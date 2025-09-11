@@ -52,8 +52,8 @@ class MainApplication : Application(), ReactApplication {
             packages.add(LinearGradientPackage());
             packages.add(RNGestureHandlerPackage());
             packages.add(RNPermissionsPackage());
-            packages.add(CoreCommsServicePackage()); // New Core Communications Package
-            packages.add(CoreServiceStarterPackage());
+            // packages.add(CoreCommsServicePackage()); // New Core Communications Package
+            // packages.add(CoreServiceStarterPackage());
             packages.add(AsyncStoragePackage());
             packages.add(SvgPackage());
             packages.add(NotificationServicePackage());

@@ -16,7 +16,7 @@
 @interface BridgeModule : RCTEventEmitter
 
 - (void)setup:(RCTResponseSenderBlock)successCallback errorCallback:(RCTResponseSenderBlock)errorCallback;
-- (void)sendCommand:(NSString *)command :(RCTPromiseResolveBlock)resolve :(RCTPromiseRejectBlock)reject;
+- (void)handleCommand:(NSString *)command :(RCTPromiseResolveBlock)resolve :(RCTPromiseRejectBlock)reject;
 + (void)emitEvent:(NSString *)eventName body:(id)body;
 
 // Add support for events

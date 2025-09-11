@@ -16,7 +16,7 @@ import {getCoreSettings, getRestUrl, getWsUrl, saveSetting} from "@/utils/Settin
 import socketComms from "@/managers/SocketComms"
 import livekitManager from "@/managers/LivekitManager"
 
-const {Bridge, BridgeModule, CoreCommsService} = NativeModules
+const {Bridge, BridgeModule} = NativeModules
 const eventEmitter = new NativeEventEmitter(Bridge)
 
 export class MantleBridge extends EventEmitter {
@@ -169,7 +169,7 @@ export class MantleBridge extends EventEmitter {
     if (Platform.OS === "ios") {
       setTimeout(async () => {
         // will fail silently if we don't have bt permissions (which is the intended behavior)
-        BridgeModule.sendCommand(JSON.stringify({command: "connect_wearable"}))
+        BridgeModule.handleCommand(JSON.stringify({command: "connect_wearable"}))
       }, 3000)
     }
 
@@ -483,17 +483,18 @@ export class MantleBridge extends EventEmitter {
         console.log("Sending data to Core:", JSON.stringify(dataObj))
       }
 
-      if (Platform.OS === "android") {
-        // Ensure the service is running
-        if (!(await CoreCommsService.isServiceRunning())) {
-          CoreCommsService.startService()
-        }
-        return await CoreCommsService.sendCommandToCore(JSON.stringify(dataObj))
-      }
+      // if (Platform.OS === "android") {
+      //   // Ensure the service is running
+      //   if (!(await CoreCommsService.isServiceRunning())) {
+      //     CoreCommsService.startService()
+      //   }
+      //   return await CoreCommsService.sendCommandToCore(JSON.stringify(dataObj))
+      // }
 
-      if (Platform.OS === "ios") {
-        return await BridgeModule.sendCommand(JSON.stringify(dataObj))
-      }
+      // if (Platform.OS === "ios") {
+      //   return await BridgeModule.sendCommand(JSON.stringify(dataObj))
+      // }
+      return await BridgeModule.handleCommand(JSON.stringify(dataObj))
     } catch (error) {
       console.error("Failed to send data to Core:", error)
       GlobalEventEmitter.emit("SHOW_BANNER", {
@@ -898,12 +899,12 @@ export class MantleBridge extends EventEmitter {
     // Clean up any active listeners
     this.cleanup()
 
-    if (Platform.OS === "android") {
-      // Stop the service if it's running
-      if (CoreCommsService && typeof CoreCommsService.stopService === "function") {
-        CoreCommsService.stopService()
-      }
-    }
+    // if (Platform.OS === "android") {
+    //   // Stop the service if it's running
+    //   if (CoreCommsService && typeof CoreCommsService.stopService === "function") {
+    //     CoreCommsService.stopService()
+    //   }
+    // }
   }
 
   async sendSetMetricSystemEnabled(metricSystemEnabled: boolean) {
