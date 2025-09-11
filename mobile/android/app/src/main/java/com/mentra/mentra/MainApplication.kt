@@ -72,6 +72,7 @@ class MainApplication : Application(), ReactApplication {
             packages.add(RNViewShotPackage());
             packages.add(SettingsNavigationPackage()); // Settings Navigation Package
             packages.add(AudioManagerPackage()); // Audio Manager Package
+            packages.add(BridgePackage()); // Bridge Package
             return packages
           }
 

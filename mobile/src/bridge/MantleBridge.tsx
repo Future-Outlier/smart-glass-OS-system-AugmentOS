@@ -179,18 +179,18 @@ export class MantleBridge extends EventEmitter {
     // Initialize message event listener
     this.initializeMessageEventListener()
 
-    if (Platform.OS === "android") {
-      // Set up audio play response callback
-      AudioPlayService.setResponseCallback((response: AudioPlayResponse) => {
-        this.sendAudioPlayResponse(response)
-      })
-    }
+    // if (Platform.OS === "android") {
+    //   // Set up audio play response callback
+    //   AudioPlayService.setResponseCallback((response: AudioPlayResponse) => {
+    //     this.sendAudioPlayResponse(response)
+    //   })
+    // }
 
-    // set the backend server url
-    if (Platform.OS === "android") {
-      const backendServerUrl = await getRestUrl() // TODO: config: remove
-      await this.setServerUrl(backendServerUrl) // TODO: config: remove
-    }
+    // // set the backend server url
+    // if (Platform.OS === "android") {
+    //   const backendServerUrl = await getRestUrl() // TODO: config: remove
+    //   await this.setServerUrl(backendServerUrl) // TODO: config: remove
+    // }
 
     this.sendSettings()
 
@@ -519,10 +519,7 @@ export class MantleBridge extends EventEmitter {
     // Reset connection state
     this.isConnected = false
 
-    // Reset the singleton instance
-    Bridge.instance = null
-
-    console.log("Bridge cleaned up")
+    console.log("MantleBridge cleaned up")
   }
 
   /* Command methods to interact with Core */
