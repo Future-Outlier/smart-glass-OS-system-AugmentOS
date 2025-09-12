@@ -21,13 +21,11 @@ import java.util.Map;
 public class BridgeModule extends ReactContextBaseJavaModule {
     private static final String TAG = "BridgeModule";
     private static BridgeModule instance;
-    private CommandBridge commandBridge;
     private ReactApplicationContext reactContext;
 
     public BridgeModule(ReactApplicationContext reactContext) {
         super(reactContext);
         this.reactContext = reactContext;
-        this.commandBridge = CommandBridge.getInstance();
         instance = this;
         // Initialize the Bridge with React context for event emission
         Bridge.initialize(reactContext);
@@ -36,7 +34,7 @@ public class BridgeModule extends ReactContextBaseJavaModule {
     @NonNull
     @Override
     public String getName() {
-        return "Bridge";
+        return "BridgeModule";
     }
 
     public static BridgeModule getInstance() {
@@ -44,18 +42,18 @@ public class BridgeModule extends ReactContextBaseJavaModule {
     }
 
     /**
-     * Handle command from React Native
+     * Send command from React Native (matches iOS BridgeModule.sendCommand)
      * @param command JSON string containing the command and parameters
      * @param promise Promise to resolve with the result
      */
     @ReactMethod
-    public void handleCommand(String command, Promise promise) {
+    public void sendCommand(String command, Promise promise) {
         try {
-            Log.d(TAG, "handleCommand called with command: " + command);
-            Object result = commandBridge.handleCommand(command);
+            Log.d(TAG, "sendCommand called with command: " + command);
+            Object result = Bridge.getInstance().handleCommand(command);
             promise.resolve(result);
         } catch (Exception e) {
-            Log.e(TAG, "Error handling command", e);
+            Log.e(TAG, "Error sending command", e);
             promise.reject("COMMAND_ERROR", e.getMessage(), e);
         }
     }
