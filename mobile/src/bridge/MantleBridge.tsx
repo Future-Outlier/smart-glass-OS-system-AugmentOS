@@ -166,12 +166,10 @@ export class MantleBridge extends EventEmitter {
    * Initializes the communication channel with Core
    */
   async initialize() {
-    if (Platform.OS === "ios") {
-      setTimeout(async () => {
-        // will fail silently if we don't have bt permissions (which is the intended behavior)
-        BridgeModule.handleCommand(JSON.stringify({command: "connect_wearable"}))
-      }, 3000)
-    }
+    setTimeout(async () => {
+      // will fail silently if we don't have bt permissions (which is the intended behavior)
+      BridgeModule.sendCommand(JSON.stringify({command: "connect_wearable"}))
+    }, 3000)
 
     // Start the external service
     startExternalService()
@@ -491,10 +489,7 @@ export class MantleBridge extends EventEmitter {
       //   return await CoreCommsService.sendCommandToCore(JSON.stringify(dataObj))
       // }
 
-      // if (Platform.OS === "ios") {
-      //   return await BridgeModule.sendCommand(JSON.stringify(dataObj))
-      // }
-      return await BridgeModule.handleCommand(JSON.stringify(dataObj))
+      return await BridgeModule.sendCommand(JSON.stringify(dataObj))
     } catch (error) {
       console.error("Failed to send data to Core:", error)
       GlobalEventEmitter.emit("SHOW_BANNER", {
@@ -657,104 +652,6 @@ export class MantleBridge extends EventEmitter {
       params: {
         enabled: enabled,
       },
-    })
-  }
-
-  // TODO: config: remove
-  async sendToggleContextualDashboard(enabled: boolean) {
-    return await this.sendData({
-      command: "enable_contextual_dashboard",
-      params: {
-        enabled: enabled,
-      },
-    })
-  }
-
-  // TODO: config: remove
-  async sendToggleBypassVadForDebugging(enabled: boolean) {
-    return await this.sendData({
-      command: "bypass_vad_for_debugging",
-      params: {
-        enabled: enabled,
-      },
-    })
-  }
-
-  // TODO: config: remove
-  async sendTogglePowerSavingMode(enabled: boolean) {
-    return await this.sendData({
-      command: "enable_power_saving_mode",
-      params: {
-        enabled: enabled,
-      },
-    })
-  }
-
-  // TODO: config: remove
-  async sendToggleBypassAudioEncodingForDebugging(enabled: boolean) {
-    return await this.sendData({
-      command: "bypass_audio_encoding_for_debugging",
-      params: {
-        enabled: enabled,
-      },
-    })
-  }
-
-  // TODO: config: remove
-  async sendToggleEnforceLocalTranscription(enabled: boolean) {
-    return await this.sendData({
-      command: "enforce_local_transcription",
-      params: {
-        enabled: enabled,
-      },
-    })
-  }
-
-  // TODO: config: remove
-  async sendToggleAlwaysOnStatusBar(enabled: boolean) {
-    console.log("sendToggleAlwaysOnStatusBar")
-    return await this.sendData({
-      command: "enable_always_on_status_bar",
-      params: {
-        enabled: enabled,
-      },
-    })
-  }
-
-  // TODO: config: remove
-  async setGlassesBrightnessMode(brightness: number, autoBrightness: boolean) {
-    return await this.sendData({
-      command: "update_glasses_brightness",
-      params: {
-        brightness: brightness,
-        autoBrightness: autoBrightness,
-      },
-    })
-  }
-
-  // TODO: config: remove
-  async setGlassesHeadUpAngle(headUpAngle: number) {
-    return await this.sendData({
-      command: "update_glasses_head_up_angle",
-      params: {
-        headUpAngle: headUpAngle,
-      },
-    })
-  }
-
-  // TODO: config: remove
-  async setGlassesHeight(height: number) {
-    return await this.sendData({
-      command: "update_glasses_height",
-      params: {height: height},
-    })
-  }
-
-  // TODO: config: remove
-  async setGlassesDepth(depth: number) {
-    return await this.sendData({
-      command: "update_glasses_depth",
-      params: {depth: depth},
     })
   }
 

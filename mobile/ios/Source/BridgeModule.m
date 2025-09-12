@@ -46,7 +46,7 @@ RCT_EXPORT_MODULE(BridgeModule);
 }
 
 RCT_EXPORT_METHOD(
-  handleCommand:
+  sendCommand:
   (NSString *)command
   resolver:(RCTPromiseResolveBlock)resolve
   rejecter:(RCTPromiseRejectBlock)reject
