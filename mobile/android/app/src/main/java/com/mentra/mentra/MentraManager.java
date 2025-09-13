@@ -216,28 +216,6 @@ public class MentraManager {
         // TODO: Set up voice data handling pipeline
     }
     
-    // Audio methods
-    public void playAudio(String requestId, String audioUrl, float volume, boolean stopOtherAudio) {
-        Log.d(TAG, "AOS: playAudio bridge called for requestId: " + requestId);
-        
-        AudioManager audioManager = AudioManager.getInstance(reactContext);
-        audioManager.playAudio(requestId, audioUrl, volume, stopOtherAudio);
-    }
-    
-    public void stopAudio(String requestId) {
-        Log.d(TAG, "AOS: stopAudio bridge called for requestId: " + requestId);
-        
-        AudioManager audioManager = AudioManager.getInstance(reactContext);
-        audioManager.stopAudio(requestId);
-    }
-    
-    public void stopAllAudio() {
-        Log.d(TAG, "AOSManager: stopAllAudio bridge called");
-        
-        AudioManager audioManager = AudioManager.getInstance(reactContext);
-        audioManager.stopAllAudio();
-    }
-    
     // Connection and status methods
     public void onConnectionAck() {
         handleRequestStatus();
@@ -872,105 +850,6 @@ public class MentraManager {
                     if (params != null) {
                         String modelName = params.getString("model_name");
                         handleSearchForCompatibleDeviceNames(modelName);
-                    }
-                    break;
-                case "enable_contextual_dashboard":
-                    if (params != null) {
-                        boolean enabled = params.getBoolean("enabled");
-                        enableContextualDashboard(enabled);
-                    }
-                    break;
-                case "set_preferred_mic":
-                    if (params != null) {
-                        String mic = params.getString("mic");
-                        setPreferredMic(mic);
-                    }
-                    break;
-                case "set_button_mode":
-                    if (params != null) {
-                        String mode = params.getString("mode");
-                        setButtonMode(mode);
-                    }
-                    break;
-                case "set_button_photo_size":
-                    if (params != null) {
-                        String size = params.getString("size");
-                        setButtonPhotoSize(size);
-                    }
-                    break;
-                case "set_button_video_settings":
-                    if (params != null) {
-                        int width = params.getInt("width");
-                        int height = params.getInt("height");
-                        int fps = params.getInt("fps");
-                        setButtonVideoSettings(width, height, fps);
-                    }
-                    break;
-                case "update_glasses_head_up_angle":
-                    if (params != null) {
-                        int angle = params.getInt("headUpAngle");
-                        updateGlassesHeadUpAngle(angle);
-                    }
-                    break;
-                case "update_glasses_brightness":
-                    if (params != null) {
-                        int brightness = params.getInt("brightness");
-                        boolean autoBrightness = params.getBoolean("autoBrightness");
-                        updateGlassesBrightness(brightness, autoBrightness);
-                    }
-                    break;
-                case "update_glasses_height":
-                    if (params != null) {
-                        int height = params.getInt("height");
-                        updateGlassesHeight(height);
-                    }
-                    break;
-                case "update_glasses_depth":
-                    if (params != null) {
-                        int depth = params.getInt("depth");
-                        updateGlassesDepth(depth);
-                    }
-                    break;
-                case "enable_sensing":
-                    if (params != null) {
-                        boolean enabled = params.getBoolean("enabled");
-                        enableSensing(enabled);
-                    }
-                    break;
-                case "enable_power_saving_mode":
-                    if (params != null) {
-                        boolean enabled = params.getBoolean("enabled");
-                        enablePowerSavingMode(enabled);
-                    }
-                    break;
-                case "enable_always_on_status_bar":
-                    if (params != null) {
-                        boolean enabled = params.getBoolean("enabled");
-                        enableAlwaysOnStatusBar(enabled);
-                    }
-                    break;
-                case "bypass_vad_for_debugging":
-                    if (params != null) {
-                        boolean enabled = params.getBoolean("enabled");
-                        bypassVad(enabled);
-                    }
-                    break;
-                case "bypass_audio_encoding_for_debugging":
-                    if (params != null) {
-                        boolean enabled = params.getBoolean("enabled");
-                        setBypassAudioEncoding(enabled);
-                    }
-                    break;
-                case "enforce_local_transcription":
-                    if (params != null) {
-                        boolean enabled = params.getBoolean("enabled");
-                        enforceLocalTranscription(enabled);
-                    }
-                    break;
-                case "set_metric_system_enabled":
-                    if (params != null) {
-                        boolean enabled = params.getBoolean("enabled");
-                        setMetricSystemEnabled(enabled);
                     }
                     break;
                 default:
