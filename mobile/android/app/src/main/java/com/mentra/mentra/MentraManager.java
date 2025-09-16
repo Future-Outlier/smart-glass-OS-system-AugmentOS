@@ -1,17 +1,10 @@
 package com.mentra.mentra;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
-
-import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.bridge.WritableArray;
-import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.modules.core.DeviceEventManagerModule;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -20,37 +13,32 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+/**
+ * Android equivalent of iOS MentraManager.swift
+ * Handles device management and connections to MentraOS servers
+ */
 public class MentraManager {
     private static final String TAG = "MentraManager";
     private static MentraManager instance;
-    private ReactApplicationContext reactContext;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private Context context;
     
     // Core properties
     private String coreToken = "";
     private String coreTokenOwner = "";
+    // private SGCManager sgc; // TODO: Implement SGCManager interface
     
-    // Device managers (these would be implemented separately)
-    // private ERG1Manager g1Manager;
-    // private MentraLiveManager liveManager;
-    // private Mach1Manager mach1Manager;
-    // private FrameManager frameManager;
-    // private ServerComms serverComms;
-    // private OnboardMicrophoneManager micManager;
-    
-    // Status and configuration
     private Map<String, Object> lastStatusObj = new HashMap<>();
-    private List<ThirdPartyCloudApp> cachedThirdPartyAppList = new ArrayList<>();
+    
+    // Settings and state
     private String defaultWearable = "";
     private String pendingWearable = "";
     private String deviceName = "";
@@ -78,9 +66,9 @@ public class MentraManager {
     private boolean isHeadUp = false;
     
     // View states
-    private List<ViewState> viewStates;
+    private List<ViewState> viewStates = new ArrayList<>();
     
-    // Microphone configuration
+    // Mic settings
     private boolean useOnboardMic = false;
     private String preferredMic = "glasses";
     private boolean micEnabled = false;
@@ -94,20 +82,13 @@ public class MentraManager {
     private int buttonVideoFps = 30;
     private boolean buttonCameraLed = true;
     
-    // VAD (Voice Activity Detection)
-    // private SileroVADStrategy vad;
-    private List<byte[]> vadBuffer = new ArrayList<>();
+    // VAD
     private boolean isSpeaking = false;
+    private List<byte[]> vadBuffer = new ArrayList<>();
     
-    // Transcriber
-    // private SherpaOnnxTranscriber transcriber;
+    // Transcription
     private boolean shouldSendPcmData = false;
     private boolean shouldSendTranscript = false;
-    
-    // Executors for async operations
-    private ExecutorService executorService = Executors.newCachedThreadPool();
-    private ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(2);
-    private ScheduledFuture<?> sendStateWorkItem;
     
     // Inner classes
     public static class ViewState {
@@ -119,26 +100,19 @@ public class MentraManager {
         public String data;
         public Map<String, Object> animationData;
         
-        public ViewState(String topText, String bottomText, String title, 
-                        String layoutType, String text) {
+        public ViewState(String topText, String bottomText, String title, String layoutType, String text) {
             this.topText = topText;
             this.bottomText = bottomText;
             this.title = title;
             this.layoutType = layoutType;
             this.text = text;
+            this.data = null;
+            this.animationData = null;
         }
     }
     
     public static class ThirdPartyCloudApp {
-        public String packageName;
-        public String displayName;
-        public boolean isActive;
-        
-        public ThirdPartyCloudApp(String packageName, String displayName, boolean isActive) {
-            this.packageName = packageName;
-            this.displayName = displayName;
-            this.isActive = isActive;
-        }
+        // TODO: Implement if needed
     }
     
     public enum SpeechRequiredDataType {
@@ -147,7 +121,7 @@ public class MentraManager {
         PCM_OR_TRANSCRIPTION
     }
     
-    // Singleton getInstance
+    // Singleton instance
     public static synchronized MentraManager getInstance() {
         if (instance == null) {
             instance = new MentraManager();
@@ -156,75 +130,53 @@ public class MentraManager {
     }
     
     private MentraManager() {
-        Log.d(TAG, "MentraManager: init()");
+        Bridge.log("Mentra: init()");
         initializeViewStates();
-        // Initialize VAD
-        // vad = new SileroVADStrategy();
-        // TODO: Initialize transcriber
+        // TODO: Initialize VAD and transcriber
     }
     
     private void initializeViewStates() {
-        viewStates = new ArrayList<>();
         viewStates.add(new ViewState(" ", " ", " ", "text_wall", ""));
         viewStates.add(new ViewState(" ", " ", " ", "text_wall", 
             "$TIME12$ $DATE$ $GBATT$ $CONNECTION_STATUS$"));
         viewStates.add(new ViewState(" ", " ", " ", "text_wall", ""));
-        viewStates.add(new ViewState(" ", " ", " ", "text_wall", 
+        viewStates.add(new ViewState(" ", " ", " ", "text_wall",
             "$TIME12$ $DATE$ $GBATT$ $CONNECTION_STATUS$"));
     }
     
-    // Setup and initialization
-    public void setup(ReactApplicationContext context) {
-        Log.d(TAG, "MentraManager: setup()");
-        this.reactContext = context;
-        // LocationManager.shared.setup();
-        // MediaManager.shared.setup();
-        setupVoiceDataHandling();
+    // Public methods for React Native
+    
+    public void setup(Context ctx) {
+        Bridge.log("Mentra: setup()");
+        this.context = ctx;
+        // TODO: Initialize LocationManager equivalent
     }
     
     public void initManager(String wearable) {
-        Log.d(TAG, "Initializing manager for wearable: " + wearable);
-        
-        // Initialize appropriate manager based on wearable type
-        if (wearable.contains("G1")) {
-            // if (g1Manager == null) {
-            //     g1Manager = ERG1Manager.getInstance();
-            // }
-        } else if (wearable.contains("Live")) {
-            // if (liveManager == null) {
-            //     liveManager = new MentraLiveManager();
-            // }
-        } else if (wearable.contains("Mach1")) {
-            // if (mach1Manager == null) {
-            //     mach1Manager = new Mach1Manager();
-            // }
-        } else if (wearable.contains("Frame") || wearable.contains("Brilliant Labs")) {
-            // if (frameManager == null) {
-            //     frameManager = FrameManager.getInstance();
-            // }
-        }
-        
-        initManagerCallbacks();
+        Bridge.log("Initializing manager for wearable: " + wearable);
+        // TODO: Initialize specific SGC managers based on wearable type
+        // if (wearable.contains("G1") && sgc == null) {
+        //     sgc = new G1();
+        // } else if (wearable.contains("Live") && sgc == null) {
+        //     sgc = new MentraLive();
+        // } else if (wearable.contains("Mach1") && sgc == null) {
+        //     sgc = new Mach1();
+        // } else if ((wearable.contains("Frame") || wearable.contains("Brilliant Labs")) && sgc == null) {
+        //     sgc = new FrameManager();
+        // }
     }
     
-    private void initManagerCallbacks() {
-        // TODO: Implement manager callbacks for connection state changes
-        // This would set up listeners for each device manager
+    public void initManagerCallbacks() {
+        // TODO: Setup callbacks for SGC managers
     }
     
-    private void setupVoiceDataHandling() {
-        // TODO: Set up voice data handling pipeline
-    }
-    
-    // Connection and status methods
-    public void onConnectionAck() {
-        handleRequestStatus();
-        String isoDatetime = getCurrentIsoDatetime();
-        // serverComms.sendUserDatetimeToBackend(isoDatetime);
+    public void updateHeadUp(boolean isHeadUp) {
+        this.isHeadUp = isHeadUp;
+        sendCurrentState(isHeadUp);
+        Bridge.sendHeadPosition(isHeadUp);
     }
     
     public void onAppStateChange(List<ThirdPartyCloudApp> apps) {
-        cachedThirdPartyAppList = apps;
         handleRequestStatus();
     }
     
@@ -236,16 +188,70 @@ public class MentraManager {
         // Handle auth error
     }
     
-    // Microphone state management
+    // Voice Data Handling
+    
+    private void checkSetVadStatus(boolean speaking) {
+        if (speaking != isSpeaking) {
+            isSpeaking = speaking;
+            // Bridge.sendVadStatus(isSpeaking); // TODO: Implement in Bridge
+        }
+    }
+    
+    private void emptyVadBuffer() {
+        while (!vadBuffer.isEmpty()) {
+            byte[] chunk = vadBuffer.remove(0);
+            Bridge.sendMicData(chunk);
+        }
+    }
+    
+    private void addToVadBuffer(byte[] chunk) {
+        final int MAX_BUFFER_SIZE = 20;
+        vadBuffer.add(chunk);
+        while (vadBuffer.size() > MAX_BUFFER_SIZE) {
+            vadBuffer.remove(0);
+        }
+    }
+    
+    public void handleGlassesMicData(byte[] rawLC3Data) {
+        // TODO: Implement LC3 to PCM conversion and VAD processing
+        Bridge.log("Mentra: handleGlassesMicData - not yet implemented");
+    }
+    
+    public void handlePcm(byte[] pcmData) {
+        // TODO: Implement PCM handling with VAD
+        if (bypassVad || bypassVadForPCM) {
+            if (shouldSendPcmData) {
+                Bridge.sendMicData(pcmData);
+            }
+            // TODO: Send to local transcriber if shouldSendTranscript
+            return;
+        }
+        // TODO: VAD processing
+    }
+    
+    public void handleConnectionStateChange(boolean isConnected) {
+        Bridge.log("Mentra: Glasses: connection state: " + isConnected);
+        // TODO: Check SGC ready state
+        // if (sgc != null) {
+        //     if (sgc.ready) {
+        //         handleDeviceReady();
+        //     } else {
+        //         handleDeviceDisconnected();
+        //         handleRequestStatus();
+        //     }
+        // }
+    }
+    
+    // ServerCommsCallback Implementation
+    
     public void handleMicrophoneStateChange(List<SpeechRequiredDataType> requiredData, boolean bypassVad) {
-        Log.d(TAG, "MIC: changing mic with requiredData: " + requiredData + " bypassVad=" + bypassVad);
+        Bridge.log("Mentra: MIC: changing mic with requiredData: " + requiredData + " bypassVad=" + bypassVad);
         
         bypassVadForPCM = bypassVad;
         shouldSendPcmData = false;
         shouldSendTranscript = false;
         
-        if (requiredData.contains(SpeechRequiredDataType.PCM) && 
-            requiredData.contains(SpeechRequiredDataType.TRANSCRIPTION)) {
+        if (requiredData.contains(SpeechRequiredDataType.PCM) && requiredData.contains(SpeechRequiredDataType.TRANSCRIPTION)) {
             shouldSendPcmData = true;
             shouldSendTranscript = true;
         } else if (requiredData.contains(SpeechRequiredDataType.PCM)) {
@@ -268,107 +274,86 @@ public class MentraManager {
         vadBuffer.clear();
         micEnabled = !requiredData.isEmpty();
         
-        // Update actual microphone state
-        executorService.execute(() -> {
-            updateMicrophoneState();
+        // TODO: Handle microphone state change
+        executor.execute(() -> {
+            boolean actuallyEnabled = micEnabled && sensingEnabled;
+            // TODO: Check glasses mic capability and enable/disable accordingly
         });
     }
     
-    private void updateMicrophoneState() {
-        boolean actuallyEnabled = micEnabled && sensingEnabled;
-        boolean glassesHasMic = getGlassesHasMic();
-        boolean useGlassesMic = false;
-        boolean useOnboardMic = false;
-        
-        useOnboardMic = preferredMic.equals("phone");
-        useGlassesMic = preferredMic.equals("glasses");
-        
-        if (onboardMicUnavailable) {
-            useOnboardMic = false;
+    public void onJsonMessage(Map<String, Object> message) {
+        Bridge.log("Mentra: onJsonMessage: " + message);
+        // TODO: Send to SGC
+        // if (sgc != null) {
+        //     sgc.sendJson(message, false);
+        // }
+    }
+    
+    public void onPhotoRequest(String requestId, String appId, String webhookUrl, String size) {
+        Bridge.log("Mentra: onPhotoRequest: " + requestId + ", " + appId + ", " + webhookUrl + ", size=" + size);
+        // TODO: Request photo from SGC
+    }
+    
+    // Display handling
+    
+    public void clearState() {
+        sendCurrentState(false); // TODO: Get actual head state from SGC
+    }
+    
+    public void sendCurrentState(boolean isDashboard) {
+        if (isUpdatingScreen) {
+            return;
         }
-        
-        if (!glassesHasMic) {
-            useGlassesMic = false;
-        }
-        
-        if (!useGlassesMic && !useOnboardMic) {
-            if (glassesHasMic) {
-                useGlassesMic = true;
-            } else if (!onboardMicUnavailable) {
-                useOnboardMic = true;
+        executeSendCurrentState(isDashboard);
+    }
+    
+    private void executeSendCurrentState(boolean isDashboard) {
+        executor.execute(() -> {
+            ViewState currentViewState;
+            if (isDashboard) {
+                currentViewState = viewStates.get(1);
+            } else {
+                currentViewState = viewStates.get(0);
+            }
+            isHeadUp = isDashboard;
+            
+            if (isDashboard && !contextualDashboard) {
+                return;
             }
             
-            if (!useGlassesMic && !useOnboardMic) {
-                Log.d(TAG, "No mic to use! Falling back to glasses mic");
-                useGlassesMic = true;
+            if (defaultWearable.contains("Simulated") || defaultWearable.isEmpty()) {
+                return;
             }
-        }
-        
-        useGlassesMic = actuallyEnabled && useGlassesMic;
-        useOnboardMic = actuallyEnabled && useOnboardMic;
-        
-        // Update device microphone state
-        // if (g1Manager != null && g1Manager.isG1Ready()) {
-        //     g1Manager.setMicEnabled(useGlassesMic);
-        // }
-        
-        setOnboardMicEnabled(useOnboardMic);
-    }
-    
-    private void setOnboardMicEnabled(boolean enabled) {
-        // TODO: Implement onboard microphone control
-    }
-    
-    // Display and UI methods
-    public void handleDisplayEvent(Map<String, Object> event) {
-        String view = (String) event.get("view");
-        if (view == null) {
-            Log.d(TAG, "Invalid view");
-            return;
-        }
-        
-        boolean isDashboard = "dashboard".equals(view);
-        int stateIndex = isDashboard ? 1 : 0;
-        
-        Map<String, Object> layout = (Map<String, Object>) event.get("layout");
-        if (layout == null) return;
-        
-        String layoutType = (String) layout.get("layoutType");
-        String text = (String) layout.getOrDefault("text", " ");
-        String topText = (String) layout.getOrDefault("topText", " ");
-        String bottomText = (String) layout.getOrDefault("bottomText", " ");
-        String title = (String) layout.getOrDefault("title", " ");
-        String data = (String) layout.getOrDefault("data", "");
-        
-        text = parsePlaceholders(text);
-        topText = parsePlaceholders(topText);
-        bottomText = parsePlaceholders(bottomText);
-        title = parsePlaceholders(title);
-        
-        ViewState newViewState = new ViewState(topText, bottomText, title, layoutType, text);
-        newViewState.data = data;
-        
-        // Check if state actually changed
-        ViewState currentState = viewStates.get(stateIndex);
-        if (!hasStateChanged(currentState, newViewState)) {
-            return;
-        }
-        
-        Log.d(TAG, "Updating view state " + stateIndex + " with " + layoutType);
-        viewStates.set(stateIndex, newViewState);
-        
-        // Send state if user is currently viewing it
-        if ((stateIndex == 0 && !isHeadUp) || (stateIndex == 1 && isHeadUp)) {
-            sendCurrentState(isDashboard);
-        }
-    }
-    
-    private boolean hasStateChanged(ViewState current, ViewState newState) {
-        String currentStr = current.layoutType + current.text + current.topText + 
-                           current.bottomText + current.title + (current.data != null ? current.data : "");
-        String newStr = newState.layoutType + newState.text + newState.topText + 
-                       newState.bottomText + newState.title + (newState.data != null ? newState.data : "");
-        return !currentStr.equals(newStr);
+            
+            if (!isSomethingConnected()) {
+                return;
+            }
+            
+            String layoutType = currentViewState.layoutType;
+            switch (layoutType) {
+                case "text_wall":
+                    sendText(currentViewState.text);
+                    break;
+                case "double_text_wall":
+                    // TODO: Send double text wall to SGC
+                    break;
+                case "reference_card":
+                    sendText(currentViewState.title + "\n\n" + currentViewState.text);
+                    break;
+                case "bitmap_view":
+                    Bridge.log("Mentra: Processing bitmap_view layout");
+                    if (currentViewState.data != null) {
+                        // TODO: Display bitmap on SGC
+                    }
+                    break;
+                case "clear_view":
+                    Bridge.log("Mentra: Processing clear_view layout - clearing display");
+                    clearDisplay();
+                    break;
+                default:
+                    Bridge.log("UNHANDLED LAYOUT_TYPE " + layoutType);
+            }
+        });
     }
     
     private String parsePlaceholders(String text) {
@@ -406,111 +391,64 @@ public class MentraManager {
         return result;
     }
     
-    private void sendCurrentState(boolean isDashboard) {
-        if (isUpdatingScreen) {
+    public void handleDisplayEvent(Map<String, Object> event) {
+        String view = (String) event.get("view");
+        if (view == null) {
+            Bridge.log("Mentra: invalid view");
+            return;
+        }
+        boolean isDashboard = "dashboard".equals(view);
+        
+        int stateIndex = isDashboard ? 1 : 0;
+        
+        Map<String, Object> layout = (Map<String, Object>) event.get("layout");
+        if (layout == null) return;
+        
+        String layoutType = (String) layout.get("layoutType");
+        String text = layout.get("text") != null ? (String) layout.get("text") : " ";
+        String topText = layout.get("topText") != null ? (String) layout.get("topText") : " ";
+        String bottomText = layout.get("bottomText") != null ? (String) layout.get("bottomText") : " ";
+        String title = layout.get("title") != null ? (String) layout.get("title") : " ";
+        String data = layout.get("data") != null ? (String) layout.get("data") : "";
+        
+        text = parsePlaceholders(text);
+        topText = parsePlaceholders(topText);
+        bottomText = parsePlaceholders(bottomText);
+        title = parsePlaceholders(title);
+        
+        ViewState newViewState = new ViewState(topText, bottomText, title, layoutType, text);
+        newViewState.data = data;
+        
+        if ("bitmap_animation".equals(layoutType)) {
+            // TODO: Handle animation data
+        }
+        
+        ViewState currentState = viewStates.get(stateIndex);
+        String currentStateStr = currentState.layoutType + currentState.text + currentState.topText + 
+                                currentState.bottomText + currentState.title + (currentState.data != null ? currentState.data : "");
+        String newStateStr = newViewState.layoutType + newViewState.text + newViewState.topText + 
+                            newViewState.bottomText + newViewState.title + (newViewState.data != null ? newViewState.data : "");
+        
+        if (currentStateStr.equals(newStateStr)) {
             return;
         }
         
-        executeSendCurrentState(isDashboard);
-    }
-    
-    private void executeSendCurrentState(boolean isDashboard) {
-        executorService.execute(() -> {
-            ViewState currentViewState = isDashboard ? viewStates.get(1) : viewStates.get(0);
-            isHeadUp = isDashboard;
-            
-            if (isDashboard && !contextualDashboard) {
-                return;
-            }
-            
-            if (defaultWearable.contains("Simulated") || defaultWearable.isEmpty()) {
-                return;
-            }
-            
-            if (!isSomethingConnected()) {
-                return;
-            }
-            
-            if (sendStateWorkItem != null) {
-                sendStateWorkItem.cancel(false);
-            }
-            
-            String layoutType = currentViewState.layoutType;
-            switch (layoutType) {
-                case "text_wall":
-                    sendText(currentViewState.text);
-                    break;
-                case "double_text_wall":
-                    sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText);
-                    break;
-                case "reference_card":
-                    sendText(currentViewState.title + "\n\n" + currentViewState.text);
-                    break;
-                case "bitmap_view":
-                    if (currentViewState.data != null) {
-                        displayBitmap(currentViewState.data);
-                    }
-                    break;
-                case "clear_view":
-                    clearDisplay();
-                    break;
-                default:
-                    Log.d(TAG, "Unhandled layout type: " + layoutType);
-            }
-        });
-    }
-    
-    private void sendText(String text) {
-        if (defaultWearable.contains("Simulated") || defaultWearable.isEmpty()) {
-            return;
-        }
+        Bridge.log("Updating view state " + stateIndex + " with " + layoutType + " " + text + " " + topText + " " + bottomText);
+        viewStates.set(stateIndex, newViewState);
         
-        if (" ".equals(text) || text.isEmpty()) {
-            clearDisplay();
-            return;
-        }
-        
-        // Send to appropriate device manager
-        // if (g1Manager != null) g1Manager.sendTextWall(text);
-        // if (mach1Manager != null) mach1Manager.sendTextWall(text);
-        // if (frameManager != null) frameManager.displayTextWall(text);
-    }
-    
-    private void sendDoubleTextWall(String topText, String bottomText) {
-        // if (g1Manager != null) g1Manager.sendDoubleTextWall(topText, bottomText);
-        // if (mach1Manager != null) mach1Manager.sendDoubleTextWall(topText, bottomText);
-    }
-    
-    private void displayBitmap(String base64Data) {
-        // if (g1Manager != null) g1Manager.displayBitmap(base64Data);
-        // if (mach1Manager != null) mach1Manager.displayBitmap(base64Data);
-    }
-    
-    private void clearDisplay() {
-        // if (g1Manager != null) g1Manager.clearDisplay();
-        // if (mach1Manager != null) mach1Manager.clearDisplay();
-        // if (frameManager != null) frameManager.blankScreen();
-        
-        if (defaultWearable.contains("G1")) {
-            // g1Manager.sendTextWall(" ");
-            
-            if (powerSavingMode) {
-                if (sendStateWorkItem != null) {
-                    sendStateWorkItem.cancel(false);
-                }
-                
-                sendStateWorkItem = scheduledExecutor.schedule(() -> {
-                    if (!isHeadUp) {
-                        // g1Manager.clearDisplay();
-                    }
-                }, 3, TimeUnit.SECONDS);
-            }
+        boolean headUp = isHeadUp;
+        if (stateIndex == 0 && !headUp) {
+            sendCurrentState(false);
+        } else if (stateIndex == 1 && headUp) {
+            sendCurrentState(true);
         }
     }
     
-    // Settings and configuration
+    // Command functions
+    
     public void setAuthCreds(String token, String userId) {
-        Log.d(TAG, "Setting core token for user: " + userId);
+        Bridge.log("Mentra: Setting core token to: " + token + " for user: " + userId);
+        setup(context);
         coreToken = token;
         coreTokenOwner = userId;
         handleRequestStatus();
@@ -518,10 +456,8 @@ public class MentraManager {
     
     public void disconnectWearable() {
         sendText(" ");
-        executorService.execute(() -> {
-            // if (g1Manager != null) g1Manager.disconnect();
-            // if (liveManager != null) liveManager.disconnect();
-            // if (mach1Manager != null) mach1Manager.disconnect();
+        executor.execute(() -> {
+            // TODO: Cancel connect task and disconnect SGC
             isSearching = false;
             handleRequestStatus();
         });
@@ -531,85 +467,28 @@ public class MentraManager {
         disconnectWearable();
         defaultWearable = "";
         deviceName = "";
-        // if (g1Manager != null) g1Manager.forget();
-        // if (mach1Manager != null) mach1Manager.forget();
+        // TODO: Forget SGC
         handleRequestStatus();
     }
     
     public void handleSearchForCompatibleDeviceNames(String modelName) {
-        Log.d(TAG, "Searching for compatible device names for: " + modelName);
-        
+        Bridge.log("Mentra: Searching for compatible device names for: " + modelName);
         if (modelName.contains("Simulated")) {
             defaultWearable = "Simulated Glasses";
             handleRequestStatus();
-        } else if (modelName.contains("Audio")) {
-            defaultWearable = "Audio Wearable";
-            handleRequestStatus();
-        } else if (modelName.contains("G1")) {
+            return;
+        }
+        if (modelName.contains("G1")) {
             pendingWearable = "Even Realities G1";
-            initManager(pendingWearable);
-            // g1Manager.findCompatibleDevices();
         } else if (modelName.contains("Live")) {
             pendingWearable = "Mentra Live";
-            initManager(pendingWearable);
-            // liveManager.findCompatibleDevices();
         } else if (modelName.contains("Mach1") || modelName.contains("Z100")) {
             pendingWearable = "Mach1";
-            initManager(pendingWearable);
-            // mach1Manager.findCompatibleDevices();
         }
+        initManager(pendingWearable);
+        // TODO: Find compatible devices with SGC
     }
     
-    public void handleConnectWearable(String deviceName, String modelName) {
-        Log.d(TAG, "Connecting to modelName: " + modelName + " deviceName: " + deviceName);
-        
-        if (modelName != null) {
-            pendingWearable = modelName;
-        }
-        
-        if (pendingWearable.contains("Simulated")) {
-            defaultWearable = "Simulated Glasses";
-            handleRequestStatus();
-            return;
-        }
-        
-        if (pendingWearable.isEmpty() && defaultWearable.isEmpty()) {
-            return;
-        }
-        
-        if (pendingWearable.isEmpty() && !defaultWearable.isEmpty()) {
-            pendingWearable = defaultWearable;
-        }
-        
-        executorService.execute(() -> {
-            disconnectWearable();
-            
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            
-            isSearching = true;
-            handleRequestStatus();
-            
-            if (!deviceName.isEmpty()) {
-                this.deviceName = deviceName;
-            }
-            
-            initManager(pendingWearable);
-            
-            if (pendingWearable.contains("Live")) {
-                // liveManager.connectById(this.deviceName);
-            } else if (pendingWearable.contains("G1")) {
-                // g1Manager.connectById(this.deviceName);
-            } else if (pendingWearable.contains("Mach1")) {
-                // mach1Manager.connectById(this.deviceName);
-            }
-        });
-    }
-    
-    // Settings update methods
     public void enableContextualDashboard(boolean enabled) {
         contextualDashboard = enabled;
         handleRequestStatus();
@@ -623,17 +502,13 @@ public class MentraManager {
     
     public void setButtonMode(String mode) {
         buttonPressMode = mode;
-        // if (liveManager != null) {
-        //     liveManager.sendButtonModeSetting();
-        // }
+        // TODO: Send to SGC
         handleRequestStatus();
     }
     
     public void setButtonPhotoSize(String size) {
         buttonPhotoSize = size;
-        // if (liveManager != null) {
-        //     liveManager.sendButtonPhotoSettings();
-        // }
+        // TODO: Send to SGC
         handleRequestStatus();
     }
     
@@ -641,17 +516,13 @@ public class MentraManager {
         buttonVideoWidth = width;
         buttonVideoHeight = height;
         buttonVideoFps = fps;
-        // if (liveManager != null) {
-        //     liveManager.sendButtonVideoRecordingSettings();
-        // }
+        // TODO: Send to SGC
         handleRequestStatus();
     }
     
     public void updateGlassesHeadUpAngle(int value) {
         headUpAngle = value;
-        // if (g1Manager != null) {
-        //     g1Manager.setHeadUpAngle(value);
-        // }
+        // TODO: Send to SGC
         handleRequestStatus();
     }
     
@@ -659,41 +530,32 @@ public class MentraManager {
         boolean autoBrightnessChanged = this.autoBrightness != autoBrightness;
         brightness = value;
         this.autoBrightness = autoBrightness;
-        
-        executorService.execute(() -> {
-            // if (mach1Manager != null) mach1Manager.setBrightness(value);
-            // if (g1Manager != null) g1Manager.setBrightness(value, autoBrightness);
-            
+        executor.execute(() -> {
+            // TODO: Send to SGC
             if (autoBrightnessChanged) {
                 sendText(autoBrightness ? "Enabled auto brightness" : "Disabled auto brightness");
             } else {
                 sendText("Set brightness to " + value + "%");
             }
-            
             try {
                 Thread.sleep(800);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                // Ignore
             }
             sendText(" ");
         });
-        
         handleRequestStatus();
     }
     
     public void updateGlassesDepth(int value) {
         dashboardDepth = value;
-        // if (g1Manager != null) {
-        //     g1Manager.setDashboardPosition(dashboardHeight, dashboardDepth);
-        // }
+        // TODO: Send to SGC
         handleRequestStatus();
     }
     
     public void updateGlassesHeight(int value) {
         dashboardHeight = value;
-        // if (g1Manager != null) {
-        //     g1Manager.setDashboardPosition(dashboardHeight, dashboardDepth);
-        // }
+        // TODO: Send to SGC
         handleRequestStatus();
     }
     
@@ -743,14 +605,49 @@ public class MentraManager {
         handleRequestStatus();
     }
     
-    // Status reporting
-    public void handleRequestStatus() {
-        boolean g1Connected = false; // g1Manager != null && g1Manager.isG1Ready();
-        boolean liveConnected = false; // liveManager != null && liveManager.isConnected();
-        boolean mach1Connected = false; // mach1Manager != null && mach1Manager.isReady();
-        boolean simulatedConnected = "Simulated Glasses".equals(defaultWearable);
-        boolean isGlassesConnected = g1Connected || liveConnected || mach1Connected || simulatedConnected;
+    public void handleConnectWearable(String deviceName, String modelName) {
+        Bridge.log("Mentra: Connecting to modelName: " + modelName + " deviceName: " + deviceName);
         
+        if (modelName != null && !modelName.isEmpty()) {
+            pendingWearable = modelName;
+        }
+        
+        if (pendingWearable.contains("Simulated")) {
+            defaultWearable = "Simulated Glasses";
+            handleRequestStatus();
+            return;
+        }
+        
+        if (pendingWearable.isEmpty() && defaultWearable.isEmpty()) {
+            return;
+        }
+        
+        if (pendingWearable.isEmpty() && !defaultWearable.isEmpty()) {
+            pendingWearable = defaultWearable;
+        }
+        
+        executor.execute(() -> {
+            disconnectWearable();
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                // Ignore
+            }
+            isSearching = true;
+            handleRequestStatus();
+            
+            if (!deviceName.isEmpty()) {
+                this.deviceName = deviceName;
+            }
+            
+            initManager(pendingWearable);
+            // TODO: Connect by ID with SGC
+        });
+    }
+    
+    public void handleRequestStatus() {
+        boolean simulatedConnected = "Simulated Glasses".equals(defaultWearable);
+        boolean isGlassesConnected = false; // TODO: Get from SGC
         if (isGlassesConnected) {
             isSearching = false;
         }
@@ -761,7 +658,11 @@ public class MentraManager {
         if (isGlassesConnected) {
             connectedGlasses.put("model_name", defaultWearable);
             connectedGlasses.put("battery_level", batteryLevel);
-            // Add device-specific info
+            // TODO: Get version info from SGC
+        }
+        
+        if (simulatedConnected) {
+            connectedGlasses.put("model_name", defaultWearable);
         }
         
         glassesSettings.put("brightness", brightness);
@@ -816,104 +717,116 @@ public class MentraManager {
         Map<String, Object> wrapperObj = new HashMap<>();
         wrapperObj.put("status", statusObj);
         
-        // Send status to React Native
-        sendEventToReactNative("CoreMessageEvent", wrapperObj);
-    }
-    
-    // Command handling
-    public void handleCommand(String command) {
-        Log.d(TAG, "Received command: " + command);
-        
         try {
-            JSONObject jsonCommand = new JSONObject(command);
-            String commandType = jsonCommand.getString("command");
-            JSONObject params = jsonCommand.optJSONObject("params");
-            
-            switch (commandType) {
-                case "request_status":
-                    handleRequestStatus();
-                    break;
-                case "connect_wearable":
-                    if (params != null) {
-                        String modelName = params.optString("model_name");
-                        String deviceName = params.optString("device_name");
-                        handleConnectWearable(deviceName, modelName);
-                    }
-                    break;
-                case "disconnect_wearable":
-                    disconnectWearable();
-                    break;
-                case "forget_smart_glasses":
-                    forgetSmartGlasses();
-                    break;
-                case "search_for_compatible_device_names":
-                    if (params != null) {
-                        String modelName = params.getString("model_name");
-                        handleSearchForCompatibleDeviceNames(modelName);
-                    }
-                    break;
-                default:
-                    Log.d(TAG, "Unknown command: " + commandType);
-                    handleRequestStatus();
-                    break;
-            }
-        } catch (JSONException e) {
-            Log.e(TAG, "Error parsing command JSON", e);
+            JSONObject jsonObject = new JSONObject(wrapperObj);
+            String jsonString = jsonObject.toString();
+            Bridge.sendEvent("CoreMessageEvent", jsonString);
+        } catch (Exception e) {
+            Bridge.log("Mentra: Error converting to JSON: " + e.getMessage());
         }
     }
     
     // Helper methods
-    private boolean isSomethingConnected() {
-        // Check all device managers for connection
-        // if (g1Manager != null && g1Manager.isG1Ready()) return true;
-        // if (liveManager != null && liveManager.isConnected()) return true;
-        // if (mach1Manager != null && mach1Manager.isReady()) return true;
-        if (defaultWearable.contains("Simulated")) return true;
-        return false;
-    }
     
-    private boolean getGlassesHasMic() {
-        if (defaultWearable.contains("G1")) return true;
-        if (defaultWearable.contains("Live")) return false;
-        if (defaultWearable.contains("Mach1")) return false;
-        return false;
-    }
-    
-    private String getCurrentIsoDatetime() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-        return sdf.format(new Date());
-    }
-    
-    private void sendEventToReactNative(String eventName, Map<String, Object> params) {
-        if (reactContext != null && reactContext.hasActiveCatalystInstance()) {
-            try {
-                WritableMap writableMap = Arguments.makeNativeMap(params);
-                reactContext
-                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                    .emit(eventName, writableMap);
-            } catch (Exception e) {
-                Log.e(TAG, "Error sending event to React Native", e);
-            }
+    private void clearDisplay() {
+        // TODO: Clear display on SGC
+        sendText(" ");
+        
+        if (powerSavingMode) {
+            // TODO: Schedule delayed clear
         }
+    }
+    
+    private void sendText(String text) {
+        // TODO: Send text to SGC
+        if (text.isEmpty() || " ".equals(text)) {
+            clearDisplay();
+            return;
+        }
+        // TODO: Send to SGC
+    }
+    
+    private boolean isSomethingConnected() {
+        // TODO: Check SGC ready state
+        if (defaultWearable.contains("Simulated")) {
+            return true;
+        }
+        return false;
+    }
+    
+    private void handleDeviceReady() {
+        // TODO: Send battery status
+        // TODO: Send connection state
+        
+        if (pendingWearable.contains("Live")) {
+            handleLiveReady();
+        } else if (pendingWearable.contains("G1")) {
+            handleG1Ready();
+        } else if (defaultWearable.contains("Mach1")) {
+            handleMach1Ready();
+        }
+        
+        Bridge.saveSetting("default_wearable", defaultWearable);
+        Bridge.saveSetting("device_name", deviceName);
+    }
+    
+    private void handleG1Ready() {
+        isSearching = false;
+        defaultWearable = "Even Realities G1";
+        handleRequestStatus();
+        
+        executor.execute(() -> {
+            try {
+                Thread.sleep(1000);
+                // TODO: Configure SGC settings
+                sendText("// BOOTING MENTRAOS");
+                Thread.sleep(400);
+                // TODO: Send settings to glasses
+                sendText("// MENTRAOS CONNECTED");
+                Thread.sleep(1000);
+                sendText(" ");
+                handleRequestStatus();
+            } catch (InterruptedException e) {
+                // Ignore
+            }
+        });
+    }
+    
+    private void handleLiveReady() {
+        Bridge.log("Mentra: Mentra Live device ready");
+        isSearching = false;
+        defaultWearable = "Mentra Live";
+        handleRequestStatus();
+    }
+    
+    private void handleMach1Ready() {
+        Bridge.log("Mentra: Mach1 device ready");
+        isSearching = false;
+        defaultWearable = "Mentra Mach1";
+        handleRequestStatus();
+        
+        executor.execute(() -> {
+            sendText("MENTRAOS CONNECTED");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                // Ignore
+            }
+            clearDisplay();
+            handleRequestStatus();
+        });
+    }
+    
+    private void handleDeviceDisconnected() {
+        Bridge.log("Mentra: Device disconnected");
+        handleMicrophoneStateChange(new ArrayList<>(), false);
+        // TODO: Send disconnection state
+        handleRequestStatus();
     }
     
     // Cleanup
     public void cleanup() {
-        // Clean up resources
-        executorService.shutdown();
-        scheduledExecutor.shutdown();
-        
-        try {
-            if (!executorService.awaitTermination(800, TimeUnit.MILLISECONDS)) {
-                executorService.shutdownNow();
-            }
-            if (!scheduledExecutor.awaitTermination(800, TimeUnit.MILLISECONDS)) {
-                scheduledExecutor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executorService.shutdownNow();
-            scheduledExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
+        // TODO: Clean up resources
+        executor.shutdown();
     }
 }
