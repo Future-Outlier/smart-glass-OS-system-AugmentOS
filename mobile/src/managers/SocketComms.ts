@@ -1,11 +1,13 @@
-import Config from "react-native-config"
 import bridge from "@/bridge/MantleBridge"
-import {getRestUrl, saveSetting, SETTINGS_KEYS} from "@/utils/SettingsHelper"
+import {saveSetting, SETTINGS_KEYS} from "@/utils/SettingsHelper"
 import {getWsUrl} from "@/utils/SettingsHelper"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import wsManager, {WebSocketStatus} from "@/managers/WebSocketManager"
 import {useDisplayStore} from "@/stores/display"
 import livekitManager from "./LivekitManager"
+import * as Calendar from "expo-calendar"
+import restComms from "@/managers/RestComms"
+import {t} from "i18next"
 
 // Type definitions
 interface ThirdPartyCloudApp {
@@ -40,13 +42,6 @@ class SocketComms {
     this.setupPeriodicTasks()
   }
 
-  // public static getInstance(): SocketComms {
-  //   if (!SocketComms.instance) {
-  //     SocketComms.instance = new SocketComms()
-  //   }
-  //   return SocketComms.instance
-  // }
-
   public static getInstance(): any {
     if (!SocketComms.instance) {
       SocketComms.instance = new SocketComms()
@@ -56,20 +51,25 @@ class SocketComms {
   }
 
   private setupPeriodicTasks() {
-    // // Calendar sync every hour
-    // this.calendarSyncTimer = setInterval(
-    //   () => {
-    //     console.log("Periodic calendar sync")
-    //     this.send_calendar_events()
-    //   },
-    //   60 * 60 * 1000,
-    // ) // 1 hour
-    // // Datetime transmission every 60 seconds
-    // this.datetimeTimer = setInterval(() => {
-    //   console.log("Periodic datetime transmission")
-    //   const isoDatetime = SocketComms.get_current_iso_datetime()
-    //   this.send_user_datetime_to_backend(isoDatetime)
-    // }, 60 * 1000) // 60 seconds
+    this.sendCalendarEvents()
+    // Calendar sync every hour
+    this.calendarSyncTimer = setInterval(
+      () => {
+        this.sendCalendarEvents()
+      },
+      60 * 60 * 1000,
+    ) // 1 hour
+  }
+
+  private async sendCalendarEvents() {
+    console.log("SocketCommsTS: fetchCalendarEvents()")
+    const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT)
+    const calendarIds = calendars.map((calendar: Calendar.Calendar) => calendar.id)
+    // from 2 hours ago to 1 week from now:
+    const startDate = new Date(Date.now() - 2 * 60 * 60 * 1000)
+    const endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    const events = await Calendar.getEventsAsync(calendarIds, startDate, endDate)
+    restComms.sendCalendarData({events, calendars})
   }
 
   // Connection Management
@@ -100,22 +100,6 @@ class SocketComms {
       this.reconnectionAttempts++
       this.attemptReconnect(true)
     }, 10000)
-  }
-
-  private handleStatusChange(status: WebSocketStatus) {
-    console.log(`SocketCommsTS: handleStatusChange: ${status}`)
-
-    if (status === WebSocketStatus.DISCONNECTED || status === WebSocketStatus.ERROR) {
-      this.attemptReconnect()
-    }
-
-    if (status === WebSocketStatus.CONNECTED) {
-      // Wait a bit before sending connection_init
-      setTimeout(() => {
-        this.send_calendar_events()
-        this.send_location_updates()
-      }, 3000)
-    }
   }
 
   isWebSocketConnected(): boolean {
@@ -178,38 +162,6 @@ class SocketComms {
 
     const jsonString = JSON.stringify(msg)
     this.ws.sendText(jsonString)
-  }
-
-  send_calendar_event(calendarItem: any) {
-    if (!this.ws.isConnected()) {
-      console.log("SocketCommsTS: Cannot send calendar event: not connected.")
-      return
-    }
-
-    try {
-      const event = {
-        type: "calendar_event",
-        title: calendarItem.title,
-        eventId: calendarItem.eventId,
-        dtStart: calendarItem.dtStart,
-        dtEnd: calendarItem.dtEnd,
-        timeZone: calendarItem.timeZone,
-        timestamp: Math.floor(Date.now() / 1000),
-      }
-
-      const jsonString = JSON.stringify(event)
-      this.ws.sendText(jsonString)
-    } catch (error) {
-      console.log(`SocketCommsTS: Error building calendar_event JSON: ${error}`)
-    }
-  }
-
-  async send_calendar_events() {
-    if (!this.ws.isConnected()) return
-
-    // Request calendar events from native side
-    // Native side will handle fetching and sending events
-    await bridge.sendCommand("fetch_calendar_events")
   }
 
   send_location_update(lat: number, lng: number, accuracy?: number, correlationId?: string) {
@@ -293,60 +245,6 @@ class SocketComms {
       this.ws.sendText(jsonString)
     } catch (error) {
       console.log(`SocketCommsTS: Error building core_status_update JSON: ${error}`)
-    }
-  }
-
-  send_audio_play_response(requestId: string, success: boolean, error?: string, duration?: number) {
-    console.log(
-      `SocketCommsTS: Sending audio play response - requestId: ${requestId}, success: ${success}, error: ${error || "none"}`,
-    )
-
-    const message: any = {
-      type: "audio_play_response",
-      requestId: requestId,
-      success: success,
-    }
-
-    if (error) message.error = error
-    if (duration !== undefined) message.duration = duration
-
-    try {
-      const jsonString = JSON.stringify(message)
-      this.ws.sendText(jsonString)
-      console.log("SocketCommsTS: Sent audio play response to server")
-    } catch (err) {
-      console.log(`SocketCommsTS: Failed to serialize audio play response: ${err}`)
-    }
-  }
-
-  // App Lifecycle
-  send_start_app(packageName: string) {
-    try {
-      const msg = {
-        type: "start_app",
-        packageName: packageName,
-        timestamp: Date.now(),
-      }
-
-      const jsonString = JSON.stringify(msg)
-      this.ws.sendText(jsonString)
-    } catch (error) {
-      console.log(`SocketCommsTS: Error building start_app JSON: ${error}`)
-    }
-  }
-
-  send_stop_app(packageName: string) {
-    try {
-      const msg = {
-        type: "stop_app",
-        packageName: packageName,
-        timestamp: Date.now(),
-      }
-
-      const jsonString = JSON.stringify(msg)
-      this.ws.sendText(jsonString)
-    } catch (error) {
-      console.log(`SocketCommsTS: Error building stop_app JSON: ${error}`)
     }
   }
 
@@ -693,51 +591,6 @@ class SocketComms {
       default:
         console.log(`SocketCommsTS: Unknown message type: ${type} / full: ${JSON.stringify(msg)}`)
     }
-  }
-
-  parse_app_list(msg: any): ThirdPartyCloudApp[] {
-    let installedApps = msg.installedApps
-    let activeAppPackageNames = msg.activeAppPackageNames
-
-    // If not found at top level, look under userSession
-    if (!installedApps && msg.userSession) {
-      installedApps = msg.userSession.installedApps
-    }
-
-    if (!activeAppPackageNames && msg.userSession) {
-      activeAppPackageNames = msg.userSession.activeAppPackageNames
-    }
-
-    // Convert activeAppPackageNames into a Set for easy lookup
-    const runningPackageNames = new Set<string>()
-    if (activeAppPackageNames) {
-      for (const packageName of activeAppPackageNames) {
-        if (packageName) {
-          runningPackageNames.add(packageName)
-        }
-      }
-    }
-
-    // Build a list of ThirdPartyCloudApp objects from installedApps
-    const appList: ThirdPartyCloudApp[] = []
-    if (installedApps) {
-      for (const appJson of installedApps) {
-        const packageName = appJson.packageName || "unknown.package"
-        const isRunning = runningPackageNames.has(packageName)
-
-        const app: ThirdPartyCloudApp = {
-          packageName: packageName,
-          name: appJson.name || "Unknown App",
-          description: appJson.description || "No description available.",
-          webhookURL: appJson.webhookURL || "",
-          logoURL: appJson.logoURL || "",
-          isRunning: isRunning,
-        }
-        appList.push(app)
-      }
-    }
-
-    return appList
   }
 
   static get_current_iso_datetime(): string {
