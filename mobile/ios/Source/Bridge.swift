@@ -37,9 +37,9 @@ class Bridge: RCTEventEmitter {
         Bridge.sendTypedMessage("show_banner", body: data)
     }
 
-    static func sendHeadPosition(_ isUp: Bool) {
-        let data = ["position": isUp ? "up" : "down"]
-        Bridge.sendTypedMessage("head_position", body: data)
+    static func sendHeadUp(_ isUp: Bool) {
+        let data = ["position": isUp]
+        Bridge.sendTypedMessage("head_up", body: data)
     }
 
     static func sendPairFailureEvent(_ error: String) {
@@ -296,26 +296,32 @@ class Bridge: RCTEventEmitter {
      * Used by AOSManager to send pre-formatted transcription results
      * Matches the Java ServerComms structure exactly
      */
-    static func sendTranscriptionResult(transcription: [String: Any]) {
+    static func sendLocalTranscription(transcription: [String: Any]) {
         guard let text = transcription["text"] as? String, !text.isEmpty else {
             Bridge.log("Skipping empty transcription result")
             return
         }
 
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: transcription)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendWSText(jsonString)
-
-                let isFinal = transcription["isFinal"] as? Bool ?? false
-                Bridge.log("Sent \(isFinal ? "final" : "partial") transcription: '\(text)'")
-            }
-        } catch {
-            Bridge.log("Error sending transcription result: \(error)")
-        }
+        Bridge.sendTypedMessage("local_transcription", body: transcription)
     }
 
     // core bridge funcs:
+
+    static func sendStatus(_ statusObj: [String: Any]) {
+        let body = ["status": statusObj]
+        Bridge.sendTypedMessage("status", body: body)
+    }
+
+    static func sendGlassesSerialNumber(_ serialNumber: String, style: String, color: String) {
+        let body = [
+            "glasses_serial_number": [
+                "serial_number": serialNumber,
+                "style": style,
+                "color": color,
+            ],
+        ]
+        Bridge.sendTypedMessage("glasses_serial_number", body: body)
+    }
 
     override func supportedEvents() -> [String] {
         // don't add to this list, use a typed message instead
@@ -363,6 +369,7 @@ class Bridge: RCTEventEmitter {
             case send_wifi_credentials
             case set_hotspot_state
             case query_gallery_status
+            case photo_request
             case start_buffer_recording
             case stop_buffer_recording
             case save_buffer_video
@@ -376,6 +383,7 @@ class Bridge: RCTEventEmitter {
             case extract_tar_bz2
             case setup
             case display_event
+            case display_text
             case update_settings
             case microphone_state_change
             case restart_transcriber
@@ -418,17 +426,23 @@ class Bridge: RCTEventEmitter {
                         break
                     }
                     m.handle_display_event(params)
+                case .display_text:
+                    guard let params else {
+                        Bridge.log("CommandBridge: display_text invalid params")
+                        break
+                    }
+                    m.handle_display_text(params)
                 case .request_status:
-                    m.handleRequestStatus()
+                    m.handle_request_status()
                 case .connect_wearable:
                     guard let params = params, let modelName = params["model_name"] as? String,
                           let deviceName = params["device_name"] as? String
                     else {
                         Bridge.log("CommandBridge: connect_wearable invalid params")
-                        m.handleConnectWearable("")
+                        m.handle_connect_wearable("")
                         break
                     }
-                    m.handleConnectWearable(deviceName, modelName: modelName)
+                    m.handle_connect_wearable(deviceName, modelName: modelName)
                 case .disconnect_wearable:
                     m.disconnectWearable()
                 case .forget_smart_glasses:
@@ -466,12 +480,22 @@ class Bridge: RCTEventEmitter {
                 case .query_gallery_status:
                     Bridge.log("CommandBridge: Querying gallery status")
                     m.queryGalleryStatus()
+                case .photo_request:
+                    guard let params = params,
+                          let requestId = params["requestId"] as? String,
+                          let appId = params["appId"] as? String,
+                          let size = params["size"] as? String
+                    else {
+                        Bridge.log("CommandBridge: photo_request invalid params")
+                        break
+                    }
+                    m.handle_photo_request(requestId, appId, size, params["webhookUrl"] as? String)
                 case .start_buffer_recording:
                     Bridge.log("CommandBridge: Starting buffer recording")
-                    m.startBufferRecording()
+                    m.handle_start_buffer_recording()
                 case .stop_buffer_recording:
                     Bridge.log("CommandBridge: Stopping buffer recording")
-                    m.stopBufferRecording()
+                    m.handle_stop_buffer_recording()
                 case .save_buffer_video:
                     guard let params = params,
                           let requestId = params["request_id"] as? String,
@@ -481,7 +505,7 @@ class Bridge: RCTEventEmitter {
                         break
                     }
                     Bridge.log("CommandBridge: Saving buffer video: requestId=\(requestId), duration=\(durationSeconds)s")
-                    m.saveBufferVideo(requestId: requestId, durationSeconds: durationSeconds)
+                    m.handle_save_buffer_video(requestId, durationSeconds)
                 case .start_video_recording:
                     guard let params = params,
                           let requestId = params["request_id"] as? String,
@@ -491,7 +515,7 @@ class Bridge: RCTEventEmitter {
                         break
                     }
                     Bridge.log("CommandBridge: Starting video recording: requestId=\(requestId), save=\(save)")
-                    m.startVideoRecording(requestId: requestId, save: save)
+                    m.handle_start_video_recording(requestId, save)
                 case .stop_video_recording:
                     guard let params = params,
                           let requestId = params["request_id"] as? String
@@ -503,39 +527,9 @@ class Bridge: RCTEventEmitter {
                     m.stopVideoRecording(requestId: requestId)
                 case .unknown:
                     Bridge.log("CommandBridge: Unknown command type: \(commandString)")
-                    m.handleRequestStatus()
+                    m.handle_request_status()
                 case .ping:
                     break
-                case .set_stt_model_details:
-                    guard let params = params,
-                          let path = params["path"] as? String,
-                          let languageCode = params["languageCode"] as? String
-                    else {
-                        Bridge.log("CommandBridge: set_stt_model_details invalid params")
-                        break
-                    }
-                    m.setSttModelDetails(path, languageCode)
-                case .get_stt_model_path:
-                    return m.getSttModelPath()
-                case .check_stt_model_available:
-                    return m.checkSTTModelAvailable()
-                case .validate_stt_model:
-                    guard let params = params,
-                          let path = params["path"] as? String
-                    else {
-                        Bridge.log("CommandBridge: validate_stt_model invalid params")
-                        break
-                    }
-                    return m.validateSTTModel(path)
-                case .extract_tar_bz2:
-                    guard let params = params,
-                          let sourcePath = params["source_path"] as? String,
-                          let destinationPath = params["destination_path"] as? String
-                    else {
-                        Bridge.log("CommandBridge: extract_tar_bz2 invalid params")
-                        break
-                    }
-                    return m.extractTarBz2(sourcePath: sourcePath, destinationPath: destinationPath)
                 case .microphone_state_change:
                     guard let msg = params else {
                         Bridge.log("CommandBridge: microphone_state_change invalid params")
@@ -560,6 +554,37 @@ class Bridge: RCTEventEmitter {
                         break
                     }
                     m.handle_update_settings(params)
+                // STT:
+                case .set_stt_model_details:
+                    guard let params = params,
+                          let path = params["path"] as? String,
+                          let languageCode = params["languageCode"] as? String
+                    else {
+                        Bridge.log("CommandBridge: set_stt_model_details invalid params")
+                        break
+                    }
+                    STTTools.setSttModelDetails(path, languageCode)
+                case .get_stt_model_path:
+                    return STTTools.getSttModelPath()
+                case .check_stt_model_available:
+                    return STTTools.checkSTTModelAvailable()
+                case .validate_stt_model:
+                    guard let params = params,
+                          let path = params["path"] as? String
+                    else {
+                        Bridge.log("CommandBridge: validate_stt_model invalid params")
+                        break
+                    }
+                    return STTTools.validateSTTModel(path)
+                case .extract_tar_bz2:
+                    guard let params = params,
+                          let sourcePath = params["source_path"] as? String,
+                          let destinationPath = params["destination_path"] as? String
+                    else {
+                        Bridge.log("CommandBridge: extract_tar_bz2 invalid params")
+                        break
+                    }
+                    return STTTools.extractTarBz2(sourcePath: sourcePath, destinationPath: destinationPath)
                 case .restart_transcriber:
                     m.restartTranscriber()
                 }

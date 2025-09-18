@@ -71,7 +71,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func sendJson(_: [String: Any], wakeUp _: Bool) {}
 
-    func requestPhoto(_: String, appId _: String, webhookUrl _: String?, size _: String?) {}
+    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?) {}
 
     func sendJson(_: [String: Any]) {}
 
@@ -111,11 +111,14 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     var onConnectionStateChanged: (() -> Void)?
     @Published var batteryLevel: Int = -1
     @Published var isConnected: Bool = false
-    @Published var ready: Bool = false {
-        didSet {
-            if oldValue != ready {
-                Bridge.log("MACH1: connection_state_changed: \(ready)")
-                onConnectionStateChanged?()
+    var _ready = false
+    var ready: Bool {
+        get { return _ready }
+        set {
+            let oldValue = _ready
+            _ready = newValue
+            if oldValue != newValue {
+                MentraManager.shared.handleConnectionStateChange()
             }
         }
     }
@@ -135,7 +138,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     func setup() {
         if setupDone { return }
         isConnectedListener = BondListener(listener: { [weak self] value in
-            guard let self = self else { return }
+            guard let self else { return }
             Bridge.log("MACH1: isConnectedListener: \(value)")
 
             if value {
@@ -158,7 +161,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         })
 
         batteryLevelListener = BondListener(listener: { [weak self] value in
-            guard let self = self else { return }
+            guard let self else { return }
             Bridge.log("MACH1: batteryLevelListener: \(value)")
             batteryLevel = value
             ready = true
@@ -263,7 +266,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     }
 
     func getConnectedBluetoothName() -> String? {
-        return UltraliteManager.shared.currentDevice?.peripheral?.name
+        UltraliteManager.shared.currentDevice?.peripheral?.name
     }
 
     func disconnect() {
@@ -333,23 +336,15 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     }
 
     func emitDiscoveredDevice(_ name: String) {
-        let res: [String: Any] = [
-            "model_name": "Mentra Mach1",
-            "device_name": "\(name)",
+        // Use the standardized typed message function
+        let body = [
+            "compatible_glasses_search_result": [
+                "model_name": "Mentra Mach1",
+                "device_name": "\(name)",
+                "device_address": "",
+            ],
         ]
-        let eventBody: [String: Any] = [
-            "compatible_glasses_search_result": res,
-        ]
-
-        // must convert to string before sending:
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: eventBody, options: [])
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendEvent(withName: "CoreMessageEvent", body: jsonString)
-            }
-        } catch {
-            Bridge.log("Error converting to JSON: \(error)")
-        }
+        Bridge.sendTypedMessage("compatible_glasses_search_result", body: body)
     }
 
     func foundDevice(_ device: CBPeripheral) {
@@ -361,7 +356,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         // just get the part inside the brackets
         let deviceName = name.split(separator: "[").last?.split(separator: "]").first
 
-        guard let deviceName = deviceName else { return }
+        guard let deviceName else { return }
 
         let id = String(deviceName)
 
@@ -376,7 +371,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         // just get the part inside the brackets
         let deviceName = name.split(separator: "[").last?.split(separator: "]").first
 
-        guard let deviceName = deviceName else { return }
+        guard let deviceName else { return }
 
         let id = String(deviceName)
 
@@ -422,7 +417,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
 
-        guard let resizedImage = resizedImage,
+        guard let resizedImage,
               let cgImage = resizedImage.cgImage
         else {
             Bridge.log("MACH1: Failed to resize image or get CGImage")

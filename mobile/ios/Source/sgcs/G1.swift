@@ -157,11 +157,9 @@ class G1: NSObject, SGCManager {
 
     func setSilentMode(_: Bool) {}
 
-    func connectById(_: String) {}
-
     func sendJson(_: [String: Any], wakeUp _: Bool) {}
 
-    func requestPhoto(_: String, appId _: String, webhookUrl _: String?, size _: String?) {}
+    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?) {}
 
     func startRtmpStream(_: [String: Any]) {}
 
@@ -215,7 +213,7 @@ class G1: NSObject, SGCManager {
             let oldValue = _ready
             _ready = newValue
             if oldValue != newValue {
-                MentraManager.shared.handleConnectionStateChange(newValue)
+                MentraManager.shared.handleConnectionStateChange()
             }
             if !newValue {
                 // Reset battery levels when disconnected
@@ -464,7 +462,7 @@ class G1: NSObject, SGCManager {
 
                 // Trigger status update to include serial number in status JSON
                 DispatchQueue.main.async {
-                    MentraManager.shared.handleRequestStatus()
+                    MentraManager.shared.handle_request_status()
                 }
             }
         } catch {
@@ -531,10 +529,9 @@ class G1: NSObject, SGCManager {
         }
     }
 
-    func connectById(_ id: String) -> Bool {
+    func connectById(_ id: String) {
         DEVICE_SEARCH_ID = "_" + id + "_"
         startScan()
-        return true
     }
 
     func findCompatibleDevices() {
@@ -1091,7 +1088,8 @@ class G1: NSObject, SGCManager {
         case .SILENT_MODE:
             handleAck(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
         case .BLE_REQ_TRANSFER_MIC_DATA:
-            compressedVoiceData = data
+            // compressedVoiceData = data
+            MentraManager.shared.handleGlassesMicData(data)
         //                CoreCommsService.log("G1: Got voice data: " + String(data.count))
         case .UNK_1:
             handleAck(from: peripheral, success: true)
@@ -1175,21 +1173,21 @@ class G1: NSObject, SGCManager {
             case .CASE_REMOVED:
                 Bridge.log("G1: REMOVED FROM CASE")
                 caseRemoved = true
-                MentraManager.shared.handleRequestStatus()
+                MentraManager.shared.handle_request_status()
             case .CASE_REMOVED2:
                 Bridge.log("G1: REMOVED FROM CASE2")
                 caseRemoved = true
-                MentraManager.shared.handleRequestStatus()
+                MentraManager.shared.handle_request_status()
             case .CASE_OPEN:
                 caseOpen = true
                 caseRemoved = false
                 Bridge.log("G1: CASE OPEN")
-                MentraManager.shared.handleRequestStatus()
+                MentraManager.shared.handle_request_status()
             case .CASE_CLOSED:
                 caseOpen = false
                 caseRemoved = false
                 Bridge.log("G1: CASE CLOSED")
-                MentraManager.shared.handleRequestStatus()
+                MentraManager.shared.handle_request_status()
             case .CASE_CHARGING_STATUS:
                 guard data.count >= 3 else { break }
                 let status = data[2]
