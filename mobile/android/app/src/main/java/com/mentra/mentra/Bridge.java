@@ -26,6 +26,7 @@ public class Bridge {
     private static Bridge instance;
     private static ReactApplicationContext reactContext;
     private static DeviceEventManagerModule.RCTDeviceEventEmitter emitter;
+    private MentraManager mentraManager;
     
     // Singleton getInstance
     public static synchronized Bridge getInstance() {
@@ -38,6 +39,9 @@ public class Bridge {
     private Bridge() {
         // Private constructor for singleton
         mentraManager = MentraManager.getInstance();
+        if (mentraManager == null) {
+            Log.e(TAG, "Failed to initialize MentraManager in Bridge constructor");
+        }
     }
     
     /**
@@ -255,10 +259,6 @@ public class Bridge {
     public static String[] getSupportedEvents() {
         return new String[] {"CoreMessageEvent", "WIFI_SCAN_RESULTS"};
     }
-
-
-    // command handling
-    private MentraManager mentraManager;
     
     // Command types enum
     public enum CommandType {
@@ -345,7 +345,12 @@ public class Bridge {
         
         // Ensure mentraManager is initialized
         if (mentraManager == null) {
+            Log.w(TAG, "MentraManager was null in handleCommand, attempting to initialize");
             mentraManager = MentraManager.getInstance();
+            if (mentraManager == null) {
+                Log.e(TAG, "Failed to initialize MentraManager in handleCommand");
+                return "Error: MentraManager not available";
+            }
         }
         
         try {
