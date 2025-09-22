@@ -170,7 +170,9 @@ export class MantleBridge extends EventEmitter {
     setTimeout(async () => {
       const defaultWearable = await settings.get(SETTINGS_KEYS.default_wearable)
       const deviceName = await settings.get(SETTINGS_KEYS.device_name)
-      this.sendConnectWearable(defaultWearable, deviceName)
+      if (defaultWearable && defaultWearable != "" && deviceName && deviceName != "") {
+        this.sendConnectWearable(defaultWearable, deviceName)
+      }
     }, 3000)
 
     // Start the external service
@@ -287,6 +289,18 @@ export class MantleBridge extends EventEmitter {
           has_content: data.glasses_gallery_status.has_content,
           camera_busy: data.glasses_gallery_status.camera_busy, // Add camera busy state
         })
+      } else if ("glasses_display_event" in data) {
+        console.log(
+          "🎯 MantleBridge: RECEIVED GLASSES_DISPLAY_EVENT from Android Core:",
+          JSON.stringify(data.glasses_display_event, null, 2),
+        )
+
+        // Extract and log text content from the display event
+        const displayEvent = data.glasses_display_event
+
+        // TODO: remove this once we have a proper display event handling system
+        socketComms.handle_display_event(displayEvent)
+        console.log("✅ MantleBridge: Android display event processed successfully")
       } else if ("ping" in data) {
         // Heartbeat response - nothing to do
       } else if ("heartbeat_sent" in data) {
@@ -405,8 +419,8 @@ export class MantleBridge extends EventEmitter {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          // socketComms.sendBinary(bytes)
-          livekitManager.addPcm(bytes)
+          socketComms.sendBinary(bytes)
+          // livekitManager.addPcm(bytes)
           break
         default:
           console.log("Unknown event type:", data.type)
