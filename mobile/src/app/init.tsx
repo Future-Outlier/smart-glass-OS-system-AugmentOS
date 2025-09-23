@@ -33,7 +33,6 @@ const APP_STORE_URL = "https://mentra.glass/os"
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.mentra.mentra"
 const NAVIGATION_DELAY = 100
 const DEEPLINK_DELAY = 1000
-const useNewWsManager = true
 
 export default function InitScreen() {
   // Hooks
@@ -121,23 +120,17 @@ export default function InitScreen() {
     const coreToken = await restComms.exchangeToken(supabaseToken)
     const uid = user?.email || user?.id
 
-    if (useNewWsManager) {
-      bridge.setup()
-      socketComms.setAuthCreds(coreToken, uid)
-
-      try {
-        const loadedSettings = await restComms.loadUserSettings() // get settings from server
-        await useSettingsStore.getState().setManyLocally(loadedSettings) // write settings to local storage
-        await useSettingsStore.getState().initUserSettings() // initialize user settings
-        await mantle.init()
-      } catch (error) {
-        console.error("Failed to load user settings from server:", error)
-      }
-
-      bridge.updateSettings(await useSettingsStore.getState().getCoreSettings()) // send settings to core
-    } else {
-      bridge.setAuthCreds(coreToken, uid)
+    socketComms.setAuthCreds(coreToken, uid)
+    try {
+      const loadedSettings = await restComms.loadUserSettings() // get settings from server
+      await useSettingsStore.getState().setManyLocally(loadedSettings) // write settings to local storage
+      await useSettingsStore.getState().initUserSettings() // initialize user settings
+      await mantle.init()
+    } catch (error) {
+      console.error("Failed to load user settings from server:", error)
     }
+
+    bridge.updateSettings(await useSettingsStore.getState().getCoreSettings()) // send settings to core
 
     await navigateToDestination()
     // } catch (error) {

@@ -12,9 +12,7 @@ import {WebSocketStatus} from "@/managers/WebSocketManager"
 
 interface CoreStatusContextType {
   status: CoreStatus
-  initializeCoreConnection: () => void
   refreshStatus: (data: any) => void
-  getCoreToken: () => string | null
 }
 
 const CoreStatusContext = createContext<CoreStatusContextType | undefined>(undefined)
@@ -45,17 +43,6 @@ export const CoreStatusProvider = ({children}: {children: ReactNode}) => {
     })
   }, [])
 
-  // Initialize the Core communication
-  const initializeCoreConnection = useCallback(() => {
-    console.log("CoreStatus: Initializing core connection")
-    bridge.initialize()
-  }, [])
-
-  // Helper to get coreToken (directly returns from RestComms)
-  const getCoreToken = useCallback(() => {
-    return restComms.getCoreToken()
-  }, [])
-
   useEffect(() => {
     const handleCoreStatusUpdate = (data: any) => {
       if (INTENSE_LOGGING) console.log("Handling received data.. refreshing status..")
@@ -71,10 +58,8 @@ export const CoreStatusProvider = ({children}: {children: ReactNode}) => {
   return (
     <CoreStatusContext.Provider
       value={{
-        initializeCoreConnection,
         status,
         refreshStatus,
-        getCoreToken,
       }}>
       {children}
     </CoreStatusContext.Provider>

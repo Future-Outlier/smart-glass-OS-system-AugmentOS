@@ -49,7 +49,7 @@ public class BridgeModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void sendCommand(String command, Promise promise) {
         try {
-            Log.d(TAG, "sendCommand called with command: " + command);
+            // Log.d(TAG, "sendCommand called with command: " + command);
             Object result = Bridge.getInstance().handleCommand(command);
             promise.resolve(result);
         } catch (Exception e) {

@@ -340,7 +340,7 @@ public class Bridge {
      * @return Object result of the command execution (can be boolean, string, int, etc.)
      */
     public Object handleCommand(String command) {
-        Log.d(TAG, "Received command: " + command);
+        // Log.d(TAG, "Received command: " + command);
         
         // Ensure mentraManager is initialized
         if (mentraManager == null) {

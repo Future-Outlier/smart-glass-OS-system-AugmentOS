@@ -1,18 +1,17 @@
 // app/index.js
 
 import {useEffect} from "react"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useAuth} from "@/contexts/AuthContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import bridge from "@/bridge/MantleBridge"
 
 export default function IndexPage() {
   const {loading} = useAuth()
-  const {initializeCoreConnection} = useCoreStatus()
   const {replace} = useNavigationHistory()
 
   useEffect(() => {
     const initializeApp = async () => {
-      initializeCoreConnection()
+      bridge.initialize()
       replace("/init")
     }
 
@@ -21,7 +20,7 @@ export default function IndexPage() {
         console.error("Error initializing app:", error)
       })
     }
-  }, [loading, initializeCoreConnection])
+  }, [loading])
 
   // this component doesn't render anything, it's just used to initialize the app
   return null
