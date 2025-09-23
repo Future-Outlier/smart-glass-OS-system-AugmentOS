@@ -560,32 +560,6 @@ struct ViewState {
         sgc?.sendRtmpKeepAlive(message)
     }
 
-    func handle_start_buffer_recording() {
-        Bridge.log("Mentra: onStartBufferRecording")
-        sgc?.startBufferRecording()
-    }
-
-    func handle_stop_buffer_recording() {
-        Bridge.log("Mentra: onStopBufferRecording")
-        sgc?.stopBufferRecording()
-    }
-
-    func handle_save_buffer_video(_ requestId: String, _ durationSeconds: Int) {
-        Bridge.log(
-            "Mentra: onSaveBufferVideo: requestId=\(requestId), duration=\(durationSeconds)s")
-        sgc?.saveBufferVideo(requestId: requestId, durationSeconds: durationSeconds)
-    }
-
-    func handle_start_video_recording(_ requestId: String, _ save: Bool) {
-        Bridge.log("Mentra: onStartVideoRecording: requestId=\(requestId), save=\(save)")
-        sgc?.startVideoRecording(requestId: requestId, save: save)
-    }
-
-    func handle_stop_video_recording(_ requestId: String) {
-        Bridge.log("Mentra: onStopVideoRecording: requestId=\(requestId)")
-        sgc?.stopVideoRecording(requestId: requestId)
-    }
-
     func setOnboardMicEnabled(_ isEnabled: Bool) {
         Task {
             if isEnabled {
@@ -902,53 +876,6 @@ struct ViewState {
         sgc?.sendTextWall(text)
     }
 
-    // command functions:
-    func setAuthCreds(_ token: String, _ userId: String) {
-        Bridge.log("Mentra: Setting core token to: \(token) for user: \(userId)")
-        coreToken = token
-        coreTokenOwner = userId
-        handle_request_status()
-    }
-
-    func handle_disconnect_wearable() {
-        sendText(" ") // clear the screen
-        Task {
-            connectTask?.cancel()
-            sgc?.disconnect()
-            self.isSearching = false
-            handle_request_status()
-        }
-    }
-
-    func handle_forget_smart_glasses() {
-        disconnectWearable()
-        defaultWearable = ""
-        deviceName = ""
-        sgc?.forget()
-        sgc = nil
-        Bridge.saveSetting("default_wearable", "")
-        Bridge.saveSetting("device_name", "")
-        handle_request_status()
-    }
-
-    func handle_search_for_compatible_device_names(_ modelName: String) {
-        Bridge.log("Mentra: Searching for compatible device names for: \(modelName)")
-        if modelName.contains("Simulated") {
-            defaultWearable = "Simulated Glasses" // there is no pairing process for simulated glasses
-            handle_request_status()
-            return
-        }
-        if modelName.contains("G1") {
-            pendingWearable = "Even Realities G1"
-        } else if modelName.contains("Live") {
-            pendingWearable = "Mentra Live"
-        } else if modelName.contains("Mach1") || modelName.contains("Z100") {
-            pendingWearable = "Mach1"
-        }
-        initSGC(pendingWearable)
-        sgc?.findCompatibleDevices()
-    }
-
     func enableContextualDashboard(_ enabled: Bool) {
         contextualDashboard = enabled
         handle_request_status() // to update the UI
@@ -1163,123 +1090,6 @@ struct ViewState {
         await sgc?.setMicEnabled(true)
     }
 
-    func handle_request_status() {
-        // construct the status object:
-        let simulatedConnected = defaultWearable == "Simulated Glasses"
-        let isGlassesConnected = sgc?.ready ?? false
-        if isGlassesConnected {
-            isSearching = false
-        }
-
-        // also referenced as glasses_info:
-        var glassesSettings: [String: Any] = [:]
-        var connectedGlasses: [String: Any] = [:]
-
-        if isGlassesConnected {
-            connectedGlasses = [
-                "model_name": defaultWearable,
-                "battery_level": sgc?.batteryLevel ?? -1,
-                "glasses_app_version": sgc?.glassesAppVersion ?? "",
-                "glasses_build_number": sgc?.glassesBuildNumber ?? "",
-                "glasses_device_model": sgc?.glassesDeviceModel ?? "",
-                "glasses_android_version": sgc?.glassesAndroidVersion ?? "",
-                "glasses_ota_version_url": sgc?.glassesOtaVersionUrl ?? "",
-            ]
-        }
-
-        if simulatedConnected {
-            connectedGlasses["model_name"] = defaultWearable
-        }
-
-        if sgc is G1 {
-            connectedGlasses["case_removed"] = sgc?.caseRemoved ?? true
-            connectedGlasses["case_open"] = sgc?.caseOpen ?? true
-            connectedGlasses["case_charging"] = sgc?.caseCharging ?? false
-            connectedGlasses["case_battery_level"] = sgc?.caseBatteryLevel ?? -1
-
-            if let serialNumber = sgc?.glassesSerialNumber, !serialNumber.isEmpty {
-                connectedGlasses["glasses_serial_number"] = serialNumber
-                connectedGlasses["glasses_style"] = sgc?.glassesStyle ?? ""
-                connectedGlasses["glasses_color"] = sgc?.glassesColor ?? ""
-            }
-        }
-
-        if sgc is MentraLive {
-            if let wifiSsid = sgc?.wifiSsid, !wifiSsid.isEmpty {
-                connectedGlasses["glasses_wifi_ssid"] = wifiSsid
-                connectedGlasses["glasses_wifi_connected"] = sgc?.wifiConnected
-                connectedGlasses["glasses_wifi_local_ip"] = sgc?.wifiLocalIp
-            }
-
-            // Add hotspot information - always include all fields for consistency
-            connectedGlasses["glasses_hotspot_enabled"] = sgc?.isHotspotEnabled ?? false
-            connectedGlasses["glasses_hotspot_ssid"] = sgc?.hotspotSsid ?? ""
-            connectedGlasses["glasses_hotspot_password"] = sgc?.hotspotPassword ?? ""
-            connectedGlasses["glasses_hotspot_gateway_ip"] = sgc?.hotspotGatewayIp ?? ""
-        }
-
-        // Add Bluetooth device name if available
-        if let bluetoothName = sgc?.getConnectedBluetoothName() {
-            connectedGlasses["bluetooth_name"] = bluetoothName
-        }
-
-        glassesSettings = [
-            "brightness": brightness,
-            "auto_brightness": autoBrightness,
-            "dashboard_height": dashboardHeight,
-            "dashboard_depth": dashboardDepth,
-            "head_up_angle": headUpAngle,
-            "button_mode": buttonPressMode,
-            "button_photo_size": buttonPhotoSize,
-            "button_video_settings": [
-                "width": buttonVideoWidth,
-                "height": buttonVideoHeight,
-                "fps": buttonVideoFps,
-            ],
-            "button_camera_led": buttonCameraLed,
-        ]
-
-        //        let cloudConnectionStatus =
-        //            WebSocketManager.shared.isConnected() ? "CONNECTED" : "DISCONNECTED"
-
-        // TODO: config: remove
-        let coreInfo: [String: Any] = [
-            // "is_searching": self.isSearching && !self.defaultWearable.isEmpty,
-            "is_searching": isSearching,
-            // only on if recording from glasses:
-            // TODO: this isn't robust:
-            "is_mic_enabled_for_frontend": micEnabled && (preferredMic == "glasses")
-                && isSomethingConnected(),
-            "core_token": coreToken,
-            "puck_connected": true,
-        ]
-
-        // hardcoded list of apps:
-        var apps: [[String: Any]] = []
-
-        let authObj: [String: Any] = [
-            "core_token_owner": coreTokenOwner,
-            //      "core_token_status":
-        ]
-
-        let statusObj: [String: Any] = [
-            "connected_glasses": connectedGlasses,
-            "glasses_settings": glassesSettings,
-            "apps": apps,
-            "core_info": coreInfo,
-            "auth": authObj,
-        ]
-
-        lastStatusObj = statusObj
-
-        Bridge.sendStatus(statusObj)
-    }
-
-    func triggerStatusUpdate() {
-        Bridge.log("🔄 Triggering immediate status update")
-        handle_request_status()
-    }
-
     private func playStartupSequence() {
         Bridge.log("Mentra: playStartupSequence()")
         // Arrow frames for the animation
@@ -1420,6 +1230,32 @@ struct ViewState {
         handle_request_status()
     }
 
+    func handle_start_buffer_recording() {
+        Bridge.log("Mentra: onStartBufferRecording")
+        sgc?.startBufferRecording()
+    }
+
+    func handle_stop_buffer_recording() {
+        Bridge.log("Mentra: onStopBufferRecording")
+        sgc?.stopBufferRecording()
+    }
+
+    func handle_save_buffer_video(_ requestId: String, _ durationSeconds: Int) {
+        Bridge.log(
+            "Mentra: onSaveBufferVideo: requestId=\(requestId), duration=\(durationSeconds)s")
+        sgc?.saveBufferVideo(requestId: requestId, durationSeconds: durationSeconds)
+    }
+
+    func handle_start_video_recording(_ requestId: String, _ save: Bool) {
+        Bridge.log("Mentra: onStartVideoRecording: requestId=\(requestId), save=\(save)")
+        sgc?.startVideoRecording(requestId: requestId, save: save)
+    }
+
+    func handle_stop_video_recording(_ requestId: String) {
+        Bridge.log("Mentra: onStopVideoRecording: requestId=\(requestId)")
+        sgc?.stopVideoRecording(requestId: requestId)
+    }
+
     func handle_connect_wearable(_ deviceName: String, modelName: String? = nil) {
         Bridge.log(
             "Mentra: Connecting to modelName: \(modelName ?? "nil") deviceName: \(deviceName) defaultWearable: \(defaultWearable) pendingWearable: \(pendingWearable) selfDeviceName: \(self.deviceName)"
@@ -1482,6 +1318,46 @@ struct ViewState {
         //        try? await Task.sleep(nanoseconds: 15_000_000_000) // 15 seconds
         //      }
         //    }
+    }
+
+    func handle_disconnect_wearable() {
+        sendText(" ") // clear the screen
+        Task {
+            connectTask?.cancel()
+            sgc?.disconnect()
+            self.isSearching = false
+            handle_request_status()
+        }
+    }
+
+    func handle_forget_smart_glasses() {
+        Bridge.log("Mentra: Forgetting smart glasses")
+        handle_disconnect_wearable()
+        defaultWearable = ""
+        deviceName = ""
+        sgc?.forget()
+        sgc = nil
+        Bridge.saveSetting("default_wearable", "")
+        Bridge.saveSetting("device_name", "")
+        handle_request_status()
+    }
+
+    func handle_search_for_compatible_device_names(_ modelName: String) {
+        Bridge.log("Mentra: Searching for compatible device names for: \(modelName)")
+        if modelName.contains("Simulated") {
+            defaultWearable = "Simulated Glasses" // there is no pairing process for simulated glasses
+            handle_request_status()
+            return
+        }
+        if modelName.contains("G1") {
+            pendingWearable = "Even Realities G1"
+        } else if modelName.contains("Live") {
+            pendingWearable = "Mentra Live"
+        } else if modelName.contains("Mach1") || modelName.contains("Z100") {
+            pendingWearable = "Mach1"
+        }
+        initSGC(pendingWearable)
+        sgc?.findCompatibleDevices()
     }
 
     func handle_update_settings(_ settings: [String: Any]) {
@@ -1599,9 +1475,121 @@ struct ViewState {
         }
     }
 
+    func handle_request_status() {
+        // construct the status object:
+        let simulatedConnected = defaultWearable == "Simulated Glasses"
+        let isGlassesConnected = sgc?.ready ?? false
+        if isGlassesConnected {
+            isSearching = false
+        }
+
+        // also referenced as glasses_info:
+        var glassesSettings: [String: Any] = [:]
+        var connectedGlasses: [String: Any] = [:]
+
+        if isGlassesConnected {
+            connectedGlasses = [
+                "model_name": defaultWearable,
+                "battery_level": sgc?.batteryLevel ?? -1,
+                "glasses_app_version": sgc?.glassesAppVersion ?? "",
+                "glasses_build_number": sgc?.glassesBuildNumber ?? "",
+                "glasses_device_model": sgc?.glassesDeviceModel ?? "",
+                "glasses_android_version": sgc?.glassesAndroidVersion ?? "",
+                "glasses_ota_version_url": sgc?.glassesOtaVersionUrl ?? "",
+            ]
+        }
+
+        if simulatedConnected {
+            connectedGlasses["model_name"] = defaultWearable
+        }
+
+        if sgc is G1 {
+            connectedGlasses["case_removed"] = sgc?.caseRemoved ?? true
+            connectedGlasses["case_open"] = sgc?.caseOpen ?? true
+            connectedGlasses["case_charging"] = sgc?.caseCharging ?? false
+            connectedGlasses["case_battery_level"] = sgc?.caseBatteryLevel ?? -1
+
+            if let serialNumber = sgc?.glassesSerialNumber, !serialNumber.isEmpty {
+                connectedGlasses["glasses_serial_number"] = serialNumber
+                connectedGlasses["glasses_style"] = sgc?.glassesStyle ?? ""
+                connectedGlasses["glasses_color"] = sgc?.glassesColor ?? ""
+            }
+        }
+
+        if sgc is MentraLive {
+            if let wifiSsid = sgc?.wifiSsid, !wifiSsid.isEmpty {
+                connectedGlasses["glasses_wifi_ssid"] = wifiSsid
+                connectedGlasses["glasses_wifi_connected"] = sgc?.wifiConnected
+                connectedGlasses["glasses_wifi_local_ip"] = sgc?.wifiLocalIp
+            }
+
+            // Add hotspot information - always include all fields for consistency
+            connectedGlasses["glasses_hotspot_enabled"] = sgc?.isHotspotEnabled ?? false
+            connectedGlasses["glasses_hotspot_ssid"] = sgc?.hotspotSsid ?? ""
+            connectedGlasses["glasses_hotspot_password"] = sgc?.hotspotPassword ?? ""
+            connectedGlasses["glasses_hotspot_gateway_ip"] = sgc?.hotspotGatewayIp ?? ""
+        }
+
+        // Add Bluetooth device name if available
+        if let bluetoothName = sgc?.getConnectedBluetoothName() {
+            connectedGlasses["bluetooth_name"] = bluetoothName
+        }
+
+        glassesSettings = [
+            "brightness": brightness,
+            "auto_brightness": autoBrightness,
+            "dashboard_height": dashboardHeight,
+            "dashboard_depth": dashboardDepth,
+            "head_up_angle": headUpAngle,
+            "button_mode": buttonPressMode,
+            "button_photo_size": buttonPhotoSize,
+            "button_video_settings": [
+                "width": buttonVideoWidth,
+                "height": buttonVideoHeight,
+                "fps": buttonVideoFps,
+            ],
+            "button_camera_led": buttonCameraLed,
+        ]
+
+        //        let cloudConnectionStatus =
+        //            WebSocketManager.shared.isConnected() ? "CONNECTED" : "DISCONNECTED"
+
+        // TODO: config: remove
+        let coreInfo: [String: Any] = [
+            // "is_searching": self.isSearching && !self.defaultWearable.isEmpty,
+            "is_searching": isSearching,
+            // only on if recording from glasses:
+            // TODO: this isn't robust:
+            "is_mic_enabled_for_frontend": micEnabled && (preferredMic == "glasses")
+                && isSomethingConnected(),
+            "core_token": coreToken,
+            "puck_connected": true,
+        ]
+
+        // hardcoded list of apps:
+        var apps: [[String: Any]] = []
+
+        let authObj: [String: Any] = [
+            "core_token_owner": coreTokenOwner,
+            //      "core_token_status":
+        ]
+
+        let statusObj: [String: Any] = [
+            "connected_glasses": connectedGlasses,
+            "glasses_settings": glassesSettings,
+            "apps": apps,
+            "core_info": coreInfo,
+            "auth": authObj,
+        ]
+
+        lastStatusObj = statusObj
+
+        Bridge.sendStatus(statusObj)
+    }
+
     // MARK: - Cleanup
 
-    @objc func cleanup() {
+    func cleanup() {
         // Clean up transcriber resources
         transcriber?.shutdown()
         transcriber = nil

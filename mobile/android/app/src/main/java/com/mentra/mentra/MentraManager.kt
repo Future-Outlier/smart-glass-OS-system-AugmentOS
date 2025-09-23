@@ -19,10 +19,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-/**
- * MentraManager - Handles device management and connections to MentraOS servers
- * 1:1 match with iOS MentraManager.swift
- */
+
 class MentraManager {
     companion object {
 
@@ -363,31 +360,6 @@ class MentraManager {
     fun onRtmpStreamKeepAlive(message: Map<String, Any>) {
         Bridge.log("Mentra: onRtmpStreamKeepAlive: $message")
         sgc?.sendRtmpKeepAlive(message)
-    }
-    
-    fun handle_start_buffer_recording() {
-        Bridge.log("Mentra: onStartBufferRecording")
-        sgc?.startBufferRecording()
-    }
-    
-    fun handle_stop_buffer_recording() {
-        Bridge.log("Mentra: onStopBufferRecording")
-        sgc?.stopBufferRecording()
-    }
-    
-    fun handle_save_buffer_video(requestId: String, durationSeconds: Int) {
-        Bridge.log("Mentra: onSaveBufferVideo: requestId=$requestId, duration=$durationSeconds")
-        sgc?.saveBufferVideo(requestId, durationSeconds)
-    }
-    
-    fun handle_start_video_recording(requestId: String, save: Boolean) {
-        Bridge.log("Mentra: onStartVideoRecording: requestId=$requestId, save=$save")
-        sgc?.startVideoRecording(requestId, save)
-    }
-    
-    fun handle_stop_video_recording(requestId: String) {
-        Bridge.log("Mentra: onStopVideoRecording: requestId=$requestId")
-        sgc?.stopVideoRecording(requestId)
     }
     
     private fun setOnboardMicEnabled(enabled: Boolean) {
@@ -769,112 +741,79 @@ class MentraManager {
     fun enableGlassesMic(enabled: Boolean) {
         sgc?.setMicEnabled(enabled)
     }
-    
-    fun handle_request_status() {
-        val simulatedConnected = defaultWearable == "Simulated Glasses"
-        val isGlassesConnected = sgc?.ready ?: false
-        
-        if (isGlassesConnected) {
-            isSearching = false
-        }
-        
-        val glassesSettings = mutableMapOf<String, Any>()
-        val connectedGlasses = mutableMapOf<String, Any>()
-        
-        if (isGlassesConnected) {
-            sgc?.let { sgc ->
-                connectedGlasses["model_name"] = defaultWearable
-                connectedGlasses["battery_level"] = sgc.batteryLevel
-                connectedGlasses["glasses_app_version"] = sgc.glassesAppVersion ?: ""
-                connectedGlasses["glasses_build_number"] = sgc.glassesBuildNumber ?: ""
-                connectedGlasses["glasses_device_model"] = sgc.glassesDeviceModel ?: ""
-                connectedGlasses["glasses_android_version"] = sgc.glassesAndroidVersion ?: ""
-                connectedGlasses["glasses_ota_version_url"] = sgc.glassesOtaVersionUrl ?: ""
-            }
-        }
-        
-        if (simulatedConnected) {
-            connectedGlasses["model_name"] = defaultWearable
-        }
-        
-        // G1 specific info
-        (sgc as? G1)?.let { g1 ->
-            connectedGlasses["case_removed"] = g1.caseRemoved
-            connectedGlasses["case_open"] = g1.caseOpen
-            connectedGlasses["case_charging"] = g1.caseCharging
-            g1.caseBatteryLevel?.let {
-                connectedGlasses["case_battery_level"] = it
-            }
-            
-            if (!g1.glassesSerialNumber.isNullOrEmpty()) {
-                connectedGlasses["glasses_serial_number"] = g1.glassesSerialNumber!!
-                connectedGlasses["glasses_style"] = g1.glassesStyle ?: ""
-                connectedGlasses["glasses_color"] = g1.glassesColor ?: ""
-            }
-        }
-        
-        // Bluetooth device name
-        sgc?.getConnectedBluetoothName()?.let { bluetoothName ->
-            connectedGlasses["bluetooth_name"] = bluetoothName
-        }
-        
-        glassesSettings["brightness"] = brightness
-        glassesSettings["auto_brightness"] = autoBrightness
-        glassesSettings["dashboard_height"] = dashboardHeight
-        glassesSettings["dashboard_depth"] = dashboardDepth
-        glassesSettings["head_up_angle"] = headUpAngle
-        glassesSettings["button_mode"] = buttonPressMode
-        glassesSettings["button_photo_size"] = buttonPhotoSize
-        
-        val buttonVideoSettings = mapOf(
-            "width" to buttonVideoWidth,
-            "height" to buttonVideoHeight,
-            "fps" to buttonVideoFps
-        )
-        glassesSettings["button_video_settings"] = buttonVideoSettings
-        glassesSettings["button_camera_led"] = buttonCameraLed
-        
-        val coreInfo = mapOf(
-            "augmentos_core_version" to "Unknown",
-            "default_wearable" to defaultWearable,
-            "preferred_mic" to preferredMic,
-            "is_searching" to isSearching,
-            "is_mic_enabled_for_frontend" to (micEnabled && preferredMic == "glasses" && isSomethingConnected()),
-            "sensing_enabled" to sensingEnabled,
-            "power_saving_mode" to powerSavingMode,
-            "always_on_status_bar" to alwaysOnStatusBar,
-            "bypass_vad_for_debugging" to bypassVad,
-            "enforce_local_transcription" to enforceLocalTranscription,
-            "bypass_audio_encoding_for_debugging" to bypassAudioEncoding,
-            "core_token" to coreToken,
-            "puck_connected" to true,
-            "metric_system_enabled" to metricSystemEnabled,
-            "contextual_dashboard_enabled" to contextualDashboard
-        )
-        
-        val apps = emptyList<Any>()
-        
-        val authObj = mapOf("core_token_owner" to coreTokenOwner)
-        
-        val statusObj = mapOf(
-            "connected_glasses" to connectedGlasses,
-            "glasses_settings" to glassesSettings,
-            "apps" to apps,
-            "core_info" to coreInfo,
-            "auth" to authObj
-        )
-        
-        Bridge.sendStatus(statusObj)
+
+    fun handle_start_buffer_recording() {
+        Bridge.log("Mentra: onStartBufferRecording")
+        sgc?.startBufferRecording()
     }
     
-    fun triggerStatusUpdate() {
-        Bridge.log("Mentra: Triggering immediate status update")
+    fun handle_stop_buffer_recording() {
+        Bridge.log("Mentra: onStopBufferRecording")
+        sgc?.stopBufferRecording()
+    }
+    
+    fun handle_save_buffer_video(requestId: String, durationSeconds: Int) {
+        Bridge.log("Mentra: onSaveBufferVideo: requestId=$requestId, duration=$durationSeconds")
+        sgc?.saveBufferVideo(requestId, durationSeconds)
+    }
+    
+    fun handle_start_video_recording(requestId: String, save: Boolean) {
+        Bridge.log("Mentra: onStartVideoRecording: requestId=$requestId, save=$save")
+        sgc?.startVideoRecording(requestId, save)
+    }
+    
+    fun handle_stop_video_recording(requestId: String) {
+        Bridge.log("Mentra: onStopVideoRecording: requestId=$requestId")
+        sgc?.stopVideoRecording(requestId)
+    }
+    
+    fun handle_connect_wearable(deviceName: String, modelName: String?) {
+        Bridge.log("Mentra: Connecting to wearable: $deviceName model: $modelName")
+        defaultWearable = modelName ?: deviceName
+        modelName?.let { initSGC(it) }
+        if (deviceName.isNotEmpty()) {
+            sgc?.connectById(deviceName)
+        }
+    }
+
+    fun handle_disconnect_wearable() {
+        sendText(" ")
+        sgc?.disconnect()
+        isSearching = false
         handle_request_status()
     }
-
-
-
     
+    fun handle_forget_smart_glasses() {
+        Bridge.log("Mentra: Forgetting smart glasses")
+        handle_disconnect_wearable()
+        defaultWearable = ""
+        deviceName = ""
+        sgc?.forget()
+        sgc = null
+        Bridge.saveSetting("default_wearable", "")
+        Bridge.saveSetting("device_name", "")
+        handle_request_status()
+    }
+    
+    fun handle_search_for_compatible_device_names(modelName: String) {
+        Bridge.log("Mentra: Searching for compatible device names for: $modelName")
+        if (modelName.contains("Simulated")) {
+            defaultWearable = "Simulated Glasses"
+            handle_request_status()
+            return
+        }
+        
+        pendingWearable = when {
+            modelName.contains("G1") -> "Even Realities G1"
+            modelName.contains("Live") -> "Mentra Live"
+            modelName.contains("Mach1") || modelName.contains("Z100") -> "Mach1"
+            else -> ""
+        }
+        
+        initSGC(pendingWearable)
+        sgc?.findCompatibleDevices()
+    }
+
     fun handle_update_settings(settings: Map<String, Any>) {
         Bridge.log("Mentra: Received update settings: $settings")
         
@@ -999,53 +938,105 @@ class MentraManager {
                 // TODO: Save setting to SharedPreferences
             }
         }
-    }
+    }    
     
-    fun handle_connect_wearable(deviceName: String, modelName: String?) {
-        Bridge.log("Mentra: Connecting to wearable: $deviceName model: $modelName")
-        defaultWearable = modelName ?: deviceName
-        modelName?.let { initSGC(it) }
-        if (deviceName.isNotEmpty()) {
-            sgc?.connectById(deviceName)
+    fun handle_request_status() {
+        val simulatedConnected = defaultWearable == "Simulated Glasses"
+        val isGlassesConnected = sgc?.ready ?: false
+        
+        if (isGlassesConnected) {
+            isSearching = false
         }
+        
+        val glassesSettings = mutableMapOf<String, Any>()
+        val connectedGlasses = mutableMapOf<String, Any>()
+        
+        if (isGlassesConnected) {
+            sgc?.let { sgc ->
+                connectedGlasses["model_name"] = defaultWearable
+                connectedGlasses["battery_level"] = sgc.batteryLevel
+                connectedGlasses["glasses_app_version"] = sgc.glassesAppVersion ?: ""
+                connectedGlasses["glasses_build_number"] = sgc.glassesBuildNumber ?: ""
+                connectedGlasses["glasses_device_model"] = sgc.glassesDeviceModel ?: ""
+                connectedGlasses["glasses_android_version"] = sgc.glassesAndroidVersion ?: ""
+                connectedGlasses["glasses_ota_version_url"] = sgc.glassesOtaVersionUrl ?: ""
+            }
+        }
+        
+        if (simulatedConnected) {
+            connectedGlasses["model_name"] = defaultWearable
+        }
+        
+        // G1 specific info
+        (sgc as? G1)?.let { g1 ->
+            connectedGlasses["case_removed"] = g1.caseRemoved
+            connectedGlasses["case_open"] = g1.caseOpen
+            connectedGlasses["case_charging"] = g1.caseCharging
+            g1.caseBatteryLevel?.let {
+                connectedGlasses["case_battery_level"] = it
+            }
+            
+            if (!g1.glassesSerialNumber.isNullOrEmpty()) {
+                connectedGlasses["glasses_serial_number"] = g1.glassesSerialNumber!!
+                connectedGlasses["glasses_style"] = g1.glassesStyle ?: ""
+                connectedGlasses["glasses_color"] = g1.glassesColor ?: ""
+            }
+        }
+        
+        // Bluetooth device name
+        sgc?.getConnectedBluetoothName()?.let { bluetoothName ->
+            connectedGlasses["bluetooth_name"] = bluetoothName
+        }
+        
+        glassesSettings["brightness"] = brightness
+        glassesSettings["auto_brightness"] = autoBrightness
+        glassesSettings["dashboard_height"] = dashboardHeight
+        glassesSettings["dashboard_depth"] = dashboardDepth
+        glassesSettings["head_up_angle"] = headUpAngle
+        glassesSettings["button_mode"] = buttonPressMode
+        glassesSettings["button_photo_size"] = buttonPhotoSize
+        
+        val buttonVideoSettings = mapOf(
+            "width" to buttonVideoWidth,
+            "height" to buttonVideoHeight,
+            "fps" to buttonVideoFps
+        )
+        glassesSettings["button_video_settings"] = buttonVideoSettings
+        glassesSettings["button_camera_led"] = buttonCameraLed
+        
+        val coreInfo = mapOf(
+            "augmentos_core_version" to "Unknown",
+            "default_wearable" to defaultWearable,
+            "preferred_mic" to preferredMic,
+            "is_searching" to isSearching,
+            "is_mic_enabled_for_frontend" to (micEnabled && preferredMic == "glasses" && isSomethingConnected()),
+            "sensing_enabled" to sensingEnabled,
+            "power_saving_mode" to powerSavingMode,
+            "always_on_status_bar" to alwaysOnStatusBar,
+            "bypass_vad_for_debugging" to bypassVad,
+            "enforce_local_transcription" to enforceLocalTranscription,
+            "bypass_audio_encoding_for_debugging" to bypassAudioEncoding,
+            "core_token" to coreToken,
+            "puck_connected" to true,
+            "metric_system_enabled" to metricSystemEnabled,
+            "contextual_dashboard_enabled" to contextualDashboard
+        )
+        
+        val apps = emptyList<Any>()
+        
+        val authObj = mapOf("core_token_owner" to coreTokenOwner)
+        
+        val statusObj = mapOf(
+            "connected_glasses" to connectedGlasses,
+            "glasses_settings" to glassesSettings,
+            "apps" to apps,
+            "core_info" to coreInfo,
+            "auth" to authObj
+        )
+        
+        Bridge.sendStatus(statusObj)
     }
 
-    fun handle_disconnect_wearable() {
-        sendText(" ")
-        sgc?.disconnect()
-        isSearching = false
-        handle_request_status()
-    }
-    
-    fun handle_forget_smart_glasses() {
-        handle_disconnect_wearable()
-        defaultWearable = ""
-        deviceName = ""
-        sgc?.forget()
-        sgc = null
-        // TODO: Save settings
-        handle_request_status()
-    }
-    
-    fun handle_search_for_compatible_device_names(modelName: String) {
-        Bridge.log("Mentra: Searching for compatible device names for: $modelName")
-        if (modelName.contains("Simulated")) {
-            defaultWearable = "Simulated Glasses"
-            handle_request_status()
-            return
-        }
-        
-        pendingWearable = when {
-            modelName.contains("G1") -> "Even Realities G1"
-            modelName.contains("Live") -> "Mentra Live"
-            modelName.contains("Mach1") || modelName.contains("Z100") -> "Mach1"
-            else -> ""
-        }
-        
-        initSGC(pendingWearable)
-        sgc?.findCompatibleDevices()
-    }
-    
     // Utility methods
     
     private fun isSomethingConnected(): Boolean = sgc?.ready ?: false
