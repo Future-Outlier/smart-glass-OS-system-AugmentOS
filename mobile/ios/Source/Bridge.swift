@@ -24,7 +24,7 @@ class Bridge: RCTEventEmitter {
     }
 
     static func log(_ message: String) {
-        let msg = "SWIFT:\(message)"
+        let msg = "CORE:\(message)"
         BridgeModule.emitEvent(withName: "CoreMessageEvent", body: msg)
     }
 
@@ -441,15 +441,15 @@ class Bridge: RCTEventEmitter {
                     }
                     m.handle_connect_wearable(deviceName, modelName: modelName)
                 case .disconnect_wearable:
-                    m.disconnectWearable()
+                    m.handle_disconnect_wearable()
                 case .forget_smart_glasses:
-                    m.forgetSmartGlasses()
+                    m.handle_forget_smart_glasses()
                 case .search_for_compatible_device_names:
                     guard let params = params, let modelName = params["model_name"] as? String else {
                         Bridge.log("CommandBridge: search_for_compatible_device_names invalid params")
                         break
                     }
-                    m.handleSearchForCompatibleDeviceNames(modelName)
+                    m.handle_search_for_compatible_device_names(modelName)
                 case .show_dashboard:
                     m.showDashboard()
                 case .toggle_updating_screen:

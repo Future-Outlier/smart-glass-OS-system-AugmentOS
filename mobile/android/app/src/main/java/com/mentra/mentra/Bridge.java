@@ -38,7 +38,7 @@ public class Bridge {
     
     private Bridge() {
         // Private constructor for singleton
-        mentraManager = MentraManager.getInstance();
+        mentraManager = MentraManager.Companion.getInstance();
         if (mentraManager == null) {
             Log.e(TAG, "Failed to initialize MentraManager in Bridge constructor");
         }
@@ -60,7 +60,7 @@ public class Bridge {
      */
     public static void log(String message) {
         // Log.d(TAG, message);
-        String msg = "ANDROID:" + message;
+        String msg = "CORE:" + message;
         sendEvent("CoreMessageEvent", msg);
     }
     
@@ -307,7 +307,6 @@ public class Bridge {
         CHECK_STT_MODEL_AVAILABLE("check_stt_model_available"),
         VALIDATE_STT_MODEL("validate_stt_model"),
         EXTRACT_TAR_BZ2("extract_tar_bz2"),
-        SETUP("setup"),
         DISPLAY_EVENT("display_event"),
         UPDATE_SETTINGS("update_settings"),
         MICROPHONE_STATE_CHANGE("microphone_state_change"),
@@ -341,12 +340,12 @@ public class Bridge {
      * @return Object result of the command execution (can be boolean, string, int, etc.)
      */
     public Object handleCommand(String command) {
-        // Log.d(TAG, "Received command: " + command);
+        Log.d(TAG, "Received command: " + command);
         
         // Ensure mentraManager is initialized
         if (mentraManager == null) {
             Log.w(TAG, "MentraManager was null in handleCommand, attempting to initialize");
-            mentraManager = MentraManager.getInstance();
+            mentraManager = MentraManager.Companion.getInstance();
             if (mentraManager == null) {
                 Log.e(TAG, "Failed to initialize MentraManager in handleCommand");
                 return "Error: MentraManager not available";
@@ -361,18 +360,6 @@ public class Bridge {
             CommandType commandType = CommandType.fromString(commandString);
             
             switch (commandType) {
-                // case SETUP:
-                //     mentraManager.setup(null);
-                //     break;
-                    
-                // case SET_AUTH_SECRET_KEY:
-                //     if (params != null) {
-                //         String userId = params.getString("userId");
-                //         String authSecretKey = params.getString("authSecretKey");
-                //         mentraManager.setAuthCreds(authSecretKey, userId);
-                //     }
-                //     break;
-                    
                 case DISPLAY_EVENT:
                     if (params != null) {
                         Map<String, Object> displayEvent = jsonObjectToMap(params);
@@ -395,11 +382,11 @@ public class Bridge {
                     break;
                     
                 case DISCONNECT_WEARABLE:
-                    mentraManager.disconnectWearable();
+                    mentraManager.handle_disconnect_wearable();
                     break;
                     
                 case FORGET_SMART_GLASSES:
-                    mentraManager.forgetSmartGlasses();
+                    mentraManager.handle_forget_smart_glasses();
                     break;
                     
                 case SEARCH_FOR_COMPATIBLE_DEVICE_NAMES:
@@ -413,43 +400,6 @@ public class Bridge {
                     if (params != null) {
                         boolean enabled = params.getBoolean("enabled");
                         mentraManager.enableContextualDashboard(enabled);
-                    }
-                    break;
-                    
-                case SET_PREFERRED_MIC:
-                    if (params != null) {
-                        String mic = params.getString("mic");
-                        mentraManager.setPreferredMic(mic);
-                    }
-                    break;
-                    
-                case SET_BUTTON_MODE:
-                    if (params != null) {
-                        String mode = params.getString("mode");
-                        mentraManager.setButtonMode(mode);
-                    }
-                    break;
-                    
-                case SET_BUTTON_PHOTO_SIZE:
-                    if (params != null) {
-                        String size = params.getString("size");
-                        mentraManager.setButtonPhotoSize(size);
-                    }
-                    break;
-                    
-                case SET_BUTTON_VIDEO_SETTINGS:
-                    if (params != null) {
-                        int width = params.getInt("width");
-                        int height = params.getInt("height");
-                        int fps = params.getInt("fps");
-                        mentraManager.setButtonVideoSettings(width, height, fps);
-                    }
-                    break;
-                    
-                case SET_BUTTON_CAMERA_LED:
-                    if (params != null) {
-                        boolean enabled = params.getBoolean("enabled");
-                        // mentraManager.setButtonCameraLed(enabled);
                     }
                     break;
                     

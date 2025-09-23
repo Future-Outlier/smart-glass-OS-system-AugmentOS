@@ -910,7 +910,7 @@ struct ViewState {
         handle_request_status()
     }
 
-    func disconnectWearable() {
+    func handle_disconnect_wearable() {
         sendText(" ") // clear the screen
         Task {
             connectTask?.cancel()
@@ -920,7 +920,7 @@ struct ViewState {
         }
     }
 
-    func forgetSmartGlasses() {
+    func handle_forget_smart_glasses() {
         disconnectWearable()
         defaultWearable = ""
         deviceName = ""
@@ -931,7 +931,7 @@ struct ViewState {
         handle_request_status()
     }
 
-    func handleSearchForCompatibleDeviceNames(_ modelName: String) {
+    func handle_search_for_compatible_device_names(_ modelName: String) {
         Bridge.log("Mentra: Searching for compatible device names for: \(modelName)")
         if modelName.contains("Simulated") {
             defaultWearable = "Simulated Glasses" // there is no pairing process for simulated glasses

@@ -214,13 +214,8 @@ export class MantleBridge extends EventEmitter {
       console.log("Received message from core:", jsonString)
     }
 
-    if (jsonString.startsWith("SWIFT:")) {
-      console.log("SWIFT:", jsonString.slice(6))
-      return
-    }
-
-    if (jsonString.startsWith("JAVA:")) {
-      console.log("JAVA: ", jsonString.slice(6))
+    if (jsonString.startsWith("CORE:")) {
+      console.log("CORE: ", jsonString.slice(5))
       return
     }
 
