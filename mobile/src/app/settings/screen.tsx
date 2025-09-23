@@ -28,12 +28,10 @@ export default function ScreenSettingsScreen() {
 
   const changeDepth = async (newDepth: number) => {
     await setDashboardDepth(newDepth)
-    await bridge.setGlassesDepth(newDepth) // TODO: config: remove
   }
 
   const changeHeight = async (newHeight: number) => {
     await setDashboardHeight(newHeight)
-    await bridge.setGlassesHeight(newHeight) // TODO: config: remove
   }
 
   return (

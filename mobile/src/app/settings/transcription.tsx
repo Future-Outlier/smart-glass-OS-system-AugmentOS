@@ -236,7 +236,6 @@ export default function TranscriptionSettingsScreen() {
   const toggleBypassVadForDebugging = async () => {
     const newSetting = !bypassVadForDebugging
     await setBypassVadForDebugging(newSetting)
-    await bridge.sendToggleBypassVadForDebugging(newSetting) // TODO: config: remove
   }
 
   useEffect(() => {

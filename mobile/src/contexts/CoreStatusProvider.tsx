@@ -20,8 +20,6 @@ interface CoreStatusContextType {
 const CoreStatusContext = createContext<CoreStatusContextType | undefined>(undefined)
 
 export const CoreStatusProvider = ({children}: {children: ReactNode}) => {
-  const connectionStatus = useConnectionStore(state => state.status)
-
   const [status, setStatus] = useState<CoreStatus>(() => {
     return CoreStatusParser.parseStatus({})
   })
@@ -33,23 +31,6 @@ export const CoreStatusProvider = ({children}: {children: ReactNode}) => {
 
     const parsedStatus = CoreStatusParser.parseStatus(data)
     if (INTENSE_LOGGING) console.log("CoreStatus: status:", parsedStatus)
-
-    // TODO: config: remove
-    if (Platform.OS === "android") {
-      if (parsedStatus.core_info.cloud_connection_status === "CONNECTED") {
-        const store = useConnectionStore.getState()
-        store.setStatus(WebSocketStatus.CONNECTED)
-      } else if (parsedStatus.core_info.cloud_connection_status === "DISCONNECTED") {
-        const store = useConnectionStore.getState()
-        store.setStatus(WebSocketStatus.DISCONNECTED)
-      } else if (parsedStatus.core_info.cloud_connection_status === "CONNECTING") {
-        const store = useConnectionStore.getState()
-        store.setStatus(WebSocketStatus.CONNECTING)
-      } else if (parsedStatus.core_info.cloud_connection_status === "ERROR") {
-        const store = useConnectionStore.getState()
-        store.setStatus(WebSocketStatus.ERROR)
-      }
-    }
 
     // only update the status if diff > 0
     setStatus(prevStatus => {

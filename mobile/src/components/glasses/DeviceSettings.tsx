@@ -168,13 +168,11 @@ export default function DeviceSettings() {
 
     setPreferredMic(val)
     await useSettingsStore.getState().setSetting(SETTINGS_KEYS.preferred_mic, val)
-    await bridge.sendSetPreferredMic(val) // TODO: config: remove
   }
 
   const setButtonModeWithSave = async (mode: string) => {
     setButtonMode(mode)
     await useSettingsStore.getState().setSetting(SETTINGS_KEYS.button_mode, mode)
-    await bridge.sendSetButtonMode(mode) // TODO: config: remove
   }
 
   const confirmForgetGlasses = () => {
