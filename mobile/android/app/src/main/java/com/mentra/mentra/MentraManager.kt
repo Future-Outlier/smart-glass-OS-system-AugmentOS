@@ -254,7 +254,6 @@ class MentraManager {
     // MARK: - Handle methods (matching Swift)
     
     fun handle_microphone_state_change(requiredData: List<String>, bypassVad: Boolean) {
-        Log.d("MENTRA_TEST1", "MENTRA_TEST2");
         Bridge.log("Mentra: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad")
         
         bypassVadForPCM = bypassVad

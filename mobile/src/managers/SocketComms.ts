@@ -9,7 +9,6 @@ import {AudioPlayService} from "@/services/AudioPlayService"
 
 class SocketComms {
   private static instance: SocketComms | null = null
-
   private ws = wsManager
   private coreToken: string = ""
   public userid: string = ""
@@ -30,6 +29,14 @@ class SocketComms {
     }
 
     return SocketComms.instance
+  }
+
+  public cleanup() {
+    // Cleanup WebSocket
+    this.ws.cleanup()
+
+    // Reset instance
+    SocketComms.instance = null
   }
 
   // Connection Management
@@ -74,7 +81,7 @@ class SocketComms {
     }
   }
 
-  setAuthCreds(coreToken: string, userid: string) {
+  public setAuthCreds(coreToken: string, userid: string) {
     console.log(`SocketCommsTS: setAuthCreds(): ${coreToken}, ${userid}`)
     this.coreToken = coreToken
     this.userid = userid
@@ -82,7 +89,7 @@ class SocketComms {
     this.connectWebsocket()
   }
 
-  sendAudioPlayResponse(requestId: string, success: boolean, error: string | null, duration: number | null) {
+  public sendAudioPlayResponse(requestId: string, success: boolean, error: string | null, duration: number | null) {
     const msg = {
       type: "audio_play_response",
       requestId: requestId,
@@ -93,7 +100,7 @@ class SocketComms {
     this.ws.sendText(JSON.stringify(msg))
   }
 
-  sendText(text: string) {
+  public sendText(text: string) {
     try {
       this.ws.sendText(text)
     } catch (error) {
@@ -101,7 +108,7 @@ class SocketComms {
     }
   }
 
-  sendBinary(data: ArrayBuffer | Uint8Array) {
+  public sendBinary(data: ArrayBuffer | Uint8Array) {
     try {
       this.ws.sendBinary(data)
     } catch (error) {
@@ -135,7 +142,7 @@ class SocketComms {
     this.ws.sendText(jsonString)
   }
 
-  sendLocationUpdate(lat: number, lng: number, accuracy?: number, correlationId?: string) {
+  public sendLocationUpdate(lat: number, lng: number, accuracy?: number, correlationId?: string) {
     try {
       const event: any = {
         type: "location_update",
@@ -159,68 +166,8 @@ class SocketComms {
     }
   }
 
-  send_location_updates() {
-    if (!this.ws.isConnected()) {
-      console.log("SocketCommsTS: Cannot send location updates: WebSocket not connected")
-      return
-    }
-
-    // Request location from native side
-    bridge.sendCommand("request_location_update")
-  }
-
-  send_glasses_connection_state(modelName: string, status: string) {
-    try {
-      const event = {
-        type: "glasses_connection_state",
-        modelName: modelName,
-        status: status,
-        timestamp: Date.now(),
-      }
-
-      const jsonString = JSON.stringify(event)
-      this.ws.sendText(jsonString)
-    } catch (error) {
-      console.log(`SocketCommsTS: Error building glasses_connection_state JSON: ${error}`)
-    }
-  }
-
-  update_asr_config(languages: any[]) {
-    if (!this.ws.isConnected()) {
-      console.log("SocketCommsTS: Cannot send ASR config: not connected.")
-      return
-    }
-
-    try {
-      const configMsg = {
-        type: "config",
-        streams: languages,
-      }
-
-      const jsonString = JSON.stringify(configMsg)
-      this.ws.sendText(jsonString)
-    } catch (error) {
-      console.log(`SocketCommsTS: Error building config message: ${error}`)
-    }
-  }
-
-  send_core_status(status: any) {
-    try {
-      const event = {
-        type: "core_status_update",
-        status: {status: status},
-        timestamp: Date.now(),
-      }
-
-      const jsonString = JSON.stringify(event)
-      this.ws.sendText(jsonString)
-    } catch (error) {
-      console.log(`SocketCommsTS: Error building core_status_update JSON: ${error}`)
-    }
-  }
-
   // Hardware Events
-  sendButtonPress(buttonId: string, pressType: string) {
+  public sendButtonPress(buttonId: string, pressType: string) {
     try {
       const event = {
         type: "button_press",
@@ -236,39 +183,7 @@ class SocketComms {
     }
   }
 
-  send_photo_response(requestId: string, photoUrl: string) {
-    try {
-      const event = {
-        type: "photo_response",
-        requestId: requestId,
-        photoUrl: photoUrl,
-        timestamp: Date.now(),
-      }
-
-      const jsonString = JSON.stringify(event)
-      this.ws.sendText(jsonString)
-    } catch (error) {
-      console.log(`SocketCommsTS: Error building photo_response JSON: ${error}`)
-    }
-  }
-
-  send_video_stream_response(appId: string, streamUrl: string) {
-    try {
-      const event = {
-        type: "video_stream_response",
-        appId: appId,
-        streamUrl: streamUrl,
-        timestamp: Date.now(),
-      }
-
-      const jsonString = JSON.stringify(event)
-      this.ws.sendText(jsonString)
-    } catch (error) {
-      console.log(`SocketCommsTS: Error building video_stream_response JSON: ${error}`)
-    }
-  }
-
-  sendHeadPosition(isUp: boolean) {
+  public sendHeadPosition(isUp: boolean) {
     try {
       const event = {
         type: "head_position",
@@ -280,6 +195,29 @@ class SocketComms {
       this.ws.sendText(jsonString)
     } catch (error) {
       console.log(`SocketCommsTS: Error sending head position: ${error}`)
+    }
+  }
+
+  public sendLocalTranscription(transcription: any) {
+    if (!this.ws.isConnected()) {
+      console.log("Cannot send local transcription: WebSocket not connected")
+      return
+    }
+
+    const text = transcription.text
+    if (!text || text === "") {
+      console.log("Skipping empty transcription result")
+      return
+    }
+
+    try {
+      const jsonString = JSON.stringify(transcription)
+      this.ws.sendText(jsonString)
+
+      const isFinal = transcription.isFinal || false
+      console.log(`SocketCommsTS: Sent ${isFinal ? "final" : "partial"} transcription: '${text}'`)
+    } catch (error) {
+      console.log(`Error sending transcription result: ${error}`)
     }
   }
 
@@ -307,7 +245,7 @@ class SocketComms {
   private handle_microphone_state_change(msg: any) {
     const bypassVad = msg.bypassVad || false
     const requiredDataStrings = msg.requiredData || []
-    console.log(`SocketCommsTS: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
+    // console.log(`SocketCommsTS: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
     bridge.sendCommand("microphone_state_change", {
       requiredData: requiredDataStrings,
       bypassVad,
@@ -333,26 +271,31 @@ class SocketComms {
   }
 
   private handle_audio_stop_request() {
-    console.log("SocketCommsTS: Handling audio stop request")
+    console.log("SocketCommsTS: audio_stop_request()")
     // Forward to native audio handling
     bridge.sendCommand("audio_stop_request")
   }
 
   private handle_set_location_tier(msg: any) {
-    console.log("SocketCommsTS: DEBUG set_location_tier:", msg)
     const tier = msg.tier
     if (!tier) {
       console.log("SocketCommsTS: No tier provided")
       return
     }
+    console.log("SocketCommsTS: set_location_tier()", tier)
     mantle.setLocationTier(tier)
   }
 
   private handle_request_single_location(msg: any) {
-    console.log("SocketCommsTS: DEBUG request_single_location:", msg)
-    if (msg.accuracy && msg.correlationId) {
-      mantle.requestSingleLocation(msg.accuracy, msg.correlationId)
+    console.log("SocketCommsTS: request_single_location()")
+    const accuracy = msg.accuracy
+    const correlationId = msg.correlationId
+    if (!accuracy || !correlationId) {
+      console.log("SocketCommsTS: No accuracy or correlationId provided")
+      return
     }
+    console.log("SocketCommsTS: request_single_location()", accuracy, correlationId)
+    mantle.requestSingleLocation(accuracy, correlationId)
   }
 
   private handle_app_started(msg: any) {
@@ -449,7 +392,6 @@ class SocketComms {
     })
   }
 
-  // Message Handling
   private handle_message(msg: any) {
     const type = msg.type
 
@@ -458,7 +400,6 @@ class SocketComms {
     switch (type) {
       case "connection_ack":
         this.handle_connection_ack(msg)
-        // bridge.sendCommand("connection_ack")
         break
 
       case "app_state_change":
@@ -487,10 +428,6 @@ class SocketComms {
 
       case "audio_stop_request":
         this.handle_audio_stop_request()
-        break
-
-      case "reconnect":
-        console.log("SocketCommsTS: TODO: Server is requesting a reconnect.")
         break
 
       case "set_location_tier":
@@ -548,37 +485,6 @@ class SocketComms {
       default:
         console.log(`SocketCommsTS: Unknown message type: ${type} / full: ${JSON.stringify(msg)}`)
     }
-  }
-
-  sendLocalTranscription(transcription: any) {
-    if (!this.ws.isConnected()) {
-      console.log("Cannot send local transcription: WebSocket not connected")
-      return
-    }
-
-    const text = transcription.text
-    if (!text || text === "") {
-      console.log("Skipping empty transcription result")
-      return
-    }
-
-    try {
-      const jsonString = JSON.stringify(transcription)
-      this.ws.sendText(jsonString)
-
-      const isFinal = transcription.isFinal || false
-      console.log(`SocketCommsTS: Sent ${isFinal ? "final" : "partial"} transcription: '${text}'`)
-    } catch (error) {
-      console.log(`Error sending transcription result: ${error}`)
-    }
-  }
-
-  cleanup() {
-    // Cleanup WebSocket
-    this.ws.cleanup()
-
-    // Reset instance
-    SocketComms.instance = null
   }
 }
 

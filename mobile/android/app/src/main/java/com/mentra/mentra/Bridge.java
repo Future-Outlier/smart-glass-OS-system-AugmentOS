@@ -49,17 +49,15 @@ public class Bridge {
      * This should be called from BridgeModule constructor
      */
     public static void initialize(ReactApplicationContext context) {
+        Log.d(TAG, "Initializing Bridge with React context");
         reactContext = context;
-        if (context != null && context.hasActiveCatalystInstance()) {
-            emitter = context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class);
-        }
+        // Don't get emitter here - it will be fetched lazily when needed
     }
     
     /**
      * Log a message and send it to React Native
      */
     public static void log(String message) {
-        // Log.d(TAG, message);
         String msg = "CORE:" + message;
         sendEvent("CoreMessageEvent", msg);
     }
@@ -68,8 +66,16 @@ public class Bridge {
      * Send an event to React Native
      */
     public static void sendEvent(String eventName, String body) {
-        if (emitter != null && reactContext != null && reactContext.hasActiveCatalystInstance()) {
-            emitter.emit(eventName, body);
+        if (reactContext != null && reactContext.hasActiveCatalystInstance()) {
+            // Lazily get the emitter when needed
+            if (emitter == null) {
+                emitter = reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class);
+            }
+            if (emitter != null) {
+                emitter.emit(eventName, body);
+            }
+        } else {
+            Log.e(TAG, "React context is null or has no active catalyst instance");
         }
     }
     
@@ -198,8 +204,14 @@ public class Bridge {
             JSONObject jsonObject = new JSONObject(body);
             String jsonString = jsonObject.toString();
             
-            if (emitter != null && reactContext != null && reactContext.hasActiveCatalystInstance()) {
-                emitter.emit("CoreMessageEvent", jsonString);
+            if (reactContext != null && reactContext.hasActiveCatalystInstance()) {
+                // Lazily get the emitter when needed
+                if (emitter == null) {
+                    emitter = reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class);
+                }
+                if (emitter != null) {
+                    emitter.emit("CoreMessageEvent", jsonString);
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error sending typed message", e);
@@ -211,8 +223,14 @@ public class Bridge {
      * Used by other modules that need to send structured data
      */
     public static void sendEventWithMap(String eventName, WritableMap params) {
-        if (emitter != null && reactContext != null && reactContext.hasActiveCatalystInstance()) {
-            emitter.emit(eventName, params);
+        if (reactContext != null && reactContext.hasActiveCatalystInstance()) {
+            // Lazily get the emitter when needed
+            if (emitter == null) {
+                emitter = reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class);
+            }
+            if (emitter != null) {
+                emitter.emit(eventName, params);
+            }
         }
     }
     

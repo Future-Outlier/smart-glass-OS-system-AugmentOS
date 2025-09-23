@@ -206,7 +206,7 @@ export class MantleBridge extends EventEmitter {
     }
 
     if (jsonString.startsWith("CORE:")) {
-      console.log("CORE: ", jsonString.slice(5))
+      console.log("CORE:", jsonString.slice(5))
       return
     }
 
