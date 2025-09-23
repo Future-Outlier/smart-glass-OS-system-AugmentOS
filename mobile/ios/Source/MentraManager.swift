@@ -1244,25 +1244,14 @@ struct ViewState {
 
         // TODO: config: remove
         let coreInfo: [String: Any] = [
-            "augmentos_core_version": "Unknown",
-            "default_wearable": defaultWearable as Any,
-            "preferred_mic": preferredMic,
             // "is_searching": self.isSearching && !self.defaultWearable.isEmpty,
             "is_searching": isSearching,
             // only on if recording from glasses:
             // TODO: this isn't robust:
             "is_mic_enabled_for_frontend": micEnabled && (preferredMic == "glasses")
                 && isSomethingConnected(),
-            "sensing_enabled": sensingEnabled,
-            "power_saving_mode": powerSavingMode,
-            "always_on_status_bar": alwaysOnStatusBar,
-            "bypass_vad_for_debugging": bypassVad,
-            "enforce_local_transcription": enforceLocalTranscription,
-            "bypass_audio_encoding_for_debugging": bypassAudioEncoding,
             "core_token": coreToken,
             "puck_connected": true,
-            "metric_system_enabled": metricSystemEnabled,
-            "contextual_dashboard_enabled": contextualDashboard,
         ]
 
         // hardcoded list of apps:

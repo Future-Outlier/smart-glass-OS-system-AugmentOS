@@ -43,14 +43,12 @@ export default function DashboardSettingsScreen() {
   const toggleContextualDashboard = async () => {
     const newVal = !contextualDashboardEnabled
     await setContextualDashboardEnabled(newVal)
-    await bridge.sendToggleContextualDashboard(newVal) // TODO: config: remove
   }
 
   const toggleMetricSystem = async () => {
     const newVal = !metricSystemEnabled
     try {
       await setMetricSystemEnabled(newVal)
-      await bridge.sendSetMetricSystemEnabled(newVal) // TODO: config: remove
     } catch (error) {
       console.error("Error toggling metric system:", error)
     }
@@ -66,7 +64,6 @@ export default function DashboardSettingsScreen() {
     }
 
     setHeadUpAngleComponentVisible(false)
-    await bridge.setGlassesHeadUpAngle(newHeadUpAngle) // TODO: config: remove
     await setHeadUpAngle(newHeadUpAngle)
   }
 

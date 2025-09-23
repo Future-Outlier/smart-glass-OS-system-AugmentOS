@@ -2,11 +2,6 @@ import {NativeEventEmitter, NativeModules, Platform} from "react-native"
 import {EventEmitter} from "events"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {INTENSE_LOGGING} from "@/consts"
-import {
-  isAugmentOsCoreInstalled,
-  isLocationServicesEnabled as checkLocationServices,
-  startExternalService,
-} from "@/bridge/CoreServiceStarter"
 import {check, PERMISSIONS, RESULTS} from "react-native-permissions"
 import BleManager from "react-native-ble-manager"
 import AudioPlayService, {AudioPlayResponse} from "@/services/AudioPlayService"
@@ -81,10 +76,11 @@ export class MantleBridge extends EventEmitter {
   async isLocationServicesEnabled(): Promise<boolean> {
     try {
       if (Platform.OS === "android") {
-        // Use our native module to check if location services are enabled
-        const locationServicesEnabled = await checkLocationServices()
-        console.log("Location services enabled (native check):", locationServicesEnabled)
-        return locationServicesEnabled
+        // // Use our native module to check if location services are enabled
+        // const locationServicesEnabled = await checkLocationServices()
+        // console.log("Location services enabled (native check):", locationServicesEnabled)
+        // return locationServicesEnabled
+        return true // TODO: fix this!
       } else if (Platform.OS === "ios") {
         // iOS doesn't require location for BLE scanning since iOS 13
         return true
@@ -113,11 +109,6 @@ export class MantleBridge extends EventEmitter {
         message: "Bluetooth is required to connect to glasses. Please enable Bluetooth and try again.",
         requirement: "bluetooth",
       }
-    }
-
-    // iOS doesn't require location permission for BLE scanning since iOS 13
-    if (Platform.OS === "ios") {
-      return {isReady: true}
     }
 
     // Only check location on Android
@@ -176,7 +167,7 @@ export class MantleBridge extends EventEmitter {
     }, 3000)
 
     // Start the external service
-    startExternalService()
+    // startExternalService()
 
     // Initialize message event listener
     this.initializeMessageEventListener()
@@ -252,94 +243,6 @@ export class MantleBridge extends EventEmitter {
         return
       }
 
-      // TODO: config: remove all of these and just use the typed messages
-      if ("glasses_wifi_status_change" in data) {
-        // console.log("Received glasses_wifi_status_change event from Core", data.glasses_wifi_status_change)
-        GlobalEventEmitter.emit("GLASSES_WIFI_STATUS_CHANGE", {
-          connected: data.glasses_wifi_status_change.connected,
-          ssid: data.glasses_wifi_status_change.ssid,
-          local_ip: data.glasses_wifi_status_change.local_ip,
-        })
-      } else if ("glasses_hotspot_status_change" in data) {
-        // console.log("Received glasses_hotspot_status_change event from Core", data.glasses_hotspot_status_change)
-        GlobalEventEmitter.emit("GLASSES_HOTSPOT_STATUS_CHANGE", {
-          enabled: data.glasses_hotspot_status_change.enabled,
-          ssid: data.glasses_hotspot_status_change.ssid,
-          password: data.glasses_hotspot_status_change.password,
-          local_ip: data.glasses_hotspot_status_change.local_ip,
-        })
-      } else if ("glasses_gallery_status" in data) {
-        console.log("Received glasses_gallery_status event from Core", data.glasses_gallery_status)
-        GlobalEventEmitter.emit("GLASSES_GALLERY_STATUS", {
-          photos: data.glasses_gallery_status.photos,
-          videos: data.glasses_gallery_status.videos,
-          total: data.glasses_gallery_status.total,
-          has_content: data.glasses_gallery_status.has_content,
-          camera_busy: data.glasses_gallery_status.camera_busy, // Add camera busy state
-        })
-      } else if ("glasses_display_event" in data) {
-        console.log(
-          "🎯 MantleBridge: RECEIVED GLASSES_DISPLAY_EVENT from Android Core:",
-          JSON.stringify(data.glasses_display_event, null, 2),
-        )
-
-        // Extract and log text content from the display event
-        const displayEvent = data.glasses_display_event
-
-        // TODO: remove this once we have a proper display event handling system
-        socketComms.handle_display_event(displayEvent)
-        console.log("✅ MantleBridge: Android display event processed successfully")
-      } else if ("ping" in data) {
-        // Heartbeat response - nothing to do
-      } else if ("heartbeat_sent" in data) {
-        console.log("💓 Received heartbeat_sent event from Core", data.heartbeat_sent)
-        GlobalEventEmitter.emit("heartbeat_sent", {
-          timestamp: data.heartbeat_sent.timestamp,
-        })
-      } else if ("heartbeat_received" in data) {
-        console.log("💓 Received heartbeat_received event from Core", data.heartbeat_received)
-        GlobalEventEmitter.emit("heartbeat_received", {
-          timestamp: data.heartbeat_received.timestamp,
-        })
-      } else if ("notify_manager" in data) {
-        GlobalEventEmitter.emit("SHOW_BANNER", {
-          message: translate(data.notify_manager.message),
-          type: data.notify_manager.type,
-        })
-      } else if ("compatible_glasses_search_result" in data) {
-        GlobalEventEmitter.emit("COMPATIBLE_GLASSES_SEARCH_RESULT", {
-          modelName: data.compatible_glasses_search_result.model_name,
-          deviceName: data.compatible_glasses_search_result.device_name,
-          deviceAddress: data.compatible_glasses_search_result.device_address,
-        })
-      } else if ("compatible_glasses_search_stop" in data) {
-        GlobalEventEmitter.emit("COMPATIBLE_GLASSES_SEARCH_STOP", {
-          modelName: data.compatible_glasses_search_stop.model_name,
-        })
-      } else if ("wifi_scan_results" in data) {
-        console.log("🔍 ========= WIFI SCAN RESULTS RECEIVED =========")
-        console.log("🔍 Received WiFi scan results from Core:", data)
-
-        // Check for enhanced format first (from iOS)
-        if ("wifi_scan_results_enhanced" in data) {
-          console.log("🔍 Enhanced networks array:", data.wifi_scan_results_enhanced)
-          console.log("🔍 Enhanced networks count:", data.wifi_scan_results_enhanced?.length || 0)
-          GlobalEventEmitter.emit("WIFI_SCAN_RESULTS", {
-            networks: data.wifi_scan_results, // Legacy format for backwards compatibility
-            networksEnhanced: data.wifi_scan_results_enhanced, // Enhanced format with security info
-          })
-          console.log("🔍 Emitted enhanced WIFI_SCAN_RESULTS event to GlobalEventEmitter")
-        } else {
-          console.log("🔍 Networks array:", data.wifi_scan_results)
-          console.log("🔍 Networks count:", data.wifi_scan_results?.length || 0)
-          GlobalEventEmitter.emit("WIFI_SCAN_RESULTS", {
-            networks: data.wifi_scan_results,
-          })
-          console.log("🔍 Emitted legacy WIFI_SCAN_RESULTS event to GlobalEventEmitter")
-        }
-        console.log("🔍 ========= END WIFI SCAN RESULTS =========")
-      }
-
       if (!("type" in data)) {
         return
       }
@@ -348,19 +251,58 @@ export class MantleBridge extends EventEmitter {
       let bytes
 
       switch (data.type) {
-        case "app_started":
-          console.log("APP_STARTED_EVENT", data.packageName)
-          GlobalEventEmitter.emit("APP_STARTED_EVENT", data.packageName)
+        case "wifi_status_change":
+          GlobalEventEmitter.emit("WIFI_STATUS_CHANGE", {
+            connected: data.connected,
+            ssid: data.ssid,
+            local_ip: data.local_ip,
+          })
           break
-        case "app_stopped":
-          console.log("APP_STOPPED_EVENT", data.packageName)
-          GlobalEventEmitter.emit("APP_STOPPED_EVENT", data.packageName)
+        case "hotspot_status_change":
+          GlobalEventEmitter.emit("HOTSPOT_STATUS_CHANGE", {
+            enabled: data.enabled,
+            ssid: data.ssid,
+            password: data.password,
+            local_ip: data.local_ip,
+          })
           break
-        case "audio_play_request":
-          await AudioPlayService.handleAudioPlayRequest(data)
+        case "gallery_status":
+          GlobalEventEmitter.emit("GALLERY_STATUS", {
+            photos: data.photos,
+            videos: data.videos,
+            total: data.total,
+            has_content: data.has_content,
+          })
           break
-        case "audio_stop_request":
-          await AudioPlayService.stopAllAudio()
+        case "compatible_glasses_search_result":
+          GlobalEventEmitter.emit("COMPATIBLE_GLASSES_SEARCH_RESULT", {
+            modelName: data.model_name,
+            deviceName: data.device_name,
+            deviceAddress: data.device_address,
+          })
+          break
+        case "compatible_glasses_search_stop":
+          GlobalEventEmitter.emit("COMPATIBLE_GLASSES_SEARCH_STOP", {
+            model_name: data.model_name,
+          })
+          break
+        case "heartbeat_sent":
+          console.log("💓 Received heartbeat_sent event from Core", data.heartbeat_sent)
+          GlobalEventEmitter.emit("heartbeat_sent", {
+            timestamp: data.heartbeat_sent.timestamp,
+          })
+          break
+        case "heartbeat_received":
+          console.log("💓 Received heartbeat_received event from Core", data.heartbeat_received)
+          GlobalEventEmitter.emit("heartbeat_received", {
+            timestamp: data.heartbeat_received.timestamp,
+          })
+          break
+        case "notify_manager":
+          GlobalEventEmitter.emit("SHOW_BANNER", {
+            message: translate(data.notify_manager.message),
+            type: data.notify_manager.type,
+          })
           break
         case "wifi_scan_results":
           GlobalEventEmitter.emit("WIFI_SCAN_RESULTS", {
@@ -383,13 +325,10 @@ export class MantleBridge extends EventEmitter {
         case "head_up":
           socketComms.sendHeadPosition(data.position)
           break
-        // TODO: config: remove (this is legacy/android only)
-        case "transcription_result":
-          mantle.handleLocalTranscription(data)
-          break
         case "local_transcription":
           mantle.handleLocalTranscription(data)
           break
+        // TODO: this is a bit of a hack, we should have dedicated functions for ws endpoints in the core:
         case "ws_text":
           socketComms.sendText(data.text)
           break
@@ -569,41 +508,12 @@ export class MantleBridge extends EventEmitter {
     })
   }
 
-  async sendPhoneNotification(
-    appName: string = "",
-    title: string = "",
-    text: string = "",
-    timestamp: number = -1,
-    uuid: string = "",
-  ) {
-    return await this.sendData({
-      command: "phone_notification",
-      params: {
-        appName: appName,
-        title: title,
-        text: text,
-        timestamp: timestamp,
-        uuid: uuid,
-      },
-    })
-  }
-
   async sendDisconnectWearable() {
     return await this.sendData({command: "disconnect_wearable"})
   }
 
   async sendForgetSmartGlasses() {
     return await this.sendData({command: "forget_smart_glasses"})
-  }
-
-  // TODO: config: remove
-  async sendToggleSensing(enabled: boolean) {
-    return await this.sendData({
-      command: "enable_sensing",
-      params: {
-        enabled: enabled,
-      },
-    })
   }
 
   async sendToggleForceCoreOnboardMic(enabled: boolean) {
@@ -621,16 +531,6 @@ export class MantleBridge extends EventEmitter {
     // Send restart command to native side
     await this.sendData({
       command: "restart_transcriber",
-    })
-  }
-
-  // TODO: config: remove
-  async sendSetPreferredMic(mic: string) {
-    return await this.sendData({
-      command: "set_preferred_mic",
-      params: {
-        mic: mic,
-      },
     })
   }
 
@@ -733,33 +633,6 @@ export class MantleBridge extends EventEmitter {
       command: "uninstall_app",
       params: {
         target: packageName,
-      },
-    })
-  }
-
-  async setup() {
-    return await this.sendData({
-      command: "setup",
-    })
-  }
-
-  // TODO: config: remove
-  async setAuthCreds(coreToken: string, userId: string) {
-    return await this.sendData({
-      command: "set_auth_secret_key",
-      params: {
-        userId: userId,
-        authSecretKey: coreToken,
-      },
-    })
-  }
-
-  // TODO: config: remove
-  async setServerUrl(url: string) {
-    return await this.sendData({
-      command: "set_server_url",
-      params: {
-        url: url,
       },
     })
   }

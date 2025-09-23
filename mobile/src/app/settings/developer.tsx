@@ -84,7 +84,6 @@ export default function DeveloperSettingsScreen() {
 
           // Save the URL if the test passes
           await setCustomBackendUrl(urlToTest)
-          await bridge.setServerUrl(urlToTest) // TODO: config: remove
 
           await showAlert(
             "Success",
@@ -134,7 +133,6 @@ export default function DeveloperSettingsScreen() {
 
   const handleResetUrl = async () => {
     setCustomBackendUrl(null)
-    await bridge.setServerUrl("") // TODO: config: remove
     setCustomUrlInput("")
     showAlert("Success", "Reset backend URL to default.", [
       {
@@ -226,7 +224,6 @@ export default function DeveloperSettingsScreen() {
               value={powerSavingMode}
               onValueChange={async value => {
                 await setPowerSavingMode(value)
-                await bridge.sendTogglePowerSavingMode(value) // TODO: config: remove
               }}
             />
             <Spacer height={theme.spacing.md} />

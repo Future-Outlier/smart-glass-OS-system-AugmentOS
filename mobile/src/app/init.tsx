@@ -213,7 +213,6 @@ export default function InitScreen() {
     try {
       const defaultUrl = (await useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.CUSTOM_BACKEND_URL)) as string
       await setCustomBackendUrl(defaultUrl)
-      await bridge.setServerUrl(defaultUrl) // TODO: config: remove
       setIsUsingCustomUrl(false)
       await checkCloudVersion(true) // Pass true for retry to avoid flash
     } catch (error) {

@@ -247,7 +247,6 @@ export default function SelectGlassesBluetoothScreen() {
 
     // update the preferredmic to be the phone mic:
     await useSettingsStore.getState().setSetting(SETTINGS_KEYS.preferred_mic, "phone")
-    bridge.sendSetPreferredMic("phone") // TODO: config: remove
 
     // All permissions granted, proceed with connecting to the wearable
     setTimeout(() => {
