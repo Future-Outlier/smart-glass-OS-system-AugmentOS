@@ -274,6 +274,7 @@ export class MantleBridge extends EventEmitter {
           })
           break
         case "compatible_glasses_search_result":
+          console.log("Received compatible_glasses_search_result event from Core", data)
           GlobalEventEmitter.emit("COMPATIBLE_GLASSES_SEARCH_RESULT", {
             modelName: data.model_name,
             deviceName: data.device_name,

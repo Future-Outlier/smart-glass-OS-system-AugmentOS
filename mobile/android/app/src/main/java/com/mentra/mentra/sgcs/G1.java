@@ -254,7 +254,7 @@ public class G1 extends SGCManager {
         return new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-                // Log.d(TAG, "ConnectionStateChanged");
+                // Bridge.log("G1: ConnectionStateChanged");
                 // Cancel the connection timeout
                 if ("Left".equals(side) && leftConnectionTimeoutRunnable != null) {
                     leftConnectionTimeoutHandler.removeCallbacks(leftConnectionTimeoutRunnable);
@@ -267,7 +267,7 @@ public class G1 extends SGCManager {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
 
                     if (newState == BluetoothProfile.STATE_CONNECTED) {
-                        Log.d(TAG, side + " glass connected, discovering services...");
+                        Bridge.log("G1: " + side + " glass connected, discovering services...");
                         if ("Left".equals(side)) {
                             isLeftConnected = true;
                             leftReconnectAttempts = 0;
@@ -278,31 +278,31 @@ public class G1 extends SGCManager {
 
                         if (isLeftConnected && isRightConnected) {
                             stopScan();
-                            Log.d(TAG, "Both glasses connected. Stopping BLE scan.");
+                            Bridge.log("G1: Both glasses connected. Stopping BLE scan.");
                         }
 
-                        Log.d(TAG, "Discover services calling...");
+                        Bridge.log("G1: Discover services calling...");
                         gatt.discoverServices();
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                        Log.d(TAG, side + " glass disconnected, stopping heartbeats");
-                        Log.d(TAG, "Entering STATE_DISCONNECTED branch for side: " + side);
+                        Bridge.log("G1: Glass disconnected, stopping heartbeats");
+                        Bridge.log("G1: Entering STATE_DISCONNECTED branch for side: " + side);
 
                         // Mark both sides as not ready (you could also clear both if one disconnects)
                         leftServicesWaiter.setTrue();
                         rightServicesWaiter.setTrue();
-                        Log.d(TAG, "Set leftServicesWaiter and rightServicesWaiter to true.");
+                        Bridge.log("G1: Set leftServicesWaiter and rightServicesWaiter to true.");
 
                         forceSideDisconnection();
-                        Log.d(TAG, "Called forceSideDisconnection().");
+                        Bridge.log("G1: Called forceSideDisconnection().");
 
                         // Stop any periodic transmissions
                         stopHeartbeat();
                         stopMicBeat();
                         sendQueue.clear();
-                        Log.d(TAG, "Stopped heartbeat and mic beat; cleared sendQueue.");
+                        Bridge.log("G1: Stopped heartbeat and mic beat; cleared sendQueue.");
 
                         updateConnectionState();
-                        Log.d(TAG, "Updated connection state after disconnection.");
+                        Bridge.log("G1: Updated connection state after disconnection.");
 
                         // Compute reconnection delay for both sides (here you could choose the maximum
                         // of the two delays or a new delay)
@@ -311,45 +311,45 @@ public class G1 extends SGCManager {
                         // long delayRight = Math.min(BASE_RECONNECT_DELAY_MS * (1L <<
                         // rightReconnectAttempts), MAX_RECONNECT_DELAY_MS);
                         long delay = 2000; // or choose another strategy
-                        // Log.d(TAG, "Computed delayLeft: " + delayLeft + " ms, delayRight: " +
+                        // Bridge.log("G1: Computed delayLeft: " + delayLeft + " ms, delayRight: " +
                         // delayRight + " ms. Using delay: " + delay + " ms.");
 
-                        Log.d(TAG,
+                        Bridge.log("G1: " +
                                 side + " glass disconnected. Scheduling reconnection for both glasses in " + delay
                                         + " ms (Left attempts: " + leftReconnectAttempts + ", Right attempts: "
                                         + rightReconnectAttempts + ")");
 
                         // if (gatt.getDevice() != null) {
                         // // Close the current gatt connection
-                        // Log.d(TAG, "Closing GATT connection for device: " +
+                        // Bridge.log("G1: Closing GATT connection for device: " +
                         // gatt.getDevice().getAddress());
                         // gatt.disconnect();
                         // gatt.close();
-                        // Log.d(TAG, "GATT connection closed.");
+                        // Bridge.log("G1: GATT connection closed.");
                         // } else {
-                        // Log.d(TAG, "No GATT device available to disconnect.");
+                        // Bridge.log("G1: No GATT device available to disconnect.");
                         // }
 
                         // Schedule a reconnection for both devices after the delay
                         reconnectHandler.postDelayed(() -> {
-                            Log.d(TAG, "Reconnect handler triggered after delay.");
+                            Bridge.log("G1: Reconnect handler triggered after delay.");
                             if (gatt.getDevice() != null && !isKilled) {
-                                Log.d(TAG, "Reconnecting to both glasses. isKilled = " + isKilled);
+                                Bridge.log("G1: Reconnecting to both glasses. isKilled = " + isKilled);
                                 // Assuming you have stored references to both devices:
                                 if (leftDevice != null) {
-                                    Log.d(TAG, "Attempting to reconnect to leftDevice: " + leftDevice.getAddress());
+                                    Bridge.log("G1: Attempting to reconnect to leftDevice: " + leftDevice.getAddress());
                                     reconnectToGatt(leftDevice);
                                 } else {
-                                    Log.d(TAG, "Left device reference is null.");
+                                    Bridge.log("G1: Left device reference is null.");
                                 }
                                 if (rightDevice != null) {
-                                    Log.d(TAG, "Attempting to reconnect to rightDevice: " + rightDevice.getAddress());
+                                    Bridge.log("G1: Attempting to reconnect to rightDevice: " + rightDevice.getAddress());
                                     reconnectToGatt(rightDevice);
                                 } else {
-                                    Log.d(TAG, "Right device reference is null.");
+                                    Bridge.log("G1: Right device reference is null.");
                                 }
                             } else {
-                                Log.d(TAG, "Reconnect handler aborted: either no GATT device or system is killed.");
+                                Bridge.log("G1: Reconnect handler aborted: either no GATT device or system is killed.");
                             }
                         }, delay);
                     }
@@ -363,7 +363,7 @@ public class G1 extends SGCManager {
                     leftServicesWaiter.setTrue();
                     rightServicesWaiter.setTrue();
 
-                    Log.d(TAG, "Stopped heartbeat and mic beat; cleared sendQueue due to connection failure.");
+                    Bridge.log("G1: Stopped heartbeat and mic beat; cleared sendQueue due to connection failure.");
 
                     Log.e(TAG, side + " glass connection failed with status: " + status);
                     if ("Left".equals(side)) {
@@ -385,31 +385,31 @@ public class G1 extends SGCManager {
                     }
 
                     forceSideDisconnection();
-                    Log.d(TAG, "Called forceSideDisconnection() after connection failure.");
+                    Bridge.log("G1: Called forceSideDisconnection() after connection failure.");
 
                     // gatt.disconnect();
                     // gatt.close();
-                    Log.d(TAG, "GATT connection disconnected and closed due to failure.");
+                    Bridge.log("G1: GATT connection disconnected and closed due to failure.");
 
                     connectHandler.postDelayed(() -> {
-                        Log.d(TAG, "Attempting GATT connection for leftDevice immediately.");
+                        Bridge.log("G1: Attempting GATT connection for leftDevice immediately.");
                         attemptGattConnection(leftDevice);
                     }, 0);
 
                     connectHandler.postDelayed(() -> {
-                        Log.d(TAG, "Attempting GATT connection for rightDevice after 2000 ms delay.");
+                        Bridge.log("G1: Attempting GATT connection for rightDevice after 2000 ms delay.");
                         attemptGattConnection(rightDevice);
                     }, 400);
                 }
             }
 
             private void forceSideDisconnection() {
-                Log.d(TAG, "forceSideDisconnection() called for side: " + side);
+                Bridge.log("G1: forceSideDisconnection() called for side: " + side);
                 // Force disconnection from the other side if necessary
                 if ("Left".equals(side)) {
                     isLeftConnected = false;
                     leftReconnectAttempts++;
-                    Log.d(TAG, "Left glass: Marked as disconnected and incremented leftReconnectAttempts to "
+                    Bridge.log("G1: Left glass: Marked as disconnected and incremented leftReconnectAttempts to "
                             + leftReconnectAttempts);
                     if (leftGlassGatt != null) {
                         Bridge.log("G1: Left glass GATT exists. Disconnecting and closing leftGlassGatt.");
@@ -513,7 +513,7 @@ public class G1 extends SGCManager {
 
                         // Handle MIC audio data
                         if (data.length > 0 && (data[0] & 0xFF) == 0xF1) {
-                            // Log.d(TAG, "Lc3 Audio data received. Data: " + Arrays.toString(data) + ",
+                            // Bridge.log("G1: Lc3 Audio data received. Data: " + Arrays.toString(data) + ",
                             // from: " + deviceName);
                             int seq = data[1] & 0xFF; // Sequence number
                             // eg. LC3 to PCM
@@ -547,7 +547,7 @@ public class G1 extends SGCManager {
                                 // MentraManager.getInstance().handleGlassesMicData(lc3);
 
                             } else {
-                                // Log.d(TAG, "Lc3 Audio data received. Seq: " + seq + ", Data: " +
+                                // Bridge.log("G1: Lc3 Audio data received. Seq: " + seq + ", Data: " +
                                 // Arrays.toString(lc3) + ", from: " + deviceName);
                             }
                         }
@@ -574,23 +574,23 @@ public class G1 extends SGCManager {
                         // else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && ((data[1] & 0xFF) ==
                         // 0x20) || ((data[1] & 0xFF) == 0x00)) {
                         // boolean isRight = deviceName.contains("R_");
-                        // Log.d(TAG, "GOT DOUBLE TAP from isRight?: " + isRight);
+                        // Bridge.log("G1: GOT DOUBLE TAP from isRight?: " + isRight);
                         // EventBus.getDefault().post(new GlassesTapOutputEvent(2, isRight,
                         // System.currentTimeMillis()));
                         // }
                         // BATTERY RESPONSE
                         else if (data.length > 2 && data[0] == 0x2C && data[1] == 0x66) {
                             if (deviceName.contains("L_")) {
-                                // Log.d(TAG, "LEFT Battery response received");
+                                // Bridge.log("G1: LEFT Battery response received");
                                 batteryLeft = data[2];
                             } else if (deviceName.contains("R_")) {
-                                // Log.d(TAG, "RIGHT Battery response received");
+                                // Bridge.log("G1: RIGHT Battery response received");
                                 batteryRight = data[2];
                             }
 
                             if (batteryLeft != -1 && batteryRight != -1) {
                                 int minBatt = Math.min(batteryLeft, batteryRight);
-                                // Log.d(TAG, "Minimum Battery Level: " + minBatt);
+                                // Bridge.log("G1: Minimum Battery Level: " + minBatt);
                                 EventBus.getDefault().post(new BatteryLevelEvent(minBatt, false));
                             }
                         }
@@ -647,10 +647,10 @@ public class G1 extends SGCManager {
                         // clear the waiter
                         // if ((data.length > 1 && (data[1] & 0xFF) == 0xC9)){
                         // if (deviceName.contains("L_")) {
-                        // Log.d(TAG, "PROC - clearing LEFT waiter on success");
+                        // Bridge.log("G1: PROC - clearing LEFT waiter on success");
                         // leftWaiter.setFalse();
                         // } else {
-                        // Log.d(TAG, "PROC - clearing RIGHT waiter on success");
+                        // Bridge.log("G1: PROC - clearing RIGHT waiter on success");
                         // rightWaiter.setFalse();
                         // }
                         // }
@@ -699,7 +699,7 @@ public class G1 extends SGCManager {
                 // Manufacturer data decoding moved to connection start
             } else {
                 isRightConnected = true;
-                // Log.d(TAG, "PROC_QUEUE - right side setup complete");
+                // Bridge.log("G1: PROC_QUEUE - right side setup complete");
             }
 
             // setup the G1s
@@ -717,7 +717,7 @@ public class G1 extends SGCManager {
                 sendDataSequentially(new byte[] { (byte) 0x03, (byte) 0x0A });
 
                 // debug command
-                // Log.d(TAG, "Sending debug 0xF4 Command");
+                // Bridge.log("G1: Sending debug 0xF4 Command");
                 // sendDataSequentially(new byte[]{(byte) 0xF4, (byte) 0x01});
 
                 // no longer need to be staggered as we fixed the sender
@@ -928,7 +928,7 @@ public class G1 extends SGCManager {
         // .putString(LEFT_DEVICE_KEY, savedG1LeftName)
         // .putString(RIGHT_DEVICE_KEY, savedG1RightName)
         // .apply();
-        // Log.d(TAG, "Saved paired device names: Left=" + savedG1LeftName + ", Right="
+        // Bridge.log("G1: Saved paired device names: Left=" + savedG1LeftName + ", Right="
         // + savedG1RightName);
         // }
     }
@@ -938,7 +938,7 @@ public class G1 extends SGCManager {
         // Context.MODE_PRIVATE);
         // savedG1LeftName = prefs.getString(LEFT_DEVICE_KEY, null);
         // savedG1RightName = prefs.getString(RIGHT_DEVICE_KEY, null);
-        // Log.d(TAG, "Loaded paired device names: Left=" + savedG1LeftName + ", Right="
+        // Bridge.log("G1: Loaded paired device names: Left=" + savedG1LeftName + ", Right="
         // + savedG1RightName);
     }
 
@@ -947,7 +947,7 @@ public class G1 extends SGCManager {
         // SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_NAME,
         // Context.MODE_PRIVATE);
         // prefs.edit().clear().apply();
-        // Log.d(TAG, "Nuked EvenRealities SharedPreferences");
+        // Bridge.log("G1: Nuked EvenRealities SharedPreferences");
     }
 
     private void connectToGatt(BluetoothDevice device) {
@@ -999,7 +999,7 @@ public class G1 extends SGCManager {
     // Runnable timeoutRunnable = () -> {
     // if ("Left".equals(side)) {
     // if (!isLeftConnected) {
-    // Log.d(TAG, "Left connection timed out. Closing GATT and retrying...");
+    // Bridge.log("G1: Left connection timed out. Closing GATT and retrying...");
     // if (leftGlassGatt != null) {
     // leftGlassGatt.disconnect();
     // leftGlassGatt.close();
@@ -1010,7 +1010,7 @@ public class G1 extends SGCManager {
     // }
     // } else if ("Right".equals(side)) {
     // if (!isRightConnected) {
-    // Log.d(TAG, "Right connection timed out. Closing GATT and retrying...");
+    // Bridge.log("G1: Right connection timed out. Closing GATT and retrying...");
     // if (rightGlassGatt != null) {
     // rightGlassGatt.disconnect();
     // rightGlassGatt.close();
@@ -1038,12 +1038,12 @@ public class G1 extends SGCManager {
     // if ("Left".equals(side)) {
     // delay = Math.min(BASE_RECONNECT_DELAY_MS * (1L << leftReconnectAttempts),
     // MAX_RECONNECT_DELAY_MS);
-    // Log.d(TAG, side + " glass reconnecting in " + delay + " ms (Attempt " +
+    // Bridge.log(TAG, side + " glass reconnecting in " + delay + " ms (Attempt " +
     // leftReconnectAttempts + ")");
     // } else { // "Right"
     // delay = Math.min(BASE_RECONNECT_DELAY_MS * (1L << rightReconnectAttempts),
     // MAX_RECONNECT_DELAY_MS);
-    // Log.d(TAG, side + " glass reconnecting in " + delay + " ms (Attempt " +
+    // Bridge.log(TAG, side + " glass reconnecting in " + delay + " ms (Attempt " +
     // rightReconnectAttempts + ")");
     // }
     //
@@ -1096,15 +1096,14 @@ public class G1 extends SGCManager {
 
                     int manufacturerId = allManufacturerData.keyAt(i);
                     byte[] data = allManufacturerData.valueAt(i);
-                    Log.d(TAG, "Left Device Manufacturer ID " + manufacturerId + ": " + bytesToHex(data));
+                    Bridge.log("G1: Left Device Manufacturer ID " + manufacturerId + ": " + bytesToHex(data));
 
                     // Try to decode serial number from this manufacturer data
                     String decodedSerial = decodeSerialFromManufacturerData(data);
                     if (decodedSerial != null) {
-                        Log.d(TAG,
-                                "LEFT DEVICE DECODED SERIAL NUMBER from ID " + manufacturerId + ": " + decodedSerial);
+                        Bridge.log("G1: LEFT DEVICE DECODED SERIAL NUMBER from ID " + manufacturerId + ": " + decodedSerial);
                         String[] decoded = decodeEvenG1SerialNumber(decodedSerial);
-                        Log.d(TAG, "LEFT DEVICE Style: " + decoded[0] + ", Color: " + decoded[1]);
+                        Bridge.log("G1: LEFT DEVICE Style: " + decoded[0] + ", Color: " + decoded[1]);
 
                         if (preferredG1DeviceId != null && preferredG1DeviceId.equals(parsedDeviceName)) {
                             EventBus.getDefault()
@@ -1115,7 +1114,7 @@ public class G1 extends SGCManager {
                 }
             }
 
-            // Log.d(TAG, "PREFERRED ID: " + preferredG1DeviceId);
+            // Bridge.log("G1: PREFERRED ID: " + preferredG1DeviceId);
             if (preferredG1DeviceId == null || !name.contains("_" + preferredG1DeviceId + "_")) {
                 Bridge.log("G1: NOT PAIRED GLASSES");
                 return;
@@ -1145,7 +1144,7 @@ public class G1 extends SGCManager {
                 stopScan();
 
                 if (isLeft && !isLeftPairing && !isLeftBonded) {
-                    // Log.d(TAG, "Bonding with Left Glass...");
+                    // Bridge.log("G1: Bonding with Left Glass...");
                     isLeftPairing = true;
                     connectionState = SmartGlassesConnectionState.BONDING;
                     // connectionEvent(connectionState);
@@ -1296,8 +1295,6 @@ public class G1 extends SGCManager {
         context.registerReceiver(bondingReceiver, filter);
         isBondingReceiverRegistered = true;
 
-        preferredG1DeviceId = MentraManager.getInstance().getDeviceName();
-
         if (!bluetoothAdapter.isEnabled()) {
             return;
         }
@@ -1376,7 +1373,7 @@ public class G1 extends SGCManager {
             return;
         }
 
-        Log.d(TAG, "attemptGattConnection called for device: " + deviceName + " (" + device.getAddress() + ")");
+        Bridge.log("G1: attemptGattConnection called for device: " + deviceName + " (" + device.getAddress() + ")");
 
         // Check if both devices are bonded before attempting connection
         if (!isLeftBonded || !isRightBonded) {
@@ -1443,10 +1440,10 @@ public class G1 extends SGCManager {
                 @Override
                 public void run() {
                     if (!isKilled) {
-                        Log.d(TAG, "Retrying right glass connection...");
+                        Bridge.log("G1: Retrying right glass connection...");
                         attemptGattConnection(device);
                     } else {
-                        Log.d(TAG, "Connection cancelled, stopping retry attempts");
+                        Bridge.log("G1: Connection cancelled, stopping retry attempts");
                     }
                 }
             };
@@ -1618,7 +1615,8 @@ public class G1 extends SGCManager {
 
     @Override
     public void connectById(String id) {
-
+        preferredG1DeviceId = id;
+        connectToSmartGlasses();
     }
 
     @Override
@@ -1665,7 +1663,7 @@ public class G1 extends SGCManager {
     // }
     // stopper = false;
     // } catch (InterruptedException e) {
-    // Log.e(TAG, "Error sending data: " + e.getMessage());
+    // Bridge.log("G1: Error sending data: " + e.getMessage());
     // }
     // }).start();
     // }
@@ -1798,14 +1796,14 @@ public class G1 extends SGCManager {
 
     private void processQueue() {
         // First wait until the services are setup and ready to receive data
-        Log.d(TAG, "PROC_QUEUE - waiting on services waiters");
+        Bridge.log("G1: PROC_QUEUE - waiting on services waiters");
         try {
             leftServicesWaiter.waitWhileTrue();
             rightServicesWaiter.waitWhileTrue();
         } catch (InterruptedException e) {
-            Log.e(TAG, "Interrupted waiting for descriptor writes: " + e);
+            Bridge.log("G1: Interrupted waiting for descriptor writes: " + e.toString());
         }
-        Log.d(TAG, "PROC_QUEUE - DONE waiting on services waiters");
+        Bridge.log("G1: PROC_QUEUE - DONE waiting on services waiters");
 
         while (!isKilled) {
             try {
@@ -1873,21 +1871,21 @@ public class G1 extends SGCManager {
                             Thread.sleep(request.waitTime);
                         }
                     } catch (InterruptedException e) {
-                        Log.e(TAG, "Error sending data: " + e.getMessage());
+                        Bridge.log("G1: Error sending data: " + e.getMessage());
                         if (isKilled)
                             break;
                     }
                 }
             } catch (InterruptedException e) {
                 if (isKilled) {
-                    Log.d(TAG, "Process queue thread interrupted - shutting down");
+                    Bridge.log("G1: Process queue thread interrupted - shutting down");
                     break;
                 }
-                Log.e(TAG, "Error in queue processing: " + e.getMessage());
+                Bridge.log("G1: Error in queue processing: " + e.getMessage());
             }
         }
 
-        Log.d(TAG, "Process queue thread exiting");
+        Bridge.log("G1: Process queue thread exiting");
     }
 
     // @Override
@@ -1995,7 +1993,7 @@ public class G1 extends SGCManager {
 
     public void displayReferenceCardSimple(String title, String body) {
         if (!isConnected()) {
-            Log.d(TAG, "Not connected to glasses");
+            Bridge.log("G1: Not connected to glasses");
             return;
         }
 
@@ -2017,11 +2015,11 @@ public class G1 extends SGCManager {
                 sendDataSequentially(chunk, false, 300);
             }
         }
-        Log.d(TAG, "Send simple reference card");
+        Bridge.log("G1: Send simple reference card");
     }
 
     public void destroy() {
-        Log.d(TAG, "EvenRealitiesG1SGC ONDESTROY");
+        Bridge.log("G1: EvenRealitiesG1SGC ONDESTROY");
         showHomeScreen();
         isKilled = true;
 
@@ -2131,7 +2129,7 @@ public class G1 extends SGCManager {
         isLeftConnected = false;
         isRightConnected = false;
 
-        Log.d(TAG, "EvenRealitiesG1SGC cleanup complete");
+        Bridge.log("G1: EvenRealitiesG1SGC cleanup complete");
     }
 
     public boolean isConnected() {
@@ -2201,7 +2199,7 @@ public class G1 extends SGCManager {
     }
 
     public void clearG1Screen() {
-        Log.d(TAG, "Clearing G1 screen");
+        Bridge.log("G1: Clearing G1 screen");
         byte[] exitCommand = new byte[] { (byte) 0x18 };
         // sendDataSequentially(exitCommand, false);
         byte[] theClearBitmapOrSomething = loadEmptyBmpFromAssets();
@@ -2266,7 +2264,7 @@ public class G1 extends SGCManager {
     }
 
     private void startHeartbeat(int delay) {
-        Log.d(TAG, "Starting heartbeat");
+        Bridge.log("G1: Starting heartbeat");
         if (heartbeatCount > 0)
             stopHeartbeat();
 
@@ -2287,7 +2285,7 @@ public class G1 extends SGCManager {
 
     // periodically send a mic ON request so it never turns off
     private void startMicBeat(int delay) {
-        Log.d(TAG, "Starting micbeat");
+        Bridge.log("G1: Starting micbeat");
         if (micBeatCount > 0)
             stopMicBeat();
         sendSetMicEnabled(true, 10);
@@ -2295,7 +2293,7 @@ public class G1 extends SGCManager {
         micBeatRunnable = new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "SENDING MIC BEAT");
+                Bridge.log("G1: SENDING MIC BEAT");
                 sendSetMicEnabled(shouldUseGlassesMic, 1);
                 micBeatHandler.postDelayed(this, MICBEAT_INTERVAL_MS);
             }
@@ -2306,8 +2304,9 @@ public class G1 extends SGCManager {
 
     @Override
     public void findCompatibleDevices() {
+        Bridge.log("G1: findCompatibleDevices called");
         if (isScanningForCompatibleDevices) {
-            Log.d(TAG, "Scan already in progress, skipping...");
+            Bridge.log("G1: Scan already in progress, skipping...");
             return;
         }
         isScanningForCompatibleDevices = true;
@@ -2340,7 +2339,7 @@ public class G1 extends SGCManager {
                     synchronized (foundDeviceNames) {
                         if (!foundDeviceNames.contains(name)) {
                             foundDeviceNames.add(name);
-                            Log.d(TAG, "Found smart glasses: " + name);
+                            Bridge.log("Found smart glasses: " + name);
                             String adjustedName = parsePairingIdFromDeviceName(name);
                             // EventBus.getDefault().post(
                             // new GlassesBluetoothSearchDiscoverEvent(
@@ -2368,13 +2367,13 @@ public class G1 extends SGCManager {
 
         // Start scanning
         scanner.startScan(filters, settings, bleScanCallback);
-        Log.d(TAG, "Started scanning for smart glasses with BluetoothLeScanner...");
+        Bridge.log("G1: Started scanning for smart glasses with BluetoothLeScanner...");
 
         // Stop scanning after 10 seconds (adjust as needed)
         findCompatibleDevicesHandler.postDelayed(() -> {
             scanner.stopScan(bleScanCallback);
             isScanningForCompatibleDevices = false;
-            Log.d(TAG, "Stopped scanning for smart glasses.");
+            Bridge.log("G1: Stopped scanning for smart glasses.");
             // EventBus.getDefault().post(
             // new GlassesBluetoothSearchStopEvent(
             // smartGlassesDevice.deviceModelName
@@ -2389,14 +2388,14 @@ public class G1 extends SGCManager {
         }
         whiteListedAlready = true;
 
-        Log.d(TAG, "Sending whitelist command");
+        Bridge.log("G1: Sending whitelist command");
         whiteListHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 List<byte[]> chunks = getWhitelistChunks();
                 sendDataSequentially(chunks, false);
                 // for (byte[] chunk : chunks) {
-                // Log.d(TAG, "Sending this chunk for white list:" + bytesToUtf8(chunk));
+                // Bridge.log("G1: Sending this chunk for white list:" + bytesToUtf8(chunk));
                 // sendDataSequentially(chunk, false);
                 //
                 //// // Sleep for 100 milliseconds between sending each chunk
@@ -2430,7 +2429,7 @@ public class G1 extends SGCManager {
 
     private void sendHeartbeat() {
         byte[] heartbeatPacket = constructHeartbeat();
-        // Log.d(TAG, "Sending heartbeat: " + bytesToHex(heartbeatPacket));
+        // Bridge.log("G1: Sending heartbeat: " + bytesToHex(heartbeatPacket));
 
         sendDataSequentially(heartbeatPacket, false, 100);
 
@@ -2444,7 +2443,7 @@ public class G1 extends SGCManager {
 
     private void queryBatteryStatus() {
         byte[] batteryQueryPacket = constructBatteryLevelQuery();
-        // Log.d(TAG, "Sending battery status query: " +
+        // Bridge.log("G1: Sending battery status query: " +
         // bytesToHex(batteryQueryPacket));
 
         sendDataSequentially(batteryQueryPacket, false, 250);
@@ -2468,7 +2467,7 @@ public class G1 extends SGCManager {
 
         sendDataSequentially(buffer.array(), false, 100);
 
-        Log.d(TAG, "Sent auto light brightness command => Brightness: " + brightness + ", Auto Light: "
+        Bridge.log("G1: Sent auto light brightness command => Brightness: " + brightness + ", Auto Light: "
                 + (autoLight ? "Open" : "Close"));
 
         // send to AugmentOS core
@@ -2495,7 +2494,7 @@ public class G1 extends SGCManager {
 
         sendDataSequentially(buffer.array(), false, 100);
 
-        Log.d(TAG, "Sent headUp angle command => Angle: " + headUpAngle);
+        Bridge.log("G1: Sent headUp angle command => Angle: " + headUpAngle);
         EventBus.getDefault().post(new HeadUpAngleEvent(headUpAngle));
     }
 
@@ -2518,17 +2517,17 @@ public class G1 extends SGCManager {
 
         sendDataSequentially(buffer.array(), false, 100);
 
-        Log.d(TAG, "Sent dashboard height/depth command => Height: " + height + ", Depth: " + depth);
+        Bridge.log("G1: Sent dashboard height/depth command => Height: " + height + ", Depth: " + depth);
         // EventBus.getDefault().post(new DashboardPositionEvent(height, depth));
     }
 
     public void updateGlassesBrightness(int brightness) {
-        Log.d(TAG, "Updating glasses brightness: " + brightness);
+        Bridge.log("G1: Updating glasses brightness: " + brightness);
         sendBrightnessCommand(brightness, false);
     }
 
     public void updateGlassesAutoBrightness(boolean autoBrightness) {
-        Log.d(TAG, "Updating glasses auto brightness: " + autoBrightness);
+        Bridge.log("G1: Updating glasses auto brightness: " + autoBrightness);
         sendBrightnessCommand(-1, autoBrightness);
     }
 
@@ -2554,13 +2553,13 @@ public class G1 extends SGCManager {
 
     // microphone stuff
     public void sendSetMicEnabled(boolean enable, int delay) {
-        // Log.d(TAG, "^^^^^^^^^^^^^");
-        // Log.d(TAG, "^^^^^^^^^^^^^");
-        // Log.d(TAG, "^^^^^^^^^^^^^");
-        // Log.d(TAG, "Running set mic enabled: " + enable);
-        // Log.d(TAG, "^^^^^^^^^^^^^");
-        // Log.d(TAG, "^^^^^^^^^^^^^");
-        // Log.d(TAG, "^^^^^^^^^^^^^");
+        // Bridge.log("G1: ^^^^^^^^^^^^^");
+        // Bridge.log("G1: ^^^^^^^^^^^^^");
+        // Bridge.log("G1: ^^^^^^^^^^^^^");
+        // Bridge.log("G1: Running set mic enabled: " + enable);
+        // Bridge.log("G1: ^^^^^^^^^^^^^");
+        // Bridge.log("G1: ^^^^^^^^^^^^^");
+        // Bridge.log("G1: ^^^^^^^^^^^^^");
 
         isMicrophoneEnabled = enable; // Update the state tracker
         EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
@@ -2568,7 +2567,7 @@ public class G1 extends SGCManager {
             @Override
             public void run() {
                 if (!isConnected()) {
-                    Log.d(TAG, "Tryna start mic: Not connected to glasses");
+                    Bridge.log("G1: Tryna start mic: Not connected to glasses");
                     return;
                 }
 
@@ -2580,7 +2579,7 @@ public class G1 extends SGCManager {
                 buffer.put(enableByte);
 
                 sendDataSequentially(buffer.array(), false, true, 300); // wait some time to setup the mic
-                Log.d(TAG, "Sent MIC command: " + bytesToHex(buffer.array()));
+                Bridge.log("G1: Sent MIC command: " + bytesToHex(buffer.array()));
             }
         }, delay);
     }
@@ -2609,7 +2608,7 @@ public class G1 extends SGCManager {
 
     private void sendPeriodicNotification() {
         if (!isConnected()) {
-            Log.d(TAG, "Cannot send notification: Not connected to glasses");
+            Bridge.log("G1: Cannot send notification: Not connected to glasses");
             return;
         }
 
@@ -2618,13 +2617,13 @@ public class G1 extends SGCManager {
         // "How much caffeine in dark chocolate?", "25 to 50 grams per piece");
         String json = createNotificationJson("com.augment.os", "QuestionAnswerer",
                 "How much caffeine in dark chocolate?", "25 to 50 grams per piece");
-        Log.d(TAG, "the JSON to send: " + json);
+        Bridge.log("G1: the JSON to send: " + json);
         List<byte[]> chunks = createNotificationChunks(json);
-        // Log.d(TAG, "THE CHUNKS:");
-        // Log.d(TAG, chunks.get(0).toString());
-        // Log.d(TAG, chunks.get(1).toString());
+        // Bridge.log("G1: THE CHUNKS:");
+        // Bridge.log(TAG, chunks.get(0).toString());
+        // Bridge.log(TAG, chunks.get(1).toString());
         for (byte[] chunk : chunks) {
-            Log.d(TAG, "Sent chunk to glasses: " + bytesToUtf8(chunk));
+            Bridge.log("G1: Sent chunk to glasses: " + bytesToUtf8(chunk));
         }
 
         // Send each chunk with a short sleep between each send
@@ -2640,7 +2639,7 @@ public class G1 extends SGCManager {
         //// }
         // }
 
-        Log.d(TAG, "Sent periodic notification");
+        Bridge.log("G1: Sent periodic notification");
     }
 
     // text wall debug
@@ -2798,7 +2797,7 @@ public class G1 extends SGCManager {
             int spacesNeeded = calculateSpacesForAlignment(leftTextWidth, RIGHT_COLUMN_START, spaceWidth);
 
             // Log detailed alignment info for debugging
-            Log.d(TAG, String.format("Line %d: Left='%s' (width=%dpx) | Spaces=%d | Right='%s'",
+            Bridge.log("G1: " + String.format("Line %d: Left='%s' (width=%dpx) | Spaces=%d | Right='%s'",
                     i, leftText, leftTextWidth, spacesNeeded, rightText));
 
             // Construct the full line with precise alignment
@@ -2885,7 +2884,7 @@ public class G1 extends SGCManager {
         // Split by newlines first
         String[] rawLines = text.split("\n");
 
-        Log.d(TAG, "Splitting text into lines..." + Arrays.toString(rawLines));
+        Bridge.log("G1: Splitting text into lines..." + Arrays.toString(rawLines));
 
         for (String rawLine : rawLines) {
             // Add empty lines for newlines
@@ -2904,8 +2903,8 @@ public class G1 extends SGCManager {
                 // Calculate width of the entire remaining text
                 int lineWidth = calculateSubstringWidth(rawLine, startIndex, endIndex);
 
-                Log.d(TAG, "Line length: " + rawLine);
-                Log.d(TAG, "Calculating line width: " + lineWidth);
+                Bridge.log("G1: Line length: " + rawLine);
+                Bridge.log("G1: Calculating line width: " + lineWidth);
 
                 // If entire line fits, add it and move to next line
                 if (lineWidth <= maxDisplayWidth) {
@@ -2967,11 +2966,11 @@ public class G1 extends SGCManager {
 
     private void sendPeriodicTextWall() {
         if (!isConnected()) {
-            Log.d(TAG, "Cannot send text wall: Not connected to glasses");
+            Bridge.log("G1: Cannot send text wall: Not connected to glasses");
             return;
         }
 
-        Log.d(TAG, "^^^^^^^^^^^^^ SENDING DEBUG TEXT WALL");
+        Bridge.log("G1: ^^^^^^^^^^^^^ SENDING DEBUG TEXT WALL");
 
         // Example text wall content - replace with your actual text content
         String sampleText = "This is an example of a text wall that will be displayed on the glasses. " +
@@ -2992,7 +2991,7 @@ public class G1 extends SGCManager {
             // }
         }
 
-        // Log.d(TAG, "Sent text wall");
+        // Bridge.log("G1: Sent text wall");
     }
 
     private static String bytesToUtf8(byte[] bytes) {
@@ -3002,7 +3001,7 @@ public class G1 extends SGCManager {
     private void stopPeriodicNotifications() {
         if (notificationHandler != null && notificationRunnable != null) {
             notificationHandler.removeCallbacks(notificationRunnable);
-            Log.d(TAG, "Stopped periodic notifications");
+            Bridge.log("G1: Stopped periodic notifications");
         }
     }
 
@@ -3015,7 +3014,7 @@ public class G1 extends SGCManager {
         apps.add(new AppInfo("com.augment.os", "AugmentOS"));
         String whitelistJson = createWhitelistJson(apps);
 
-        Log.d(TAG, "Creating chunks for hardcoded whitelist: " + whitelistJson);
+        Bridge.log("G1: Creating chunks for hardcoded whitelist: " + whitelistJson);
 
         // Convert JSON to bytes and split into chunks
         return createWhitelistChunks(whitelistJson);
@@ -3101,7 +3100,7 @@ public class G1 extends SGCManager {
     }
 
     public void displayCustomContent(String content) {
-        Log.d(TAG, "DISPLAY CUSTOM CONTENT");
+        Bridge.log("G1: DISPLAY CUSTOM CONTENT");
     }
 
     private void sendChunks(List<byte[]> chunks) {
@@ -3186,7 +3185,7 @@ public class G1 extends SGCManager {
 
     // Optimized bitmap display using iOS-like approach
     private void displayBitmapImageOptimized(byte[] bmpData, BmpProgressCallback callback) {
-        Log.d(TAG, "Starting OPTIMIZED BMP display process");
+        Bridge.log("G1: Starting OPTIMIZED BMP display process");
 
         try {
             if (bmpData == null || bmpData.length == 0) {
@@ -3199,9 +3198,9 @@ public class G1 extends SGCManager {
             isSendingBitmap = true;
             long startTime = System.currentTimeMillis();
 
-            Log.d(TAG, "Processing BMP data, size: " + bmpData.length + " bytes");
+            Bridge.log("G1: Processing BMP data, size: " + bmpData.length + " bytes");
             List<byte[]> chunks = createBmpChunks(bmpData);
-            Log.d(TAG, "Created " + chunks.size() + " chunks");
+            Bridge.log("G1: Created " + chunks.size() + " chunks");
 
             // Send chunks using optimized method
             boolean chunksSuccess = sendBmpChunksOptimized(chunks, callback);
@@ -3233,7 +3232,7 @@ public class G1 extends SGCManager {
             lastThingDisplayedWasAnImage = true;
 
             long totalTime = System.currentTimeMillis() - startTime;
-            Log.d(TAG, "BMP display completed in " + totalTime + "ms");
+            Bridge.log("G1: BMP display completed in " + totalTime + "ms");
 
             if (callback != null) {
                 callback.onSuccess("both");
@@ -3250,7 +3249,7 @@ public class G1 extends SGCManager {
 
     // Legacy method for fallback
     private void displayBitmapImageLegacy(byte[] bmpData, BmpProgressCallback callback) {
-        Log.d(TAG, "Starting LEGACY BMP display process");
+        Bridge.log("G1: Starting LEGACY BMP display process");
 
         try {
             if (bmpData == null || bmpData.length == 0) {
@@ -3259,10 +3258,10 @@ public class G1 extends SGCManager {
                     callback.onError("both", "Invalid BMP data");
                 return;
             }
-            Log.d(TAG, "Processing BMP data, size: " + bmpData.length + " bytes");
+            Bridge.log("G1: Processing BMP data, size: " + bmpData.length + " bytes");
             // Split into chunks and send
             List<byte[]> chunks = createBmpChunks(bmpData);
-            Log.d(TAG, "Created " + chunks.size() + " chunks");
+            Bridge.log("G1: Created " + chunks.size() + " chunks");
 
             // Send all chunks
             sendBmpChunks(chunks);
@@ -3299,7 +3298,7 @@ public class G1 extends SGCManager {
                 callback.onSuccess("both");
             }
 
-            Log.d(TAG, "BMP display process completed successfully");
+            Bridge.log("G1: BMP display process completed successfully");
 
         } catch (Exception e) {
             Log.e(TAG, "Error in displayBitmapImage: " + e.getMessage());
@@ -3311,7 +3310,7 @@ public class G1 extends SGCManager {
     private List<byte[]> createBmpChunks(byte[] bmpData) {
         List<byte[]> chunks = new ArrayList<>();
         int totalChunks = (int) Math.ceil((double) bmpData.length / BMP_CHUNK_SIZE);
-        Log.d(TAG, "Creating " + totalChunks + " chunks from " + bmpData.length + " bytes");
+        Bridge.log("G1: Creating " + totalChunks + " chunks from " + bmpData.length + " bytes");
 
         for (int i = 0; i < totalChunks; i++) {
             int start = i * BMP_CHUNK_SIZE;
@@ -3343,7 +3342,7 @@ public class G1 extends SGCManager {
 
         for (int i = 0; i < chunks.size(); i++) {
             byte[] chunk = chunks.get(i);
-            Log.d(TAG, "Sending chunk " + i + " of " + chunks.size() + ", size: " + chunk.length);
+            Bridge.log("G1: Sending chunk " + i + " of " + chunks.size() + ", size: " + chunk.length);
 
             boolean success = sendDataSequentiallyWithTimeout(chunk, CHUNK_SEND_TIMEOUT_MS);
             if (!success) {
@@ -3373,7 +3372,7 @@ public class G1 extends SGCManager {
         if (updatingScreen)
             return false;
 
-        Log.d(TAG, "Sending " + chunks.size() + " chunks using OPTIMIZED method");
+        Bridge.log("G1: Sending " + chunks.size() + " chunks using OPTIMIZED method");
 
         // Send all chunks except last without waiting for response
         for (int i = 0; i < chunks.size() - 1; i++) {
@@ -3445,7 +3444,7 @@ public class G1 extends SGCManager {
         // Last chunk - wait for confirmation (like iOS)
         if (!chunks.isEmpty()) {
             byte[] lastChunk = chunks.get(chunks.size() - 1);
-            Log.d(TAG, "Sending last chunk with confirmation");
+            Bridge.log("G1: Sending last chunk with confirmation");
 
             boolean success = sendDataSequentiallyWithTimeout(lastChunk, 2000); // Shorter timeout for last chunk
             if (!success) {
@@ -3464,12 +3463,12 @@ public class G1 extends SGCManager {
 
     // Optimized end command sending
     private boolean sendBmpEndCommandOptimized() {
-        Log.d(TAG, "Sending BMP end command (optimized)");
+        Bridge.log("G1: Sending BMP end command (optimized)");
 
         // End command needs confirmation, but with shorter timeout
         boolean success = sendDataSequentiallyWithTimeout(END_COMMAND, 1000);
         if (success) {
-            Log.d(TAG, "BMP end command sent successfully");
+            Bridge.log("G1: BMP end command sent successfully");
 
             // Small delay after end command
             try {
@@ -3501,12 +3500,12 @@ public class G1 extends SGCManager {
         crcCommand[3] = (byte) ((crcValue >> 8) & 0xFF);
         crcCommand[4] = (byte) (crcValue & 0xFF);
 
-        Log.d(TAG, "Sending CRC command (optimized), CRC value: " + Long.toHexString(crcValue));
+        Bridge.log("G1: Sending CRC command (optimized), CRC value: " + Long.toHexString(crcValue));
 
         // CRC needs confirmation, but with shorter timeout
         boolean success = sendDataSequentiallyWithTimeout(crcCommand, 1000);
         if (success) {
-            Log.d(TAG, "CRC command sent successfully");
+            Bridge.log("G1: CRC command sent successfully");
         }
         return success;
     }
@@ -3544,11 +3543,11 @@ public class G1 extends SGCManager {
             return false;
 
         for (int attempt = 0; attempt < MAX_BMP_RETRY_ATTEMPTS; attempt++) {
-            Log.d(TAG, "Sending BMP end command, attempt " + (attempt + 1));
+            Bridge.log("G1: Sending BMP end command, attempt " + (attempt + 1));
 
             boolean success = sendDataSequentiallyWithTimeout(END_COMMAND, END_COMMAND_TIMEOUT_MS);
             if (success) {
-                Log.d(TAG, "BMP end command sent successfully");
+                Bridge.log("G1: BMP end command sent successfully");
                 return true;
             }
 
@@ -3586,13 +3585,13 @@ public class G1 extends SGCManager {
         crcCommand[3] = (byte) ((crcValue >> 8) & 0xFF);
         crcCommand[4] = (byte) (crcValue & 0xFF);
 
-        Log.d(TAG, "Sending CRC command, CRC value: " + Long.toHexString(crcValue));
+        Bridge.log("G1: Sending CRC command, CRC value: " + Long.toHexString(crcValue));
 
         // Send CRC with retry
         for (int attempt = 0; attempt < MAX_BMP_RETRY_ATTEMPTS; attempt++) {
             boolean success = sendDataSequentiallyWithTimeout(crcCommand, CRC_COMMAND_TIMEOUT_MS);
             if (success) {
-                Log.d(TAG, "CRC command sent successfully");
+                Bridge.log("G1: CRC command sent successfully");
                 return true;
             }
 
@@ -3628,12 +3627,12 @@ public class G1 extends SGCManager {
         displayBitmapImage(bmpData, new BmpProgressCallback() {
             @Override
             public void onProgress(String side, int offset, int chunkIndex, int totalSize) {
-                Log.d(TAG, "BMP progress for " + side + ": " + offset + "/" + totalSize);
+                Bridge.log("G1: BMP progress for " + side + ": " + offset + "/" + totalSize);
             }
 
             @Override
             public void onSuccess(String side) {
-                Log.d(TAG, "BMP sent successfully to " + side);
+                Bridge.log("G1: BMP sent successfully to " + side);
             }
 
             @Override
@@ -3687,7 +3686,7 @@ public class G1 extends SGCManager {
     public void clearBmpDisplay() {
         if (updatingScreen)
             return;
-        Log.d(TAG, "Clearing BMP display with EXIT command");
+        Bridge.log("G1: Clearing BMP display with EXIT command");
         byte[] exitCommand = new byte[] { 0x18 };
         sendDataSequentially(exitCommand);
     }
@@ -3738,7 +3737,7 @@ public class G1 extends SGCManager {
 
                         @Override
                         public void onSuccess(String side) {
-                            Log.d(TAG, "Successfully sent BMP: " + path);
+                            Bridge.log("G1: Successfully sent BMP: " + path);
                         }
 
                         @Override
@@ -3781,13 +3780,13 @@ public class G1 extends SGCManager {
     // Enhanced clearing with state management
     public void clearBmpDisplayWithState() {
         if (updatingScreen) {
-            Log.d(TAG, "Screen update in progress, queuing clear command");
+            Bridge.log("G1: Screen update in progress, queuing clear command");
             // Queue the clear command for later
             handler.postDelayed(this::clearBmpDisplay, 1000);
             return;
         }
 
-        Log.d(TAG, "Clearing BMP display with EXIT command");
+        Bridge.log("G1: Clearing BMP display with EXIT command");
         updatingScreen = true;
 
         try {
@@ -3795,7 +3794,7 @@ public class G1 extends SGCManager {
             boolean success = sendDataSequentiallyWithTimeout(exitCommand, 2000);
             if (success) {
                 lastThingDisplayedWasAnImage = false;
-                Log.d(TAG, "BMP display cleared successfully");
+                Bridge.log("G1: BMP display cleared successfully");
             } else {
                 Log.e(TAG, "Failed to clear BMP display");
             }
@@ -3807,7 +3806,7 @@ public class G1 extends SGCManager {
     // Optimized batch clearing
     public void clearAndDisplayBmp(byte[] bmpData, BmpProgressCallback callback) {
         if (updatingScreen) {
-            Log.d(TAG, "Screen update in progress, cannot clear and display");
+            Bridge.log("G1: Screen update in progress, cannot clear and display");
             if (callback != null)
                 callback.onError("both", "Screen update in progress");
             return;
@@ -3836,7 +3835,7 @@ public class G1 extends SGCManager {
 
     private void displayBmpSequenceInternal(List<byte[]> bmpDataList, int index, BmpProgressCallback callback) {
         if (index >= bmpDataList.size()) {
-            Log.d(TAG, "BMP sequence completed");
+            Bridge.log("G1: BMP sequence completed");
             if (callback != null)
                 callback.onSuccess("sequence");
             return;
@@ -3855,7 +3854,7 @@ public class G1 extends SGCManager {
 
             @Override
             public void onSuccess(String side) {
-                Log.d(TAG, "BMP " + (index + 1) + " of " + bmpDataList.size() + " displayed successfully");
+                Bridge.log("G1: BMP " + (index + 1) + " of " + bmpDataList.size() + " displayed successfully");
 
                 // Schedule next image with delay
                 handler.postDelayed(() -> {
@@ -3874,23 +3873,23 @@ public class G1 extends SGCManager {
     }
 
     private void quickRestartG1() {
-        Log.d(TAG, "Sending restart 0x23 0x72 Command");
+        Bridge.log("G1: Sending restart 0x23 0x72 Command");
         sendDataSequentially(new byte[] { (byte) 0x23, (byte) 0x72 }); // quick restart comand
     }
 
     public void setMicEnabled(boolean isMicrophoneEnabled) {
-        Log.d(TAG, "Microphone state changed: " + isMicrophoneEnabled);
+        Bridge.log("G1: Microphone state changed: " + isMicrophoneEnabled);
 
         // Update the shouldUseGlassesMic flag to reflect the current state
         this.shouldUseGlassesMic = isMicrophoneEnabled;
-        Log.d(TAG, "Updated shouldUseGlassesMic to: " + shouldUseGlassesMic);
+        Bridge.log("G1: Updated shouldUseGlassesMic to: " + shouldUseGlassesMic);
 
         if (isMicrophoneEnabled) {
-            Log.d(TAG, "Microphone enabled, starting audio input handling");
+            Bridge.log("G1: Microphone enabled, starting audio input handling");
             sendSetMicEnabled(true, 10);
             startMicBeat((int) MICBEAT_INTERVAL_MS);
         } else {
-            Log.d(TAG, "Microphone disabled, stopping audio input handling");
+            Bridge.log("G1: Microphone disabled, stopping audio input handling");
             sendSetMicEnabled(false, 10);
             stopMicBeat();
         }
@@ -3898,7 +3897,7 @@ public class G1 extends SGCManager {
 
     /**
      * Returns whether the microphone is currently enabled
-     * 
+     *
      * @return true if microphone is enabled, false otherwise
      */
     public boolean isMicrophoneEnabled() {
@@ -3907,7 +3906,7 @@ public class G1 extends SGCManager {
 
     /**
      * Decodes Even G1 serial number to extract style and color information
-     * 
+     *
      * @param serialNumber The full serial number (e.g., "S110LABD020021")
      * @return Array containing [style, color] or ["Unknown", "Unknown"] if invalid
      */
@@ -3952,7 +3951,7 @@ public class G1 extends SGCManager {
 
     /**
      * Decodes serial number from manufacturer data bytes
-     * 
+     *
      * @param manufacturerData The manufacturer data bytes
      * @return Decoded serial number string or null if not found
      */

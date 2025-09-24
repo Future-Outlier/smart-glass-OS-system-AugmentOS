@@ -1,49 +1,39 @@
 package com.mentra.mentra
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.util.Base64
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
+import com.mentra.mentra.sgcs.G1
+import com.mentra.mentra.sgcs.SGCManager
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-
-import com.mentra.mentra.sgcs.SGCManager
-import com.mentra.mentra.sgcs.G1
 
 class MentraManager {
     companion object {
 
-        @Volatile
-        private var instance: MentraManager? = null
+        @Volatile private var instance: MentraManager? = null
 
         @JvmStatic
         fun getInstance(): MentraManager {
-            return instance ?: synchronized(this) {
-                instance ?: MentraManager().also { instance = it }
-            }
+            return instance
+                    ?: synchronized(this) { instance ?: MentraManager().also { instance = it } }
         }
     }
-    
+
     // Core properties (matching Swift)
     private var coreToken = ""
     private var coreTokenOwner = ""
     private var sgc: SGCManager? = null
-    
+
     private val lastStatusObj = ConcurrentHashMap<String, Any>()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private var sendStateWorkItem: Runnable? = null
-    
+
     // Settings and state (matching Swift exactly)
     private var defaultWearable = ""
     private var pendingWearable = ""
@@ -70,14 +60,14 @@ class MentraManager {
     public var glassesWifiConnected = false
     public var glassesWifiSsid = ""
     private var isHeadUp = false
-    
+
     // Mic settings (matching Swift)
     public var useOnboardMic = false
     public var preferredMic = "glasses"
     public var offlineStt = false
     public var micEnabled = false
     public val currentRequiredData = mutableListOf<String>()
-    
+
     // Button settings (matching Swift)
     public var buttonPressMode = "photo"
     public var buttonPhotoSize = "medium"
@@ -85,18 +75,18 @@ class MentraManager {
     public var buttonVideoHeight = 720
     public var buttonVideoFps = 30
     public var buttonCameraLed = true
-    
+
     // VAD (matching Swift)
     private var isSpeaking = false
     private val vadBuffer = mutableListOf<ByteArray>()
-    
+
     // STT (matching Swift)
     private var shouldSendPcmData = false
     private var shouldSendTranscript = false
-    
+
     // View states (matching Swift with 4 states)
     private val viewStates = mutableListOf<ViewState>()
-    
+
     init {
         initializeViewStates()
         Bridge.log("Mentra: init()")
@@ -104,60 +94,78 @@ class MentraManager {
 
     private fun initializeViewStates() {
         viewStates.clear()
-        
+
         // Matching Swift's 4 view states exactly
         viewStates.add(ViewState(" ", " ", " ", "text_wall", "", null, null))
-        viewStates.add(ViewState(" ", " ", " ", "text_wall", 
-                "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$", null, null))
+        viewStates.add(
+                ViewState(
+                        " ",
+                        " ",
+                        " ",
+                        "text_wall",
+                        "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$",
+                        null,
+                        null
+                )
+        )
         viewStates.add(ViewState(" ", " ", " ", "text_wall", "", null, null))
-        viewStates.add(ViewState(" ", " ", " ", "text_wall",
-                "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$", null, null))
+        viewStates.add(
+                ViewState(
+                        " ",
+                        " ",
+                        " ",
+                        "text_wall",
+                        "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$",
+                        null,
+                        null
+                )
+        )
     }
-    
+
     // MARK: - Public Methods (for React Native)
-    
+
     fun initSGC(wearable: String) {
         Bridge.log("Mentra: initSGC(): wearable: $wearable")
-        
+
         if (wearable.contains("G1") && sgc == null) {
             sgc = G1()
-        }    
+        }
     }
-    
+
     fun updateHeadUp(isHeadUp: Boolean) {
         this.isHeadUp = isHeadUp
         sendCurrentState(isHeadUp)
         Bridge.sendHeadPosition(isHeadUp)
     }
-    
+
     fun onAppStateChange(apps: List<Any>) {
         handle_request_status()
     }
-    
+
     fun onConnectionError(error: String) {
         handle_request_status()
     }
-    
+
     fun onAuthError() {
         // Handle auth error
     }
-    
+
     // MARK: - Voice Data Handling
-    
+
     private fun checkSetVadStatus(speaking: Boolean) {
         if (speaking != isSpeaking) {
             isSpeaking = speaking
             Bridge.sendVadStatus(isSpeaking)
         }
     }
-    
+
     private fun emptyVadBuffer() {
         while (vadBuffer.isNotEmpty()) {
             val chunk = vadBuffer.removeAt(0)
             Bridge.sendMicData(chunk)
         }
     }
-    
+
     private fun addToVadBuffer(chunk: ByteArray) {
         val MAX_BUFFER_SIZE = 20
         vadBuffer.add(chunk)
@@ -165,34 +173,34 @@ class MentraManager {
             vadBuffer.removeAt(0)
         }
     }
-    
+
     fun handleGlassesMicData(rawLC3Data: ByteArray) {
         // decode the lc3 data to pcm and pass to the bridge to be sent to the server:
         // TODO: config
     }
-    
+
     fun handlePcm(base64PcmData: String) {
         val pcmData = Base64.decode(base64PcmData, Base64.DEFAULT)
-        
+
         if (bypassVad || bypassVadForPCM) {
             if (shouldSendPcmData) {
                 Bridge.sendMicData(pcmData)
             }
-            
+
             if (shouldSendTranscript) {
                 // TODO: Send to local transcriber
             }
             return
         }
-        
+
         // TODO: Implement VAD processing
     }
-    
+
     fun handle_connection_state_change() {
         Bridge.log("Mentra: Glasses connection state changed!")
-        
+
         val currentSgc = sgc ?: return
-        
+
         if (currentSgc.ready) {
             handleDeviceReady()
         } else {
@@ -200,7 +208,7 @@ class MentraManager {
             handle_request_status()
         }
     }
-    
+
     private fun handleDeviceReady() {
         Bridge.log("Mentra: Device ready")
         sgc?.apply {
@@ -210,34 +218,39 @@ class MentraManager {
         }
         handle_request_status()
     }
-    
+
     private fun handleDeviceDisconnected() {
         Bridge.log("Mentra: Device disconnected")
         isHeadUp = false
         handle_request_status()
     }
-    
+
     // MARK: - Handle methods (matching Swift)
-    
+
     fun handle_microphone_state_change(requiredData: List<String>, bypassVad: Boolean) {
-        Bridge.log("Mentra: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad")
-        
+        Bridge.log(
+                "Mentra: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad"
+        )
+
         bypassVadForPCM = bypassVad
-        
+
         currentRequiredData.clear()
         currentRequiredData.addAll(requiredData)
-        
+
         val mutableRequiredData = requiredData.toMutableList()
-        if (offlineStt && !mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") && 
-            !mutableRequiredData.contains("TRANSCRIPTION")) {
+        if (offlineStt &&
+                        !mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") &&
+                        !mutableRequiredData.contains("TRANSCRIPTION")
+        ) {
             mutableRequiredData.add("TRANSCRIPTION")
         }
-        
+
         shouldSendPcmData = false
         shouldSendTranscript = false
-        
+
         when {
-            mutableRequiredData.contains("PCM") && mutableRequiredData.contains("TRANSCRIPTION") -> {
+            mutableRequiredData.contains("PCM") &&
+                    mutableRequiredData.contains("TRANSCRIPTION") -> {
                 shouldSendPcmData = true
                 shouldSendTranscript = true
             }
@@ -259,117 +272,116 @@ class MentraManager {
                 }
             }
         }
-        
+
         vadBuffer.clear()
         micEnabled = requiredData.isNotEmpty()
-        
+
         updateMicrophoneState()
     }
-    
+
     private fun updateMicrophoneState() {
         val actuallyEnabled = micEnabled && sensingEnabled
         val glassesHasMic = sgc?.hasMic ?: false
-        
+
         var useGlassesMic = preferredMic == "glasses"
         var useOnboardMic = preferredMic == "phone"
-        
+
         if (onboardMicUnavailable) {
             useOnboardMic = false
         }
-        
+
         if (!glassesHasMic) {
             useGlassesMic = false
         }
-        
+
         if (!useGlassesMic && !useOnboardMic) {
             if (glassesHasMic) {
                 useGlassesMic = true
             } else if (!onboardMicUnavailable) {
                 useOnboardMic = true
             }
-            
+
             if (!useGlassesMic && !useOnboardMic) {
                 Bridge.log("Mentra: no mic to use! falling back to glasses mic!")
                 useGlassesMic = true
             }
         }
-        
+
         useGlassesMic = actuallyEnabled && useGlassesMic
         useOnboardMic = actuallyEnabled && useOnboardMic
-        
+
         sgc?.let { sgc ->
             if (sgc.type == "g1" && sgc.ready) {
                 sgc.setMicEnabled(useGlassesMic)
             }
         }
-        
+
         setOnboardMicEnabled(useOnboardMic)
     }
-    
+
     fun onJsonMessage(message: Map<String, Any>) {
         Bridge.log("Mentra: onJsonMessage: $message")
         sgc?.sendJson(message, false)
     }
-    
+
     fun handle_photo_request(requestId: String, appId: String, size: String, webhookUrl: String) {
         Bridge.log("Mentra: onPhotoRequest: $requestId, $appId, $size")
         sgc?.requestPhoto(requestId, appId, size, webhookUrl)
     }
-    
+
     fun onRtmpStreamStartRequest(message: Map<String, Any>) {
         Bridge.log("Mentra: onRtmpStreamStartRequest: $message")
         sgc?.startRtmpStream(message)
     }
-    
+
     fun onRtmpStreamStop() {
         Bridge.log("Mentra: onRtmpStreamStop")
         sgc?.stopRtmpStream()
     }
-    
+
     fun onRtmpStreamKeepAlive(message: Map<String, Any>) {
         Bridge.log("Mentra: onRtmpStreamKeepAlive: $message")
         sgc?.sendRtmpKeepAlive(message)
     }
-    
+
     private fun setOnboardMicEnabled(enabled: Boolean) {
         // TODO: Implement phone microphone control
     }
-    
+
     fun clearState() {
         sendCurrentState(sgc?.isHeadUp ?: false)
     }
-    
+
     private fun sendCurrentState(isDashboard: Boolean) {
         if (isUpdatingScreen) {
             return
         }
-        
+
         executor.execute {
-            val currentViewState = if (isDashboard) {
-                viewStates[1]
-            } else {
-                viewStates[0]
-            }
-            
+            val currentViewState =
+                    if (isDashboard) {
+                        viewStates[1]
+                    } else {
+                        viewStates[0]
+                    }
+
             isHeadUp = isDashboard
-            
+
             if (isDashboard && !contextualDashboard) {
                 return@execute
             }
-            
+
             if (defaultWearable.contains("Simulated") || defaultWearable.isEmpty()) {
                 return@execute
             }
-            
+
             if (!isSomethingConnected()) {
                 return@execute
             }
-            
+
             // Cancel any pending clear display work item
-            sendStateWorkItem?.let {
-                mainHandler.removeCallbacks(it)
-            }
-            
+            sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
+
             when (currentViewState.layoutType) {
                 "text_wall" -> sendText(currentViewState.text)
                 "double_text_wall" -> {
@@ -379,80 +391,77 @@ class MentraManager {
                     sendText("${currentViewState.title}\n\n${currentViewState.text}")
                 }
                 "bitmap_view" -> {
-                    currentViewState.data?.let { data ->
-                        sgc?.displayBitmap(data)
-                    }
+                    currentViewState.data?.let { data -> sgc?.displayBitmap(data) }
                 }
                 "clear_view" -> clearDisplay()
                 else -> Bridge.log("Mentra: UNHANDLED LAYOUT_TYPE ${currentViewState.layoutType}")
             }
         }
     }
-    
+
     private fun parsePlaceholders(text: String): String {
         val dateFormatter = SimpleDateFormat("M/dd, h:mm", Locale.getDefault())
         val formattedDate = dateFormatter.format(Date())
-        
+
         val time12Format = SimpleDateFormat("hh:mm", Locale.getDefault())
         val time12 = time12Format.format(Date())
-        
+
         val time24Format = SimpleDateFormat("HH:mm", Locale.getDefault())
         val time24 = time24Format.format(Date())
-        
+
         val dateFormat = SimpleDateFormat("MM/dd", Locale.getDefault())
         val currentDate = dateFormat.format(Date())
-        
-        val placeholders = mapOf(
-            "\$no_datetime$" to formattedDate,
-            "\$DATE$" to currentDate,
-            "\$TIME12$" to time12,
-            "\$TIME24$" to time24,
-            "\$GBATT$" to (sgc?.batteryLevel?.let { 
-                if (it == -1) "" else "$it%" 
-            } ?: ""),
-            "\$CONNECTION_STATUS$" to "Connected"
-        )
-        
+
+        val placeholders =
+                mapOf(
+                        "\$no_datetime$" to formattedDate,
+                        "\$DATE$" to currentDate,
+                        "\$TIME12$" to time12,
+                        "\$TIME24$" to time24,
+                        "\$GBATT$" to
+                                (sgc?.batteryLevel?.let { if (it == -1) "" else "$it%" } ?: ""),
+                        "\$CONNECTION_STATUS$" to "Connected"
+                )
+
         return placeholders.entries.fold(text) { result, (key, value) ->
             result.replace(key, value)
         }
     }
-    
+
     fun handle_display_text(params: Map<String, Any>) {
         (params["text"] as? String)?.let { text ->
             Bridge.log("Mentra: Displaying text: $text")
             sendText(text)
         }
     }
-    
+
     fun handle_display_event(event: Map<String, Any>) {
         val view = event["view"] as? String
         if (view == null) {
             Bridge.log("Mentra: Invalid view")
             return
         }
-        
+
         val isDashboard = view == "dashboard"
         val stateIndex = if (isDashboard) 1 else 0
-        
-        @Suppress("UNCHECKED_CAST")
-        val layout = event["layout"] as? Map<String, Any> ?: return
-        
+
+        @Suppress("UNCHECKED_CAST") val layout = event["layout"] as? Map<String, Any> ?: return
+
         val layoutType = layout["layoutType"] as? String
         val text = parsePlaceholders(layout.getString("text", " "))
         val topText = parsePlaceholders(layout.getString("topText", " "))
         val bottomText = parsePlaceholders(layout.getString("bottomText", " "))
         val title = parsePlaceholders(layout.getString("title", " "))
         val data = layout["data"] as? String
-        
+
         var newViewState = ViewState(topText, bottomText, title, layoutType ?: "", text, data, null)
-        
+
         val currentState = viewStates[stateIndex]
-        
+
         if (!statesEqual(currentState, newViewState)) {
             Bridge.log("Mentra: Updating view state $stateIndex with $layoutType")
             viewStates[stateIndex] = newViewState
-            
+
             val headUp = isHeadUp
             if (stateIndex == 0 && !headUp) {
                 sendCurrentState(false)
@@ -461,27 +470,25 @@ class MentraManager {
             }
         }
     }
-    
+
     fun onRouteChange(reason: String, availableInputs: List<String>) {
         Bridge.log("Mentra: onRouteChange: reason: $reason")
         Bridge.log("Mentra: onRouteChange: inputs: $availableInputs")
     }
-    
+
     fun onInterruption(began: Boolean) {
         Bridge.log("Mentra: Interruption: $began")
         onboardMicUnavailable = began
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
     }
-    
+
     private fun clearDisplay() {
         sgc?.let { sgc ->
             sgc.sendTextWall(" ")
-            
+
             if (powerSavingMode) {
-                sendStateWorkItem?.let {
-                    mainHandler.removeCallbacks(it)
-                }
-                
+                sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
+
                 Bridge.log("Mentra: Clearing display after 3 seconds")
                 sendStateWorkItem = Runnable {
                     if (isHeadUp) {
@@ -493,42 +500,42 @@ class MentraManager {
             }
         }
     }
-    
+
     private fun sendText(text: String) {
         val currentSgc = sgc ?: return
-        
+
         if (text == " " || text.isEmpty()) {
             clearDisplay()
             return
         }
-        
+
         val parsed = parsePlaceholders(text)
         currentSgc.sendTextWall(parsed)
     }
-    
+
     fun enableContextualDashboard(enabled: Boolean) {
         contextualDashboard = enabled
         handle_request_status()
     }
-    
+
     fun updatePreferredMic(mic: String) {
         preferredMic = mic
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
         handle_request_status()
     }
-    
+
     fun updateButtonMode(mode: String) {
         buttonPressMode = mode
         sgc?.sendButtonModeSetting()
         handle_request_status()
     }
-    
+
     fun updateButtonPhotoSize(size: String) {
         buttonPhotoSize = size
         sgc?.sendButtonPhotoSettings()
         handle_request_status()
     }
-    
+
     fun updateButtonVideoSettings(width: Int, height: Int, fps: Int) {
         buttonVideoWidth = width
         buttonVideoHeight = height
@@ -536,29 +543,29 @@ class MentraManager {
         sgc?.sendButtonVideoRecordingSettings()
         handle_request_status()
     }
-    
+
     fun updateButtonCameraLed(enabled: Boolean) {
         buttonCameraLed = enabled
         sgc?.sendButtonCameraLedSetting()
         handle_request_status()
     }
-    
+
     fun updateOfflineStt(enabled: Boolean) {
         offlineStt = enabled
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
     }
-    
+
     fun updateGlassesHeadUpAngle(value: Int) {
         headUpAngle = value
         sgc?.setHeadUpAngle(value)
         handle_request_status()
     }
-    
+
     fun updateGlassesBrightness(value: Int, autoMode: Boolean) {
         val autoBrightnessChanged = this.autoBrightness != autoMode
         brightness = value
         this.autoBrightness = autoMode
-        
+
         executor.execute {
             sgc?.setBrightness(value, autoMode)
             if (autoBrightnessChanged) {
@@ -573,10 +580,10 @@ class MentraManager {
             }
             sendText(" ")
         }
-        
+
         handle_request_status()
     }
-    
+
     fun updateGlassesDepth(value: Int) {
         dashboardDepth = value
         sgc?.let {
@@ -585,7 +592,7 @@ class MentraManager {
         }
         handle_request_status()
     }
-    
+
     fun updateGlassesHeight(value: Int) {
         dashboardHeight = value
         sgc?.let {
@@ -594,31 +601,31 @@ class MentraManager {
         }
         handle_request_status()
     }
-    
+
     fun enableSensing(enabled: Boolean) {
         sensingEnabled = enabled
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
         handle_request_status()
     }
-    
+
     fun enablePowerSavingMode(enabled: Boolean) {
         powerSavingMode = enabled
         handle_request_status()
     }
-    
+
     fun enableAlwaysOnStatusBar(enabled: Boolean) {
         alwaysOnStatusBar = enabled
         handle_request_status()
     }
-    
+
     fun bypassVad(enabled: Boolean) {
         bypassVad = enabled
         handle_request_status()
     }
-    
+
     fun enforceLocalTranscription(enabled: Boolean) {
         enforceLocalTranscription = enabled
-        
+
         if (currentRequiredData.contains("PCM_OR_TRANSCRIPTION")) {
             if (enforceLocalTranscription) {
                 shouldSendTranscript = true
@@ -628,27 +635,27 @@ class MentraManager {
                 shouldSendTranscript = false
             }
         }
-        
+
         handle_request_status()
     }
-    
+
     fun startBufferRecording() {
         sgc?.startBufferRecording()
     }
-    
+
     fun stopBufferRecording() {
         sgc?.stopBufferRecording()
     }
-    
+
     fun setBypassAudioEncoding(enabled: Boolean) {
         bypassAudioEncoding = enabled
     }
-    
+
     fun setMetricSystemEnabled(enabled: Boolean) {
         metricSystemEnabled = enabled
         handle_request_status()
     }
-    
+
     fun toggleUpdatingScreen(enabled: Boolean) {
         Bridge.log("Mentra: Toggling updating screen: $enabled")
         if (enabled) {
@@ -658,55 +665,56 @@ class MentraManager {
             isUpdatingScreen = false
         }
     }
-    
+
     fun showDashboard() {
         sgc?.showDashboard()
     }
-    
+
     fun saveBufferVideo(requestId: String, durationSeconds: Int) {
         sgc?.saveBufferVideo(requestId, durationSeconds)
     }
-    
+
     fun startVideoRecording(requestId: String, save: Boolean) {
         sgc?.startVideoRecording(requestId, save)
     }
-    
+
     fun stopVideoRecording(requestId: String) {
         sgc?.stopVideoRecording(requestId)
     }
-    
+
     fun requestWifiScan() {
         Bridge.log("Mentra: Requesting wifi scan")
         sgc?.requestWifiScan()
     }
-    
+
     fun sendWifiCredentials(ssid: String, password: String) {
         Bridge.log("Mentra: Sending wifi credentials: $ssid")
         sgc?.sendWifiCredentials(ssid, password)
     }
-    
+
     fun setGlassesHotspotState(enabled: Boolean) {
         Bridge.log("Mentra: Setting glasses hotspot state: $enabled")
         sgc?.sendHotspotState(enabled)
     }
-    
+
     fun queryGalleryStatus() {
         Bridge.log("Mentra: Querying gallery status from glasses")
         sgc?.queryGalleryStatus()
     }
-    
+
     fun restartTranscriber() {
         Bridge.log("Mentra: Restarting transcriber via command")
         // TODO: Implement transcriber restart
     }
-    
-    private fun getGlassesHasMic(): Boolean = when {
-        defaultWearable.contains("G1") -> true
-        defaultWearable.contains("Live") -> false
-        defaultWearable.contains("Mach1") -> false
-        else -> false
-    }
-    
+
+    private fun getGlassesHasMic(): Boolean =
+            when {
+                defaultWearable.contains("G1") -> true
+                defaultWearable.contains("Live") -> false
+                defaultWearable.contains("Mach1") -> false
+                else -> false
+            }
+
     fun enableGlassesMic(enabled: Boolean) {
         sgc?.setMicEnabled(enabled)
     }
@@ -715,34 +723,61 @@ class MentraManager {
         Bridge.log("Mentra: onStartBufferRecording")
         sgc?.startBufferRecording()
     }
-    
+
     fun handle_stop_buffer_recording() {
         Bridge.log("Mentra: onStopBufferRecording")
         sgc?.stopBufferRecording()
     }
-    
+
     fun handle_save_buffer_video(requestId: String, durationSeconds: Int) {
         Bridge.log("Mentra: onSaveBufferVideo: requestId=$requestId, duration=$durationSeconds")
         sgc?.saveBufferVideo(requestId, durationSeconds)
     }
-    
+
     fun handle_start_video_recording(requestId: String, save: Boolean) {
         Bridge.log("Mentra: onStartVideoRecording: requestId=$requestId, save=$save")
         sgc?.startVideoRecording(requestId, save)
     }
-    
+
     fun handle_stop_video_recording(requestId: String) {
         Bridge.log("Mentra: onStopVideoRecording: requestId=$requestId")
         sgc?.stopVideoRecording(requestId)
     }
-    
-    fun handle_connect_wearable(deviceName: String, modelName: String?) {
-        Bridge.log("Mentra: Connecting to wearable: $deviceName model: $modelName")
-        defaultWearable = modelName ?: deviceName
-        modelName?.let { initSGC(it) }
-        if (deviceName.isNotEmpty()) {
-            sgc?.connectById(deviceName)
+
+    fun handle_connect_wearable(dName: String, modelName: String?) {
+        Bridge.log("Mentra: Connecting to wearable: $dName model: $modelName")
+
+        if (modelName != null) {
+            pendingWearable = modelName
         }
+
+        if (pendingWearable.contains("Simulated")) {
+            Bridge.log(
+                    "Mentra: Pending wearable is simulated, setting default wearable to Simulated Glasses"
+            )
+            defaultWearable = "Simulated Glasses"
+            handle_request_status()
+            return
+        }
+
+        if (pendingWearable.isEmpty() && defaultWearable.isEmpty()) {
+            Bridge.log("Mentra: No pending or default wearable, returning")
+            return
+        }
+
+        if (pendingWearable.isEmpty() && !defaultWearable.isEmpty()) {
+            Bridge.log("Mentra: No pending wearable, using default wearable")
+            pendingWearable = defaultWearable
+        }
+
+        handle_disconnect_wearable()
+        Thread.sleep(100)
+        isSearching = true
+        handle_request_status() // update the ui
+        deviceName = dName
+
+        initSGC(pendingWearable)
+        sgc?.connectById(deviceName)
     }
 
     fun handle_disconnect_wearable() {
@@ -751,7 +786,7 @@ class MentraManager {
         isSearching = false
         handle_request_status()
     }
-    
+
     fun handle_forget_smart_glasses() {
         Bridge.log("Mentra: Forgetting smart glasses")
         handle_disconnect_wearable()
@@ -763,7 +798,7 @@ class MentraManager {
         Bridge.saveSetting("device_name", "")
         handle_request_status()
     }
-    
+
     fun handle_search_for_compatible_device_names(modelName: String) {
         Bridge.log("Mentra: Searching for compatible device names for: $modelName")
         if (modelName.contains("Simulated")) {
@@ -771,7 +806,7 @@ class MentraManager {
             handle_request_status()
             return
         }
-        
+
         if (modelName.contains("G1")) {
             pendingWearable = "Even Realities G1"
         } else if (modelName.contains("Live")) {
@@ -779,7 +814,7 @@ class MentraManager {
         } else if (modelName.contains("Mach1") || modelName.contains("Z100")) {
             pendingWearable = "Mach1"
         }
-        
+
         initSGC(pendingWearable)
         Bridge.log("Mentra: sgc initialized, calling findCompatibleDevices")
         sgc?.findCompatibleDevices()
@@ -787,141 +822,141 @@ class MentraManager {
 
     fun handle_update_settings(settings: Map<String, Any>) {
         Bridge.log("Mentra: Received update settings: $settings")
-        
+
         // Update settings with new values
         (settings["preferred_mic"] as? String)?.let { newPreferredMic ->
             if (preferredMic != newPreferredMic) {
                 updatePreferredMic(newPreferredMic)
             }
         }
-        
+
         (settings["head_up_angle"] as? Int)?.let { newHeadUpAngle ->
             if (headUpAngle != newHeadUpAngle) {
                 updateGlassesHeadUpAngle(newHeadUpAngle)
             }
         }
-        
+
         (settings["brightness"] as? Int)?.let { newBrightness ->
             if (brightness != newBrightness) {
                 updateGlassesBrightness(newBrightness, false)
             }
         }
-        
+
         (settings["dashboard_height"] as? Int)?.let { newDashboardHeight ->
             if (dashboardHeight != newDashboardHeight) {
                 updateGlassesHeight(newDashboardHeight)
             }
         }
-        
+
         (settings["dashboard_depth"] as? Int)?.let { newDashboardDepth ->
             if (dashboardDepth != newDashboardDepth) {
                 updateGlassesDepth(newDashboardDepth)
             }
         }
-        
+
         (settings["auto_brightness"] as? Boolean)?.let { newAutoBrightness ->
             if (autoBrightness != newAutoBrightness) {
                 updateGlassesBrightness(brightness, newAutoBrightness)
             }
         }
-        
+
         (settings["sensing_enabled"] as? Boolean)?.let { newSensingEnabled ->
             if (sensingEnabled != newSensingEnabled) {
                 enableSensing(newSensingEnabled)
             }
         }
-        
+
         (settings["power_saving_mode"] as? Boolean)?.let { newPowerSavingMode ->
             if (powerSavingMode != newPowerSavingMode) {
                 enablePowerSavingMode(newPowerSavingMode)
             }
         }
-        
+
         (settings["always_on_status_bar_enabled"] as? Boolean)?.let { newAlwaysOnStatusBar ->
             if (alwaysOnStatusBar != newAlwaysOnStatusBar) {
                 enableAlwaysOnStatusBar(newAlwaysOnStatusBar)
             }
         }
-        
+
         (settings["bypass_vad_for_debugging"] as? Boolean)?.let { newBypassVad ->
             if (bypassVad != newBypassVad) {
                 bypassVad(newBypassVad)
             }
         }
-        
+
         (settings["enforce_local_transcription"] as? Boolean)?.let { newEnforceLocalTranscription ->
             if (enforceLocalTranscription != newEnforceLocalTranscription) {
                 enforceLocalTranscription(newEnforceLocalTranscription)
             }
         }
-        
+
         (settings["metric_system_enabled"] as? Boolean)?.let { newMetricSystemEnabled ->
             if (metricSystemEnabled != newMetricSystemEnabled) {
                 setMetricSystemEnabled(newMetricSystemEnabled)
             }
         }
-        
+
         (settings["contextual_dashboard_enabled"] as? Boolean)?.let { newContextualDashboard ->
             if (contextualDashboard != newContextualDashboard) {
                 enableContextualDashboard(newContextualDashboard)
             }
         }
-        
+
         (settings["button_mode"] as? String)?.let { newButtonMode ->
             if (buttonPressMode != newButtonMode) {
                 updateButtonMode(newButtonMode)
             }
         }
-        
+
         (settings["button_video_fps"] as? Int)?.let { newFps ->
             if (buttonVideoFps != newFps) {
                 updateButtonVideoSettings(buttonVideoWidth, buttonVideoHeight, newFps)
             }
         }
-        
+
         (settings["button_video_width"] as? Int)?.let { newWidth ->
             if (buttonVideoWidth != newWidth) {
                 updateButtonVideoSettings(newWidth, buttonVideoHeight, buttonVideoFps)
             }
         }
-        
+
         (settings["button_video_height"] as? Int)?.let { newHeight ->
             if (buttonVideoHeight != newHeight) {
                 updateButtonVideoSettings(buttonVideoWidth, newHeight, buttonVideoFps)
             }
         }
-        
+
         (settings["button_photo_size"] as? String)?.let { newPhotoSize ->
             if (buttonPhotoSize != newPhotoSize) {
                 updateButtonPhotoSize(newPhotoSize)
             }
         }
-        
+
         (settings["offline_stt"] as? Boolean)?.let { newOfflineStt ->
             if (offlineStt != newOfflineStt) {
                 updateOfflineStt(newOfflineStt)
             }
         }
-        
+
         (settings["default_wearable"] as? String)?.let { newDefaultWearable ->
             if (defaultWearable != newDefaultWearable) {
                 defaultWearable = newDefaultWearable
                 Bridge.saveSetting("default_wearable", newDefaultWearable)
             }
         }
-    }    
-    
+    }
+
     fun handle_request_status() {
         val simulatedConnected = defaultWearable == "Simulated Glasses"
         val isGlassesConnected = sgc?.ready ?: false
-        
+
         if (isGlassesConnected) {
             isSearching = false
         }
-        
+
         val glassesSettings = mutableMapOf<String, Any>()
         val connectedGlasses = mutableMapOf<String, Any>()
-        
+
         if (isGlassesConnected) {
             sgc?.let { sgc ->
                 connectedGlasses["model_name"] = defaultWearable
@@ -933,11 +968,11 @@ class MentraManager {
                 connectedGlasses["glasses_ota_version_url"] = sgc.glassesOtaVersionUrl ?: ""
             }
         }
-        
+
         if (simulatedConnected) {
             connectedGlasses["model_name"] = defaultWearable
         }
-        
+
         // G1 specific info
         // (sgc as? G1)?.let { g1 ->
         //     connectedGlasses["case_removed"] = g1.caseRemoved
@@ -946,19 +981,19 @@ class MentraManager {
         //     // g1.caseBatteryLevel?.let {
         //     //     connectedGlasses["case_battery_level"] = it
         //     // }
-            
+
         //     // if (!g1.glassesSerialNumber.isNullOrEmpty()) {
         //     //     connectedGlasses["glasses_serial_number"] = g1.glassesSerialNumber!!
         //     //     connectedGlasses["glasses_style"] = g1.glassesStyle ?: ""
         //     //     connectedGlasses["glasses_color"] = g1.glassesColor ?: ""
         //     // }
         // }
-        
+
         // Bluetooth device name
         sgc?.getConnectedBluetoothName()?.let { bluetoothName ->
             connectedGlasses["bluetooth_name"] = bluetoothName
         }
-        
+
         glassesSettings["brightness"] = brightness
         glassesSettings["auto_brightness"] = autoBrightness
         glassesSettings["dashboard_height"] = dashboardHeight
@@ -966,62 +1001,68 @@ class MentraManager {
         glassesSettings["head_up_angle"] = headUpAngle
         glassesSettings["button_mode"] = buttonPressMode
         glassesSettings["button_photo_size"] = buttonPhotoSize
-        
-        val buttonVideoSettings = mapOf(
-            "width" to buttonVideoWidth,
-            "height" to buttonVideoHeight,
-            "fps" to buttonVideoFps
-        )
+
+        val buttonVideoSettings =
+                mapOf(
+                        "width" to buttonVideoWidth,
+                        "height" to buttonVideoHeight,
+                        "fps" to buttonVideoFps
+                )
         glassesSettings["button_video_settings"] = buttonVideoSettings
         glassesSettings["button_camera_led"] = buttonCameraLed
-        
-        val coreInfo = mapOf(
-            "augmentos_core_version" to "Unknown",
-            "default_wearable" to defaultWearable,
-            "preferred_mic" to preferredMic,
-            "is_searching" to isSearching,
-            "is_mic_enabled_for_frontend" to (micEnabled && preferredMic == "glasses" && isSomethingConnected()),
-            "sensing_enabled" to sensingEnabled,
-            "power_saving_mode" to powerSavingMode,
-            "always_on_status_bar" to alwaysOnStatusBar,
-            "bypass_vad_for_debugging" to bypassVad,
-            "enforce_local_transcription" to enforceLocalTranscription,
-            "bypass_audio_encoding_for_debugging" to bypassAudioEncoding,
-            "core_token" to coreToken,
-            "puck_connected" to true,
-            "metric_system_enabled" to metricSystemEnabled,
-            "contextual_dashboard_enabled" to contextualDashboard
-        )
-        
+
+        val coreInfo =
+                mapOf(
+                        "augmentos_core_version" to "Unknown",
+                        "default_wearable" to defaultWearable,
+                        "preferred_mic" to preferredMic,
+                        "is_searching" to isSearching,
+                        "is_mic_enabled_for_frontend" to
+                                (micEnabled && preferredMic == "glasses" && isSomethingConnected()),
+                        "sensing_enabled" to sensingEnabled,
+                        "power_saving_mode" to powerSavingMode,
+                        "always_on_status_bar" to alwaysOnStatusBar,
+                        "bypass_vad_for_debugging" to bypassVad,
+                        "enforce_local_transcription" to enforceLocalTranscription,
+                        "bypass_audio_encoding_for_debugging" to bypassAudioEncoding,
+                        "core_token" to coreToken,
+                        "puck_connected" to true,
+                        "metric_system_enabled" to metricSystemEnabled,
+                        "contextual_dashboard_enabled" to contextualDashboard
+                )
+
         val apps = emptyList<Any>()
-        
+
         val authObj = mapOf("core_token_owner" to coreTokenOwner)
-        
-        val statusObj = mapOf(
-            "connected_glasses" to connectedGlasses,
-            "glasses_settings" to glassesSettings,
-            "apps" to apps,
-            "core_info" to coreInfo,
-            "auth" to authObj
-        )
-        
+
+        val statusObj =
+                mapOf(
+                        "connected_glasses" to connectedGlasses,
+                        "glasses_settings" to glassesSettings,
+                        "apps" to apps,
+                        "core_info" to coreInfo,
+                        "auth" to authObj
+                )
+
         Bridge.sendStatus(statusObj)
     }
 
     // Utility methods
-    
+
     private fun isSomethingConnected(): Boolean = sgc?.ready ?: false
-    
+
     private fun statesEqual(s1: ViewState, s2: ViewState): Boolean {
-        val state1 = "${s1.layoutType}${s1.text}${s1.topText}${s1.bottomText}${s1.title}${s1.data ?: ""}"
-        val state2 = "${s2.layoutType}${s2.text}${s2.topText}${s2.bottomText}${s2.title}${s2.data ?: ""}"
+        val state1 =
+                "${s1.layoutType}${s1.text}${s1.topText}${s1.bottomText}${s1.title}${s1.data ?: ""}"
+        val state2 =
+                "${s2.layoutType}${s2.text}${s2.topText}${s2.bottomText}${s2.title}${s2.data ?: ""}"
         return state1 == state2
     }
-    
+
     private fun Map<String, Any>.getString(key: String, defaultValue: String): String {
         return (this[key] as? String) ?: defaultValue
     }
-    
+
     private fun sendButtonSettings() {
         sgc?.apply {
             sendButtonPhotoSettings()
@@ -1030,19 +1071,19 @@ class MentraManager {
             sendButtonCameraLedSetting()
         }
     }
-    
+
     // Inner classes
-    
+
     data class ViewState(
-        var topText: String,
-        var bottomText: String,
-        var title: String,
-        var layoutType: String,
-        var text: String,
-        var data: String?,
-        var animationData: Map<String, Any>?
+            var topText: String,
+            var bottomText: String,
+            var title: String,
+            var layoutType: String,
+            var text: String,
+            var data: String?,
+            var animationData: Map<String, Any>?
     )
-    
+
     enum class SpeechRequiredDataType {
         PCM,
         TRANSCRIPTION,

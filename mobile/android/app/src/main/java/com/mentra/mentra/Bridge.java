@@ -27,7 +27,7 @@ public class Bridge {
     private static ReactApplicationContext reactContext;
     private static DeviceEventManagerModule.RCTDeviceEventEmitter emitter;
     private MentraManager mentraManager;
-    
+
     // Singleton getInstance
     public static synchronized Bridge getInstance() {
         if (instance == null) {
@@ -35,7 +35,7 @@ public class Bridge {
         }
         return instance;
     }
-    
+
     private Bridge() {
         // Private constructor for singleton
         mentraManager = MentraManager.Companion.getInstance();
@@ -43,7 +43,7 @@ public class Bridge {
             Log.e(TAG, "Failed to initialize MentraManager in Bridge constructor");
         }
     }
-    
+
     /**
      * Initialize the Bridge with React context
      * This should be called from BridgeModule constructor
@@ -53,7 +53,7 @@ public class Bridge {
         reactContext = context;
         // Don't get emitter here - it will be fetched lazily when needed
     }
-    
+
     /**
      * Log a message and send it to React Native
      */
@@ -61,7 +61,7 @@ public class Bridge {
         String msg = "CORE:" + message;
         sendEvent("CoreMessageEvent", msg);
     }
-    
+
     /**
      * Send an event to React Native
      */
@@ -78,7 +78,7 @@ public class Bridge {
             Log.e(TAG, "React context is null or has no active catalyst instance");
         }
     }
-    
+
     /**
      * Show a banner message in the UI
      */
@@ -88,7 +88,7 @@ public class Bridge {
         data.put("message", message);
         sendTypedMessage("show_banner", data);
     }
-    
+
     /**
      * Send app started event
      */
@@ -97,7 +97,7 @@ public class Bridge {
         data.put("packageName", packageName);
         sendTypedMessage("app_started", data);
     }
-    
+
     /**
      * Send app stopped event
      */
@@ -106,7 +106,7 @@ public class Bridge {
         data.put("packageName", packageName);
         sendTypedMessage("app_stopped", data);
     }
-    
+
     /**
      * Send status update
      */
@@ -115,7 +115,7 @@ public class Bridge {
         body.put("status", statusObj);
         sendTypedMessage("status", body);
     }
-    
+
     /**
      * Send head position event
      */
@@ -124,7 +124,7 @@ public class Bridge {
         data.put("position", isUp ? "up" : "down");
         sendTypedMessage("head_position", data);
     }
-    
+
     /**
      * Send pair failure event
      */
@@ -133,7 +133,7 @@ public class Bridge {
         data.put("error", error);
         sendTypedMessage("pair_failure", data);
     }
-    
+
     /**
      * Send microphone data
      */
@@ -143,7 +143,7 @@ public class Bridge {
         body.put("base64", base64String);
         sendTypedMessage("mic_data", body);
     }
-    
+
     /**
      * Save a setting
      */
@@ -153,7 +153,7 @@ public class Bridge {
         body.put("value", value);
         sendTypedMessage("save_setting", body);
     }
-    
+
     /**
      * Send VAD (Voice Activity Detection) status
      */
@@ -161,7 +161,7 @@ public class Bridge {
         Map<String, Object> vadMsg = new HashMap<>();
         vadMsg.put("type", "VAD");
         vadMsg.put("status", isSpeaking);
-        
+
         try {
             JSONObject jsonObject = new JSONObject(vadMsg);
             String jsonString = jsonObject.toString();
@@ -170,7 +170,7 @@ public class Bridge {
             Log.e(TAG, "Error sending VAD status", e);
         }
     }
-    
+
     /**
      * Send WebSocket text message
      */
@@ -179,7 +179,7 @@ public class Bridge {
         data.put("text", msg);
         sendTypedMessage("ws_text", data);
     }
-    
+
     /**
      * Send WebSocket binary message
      */
@@ -189,7 +189,15 @@ public class Bridge {
         body.put("base64", base64String);
         sendTypedMessage("ws_bin", body);
     }
-    
+
+    public static void sendDiscoveredDevice(String modelName, String deviceName) {
+        Map<String, Object> eventBody = new HashMap<>();
+        eventBody.put("model_name", modelName);
+        eventBody.put("device_name", deviceName);
+
+        sendTypedMessage("compatible_glasses_search_result", eventBody);
+    }
+
     /**
      * Send a typed message to React Native
      * This is the internal method that all other send methods use
@@ -199,11 +207,11 @@ public class Bridge {
             body = new HashMap<>();
         }
         body.put("type", type);
-        
+
         try {
             JSONObject jsonObject = new JSONObject(body);
             String jsonString = jsonObject.toString();
-            
+
             if (reactContext != null && reactContext.hasActiveCatalystInstance()) {
                 // Lazily get the emitter when needed
                 if (emitter == null) {
@@ -217,7 +225,7 @@ public class Bridge {
             Log.e(TAG, "Error sending typed message", e);
         }
     }
-    
+
     /**
      * Send event with WritableMap (for complex objects)
      * Used by other modules that need to send structured data
@@ -233,21 +241,21 @@ public class Bridge {
             }
         }
     }
-    
+
     /**
      * Convert Map to WritableMap for React Native
      */
     public static WritableMap mapToWritableMap(Map<String, Object> map) {
         WritableMap writableMap = Arguments.createMap();
-        
+
         if (map == null) {
             return writableMap;
         }
-        
+
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-            
+
             if (value == null) {
                 writableMap.putNull(key);
             } else if (value instanceof Boolean) {
@@ -266,10 +274,10 @@ public class Bridge {
                 writableMap.putString(key, value.toString());
             }
         }
-        
+
         return writableMap;
     }
-    
+
     /**
      * Get the supported events list
      * Don't add to this list, use a typed message instead
@@ -277,7 +285,7 @@ public class Bridge {
     public static String[] getSupportedEvents() {
         return new String[] {"CoreMessageEvent", "WIFI_SCAN_RESULTS"};
     }
-    
+
     // Command types enum
     public enum CommandType {
         SET_AUTH_SECRET_KEY("set_auth_secret_key"),
@@ -331,17 +339,17 @@ public class Bridge {
         RESTART_TRANSCRIBER("restart_transcriber"),
         CONNECT_LIVEKIT("connect_livekit"),
         UNKNOWN("unknown");
-        
+
         private final String value;
-        
+
         CommandType(String value) {
             this.value = value;
         }
-        
+
         public String getValue() {
             return value;
         }
-        
+
         public static CommandType fromString(String text) {
             for (CommandType type : CommandType.values()) {
                 if (type.value.equalsIgnoreCase(text)) {
@@ -351,7 +359,7 @@ public class Bridge {
             return UNKNOWN;
         }
     }
-    
+
     /**
      * Handle command from React Native
      * @param command JSON string containing the command and parameters
@@ -359,7 +367,7 @@ public class Bridge {
      */
     public Object handleCommand(String command) {
         // Log.d(TAG, "Received command: " + command);
-        
+
         // Ensure mentraManager is initialized
         if (mentraManager == null) {
             Log.w(TAG, "MentraManager was null in handleCommand, attempting to initialize");
@@ -369,14 +377,14 @@ public class Bridge {
                 return "Error: MentraManager not available";
             }
         }
-        
+
         try {
             JSONObject jsonCommand = new JSONObject(command);
             String commandString = jsonCommand.getString("command");
             JSONObject params = jsonCommand.optJSONObject("params");
-            
+
             CommandType commandType = CommandType.fromString(commandString);
-            
+
             switch (commandType) {
                 case DISPLAY_EVENT:
                     if (params != null) {
@@ -384,11 +392,11 @@ public class Bridge {
                         mentraManager.handle_display_event(displayEvent);
                     }
                     break;
-                    
+
                 case REQUEST_STATUS:
                     mentraManager.handle_request_status();
                     break;
-                    
+
                 case CONNECT_WEARABLE:
                     if (params != null) {
                         String modelName = params.optString("model_name", "");
@@ -398,51 +406,51 @@ public class Bridge {
                         mentraManager.handle_connect_wearable("", null);
                     }
                     break;
-                    
+
                 case DISCONNECT_WEARABLE:
                     mentraManager.handle_disconnect_wearable();
                     break;
-                    
+
                 case FORGET_SMART_GLASSES:
                     mentraManager.handle_forget_smart_glasses();
                     break;
-                    
+
                 case SEARCH_FOR_COMPATIBLE_DEVICE_NAMES:
                     if (params != null) {
                         String modelName = params.getString("model_name");
                         mentraManager.handle_search_for_compatible_device_names(modelName);
                     }
                     break;
-                    
+
                 case ENABLE_CONTEXTUAL_DASHBOARD:
                     if (params != null) {
                         boolean enabled = params.getBoolean("enabled");
                         mentraManager.enableContextualDashboard(enabled);
                     }
                     break;
-                    
+
                 case START_APP:
                     if (params != null) {
                         String target = params.getString("target");
                         // mentraManager.startApp(target);
                     }
                     break;
-                    
+
                 case STOP_APP:
                     if (params != null) {
                         String target = params.getString("target");
                         // mentraManager.stopApp(target);
                     }
                     break;
-                    
+
                 case SHOW_DASHBOARD:
                     // mentraManager.sendCurrentState(true);
                     break;
-                    
+
                 case REQUEST_WIFI_SCAN:
                     // mentraManager.requestWifiScan();
                     break;
-                    
+
                 case SEND_WIFI_CREDENTIALS:
                     if (params != null) {
                         String ssid = params.getString("ssid");
@@ -450,19 +458,19 @@ public class Bridge {
                         // mentraManager.sendWifiCredentials(ssid, password);
                     }
                     break;
-                    
+
                 case SET_HOTSPOT_STATE:
                     if (params != null) {
                         boolean enabled = params.getBoolean("enabled");
                         // mentraManager.setGlassesHotspotState(enabled);
                     }
                     break;
-                    
+
                 case QUERY_GALLERY_STATUS:
                     Log.d(TAG, "Querying gallery status");
                     // mentraManager.queryGalleryStatus();
                     break;
-                    
+
                 // case SIMULATE_HEAD_POSITION:
                 //     if (params != null) {
                 //         String position = params.getString("position");
@@ -470,7 +478,7 @@ public class Bridge {
                 //         mentraManager.sendCurrentState("up".equals(position));
                 //     }
                 //     break;
-                    
+
                 // case SIMULATE_BUTTON_PRESS:
                 //     if (params != null) {
                 //         String buttonId = params.getString("buttonId");
@@ -478,17 +486,17 @@ public class Bridge {
                 //         // ServerComms.getInstance().sendButtonPress(buttonId, pressType);
                 //     }
                 //     break;
-                    
+
                 case START_BUFFER_RECORDING:
                     Log.d(TAG, "Starting buffer recording");
                     // mentraManager.startBufferRecording();
                     break;
-                    
+
                 case STOP_BUFFER_RECORDING:
                     Log.d(TAG, "Stopping buffer recording");
                     // mentraManager.stopBufferRecording();
                     break;
-                    
+
                 case SAVE_BUFFER_VIDEO:
                     if (params != null) {
                         String requestId = params.getString("request_id");
@@ -497,7 +505,7 @@ public class Bridge {
                         // mentraManager.saveBufferVideo(requestId, durationSeconds);
                     }
                     break;
-                    
+
                 case START_VIDEO_RECORDING:
                     if (params != null) {
                         String requestId = params.getString("request_id");
@@ -506,7 +514,7 @@ public class Bridge {
                         mentraManager.handle_start_video_recording(requestId, save);
                     }
                     break;
-                    
+
                 case STOP_VIDEO_RECORDING:
                     if (params != null) {
                         String requestId = params.getString("request_id");
@@ -514,7 +522,7 @@ public class Bridge {
                         mentraManager.handle_stop_video_recording(requestId);
                     }
                     break;
-                    
+
                 case SET_STT_MODEL_DETAILS:
                     if (params != null) {
                         String path = params.getString("path");
@@ -522,22 +530,22 @@ public class Bridge {
                         // mentraManager.handle_set_stt_model_details(path, languageCode);
                     }
                     break;
-                    
+
                 case GET_STT_MODEL_PATH:
                     // return mentraManager.handle_get_stt_model_path();
                     return "";
-                    
+
                 case CHECK_STT_MODEL_AVAILABLE:
                     // return mentraManager.handle_check_stt_model_available();
                     return false;
-                    
+
                 case VALIDATE_STT_MODEL:
                     if (params != null) {
                         String path = params.getString("path");
                         // return mentraManager.handle_validate_stt_model(path);
                     }
                     return false;
-                    
+
                 case EXTRACT_TAR_BZ2:
                     if (params != null) {
                         String sourcePath = params.getString("source_path");
@@ -545,13 +553,13 @@ public class Bridge {
                         // return mentraManager.extractTarBz2(sourcePath, destinationPath);
                     }
                     return false;
-                    
+
                 case MICROPHONE_STATE_CHANGE:
                     if (params != null) {
                         boolean bypassVad = params.optBoolean("bypassVad", false);
                         JSONArray requiredDataArray = params.optJSONArray("requiredData");
                         List<String> requiredData = new ArrayList<>();
-                        
+
                         if (requiredDataArray != null) {
                             for (int i = 0; i < requiredDataArray.length(); i++) {
                                 try {
@@ -562,60 +570,60 @@ public class Bridge {
                                 }
                             }
                         }
-                        
+
                         Log.d(TAG, "requiredData = " + requiredData + ", bypassVad = " + bypassVad);
                         mentraManager.handle_microphone_state_change(requiredData, bypassVad);
                     }
                     break;
-                    
+
                 case UPDATE_SETTINGS:
                     if (params != null) {
                         Map<String, Object> settings = jsonObjectToMap(params);
                         mentraManager.handle_update_settings(settings);
                     }
                     break;
-                    
+
                 case RESTART_TRANSCRIBER:
                     // mentraManager.restartTranscriber();
                     break;
-                    
+
                 case PING:
                     // Do nothing for ping
                     break;
-                    
+
                 case UNKNOWN:
                 default:
                     Log.d(TAG, "Unknown command type: " + commandString);
                     mentraManager.handle_request_status();
                     break;
             }
-            
+
         } catch (JSONException e) {
             Log.e(TAG, "Error parsing JSON command", e);
         }
-        
+
         return 0;
     }
-    
+
     /**
      * Convert JSONObject to Map recursively
      */
     private Map<String, Object> jsonObjectToMap(JSONObject jsonObject) throws JSONException {
         Map<String, Object> map = new HashMap<>();
-        
+
         if (jsonObject == null) {
             return map;
         }
-        
+
         JSONArray keys = jsonObject.names();
         if (keys == null) {
             return map;
         }
-        
+
         for (int i = 0; i < keys.length(); i++) {
             String key = keys.getString(i);
             Object value = jsonObject.get(key);
-            
+
             if (value instanceof JSONObject) {
                 map.put(key, jsonObjectToMap((JSONObject) value));
             } else if (value instanceof JSONArray) {
@@ -626,23 +634,23 @@ public class Bridge {
                 map.put(key, value);
             }
         }
-        
+
         return map;
     }
-    
+
     /**
      * Convert JSONArray to List recursively
      */
     private List<Object> jsonArrayToList(JSONArray jsonArray) throws JSONException {
         List<Object> list = new ArrayList<>();
-        
+
         if (jsonArray == null) {
             return list;
         }
-        
+
         for (int i = 0; i < jsonArray.length(); i++) {
             Object value = jsonArray.get(i);
-            
+
             if (value instanceof JSONObject) {
                 list.add(jsonObjectToMap((JSONObject) value));
             } else if (value instanceof JSONArray) {
@@ -653,7 +661,7 @@ public class Bridge {
                 list.add(value);
             }
         }
-        
+
         return list;
     }
 }

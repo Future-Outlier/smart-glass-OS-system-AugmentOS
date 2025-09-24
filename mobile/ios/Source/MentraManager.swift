@@ -449,7 +449,9 @@ struct ViewState {
         // this must be done before the requiredData is modified by offlineStt:
         currentRequiredData = requiredData
 
-        if offlineModeEnabled, !requiredData.contains(.PCM_OR_TRANSCRIPTION), !requiredData.contains(.TRANSCRIPTION) {
+        if offlineModeEnabled, !requiredData.contains(.PCM_OR_TRANSCRIPTION),
+           !requiredData.contains(.TRANSCRIPTION)
+        {
             requiredData.append(.TRANSCRIPTION)
         }
 
@@ -540,7 +542,9 @@ struct ViewState {
         sgc?.sendJson(message, wakeUp: false)
     }
 
-    func handle_photo_request(_ requestId: String, _ appId: String, _ size: String, _ webhookUrl: String?) {
+    func handle_photo_request(
+        _ requestId: String, _ appId: String, _ size: String, _ webhookUrl: String?
+    ) {
         Bridge.log("Mentra: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size)")
         sgc?.requestPhoto(requestId, appId: appId, size: size, webhookUrl: webhookUrl)
     }
@@ -1176,7 +1180,7 @@ struct ViewState {
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
         Bridge.saveSetting("device_name", deviceName)
-//        Bridge.saveSetting("device_address", deviceAddress)
+        //        Bridge.saveSetting("device_address", deviceAddress)
     }
 
     private func handleG1Ready() {
@@ -1285,15 +1289,11 @@ struct ViewState {
         }
 
         Task {
-            disconnectWearable()
-
+            handle_disconnect_wearable()
             try? await Task.sleep(nanoseconds: 100 * 1_000_000) // 100ms
             self.isSearching = true
             handle_request_status() // update the UI
-
-            if deviceName != "" {
-                self.deviceName = deviceName
-            }
+            self.deviceName = deviceName
 
             initSGC(self.pendingWearable)
             sgc?.connectById(self.deviceName)
@@ -1449,15 +1449,21 @@ struct ViewState {
         }
 
         if let newFps = settings["button_video_fps"] as? Int, newFps != buttonVideoFps {
-            updateButtonVideoSettings(width: buttonVideoWidth, height: buttonVideoHeight, fps: newFps)
+            updateButtonVideoSettings(
+                width: buttonVideoWidth, height: buttonVideoHeight, fps: newFps
+            )
         }
 
         if let newWidth = settings["button_video_width"] as? Int, newWidth != buttonVideoWidth {
-            updateButtonVideoSettings(width: newWidth, height: buttonVideoHeight, fps: buttonVideoFps)
+            updateButtonVideoSettings(
+                width: newWidth, height: buttonVideoHeight, fps: buttonVideoFps
+            )
         }
 
         if let newHeight = settings["button_video_height"] as? Int, newHeight != buttonVideoHeight {
-            updateButtonVideoSettings(width: buttonVideoWidth, height: newHeight, fps: buttonVideoFps)
+            updateButtonVideoSettings(
+                width: buttonVideoWidth, height: newHeight, fps: buttonVideoFps
+            )
         }
 
         if let newPhotoSize = settings["button_photo_size"] as? String,

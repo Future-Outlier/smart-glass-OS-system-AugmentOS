@@ -85,30 +85,12 @@ class Bridge: RCTEventEmitter {
         }
     }
 
-    static func sendLocationUpdate(lat: Double, lng: Double, accuracy: Double?, correlationId: String?) {
-        do {
-            var event: [String: Any] = [
-                "type": "location_update",
-                "lat": lat,
-                "lng": lng,
-                "timestamp": Int(Date().timeIntervalSince1970 * 1000),
-            ]
-
-            if let acc = accuracy {
-                event["accuracy"] = acc
-            }
-
-            if let corrId = correlationId {
-                event["correlationId"] = corrId
-            }
-
-            let jsonData = try JSONSerialization.data(withJSONObject: event)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendWSText(jsonString)
-            }
-        } catch {
-            Bridge.log("ServerComms: Error building location_update JSON: \(error)")
-        }
+    static func sendDiscoveredDevice(_ modelName: String, _ deviceName: String) {
+        let eventBody: [String: Any] = [
+            "model_name": modelName,
+            "device_name": deviceName,
+        ]
+        sendTypedMessage("compatible_glasses_search_result", eventBody)
     }
 
     static func sendGlassesConnectionState(modelName: String, status: String) {
@@ -161,8 +143,12 @@ class Bridge: RCTEventEmitter {
         }
     }
 
-    func sendAudioPlayResponse(requestId: String, success: Bool, error: String? = nil, duration: Double? = nil) {
-        Bridge.log("ServerComms: Sending audio play response - requestId: \(requestId), success: \(success), error: \(error ?? "none")")
+    func sendAudioPlayResponse(
+        requestId: String, success: Bool, error: String? = nil, duration: Double? = nil
+    ) {
+        Bridge.log(
+            "ServerComms: Sending audio play response - requestId: \(requestId), success: \(success), error: \(error ?? "none")"
+        )
         let message: [String: Any] = [
             "type": "audio_play_response",
             "requestId": requestId,
@@ -396,7 +382,9 @@ class Bridge: RCTEventEmitter {
         }
 
         do {
-            if let jsonDict = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+            if let jsonDict = try JSONSerialization.jsonObject(with: data, options: [])
+                as? [String: Any]
+            {
                 // Extract command type
                 guard let commandString = jsonDict["command"] as? String else {
                     Bridge.log("CommandBridge: Invalid command format: missing 'command' field")
@@ -445,8 +433,10 @@ class Bridge: RCTEventEmitter {
                 case .forget_smart_glasses:
                     m.handle_forget_smart_glasses()
                 case .search_for_compatible_device_names:
-                    guard let params = params, let modelName = params["model_name"] as? String else {
-                        Bridge.log("CommandBridge: search_for_compatible_device_names invalid params")
+                    guard let params = params, let modelName = params["model_name"] as? String
+                    else {
+                        Bridge.log(
+                            "CommandBridge: search_for_compatible_device_names invalid params")
                         break
                     }
                     m.handle_search_for_compatible_device_names(modelName)
@@ -501,7 +491,9 @@ class Bridge: RCTEventEmitter {
                         Bridge.log("CommandBridge: save_buffer_video invalid params")
                         break
                     }
-                    Bridge.log("CommandBridge: Saving buffer video: requestId=\(requestId), duration=\(durationSeconds)s")
+                    Bridge.log(
+                        "CommandBridge: Saving buffer video: requestId=\(requestId), duration=\(durationSeconds)s"
+                    )
                     m.handle_save_buffer_video(requestId, durationSeconds)
                 case .start_video_recording:
                     guard let params = params,
@@ -511,7 +503,9 @@ class Bridge: RCTEventEmitter {
                         Bridge.log("CommandBridge: start_video_recording invalid params")
                         break
                     }
-                    Bridge.log("CommandBridge: Starting video recording: requestId=\(requestId), save=\(save)")
+                    Bridge.log(
+                        "CommandBridge: Starting video recording: requestId=\(requestId), save=\(save)"
+                    )
                     m.handle_start_video_recording(requestId, save)
                 case .stop_video_recording:
                     guard let params = params,
@@ -543,7 +537,9 @@ class Bridge: RCTEventEmitter {
                     }
                     // Convert string array to enum array
                     var requiredData = SpeechRequiredDataType.fromStringArray(requiredDataStrings)
-                    Bridge.log("ServerComms: requiredData = \(requiredDataStrings), bypassVad = \(bypassVad)")
+                    Bridge.log(
+                        "ServerComms: requiredData = \(requiredDataStrings), bypassVad = \(bypassVad)"
+                    )
                     m.handle_microphone_state_change(requiredData, bypassVad)
                 case .update_settings:
                     guard let params else {
@@ -581,7 +577,9 @@ class Bridge: RCTEventEmitter {
                         Bridge.log("CommandBridge: extract_tar_bz2 invalid params")
                         break
                     }
-                    return STTTools.extractTarBz2(sourcePath: sourcePath, destinationPath: destinationPath)
+                    return STTTools.extractTarBz2(
+                        sourcePath: sourcePath, destinationPath: destinationPath
+                    )
                 case .restart_transcriber:
                     m.restartTranscriber()
                 }
