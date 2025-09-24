@@ -278,7 +278,7 @@ public class Bridge {
         return writableMap;
     }
 
-    public static getContext() {
+    public static ReactApplicationContext getContext() {
         return reactContext;
     }
 
