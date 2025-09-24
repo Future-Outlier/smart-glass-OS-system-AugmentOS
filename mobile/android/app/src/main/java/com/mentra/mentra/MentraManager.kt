@@ -117,19 +117,11 @@ class MentraManager {
     // MARK: - Public Methods (for React Native)
     
     fun initSGC(wearable: String) {
-        Bridge.log("Mentra: Initializing manager for wearable: $wearable")
+        Bridge.log("Mentra: initSGC(): wearable: $wearable")
         
         if (wearable.contains("G1") && sgc == null) {
             sgc = G1()
-        }
-        // Add other glasses types as needed (MentraLive, Mach1, Frame)
-        
-        sgc?.let { initSGCCallbacks() }
-    }
-    
-    private fun initSGCCallbacks() {
-        // Initialize callbacks for SGC events
-        // This would be implemented based on specific SGC implementations
+        }    
     }
     
     fun updateHeadUp(isHeadUp: Boolean) {
@@ -803,11 +795,12 @@ class MentraManager {
             return
         }
         
-        pendingWearable = when {
-            modelName.contains("G1") -> "Even Realities G1"
-            modelName.contains("Live") -> "Mentra Live"
-            modelName.contains("Mach1") || modelName.contains("Z100") -> "Mach1"
-            else -> ""
+        if modelName.contains("G1") {
+            pendingWearable = "Even Realities G1"
+        } else if modelName.contains("Live") {
+            pendingWearable = "Mentra Live"
+        } else if modelName.contains("Mach1") || modelName.contains("Z100") {
+            pendingWearable = "Mach1"
         }
         
         initSGC(pendingWearable)
