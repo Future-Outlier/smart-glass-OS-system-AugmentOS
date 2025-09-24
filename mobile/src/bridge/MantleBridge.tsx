@@ -563,15 +563,6 @@ export class MantleBridge extends EventEmitter {
     })
   }
 
-  async sendSetButtonCameraLed(enabled: boolean) {
-    return await this.sendData({
-      command: "set_button_camera_led",
-      params: {
-        enabled: enabled,
-      },
-    })
-  }
-
   async showDashboard() {
     return await this.sendData({
       command: "show_dashboard",

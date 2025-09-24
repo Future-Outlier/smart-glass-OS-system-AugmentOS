@@ -1,4 +1,4 @@
-package com.augmentos.augmentos_core.smarterglassesmanager.smartglassescommunicators;
+package com.mentra.mentra.sgcs;
 
 import static com.augmentos.augmentos_core.smarterglassesmanager.utils.BitmapJavaUtils.convertBitmapTo1BitBmpBytes;
 
@@ -26,7 +26,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.util.SparseArray;
 
-import androidx.preference.PreferenceManager;
+// import androidx.preference.PreferenceManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,6 +76,11 @@ import java.util.regex.Pattern;
 import java.util.Map;
 import java.util.HashMap;
 import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesSerialNumberEvent;
+
+// Mentra
+import com.mentra.mentra.sgcs.SGCManager;
+import com.mentra.mentra.MentraManager;
+import com.mentra.mentra.Bridge;
 
 public class G1 extends SGCManager {
     private static final String TAG = "WearableAi_EvenRealitiesG1SGC";
@@ -192,7 +197,6 @@ public class G1 extends SGCManager {
 
     //remember when we connected
     private long lastConnectionTimestamp = 0;
-    private SmartGlassesDevice smartGlassesDevice;
 
     private static final long CONNECTION_TIMEOUT_MS = 10000; // 10 seconds
 
@@ -215,15 +219,15 @@ public class G1 extends SGCManager {
     private volatile long lastSendTimestamp = 0;
     private long lc3DecoderPtr = 0;
 
-    public EvenRealitiesG1SGC(Context context, SmartGlassesDevice smartGlassesDevice) {
+    public G1() {
         super();
-        this.context = context;
+        // this.context = context;
         loadPairedDeviceNames();
         //goHomeHandler = new Handler();
-        this.smartGlassesDevice = smartGlassesDevice;
-        preferredG1DeviceId = getPreferredG1DeviceId(context);
-        brightnessValue = getSavedBrightnessValue(context);
-        shouldUseAutoBrightness = getSavedAutoBrightnessValue(context);
+        // this.smartGlassesDevice = smartGlassesDevice;
+        preferredG1DeviceId = MentraManager.getInstance().getDeviceName();
+        brightnessValue = MentraManager.getInstance().getBrightness();
+        shouldUseAutoBrightness = MentraManager.getInstance().getAutoBrightness();
         this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         this.shouldUseGlassesMic = SmartGlassesManager.getSensingEnabled(context) && !"phone".equals(SmartGlassesManager.getPreferredMic(context));
         
@@ -508,14 +512,10 @@ public class G1 extends SGCManager {
                                     byte[] pcmData = L3cCpp.decodeLC3(lc3DecoderPtr, lc3);
                                     //send the PCM out
                                     if (shouldUseGlassesMic) {
-                                        if (audioProcessingCallback != null) {
                                             if (pcmData != null && pcmData.length > 0) {
-                                                audioProcessingCallback.onAudioDataAvailable(pcmData);
+                                                // audioProcessingCallback.onAudioDataAvailable(pcmData);
+                                                MentraManager.getInstance().handleGlassesMicData(pcmData);
                                             }
-                                        } else {
-                                            // If we get here, it means the callback wasn't properly registered
-                                            Log.e(TAG, "Audio processing callback is null - callback registration failed!");
-                                        }
                                     }
 
 //                                    if (shouldUseGlassesMic) { TODO: add this back if needed
@@ -526,7 +526,8 @@ public class G1 extends SGCManager {
                                 }
 
                             //send through the LC3
-                            audioProcessingCallback.onLC3AudioDataAvailable(lc3);
+                            // audioProcessingCallback.onLC3AudioDataAvailable(lc3);
+                            // MentraManager.getInstance().handleGlassesMicData(lc3);
 
                         } else {
                             // Log.d(TAG, "Lc3 Audio data received. Seq: " + seq + ", Data: " + Arrays.toString(lc3) + ", from: " + deviceName);
@@ -538,7 +539,7 @@ public class G1 extends SGCManager {
                             if (deviceName.contains("R_")) {
                                 // Check for head down movement - initial F5 02 signal
                                 Log.d(TAG, "HEAD UP MOVEMENT DETECTED");
-                                EventBus.getDefault().post(new GlassesHeadUpEvent());
+                                MentraManager.getInstance().updateHeadUp(true);
                             }
                         }
                         //HEAD DOWN MOVEMENTS
@@ -546,7 +547,7 @@ public class G1 extends SGCManager {
                             if (deviceName.contains("R_")) {
                                  Log.d(TAG, "HEAD DOWN MOVEMENT DETECTED");
                                 //                                clearBmpDisplay();
-                                EventBus.getDefault().post(new GlassesHeadDownEvent());
+                                MentraManager.getInstance().updateHeadUp(false);
                             }
                         }
                         //DOUBLE TAP
@@ -600,32 +601,6 @@ public class G1 extends SGCManager {
                             caseBatteryLevel = (data[2] & 0xFF);// TODO: verify this is correct
                             EventBus.getDefault().post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
                         }
-    //   case .CASE_REMOVED:
-    //     print("REMOVED FROM CASE")
-    //     self.caseRemoved = true
-    //   case .CASE_OPEN:
-    //     self.caseOpen = true
-    //     self.caseRemoved = false
-    //     print("CASE OPEN");
-    //   case .CASE_CLOSED:
-    //     self.caseOpen = false
-    //     self.caseRemoved = false
-    //     print("CASE CLOSED");
-    //   case .CASE_CHARGING_STATUS:
-    //     guard data.count >= 3 else { break }
-    //     let status = data[2]
-    //     if status == 0x01 {
-    //       self.caseCharging = true
-    //       print("CASE CHARGING")
-    //     } else {
-    //       self.caseCharging = false
-    //       print("CASE NOT CHARGING")
-    //     }
-    //   case .CASE_CHARGE_INFO:
-    //     print("CASE CHARGE INFO")
-    //     guard data.count >= 3 else { break }
-    //     caseBatteryLevel = Int(data[2])
-    //     print("Case battery level: \(caseBatteryLevel)%")
                         //HEARTBEAT RESPONSE
                         else if (data.length > 0 && data[0] == 0x25) {
                             Log.d(TAG, "Heartbeat response received");
@@ -783,15 +758,15 @@ public class G1 extends SGCManager {
             connectionState = SmartGlassesConnectionState.CONNECTED;
             Log.d(TAG, "Both glasses connected");
             lastConnectionTimestamp = System.currentTimeMillis();
-            connectionEvent(connectionState);
+            // connectionEvent(connectionState);
         } else if (isLeftConnected || isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTING;
             Log.d(TAG, "One glass connected");
-            connectionEvent(connectionState);
+            // connectionEvent(connectionState);
         } else {
             connectionState = SmartGlassesConnectionState.DISCONNECTED;
             Log.d(TAG, "No glasses connected");
-            connectionEvent(connectionState);
+            // connectionEvent(connectionState);
         }
     }
 
@@ -904,48 +879,32 @@ public class G1 extends SGCManager {
     }
 
     public static void savePreferredG1DeviceId(Context context, String deviceName){
-        context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
-                .edit()
-                .putString(SAVED_G1_ID_KEY, deviceName)
-                .apply();
-    }
-
-    public static String getPreferredG1DeviceId(Context context){
-        SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-        return prefs.getString(SAVED_G1_ID_KEY, null);
-    }
-
-    public static int getSavedBrightnessValue(Context context){
-        return Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(context).getString(context.getResources().getString(R.string.SHARED_PREF_BRIGHTNESS), "50"));
-    }
-
-    public static boolean getSavedAutoBrightnessValue(Context context){
-        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(context.getResources().getString(R.string.SHARED_PREF_AUTO_BRIGHTNESS), false);
+        Bridge.saveSetting("deviceName", deviceName);
     }
 
     private void savePairedDeviceNames() {
-        if (savedG1LeftName != null && savedG1RightName != null) {
-            context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
-                    .edit()
-                    .putString(LEFT_DEVICE_KEY, savedG1LeftName)
-                    .putString(RIGHT_DEVICE_KEY, savedG1RightName)
-                    .apply();
-            Log.d(TAG, "Saved paired device names: Left=" + savedG1LeftName + ", Right=" + savedG1RightName);
-        }
+        // if (savedG1LeftName != null && savedG1RightName != null) {
+        //     context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+        //             .edit()
+        //             .putString(LEFT_DEVICE_KEY, savedG1LeftName)
+        //             .putString(RIGHT_DEVICE_KEY, savedG1RightName)
+        //             .apply();
+        //     Log.d(TAG, "Saved paired device names: Left=" + savedG1LeftName + ", Right=" + savedG1RightName);
+        // }
     }
 
     private void loadPairedDeviceNames() {
-        SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-        savedG1LeftName = prefs.getString(LEFT_DEVICE_KEY, null);
-        savedG1RightName = prefs.getString(RIGHT_DEVICE_KEY, null);
-        Log.d(TAG, "Loaded paired device names: Left=" + savedG1LeftName + ", Right=" + savedG1RightName);
+        // SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+        // savedG1LeftName = prefs.getString(LEFT_DEVICE_KEY, null);
+        // savedG1RightName = prefs.getString(RIGHT_DEVICE_KEY, null);
+        // Log.d(TAG, "Loaded paired device names: Left=" + savedG1LeftName + ", Right=" + savedG1RightName);
     }
 
     public static void deleteEvenSharedPreferences(Context context) {
-        savePreferredG1DeviceId(context, null);
-        SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit().clear().apply();
-        Log.d(TAG, "Nuked EvenRealities SharedPreferences");
+        // savePreferredG1DeviceId(context, null);
+        // SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+        // prefs.edit().clear().apply();
+        // Log.d(TAG, "Nuked EvenRealities SharedPreferences");
     }
 
     private void connectToGatt(BluetoothDevice device) {
@@ -1139,13 +1098,13 @@ public class G1 extends SGCManager {
 //                    Log.d(TAG, "Bonding with Left Glass...");
                     isLeftPairing = true;
                     connectionState = SmartGlassesConnectionState.BONDING;
-                    connectionEvent(connectionState);
+                    // connectionEvent(connectionState);
                     bondDevice(device);
                 } else if (!isLeft && !isRightPairing && !isRightBonded) {
                     Log.d(TAG, "Attempting to bond with right device. isRightPairing=" + isRightPairing + ", isRightBonded=" + isRightBonded);
                     isRightPairing = true;
                     connectionState = SmartGlassesConnectionState.BONDING;
-                    connectionEvent(connectionState);
+                    // connectionEvent(connectionState);
                     bondDevice(device);
                 } else {
                     Log.d(TAG, "Not running bonding - isLeft=" + isLeft + ", isLeftPairing=" + isLeftPairing + 
@@ -1221,7 +1180,7 @@ public class G1 extends SGCManager {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             Log.d(TAG, "Restarting scan after complete bond/state reset");
             connectionState = SmartGlassesConnectionState.SCANNING;
-            connectionEvent(connectionState);
+            // connectionEvent(connectionState);
             startScan();
         }, 2000);
     }
@@ -1277,14 +1236,14 @@ public class G1 extends SGCManager {
         }
     }
 
-    @Override
+
     public void connectToSmartGlasses() {
         // Register bonding receiver
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
         context.registerReceiver(bondingReceiver, filter);
         isBondingReceiverRegistered=true;
 
-        preferredG1DeviceId = getPreferredG1DeviceId(context);
+        preferredG1DeviceId = MentraManager.getInstance().getDeviceName();
 
         if(!bluetoothAdapter.isEnabled()) {
             return;
@@ -1292,7 +1251,7 @@ public class G1 extends SGCManager {
 
         // Start scanning for devices
         connectionState = SmartGlassesConnectionState.SCANNING;
-        connectionEvent(connectionState);
+        // connectionEvent(connectionState);
         startScan();
     }
 
@@ -1320,7 +1279,7 @@ public class G1 extends SGCManager {
         
         // Ensure scanning state is immediately communicated to UI
         connectionState = SmartGlassesConnectionState.SCANNING;
-        connectionEvent(connectionState);
+        // connectionEvent(connectionState);
 
         // Stop the scan after some time (e.g., 10-15s instead of 60 to avoid throttling)
         //handler.postDelayed(() -> stopScan(), 10000);
@@ -1372,7 +1331,7 @@ public class G1 extends SGCManager {
 
         connectionState = SmartGlassesConnectionState.CONNECTING;
         Log.d(TAG, "Setting connectionState to CONNECTING. Notifying connectionEvent.");
-        connectionEvent(connectionState);
+        // connectionEvent(connectionState);
 
         boolean isLeftDevice = deviceName.contains("_L_");
         boolean isRightDevice = deviceName.contains("_R_");
@@ -1463,6 +1422,176 @@ public class G1 extends SGCManager {
 
     private void sendDataSequentially(List<byte[]> data) {
         sendDataSequentially(data, false);
+    }
+
+    @Override
+    public void setMicEnabled(boolean enabled) {
+
+    }
+
+    @Override
+    public void sendJson(Map<String, Object> jsonOriginal, boolean wakeUp) {
+
+    }
+
+    @Override
+    public void requestPhoto(String requestId, String appId, String size, String webhookUrl) {
+
+    }
+
+    @Override
+    public void startRtmpStream(Map<String, Object> message) {
+
+    }
+
+    @Override
+    public void stopRtmpStream() {
+
+    }
+
+    @Override
+    public void sendRtmpKeepAlive(Map<String, Object> message) {
+
+    }
+
+    @Override
+    public void startBufferRecording() {
+
+    }
+
+    @Override
+    public void stopBufferRecording() {
+
+    }
+
+    @Override
+    public void saveBufferVideo(String requestId, int durationSeconds) {
+
+    }
+
+    @Override
+    public void startVideoRecording(String requestId, boolean save) {
+
+    }
+
+    @Override
+    public void stopVideoRecording(String requestId) {
+
+    }
+
+    @Override
+    public void sendButtonPhotoSettings() {
+
+    }
+
+    @Override
+    public void sendButtonModeSetting() {
+
+    }
+
+    @Override
+    public void sendButtonVideoRecordingSettings() {
+
+    }
+
+    @Override
+    public void sendButtonCameraLedSetting() {
+
+    }
+
+    @Override
+    public void setBrightness(int level, boolean autoMode) {
+
+    }
+
+    @Override
+    public void clearDisplay() {
+
+    }
+
+    @Override
+    public void sendTextWall(String text) {
+
+    }
+
+    @Override
+    public void sendDoubleTextWall(String top, String bottom) {
+
+    }
+
+    @Override
+    public boolean displayBitmap(String base64ImageData) {
+        return false;
+    }
+
+    @Override
+    public void showDashboard() {
+
+    }
+
+    @Override
+    public void setDashboardPosition(int height, int depth) {
+
+    }
+
+    @Override
+    public void setHeadUpAngle(int angle) {
+
+    }
+
+    @Override
+    public void getBatteryStatus() {
+
+    }
+
+    @Override
+    public void setSilentMode(boolean enabled) {
+
+    }
+
+    @Override
+    public void exit() {
+
+    }
+
+    @Override
+    public void disconnect() {
+
+    }
+
+    @Override
+    public void forget() {
+
+    }
+
+    @Override
+    public void connectById(String id) {
+
+    }
+
+    @Override
+    public String getConnectedBluetoothName() {
+        return "";
+    }
+
+    @Override
+    public void requestWifiScan() {
+
+    }
+
+    @Override
+    public void sendWifiCredentials(String ssid, String password) {
+
+    }
+
+    @Override
+    public void sendHotspotState(boolean enabled) {
+
+    }
+
+    @Override
+    public void queryGalleryStatus() {
+
     }
 
 //    private void sendDataSequentially(byte[] data, boolean onlyLeft) {
@@ -1806,7 +1935,6 @@ public class G1 extends SGCManager {
         return chunks;
     }
 
-    @Override
     public void displayReferenceCardSimple(String title, String body) {
         if (!isConnected()) {
             Log.d(TAG, "Not connected to glasses");
@@ -1834,7 +1962,6 @@ public class G1 extends SGCManager {
         Log.d(TAG, "Send simple reference card");
     }
 
-    @Override
     public void destroy() {
         Log.d(TAG, "EvenRealitiesG1SGC ONDESTROY");
         showHomeScreen();
@@ -1951,34 +2078,25 @@ public class G1 extends SGCManager {
     }
 
 
-    @Override
     public boolean isConnected() {
         return connectionState == SmartGlassesConnectionState.CONNECTED;
     }
 
     // Remaining methods
-    @Override
     public void showNaturalLanguageCommandScreen(String prompt, String naturalLanguageInput) {}
 
-    @Override
     public void updateNaturalLanguageCommandScreen(String naturalLanguageArgs) {}
 
-    @Override
     public void scrollingTextViewIntermediateText(String text) {}
 
-    @Override
     public void scrollingTextViewFinalText(String text) {}
 
-    @Override
     public void stopScrollingTextViewMode() {}
 
-    @Override
     public void displayPromptView(String title, String[] options) {}
 
-    @Override
     public void displayTextLine(String text) {}
 
-    @Override
     public void displayBitmap(Bitmap bmp) {
         try {
             byte[] bmpBytes = convertBitmapTo1BitBmpBytes(bmp, false);
@@ -2031,8 +2149,7 @@ public class G1 extends SGCManager {
         }
     }
 
-    @Override
-    public void setFontSize(SmartGlassesFontSize fontSize) {}
+    // public void setFontSize(SmartGlassesFontSize fontSize) {}
 
     public void displayRowsCard(String[] rowStrings) {}
 
@@ -2053,7 +2170,6 @@ public class G1 extends SGCManager {
         sendChunks(chunks);
     }
 
-    @Override
     public void setUpdatingScreen(boolean updatingScreen) {
         this.updatingScreen = updatingScreen;
     }
@@ -2119,7 +2235,7 @@ public class G1 extends SGCManager {
     }
 
     @Override
-    public void findCompatibleDeviceNames() {
+    public void findCompatibleDevices() {
         if (isScanningForCompatibleDevices) {
             Log.d(TAG, "Scan already in progress, skipping...");
             return;
@@ -2156,12 +2272,14 @@ public class G1 extends SGCManager {
                             foundDeviceNames.add(name);
                             Log.d(TAG, "Found smart glasses: " + name);
                             String adjustedName = parsePairingIdFromDeviceName(name);
-                            EventBus.getDefault().post(
-                                    new GlassesBluetoothSearchDiscoverEvent(
-                                            smartGlassesDevice.deviceModelName,
-                                            adjustedName
-                                    )
-                            );
+                            // EventBus.getDefault().post(
+                            //         new GlassesBluetoothSearchDiscoverEvent(
+                            //                 smartGlassesDevice.deviceModelName,
+                            //                 adjustedName
+                            //         )
+                            // );
+                            // TODO: finish this
+                            // Bridge.sendEvent("glasses_bluetooth_search_discover", adjustedName);
                         }
                     }
                 }
@@ -2331,29 +2449,24 @@ public class G1 extends SGCManager {
     }
     
 
-    @Override
     public void updateGlassesBrightness(int brightness) {
         Log.d(TAG, "Updating glasses brightness: " + brightness);
         sendBrightnessCommand(brightness, false);
     }
 
-    @Override
     public void updateGlassesAutoBrightness(boolean autoBrightness) {
         Log.d(TAG, "Updating glasses auto brightness: " + autoBrightness);
         sendBrightnessCommand(-1, autoBrightness);
     }
 
-    @Override
     public void updateGlassesHeadUpAngle(int headUpAngle) {
         sendHeadUpAngleCommand(headUpAngle);
     }
 
-    @Override
     public void updateGlassesDepthHeight(int depth, int height) {
         sendDashboardPositionCommand(height, depth);
     }
 
-    @Override
     public void sendExitCommand() {
         sendDataSequentially(new byte[]{(byte) 0x18}, false, 100);
     }
@@ -2901,7 +3014,6 @@ public class G1 extends SGCManager {
         return chunks;
     }
 
-    @Override
     public void displayCustomContent(String content){
         Log.d(TAG, "DISPLAY CUSTOM CONTENT");
     }
@@ -3661,7 +3773,6 @@ public class G1 extends SGCManager {
         sendDataSequentially(new byte[]{(byte) 0x23, (byte) 0x72}); //quick restart comand
     }
 
-    @Override
     public void changeSmartGlassesMicrophoneState(boolean isMicrophoneEnabled) {
         Log.d(TAG, "Microphone state changed: " + isMicrophoneEnabled);
         

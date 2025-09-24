@@ -141,7 +141,9 @@ export default function CameraSettingsScreen() {
 
     try {
       setLedEnabled(enabled) // Optimistic update
-      await bridge.sendSetButtonCameraLed(enabled)
+      await bridge.updateSettings({
+        button_camera_led: enabled,
+      })
     } catch (error) {
       console.error("Failed to update LED setting:", error)
       // Revert on error

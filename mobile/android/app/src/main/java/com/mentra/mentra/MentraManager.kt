@@ -6,8 +6,6 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.util.Base64
-import com.mentra.mentra.sgcs.SGCManager
-import com.mentra.mentra.sgcs.G1
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -19,6 +17,8 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
+import com.mentra.mentra.sgcs.SGCManager
+import com.mentra.mentra.sgcs.G1
 
 class MentraManager {
     companion object {
@@ -47,13 +47,13 @@ class MentraManager {
     // Settings and state (matching Swift exactly)
     private var defaultWearable = ""
     private var pendingWearable = ""
-    private var deviceName = ""
+    public var deviceName = ""
     private var contextualDashboard = true
     private var headUpAngle = 30
-    private var brightness = 50
-    private var autoBrightness = true
-    private var dashboardHeight = 4
-    private var dashboardDepth = 5
+    public var brightness = 50
+    public var autoBrightness = true
+    public var dashboardHeight = 4
+    public var dashboardDepth = 5
     private var sensingEnabled = true
     private var powerSavingMode = false
     private var isSearching = false
@@ -67,24 +67,24 @@ class MentraManager {
     private var metricSystemEnabled = false
     private var settingsLoaded = false
     private val settingsLoadedLatch = CountDownLatch(1)
-    private var glassesWifiConnected = false
-    private var glassesWifiSsid = ""
+    public var glassesWifiConnected = false
+    public var glassesWifiSsid = ""
     private var isHeadUp = false
     
     // Mic settings (matching Swift)
-    private var useOnboardMic = false
-    private var preferredMic = "glasses"
-    private var offlineStt = false
-    private var micEnabled = false
-    private val currentRequiredData = mutableListOf<String>()
+    public var useOnboardMic = false
+    public var preferredMic = "glasses"
+    public var offlineStt = false
+    public var micEnabled = false
+    public val currentRequiredData = mutableListOf<String>()
     
     // Button settings (matching Swift)
-    private var buttonPressMode = "photo"
-    private var buttonPhotoSize = "medium"
-    private var buttonVideoWidth = 1280
-    private var buttonVideoHeight = 720
-    private var buttonVideoFps = 30
-    private var buttonCameraLed = true
+    public var buttonPressMode = "photo"
+    public var buttonPhotoSize = "medium"
+    public var buttonVideoWidth = 1280
+    public var buttonVideoHeight = 720
+    public var buttonVideoFps = 30
+    public var buttonCameraLed = true
     
     // VAD (matching Swift)
     private var isSpeaking = false
@@ -166,32 +166,9 @@ class MentraManager {
         }
     }
     
-    fun handleGlassesMicData(base64Data: String) {
-        val rawLC3Data = Base64.decode(base64Data, Base64.DEFAULT)
-        
-        if (rawLC3Data.size <= 2) {
-            Bridge.log("Mentra: Received invalid PCM data size: ${rawLC3Data.size}")
-            return
-        }
-        
-        // Skip first 2 bytes which are command bytes
-        val lc3Data = rawLC3Data.copyOfRange(2, rawLC3Data.size)
-        
-        if (lc3Data.isEmpty()) {
-            Bridge.log("Mentra: No LC3 data after removing command bytes")
-            return
-        }
-        
-        if (bypassVad || bypassVadForPCM) {
-            Bridge.log("Mentra: Glasses mic VAD bypassed")
-            checkSetVadStatus(true)
-            emptyVadBuffer()
-            // TODO: Implement PCM conversion
-            // Bridge.sendMicData(pcmData)
-            return
-        }
-        
-        // TODO: Implement VAD processing
+    fun handleGlassesMicData(rawLC3Data: ByteArray) {
+        // decode the lc3 data to pcm and pass to the bridge to be sent to the server:
+        // TODO: config
     }
     
     fun handlePcm(base64PcmData: String) {
@@ -534,25 +511,25 @@ class MentraManager {
         handle_request_status()
     }
     
-    fun setPreferredMic(mic: String) {
+    fun updatePreferredMic(mic: String) {
         preferredMic = mic
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
         handle_request_status()
     }
     
-    fun setButtonMode(mode: String) {
+    fun updateButtonMode(mode: String) {
         buttonPressMode = mode
         sgc?.sendButtonModeSetting()
         handle_request_status()
     }
     
-    fun setButtonPhotoSize(size: String) {
+    fun updateButtonPhotoSize(size: String) {
         buttonPhotoSize = size
         sgc?.sendButtonPhotoSettings()
         handle_request_status()
     }
     
-    fun setButtonVideoSettings(width: Int, height: Int, fps: Int) {
+    fun updateButtonVideoSettings(width: Int, height: Int, fps: Int) {
         buttonVideoWidth = width
         buttonVideoHeight = height
         buttonVideoFps = fps
@@ -560,13 +537,13 @@ class MentraManager {
         handle_request_status()
     }
     
-    fun setButtonCameraLed(enabled: Boolean) {
+    fun updateButtonCameraLed(enabled: Boolean) {
         buttonCameraLed = enabled
         sgc?.sendButtonCameraLedSetting()
         handle_request_status()
     }
     
-    fun setOfflineStt(enabled: Boolean) {
+    fun updateOfflineStt(enabled: Boolean) {
         offlineStt = enabled
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
     }
@@ -795,11 +772,11 @@ class MentraManager {
             return
         }
         
-        if modelName.contains("G1") {
+        if (modelName.contains("G1")) {
             pendingWearable = "Even Realities G1"
-        } else if modelName.contains("Live") {
+        } else if (modelName.contains("Live")) {
             pendingWearable = "Mentra Live"
-        } else if modelName.contains("Mach1") || modelName.contains("Z100") {
+        } else if (modelName.contains("Mach1") || modelName.contains("Z100")) {
             pendingWearable = "Mach1"
         }
         
@@ -813,7 +790,7 @@ class MentraManager {
         // Update settings with new values
         (settings["preferred_mic"] as? String)?.let { newPreferredMic ->
             if (preferredMic != newPreferredMic) {
-                setPreferredMic(newPreferredMic)
+                updatePreferredMic(newPreferredMic)
             }
         }
         
@@ -891,44 +868,44 @@ class MentraManager {
         
         (settings["button_mode"] as? String)?.let { newButtonMode ->
             if (buttonPressMode != newButtonMode) {
-                setButtonMode(newButtonMode)
+                updateButtonMode(newButtonMode)
             }
         }
         
         (settings["button_video_fps"] as? Int)?.let { newFps ->
             if (buttonVideoFps != newFps) {
-                setButtonVideoSettings(buttonVideoWidth, buttonVideoHeight, newFps)
+                updateButtonVideoSettings(buttonVideoWidth, buttonVideoHeight, newFps)
             }
         }
         
         (settings["button_video_width"] as? Int)?.let { newWidth ->
             if (buttonVideoWidth != newWidth) {
-                setButtonVideoSettings(newWidth, buttonVideoHeight, buttonVideoFps)
+                updateButtonVideoSettings(newWidth, buttonVideoHeight, buttonVideoFps)
             }
         }
         
         (settings["button_video_height"] as? Int)?.let { newHeight ->
             if (buttonVideoHeight != newHeight) {
-                setButtonVideoSettings(buttonVideoWidth, newHeight, buttonVideoFps)
+                updateButtonVideoSettings(buttonVideoWidth, newHeight, buttonVideoFps)
             }
         }
         
         (settings["button_photo_size"] as? String)?.let { newPhotoSize ->
             if (buttonPhotoSize != newPhotoSize) {
-                setButtonPhotoSize(newPhotoSize)
+                updateButtonPhotoSize(newPhotoSize)
             }
         }
         
         (settings["offline_stt"] as? Boolean)?.let { newOfflineStt ->
             if (offlineStt != newOfflineStt) {
-                setOfflineStt(newOfflineStt)
+                updateOfflineStt(newOfflineStt)
             }
         }
         
         (settings["default_wearable"] as? String)?.let { newDefaultWearable ->
             if (defaultWearable != newDefaultWearable) {
                 defaultWearable = newDefaultWearable
-                // TODO: Save setting to SharedPreferences
+                Bridge.saveSetting("default_wearable", newDefaultWearable)
             }
         }
     }    
@@ -961,20 +938,20 @@ class MentraManager {
         }
         
         // G1 specific info
-        (sgc as? G1)?.let { g1 ->
-            connectedGlasses["case_removed"] = g1.caseRemoved
-            connectedGlasses["case_open"] = g1.caseOpen
-            connectedGlasses["case_charging"] = g1.caseCharging
-            g1.caseBatteryLevel?.let {
-                connectedGlasses["case_battery_level"] = it
-            }
+        // (sgc as? G1)?.let { g1 ->
+        //     connectedGlasses["case_removed"] = g1.caseRemoved
+        //     connectedGlasses["case_open"] = g1.caseOpen
+        //     connectedGlasses["case_charging"] = g1.caseCharging
+        //     // g1.caseBatteryLevel?.let {
+        //     //     connectedGlasses["case_battery_level"] = it
+        //     // }
             
-            if (!g1.glassesSerialNumber.isNullOrEmpty()) {
-                connectedGlasses["glasses_serial_number"] = g1.glassesSerialNumber!!
-                connectedGlasses["glasses_style"] = g1.glassesStyle ?: ""
-                connectedGlasses["glasses_color"] = g1.glassesColor ?: ""
-            }
-        }
+        //     // if (!g1.glassesSerialNumber.isNullOrEmpty()) {
+        //     //     connectedGlasses["glasses_serial_number"] = g1.glassesSerialNumber!!
+        //     //     connectedGlasses["glasses_style"] = g1.glassesStyle ?: ""
+        //     //     connectedGlasses["glasses_color"] = g1.glassesColor ?: ""
+        //     // }
+        // }
         
         // Bluetooth device name
         sgc?.getConnectedBluetoothName()?.let { bluetoothName ->

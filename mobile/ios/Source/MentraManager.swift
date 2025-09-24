@@ -881,25 +881,25 @@ struct ViewState {
         handle_request_status() // to update the UI
     }
 
-    func setPreferredMic(_ mic: String) {
+    func updatePreferredMic(_ mic: String) {
         preferredMic = mic
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
         handle_request_status() // to update the UI
     }
 
-    func setButtonMode(_ mode: String) {
+    func updateButtonMode(_ mode: String) {
         buttonPressMode = mode
         sgc?.sendButtonModeSetting()
         handle_request_status() // to update the UI
     }
 
-    func setButtonPhotoSize(_ size: String) {
+    func updateButtonPhotoSize(_ size: String) {
         buttonPhotoSize = size
         sgc?.sendButtonPhotoSettings()
         handle_request_status() // to update the UI
     }
 
-    func setButtonVideoSettings(width: Int, height: Int, fps: Int) {
+    func updateButtonVideoSettings(width: Int, height: Int, fps: Int) {
         buttonVideoWidth = width
         buttonVideoHeight = height
         buttonVideoFps = fps
@@ -907,7 +907,7 @@ struct ViewState {
         handle_request_status() // to update the UI
     }
 
-    func setButtonCameraLed(_: Bool) {
+    func updateButtonCameraLed(_: Bool) {
         sgc?.sendButtonCameraLedSetting()
 
         handle_request_status() // to update the UI
@@ -1367,7 +1367,7 @@ struct ViewState {
         if let newPreferredMic = settings["preferred_mic"] as? String,
            newPreferredMic != preferredMic
         {
-            setPreferredMic(newPreferredMic)
+            updatePreferredMic(newPreferredMic)
         }
 
         if let newHeadUpAngle = settings["head_up_angle"] as? Int, newHeadUpAngle != headUpAngle {
@@ -1445,25 +1445,25 @@ struct ViewState {
         }
 
         if let newButtonMode = settings["button_mode"] as? String, newButtonMode != buttonPressMode {
-            setButtonMode(newButtonMode)
+            updateButtonMode(newButtonMode)
         }
 
         if let newFps = settings["button_video_fps"] as? Int, newFps != buttonVideoFps {
-            setButtonVideoSettings(width: buttonVideoWidth, height: buttonVideoHeight, fps: newFps)
+            updateButtonVideoSettings(width: buttonVideoWidth, height: buttonVideoHeight, fps: newFps)
         }
 
         if let newWidth = settings["button_video_width"] as? Int, newWidth != buttonVideoWidth {
-            setButtonVideoSettings(width: newWidth, height: buttonVideoHeight, fps: buttonVideoFps)
+            updateButtonVideoSettings(width: newWidth, height: buttonVideoHeight, fps: buttonVideoFps)
         }
 
         if let newHeight = settings["button_video_height"] as? Int, newHeight != buttonVideoHeight {
-            setButtonVideoSettings(width: buttonVideoWidth, height: newHeight, fps: buttonVideoFps)
+            updateButtonVideoSettings(width: buttonVideoWidth, height: newHeight, fps: buttonVideoFps)
         }
 
         if let newPhotoSize = settings["button_photo_size"] as? String,
            newPhotoSize != buttonPhotoSize
         {
-            setButtonPhotoSize(newPhotoSize)
+            updateButtonPhotoSize(newPhotoSize)
         }
 
         // get default wearable from core_info:
