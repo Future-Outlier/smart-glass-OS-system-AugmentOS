@@ -196,7 +196,7 @@ class MentraManager {
         // TODO: Implement VAD processing
     }
 
-    fun handle_connection_state_change() {
+    fun handleConnectionStateChanged() {
         Bridge.log("Mentra: Glasses connection state changed!")
 
         val currentSgc = sgc ?: return
