@@ -393,33 +393,6 @@ export class MantleBridge extends EventEmitter {
   }
 
   /**
-   * Validates that Core is responding to commands
-   */
-  private async validateResponseFromCore(): Promise<boolean> {
-    if (this.validationInProgress || (await isAugmentOsCoreInstalled())) {
-      return this.validationInProgress ?? true
-    }
-
-    this.validationInProgress = new Promise<boolean>((resolve, _reject) => {
-      const dataReceivedListener = () => {
-        resolve(true)
-      }
-
-      this.once("dataReceived", dataReceivedListener)
-
-      setTimeout(() => {
-        this.removeListener("dataReceived", dataReceivedListener)
-        resolve(false)
-      }, 4500)
-    }).then(result => {
-      this.validationInProgress = null
-      return result
-    })
-
-    return this.validationInProgress
-  }
-
-  /**
    * Sends data to Core
    */
   private async sendData(dataObj: any): Promise<any> {
@@ -472,12 +445,10 @@ export class MantleBridge extends EventEmitter {
 
   async sendRequestStatus() {
     await this.sendData({command: "request_status"})
-    return this.validateResponseFromCore()
   }
 
   async sendHeartbeat() {
     await this.sendData({command: "ping"})
-    return this.validateResponseFromCore()
   }
 
   async sendSearchForCompatibleDeviceNames(modelName: string) {
@@ -576,7 +547,6 @@ export class MantleBridge extends EventEmitter {
         repository: packageName,
       },
     })
-    return this.validateResponseFromCore()
   }
 
   async stopAppByPackageName(packageName: string) {
@@ -586,7 +556,6 @@ export class MantleBridge extends EventEmitter {
         target: packageName,
       },
     })
-    return this.validateResponseFromCore()
   }
 
   async installAppByPackageName(packageName: string) {
@@ -596,7 +565,6 @@ export class MantleBridge extends EventEmitter {
         target: packageName,
       },
     })
-    return this.validateResponseFromCore()
   }
 
   async sendRequestAppDetails(packageName: string) {
