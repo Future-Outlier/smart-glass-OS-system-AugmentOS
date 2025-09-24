@@ -781,6 +781,7 @@ class MentraManager {
         }
         
         initSGC(pendingWearable)
+        Bridge.log("Mentra: sgc initialized, calling findCompatibleDevices")
         sgc?.findCompatibleDevices()
     }
 

@@ -4,11 +4,10 @@ import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {INTENSE_LOGGING} from "@/consts"
 import {check, PERMISSIONS, RESULTS} from "react-native-permissions"
 import BleManager from "react-native-ble-manager"
-import AudioPlayService, {AudioPlayResponse} from "@/services/AudioPlayService"
+import {AudioPlayResponse} from "@/services/AudioPlayService"
 import {translate} from "@/i18n"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import socketComms from "@/managers/SocketComms"
-import livekitManager from "@/managers/LivekitManager"
 import mantle from "@/managers/MantleManager"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 
@@ -401,7 +400,7 @@ export class MantleBridge extends EventEmitter {
       return this.validationInProgress ?? true
     }
 
-    this.validationInProgress = new Promise<boolean>((resolve, reject) => {
+    this.validationInProgress = new Promise<boolean>((resolve, _reject) => {
       const dataReceivedListener = () => {
         resolve(true)
       }
@@ -425,9 +424,9 @@ export class MantleBridge extends EventEmitter {
    */
   private async sendData(dataObj: any): Promise<any> {
     try {
-      if (INTENSE_LOGGING) {
-        console.log("Sending data to Core:", JSON.stringify(dataObj))
-      }
+      // if (INTENSE_LOGGING) {
+      console.log("Sending data to Core:", JSON.stringify(dataObj))
+      // }
 
       // if (Platform.OS === "android") {
       //   // Ensure the service is running

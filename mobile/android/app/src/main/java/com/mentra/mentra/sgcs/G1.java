@@ -19,7 +19,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
+// import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Looper;
@@ -97,7 +97,8 @@ public class G1 extends SGCManager {
     private static final UUID UART_SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
     private static final UUID UART_TX_CHAR_UUID = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E");
     private static final UUID UART_RX_CHAR_UUID = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
-    private static final UUID CLIENT_CHARACTERISTIC_CONFIG_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+    private static final UUID CLIENT_CHARACTERISTIC_CONFIG_UUID = UUID
+            .fromString("00002902-0000-1000-8000-00805f9b34fb");
     private static final String SAVED_G1_ID_KEY = "SAVED_G1_ID_KEY";
     private Context context;
     private BluetoothGatt leftGlassGatt;
@@ -123,11 +124,11 @@ public class G1 extends SGCManager {
     private int brightnessValue;
     private boolean updatingScreen = false;
 
-    private static final long DELAY_BETWEEN_SENDS_MS = 5; //not using now
-    private static final long DELAY_BETWEEN_CHUNKS_SEND = 5; //super small just in case
-    private static final long DELAY_BETWEEN_ACTIONS_SEND = 250; //not using now
+    private static final long DELAY_BETWEEN_SENDS_MS = 5; // not using now
+    private static final long DELAY_BETWEEN_CHUNKS_SEND = 5; // super small just in case
+    private static final long DELAY_BETWEEN_ACTIONS_SEND = 250; // not using now
     private static final long HEARTBEAT_INTERVAL_MS = 15000;
-    private static final long MICBEAT_INTERVAL_MS = (1000 * 60) * 30; //micbeat every 30 minutes
+    private static final long MICBEAT_INTERVAL_MS = (1000 * 60) * 30; // micbeat every 30 minutes
     private int caseBatteryLevel = -1;
     private boolean caseCharging = false;
     private boolean caseOpen = false;
@@ -136,11 +137,11 @@ public class G1 extends SGCManager {
     private int batteryRight = -1;
     private int leftReconnectAttempts = 0;
     private int rightReconnectAttempts = 0;
-    private int reconnectAttempts = 0;  // Counts the number of reconnect attempts
-    private static final long BASE_RECONNECT_DELAY_MS = 3000;  // Start with 3 seconds
+    private int reconnectAttempts = 0; // Counts the number of reconnect attempts
+    private static final long BASE_RECONNECT_DELAY_MS = 3000; // Start with 3 seconds
     private static final long MAX_RECONNECT_DELAY_MS = 60000;
 
-    //heartbeat sender
+    // heartbeat sender
     private Handler heartbeatHandler = new Handler();
     private Handler findCompatibleDevicesHandler;
     private boolean isScanningForCompatibleDevices = false;
@@ -148,32 +149,32 @@ public class G1 extends SGCManager {
 
     private Runnable heartbeatRunnable;
 
-    //mic heartbeat turn on
+    // mic heartbeat turn on
     private Handler micBeatHandler = new Handler();
     private Runnable micBeatRunnable;
 
-    //white list sender
+    // white list sender
     private Handler whiteListHandler = new Handler();
     private boolean whiteListedAlready = false;
 
-    //mic enable Handler
+    // mic enable Handler
     private Handler micEnableHandler = new Handler();
     private boolean micEnabledAlready = false;
     private boolean isMicrophoneEnabled = false; // Track current microphone state
 
-    //notification period sender
+    // notification period sender
     private Handler notificationHandler = new Handler();
     private Runnable notificationRunnable;
     private boolean notifysStarted = false;
     private int notificationNum = 10;
 
-    //text wall periodic sender
+    // text wall periodic sender
     private Handler textWallHandler = new Handler();
     private Runnable textWallRunnable;
     private boolean textWallsStarted = false;
     private int textWallNum = 10;
 
-    //pairing logic
+    // pairing logic
     private boolean isLeftPairing = false;
     private boolean isRightPairing = false;
     private boolean isLeftBonded = false;
@@ -187,15 +188,15 @@ public class G1 extends SGCManager {
     private String savedG1RightName = null;
     private String preferredG1DeviceId = null;
 
-    //handler to turn off screen
-    //Handler goHomeHandler;
-    //Runnable goHomeRunnable;
+    // handler to turn off screen
+    // Handler goHomeHandler;
+    // Runnable goHomeRunnable;
 
-    //Retry handler
+    // Retry handler
     Handler retryBondHandler;
     private static final long BOND_RETRY_DELAY_MS = 5000; // 5-second backoff
 
-    //remember when we connected
+    // remember when we connected
     private long lastConnectionTimestamp = 0;
 
     private static final long CONNECTION_TIMEOUT_MS = 10000; // 10 seconds
@@ -212,7 +213,7 @@ public class G1 extends SGCManager {
     private boolean lastThingDisplayedWasAnImage = false;
 
     // lock writing until the last write is successful
-    //fonts in G1
+    // fonts in G1
     G1FontLoader fontLoader;
 
     private static final long DEBOUNCE_DELAY_MS = 270; // Minimum time between chunk sends
@@ -221,27 +222,28 @@ public class G1 extends SGCManager {
 
     public G1() {
         super();
+        Bridge.log("G1: G1 constructor");
         // this.context = context;
         loadPairedDeviceNames();
-        //goHomeHandler = new Handler();
+        // goHomeHandler = new Handler();
         // this.smartGlassesDevice = smartGlassesDevice;
         preferredG1DeviceId = MentraManager.getInstance().getDeviceName();
         brightnessValue = MentraManager.getInstance().getBrightness();
         shouldUseAutoBrightness = MentraManager.getInstance().getAutoBrightness();
         this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        this.shouldUseGlassesMic = SmartGlassesManager.getSensingEnabled(context) && !"phone".equals(SmartGlassesManager.getPreferredMic(context));
-        
+        this.shouldUseGlassesMic = false;
+
         // Initialize bitmap executor for parallel operations
         if (USE_PARALLEL_BITMAP_WRITES) {
             bitmapExecutor = Executors.newFixedThreadPool(2);
         }
 
-        //setup LC3 decoder
+        // setup LC3 decoder
         if (lc3DecoderPtr == 0) {
             lc3DecoderPtr = L3cCpp.initDecoder();
         }
 
-        //setup fonts
+        // setup fonts
         fontLoader = new G1FontLoader(context);
     }
 
@@ -252,7 +254,7 @@ public class G1 extends SGCManager {
         return new BluetoothGattCallback() {
             @Override
             public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-//                Log.d(TAG, "ConnectionStateChanged");
+                // Log.d(TAG, "ConnectionStateChanged");
                 // Cancel the connection timeout
                 if ("Left".equals(side) && leftConnectionTimeoutRunnable != null) {
                     leftConnectionTimeoutHandler.removeCallbacks(leftConnectionTimeoutRunnable);
@@ -302,23 +304,31 @@ public class G1 extends SGCManager {
                         updateConnectionState();
                         Log.d(TAG, "Updated connection state after disconnection.");
 
-                        // Compute reconnection delay for both sides (here you could choose the maximum of the two delays or a new delay)
-//                        long delayLeft = Math.min(BASE_RECONNECT_DELAY_MS * (1L << leftReconnectAttempts), MAX_RECONNECT_DELAY_MS);
-//                        long delayRight = Math.min(BASE_RECONNECT_DELAY_MS * (1L << rightReconnectAttempts), MAX_RECONNECT_DELAY_MS);
+                        // Compute reconnection delay for both sides (here you could choose the maximum
+                        // of the two delays or a new delay)
+                        // long delayLeft = Math.min(BASE_RECONNECT_DELAY_MS * (1L <<
+                        // leftReconnectAttempts), MAX_RECONNECT_DELAY_MS);
+                        // long delayRight = Math.min(BASE_RECONNECT_DELAY_MS * (1L <<
+                        // rightReconnectAttempts), MAX_RECONNECT_DELAY_MS);
                         long delay = 2000; // or choose another strategy
-//                        Log.d(TAG, "Computed delayLeft: " + delayLeft + " ms, delayRight: " + delayRight + " ms. Using delay: " + delay + " ms.");
+                        // Log.d(TAG, "Computed delayLeft: " + delayLeft + " ms, delayRight: " +
+                        // delayRight + " ms. Using delay: " + delay + " ms.");
 
-                        Log.d(TAG, side + " glass disconnected. Scheduling reconnection for both glasses in " + delay + " ms (Left attempts: " + leftReconnectAttempts + ", Right attempts: " + rightReconnectAttempts + ")");
+                        Log.d(TAG,
+                                side + " glass disconnected. Scheduling reconnection for both glasses in " + delay
+                                        + " ms (Left attempts: " + leftReconnectAttempts + ", Right attempts: "
+                                        + rightReconnectAttempts + ")");
 
-//                        if (gatt.getDevice() != null) {
-//                            // Close the current gatt connection
-//                            Log.d(TAG, "Closing GATT connection for device: " + gatt.getDevice().getAddress());
-//                            gatt.disconnect();
-//                            gatt.close();
-//                            Log.d(TAG, "GATT connection closed.");
-//                        } else {
-//                            Log.d(TAG, "No GATT device available to disconnect.");
-//                        }
+                        // if (gatt.getDevice() != null) {
+                        // // Close the current gatt connection
+                        // Log.d(TAG, "Closing GATT connection for device: " +
+                        // gatt.getDevice().getAddress());
+                        // gatt.disconnect();
+                        // gatt.close();
+                        // Log.d(TAG, "GATT connection closed.");
+                        // } else {
+                        // Log.d(TAG, "No GATT device available to disconnect.");
+                        // }
 
                         // Schedule a reconnection for both devices after the delay
                         reconnectHandler.postDelayed(() -> {
@@ -359,7 +369,7 @@ public class G1 extends SGCManager {
                     if ("Left".equals(side)) {
                         isLeftConnected = false;
                         leftReconnectAttempts++;
-                        if (leftGlassGatt != null){
+                        if (leftGlassGatt != null) {
                             leftGlassGatt.disconnect();
                             leftGlassGatt.close();
                         }
@@ -367,7 +377,7 @@ public class G1 extends SGCManager {
                     } else {
                         isRightConnected = false;
                         rightReconnectAttempts++;
-                        if (rightGlassGatt != null){
+                        if (rightGlassGatt != null) {
                             rightGlassGatt.disconnect();
                             rightGlassGatt.close();
                         }
@@ -377,8 +387,8 @@ public class G1 extends SGCManager {
                     forceSideDisconnection();
                     Log.d(TAG, "Called forceSideDisconnection() after connection failure.");
 
-//                    gatt.disconnect();
-//                    gatt.close();
+                    // gatt.disconnect();
+                    // gatt.close();
                     Log.d(TAG, "GATT connection disconnected and closed due to failure.");
 
                     connectHandler.postDelayed(() -> {
@@ -399,50 +409,54 @@ public class G1 extends SGCManager {
                 if ("Left".equals(side)) {
                     isLeftConnected = false;
                     leftReconnectAttempts++;
-                    Log.d(TAG, "Left glass: Marked as disconnected and incremented leftReconnectAttempts to " + leftReconnectAttempts);
+                    Log.d(TAG, "Left glass: Marked as disconnected and incremented leftReconnectAttempts to "
+                            + leftReconnectAttempts);
                     if (leftGlassGatt != null) {
-                        Log.d(TAG, "Left glass GATT exists. Disconnecting and closing leftGlassGatt.");
+                        Bridge.log("G1: Left glass GATT exists. Disconnecting and closing leftGlassGatt.");
                         leftGlassGatt.disconnect();
                         leftGlassGatt.close();
                         leftGlassGatt = null;
                     } else {
-                        Log.d(TAG, "Left glass GATT is already null.");
+                        Bridge.log("G1: Left glass GATT is already null.");
                     }
                     // If right is still connected, disconnect it too
                     if (rightGlassGatt != null) {
-                        Log.d(TAG, "Left glass disconnected - forcing disconnection from right glass.");
+                        Bridge.log("G1: Left glass disconnected - forcing disconnection from right glass.");
                         rightGlassGatt.disconnect();
                         rightGlassGatt.close();
                         rightGlassGatt = null;
                         isRightConnected = false;
                         rightReconnectAttempts++;
-                        Log.d(TAG, "Right glass marked as disconnected and rightReconnectAttempts incremented to " + rightReconnectAttempts);
+                        Bridge.log("G1: Right glass marked as disconnected and rightReconnectAttempts incremented to "
+                                + rightReconnectAttempts);
                     } else {
-                        Log.d(TAG, "Right glass GATT already null, no action taken.");
+                        Bridge.log("G1: Right glass GATT already null, no action taken.");
                     }
                 } else { // side equals "Right"
                     isRightConnected = false;
                     rightReconnectAttempts++;
-                    Log.d(TAG, "Right glass: Marked as disconnected and incremented rightReconnectAttempts to " + rightReconnectAttempts);
+                    Bridge.log("G1: Right glass: Marked as disconnected and incremented rightReconnectAttempts to "
+                            + rightReconnectAttempts);
                     if (rightGlassGatt != null) {
-                        Log.d(TAG, "Right glass GATT exists. Disconnecting and closing rightGlassGatt.");
+                        Bridge.log("G1: Right glass GATT exists. Disconnecting and closing rightGlassGatt.");
                         rightGlassGatt.disconnect();
                         rightGlassGatt.close();
                         rightGlassGatt = null;
                     } else {
-                        Log.d(TAG, "Right glass GATT is already null.");
+                        Bridge.log("G1: Right glass GATT is already null.");
                     }
                     // If left is still connected, disconnect it too
                     if (leftGlassGatt != null) {
-                        Log.d(TAG, "Right glass disconnected - forcing disconnection from left glass.");
+                        Bridge.log("G1: Right glass disconnected - forcing disconnection from left glass.");
                         leftGlassGatt.disconnect();
                         leftGlassGatt.close();
                         leftGlassGatt = null;
                         isLeftConnected = false;
                         leftReconnectAttempts++;
-                        Log.d(TAG, "Left glass marked as disconnected and leftReconnectAttempts incremented to " + leftReconnectAttempts);
+                        Bridge.log("G1: Left glass marked as disconnected and leftReconnectAttempts incremented to "
+                                + leftReconnectAttempts);
                     } else {
-                        Log.d(TAG, "Left glass GATT already null, no action taken.");
+                        Bridge.log("G1: Left glass GATT already null, no action taken.");
                     }
                 }
             }
@@ -455,19 +469,20 @@ public class G1 extends SGCManager {
             }
 
             @Override
-            public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic,
+                    int status) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    Log.d(TAG, "PROC_QUEUE - " + side + " glass write successful");
+                    Bridge.log("G1: PROC_QUEUE - " + side + " glass write successful");
                 } else {
-                    Log.e(TAG, side + " glass write failed with status: " + status);
+                    Bridge.log("G1: " + side + " glass write failed with status: " + status);
 
-                    if(status == 133) {
-                        Log.d(TAG, "GOT THAT 133 STATUS!");
+                    if (status == 133) {
+                        Bridge.log("G1: GOT THAT 133 STATUS!");
 
                     }
                 }
 
-                //clear the waiter
+                // clear the waiter
                 if ("Left".equals(side)) {
                     leftWaiter.setFalse();
                 } else {
@@ -477,9 +492,9 @@ public class G1 extends SGCManager {
 
             @Override
             public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-                Log.d(TAG, "PROC - GOT DESCRIPTOR WRITE: " + status);
+                Bridge.log("G1: PROC - GOT DESCRIPTOR WRITE: " + status);
 
-                //clear the waiter
+                // clear the waiter
                 if ("Left".equals(side)) {
                     leftServicesWaiter.setFalse();
                 } else {
@@ -493,139 +508,152 @@ public class G1 extends SGCManager {
                     if (characteristic.getUuid().equals(UART_RX_CHAR_UUID)) {
                         byte[] data = characteristic.getValue();
                         String deviceName = gatt.getDevice().getName();
-                        if (deviceName == null) return;
+                        if (deviceName == null)
+                            return;
 
                         // Handle MIC audio data
                         if (data.length > 0 && (data[0] & 0xFF) == 0xF1) {
-                            // Log.d(TAG, "Lc3 Audio data received. Data: " + Arrays.toString(data) + ", from: " + deviceName);
+                            // Log.d(TAG, "Lc3 Audio data received. Data: " + Arrays.toString(data) + ",
+                            // from: " + deviceName);
                             int seq = data[1] & 0xFF; // Sequence number
                             // eg. LC3 to PCM
                             byte[] lc3 = Arrays.copyOfRange(data, 2, 202);
-//                            byte[] pcmData = L3cCpp.decodeLC3(lc3);
-//                            if (pcmData == null) {
-//                                throw new IllegalStateException("Failed to decode LC3 data");
-//                            }
+                            // byte[] pcmData = L3cCpp.decodeLC3(lc3);
+                            // if (pcmData == null) {
+                            // throw new IllegalStateException("Failed to decode LC3 data");
+                            // }
 
                             if (deviceName.contains("R_")) {
-                                //decode the LC3 audio
+                                // decode the LC3 audio
                                 if (lc3DecoderPtr != 0) {
                                     byte[] pcmData = L3cCpp.decodeLC3(lc3DecoderPtr, lc3);
-                                    //send the PCM out
+                                    // send the PCM out
                                     if (shouldUseGlassesMic) {
-                                            if (pcmData != null && pcmData.length > 0) {
-                                                // audioProcessingCallback.onAudioDataAvailable(pcmData);
-                                                MentraManager.getInstance().handleGlassesMicData(pcmData);
-                                            }
+                                        if (pcmData != null && pcmData.length > 0) {
+                                            // audioProcessingCallback.onAudioDataAvailable(pcmData);
+                                            MentraManager.getInstance().handleGlassesMicData(pcmData);
+                                        }
                                     }
 
-//                                    if (shouldUseGlassesMic) { TODO: add this back if needed
-//                                        EventBus.getDefault().post(new AudioChunkNewEvent(pcmData));
-//                                    } else {
-//                                        Log.e(TAG, "Failed to decode LC3 frame, got null or empty result");
-//                                    }
+                                    // if (shouldUseGlassesMic) { TODO: add this back if needed
+                                    // EventBus.getDefault().post(new AudioChunkNewEvent(pcmData));
+                                    // } else {
+                                    // Log.e(TAG, "Failed to decode LC3 frame, got null or empty result");
+                                    // }
                                 }
 
-                            //send through the LC3
-                            // audioProcessingCallback.onLC3AudioDataAvailable(lc3);
-                            // MentraManager.getInstance().handleGlassesMicData(lc3);
+                                // send through the LC3
+                                // audioProcessingCallback.onLC3AudioDataAvailable(lc3);
+                                // MentraManager.getInstance().handleGlassesMicData(lc3);
 
-                        } else {
-                            // Log.d(TAG, "Lc3 Audio data received. Seq: " + seq + ", Data: " + Arrays.toString(lc3) + ", from: " + deviceName);
+                            } else {
+                                // Log.d(TAG, "Lc3 Audio data received. Seq: " + seq + ", Data: " +
+                                // Arrays.toString(lc3) + ", from: " + deviceName);
+                            }
                         }
-                    }
-                        //HEAD UP MOVEMENTS
+                        // HEAD UP MOVEMENTS
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x02) {
                             // Only check head movements from the right sensor
                             if (deviceName.contains("R_")) {
                                 // Check for head down movement - initial F5 02 signal
-                                Log.d(TAG, "HEAD UP MOVEMENT DETECTED");
+                                Bridge.log("G1: HEAD UP MOVEMENT DETECTED");
                                 MentraManager.getInstance().updateHeadUp(true);
                             }
                         }
-                        //HEAD DOWN MOVEMENTS
+                        // HEAD DOWN MOVEMENTS
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x03) {
                             if (deviceName.contains("R_")) {
-                                 Log.d(TAG, "HEAD DOWN MOVEMENT DETECTED");
-                                //                                clearBmpDisplay();
+                            Bridge.log("G1: HEAD DOWN MOVEMENT DETECTED");
+                                // clearBmpDisplay();
                                 MentraManager.getInstance().updateHeadUp(false);
                             }
                         }
-                        //DOUBLE TAP
-                        //appears to be completely broken - clears the screen - we should not tell people to use the touchpads yet til this is fixed
-//                        else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && ((data[1] & 0xFF) == 0x20) || ((data[1] & 0xFF) == 0x00)) {
-//                            boolean isRight = deviceName.contains("R_");
-//                            Log.d(TAG, "GOT DOUBLE TAP from isRight?: " + isRight);
-//                            EventBus.getDefault().post(new GlassesTapOutputEvent(2, isRight, System.currentTimeMillis()));
-//                        }
-                        //BATTERY RESPONSE
+                        // DOUBLE TAP
+                        // appears to be completely broken - clears the screen - we should not tell
+                        // people to use the touchpads yet til this is fixed
+                        // else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && ((data[1] & 0xFF) ==
+                        // 0x20) || ((data[1] & 0xFF) == 0x00)) {
+                        // boolean isRight = deviceName.contains("R_");
+                        // Log.d(TAG, "GOT DOUBLE TAP from isRight?: " + isRight);
+                        // EventBus.getDefault().post(new GlassesTapOutputEvent(2, isRight,
+                        // System.currentTimeMillis()));
+                        // }
+                        // BATTERY RESPONSE
                         else if (data.length > 2 && data[0] == 0x2C && data[1] == 0x66) {
                             if (deviceName.contains("L_")) {
-                                //Log.d(TAG, "LEFT Battery response received");
+                                // Log.d(TAG, "LEFT Battery response received");
                                 batteryLeft = data[2];
                             } else if (deviceName.contains("R_")) {
-                                //Log.d(TAG, "RIGHT Battery response received");
+                                // Log.d(TAG, "RIGHT Battery response received");
                                 batteryRight = data[2];
                             }
 
-                            if(batteryLeft != -1 && batteryRight != -1) {
+                            if (batteryLeft != -1 && batteryRight != -1) {
                                 int minBatt = Math.min(batteryLeft, batteryRight);
-                                //Log.d(TAG, "Minimum Battery Level: " + minBatt);
+                                // Log.d(TAG, "Minimum Battery Level: " + minBatt);
                                 EventBus.getDefault().post(new BatteryLevelEvent(minBatt, false));
                             }
                         }
-                        //CASE REMOVED
-                        else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && ((data[1] & 0xFF) == 0x07 || (data[1] & 0xFF) == 0x06)) {
+                        // CASE REMOVED
+                        else if (data.length > 1 && (data[0] & 0xFF) == 0xF5
+                                && ((data[1] & 0xFF) == 0x07 || (data[1] & 0xFF) == 0x06)) {
                             caseRemoved = true;
-                            Log.d("AugmentOsService", "CASE REMOVED");
-                            EventBus.getDefault().post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            Bridge.log("G1: CASE REMOVED");
+                            EventBus.getDefault()
+                                    .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
                         }
-                        //CASE OPEN
+                        // CASE OPEN
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x08) {
                             caseOpen = true;
                             caseRemoved = false;
-                            EventBus.getDefault().post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            EventBus.getDefault()
+                                    .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
                         }
-                        //CASE CLOSED
+                        // CASE CLOSED
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0B) {
                             caseOpen = false;
                             caseRemoved = false;
-                            EventBus.getDefault().post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            EventBus.getDefault()
+                                    .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
                         }
-                        //CASE CHARGING STATUS
+                        // CASE CHARGING STATUS
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0E) {
                             caseCharging = (data[2] & 0xFF) == 0x01;// TODO: verify this is correct
-                            EventBus.getDefault().post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            EventBus.getDefault()
+                                    .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
                         }
-                        //CASE CHARGING INFO
+                        // CASE CHARGING INFO
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0F) {
                             caseBatteryLevel = (data[2] & 0xFF);// TODO: verify this is correct
-                            EventBus.getDefault().post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            EventBus.getDefault()
+                                    .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
                         }
-                        //HEARTBEAT RESPONSE
+                        // HEARTBEAT RESPONSE
                         else if (data.length > 0 && data[0] == 0x25) {
-                            Log.d(TAG, "Heartbeat response received");
+                            Bridge.log("G1: Heartbeat response received");
                         }
-                        //TEXT RESPONSE
+                        // TEXT RESPONSE
                         else if (data.length > 0 && data[0] == 0x4E) {
-                            Log.d(TAG, "Text response on side " + (deviceName.contains("L_") ? "Left" : "Right") + " was: " + ((data.length > 1 && (data[1] & 0xFF) == 0xC9) ? "SUCCEED" : "FAIL"));
+                            Bridge.log("G1: Text response on side " + (deviceName.contains("L_") ? "Left" : "Right")
+                                    + " was: " + ((data.length > 1 && (data[1] & 0xFF) == 0xC9) ? "SUCCEED" : "FAIL"));
                         }
-
 
                         // Handle other non-audio responses
                         else {
-                            Log.d(TAG, "PROC - Received other Even Realities response: " + bytesToHex(data) + ", from: " + deviceName);
+                            Bridge.log("G1: PROC - Received other Even Realities response: " + bytesToHex(data) + ", from: "
+                                    + deviceName);
                         }
 
-                        //clear the waiter
-//                        if ((data.length > 1 && (data[1] & 0xFF) == 0xC9)){
-//                            if (deviceName.contains("L_")) {
-//                                Log.d(TAG, "PROC - clearing LEFT waiter on success");
-//                                leftWaiter.setFalse();
-//                            } else {
-//                                Log.d(TAG, "PROC - clearing RIGHT waiter on success");
-//                                rightWaiter.setFalse();
-//                            }
-//                        }
+                        // clear the waiter
+                        // if ((data.length > 1 && (data[1] & 0xFF) == 0xC9)){
+                        // if (deviceName.contains("L_")) {
+                        // Log.d(TAG, "PROC - clearing LEFT waiter on success");
+                        // leftWaiter.setFalse();
+                        // } else {
+                        // Log.d(TAG, "PROC - clearing RIGHT waiter on success");
+                        // rightWaiter.setFalse();
+                        // }
+                        // }
                     }
                 });
             }
@@ -633,9 +661,9 @@ public class G1 extends SGCManager {
         };
     }
 
-    private void initG1s(BluetoothGatt gatt, String side){
+    private void initG1s(BluetoothGatt gatt, String side) {
         gatt.requestMtu(251); // Request a higher MTU size
-        Log.d(TAG, "Requested MTU size: 251");
+        Bridge.log("G1: Requested MTU size: 251");
 
         BluetoothGattService uartService = gatt.getService(UART_SERVICE_UUID);
 
@@ -644,128 +672,133 @@ public class G1 extends SGCManager {
             BluetoothGattCharacteristic rxChar = uartService.getCharacteristic(UART_RX_CHAR_UUID);
 
             if (txChar != null) {
-                if ("Left".equals(side)) leftTxChar = txChar;
-                else rightTxChar = txChar;
-//                            enableNotification(gatt, txChar, side);
-//                            txChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-                Log.d(TAG, side + " glass TX characteristic found");
+                if ("Left".equals(side))
+                    leftTxChar = txChar;
+                else
+                    rightTxChar = txChar;
+                // enableNotification(gatt, txChar, side);
+                // txChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                Bridge.log("G1: " + side + " glass TX characteristic found");
             }
 
             if (rxChar != null) {
-                if ("Left".equals(side)) leftRxChar = rxChar;
-                else rightRxChar = rxChar;
+                if ("Left".equals(side))
+                    leftRxChar = rxChar;
+                else
+                    rightRxChar = rxChar;
                 enableNotification(gatt, rxChar, side);
-//                            rxChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-                Log.d(TAG, side + " glass RX characteristic found");
+                // rxChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                Bridge.log("G1: " + side + " glass RX characteristic found");
             }
 
             // Mark as connected but wait for setup below to update connection state
             if ("Left".equals(side)) {
                 isLeftConnected = true;
-                Log.d(TAG, "PROC_QUEUE - left side setup complete");
-                
+                Bridge.log("G1: PROC_QUEUE - left side setup complete");
+
                 // Manufacturer data decoding moved to connection start
             } else {
                 isRightConnected = true;
-                //Log.d(TAG, "PROC_QUEUE - right side setup complete");
+                // Log.d(TAG, "PROC_QUEUE - right side setup complete");
             }
 
-            //setup the G1s
+            // setup the G1s
             if (isLeftConnected && isRightConnected) {
-                Log.d(TAG, "Sending firmware request Command");
-                sendDataSequentially(new byte[]{(byte) 0x6E, (byte) 0x74});
+                Bridge.log("G1: Sending firmware request Command");
+                sendDataSequentially(new byte[] { (byte) 0x6E, (byte) 0x74 });
 
-                Log.d(TAG, "Sending init 0x4D Command");
-                sendDataSequentially(new byte[]{(byte) 0x4D, (byte) 0xFB}); //told this is only left
+                Bridge.log("G1: Sending init 0x4D Command");
+                sendDataSequentially(new byte[] { (byte) 0x4D, (byte) 0xFB }); // told this is only left
 
-                Log.d(TAG, "Sending turn off wear detection command");
-                sendDataSequentially(new byte[]{(byte) 0x27, (byte) 0x00});
+                Bridge.log("G1: Sending turn off wear detection command");
+                sendDataSequentially(new byte[] { (byte) 0x27, (byte) 0x00 });
 
-                Log.d(TAG, "Sending turn off silent mode Command");
-                sendDataSequentially(new byte[]{(byte) 0x03, (byte) 0x0A});
+                Bridge.log("G1: Sending turn off silent mode Command");
+                sendDataSequentially(new byte[] { (byte) 0x03, (byte) 0x0A });
 
-                //debug command
-//                            Log.d(TAG, "Sending debug 0xF4 Command");
-//                            sendDataSequentially(new byte[]{(byte) 0xF4, (byte) 0x01});
+                // debug command
+                // Log.d(TAG, "Sending debug 0xF4 Command");
+                // sendDataSequentially(new byte[]{(byte) 0xF4, (byte) 0x01});
 
-                //no longer need to be staggered as we fixed the sender
-                //do first battery status query
+                // no longer need to be staggered as we fixed the sender
+                // do first battery status query
                 queryBatteryStatusHandler.postDelayed(() -> queryBatteryStatus(), 10);
 
-                //setup brightness
-                sendBrightnessCommandHandler.postDelayed(() -> sendBrightnessCommand(brightnessValue, shouldUseAutoBrightness), 10);
+                // setup brightness
+                sendBrightnessCommandHandler
+                        .postDelayed(() -> sendBrightnessCommand(brightnessValue, shouldUseAutoBrightness), 10);
 
                 // Maybe start MIC streaming
-                setMicEnabled(false, 10); // Disable the MIC
+                sendSetMicEnabled(false, 10); // Disable the MIC
 
-                //enable our AugmentOS notification key
+                // enable our AugmentOS notification key
                 sendWhiteListCommand(10);
 
-                //start heartbeat
+                // start heartbeat
                 startHeartbeat(10000);
 
-                //start mic beat
-//                startMicBeat(30000);
+                // start mic beat
+                // startMicBeat(30000);
 
-                showHomeScreen(); //turn on the g1 display
+                showHomeScreen(); // turn on the g1 display
 
                 updateConnectionState();
 
-                //start sending debug notifications
-                //                        startPeriodicNotifications(302);
-                //start sending debug notifications
-                //                        startPeriodicTextWall(302);
+                // start sending debug notifications
+                // startPeriodicNotifications(302);
+                // start sending debug notifications
+                // startPeriodicTextWall(302);
             }
         } else {
-            Log.e(TAG, side + " glass UART service not found");
+            Bridge.log("G1: " + side + " glass UART service not found");
         }
     }
 
-    //working on all phones - must keep the delay
+    // working on all phones - must keep the delay
     private void enableNotification(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, String side) {
-        Log.d(TAG, "PROC_QUEUE - Starting notification setup for " + side);
+        Bridge.log("G1: PROC_QUEUE - Starting notification setup for " + side);
 
         // Simply enable notifications
-        Log.d(TAG, "PROC_QUEUE - setting characteristic notification on side: " + side);
+        Bridge.log("G1: PROC_QUEUE - setting characteristic notification on side: " + side);
         boolean result = gatt.setCharacteristicNotification(characteristic, true);
-        Log.d(TAG, "PROC_QUEUE - setCharacteristicNotification result for " + side + ": " + result);
+        Bridge.log("G1: PROC_QUEUE - setCharacteristicNotification result for " + side + ": " + result);
 
         // Set write type for the characteristic
         characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-        Log.d(TAG, "PROC_QUEUE - write type set for " + side);
+        Bridge.log("G1: PROC_QUEUE - write type set for " + side);
 
-        //wait
-        Log.d(TAG, "PROC_QUEUE - waiting to enable it on this side: " + side);
+        // wait
+        Bridge.log("G1: PROC_QUEUE - waiting to enable it on this side: " + side);
 
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
-            Log.e(TAG, "Error sending data: " + e.getMessage());
+            Bridge.log("G1: Error sending data: " + e.getMessage());
         }
 
-        Log.d(TAG, "PROC_QUEUE - get descriptor on side: " + side);
+        Bridge.log("G1: PROC_QUEUE - get descriptor on side: " + side);
         BluetoothGattDescriptor descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG_UUID);
         if (descriptor != null) {
-            Log.d(TAG, "PROC_QUEUE - setting descriptor on side: " + side);
+            Bridge.log("G1: PROC_QUEUE - setting descriptor on side: " + side);
             descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
             boolean r_result = gatt.writeDescriptor(descriptor);
-            Log.d(TAG, "PROC_QUEUE - set descriptor on side: " + side + " with result: " + r_result);
+            Bridge.log("G1: PROC_QUEUE - set descriptor on side: " + side + " with result: " + r_result);
         }
     }
 
     private void updateConnectionState() {
         if (isLeftConnected && isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTED;
-            Log.d(TAG, "Both glasses connected");
+            Bridge.log("G1: Both glasses connected");
             lastConnectionTimestamp = System.currentTimeMillis();
             // connectionEvent(connectionState);
         } else if (isLeftConnected || isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTING;
-            Log.d(TAG, "One glass connected");
+            Bridge.log("G1: One glass connected");
             // connectionEvent(connectionState);
         } else {
             connectionState = SmartGlassesConnectionState.DISCONNECTED;
-            Log.d(TAG, "No glasses connected");
+            Bridge.log("G1: No glasses connected");
             // connectionEvent(connectionState);
         }
     }
@@ -777,14 +810,14 @@ public class G1 extends SGCManager {
             if (BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(action)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if (device.getName() == null) {
-                    Log.d(TAG, "Bluetooth Device Name is Null!!!");
+                    Bridge.log("G1: Bluetooth Device Name is Null!!!");
                     return;
                 }
 
                 int bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, -1);
 
                 if (bondState == BluetoothDevice.BOND_BONDED) {
-                    Log.d(TAG, "Bonded with device: " + device.getName());
+                    Bridge.log("G1: Bonded with device: " + device.getName());
                     if (device.getName().contains("_L_")) {
                         isLeftBonded = true;
                         isLeftPairing = false;
@@ -794,7 +827,7 @@ public class G1 extends SGCManager {
                         isRightPairing = false;
                         pendingSavedG1RightName = device.getName();
                     }
-                    
+
                     // Reset both pairing flags when a device bonds successfully
                     // This prevents the other device from being blocked when scan restarts
                     isLeftPairing = false;
@@ -803,7 +836,7 @@ public class G1 extends SGCManager {
                     // Restart scan for the next device
                     if (!isLeftBonded || !isRightBonded) {
                         // if (!(isLeftBonded && !isRightBonded)){// || !doPendingPairingIdsMatch()) {
-                        Log.d(TAG, "Restarting scan to find remaining device...");
+                            Bridge.log("G1: Restarting scan to find remaining device...");
                         // Add delay for vendor-specific timing issues (e.g., Motorola devices)
                         new Handler(Looper.getMainLooper()).postDelayed(() -> {
                             startScan();
@@ -815,9 +848,9 @@ public class G1 extends SGCManager {
                         isRightConnected = false;
                         isRightPairing = false;
                         pendingSavedG1RightName = null;
-                        Log.d(TAG, "Connected to two different G1s - retry right G1 arm");
+                        Bridge.log("G1: Connected to two different G1s - retry right G1 arm");
                     } else {
-                        Log.d(TAG, "Both devices bonded. Proceeding with connections...");
+                        Bridge.log("G1: Both devices bonded. Proceeding with connections...");
                         savedG1LeftName = pendingSavedG1LeftName;
                         savedG1RightName = pendingSavedG1RightName;
                         savePairedDeviceNames();
@@ -832,9 +865,11 @@ public class G1 extends SGCManager {
                         }, 2000);
                     }
                 } else if (bondState == BluetoothDevice.BOND_NONE) {
-                    Log.d(TAG, "Bonding failed for device: " + device.getName());
-                    if (device.getName().contains("_L_")) isLeftPairing = false;
-                    if (device.getName().contains("_R_")) isRightPairing = false;
+                    Bridge.log("G1: Bonding failed for device: " + device.getName());
+                    if (device.getName().contains("_L_"))
+                        isLeftPairing = false;
+                    if (device.getName().contains("_R_"))
+                        isRightPairing = false;
 
                     // Restart scanning to retry bonding
                     if (retryBondHandler == null) {
@@ -842,7 +877,7 @@ public class G1 extends SGCManager {
                     }
 
                     retryBondHandler.postDelayed(() -> {
-                        Log.d(TAG, "Retrying scan after bond failure...");
+                        Bridge.log("G1: Retrying scan after bond failure...");
                         startScan();
                     }, BOND_RETRY_DELAY_MS);
                 }
@@ -853,13 +888,16 @@ public class G1 extends SGCManager {
     public boolean doPendingPairingIdsMatch() {
         String leftId = parsePairingIdFromDeviceName(pendingSavedG1LeftName);
         String rightId = parsePairingIdFromDeviceName(pendingSavedG1RightName);
-        Log.d(TAG, "LeftID: " + leftId);
-        Log.d(TAG, "RightID: " + rightId);
+        Bridge.log("G1: LeftID: " + leftId);
+        Bridge.log("G1: RightID: " + rightId);
 
-        //ok, HACKY, but if one of them is null, that means that we connected to the other on a previous connect
-        //this whole function shouldn't matter anymore anyway as we properly filter for the device name, so it should be fine
-        //in the future, the way to actually check this would be to check the final ID string, which is the only one guaranteed to be unique
-        if (leftId == null || rightId == null){
+        // ok, HACKY, but if one of them is null, that means that we connected to the
+        // other on a previous connect
+        // this whole function shouldn't matter anymore anyway as we properly filter for
+        // the device name, so it should be fine
+        // in the future, the way to actually check this would be to check the final ID
+        // string, which is the only one guaranteed to be unique
+        if (leftId == null || rightId == null) {
             return true;
         }
 
@@ -867,7 +905,8 @@ public class G1 extends SGCManager {
     }
 
     public String parsePairingIdFromDeviceName(String input) {
-        if (input == null || input.isEmpty()) return null;
+        if (input == null || input.isEmpty())
+            return null;
         // Regular expression to match the number after "G1_"
         Pattern pattern = Pattern.compile("G1_(\\d+)_");
         Matcher matcher = pattern.matcher(input);
@@ -878,128 +917,138 @@ public class G1 extends SGCManager {
         return null; // Return null if no match is found
     }
 
-    public static void savePreferredG1DeviceId(Context context, String deviceName){
+    public static void savePreferredG1DeviceId(Context context, String deviceName) {
         Bridge.saveSetting("deviceName", deviceName);
     }
 
     private void savePairedDeviceNames() {
         // if (savedG1LeftName != null && savedG1RightName != null) {
-        //     context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
-        //             .edit()
-        //             .putString(LEFT_DEVICE_KEY, savedG1LeftName)
-        //             .putString(RIGHT_DEVICE_KEY, savedG1RightName)
-        //             .apply();
-        //     Log.d(TAG, "Saved paired device names: Left=" + savedG1LeftName + ", Right=" + savedG1RightName);
+        // context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+        // .edit()
+        // .putString(LEFT_DEVICE_KEY, savedG1LeftName)
+        // .putString(RIGHT_DEVICE_KEY, savedG1RightName)
+        // .apply();
+        // Log.d(TAG, "Saved paired device names: Left=" + savedG1LeftName + ", Right="
+        // + savedG1RightName);
         // }
     }
 
     private void loadPairedDeviceNames() {
-        // SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+        // SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_NAME,
+        // Context.MODE_PRIVATE);
         // savedG1LeftName = prefs.getString(LEFT_DEVICE_KEY, null);
         // savedG1RightName = prefs.getString(RIGHT_DEVICE_KEY, null);
-        // Log.d(TAG, "Loaded paired device names: Left=" + savedG1LeftName + ", Right=" + savedG1RightName);
+        // Log.d(TAG, "Loaded paired device names: Left=" + savedG1LeftName + ", Right="
+        // + savedG1RightName);
     }
 
     public static void deleteEvenSharedPreferences(Context context) {
         // savePreferredG1DeviceId(context, null);
-        // SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+        // SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_NAME,
+        // Context.MODE_PRIVATE);
         // prefs.edit().clear().apply();
         // Log.d(TAG, "Nuked EvenRealities SharedPreferences");
     }
 
     private void connectToGatt(BluetoothDevice device) {
         if (device == null) {
-            Log.e(TAG, "Cannot connect to GATT: device is null");
+            Bridge.log("G1: Cannot connect to GATT: device is null");
             return;
         }
 
-        Log.d(TAG, "connectToGatt called for device: " + device.getName() + " (" + device.getAddress() + ")");
+        Bridge.log("G1: connectToGatt called for device: " + device.getName() + " (" + device.getAddress() + ")");
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
-            Log.e(TAG, "Bluetooth is disabled or not available. Cannot reconnect to glasses.");
+            Bridge.log("G1: Bluetooth is disabled or not available. Cannot reconnect to glasses.");
             return;
         }
 
         // Reset the services waiter based on device name
         if (device.getName().contains("_L_")) {
-            Log.d(TAG, "Device identified as left side. Resetting leftServicesWaiter.");
+            Bridge.log("G1: Device identified as left side. Resetting leftServicesWaiter.");
             leftServicesWaiter.setTrue();
         } else {
-            Log.d(TAG, "Device identified as right side. Resetting rightServicesWaiter.");
+            Bridge.log("G1: Device identified as right side. Resetting rightServicesWaiter.");
             rightServicesWaiter.setTrue();
         }
 
         // Establish GATT connection based on device name and current connection state
         if (device.getName().contains("_L_") && leftGlassGatt == null) {
-            Log.d(TAG, "Connecting GATT to left side.");
+                    Bridge.log("G1: Connecting GATT to left side.");
             leftGlassGatt = device.connectGatt(context, false, leftGattCallback);
             isLeftConnected = false; // Reset connection state
-            Log.d(TAG, "Left GATT connection initiated. isLeftConnected set to false.");
+            Bridge.log("G1: Left GATT connection initiated. isLeftConnected set to false.");
         } else if (device.getName().contains("_R_") && rightGlassGatt == null && isLeftConnected) {
-            Log.d(TAG, "Connecting GATT to right side.");
+            Bridge.log("G1: Connecting GATT to right side.");
             rightGlassGatt = device.connectGatt(context, false, rightGattCallback);
             isRightConnected = false; // Reset connection state
-            Log.d(TAG, "Right GATT connection initiated. isRightConnected set to false.");
+            Bridge.log("G1: Right GATT connection initiated. isRightConnected set to false.");
         } else {
-            Log.d(TAG, "Tried to connect to incorrect or already connected device: " + device.getName());
+            Bridge.log("G1: Tried to connect to incorrect or already connected device: " + device.getName());
         }
     }
 
     private void reconnectToGatt(BluetoothDevice device) {
-        if (isKilled){
+        if (isKilled) {
             return;
         }
         connectToGatt(device); // Reuse the connectToGatt method
     }
 
-//    private void startConnectionTimeout(String side, BluetoothGatt gatt) {
-//        Runnable timeoutRunnable = () -> {
-//            if ("Left".equals(side)) {
-//                if (!isLeftConnected) {
-//                    Log.d(TAG, "Left connection timed out. Closing GATT and retrying...");
-//                    if (leftGlassGatt != null) {
-//                        leftGlassGatt.disconnect();
-//                        leftGlassGatt.close();
-//                        leftGlassGatt = null;
-//                    }
-//                    leftReconnectAttempts++;
-//                    scheduleReconnect("Left", gatt.getDevice());
-//                }
-//            } else if ("Right".equals(side)) {
-//                if (!isRightConnected) {
-//                    Log.d(TAG, "Right connection timed out. Closing GATT and retrying...");
-//                    if (rightGlassGatt != null) {
-//                        rightGlassGatt.disconnect();
-//                        rightGlassGatt.close();
-//                        rightGlassGatt = null;
-//                    }
-//                    rightReconnectAttempts++;
-//                    scheduleReconnect("Right", gatt.getDevice());
-//                }
-//            }
-//        };
-//
-//        if ("Left".equals(side)) {
-//            leftConnectionTimeoutRunnable = timeoutRunnable;
-//            leftConnectionTimeoutHandler.postDelayed(leftConnectionTimeoutRunnable, CONNECTION_TIMEOUT_MS);
-//        } else if ("Right".equals(side)) {
-//            rightConnectionTimeoutRunnable = timeoutRunnable;
-//            rightConnectionTimeoutHandler.postDelayed(rightConnectionTimeoutRunnable, CONNECTION_TIMEOUT_MS);
-//        }
-//    }
+    // private void startConnectionTimeout(String side, BluetoothGatt gatt) {
+    // Runnable timeoutRunnable = () -> {
+    // if ("Left".equals(side)) {
+    // if (!isLeftConnected) {
+    // Log.d(TAG, "Left connection timed out. Closing GATT and retrying...");
+    // if (leftGlassGatt != null) {
+    // leftGlassGatt.disconnect();
+    // leftGlassGatt.close();
+    // leftGlassGatt = null;
+    // }
+    // leftReconnectAttempts++;
+    // scheduleReconnect("Left", gatt.getDevice());
+    // }
+    // } else if ("Right".equals(side)) {
+    // if (!isRightConnected) {
+    // Log.d(TAG, "Right connection timed out. Closing GATT and retrying...");
+    // if (rightGlassGatt != null) {
+    // rightGlassGatt.disconnect();
+    // rightGlassGatt.close();
+    // rightGlassGatt = null;
+    // }
+    // rightReconnectAttempts++;
+    // scheduleReconnect("Right", gatt.getDevice());
+    // }
+    // }
+    // };
+    //
+    // if ("Left".equals(side)) {
+    // leftConnectionTimeoutRunnable = timeoutRunnable;
+    // leftConnectionTimeoutHandler.postDelayed(leftConnectionTimeoutRunnable,
+    // CONNECTION_TIMEOUT_MS);
+    // } else if ("Right".equals(side)) {
+    // rightConnectionTimeoutRunnable = timeoutRunnable;
+    // rightConnectionTimeoutHandler.postDelayed(rightConnectionTimeoutRunnable,
+    // CONNECTION_TIMEOUT_MS);
+    // }
+    // }
 
-//    private void scheduleReconnect(String side, BluetoothDevice device) {
-//        long delay;
-//        if ("Left".equals(side)) {
-//            delay = Math.min(BASE_RECONNECT_DELAY_MS * (1L << leftReconnectAttempts), MAX_RECONNECT_DELAY_MS);
-//            Log.d(TAG, side + " glass reconnecting in " + delay + " ms (Attempt " + leftReconnectAttempts + ")");
-//        } else { // "Right"
-//            delay = Math.min(BASE_RECONNECT_DELAY_MS * (1L << rightReconnectAttempts), MAX_RECONNECT_DELAY_MS);
-//            Log.d(TAG, side + " glass reconnecting in " + delay + " ms (Attempt " + rightReconnectAttempts + ")");
-//        }
-//
-//        reconnectHandler.postDelayed(() -> reconnectToGatt(device), delay);
-//    }
+    // private void scheduleReconnect(String side, BluetoothDevice device) {
+    // long delay;
+    // if ("Left".equals(side)) {
+    // delay = Math.min(BASE_RECONNECT_DELAY_MS * (1L << leftReconnectAttempts),
+    // MAX_RECONNECT_DELAY_MS);
+    // Log.d(TAG, side + " glass reconnecting in " + delay + " ms (Attempt " +
+    // leftReconnectAttempts + ")");
+    // } else { // "Right"
+    // delay = Math.min(BASE_RECONNECT_DELAY_MS * (1L << rightReconnectAttempts),
+    // MAX_RECONNECT_DELAY_MS);
+    // Log.d(TAG, side + " glass reconnecting in " + delay + " ms (Attempt " +
+    // rightReconnectAttempts + ")");
+    // }
+    //
+    // reconnectHandler.postDelayed(() -> reconnectToGatt(device), delay);
+    // }
 
     private final ScanCallback modernScanCallback = new ScanCallback() {
         @Override
@@ -1009,7 +1058,7 @@ public class G1 extends SGCManager {
 
             // Now you can reference the bluetoothAdapter field if needed:
             if (!bluetoothAdapter.isEnabled()) {
-                Log.e(TAG, "Bluetooth is disabled");
+                Bridge.log("G1: Bluetooth is disabled");
                 return;
             }
 
@@ -1019,21 +1068,21 @@ public class G1 extends SGCManager {
             }
 
             // Log all available device information for debugging
-            Log.d(TAG, "=== Device Information ===");
-            Log.d(TAG, "Device Name: " + name);
-            Log.d(TAG, "Device Address: " + device.getAddress());
-            Log.d(TAG, "Device Type: " + device.getType());
-            Log.d(TAG, "Device Class: " + device.getBluetoothClass());
-            Log.d(TAG, "Bond State: " + device.getBondState());
-            
+            Bridge.log("G1: === Device Information ===");
+            Bridge.log("G1: Device Name: " + name);
+            Bridge.log("G1: Device Address: " + device.getAddress());
+            Bridge.log("G1: Device Type: " + device.getType());
+            Bridge.log("G1: Device Class: " + device.getBluetoothClass());
+            Bridge.log("G1: Bond State: " + device.getBondState());
+
             // Try to get additional device information using reflection
             try {
                 // Try to get the full device name (might contain serial number)
                 Method getAliasMethod = device.getClass().getMethod("getAlias");
                 String alias = (String) getAliasMethod.invoke(device);
-                Log.d(TAG, "Device Alias: " + alias);
+                Bridge.log("G1: Device Alias: " + alias);
             } catch (Exception e) {
-                Log.d(TAG, "Could not get device alias: " + e.getMessage());
+                Bridge.log("G1: Could not get device alias: " + e.getMessage());
             }
 
             // Capture manufacturer data for left device during scanning
@@ -1042,36 +1091,37 @@ public class G1 extends SGCManager {
                 for (int i = 0; i < allManufacturerData.size(); i++) {
                     String parsedDeviceName = parsePairingIdFromDeviceName(name);
                     if (parsedDeviceName != null) {
-                        Log.d(TAG, "Parsed Device Name: " + parsedDeviceName);
+                        Bridge.log("G1: Parsed Device Name: " + parsedDeviceName);
                     }
 
                     int manufacturerId = allManufacturerData.keyAt(i);
                     byte[] data = allManufacturerData.valueAt(i);
                     Log.d(TAG, "Left Device Manufacturer ID " + manufacturerId + ": " + bytesToHex(data));
-                    
+
                     // Try to decode serial number from this manufacturer data
                     String decodedSerial = decodeSerialFromManufacturerData(data);
                     if (decodedSerial != null) {
-                        Log.d(TAG, "LEFT DEVICE DECODED SERIAL NUMBER from ID " + manufacturerId + ": " + decodedSerial);
+                        Log.d(TAG,
+                                "LEFT DEVICE DECODED SERIAL NUMBER from ID " + manufacturerId + ": " + decodedSerial);
                         String[] decoded = decodeEvenG1SerialNumber(decodedSerial);
                         Log.d(TAG, "LEFT DEVICE Style: " + decoded[0] + ", Color: " + decoded[1]);
 
                         if (preferredG1DeviceId != null && preferredG1DeviceId.equals(parsedDeviceName)) {
-                            EventBus.getDefault().post(new GlassesSerialNumberEvent(decodedSerial, decoded[0], decoded[1]));
+                            EventBus.getDefault()
+                                    .post(new GlassesSerialNumberEvent(decodedSerial, decoded[0], decoded[1]));
                         }
                         break;
                     }
-                } 
+                }
             }
 
-//            Log.d(TAG, "PREFERRED ID: " + preferredG1DeviceId);
+            // Log.d(TAG, "PREFERRED ID: " + preferredG1DeviceId);
             if (preferredG1DeviceId == null || !name.contains("_" + preferredG1DeviceId + "_")) {
-                Log.d(TAG, "NOT PAIRED GLASSES");
+                Bridge.log("G1: NOT PAIRED GLASSES");
                 return;
             }
 
-
-            Log.d(TAG, "FOUND OUR PREFERRED ID: " + preferredG1DeviceId);
+            Bridge.log("G1: FOUND OUR PREFERRED ID: " + preferredG1DeviceId);
 
             boolean isLeft = name.contains("_L_");
 
@@ -1095,52 +1145,56 @@ public class G1 extends SGCManager {
                 stopScan();
 
                 if (isLeft && !isLeftPairing && !isLeftBonded) {
-//                    Log.d(TAG, "Bonding with Left Glass...");
+                    // Log.d(TAG, "Bonding with Left Glass...");
                     isLeftPairing = true;
                     connectionState = SmartGlassesConnectionState.BONDING;
                     // connectionEvent(connectionState);
                     bondDevice(device);
                 } else if (!isLeft && !isRightPairing && !isRightBonded) {
-                    Log.d(TAG, "Attempting to bond with right device. isRightPairing=" + isRightPairing + ", isRightBonded=" + isRightBonded);
+                    Bridge.log("G1: Attempting to bond with right device. isRightPairing=" + isRightPairing
+                            + ", isRightBonded=" + isRightBonded);
                     isRightPairing = true;
                     connectionState = SmartGlassesConnectionState.BONDING;
                     // connectionEvent(connectionState);
                     bondDevice(device);
                 } else {
-                    Log.d(TAG, "Not running bonding - isLeft=" + isLeft + ", isLeftPairing=" + isLeftPairing + 
-                              ", isLeftBonded=" + isLeftBonded + ", isRightPairing=" + isRightPairing + 
-                              ", isRightBonded=" + isRightBonded);
+                    Bridge.log("G1: Not running bonding - isLeft=" + isLeft + ", isLeftPairing=" + isLeftPairing +
+                            ", isLeftBonded=" + isLeftBonded + ", isRightPairing=" + isRightPairing +
+                            ", isRightBonded=" + isRightBonded);
                 }
             } else {
                 // Already bonded
-                if (isLeft) isLeftBonded = true; else isRightBonded = true;
+                if (isLeft)
+                    isLeftBonded = true;
+                else
+                    isRightBonded = true;
 
                 // Both are bonded => connect to GATT
                 if (leftDevice != null && rightDevice != null && isLeftBonded && isRightBonded) {
-                    Log.d(TAG, "Both sides bonded. Ready to connect to GATT.");
+                    Bridge.log("G1: Both sides bonded. Ready to connect to GATT.");
                     stopScan();
 
                     connectHandler.postDelayed(() -> {
                         attemptGattConnection(leftDevice);
-                    },0);
+                    }, 0);
 
                     connectHandler.postDelayed(() -> {
                         attemptGattConnection(rightDevice);
-                    },2000);
+                    }, 2000);
                 } else {
-                    Log.d(TAG, "Not running a63dd");
+                    Bridge.log("G1: Not running a63dd");
                 }
             }
         }
 
         @Override
         public void onScanFailed(int errorCode) {
-            Log.e(TAG, "Scan failed with error: " + errorCode);
+            Bridge.log("G1: Scan failed with error: " + errorCode);
         }
     };
 
     private void resetAllBondsAndState() {
-        Log.d(TAG, "Resetting ALL bonds and internal state for complete fresh start");
+        Bridge.log("G1: Resetting ALL bonds and internal state for complete fresh start");
 
         // Remove both bonds if devices exist
         if (leftDevice != null) {
@@ -1178,7 +1232,7 @@ public class G1 extends SGCManager {
 
         // Wait briefly for bond removal to complete
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            Log.d(TAG, "Restarting scan after complete bond/state reset");
+            Bridge.log("G1: Restarting scan after complete bond/state reset");
             connectionState = SmartGlassesConnectionState.SCANNING;
             // connectionEvent(connectionState);
             startScan();
@@ -1189,7 +1243,7 @@ public class G1 extends SGCManager {
      * Handles a device with a valid bond
      */
     private void handleValidBond(BluetoothDevice device, boolean isLeft) {
-        Log.d(TAG, "Handling valid bond for " + (isLeft ? "left" : "right") + " glass");
+        Bridge.log("G1: Handling valid bond for " + (isLeft ? "left" : "right") + " glass");
 
         // Update state
         if (isLeft) {
@@ -1200,7 +1254,7 @@ public class G1 extends SGCManager {
 
         // If both glasses are bonded, connect to GATT
         if (leftDevice != null && rightDevice != null && isLeftBonded && isRightBonded) {
-            Log.d(TAG, "Both glasses have valid bonds - ready to connect to GATT");
+            Bridge.log("G1: Both glasses have valid bonds - ready to connect to GATT");
 
             connectHandler.postDelayed(() -> {
                 attemptGattConnection(leftDevice);
@@ -1211,7 +1265,7 @@ public class G1 extends SGCManager {
             }, 2000);
         } else {
             // Continue scanning for the other glass
-            Log.d(TAG, "Still need to find " + (isLeft ? "right" : "left") + " glass - resuming scan");
+            Bridge.log("Still need to find " + (isLeft ? "right" : "left") + " glass - resuming scan");
             startScan();
         }
     }
@@ -1222,30 +1276,29 @@ public class G1 extends SGCManager {
     private boolean removeBond(BluetoothDevice device) {
         try {
             if (device == null) {
-                Log.e(TAG, "Cannot remove bond: device is null");
+                Bridge.log("G1: Cannot remove bond: device is null");
                 return false;
             }
 
             Method method = device.getClass().getMethod("removeBond");
             boolean result = (Boolean) method.invoke(device);
-            Log.d(TAG, "Removing bond for device " + device.getName() + ", result: " + result);
+            Bridge.log("G1: Removing bond for device " + device.getName() + ", result: " + result);
             return result;
         } catch (Exception e) {
-            Log.e(TAG, "Error removing bond: " + e.getMessage(), e);
+            Bridge.log("G1: Error removing bond: " + e.getMessage());
             return false;
         }
     }
-
 
     public void connectToSmartGlasses() {
         // Register bonding receiver
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
         context.registerReceiver(bondingReceiver, filter);
-        isBondingReceiverRegistered=true;
+        isBondingReceiverRegistered = true;
 
         preferredG1DeviceId = MentraManager.getInstance().getDeviceName();
 
-        if(!bluetoothAdapter.isEnabled()) {
+        if (!bluetoothAdapter.isEnabled()) {
             return;
         }
 
@@ -1258,7 +1311,7 @@ public class G1 extends SGCManager {
     private void startScan() {
         BluetoothLeScanner scanner = bluetoothAdapter.getBluetoothLeScanner();
         if (scanner == null) {
-            Log.e(TAG, "BluetoothLeScanner not available.");
+            Bridge.log("G1: BluetoothLeScanner not available.");
             return;
         }
 
@@ -1275,14 +1328,15 @@ public class G1 extends SGCManager {
         // Start scanning
         isScanning = true;
         scanner.startScan(filters, settings, modernScanCallback);
-        Log.d(TAG, "CALL START SCAN - Started scanning for devices...");
-        
+        Bridge.log("G1: CALL START SCAN - Started scanning for devices...");
+
         // Ensure scanning state is immediately communicated to UI
         connectionState = SmartGlassesConnectionState.SCANNING;
         // connectionEvent(connectionState);
 
-        // Stop the scan after some time (e.g., 10-15s instead of 60 to avoid throttling)
-        //handler.postDelayed(() -> stopScan(), 10000);
+        // Stop the scan after some time (e.g., 10-15s instead of 60 to avoid
+        // throttling)
+        // handler.postDelayed(() -> stopScan(), 10000);
     }
 
     private void stopScan() {
@@ -1291,16 +1345,16 @@ public class G1 extends SGCManager {
             scanner.stopScan(modernScanCallback);
         }
         isScanning = false;
-        Log.d(TAG, "Stopped scanning for devices");
+        Bridge.log("G1: Stopped scanning for devices");
     }
 
     private void bondDevice(BluetoothDevice device) {
         try {
-            Log.d(TAG, "Attempting to bond with device: " + device.getName());
+            Bridge.log("G1: Attempting to bond with device: " + device.getName());
             Method method = device.getClass().getMethod("createBond");
             method.invoke(device);
         } catch (Exception e) {
-            Log.e(TAG, "Bonding failed: " + e.getMessage());
+            Bridge.log("G1: Bonding failed: " + e.getMessage());
         }
     }
 
@@ -1308,16 +1362,17 @@ public class G1 extends SGCManager {
     private static final long RIGHT_CONNECTION_RETRY_DELAY = 1000; // 1 second
 
     private void attemptGattConnection(BluetoothDevice device) {
-//        if (!isKilled)
+        // if (!isKilled)
 
         if (device == null) {
-            Log.d(TAG, "Cannot connect to GATT: Device is null");
+            Bridge.log("G1: Cannot connect to GATT: Device is null");
             return;
         }
 
         String deviceName = device.getName();
         if (deviceName == null) {
-            Log.d(TAG, "Skipping null device name: " + device.getAddress() + "... this means something horriffic has occured. Look into this.");
+            Bridge.log("G1: Skipping null device name: " + device.getAddress()
+                    + "... this means something horriffic has occured. Look into this.");
             return;
         }
 
@@ -1325,12 +1380,13 @@ public class G1 extends SGCManager {
 
         // Check if both devices are bonded before attempting connection
         if (!isLeftBonded || !isRightBonded) {
-            Log.d(TAG, "Cannot connect to GATT: Both devices are not bonded yet (isLeftBonded: " + isLeftBonded + ", isRightBonded: " + isRightBonded + ")");
+            Bridge.log("G1: Cannot connect to GATT: Both devices are not bonded yet (isLeftBonded: " + isLeftBonded
+                    + ", isRightBonded: " + isRightBonded + ")");
             return;
         }
 
         connectionState = SmartGlassesConnectionState.CONNECTING;
-        Log.d(TAG, "Setting connectionState to CONNECTING. Notifying connectionEvent.");
+        Bridge.log("G1: Setting connectionState to CONNECTING. Notifying connectionEvent.");
         // connectionEvent(connectionState);
 
         boolean isLeftDevice = deviceName.contains("_L_");
@@ -1341,18 +1397,18 @@ public class G1 extends SGCManager {
         } else if (isRightDevice) {
             connectRightDevice(device);
         } else {
-            Log.d(TAG, "Unknown device type: " + deviceName);
+            Bridge.log("G1: Unknown device type: " + deviceName);
         }
     }
 
     private void connectLeftDevice(BluetoothDevice device) {
         if (leftGlassGatt == null) {
-            Log.d(TAG, "Attempting GATT connection for Left Glass...");
+            Bridge.log("G1: Attempting GATT connection for Left Glass...");
             leftGlassGatt = device.connectGatt(context, false, leftGattCallback);
             isLeftConnected = false;
-            Log.d(TAG, "Left GATT connection initiated. isLeftConnected set to false.");
+            Bridge.log("G1: Left GATT connection initiated. isLeftConnected set to false.");
         } else {
-            Log.d(TAG, "Left Glass GATT already exists");
+            Bridge.log("G1: Left Glass GATT already exists");
         }
     }
 
@@ -1360,10 +1416,10 @@ public class G1 extends SGCManager {
         // Only connect right after left is fully connected
         if (isLeftConnected) {
             if (rightGlassGatt == null) {
-                Log.d(TAG, "Attempting GATT connection for Right Glass...");
+                Bridge.log("G1: Attempting GATT connection for Right Glass...");
                 rightGlassGatt = device.connectGatt(context, false, rightGattCallback);
                 isRightConnected = false;
-                Log.d(TAG, "Right GATT connection initiated. isRightConnected set to false.");
+                Bridge.log("G1: Right GATT connection initiated. isRightConnected set to false.");
 
                 // Cancel any pending retry attempts since we're now connecting
                 if (rightConnectionRetryRunnable != null) {
@@ -1371,10 +1427,11 @@ public class G1 extends SGCManager {
                     rightConnectionRetryRunnable = null;
                 }
             } else {
-                Log.d(TAG, "Right Glass GATT already exists");
+                Bridge.log("G1: Right Glass GATT already exists");
             }
         } else {
-            Log.d(TAG, "Waiting for left glass before connecting right. Scheduling retry in " + RIGHT_CONNECTION_RETRY_DELAY + "ms");
+            Bridge.log("G1: Waiting for left glass before connecting right. Scheduling retry in "
+                    + RIGHT_CONNECTION_RETRY_DELAY + "ms");
 
             // Cancel any existing retry attempts to avoid duplicate retries
             if (rightConnectionRetryRunnable != null) {
@@ -1422,11 +1479,6 @@ public class G1 extends SGCManager {
 
     private void sendDataSequentially(List<byte[]> data) {
         sendDataSequentially(data, false);
-    }
-
-    @Override
-    public void setMicEnabled(boolean enabled) {
-
     }
 
     @Override
@@ -1594,29 +1646,29 @@ public class G1 extends SGCManager {
 
     }
 
-//    private void sendDataSequentially(byte[] data, boolean onlyLeft) {
-//        if (stopper) return;
-//        stopper = true;
-//
-//        new Thread(() -> {
-//            try {
-//                if (leftGlassGatt != null && leftTxChar != null) {
-//                    leftTxChar.setValue(data);
-//                    leftGlassGatt.writeCharacteristic(leftTxChar);
-//                    Thread.sleep(DELAY_BETWEEN_SENDS_MS);
-//                }
-//
-//                if (!onlyLeft && rightGlassGatt != null && rightTxChar != null) {
-//                    rightTxChar.setValue(data);
-//                    rightGlassGatt.writeCharacteristic(rightTxChar);
-//                    Thread.sleep(DELAY_BETWEEN_SENDS_MS);
-//                }
-//                stopper = false;
-//            } catch (InterruptedException e) {
-//                Log.e(TAG, "Error sending data: " + e.getMessage());
-//            }
-//        }).start();
-//    }
+    // private void sendDataSequentially(byte[] data, boolean onlyLeft) {
+    // if (stopper) return;
+    // stopper = true;
+    //
+    // new Thread(() -> {
+    // try {
+    // if (leftGlassGatt != null && leftTxChar != null) {
+    // leftTxChar.setValue(data);
+    // leftGlassGatt.writeCharacteristic(leftTxChar);
+    // Thread.sleep(DELAY_BETWEEN_SENDS_MS);
+    // }
+    //
+    // if (!onlyLeft && rightGlassGatt != null && rightTxChar != null) {
+    // rightTxChar.setValue(data);
+    // rightGlassGatt.writeCharacteristic(rightTxChar);
+    // Thread.sleep(DELAY_BETWEEN_SENDS_MS);
+    // }
+    // stopper = false;
+    // } catch (InterruptedException e) {
+    // Log.e(TAG, "Error sending data: " + e.getMessage());
+    // }
+    // }).start();
+    // }
 
     // Data class to represent a send request
     private static class SendRequest {
@@ -1646,14 +1698,14 @@ public class G1 extends SGCManager {
 
     // Non-blocking function to add new send request
     private void sendDataSequentially(byte[] data, boolean onlyLeft) {
-        SendRequest [] chunks = {new SendRequest(data, onlyLeft, false)};
+        SendRequest[] chunks = { new SendRequest(data, onlyLeft, false) };
         sendQueue.offer(chunks);
         startWorkerIfNeeded();
     }
 
     // Non-blocking function to add new send request
     private void sendDataSequentially(byte[] data, boolean onlyLeft, int waitTime) {
-        SendRequest [] chunks = {new SendRequest(data, onlyLeft, false, waitTime)};
+        SendRequest[] chunks = { new SendRequest(data, onlyLeft, false, waitTime) };
         sendQueue.offer(chunks);
         startWorkerIfNeeded();
     }
@@ -1664,13 +1716,13 @@ public class G1 extends SGCManager {
     }
 
     private void sendDataSequentially(byte[] data, boolean onlyLeft, boolean onlyRight) {
-        SendRequest [] chunks = {new SendRequest(data, onlyLeft, onlyRight)};
+        SendRequest[] chunks = { new SendRequest(data, onlyLeft, onlyRight) };
         sendQueue.offer(chunks);
         startWorkerIfNeeded();
     }
 
     private void sendDataSequentially(byte[] data, boolean onlyLeft, boolean onlyRight, int waitTime) {
-        SendRequest [] chunks = {new SendRequest(data, onlyLeft, onlyRight, waitTime)};
+        SendRequest[] chunks = { new SendRequest(data, onlyLeft, onlyRight, waitTime) };
         sendQueue.offer(chunks);
         startWorkerIfNeeded();
     }
@@ -1691,14 +1743,15 @@ public class G1 extends SGCManager {
             new Thread(this::processQueue, "EvenRealitiesG1SGCProcessQueue").start();
         }
     }
-    
+
     // Fast send method for bitmap chunks - doesn't wait for write confirmation
     private void sendBitmapChunkNoWait(byte[] data, boolean sendLeft, boolean sendRight) {
-        if (data == null || data.length == 0) return;
-        
+        if (data == null || data.length == 0)
+            return;
+
         // IMPORTANT: Set write type to NO_RESPONSE for fire-and-forget behavior
         // This prevents waiting for BLE acknowledgments
-        
+
         // Send to right glass without waiting
         if (sendRight && rightGlassGatt != null && rightTxChar != null && isRightConnected) {
             rightTxChar.setValue(data);
@@ -1707,8 +1760,8 @@ public class G1 extends SGCManager {
             // Restore default write type
             rightTxChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
         }
-        
-        // Send to left glass without waiting  
+
+        // Send to left glass without waiting
         if (sendLeft && leftGlassGatt != null && leftTxChar != null && isLeftConnected) {
             leftTxChar.setValue(data);
             leftTxChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
@@ -1718,10 +1771,8 @@ public class G1 extends SGCManager {
         }
     }
 
-
-
     public class BooleanWaiter {
-        private boolean flag = true;  // initially true
+        private boolean flag = true; // initially true
 
         public synchronized void waitWhileTrue() throws InterruptedException {
             while (flag) {
@@ -1818,12 +1869,13 @@ public class G1 extends SGCManager {
                         Thread.sleep(DELAY_BETWEEN_CHUNKS_SEND);
 
                         // If the packet asked us to do a delay, then do it
-                        if (request.waitTime != -1){
+                        if (request.waitTime != -1) {
                             Thread.sleep(request.waitTime);
                         }
                     } catch (InterruptedException e) {
                         Log.e(TAG, "Error sending data: " + e.getMessage());
-                        if (isKilled) break;
+                        if (isKilled)
+                            break;
                     }
                 }
             } catch (InterruptedException e) {
@@ -1838,25 +1890,31 @@ public class G1 extends SGCManager {
         Log.d(TAG, "Process queue thread exiting");
     }
 
-//    @Override
-//    public void displayReferenceCardSimple(String title, String body, int lingerTimeMs) {
-//        displayReferenceCardSimple(title, body, lingerTimeMs);
-//    }
+    // @Override
+    // public void displayReferenceCardSimple(String title, String body, int
+    // lingerTimeMs) {
+    // displayReferenceCardSimple(title, body, lingerTimeMs);
+    // }
 
     private static final int NOTIFICATION = 0x4B; // Notification command
+
     private String createNotificationJson(String appIdentifier, String title, String subtitle, String message) {
         long currentTime = System.currentTimeMillis() / 1000L; // Unix timestamp in seconds
-        String currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()); // Date format for 'date' field
+        String currentDate = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()); // Date
+                                                                                                                 // format
+                                                                                                                 // for
+                                                                                                                 // 'date'
+                                                                                                                 // field
 
         NCSNotification ncsNotification = new NCSNotification(
-                notificationNum++,  // Increment sequence ID for uniqueness
-                1,             // type (e.g., 1 = notification type)
+                notificationNum++, // Increment sequence ID for uniqueness
+                1, // type (e.g., 1 = notification type)
                 appIdentifier,
                 title,
                 subtitle,
                 message,
-                (int) currentTime,  // Cast long to int to match Python
-                currentDate,        // Add the current date to the notification
+                (int) currentTime, // Cast long to int to match Python
+                currentDate, // Add the current date to the notification
                 "AugmentOS" // display_name
         );
 
@@ -1865,7 +1923,6 @@ public class G1 extends SGCManager {
         Gson gson = new Gson();
         return gson.toJson(notification);
     }
-
 
     class Notification {
         NCSNotification ncs_notification;
@@ -1888,11 +1945,12 @@ public class G1 extends SGCManager {
         String title;
         String subtitle;
         String message;
-        int time_s;  // Changed from long to int for consistency
+        int time_s; // Changed from long to int for consistency
         String date; // Added to match Python's date field
         String display_name;
 
-        public NCSNotification(int msg_id, int type, String app_identifier, String title, String subtitle, String message, int time_s, String date, String display_name) {
+        public NCSNotification(int msg_id, int type, String app_identifier, String title, String subtitle,
+                String message, int time_s, String date, String display_name) {
             this.msg_id = msg_id;
             this.type = type;
             this.app_identifier = app_identifier;
@@ -1941,7 +1999,7 @@ public class G1 extends SGCManager {
             return;
         }
 
-        if (title.trim().isEmpty() && body.trim().isEmpty()){
+        if (title.trim().isEmpty() && body.trim().isEmpty()) {
             if (SmartGlassesManager.getPowerSavingMode(context)) {
                 sendExitCommand();
                 return;
@@ -1967,9 +2025,9 @@ public class G1 extends SGCManager {
         showHomeScreen();
         isKilled = true;
 
-        //stop BLE scanning
+        // stop BLE scanning
         stopScan();
-        
+
         // Shutdown bitmap executor
         if (bitmapExecutor != null) {
             bitmapExecutor.shutdown();
@@ -1992,21 +2050,20 @@ public class G1 extends SGCManager {
             rightConnectionRetryRunnable = null;
         }
 
-        //disable the microphone
-        setMicEnabled(false, 0);
+        // disable the microphone
+        sendSetMicEnabled(false, 0);
 
-        //stop sending heartbeat
+        // stop sending heartbeat
         stopHeartbeat();
 
-        //stop sending micbeat
+        // stop sending micbeat
         stopMicBeat();
 
         // Stop periodic notifications
         stopPeriodicNotifications();
 
-
         // Stop periodic text wall
-//        stopPeriodicNotifications();
+        // stopPeriodicNotifications();
 
         if (leftGlassGatt != null) {
             leftGlassGatt.disconnect();
@@ -2031,8 +2088,8 @@ public class G1 extends SGCManager {
             notificationHandler.removeCallbacks(notificationRunnable);
         if (textWallHandler != null)
             textWallHandler.removeCallbacks(textWallRunnable);
-        //if (goHomeHandler != null)
-        //    goHomeHandler.removeCallbacks(goHomeRunnable);
+        // if (goHomeHandler != null)
+        // goHomeHandler.removeCallbacks(goHomeRunnable);
         if (findCompatibleDevicesHandler != null)
             findCompatibleDevicesHandler.removeCallbacksAndMessages(null);
         if (connectHandler != null)
@@ -2058,7 +2115,7 @@ public class G1 extends SGCManager {
             queryBatteryStatusHandler.removeCallbacksAndMessages(null);
         }
 
-        //free LC3 decoder
+        // free LC3 decoder
         if (lc3DecoderPtr != 0) {
             L3cCpp.freeDecoder(lc3DecoderPtr);
             lc3DecoderPtr = 0;
@@ -2067,7 +2124,7 @@ public class G1 extends SGCManager {
         sendQueue.clear();
 
         // Add a dummy element to unblock the take() call if needed
-        sendQueue.offer(new SendRequest[0]); //is this needed?
+        sendQueue.offer(new SendRequest[0]); // is this needed?
 
         isWorkerRunning = false;
 
@@ -2077,25 +2134,31 @@ public class G1 extends SGCManager {
         Log.d(TAG, "EvenRealitiesG1SGC cleanup complete");
     }
 
-
     public boolean isConnected() {
         return connectionState == SmartGlassesConnectionState.CONNECTED;
     }
 
     // Remaining methods
-    public void showNaturalLanguageCommandScreen(String prompt, String naturalLanguageInput) {}
+    public void showNaturalLanguageCommandScreen(String prompt, String naturalLanguageInput) {
+    }
 
-    public void updateNaturalLanguageCommandScreen(String naturalLanguageArgs) {}
+    public void updateNaturalLanguageCommandScreen(String naturalLanguageArgs) {
+    }
 
-    public void scrollingTextViewIntermediateText(String text) {}
+    public void scrollingTextViewIntermediateText(String text) {
+    }
 
-    public void scrollingTextViewFinalText(String text) {}
+    public void scrollingTextViewFinalText(String text) {
+    }
 
-    public void stopScrollingTextViewMode() {}
+    public void stopScrollingTextViewMode() {
+    }
 
-    public void displayPromptView(String title, String[] options) {}
+    public void displayPromptView(String title, String[] options) {
+    }
 
-    public void displayTextLine(String text) {}
+    public void displayTextLine(String text) {
+    }
 
     public void displayBitmap(Bitmap bmp) {
         try {
@@ -2106,12 +2169,14 @@ public class G1 extends SGCManager {
         }
     }
 
-    public void blankScreen() {}
+    public void blankScreen() {
+    }
 
     public void displayDoubleTextWall(String textTop, String textBottom) {
-        if (updatingScreen) return;
+        if (updatingScreen)
+            return;
 
-        if (textTop.trim().isEmpty() && textBottom.trim().isEmpty()){
+        if (textTop.trim().isEmpty() && textBottom.trim().isEmpty()) {
             if (SmartGlassesManager.getPowerSavingMode(context)) {
                 sendExitCommand();
                 return;
@@ -2130,14 +2195,14 @@ public class G1 extends SGCManager {
         }
 
         if (lastThingDisplayedWasAnImage) {
-            //clearG1Screen();
+            // clearG1Screen();
             lastThingDisplayedWasAnImage = false;
         }
     }
 
     public void clearG1Screen() {
         Log.d(TAG, "Clearing G1 screen");
-        byte[] exitCommand = new byte[]{(byte) 0x18};
+        byte[] exitCommand = new byte[] { (byte) 0x18 };
         // sendDataSequentially(exitCommand, false);
         byte[] theClearBitmapOrSomething = loadEmptyBmpFromAssets();
         Bitmap bmp = BitmapJavaUtils.bytesToBitmap(theClearBitmapOrSomething);
@@ -2151,15 +2216,19 @@ public class G1 extends SGCManager {
 
     // public void setFontSize(SmartGlassesFontSize fontSize) {}
 
-    public void displayRowsCard(String[] rowStrings) {}
+    public void displayRowsCard(String[] rowStrings) {
+    }
 
-    public void displayBulletList(String title, String[] bullets) {}
+    public void displayBulletList(String title, String[] bullets) {
+    }
 
-    public void displayReferenceCardImage(String title, String body, String imgUrl) {}
+    public void displayReferenceCardImage(String title, String body, String imgUrl) {
+    }
 
     public void displayTextWall(String a) {
-        if (updatingScreen) return;
-        if (a.trim().isEmpty()){
+        if (updatingScreen)
+            return;
+        if (a.trim().isEmpty()) {
             if (SmartGlassesManager.getPowerSavingMode(context)) {
                 sendExitCommand();
                 return;
@@ -2174,7 +2243,8 @@ public class G1 extends SGCManager {
         this.updatingScreen = updatingScreen;
     }
 
-    public void setFontSizes() {}
+    public void setFontSizes() {
+    }
 
     // Heartbeat methods
     private byte[] constructHeartbeat() {
@@ -2190,43 +2260,43 @@ public class G1 extends SGCManager {
 
     private byte[] constructBatteryLevelQuery() {
         ByteBuffer buffer = ByteBuffer.allocate(2);
-        buffer.put((byte) 0x2C);  // Command
+        buffer.put((byte) 0x2C); // Command
         buffer.put((byte) 0x01); // use 0x02 for iOS
         return buffer.array();
     }
 
     private void startHeartbeat(int delay) {
         Log.d(TAG, "Starting heartbeat");
-        if (heartbeatCount > 0) stopHeartbeat();
+        if (heartbeatCount > 0)
+            stopHeartbeat();
 
         heartbeatRunnable = new Runnable() {
             @Override
             public void run() {
                 sendHeartbeat();
-//                sendLoremIpsum();
+                // sendLoremIpsum();
 
-//                quickRestartG1();
-
+                // quickRestartG1();
 
                 heartbeatHandler.postDelayed(this, HEARTBEAT_INTERVAL_MS);
             }
         };
 
-
         heartbeatHandler.postDelayed(heartbeatRunnable, delay);
     }
 
-    //periodically send a mic ON request so it never turns off
+    // periodically send a mic ON request so it never turns off
     private void startMicBeat(int delay) {
         Log.d(TAG, "Starting micbeat");
-        if (micBeatCount > 0) stopMicBeat();
-        setMicEnabled(true, 10);
+        if (micBeatCount > 0)
+            stopMicBeat();
+        sendSetMicEnabled(true, 10);
 
         micBeatRunnable = new Runnable() {
             @Override
             public void run() {
                 Log.d(TAG, "SENDING MIC BEAT");
-                setMicEnabled(shouldUseGlassesMic, 1);
+                sendSetMicEnabled(shouldUseGlassesMic, 1);
                 micBeatHandler.postDelayed(this, MICBEAT_INTERVAL_MS);
             }
         };
@@ -2273,10 +2343,10 @@ public class G1 extends SGCManager {
                             Log.d(TAG, "Found smart glasses: " + name);
                             String adjustedName = parsePairingIdFromDeviceName(name);
                             // EventBus.getDefault().post(
-                            //         new GlassesBluetoothSearchDiscoverEvent(
-                            //                 smartGlassesDevice.deviceModelName,
-                            //                 adjustedName
-                            //         )
+                            // new GlassesBluetoothSearchDiscoverEvent(
+                            // smartGlassesDevice.deviceModelName,
+                            // adjustedName
+                            // )
                             // );
                             // TODO: finish this
                             // Bridge.sendEvent("glasses_bluetooth_search_discover", adjustedName);
@@ -2306,15 +2376,15 @@ public class G1 extends SGCManager {
             isScanningForCompatibleDevices = false;
             Log.d(TAG, "Stopped scanning for smart glasses.");
             // EventBus.getDefault().post(
-            //         new GlassesBluetoothSearchStopEvent(
-            //                 smartGlassesDevice.deviceModelName
-            //         )
+            // new GlassesBluetoothSearchStopEvent(
+            // smartGlassesDevice.deviceModelName
+            // )
             // );
         }, 10000);
     }
 
     private void sendWhiteListCommand(int delay) {
-        if (whiteListedAlready){
+        if (whiteListedAlready) {
             return;
         }
         whiteListedAlready = true;
@@ -2325,17 +2395,17 @@ public class G1 extends SGCManager {
             public void run() {
                 List<byte[]> chunks = getWhitelistChunks();
                 sendDataSequentially(chunks, false);
-//                for (byte[] chunk : chunks) {
-//                    Log.d(TAG, "Sending this chunk for white list:" + bytesToUtf8(chunk));
-//                    sendDataSequentially(chunk, false);
-//
-////                    // Sleep for 100 milliseconds between sending each chunk
-////                    try {
-////                        Thread.sleep(150);
-////                    } catch (InterruptedException e) {
-////                        e.printStackTrace();
-////                    }
-//                }
+                // for (byte[] chunk : chunks) {
+                // Log.d(TAG, "Sending this chunk for white list:" + bytesToUtf8(chunk));
+                // sendDataSequentially(chunk, false);
+                //
+                //// // Sleep for 100 milliseconds between sending each chunk
+                //// try {
+                //// Thread.sleep(150);
+                //// } catch (InterruptedException e) {
+                //// e.printStackTrace();
+                //// }
+                // }
             }
         }, delay);
     }
@@ -2349,7 +2419,7 @@ public class G1 extends SGCManager {
     }
 
     private void stopMicBeat() {
-        setMicEnabled(false, 10);
+        sendSetMicEnabled(false, 10);
         if (micBeatHandler != null) {
             micBeatHandler.removeCallbacksAndMessages(null);
             micBeatHandler.removeCallbacksAndMessages(micBeatRunnable);
@@ -2360,23 +2430,26 @@ public class G1 extends SGCManager {
 
     private void sendHeartbeat() {
         byte[] heartbeatPacket = constructHeartbeat();
-//        Log.d(TAG, "Sending heartbeat: " + bytesToHex(heartbeatPacket));
+        // Log.d(TAG, "Sending heartbeat: " + bytesToHex(heartbeatPacket));
 
         sendDataSequentially(heartbeatPacket, false, 100);
 
         if (batteryLeft == -1 || batteryRight == -1 || heartbeatCount % 10 == 0) {
-             queryBatteryStatusHandler.postDelayed(this::queryBatteryStatus, 500);
+            queryBatteryStatusHandler.postDelayed(this::queryBatteryStatus, 500);
         }
-        //queryBatteryStatusHandler.postDelayed(this::queryBatteryStatus, 500);
+        // queryBatteryStatusHandler.postDelayed(this::queryBatteryStatus, 500);
 
         heartbeatCount++;
     }
+
     private void queryBatteryStatus() {
         byte[] batteryQueryPacket = constructBatteryLevelQuery();
-//        Log.d(TAG, "Sending battery status query: " + bytesToHex(batteryQueryPacket));
+        // Log.d(TAG, "Sending battery status query: " +
+        // bytesToHex(batteryQueryPacket));
 
         sendDataSequentially(batteryQueryPacket, false, 250);
     }
+
     public void sendBrightnessCommand(int brightness, boolean autoLight) {
         // Validate brightness range
 
@@ -2389,20 +2462,21 @@ public class G1 extends SGCManager {
 
         // Construct the command
         ByteBuffer buffer = ByteBuffer.allocate(3);
-        buffer.put((byte) 0x01);              // Command
-        buffer.put((byte) validBrightness);       // Brightness level (0~63)
+        buffer.put((byte) 0x01); // Command
+        buffer.put((byte) validBrightness); // Brightness level (0~63)
         buffer.put((byte) (autoLight ? 1 : 0)); // Auto light (0 = close, 1 = open)
 
         sendDataSequentially(buffer.array(), false, 100);
 
-        Log.d(TAG, "Sent auto light brightness command => Brightness: " + brightness + ", Auto Light: " + (autoLight ? "Open" : "Close"));
+        Log.d(TAG, "Sent auto light brightness command => Brightness: " + brightness + ", Auto Light: "
+                + (autoLight ? "Open" : "Close"));
 
-        //send to AugmentOS core
-//        if (autoLight) {
-//            EventBus.getDefault().post(new BrightnessLevelEvent(autoLight));
-//        } else {
-//            EventBus.getDefault().post(new BrightnessLevelEvent(brightness));
-//        }
+        // send to AugmentOS core
+        // if (autoLight) {
+        // EventBus.getDefault().post(new BrightnessLevelEvent(autoLight));
+        // } else {
+        // EventBus.getDefault().post(new BrightnessLevelEvent(brightness));
+        // }
     }
 
     public void sendHeadUpAngleCommand(int headUpAngle) {
@@ -2415,9 +2489,9 @@ public class G1 extends SGCManager {
 
         // Construct the command
         ByteBuffer buffer = ByteBuffer.allocate(3);
-        buffer.put((byte) 0x0B);        // Command for configuring headUp angle
+        buffer.put((byte) 0x0B); // Command for configuring headUp angle
         buffer.put((byte) headUpAngle); // Angle value (0~60)
-        buffer.put((byte) 0x01);        // Level (fixed at 0x01)
+        buffer.put((byte) 0x01); // Level (fixed at 0x01)
 
         sendDataSequentially(buffer.array(), false, 100);
 
@@ -2433,21 +2507,20 @@ public class G1 extends SGCManager {
         int globalCounter = 0;// TODO: must be incremented each time this command is sent!
 
         ByteBuffer buffer = ByteBuffer.allocate(8);
-        buffer.put((byte) 0x26);        // Command for dashboard height
-        buffer.put((byte) 0x08);     // Length
-        buffer.put((byte) 0x00);     // Sequence
+        buffer.put((byte) 0x26); // Command for dashboard height
+        buffer.put((byte) 0x08); // Length
+        buffer.put((byte) 0x00); // Sequence
         buffer.put((byte) (globalCounter & 0xFF));// counter
-        buffer.put((byte) 0x02);     // Fixed value
-        buffer.put((byte) 0x01);     // State ON
-        buffer.put((byte) height);     // Height value (0-8)
-        buffer.put((byte) depth);     // Depth value (0-9)
-        
+        buffer.put((byte) 0x02); // Fixed value
+        buffer.put((byte) 0x01); // State ON
+        buffer.put((byte) height); // Height value (0-8)
+        buffer.put((byte) depth); // Depth value (0-9)
+
         sendDataSequentially(buffer.array(), false, 100);
 
         Log.d(TAG, "Sent dashboard height/depth command => Height: " + height + ", Depth: " + depth);
         // EventBus.getDefault().post(new DashboardPositionEvent(height, depth));
     }
-    
 
     public void updateGlassesBrightness(int brightness) {
         Log.d(TAG, "Updating glasses brightness: " + brightness);
@@ -2468,9 +2541,8 @@ public class G1 extends SGCManager {
     }
 
     public void sendExitCommand() {
-        sendDataSequentially(new byte[]{(byte) 0x18}, false, 100);
+        sendDataSequentially(new byte[] { (byte) 0x18 }, false, 100);
     }
-    
 
     private static String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
@@ -2480,8 +2552,8 @@ public class G1 extends SGCManager {
         return sb.toString().trim();
     }
 
-    //microphone stuff
-    public void setMicEnabled(boolean enable, int delay) {
+    // microphone stuff
+    public void sendSetMicEnabled(boolean enable, int delay) {
         // Log.d(TAG, "^^^^^^^^^^^^^");
         // Log.d(TAG, "^^^^^^^^^^^^^");
         // Log.d(TAG, "^^^^^^^^^^^^^");
@@ -2507,15 +2579,15 @@ public class G1 extends SGCManager {
                 buffer.put(command);
                 buffer.put(enableByte);
 
-                sendDataSequentially(buffer.array(), false, true, 300); //wait some time to setup the mic
+                sendDataSequentially(buffer.array(), false, true, 300); // wait some time to setup the mic
                 Log.d(TAG, "Sent MIC command: " + bytesToHex(buffer.array()));
             }
         }, delay);
     }
 
-    //notifications
+    // notifications
     private void startPeriodicNotifications(int delay) {
-        if (notifysStarted){
+        if (notifysStarted) {
             return;
         }
         notifysStarted = true;
@@ -2542,36 +2614,38 @@ public class G1 extends SGCManager {
         }
 
         // Example notification data (replace with your actual data)
-//        String json = createNotificationJson("com.augment.os", "QuestionAnswerer", "How much caffeine in dark chocolate?", "25 to 50 grams per piece");
-        String json = createNotificationJson("com.augment.os", "QuestionAnswerer", "How much caffeine in dark chocolate?", "25 to 50 grams per piece");
+        // String json = createNotificationJson("com.augment.os", "QuestionAnswerer",
+        // "How much caffeine in dark chocolate?", "25 to 50 grams per piece");
+        String json = createNotificationJson("com.augment.os", "QuestionAnswerer",
+                "How much caffeine in dark chocolate?", "25 to 50 grams per piece");
         Log.d(TAG, "the JSON to send: " + json);
         List<byte[]> chunks = createNotificationChunks(json);
-//        Log.d(TAG, "THE CHUNKS:");
-//        Log.d(TAG, chunks.get(0).toString());
-//        Log.d(TAG, chunks.get(1).toString());
+        // Log.d(TAG, "THE CHUNKS:");
+        // Log.d(TAG, chunks.get(0).toString());
+        // Log.d(TAG, chunks.get(1).toString());
         for (byte[] chunk : chunks) {
             Log.d(TAG, "Sent chunk to glasses: " + bytesToUtf8(chunk));
         }
 
         // Send each chunk with a short sleep between each send
         sendDataSequentially(chunks, false);
-//        for (byte[] chunk : chunks) {
-//            sendDataSequentially(chunk);
-//
-////            // Sleep for 100 milliseconds between sending each chunk
-////            try {
-////                Thread.sleep(150);
-////            } catch (InterruptedException e) {
-////                e.printStackTrace();
-////            }
-//        }
+        // for (byte[] chunk : chunks) {
+        // sendDataSequentially(chunk);
+        //
+        //// // Sleep for 100 milliseconds between sending each chunk
+        //// try {
+        //// Thread.sleep(150);
+        //// } catch (InterruptedException e) {
+        //// e.printStackTrace();
+        //// }
+        // }
 
         Log.d(TAG, "Sent periodic notification");
     }
 
-    //text wall debug
+    // text wall debug
     private void startPeriodicTextWall(int delay) {
-        if (textWallsStarted){
+        if (textWallsStarted) {
             return;
         }
         textWallsStarted = true;
@@ -2592,26 +2666,28 @@ public class G1 extends SGCManager {
     }
 
     // Constants for text wall display
-    private static final int TEXT_COMMAND = 0x4E;  // Text command
+    private static final int TEXT_COMMAND = 0x4E; // Text command
     private static final int DISPLAY_WIDTH = 488;
-    private static final int DISPLAY_USE_WIDTH = 488;  // How much of the display to use
-    private static final float FONT_MULTIPLIER = 1/50.0f;
-    private static final int OLD_FONT_SIZE = 21;      // Font size
+    private static final int DISPLAY_USE_WIDTH = 488; // How much of the display to use
+    private static final float FONT_MULTIPLIER = 1 / 50.0f;
+    private static final int OLD_FONT_SIZE = 21; // Font size
     private static final float FONT_DIVIDER = 2.0f;
     private static final int LINES_PER_SCREEN = 5; // Lines per screen
     private static final int MAX_CHUNK_SIZE = 176; // Maximum chunk size for BLE packets
-//    private static final int INDENT_SPACES = 32;    // Number of spaces to indent text
+    // private static final int INDENT_SPACES = 32; // Number of spaces to indent
+    // text
 
     private int textSeqNum = 0; // Sequence number for text packets
 
-    //currently only a single page - 1PAGE CHANGE
+    // currently only a single page - 1PAGE CHANGE
     private List<byte[]> createTextWallChunks(String text) {
         int margin = 5;
 
         // Get width of single space character
         int spaceWidth = calculateTextWidth(" ");
 
-        // Calculate effective display width after accounting for left and right margins in spaces
+        // Calculate effective display width after accounting for left and right margins
+        // in spaces
         int marginWidth = margin * spaceWidth; // Width of left margin in pixels
         int effectiveWidth = DISPLAY_WIDTH - (2 * marginWidth); // Subtract left and right margins
 
@@ -2619,7 +2695,7 @@ public class G1 extends SGCManager {
         List<String> lines = splitIntoLines(text, effectiveWidth);
 
         // Calculate total pages
-        int totalPages = 1; //hard set to 1 since we only do 1 page - 1PAGECHANGE
+        int totalPages = 1; // hard set to 1 since we only do 1 page - 1PAGECHANGE
 
         List<byte[]> allChunks = new ArrayList<>();
 
@@ -2651,15 +2727,15 @@ public class G1 extends SGCManager {
                 // Create header with protocol specifications
                 byte screenStatus = 0x71; // New content (0x01) + Text Show (0x70)
                 byte[] header = new byte[] {
-                        (byte) TEXT_COMMAND,    // Command type
-                        (byte) textSeqNum,      // Sequence number
-                        (byte) totalChunks,     // Total packages
-                        (byte) i,               // Current package number
-                        screenStatus,           // Screen status
-                        (byte) 0x00,            // new_char_pos0 (high)
-                        (byte) 0x00,            // new_char_pos1 (low)
-                        (byte) page,            // Current page number
-                        (byte) totalPages       // Max page number
+                        (byte) TEXT_COMMAND, // Command type
+                        (byte) textSeqNum, // Sequence number
+                        (byte) totalChunks, // Total packages
+                        (byte) i, // Current package number
+                        screenStatus, // Screen status
+                        (byte) 0x00, // new_char_pos0 (high)
+                        (byte) 0x00, // new_char_pos1 (low)
+                        (byte) page, // Current page number
+                        (byte) totalPages // Max page number
                 };
 
                 // Combine header and payload
@@ -2672,7 +2748,7 @@ public class G1 extends SGCManager {
 
             // Increment sequence number for next page
             textSeqNum = (textSeqNum + 1) % 256;
-            break; //hard set to 1  - 1PAGECHANGE
+            break; // hard set to 1 - 1PAGECHANGE
         }
 
         return allChunks;
@@ -2689,16 +2765,18 @@ public class G1 extends SGCManager {
 
     private List<byte[]> createDoubleTextWallChunks(String text1, String text2) {
         // Define column widths and positions
-        final int LEFT_COLUMN_WIDTH = (int)(DISPLAY_WIDTH * 0.5);  // 40% of display for left column
-        final int RIGHT_COLUMN_START = (int)(DISPLAY_WIDTH * 0.55);  // Right column starts at 60%
+        final int LEFT_COLUMN_WIDTH = (int) (DISPLAY_WIDTH * 0.5); // 40% of display for left column
+        final int RIGHT_COLUMN_START = (int) (DISPLAY_WIDTH * 0.55); // Right column starts at 60%
 
         // Split texts into lines with specific width constraints
         List<String> lines1 = splitIntoLines(text1, LEFT_COLUMN_WIDTH);
         List<String> lines2 = splitIntoLines(text2, DISPLAY_WIDTH - RIGHT_COLUMN_START);
 
         // Ensure we have exactly LINES_PER_SCREEN lines (typically 5)
-        while (lines1.size() < LINES_PER_SCREEN) lines1.add("");
-        while (lines2.size() < LINES_PER_SCREEN) lines2.add("");
+        while (lines1.size() < LINES_PER_SCREEN)
+            lines1.add("");
+        while (lines2.size() < LINES_PER_SCREEN)
+            lines2.add("");
 
         lines1 = lines1.subList(0, LINES_PER_SCREEN);
         lines2 = lines2.subList(0, LINES_PER_SCREEN);
@@ -2715,7 +2793,8 @@ public class G1 extends SGCManager {
             // Calculate width of left text in pixels
             int leftTextWidth = calculateTextWidth(leftText);
 
-            // Calculate exactly how many spaces are needed to position the right column correctly
+            // Calculate exactly how many spaces are needed to position the right column
+            // correctly
             int spacesNeeded = calculateSpacesForAlignment(leftTextWidth, RIGHT_COLUMN_START, spaceWidth);
 
             // Log detailed alignment info for debugging
@@ -2743,7 +2822,7 @@ public class G1 extends SGCManager {
         }
 
         // Calculate the exact number of spaces needed
-        int spaces = (int)Math.ceil((double)pixelsNeeded / spaceWidth);
+        int spaces = (int) Math.ceil((double) pixelsNeeded / spaceWidth);
 
         // Cap at a reasonable maximum
         return Math.min(spaces, 100);
@@ -2761,16 +2840,16 @@ public class G1 extends SGCManager {
 
             // Create header with protocol specifications
             byte screenStatus = 0x71; // New content (0x01) + Text Show (0x70)
-            byte[] header = new byte[]{
-                    (byte) TEXT_COMMAND,    // Command type
-                    (byte) textSeqNum,      // Sequence number
-                    (byte) totalChunks,     // Total packages
-                    (byte) i,               // Current package number
-                    screenStatus,           // Screen status
-                    (byte) 0x00,            // new_char_pos0 (high)
-                    (byte) 0x00,            // new_char_pos1 (low)
-                    (byte) 0x00,            // Current page number (always 0 for now)
-                    (byte) 0x01             // Max page number (always 1)
+            byte[] header = new byte[] {
+                    (byte) TEXT_COMMAND, // Command type
+                    (byte) textSeqNum, // Sequence number
+                    (byte) totalChunks, // Total packages
+                    (byte) i, // Current package number
+                    screenStatus, // Screen status
+                    (byte) 0x00, // new_char_pos0 (high)
+                    (byte) 0x00, // new_char_pos1 (low)
+                    (byte) 0x00, // Current page number (always 0 for now)
+                    (byte) 0x01 // Max page number (always 1)
             };
 
             // Combine header and payload
@@ -2864,7 +2943,8 @@ public class G1 extends SGCManager {
                     }
                 }
 
-                // If we couldn't find a space in a reasonable range, use the calculated split point
+                // If we couldn't find a space in a reasonable range, use the calculated split
+                // point
                 if (!foundSpace && bestSplitIndex - startIndex > 2) {
                     splitIndex = bestSplitIndex;
                 }
@@ -2905,11 +2985,11 @@ public class G1 extends SGCManager {
         for (byte[] chunk : chunks) {
             sendDataSequentially(chunk);
 
-//            try {
-//                Thread.sleep(150); // 150ms delay between chunks
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+            // try {
+            // Thread.sleep(150); // 150ms delay between chunks
+            // } catch (InterruptedException e) {
+            // e.printStackTrace();
+            // }
         }
 
         // Log.d(TAG, "Sent text wall");
@@ -2928,6 +3008,7 @@ public class G1 extends SGCManager {
 
     // handle white list stuff
     private static final int WHITELIST_CMD = 0x04; // Command ID for whitelist
+
     public List<byte[]> getWhitelistChunks() {
         // Define the hardcoded whitelist JSON
         List<AppInfo> apps = new ArrayList<>();
@@ -2980,8 +3061,13 @@ public class G1 extends SGCManager {
             this.name = name;
         }
 
-        public String getId() { return id; }
-        public String getName() { return name; }
+        public String getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 
     // Helper function to split JSON into chunks
@@ -2998,9 +3084,9 @@ public class G1 extends SGCManager {
 
             // Create the header: [WHITELIST_CMD, total_chunks, chunk_index]
             byte[] header = new byte[] {
-                    (byte) WHITELIST_CMD,  // Command ID
-                    (byte) totalChunks,   // Total number of chunks
-                    (byte) i              // Current chunk index
+                    (byte) WHITELIST_CMD, // Command ID
+                    (byte) totalChunks, // Total number of chunks
+                    (byte) i // Current chunk index
             };
 
             // Combine header and payload
@@ -3014,51 +3100,50 @@ public class G1 extends SGCManager {
         return chunks;
     }
 
-    public void displayCustomContent(String content){
+    public void displayCustomContent(String content) {
         Log.d(TAG, "DISPLAY CUSTOM CONTENT");
     }
 
-    private void sendChunks(List<byte[]> chunks){
+    private void sendChunks(List<byte[]> chunks) {
         // Send each chunk with a delay between sends
         for (byte[] chunk : chunks) {
             sendDataSequentially(chunk);
 
-//            try {
-//                Thread.sleep(DELAY_BETWEEN_CHUNKS_SEND); // delay between chunks
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+            // try {
+            // Thread.sleep(DELAY_BETWEEN_CHUNKS_SEND); // delay between chunks
+            // } catch (InterruptedException e) {
+            // e.printStackTrace();
+            // }
         }
     }
 
-//    public int DEFAULT_CARD_SHOW_TIME = 6;
-//    public void homeScreenInNSeconds(int n){
-//        if (n == -1){
-//            return;
-//        }
-//
-//        if (n == 0){
-//            n = DEFAULT_CARD_SHOW_TIME;
-//        }
-//
-//        //disconnect after slight delay, so our above text gets a chance to show up
-//        goHomeHandler.removeCallbacksAndMessages(goHomeRunnable);
-//        goHomeHandler.removeCallbacksAndMessages(null);
-//        goHomeRunnable = new Runnable() {
-//            @Override
-//            public void run() {
-//                showHomeScreen();
-//            }};
-//        goHomeHandler.postDelayed(goHomeRunnable, n * 1000);
-//    }
+    // public int DEFAULT_CARD_SHOW_TIME = 6;
+    // public void homeScreenInNSeconds(int n){
+    // if (n == -1){
+    // return;
+    // }
+    //
+    // if (n == 0){
+    // n = DEFAULT_CARD_SHOW_TIME;
+    // }
+    //
+    // //disconnect after slight delay, so our above text gets a chance to show up
+    // goHomeHandler.removeCallbacksAndMessages(goHomeRunnable);
+    // goHomeHandler.removeCallbacksAndMessages(null);
+    // goHomeRunnable = new Runnable() {
+    // @Override
+    // public void run() {
+    // showHomeScreen();
+    // }};
+    // goHomeHandler.postDelayed(goHomeRunnable, n * 1000);
+    // }
 
-
-    //BMP handling
+    // BMP handling
 
     // Add these class variables
     private static final int BMP_CHUNK_SIZE = 194;
-    private static final byte[] GLASSES_ADDRESS = new byte[]{0x00, 0x1c, 0x00, 0x00};
-    private static final byte[] END_COMMAND = new byte[]{0x20, 0x0d, 0x0e};
+    private static final byte[] GLASSES_ADDRESS = new byte[] { 0x00, 0x1c, 0x00, 0x00 };
+    private static final byte[] END_COMMAND = new byte[] { 0x20, 0x0d, 0x0e };
     private static final int MAX_BMP_RETRY_ATTEMPTS = 10;
     private static final long BMP_RETRY_DELAY_MS = 1000;
 
@@ -3069,19 +3154,21 @@ public class G1 extends SGCManager {
     private static final long END_COMMAND_TIMEOUT_MS = 3000;
     private static final long CRC_COMMAND_TIMEOUT_MS = 3000;
     private static final long CHUNK_SEND_TIMEOUT_MS = 5000;
-    
+
     // Optimized bitmap display flags
     private static final boolean USE_OPTIMIZED_BITMAP_DISPLAY = true;
     private static final boolean USE_PARALLEL_BITMAP_WRITES = true;
     private volatile boolean isSendingBitmap = false;
-    
+
     // Executor for parallel bitmap operations
     private ExecutorService bitmapExecutor;
 
     // Progress callback interface
     public interface BmpProgressCallback {
         void onProgress(String side, int offset, int chunkIndex, int totalSize);
+
         void onSuccess(String side);
+
         void onError(String side, String error);
     }
 
@@ -3096,66 +3183,71 @@ public class G1 extends SGCManager {
             displayBitmapImageLegacy(bmpData, callback);
         }
     }
-    
+
     // Optimized bitmap display using iOS-like approach
     private void displayBitmapImageOptimized(byte[] bmpData, BmpProgressCallback callback) {
         Log.d(TAG, "Starting OPTIMIZED BMP display process");
-        
+
         try {
             if (bmpData == null || bmpData.length == 0) {
                 Log.e(TAG, "Invalid BMP data provided");
-                if (callback != null) callback.onError("both", "Invalid BMP data");
+                if (callback != null)
+                    callback.onError("both", "Invalid BMP data");
                 return;
             }
-            
+
             isSendingBitmap = true;
             long startTime = System.currentTimeMillis();
-            
+
             Log.d(TAG, "Processing BMP data, size: " + bmpData.length + " bytes");
             List<byte[]> chunks = createBmpChunks(bmpData);
             Log.d(TAG, "Created " + chunks.size() + " chunks");
-            
+
             // Send chunks using optimized method
             boolean chunksSuccess = sendBmpChunksOptimized(chunks, callback);
             if (!chunksSuccess) {
                 Log.e(TAG, "Failed to send BMP chunks");
-                if (callback != null) callback.onError("both", "Failed to send chunks");
+                if (callback != null)
+                    callback.onError("both", "Failed to send chunks");
                 return;
             }
-            
+
             // Send end command - this needs confirmation
             boolean endSuccess = sendBmpEndCommandOptimized();
             if (!endSuccess) {
                 Log.e(TAG, "Failed to send BMP end command");
-                if (callback != null) callback.onError("both", "Failed to send end command");
+                if (callback != null)
+                    callback.onError("both", "Failed to send end command");
                 return;
             }
-            
+
             // Send CRC - this needs confirmation
             boolean crcSuccess = sendBmpCrcOptimized(bmpData);
             if (!crcSuccess) {
                 Log.e(TAG, "Failed to send BMP CRC");
-                if (callback != null) callback.onError("both", "CRC check failed");
+                if (callback != null)
+                    callback.onError("both", "CRC check failed");
                 return;
             }
-            
+
             lastThingDisplayedWasAnImage = true;
-            
+
             long totalTime = System.currentTimeMillis() - startTime;
             Log.d(TAG, "BMP display completed in " + totalTime + "ms");
-            
+
             if (callback != null) {
                 callback.onSuccess("both");
             }
-            
+
         } catch (Exception e) {
             Log.e(TAG, "Error in displayBitmapImageOptimized: " + e.getMessage());
-            if (callback != null) callback.onError("both", "Exception: " + e.getMessage());
+            if (callback != null)
+                callback.onError("both", "Exception: " + e.getMessage());
         } finally {
             isSendingBitmap = false;
         }
     }
-    
+
     // Legacy method for fallback
     private void displayBitmapImageLegacy(byte[] bmpData, BmpProgressCallback callback) {
         Log.d(TAG, "Starting LEGACY BMP display process");
@@ -3163,7 +3255,8 @@ public class G1 extends SGCManager {
         try {
             if (bmpData == null || bmpData.length == 0) {
                 Log.e(TAG, "Invalid BMP data provided");
-                if (callback != null) callback.onError("both", "Invalid BMP data");
+                if (callback != null)
+                    callback.onError("both", "Invalid BMP data");
                 return;
             }
             Log.d(TAG, "Processing BMP data, size: " + bmpData.length + " bytes");
@@ -3177,7 +3270,8 @@ public class G1 extends SGCManager {
             boolean chunksSuccess = sendBmpChunksWithProgress(chunks, callback);
             if (!chunksSuccess) {
                 Log.e(TAG, "Failed to send BMP chunks");
-                if (callback != null) callback.onError("both", "Failed to send chunks");
+                if (callback != null)
+                    callback.onError("both", "Failed to send chunks");
                 return;
             }
 
@@ -3185,7 +3279,8 @@ public class G1 extends SGCManager {
             boolean endSuccess = sendBmpEndCommandWithRetry();
             if (!endSuccess) {
                 Log.e(TAG, "Failed to send BMP end command");
-                if (callback != null) callback.onError("both", "Failed to send end command");
+                if (callback != null)
+                    callback.onError("both", "Failed to send end command");
                 return;
             }
 
@@ -3193,7 +3288,8 @@ public class G1 extends SGCManager {
             boolean crcSuccess = sendBmpCrcWithRetry(bmpData);
             if (!crcSuccess) {
                 Log.e(TAG, "Failed to send BMP CRC");
-                if (callback != null) callback.onError("both", "CRC check failed");
+                if (callback != null)
+                    callback.onError("both", "CRC check failed");
                 return;
             }
 
@@ -3207,7 +3303,8 @@ public class G1 extends SGCManager {
 
         } catch (Exception e) {
             Log.e(TAG, "Error in displayBitmapImage: " + e.getMessage());
-            if (callback != null) callback.onError("both", "Exception: " + e.getMessage());
+            if (callback != null)
+                callback.onError("both", "Exception: " + e.getMessage());
         }
     }
 
@@ -3224,15 +3321,15 @@ public class G1 extends SGCManager {
             // First chunk needs address bytes
             if (i == 0) {
                 byte[] headerWithAddress = new byte[2 + GLASSES_ADDRESS.length + chunk.length];
-                headerWithAddress[0] = 0x15;  // Command
-                headerWithAddress[1] = (byte)(i & 0xFF);  // Sequence
+                headerWithAddress[0] = 0x15; // Command
+                headerWithAddress[1] = (byte) (i & 0xFF); // Sequence
                 System.arraycopy(GLASSES_ADDRESS, 0, headerWithAddress, 2, GLASSES_ADDRESS.length);
                 System.arraycopy(chunk, 0, headerWithAddress, 6, chunk.length);
                 chunks.add(headerWithAddress);
             } else {
                 byte[] header = new byte[2 + chunk.length];
-                header[0] = 0x15;  // Command
-                header[1] = (byte)(i & 0xFF);  // Sequence
+                header[0] = 0x15; // Command
+                header[1] = (byte) (i & 0xFF); // Sequence
                 System.arraycopy(chunk, 0, header, 2, chunk.length);
                 chunks.add(header);
             }
@@ -3241,12 +3338,13 @@ public class G1 extends SGCManager {
     }
 
     private boolean sendBmpChunksWithProgress(List<byte[]> chunks, BmpProgressCallback callback) {
-        if (updatingScreen) return false;
-        
+        if (updatingScreen)
+            return false;
+
         for (int i = 0; i < chunks.size(); i++) {
             byte[] chunk = chunks.get(i);
             Log.d(TAG, "Sending chunk " + i + " of " + chunks.size() + ", size: " + chunk.length);
-            
+
             boolean success = sendDataSequentiallyWithTimeout(chunk, CHUNK_SEND_TIMEOUT_MS);
             if (!success) {
                 Log.e(TAG, "Failed to send chunk " + i);
@@ -3269,27 +3367,28 @@ public class G1 extends SGCManager {
         }
         return true;
     }
-    
+
     // Optimized chunk sending - mimics iOS approach
     private boolean sendBmpChunksOptimized(List<byte[]> chunks, BmpProgressCallback callback) {
-        if (updatingScreen) return false;
-        
+        if (updatingScreen)
+            return false;
+
         Log.d(TAG, "Sending " + chunks.size() + " chunks using OPTIMIZED method");
-        
+
         // Send all chunks except last without waiting for response
         for (int i = 0; i < chunks.size() - 1; i++) {
             byte[] chunk = chunks.get(i);
             final int chunkIndex = i;
-            
+
             if (USE_PARALLEL_BITMAP_WRITES && bitmapExecutor != null) {
                 // Send to both glasses in parallel using executor
                 CountDownLatch latch = new CountDownLatch(2);
-                
+
                 // Send to left glass
                 bitmapExecutor.execute(() -> {
                     try {
                         if (leftGlassGatt != null && leftTxChar != null && isLeftConnected) {
-                            synchronized(leftTxChar) {
+                            synchronized (leftTxChar) {
                                 leftTxChar.setValue(chunk);
                                 leftTxChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
                                 leftGlassGatt.writeCharacteristic(leftTxChar);
@@ -3300,12 +3399,12 @@ public class G1 extends SGCManager {
                         latch.countDown();
                     }
                 });
-                
+
                 // Send to right glass
                 bitmapExecutor.execute(() -> {
                     try {
                         if (rightGlassGatt != null && rightTxChar != null && isRightConnected) {
-                            synchronized(rightTxChar) {
+                            synchronized (rightTxChar) {
                                 rightTxChar.setValue(chunk);
                                 rightTxChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
                                 rightGlassGatt.writeCharacteristic(rightTxChar);
@@ -3316,7 +3415,7 @@ public class G1 extends SGCManager {
                         latch.countDown();
                     }
                 });
-                
+
                 // Wait for both to complete (but don't wait for BLE response)
                 try {
                     latch.await(50, TimeUnit.MILLISECONDS); // Short timeout
@@ -3327,13 +3426,13 @@ public class G1 extends SGCManager {
                 // Fall back to sequential but still no wait
                 sendBitmapChunkNoWait(chunk, true, true);
             }
-            
+
             // Report progress
             if (callback != null) {
                 int offset = chunkIndex * BMP_CHUNK_SIZE;
                 callback.onProgress("both", offset, chunkIndex, chunks.size() * BMP_CHUNK_SIZE);
             }
-            
+
             // Small delay between chunks (iOS uses 8ms)
             try {
                 Thread.sleep(ANDROID_CHUNK_DELAY_MS);
@@ -3342,36 +3441,36 @@ public class G1 extends SGCManager {
                 return false;
             }
         }
-        
+
         // Last chunk - wait for confirmation (like iOS)
         if (!chunks.isEmpty()) {
             byte[] lastChunk = chunks.get(chunks.size() - 1);
             Log.d(TAG, "Sending last chunk with confirmation");
-            
+
             boolean success = sendDataSequentiallyWithTimeout(lastChunk, 2000); // Shorter timeout for last chunk
             if (!success) {
                 Log.e(TAG, "Failed to send last chunk");
                 return false;
             }
-            
+
             if (callback != null) {
                 int offset = (chunks.size() - 1) * BMP_CHUNK_SIZE;
                 callback.onProgress("both", offset, chunks.size() - 1, chunks.size() * BMP_CHUNK_SIZE);
             }
         }
-        
+
         return true;
     }
-    
+
     // Optimized end command sending
     private boolean sendBmpEndCommandOptimized() {
         Log.d(TAG, "Sending BMP end command (optimized)");
-        
+
         // End command needs confirmation, but with shorter timeout
         boolean success = sendDataSequentiallyWithTimeout(END_COMMAND, 1000);
         if (success) {
             Log.d(TAG, "BMP end command sent successfully");
-            
+
             // Small delay after end command
             try {
                 Thread.sleep(10);
@@ -3381,7 +3480,7 @@ public class G1 extends SGCManager {
         }
         return success;
     }
-    
+
     // Optimized CRC sending
     private boolean sendBmpCrcOptimized(byte[] bmpData) {
         // Create data with address for CRC calculation
@@ -3396,14 +3495,14 @@ public class G1 extends SGCManager {
 
         // Create CRC command packet
         byte[] crcCommand = new byte[5];
-        crcCommand[0] = 0x16;  // CRC command
-        crcCommand[1] = (byte)((crcValue >> 24) & 0xFF);
-        crcCommand[2] = (byte)((crcValue >> 16) & 0xFF);
-        crcCommand[3] = (byte)((crcValue >> 8) & 0xFF);
-        crcCommand[4] = (byte)(crcValue & 0xFF);
+        crcCommand[0] = 0x16; // CRC command
+        crcCommand[1] = (byte) ((crcValue >> 24) & 0xFF);
+        crcCommand[2] = (byte) ((crcValue >> 16) & 0xFF);
+        crcCommand[3] = (byte) ((crcValue >> 8) & 0xFF);
+        crcCommand[4] = (byte) (crcValue & 0xFF);
 
         Log.d(TAG, "Sending CRC command (optimized), CRC value: " + Long.toHexString(crcValue));
-        
+
         // CRC needs confirmation, but with shorter timeout
         boolean success = sendDataSequentiallyWithTimeout(crcCommand, 1000);
         if (success) {
@@ -3414,9 +3513,9 @@ public class G1 extends SGCManager {
 
     private boolean sendDataSequentiallyWithTimeout(byte[] data, long timeoutMs) {
         // Create a future to track the send operation
-        final boolean[] success = {false};
+        final boolean[] success = { false };
         final CountDownLatch latch = new CountDownLatch(1);
-        
+
         // Send the data asynchronously
         new Thread(() -> {
             try {
@@ -3441,19 +3540,20 @@ public class G1 extends SGCManager {
     }
 
     private boolean sendBmpEndCommandWithRetry() {
-        if (updatingScreen) return false;
-        
+        if (updatingScreen)
+            return false;
+
         for (int attempt = 0; attempt < MAX_BMP_RETRY_ATTEMPTS; attempt++) {
             Log.d(TAG, "Sending BMP end command, attempt " + (attempt + 1));
-            
+
             boolean success = sendDataSequentiallyWithTimeout(END_COMMAND, END_COMMAND_TIMEOUT_MS);
             if (success) {
                 Log.d(TAG, "BMP end command sent successfully");
                 return true;
             }
-            
+
             Log.w(TAG, "BMP end command failed, attempt " + (attempt + 1));
-            
+
             // Wait before retry
             try {
                 Thread.sleep(BMP_RETRY_DELAY_MS);
@@ -3462,7 +3562,7 @@ public class G1 extends SGCManager {
                 return false;
             }
         }
-        
+
         Log.e(TAG, "Failed to send BMP end command after " + MAX_BMP_RETRY_ATTEMPTS + " attempts");
         return false;
     }
@@ -3480,14 +3580,14 @@ public class G1 extends SGCManager {
 
         // Create CRC command packet
         byte[] crcCommand = new byte[5];
-        crcCommand[0] = 0x16;  // CRC command
-        crcCommand[1] = (byte)((crcValue >> 24) & 0xFF);
-        crcCommand[2] = (byte)((crcValue >> 16) & 0xFF);
-        crcCommand[3] = (byte)((crcValue >> 8) & 0xFF);
-        crcCommand[4] = (byte)(crcValue & 0xFF);
+        crcCommand[0] = 0x16; // CRC command
+        crcCommand[1] = (byte) ((crcValue >> 24) & 0xFF);
+        crcCommand[2] = (byte) ((crcValue >> 16) & 0xFF);
+        crcCommand[3] = (byte) ((crcValue >> 8) & 0xFF);
+        crcCommand[4] = (byte) (crcValue & 0xFF);
 
         Log.d(TAG, "Sending CRC command, CRC value: " + Long.toHexString(crcValue));
-        
+
         // Send CRC with retry
         for (int attempt = 0; attempt < MAX_BMP_RETRY_ATTEMPTS; attempt++) {
             boolean success = sendDataSequentiallyWithTimeout(crcCommand, CRC_COMMAND_TIMEOUT_MS);
@@ -3495,9 +3595,9 @@ public class G1 extends SGCManager {
                 Log.d(TAG, "CRC command sent successfully");
                 return true;
             }
-            
+
             Log.w(TAG, "CRC command failed, attempt " + (attempt + 1));
-            
+
             try {
                 Thread.sleep(BMP_RETRY_DELAY_MS);
             } catch (InterruptedException e) {
@@ -3505,7 +3605,7 @@ public class G1 extends SGCManager {
                 return false;
             }
         }
-        
+
         Log.e(TAG, "Failed to send CRC command after " + MAX_BMP_RETRY_ATTEMPTS + " attempts");
         return false;
     }
@@ -3550,16 +3650,16 @@ public class G1 extends SGCManager {
                 Log.e(TAG, "BMP file does not exist: " + filePath);
                 return null;
             }
-            
+
             // Read file into byte array
             byte[] fileData = new byte[(int) file.length()];
             try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
                 fis.read(fileData);
             }
-            
+
             // Convert to 1-bit BMP format if needed
             return convertTo1BitBmp(fileData);
-            
+
         } catch (Exception e) {
             Log.e(TAG, "Error loading BMP file: " + e.getMessage());
             return null;
@@ -3567,7 +3667,8 @@ public class G1 extends SGCManager {
     }
 
     private byte[] convertTo1BitBmp(byte[] originalBmp) {
-        // This is a placeholder - in a real implementation, you'd convert the BMP to 1-bit format
+        // This is a placeholder - in a real implementation, you'd convert the BMP to
+        // 1-bit format
         // For now, we'll assume the input is already in the correct format
         return originalBmp;
     }
@@ -3584,9 +3685,10 @@ public class G1 extends SGCManager {
     }
 
     public void clearBmpDisplay() {
-        if (updatingScreen) return;
+        if (updatingScreen)
+            return;
         Log.d(TAG, "Clearing BMP display with EXIT command");
-        byte[] exitCommand = new byte[]{0x18};
+        byte[] exitCommand = new byte[] { 0x18 };
         sendDataSequentially(exitCommand);
     }
 
@@ -3669,12 +3771,12 @@ public class G1 extends SGCManager {
         }
     }
 
-    private void sendLoremIpsum(){
-        if (updatingScreen) return;
+    private void sendLoremIpsum() {
+        if (updatingScreen)
+            return;
         String text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. ";
         sendDataSequentially(createTextWallChunks(text));
     }
-
 
     // Enhanced clearing with state management
     public void clearBmpDisplayWithState() {
@@ -3689,7 +3791,7 @@ public class G1 extends SGCManager {
         updatingScreen = true;
 
         try {
-            byte[] exitCommand = new byte[]{0x18};
+            byte[] exitCommand = new byte[] { 0x18 };
             boolean success = sendDataSequentiallyWithTimeout(exitCommand, 2000);
             if (success) {
                 lastThingDisplayedWasAnImage = false;
@@ -3706,7 +3808,8 @@ public class G1 extends SGCManager {
     public void clearAndDisplayBmp(byte[] bmpData, BmpProgressCallback callback) {
         if (updatingScreen) {
             Log.d(TAG, "Screen update in progress, cannot clear and display");
-            if (callback != null) callback.onError("both", "Screen update in progress");
+            if (callback != null)
+                callback.onError("both", "Screen update in progress");
             return;
         }
 
@@ -3723,7 +3826,8 @@ public class G1 extends SGCManager {
     public void displayBmpSequence(List<byte[]> bmpDataList, BmpProgressCallback callback) {
         if (bmpDataList == null || bmpDataList.isEmpty()) {
             Log.e(TAG, "No BMP data provided for sequence");
-            if (callback != null) callback.onError("sequence", "No BMP data provided");
+            if (callback != null)
+                callback.onError("sequence", "No BMP data provided");
             return;
         }
 
@@ -3733,7 +3837,8 @@ public class G1 extends SGCManager {
     private void displayBmpSequenceInternal(List<byte[]> bmpDataList, int index, BmpProgressCallback callback) {
         if (index >= bmpDataList.size()) {
             Log.d(TAG, "BMP sequence completed");
-            if (callback != null) callback.onSuccess("sequence");
+            if (callback != null)
+                callback.onSuccess("sequence");
             return;
         }
 
@@ -3768,31 +3873,32 @@ public class G1 extends SGCManager {
         });
     }
 
-    private void quickRestartG1(){
+    private void quickRestartG1() {
         Log.d(TAG, "Sending restart 0x23 0x72 Command");
-        sendDataSequentially(new byte[]{(byte) 0x23, (byte) 0x72}); //quick restart comand
+        sendDataSequentially(new byte[] { (byte) 0x23, (byte) 0x72 }); // quick restart comand
     }
 
-    public void changeSmartGlassesMicrophoneState(boolean isMicrophoneEnabled) {
+    public void setMicEnabled(boolean isMicrophoneEnabled) {
         Log.d(TAG, "Microphone state changed: " + isMicrophoneEnabled);
-        
+
         // Update the shouldUseGlassesMic flag to reflect the current state
-        this.shouldUseGlassesMic = isMicrophoneEnabled && SmartGlassesManager.getSensingEnabled(context);// && !SmartGlassesManager.getForceCoreOnboardMic(context);
+        this.shouldUseGlassesMic = isMicrophoneEnabled;
         Log.d(TAG, "Updated shouldUseGlassesMic to: " + shouldUseGlassesMic);
-        
+
         if (isMicrophoneEnabled) {
             Log.d(TAG, "Microphone enabled, starting audio input handling");
-            setMicEnabled(true, 10);
+            sendSetMicEnabled(true, 10);
             startMicBeat((int) MICBEAT_INTERVAL_MS);
         } else {
             Log.d(TAG, "Microphone disabled, stopping audio input handling");
-            setMicEnabled(false, 10);
+            sendSetMicEnabled(false, 10);
             stopMicBeat();
         }
     }
 
     /**
      * Returns whether the microphone is currently enabled
+     * 
      * @return true if microphone is enabled, false otherwise
      */
     public boolean isMicrophoneEnabled() {
@@ -3801,12 +3907,13 @@ public class G1 extends SGCManager {
 
     /**
      * Decodes Even G1 serial number to extract style and color information
+     * 
      * @param serialNumber The full serial number (e.g., "S110LABD020021")
      * @return Array containing [style, color] or ["Unknown", "Unknown"] if invalid
      */
     public static String[] decodeEvenG1SerialNumber(String serialNumber) {
         if (serialNumber == null || serialNumber.length() < 6) {
-            return new String[]{"Unknown", "Unknown"};
+            return new String[] { "Unknown", "Unknown" };
         }
 
         // Style mapping: 3rd character (index 2)
@@ -3840,11 +3947,12 @@ public class G1 extends SGCManager {
                 break;
         }
 
-        return new String[]{style, color};
+        return new String[] { style, color };
     }
 
     /**
      * Decodes serial number from manufacturer data bytes
+     * 
      * @param manufacturerData The manufacturer data bytes
      * @return Decoded serial number string or null if not found
      */
@@ -3852,7 +3960,7 @@ public class G1 extends SGCManager {
         if (manufacturerData == null || manufacturerData.length < 10) {
             return null;
         }
-        
+
         try {
             // Convert hex bytes to ASCII string
             StringBuilder serialBuilder = new StringBuilder();
@@ -3867,15 +3975,16 @@ public class G1 extends SGCManager {
                     serialBuilder.append((char) b);
                 }
             }
-            
+
             String decodedString = serialBuilder.toString().trim();
-            
+
             // Check if it looks like a valid Even G1 serial number
-            if (decodedString.length() >= 12 && 
-                (decodedString.startsWith("S1") || decodedString.startsWith("100") || decodedString.startsWith("110"))) {
+            if (decodedString.length() >= 12 &&
+                    (decodedString.startsWith("S1") || decodedString.startsWith("100")
+                            || decodedString.startsWith("110"))) {
                 return decodedString;
             }
-            
+
             return null;
         } catch (Exception e) {
             Log.e(TAG, "Error decoding manufacturer data: " + e.getMessage());
