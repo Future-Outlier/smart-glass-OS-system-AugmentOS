@@ -2305,11 +2305,11 @@ public class G1 extends SGCManager {
             scanner.stopScan(bleScanCallback);
             isScanningForCompatibleDevices = false;
             Log.d(TAG, "Stopped scanning for smart glasses.");
-            EventBus.getDefault().post(
-                    new GlassesBluetoothSearchStopEvent(
-                            smartGlassesDevice.deviceModelName
-                    )
-            );
+            // EventBus.getDefault().post(
+            //         new GlassesBluetoothSearchStopEvent(
+            //                 smartGlassesDevice.deviceModelName
+            //         )
+            // );
         }, 10000);
     }
 
