@@ -278,6 +278,10 @@ public class Bridge {
         return writableMap;
     }
 
+    public static getContext() {
+        return reactContext;
+    }
+
     /**
      * Get the supported events list
      * Don't add to this list, use a typed message instead

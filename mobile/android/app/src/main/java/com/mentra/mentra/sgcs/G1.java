@@ -223,7 +223,7 @@ public class G1 extends SGCManager {
     public G1() {
         super();
         Bridge.log("G1: G1 constructor");
-        // this.context = context;
+        this.context = Bridge.getContext();
         loadPairedDeviceNames();
         // goHomeHandler = new Handler();
         // this.smartGlassesDevice = smartGlassesDevice;
@@ -1295,6 +1295,8 @@ public class G1 extends SGCManager {
         context.registerReceiver(bondingReceiver, filter);
         isBondingReceiverRegistered = true;
 
+        preferredG1DeviceId = MentraManager.getInstance().getDeviceName();
+
         if (!bluetoothAdapter.isEnabled()) {
             return;
         }
@@ -2341,6 +2343,7 @@ public class G1 extends SGCManager {
                             foundDeviceNames.add(name);
                             Bridge.log("Found smart glasses: " + name);
                             String adjustedName = parsePairingIdFromDeviceName(name);
+                            Bridge.sendDiscoveredDevice("Even Realities G1", adjustedName);
                             // EventBus.getDefault().post(
                             // new GlassesBluetoothSearchDiscoverEvent(
                             // smartGlassesDevice.deviceModelName,
