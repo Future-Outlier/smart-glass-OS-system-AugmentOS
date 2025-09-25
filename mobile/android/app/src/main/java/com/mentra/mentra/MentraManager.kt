@@ -2,6 +2,7 @@ package com.mentra.mentra
 
 import android.os.Handler
 import android.os.Looper
+import android.service.controls.DeviceTypes
 import android.util.Base64
 import com.mentra.mentra.sgcs.G1
 import com.mentra.mentra.sgcs.SGCManager
@@ -210,12 +211,65 @@ class MentraManager {
     }
 
     private fun handleDeviceReady() {
-        Bridge.log("Mentra: Device ready")
-        sgc?.apply {
-            setBrightness(brightness, autoBrightness)
-            setHeadUpAngle(headUpAngle)
-            sendButtonSettings()
+        if (sgc == null) {
+            Bridge.log("Mentra: SGC is null, returning")
+            return
         }
+        Bridge.log("Mentra: handleDeviceReady() ${sgc?.type}")
+        pendingWearable = ""
+        defaultWearable = sgc?.type ?: ""
+        isSearching = false
+        handle_request_status()
+
+        if (defaultWearable.contains("G1")) {
+            handleG1Ready()
+        } else if (defaultWearable.contains(DeviceTypes.MACH1)) {
+            handleMach1Ready()
+        }
+
+        // save the default_wearable now that we're connected:
+        Bridge.saveSetting("default_wearable", defaultWearable)
+        Bridge.saveSetting("device_name", deviceName)
+        //        Bridge.saveSetting("device_address", deviceAddress)
+    }
+
+    private fun handleG1Ready() {
+        // load settings and send the animation:
+        // give the glasses some extra time to finish booting:
+        // Thread.sleep(1000)
+        // await sgc?.setSilentMode(false) // turn off silent mode
+        // await sgc?.getBatteryStatus()
+
+        // if shouldSendBootingMessage {
+        //     sendText("// BOOTING MENTRAOS")
+        // }
+
+        // // send loaded settings to glasses:
+        // try? await Task.sleep(nanoseconds: 400_000_000)
+        // sgc?.setHeadUpAngle(headUpAngle)
+        // try? await Task.sleep(nanoseconds: 400_000_000)
+        // sgc?.setBrightness(brightness, autoMode: autoBrightness)
+        // try? await Task.sleep(nanoseconds: 400_000_000)
+        // // self.g1Manager?.RN_setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
+        // // try? await Task.sleep(nanoseconds: 400_000_000)
+        // //      playStartupSequence()
+        // if shouldSendBootingMessage {
+        //     sendText("// MENTRAOS CONNECTED")
+        //     try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        //     sendText(" ") // clear screen
+        // }
+
+        // shouldSendBootingMessage = false
+
+        // handle_request_status()
+    }
+
+    private fun handleMach1Ready() {
+        // Send startup message
+        sendText("MENTRAOS CONNECTED")
+        Thread.sleep(1000)
+        clearDisplay()
+
         handle_request_status()
     }
 

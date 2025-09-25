@@ -180,7 +180,7 @@ class G1: NSObject, SGCManager {
 
     func stopVideoRecording(requestId _: String) {}
 
-    let type = "Even Realities G1"
+    let type = DeviceType.G1
     let hasMic = true
 
     // TODO: we probably don't need this

@@ -88,6 +88,7 @@ public class G1 extends SGCManager {
     private int heartbeatCount = 0;
     private int micBeatCount = 0;
     private BluetoothAdapter bluetoothAdapter;
+    public String type = DeviceType.G1;
 
     public static final String LEFT_DEVICE_KEY = "SavedG1LeftName";
     public static final String RIGHT_DEVICE_KEY = "SavedG1RightName";
@@ -797,16 +798,20 @@ public class G1 extends SGCManager {
             connectionState = SmartGlassesConnectionState.CONNECTED;
             Bridge.log("G1: Both glasses connected");
             lastConnectionTimestamp = System.currentTimeMillis();
+            ready = true;
             // connectionEvent(connectionState);
         } else if (isLeftConnected || isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTING;
             Bridge.log("G1: One glass connected");
+            ready = false;
             // connectionEvent(connectionState);
         } else {
             connectionState = SmartGlassesConnectionState.DISCONNECTED;
             Bridge.log("G1: No glasses connected");
             // connectionEvent(connectionState);
+            ready = false;
         }
+        MentraManager.getInstance().handleConnectionStateChanged();
     }
 
     private final BroadcastReceiver bondingReceiver = new BroadcastReceiver() {

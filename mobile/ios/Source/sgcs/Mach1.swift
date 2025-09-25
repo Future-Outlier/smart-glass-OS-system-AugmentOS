@@ -97,7 +97,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func setBrightness(_: Int, autoMode _: Bool) {}
 
-    let type = "Mentra Mach1"
+    let type = DeviceType.MACH1
     let hasMic: Bool = false
     var caseOpen = false
     var caseRemoved = true
@@ -124,7 +124,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     }
 
     // Store discovered peripherals by their identifier
-    private var discoveredPeripherals: [String: CBPeripheral] = [:]
+    private var discoveredPeripherals: [string: cbperipheral] = [:]
 
     private var textHandle: Int?
     private var tapTextHandle: Int?
@@ -218,10 +218,15 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         setup()
         let isLinked = UltraliteManager.shared.isLinked.value
         let currentDevice = UltraliteManager.shared.currentDevice
-        let isConnected = isLinked && currentDevice != nil && currentDevice!.isPaired && currentDevice!.isConnected.value
+        let isConnected =
+            isLinked && currentDevice != nil && currentDevice!.isPaired
+                && currentDevice!.isConnected.value
         let peripheral = discoveredPeripherals[id] ?? currentDevice?.peripheral
 
-        let gotControl = currentDevice?.requestControl(layout: UltraliteSDK.Ultralite.Layout.textBottomLeftAlign, timeout: 0, hideStatusBar: true, showTapAnimation: true, maxNumTaps: 3)
+        let gotControl = currentDevice?.requestControl(
+            layout: UltraliteSDK.Ultralite.Layout.textBottomLeftAlign, timeout: 0,
+            hideStatusBar: true, showTapAnimation: true, maxNumTaps: 3
+        )
 
         Bridge.log("MACH1: gotControl: \(gotControl ?? false)")
         Bridge.log("MACH1: control is nil \(gotControl == nil)")
@@ -244,7 +249,8 @@ class Mach1: UltraliteBaseViewController, SGCManager {
             Bridge.log("Mach1Manager: Connecting to peripheral with ID: \(id)")
             UltraliteManager.shared.link(device: peripheral!, callback: linked)
             UltraliteManager.shared.currentDevice?.isConnected.bind(listener: isConnectedListener!)
-            UltraliteManager.shared.currentDevice?.batteryLevel.bind(listener: batteryLevelListener!)
+            UltraliteManager.shared.currentDevice?.batteryLevel.bind(
+                listener: batteryLevelListener!)
             return
         }
     }
@@ -388,7 +394,9 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         UltraliteManager.shared.setBluetoothManger()
         let scanResult = UltraliteManager.shared.startScan(callback: foundDevice)
         Bridge.log("Mach1: \(scanResult)")
-        if scanResult == UltraliteSDK.UltraliteManager.BluetoothScanResult.BLUETOOTH_PERMISSION_NEEDED {
+        if scanResult
+            == UltraliteSDK.UltraliteManager.BluetoothScanResult.BLUETOOTH_PERMISSION_NEEDED
+        {
             // call this function again in 5 seconds:
             DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                 self.findCompatibleDevices()
