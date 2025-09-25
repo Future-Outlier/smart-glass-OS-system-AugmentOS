@@ -11,6 +11,7 @@ import android.os.Looper
 import android.util.Base64
 import androidx.core.content.ContextCompat
 import com.mentra.mentra.services.ForegroundService
+import com.mentra.mentra.services.PhoneMic
 import com.mentra.mentra.sgcs.G1
 import com.mentra.mentra.sgcs.SGCManager
 import com.mentra.mentra.utils.DeviceTypes
@@ -584,7 +585,11 @@ class MentraManager {
     }
 
     private fun setOnboardMicEnabled(enabled: Boolean) {
-        // TODO: Implement phone microphone control
+        if (enabled) {
+            PhoneMic.getInstance(Bridge.getContext()).startRecording()
+        } else {
+            PhoneMic.getInstance(Bridge.getContext()).stopRecording()
+        }
     }
 
     fun clearState() {
