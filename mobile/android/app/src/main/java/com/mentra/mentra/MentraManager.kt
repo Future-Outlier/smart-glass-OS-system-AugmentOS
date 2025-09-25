@@ -225,9 +225,18 @@ class MentraManager {
             Bridge.log("Mentra: SGC is null, returning")
             return
         }
+
         Bridge.log("Mentra: handleDeviceReady() ${sgc?.type}")
         pendingWearable = ""
         defaultWearable = sgc?.type ?: ""
+
+        // TODO: fix this hack!
+        if (sgc is G1) {
+            defaultWearable = DeviceTypes.G1
+            handle_request_status()
+            handleG1Ready()
+        }
+
         isSearching = false
         handle_request_status()
 

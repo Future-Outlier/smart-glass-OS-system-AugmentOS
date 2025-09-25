@@ -532,7 +532,7 @@ struct ViewState {
             // )
 
             // if a g1 is connected, set the mic enabled:
-            if sgc?.type == "g1", sgc!.ready {
+            if sgc?.type == DeviceTypes.G1, sgc!.ready {
                 await sgc!.setMicEnabled(useGlassesMic)
             }
 
@@ -1081,13 +1081,13 @@ struct ViewState {
     }
 
     private func getGlassesHasMic() -> Bool {
-        if defaultWearable.contains("G1") {
+        if defaultWearable.contains(DeviceTypes.G1) {
             return true
         }
-        if defaultWearable.contains("Live") {
+        if defaultWearable.contains(DeviceTypes.Live) {
             return false
         }
-        if defaultWearable.contains("Mach1") {
+        if defaultWearable.contains(DeviceTypes.Mach1) {
             return false
         }
         return false
