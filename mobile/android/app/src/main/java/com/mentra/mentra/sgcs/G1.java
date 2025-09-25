@@ -1574,12 +1574,12 @@ public class G1 extends SGCManager {
 
     @Override
     public void sendTextWall(String text) {
-
+        displayTextWall(text);
     }
 
     @Override
     public void sendDoubleTextWall(String top, String bottom) {
-
+        displayDoubleTextWall(top, bottom);
     }
 
     @Override

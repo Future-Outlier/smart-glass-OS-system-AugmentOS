@@ -322,8 +322,8 @@ export class MantleBridge extends EventEmitter {
         case "save_setting":
           await useSettingsStore.getState().setSetting(data.key, data.value, false)
           break
-        case "head_up":
-          socketComms.sendHeadPosition(data.position)
+        case "head_position":
+          socketComms.sendHeadPosition(data.position === "up")
           break
         case "local_transcription":
           mantle.handleLocalTranscription(data)

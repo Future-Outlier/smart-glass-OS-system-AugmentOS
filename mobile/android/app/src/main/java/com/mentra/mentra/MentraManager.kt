@@ -1,8 +1,16 @@
 package com.mentra.mentra
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
+import androidx.core.content.ContextCompat
+import com.mentra.mentra.services.ForegroundService
 import com.mentra.mentra.sgcs.G1
 import com.mentra.mentra.sgcs.SGCManager
 import com.mentra.mentra.utils.DeviceTypes
@@ -25,7 +33,8 @@ class MentraManager {
         }
     }
 
-    // Core properties (matching Swift)
+    private var serviceStarted = false
+
     private var coreToken = ""
     private var coreTokenOwner = ""
     private var sgc: SGCManager? = null
@@ -88,9 +97,166 @@ class MentraManager {
     // View states (matching Swift with 4 states)
     private val viewStates = mutableListOf<ViewState>()
 
+    // Track last known permissions
+    private var lastHadBluetoothPermission = false
+    private var lastHadMicrophonePermission = false
+    private var permissionReceiver: BroadcastReceiver? = null
+
     init {
         initializeViewStates()
         Bridge.log("Mentra: init()")
+        startForegroundService()
+        setupPermissionMonitoring()
+    }
+
+    private fun setupPermissionMonitoring() {
+        val context = Bridge.getContext() ?: return
+
+        // Store initial permission state
+        lastHadBluetoothPermission = checkBluetoothPermission(context)
+        lastHadMicrophonePermission = checkMicrophonePermission(context)
+
+        Bridge.log(
+                "Mentra: Initial permissions - BT: $lastHadBluetoothPermission, Mic: $lastHadMicrophonePermission"
+        )
+
+        // Create receiver for package changes (fires when permissions change)
+        permissionReceiver =
+                object : BroadcastReceiver() {
+                    override fun onReceive(context: Context?, intent: Intent?) {
+                        if (intent?.action == Intent.ACTION_PACKAGE_CHANGED &&
+                                        intent.data?.schemeSpecificPart == context?.packageName
+                        ) {
+
+                            Bridge.log("Mentra: Package changed, checking permissions...")
+                            checkPermissionChanges()
+                        }
+                    }
+                }
+
+        // Register the receiver
+        try {
+            val filter =
+                    IntentFilter().apply {
+                        addAction(Intent.ACTION_PACKAGE_CHANGED)
+                        addDataScheme("package")
+                    }
+            context.registerReceiver(permissionReceiver, filter)
+            Bridge.log("Mentra: Permission monitoring started")
+        } catch (e: Exception) {
+            Bridge.log("Mentra: Failed to register permission receiver: ${e.message}")
+        }
+
+        // Also set up a periodic check as backup (some devices don't fire PACKAGE_CHANGED reliably)
+        startPeriodicPermissionCheck()
+    }
+
+    private val handler = Handler(Looper.getMainLooper())
+    private var permissionCheckRunnable: Runnable? = null
+
+    private fun startPeriodicPermissionCheck() {
+        permissionCheckRunnable =
+                object : Runnable {
+                    override fun run() {
+                        checkPermissionChanges()
+                        handler.postDelayed(this, 10000) // Check every 10 seconds
+                    }
+                }
+        handler.postDelayed(permissionCheckRunnable!!, 10000)
+    }
+
+    private fun checkPermissionChanges() {
+        val context = Bridge.getContext() ?: return
+
+        val currentHasBluetoothPermission = checkBluetoothPermission(context)
+        val currentHasMicrophonePermission = checkMicrophonePermission(context)
+
+        var permissionsChanged = false
+
+        if (currentHasBluetoothPermission != lastHadBluetoothPermission) {
+            Bridge.log(
+                    "Mentra: Bluetooth permission changed: $lastHadBluetoothPermission -> $currentHasBluetoothPermission"
+            )
+            lastHadBluetoothPermission = currentHasBluetoothPermission
+            permissionsChanged = true
+        }
+
+        if (currentHasMicrophonePermission != lastHadMicrophonePermission) {
+            Bridge.log(
+                    "Mentra: Microphone permission changed: $lastHadMicrophonePermission -> $currentHasMicrophonePermission"
+            )
+            lastHadMicrophonePermission = currentHasMicrophonePermission
+            permissionsChanged = true
+        }
+
+        if (permissionsChanged && serviceStarted) {
+            Bridge.log("Mentra: Permissions changed, restarting service")
+            restartForegroundService()
+        }
+    }
+
+    private fun checkBluetoothPermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(context, android.Manifest.permission.BLUETOOTH) ==
+                    PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun checkMicrophonePermission(context: Context): Boolean {
+        return ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun startForegroundService() {
+        val context = Bridge.getContext() ?: return
+
+        try {
+            Bridge.log("Mentra: Starting foreground service")
+            val serviceIntent = Intent(context, ForegroundService::class.java)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+
+            serviceStarted = true
+            Bridge.log("Mentra: Foreground service started")
+        } catch (e: Exception) {
+            Bridge.log("Mentra: Failed to start service: ${e.message}")
+        }
+    }
+
+    private fun restartForegroundService() {
+        val context = Bridge.getContext() ?: return
+
+        try {
+            // Stop the service
+            val stopIntent = Intent(context, ForegroundService::class.java)
+            context.stopService(stopIntent)
+
+            // Small delay
+            Thread.sleep(100)
+
+            // Start it again with new permissions
+            val startIntent = Intent(context, ForegroundService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(startIntent)
+            } else {
+                context.startService(startIntent)
+            }
+
+            Bridge.log("Mentra: Service restarted with updated permissions")
+        } catch (e: Exception) {
+            Bridge.log("Mentra: Failed to restart service: ${e.message}")
+        }
     }
 
     private fun initializeViewStates() {
@@ -426,50 +592,53 @@ class MentraManager {
     }
 
     private fun sendCurrentState(isDashboard: Boolean) {
+        Bridge.log("Mentra: sendCurrentState(): $isDashboard")
         if (isUpdatingScreen) {
             return
         }
 
-        executor.execute {
-            val currentViewState =
-                    if (isDashboard) {
-                        viewStates[1]
-                    } else {
-                        viewStates[0]
-                    }
-
-            isHeadUp = isDashboard
-
-            if (isDashboard && !contextualDashboard) {
-                return@execute
-            }
-
-            if (defaultWearable.contains("Simulated") || defaultWearable.isEmpty()) {
-                return@execute
-            }
-
-            if (!isSomethingConnected()) {
-                return@execute
-            }
-
-            // Cancel any pending clear display work item
-            sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
-
-            when (currentViewState.layoutType) {
-                "text_wall" -> sendText(currentViewState.text)
-                "double_text_wall" -> {
-                    sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
+        // executor.execute {
+        val currentViewState =
+                if (isDashboard) {
+                    viewStates[1]
+                } else {
+                    viewStates[0]
                 }
-                "reference_card" -> {
-                    sendText("${currentViewState.title}\n\n${currentViewState.text}")
-                }
-                "bitmap_view" -> {
-                    currentViewState.data?.let { data -> sgc?.displayBitmap(data) }
-                }
-                "clear_view" -> clearDisplay()
-                else -> Bridge.log("Mentra: UNHANDLED LAYOUT_TYPE ${currentViewState.layoutType}")
-            }
+
+        isHeadUp = isDashboard
+
+        if (isDashboard && !contextualDashboard) {
+            return
         }
+
+        if (defaultWearable.contains("Simulated") || defaultWearable.isEmpty()) {
+            return
+        }
+
+        if (!isSomethingConnected()) {
+            return
+        }
+
+        // Cancel any pending clear display work item
+        // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
+        //
+        Bridge.log("Mentra: Entering parseViewState")
+
+        when (currentViewState.layoutType) {
+            "text_wall" -> sendText(currentViewState.text)
+            "double_text_wall" -> {
+                sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
+            }
+            "reference_card" -> {
+                sendText("${currentViewState.title}\n\n${currentViewState.text}")
+            }
+            "bitmap_view" -> {
+                currentViewState.data?.let { data -> sgc?.displayBitmap(data) }
+            }
+            "clear_view" -> clearDisplay()
+            else -> Bridge.log("Mentra: UNHANDLED LAYOUT_TYPE ${currentViewState.layoutType}")
+        }
+        // }
     }
 
     private fun parsePlaceholders(text: String): String {
@@ -575,6 +744,7 @@ class MentraManager {
     }
 
     private fun sendText(text: String) {
+        Bridge.log("Mentra: sendText: $text")
         val currentSgc = sgc ?: return
 
         if (text == " " || text.isEmpty()) {
