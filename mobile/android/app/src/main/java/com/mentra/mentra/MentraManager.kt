@@ -55,7 +55,7 @@ class MentraManager {
     public var dashboardHeight = 4
     public var dashboardDepth = 5
     private var sensingEnabled = true
-    private var powerSavingMode = false
+    public var powerSavingMode = false
     private var isSearching = false
     private var isUpdatingScreen = false
     private var alwaysOnStatusBar = false

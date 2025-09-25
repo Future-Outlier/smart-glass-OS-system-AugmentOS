@@ -1,6 +1,5 @@
 package com.mentra.mentra.sgcs;
 
-import static com.mentra.mentra.utils.BitmapJavaUtils.convertBitmapTo1BitBmpBytes;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -40,24 +39,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.CRC32;
 import java.nio.ByteBuffer;
 
-import com.augmentos.augmentos_core.smarterglassesmanager.SmartGlassesManager;
-import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.isMicEnabledForFrontendEvent;
-import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.HeadUpAngleEvent;
-import com.augmentos.augmentos_core.smarterglassesmanager.utils.BitmapJavaUtils;
-import com.augmentos.augmentos_core.smarterglassesmanager.utils.G1FontLoader;
-import com.augmentos.augmentos_core.smarterglassesmanager.utils.SmartGlassesConnectionState;
-import com.google.gson.Gson;
-import com.augmentos.smartglassesmanager.cpp.L3cCpp;
-import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BatteryLevelEvent;
-import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.CaseEvent;
-import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BrightnessLevelEvent;
-import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchDiscoverEvent;
-import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchStopEvent;
-import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesHeadDownEvent;
-import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesHeadUpEvent;
-import com.augmentos.augmentos_core.smarterglassesmanager.supportedglasses.SmartGlassesDevice;
-import com.augmentos.augmentos_core.R;
+// import com.augmentos.augmentos_core.smarterglassesmanager.SmartGlassesManager;
+// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.isMicEnabledForFrontendEvent;
+// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.HeadUpAngleEvent;
+// import com.augmentos.augmentos_core.R;
 
+import com.google.gson.Gson;
 import org.greenrobot.eventbus.EventBus;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -72,13 +59,28 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Map;
 import java.util.HashMap;
-import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesSerialNumberEvent;
 
 // Mentra
 import com.mentra.mentra.sgcs.SGCManager;
 import com.mentra.mentra.MentraManager;
 import com.mentra.mentra.Bridge;
 import com.mentra.mentra.utils.DeviceTypes;
+import com.mentra.mentra.utils.BitmapJavaUtils;
+import static com.mentra.mentra.utils.BitmapJavaUtils.convertBitmapTo1BitBmpBytes;
+import com.mentra.mentra.utils.G1FontLoader;
+import com.mentra.mentra.utils.SmartGlassesConnectionState;
+
+import com.augmentos.smartglassesmanager.cpp.L3cCpp;
+// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesSerialNumberEvent;
+// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BatteryLevelEvent;
+// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.CaseEvent;
+// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BrightnessLevelEvent;
+// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchDiscoverEvent;
+// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchStopEvent;
+// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesHeadDownEvent;
+// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesHeadUpEvent;
+// import com.augmentos.augmentos_core.smarterglassesmanager.supportedglasses.SmartGlassesDevice;
+
 
 public class G1 extends SGCManager {
     private static final String TAG = "WearableAi_EvenRealitiesG1SGC";
@@ -1120,8 +1122,8 @@ public class G1 extends SGCManager {
                         Bridge.log("G1: LEFT DEVICE Style: " + decoded[0] + ", Color: " + decoded[1]);
 
                         if (preferredG1DeviceId != null && preferredG1DeviceId.equals(parsedDeviceName)) {
-                            EventBus.getDefault()
-                                    .post(new GlassesSerialNumberEvent(decodedSerial, decoded[0], decoded[1]));
+                            // EventBus.getDefault()
+                            //         .post(new GlassesSerialNumberEvent(decodedSerial, decoded[0], decoded[1]));
                         }
                         break;
                     }
@@ -2014,7 +2016,7 @@ public class G1 extends SGCManager {
         }
 
         if (title.trim().isEmpty() && body.trim().isEmpty()) {
-            if (SmartGlassesManager.getPowerSavingMode(context)) {
+            if (MentraManager.getInstance().getPowerSavingMode()) {
                 sendExitCommand();
                 return;
             }
@@ -2191,7 +2193,7 @@ public class G1 extends SGCManager {
             return;
 
         if (textTop.trim().isEmpty() && textBottom.trim().isEmpty()) {
-            if (SmartGlassesManager.getPowerSavingMode(context)) {
+            if (MentraManager.getInstance().getPowerSavingMode()) {
                 sendExitCommand();
                 return;
             }
@@ -2202,7 +2204,7 @@ public class G1 extends SGCManager {
     }
 
     public void showHomeScreen() {
-        if (SmartGlassesManager.getPowerSavingMode(context)) {
+        if (MentraManager.getInstance().getPowerSavingMode()) {
             sendExitCommand();
         } else {
             displayTextWall(" ");
@@ -2243,7 +2245,7 @@ public class G1 extends SGCManager {
         if (updatingScreen)
             return;
         if (a.trim().isEmpty()) {
-            if (SmartGlassesManager.getPowerSavingMode(context)) {
+            if (MentraManager.getInstance().getPowerSavingMode()) {
                 sendExitCommand();
                 return;
             }
@@ -2512,7 +2514,7 @@ public class G1 extends SGCManager {
         sendDataSequentially(buffer.array(), false, 100);
 
         Bridge.log("G1: Sent headUp angle command => Angle: " + headUpAngle);
-        EventBus.getDefault().post(new HeadUpAngleEvent(headUpAngle));
+        // EventBus.getDefault().post(new HeadUpAngleEvent(headUpAngle));
     }
 
     public void sendDashboardPositionCommand(int height, int depth) {
@@ -2579,7 +2581,7 @@ public class G1 extends SGCManager {
         // Bridge.log("G1: ^^^^^^^^^^^^^");
 
         isMicrophoneEnabled = enable; // Update the state tracker
-        EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
+        // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
         micEnableHandler.postDelayed(new Runnable() {
             @Override
             public void run() {

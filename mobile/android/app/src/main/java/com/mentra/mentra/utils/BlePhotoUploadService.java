@@ -1,4 +1,4 @@
-package com.augmentos.augmentos_core.smarterglassesmanager.utils;
+package com.mentra.mentra.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -21,12 +21,12 @@ import okhttp3.Response;
  */
 public class BlePhotoUploadService {
     private static final String TAG = "BlePhotoUploadService";
-    
+
     public interface UploadCallback {
         void onSuccess(String requestId);
         void onError(String requestId, String error);
     }
-    
+
     /**
      * Process image data and upload to webhook
      * @param imageData Raw image data (AVIF or JPEG)
@@ -35,42 +35,42 @@ public class BlePhotoUploadService {
      * @param authToken Authentication token for upload
      * @param callback Callback for success/error
      */
-    public static void processAndUploadPhoto(byte[] imageData, String requestId, 
+    public static void processAndUploadPhoto(byte[] imageData, String requestId,
                                             String webhookUrl, String authToken,
                                             UploadCallback callback) {
         new Thread(() -> {
             try {
                 Log.d(TAG, "Processing BLE photo for upload. Image size: " + imageData.length + " bytes");
-                
+
                 // 1. Decode image (AVIF or JPEG) to Bitmap
                 Bitmap bitmap = decodeImage(imageData);
                 if (bitmap == null) {
                     throw new Exception("Failed to decode image data");
                 }
-                
+
                 Log.d(TAG, "Decoded image to bitmap: " + bitmap.getWidth() + "x" + bitmap.getHeight());
-                
+
                 // 2. Convert to JPEG for upload (in case it was AVIF)
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 90, baos);
                 byte[] jpegData = baos.toByteArray();
                 bitmap.recycle();
-                
+
                 Log.d(TAG, "Converted to JPEG for upload. Size: " + jpegData.length + " bytes");
-                
+
                 // 3. Upload to webhook
                 uploadToWebhook(jpegData, requestId, webhookUrl, authToken);
-                
+
                 Log.d(TAG, "Photo uploaded successfully for requestId: " + requestId);
                 callback.onSuccess(requestId);
-                
+
             } catch (Exception e) {
                 Log.e(TAG, "Error processing BLE photo for requestId: " + requestId, e);
                 callback.onError(requestId, e.getMessage());
             }
         }).start();
     }
-    
+
     /**
      * Decode image data (AVIF or JPEG) to Bitmap
      * @param imageData Raw image bytes
@@ -79,11 +79,11 @@ public class BlePhotoUploadService {
     private static Bitmap decodeImage(byte[] imageData) {
         try {
             // Check if this is AVIF by looking for "ftyp" box
-            boolean isAvif = imageData.length > 12 && 
-                           imageData[4] == 'f' && imageData[5] == 't' && 
+            boolean isAvif = imageData.length > 12 &&
+                           imageData[4] == 'f' && imageData[5] == 't' &&
                            imageData[6] == 'y' && imageData[7] == 'p' &&
                            (imageData[8] == 'a' && imageData[9] == 'v' && imageData[10] == 'i' && imageData[11] == 'f');
-            
+
             if (isAvif) {
                 Log.d(TAG, "Detected AVIF image format");
                 // AVIF decoding - requires Android API 31+ for native support
@@ -107,7 +107,7 @@ public class BlePhotoUploadService {
             return null;
         }
     }
-    
+
     /**
      * Upload JPEG data to webhook
      * @param jpegData JPEG image bytes
@@ -116,14 +116,14 @@ public class BlePhotoUploadService {
      * @param authToken Bearer token for auth
      * @throws IOException If upload fails
      */
-    private static void uploadToWebhook(byte[] jpegData, String requestId, 
+    private static void uploadToWebhook(byte[] jpegData, String requestId,
                                        String webhookUrl, String authToken) throws IOException {
         OkHttpClient client = new OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build();
-        
+
         // Build multipart request
         RequestBody requestBody = new MultipartBody.Builder()
             .setType(MultipartBody.FORM)
@@ -132,30 +132,30 @@ public class BlePhotoUploadService {
             .addFormDataPart("photo", requestId + ".jpg",
                 RequestBody.create(MediaType.parse("image/jpeg"), jpegData))
             .build();
-        
+
         // Build request with auth header
         Request.Builder requestBuilder = new Request.Builder()
             .url(webhookUrl)
             .post(requestBody);
-        
+
         if (authToken != null && !authToken.isEmpty()) {
             requestBuilder.addHeader("Authorization", "Bearer " + authToken);
         }
-        
+
         Request request = requestBuilder.build();
-        
+
         Log.d(TAG, "Uploading photo to webhook: " + webhookUrl);
-        
+
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
                 String errorBody = response.body() != null ? response.body().string() : "No response body";
                 throw new IOException("Upload failed with code " + response.code() + ": " + errorBody);
             }
-            
+
             Log.d(TAG, "Upload successful. Response code: " + response.code());
         }
     }
-    
+
     /**
      * Alternative method for platforms without AVIF support
      * Expects already-decoded JPEG data instead of AVIF

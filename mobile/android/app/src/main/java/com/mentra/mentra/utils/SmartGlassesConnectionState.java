@@ -1,4 +1,4 @@
-package com.augmentos.augmentos_core.smarterglassesmanager.utils;
+package com.mentra.mentra.utils;
 
 public enum SmartGlassesConnectionState {
     DISCONNECTED,
