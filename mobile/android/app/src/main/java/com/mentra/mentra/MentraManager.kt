@@ -103,10 +103,10 @@ class MentraManager {
     private var permissionReceiver: BroadcastReceiver? = null
 
     init {
-        initializeViewStates()
         Bridge.log("Mentra: init()")
+        initializeViewStates()
         startForegroundService()
-        setupPermissionMonitoring()
+        // setupPermissionMonitoring()
     }
 
     private fun setupPermissionMonitoring() {
@@ -148,7 +148,7 @@ class MentraManager {
         }
 
         // Also set up a periodic check as backup (some devices don't fire PACKAGE_CHANGED reliably)
-        startPeriodicPermissionCheck()
+        // startPeriodicPermissionCheck()
     }
 
     private val handler = Handler(Looper.getMainLooper())

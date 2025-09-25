@@ -1,6 +1,6 @@
 package com.mentra.mentra.sgcs;
 
-import static com.augmentos.augmentos_core.smarterglassesmanager.utils.BitmapJavaUtils.convertBitmapTo1BitBmpBytes;
+import static com.mentra.mentra.utils.BitmapJavaUtils.convertBitmapTo1BitBmpBytes;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -19,14 +19,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-// import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.util.SparseArray;
-
-// import androidx.preference.PreferenceManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -599,7 +596,9 @@ public class G1 extends SGCManager {
                             if (batteryLeft != -1 && batteryRight != -1) {
                                 int minBatt = Math.min(batteryLeft, batteryRight);
                                 // Bridge.log("G1: Minimum Battery Level: " + minBatt);
-                                EventBus.getDefault().post(new BatteryLevelEvent(minBatt, false));
+                                // EventBus.getDefault().post(new BatteryLevelEvent(minBatt, false));
+                                batteryLevel = minBatt;
+                                MentraManager.getInstance().handle_request_status();
                             }
                         }
                         // CASE REMOVED
@@ -607,34 +606,37 @@ public class G1 extends SGCManager {
                                 && ((data[1] & 0xFF) == 0x07 || (data[1] & 0xFF) == 0x06)) {
                             caseRemoved = true;
                             Bridge.log("G1: CASE REMOVED");
-                            EventBus.getDefault()
-                                    .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            MentraManager.getInstance().handle_request_status();
                         }
                         // CASE OPEN
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x08) {
                             caseOpen = true;
                             caseRemoved = false;
-                            EventBus.getDefault()
-                                    .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            // EventBus.getDefault()
+                                    // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            MentraManager.getInstance().handle_request_status();
                         }
                         // CASE CLOSED
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0B) {
                             caseOpen = false;
                             caseRemoved = false;
-                            EventBus.getDefault()
-                                    .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            // EventBus.getDefault()
+                                    // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            MentraManager.getInstance().handle_request_status();
                         }
                         // CASE CHARGING STATUS
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0E) {
                             caseCharging = (data[2] & 0xFF) == 0x01;// TODO: verify this is correct
-                            EventBus.getDefault()
-                                    .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            // EventBus.getDefault()
+                                    // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            MentraManager.getInstance().handle_request_status();
                         }
                         // CASE CHARGING INFO
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0F) {
                             caseBatteryLevel = (data[2] & 0xFF);// TODO: verify this is correct
-                            EventBus.getDefault()
-                                    .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            // EventBus.getDefault()
+                                    // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
+                            MentraManager.getInstance().handle_request_status();
                         }
                         // HEARTBEAT RESPONSE
                         else if (data.length > 0 && data[0] == 0x25) {
