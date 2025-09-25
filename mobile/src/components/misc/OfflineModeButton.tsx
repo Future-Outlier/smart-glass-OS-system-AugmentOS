@@ -1,4 +1,3 @@
-import React from "react"
 import {View, TouchableOpacity, ViewStyle} from "react-native"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
@@ -6,12 +5,11 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {useAppStatus} from "@/contexts/AppletStatusProvider"
-import bridge from "@/bridge/MantleBridge"
 
 export const OfflineModeButton: React.FC = () => {
   const {theme, themed} = useAppTheme()
   const [offlineMode, setOfflineMode] = useSetting(SETTINGS_KEYS.OFFLINE_MODE)
-  const [offlineCaptionsAppRunning, setOfflineCaptionsAppRunning] = useSetting(
+  const [_offlineCaptionsAppRunning, setOfflineCaptionsAppRunning] = useSetting(
     SETTINGS_KEYS.offline_captions_app_running,
   )
   const {stopAllApps} = useAppStatus()
@@ -37,7 +35,6 @@ export const OfflineModeButton: React.FC = () => {
             } else {
               // If disabling offline mode, turn off offline captions
               setOfflineCaptionsAppRunning(false)
-              bridge.toggleOfflineApps(false)
             }
             setOfflineMode(!offlineMode)
           },

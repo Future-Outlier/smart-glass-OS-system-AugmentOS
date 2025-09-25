@@ -4,7 +4,6 @@ import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {INTENSE_LOGGING} from "@/consts"
 import {check, PERMISSIONS, RESULTS} from "react-native-permissions"
 import BleManager from "react-native-ble-manager"
-import {AudioPlayResponse} from "@/services/AudioPlayService"
 import {translate} from "@/i18n"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import socketComms from "@/managers/SocketComms"
@@ -17,7 +16,6 @@ const coreBridge = new NativeEventEmitter(BridgeModule)
 export class MantleBridge extends EventEmitter {
   private static instance: MantleBridge | null = null
   private messageEventSubscription: any = null
-  private validationInProgress: Promise<boolean> | null = null
   private reconnectionTimer: NodeJS.Timeout | null = null
   private isConnected: boolean = false
   private lastMessage: string = ""
@@ -765,24 +763,6 @@ export class MantleBridge extends EventEmitter {
     return await this.sendData({
       command: command,
       params: params || {},
-    })
-  }
-
-  /**
-   * Sends audio play response back to Core
-   */
-  private async sendAudioPlayResponse(response: AudioPlayResponse) {
-    console.log(
-      `Bridge: Sending audio play response for requestId: ${response.requestId}, success: ${response.success}`,
-    )
-    await this.sendData({
-      command: "audio_play_response",
-      params: {
-        requestId: response.requestId,
-        success: response.success,
-        error: response.error,
-        duration: response.duration,
-      },
     })
   }
 

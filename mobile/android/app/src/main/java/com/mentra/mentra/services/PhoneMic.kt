@@ -308,13 +308,7 @@ class PhoneMic private constructor(private val context: Context) {
                             }
 
                             // Send PCM data to MentraManager
-                            MentraManager.getInstance()
-                                    .handlePcm(
-                                            android.util.Base64.encodeToString(
-                                                    pcmData,
-                                                    android.util.Base64.DEFAULT
-                                            )
-                                    )
+                            MentraManager.getInstance().handlePcm(pcmData)
                         }
                     }
                 }

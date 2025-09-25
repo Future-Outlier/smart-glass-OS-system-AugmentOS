@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Base64
 import androidx.core.content.ContextCompat
 import com.mentra.mentra.services.ForegroundService
 import com.mentra.mentra.services.PhoneMic
@@ -357,21 +356,9 @@ class MentraManager {
         // TODO: config
     }
 
-    fun handlePcm(base64PcmData: String) {
-        val pcmData = Base64.decode(base64PcmData, Base64.DEFAULT)
-
-        if (bypassVad || bypassVadForPCM) {
-            if (shouldSendPcmData) {
-                Bridge.sendMicData(pcmData)
-            }
-
-            if (shouldSendTranscript) {
-                // TODO: Send to local transcriber
-            }
-            return
-        }
-
-        // TODO: Implement VAD processing
+    fun handlePcm(pcmData: ByteArray) {
+        Bridge.log("Mentra: handlePcm()")
+        Bridge.sendMicData(pcmData)
     }
 
     fun handleConnectionStateChanged() {
@@ -585,6 +572,7 @@ class MentraManager {
     }
 
     private fun setOnboardMicEnabled(enabled: Boolean) {
+        Bridge.log("Mentra: setOnboardMicEnabled(): $enabled")
         if (enabled) {
             PhoneMic.getInstance(Bridge.getContext()).startRecording()
         } else {
