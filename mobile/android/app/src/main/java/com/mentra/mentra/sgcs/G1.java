@@ -81,6 +81,7 @@ import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.Glass
 import com.mentra.mentra.sgcs.SGCManager;
 import com.mentra.mentra.MentraManager;
 import com.mentra.mentra.Bridge;
+import com.mentra.mentra.utils.DeviceTypes;
 
 public class G1 extends SGCManager {
     private static final String TAG = "WearableAi_EvenRealitiesG1SGC";
@@ -88,7 +89,7 @@ public class G1 extends SGCManager {
     private int heartbeatCount = 0;
     private int micBeatCount = 0;
     private BluetoothAdapter bluetoothAdapter;
-    public String type = DeviceType.G1;
+    public String type = DeviceTypes.G1;
 
     public static final String LEFT_DEVICE_KEY = "SavedG1LeftName";
     public static final String RIGHT_DEVICE_KEY = "SavedG1RightName";

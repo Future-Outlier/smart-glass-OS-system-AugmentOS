@@ -2,10 +2,10 @@ package com.mentra.mentra
 
 import android.os.Handler
 import android.os.Looper
-import android.service.controls.DeviceTypes
 import android.util.Base64
 import com.mentra.mentra.sgcs.G1
 import com.mentra.mentra.sgcs.SGCManager
+import com.mentra.mentra.utils.DeviceTypes
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -126,10 +126,20 @@ class MentraManager {
     // MARK: - Public Methods (for React Native)
 
     fun initSGC(wearable: String) {
-        Bridge.log("Mentra: initSGC(): wearable: $wearable")
+        Bridge.log("Initializing manager for wearable: $wearable")
+        if (sgc != null) {
+            Bridge.log("Mentra: Manager already initialized")
+            return
+        }
 
-        if (wearable.contains("G1") && sgc == null) {
+        if (wearable.contains(DeviceTypes.G1)) {
             sgc = G1()
+        } else if (wearable.contains(DeviceTypes.LIVE)) {
+            // sgc = MentraLive()
+        } else if (wearable.contains(DeviceTypes.MACH1)) {
+            // sgc = Mach1()
+        } else if (wearable.contains(DeviceTypes.FRAME)) {
+            // sgc = FrameManager()
         }
     }
 
@@ -221,7 +231,7 @@ class MentraManager {
         isSearching = false
         handle_request_status()
 
-        if (defaultWearable.contains("G1")) {
+        if (defaultWearable.contains(DeviceTypes.G1)) {
             handleG1Ready()
         } else if (defaultWearable.contains(DeviceTypes.MACH1)) {
             handleMach1Ready()
@@ -365,7 +375,7 @@ class MentraManager {
         useOnboardMic = actuallyEnabled && useOnboardMic
 
         sgc?.let { sgc ->
-            if (sgc.type == "g1" && sgc.ready) {
+            if (sgc.type == DeviceTypes.G1 && sgc.ready) {
                 sgc.setMicEnabled(useGlassesMic)
             }
         }
@@ -763,9 +773,9 @@ class MentraManager {
 
     private fun getGlassesHasMic(): Boolean =
             when {
-                defaultWearable.contains("G1") -> true
-                defaultWearable.contains("Live") -> false
-                defaultWearable.contains("Mach1") -> false
+                defaultWearable.contains(DeviceTypes.G1) -> true
+                defaultWearable.contains(DeviceTypes.LIVE) -> false
+                defaultWearable.contains(DeviceTypes.MACH1) -> false
                 else -> false
             }
 
@@ -855,18 +865,14 @@ class MentraManager {
 
     fun handle_search_for_compatible_device_names(modelName: String) {
         Bridge.log("Mentra: Searching for compatible device names for: $modelName")
-        if (modelName.contains("Simulated")) {
-            defaultWearable = "Simulated Glasses"
+        if (modelName.contains(DeviceTypes.SIMULATED)) {
+            defaultWearable = DeviceTypes.SIMULATED
             handle_request_status()
             return
         }
 
-        if (modelName.contains("G1")) {
-            pendingWearable = "Even Realities G1"
-        } else if (modelName.contains("Live")) {
-            pendingWearable = "Mentra Live"
-        } else if (modelName.contains("Mach1") || modelName.contains("Z100")) {
-            pendingWearable = "Mach1"
+        if (DeviceTypes.ALL.contains(modelName)) {
+            pendingWearable = modelName
         }
 
         initSGC(pendingWearable)

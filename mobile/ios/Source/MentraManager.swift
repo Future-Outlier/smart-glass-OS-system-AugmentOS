@@ -147,15 +147,18 @@ struct ViewState {
 
     func initSGC(_ wearable: String) {
         Bridge.log("Initializing manager for wearable: \(wearable)")
-        if wearable.contains("G1") && sgc == nil {
+        if sgc != nil {
+            Bridge.log("Mentra: Manager already initialized")
+            return
+        }
+
+        if wearable.contains(DeviceTypes.G1) {
             sgc = G1()
-        } else if wearable.contains("Live") && sgc == nil {
+        } else if wearable.contains(DeviceTypes.LIVE) {
             sgc = MentraLive()
-        } else if wearable.contains("Mach1") && sgc == nil {
+        } else if wearable.contains(DeviceTypes.MACH1) {
             sgc = Mach1()
-        } else if wearable.contains("Frame") || wearable.contains("Brilliant Labs"),
-                  sgc == nil
-        {
+        } else if wearable.contains(DeviceTypes.FRAME) {
             sgc = FrameManager()
         }
     }
@@ -1171,9 +1174,9 @@ struct ViewState {
         isSearching = false
         handle_request_status()
 
-        if defaultWearable.contains("G1") {
+        if defaultWearable.contains(DeviceTypes.G1) {
             handleG1Ready()
-        } else if defaultWearable.contains("Mach1") {
+        } else if defaultWearable.contains(DeviceTypes.MACH1) {
             handleMach1Ready()
         }
 
@@ -1344,18 +1347,16 @@ struct ViewState {
 
     func handle_search_for_compatible_device_names(_ modelName: String) {
         Bridge.log("Mentra: Searching for compatible device names for: \(modelName)")
-        if modelName.contains("Simulated") {
-            defaultWearable = "Simulated Glasses" // there is no pairing process for simulated glasses
+        if modelName.contains(DeviceTypes.SIMULATED) {
+            defaultWearable = DeviceTypes.SIMULATED
             handle_request_status()
             return
         }
-        if modelName.contains("G1") {
-            pendingWearable = "Even Realities G1"
-        } else if modelName.contains("Live") {
-            pendingWearable = "Mentra Live"
-        } else if modelName.contains("Mach1") || modelName.contains("Z100") {
-            pendingWearable = "Mach1"
+
+        if DeviceTypes.ALL.contains(modelName) {
+            pendingWearable = modelName
         }
+
         initSGC(pendingWearable)
         sgc?.findCompatibleDevices()
     }
