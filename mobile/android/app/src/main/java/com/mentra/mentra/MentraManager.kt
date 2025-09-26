@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import com.mentra.mentra.services.ForegroundService
 import com.mentra.mentra.services.PhoneMic
 import com.mentra.mentra.sgcs.G1
+import com.mentra.mentra.sgcs.MentraLive
 import com.mentra.mentra.sgcs.SGCManager
 import com.mentra.mentra.utils.DeviceTypes
 import java.text.SimpleDateFormat
@@ -301,7 +302,7 @@ class MentraManager {
         if (wearable.contains(DeviceTypes.G1)) {
             sgc = G1()
         } else if (wearable.contains(DeviceTypes.LIVE)) {
-            // sgc = MentraLive()
+            sgc = MentraLive()
         } else if (wearable.contains(DeviceTypes.MACH1)) {
             // sgc = Mach1()
         } else if (wearable.contains(DeviceTypes.FRAME)) {
