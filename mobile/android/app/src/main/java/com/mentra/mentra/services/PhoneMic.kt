@@ -2,22 +2,21 @@ package com.mentra.mentra.services
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHeadset
-import android.bluetooth.BluetoothProfile
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.media.AudioDeviceInfo
-import android.media.AudioFormat
-import android.media.AudioManager
-import android.media.AudioRecord
-import android.media.MediaRecorder
+import android.media.*
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.telephony.PhoneStateListener
+import android.telephony.TelephonyManager
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.mentra.mentra.Bridge
 import com.mentra.mentra.MentraManager
 import java.nio.ByteBuffer
@@ -42,12 +41,19 @@ class PhoneMic private constructor(private val context: Context) {
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
         private const val BUFFER_SIZE_MULTIPLIER = 2
+
+        // Debouncing and retry constants
+        private const val MODE_CHANGE_DEBOUNCE_MS = 500L
+        private const val MAX_SCO_RETRIES = 3
+        private const val FOCUS_REGAIN_DELAY_MS = 500L
+        private const val SAMSUNG_MIC_TEST_DELAY_MS = 500L
     }
 
     // Audio recording components
     private var audioRecord: AudioRecord? = null
     private var recordingThread: Thread? = null
     private val isRecording = AtomicBoolean(false)
+    private var preferScoMode = true // Try SCO first, fallback to normal if needed
 
     // Audio manager and routing
     private val audioManager: AudioManager =
@@ -59,6 +65,26 @@ class PhoneMic private constructor(private val context: Context) {
     private var audioRouteReceiver: BroadcastReceiver? = null
     private var bluetoothReceiver: BroadcastReceiver? = null
 
+    // Phone call detection
+    private var telephonyManager: TelephonyManager? = null
+    private var phoneStateListener: PhoneStateListener? = null
+    private var isPhoneCallActive = false
+
+    // Audio focus management
+    private var audioFocusListener: AudioManager.OnAudioFocusChangeListener? = null
+    private var hasAudioFocus = false
+    private var audioFocusRequest: AudioFocusRequest? = null // For Android 8.0+
+
+    // Audio recording conflict detection (API 24+)
+    private var audioRecordingCallback: AudioManager.AudioRecordingCallback? = null
+    private val ourAudioSessionIds = mutableListOf<Int>()
+    private var isExternalAudioActive = false
+
+    // State tracking
+    private var lastModeChangeTime = 0L
+    private var scoRetries = 0
+    private var pendingRecordingRequest = false
+
     // Handler for main thread operations
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -66,113 +92,177 @@ class PhoneMic private constructor(private val context: Context) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     init {
+        setupPhoneCallDetection()
+        setupAudioFocusListener()
+        setupAudioRecordingDetection()
         setupAudioRouteListener()
         setupBluetoothListener()
     }
 
-    // MARK: - Public Methods
+    // MARK: - Public Methods (Simplified Interface)
 
     /**
-     * Check (but don't request) microphone permissions Permissions are requested by React Native
-     * UI, not directly by Kotlin
+     * Start recording from the phone microphone Will automatically handle SCO mode, conflicts, and
+     * fallbacks
      */
-    fun requestPermissions(): Boolean {
-        // Instead of requesting permissions directly, we just check the current status
-        // This maintains compatibility with existing code that calls this method
-        return checkPermissions()
-    }
-
-    /** Check if microphone permissions have been granted */
-    fun checkPermissions(): Boolean {
-        return ActivityCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
-                PackageManager.PERMISSION_GRANTED
-    }
-
-    /** Get a list of available audio input devices */
-    fun getAvailableInputDevices(): Map<String, String> {
-        val deviceInfo = mutableMapOf<String, String>()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val devices = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
-            for (device in devices) {
-                val name =
-                        when (device.type) {
-                            AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Built-in Microphone"
-                            AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth Headset"
-                            AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Wired Headset"
-                            AudioDeviceInfo.TYPE_USB_HEADSET -> "USB Headset"
-                            else -> device.productName.toString()
-                        }
-                deviceInfo[device.id.toString()] = name
-            }
-        } else {
-            // Fallback for older Android versions
-            deviceInfo["default"] = "Default Microphone"
-            if (audioManager.isBluetoothScoAvailableOffCall) {
-                deviceInfo["bluetooth"] = "Bluetooth Headset"
-            }
-            if (audioManager.isWiredHeadsetOn) {
-                deviceInfo["wired"] = "Wired Headset"
-            }
-        }
-
-        return deviceInfo
-    }
-
-    /** Manually set a specific device as preferred input */
-    fun setPreferredInputDevice(deviceName: String): Boolean {
-        return try {
-            when {
-                deviceName.contains("bluetooth", ignoreCase = true) ||
-                        deviceName.contains("airpods", ignoreCase = true) -> {
-                    // Route to Bluetooth SCO
-                    if (!audioManager.isBluetoothScoOn) {
-                        audioManager.startBluetoothSco()
-                        audioManager.isBluetoothScoOn = true
-                    }
-                    Bridge.log("Successfully routed audio to Bluetooth device")
-                    true
-                }
-                deviceName.contains("speaker", ignoreCase = true) -> {
-                    // Route to speaker
-                    audioManager.isSpeakerphoneOn = true
-                    if (audioManager.isBluetoothScoOn) {
-                        audioManager.stopBluetoothSco()
-                        audioManager.isBluetoothScoOn = false
-                    }
-                    Bridge.log("Successfully routed audio to speaker")
-                    true
-                }
-                else -> {
-                    // Route to default (earpiece/wired headset)
-                    audioManager.isSpeakerphoneOn = false
-                    if (audioManager.isBluetoothScoOn) {
-                        audioManager.stopBluetoothSco()
-                        audioManager.isBluetoothScoOn = false
-                    }
-                    Bridge.log("Successfully routed audio to default device")
-                    true
-                }
-            }
-        } catch (e: Exception) {
-            Bridge.log("Failed to set preferred input: ${e.message}")
-            false
-        }
-    }
-
-    /** Start recording from the available microphone */
     fun startRecording(): Boolean {
-        // Ensure we're not already recording
+        // Ensure we're on main thread for consistency
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            var result = false
+            runBlocking { withContext(Dispatchers.Main) { result = startRecording() } }
+            return result
+        }
+
+        // Check if already recording
         if (isRecording.get()) {
+            Bridge.log("MIC: Already recording")
             return true
         }
 
-        // Check permissions first
+        // Check permissions
         if (!checkPermissions()) {
             Bridge.log("MIC: Microphone permissions not granted")
+            notifyMentraManager("permission_denied", emptyList())
             return false
         }
 
+        // Smart debouncing
+        val now = System.currentTimeMillis()
+        if (now - lastModeChangeTime < MODE_CHANGE_DEBOUNCE_MS) {
+            Bridge.log("MIC: Debouncing rapid recording request")
+            pendingRecordingRequest = true
+            mainHandler.postDelayed(
+                    {
+                        if (pendingRecordingRequest && !isRecording.get()) {
+                            startRecordingInternal()
+                        }
+                        pendingRecordingRequest = false
+                    },
+                    MODE_CHANGE_DEBOUNCE_MS
+            )
+            return false
+        }
+
+        return startRecordingInternal()
+    }
+
+    /** Stop recording from the phone microphone */
+    fun stopRecording() {
+        // Ensure we're on main thread for consistency
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            runBlocking { withContext(Dispatchers.Main) { stopRecording() } }
+            return
+        }
+
+        if (!isRecording.get()) {
+            return
+        }
+
+        Bridge.log("MIC: Stopping recording")
+
+        // Clean up recording
+        cleanUpRecording()
+
+        // Abandon audio focus
+        abandonAudioFocus()
+
+        // Reset Bluetooth SCO
+        if (audioManager.isBluetoothScoOn) {
+            audioManager.stopBluetoothSco()
+            audioManager.isBluetoothScoOn = false
+        }
+
+        // Reset audio mode
+        audioManager.mode = AudioManager.MODE_NORMAL
+
+        // Notify MentraManager
+        notifyMentraManager("recording_stopped", getAvailableInputDevices().values.toList())
+
+        Bridge.log("MIC: Recording stopped")
+    }
+
+    // MARK: - Private Methods
+
+    private fun startRecordingInternal(): Boolean {
+        lastModeChangeTime = System.currentTimeMillis()
+
+        // Check for conflicts
+        if (isPhoneCallActive) {
+            Bridge.log("MIC: Cannot start recording - phone call active")
+            notifyMentraManager("phone_call_active", emptyList())
+            return false
+        }
+
+        // Request audio focus
+        if (!requestAudioFocus()) {
+            Bridge.log("MIC: Failed to get audio focus")
+            // On Samsung, test if another app actually needs the mic
+            if (isSamsungDevice()) {
+                testMicrophoneAvailabilityOnSamsung()
+            } else {
+                notifyMentraManager("audio_focus_denied", emptyList())
+            }
+            return false
+        }
+
+        // Try SCO mode first (if preferred)
+        if (preferScoMode && audioManager.isBluetoothScoAvailableOffCall) {
+            Bridge.log("MIC: Attempting to start with Bluetooth SCO")
+            if (startRecordingWithSco()) {
+                return true
+            }
+            Bridge.log("MIC: SCO failed, falling back to normal mode")
+        }
+
+        // Fallback to normal mode
+        return startRecordingNormal()
+    }
+
+    private fun startRecordingWithSco(): Boolean {
+        try {
+            // Start Bluetooth SCO
+            audioManager.startBluetoothSco()
+            audioManager.isBluetoothScoOn = true
+            audioManager.mode = AudioManager.MODE_IN_CALL
+
+            // Wait briefly for SCO to connect
+            Thread.sleep(100)
+
+            return createAndStartAudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
+        } catch (e: Exception) {
+            Bridge.log("MIC: SCO recording failed: ${e.message}")
+
+            // Clean up SCO
+            audioManager.stopBluetoothSco()
+            audioManager.isBluetoothScoOn = false
+            audioManager.mode = AudioManager.MODE_NORMAL
+
+            // Retry logic
+            if (scoRetries < MAX_SCO_RETRIES) {
+                scoRetries++
+                Bridge.log("MIC: Retrying SCO (attempt $scoRetries)")
+                return startRecordingWithSco()
+            }
+
+            return false
+        }
+    }
+
+    private fun startRecordingNormal(): Boolean {
+        try {
+            // Set appropriate audio mode for Samsung devices
+            if (isSamsungDevice()) {
+                audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            }
+
+            return createAndStartAudioRecord(MediaRecorder.AudioSource.MIC)
+        } catch (e: Exception) {
+            Bridge.log("MIC: Normal recording failed: ${e.message}")
+            return false
+        }
+    }
+
+    private fun createAndStartAudioRecord(audioSource: Int): Boolean {
         // Calculate buffer size
         val minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
 
@@ -183,110 +273,51 @@ class PhoneMic private constructor(private val context: Context) {
 
         val bufferSize = minBufferSize * BUFFER_SIZE_MULTIPLIER
 
-        // Create AudioRecord instance
-        try {
-            audioRecord =
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        AudioRecord.Builder()
-                                .setAudioSource(MediaRecorder.AudioSource.MIC)
-                                .setAudioFormat(
-                                        AudioFormat.Builder()
-                                                .setSampleRate(SAMPLE_RATE)
-                                                .setChannelMask(CHANNEL_CONFIG)
-                                                .setEncoding(AUDIO_FORMAT)
-                                                .build()
-                                )
-                                .setBufferSizeInBytes(bufferSize)
-                                .build()
-                    } else {
-                        AudioRecord(
-                                MediaRecorder.AudioSource.MIC,
-                                SAMPLE_RATE,
-                                CHANNEL_CONFIG,
-                                AUDIO_FORMAT,
-                                bufferSize
-                        )
-                    }
+        // Create AudioRecord
+        audioRecord =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    AudioRecord.Builder()
+                            .setAudioSource(audioSource)
+                            .setAudioFormat(
+                                    AudioFormat.Builder()
+                                            .setSampleRate(SAMPLE_RATE)
+                                            .setChannelMask(CHANNEL_CONFIG)
+                                            .setEncoding(AUDIO_FORMAT)
+                                            .build()
+                            )
+                            .setBufferSizeInBytes(bufferSize)
+                            .build()
+                } else {
+                    AudioRecord(audioSource, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, bufferSize)
+                }
 
-            if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
-                Bridge.log("MIC: AudioRecord failed to initialize")
-                audioRecord?.release()
-                audioRecord = null
-                return false
-            }
-
-            // Set preferred audio device if available
-            setPreferredAudioDevice()
-
-            // Start recording
-            audioRecord?.startRecording()
-            isRecording.set(true)
-
-            // Start recording thread
-            startRecordingThread(bufferSize)
-
-            Bridge.log("MIC: Started recording from: ${getActiveInputDevice() ?: "Unknown device"}")
-            return true
-        } catch (e: Exception) {
-            Bridge.log("MIC: Failed to start recording: ${e.message}")
+        if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
+            Bridge.log("MIC: AudioRecord failed to initialize")
             audioRecord?.release()
             audioRecord = null
             return false
         }
+
+        // Register this AudioRecord's session ID
+        audioRecord?.let { ourAudioSessionIds.add(it.audioSessionId) }
+
+        // Start recording
+        audioRecord?.startRecording()
+        isRecording.set(true)
+
+        // Start recording thread
+        startRecordingThread(bufferSize)
+
+        // Notify MentraManager
+        val activeDevice = getActiveInputDevice() ?: "Unknown"
+        Bridge.log("MIC: Started recording from: $activeDevice")
+        notifyMentraManager("recording_started", listOf(activeDevice))
+
+        // Reset retry counter on success
+        scoRetries = 0
+
+        return true
     }
-
-    /** Stop recording from the microphone */
-    fun stopRecording() {
-        if (!isRecording.get()) {
-            return
-        }
-
-        isRecording.set(false)
-
-        // Stop recording thread
-        recordingThread?.interrupt()
-        recordingThread = null
-
-        // Stop and release AudioRecord
-        try {
-            audioRecord?.stop()
-            audioRecord?.release()
-            audioRecord = null
-        } catch (e: Exception) {
-            Bridge.log("MIC: Error stopping recording: ${e.message}")
-        }
-
-        // Reset audio routing
-        if (audioManager.isBluetoothScoOn) {
-            audioManager.stopBluetoothSco()
-            audioManager.isBluetoothScoOn = false
-        }
-
-        Bridge.log("MIC: Stopped recording")
-    }
-
-    /** Get the currently active input device name */
-    fun getActiveInputDevice(): String? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            audioRecord?.routedDevice?.let { device ->
-                when (device.type) {
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Built-in Microphone"
-                    AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth Headset"
-                    AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Wired Headset"
-                    AudioDeviceInfo.TYPE_USB_HEADSET -> "USB Headset"
-                    else -> device.productName.toString()
-                }
-            }
-        } else {
-            when {
-                audioManager.isBluetoothScoOn -> "Bluetooth Headset"
-                audioManager.isWiredHeadsetOn -> "Wired Headset"
-                else -> "Built-in Microphone"
-            }
-        }
-    }
-
-    // MARK: - Private Methods
 
     private fun startRecordingThread(bufferSize: Int) {
         recordingThread =
@@ -318,21 +349,159 @@ class PhoneMic private constructor(private val context: Context) {
                         }
     }
 
-    private fun setPreferredAudioDevice() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val devices = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
+    private fun cleanUpRecording() {
+        isRecording.set(false)
 
-            // Prefer Bluetooth device if available
-            val bluetoothDevice =
-                    devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
+        // Stop recording thread
+        recordingThread?.interrupt()
+        recordingThread = null
 
-            bluetoothDevice?.let { device ->
-                try {
-                    audioRecord?.preferredDevice = device
-                    Bridge.log("MIC: Set preferred device to Bluetooth")
-                } catch (e: Exception) {
-                    Bridge.log("MIC: Failed to set preferred device: ${e.message}")
+        // Stop and release AudioRecord
+        audioRecord?.let { record ->
+            try {
+                // Unregister session ID
+                ourAudioSessionIds.remove(record.audioSessionId)
+
+                record.stop()
+                record.release()
+            } catch (e: Exception) {
+                Bridge.log("MIC: Error cleaning up AudioRecord: ${e.message}")
+            }
+        }
+        audioRecord = null
+    }
+
+    private fun setupPhoneCallDetection() {
+        // Check for phone state permission
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) !=
+                        PackageManager.PERMISSION_GRANTED
+        ) {
+            Bridge.log("MIC: READ_PHONE_STATE permission not granted, skipping call detection")
+            return
+        }
+
+        telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+
+        phoneStateListener =
+                object : PhoneStateListener() {
+                    override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+                        val wasCallActive = isPhoneCallActive
+                        isPhoneCallActive = (state != TelephonyManager.CALL_STATE_IDLE)
+
+                        if (wasCallActive != isPhoneCallActive) {
+                            if (isPhoneCallActive) {
+                                Bridge.log("MIC: Phone call started - stopping recording")
+                                if (isRecording.get()) {
+                                    stopRecording()
+                                    notifyMentraManager("phone_call_interruption", emptyList())
+                                }
+                            } else {
+                                Bridge.log("MIC: Phone call ended")
+                                notifyMentraManager(
+                                        "phone_call_ended",
+                                        getAvailableInputDevices().values.toList()
+                                )
+                            }
+                        }
+                    }
                 }
+
+        telephonyManager?.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE)
+    }
+
+    private fun setupAudioFocusListener() {
+        audioFocusListener =
+                AudioManager.OnAudioFocusChangeListener { focusChange ->
+                    when (focusChange) {
+                        AudioManager.AUDIOFOCUS_LOSS -> {
+                            Bridge.log("MIC: Permanent audio focus loss")
+                            hasAudioFocus = false
+                            // Don't stop recording for media playback
+                        }
+                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                            Bridge.log("MIC: Transient audio focus loss")
+                            hasAudioFocus = false
+
+                            if (isSamsungDevice() && isRecording.get()) {
+                                // Samsung needs special handling
+                                testMicrophoneAvailabilityOnSamsung()
+                            } else {
+                                // Wait to see if another app actually records
+                                mainHandler.postDelayed(
+                                        {
+                                            if (isExternalAudioActive && isRecording.get()) {
+                                                Bridge.log(
+                                                        "MIC: Another app is recording - stopping"
+                                                )
+                                                stopRecording()
+                                                notifyMentraManager(
+                                                        "external_app_recording",
+                                                        emptyList()
+                                                )
+                                            }
+                                        },
+                                        500
+                                )
+                            }
+                        }
+                        AudioManager.AUDIOFOCUS_GAIN -> {
+                            Bridge.log("MIC: Regained audio focus")
+                            hasAudioFocus = true
+
+                            if (isSamsungDevice()) {
+                                isExternalAudioActive = false
+                            }
+
+                            // Notify that focus is available again
+                            if (!isRecording.get()) {
+                                notifyMentraManager(
+                                        "audio_focus_available",
+                                        getAvailableInputDevices().values.toList()
+                                )
+                            }
+                        }
+                    }
+                }
+    }
+
+    private fun setupAudioRecordingDetection() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            audioRecordingCallback =
+                    object : AudioManager.AudioRecordingCallback() {
+                        override fun onRecordingConfigChanged(
+                                configs: MutableList<AudioRecordingConfiguration>?
+                        ) {
+                            configs ?: return
+
+                            // Filter out our own recordings
+                            val otherAppRecordings =
+                                    configs.filter { config ->
+                                        !ourAudioSessionIds.contains(config.clientAudioSessionId)
+                                    }
+
+                            val wasExternalActive = isExternalAudioActive
+                            isExternalAudioActive = otherAppRecordings.isNotEmpty()
+
+                            if (wasExternalActive != isExternalAudioActive) {
+                                if (isExternalAudioActive) {
+                                    Bridge.log("MIC: External app started recording")
+                                    if (isRecording.get()) {
+                                        stopRecording()
+                                        notifyMentraManager("external_app_recording", emptyList())
+                                    }
+                                } else {
+                                    Bridge.log("MIC: External app stopped recording")
+                                    notifyMentraManager(
+                                            "external_app_stopped",
+                                            getAvailableInputDevices().values.toList()
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+            if (audioRecordingCallback != null) {
+                audioManager.registerAudioRecordingCallback(audioRecordingCallback!!, mainHandler)
             }
         }
     }
@@ -343,7 +512,7 @@ class PhoneMic private constructor(private val context: Context) {
                     override fun onReceive(context: Context?, intent: Intent?) {
                         when (intent?.action) {
                             AudioManager.ACTION_AUDIO_BECOMING_NOISY -> {
-                                Bridge.log("MIC: Audio becoming noisy (headset disconnected)")
+                                Bridge.log("MIC: Audio becoming noisy")
                                 handleAudioRouteChange()
                             }
                             AudioManager.ACTION_HEADSET_PLUG -> {
@@ -388,129 +557,213 @@ class PhoneMic private constructor(private val context: Context) {
                 object : BroadcastReceiver() {
                     override fun onReceive(context: Context?, intent: Intent?) {
                         when (intent?.action) {
-                            BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED -> {
-                                val state =
-                                        intent.getIntExtra(
-                                                BluetoothProfile.EXTRA_STATE,
-                                                BluetoothProfile.STATE_DISCONNECTED
+                            BluetoothDevice.ACTION_ACL_CONNECTED -> {
+                                val device =
+                                        intent.getParcelableExtra<BluetoothDevice>(
+                                                BluetoothDevice.EXTRA_DEVICE
                                         )
-                                when (state) {
-                                    BluetoothProfile.STATE_CONNECTED -> {
-                                        Bridge.log("MIC: Bluetooth headset connected")
-                                        handleAudioRouteChange()
-                                    }
-                                    BluetoothProfile.STATE_DISCONNECTED -> {
-                                        Bridge.log("MIC: Bluetooth headset disconnected")
-                                        handleAudioRouteChange()
-                                    }
-                                }
+                                Bridge.log(
+                                        "MIC: Bluetooth device connected: ${device?.name ?: "Unknown"}"
+                                )
+                                handleAudioRouteChange()
+                            }
+                            BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
+                                val device =
+                                        intent.getParcelableExtra<BluetoothDevice>(
+                                                BluetoothDevice.EXTRA_DEVICE
+                                        )
+                                Bridge.log(
+                                        "MIC: Bluetooth device disconnected: ${device?.name ?: "Unknown"}"
+                                )
+                                handleAudioRouteChange()
                             }
                         }
                     }
                 }
 
         val filter =
-                IntentFilter().apply { addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED) }
+                IntentFilter().apply {
+                    addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
+                    addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+                }
 
         context.registerReceiver(bluetoothReceiver, filter)
-
-        // Set up Bluetooth profile proxy
-        bluetoothAdapter?.getProfileProxy(
-                context,
-                object : BluetoothProfile.ServiceListener {
-                    override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
-                        if (profile == BluetoothProfile.HEADSET) {
-                            bluetoothHeadset = proxy as BluetoothHeadset
-                        }
-                    }
-
-                    override fun onServiceDisconnected(profile: Int) {
-                        if (profile == BluetoothProfile.HEADSET) {
-                            bluetoothHeadset = null
-                        }
-                    }
-                },
-                BluetoothProfile.HEADSET
-        )
     }
 
     private fun handleAudioRouteChange() {
-        // Get available inputs and notify MentraManager
         val availableInputs = getAvailableInputDevices().values.toList()
-
-        mainHandler.post {
-            MentraManager.getInstance()
-                    .onRouteChange(reason = "AudioRouteChanged", availableInputs = availableInputs)
-        }
-
-        // Log current audio route
-        logCurrentAudioRoute()
+        notifyMentraManager("audio_route_changed", availableInputs)
     }
 
-    private fun logCurrentAudioRoute() {
-        val routeDescription = StringBuilder("Current audio route:\n")
+    private fun requestAudioFocus(): Boolean {
+        val result =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val audioAttributes =
+                            AudioAttributes.Builder()
+                                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                    .build()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val devices = audioManager.getDevices(AudioManager.GET_DEVICES_ALL)
+                    audioFocusRequest =
+                            AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                                    .setAudioAttributes(audioAttributes)
+                                    .setOnAudioFocusChangeListener(
+                                            audioFocusListener!!,
+                                            mainHandler
+                                    )
+                                    .setAcceptsDelayedFocusGain(false)
+                                    .build()
 
-            val inputs = devices.filter { it.isSource }
-            val outputs = devices.filter { it.isSink }
-
-            if (inputs.isEmpty()) {
-                routeDescription.append("- No input devices\n")
-            } else {
-                inputs.forEachIndexed { index, device ->
-                    routeDescription.append(
-                            "- Input ${index + 1}: ${device.productName} (type: ${device.type})\n"
+                    audioManager.requestAudioFocus(audioFocusRequest!!)
+                } else {
+                    audioManager.requestAudioFocus(
+                            audioFocusListener,
+                            AudioManager.STREAM_VOICE_CALL,
+                            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
                     )
                 }
-            }
 
-            if (outputs.isEmpty()) {
-                routeDescription.append("- No output devices")
-            } else {
-                outputs.forEachIndexed { index, device ->
-                    routeDescription.append(
-                            "- Output ${index + 1}: ${device.productName} (type: ${device.type})"
-                    )
-                    if (index < outputs.size - 1) {
-                        routeDescription.append("\n")
+        hasAudioFocus = (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
+        return hasAudioFocus
+    }
+
+    private fun abandonAudioFocus() {
+        if (!hasAudioFocus) return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && audioFocusRequest != null) {
+            audioManager.abandonAudioFocusRequest(audioFocusRequest!!)
+            audioFocusRequest = null
+        } else {
+            audioManager.abandonAudioFocus(audioFocusListener)
+        }
+
+        hasAudioFocus = false
+    }
+
+    private fun testMicrophoneAvailabilityOnSamsung() {
+        Bridge.log("MIC: Samsung - testing mic availability")
+
+        val currentRecord = audioRecord
+
+        // Temporarily stop recording
+        cleanUpRecording()
+
+        // Wait and try to recreate
+        mainHandler.postDelayed(
+                {
+                    if (tryCreateTestAudioRecord()) {
+                        Bridge.log("MIC: Samsung - mic available, just playback app")
+                        // Restart recording
+                        startRecordingInternal()
+                    } else {
+                        Bridge.log("MIC: Samsung - mic taken by another app")
+                        isExternalAudioActive = true
+                        notifyMentraManager("samsung_mic_conflict", emptyList())
                     }
+                },
+                SAMSUNG_MIC_TEST_DELAY_MS
+        )
+    }
+
+    private fun tryCreateTestAudioRecord(): Boolean {
+        var testRecorder: AudioRecord? = null
+        try {
+            val minBufferSize =
+                    AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
+
+            testRecorder =
+                    AudioRecord(
+                            MediaRecorder.AudioSource.MIC,
+                            SAMPLE_RATE,
+                            CHANNEL_CONFIG,
+                            AUDIO_FORMAT,
+                            minBufferSize
+                    )
+
+            return testRecorder.state == AudioRecord.STATE_INITIALIZED
+        } catch (e: Exception) {
+            return false
+        } finally {
+            testRecorder?.release()
+        }
+    }
+
+    private fun isSamsungDevice(): Boolean {
+        return Build.MANUFACTURER.equals("samsung", ignoreCase = true)
+    }
+
+    private fun checkPermissions(): Boolean {
+        return ActivityCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun getAvailableInputDevices(): Map<String, String> {
+        val deviceInfo = mutableMapOf<String, String>()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val devices = audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
+            for (device in devices) {
+                val name =
+                        when (device.type) {
+                            AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Built-in Microphone"
+                            AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth Headset"
+                            AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Wired Headset"
+                            AudioDeviceInfo.TYPE_USB_HEADSET -> "USB Headset"
+                            else -> device.productName.toString()
+                        }
+                deviceInfo[device.id.toString()] = name
+            }
+        } else {
+            deviceInfo["default"] = "Default Microphone"
+            if (audioManager.isBluetoothScoAvailableOffCall) {
+                deviceInfo["bluetooth"] = "Bluetooth Headset"
+            }
+            if (audioManager.isWiredHeadsetOn) {
+                deviceInfo["wired"] = "Wired Headset"
+            }
+        }
+
+        return deviceInfo
+    }
+
+    private fun getActiveInputDevice(): String? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            audioRecord?.routedDevice?.let { device ->
+                when (device.type) {
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Built-in Microphone"
+                    AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth Headset"
+                    AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Wired Headset"
+                    AudioDeviceInfo.TYPE_USB_HEADSET -> "USB Headset"
+                    else -> device.productName.toString()
                 }
             }
         } else {
-            // Fallback for older Android versions
-            routeDescription.append("- Input: ${getActiveInputDevice() ?: "Unknown"}\n")
-            routeDescription.append("- Output: ")
             when {
-                audioManager.isBluetoothScoOn -> routeDescription.append("Bluetooth")
-                audioManager.isSpeakerphoneOn -> routeDescription.append("Speaker")
-                audioManager.isWiredHeadsetOn -> routeDescription.append("Wired Headset")
-                else -> routeDescription.append("Earpiece")
+                audioManager.isBluetoothScoOn -> "Bluetooth Headset"
+                audioManager.isWiredHeadsetOn -> "Wired Headset"
+                else -> "Built-in Microphone"
             }
         }
-
-        Bridge.log(routeDescription.toString())
     }
 
-    /** Handle audio interruption (e.g., phone call) */
-    fun handleInterruption(began: Boolean) {
+    private fun notifyMentraManager(reason: String, availableInputs: List<String>) {
         mainHandler.post {
-            if (began) {
-                Bridge.log("Audio session interrupted - another app took control")
-                if (isRecording.get()) {
-                    MentraManager.getInstance().onInterruption(true)
-                }
-            } else {
-                Bridge.log("Audio session interruption ended")
-                MentraManager.getInstance().onInterruption(false)
-            }
+            MentraManager.getInstance()
+                    .onRouteChange(reason = reason, availableInputs = availableInputs)
         }
     }
 
-    /** Clean up resources */
     fun cleanup() {
         stopRecording()
+
+        // Unregister listeners
+        phoneStateListener?.let { telephonyManager?.listen(it, PhoneStateListener.LISTEN_NONE) }
+
+        audioRecordingCallback?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                audioManager.unregisterAudioRecordingCallback(it)
+            }
+        }
 
         // Unregister receivers
         try {
@@ -519,9 +772,6 @@ class PhoneMic private constructor(private val context: Context) {
         } catch (e: Exception) {
             Bridge.log("Error unregistering receivers: ${e.message}")
         }
-
-        // Close Bluetooth proxy
-        bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HEADSET, bluetoothHeadset)
 
         // Cancel coroutines
         scope.cancel()
