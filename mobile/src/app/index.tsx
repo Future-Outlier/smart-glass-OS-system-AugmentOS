@@ -3,7 +3,6 @@
 import {useEffect} from "react"
 import {useAuth} from "@/contexts/AuthContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import bridge from "@/bridge/MantleBridge"
 
 export default function IndexPage() {
   const {loading} = useAuth()
@@ -11,7 +10,6 @@ export default function IndexPage() {
 
   useEffect(() => {
     const initializeApp = async () => {
-      bridge.initialize()
       replace("/init")
     }
 

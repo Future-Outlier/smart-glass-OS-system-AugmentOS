@@ -121,7 +121,6 @@ export default function InitScreen() {
     const coreToken = await restComms.exchangeToken(supabaseToken)
     const uid = user?.email || user?.id
 
-    bridge.setup()
     socketComms.setAuthCreds(coreToken, uid)
     await mantle.init()
 

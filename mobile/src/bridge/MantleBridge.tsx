@@ -155,7 +155,7 @@ export class MantleBridge extends EventEmitter {
   /**
    * Initializes the communication channel with Core
    */
-  async initialize() {
+  async init() {
     setTimeout(async () => {
       const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
       const deviceName = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.device_name)

@@ -50,6 +50,7 @@ class MantleManager {
   // should only ever be run once
   public async init() {
     try {
+      await bridge.init()
       const loadedSettings = await restComms.loadUserSettings() // get settings from server
       await useSettingsStore.getState().setManyLocally(loadedSettings) // write settings to local storage
       await useSettingsStore.getState().initUserSettings() // initialize user settings

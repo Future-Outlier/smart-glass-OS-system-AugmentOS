@@ -54,10 +54,7 @@
       <meta-data android:name="android.service.notification.default_filter_types" android:value="conversations|alerting"/>
       <meta-data android:name="android.service.notification.disabled_filter_types" android:value="ongoing|silent"/>
     </service>
-    <service 
-        android:name="com.mentra.mentra.services.ForegroundService"
-        android:exported="false"
-        android:foregroundServiceType="dataSync|connectedDevice|microphone" />
+    <service android:name="com.mentra.mentra.services.ForegroundService" android:exported="false" android:foregroundServiceType="dataSync|connectedDevice|microphone"/>
     <activity android:name=".MainActivity" android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode|locale|layoutDirection" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.App.SplashScreen" android:exported="true" android:screenOrientation="portrait">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
