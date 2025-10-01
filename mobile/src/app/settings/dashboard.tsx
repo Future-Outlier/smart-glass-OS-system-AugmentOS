@@ -191,7 +191,6 @@ const $pickerContainer: ThemedStyle<ViewStyle> = ({colors}) => ({
   maxHeight: "80%",
   borderRadius: 16,
   overflow: "hidden",
-  backgroundColor: colors.modalBackground,
 })
 
 const $pickerHeader: ThemedStyle<ViewStyle> = ({colors}) => ({
@@ -200,8 +199,6 @@ const $pickerHeader: ThemedStyle<ViewStyle> = ({colors}) => ({
   alignItems: "center",
   padding: 16,
   borderBottomWidth: 1,
-  borderBottomColor: colors.borderLight,
-  backgroundColor: colors.modalBackground,
 })
 
 const $pickerTitle: ThemedStyle<TextStyle> = ({colors}) => ({

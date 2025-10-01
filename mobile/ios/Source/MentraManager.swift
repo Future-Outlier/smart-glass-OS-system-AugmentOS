@@ -521,6 +521,24 @@ struct ViewState {
                 }
             }
 
+            let appState = UIApplication.shared.applicationState
+            if appState == .background {
+                Bridge.log("App is in background - onboard mic unavailable to start!")
+                if useOnboardMic {
+                    // if we're using the onboard mic and already recording, simply return as we shouldn't interrupt
+                    // the audio session
+                    if PhoneMic.shared.isRecording {
+                        return
+                    }
+
+                    // if we want to use the onboard mic but aren't currently recording, switch to using the glasses mic
+                    // instead since we won't be able to start the mic from the background
+                    useGlassesMic = true
+                    useOnboardMic = false
+                }
+            }
+
+            // preferred state:
             useGlassesMic = actuallyEnabled && useGlassesMic
             useOnboardMic = actuallyEnabled && useOnboardMic
 
@@ -689,10 +707,10 @@ struct ViewState {
         placeholders["$TIME12$"] = time12
         placeholders["$TIME24$"] = time24
 
-        if sgc?.batteryLevel == -1 {
+        if (sgc?.batteryLevel ?? -1) == -1 {
             placeholders["$GBATT$"] = ""
         } else {
-            placeholders["$GBATT$"] = "\(sgc?.batteryLevel)%"
+            placeholders["$GBATT$"] = "\(sgc!.batteryLevel)%"
         }
 
         //        placeholders["$CONNECTION_STATUS$"] =
@@ -1592,6 +1610,330 @@ struct ViewState {
         lastStatusObj = statusObj
 
         Bridge.sendStatus(statusObj)
+    }
+
+    func triggerStatusUpdate() {
+        Bridge.log("🔄 Triggering immediate status update")
+        handle_request_status()
+    }
+
+    private func playStartupSequence() {
+        Bridge.log("Mentra: playStartupSequence()")
+        // Arrow frames for the animation
+        let arrowFrames = ["↑", "↗", "↑", "↖"]
+
+        let delay = 0.25 // Frame delay in seconds
+        let totalCycles = 2 // Number of animation cycles
+
+        // Variables to track animation state
+        var frameIndex = 0
+        var cycles = 0
+
+        // Create a dispatch queue for the animation
+        let animationQueue = DispatchQueue.global(qos: .userInteractive)
+
+        // Function to display the current animation frame
+        func displayFrame() {
+            // Check if we've completed all cycles
+            if cycles >= totalCycles {
+                // End animation with final message
+                sendText("                  /// MentraOS Connected \\\\\\")
+                animationQueue.asyncAfter(deadline: .now() + 1.0) {
+                    self.sendText(" ")
+                }
+                return
+            }
+
+            // Display current animation frame
+            let frameText =
+                "                    \(arrowFrames[frameIndex]) MentraOS Booting \(arrowFrames[frameIndex])"
+            sendText(frameText)
+
+            // Move to next frame
+            frameIndex = (frameIndex + 1) % arrowFrames.count
+
+            // Count completed cycles
+            if frameIndex == 0 {
+                cycles += 1
+            }
+
+            // Schedule next frame
+            animationQueue.asyncAfter(deadline: .now() + delay) {
+                displayFrame()
+            }
+        }
+
+        // Start the animation after a short initial delay
+        animationQueue.asyncAfter(deadline: .now() + 0.35) {
+            displayFrame()
+        }
+    }
+
+    private func isSomethingConnected() -> Bool {
+        if sgc?.ready == true {
+            return true
+        }
+        if defaultWearable.contains("Simulated") {
+            return true
+        }
+        return false
+    }
+
+    private func handleDeviceReady() {
+        guard let sgc else {
+            Bridge.log("Mentra: SGC is nil, returning")
+            return
+        }
+        Bridge.log("Mentra: handleDeviceReady(): \(sgc.type)")
+        // send to the server our battery status:
+        Bridge.sendBatteryStatus(level: sgc.batteryLevel ?? -1, charging: false)
+        Bridge.sendGlassesConnectionState(modelName: defaultWearable, status: "CONNECTED")
+
+        pendingWearable = ""
+        defaultWearable = sgc.type
+        isSearching = false
+        handle_request_status()
+
+        if defaultWearable.contains("G1") {
+            handleG1Ready()
+        } else if defaultWearable.contains("Mach1") {
+            handleMach1Ready()
+        }
+
+        // save the default_wearable now that we're connected:
+        Bridge.saveSetting("default_wearable", defaultWearable)
+        Bridge.saveSetting("device_name", deviceName)
+        //        Bridge.saveSetting("device_address", deviceAddress)
+    }
+
+    private func handleG1Ready() {
+        // load settings and send the animation:
+        Task {
+            // give the glasses some extra time to finish booting:
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 3 seconds
+            await sgc?.setSilentMode(false) // turn off silent mode
+            await sgc?.getBatteryStatus()
+
+            if shouldSendBootingMessage {
+                sendText("// BOOTING MENTRAOS")
+            }
+
+            // send loaded settings to glasses:
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            sgc?.setHeadUpAngle(headUpAngle)
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            sgc?.setBrightness(brightness, autoMode: autoBrightness)
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            // self.g1Manager?.RN_setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
+            // try? await Task.sleep(nanoseconds: 400_000_000)
+            //      playStartupSequence()
+            if shouldSendBootingMessage {
+                sendText("// MENTRAOS CONNECTED")
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                sendText(" ") // clear screen
+            }
+
+            shouldSendBootingMessage = false
+
+            self.handle_request_status()
+        }
+    }
+
+    private func handleMach1Ready() {
+        Task {
+            // Send startup message
+            sendText("MENTRAOS CONNECTED")
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+            clearDisplay()
+
+            self.handle_request_status()
+        }
+    }
+
+    private func handleDeviceDisconnected() {
+        Bridge.log("Mentra: Device disconnected")
+        handle_microphone_state_change([], false)
+        Bridge.sendGlassesConnectionState(modelName: defaultWearable, status: "DISCONNECTED")
+        handle_request_status()
+    }
+
+    func handle_connect_wearable(_ deviceName: String, modelName: String? = nil) {
+        Bridge.log(
+            "Mentra: Connecting to modelName: \(modelName ?? "nil") deviceName: \(deviceName) defaultWearable: \(defaultWearable) pendingWearable: \(pendingWearable) selfDeviceName: \(self.deviceName)"
+        )
+
+        if modelName != nil {
+            pendingWearable = modelName!
+        }
+
+        if pendingWearable.contains("Simulated") {
+            Bridge.log(
+                "Mentra: Pending wearable is simulated, setting default wearable to Simulated Glasses"
+            )
+            defaultWearable = "Simulated Glasses"
+            handle_request_status()
+            return
+        }
+
+        if pendingWearable.isEmpty, defaultWearable.isEmpty {
+            Bridge.log("Mentra: No pending or default wearable, returning")
+            return
+        }
+
+        if pendingWearable.isEmpty, !defaultWearable.isEmpty {
+            Bridge.log("Mentra: No pending wearable, using default wearable: \(defaultWearable)")
+            pendingWearable = defaultWearable
+        }
+
+        Task {
+            disconnectWearable()
+
+            try? await Task.sleep(nanoseconds: 100 * 1_000_000) // 100ms
+            self.isSearching = true
+            handle_request_status() // update the UI
+
+            if deviceName != "" {
+                self.deviceName = deviceName
+            }
+
+            initSGC(self.pendingWearable)
+            sgc?.connectById(self.deviceName)
+        }
+
+        // wait for the g1's to be fully ready:
+        //    connectTask?.cancel()
+        //    connectTask = Task {
+        //      while !(connectTask?.isCancelled ?? true) {
+        //        Core.log("checking if g1 is ready... \(self.g1Manager?.g1Ready ?? false)")
+        //        Core.log("leftReady \(self.g1Manager?.leftReady ?? false) rightReady \(self.g1Manager?.rightReady ?? false)")
+        //        if self.g1Manager?.g1Ready ?? false {
+        //          // we actualy don't need this line:
+        //          //          handleDeviceReady()
+        //          handle_request_status()
+        //          break
+        //        } else {
+        //          // todo: ios not the cleanest solution here
+        //          self.g1Manager?.RN_startScan()
+        //        }
+        //
+        //        try? await Task.sleep(nanoseconds: 15_000_000_000) // 15 seconds
+        //      }
+        //    }
+    }
+
+    func handle_update_settings(_ settings: [String: Any]) {
+        Bridge.log("Mentra: Received update settings: \(settings)")
+
+        // update our settings with the new values:
+        if let newPreferredMic = settings["preferred_mic"] as? String,
+           newPreferredMic != preferredMic
+        {
+            setPreferredMic(newPreferredMic)
+        }
+
+        if let newHeadUpAngle = settings["head_up_angle"] as? Int, newHeadUpAngle != headUpAngle {
+            updateGlassesHeadUpAngle(newHeadUpAngle)
+        }
+
+        if let newBrightness = settings["brightness"] as? Int, newBrightness != brightness {
+            updateGlassesBrightness(newBrightness, autoBrightness: false)
+        }
+
+        if let newDashboardHeight = settings["dashboard_height"] as? Int,
+           newDashboardHeight != dashboardHeight
+        {
+            updateGlassesHeight(newDashboardHeight)
+        }
+
+        if let newDashboardDepth = settings["dashboard_depth"] as? Int,
+           newDashboardDepth != dashboardDepth
+        {
+            updateGlassesDepth(newDashboardDepth)
+        }
+
+        if let newAutoBrightness = settings["auto_brightness"] as? Bool,
+           newAutoBrightness != autoBrightness
+        {
+            updateGlassesBrightness(brightness, autoBrightness: newAutoBrightness)
+        }
+
+        if let sensingEnabled = settings["sensing_enabled"] as? Bool,
+           sensingEnabled != self.sensingEnabled
+        {
+            enableSensing(sensingEnabled)
+        }
+
+        if let powerSavingMode = settings["power_saving_mode"] as? Bool,
+           powerSavingMode != self.powerSavingMode
+        {
+            enablePowerSavingMode(powerSavingMode)
+        }
+
+        if let newAlwaysOnStatusBar = settings["always_on_status_bar_enabled"] as? Bool,
+           newAlwaysOnStatusBar != alwaysOnStatusBar
+        {
+            enableAlwaysOnStatusBar(newAlwaysOnStatusBar)
+        }
+
+        if let newBypassVad = settings["bypass_vad_for_debugging"] as? Bool,
+           newBypassVad != bypassVad
+        {
+            bypassVad(newBypassVad)
+        }
+
+        if let newEnforceLocalTranscription = settings["enforce_local_transcription"] as? Bool,
+           newEnforceLocalTranscription != enforceLocalTranscription
+        {
+            enforceLocalTranscription(newEnforceLocalTranscription)
+        }
+
+        if let newEnableOfflineMode = settings["offline_captions_app_running"] as? Bool,
+           newEnableOfflineMode != offlineModeEnabled
+        {
+            enableOfflineMode(newEnableOfflineMode)
+        }
+
+        if let newMetricSystemEnabled = settings["metric_system_enabled"] as? Bool,
+           newMetricSystemEnabled != metricSystemEnabled
+        {
+            setMetricSystemEnabled(newMetricSystemEnabled)
+        }
+
+        if let newContextualDashboard = settings["contextual_dashboard_enabled"] as? Bool,
+           newContextualDashboard != contextualDashboard
+        {
+            enableContextualDashboard(newContextualDashboard)
+        }
+
+        if let newButtonMode = settings["button_mode"] as? String, newButtonMode != buttonPressMode {
+            setButtonMode(newButtonMode)
+        }
+
+        if let newFps = settings["button_video_fps"] as? Int, newFps != buttonVideoFps {
+            setButtonVideoSettings(width: buttonVideoWidth, height: buttonVideoHeight, fps: newFps)
+        }
+
+        if let newWidth = settings["button_video_width"] as? Int, newWidth != buttonVideoWidth {
+            setButtonVideoSettings(width: newWidth, height: buttonVideoHeight, fps: buttonVideoFps)
+        }
+
+        if let newHeight = settings["button_video_height"] as? Int, newHeight != buttonVideoHeight {
+            setButtonVideoSettings(width: buttonVideoWidth, height: newHeight, fps: buttonVideoFps)
+        }
+
+        if let newPhotoSize = settings["button_photo_size"] as? String,
+           newPhotoSize != buttonPhotoSize
+        {
+            setButtonPhotoSize(newPhotoSize)
+        }
+
+        // get default wearable from core_info:
+        if let newDefaultWearable = settings["default_wearable"] as? String,
+           newDefaultWearable != defaultWearable
+        {
+            defaultWearable = newDefaultWearable
+            Bridge.saveSetting("default_wearable", newDefaultWearable)
+        }
     }
 
     // MARK: - Cleanup

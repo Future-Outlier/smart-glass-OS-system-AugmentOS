@@ -8,7 +8,7 @@ import {useAppStatus} from "@/contexts/AppletStatusProvider"
 
 export const OfflineModeButton: React.FC = () => {
   const {theme, themed} = useAppTheme()
-  const [offlineMode, setOfflineMode] = useSetting(SETTINGS_KEYS.OFFLINE_MODE)
+  const [offlineMode, setOfflineMode] = useSetting(SETTINGS_KEYS.offline_mode)
   const [_offlineCaptionsAppRunning, setOfflineCaptionsAppRunning] = useSetting(
     SETTINGS_KEYS.offline_captions_app_running,
   )
@@ -50,11 +50,7 @@ export const OfflineModeButton: React.FC = () => {
   return (
     <View style={themed($container)}>
       <TouchableOpacity onPress={handlePress} style={themed($button)}>
-        <MaterialCommunityIcons
-          name={offlineMode ? "wifi-off" : "wifi"}
-          size={24}
-          color={theme.colors.icon}
-        />
+        <MaterialCommunityIcons name={offlineMode ? "wifi-off" : "wifi"} size={24} color={theme.colors.icon} />
       </TouchableOpacity>
     </View>
   )

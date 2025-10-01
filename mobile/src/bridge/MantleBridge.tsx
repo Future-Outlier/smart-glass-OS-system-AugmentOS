@@ -7,6 +7,7 @@ import BleManager from "react-native-ble-manager"
 import {translate} from "@/i18n"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import socketComms from "@/managers/SocketComms"
+// import livekitManager from "@/managers/LivekitManager"
 import mantle from "@/managers/MantleManager"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 
@@ -627,6 +628,13 @@ export class MantleBridge extends EventEmitter {
   async requestWifiScan() {
     return await this.sendData({
       command: "request_wifi_scan",
+    })
+  }
+
+  async disconnectFromWifi() {
+    console.log("Sending WiFi disconnect command to Core")
+    return await this.sendData({
+      command: "disconnect_wifi",
     })
   }
 
