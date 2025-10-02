@@ -808,37 +808,23 @@ typealias JSONObject = [String: Any]
 
 class MentraLive: NSObject, SGCManager {
     var caseBatteryLevel: Int?
-
     var glassesSerialNumber: String?
-
     var glassesStyle: String?
-
     var glassesColor: String?
-
     func setDashboardPosition(_: Int, _: Int) {}
-
     func setSilentMode(_: Bool) {}
-
     func exit() {}
-
     func showDashboard() {}
-
     func displayBitmap(base64ImageData _: String) async -> Bool {
         return true
     }
 
     func sendDoubleTextWall(_: String, _: String) {}
-
     func setHeadUpAngle(_: Int) {}
-
     func getBatteryStatus() {}
-
     func setBrightness(_: Int, autoMode _: Bool) {}
-
     func clearDisplay() {}
-
     func sendTextWall(_: String) {}
-
     func forget() {}
 
     let type = "Mentra Live"
@@ -2046,25 +2032,6 @@ class MentraLive: NSObject, SGCManager {
     private func processAndUploadBlePhoto(_ transfer: BlePhotoTransfer, imageData: Data) {
         Bridge.log("Processing BLE photo for upload. RequestId: \(transfer.requestId)")
         let uploadStartTime = Date()
-
-        // Save BLE photo locally for debugging/backup
-        //    do {
-        //      let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        //      let saveDirectory = documentsDirectory.appendingPathComponent(FILE_SAVE_DIR)
-        //
-        //      if !FileManager.default.fileExists(atPath: saveDirectory.path) {
-        //        try FileManager.default.createDirectory(at: saveDirectory, withIntermediateDirectories: true)
-        //      }
-        //
-        //      // BLE photos are ALWAYS AVIF format
-        //      let fileName = "BLE_\(transfer.bleImgId)_\(Int64(Date().timeIntervalSince1970 * 1000)).avif"
-        //      let fileURL = saveDirectory.appendingPathComponent(fileName)
-        //
-        //      try imageData.write(to: fileURL)
-        //      Bridge.log("💾 Saved BLE photo locally: \(fileURL.path)")
-        //    } catch {
-        //      Bridge.log("Error saving BLE photo locally: \(error)")
-        //    }
 
         // Get core token for authentication
         let coreToken = MentraManager.shared.coreToken
