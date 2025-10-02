@@ -43,7 +43,7 @@ public abstract class SGCManager {
     public abstract void sendJson(Map<String, Object> jsonOriginal, boolean wakeUp);
 
     // Camera & Media
-    public abstract void requestPhoto(String requestId, String appId, String size, String webhookUrl);
+    public abstract void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken);
     public abstract void startRtmpStream(Map<String, Object> message);
     public abstract void stopRtmpStream();
     public abstract void sendRtmpKeepAlive(Map<String, Object> message);

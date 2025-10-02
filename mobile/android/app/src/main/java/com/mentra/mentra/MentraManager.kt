@@ -552,9 +552,15 @@ class MentraManager {
         sgc?.sendJson(message, false)
     }
 
-    fun handle_photo_request(requestId: String, appId: String, size: String, webhookUrl: String) {
+    fun handle_photo_request(
+            requestId: String,
+            appId: String,
+            size: String,
+            webhookUrl: String,
+            authToken: String
+    ) {
         Bridge.log("Mentra: onPhotoRequest: $requestId, $appId, $size")
-        sgc?.requestPhoto(requestId, appId, size, webhookUrl)
+        sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken)
     }
 
     fun onRtmpStreamStartRequest(message: Map<String, Any>) {

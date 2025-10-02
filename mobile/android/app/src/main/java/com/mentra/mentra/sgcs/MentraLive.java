@@ -1301,6 +1301,10 @@ public class MentraLive extends SGCManager {
         sendJson(json, false);
     }
 
+    public void sendJson(Map<String, Object> jsonOriginal, boolean wakeUp) {
+
+    }
+
     /**
      * Track a message for ACK response
      */
@@ -2529,6 +2533,30 @@ public class MentraLive extends SGCManager {
         Bridge.log("LIVE: [STUB]");
     }
 
+    public void setSilentMode(boolean enabled) {
+
+    }
+
+    public void getBatteryStatus() {
+
+    }
+
+    public void setHeadUpAngle(int angle) {
+
+    }
+
+    public void setDashboardPosition(int height, int depth) {
+
+    }
+
+    public void showDashboard() {
+
+    }
+
+    public boolean displayBitmap(String base64) {
+        return false;
+    }
+
     public void connectToSmartGlasses() {
         Bridge.log("LIVE: Connecting to Mentra Live glasses");
         // connectionEvent(SmartGlassesConnectionState.CONNECTING);
@@ -2653,16 +2681,16 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    public void requestRtmpStreamStart(JSONObject message) {
+    public void startRtmpStream(Map<String, Object> messagee) {
     //    try {
-            JSONObject json = message;
-            json.remove("timestamp");
-            json.remove("appId");
-            json.remove("video");
-            json.remove("audio");
-            //String rtmpUrl=json.getString("rtmpUrl");
-            //Bridge.log("LIVE: Requesting RTMP stream to URL: " + rtmpUrl);
-            sendJson(json, true);
+            // JSONObject json = message;
+            // json.remove("timestamp");
+            // json.remove("appId");
+            // json.remove("video");
+            // json.remove("audio");
+            // //String rtmpUrl=json.getString("rtmpUrl");
+            // //Bridge.log("LIVE: Requesting RTMP stream to URL: " + rtmpUrl);
+            // sendJson(json, true);
     }
 
     public void stopRtmpStream() {
@@ -2677,14 +2705,14 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    public void sendRtmpStreamKeepAlive(JSONObject message) {
+    public void sendRtmpKeepAlive(Map<String, Object> message) {
         Bridge.log("LIVE: Sending RTMP stream keep alive");
-        try {
-            // Forward the keep alive message directly to the glasses
-            sendJson(message);
-        } catch (Exception e) {
-            Log.e(TAG, "Error sending RTMP stream keep alive", e);
-        }
+        // try {
+        //     // Forward the keep alive message directly to the glasses
+        //     sendJson(message);
+        // } catch (Exception e) {
+        //     Log.e(TAG, "Error sending RTMP stream keep alive", e);
+        // }
     }
 
     /**
@@ -3988,13 +4016,17 @@ public class MentraLive extends SGCManager {
      *
      * @param mode The button mode (photo, apps, both)
      */
-    public void sendButtonModeSetting(String mode) {
-        Bridge.log("LIVE: Sending button mode setting to glasses: " + mode);
+    @Override
+    public void sendButtonModeSetting() {
+        Bridge.log("LIVE: Sending button mode setting to glasses");
 
         if (!isConnected) {
             Log.w(TAG, "Cannot send button mode - not connected");
             return;
         }
+
+        var m = MentraManager.getInstance();
+        String mode = m.getButtonPressMode();
 
         try {
             JSONObject json = new JSONObject();
@@ -4083,11 +4115,8 @@ public class MentraLive extends SGCManager {
     private void sendUserSettings() {
         Bridge.log("LIVE: Sending user settings to glasses");
 
-        var m = MentraManager.getInstance();
-
         // Send button mode setting
-        String buttonMode = m.getButtonPressMode();
-        sendButtonModeSetting(buttonMode);
+        sendButtonModeSetting();
 
         // Send button video recording settings
         sendButtonVideoRecordingSettings();
