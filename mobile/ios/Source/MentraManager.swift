@@ -334,8 +334,6 @@ struct ViewState {
         }
     }
 
-    // MARK: - ServerCommsCallback Implementation
-
     func setOnboardMicEnabled(_ isEnabled: Bool) {
         Task {
             if isEnabled {
@@ -1416,7 +1414,7 @@ struct ViewState {
             updateGlassesBrightness(brightness, autoBrightness: newAutoBrightness)
         }
 
-        if let sensingEnabled = settings["sensing_enabled"] as? Bool,
+        if let sensingEnabled = settings["sensing"] as? Bool,
            sensingEnabled != self.sensingEnabled
         {
             updateSensing(sensingEnabled)
@@ -1428,7 +1426,7 @@ struct ViewState {
             updatePowerSavingMode(powerSavingMode)
         }
 
-        if let newAlwaysOnStatusBar = settings["always_on_status_bar_enabled"] as? Bool,
+        if let newAlwaysOnStatusBar = settings["always_on_status_bar"] as? Bool,
            newAlwaysOnStatusBar != alwaysOnStatusBar
         {
             updateAlwaysOnStatusBar(newAlwaysOnStatusBar)
@@ -1446,19 +1444,19 @@ struct ViewState {
             updateEnforceLocalTranscription(newEnforceLocalTranscription)
         }
 
-        if let newEnableOfflineMode = settings["offline_captions_app_running"] as? Bool,
-           newEnableOfflineMode != offlineModeEnabled
+        if let newOfflineMode = settings["offline_mode"] as? Bool,
+           newOfflineMode != offlineMode
         {
-            updateOfflineMode(newEnableOfflineMode)
+            updateOfflineMode(newOfflineMode)
         }
 
-        if let newMetricSystemEnabled = settings["metric_system_enabled"] as? Bool,
+        if let newMetricSystemEnabled = settings["metric_system"] as? Bool,
            newMetricSystemEnabled != metricSystemEnabled
         {
             updateMetricSystem(newMetricSystemEnabled)
         }
 
-        if let newContextualDashboard = settings["contextual_dashboard_enabled"] as? Bool,
+        if let newContextualDashboard = settings["contextual_dashboard"] as? Bool,
            newContextualDashboard != contextualDashboard
         {
             updateContextualDashboard(newContextualDashboard)

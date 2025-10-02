@@ -295,6 +295,50 @@ class MentraManager {
         )
     }
 
+    // Utility methods
+
+    private fun isSomethingConnected(): Boolean = sgc?.ready ?: false
+
+    private fun statesEqual(s1: ViewState, s2: ViewState): Boolean {
+        val state1 =
+                "${s1.layoutType}${s1.text}${s1.topText}${s1.bottomText}${s1.title}${s1.data ?: ""}"
+        val state2 =
+                "${s2.layoutType}${s2.text}${s2.topText}${s2.bottomText}${s2.title}${s2.data ?: ""}"
+        return state1 == state2
+    }
+
+    private fun Map<String, Any>.getString(key: String, defaultValue: String): String {
+        return (this[key] as? String) ?: defaultValue
+    }
+
+    private fun sendButtonSettings() {
+        sgc?.apply {
+            sendButtonPhotoSettings()
+            sendButtonModeSetting()
+            sendButtonVideoRecordingSettings()
+            sendButtonCameraLedSetting()
+        }
+    }
+
+    // Inner classes
+
+    data class ViewState(
+            var topText: String,
+            var bottomText: String,
+            var title: String,
+            var layoutType: String,
+            var text: String,
+            var data: String?,
+            var animationData: Map<String, Any>?
+    )
+
+    enum class SpeechRequiredDataType {
+        PCM,
+        TRANSCRIPTION,
+        PCM_OR_TRANSCRIPTION
+    }
+    // MARK: - End Unique
+
     // MARK: - Public Methods (for React Native)
 
     fun initSGC(wearable: String) {
@@ -319,18 +363,6 @@ class MentraManager {
         this.isHeadUp = isHeadUp
         sendCurrentState(isHeadUp)
         Bridge.sendHeadPosition(isHeadUp)
-    }
-
-    fun onAppStateChange(apps: List<Any>) {
-        handle_request_status()
-    }
-
-    fun onConnectionError(error: String) {
-        handle_request_status()
-    }
-
-    fun onAuthError() {
-        // Handle auth error
     }
 
     // MARK: - Voice Data Handling
@@ -1068,6 +1100,107 @@ class MentraManager {
         sgc?.findCompatibleDevices()
     }
 
+    fun handle_request_status() {
+        val simulatedConnected = defaultWearable == "Simulated Glasses"
+        val isGlassesConnected = sgc?.ready ?: false
+
+        if (isGlassesConnected) {
+            isSearching = false
+        }
+
+        val glassesSettings = mutableMapOf<String, Any>()
+        val connectedGlasses = mutableMapOf<String, Any>()
+
+        if (isGlassesConnected) {
+            sgc?.let { sgc ->
+                connectedGlasses["model_name"] = defaultWearable
+                connectedGlasses["battery_level"] = sgc.batteryLevel
+                connectedGlasses["glasses_app_version"] = sgc.glassesAppVersion ?: ""
+                connectedGlasses["glasses_build_number"] = sgc.glassesBuildNumber ?: ""
+                connectedGlasses["glasses_device_model"] = sgc.glassesDeviceModel ?: ""
+                connectedGlasses["glasses_android_version"] = sgc.glassesAndroidVersion ?: ""
+                connectedGlasses["glasses_ota_version_url"] = sgc.glassesOtaVersionUrl ?: ""
+            }
+        }
+
+        if (simulatedConnected) {
+            connectedGlasses["model_name"] = defaultWearable
+        }
+
+        // G1 specific info
+        // (sgc as? G1)?.let { g1 ->
+        //     connectedGlasses["case_removed"] = g1.caseRemoved
+        //     connectedGlasses["case_open"] = g1.caseOpen
+        //     connectedGlasses["case_charging"] = g1.caseCharging
+        //     // g1.caseBatteryLevel?.let {
+        //     //     connectedGlasses["case_battery_level"] = it
+        //     // }
+
+        //     // if (!g1.glassesSerialNumber.isNullOrEmpty()) {
+        //     //     connectedGlasses["glasses_serial_number"] = g1.glassesSerialNumber!!
+        //     //     connectedGlasses["glasses_style"] = g1.glassesStyle ?: ""
+        //     //     connectedGlasses["glasses_color"] = g1.glassesColor ?: ""
+        //     // }
+        // }
+
+        // Bluetooth device name
+        sgc?.getConnectedBluetoothName()?.let { bluetoothName ->
+            connectedGlasses["bluetooth_name"] = bluetoothName
+        }
+
+        glassesSettings["brightness"] = brightness
+        glassesSettings["auto_brightness"] = autoBrightness
+        glassesSettings["dashboard_height"] = dashboardHeight
+        glassesSettings["dashboard_depth"] = dashboardDepth
+        glassesSettings["head_up_angle"] = headUpAngle
+        glassesSettings["button_mode"] = buttonPressMode
+        glassesSettings["button_photo_size"] = buttonPhotoSize
+
+        val buttonVideoSettings =
+                mapOf(
+                        "width" to buttonVideoWidth,
+                        "height" to buttonVideoHeight,
+                        "fps" to buttonVideoFps
+                )
+        glassesSettings["button_video_settings"] = buttonVideoSettings
+        glassesSettings["button_camera_led"] = buttonCameraLed
+
+        val coreInfo =
+                mapOf(
+                        "augmentos_core_version" to "Unknown",
+                        "default_wearable" to defaultWearable,
+                        "preferred_mic" to preferredMic,
+                        "is_searching" to isSearching,
+                        "is_mic_enabled_for_frontend" to
+                                (micEnabled && preferredMic == "glasses" && isSomethingConnected()),
+                        "sensing_enabled" to sensingEnabled,
+                        "power_saving_mode" to powerSavingMode,
+                        "always_on_status_bar" to alwaysOnStatusBar,
+                        "bypass_vad_for_debugging" to bypassVad,
+                        "enforce_local_transcription" to enforceLocalTranscription,
+                        "bypass_audio_encoding_for_debugging" to bypassAudioEncoding,
+                        "core_token" to coreToken,
+                        "puck_connected" to true,
+                        "metric_system_enabled" to metricSystemEnabled,
+                        "contextual_dashboard_enabled" to contextualDashboard
+                )
+
+        val apps = emptyList<Any>()
+
+        val authObj = mapOf("core_token_owner" to coreTokenOwner)
+
+        val statusObj =
+                mapOf(
+                        "connected_glasses" to connectedGlasses,
+                        "glasses_settings" to glassesSettings,
+                        "apps" to apps,
+                        "core_info" to coreInfo,
+                        "auth" to authObj
+                )
+
+        Bridge.sendStatus(statusObj)
+    }
+
     fun handle_update_settings(settings: Map<String, Any>) {
         Bridge.log("Mentra: Received update settings: $settings")
 
@@ -1180,12 +1313,6 @@ class MentraManager {
             }
         }
 
-        (settings["offline_stt"] as? Boolean)?.let { newOfflineStt ->
-            if (offlineStt != newOfflineStt) {
-                updateOfflineStt(newOfflineStt)
-            }
-        }
-
         (settings["default_wearable"] as? String)?.let { newDefaultWearable ->
             if (defaultWearable != newDefaultWearable) {
                 defaultWearable = newDefaultWearable
@@ -1194,147 +1321,8 @@ class MentraManager {
         }
     }
 
-    fun handle_request_status() {
-        val simulatedConnected = defaultWearable == "Simulated Glasses"
-        val isGlassesConnected = sgc?.ready ?: false
-
-        if (isGlassesConnected) {
-            isSearching = false
-        }
-
-        val glassesSettings = mutableMapOf<String, Any>()
-        val connectedGlasses = mutableMapOf<String, Any>()
-
-        if (isGlassesConnected) {
-            sgc?.let { sgc ->
-                connectedGlasses["model_name"] = defaultWearable
-                connectedGlasses["battery_level"] = sgc.batteryLevel
-                connectedGlasses["glasses_app_version"] = sgc.glassesAppVersion ?: ""
-                connectedGlasses["glasses_build_number"] = sgc.glassesBuildNumber ?: ""
-                connectedGlasses["glasses_device_model"] = sgc.glassesDeviceModel ?: ""
-                connectedGlasses["glasses_android_version"] = sgc.glassesAndroidVersion ?: ""
-                connectedGlasses["glasses_ota_version_url"] = sgc.glassesOtaVersionUrl ?: ""
-            }
-        }
-
-        if (simulatedConnected) {
-            connectedGlasses["model_name"] = defaultWearable
-        }
-
-        // G1 specific info
-        // (sgc as? G1)?.let { g1 ->
-        //     connectedGlasses["case_removed"] = g1.caseRemoved
-        //     connectedGlasses["case_open"] = g1.caseOpen
-        //     connectedGlasses["case_charging"] = g1.caseCharging
-        //     // g1.caseBatteryLevel?.let {
-        //     //     connectedGlasses["case_battery_level"] = it
-        //     // }
-
-        //     // if (!g1.glassesSerialNumber.isNullOrEmpty()) {
-        //     //     connectedGlasses["glasses_serial_number"] = g1.glassesSerialNumber!!
-        //     //     connectedGlasses["glasses_style"] = g1.glassesStyle ?: ""
-        //     //     connectedGlasses["glasses_color"] = g1.glassesColor ?: ""
-        //     // }
-        // }
-
-        // Bluetooth device name
-        sgc?.getConnectedBluetoothName()?.let { bluetoothName ->
-            connectedGlasses["bluetooth_name"] = bluetoothName
-        }
-
-        glassesSettings["brightness"] = brightness
-        glassesSettings["auto_brightness"] = autoBrightness
-        glassesSettings["dashboard_height"] = dashboardHeight
-        glassesSettings["dashboard_depth"] = dashboardDepth
-        glassesSettings["head_up_angle"] = headUpAngle
-        glassesSettings["button_mode"] = buttonPressMode
-        glassesSettings["button_photo_size"] = buttonPhotoSize
-
-        val buttonVideoSettings =
-                mapOf(
-                        "width" to buttonVideoWidth,
-                        "height" to buttonVideoHeight,
-                        "fps" to buttonVideoFps
-                )
-        glassesSettings["button_video_settings"] = buttonVideoSettings
-        glassesSettings["button_camera_led"] = buttonCameraLed
-
-        val coreInfo =
-                mapOf(
-                        "augmentos_core_version" to "Unknown",
-                        "default_wearable" to defaultWearable,
-                        "preferred_mic" to preferredMic,
-                        "is_searching" to isSearching,
-                        "is_mic_enabled_for_frontend" to
-                                (micEnabled && preferredMic == "glasses" && isSomethingConnected()),
-                        "sensing_enabled" to sensingEnabled,
-                        "power_saving_mode" to powerSavingMode,
-                        "always_on_status_bar" to alwaysOnStatusBar,
-                        "bypass_vad_for_debugging" to bypassVad,
-                        "enforce_local_transcription" to enforceLocalTranscription,
-                        "bypass_audio_encoding_for_debugging" to bypassAudioEncoding,
-                        "core_token" to coreToken,
-                        "puck_connected" to true,
-                        "metric_system_enabled" to metricSystemEnabled,
-                        "contextual_dashboard_enabled" to contextualDashboard
-                )
-
-        val apps = emptyList<Any>()
-
-        val authObj = mapOf("core_token_owner" to coreTokenOwner)
-
-        val statusObj =
-                mapOf(
-                        "connected_glasses" to connectedGlasses,
-                        "glasses_settings" to glassesSettings,
-                        "apps" to apps,
-                        "core_info" to coreInfo,
-                        "auth" to authObj
-                )
-
-        Bridge.sendStatus(statusObj)
-    }
-
-    // Utility methods
-
-    private fun isSomethingConnected(): Boolean = sgc?.ready ?: false
-
-    private fun statesEqual(s1: ViewState, s2: ViewState): Boolean {
-        val state1 =
-                "${s1.layoutType}${s1.text}${s1.topText}${s1.bottomText}${s1.title}${s1.data ?: ""}"
-        val state2 =
-                "${s2.layoutType}${s2.text}${s2.topText}${s2.bottomText}${s2.title}${s2.data ?: ""}"
-        return state1 == state2
-    }
-
-    private fun Map<String, Any>.getString(key: String, defaultValue: String): String {
-        return (this[key] as? String) ?: defaultValue
-    }
-
-    private fun sendButtonSettings() {
-        sgc?.apply {
-            sendButtonPhotoSettings()
-            sendButtonModeSetting()
-            sendButtonVideoRecordingSettings()
-            sendButtonCameraLedSetting()
-        }
-    }
-
-    // Inner classes
-
-    data class ViewState(
-            var topText: String,
-            var bottomText: String,
-            var title: String,
-            var layoutType: String,
-            var text: String,
-            var data: String?,
-            var animationData: Map<String, Any>?
-    )
-
-    enum class SpeechRequiredDataType {
-        PCM,
-        TRANSCRIPTION,
-        PCM_OR_TRANSCRIPTION
+    // MARK: Cleanup
+    fun cleanup() {
+        // Cleanup code here
     }
 }
