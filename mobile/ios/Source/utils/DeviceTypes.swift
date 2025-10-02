@@ -13,6 +13,7 @@ struct DeviceTypes {
         MACH1,
         LIVE,
         Z100,
+        NEX,
         FRAME,
     ]
 

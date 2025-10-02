@@ -1757,16 +1757,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     private func emitDiscoveredDevice(_ name: String) {
         // Emit device discovery event using standardized typed message function
         Bridge.log("NEX: 📡 Emitting discovered device: \(name)")
-
-        // Use the standardized typed message function
-        let body = [
-            "compatible_glasses_search_result": [
-                "model_name": "Mentra Nex",
-                "device_name": name,
-                "device_address": "",
-            ],
-        ]
-        Bridge.sendTypedMessage("compatible_glasses_search_result", body: body)
+        Bridge.emitDiscoveredDevice(DeviceTypes.NEX, name)
     }
 
     @objc func checkBluetoothState() {

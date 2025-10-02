@@ -2566,11 +2566,9 @@ class MentraLive: NSObject, SGCManager {
     private func emitDiscoveredDevice(_ name: String) {
         // Use the standardized typed message function
         let body = [
-            "compatible_glasses_search_result": [
-                "model_name": "Mentra Live",
-                "device_name": name,
-                "device_address": "",
-            ],
+            "model_name": "Mentra Live",
+            "device_name": name,
+            "device_address": "",
         ]
         Bridge.sendTypedMessage("compatible_glasses_search_result", body: body)
     }
@@ -2594,24 +2592,22 @@ class MentraLive: NSObject, SGCManager {
     // }
 
     private func emitWifiStatusChange() {
-        let eventBody = [
-            "glasses_wifi_status_change": [
-                "connected": wifiConnected,
-                "ssid": wifiSsid,
-                "local_ip": wifiLocalIp,
-            ],
+        let eventBody: [String: Any] = [
+            "connected": wifiConnected,
+            "ssid": wifiSsid,
+            "local_ip": wifiLocalIp,
         ]
-        Bridge.sendTypedMessage("glasses_wifi_status_change", body: eventBody)
+        Bridge.sendTypedMessage("wifi_status_change", body: eventBody)
     }
 
     private func emitHotspotStatusChange() {
-        let eventBody = [
+        let eventBody: [String: Any] = [
             "enabled": isHotspotEnabled,
             "ssid": hotspotSsid,
             "password": hotspotPassword,
             "local_ip": hotspotGatewayIp, // Using gateway IP for consistency with Android
         ]
-        Bridge.sendTypedMessage("glasses_hotspot_status_change", body: eventBody)
+        Bridge.sendTypedMessage("hotspot_status_change", body: eventBody)
     }
 
     private func emitWifiScanResult(_ networks: [String]) {

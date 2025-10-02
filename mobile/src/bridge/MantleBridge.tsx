@@ -9,7 +9,7 @@ import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import socketComms from "@/managers/SocketComms"
 import livekitManager from "@/managers/LivekitManager"
 import mantle from "@/managers/MantleManager"
-import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
+import {useSettingsStore} from "@/stores/settings"
 
 const {BridgeModule} = NativeModules
 const coreBridge = new NativeEventEmitter(BridgeModule)
@@ -473,11 +473,11 @@ export class MantleBridge extends EventEmitter {
   }
 
   async sendDisconnectWearable() {
-    return await this.sendData({command: "disconnect_wearable"})
+    return await this.sendData({command: "disconnect"})
   }
 
   async sendForgetSmartGlasses() {
-    return await this.sendData({command: "forget_smart_glasses"})
+    return await this.sendData({command: "forget"})
   }
 
   async sendToggleForceCoreOnboardMic(enabled: boolean) {
@@ -644,18 +644,9 @@ export class MantleBridge extends EventEmitter {
     // }
   }
 
-  async sendSetMetricSystemEnabled(metricSystemEnabled: boolean) {
-    return await this.sendData({
-      command: "set_metric_system_enabled",
-      params: {
-        enabled: metricSystemEnabled,
-      },
-    })
-  }
-
   async toggleUpdatingScreen(enabled: boolean) {
     return await this.sendData({
-      command: "toggle_updating_screen",
+      command: "update_settings",
       params: {
         enabled: enabled,
       },

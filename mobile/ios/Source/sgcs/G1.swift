@@ -2081,7 +2081,8 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                 return
             }
             let modelName = "Even Realities G1"
-            Bridge.sendDiscoveredDevice(modelName, deviceName)
+            let dName = "\(deviceName)"
+            Bridge.sendDiscoveredDevice(modelName, dName)
         } else {
             Bridge.log("Unknown device type: \(name)")
         }

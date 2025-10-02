@@ -124,7 +124,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     }
 
     // Store discovered peripherals by their identifier
-    private var discoveredPeripherals: [string: cbperipheral] = [:]
+    private var discoveredPeripherals: [String: CBPeripheral] = [:]
 
     private var textHandle: Int?
     private var tapTextHandle: Int?
@@ -341,18 +341,6 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         device.canvas.commit()
     }
 
-    func emitDiscoveredDevice(_ name: String) {
-        // Use the standardized typed message function
-        let body = [
-            "compatible_glasses_search_result": [
-                "model_name": "Mentra Mach1",
-                "device_name": "\(name)",
-                "device_address": "",
-            ],
-        ]
-        Bridge.sendTypedMessage("compatible_glasses_search_result", body: body)
-    }
-
     func foundDevice(_ device: CBPeripheral) {
         // log the found devices:
         Bridge.log(device.name ?? "Unknown Device")
@@ -368,7 +356,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
         // Store the peripheral by its identifier
         discoveredPeripherals[id] = device
-        emitDiscoveredDevice(id)
+        Bridge.sendDiscoveredDevice(DeviceTypes.MACH1, name)
     }
 
     func foundDevice2(_ device: CBPeripheral) {
@@ -434,7 +422,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
         guard let device = UltraliteManager.shared.currentDevice else {
             Bridge.log("MACH1: No current device")
-            MentraManager.shared.forgetSmartGlasses()
+            MentraManager.shared.handle_forget()
             return false
         }
 
