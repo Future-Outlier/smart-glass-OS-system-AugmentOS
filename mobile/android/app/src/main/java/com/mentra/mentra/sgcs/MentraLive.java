@@ -61,7 +61,7 @@ import com.mentra.mentra.utils.DeviceTypes;
 import com.mentra.mentra.utils.BitmapJavaUtils;
 import com.mentra.mentra.utils.SmartGlassesConnectionState;
 import com.mentra.mentra.utils.K900ProtocolUtils;
-import com.mentra.mentra.MessageChunker;
+import com.mentra.mentra.utils.MessageChunker;
 // import com.mentra.mentra.audio.Lc3Player;
 import com.mentra.mentra.utils.BlePhotoUploadService;
 
@@ -97,7 +97,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import io.reactivex.rxjava3.subjects.PublishSubject;
+// import io.reactivex.rxjava3.subjects.PublishSubject;
 
 /**
  * Smart Glasses Communicator for Mentra Live (K900) glasses
@@ -112,6 +112,8 @@ public class MentraLive extends SGCManager {
 
     // LC3 frame size for Mentra Live
     private static final int LC3_FRAME_SIZE = 40;
+
+    private SmartGlassesConnectionState mConnectState;
 
     // Glasses version information
     private String glassesAppVersion = "";
@@ -166,8 +168,7 @@ public class MentraLive extends SGCManager {
 
     // State tracking
     private Context context;
-    private SmartGlassesDevice smartGlassesDevice;
-    private PublishSubject<JSONObject> dataObservable;
+    // private PublishSubject<JSONObject> dataObservable;
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothLeScanner bluetoothScanner;
     private BluetoothGatt bluetoothGatt;
@@ -437,11 +438,10 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    @Override
     protected void setFontSizes() {
-        LARGE_FONT = 3;
-        MEDIUM_FONT = 2;
-        SMALL_FONT = 1;
+        // LARGE_FONT = 3;
+        // MEDIUM_FONT = 2;
+        // SMALL_FONT = 1;
     }
 
     /**
@@ -517,10 +517,9 @@ public class MentraLive extends SGCManager {
             Bridge.log("LIVE: BLE scan stopped");
 
             // Post event only if we haven't been destroyed
-            if (smartGlassesDevice != null) {
+            // if (smartGlassesDevice != null) {
                 // EventBus.getDefault().post(new GlassesBluetoothSearchStopEvent(smartGlassesDevice.deviceModelName));
-
-            }
+            // }
         } catch (Exception e) {
             Log.e(TAG, "Error stopping BLE scan", e);
             // Ensure isScanning is false even if stop failed
@@ -620,7 +619,7 @@ public class MentraLive extends SGCManager {
 
         // Update connection state
         isConnecting = true;
-        connectionEvent(SmartGlassesConnectionState.CONNECTING);
+        // connectionEvent(SmartGlassesConnectionState.CONNECTING);
         Bridge.log("LIVE: Connecting to device: " + device.getAddress());
 
         // Connect to the device
@@ -633,7 +632,7 @@ public class MentraLive extends SGCManager {
         } catch (Exception e) {
             Log.e(TAG, "Error connecting to GATT server", e);
             isConnecting = false;
-            connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+            // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
         }
     }
 
@@ -666,7 +665,7 @@ public class MentraLive extends SGCManager {
         if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             Bridge.log("LIVE: Maximum reconnection attempts reached (" + MAX_RECONNECT_ATTEMPTS + ")");
             reconnectAttempts = 0;
-            connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+            // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
             return;
         }
 
@@ -678,28 +677,28 @@ public class MentraLive extends SGCManager {
               " in " + delay + "ms (max " + MAX_RECONNECT_ATTEMPTS + ")");
 
         // Schedule reconnection attempt
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (!isConnected && !isConnecting && !isKilled) {
-                    // Check for last known device name to start scan
-                    SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                    String lastDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
+        // handler.postDelayed(new Runnable() {
+        //     @Override
+        //     public void run() {
+        //         if (!isConnected && !isConnecting && !isKilled) {
+        //             // Check for last known device name to start scan
+        //             SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        //             String lastDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
 
-                    if (lastDeviceName != null && bluetoothAdapter != null) {
-                        Bridge.log("LIVE: Reconnection attempt " + reconnectAttempts + " - looking for device with name: " + lastDeviceName);
-                        // Start scan to find this device
-                        startScan();
-                        // The scan will automatically connect if it finds a device with the saved name
-                    } else {
-                        Bridge.log("LIVE: Reconnection attempt " + reconnectAttempts + " - no last device name available");
-                        // Note: We don't start scanning here without a name to avoid unexpected behavior
-                        // Instead, let the user explicitly trigger a new scan when needed
-                        connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
-                    }
-                }
-            }
-        }, delay);
+        //             if (lastDeviceName != null && bluetoothAdapter != null) {
+        //                 Bridge.log("LIVE: Reconnection attempt " + reconnectAttempts + " - looking for device with name: " + lastDeviceName);
+        //                 // Start scan to find this device
+        //                 startScan();
+        //                 // The scan will automatically connect if it finds a device with the saved name
+        //             } else {
+        //                 Bridge.log("LIVE: Reconnection attempt " + reconnectAttempts + " - no last device name available");
+        //                 // Note: We don't start scanning here without a name to avoid unexpected behavior
+        //                 // Instead, let the user explicitly trigger a new scan when needed
+        //                 connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+        //             }
+        //         }
+        //     }
+        // }, delay);
     }
 
     /**
@@ -739,7 +738,7 @@ public class MentraLive extends SGCManager {
                     isConnecting = false;
                     connectedDevice = null;
                     glassesReady = false; // Reset ready state on disconnect
-                    connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+                    // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
 
                     handler.removeCallbacks(processSendQueueRunnable);
 
@@ -774,7 +773,7 @@ public class MentraLive extends SGCManager {
                 Log.e(TAG, "GATT connection error: " + status);
                 isConnected = false;
                 isConnecting = false;
-                connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+                // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
 
                 // Stop heartbeat mechanism
                 stopHeartbeat();
@@ -831,7 +830,7 @@ public class MentraLive extends SGCManager {
                         Bridge.log("LIVE: 🔄 Waiting for glasses SOC to become ready...");
 
                         // Keep the state as CONNECTING until the glasses SOC responds
-                        connectionEvent(SmartGlassesConnectionState.CONNECTING);
+                        // connectionEvent(SmartGlassesConnectionState.CONNECTING);
 
                         // CRITICAL FIX: Request MTU size ONCE - don't schedule delayed retries
                         // This avoids BLE operations during active data flow
@@ -1721,9 +1720,9 @@ public class MentraLive extends SGCManager {
                     } else {
                         Log.w(TAG, "Received WiFi scan results without networks field");
                         // Post empty list to notify that scan completed with no results
-                        EventBus.getDefault().post(new GlassesWifiScanResultEvent(
-                                smartGlassesDevice.deviceModelName,
-                                networks));
+                        // EventBus.getDefault().post(new GlassesWifiScanResultEvent(
+                                // smartGlassesDevice.deviceModelName,
+                                // networks));
                     }
                 } catch (Exception e) {
                     Log.e(TAG, "Error processing WiFi scan results", e);
@@ -1827,7 +1826,7 @@ public class MentraLive extends SGCManager {
 
                 // Finally, mark the connection as fully established
                 Bridge.log("LIVE: ✅ Glasses connection is now fully established!");
-                connectionEvent(SmartGlassesConnectionState.CONNECTED);
+                // connectionEvent(SmartGlassesConnectionState.CONNECTED);
                 break;
 
             case "keep_alive_ack":
@@ -1892,23 +1891,23 @@ public class MentraLive extends SGCManager {
 
                 // Emit EventBus event for AugmentosService on main thread
                 try {
-                    DownloadProgressEvent.DownloadStatus downloadEventStatus;
-                    final DownloadProgressEvent event;
+                    // DownloadProgressEvent.DownloadStatus downloadEventStatus;
+                    // final DownloadProgressEvent event;
                     switch (downloadStatus) {
                         case "STARTED":
-                            downloadEventStatus = DownloadProgressEvent.DownloadStatus.STARTED;
+                            // downloadEventStatus = DownloadProgressEvent.DownloadStatus.STARTED;
                             // event = new DownloadProgressEvent(downloadEventStatus, totalBytes);
                             break;
                         case "PROGRESS":
-                            downloadEventStatus = DownloadProgressEvent.DownloadStatus.PROGRESS;
+                            // downloadEventStatus = DownloadProgressEvent.DownloadStatus.PROGRESS;
                             // event = new DownloadProgressEvent(downloadEventStatus, downloadProgress, bytesDownloaded, totalBytes);
                             break;
                         case "FINISHED":
-                            downloadEventStatus = DownloadProgressEvent.DownloadStatus.FINISHED;
+                            // downloadEventStatus = DownloadProgressEvent.DownloadStatus.FINISHED;
                             // event = new DownloadProgressEvent(downloadEventStatus, totalBytes, true);
                             break;
                         case "FAILED":
-                            downloadEventStatus = DownloadProgressEvent.DownloadStatus.FAILED;
+                            // downloadEventStatus = DownloadProgressEvent.DownloadStatus.FAILED;
                             // event = new DownloadProgressEvent(downloadEventStatus, downloadErrorMessage);
                             break;
                         default:
@@ -1918,7 +1917,7 @@ public class MentraLive extends SGCManager {
 
                     // Post event on main thread to ensure proper delivery
                     handler.post(() -> {
-                        Bridge.log("LIVE: 📡 Posting download progress event on main thread: " + downloadEventStatus);
+                        // Bridge.log("LIVE: 📡 Posting download progress event on main thread: " + downloadEventStatus);
                         // EventBus.getDefault().post(event);
                         // Bridge.
                     });
@@ -1927,9 +1926,9 @@ public class MentraLive extends SGCManager {
                 }
 
                 // Forward to data observable for cloud communication
-                if (dataObservable != null) {
-                    dataObservable.onNext(json);
-                }
+                // if (dataObservable != null) {
+                    // dataObservable.onNext(json);
+                // }
                 break;
 
             case "ota_installation_progress":
@@ -1948,29 +1947,29 @@ public class MentraLive extends SGCManager {
 
                 // Emit EventBus event for AugmentosService on main thread
                 try {
-                    InstallationProgressEvent.InstallationStatus installationEventStatus;
-                    final InstallationProgressEvent event;
+                    // InstallationProgressEvent.InstallationStatus installationEventStatus;
+                    // final InstallationProgressEvent event;
                     switch (installationStatus) {
                         case "STARTED":
-                            installationEventStatus = InstallationProgressEvent.InstallationStatus.STARTED;
-                            event = new InstallationProgressEvent(installationEventStatus, apkPath);
+                            // installationEventStatus = InstallationProgressEvent.InstallationStatus.STARTED;
+                            // event = new InstallationProgressEvent(installationEventStatus, apkPath);
                             break;
                         case "FINISHED":
-                            installationEventStatus = InstallationProgressEvent.InstallationStatus.FINISHED;
-                            event = new InstallationProgressEvent(installationEventStatus, apkPath);
+                            // installationEventStatus = InstallationProgressEvent.InstallationStatus.FINISHED;
+                            // event = new InstallationProgressEvent(installationEventStatus, apkPath);
                             break;
                         case "FAILED":
-                            installationEventStatus = InstallationProgressEvent.InstallationStatus.FAILED;
-                            event = new InstallationProgressEvent(installationEventStatus, apkPath, installationErrorMessage);
+                            // installationEventStatus = InstallationProgressEvent.InstallationStatus.FAILED;
+                            // event = new InstallationProgressEvent(installationEventStatus, apkPath, installationErrorMessage);
                             break;
                         default:
-                            Log.w(TAG, "Unknown installation status: " + installationStatus);
+                            // Log.w(TAG, "Unknown installation status: " + installationStatus);
                             return;
                     }
 
                     // Post event on main thread to ensure proper delivery
                     handler.post(() -> {
-                        Bridge.log("LIVE: 📡 Posting installation progress event on main thread: " + installationEventStatus);
+                        // Bridge.log("LIVE: 📡 Posting installation progress event on main thread: " + installationEventStatus);
                         // EventBus.getDefault().post(event);
                     });
                 } catch (Exception e) {
@@ -1978,16 +1977,16 @@ public class MentraLive extends SGCManager {
                 }
 
                 // Forward to data observable for cloud communication
-                if (dataObservable != null) {
-                    dataObservable.onNext(json);
-                }
+                // if (dataObservable != null) {
+                    // dataObservable.onNext(json);
+                // }
                 break;
 
             default:
                 // Pass the data to the subscriber for custom processing
-                if (dataObservable != null) {
-                    dataObservable.onNext(json);
-                }
+                // if (dataObservable != null) {
+                    // dataObservable.onNext(json);
+                // }
                 break;
         }
     }
@@ -2152,15 +2151,15 @@ public class MentraLive extends SGCManager {
                     bluetoothGatt.disconnect();
                 }
                 // Notify the system that glasses are intentionally disconnected
-                connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+                // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
                 break;
 
             default:
                 Bridge.log("LIVE: Unknown K900 command: " + command);
                 // Pass to data observable for custom processing
-                if (dataObservable != null) {
-                    dataObservable.onNext(json);
-                }
+                // if (dataObservable != null) {
+                    // dataObservable.onNext(json);
+                // }
                 break;
         }
     }
@@ -2226,7 +2225,7 @@ public class MentraLive extends SGCManager {
         isCharging = charging;
 
         // Post battery event so the system knows the battery level
-        EventBus.getDefault().post(new BatteryLevelEvent(level, charging));
+        // EventBus.getDefault().post(new BatteryLevelEvent(level, charging));
 
         // Send battery status via BLE to connected phone
         // This was necessary for OG beta units
@@ -2495,7 +2494,7 @@ public class MentraLive extends SGCManager {
     // SmartGlassesCommunicator interface implementation
 
     @Override
-    public void findCompatibleDeviceNames() {
+    public void findCompatibleDevices() {
         Bridge.log("LIVE: Finding compatible Mentra Live glasses");
 
         if (bluetoothAdapter == null) {
@@ -2512,31 +2511,48 @@ public class MentraLive extends SGCManager {
         startScan();
     }
 
+    public void connectById(String id) {
+        Bridge.log("LIVE: Connecting to Mentra Live glasses by ID: " + id);
+        // TODO:
+    }
 
-    @Override
-    public void connectToSmartGlasses(SmartGlassesDevice smartDevice) {
+    public void forget() {
+        Bridge.log("LIVE: Forgetting Mentra Live glasses");
+        // TODO:
+    }
+
+    public void disconnect() {
+        Bridge.log("LIVE: Disconnecting from Mentra Live glasses");
+    }
+
+    public void exit() {
+        Bridge.log("LIVE: [STUB]");
+    }
+
+    public void connectToSmartGlasses() {
         Bridge.log("LIVE: Connecting to Mentra Live glasses");
-        connectionEvent(SmartGlassesConnectionState.CONNECTING);
+        // connectionEvent(SmartGlassesConnectionState.CONNECTING);
 
         if (isConnected) {
             Bridge.log("LIVE: #@32 Already connected to Mentra Live glasses");
-            connectionEvent(SmartGlassesConnectionState.CONNECTED);
+            // connectionEvent(SmartGlassesConnectionState.CONNECTED);
             return;
         }
 
         if (bluetoothAdapter == null) {
             Log.e(TAG, "Bluetooth not available");
-            connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+            // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
             return;
         }
 
         if (!bluetoothAdapter.isEnabled()) {
             Log.e(TAG, "Bluetooth is not enabled");
-            connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+            // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
             return;
         }
 
         // Get last known device address
+        var context = Bridge.getContext();
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String lastDeviceAddress = prefs.getString(PREF_DEVICE_NAME, null);
 
@@ -2550,12 +2566,12 @@ public class MentraLive extends SGCManager {
                     connectToDevice(device);
                 } else {
                     Log.e(TAG, "Could not create device from address: " + lastDeviceAddress);
-                    connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+                    // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
                     startScan(); // Fallback to scanning
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error connecting to saved device: " + e.getMessage());
-                connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+                // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
                 startScan(); // Fallback to scanning
             }
         } else {
@@ -2565,7 +2581,6 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    @Override
     public void changeSmartGlassesMicrophoneState(boolean enable) {
         Bridge.log("LIVE: Microphone state changed: " + enable);
 
@@ -2597,7 +2612,6 @@ public class MentraLive extends SGCManager {
         return isMicrophoneEnabled;
     }
 
-    @Override
     public void requestPhoto(String requestId, String appId, String webhookUrl, String authToken, String size) {
         Bridge.log("LIVE: Requesting photo: " + requestId + " for app: " + appId + " with webhookUrl: " + webhookUrl + ", authToken: " + (authToken.isEmpty() ? "none" : "***") + ", size=" + size);
 
@@ -2639,7 +2653,6 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    @Override
     public void requestRtmpStreamStart(JSONObject message) {
     //    try {
             JSONObject json = message;
@@ -2652,7 +2665,6 @@ public class MentraLive extends SGCManager {
             sendJson(json, true);
     }
 
-    @Override
     public void stopRtmpStream() {
         Bridge.log("LIVE: Requesting to stop RTMP stream");
         try {
@@ -2665,7 +2677,6 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    @Override
     public void sendRtmpStreamKeepAlive(JSONObject message) {
         Bridge.log("LIVE: Sending RTMP stream keep alive");
         try {
@@ -2708,6 +2719,11 @@ public class MentraLive extends SGCManager {
         if (isConnected) {
             requestWifiStatus();
         }
+    }
+
+    @Override
+    public String getConnectedBluetoothName() {
+        return "";
     }
 
     // Debug video command loop vars
@@ -2772,7 +2788,6 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    @Override
     public void destroy() {
         Bridge.log("LIVE: Destroying MentraLiveSGC");
 
@@ -2829,11 +2844,10 @@ public class MentraLive extends SGCManager {
 
         // Note: We don't null context here to prevent race conditions with BLE callbacks
         // The isKilled flag above serves as our destruction indicator
-        smartGlassesDevice = null;
-        dataObservable = null;
+        // dataObservable = null;
 
         // Set connection state to disconnected
-        connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+        // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
 
         // Clean up LC3 audio player
         if (lc3AudioPlayer != null) {
@@ -2855,7 +2869,6 @@ public class MentraLive extends SGCManager {
     //     Bridge.log("LIVE: [STUB] Device has no display. Cannot set font size: " + fontSize);
     // }
 
-    @Override
     public void sendButtonPhotoSettings(String size) {
         // Send photo size settings to glasses
         JSONObject command = new JSONObject();
@@ -2868,8 +2881,8 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    @Override
     public void sendButtonVideoRecordingSettings() {
-
         var m = MentraManager.getInstance();
         int videoWidth = m.getButtonVideoWidth();
         int videoHeight = m.getButtonVideoHeight();
@@ -2891,7 +2904,6 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    @Override
     public void sendButtonCameraLedSetting(boolean enabled) {
         // Send LED setting to glasses
         JSONObject command = new JSONObject();
@@ -2905,105 +2917,85 @@ public class MentraLive extends SGCManager {
     }
 
     @Override
-    public void displayTextWall(String text) {
+    public void sendTextWall(String text) {
         Bridge.log("LIVE: [STUB] Device has no display. Text wall would show: " + text);
     }
 
-    @Override
     public void displayBitmap(Bitmap bitmap) {
         Bridge.log("LIVE: [STUB] Device has no display. Cannot display bitmap.");
     }
 
-    @Override
     public void displayTextLine(String text) {
         Bridge.log("LIVE: [STUB] Device has no display. Text line would show: " + text);
     }
 
-    @Override
     public void displayReferenceCardSimple(String title, String body) {
         Bridge.log("LIVE: [STUB] Device has no display. Reference card would show: " + title);
     }
 
     @Override
-    public void updateGlassesBrightness(int brightness) {
-        Bridge.log("LIVE: [STUB] Device has no display. Cannot set brightness: " + brightness);
+    public void setBrightness(int level, boolean autoMode) {
+        Bridge.log("LIVE: [STUB] Device has no display. Cannot set brightness: " + level);
     }
 
-    @Override
     public void showHomeScreen() {
         Bridge.log("LIVE: [STUB] Device has no display. Cannot show home screen.");
     }
 
-    @Override
     public void blankScreen() {
         Bridge.log("LIVE: [STUB] Device has no display. Cannot blank screen.");
     }
 
-    @Override
     public void displayRowsCard(String[] rowStrings) {
         Bridge.log("LIVE: [STUB] Device has no display. Cannot display rows card with " + rowStrings.length + " rows");
     }
 
-    @Override
     public void showNaturalLanguageCommandScreen(String prompt, String naturalLanguageArgs) {
         Bridge.log("LIVE: [STUB] Device has no display. Cannot show natural language command screen: " + prompt);
     }
 
-    @Override
     public void updateNaturalLanguageCommandScreen(String naturalLanguageArgs) {
         Bridge.log("LIVE: [STUB] Device has no display. Cannot update natural language command screen");
     }
 
-    @Override
     public void scrollingTextViewIntermediateText(String text) {
         Bridge.log("LIVE: [STUB] Device has no display. Cannot display scrolling text: " + text);
     }
 
-    @Override
     public void displayPromptView(String title, String[] options) {
         Bridge.log("LIVE: [STUB] Device has no display. Cannot display prompt view: " + title);
     }
 
-    @Override
     public void displayCustomContent(String json) {
         Bridge.log("LIVE: [STUB] Device has no display. Cannot display custom content");
     }
 
     @Override
     public void clearDisplay() {
-        if (!isConnected()) {
-            Bridge.log("LIVE: Not connected to glasses");
-            return;
-        }
         Log.w(TAG, "MentraLiveSGC does not support clearDisplay");
     }
 
-    @Override
     public void displayReferenceCardImage(String title, String body, String imgUrl) {
         Bridge.log("LIVE: [STUB] Device has no display. Reference card with image would show: " + title);
     }
 
     @Override
-    public void displayDoubleTextWall(String textTop, String textBottom) {
+    public void sendDoubleTextWall(String textTop, String textBottom) {
         Bridge.log("LIVE: [STUB] Device has no display. Double text wall would show: " + textTop + " / " + textBottom);
     }
 
-    @Override
     public void displayBulletList(String title, String[] bullets) {
         Bridge.log("LIVE: [STUB] Device has no display. Bullet list would show: " + title + " with " + bullets.length + " items");
     }
 
-    @Override
     public void startScrollingTextViewMode(String title) {
         Bridge.log("LIVE: [STUB] Device has no display. Scrolling text view would start with: " + title);
     }
 
-    @Override
     public void scrollingTextViewFinalText(String text) {
         Bridge.log("LIVE: [STUB] Device has no display. Scrolling text view would show: " + text);
     }
 
-    @Override
     public void stopScrollingTextViewMode() {
         // Not supported on Mentra Live
     }
@@ -3337,9 +3329,9 @@ public class MentraLive extends SGCManager {
                 euler.getDouble(0), euler.getDouble(1), euler.getDouble(2)));
 
             // Post event for other components
-            EventBus.getDefault().post(new ImuDataEvent(
-                accel, gyro, mag, quat, euler, System.currentTimeMillis()
-            ));
+            // EventBus.getDefault().post(new ImuDataEvent(
+                // accel, gyro, mag, quat, euler, System.currentTimeMillis()
+            // ));
         } catch (JSONException e) {
             Log.e(TAG, "Error parsing single IMU data", e);
         }
@@ -3366,7 +3358,7 @@ public class MentraLive extends SGCManager {
             Bridge.log("LIVE: IMU Gesture detected: " + gesture);
 
             // Post event for other components
-            EventBus.getDefault().post(new ImuGestureEvent(gesture, timestamp));
+            // EventBus.getDefault().post(new ImuGestureEvent(gesture, timestamp));
         } catch (JSONException e) {
             Log.e(TAG, "Error parsing IMU gesture", e);
         }
@@ -3476,7 +3468,6 @@ public class MentraLive extends SGCManager {
      * @param ssid The WiFi network name
      * @param password The WiFi password
      */
-    @Override
     public void sendWifiCredentials(String ssid, String password) {
         Bridge.log("LIVE: 432432 Sending WiFi credentials to glasses - SSID: " + ssid);
 
@@ -3501,7 +3492,6 @@ public class MentraLive extends SGCManager {
     /**
      * Disconnect from WiFi on the glasses
      */
-    @Override
     public void disconnectFromWifi() {
         Bridge.log("LIVE: 📶 Sending WiFi disconnect command to glasses");
 
@@ -3515,7 +3505,6 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    @Override
     public void sendHotspotState(boolean enabled) {
         Bridge.log("LIVE: 🔥 Sending hotspot state to glasses - enabled: " + enabled);
         try {
@@ -3530,7 +3519,6 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    @Override
     public void sendCustomCommand(String commandJson) {
         Bridge.log("LIVE: Received custom command: " + commandJson);
 
@@ -3866,9 +3854,9 @@ public class MentraLive extends SGCManager {
             event.put("timestamp", System.currentTimeMillis());
 
             // Emit event through data observable
-            if (dataObservable != null) {
-                dataObservable.onNext(event);
-            }
+            // if (dataObservable != null) {
+                // dataObservable.onNext(event);
+            // }
 
             // You could also post an EventBus event here if needed
             // EventBus.getDefault().post(new FileReceivedEvent(filePath, fileType));
@@ -4000,7 +3988,6 @@ public class MentraLive extends SGCManager {
      *
      * @param mode The button mode (photo, apps, both)
      */
-    @Override
     public void sendButtonModeSetting(String mode) {
         Bridge.log("LIVE: Sending button mode setting to glasses: " + mode);
 
@@ -4096,9 +4083,10 @@ public class MentraLive extends SGCManager {
     private void sendUserSettings() {
         Bridge.log("LIVE: Sending user settings to glasses");
 
+        var m = MentraManager.getInstance();
+
         // Send button mode setting
-        String buttonMode = PreferenceManager.getDefaultSharedPreferences(context)
-                .getString("button_press_mode", "photo");
+        String buttonMode = m.getButtonPressMode();
         sendButtonModeSetting(buttonMode);
 
         // Send button video recording settings
@@ -4236,7 +4224,7 @@ public class MentraLive extends SGCManager {
             // Bridge.log("LIVE: Received LC3 audio packet seq=" + sequenceNumber + ", size=" + lc3Data.length);
 
             // Decode LC3 to PCM and forward to audio processing system
-            if (audioProcessingCallback != null) {
+            // if (audioProcessingCallback != null) {
                 if (lc3DecoderPtr != 0) {
                     // Decode LC3 to PCM using the native decoder with Mentra Live frame size
                     byte[] pcmData = L3cCpp.decodeLC3(lc3DecoderPtr, lc3Data, LC3_FRAME_SIZE);
@@ -4254,9 +4242,9 @@ public class MentraLive extends SGCManager {
                     Log.e(TAG, "LC3 decoder not initialized - cannot decode to PCM");
 
                 }
-            } else {
-                Log.w(TAG, "No audio processing callback registered - audio data will not be processed");
-            }
+            // } else {
+                // Log.w(TAG, "No audio processing callback registered - audio data will not be processed");
+            // }
 
             // Play LC3 audio directly through LC3 player if enabled
             if (audioPlaybackEnabled && lc3AudioPlayer != null) {
