@@ -2571,20 +2571,20 @@ public class MentraLive extends SGCManager {
         }
 
         if (bluetoothAdapter == null) {
-            Log.e(TAG, "Bluetooth not available");
+            Bridge.log("LIVE: Bluetooth not available");
             // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
             return;
         }
 
         if (!bluetoothAdapter.isEnabled()) {
-            Log.e(TAG, "Bluetooth is not enabled");
+            Bridge.log("LIVE: Bluetooth is not enabled");
             // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
             return;
         }
 
         // Get last known device address
-        var context = Bridge.getContext();
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        // var context = Bridge.getContext();
+        // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String lastDeviceAddress = prefs.getString(PREF_DEVICE_NAME, null);
 
         if (lastDeviceAddress != null) {

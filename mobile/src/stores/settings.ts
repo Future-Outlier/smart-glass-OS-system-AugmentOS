@@ -32,6 +32,7 @@ export const SETTINGS_KEYS = {
   button_press_mode: "button_press_mode",
   default_wearable: "default_wearable",
   device_name: "device_name",
+  device_address: "device_address",
   preferred_mic: "preferred_mic",
   contextual_dashboard_enabled: "contextual_dashboard_enabled",
   head_up_angle: "head_up_angle",
@@ -84,7 +85,8 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.metric_system_enabled]: false,
   [SETTINGS_KEYS.enforce_local_transcription]: false,
   [SETTINGS_KEYS.button_press_mode]: "photo",
-  [SETTINGS_KEYS.default_wearable]: null,
+  [SETTINGS_KEYS.default_wearable]: "",
+  [SETTINGS_KEYS.device_address]: "",
   [SETTINGS_KEYS.device_name]: "",
   [SETTINGS_KEYS.preferred_mic]: "phone",
   [SETTINGS_KEYS.contextual_dashboard_enabled]: true,
@@ -95,9 +97,9 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.dashboard_depth]: 5,
   [SETTINGS_KEYS.button_mode]: "photo",
   [SETTINGS_KEYS.button_photo_size]: "medium",
-  [SETTINGS_KEYS.time_zone]: null,
-  [SETTINGS_KEYS.time_zone_override]: null,
-  [SETTINGS_KEYS.location_tier]: null,
+  [SETTINGS_KEYS.time_zone]: "",
+  [SETTINGS_KEYS.time_zone_override]: "",
+  [SETTINGS_KEYS.location_tier]: "",
   [SETTINGS_KEYS.offline_captions_app_running]: false,
 }
 
@@ -112,6 +114,7 @@ const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.button_press_mode,
   SETTINGS_KEYS.default_wearable,
   SETTINGS_KEYS.device_name,
+  SETTINGS_KEYS.device_address,
   SETTINGS_KEYS.preferred_mic,
   SETTINGS_KEYS.contextual_dashboard_enabled,
   SETTINGS_KEYS.head_up_angle,
@@ -184,7 +187,7 @@ export const useSettingsStore = create<SettingsState>()(
           settings: {...state.settings, [key]: oldValue},
         }))
 
-        throw error
+        // throw error
       }
     },
 

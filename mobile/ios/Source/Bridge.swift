@@ -419,15 +419,17 @@ class Bridge: RCTEventEmitter {
                     m.handle_display_text(params)
                 case .request_status:
                     m.handle_request_status()
-                case .connect_wearable:
-                    guard let params = params, let modelName = params["model_name"] as? String,
+                case .connect_default:
+                    m.handle_connect_default()
+                case .connect_by_name:
+                    guard let params = params,
                           let deviceName = params["device_name"] as? String
                     else {
-                        Bridge.log("CommandBridge: connect_wearable invalid params")
+                        Bridge.log("CommandBridge: connect_by_name invalid params")
                         m.handle_connect_wearable("")
                         break
                     }
-                    m.handle_connect_wearable(deviceName, modelName: modelName)
+                    m.handle_connect_by_name(deviceName)
                 case .disconnect_wearable:
                     m.handle_disconnect_wearable()
                 case .forget_smart_glasses:

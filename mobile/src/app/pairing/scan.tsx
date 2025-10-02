@@ -1,39 +1,26 @@
 // SelectGlassesBluetoothScreen.tsx
 
-import React, {useEffect, useMemo, useRef, useState, useCallback} from "react"
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  Platform,
-  Alert,
-  ViewStyle,
-  BackHandler,
-} from "react-native"
-import {useNavigation, useRoute} from "@react-navigation/native" // <<--- import useRoute
-import {useFocusEffect} from "@react-navigation/native"
-import Icon from "react-native-vector-icons/FontAwesome"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import bridge from "@/bridge/MantleBridge"
-import {MOCK_CONNECTION} from "@/consts"
-import {NavigationProps} from "@/components/misc/types"
-import {getGlassesImage} from "@/utils/getGlassesImage"
-import PairingDeviceInfo from "@/components/misc/PairingDeviceInfo"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {useSearchResults, SearchResultDevice} from "@/contexts/SearchResultsContext"
-import {requestFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
-import showAlert from "@/utils/AlertUtils"
-import {router, useLocalSearchParams} from "expo-router"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {Header, Screen, Text} from "@/components/ignite"
 import {PillButton} from "@/components/ignite/PillButton"
 import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
-import {ThemedStyle} from "@/theme"
+import PairingDeviceInfo from "@/components/misc/PairingDeviceInfo"
+import {MOCK_CONNECTION} from "@/consts"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import Animated, {useAnimatedStyle, useSharedValue, withDelay, withTiming} from "react-native-reanimated"
+import {SearchResultDevice, useSearchResults} from "@/contexts/SearchResultsContext"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {useFocusEffect} from "@react-navigation/native"
+import {router, useLocalSearchParams} from "expo-router"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {BackHandler, Platform, ScrollView, StyleSheet, TouchableOpacity, View, ViewStyle} from "react-native"
+import Animated, {useAnimatedStyle, useSharedValue, withDelay, withTiming} from "react-native-reanimated"
+import Icon from "react-native-vector-icons/FontAwesome"
 
 export default function SelectGlassesBluetoothScreen() {
   const {status} = useCoreStatus()
@@ -60,7 +47,7 @@ export default function SelectGlassesBluetoothScreen() {
 
   // Clear search results when screen comes into focus to prevent stale data
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       setSearchResults([])
     }, [setSearchResults]),
   )
@@ -201,14 +188,8 @@ export default function SelectGlassesBluetoothScreen() {
   }, [])
 
   useEffect(() => {
-    // If puck gets d/c'd here, return to home
-    //     if (!status.core_info.puck_connected) {
-    //       router.dismissAll()
-    //       replace("/(tabs)/home")
-    //     }
-
     // If pairing successful, return to home
-    if (status.core_info.puck_connected && status.glasses_info?.model_name) {
+    if (status.glasses_info?.model_name) {
       router.dismissAll()
       replace("/(tabs)/home")
     }
@@ -250,13 +231,10 @@ export default function SelectGlassesBluetoothScreen() {
 
     // All permissions granted, proceed with connecting to the wearable
     setTimeout(() => {
-      // give some time to show the loader (otherwise it's a bit jarring)
-      bridge.sendConnectWearable(glassesModelName, deviceName, deviceAddress)
+      bridge.sendConnectByName(deviceName)
     }, 2000)
     push("/pairing/loading", {glassesModelName: glassesModelName})
   }
-
-  const glassesImage = useMemo(() => getGlassesImage(glassesModelName), [glassesModelName])
 
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}} safeAreaEdges={["bottom"]}>

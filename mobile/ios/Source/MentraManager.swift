@@ -558,11 +558,6 @@ struct ViewState {
         }
     }
 
-    func onJsonMessage(_ message: [String: Any]) {
-        Bridge.log("Mentra: onJsonMessage: \(message)")
-        sgc?.sendJson(message, wakeUp: false)
-    }
-
     func handle_photo_request(
         _ requestId: String, _ appId: String, _ size: String, _ webhookUrl: String?
     ) {
@@ -608,14 +603,6 @@ struct ViewState {
         }
     }
 
-    //  func onDashboardDisplayEvent(_ event: [String: Any]) {
-    //    Core.log("got dashboard display event")
-    ////    onDisplayEvent?(["event": event, "type": "dashboard"])
-    //    Core.log(event)
-    ////    Task {
-    ////      await self.g1Manager.sendText(text: "\(event)")
-    ////    }
-    //  }
 
     // send whatever was there before sending something else:
     func clearState() {
@@ -1281,14 +1268,18 @@ struct ViewState {
         sgc?.stopVideoRecording(requestId: requestId)
     }
 
-    func handle_connect_wearable(_ deviceName: String, modelName: String? = nil) {
+    func handle_connect_default() {
+        if defaultWearable.isEmpty() {
+            Bridge.log("Mentra: No default wearable, returning")
+            return
+        }
+
+    }
+
+    func handle_connect_by_name(_ deviceName: String) {
         Bridge.log(
             "Mentra: Connecting to modelName: \(modelName ?? "nil") deviceName: \(deviceName) defaultWearable: \(defaultWearable) pendingWearable: \(pendingWearable) selfDeviceName: \(self.deviceName)"
         )
-
-        if modelName != nil {
-            pendingWearable = modelName!
-        }
 
         if pendingWearable.contains("Simulated") {
             Bridge.log(
@@ -1363,7 +1354,7 @@ struct ViewState {
         handle_request_status()
     }
 
-    func handle_search_for_compatible_device_names(_ modelName: String) {
+    func handle_find_compatible_devices(_ modelName: String) {
         Bridge.log("Mentra: Searching for compatible device names for: \(modelName)")
         if modelName.contains(DeviceTypes.SIMULATED) {
             defaultWearable = DeviceTypes.SIMULATED

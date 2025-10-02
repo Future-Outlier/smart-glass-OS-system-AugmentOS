@@ -39,9 +39,6 @@ public abstract class SGCManager {
     // Audio Control
     public abstract void setMicEnabled(boolean enabled);
 
-    // Messaging
-    public abstract void sendJson(Map<String, Object> jsonOriginal, boolean wakeUp);
-
     // Camera & Media
     public abstract void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken);
     public abstract void startRtmpStream(Map<String, Object> message);

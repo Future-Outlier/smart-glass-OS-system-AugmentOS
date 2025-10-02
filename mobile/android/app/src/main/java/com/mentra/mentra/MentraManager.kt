@@ -547,11 +547,6 @@ class MentraManager {
         setOnboardMicEnabled(useOnboardMic)
     }
 
-    fun onJsonMessage(message: Map<String, Any>) {
-        Bridge.log("Mentra: onJsonMessage: $message")
-        sgc?.sendJson(message, false)
-    }
-
     fun handle_photo_request(
             requestId: String,
             appId: String,
@@ -987,12 +982,21 @@ class MentraManager {
         sgc?.stopVideoRecording(requestId)
     }
 
-    fun handle_connect_wearable(dName: String, modelName: String?) {
-        Bridge.log("Mentra: Connecting to wearable: $dName model: $modelName")
-
-        if (modelName != null) {
-            pendingWearable = modelName
+    fun handle_connect_default() {
+        if (defaultWearable.isEmpty()) {
+            Bridge.log("Mentra: No default wearable, returning")
+            return
         }
+        if (deviceName.isEmpty()) {
+            Bridge.log("Mentra: No device name, returning")
+            return
+        }
+        initSGC(defaultWearable)
+        sgc?.connectById(deviceName)
+    }
+
+    fun handle_connect_by_name(dName: String) {
+        Bridge.log("Mentra: Connecting to wearable: $dName")
 
         if (pendingWearable.contains("Simulated")) {
             Bridge.log(
@@ -1042,7 +1046,7 @@ class MentraManager {
         handle_request_status()
     }
 
-    fun handle_search_for_compatible_device_names(modelName: String) {
+    fun handle_find_compatible_devices(modelName: String) {
         Bridge.log("Mentra: Searching for compatible device names for: $modelName")
         if (modelName.contains(DeviceTypes.SIMULATED)) {
             defaultWearable = DeviceTypes.SIMULATED

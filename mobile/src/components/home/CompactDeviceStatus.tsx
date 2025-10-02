@@ -92,11 +92,7 @@ export const CompactDeviceStatus: React.FC = () => {
         return
       }
 
-      const deviceName = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.device_name)
-      console.log("Connecting to glasses:", defaultWearable, deviceName)
-      if (defaultWearable !== "") {
-        await bridge.sendConnectWearable(defaultWearable, deviceName, "")
-      }
+      await bridge.sendConnectDefault()
     } catch (error) {
       console.error("connect to glasses error:", error)
       showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
