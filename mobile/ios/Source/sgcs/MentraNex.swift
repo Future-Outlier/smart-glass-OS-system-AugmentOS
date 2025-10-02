@@ -1757,7 +1757,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     private func emitDiscoveredDevice(_ name: String) {
         // Emit device discovery event using standardized typed message function
         Bridge.log("NEX: 📡 Emitting discovered device: \(name)")
-        Bridge.emitDiscoveredDevice(DeviceTypes.NEX, name)
+        Bridge.sendDiscoveredDevice(DeviceTypes.NEX, name)
     }
 
     @objc func checkBluetoothState() {
