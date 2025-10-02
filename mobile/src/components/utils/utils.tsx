@@ -134,10 +134,8 @@ export function Reconnect() {
               )
           }
         }
-        let defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-        let deviceName = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.device_name)
-        console.log("Attempt reconnect to glasses", defaultWearable, deviceName)
-        await bridge.sendConnectWearable(defaultWearable, deviceName)
+
+        await bridge.sendConnectDefault()
       }
     }
 

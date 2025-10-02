@@ -90,7 +90,7 @@ class Bridge: RCTEventEmitter {
             "model_name": modelName,
             "device_name": deviceName,
         ]
-        sendTypedMessage("compatible_glasses_search_result", eventBody)
+        sendTypedMessage("compatible_glasses_search_result", body: eventBody)
     }
 
     static func sendGlassesConnectionState(modelName: String, status: String) {
@@ -344,12 +344,12 @@ class Bridge: RCTEventEmitter {
         // Define command types enum
         enum CommandType: String {
             case request_status
-            case connect_wearable
-            case disconnect_wearable
-            case search_for_compatible_device_names
+            case connect_default
+            case connect_by_name
+            case disconnect
+            case find_compatible_devices
             case ping
-            case forget_smart_glasses
-            case toggle_updating_screen
+            case forget
             case show_dashboard
             case request_wifi_scan
             case send_wifi_credentials
@@ -361,7 +361,6 @@ class Bridge: RCTEventEmitter {
             case save_buffer_video
             case start_video_recording
             case stop_video_recording
-            case set_auth_secret_key
             case set_stt_model_details
             case get_stt_model_path
             case check_stt_model_available
@@ -396,15 +395,6 @@ class Bridge: RCTEventEmitter {
 
                 // Process based on command type
                 switch commandType {
-                case .set_auth_secret_key:
-                    guard let params = params,
-                          let userId = params["userId"] as? String,
-                          let authSecretKey = params["authSecretKey"] as? String
-                    else {
-                        Bridge.log("CommandBridge: set_auth_secret_key invalid params")
-                        break
-                    }
-                    m.setAuthCreds(authSecretKey, userId)
                 case .display_event:
                     guard let params else {
                         Bridge.log("CommandBridge: display_event invalid params")
@@ -426,30 +416,23 @@ class Bridge: RCTEventEmitter {
                           let deviceName = params["device_name"] as? String
                     else {
                         Bridge.log("CommandBridge: connect_by_name invalid params")
-                        m.handle_connect_wearable("")
                         break
                     }
                     m.handle_connect_by_name(deviceName)
-                case .disconnect_wearable:
-                    m.handle_disconnect_wearable()
-                case .forget_smart_glasses:
-                    m.handle_forget_smart_glasses()
-                case .search_for_compatible_device_names:
+                case .disconnect:
+                    m.handle_disconnect()
+                case .forget:
+                    m.handle_forget()
+                case .find_compatible_devices:
                     guard let params = params, let modelName = params["model_name"] as? String
                     else {
                         Bridge.log(
                             "CommandBridge: search_for_compatible_device_names invalid params")
                         break
                     }
-                    m.handle_search_for_compatible_device_names(modelName)
+                    m.handle_find_compatible_devices(modelName)
                 case .show_dashboard:
                     m.showDashboard()
-                case .toggle_updating_screen:
-                    guard let params = params, let enabled = params["enabled"] as? Bool else {
-                        Bridge.log("CommandBridge: toggle_updating_screen invalid params")
-                        break
-                    }
-                    m.toggleUpdatingScreen(enabled)
                 case .request_wifi_scan:
                     m.requestWifiScan()
                 case .send_wifi_credentials:

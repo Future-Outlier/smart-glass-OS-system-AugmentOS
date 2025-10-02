@@ -294,7 +294,8 @@ public class Bridge {
     public enum CommandType {
         SET_AUTH_SECRET_KEY("set_auth_secret_key"),
         REQUEST_STATUS("request_status"),
-        CONNECT_WEARABLE("connect_wearable"),
+        CONNECT_DEFAULT("connect_default"),
+        CONNECT_BY_NAME("connect_by_name"),
         DISCONNECT_WEARABLE("disconnect_wearable"),
         SEARCH_FOR_COMPATIBLE_DEVICE_NAMES("search_for_compatible_device_names"),
         ENABLE_CONTEXTUAL_DASHBOARD("enable_contextual_dashboard"),
@@ -401,13 +402,14 @@ public class Bridge {
                     mentraManager.handle_request_status();
                     break;
 
-                case CONNECT_WEARABLE:
+                case CONNECT_DEFAULT:
+                    mentraManager.handle_connect_default();
+                    break;
+
+                case CONNECT_BY_NAME:
                     if (params != null) {
-                        String modelName = params.optString("model_name", "");
                         String deviceName = params.optString("device_name", "");
-                        mentraManager.handle_connect_wearable(deviceName, modelName);
-                    } else {
-                        mentraManager.handle_connect_wearable("", null);
+                        mentraManager.handle_connect_by_name(deviceName);
                     }
                     break;
 

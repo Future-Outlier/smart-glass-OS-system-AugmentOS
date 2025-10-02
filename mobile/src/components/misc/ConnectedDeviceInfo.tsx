@@ -17,11 +17,10 @@ import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import ChevronRight from "assets/icons/component/ChevronRight"
 import SunIcon from "assets/icons/component/SunIcon"
 import {glassesFeatures} from "@/config/glassesFeatures"
-// import {} from "assets/icons/"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import {showAlert, showBluetoothAlert, showLocationAlert, showLocationServicesAlert} from "@/utils/AlertUtils"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useSetting, useSettingsStore} from "@/stores/settings"
+import {useSetting} from "@/stores/settings"
 import {SETTINGS_KEYS} from "@/stores/settings"
 
 export const ConnectDeviceButton = () => {
@@ -78,13 +77,7 @@ export const ConnectDeviceButton = () => {
         return
       }
 
-      // Connectivity check passed, proceed with connection
-      const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-      const deviceName = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.device_name)
-      console.log("Connecting to glasses:", defaultWearable, deviceName)
-      if (defaultWearable && defaultWearable != "") {
-        await bridge.sendConnectWearable(defaultWearable, deviceName, "")
-      }
+      await bridge.sendConnectDefault()
     } catch (err) {
       console.error("connect to glasses error:", err)
       showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
