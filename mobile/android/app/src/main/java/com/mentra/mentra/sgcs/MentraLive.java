@@ -1305,6 +1305,9 @@ public class MentraLive extends SGCManager {
 
     }
 
+    public void setMicEnabled(boolean enabled) {
+    }
+
     /**
      * Track a message for ACK response
      */
