@@ -30,49 +30,59 @@ struct ViewState {
         return MentraManager.shared
     }
 
-    var coreToken: String = ""
-    private var coreTokenOwner: String = ""
-    var sgc: SGCManager?
-
-    private var lastStatusObj: [String: Any] = [:]
+    // MARK: - Unique (iOS)
 
     private var cancellables = Set<AnyCancellable>()
+    private var sendStateWorkItem: DispatchWorkItem?
+    private let sendStateQueue = DispatchQueue(label: "sendStateQueue", qos: .userInitiated)
+
+    // MARK: - End Unique
+
+    // MARK: - Properties
+
+    var coreToken: String = ""
+    var coreTokenOwner: String = ""
+    var sgc: SGCManager?
+
+    // state
+    private var shouldSendBootingMessage = true
+    private var lastStatusObj: [String: Any] = [:]
     private var defaultWearable: String = ""
     private var pendingWearable: String = ""
     private var deviceName: String = ""
+    private var isUpdatingScreen: Bool = false
+    private var isSearching: Bool = false
+    private var onboardMicUnavailable: Bool = false
+    private var currentRequiredData: [SpeechRequiredDataType] = []
+
+    // glasses settings
     private var contextualDashboard = true
     private var headUpAngle = 30
     private var brightness = 50
     private var autoBrightness: Bool = true
     private var dashboardHeight: Int = 4
     private var dashboardDepth: Int = 5
+
+    // glasses state:
+    private var glassesWifiConnected: Bool = false
+    private var glassesWifiSsid: String = ""
+    private var isHeadUp: Bool = false
+
+    // settings
     private var sensingEnabled: Bool = true
     private var powerSavingMode: Bool = false
-    private var isSearching: Bool = false
-    private var isUpdatingScreen: Bool = false
     private var alwaysOnStatusBar: Bool = false
     private var bypassVad: Bool = true
     private var bypassVadForPCM: Bool = false // NEW: PCM subscription bypass
     private var enforceLocalTranscription: Bool = false
-    private var offlineModeEnabled: Bool = false
     private var bypassAudioEncoding: Bool = false
-    private var onboardMicUnavailable: Bool = false
+    private var offlineModeEnabled: Bool = false
     private var metricSystemEnabled: Bool = false
-    private var settingsLoaded = false
-    private let settingsLoadedSemaphore = DispatchSemaphore(value: 0)
-    private var connectTask: Task<Void, Never>?
-    private var glassesWifiConnected: Bool = false
-    private var glassesWifiSsid: String = ""
-    private var isHeadUp: Bool = false
-    private var sendStateWorkItem: DispatchWorkItem?
-    private let sendStateQueue = DispatchQueue(label: "sendStateQueue", qos: .userInitiated)
-    private var shouldSendBootingMessage = true
 
     // mic:
     private var useOnboardMic = false
     private var preferredMic = "glasses"
     private var micEnabled = false
-    private var currentRequiredData: [SpeechRequiredDataType] = []
 
     // button settings:
     var buttonPressMode = "photo"
@@ -1219,32 +1229,11 @@ struct ViewState {
             initSGC(self.pendingWearable)
             sgc?.connectById(self.deviceName)
         }
-
-        // wait for the g1's to be fully ready:
-        //    connectTask?.cancel()
-        //    connectTask = Task {
-        //      while !(connectTask?.isCancelled ?? true) {
-        //        Core.log("checking if g1 is ready... \(self.g1Manager?.g1Ready ?? false)")
-        //        Core.log("leftReady \(self.g1Manager?.leftReady ?? false) rightReady \(self.g1Manager?.rightReady ?? false)")
-        //        if self.g1Manager?.g1Ready ?? false {
-        //          // we actualy don't need this line:
-        //          //          handleDeviceReady()
-        //          handle_request_status()
-        //          break
-        //        } else {
-        //          // todo: ios not the cleanest solution here
-        //          self.g1Manager?.RN_startScan()
-        //        }
-        //
-        //        try? await Task.sleep(nanoseconds: 15_000_000_000) // 15 seconds
-        //      }
-        //    }
     }
 
     func handle_disconnect() {
         sendText(" ") // clear the screen
         Task {
-            connectTask?.cancel()
             sgc?.disconnect()
             self.isSearching = false
             handle_request_status()
@@ -1480,15 +1469,21 @@ struct ViewState {
         }
 
         if let newFps = settings["button_video_fps"] as? Int, newFps != buttonVideoFps {
-            updateButtonVideoSettings(width: buttonVideoWidth, height: buttonVideoHeight, fps: newFps)
+            updateButtonVideoSettings(
+                width: buttonVideoWidth, height: buttonVideoHeight, fps: newFps
+            )
         }
 
         if let newWidth = settings["button_video_width"] as? Int, newWidth != buttonVideoWidth {
-            updateButtonVideoSettings(width: newWidth, height: buttonVideoHeight, fps: buttonVideoFps)
+            updateButtonVideoSettings(
+                width: newWidth, height: buttonVideoHeight, fps: buttonVideoFps
+            )
         }
 
         if let newHeight = settings["button_video_height"] as? Int, newHeight != buttonVideoHeight {
-            updateButtonVideoSettings(width: buttonVideoWidth, height: newHeight, fps: buttonVideoFps)
+            updateButtonVideoSettings(
+                width: buttonVideoWidth, height: newHeight, fps: buttonVideoFps
+            )
         }
 
         if let newPhotoSize = settings["button_photo_size"] as? String,

@@ -18,7 +18,6 @@ import com.mentra.mentra.utils.DeviceTypes
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -34,52 +33,65 @@ class MentraManager {
         }
     }
 
+    // MARK: - Unique (Android)
     private var serviceStarted = false
-
-    private var coreToken = ""
-    private var coreTokenOwner = ""
-    private var sgc: SGCManager? = null
-
-    private val lastStatusObj = ConcurrentHashMap<String, Any>()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private var sendStateWorkItem: Runnable? = null
+    // Track last known permissions
+    private var lastHadBluetoothPermission = false
+    private var lastHadMicrophonePermission = false
+    private var permissionReceiver: BroadcastReceiver? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private var permissionCheckRunnable: Runnable? = null
+    // MARK: - End Unique
 
-    // Settings and state (matching Swift exactly)
+    // MARK: - Properties
+    var coreToken = ""
+    var coreTokenOwner = ""
+    var sgc: SGCManager? = null
+
+    // state
+    private var shouldSendBootingMessage = true
+    private val lastStatusObj = ConcurrentHashMap<String, Any>()
     private var defaultWearable = ""
     private var pendingWearable = ""
     public var deviceName = ""
+    private var isUpdatingScreen = false
+    private var isSearching = false
+    private var onboardMicUnavailable = false
+    public val currentRequiredData = mutableListOf<String>()
+
+    // glasses settings
     private var contextualDashboard = true
     private var headUpAngle = 30
     public var brightness = 50
     public var autoBrightness = true
     public var dashboardHeight = 4
     public var dashboardDepth = 5
+
+    // glasses state
+    private var isHeadUp = false
+    public var glassesWifiConnected = false
+    public var glassesWifiSsid = ""
+
+    // settings
     public var sensingEnabled = true
     public var powerSavingMode = false
-    private var isSearching = false
-    private var isUpdatingScreen = false
     private var alwaysOnStatusBar = false
     private var bypassVad = true
     private var bypassVadForPCM = false
     private var enforceLocalTranscription = false
     private var bypassAudioEncoding = false
-    private var onboardMicUnavailable = false
+    private var offlineModeEnabled = false
     private var metricSystemEnabled = false
-    private var settingsLoaded = false
-    private val settingsLoadedLatch = CountDownLatch(1)
-    public var glassesWifiConnected = false
-    public var glassesWifiSsid = ""
-    private var isHeadUp = false
 
-    // Mic settings (matching Swift)
+    // mic
     public var useOnboardMic = false
     public var preferredMic = "glasses"
-    public var offlineStt = false
     public var micEnabled = false
-    public val currentRequiredData = mutableListOf<String>()
 
-    // Button settings (matching Swift)
+    // button settings
     public var buttonPressMode = "photo"
     public var buttonPhotoSize = "medium"
     public var buttonVideoWidth = 1280
@@ -87,21 +99,16 @@ class MentraManager {
     public var buttonVideoFps = 30
     public var buttonCameraLed = true
 
-    // VAD (matching Swift)
-    private var isSpeaking = false
+    // VAD
     private val vadBuffer = mutableListOf<ByteArray>()
+    private var isSpeaking = false
 
-    // STT (matching Swift)
+    // STT
     private var shouldSendPcmData = false
     private var shouldSendTranscript = false
 
-    // View states (matching Swift with 4 states)
+    // View states
     private val viewStates = mutableListOf<ViewState>()
-
-    // Track last known permissions
-    private var lastHadBluetoothPermission = false
-    private var lastHadMicrophonePermission = false
-    private var permissionReceiver: BroadcastReceiver? = null
 
     init {
         Bridge.log("Mentra: init()")
@@ -110,6 +117,7 @@ class MentraManager {
         // setupPermissionMonitoring()
     }
 
+    // MARK: - Unique (Android)
     private fun setupPermissionMonitoring() {
         val context = Bridge.getContext() ?: return
 
@@ -151,9 +159,6 @@ class MentraManager {
         // Also set up a periodic check as backup (some devices don't fire PACKAGE_CHANGED reliably)
         // startPeriodicPermissionCheck()
     }
-
-    private val handler = Handler(Looper.getMainLooper())
-    private var permissionCheckRunnable: Runnable? = null
 
     private fun startPeriodicPermissionCheck() {
         permissionCheckRunnable =
