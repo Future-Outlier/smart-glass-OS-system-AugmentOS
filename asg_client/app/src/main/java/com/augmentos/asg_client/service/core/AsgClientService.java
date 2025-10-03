@@ -203,6 +203,10 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             Log.d(TAG, "🗑️ Cleaning up orphaned BLE transfer files");
             cleanupOrphanedBleTransfers();
 
+            // Claim RGB LED control authority from BES
+            Log.d(TAG, "🚨 Claiming RGB LED control authority from BES");
+            sendRgbLedControlAuthority(true);
+
             Log.i(TAG, "✅ AsgClientServiceV2 onCreate() completed successfully");
         } catch (Exception e) {
             Log.e(TAG, "💥 Error in onCreate()", e);
@@ -301,6 +305,10 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             streamingManager.stopRtmpStreaming();
             Log.d(TAG, "✅ RTMP streaming stopped");
 
+            // Release RGB LED control authority back to BES
+            Log.d(TAG, "🚨 Releasing RGB LED control authority back to BES");
+            sendRgbLedControlAuthority(false);
+
             Log.i(TAG, "✅ AsgClientServiceV2 onDestroy() completed successfully");
         } catch (Exception e) {
             Log.e(TAG, "💥 Error in onDestroy()", e);
@@ -333,6 +341,7 @@ public class AsgClientService extends Service implements NetworkStateListener, B
         try {
             JSONObject payload = new JSONObject();
             payload.put("C", command);
+            payload.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
             payload.put("B", new JSONObject());
 
             boolean sent = sendK900Command(command);
@@ -365,6 +374,107 @@ public class AsgClientService extends Service implements NetworkStateListener, B
         boolean sent = bluetoothManager.sendData(payload.getBytes(StandardCharsets.UTF_8));
         Log.i(TAG, "I2S command sent (" + payload + ") result=" + sent);
         return sent;
+    }
+
+    /**
+     * Send RGB LED control authority command to BES chipset.
+     * This tells BES whether MTK (our app) or BES should control the RGB LEDs.
+     * 
+     * @param claimControl true = MTK claims control, false = BES resumes control
+     */
+    private void sendRgbLedControlAuthority(boolean claimControl) {
+        Log.d(TAG, "🚨 sendRgbLedControlAuthority() called - Claim: " + claimControl);
+        
+        try {
+            // Build full K900 format (C, V, B) to avoid double-wrapping
+            JSONObject authorityCommand = new JSONObject();
+            authorityCommand.put("C", "android_control_led");
+            authorityCommand.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
+            authorityCommand.put("B", claimControl);
+            
+            String commandStr = authorityCommand.toString();
+            Log.i(TAG, "🚨 Sending RGB LED authority command: " + commandStr);
+            
+            if (serviceContainer == null || serviceContainer.getServiceManager() == null) {
+                Log.w(TAG, "⚠️ ServiceContainer not initialized; deferring RGB LED authority claim");
+                return;
+            }
+
+            var bluetoothManager = serviceContainer.getServiceManager().getBluetoothManager();
+            if (bluetoothManager == null) {
+                Log.w(TAG, "⚠️ Bluetooth manager unavailable; cannot send RGB LED authority command");
+                return;
+            }
+
+            if (!bluetoothManager.isConnected()) {
+                Log.w(TAG, "⚠️ Bluetooth not connected; RGB LED authority will be sent when connected");
+                return;
+            }
+
+            boolean sent = bluetoothManager.sendData(commandStr.getBytes(StandardCharsets.UTF_8));
+            if (sent) {
+                Log.i(TAG, "✅ RGB LED control authority " + (claimControl ? "CLAIMED" : "RELEASED") + " successfully");
+            } else {
+                Log.e(TAG, "❌ Failed to send RGB LED authority command");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "💥 Error creating RGB LED authority command", e);
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error sending RGB LED authority command", e);
+        }
+    }
+
+    /**
+     * Activate blue RGB LED (for testing/demo).
+     * Turns on the blue LED indefinitely.
+     */
+    private void activateBlueRgbLed() {
+        Log.d(TAG, "🚨 💙 activateBlueRgbLed() called");
+        
+        try {
+            // Build K900 protocol command to turn on blue LED forever
+            JSONObject k900Command = new JSONObject();
+            k900Command.put("C", "cs_ledon");
+            k900Command.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
+            
+            JSONObject ledParams = new JSONObject();
+            ledParams.put("led", 2);  // Blue LED
+            ledParams.put("ontime", 999999);  // Stay on for a very long time (forever)
+            ledParams.put("offtime", 0);  // No off time
+            ledParams.put("count", 1);  // Single cycle
+            
+            k900Command.put("B", ledParams);  // Pass as JSONObject, not string
+            
+            String commandStr = k900Command.toString();
+            Log.i(TAG, "🚨 💙 Sending blue RGB LED command: " + commandStr);
+            
+            if (serviceContainer == null || serviceContainer.getServiceManager() == null) {
+                Log.w(TAG, "⚠️ ServiceContainer not initialized; cannot activate blue RGB LED");
+                return;
+            }
+
+            var bluetoothManager = serviceContainer.getServiceManager().getBluetoothManager();
+            if (bluetoothManager == null) {
+                Log.w(TAG, "⚠️ Bluetooth manager unavailable; cannot activate blue RGB LED");
+                return;
+            }
+
+            if (!bluetoothManager.isConnected()) {
+                Log.w(TAG, "⚠️ Bluetooth not connected; cannot activate blue RGB LED");
+                return;
+            }
+
+            boolean sent = bluetoothManager.sendData(commandStr.getBytes(StandardCharsets.UTF_8));
+            if (sent) {
+                Log.i(TAG, "✅ 💙 Blue RGB LED activated successfully (forever)");
+            } else {
+                Log.e(TAG, "❌ 💙 Failed to activate blue RGB LED");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "💥 Error creating blue RGB LED command", e);
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error activating blue RGB LED", e);
+        }
     }
 
     // ---------------------------------------------
@@ -588,6 +698,10 @@ public class AsgClientService extends Service implements NetworkStateListener, B
 
             Log.d(TAG, "📋 Sending version information after Bluetooth connection");
             sendVersionInfo();
+            
+            // Claim RGB LED control authority when Bluetooth connects
+            Log.d(TAG, "🚨 Claiming RGB LED control authority on Bluetooth connection");
+            sendRgbLedControlAuthority(true);
         } else {
             Log.d(TAG, "📶 Bluetooth disconnected - no additional actions needed");
         }

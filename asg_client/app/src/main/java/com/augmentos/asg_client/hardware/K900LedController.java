@@ -10,6 +10,9 @@ import com.dev.api.DevApi;
  * Singleton controller for managing the K900 recording LED.
  * Provides thread-safe LED control with support for different patterns.
  * This class wraps the low-level DevApi to provide a more convenient interface.
+ * 
+ * NOTE: This class controls the local MTK LED. For RGB LED control on the glasses
+ * themselves (BES chipset), use the LedCommandHandler to send commands via Bluetooth.
  */
 public class K900LedController {
     private static final String TAG = "K900LedController";
@@ -18,7 +21,7 @@ public class K900LedController {
     private final Handler ledHandler;
     private final HandlerThread ledHandlerThread;
     
-    // LED states
+    // LED states (for local MTK LED)
     private boolean isLedOn = false;
     private boolean isBlinking = false;
     private boolean isInitialized = false;
