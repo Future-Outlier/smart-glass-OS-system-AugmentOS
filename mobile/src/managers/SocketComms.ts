@@ -100,7 +100,27 @@ class SocketComms {
     this.ws.sendText(JSON.stringify(msg))
   }
 
-  public sendText(text: string) {
+  sendRtmpStreamStatus(statusMessage: any) {
+    try {
+      // Forward the status message directly since it's already in the correct format
+      this.ws.sendText(JSON.stringify(statusMessage))
+      console.log("SocketCommsTS: Sent RTMP stream status:", statusMessage)
+    } catch (error) {
+      console.log(`SocketCommsTS: Failed to send RTMP stream status: ${error}`)
+    }
+  }
+
+  sendKeepAliveAck(ackMessage: any) {
+    try {
+      // Forward the ACK message directly since it's already in the correct format
+      this.ws.sendText(JSON.stringify(ackMessage))
+      console.log("SocketCommsTS: Sent keep-alive ACK:", ackMessage)
+    } catch (error) {
+      console.log(`SocketCommsTS: Failed to send keep-alive ACK: ${error}`)
+    }
+  }
+
+  sendText(text: string) {
     try {
       this.ws.sendText(text)
     } catch (error) {
