@@ -1444,7 +1444,7 @@ struct ViewState {
             updateEnforceLocalTranscription(newEnforceLocalTranscription)
         }
 
-        if let newOfflineMode = settings["offline_mode"] as? Bool,
+        if let newOfflineMode = settings["offline_captions_app_running"] as? Bool,
            newOfflineMode != offlineMode
         {
             updateOfflineMode(newOfflineMode)
