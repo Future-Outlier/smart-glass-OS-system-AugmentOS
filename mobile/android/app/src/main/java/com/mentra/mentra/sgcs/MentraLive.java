@@ -62,12 +62,12 @@ import com.mentra.mentra.utils.BitmapJavaUtils;
 import com.mentra.mentra.utils.SmartGlassesConnectionState;
 import com.mentra.mentra.utils.K900ProtocolUtils;
 import com.mentra.mentra.utils.MessageChunker;
-// import com.mentra.mentra.audio.Lc3Player;
+import com.mentra.mentra.utils.audio.Lc3Player;
 import com.mentra.mentra.utils.BlePhotoUploadService;
 
 // old augmentos imports:
-import com.augmentos.smartglassesmanager.cpp.L3cCpp;
-import com.augmentos.augmentos_core.audio.Lc3Player;
+import com.mentra.mentra.lc3.L3cCpp;
+import com.mentra.mentra.utils.audio.Lc3Player;
 
 
 
@@ -2585,7 +2585,8 @@ public class MentraLive extends SGCManager {
         // Get last known device address
         // var context = Bridge.getContext();
         // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String lastDeviceAddress = prefs.getString(PREF_DEVICE_NAME, null);
+        // String lastDeviceAddress = prefs.getString(PREF_DEVICE_NAME, null);
+        String lastDeviceAddress = null;
 
         if (lastDeviceAddress != null) {
             // Connect to last known device if available

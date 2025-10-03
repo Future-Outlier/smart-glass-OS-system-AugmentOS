@@ -297,7 +297,7 @@ public class Bridge {
         CONNECT_DEFAULT("connect_default"),
         CONNECT_BY_NAME("connect_by_name"),
         DISCONNECT_WEARABLE("disconnect_wearable"),
-        SEARCH_FOR_COMPATIBLE_DEVICE_NAMES("search_for_compatible_device_names"),
+        FIND_COMPATIBLE_DEVICES("FIND_COMPATIBLE_DEVICES"),
         ENABLE_CONTEXTUAL_DASHBOARD("enable_contextual_dashboard"),
         SET_PREFERRED_MIC("set_preferred_mic"),
         SET_BUTTON_MODE("set_button_mode"),
@@ -421,10 +421,10 @@ public class Bridge {
                     mentraManager.handle_forget_smart_glasses();
                     break;
 
-                case SEARCH_FOR_COMPATIBLE_DEVICE_NAMES:
+                case FIND_COMPATIBLE_DEVICES:
                     if (params != null) {
                         String modelName = params.getString("model_name");
-                        mentraManager.handle_search_for_compatible_device_names(modelName);
+                        mentraManager.handle_find_compatible_devices(modelName);
                     }
                     break;
 

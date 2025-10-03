@@ -69,7 +69,7 @@ import com.mentra.mentra.utils.BitmapJavaUtils;
 import static com.mentra.mentra.utils.BitmapJavaUtils.convertBitmapTo1BitBmpBytes;
 import com.mentra.mentra.utils.G1FontLoader;
 import com.mentra.mentra.utils.SmartGlassesConnectionState;
-import com.augmentos.smartglassesmanager.cpp.L3cCpp;
+import com.mentra.mentra.lc3.L3cCpp;
 
 // import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesSerialNumberEvent;
 // import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BatteryLevelEvent;
@@ -1496,7 +1496,6 @@ public class G1 extends SGCManager {
         sendDataSequentially(data, false);
     }
 
-    @Override
     public void sendJson(Map<String, Object> jsonOriginal, boolean wakeUp) {
 
     }

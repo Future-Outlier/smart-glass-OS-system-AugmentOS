@@ -503,7 +503,7 @@ class MentraManager {
         currentRequiredData.addAll(requiredData)
 
         val mutableRequiredData = requiredData.toMutableList()
-        if (offlineStt &&
+        if (offlineModeEnabled &&
                         !mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") &&
                         !mutableRequiredData.contains("TRANSCRIPTION")
         ) {
@@ -825,8 +825,8 @@ class MentraManager {
         handle_request_status()
     }
 
-    fun updateOfflineStt(enabled: Boolean) {
-        offlineStt = enabled
+    fun updateOfflineMode(enabled: Boolean) {
+        offlineModeEnabled = enabled
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
     }
 

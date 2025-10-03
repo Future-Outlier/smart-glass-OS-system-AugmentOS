@@ -11,8 +11,8 @@ import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.augmentos.smartglassesmanager.cpp.L3cCpp;
-import com.augmentos.augmentos_core.audio.ByteUtilAudioPlayer;
+import com.mentra.mentra.lc3.L3cCpp;
+import com.mentra.mentra.utils.audio.ByteUtilAudioPlayer;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
