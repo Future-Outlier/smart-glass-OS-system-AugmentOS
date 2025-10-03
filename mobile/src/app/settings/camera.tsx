@@ -96,7 +96,7 @@ export default function CameraSettingsScreen() {
 
     try {
       setPhotoSize(size) // Optimistic update
-      await bridge.sendSetButtonPhotoSize(size)
+      await bridge.updateButtonPhotoSize(size)
     } catch (error) {
       console.error("Failed to update photo size:", error)
       // Revert on error if we have the original value
@@ -120,7 +120,7 @@ export default function CameraSettingsScreen() {
       const height = resolution === "4K" ? 2160 : resolution === "1440p" ? 1920 : resolution === "1080p" ? 1080 : 720
       const fps = resolution === "4K" ? 15 : 30
 
-      await bridge.sendSetButtonVideoSettings(width, height, fps)
+      await bridge.updateButtonVideoSettings(width, height, fps)
     } catch (error) {
       console.error("Failed to update video resolution:", error)
       // Revert on error

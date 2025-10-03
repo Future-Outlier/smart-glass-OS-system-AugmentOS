@@ -161,7 +161,7 @@ class MantleManager {
 
   public async handleLocalTranscription(data: any) {
     // TODO: performance!
-    const offlineStt = await useSettingsStore.getState().loadSetting(SETTINGS_KEYS.offline_captions_app_running)
+    const offlineStt = await useSettingsStore.getState().loadSetting(SETTINGS_KEYS.offline_mode)
     if (offlineStt) {
       this.transcriptProcessor.changeLanguage(data.transcribeLanguage)
       const processedText = this.transcriptProcessor.processString(data.text, data.isFinal ?? false)

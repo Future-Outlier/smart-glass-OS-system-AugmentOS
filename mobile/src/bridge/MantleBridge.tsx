@@ -480,15 +480,6 @@ export class MantleBridge extends EventEmitter {
     return await this.sendData({command: "forget"})
   }
 
-  async sendToggleForceCoreOnboardMic(enabled: boolean) {
-    return await this.sendData({
-      command: "force_core_onboard_mic",
-      params: {
-        enabled: enabled,
-      },
-    })
-  }
-
   async restartTranscription() {
     console.log("Restarting transcription with new model...")
 
@@ -498,31 +489,22 @@ export class MantleBridge extends EventEmitter {
     })
   }
 
-  async sendSetButtonMode(mode: string) {
+  async updateButtonPhotoSize(size: string) {
     return await this.sendData({
-      command: "set_button_mode",
+      command: "update_settings",
       params: {
-        mode: mode,
+        button_photo_size: size,
       },
     })
   }
 
-  async sendSetButtonPhotoSize(size: string) {
+  async updateButtonVideoSettings(width: number, height: number, fps: number) {
     return await this.sendData({
-      command: "set_button_photo_size",
+      command: "update_settings",
       params: {
-        size: size,
-      },
-    })
-  }
-
-  async sendSetButtonVideoSettings(width: number, height: number, fps: number) {
-    return await this.sendData({
-      command: "set_button_video_settings",
-      params: {
-        width: width,
-        height: height,
-        fps: fps,
+        button_video_width: width,
+        button_video_height: height,
+        button_video_fps: fps,
       },
     })
   }

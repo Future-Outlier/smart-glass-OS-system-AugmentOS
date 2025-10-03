@@ -1241,7 +1241,7 @@ class MentraManager {
             }
         }
 
-        (settings["sensing_enabled"] as? Boolean)?.let { newSensingEnabled ->
+        (settings["sensing"] as? Boolean)?.let { newSensingEnabled ->
             if (sensingEnabled != newSensingEnabled) {
                 enableSensing(newSensingEnabled)
             }
@@ -1253,7 +1253,7 @@ class MentraManager {
             }
         }
 
-        (settings["always_on_status_bar_enabled"] as? Boolean)?.let { newAlwaysOnStatusBar ->
+        (settings["always_on_status_bar"] as? Boolean)?.let { newAlwaysOnStatusBar ->
             if (alwaysOnStatusBar != newAlwaysOnStatusBar) {
                 enableAlwaysOnStatusBar(newAlwaysOnStatusBar)
             }
@@ -1271,13 +1271,13 @@ class MentraManager {
             }
         }
 
-        (settings["metric_system_enabled"] as? Boolean)?.let { newMetricSystemEnabled ->
+        (settings["metric_system"] as? Boolean)?.let { newMetricSystemEnabled ->
             if (metricSystemEnabled != newMetricSystemEnabled) {
                 setMetricSystemEnabled(newMetricSystemEnabled)
             }
         }
 
-        (settings["contextual_dashboard_enabled"] as? Boolean)?.let { newContextualDashboard ->
+        (settings["contextual_dashboard"] as? Boolean)?.let { newContextualDashboard ->
             if (contextualDashboard != newContextualDashboard) {
                 enableContextualDashboard(newContextualDashboard)
             }

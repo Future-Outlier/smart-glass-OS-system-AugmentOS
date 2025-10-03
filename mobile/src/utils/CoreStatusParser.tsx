@@ -91,19 +91,7 @@ export interface CoreInfo {
   puck_battery_life: number | null
   puck_charging_status: boolean
   default_wearable: string | null
-  default_wearable_name: string | null
-  default_wearable_address: string | null
-  sensing_enabled: boolean
-  power_saving_mode: boolean
-  force_core_onboard_mic: boolean
-  preferred_mic: string
   is_mic_enabled_for_frontend: boolean
-  contextual_dashboard_enabled: boolean
-  bypass_vad_for_debugging: boolean
-  enforce_local_transcription: boolean
-  bypass_audio_encoding_for_debugging: boolean
-  always_on_status_bar_enabled: boolean
-  metric_system_enabled: boolean
   is_searching: boolean
   protobuf_schema_version: string
   glasses_protobuf_version: string
@@ -128,18 +116,8 @@ export class CoreStatusParser {
       puck_connected: false,
       puck_battery_life: null,
       puck_charging_status: false,
-      sensing_enabled: false,
-      power_saving_mode: false,
-      force_core_onboard_mic: false,
-      preferred_mic: "glasses",
       is_mic_enabled_for_frontend: false,
-      contextual_dashboard_enabled: false,
-      bypass_vad_for_debugging: true,
-      enforce_local_transcription: false,
-      bypass_audio_encoding_for_debugging: false,
       default_wearable: null,
-      always_on_status_bar_enabled: false,
-      metric_system_enabled: true,
       is_searching: false,
       protobuf_schema_version: "Unknown",
       glasses_protobuf_version: "Unknown",
@@ -177,18 +155,8 @@ export class CoreStatusParser {
       puck_connected: true,
       puck_battery_life: 88,
       puck_charging_status: true,
-      sensing_enabled: true,
-      power_saving_mode: false,
-      preferred_mic: "glasses",
-      force_core_onboard_mic: false,
       is_mic_enabled_for_frontend: false,
-      contextual_dashboard_enabled: true,
-      bypass_vad_for_debugging: true,
-      enforce_local_transcription: false,
-      bypass_audio_encoding_for_debugging: false,
       default_wearable: "evenrealities_g1",
-      always_on_status_bar_enabled: false,
-      metric_system_enabled: true,
       is_searching: false,
     },
     glasses_info: {
@@ -256,21 +224,11 @@ export class CoreStatusParser {
           puck_connected: true,
           puck_battery_life: status.core_info.puck_battery_life ?? null,
           puck_charging_status: status.core_info.charging_status ?? false,
-          sensing_enabled: status.core_info.sensing_enabled ?? false,
-          power_saving_mode: status.core_info.power_saving_mode ?? false,
-          force_core_onboard_mic: status.core_info.force_core_onboard_mic ?? false,
-          preferred_mic: status.core_info.preferred_mic ?? "glasses",
-          contextual_dashboard_enabled: status.core_info.contextual_dashboard_enabled ?? true,
-          bypass_vad_for_debugging: status.core_info.bypass_vad_for_debugging ?? true,
-          enforce_local_transcription: status.core_info.enforce_local_transcription ?? false,
-          bypass_audio_encoding_for_debugging: status.core_info.bypass_audio_encoding_for_debugging ?? false,
           default_wearable:
             hasConnectedGlasses && !status.core_info.default_wearable
               ? status.connected_glasses.model_name
               : (status.core_info.default_wearable ?? null),
           is_mic_enabled_for_frontend: status.core_info.is_mic_enabled_for_frontend ?? false,
-          always_on_status_bar_enabled: status.core_info.always_on_status_bar_enabled ?? false,
-          metric_system_enabled: status.core_info.metric_system_enabled ?? true,
           is_searching: status.core_info.is_searching ?? false,
           protobuf_schema_version: status.core_info.protobuf_schema_version ?? "Unknown",
           glasses_protobuf_version: status.core_info.glasses_protobuf_version ?? "Unknown",
