@@ -26,6 +26,7 @@ import com.augmentos.asg_client.service.core.handlers.WifiCommandHandler;
 import com.augmentos.asg_client.service.core.handlers.BatteryCommandHandler;
 import com.augmentos.asg_client.service.core.handlers.ImuCommandHandler;
 import com.augmentos.asg_client.service.core.handlers.GalleryCommandHandler;
+import com.augmentos.asg_client.service.core.handlers.RgbLedCommandHandler;
 
 import org.json.JSONObject;
 
@@ -133,6 +134,7 @@ public class CommandProcessor {
     private void processJsonCommand(JSONObject json) {
         // processJsonCommand() started
 
+        Log.d(TAG, "📊 processJsonCommand() started" + json.toString());
         try {
             // Check for ACK first (from phone acknowledging our sent messages)
             String type = json.optString("type", "");
@@ -150,7 +152,7 @@ public class CommandProcessor {
             // Extracting command data from JSON
             CommandData commandData = extractCommandData(json);
             if (commandData == null) {
-                Log.w(TAG, "⚠️ No command data extracted - processing complete");
+                Log.w(TAG, "⚠️ No command data extracted - processing complete" + json.toString());
                 return;
             }
 
@@ -322,6 +324,9 @@ public class CommandProcessor {
 
             commandHandlerRegistry.registerHandler(new com.augmentos.asg_client.service.core.handlers.TransferCompleteCommandHandler(serviceManager));
             Log.d(TAG, "✅ Registered TransferCompleteCommandHandler");
+
+            commandHandlerRegistry.registerHandler(new RgbLedCommandHandler(serviceManager));
+            Log.d(TAG, "✅ Registered RgbLedCommandHandler");
 
             Log.i(TAG, "✅ Successfully registered " + commandHandlerRegistry.getHandlerCount() + " command handlers");
 
