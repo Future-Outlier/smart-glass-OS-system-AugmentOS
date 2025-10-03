@@ -36,7 +36,7 @@ export const AppsOfflineList: React.FC<AppsOfflineListProps> = ({isSearchPage = 
   const [isLocalTranscriptionEnforced, setIsLocalTranscriptionEnforced] = useSetting(
     SETTINGS_KEYS.enforce_local_transcription,
   )
-  const [isOfflineCaptionsEnabled, setIsOfflineCaptionsEnabled] = useSetting(SETTINGS_KEYS.offline_mode)
+  const [isOfflineCaptionsEnabled, setIsOfflineCaptionsEnabled] = useSetting(SETTINGS_KEYS.offline_captions_app_running)
 
   // Load saved states on mount and when screen comes into focus
   const loadState = useCallback(async () => {
