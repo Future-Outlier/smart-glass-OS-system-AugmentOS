@@ -116,7 +116,7 @@ export default function SelectGlassesBluetoothScreen() {
         // Quick hack // bugfix => we get NOTREQUIREDSKIP twice in some cases, so just stop after the initial one
         GlobalEventEmitter.removeListener("COMPATIBLE_GLASSES_SEARCH_RESULT", handleSearchResult)
 
-        triggerGlassesPairingGuide(glassesModelName as string, deviceName, deviceAddress as string)
+        triggerGlassesPairingGuide(glassesModelName as string, deviceName)
         return
       }
 
