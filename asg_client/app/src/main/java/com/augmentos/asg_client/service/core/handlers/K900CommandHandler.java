@@ -1,5 +1,7 @@
 package com.augmentos.asg_client.service.core.handlers;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.augmentos.asg_client.io.bluetooth.managers.K900BluetoothManager;
@@ -24,10 +26,12 @@ public class K900CommandHandler {
     private final AsgClientServiceManager serviceManager;
     private final IStateManager stateManager;
     private final ICommunicationManager communicationManager;
+    private final Handler mainHandler;
 
     public K900CommandHandler(AsgClientServiceManager serviceManager,
                               IStateManager stateManager,
                               ICommunicationManager communicationManager) {
+        this.mainHandler = new Handler(Looper.getMainLooper());
         this.serviceManager = serviceManager;
         this.stateManager = stateManager;
         this.communicationManager = communicationManager;
@@ -78,10 +82,24 @@ public class K900CommandHandler {
 
     /**
      * Handle camera button short press
+     * 1. Immediately send RGB LED authority claim
+     * 2. After 5 seconds, activate blue LED
      */
     private void handleCameraButtonShortPress() {
         Log.d(TAG, "📸 Camera button short pressed - handling with configurable mode");
-        handleConfigurableButtonPress(false); // false = short press
+        
+        // Step 1: Immediately claim RGB LED control authority
+        Log.i(TAG, "🔘 🎖️ Camera button pressed - claiming RGB LED authority!");
+        sendRgbLedControlAuthority(true);
+        
+        // Step 2: Schedule blue LED activation for 5 seconds later
+        Log.i(TAG, "⏱️ Scheduling blue LED activation in 5 seconds...");
+        mainHandler.postDelayed(() -> {
+            Log.i(TAG, "⏱️ 5 seconds elapsed - activating blue RGB LED!");
+            activateBlueRgbLedViaService();
+        }, 5000); // 5000ms = 5 seconds
+        
+        // handleConfigurableButtonPress(false); // false = short press
     }
 
     /**
@@ -301,6 +319,97 @@ public class K900CommandHandler {
             } catch (JSONException e) {
                 Log.e(TAG, "Error creating battery status JSON", e);
             }
+        }
+    }
+
+    /**
+     * Activate blue RGB LED
+     * Uses full K900 format (C, V, B) to avoid double-wrapping by K900ProtocolUtils
+     */
+    private void activateBlueRgbLedViaService() {
+        Log.d(TAG, "🚨 💙 activateBlueRgbLedViaService() called");
+        
+        try {
+            // Build LED parameters JSON string
+            JSONObject ledParams = new JSONObject();
+            ledParams.put("led", 2);  // Blue LED
+            ledParams.put("ontime", 5000);  // 5 seconds on
+            ledParams.put("offtime", 1000);  // 1 second off
+            ledParams.put("count", 1);  // Single cycle
+            
+            // Build full K900 format: C, V, B (all three required to avoid double-wrapping!)
+            JSONObject k900Command = new JSONObject();
+            k900Command.put("C", "cs_ledon");
+            // k900Command.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
+            k900Command.put("B", ledParams);
+            
+            String commandStr = k900Command.toString();
+            Log.i(TAG, "🚨 💙 Sending blue RGB LED command: " + commandStr);
+            
+            if (serviceManager == null || serviceManager.getBluetoothManager() == null) {
+                Log.w(TAG, "⚠️ ServiceManager or Bluetooth manager unavailable");
+                return;
+            }
+
+            if (!serviceManager.getBluetoothManager().isConnected()) {
+                Log.w(TAG, "⚠️ Bluetooth not connected; cannot activate blue RGB LED");
+                return;
+            }
+
+            boolean sent = serviceManager.getBluetoothManager().sendData(
+                commandStr.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            
+            if (sent) {
+                Log.i(TAG, "✅ 💙 Blue RGB LED activated successfully via camera button");
+            } else {
+                Log.e(TAG, "❌ 💙 Failed to activate blue RGB LED");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "💥 Error creating blue RGB LED command", e);
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error activating blue RGB LED", e);
+        }
+    }
+
+    /**
+     * Send RGB LED control authority command to BES chipset.
+     * This tells BES whether MTK (our app) or BES should control the RGB LEDs.
+     * 
+     * @param claimControl true = MTK claims control, false = BES resumes control
+     */
+    private void sendRgbLedControlAuthority(boolean claimControl) {
+        Log.d(TAG, "🚨 sendRgbLedControlAuthority() called - Claim: " + claimControl);
+        
+        try {
+            // Build full K900 format (C, V, B) to avoid double-wrapping
+            JSONObject authorityCommand = new JSONObject();
+            authorityCommand.put("C", "android_control_led");
+            // authorityCommand.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
+            authorityCommand.put("B", claimControl);
+            
+            String commandStr = authorityCommand.toString();
+            Log.i(TAG, "🚨 Sending RGB LED authority command: " + commandStr);
+            
+            if (serviceManager == null || serviceManager.getBluetoothManager() == null) {
+                Log.w(TAG, "⚠️ ServiceManager or Bluetooth manager unavailable");
+                return;
+            }
+
+            if (!serviceManager.getBluetoothManager().isConnected()) {
+                Log.w(TAG, "⚠️ Bluetooth not connected; RGB LED authority will be sent when connected");
+                return;
+            }
+
+            boolean sent = serviceManager.getBluetoothManager().sendData(commandStr.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            if (sent) {
+                Log.i(TAG, "✅ RGB LED control authority " + (claimControl ? "CLAIMED" : "RELEASED") + " successfully");
+            } else {
+                Log.e(TAG, "❌ Failed to send RGB LED authority command");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "💥 Error creating RGB LED authority command", e);
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error sending RGB LED authority command", e);
         }
     }
 } 
