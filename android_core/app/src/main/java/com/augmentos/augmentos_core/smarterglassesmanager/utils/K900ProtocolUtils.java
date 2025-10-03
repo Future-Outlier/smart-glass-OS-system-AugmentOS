@@ -289,7 +289,7 @@ public class K900ProtocolUtils {
             }
             
             // Check for full K900 format {"C": "command", "V": val, "B": body}
-            if (json.has(FIELD_C) && json.has(FIELD_B)) {
+            if (json.has(FIELD_C) && json.has(FIELD_V) && json.has(FIELD_B)) {
                 return true;
             }
             
