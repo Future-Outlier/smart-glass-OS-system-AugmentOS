@@ -107,7 +107,7 @@ android {
         applicationId 'com.mentra.mentra'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 44
+        versionCode 49
         versionName "2.2.11"
 
         // Native build configuration for LC3
