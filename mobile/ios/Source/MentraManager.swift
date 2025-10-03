@@ -76,8 +76,8 @@ struct ViewState {
     private var bypassVadForPCM: Bool = false // NEW: PCM subscription bypass
     private var enforceLocalTranscription: Bool = false
     private var bypassAudioEncoding: Bool = false
-    private var offlineModeEnabled: Bool = false
-    private var metricSystemEnabled: Bool = false
+    private var offlineMode: Bool = false
+    private var metricSystem: Bool = false
 
     // mic:
     private var useOnboardMic = false
@@ -483,7 +483,7 @@ struct ViewState {
     }
 
     func updateOfflineMode(_ enabled: Bool) {
-        offlineModeEnabled = enabled
+        offlineMode = enabled
 
         var requiredData: [SpeechRequiredDataType] = []
 
@@ -499,7 +499,7 @@ struct ViewState {
     }
 
     func updateMetricSystem(_ enabled: Bool) {
-        metricSystemEnabled = enabled
+        metricSystem = enabled
         handle_request_status()
     }
 
@@ -1073,7 +1073,7 @@ struct ViewState {
         // this must be done before the requiredData is modified by offlineStt:
         currentRequiredData = requiredData
 
-        if offlineModeEnabled, !requiredData.contains(.PCM_OR_TRANSCRIPTION),
+        if offlineMode, !requiredData.contains(.PCM_OR_TRANSCRIPTION),
            !requiredData.contains(.TRANSCRIPTION)
         {
             requiredData.append(.TRANSCRIPTION)
@@ -1450,10 +1450,10 @@ struct ViewState {
             updateOfflineMode(newOfflineMode)
         }
 
-        if let newMetricSystemEnabled = settings["metric_system"] as? Bool,
-           newMetricSystemEnabled != metricSystemEnabled
+        if let newMetricSystem = settings["metric_system"] as? Bool,
+           newMetricSystem != metricSystem
         {
-            updateMetricSystem(newMetricSystemEnabled)
+            updateMetricSystem(newMetricSystem)
         }
 
         if let newContextualDashboard = settings["contextual_dashboard"] as? Bool,
