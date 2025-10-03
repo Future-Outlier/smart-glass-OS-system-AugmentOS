@@ -18,7 +18,7 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {useFocusEffect} from "@react-navigation/native"
 import {router, useLocalSearchParams} from "expo-router"
 import {useCallback, useEffect, useRef, useState} from "react"
-import {BackHandler, Platform, ScrollView, StyleSheet, TouchableOpacity, View, ViewStyle} from "react-native"
+import {BackHandler, Platform, ScrollView, TouchableOpacity, View, ViewStyle} from "react-native"
 import Animated, {useAnimatedStyle, useSharedValue, withDelay, withTiming} from "react-native-reanimated"
 import Icon from "react-native-vector-icons/FontAwesome"
 
@@ -27,7 +27,7 @@ export default function SelectGlassesBluetoothScreen() {
   const {searchResults, setSearchResults} = useSearchResults()
   const {glassesModelName}: {glassesModelName: string} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
-  const {goBack, push, clearHistory, navigate, replace} = useNavigationHistory()
+  const {goBack, push, clearHistory, replace} = useNavigationHistory()
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   // Create a ref to track the current state of searchResults
   const searchResultsRef = useRef<SearchResultDevice[]>(searchResults)
@@ -195,7 +195,7 @@ export default function SelectGlassesBluetoothScreen() {
     }
   }, [status])
 
-  const triggerGlassesPairingGuide = async (glassesModelName: string, deviceName: string, deviceAddress: string) => {
+  const triggerGlassesPairingGuide = async (glassesModelName: string, deviceName: string) => {
     // On Android, we need to check both microphone and location permissions
     if (Platform.OS === "android") {
       // First check location permission, which is required for Bluetooth scanning on Android
@@ -264,7 +264,7 @@ export default function SelectGlassesBluetoothScreen() {
                   key={index}
                   style={themed($settingItem)}
                   onPress={() => {
-                    triggerGlassesPairingGuide(device.deviceMode, device.deviceName, device.deviceAddress)
+                    triggerGlassesPairingGuide(device.deviceMode, device.deviceName)
                   }}>
                   {/* <Image source={glassesImage} style={styles.glassesImage} /> */}
                   <View style={styles.settingTextContainer}>
@@ -319,82 +319,24 @@ const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 
   // More subtle elevation for Android
   elevation: 2,
-  backgroundColor: colors.background,
+  backgroundColor: colors.backgroundAlt,
 })
 
-const styles = StyleSheet.create({
+const styles = {
   contentContainer: {
     // alignItems: "center",
     // justifyContent: "center",
     height: 320,
     // backgroundColor: "red",
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20, // Consistent spacing at the top
-    overflow: "hidden", // Prevent content from creating visual lines
-  },
-  titleContainer: {
-    marginBottom: 10,
-    marginHorizontal: -20,
-    marginTop: -20,
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-  // Removed hardcoded theme colors - using dynamic styling
-  // titleContainerDark and titleContainerLight removed
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 5,
-    textAlign: "left",
-    // color moved to dynamic styling
-  },
-  // Removed hardcoded theme colors - using dynamic styling
-  // darkBackground, lightBackground, darkText, lightText, darkSubtext, lightSubtext, darkIcon, lightIcon removed
-  backButton: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 20,
-  },
-  backButtonText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginLeft: 10,
-  },
   settingTextContainer: {
     flex: 1,
     paddingHorizontal: 10,
   },
   label: {
-    fontSize: 16, // bigger text size
+    fontSize: 16,
     fontWeight: "600",
     flexWrap: "wrap",
-  },
-  value: {
-    flexWrap: "wrap",
-    fontSize: 12,
     marginTop: 5,
   },
-  headerContainer: {
-    borderBottomWidth: 1,
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    // backgroundColor and borderBottomColor moved to dynamic styling
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: "600",
-    // color moved to dynamic styling
-  },
-  /**
-   * BIGGER, SEXIER IMAGES
-   */
-  glassesImage: {
-    width: 80, // bigger width
-    height: 50, // bigger height
-    resizeMode: "contain",
-    marginRight: 10,
-  },
-})
+} as const
