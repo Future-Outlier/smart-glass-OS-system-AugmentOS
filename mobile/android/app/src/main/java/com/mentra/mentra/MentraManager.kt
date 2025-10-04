@@ -1054,7 +1054,7 @@ class MentraManager {
             pendingWearable = defaultWearable
         }
 
-        handle_disconnect_wearable()
+        handle_disconnect()
         Thread.sleep(100)
         isSearching = true
         handle_request_status() // update the ui
@@ -1064,16 +1064,16 @@ class MentraManager {
         sgc?.connectById(deviceName)
     }
 
-    fun handle_disconnect_wearable() {
+    fun handle_disconnect() {
         sendText(" ")
         sgc?.disconnect()
         isSearching = false
         handle_request_status()
     }
 
-    fun handle_forget_smart_glasses() {
+    fun handle_forget() {
         Bridge.log("Mentra: Forgetting smart glasses")
-        handle_disconnect_wearable()
+        handle_disconnect()
         defaultWearable = ""
         deviceName = ""
         sgc?.forget()

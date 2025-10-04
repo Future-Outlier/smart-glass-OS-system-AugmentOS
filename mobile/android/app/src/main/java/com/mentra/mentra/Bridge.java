@@ -290,81 +290,6 @@ public class Bridge {
         return new String[] {"CoreMessageEvent", "WIFI_SCAN_RESULTS"};
     }
 
-    // Command types enum
-    public enum CommandType {
-        SET_AUTH_SECRET_KEY("set_auth_secret_key"),
-        REQUEST_STATUS("request_status"),
-        CONNECT_DEFAULT("connect_default"),
-        CONNECT_BY_NAME("connect_by_name"),
-        DISCONNECT_WEARABLE("disconnect_wearable"),
-        FIND_COMPATIBLE_DEVICES("FIND_COMPATIBLE_DEVICES"),
-        ENABLE_CONTEXTUAL_DASHBOARD("enable_contextual_dashboard"),
-        SET_PREFERRED_MIC("set_preferred_mic"),
-        SET_BUTTON_MODE("set_button_mode"),
-        SET_BUTTON_PHOTO_SIZE("set_button_photo_size"),
-        SET_BUTTON_VIDEO_SETTINGS("set_button_video_settings"),
-        SET_BUTTON_CAMERA_LED("set_button_camera_led"),
-        PING("ping"),
-        FORGET_SMART_GLASSES("forget_smart_glasses"),
-        START_APP("start_app"),
-        STOP_APP("stop_app"),
-        UPDATE_GLASSES_HEAD_UP_ANGLE("update_glasses_head_up_angle"),
-        UPDATE_GLASSES_BRIGHTNESS("update_glasses_brightness"),
-        UPDATE_GLASSES_DEPTH("update_glasses_depth"),
-        UPDATE_GLASSES_HEIGHT("update_glasses_height"),
-        ENABLE_SENSING("enable_sensing"),
-        ENABLE_POWER_SAVING_MODE("enable_power_saving_mode"),
-        ENABLE_ALWAYS_ON_STATUS_BAR("enable_always_on_status_bar"),
-        BYPASS_VAD_FOR_DEBUGGING("bypass_vad_for_debugging"),
-        BYPASS_AUDIO_ENCODING_FOR_DEBUGGING("bypass_audio_encoding_for_debugging"),
-        ENFORCE_LOCAL_TRANSCRIPTION("enforce_local_transcription"),
-        SET_SERVER_URL("set_server_url"),
-        SET_METRIC_SYSTEM_ENABLED("set_metric_system_enabled"),
-        TOGGLE_UPDATING_SCREEN("toggle_updating_screen"),
-        SHOW_DASHBOARD("show_dashboard"),
-        REQUEST_WIFI_SCAN("request_wifi_scan"),
-        SEND_WIFI_CREDENTIALS("send_wifi_credentials"),
-        SET_HOTSPOT_STATE("set_hotspot_state"),
-        QUERY_GALLERY_STATUS("query_gallery_status"),
-        SIMULATE_HEAD_POSITION("simulate_head_position"),
-        SIMULATE_BUTTON_PRESS("simulate_button_press"),
-        START_BUFFER_RECORDING("start_buffer_recording"),
-        STOP_BUFFER_RECORDING("stop_buffer_recording"),
-        SAVE_BUFFER_VIDEO("save_buffer_video"),
-        START_VIDEO_RECORDING("start_video_recording"),
-        STOP_VIDEO_RECORDING("stop_video_recording"),
-        SET_STT_MODEL_DETAILS("set_stt_model_details"),
-        GET_STT_MODEL_PATH("get_stt_model_path"),
-        CHECK_STT_MODEL_AVAILABLE("check_stt_model_available"),
-        VALIDATE_STT_MODEL("validate_stt_model"),
-        EXTRACT_TAR_BZ2("extract_tar_bz2"),
-        DISPLAY_EVENT("display_event"),
-        UPDATE_SETTINGS("update_settings"),
-        MICROPHONE_STATE_CHANGE("microphone_state_change"),
-        RESTART_TRANSCRIBER("restart_transcriber"),
-        CONNECT_LIVEKIT("connect_livekit"),
-        UNKNOWN("unknown");
-
-        private final String value;
-
-        CommandType(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        public static CommandType fromString(String text) {
-            for (CommandType type : CommandType.values()) {
-                if (type.value.equalsIgnoreCase(text)) {
-                    return type;
-                }
-            }
-            return UNKNOWN;
-        }
-    }
-
     /**
      * Handle command from React Native
      * @param command JSON string containing the command and parameters
@@ -388,76 +313,71 @@ public class Bridge {
             String commandString = jsonCommand.getString("command");
             JSONObject params = jsonCommand.optJSONObject("params");
 
-            CommandType commandType = CommandType.fromString(commandString);
+            // CommandType commandType = CommandType.fromString(commandString);
 
-            switch (commandType) {
-                case DISPLAY_EVENT:
-                    if (params != null) {
-                        Map<String, Object> displayEvent = jsonObjectToMap(params);
-                        mentraManager.handle_display_event(displayEvent);
+            switch (commandString) {
+                case "display_event":
+                    if (params == null) {
+                        Bridge.log("CommandBridge: display_event invalid params");
+                        break;
                     }
+                    Map<String, Object> displayEvent = jsonObjectToMap(params);
+                    mentraManager.handle_display_event(displayEvent);
                     break;
 
-                case REQUEST_STATUS:
+                case "request_status":
                     mentraManager.handle_request_status();
                     break;
 
-                case CONNECT_DEFAULT:
+                case "connect_default":
                     mentraManager.handle_connect_default();
                     break;
 
-                case CONNECT_BY_NAME:
+                case "connect_by_name":
                     if (params != null) {
                         String deviceName = params.optString("device_name", "");
                         mentraManager.handle_connect_by_name(deviceName);
                     }
                     break;
 
-                case DISCONNECT_WEARABLE:
-                    mentraManager.handle_disconnect_wearable();
+                case "disconnect":
+                    mentraManager.handle_disconnect();
                     break;
 
-                case FORGET_SMART_GLASSES:
-                    mentraManager.handle_forget_smart_glasses();
+                case "forget":
+                    mentraManager.handle_forget();
                     break;
 
-                case FIND_COMPATIBLE_DEVICES:
+                case "find_compatible_devices":
                     if (params != null) {
                         String modelName = params.getString("model_name");
                         mentraManager.handle_find_compatible_devices(modelName);
                     }
                     break;
 
-                case ENABLE_CONTEXTUAL_DASHBOARD:
-                    if (params != null) {
-                        boolean enabled = params.getBoolean("enabled");
-                        mentraManager.enableContextualDashboard(enabled);
-                    }
-                    break;
-
-                case START_APP:
+                case "start_app":
                     if (params != null) {
                         String target = params.getString("target");
                         // mentraManager.startApp(target);
                     }
                     break;
 
-                case STOP_APP:
+                case "stop_app":
                     if (params != null) {
                         String target = params.getString("target");
                         // mentraManager.stopApp(target);
                     }
                     break;
 
-                case SHOW_DASHBOARD:
+                case "show_dashboard":
                     // mentraManager.sendCurrentState(true);
                     break;
 
-                case REQUEST_WIFI_SCAN:
+                case "request_wifi_scan":
                     // mentraManager.requestWifiScan();
                     break;
 
-                case SEND_WIFI_CREDENTIALS:
+                case "send_wifi_credentials":
                     if (params != null) {
                         String ssid = params.getString("ssid");
                         String password = params.getString("password");
@@ -465,14 +385,14 @@ public class Bridge {
                     }
                     break;
 
-                case SET_HOTSPOT_STATE:
+                case "set_hotspot_state":
                     if (params != null) {
                         boolean enabled = params.getBoolean("enabled");
                         // mentraManager.setGlassesHotspotState(enabled);
                     }
                     break;
 
-                case QUERY_GALLERY_STATUS:
+                case "query_gallery_status":
                     Log.d(TAG, "Querying gallery status");
                     // mentraManager.queryGalleryStatus();
                     break;
@@ -493,17 +413,17 @@ public class Bridge {
                 //     }
                 //     break;
 
-                case START_BUFFER_RECORDING:
+                case "start_buffer_recording":
                     Log.d(TAG, "Starting buffer recording");
                     // mentraManager.startBufferRecording();
                     break;
 
-                case STOP_BUFFER_RECORDING:
+                case "stop_buffer_recording":
                     Log.d(TAG, "Stopping buffer recording");
                     // mentraManager.stopBufferRecording();
                     break;
 
-                case SAVE_BUFFER_VIDEO:
+                case "save_buffer_video":
                     if (params != null) {
                         String requestId = params.getString("request_id");
                         int durationSeconds = params.getInt("duration_seconds");
@@ -512,7 +432,7 @@ public class Bridge {
                     }
                     break;
 
-                case START_VIDEO_RECORDING:
+                case "start_video_recording":
                     if (params != null) {
                         String requestId = params.getString("request_id");
                         boolean save = params.getBoolean("save");
@@ -521,7 +441,7 @@ public class Bridge {
                     }
                     break;
 
-                case STOP_VIDEO_RECORDING:
+                case "stop_video_recording":
                     if (params != null) {
                         String requestId = params.getString("request_id");
                         Log.d(TAG, "Stopping video recording: requestId=" + requestId);
@@ -529,7 +449,7 @@ public class Bridge {
                     }
                     break;
 
-                case SET_STT_MODEL_DETAILS:
+                case "set_stt_model_details":
                     if (params != null) {
                         String path = params.getString("path");
                         String languageCode = params.getString("languageCode");
@@ -537,22 +457,22 @@ public class Bridge {
                     }
                     break;
 
-                case GET_STT_MODEL_PATH:
+                case "get_stt_model_path":
                     // return mentraManager.handle_get_stt_model_path();
                     return "";
 
-                case CHECK_STT_MODEL_AVAILABLE:
+                case "check_stt_model_available":
                     // return mentraManager.handle_check_stt_model_available();
                     return false;
 
-                case VALIDATE_STT_MODEL:
+                case "validate_stt_model":
                     if (params != null) {
                         String path = params.getString("path");
                         // return mentraManager.handle_validate_stt_model(path);
                     }
                     return false;
 
-                case EXTRACT_TAR_BZ2:
+                case "extract_tar_bz2":
                     if (params != null) {
                         String sourcePath = params.getString("source_path");
                         String destinationPath = params.getString("destination_path");
@@ -560,7 +480,7 @@ public class Bridge {
                     }
                     return false;
 
-                case MICROPHONE_STATE_CHANGE:
+                case "microphone_state_change":
                     if (params != null) {
                         boolean bypassVad = params.optBoolean("bypassVad", false);
                         JSONArray requiredDataArray = params.optJSONArray("requiredData");
@@ -582,22 +502,22 @@ public class Bridge {
                     }
                     break;
 
-                case UPDATE_SETTINGS:
+                case "update_settings":
                     if (params != null) {
                         Map<String, Object> settings = jsonObjectToMap(params);
                         mentraManager.handle_update_settings(settings);
                     }
                     break;
 
-                case RESTART_TRANSCRIBER:
+                case "restart_transcriber":
                     // mentraManager.restartTranscriber();
                     break;
 
-                case PING:
+                case "ping":
                     // Do nothing for ping
                     break;
 
-                case UNKNOWN:
+                case "unknown":
                 default:
                     Log.d(TAG, "Unknown command type: " + commandString);
                     mentraManager.handle_request_status();
