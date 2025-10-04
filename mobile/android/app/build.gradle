@@ -111,20 +111,20 @@ android {
         versionName "2.2.11"
 
         // Native build configuration for LC3
-        externalNativeBuild {
-            cmake {
-                cppFlags ""
-            }
-        }
+        // externalNativeBuild {
+        //     cmake {
+        //         cppFlags ""
+        //     }
+        // }
     }
 
     // External native build configuration
-    externalNativeBuild {
-        cmake {
-            path "src/main/cpp/CMakeLists.txt"
-            version "3.22.1"
-        }
-    }
+    // externalNativeBuild {
+    //     cmake {
+    //         path "src/main/cpp/CMakeLists.txt"
+    //         version "3.22.1"
+    //     }
+    // }
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
