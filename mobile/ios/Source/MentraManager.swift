@@ -347,7 +347,7 @@ struct ViewState {
                 let success = PhoneMic.shared.startRecording()
                 if !success {
                     // fallback to glasses mic if possible:
-                    if getGlassesHasMic() {
+                    if sgc?.hasMic ?? false {
                         await enableGlassesMic(true)
                     }
                 }
@@ -396,9 +396,9 @@ struct ViewState {
         handle_request_status() // to update the UI
     }
 
-    func updateButtonCameraLed(_: Bool) {
+    func updateButtonCameraLed(_ enabled: Bool) {
+        buttonCameraLed = enabled
         sgc?.sendButtonCameraLedSetting()
-
         handle_request_status() // to update the UI
     }
 

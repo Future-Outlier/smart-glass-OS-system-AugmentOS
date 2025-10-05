@@ -71,9 +71,9 @@ class MentraManager {
     public var dashboardDepth = 5
 
     // glasses state
-    private var isHeadUp = false
     public var glassesWifiConnected = false
     public var glassesWifiSsid = ""
+    private var isHeadUp = false
 
     // settings
     public var sensingEnabled = true
@@ -83,8 +83,8 @@ class MentraManager {
     private var bypassVadForPCM = false
     private var enforceLocalTranscription = false
     private var bypassAudioEncoding = false
-    private var offlineModeEnabled = false
-    private var metricSystemEnabled = false
+    private var offlineMode = false
+    private var metricSystem = false
 
     // mic
     public var useOnboardMic = false
@@ -294,8 +294,6 @@ class MentraManager {
                 )
         )
     }
-
-    // Utility methods
 
     private fun isSomethingConnected(): Boolean = sgc?.ready ?: false
 
@@ -756,39 +754,15 @@ class MentraManager {
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
     }
 
-    private fun clearDisplay() {
-        sgc?.let { sgc ->
-            sgc.sendTextWall(" ")
+    // MARK: - State Management
 
-            if (powerSavingMode) {
-                sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
-
-                Bridge.log("Mentra: Clearing display after 3 seconds")
-                sendStateWorkItem = Runnable {
-                    if (isHeadUp) {
-                        return@Runnable
-                    }
-                    sgc.clearDisplay()
-                }
-                mainHandler.postDelayed(sendStateWorkItem!!, 3000)
-            }
-        }
+    fun updateHeadUp(isHeadUp: Boolean) {
+        isHeadUp = isHeadUp
+        sendCurrentState(isHeadUp)
+        Bridge.sendHeadUp(isHeadUp)
     }
 
-    private fun sendText(text: String) {
-        Bridge.log("Mentra: sendText: $text")
-        val currentSgc = sgc ?: return
-
-        if (text == " " || text.isEmpty()) {
-            clearDisplay()
-            return
-        }
-
-        val parsed = parsePlaceholders(text)
-        currentSgc.sendTextWall(parsed)
-    }
-
-    fun enableContextualDashboard(enabled: Boolean) {
+    fun updateContextualDashboard(enabled: Boolean) {
         contextualDashboard = enabled
         handle_request_status()
     }
@@ -823,11 +797,6 @@ class MentraManager {
         buttonCameraLed = enabled
         sgc?.sendButtonCameraLedSetting()
         handle_request_status()
-    }
-
-    fun updateOfflineMode(enabled: Boolean) {
-        offlineModeEnabled = enabled
-        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
     }
 
     fun updateGlassesHeadUpAngle(value: Int) {
@@ -877,28 +846,28 @@ class MentraManager {
         handle_request_status()
     }
 
-    fun enableSensing(enabled: Boolean) {
+    fun updateSensing(enabled: Boolean) {
         sensingEnabled = enabled
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
         handle_request_status()
     }
 
-    fun enablePowerSavingMode(enabled: Boolean) {
+    fun updatePowerSavingMode(enabled: Boolean) {
         powerSavingMode = enabled
         handle_request_status()
     }
 
-    fun enableAlwaysOnStatusBar(enabled: Boolean) {
+    fun updateAlwaysOnStatusBar(enabled: Boolean) {
         alwaysOnStatusBar = enabled
         handle_request_status()
     }
 
-    fun bypassVad(enabled: Boolean) {
+    fun updateBypassVad(enabled: Boolean) {
         bypassVad = enabled
         handle_request_status()
     }
 
-    fun enforceLocalTranscription(enabled: Boolean) {
+    fun updateEnforceLocalTranscription(enabled: Boolean) {
         enforceLocalTranscription = enabled
 
         if (currentRequiredData.contains("PCM_OR_TRANSCRIPTION")) {
@@ -914,24 +883,21 @@ class MentraManager {
         handle_request_status()
     }
 
-    fun startBufferRecording() {
-        sgc?.startBufferRecording()
+    fun updateOfflineMode(enabled: Boolean) {
+        offlineMode = enabled
+        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
     }
 
-    fun stopBufferRecording() {
-        sgc?.stopBufferRecording()
-    }
-
-    fun setBypassAudioEncoding(enabled: Boolean) {
+    fun updateBypassAudioEncoding(enabled: Boolean) {
         bypassAudioEncoding = enabled
     }
 
-    fun setMetricSystemEnabled(enabled: Boolean) {
-        metricSystemEnabled = enabled
+    fun updateMetricSystem(enabled: Boolean) {
+        metricSystem = enabled
         handle_request_status()
     }
 
-    fun toggleUpdatingScreen(enabled: Boolean) {
+    fun updateUpdatingScreen(enabled: Boolean) {
         Bridge.log("Mentra: Toggling updating screen: $enabled")
         if (enabled) {
             sgc?.exit()
@@ -941,10 +907,72 @@ class MentraManager {
         }
     }
 
+    // MARK: - Glasses Commands
+
+    // send whatever was there before sending something else:
+    fun clearState() {
+        sendCurrentState(isHeadUp)
+    }
+
+    private fun clearDisplay() {
+        sgc?.let { sgc ->
+            sgc.sendTextWall(" ")
+
+            if (powerSavingMode) {
+                sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
+
+                Bridge.log("Mentra: Clearing display after 3 seconds")
+                sendStateWorkItem = Runnable {
+                    if (isHeadUp) {
+                        return@Runnable
+                    }
+                    sgc.clearDisplay()
+                }
+                mainHandler.postDelayed(sendStateWorkItem!!, 3000)
+            }
+        }
+    }
+
+    private fun sendText(text: String) {
+        Bridge.log("Mentra: sendText: $text")
+        val currentSgc = sgc ?: return
+
+        if (text == " " || text.isEmpty()) {
+            clearDisplay()
+            return
+        }
+
+        val parsed = parsePlaceholders(text)
+        currentSgc.sendTextWall(parsed)
+    }
+
     fun showDashboard() {
         sgc?.showDashboard()
     }
 
+    fun sendStartRtmpStream(message: Map<String, Any>) {
+        Bridge.log("Mentra: sendStartRtmpStream: \(message)")
+        sgc?.startRtmpStream(message)
+    }
+
+    fun sendRtmpStreamStop() {
+        Bridge.log("Mentra: onRtmpStreamStop")
+        sgc?.stopRtmpStream()
+    }
+
+    fun sendRtmpStreamKeepAlive(message: Map<String, Any>) {
+        Bridge.log("Mentra: onRtmpStreamKeepAlive: \(message)")
+        sgc?.sendRtmpKeepAlive(message)
+    }
+
+    fun startBufferRecording() {
+        sgc?.startBufferRecording()
+    }
+
+    fun stopBufferRecording() {
+        sgc?.stopBufferRecording()
+    }
+    
     fun saveBufferVideo(requestId: String, durationSeconds: Int) {
         sgc?.saveBufferVideo(requestId, durationSeconds)
     }
