@@ -348,7 +348,7 @@ struct ViewState {
                 if !success {
                     // fallback to glasses mic if possible:
                     if sgc?.hasMic ?? false {
-                        await enableGlassesMic(true)
+                        await sgc?.setMicEnabled(true)
                     }
                 }
             } else {
@@ -578,26 +578,6 @@ struct ViewState {
         sgc?.sendRtmpKeepAlive(message)
     }
 
-    func startBufferRecording() {
-        sgc?.startBufferRecording()
-    }
-
-    func stopBufferRecording() {
-        sgc?.stopBufferRecording()
-    }
-
-    func saveBufferVideo(requestId: String, durationSeconds: Int) {
-        sgc?.saveBufferVideo(requestId: requestId, durationSeconds: durationSeconds)
-    }
-
-    func startVideoRecording(requestId: String, save: Bool) {
-        sgc?.startVideoRecording(requestId: requestId, save: save)
-    }
-
-    func stopVideoRecording(requestId: String) {
-        sgc?.stopVideoRecording(requestId: requestId)
-    }
-
     func requestWifiScan() {
         Bridge.log("Mentra: Requesting wifi scan")
         sgc?.requestWifiScan()
@@ -616,23 +596,6 @@ struct ViewState {
     func queryGalleryStatus() {
         Bridge.log("Mentra: 📸 Querying gallery status from glasses")
         sgc?.queryGalleryStatus()
-    }
-
-    private func getGlassesHasMic() -> Bool {
-        if defaultWearable.contains(DeviceTypes.G1) {
-            return true
-        }
-        if defaultWearable.contains(DeviceTypes.LIVE) {
-            return false
-        }
-        if defaultWearable.contains(DeviceTypes.MACH1) {
-            return false
-        }
-        return false
-    }
-
-    func enableGlassesMic(_: Bool) async {
-        await sgc?.setMicEnabled(true)
     }
 
     private func playStartupSequence() {
@@ -856,6 +819,8 @@ struct ViewState {
         Bridge.log("Mentra: Restarting SherpaOnnxTranscriber via command")
         transcriber?.restart()
     }
+
+    // MARK: - connection state management
 
     private func isSomethingConnected() -> Bool {
         if sgc?.ready == true {

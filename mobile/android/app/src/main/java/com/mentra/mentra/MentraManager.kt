@@ -295,8 +295,6 @@ class MentraManager {
         )
     }
 
-    private fun isSomethingConnected(): Boolean = sgc?.ready ?: false
-
     private fun statesEqual(s1: ViewState, s2: ViewState): Boolean {
         val state1 =
                 "${s1.layoutType}${s1.text}${s1.topText}${s1.bottomText}${s1.title}${s1.data ?: ""}"
@@ -337,32 +335,6 @@ class MentraManager {
     }
     // MARK: - End Unique
 
-    // MARK: - Public Methods (for React Native)
-
-    fun initSGC(wearable: String) {
-        Bridge.log("Initializing manager for wearable: $wearable")
-        if (sgc != null) {
-            Bridge.log("Mentra: Manager already initialized")
-            return
-        }
-
-        if (wearable.contains(DeviceTypes.G1)) {
-            sgc = G1()
-        } else if (wearable.contains(DeviceTypes.LIVE)) {
-            sgc = MentraLive()
-        } else if (wearable.contains(DeviceTypes.MACH1)) {
-            // sgc = Mach1()
-        } else if (wearable.contains(DeviceTypes.FRAME)) {
-            // sgc = FrameManager()
-        }
-    }
-
-    fun updateHeadUp(isHeadUp: Boolean) {
-        this.isHeadUp = isHeadUp
-        sendCurrentState(isHeadUp)
-        Bridge.sendHeadPosition(isHeadUp)
-    }
-
     // MARK: - Voice Data Handling
 
     private fun checkSetVadStatus(speaking: Boolean) {
@@ -395,151 +367,6 @@ class MentraManager {
     fun handlePcm(pcmData: ByteArray) {
         Bridge.log("Mentra: handlePcm()")
         Bridge.sendMicData(pcmData)
-    }
-
-    fun handleConnectionStateChanged() {
-        Bridge.log("Mentra: Glasses connection state changed!")
-
-        val currentSgc = sgc ?: return
-
-        if (currentSgc.ready) {
-            handleDeviceReady()
-        } else {
-            handleDeviceDisconnected()
-            handle_request_status()
-        }
-    }
-
-    private fun handleDeviceReady() {
-        if (sgc == null) {
-            Bridge.log("Mentra: SGC is null, returning")
-            return
-        }
-
-        Bridge.log("Mentra: handleDeviceReady() ${sgc?.type}")
-        pendingWearable = ""
-        defaultWearable = sgc?.type ?: ""
-
-        // TODO: fix this hack!
-        if (sgc is G1) {
-            defaultWearable = DeviceTypes.G1
-            handle_request_status()
-            handleG1Ready()
-        }
-
-        isSearching = false
-        handle_request_status()
-
-        if (defaultWearable.contains(DeviceTypes.G1)) {
-            handleG1Ready()
-        } else if (defaultWearable.contains(DeviceTypes.MACH1)) {
-            handleMach1Ready()
-        }
-
-        // save the default_wearable now that we're connected:
-        Bridge.saveSetting("default_wearable", defaultWearable)
-        Bridge.saveSetting("device_name", deviceName)
-        //        Bridge.saveSetting("device_address", deviceAddress)
-    }
-
-    private fun handleG1Ready() {
-        // load settings and send the animation:
-        // give the glasses some extra time to finish booting:
-        // Thread.sleep(1000)
-        // await sgc?.setSilentMode(false) // turn off silent mode
-        // await sgc?.getBatteryStatus()
-
-        // if shouldSendBootingMessage {
-        //     sendText("// BOOTING MENTRAOS")
-        // }
-
-        // // send loaded settings to glasses:
-        // try? await Task.sleep(nanoseconds: 400_000_000)
-        // sgc?.setHeadUpAngle(headUpAngle)
-        // try? await Task.sleep(nanoseconds: 400_000_000)
-        // sgc?.setBrightness(brightness, autoMode: autoBrightness)
-        // try? await Task.sleep(nanoseconds: 400_000_000)
-        // // self.g1Manager?.RN_setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
-        // // try? await Task.sleep(nanoseconds: 400_000_000)
-        // //      playStartupSequence()
-        // if shouldSendBootingMessage {
-        //     sendText("// MENTRAOS CONNECTED")
-        //     try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-        //     sendText(" ") // clear screen
-        // }
-
-        // shouldSendBootingMessage = false
-
-        // handle_request_status()
-    }
-
-    private fun handleMach1Ready() {
-        // Send startup message
-        sendText("MENTRAOS CONNECTED")
-        Thread.sleep(1000)
-        clearDisplay()
-
-        handle_request_status()
-    }
-
-    private fun handleDeviceDisconnected() {
-        Bridge.log("Mentra: Device disconnected")
-        isHeadUp = false
-        handle_request_status()
-    }
-
-    // MARK: - Handle methods (matching Swift)
-
-    fun handle_microphone_state_change(requiredData: List<String>, bypassVad: Boolean) {
-        Bridge.log(
-                "Mentra: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad"
-        )
-
-        bypassVadForPCM = bypassVad
-
-        currentRequiredData.clear()
-        currentRequiredData.addAll(requiredData)
-
-        val mutableRequiredData = requiredData.toMutableList()
-        if (offlineModeEnabled &&
-                        !mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") &&
-                        !mutableRequiredData.contains("TRANSCRIPTION")
-        ) {
-            mutableRequiredData.add("TRANSCRIPTION")
-        }
-
-        shouldSendPcmData = false
-        shouldSendTranscript = false
-
-        when {
-            mutableRequiredData.contains("PCM") &&
-                    mutableRequiredData.contains("TRANSCRIPTION") -> {
-                shouldSendPcmData = true
-                shouldSendTranscript = true
-            }
-            mutableRequiredData.contains("PCM") -> {
-                shouldSendPcmData = true
-                shouldSendTranscript = false
-            }
-            mutableRequiredData.contains("TRANSCRIPTION") -> {
-                shouldSendTranscript = true
-                shouldSendPcmData = false
-            }
-            mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") -> {
-                if (enforceLocalTranscription) {
-                    shouldSendTranscript = true
-                    shouldSendPcmData = false
-                } else {
-                    shouldSendPcmData = true
-                    shouldSendTranscript = false
-                }
-            }
-        }
-
-        vadBuffer.clear()
-        micEnabled = requiredData.isNotEmpty()
-
-        updateMicrophoneState()
     }
 
     private fun updateMicrophoneState() {
@@ -580,17 +407,6 @@ class MentraManager {
         }
 
         setOnboardMicEnabled(useOnboardMic)
-    }
-
-    fun handle_photo_request(
-            requestId: String,
-            appId: String,
-            size: String,
-            webhookUrl: String,
-            authToken: String
-    ) {
-        Bridge.log("Mentra: onPhotoRequest: $requestId, $appId, $size")
-        sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken)
     }
 
     fun onRtmpStreamStartRequest(message: Map<String, Any>) {
@@ -697,49 +513,6 @@ class MentraManager {
 
         return placeholders.entries.fold(text) { result, (key, value) ->
             result.replace(key, value)
-        }
-    }
-
-    fun handle_display_text(params: Map<String, Any>) {
-        (params["text"] as? String)?.let { text ->
-            Bridge.log("Mentra: Displaying text: $text")
-            sendText(text)
-        }
-    }
-
-    fun handle_display_event(event: Map<String, Any>) {
-        val view = event["view"] as? String
-        if (view == null) {
-            Bridge.log("Mentra: Invalid view")
-            return
-        }
-
-        val isDashboard = view == "dashboard"
-        val stateIndex = if (isDashboard) 1 else 0
-
-        @Suppress("UNCHECKED_CAST") val layout = event["layout"] as? Map<String, Any> ?: return
-
-        val layoutType = layout["layoutType"] as? String
-        val text = parsePlaceholders(layout.getString("text", " "))
-        val topText = parsePlaceholders(layout.getString("topText", " "))
-        val bottomText = parsePlaceholders(layout.getString("bottomText", " "))
-        val title = parsePlaceholders(layout.getString("title", " "))
-        val data = layout["data"] as? String
-
-        var newViewState = ViewState(topText, bottomText, title, layoutType ?: "", text, data, null)
-
-        val currentState = viewStates[stateIndex]
-
-        if (!statesEqual(currentState, newViewState)) {
-            Bridge.log("Mentra: Updating view state $stateIndex with $layoutType")
-            viewStates[stateIndex] = newViewState
-
-            val headUp = isHeadUp
-            if (stateIndex == 0 && !headUp) {
-                sendCurrentState(false)
-            } else if (stateIndex == 1 && headUp) {
-                sendCurrentState(true)
-            }
         }
     }
 
@@ -965,26 +738,6 @@ class MentraManager {
         sgc?.sendRtmpKeepAlive(message)
     }
 
-    fun startBufferRecording() {
-        sgc?.startBufferRecording()
-    }
-
-    fun stopBufferRecording() {
-        sgc?.stopBufferRecording()
-    }
-    
-    fun saveBufferVideo(requestId: String, durationSeconds: Int) {
-        sgc?.saveBufferVideo(requestId, durationSeconds)
-    }
-
-    fun startVideoRecording(requestId: String, save: Boolean) {
-        sgc?.startVideoRecording(requestId, save)
-    }
-
-    fun stopVideoRecording(requestId: String) {
-        sgc?.stopVideoRecording(requestId)
-    }
-
     fun requestWifiScan() {
         Bridge.log("Mentra: Requesting wifi scan")
         sgc?.requestWifiScan()
@@ -1005,21 +758,171 @@ class MentraManager {
         sgc?.queryGalleryStatus()
     }
 
+
+
+    // MARK: - Auxiliary Commands
+
+    fun initSGC(wearable: String) {
+        Bridge.log("Initializing manager for wearable: $wearable")
+        if (sgc != null) {
+            Bridge.log("Mentra: Manager already initialized")
+            return
+        }
+
+        if (wearable.contains(DeviceTypes.G1)) {
+            sgc = G1()
+        } else if (wearable.contains(DeviceTypes.LIVE)) {
+            sgc = MentraLive()
+        } else if (wearable.contains(DeviceTypes.MACH1)) {
+            // sgc = Mach1()
+        } else if (wearable.contains(DeviceTypes.FRAME)) {
+            // sgc = FrameManager()
+        }
+    }
+
     fun restartTranscriber() {
         Bridge.log("Mentra: Restarting transcriber via command")
         // TODO: Implement transcriber restart
     }
 
-    private fun getGlassesHasMic(): Boolean =
-            when {
-                defaultWearable.contains(DeviceTypes.G1) -> true
-                defaultWearable.contains(DeviceTypes.LIVE) -> false
-                defaultWearable.contains(DeviceTypes.MACH1) -> false
-                else -> false
-            }
+    // MARK: - connection state management
 
-    fun enableGlassesMic(enabled: Boolean) {
-        sgc?.setMicEnabled(enabled)
+    private fun isSomethingConnected(): Boolean = sgc?.ready ?: false
+
+    fun handleConnectionStateChanged() {
+        Bridge.log("Mentra: Glasses connection state changed!")
+
+        val currentSgc = sgc ?: return
+
+        if (currentSgc.ready) {
+            handleDeviceReady()
+        } else {
+            handleDeviceDisconnected()
+            handle_request_status()
+        }
+    }
+
+    private fun handleDeviceReady() {
+        if (sgc == null) {
+            Bridge.log("Mentra: SGC is null, returning")
+            return
+        }
+
+        Bridge.log("Mentra: handleDeviceReady() ${sgc?.type}")
+        pendingWearable = ""
+        defaultWearable = sgc?.type ?: ""
+
+        // TODO: fix this hack!
+        if (sgc is G1) {
+            defaultWearable = DeviceTypes.G1
+            handle_request_status()
+            handleG1Ready()
+        }
+
+        isSearching = false
+        handle_request_status()
+
+        if (defaultWearable.contains(DeviceTypes.G1)) {
+            handleG1Ready()
+        } else if (defaultWearable.contains(DeviceTypes.MACH1)) {
+            handleMach1Ready()
+        }
+
+        // save the default_wearable now that we're connected:
+        Bridge.saveSetting("default_wearable", defaultWearable)
+        Bridge.saveSetting("device_name", deviceName)
+        //        Bridge.saveSetting("device_address", deviceAddress)
+    }
+
+    private fun handleG1Ready() {
+        // load settings and send the animation:
+        // give the glasses some extra time to finish booting:
+        // Thread.sleep(1000)
+        // await sgc?.setSilentMode(false) // turn off silent mode
+        // await sgc?.getBatteryStatus()
+
+        // if shouldSendBootingMessage {
+        //     sendText("// BOOTING MENTRAOS")
+        // }
+
+        // // send loaded settings to glasses:
+        // try? await Task.sleep(nanoseconds: 400_000_000)
+        // sgc?.setHeadUpAngle(headUpAngle)
+        // try? await Task.sleep(nanoseconds: 400_000_000)
+        // sgc?.setBrightness(brightness, autoMode: autoBrightness)
+        // try? await Task.sleep(nanoseconds: 400_000_000)
+        // // self.g1Manager?.RN_setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
+        // // try? await Task.sleep(nanoseconds: 400_000_000)
+        // //      playStartupSequence()
+        // if shouldSendBootingMessage {
+        //     sendText("// MENTRAOS CONNECTED")
+        //     try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        //     sendText(" ") // clear screen
+        // }
+
+        // shouldSendBootingMessage = false
+
+        // handle_request_status()
+    }
+
+    private fun handleMach1Ready() {
+        // Send startup message
+        sendText("MENTRAOS CONNECTED")
+        Thread.sleep(1000)
+        clearDisplay()
+
+        handle_request_status()
+    }
+
+    private fun handleDeviceDisconnected() {
+        Bridge.log("Mentra: Device disconnected")
+        isHeadUp = false
+        handle_request_status()
+    }
+
+    // MARK: - Network Command handlers
+
+    fun handle_display_text(params: Map<String, Any>) {
+        (params["text"] as? String)?.let { text ->
+            Bridge.log("Mentra: Displaying text: $text")
+            sendText(text)
+        }
+    }
+
+    fun handle_display_event(event: Map<String, Any>) {
+        val view = event["view"] as? String
+        if (view == null) {
+            Bridge.log("Mentra: Invalid view")
+            return
+        }
+
+        val isDashboard = view == "dashboard"
+        val stateIndex = if (isDashboard) 1 else 0
+
+        @Suppress("UNCHECKED_CAST") val layout = event["layout"] as? Map<String, Any> ?: return
+
+        val layoutType = layout["layoutType"] as? String
+        val text = parsePlaceholders(layout.getString("text", " "))
+        val topText = parsePlaceholders(layout.getString("topText", " "))
+        val bottomText = parsePlaceholders(layout.getString("bottomText", " "))
+        val title = parsePlaceholders(layout.getString("title", " "))
+        val data = layout["data"] as? String
+
+        var newViewState = ViewState(topText, bottomText, title, layoutType ?: "", text, data, null)
+
+        val currentState = viewStates[stateIndex]
+
+        if (!statesEqual(currentState, newViewState)) {
+            Bridge.log("Mentra: Updating view state $stateIndex with $layoutType")
+            viewStates[stateIndex] = newViewState
+
+            val headUp = isHeadUp
+            if (stateIndex == 0 && !headUp) {
+                sendCurrentState(false)
+            } else if (stateIndex == 1 && headUp) {
+                sendCurrentState(true)
+            }
+        }
     }
 
     fun handle_start_buffer_recording() {
@@ -1045,6 +948,69 @@ class MentraManager {
     fun handle_stop_video_recording(requestId: String) {
         Bridge.log("Mentra: onStopVideoRecording: requestId=$requestId")
         sgc?.stopVideoRecording(requestId)
+    }
+
+    fun handle_microphone_state_change(requiredData: List<String>, bypassVad: Boolean) {
+        Bridge.log(
+                "Mentra: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad"
+        )
+
+        bypassVadForPCM = bypassVad
+
+        currentRequiredData.clear()
+        currentRequiredData.addAll(requiredData)
+
+        val mutableRequiredData = requiredData.toMutableList()
+        if (offlineModeEnabled &&
+                        !mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") &&
+                        !mutableRequiredData.contains("TRANSCRIPTION")
+        ) {
+            mutableRequiredData.add("TRANSCRIPTION")
+        }
+
+        shouldSendPcmData = false
+        shouldSendTranscript = false
+
+        when {
+            mutableRequiredData.contains("PCM") &&
+                    mutableRequiredData.contains("TRANSCRIPTION") -> {
+                shouldSendPcmData = true
+                shouldSendTranscript = true
+            }
+            mutableRequiredData.contains("PCM") -> {
+                shouldSendPcmData = true
+                shouldSendTranscript = false
+            }
+            mutableRequiredData.contains("TRANSCRIPTION") -> {
+                shouldSendTranscript = true
+                shouldSendPcmData = false
+            }
+            mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") -> {
+                if (enforceLocalTranscription) {
+                    shouldSendTranscript = true
+                    shouldSendPcmData = false
+                } else {
+                    shouldSendPcmData = true
+                    shouldSendTranscript = false
+                }
+            }
+        }
+
+        vadBuffer.clear()
+        micEnabled = requiredData.isNotEmpty()
+
+        updateMicrophoneState()
+    }
+
+    fun handle_photo_request(
+            requestId: String,
+            appId: String,
+            size: String,
+            webhookUrl: String,
+            authToken: String
+    ) {
+        Bridge.log("Mentra: onPhotoRequest: $requestId, $appId, $size")
+        sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken)
     }
 
     fun handle_connect_default() {
@@ -1271,43 +1237,43 @@ class MentraManager {
 
         (settings["sensing"] as? Boolean)?.let { newSensingEnabled ->
             if (sensingEnabled != newSensingEnabled) {
-                enableSensing(newSensingEnabled)
+                updateSensing(newSensingEnabled)
             }
         }
 
         (settings["power_saving_mode"] as? Boolean)?.let { newPowerSavingMode ->
             if (powerSavingMode != newPowerSavingMode) {
-                enablePowerSavingMode(newPowerSavingMode)
+                updatePowerSavingMode(newPowerSavingMode)
             }
         }
 
         (settings["always_on_status_bar"] as? Boolean)?.let { newAlwaysOnStatusBar ->
             if (alwaysOnStatusBar != newAlwaysOnStatusBar) {
-                enableAlwaysOnStatusBar(newAlwaysOnStatusBar)
+                updateAlwaysOnStatusBar(newAlwaysOnStatusBar)
             }
         }
 
         (settings["bypass_vad_for_debugging"] as? Boolean)?.let { newBypassVad ->
             if (bypassVad != newBypassVad) {
-                bypassVad(newBypassVad)
+                updateBypassVad(newBypassVad)
             }
         }
 
         (settings["enforce_local_transcription"] as? Boolean)?.let { newEnforceLocalTranscription ->
             if (enforceLocalTranscription != newEnforceLocalTranscription) {
-                enforceLocalTranscription(newEnforceLocalTranscription)
+                updateEnforceLocalTranscription(newEnforceLocalTranscription)
             }
         }
 
-        (settings["metric_system"] as? Boolean)?.let { newMetricSystemEnabled ->
-            if (metricSystemEnabled != newMetricSystemEnabled) {
-                setMetricSystemEnabled(newMetricSystemEnabled)
+        (settings["metric_system"] as? Boolean)?.let { newMetricSystem ->
+            if (metricSystemEnabled != newMetricSystem) {
+                updateMetricSystem(newMetricSystem)
             }
         }
 
         (settings["contextual_dashboard"] as? Boolean)?.let { newContextualDashboard ->
             if (contextualDashboard != newContextualDashboard) {
-                enableContextualDashboard(newContextualDashboard)
+                updateContextualDashboard(newContextualDashboard)
             }
         }
 
