@@ -119,10 +119,10 @@ public class Bridge {
     /**
      * Send head position event
      */
-    public static void sendHeadPosition(boolean isUp) {
+    public static void sendHeadUp(boolean isUp) {
         Map<String, Object> data = new HashMap<>();
-        data.put("position", isUp ? "up" : "down");
-        sendTypedMessage("head_position", data);
+        data.put("position", isUp);
+        sendTypedMessage("head_up", data);
     }
 
     /**

@@ -758,8 +758,6 @@ class MentraManager {
         sgc?.queryGalleryStatus()
     }
 
-
-
     // MARK: - Auxiliary Commands
 
     fun initSGC(wearable: String) {
