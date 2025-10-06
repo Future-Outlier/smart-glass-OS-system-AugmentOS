@@ -5,7 +5,6 @@ import {useDisplayStore} from "@/stores/display"
 import livekitManager from "@/managers/LivekitManager"
 import mantle from "@/managers/MantleManager"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
-import {AudioPlayService} from "@/services/AudioPlayService"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -309,10 +308,11 @@ class SocketComms {
 
   private handle_audio_play_request(msg: any) {
     console.log(`SocketCommsTS: Handling audio play request: ${JSON.stringify(msg)}`)
-    const requestId = msg.requestId
-    if (!requestId) return
+    console.error("audio play request is deprecated!")
+    // const requestId = msg.requestId
+    // if (!requestId) return
 
-    AudioPlayService.getInstance().handle_audio_play_request(msg)
+    // AudioPlayService.getInstance().handle_audio_play_request(msg)
   }
 
   private handle_audio_stop_request() {
