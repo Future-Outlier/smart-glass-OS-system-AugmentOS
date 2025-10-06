@@ -85,8 +85,6 @@ struct FrameCommand {
 
     func queryGalleryStatus() {}
 
-    func sendGalleryModeActive(_: Bool) {}
-
     func showDashboard() {}
 
     func getConnectedBluetoothName() -> String? {
