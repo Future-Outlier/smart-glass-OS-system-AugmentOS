@@ -3,14 +3,16 @@ name: China Cloud Deployment
 on:
   push:
     branches: [ya/china-cloud-cd]
-    # paths: ["cloud/**"]
 
 jobs:
   china-cloud-deploy:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read
+    env:
+      ACR_INSTANCE_ID: cri-h675v46p9lj694l6
+      ACR_REGION_ID: cn-shenzhen
+      ACR_PUBLIC_DOMAIN: mentra-acr-cnsz-a-registry.cn-shenzhen.cr.aliyuncs.com
 
     steps:
       # 1. Checkout source code
@@ -21,80 +23,54 @@ jobs:
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       # 3. Compute Docker tags dynamically
-      # - id: docker-tags
-      #   run: |
-      #     BRANCH=${GITHUB_REF_NAME//\//-}  # replace / with - for valid tag
-      #     TAGS="${BRANCH}-${{ steps.vars.outputs.sha_short }}"
-      #     # Add 'latest' only for main or release branches
-      #     if [[ "$GITHUB_REF_NAME" == "main" || "$GITHUB_REF_NAME" == release/* ]]; then
-      #       TAGS="$TAGS latest"
-      #     fi
-      #     echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
       - id: docker-tags
         run: |
-          BRANCH=${GITHUB_REF_NAME//\//-}  # replace / with -
+          BRANCH=${GITHUB_REF_NAME//\//-}
           echo "tags=$BRANCH latest" >> "$GITHUB_OUTPUT"
 
       # 4. Docker Buildx
       - uses: docker/setup-buildx-action@v2
 
-      # 5. Install and configure Alibaba Cloud CLI
+      # 5. Install Alibaba Cloud CLI
       - name: Install Alibaba Cloud CLI
         run: |
           curl -sSL https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz | tar -xz
           sudo mv aliyun /usr/local/bin/
 
+      # 6. Configure Alibaba CLI with long-lived AK/SK
       - name: Configure Alibaba Cloud CLI
         run: |
           aliyun configure set \
             --profile default \
             --mode AK \
-            --region cn-shenzhen \
+            --region $ACR_REGION_ID \
             --access-key-id ${{ secrets.ALIBABA_ACCESS_KEY_ID }} \
             --access-key-secret ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
         shell: bash
 
-      # 6. AssumeRole → generate STS token
-      - id: sts
+      # 7. Get temporary Docker login token
+      - id: acr-token
         run: |
-          # Get JSON output and store in a variable
-          CREDS_JSON=$(aliyun sts AssumeRole \
-            --RoleArn "${{ secrets.ALIBABA_STS_ROLE_ARN }}" \
-            --RoleSessionName "github-actions" \
-            --DurationSeconds 3600)
-            
-          # Extract values using jq
-          AKID=$(echo "$CREDS_JSON" | jq -r '.Credentials.AccessKeyId')
-          TOKEN=$(echo "$CREDS_JSON" | jq -r '.Credentials.SecurityToken')
-
-          # Output for next steps
-          echo "akid=$AKID" >> "$GITHUB_OUTPUT"
+          TOKEN=$(aliyun cr GetAuthorizationToken \
+            --InstanceId $ACR_INSTANCE_ID \
+            --RegionId $ACR_REGION_ID \
+            | jq -r '.AuthorizationToken')
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
 
-          # For debugging
-          echo "Temporary credentials generated successfully"
-
-      # 7. Get ACR authorization token and login
-      - name: Login to ACR
+      # 8. Docker login with temporary token
+      - name: Docker Login to ACR
         run: |
-          # Get ACR authorization token using STS credentials
-          AUTH_TOKEN=$(aliyun cr GetAuthorizationToken \
-            --InstanceId mentra-acr-cnsz-a \
-            --access-key-id ${{ steps.sts.outputs.akid }} \
-            --access-key-secret $(echo "${{ steps.sts.outputs.token }}" | cut -d'.' -f1) \
-            --sts-token ${{ steps.sts.outputs.token }} \
-            --region cn-shenzhen | jq -r '.data.authorizationToken')
+          docker login \
+            --username cr_temp_user \
+            --password ${{ steps.acr-token.outputs.token }} \
+            $ACR_PUBLIC_DOMAIN
 
-          # Login to ACR
-          echo $AUTH_TOKEN | docker login \
-            --username=cr_temp_user \
-            --password-stdin \
-            mentra-acr-cnsz-a-registry.cn-shenzhen.cr.aliyuncs.com
-
-      # 8. Build & push Docker image
+      # 9. Build & push Docker image
       - uses: docker/build-push-action@v4
         with:
           context: ./cloud
           file: ./cloud/docker/Dockerfile.porter
           push: true
-          tags: ${{ steps.docker-tags.outputs.tags }}
+          tags: |
+            ${{ env.ACR_PUBLIC_DOMAIN }}/mentra-dev/backend:${{ steps.vars.outputs.sha_short }}
+            ${{ env.ACR_PUBLIC_DOMAIN }}/mentra-dev/backend:latest
