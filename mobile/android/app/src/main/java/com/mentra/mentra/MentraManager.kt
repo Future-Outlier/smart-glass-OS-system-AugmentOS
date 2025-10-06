@@ -433,10 +433,6 @@ class MentraManager {
         }
     }
 
-    fun clearState() {
-        sendCurrentState(sgc?.isHeadUp ?: false)
-    }
-
     private fun sendCurrentState(isDashboard: Boolean) {
         Bridge.log("Mentra: sendCurrentState(): $isDashboard")
         if (isUpdatingScreen) {
@@ -529,8 +525,8 @@ class MentraManager {
 
     // MARK: - State Management
 
-    fun updateHeadUp(isHeadUp: Boolean) {
-        isHeadUp = isHeadUp
+    fun updateHeadUp(headUp: Boolean) {
+        isHeadUp = headUp
         sendCurrentState(isHeadUp)
         Bridge.sendHeadUp(isHeadUp)
     }
@@ -724,7 +720,7 @@ class MentraManager {
     }
 
     fun sendStartRtmpStream(message: Map<String, Any>) {
-        Bridge.log("Mentra: sendStartRtmpStream: \(message)")
+        Bridge.log("Mentra: sendStartRtmpStream: (message)")
         sgc?.startRtmpStream(message)
     }
 
@@ -734,7 +730,7 @@ class MentraManager {
     }
 
     fun sendRtmpStreamKeepAlive(message: Map<String, Any>) {
-        Bridge.log("Mentra: onRtmpStreamKeepAlive: \(message)")
+        Bridge.log("Mentra: onRtmpStreamKeepAlive: (message)")
         sgc?.sendRtmpKeepAlive(message)
     }
 
@@ -959,7 +955,7 @@ class MentraManager {
         currentRequiredData.addAll(requiredData)
 
         val mutableRequiredData = requiredData.toMutableList()
-        if (offlineModeEnabled &&
+        if (offlineMode &&
                         !mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") &&
                         !mutableRequiredData.contains("TRANSCRIPTION")
         ) {
@@ -1165,16 +1161,7 @@ class MentraManager {
                         "is_searching" to isSearching,
                         "is_mic_enabled_for_frontend" to
                                 (micEnabled && preferredMic == "glasses" && isSomethingConnected()),
-                        "sensing_enabled" to sensingEnabled,
-                        "power_saving_mode" to powerSavingMode,
-                        "always_on_status_bar" to alwaysOnStatusBar,
-                        "bypass_vad_for_debugging" to bypassVad,
-                        "enforce_local_transcription" to enforceLocalTranscription,
-                        "bypass_audio_encoding_for_debugging" to bypassAudioEncoding,
                         "core_token" to coreToken,
-                        "puck_connected" to true,
-                        "metric_system_enabled" to metricSystemEnabled,
-                        "contextual_dashboard_enabled" to contextualDashboard
                 )
 
         val apps = emptyList<Any>()
@@ -1264,7 +1251,7 @@ class MentraManager {
         }
 
         (settings["metric_system"] as? Boolean)?.let { newMetricSystem ->
-            if (metricSystemEnabled != newMetricSystem) {
+            if (metricSystem != newMetricSystem) {
                 updateMetricSystem(newMetricSystem)
             }
         }
