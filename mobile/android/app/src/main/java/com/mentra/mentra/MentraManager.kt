@@ -308,15 +308,6 @@ class MentraManager {
         return (this[key] as? String) ?: defaultValue
     }
 
-    private fun sendButtonSettings() {
-        sgc?.apply {
-            sendButtonPhotoSettings()
-            sendButtonModeSetting()
-            sendButtonVideoRecordingSettings()
-            sendButtonCameraLedSetting()
-        }
-    }
-
     // Inner classes
 
     data class ViewState(

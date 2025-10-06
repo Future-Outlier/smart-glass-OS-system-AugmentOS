@@ -324,17 +324,6 @@ struct ViewState {
         }
     }
 
-    func handleConnectionStateChange() {
-        Bridge.log("Mentra: Glasses: connection state changed!")
-        if sgc == nil { return }
-        if sgc!.ready {
-            handleDeviceReady()
-        } else {
-            handleDeviceDisconnected()
-            handle_request_status()
-        }
-    }
-
     func setOnboardMicEnabled(_ isEnabled: Bool) {
         Task {
             if isEnabled {
@@ -793,6 +782,17 @@ struct ViewState {
             return true
         }
         return false
+    }
+
+    func handleConnectionStateChanged() {
+        Bridge.log("Mentra: Glasses: connection state changed!")
+        if sgc == nil { return }
+        if sgc!.ready {
+            handleDeviceReady()
+        } else {
+            handleDeviceDisconnected()
+            handle_request_status()
+        }
     }
 
     private func handleDeviceReady() {
