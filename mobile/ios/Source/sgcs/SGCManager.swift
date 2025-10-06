@@ -3,6 +3,9 @@ protocol SGCManager {
 
     var type: String { get }
     var ready: Bool { get }
+    var connectionState: String { get }
+
+    // info:
     var glassesAppVersion: String? { get }
     var glassesBuildNumber: String? { get }
     var glassesDeviceModel: String? { get }

@@ -20,3 +20,12 @@ struct DeviceTypes {
     // Private init to prevent instantiation
     private init() {}
 }
+
+struct ConnTypes {
+    static let CONNECTING = "CONNECTING"
+    static let CONNECTED = "CONNECTED"
+    static let DISCONNECTED = "DISCONNECTED"
+
+    // Private init to prevent instantiation
+    private init() {}
+}

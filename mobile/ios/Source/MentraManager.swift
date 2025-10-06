@@ -688,7 +688,7 @@ struct ViewState {
                 return
             }
 
-            if self.defaultWearable.contains("Simulated") || self.defaultWearable.isEmpty {
+            if self.defaultWearable.contains(DeviceTypes.SIMULATED) || self.defaultWearable.isEmpty {
                 // dont send the event to glasses that aren't there:
                 return
             }
@@ -826,7 +826,7 @@ struct ViewState {
         if sgc?.ready == true {
             return true
         }
-        if defaultWearable.contains("Simulated") {
+        if defaultWearable.contains(DeviceTypes.SIMULATED) {
             return true
         }
         return false
@@ -1163,11 +1163,11 @@ struct ViewState {
             "Mentra: Connecting by name: \(deviceName ?? "nil") defaultWearable: \(defaultWearable) pendingWearable: \(pendingWearable) selfDeviceName: \(self.deviceName)"
         )
 
-        if pendingWearable.contains("Simulated") {
+        if pendingWearable.contains(DeviceTypes.SIMULATED) {
             Bridge.log(
                 "Mentra: Pending wearable is simulated, setting default wearable to Simulated Glasses"
             )
-            defaultWearable = "Simulated Glasses"
+            defaultWearable = DeviceTypes.SIMULATED
             handle_request_status()
             return
         }
@@ -1233,7 +1233,7 @@ struct ViewState {
 
     func handle_request_status() {
         // construct the status object:
-        let simulatedConnected = defaultWearable == "Simulated Glasses"
+        let simulatedConnected = defaultWearable == DeviceTypes.SIMULATED
         let isGlassesConnected = sgc?.ready ?? false
         if isGlassesConnected {
             isSearching = false

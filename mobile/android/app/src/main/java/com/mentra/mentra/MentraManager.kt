@@ -453,7 +453,7 @@ class MentraManager {
             return
         }
 
-        if (defaultWearable.contains("Simulated") || defaultWearable.isEmpty()) {
+        if (defaultWearable.contains(DeviceTypes.SIMULATED) || defaultWearable.isEmpty()) {
             return
         }
 
@@ -1023,11 +1023,11 @@ class MentraManager {
     fun handle_connect_by_name(dName: String) {
         Bridge.log("Mentra: Connecting to wearable: $dName")
 
-        if (pendingWearable.contains("Simulated")) {
+        if (pendingWearable.contains(DeviceTypes.SIMULATED)) {
             Bridge.log(
                     "Mentra: Pending wearable is simulated, setting default wearable to Simulated Glasses"
             )
-            defaultWearable = "Simulated Glasses"
+            defaultWearable = DeviceTypes.SIMULATED
             handle_request_status()
             return
         }
@@ -1089,7 +1089,7 @@ class MentraManager {
     }
 
     fun handle_request_status() {
-        val simulatedConnected = defaultWearable == "Simulated Glasses"
+        val simulatedConnected = defaultWearable == DeviceTypes.SIMULATED
         val isGlassesConnected = sgc?.ready ?: false
 
         if (isGlassesConnected) {

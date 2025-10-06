@@ -114,6 +114,8 @@ enum GlassesError: Error {
 }
 
 class G1: NSObject, SGCManager {
+    var connectionState: String
+
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
 
     var caseBatteryLevel: Int?

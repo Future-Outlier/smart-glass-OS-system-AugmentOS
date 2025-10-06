@@ -479,15 +479,15 @@ extension MentraLive: CBCentralManagerDelegate {
 
         case .poweredOff:
             Bridge.log("Bluetooth is powered off")
-            connectionState = .disconnected
+            connectionState = ConnTypes.DISCONNECTED
 
         case .unauthorized:
             Bridge.log("Bluetooth is unauthorized")
-            connectionState = .disconnected
+            connectionState = ConnTypes.DISCONNECTED
 
         case .unsupported:
             Bridge.log("Bluetooth is unsupported")
-            connectionState = .disconnected
+            connectionState = ConnTypes.DISCONNECTED
 
         default:
             Bridge.log("Bluetooth state: \(central.state.rawValue)")
@@ -551,7 +551,7 @@ extension MentraLive: CBCentralManagerDelegate {
         isConnecting = false
         connectedPeripheral = nil
         ready = false
-        connectionState = .disconnected
+        connectionState = ConnTypes.DISCONNECTED
 
         stopAllTimers()
 
@@ -571,7 +571,7 @@ extension MentraLive: CBCentralManagerDelegate {
 
         stopConnectionTimeout()
         isConnecting = false
-        connectionState = .disconnected
+        connectionState = ConnTypes.DISCONNECTED
 
         if !isKilled {
             handleReconnection()
@@ -640,7 +640,7 @@ extension MentraLive: CBPeripheralDelegate {
             Bridge.log("🔄 Waiting for glasses SOC to become ready...")
 
             // Keep state as connecting until glasses are ready
-            connectionState = .connecting
+            connectionState = ConnTypes.CONNECTING
 
             // Request MTU size
             peripheral.readRSSI()
@@ -807,6 +807,8 @@ typealias JSONObject = [String: Any]
 // MARK: - Main Manager Class
 
 class MentraLive: NSObject, SGCManager {
+    var connectionState: String = ConnTypes.DISCONNECTED
+
     var caseBatteryLevel: Int?
     var glassesSerialNumber: String?
     var glassesStyle: String?
@@ -868,19 +870,6 @@ class MentraLive: NSObject, SGCManager {
     // MARK: - Properties
 
     @objc static func requiresMainQueueSetup() -> Bool { true }
-
-    // Connection State
-    private var _connectionState: MentraLiveConnectionState = .disconnected
-    var connectionState: MentraLiveConnectionState {
-        get { _connectionState }
-        set {
-            let oldValue = _connectionState
-            _connectionState = newValue
-            //            if oldValue != newValue {
-            //                MentraManager.shared.handleConnectionStateChange(newValue)
-            //            }
-        }
-    }
 
     var onConnectionStateChanged: (() -> Void)?
 
@@ -1019,7 +1008,7 @@ class MentraLive: NSObject, SGCManager {
         }
 
         stopAllTimers()
-        connectionState = .disconnected
+        connectionState = ConnTypes.DISCONNECTED
     }
 
     @objc func setMicrophoneEnabled(_ enabled: Bool) {
@@ -1271,7 +1260,7 @@ class MentraLive: NSObject, SGCManager {
         Bridge.log("Connecting to device: \(peripheral.identifier.uuidString)")
 
         isConnecting = true
-        connectionState = .connecting
+        connectionState = ConnTypes.CONNECTING
         connectedPeripheral = peripheral
         peripheral.delegate = self
 
@@ -1558,7 +1547,7 @@ class MentraLive: NSObject, SGCManager {
                 centralManager?.cancelPeripheralConnection(peripheral)
             }
             // Notify the system that glasses are intentionally disconnected
-            connectionState = .disconnected
+            connectionState = ConnTypes.DISCONNECTED
 
         default:
             Bridge.log("Unknown K900 command: \(command)")
@@ -1632,7 +1621,7 @@ class MentraLive: NSObject, SGCManager {
         startHeartbeat()
 
         // Update connection state
-        connectionState = .connected
+        connectionState = ConnTypes.CONNECTED
     }
 
     private func handleWifiScanResult(_ json: [String: Any]) {
@@ -2427,7 +2416,7 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func sendHeartbeat() {
-        guard ready, connectionState == .connected else {
+        guard ready, connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Skipping heartbeat - glasses not ready or not connected")
             return
         }
@@ -2519,7 +2508,7 @@ class MentraLive: NSObject, SGCManager {
         ) { [weak self] _ in
             guard let self else { return }
 
-            if self.isConnecting, self.connectionState != .connected {
+            if self.isConnecting, self.connectionState != ConnTypes.CONNECTED {
                 Bridge.log("Connection timeout - closing GATT connection")
                 self.isConnecting = false
 
@@ -2667,7 +2656,7 @@ class MentraLive: NSObject, SGCManager {
         centralManager?.delegate = nil
         centralManager = nil
 
-        connectionState = .disconnected
+        connectionState = ConnTypes.DISCONNECTED
     }
 }
 
@@ -2853,7 +2842,7 @@ extension MentraLive {
         let mode = MentraManager.shared.buttonPressMode
         Bridge.log("Sending button mode setting to glasses: \(mode)")
 
-        guard connectionState == .connected else {
+        guard connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Cannot send button mode - not connected")
             return
         }
@@ -2870,7 +2859,7 @@ extension MentraLive {
     func startBufferRecording() {
         Bridge.log("Starting buffer recording on glasses")
 
-        guard connectionState == .connected else {
+        guard connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Cannot start buffer recording - not connected")
             return
         }
@@ -2884,7 +2873,7 @@ extension MentraLive {
     func stopBufferRecording() {
         Bridge.log("Stopping buffer recording on glasses")
 
-        guard connectionState == .connected else {
+        guard connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Cannot stop buffer recording - not connected")
             return
         }
@@ -2898,7 +2887,7 @@ extension MentraLive {
     func saveBufferVideo(requestId: String, durationSeconds: Int) {
         Bridge.log("Saving buffer video: requestId=\(requestId), duration=\(durationSeconds)s")
 
-        guard connectionState == .connected else {
+        guard connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Cannot save buffer video - not connected")
             return
         }
@@ -2940,7 +2929,7 @@ extension MentraLive {
         Bridge.log(
             "Sending button video recording settings: \(finalWidth)x\(finalHeight)@\(finalFps)fps")
 
-        guard connectionState == .connected else {
+        guard connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Cannot send button video recording settings - not connected")
             return
         }
@@ -2961,7 +2950,7 @@ extension MentraLive {
 
         Bridge.log("Sending button photo setting: \(size)")
 
-        guard connectionState == .connected else {
+        guard connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Cannot send button photo settings - not connected")
             return
         }
@@ -2978,7 +2967,7 @@ extension MentraLive {
 
         Bridge.log("Sending button camera LED setting: \(enabled)")
 
-        guard connectionState == .connected else {
+        guard connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Cannot send button camera LED setting - not connected")
             return
         }
@@ -2999,7 +2988,7 @@ extension MentraLive {
             "Starting video recording on glasses: requestId=\(requestId), save=\(save), resolution=\(width)x\(height)@\(fps)fps"
         )
 
-        guard connectionState == .connected else {
+        guard connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Cannot start video recording - not connected")
             return
         }
@@ -3024,7 +3013,7 @@ extension MentraLive {
     func stopVideoRecording(requestId: String) {
         Bridge.log("Stopping video recording on glasses: requestId=\(requestId)")
 
-        guard connectionState == .connected else {
+        guard connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Cannot stop video recording - not connected")
             return
         }

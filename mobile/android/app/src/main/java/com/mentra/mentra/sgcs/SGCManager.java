@@ -7,6 +7,8 @@ public abstract class SGCManager {
     // Device Information
     public String type;
     public boolean ready;
+    public String connectionState;// "disconnected" | "connected" | "connecting"
+
     public String glassesAppVersion;
     public String glassesBuildNumber;
     public String glassesDeviceModel;

@@ -58,6 +58,7 @@ import com.mentra.mentra.sgcs.SGCManager;
 import com.mentra.mentra.MentraManager;
 import com.mentra.mentra.Bridge;
 import com.mentra.mentra.utils.DeviceTypes;
+import com.mentra.mentra.utils.ConnTypes;
 import com.mentra.mentra.utils.BitmapJavaUtils;
 import com.mentra.mentra.utils.SmartGlassesConnectionState;
 import com.mentra.mentra.utils.K900ProtocolUtils;
@@ -109,6 +110,7 @@ import java.util.Locale;
 public class MentraLive extends SGCManager {
     private static final String TAG = "Live";
     public String type = DeviceTypes.G1;
+    public String savedDeviceName = "";
 
     // LC3 frame size for Mentra Live
     private static final int LC3_FRAME_SIZE = 40;
@@ -549,8 +551,8 @@ public class MentraLive extends SGCManager {
             Bridge.log("LIVE: Found BLE device: " + deviceName + " (" + deviceAddress + ")");
 
             // Check if this device matches the saved device name
-            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-            String savedDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
+            // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            // String savedDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
 
             // Post the discovered device to the event bus ONLY
             // Don't automatically connect - wait for explicit connect request from UI
@@ -2520,7 +2522,8 @@ public class MentraLive extends SGCManager {
 
     public void connectById(String id) {
         Bridge.log("LIVE: Connecting to Mentra Live glasses by ID: " + id);
-        // TODO:
+        savedDeviceName = id;
+        connectToSmartGlasses();
     }
 
     public void forget() {
@@ -2562,6 +2565,7 @@ public class MentraLive extends SGCManager {
 
     public void connectToSmartGlasses() {
         Bridge.log("LIVE: Connecting to Mentra Live glasses");
+        connectionState = ConnTypes.CONNECTING;
         // connectionEvent(SmartGlassesConnectionState.CONNECTING);
 
         if (isConnected) {

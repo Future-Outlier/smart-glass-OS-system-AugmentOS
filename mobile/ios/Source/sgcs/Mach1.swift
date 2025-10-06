@@ -13,6 +13,8 @@ import UIKit
 import UltraliteSDK
 
 class Mach1: UltraliteBaseViewController, SGCManager {
+    var connectionState: String = ConnTypes.DISCONNECTED
+
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
 
     var caseBatteryLevel: Int?
