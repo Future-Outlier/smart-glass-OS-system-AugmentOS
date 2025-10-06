@@ -69,7 +69,7 @@ jobs:
       - uses: docker/build-push-action@v4
         with:
           context: ./cloud
-          file: ./cloud/docker/Dockerfile.porter
+          file: ./cloud/docker/Dockerfile.livekit
           push: true
           tags: |
             ${{ env.ACR_PUBLIC_DOMAIN }}/mentra-dev/backend:${{ steps.vars.outputs.sha_short }}
