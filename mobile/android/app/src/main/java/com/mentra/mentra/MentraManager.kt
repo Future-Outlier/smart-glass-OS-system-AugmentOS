@@ -831,7 +831,6 @@ class MentraManager {
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
         Bridge.saveSetting("device_name", deviceName)
-        //        Bridge.saveSetting("device_address", deviceAddress)
     }
 
     private fun handleG1Ready() {
@@ -1304,6 +1303,18 @@ class MentraManager {
                 Bridge.saveSetting("default_wearable", newDefaultWearable)
             }
         }
+
+        (settings["device_name"] as? String)?.let { newDeviceName ->
+            if (deviceName != newDeviceName) {
+                deviceName = newDeviceName
+            }
+        }
+
+        // (settings["device_address"] as? String)?.let { newDeviceAddress ->
+        //     if (deviceAddress != newDeviceAddress) {
+        //         deviceAddress = newDeviceAddress
+        //     }
+        // }
     }
 
     // MARK: Cleanup
