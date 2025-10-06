@@ -10,7 +10,6 @@ import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {AppletInterface} from "@/types/AppletTypes"
 import {getOfflineApps, isOfflineAppPackage} from "@/types/OfflineApps"
-import bridge from "@/bridge/MantleBridge"
 import {hasCamera} from "@/config/glassesFeatures"
 import {shouldBlockCameraAppStop} from "@/utils/cameraAppProtection"
 
@@ -433,7 +432,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
     if (cameraApp) {
       const isRunning = cameraApp.is_running ?? false
       console.log(`Camera app state changed: is_running = ${isRunning}`)
-      bridge.sendGalleryModeActive(isRunning)
+      // bridge.sendGalleryModeActive(isRunning)
     }
   }, [appStatus])
 
@@ -449,7 +448,7 @@ export const AppStatusProvider = ({children}: {children: ReactNode}) => {
       const isRunning = cameraApp?.is_running ?? false
 
       console.log(`Re-sending gallery mode state on connection: ${isRunning}`)
-      bridge.sendGalleryModeActive(isRunning)
+      // bridge.sendGalleryModeActive(isRunning)
 
       // Refresh app status to update compatibility (camera app will show as compatible if glasses have camera)
       console.log("📸 Refreshing app status after glasses connect to update compatibility")
