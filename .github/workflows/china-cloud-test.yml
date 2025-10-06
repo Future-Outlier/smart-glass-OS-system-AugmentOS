@@ -3,7 +3,7 @@ name: China Cloud Deployment
 on:
   push:
     branches: [ya/china-cloud-cd]
-    paths: ["cloud/**"]
+    # paths: ["cloud/**"]
 
 jobs:
   china-cloud-deploy:
