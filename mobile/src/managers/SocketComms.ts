@@ -21,6 +21,17 @@ class SocketComms {
     this.ws.on("message", message => {
       this.handle_message(message)
     })
+
+    // Subscribe to changes in default_wearable and call sendGlassesConnectionState() when it updates:
+    useSettingsStore.subscribe(
+      state => state.settings[SETTINGS_KEYS.default_wearable],
+      (modelName: string) => {
+        // TODO: get the connection state from mantlemanager or something
+        if (modelName != "") {
+          this.sendGlassesConnectionState(true)
+        }
+      },
+    )
   }
 
   public static getInstance(): SocketComms {
@@ -118,6 +129,20 @@ class SocketComms {
     } catch (error) {
       console.log(`SocketCommsTS: Failed to send keep-alive ACK: ${error}`)
     }
+  }
+
+  sendGlassesConnectionState(connected: boolean): void {
+    let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+    // let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+
+    this.ws.sendText(
+      JSON.stringify({
+        type: "glasses_connection_state",
+        modelName: modelName,
+        status: connected ? "CONNECTED" : "DISCONNECTED",
+        timestamp: new Date(),
+      }),
+    )
   }
 
   sendText(text: string) {
