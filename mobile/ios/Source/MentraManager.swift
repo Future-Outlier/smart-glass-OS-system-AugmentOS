@@ -50,6 +50,7 @@ struct ViewState {
     private var defaultWearable: String = ""
     private var pendingWearable: String = ""
     private var deviceName: String = ""
+    var deviceAddress: String = ""
     private var isUpdatingScreen: Bool = false
     private var isSearching: Bool = false
     private var onboardMicUnavailable: Bool = false
@@ -1462,6 +1463,12 @@ struct ViewState {
         {
             defaultWearable = newDefaultWearable
             Bridge.saveSetting("default_wearable", newDefaultWearable)
+        }
+
+        if let newDeviceAddress = settings["device_address"] as? String,
+           newDeviceAddress != deviceAddress
+        {
+            deviceAddress = newDeviceAddress
         }
     }
 

@@ -299,16 +299,12 @@ export class MantleBridge extends EventEmitter {
             type: data.notify_manager.type,
           })
           break
-        case "audio_play_request":
-          await AudioPlayService.handle_audio_play_request(data)
-          break
         case "audio_stop_request":
           await bridge.sendCommand("audio_stop_request")
           break
         case "wifi_scan_results":
           GlobalEventEmitter.emit("WIFI_SCAN_RESULTS", {
-            networks: data.wifi_scan_results, // Legacy format for backwards compatibility
-            networksEnhanced: data.wifi_scan_results_enhanced, // Enhanced format with security info
+            networks: data.networks,
           })
           break
         case "pair_failure":

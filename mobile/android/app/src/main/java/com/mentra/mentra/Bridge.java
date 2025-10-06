@@ -125,6 +125,13 @@ public class Bridge {
         sendTypedMessage("head_up", data);
     }
 
+
+    public static void sendWifiScanResults(List<Map<String, Object>> networks) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("networks", networks);
+        sendTypedMessage("wifi_scan_results", body);
+    }
+
     /**
      * Send pair failure event
      */

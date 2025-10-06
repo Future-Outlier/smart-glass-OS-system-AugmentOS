@@ -309,9 +309,16 @@ class Bridge: RCTEventEmitter {
         Bridge.sendTypedMessage("glasses_serial_number", body: body)
     }
 
+    static func sendWifiScanResults(_ networks: [[String: Any]]) {
+        let eventBody: [String: Any] = [
+            "networks": networks,
+        ]
+        Bridge.sendTypedMessage("wifi_scan_results", body: eventBody)
+    }
+
     override func supportedEvents() -> [String] {
         // don't add to this list, use a typed message instead
-        return ["CoreMessageEvent", "WIFI_SCAN_RESULTS"]
+        return ["CoreMessageEvent"]
     }
 
     // Arbitrary WS Comms (dont use these, make a dedicated function for your use case):

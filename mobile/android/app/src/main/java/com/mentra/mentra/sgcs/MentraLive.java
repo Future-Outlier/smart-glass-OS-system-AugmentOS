@@ -81,6 +81,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -658,24 +659,24 @@ public class MentraLive extends SGCManager {
     /**
      * Try to reconnect to the last known device by starting a scan and looking for the saved name
      */
-    private void reconnectToLastKnownDevice() {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String lastDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
+    // private void reconnectToLastKnownDevice() {
+        // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        // String lastDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
 
-        if (lastDeviceName != null && bluetoothAdapter != null) {
-            Bridge.log("LIVE: Attempting to reconnect to last known device by name: " + lastDeviceName);
+        // if (lastDeviceName != null && bluetoothAdapter != null) {
+        //     Bridge.log("LIVE: Attempting to reconnect to last known device by name: " + lastDeviceName);
 
-            // We can't directly connect by name, we need to scan to find the device first
-            Bridge.log("LIVE: Starting scan to find device with name: " + lastDeviceName);
-            startScan();
+        //     // We can't directly connect by name, we need to scan to find the device first
+        //     Bridge.log("LIVE: Starting scan to find device with name: " + lastDeviceName);
+        //     startScan();
 
-            // The scan callback will automatically connect when it finds a device with this name
-        } else {
-            // No last device to connect to, start scanning
-            Bridge.log("LIVE: No last known device name, starting scan");
-            startScan();
-        }
-    }
+        //     // The scan callback will automatically connect when it finds a device with this name
+        // } else {
+        //     // No last device to connect to, start scanning
+        //     Bridge.log("LIVE: No last known device name, starting scan");
+        //     startScan();
+        // }
+    // }
 
     /**
      * Handle reconnection with exponential backoff
@@ -1713,46 +1714,35 @@ public class MentraLive extends SGCManager {
 
             case "wifi_scan_result":
                 // Process WiFi scan results
-                try {
-                    // Get the list of networks from the JSON
-                    List<String> networks = new ArrayList<>();
+                List<Map<String, Object>> networks = new ArrayList<>();
 
-                    if (json.has("networks")) {
-                        // Could be either a JSONArray or a comma-separated string
-                        if (json.get("networks") instanceof org.json.JSONArray) {
-                            org.json.JSONArray networksArray = json.getJSONArray("networks");
-                            for (int i = 0; i < networksArray.length(); i++) {
-                                networks.add(networksArray.getString(i));
+                if (json.has("networks_neo")) {
+                        try {
+                            JSONArray networksNeoArray = json.getJSONArray("networks_neo");
+
+                            for (int i = 0; i < networksNeoArray.length(); i++) {
+                                JSONObject networkInfo = networksNeoArray.getJSONObject(i);
+
+                                // Convert JSONObject to Map
+                                Map<String, Object> networkMap = new HashMap<>();
+                                Iterator<String> keys = networkInfo.keys();
+                                while (keys.hasNext()) {
+                                    String key = keys.next();
+                                    networkMap.put(key, networkInfo.get(key));
+                                }
+                                networks.add(networkMap);
                             }
-                        } else {
-                            // Handle as comma-separated string
-                            String networksStr = json.getString("networks");
-                            String[] networksArray = networksStr.split(",");
-                            for (String network : networksArray) {
-                                networks.add(network.trim());
-                            }
-                        }
 
-                        // Log the found networks
-                        Bridge.log("LIVE: Received WiFi scan results: " + networks.size() + " networks found");
-                        for (String network : networks) {
-                            Bridge.log("LIVE:   WiFi network: " + network);
+                            Bridge.log(
+                                "Received enhanced WiFi scan results: " + networks.size() +
+                                " networks with security info"
+                            );
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Error parsing networks_neo", e);
                         }
-
-                        // Post event with the scan results
-                        // EventBus.getDefault().post(new GlassesWifiScanResultEvent(
-                        //         smartGlassesDevice.deviceModelName,
-                        //         networks));
-                    } else {
-                        Log.w(TAG, "Received WiFi scan results without networks field");
-                        // Post empty list to notify that scan completed with no results
-                        // EventBus.getDefault().post(new GlassesWifiScanResultEvent(
-                                // smartGlassesDevice.deviceModelName,
-                                // networks));
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error processing WiFi scan results", e);
                 }
+
+                Bridge.sendWifiScanResults(networks);
                 break;
 
             case "token_status":
@@ -2607,7 +2597,7 @@ public class MentraLive extends SGCManager {
         // var context = Bridge.getContext();
         // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         // String lastDeviceAddress = prefs.getString(PREF_DEVICE_NAME, null);
-        String lastDeviceAddress = null;
+        String lastDeviceAddress = MentraManager.getInstance().getDeviceAddress();
 
         if (lastDeviceAddress != null) {
             // Connect to last known device if available

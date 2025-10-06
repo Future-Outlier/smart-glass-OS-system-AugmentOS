@@ -57,6 +57,7 @@ class MentraManager {
     private var defaultWearable = ""
     private var pendingWearable = ""
     public var deviceName = ""
+    public var deviceAddress = ""
     private var isUpdatingScreen = false
     private var isSearching = false
     private var onboardMicUnavailable = false
@@ -1310,11 +1311,11 @@ class MentraManager {
             }
         }
 
-        // (settings["device_address"] as? String)?.let { newDeviceAddress ->
-        //     if (deviceAddress != newDeviceAddress) {
-        //         deviceAddress = newDeviceAddress
-        //     }
-        // }
+        (settings["device_address"] as? String)?.let { newDeviceAddress ->
+            if (deviceAddress != newDeviceAddress) {
+                deviceAddress = newDeviceAddress
+            }
+        }
     }
 
     // MARK: Cleanup

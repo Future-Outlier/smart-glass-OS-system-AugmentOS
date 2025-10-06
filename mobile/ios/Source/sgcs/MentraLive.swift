@@ -1629,39 +1629,17 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func handleWifiScanResult(_ json: [String: Any]) {
-        var networks: [String] = []
-        var enhancedNetworks: [[String: Any]] = []
+        var networks: [[String: Any]] = []
 
         // First, check for enhanced format (networks_neo)
         if let networksNeoArray = json["networks_neo"] as? [[String: Any]] {
-            enhancedNetworks = networksNeoArray
-            // Extract SSIDs for backwards compatibility
-            networks = networksNeoArray.compactMap { networkInfo in
-                networkInfo["ssid"] as? String
-            }
+            networks = networksNeoArray
             Bridge.log(
-                "Received enhanced WiFi scan results: \(enhancedNetworks.count) networks with security info"
-            )
-        }
-        // Fall back to legacy format
-        else if let networksArray = json["networks"] as? [String] {
-            networks = networksArray
-            Bridge.log("Received legacy WiFi scan results: \(networks.count) networks found")
-        } else if let networksString = json["networks"] as? String {
-            networks = networksString.split(separator: ",").map {
-                $0.trimmingCharacters(in: .whitespaces)
-            }
-            Bridge.log(
-                "Received legacy WiFi scan results (string format): \(networks.count) networks found"
+                "Received enhanced WiFi scan results: \(networks.count) networks with security info"
             )
         }
 
-        // Emit with enhanced data if available, otherwise legacy format
-        if !enhancedNetworks.isEmpty {
-            emitWifiScanResultEnhanced(enhancedNetworks, legacyNetworks: networks)
-        } else {
-            emitWifiScanResult(networks)
-        }
+        Bridge.sendWifiScanResults(networks)
     }
 
     private func handleButtonPress(_ json: [String: Any]) {
@@ -2585,21 +2563,6 @@ class MentraLive: NSObject, SGCManager {
             "local_ip": hotspotGatewayIp, // Using gateway IP for consistency with Android
         ]
         Bridge.sendTypedMessage("hotspot_status_change", body: eventBody)
-    }
-
-    private func emitWifiScanResult(_ networks: [String]) {
-        let eventBody = ["wifi_scan_results": networks]
-        Bridge.sendTypedMessage("wifi_scan_results", body: eventBody)
-    }
-
-    private func emitWifiScanResultEnhanced(
-        _ enhancedNetworks: [[String: Any]], legacyNetworks: [String]
-    ) {
-        let eventBody: [String: Any] = [
-            "wifi_scan_results": legacyNetworks, // Backwards compatibility
-            "wifi_scan_results_enhanced": enhancedNetworks, // Enhanced format with security info
-        ]
-        Bridge.sendTypedMessage("wifi_scan_results", body: eventBody)
     }
 
     private func emitRtmpStreamStatus(_ json: [String: Any]) {
