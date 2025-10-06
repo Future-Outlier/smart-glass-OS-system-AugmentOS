@@ -362,12 +362,13 @@ class SocketComms {
   }
 
   private handle_photo_request(msg: any) {
-    const requestId = msg.requestId || ""
-    const appId = msg.appId || ""
-    const webhookUrl = msg.webhookUrl || ""
-    const size = msg.size || "medium"
+    const requestId = msg.requestId ?? ""
+    const appId = msg.appId ?? ""
+    const webhookUrl = msg.webhookUrl ?? ""
+    const size = msg.size ?? "medium"
+    const authToken = msg.authToken ?? ""
     console.log(
-      `Received photo_request, requestId: ${requestId}, appId: ${appId}, webhookUrl: ${webhookUrl}, size: ${size}`,
+      `Received photo_request, requestId: ${requestId}, appId: ${appId}, webhookUrl: ${webhookUrl}, size: ${size} authToken: ${authToken}`,
     )
     if (!requestId || !appId) {
       console.log("Invalid photo request: missing requestId or appId")
@@ -378,6 +379,7 @@ class SocketComms {
       appId,
       webhookUrl,
       size,
+      authToken,
     })
   }
 

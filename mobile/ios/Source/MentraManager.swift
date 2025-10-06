@@ -560,45 +560,6 @@ struct ViewState {
         sgc?.sendTextWall(text)
     }
 
-    func showDashboard() {
-        sgc?.showDashboard()
-    }
-
-    func sendStartRtmpStream(_ message: [String: Any]) {
-        Bridge.log("Mentra: sendStartRtmpStream: \(message)")
-        sgc?.startRtmpStream(message)
-    }
-
-    func sendRtmpStreamStop() {
-        Bridge.log("Mentra: onRtmpStreamStop")
-        sgc?.stopRtmpStream()
-    }
-
-    func sendRtmpStreamKeepAlive(_ message: [String: Any]) {
-        Bridge.log("Mentra: onRtmpStreamKeepAlive: \(message)")
-        sgc?.sendRtmpKeepAlive(message)
-    }
-
-    func requestWifiScan() {
-        Bridge.log("Mentra: Requesting wifi scan")
-        sgc?.requestWifiScan()
-    }
-
-    func sendWifiCredentials(_ ssid: String, _ password: String) {
-        Bridge.log("Mentra: Sending wifi credentials: \(ssid) \(password)")
-        sgc?.sendWifiCredentials(ssid, password)
-    }
-
-    func setGlassesHotspotState(_ enabled: Bool) {
-        Bridge.log("Mentra: 🔥 Setting glasses hotspot state: \(enabled)")
-        sgc?.sendHotspotState(enabled)
-    }
-
-    func queryGalleryStatus() {
-        Bridge.log("Mentra: 📸 Querying gallery status from glasses")
-        sgc?.queryGalleryStatus()
-    }
-
     private func playStartupSequence() {
         Bridge.log("Mentra: playStartupSequence()")
         // Arrow frames for the animation
@@ -1000,6 +961,45 @@ struct ViewState {
         }
     }
 
+    func handle_show_dashboard() {
+        sgc?.showDashboard()
+    }
+
+    func handle_send_rtmp_stream_start(_ message: [String: Any]) {
+        Bridge.log("Mentra: sendStartRtmpStream: \(message)")
+        sgc?.startRtmpStream(message)
+    }
+
+    func handle_send_rtmp_stream_stop() {
+        Bridge.log("Mentra: onRtmpStreamStop")
+        sgc?.stopRtmpStream()
+    }
+
+    func handle_send_rtmp_stream_keep_alive(_ message: [String: Any]) {
+        Bridge.log("Mentra: onRtmpStreamKeepAlive: \(message)")
+        sgc?.sendRtmpKeepAlive(message)
+    }
+
+    func handle_request_wifi_scan() {
+        Bridge.log("Mentra: Requesting wifi scan")
+        sgc?.requestWifiScan()
+    }
+
+    func handle_send_wifi_credentials(_ ssid: String, _ password: String) {
+        Bridge.log("Mentra: Sending wifi credentials: \(ssid) \(password)")
+        sgc?.sendWifiCredentials(ssid, password)
+    }
+
+    func handle_set_hotspot_state(_ enabled: Bool) {
+        Bridge.log("Mentra: 🔥 Setting glasses hotspot state: \(enabled)")
+        sgc?.sendHotspotState(enabled)
+    }
+
+    func handle_query_gallery_status() {
+        Bridge.log("Mentra: 📸 Querying gallery status from glasses")
+        sgc?.queryGalleryStatus()
+    }
+
     func handle_start_buffer_recording() {
         Bridge.log("Mentra: onStartBufferRecording")
         sgc?.startBufferRecording()
@@ -1147,7 +1147,7 @@ struct ViewState {
     }
 
     func handle_photo_request(
-        _ requestId: String, _ appId: String, _ size: String, _ webhookUrl: String?
+        _ requestId: String, _ appId: String, _ size: String, _ webhookUrl: String?, _: String?
     ) {
         Bridge.log("Mentra: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size)")
         sgc?.requestPhoto(requestId, appId: appId, size: size, webhookUrl: webhookUrl)
@@ -1158,12 +1158,18 @@ struct ViewState {
             Bridge.log("Mentra: No default wearable, returning")
             return
         }
+        if deviceName.isEmpty {
+            Bridge.log("Mentra: No device name, returning")
+            return
+        }
+        initSGC(defaultWearable)
+        isSearching = true
+        handle_request_status()
+        sgc?.connectById(deviceName)
     }
 
-    func handle_connect_by_name(_ deviceName: String) {
-        Bridge.log(
-            "Mentra: Connecting by name: \(deviceName ?? "nil") defaultWearable: \(defaultWearable) pendingWearable: \(pendingWearable) selfDeviceName: \(self.deviceName)"
-        )
+    func handle_connect_by_name(_ dName: String) {
+        Bridge.log("Mentra: Connecting to wearable: \(dName ?? "nil")")
 
         if pendingWearable.contains(DeviceTypes.SIMULATED) {
             Bridge.log(

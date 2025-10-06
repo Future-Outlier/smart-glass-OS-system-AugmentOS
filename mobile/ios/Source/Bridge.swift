@@ -444,9 +444,9 @@ class Bridge: RCTEventEmitter {
                     }
                     m.handle_find_compatible_devices(modelName)
                 case .show_dashboard:
-                    m.showDashboard()
+                    m.handle_show_dashboard()
                 case .request_wifi_scan:
-                    m.requestWifiScan()
+                    m.handle_request_wifi_scan()
                 case .send_wifi_credentials:
                     guard let params = params, let ssid = params["ssid"] as? String,
                           let password = params["password"] as? String
@@ -454,16 +454,16 @@ class Bridge: RCTEventEmitter {
                         Bridge.log("CommandBridge: send_wifi_credentials invalid params")
                         break
                     }
-                    m.sendWifiCredentials(ssid, password)
+                    m.handle_send_wifi_credentials(ssid, password)
                 case .set_hotspot_state:
                     guard let params = params, let enabled = params["enabled"] as? Bool else {
                         Bridge.log("CommandBridge: set_hotspot_state invalid params")
                         break
                     }
-                    m.setGlassesHotspotState(enabled)
+                    m.handle_set_hotspot_state(enabled)
                 case .query_gallery_status:
                     Bridge.log("CommandBridge: Querying gallery status")
-                    m.queryGalleryStatus()
+                    m.handle_query_gallery_status()
                 case .photo_request:
                     guard let params = params,
                           let requestId = params["requestId"] as? String,
@@ -473,7 +473,9 @@ class Bridge: RCTEventEmitter {
                         Bridge.log("CommandBridge: photo_request invalid params")
                         break
                     }
-                    m.handle_photo_request(requestId, appId, size, params["webhookUrl"] as? String)
+                    let webhookUrl = params["webhookUrl"] as? String
+                    let authToken = params["authToken"] as? String
+                    m.handle_photo_request(requestId, appId, size, webhookUrl, authToken)
                 case .start_buffer_recording:
                     Bridge.log("CommandBridge: Starting buffer recording")
                     m.handle_start_buffer_recording()
@@ -512,7 +514,7 @@ class Bridge: RCTEventEmitter {
                         break
                     }
                     Bridge.log("CommandBridge: Stopping video recording: requestId=\(requestId)")
-                    m.stopVideoRecording(requestId: requestId)
+                    m.handle_stop_video_recording(requestId)
                 case .start_rtmp_stream:
                     guard let params = params else {
                         Bridge.log("CommandBridge: start_rtmp_stream invalid params")

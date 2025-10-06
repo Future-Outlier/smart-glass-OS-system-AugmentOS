@@ -716,45 +716,6 @@ class MentraManager {
         currentSgc.sendTextWall(parsed)
     }
 
-    fun showDashboard() {
-        sgc?.showDashboard()
-    }
-
-    fun sendStartRtmpStream(message: Map<String, Any>) {
-        Bridge.log("Mentra: sendStartRtmpStream: (message)")
-        sgc?.startRtmpStream(message)
-    }
-
-    fun sendRtmpStreamStop() {
-        Bridge.log("Mentra: onRtmpStreamStop")
-        sgc?.stopRtmpStream()
-    }
-
-    fun sendRtmpStreamKeepAlive(message: Map<String, Any>) {
-        Bridge.log("Mentra: onRtmpStreamKeepAlive: (message)")
-        sgc?.sendRtmpKeepAlive(message)
-    }
-
-    fun requestWifiScan() {
-        Bridge.log("Mentra: Requesting wifi scan")
-        sgc?.requestWifiScan()
-    }
-
-    fun sendWifiCredentials(ssid: String, password: String) {
-        Bridge.log("Mentra: Sending wifi credentials: $ssid")
-        sgc?.sendWifiCredentials(ssid, password)
-    }
-
-    fun setGlassesHotspotState(enabled: Boolean) {
-        Bridge.log("Mentra: Setting glasses hotspot state: $enabled")
-        sgc?.sendHotspotState(enabled)
-    }
-
-    fun queryGalleryStatus() {
-        Bridge.log("Mentra: Querying gallery status from glasses")
-        sgc?.queryGalleryStatus()
-    }
-
     // MARK: - Auxiliary Commands
 
     fun initSGC(wearable: String) {
@@ -925,6 +886,45 @@ class MentraManager {
         }
     }
 
+    fun handle_show_dashboard() {
+        sgc?.showDashboard()
+    }
+
+    fun handle_send_rtmp_stream_start(message: Map<String, Any>) {
+        Bridge.log("Mentra: sendStartRtmpStream: (message)")
+        sgc?.startRtmpStream(message)
+    }
+
+    fun handle_send_rtmp_stream_stop() {
+        Bridge.log("Mentra: onRtmpStreamStop")
+        sgc?.stopRtmpStream()
+    }
+
+    fun handle_send_rtmp_stream_keep_alive(message: Map<String, Any>) {
+        Bridge.log("Mentra: onRtmpStreamKeepAlive: (message)")
+        sgc?.sendRtmpKeepAlive(message)
+    }
+
+    fun handle_request_wifi_scan() {
+        Bridge.log("Mentra: Requesting wifi scan")
+        sgc?.requestWifiScan()
+    }
+
+    fun handle_send_wifi_credentials(ssid: String, password: String) {
+        Bridge.log("Mentra: Sending wifi credentials: $ssid")
+        sgc?.sendWifiCredentials(ssid, password)
+    }
+
+    fun handle_set_hotspot_state(enabled: Boolean) {
+        Bridge.log("Mentra: Setting glasses hotspot state: $enabled")
+        sgc?.sendHotspotState(enabled)
+    }
+
+    fun handle_query_gallery_status() {
+        Bridge.log("Mentra: Querying gallery status from glasses")
+        sgc?.queryGalleryStatus()
+    }
+
     fun handle_start_buffer_recording() {
         Bridge.log("Mentra: onStartBufferRecording")
         sgc?.startBufferRecording()
@@ -1023,6 +1023,8 @@ class MentraManager {
             return
         }
         initSGC(defaultWearable)
+        isSearching = true
+        handle_request_status()
         sgc?.connectById(deviceName)
     }
 

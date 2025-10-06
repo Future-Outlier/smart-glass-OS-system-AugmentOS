@@ -362,46 +362,43 @@ public class Bridge {
                     }
                     break;
 
-                case "start_app":
-                    if (params != null) {
-                        String target = params.getString("target");
-                        // mentraManager.startApp(target);
-                    }
-                    break;
-
-                case "stop_app":
-                    if (params != null) {
-                        String target = params.getString("target");
-                        // mentraManager.stopApp(target);
-                    }
-                    break;
-
                 case "show_dashboard":
                     // mentraManager.sendCurrentState(true);
                     break;
 
                 case "request_wifi_scan":
-                    // mentraManager.requestWifiScan();
+                    mentraManager.handle_request_wifi_scan();
                     break;
 
                 case "send_wifi_credentials":
                     if (params != null) {
                         String ssid = params.getString("ssid");
                         String password = params.getString("password");
-                        // mentraManager.sendWifiCredentials(ssid, password);
+                        mentraManager.handle_send_wifi_credentials(ssid, password);
                     }
                     break;
 
                 case "set_hotspot_state":
                     if (params != null) {
                         boolean enabled = params.getBoolean("enabled");
-                        // mentraManager.setGlassesHotspotState(enabled);
+                        mentraManager.handle_set_hotspot_state(enabled);
                     }
                     break;
 
                 case "query_gallery_status":
                     Log.d(TAG, "Querying gallery status");
-                    // mentraManager.queryGalleryStatus();
+                    mentraManager.handle_query_gallery_status();
+                    break;
+
+                case "photo_request":
+                    if (params != null) {
+                        String requestId = params.getString("request_id");
+                        String appId = params.getString("app_id");
+                        String size = params.getString("size");
+                        String webhookUrl = params.getString("webhook_url");
+                        String authToken = params.getString("auth_token");
+                        mentraManager.handle_photo_request(requestId, appId, size, webhookUrl, authToken);
+                    }
                     break;
 
                 // case SIMULATE_HEAD_POSITION:
@@ -422,12 +419,12 @@ public class Bridge {
 
                 case "start_buffer_recording":
                     Log.d(TAG, "Starting buffer recording");
-                    // mentraManager.startBufferRecording();
+                    mentraManager.handle_start_buffer_recording();
                     break;
 
                 case "stop_buffer_recording":
                     Log.d(TAG, "Stopping buffer recording");
-                    // mentraManager.stopBufferRecording();
+                    mentraManager.handle_stop_buffer_recording();
                     break;
 
                 case "save_buffer_video":
@@ -435,7 +432,7 @@ public class Bridge {
                         String requestId = params.getString("request_id");
                         int durationSeconds = params.getInt("duration_seconds");
                         Log.d(TAG, "Saving buffer video: requestId=" + requestId + ", duration=" + durationSeconds + "s");
-                        // mentraManager.saveBufferVideo(requestId, durationSeconds);
+                        mentraManager.handle_save_buffer_video(requestId, durationSeconds);
                     }
                     break;
 
