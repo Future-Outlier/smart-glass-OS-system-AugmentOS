@@ -99,6 +99,8 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func setBrightness(_: Int, autoMode _: Bool) {}
 
+    func cleanup() {}
+
     let type = DeviceTypes.MACH1
     let hasMic: Bool = false
     var caseOpen = false

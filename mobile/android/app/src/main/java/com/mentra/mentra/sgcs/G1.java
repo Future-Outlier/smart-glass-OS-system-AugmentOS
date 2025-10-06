@@ -4008,4 +4008,8 @@ public class G1 extends SGCManager {
             return null;
         }
     }
+
+    public void cleanup() {
+        // TODO:
+    }
 }

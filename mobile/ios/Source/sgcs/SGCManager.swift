@@ -89,6 +89,7 @@ protocol SGCManager {
     func findCompatibleDevices()
     func connectById(_ id: String)
     func getConnectedBluetoothName() -> String?
+    func cleanup()
 
     // MARK: - Network Management
 

@@ -365,7 +365,7 @@ class MentraManager {
     }
 
     fun handlePcm(pcmData: ByteArray) {
-        Bridge.log("Mentra: handlePcm()")
+        // Bridge.log("Mentra: handlePcm()")
         Bridge.sendMicData(pcmData)
     }
 
@@ -759,8 +759,9 @@ class MentraManager {
     fun initSGC(wearable: String) {
         Bridge.log("Initializing manager for wearable: $wearable")
         if (sgc != null) {
-            Bridge.log("Mentra: Manager already initialized")
-            return
+            Bridge.log("Mentra: Manager already initialized, cleaning up previous sgc")
+            sgc?.cleanup();
+            sgc = null;
         }
 
         if (wearable.contains(DeviceTypes.G1)) {
@@ -811,6 +812,11 @@ class MentraManager {
             defaultWearable = DeviceTypes.G1
             handle_request_status()
             handleG1Ready()
+        }
+
+        if (sgc is MentraLive) {
+            defaultWearable = DeviceTypes.LIVE;
+            handle_request_status()
         }
 
         isSearching = false

@@ -109,13 +109,11 @@ import java.util.Locale;
  */
 public class MentraLive extends SGCManager {
     private static final String TAG = "Live";
-    public String type = DeviceTypes.G1;
+    public String type = DeviceTypes.LIVE;
     public String savedDeviceName = "";
 
     // LC3 frame size for Mentra Live
     private static final int LC3_FRAME_SIZE = 40;
-
-    private SmartGlassesConnectionState mConnectState;
 
     // Glasses version information
     private String glassesAppVersion = "";
@@ -392,7 +390,7 @@ public class MentraLive extends SGCManager {
         }
 
         // Initialize connection state
-        mConnectState = SmartGlassesConnectionState.DISCONNECTED;
+        connectionState = ConnTypes.DISCONNECTED;
 
         // Initialize the send queue processor
         processSendQueueRunnable = new Runnable() {
@@ -437,6 +435,25 @@ public class MentraLive extends SGCManager {
         if (lc3DecoderPtr == 0) {
             lc3DecoderPtr = Lc3Cpp.initDecoder();
             Bridge.log("LIVE: Initialized LC3 decoder for PCM conversion: " + lc3DecoderPtr);
+        }
+    }
+
+    public void cleanup() {
+        // TODO:
+    }
+
+    private void updateConnectionState(String state) {
+        boolean isEqual = state.equals(connectionState);
+        if (isEqual) {
+            return;
+        }
+
+        if (state.equals(ConnTypes.CONNECTED)) {
+            ready = true;
+            MentraManager.getInstance().handleConnectionStateChanged();
+        } else if (state.equals(ConnTypes.DISCONNECTED)) {
+            ready = false;
+            MentraManager.getInstance().handleConnectionStateChanged();
         }
     }
 
@@ -621,7 +638,7 @@ public class MentraLive extends SGCManager {
 
         // Update connection state
         isConnecting = true;
-        // connectionEvent(SmartGlassesConnectionState.CONNECTING);
+        updateConnectionState(ConnTypes.CONNECTING);
         Bridge.log("LIVE: Connecting to device: " + device.getAddress());
 
         // Connect to the device
@@ -1590,7 +1607,7 @@ public class MentraLive extends SGCManager {
                         Log.e(TAG, "   - bluetoothGatt: " + (bluetoothGatt != null ? "NOT NULL" : "NULL"));
                         Log.e(TAG, "   - txCharacteristic: " + (txCharacteristic != null ? "NOT NULL" : "NULL"));
                         Log.e(TAG, "   - rxCharacteristic: " + (rxCharacteristic != null ? "NOT NULL" : "NULL"));
-                        Log.e(TAG, "   - mConnectState: " + mConnectState);
+                        Log.e(TAG, "   - connectionState: " + connectionState);
                         Log.e(TAG, "   - glassesReady: " + glassesReady);
                     }
                 }
@@ -1835,7 +1852,7 @@ public class MentraLive extends SGCManager {
 
                 // Finally, mark the connection as fully established
                 Bridge.log("LIVE: ✅ Glasses connection is now fully established!");
-                // connectionEvent(SmartGlassesConnectionState.CONNECTED);
+                updateConnectionState(ConnTypes.CONNECTED);
                 break;
 
             case "keep_alive_ack":
@@ -2161,6 +2178,7 @@ public class MentraLive extends SGCManager {
                 }
                 // Notify the system that glasses are intentionally disconnected
                 // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+                updateConnectionState(ConnTypes.DISCONNECTED);
                 break;
 
             default:
@@ -2317,7 +2335,7 @@ public class MentraLive extends SGCManager {
      * Send heartbeat ping to glasses and handle periodic battery requests
      */
     private void sendHeartbeat() {
-        if (!glassesReady || mConnectState != SmartGlassesConnectionState.CONNECTED) {
+        if (!glassesReady || connectionState != ConnTypes.CONNECTED) {
             Bridge.log("LIVE: Skipping heartbeat - glasses not ready or not connected");
             return;
         }
@@ -2411,7 +2429,7 @@ public class MentraLive extends SGCManager {
      * Send a periodic test message to verify ACK system
      */
     private void sendTestMessage() {
-        if (!glassesReady || mConnectState != SmartGlassesConnectionState.CONNECTED) {
+        if (!glassesReady || connectionState != ConnTypes.CONNECTED) {
             Bridge.log("LIVE: Skipping test message - glasses not ready or not connected");
             return;
         }
@@ -2565,24 +2583,23 @@ public class MentraLive extends SGCManager {
 
     public void connectToSmartGlasses() {
         Bridge.log("LIVE: Connecting to Mentra Live glasses");
-        connectionState = ConnTypes.CONNECTING;
-        // connectionEvent(SmartGlassesConnectionState.CONNECTING);
+        updateConnectionState(ConnTypes.CONNECTING);
 
         if (isConnected) {
             Bridge.log("LIVE: #@32 Already connected to Mentra Live glasses");
-            // connectionEvent(SmartGlassesConnectionState.CONNECTED);
+            updateConnectionState(ConnTypes.CONNECTED);
             return;
         }
 
         if (bluetoothAdapter == null) {
             Bridge.log("LIVE: Bluetooth not available");
-            // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+            updateConnectionState(ConnTypes.DISCONNECTED);
             return;
         }
 
         if (!bluetoothAdapter.isEnabled()) {
             Bridge.log("LIVE: Bluetooth is not enabled");
-            // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+            updateConnectionState(ConnTypes.DISCONNECTED);
             return;
         }
 
@@ -2602,12 +2619,12 @@ public class MentraLive extends SGCManager {
                     connectToDevice(device);
                 } else {
                     Log.e(TAG, "Could not create device from address: " + lastDeviceAddress);
-                    // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+                    updateConnectionState(ConnTypes.DISCONNECTED);
                     startScan(); // Fallback to scanning
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error connecting to saved device: " + e.getMessage());
-                // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+                updateConnectionState(ConnTypes.DISCONNECTED);
                 startScan(); // Fallback to scanning
             }
         } else {

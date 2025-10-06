@@ -378,6 +378,10 @@ class G1: NSObject, SGCManager {
         Bridge.log("G1: ERG1Manager deinitialized")
     }
 
+    func cleanup() {
+        // TODO:
+    }
+
     // MARK: - Serial Number and Color Detection
 
     /// Decodes Even G1 serial number to extract style and color information

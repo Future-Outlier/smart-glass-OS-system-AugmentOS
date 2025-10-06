@@ -79,6 +79,7 @@ public abstract class SGCManager {
     public abstract void findCompatibleDevices();
     public abstract void connectById(String id);
     public abstract String getConnectedBluetoothName();
+    public abstract void cleanup();
 
     // Network Management
     public abstract void requestWifiScan();

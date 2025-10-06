@@ -946,6 +946,10 @@ class MentraLive: NSObject, SGCManager {
         destroy()
     }
 
+    func cleanup() {
+        destroy()
+    }
+
     // MARK: - React Native Interface
 
     private var discoveredPeripherals = [String: CBPeripheral]() // name -> peripheral
