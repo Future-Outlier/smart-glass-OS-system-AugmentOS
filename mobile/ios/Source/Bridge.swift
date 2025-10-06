@@ -432,7 +432,7 @@ class Bridge: RCTEventEmitter {
                     guard let params = params, let modelName = params["model_name"] as? String
                     else {
                         Bridge.log(
-                            "CommandBridge: search_for_compatible_device_names invalid params")
+                            "CommandBridge: find_compatible_devices invalid params")
                         break
                     }
                     m.handle_find_compatible_devices(modelName)

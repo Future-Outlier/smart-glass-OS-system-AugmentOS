@@ -466,7 +466,7 @@ export class MantleBridge extends EventEmitter {
 
   async sendSearchForCompatibleDeviceNames(modelName: string) {
     return await this.sendData({
-      command: "search_for_compatible_device_names",
+      command: "find_compatible_devices",
       params: {
         model_name: modelName,
       },

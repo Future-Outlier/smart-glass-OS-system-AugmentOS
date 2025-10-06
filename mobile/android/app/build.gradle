@@ -109,13 +109,6 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 49
         versionName "2.2.11"
-
-        // Native build configuration for LC3
-        // externalNativeBuild {
-        //     cmake {
-        //         cppFlags ""
-        //     }
-        // }
     }
 
     // External native build configuration
@@ -125,6 +118,32 @@ android {
     //         version "3.22.1"
     //     }
     // }
+
+
+
+//    externalNativeBuild {
+//        cmake {
+//            '-DCMAKE_OBJECT_PATH_MAX=600'
+//            '-DANDROID_STL=c++_static'
+//        }
+//    }
+
+//    externalNativeBuild {
+//        cmake {
+//            '-DCMAKE_OBJECT_PATH_MAX=600'
+//            '-DANDROID_STL=c++_static'
+//            path file('src/main/cpp/CMakeLists.txt')
+//            version '3.22.1'
+//        }
+//    }
+
+//    externalNativeBuild {
+//        cmake {
+//            path file('src/main/cpp/liblc3/CMakeLists.txt')
+//            version '3.22.1'
+//        }
+//    }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -196,6 +215,7 @@ dependencies {
     // AugmentOSLib project dependency
     // implementation project(path: ':AugmentOSLib')
     // implementation project(path: ":augmentos_core")
+    implementation project(path: ":SmartGlassesManager")
     implementation "androidx.lifecycle:lifecycle-service:2.6.1"
     implementation("org.greenrobot:eventbus:3.3.1")
     implementation 'com.google.code.gson:gson:2.10.1'
