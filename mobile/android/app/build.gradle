@@ -212,13 +212,11 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-    // AugmentOSLib project dependency
-    // implementation project(path: ':AugmentOSLib')
-    // implementation project(path: ":augmentos_core")
-    implementation project(path: ":SmartGlassesManager")
     implementation "androidx.lifecycle:lifecycle-service:2.6.1"
     implementation("org.greenrobot:eventbus:3.3.1")
     implementation 'com.google.code.gson:gson:2.10.1'
+    // lc3Lib which includes the cpp lc3 library dep
+    implementation project(path: ":lc3Lib")
 
     // Google Play Services for location settings dialog
     implementation 'com.google.android.gms:play-services-location:21.0.1'

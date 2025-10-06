@@ -11,7 +11,7 @@ import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.mentra.mentra.lc3.L3cCpp;
+import com.mentra.lc3Lib.Lc3Cpp;
 import com.mentra.mentra.utils.audio.ByteUtilAudioPlayer;
 
 import java.io.FileNotFoundException;
@@ -57,7 +57,7 @@ public class Lc3Player extends Thread{
 //        mTrack.setStereoVolume(0.8f,0.8f);
         mTrack.setVolume(1.0f);
         mTrack.setPlaybackRate(mSampleRate);
-        mDecorderHandle = L3cCpp.initDecoder();
+        mDecorderHandle = Lc3Cpp.initDecoder();
         Log.e("_test_", "lc3 decoder handle="+mDecorderHandle);
     }
 
@@ -91,7 +91,7 @@ public class Lc3Player extends Thread{
         for(int i = 0;i < 5; i++)
         {
             System.arraycopy(data, i*40 + 2, mTestBuffer, 0, 40);
-            byte []decData = L3cCpp.decodeLC3(mDecorderHandle, mTestBuffer, mFrameSize);
+            byte []decData = Lc3Cpp.decodeLC3(mDecorderHandle, mTestBuffer, mFrameSize);
             if(decData != null)
                 mTrack.write(decData, 0, decData.length);
         }
@@ -101,7 +101,7 @@ public class Lc3Player extends Thread{
         if(size != 202)
             return;
         System.arraycopy(data, 2, mBuffer, 0, 200);
-        byte []decData = L3cCpp.decodeLC3(mDecorderHandle, mBuffer, mFrameSize);
+        byte []decData = Lc3Cpp.decodeLC3(mDecorderHandle, mBuffer, mFrameSize);
         if(decData == null)
         {
             Log.e("_test_", "lc3 decoder data null");
@@ -133,7 +133,7 @@ public class Lc3Player extends Thread{
                 } finally {
                     mTrack = null;
                 }
-                L3cCpp.freeDecoder(mDecorderHandle);
+                Lc3Cpp.freeDecoder(mDecorderHandle);
             }
         }
         // stopRec(); // Recording disabled
@@ -154,7 +154,7 @@ public class Lc3Player extends Thread{
                         for(int i = 0;i < 5; i++)
                         {
                             System.arraycopy(data, i*40 + 2, mTestBuffer, 0, 40);
-                            byte []decData = L3cCpp.decodeLC3(mDecorderHandle, mTestBuffer, mFrameSize);
+                            byte []decData = Lc3Cpp.decodeLC3(mDecorderHandle, mTestBuffer, mFrameSize);
                             if(decData != null) {
                                 synchronized (this) {
                                     if (mTrack != null && isPlaying) {
@@ -182,7 +182,7 @@ public class Lc3Player extends Thread{
                         }
                         mLastSeq = ByteUtilAudioPlayer.byte2Int(data[1]);
                         mLastSeq = (mLastSeq + 1) % 256;
-                        byte []decData = L3cCpp.decodeLC3(mDecorderHandle, mBuffer, mFrameSize);
+                        byte []decData = Lc3Cpp.decodeLC3(mDecorderHandle, mBuffer, mFrameSize);
                         if(decData != null) {
                             synchronized (this) {
                                 if (mTrack != null && isPlaying) {

@@ -69,7 +69,7 @@ import com.mentra.mentra.utils.BitmapJavaUtils;
 import static com.mentra.mentra.utils.BitmapJavaUtils.convertBitmapTo1BitBmpBytes;
 import com.mentra.mentra.utils.G1FontLoader;
 import com.mentra.mentra.utils.SmartGlassesConnectionState;
-import com.mentra.mentra.lc3.L3cCpp;
+import com.mentra.lc3Lib.Lc3Cpp;
 
 // import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesSerialNumberEvent;
 // import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BatteryLevelEvent;
@@ -241,7 +241,7 @@ public class G1 extends SGCManager {
 
         // setup LC3 decoder
         if (lc3DecoderPtr == 0) {
-            lc3DecoderPtr = L3cCpp.initDecoder();
+            lc3DecoderPtr = Lc3Cpp.initDecoder();
         }
 
         // setup fonts
@@ -533,7 +533,7 @@ public class G1 extends SGCManager {
                             if (deviceName.contains("R_")) {
                                 // decode the LC3 audio
                                 if (lc3DecoderPtr != 0) {
-                                    byte[] pcmData = L3cCpp.decodeLC3(lc3DecoderPtr, lc3);
+                                    byte[] pcmData = Lc3Cpp.decodeLC3(lc3DecoderPtr, lc3);
                                     // send the PCM out
                                     if (shouldUseGlassesMic) {
                                         if (pcmData != null && pcmData.length > 0) {
@@ -2132,7 +2132,7 @@ public class G1 extends SGCManager {
 
         // free LC3 decoder
         if (lc3DecoderPtr != 0) {
-            L3cCpp.freeDecoder(lc3DecoderPtr);
+            Lc3Cpp.freeDecoder(lc3DecoderPtr);
             lc3DecoderPtr = 0;
         }
 

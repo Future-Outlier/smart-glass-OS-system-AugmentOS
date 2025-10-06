@@ -23,8 +23,8 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
 
 rootProject.name = 'MentraOS'
 
-include ':SmartGlassesManager'
-project(':SmartGlassesManager').projectDir = new File(rootProject.projectDir, './SmartGlassesManager')
+include ':lc3Lib'
+project(':lc3Lib').projectDir = new File(rootProject.projectDir, './lc3Lib')
 
 dependencyResolutionManagement {
   versionCatalogs {

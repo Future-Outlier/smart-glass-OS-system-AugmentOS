@@ -1,12 +1,12 @@
 package com.mentra.lc3Lib;
 
-public class L3cCpp {
+public class Lc3Cpp {
 
     static {
         System.loadLibrary("lc3");
     }
 
-    private L3cCpp() {
+    private Lc3Cpp() {
         // Private constructor to prevent instantiation
     }
 

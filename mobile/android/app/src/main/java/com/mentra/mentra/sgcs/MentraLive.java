@@ -66,7 +66,7 @@ import com.mentra.mentra.utils.audio.Lc3Player;
 import com.mentra.mentra.utils.BlePhotoUploadService;
 
 // old augmentos imports:
-import com.mentra.mentra.lc3.L3cCpp;
+import com.mentra.lc3Lib.Lc3Cpp;
 import com.mentra.mentra.utils.audio.Lc3Player;
 
 
@@ -433,7 +433,7 @@ public class MentraLive extends SGCManager {
 
         //setup LC3 decoder for PCM conversion
         if (lc3DecoderPtr == 0) {
-            lc3DecoderPtr = L3cCpp.initDecoder();
+            lc3DecoderPtr = Lc3Cpp.initDecoder();
             Bridge.log("LIVE: Initialized LC3 decoder for PCM conversion: " + lc3DecoderPtr);
         }
     }
@@ -2888,7 +2888,7 @@ public class MentraLive extends SGCManager {
 
         // Clean up LC3 decoder
         if (lc3DecoderPtr != 0) {
-            L3cCpp.freeDecoder(lc3DecoderPtr);
+            Lc3Cpp.freeDecoder(lc3DecoderPtr);
             lc3DecoderPtr = 0;
             Bridge.log("LIVE: Freed LC3 decoder resources");
         }
@@ -4260,7 +4260,7 @@ public class MentraLive extends SGCManager {
             // if (audioProcessingCallback != null) {
                 if (lc3DecoderPtr != 0) {
                     // Decode LC3 to PCM using the native decoder with Mentra Live frame size
-                    byte[] pcmData = L3cCpp.decodeLC3(lc3DecoderPtr, lc3Data, LC3_FRAME_SIZE);
+                    byte[] pcmData = Lc3Cpp.decodeLC3(lc3DecoderPtr, lc3Data, LC3_FRAME_SIZE);
 
                     if (pcmData != null && pcmData.length > 0) {
                         // Forward PCM data to audio processing system (like Even Realities G1)
