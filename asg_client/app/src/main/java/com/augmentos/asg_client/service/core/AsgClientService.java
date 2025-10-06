@@ -452,7 +452,7 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             JSONObject ledParams = new JSONObject();
             ledParams.put("led", 2);  // Blue LED
             ledParams.put("ontime", 999999);  // Stay on for a very long time (forever)
-            ledParams.put("offtime", 0);  // No off time
+            ledParams.put("offime", 0);  // No off time
             ledParams.put("count", 1);  // Single cycle
             
             k900Command.put("B", ledParams);  // Pass as JSONObject, not string

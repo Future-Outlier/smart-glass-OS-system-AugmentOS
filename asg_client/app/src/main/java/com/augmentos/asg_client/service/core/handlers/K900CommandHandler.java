@@ -303,13 +303,13 @@ public class K900CommandHandler {
             JSONObject ledParams = new JSONObject();
             ledParams.put("led", 2);  // Blue LED
             ledParams.put("ontime", 5000);  // 5 seconds on
-            ledParams.put("offtime", 1000);  // 1 second off
+            ledParams.put("offime", 1000);  // 1 second off
             ledParams.put("count", 1);  // Single cycle
             
             // Build full K900 format: C, V, B (all three required to avoid double-wrapping!)
             JSONObject k900Command = new JSONObject();
             k900Command.put("C", "cs_ledon");
-            // k900Command.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
+            k900Command.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
             k900Command.put("B", ledParams);
             
             String commandStr = k900Command.toString();
@@ -353,7 +353,7 @@ public class K900CommandHandler {
             // Build full K900 format (C, V, B) to avoid double-wrapping
             JSONObject authorityCommand = new JSONObject();
             authorityCommand.put("C", "android_control_led");
-            // authorityCommand.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
+            authorityCommand.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
             authorityCommand.put("B", claimControl);
             
             String commandStr = authorityCommand.toString();
