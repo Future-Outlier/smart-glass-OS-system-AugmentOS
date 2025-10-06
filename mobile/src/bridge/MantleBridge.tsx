@@ -418,8 +418,11 @@ export class MantleBridge extends EventEmitter {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          // socketComms.sendBinary(bytes)
-          livekitManager.addPcm(bytes)
+          if (livekitManager.isRoomConnected()) {
+            livekitManager.addPcm(bytes)
+          } else {
+            socketComms.sendBinary(bytes)
+          }
           break
         case "rtmp_stream_status":
           console.log("MantleBridge: Forwarding RTMP stream status to server:", data)
@@ -655,11 +658,18 @@ export class MantleBridge extends EventEmitter {
     })
   }
 
-  async sendSetButtonMode(mode: string) {
+  // DEPRECATED: Button mode is now controlled by gallery mode state
+  // Keeping method for backward compatibility but it does nothing
+  async sendSetButtonMode(_mode: string) {
+    console.log("sendSetButtonMode is deprecated - gallery mode controls capture now")
+    return Promise.resolve()
+  }
+
+  async sendGalleryModeActive(active: boolean) {
     return await this.sendData({
-      command: "set_button_mode",
+      command: "send_gallery_mode_active",
       params: {
-        mode: mode,
+        active: active,
       },
     })
   }
