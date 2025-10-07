@@ -1164,12 +1164,12 @@ struct ViewState {
     func handle_connect_by_name(_ dName: String) {
         Bridge.log("Mentra: Connecting to wearable: \(dName ?? "nil")")
 
-        if pendingWearable.isEmpty, defaultWearable.isEmpty {
+        if pendingWearable.isEmpty && defaultWearable.isEmpty {
             Bridge.log("Mentra: No pending or default wearable, returning")
             return
         }
 
-        if pendingWearable.isEmpty, !defaultWearable.isEmpty {
+        if pendingWearable.isEmpty && !defaultWearable.isEmpty {
             Bridge.log("Mentra: No pending wearable, using default wearable: \(defaultWearable)")
             pendingWearable = defaultWearable
         }
