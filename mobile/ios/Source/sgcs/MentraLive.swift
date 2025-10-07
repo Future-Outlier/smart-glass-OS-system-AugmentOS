@@ -2552,7 +2552,7 @@ class MentraLive: NSObject, SGCManager {
             "ssid": wifiSsid,
             "local_ip": wifiLocalIp,
         ]
-        Bridge.sendTypedMessage("wifi_status_change", body: eventBody)
+        Bridge.sendWifiStatusChange(wifiConnected, wifiSsid, wifiLocalIp)
     }
 
     private func emitHotspotStatusChange() {

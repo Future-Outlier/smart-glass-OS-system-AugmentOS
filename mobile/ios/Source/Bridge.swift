@@ -309,6 +309,15 @@ class Bridge: RCTEventEmitter {
         Bridge.sendTypedMessage("glasses_serial_number", body: body)
     }
 
+    static func sendWifiStatusChange(connected: Bool, ssid: String?, localIp: String?) {
+        let event: [String: Any] = [
+            "connected": connected,
+            "ssid": ssid,
+            "local_ip": localIp,
+        ]
+        Bridge.sendTypedMessage("wifi_status_change", body: event)
+    }
+
     static func sendWifiScanResults(_ networks: [[String: Any]]) {
         let eventBody: [String: Any] = [
             "networks": networks,

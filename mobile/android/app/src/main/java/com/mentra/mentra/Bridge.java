@@ -125,6 +125,13 @@ public class Bridge {
         sendTypedMessage("head_up", data);
     }
 
+    public static void sendWifiStatusChange(boolean connected, String ssid, String localIp) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("connected", connected);
+        data.put("ssid", ssid);
+        data.put("localIp", localIp);
+        sendTypedMessage("wifi_status_change", data);
+    }
 
     public static void sendWifiScanResults(List<Map<String, Object>> networks) {
         Map<String, Object> body = new HashMap<>();
@@ -294,7 +301,7 @@ public class Bridge {
      * Don't add to this list, use a typed message instead
      */
     public static String[] getSupportedEvents() {
-        return new String[] {"CoreMessageEvent", "WIFI_SCAN_RESULTS"};
+        return new String[] {"CoreMessageEvent"};
     }
 
     /**

@@ -135,7 +135,7 @@ export function Reconnect() {
           }
         }
 
-        await bridge.sendConnectDefault()
+        // await bridge.sendConnectDefault()
       }
     }
 

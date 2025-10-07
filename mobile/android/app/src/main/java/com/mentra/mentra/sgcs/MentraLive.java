@@ -77,6 +77,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Set;
+import java.util.HashSet;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -547,6 +549,8 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    Set<String> seenDevices = new HashSet<>();
+
     /**
      * BLE Scan callback
      */
@@ -566,7 +570,11 @@ public class MentraLive extends SGCManager {
             String deviceName = result.getDevice().getName();
             String deviceAddress = result.getDevice().getAddress();
 
-            Bridge.log("LIVE: Found BLE device: " + deviceName + " (" + deviceAddress + ")");
+            // String device = deviceName + deviceAddress;
+            // if (!seenDevices.contains(device)) {
+            //     seenDevices.add(device);
+            //     Bridge.log("LIVE: Found BLE device: " + deviceName + " (" + deviceAddress + ")");
+            // }
 
             // Check if this device matches the saved device name
             // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
@@ -1650,12 +1658,7 @@ public class MentraLive extends SGCManager {
                 wifiSsid = ssid;
 
                 Bridge.log("LIVE: ## Received WiFi status: connected=" + wifiConnected + ", SSID=" + ssid + ", Local IP=" + localIp);
-                // EventBus.getDefault().post(new GlassesWifiStatusChange(
-                //         smartGlassesDevice.deviceModelName,
-                //         wifiConnected,
-                //         ssid,
-                //         localIp));
-
+                Bridge.sendWifiStatusChange(wifiConnected, ssid, localIp);
                 break;
 
             case "hotspot_status_update":
@@ -2541,6 +2544,7 @@ public class MentraLive extends SGCManager {
 
     public void disconnect() {
         Bridge.log("LIVE: Disconnecting from Mentra Live glasses");
+        destroy();
     }
 
     public void exit() {
@@ -2599,7 +2603,7 @@ public class MentraLive extends SGCManager {
         // String lastDeviceAddress = prefs.getString(PREF_DEVICE_NAME, null);
         String lastDeviceAddress = MentraManager.getInstance().getDeviceAddress();
 
-        if (lastDeviceAddress != null) {
+        if (lastDeviceAddress != null && lastDeviceAddress.length() > 0) {
             // Connect to last known device if available
             Bridge.log("LIVE: Attempting to connect to last known device: " + lastDeviceAddress);
             try {
@@ -2608,12 +2612,12 @@ public class MentraLive extends SGCManager {
                     Bridge.log("LIVE: Found saved device, connecting directly: " + lastDeviceAddress);
                     connectToDevice(device);
                 } else {
-                    Log.e(TAG, "Could not create device from address: " + lastDeviceAddress);
+                    Bridge.log("LIVE: ERROR: Could not create device from address: " + lastDeviceAddress);
                     updateConnectionState(ConnTypes.DISCONNECTED);
                     startScan(); // Fallback to scanning
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error connecting to saved device: " + e.getMessage());
+                Bridge.log("LIVE: ERROR: Error connecting to saved device: " + e.getMessage());
                 updateConnectionState(ConnTypes.DISCONNECTED);
                 startScan(); // Fallback to scanning
             }
@@ -2884,6 +2888,8 @@ public class MentraLive extends SGCManager {
         // Reset state variables
         reconnectAttempts = 0;
         glassesReady = false;
+        ready = false;
+        updateConnectionState(ConnTypes.DISCONNECTED);
 
         // Note: We don't null context here to prevent race conditions with BLE callbacks
         // The isKilled flag above serves as our destruction indicator
