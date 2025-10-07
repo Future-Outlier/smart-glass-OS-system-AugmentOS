@@ -14,6 +14,7 @@ import com.mentra.mentra.services.PhoneMic
 import com.mentra.mentra.sgcs.G1
 import com.mentra.mentra.sgcs.MentraLive
 import com.mentra.mentra.sgcs.SGCManager
+import com.mentra.mentra.sgcs.Simulated
 import com.mentra.mentra.utils.DeviceTypes
 import java.text.SimpleDateFormat
 import java.util.*
@@ -445,11 +446,13 @@ class MentraManager {
             return
         }
 
-        if (defaultWearable.contains(DeviceTypes.SIMULATED) || defaultWearable.isEmpty()) {
+        if (sgc?.type?.contains(DeviceTypes.SIMULATED) == true) {
+            // dont send the event to glasses that aren't there:
             return
         }
 
-        if (!isSomethingConnected()) {
+        var ready = sgc?.ready ?: false
+        if (!ready) {
             return
         }
 
@@ -713,11 +716,13 @@ class MentraManager {
         Bridge.log("Initializing manager for wearable: $wearable")
         if (sgc != null) {
             Bridge.log("Mentra: Manager already initialized, cleaning up previous sgc")
-            sgc?.cleanup();
-            sgc = null;
+            sgc?.cleanup()
+            sgc = null
         }
 
-        if (wearable.contains(DeviceTypes.G1)) {
+        if (wearable.contains(DeviceTypes.SIMULATED)) {
+            sgc = Simulated()
+        } else if (wearable.contains(DeviceTypes.G1)) {
             sgc = G1()
         } else if (wearable.contains(DeviceTypes.LIVE)) {
             sgc = MentraLive()
@@ -734,8 +739,6 @@ class MentraManager {
     }
 
     // MARK: - connection state management
-
-    private fun isSomethingConnected(): Boolean = sgc?.ready ?: false
 
     fun handleConnectionStateChanged() {
         Bridge.log("Mentra: Glasses connection state changed!")
@@ -768,7 +771,7 @@ class MentraManager {
         }
 
         if (sgc is MentraLive) {
-            defaultWearable = DeviceTypes.LIVE;
+            defaultWearable = DeviceTypes.LIVE
             handle_request_status()
         }
 
@@ -1022,15 +1025,6 @@ class MentraManager {
     fun handle_connect_by_name(dName: String) {
         Bridge.log("Mentra: Connecting to wearable: $dName")
 
-        if (pendingWearable.contains(DeviceTypes.SIMULATED)) {
-            Bridge.log(
-                    "Mentra: Pending wearable is simulated, setting default wearable to Simulated Glasses"
-            )
-            defaultWearable = DeviceTypes.SIMULATED
-            handle_request_status()
-            return
-        }
-
         if (pendingWearable.isEmpty() && defaultWearable.isEmpty()) {
             Bridge.log("Mentra: No pending or default wearable, returning")
             return
@@ -1044,11 +1038,11 @@ class MentraManager {
         handle_disconnect()
         Thread.sleep(100)
         isSearching = true
-        handle_request_status() // update the ui
         deviceName = dName
 
         initSGC(pendingWearable)
         sgc?.connectById(deviceName)
+        handle_request_status()
     }
 
     fun handle_disconnect() {
@@ -1072,11 +1066,6 @@ class MentraManager {
 
     fun handle_find_compatible_devices(modelName: String) {
         Bridge.log("Mentra: Searching for compatible device names for: $modelName")
-        if (modelName.contains(DeviceTypes.SIMULATED)) {
-            defaultWearable = DeviceTypes.SIMULATED
-            handle_request_status()
-            return
-        }
 
         if (DeviceTypes.ALL.contains(modelName)) {
             pendingWearable = modelName
@@ -1085,6 +1074,7 @@ class MentraManager {
         initSGC(pendingWearable)
         Bridge.log("Mentra: sgc initialized, calling findCompatibleDevices")
         sgc?.findCompatibleDevices()
+        handle_request_status()
     }
 
     fun handle_request_status() {
@@ -1154,7 +1144,6 @@ class MentraManager {
 
         val coreInfo =
                 mapOf(
-                        "augmentos_core_version" to "Unknown",
                         "default_wearable" to defaultWearable,
                         "preferred_mic" to preferredMic,
                         "is_searching" to isSearching,

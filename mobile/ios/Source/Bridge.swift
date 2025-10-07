@@ -521,10 +521,10 @@ class Bridge: RCTEventEmitter {
                         break
                     }
                     Bridge.log("CommandBridge: Starting RTMP stream")
-                    m.onRtmpStreamStartRequest(params)
+                    m.handle_start_rtmp_stream(params)
                 case .stop_rtmp_stream:
                     Bridge.log("CommandBridge: Stopping RTMP stream")
-                    m.onRtmpStreamStop()
+                    m.handle_stop_stream()
                 case .keep_rtmp_stream_alive:
                     guard let params = params else {
                         Bridge.log("CommandBridge: keep_rtmp_stream_alive invalid params")

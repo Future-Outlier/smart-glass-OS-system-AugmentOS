@@ -611,7 +611,9 @@ struct ViewState {
             sgc = nil
         }
 
-        if wearable.contains(DeviceTypes.G1) {
+        if wearable.contains(DeviceTypes.SIMULATED) {
+            sgc = Simulated()
+        } else if wearable.contains(DeviceTypes.G1) {
             sgc = G1()
         } else if wearable.contains(DeviceTypes.LIVE) {
             sgc = MentraLive()
@@ -640,12 +642,13 @@ struct ViewState {
                 return
             }
 
-            if self.defaultWearable.contains(DeviceTypes.SIMULATED) || self.defaultWearable.isEmpty {
+            if sgc?.type?.contains(DeviceTypes.SIMULATED) ?? true {
                 // dont send the event to glasses that aren't there:
                 return
             }
 
-            if !self.isSomethingConnected() {
+            var ready = sgc?.ready ?? false
+            if !ready {
                 return
             }
 
@@ -773,16 +776,6 @@ struct ViewState {
     }
 
     // MARK: - connection state management
-
-    private func isSomethingConnected() -> Bool {
-        if sgc?.ready == true {
-            return true
-        }
-        if defaultWearable.contains(DeviceTypes.SIMULATED) {
-            return true
-        }
-        return false
-    }
 
     func handleConnectionStateChanged() {
         Bridge.log("Mentra: Glasses: connection state changed!")
@@ -965,13 +958,13 @@ struct ViewState {
         sgc?.showDashboard()
     }
 
-    func handle_send_rtmp_stream_start(_ message: [String: Any]) {
-        Bridge.log("Mentra: sendStartRtmpStream: \(message)")
+    func handle_start_rtmp_stream(_ message: [String: Any]) {
+        Bridge.log("Mentra: startRtmpStream: \(message)")
         sgc?.startRtmpStream(message)
     }
 
-    func handle_send_rtmp_stream_stop() {
-        Bridge.log("Mentra: onRtmpStreamStop")
+    func handle_stop_rtmp_stream() {
+        Bridge.log("Mentra: stopRtmpStream")
         sgc?.stopRtmpStream()
     }
 
@@ -1171,15 +1164,6 @@ struct ViewState {
     func handle_connect_by_name(_ dName: String) {
         Bridge.log("Mentra: Connecting to wearable: \(dName ?? "nil")")
 
-        if pendingWearable.contains(DeviceTypes.SIMULATED) {
-            Bridge.log(
-                "Mentra: Pending wearable is simulated, setting default wearable to Simulated Glasses"
-            )
-            defaultWearable = DeviceTypes.SIMULATED
-            handle_request_status()
-            return
-        }
-
         if pendingWearable.isEmpty, defaultWearable.isEmpty {
             Bridge.log("Mentra: No pending or default wearable, returning")
             return
@@ -1194,11 +1178,11 @@ struct ViewState {
             handle_disconnect()
             try? await Task.sleep(nanoseconds: 100 * 1_000_000) // 100ms
             self.isSearching = true
-            handle_request_status() // update the UI
-            self.deviceName = deviceName
+            self.deviceName = dName
 
             initSGC(self.pendingWearable)
             sgc?.connectById(self.deviceName)
+            handle_request_status()
         }
     }
 
@@ -1225,11 +1209,6 @@ struct ViewState {
 
     func handle_find_compatible_devices(_ modelName: String) {
         Bridge.log("Mentra: Searching for compatible device names for: \(modelName)")
-        if modelName.contains(DeviceTypes.SIMULATED) {
-            defaultWearable = DeviceTypes.SIMULATED
-            handle_request_status()
-            return
-        }
 
         if DeviceTypes.ALL.contains(modelName) {
             pendingWearable = modelName
@@ -1237,6 +1216,7 @@ struct ViewState {
 
         initSGC(pendingWearable)
         sgc?.findCompatibleDevices()
+        handle_request_status()
     }
 
     func handle_request_status() {

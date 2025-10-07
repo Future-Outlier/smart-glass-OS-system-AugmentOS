@@ -902,7 +902,7 @@ class MentraLive: NSObject, SGCManager {
             _ready = newValue
             if oldValue != newValue {
                 // Call the callback when state changes
-                MentraManager.shared.handleConnectionStateChange()
+                MentraManager.shared.handleConnectionStateChanged()
                 Bridge.log("MentraLive: connection state changed to: \(newValue)")
             }
             if !newValue {

@@ -18,7 +18,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "assets/*": ["./assets/*"]
+      "assets/*": ["./assets/*"],
+      "@cloud/*": ["../cloud/*"]
     },
     "typeRoots": ["./node_modules/@types", "./types", "./src/types"]
   },
