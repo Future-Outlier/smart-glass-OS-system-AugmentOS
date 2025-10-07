@@ -114,7 +114,7 @@ enum GlassesError: Error {
 }
 
 class G1: NSObject, SGCManager {
-    var connectionState: String
+    var connectionState: String = ConnTypes.DISCONNECTED
 
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
 
@@ -219,7 +219,7 @@ class G1: NSObject, SGCManager {
             let oldValue = _ready
             _ready = newValue
             if oldValue != newValue {
-                MentraManager.shared.handleConnectionStateChange()
+                MentraManager.shared.handleConnectionStateChanged()
             }
             if !newValue {
                 // Reset battery levels when disconnected

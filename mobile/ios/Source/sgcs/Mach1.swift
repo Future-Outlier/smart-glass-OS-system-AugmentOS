@@ -122,7 +122,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
             let oldValue = _ready
             _ready = newValue
             if oldValue != newValue {
-                MentraManager.shared.handleConnectionStateChange()
+                MentraManager.shared.handleConnectionStateChanged()
             }
         }
     }

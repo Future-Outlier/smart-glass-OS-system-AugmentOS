@@ -362,7 +362,6 @@ class Bridge: RCTEventEmitter {
             case send_wifi_credentials
             case set_hotspot_state
             case query_gallery_status
-            case send_gallery_mode_active
             case photo_request
             case start_buffer_recording
             case stop_buffer_recording
@@ -372,7 +371,6 @@ class Bridge: RCTEventEmitter {
             case start_rtmp_stream
             case stop_rtmp_stream
             case keep_rtmp_stream_alive
-            case set_auth_secret_key
             case set_stt_model_details
             case get_stt_model_path
             case check_stt_model_available
@@ -524,14 +522,14 @@ class Bridge: RCTEventEmitter {
                     m.handle_start_rtmp_stream(params)
                 case .stop_rtmp_stream:
                     Bridge.log("CommandBridge: Stopping RTMP stream")
-                    m.handle_stop_stream()
+                    m.handle_stop_rtmp_stream()
                 case .keep_rtmp_stream_alive:
                     guard let params = params else {
                         Bridge.log("CommandBridge: keep_rtmp_stream_alive invalid params")
                         break
                     }
                     Bridge.log("CommandBridge: RTMP stream keep alive")
-                    m.onRtmpStreamKeepAlive(params)
+                    m.handle_keep_rtmp_stream_alive(params)
                 case .unknown:
                     Bridge.log("CommandBridge: Unknown command type: \(commandString)")
                     m.handle_request_status()

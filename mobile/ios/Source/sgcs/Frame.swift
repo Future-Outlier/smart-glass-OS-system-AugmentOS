@@ -487,7 +487,7 @@ struct FrameCommand {
             .replacingOccurrences(of: "\t", with: " ")
     }
 
-    private func cleanup() {
+    func cleanup() {
         txCharacteristic = nil
         rxCharacteristic = nil
         framePeripheral = nil

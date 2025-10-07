@@ -968,8 +968,8 @@ struct ViewState {
         sgc?.stopRtmpStream()
     }
 
-    func handle_send_rtmp_stream_keep_alive(_ message: [String: Any]) {
-        Bridge.log("Mentra: onRtmpStreamKeepAlive: \(message)")
+    func handle_keep_rtmp_stream_alive(_ message: [String: Any]) {
+        Bridge.log("Mentra: sendRtmpKeepAlive: \(message)")
         sgc?.sendRtmpKeepAlive(message)
     }
 
