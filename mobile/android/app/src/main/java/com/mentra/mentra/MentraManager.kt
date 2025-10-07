@@ -1148,7 +1148,7 @@ class MentraManager {
                         "preferred_mic" to preferredMic,
                         "is_searching" to isSearching,
                         "is_mic_enabled_for_frontend" to
-                                (micEnabled && preferredMic == "glasses" && isSomethingConnected()),
+                                (micEnabled && preferredMic == "glasses" && sgc?.ready == true),
                         "core_token" to coreToken,
                 )
 

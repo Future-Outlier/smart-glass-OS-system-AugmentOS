@@ -642,7 +642,7 @@ struct ViewState {
                 return
             }
 
-            if sgc?.type?.contains(DeviceTypes.SIMULATED) ?? true {
+            if sgc?.type.contains(DeviceTypes.SIMULATED) ?? true {
                 // dont send the event to glasses that aren't there:
                 return
             }
@@ -1304,8 +1304,7 @@ struct ViewState {
             "is_searching": isSearching,
             // only on if recording from glasses:
             // TODO: this isn't robust:
-            "is_mic_enabled_for_frontend": micEnabled && (preferredMic == "glasses")
-                && isSomethingConnected(),
+            "is_mic_enabled_for_frontend": micEnabled && (preferredMic == "glasses") && (sgc?.ready ?? false),
             "core_token": coreToken,
             "puck_connected": true,
         ]
