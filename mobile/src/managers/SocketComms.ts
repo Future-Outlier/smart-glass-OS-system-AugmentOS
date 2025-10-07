@@ -53,7 +53,7 @@ class SocketComms {
 
   private async connectWebsocket() {
     console.log("SocketCommsTS: connectWebsocket()")
-    const url = await useSettingsStore.getState().getWsUrl()
+    const url = useSettingsStore.getState().getWsUrl()
     if (!url) {
       console.error(`SocketCommsTS: Invalid server URL`)
       return
