@@ -4,39 +4,39 @@ import com.mentra.mentra.utils.ConnTypes
 
 abstract class SGCManager {
     // Device Information
-    var type: String = ""
-    var ready: Boolean = false
-    var connectionState: String =
+    @JvmField var type: String = ""
+    @JvmField var ready: Boolean = false
+    @JvmField var connectionState: String =
             ConnTypes.DISCONNECTED // "disconnected" | "connected" | "connecting"
 
-    var glassesAppVersion: String = ""
-    var glassesBuildNumber: String = ""
-    var glassesDeviceModel: String = ""
-    var glassesAndroidVersion: String = ""
-    var glassesOtaVersionUrl: String = ""
-    var glassesSerialNumber: String = ""
-    var glassesStyle: String = ""
-    var glassesColor: String = ""
+    @JvmField var glassesAppVersion: String = ""
+    @JvmField var glassesBuildNumber: String = ""
+    @JvmField var glassesDeviceModel: String = ""
+    @JvmField var glassesAndroidVersion: String = ""
+    @JvmField var glassesOtaVersionUrl: String = ""
+    @JvmField var glassesSerialNumber: String = ""
+    @JvmField var glassesStyle: String = ""
+    @JvmField var glassesColor: String = ""
 
     // Hardware Status
-    var hasMic: Boolean = false
-    var batteryLevel: Int = -1
-    var isHeadUp: Boolean = false
+    @JvmField var hasMic: Boolean = false
+    @JvmField var batteryLevel: Int = -1
+    @JvmField var isHeadUp: Boolean = false
 
     // Case Status
-    var caseOpen: Boolean = false
-    var caseRemoved: Boolean = false
-    var caseCharging: Boolean = false
-    var caseBatteryLevel: Int = -1
+    @JvmField var caseOpen: Boolean = false
+    @JvmField var caseRemoved: Boolean = false
+    @JvmField var caseCharging: Boolean = false
+    @JvmField var caseBatteryLevel: Int = -1
 
     // Network Status
-    var wifiSsid: String = ""
-    var wifiConnected: Boolean = false
-    var wifiLocalIp: String = ""
-    var isHotspotEnabled: Boolean = false
-    var hotspotSsid: String = ""
-    var hotspotPassword: String = ""
-    var hotspotGatewayIp: String = ""
+    @JvmField var wifiSsid: String = ""
+    @JvmField var wifiConnected: Boolean = false
+    @JvmField var wifiLocalIp: String = ""
+    @JvmField var isHotspotEnabled: Boolean = false
+    @JvmField var hotspotSsid: String = ""
+    @JvmField var hotspotPassword: String = ""
+    @JvmField var hotspotGatewayIp: String = ""
 
     // Audio Control
     abstract fun setMicEnabled(enabled: Boolean)
@@ -49,6 +49,7 @@ abstract class SGCManager {
             webhookUrl: String?,
             authToken: String?
     )
+    abstract fun startRtmpStream(message: MutableMap<String, Any>)
     abstract fun stopRtmpStream()
     abstract fun sendRtmpKeepAlive(message: MutableMap<String, Any>)
     abstract fun startBufferRecording()

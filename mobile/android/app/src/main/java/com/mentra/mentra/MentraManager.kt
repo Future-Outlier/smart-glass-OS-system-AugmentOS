@@ -400,21 +400,6 @@ class MentraManager {
         setOnboardMicEnabled(useOnboardMic)
     }
 
-    fun onRtmpStreamStartRequest(message: Map<String, Any>) {
-        Bridge.log("Mentra: onRtmpStreamStartRequest: $message")
-        sgc?.startRtmpStream(message)
-    }
-
-    fun onRtmpStreamStop() {
-        Bridge.log("Mentra: onRtmpStreamStop")
-        sgc?.stopRtmpStream()
-    }
-
-    fun onRtmpStreamKeepAlive(message: Map<String, Any>) {
-        Bridge.log("Mentra: onRtmpStreamKeepAlive: $message")
-        sgc?.sendRtmpKeepAlive(message)
-    }
-
     private fun setOnboardMicEnabled(enabled: Boolean) {
         Bridge.log("Mentra: setOnboardMicEnabled(): $enabled")
         if (enabled) {
@@ -882,18 +867,18 @@ class MentraManager {
         sgc?.showDashboard()
     }
 
-    fun handle_send_rtmp_stream_start(message: Map<String, Any>) {
-        Bridge.log("Mentra: sendStartRtmpStream: (message)")
+    fun handle_send_rtmp_stream_start(message: MutableMap<String, Any>) {
+        Bridge.log("Mentra: startRtmpStream")
         sgc?.startRtmpStream(message)
     }
 
-    fun handle_send_rtmp_stream_stop() {
-        Bridge.log("Mentra: onRtmpStreamStop")
+    fun handle_stop_rtmp_stream() {
+        Bridge.log("Mentra: stopRtmpStream")
         sgc?.stopRtmpStream()
     }
 
-    fun handle_send_rtmp_stream_keep_alive(message: Map<String, Any>) {
-        Bridge.log("Mentra: onRtmpStreamKeepAlive: (message)")
+    fun handle_keep_rtmp_stream_alive(message: MutableMap<String, Any>) {
+        Bridge.log("Mentra: keepRtmpStreamAlive: (message)")
         sgc?.sendRtmpKeepAlive(message)
     }
 
