@@ -120,7 +120,7 @@ class MentraManager {
 
     // MARK: - Unique (Android)
     private fun setupPermissionMonitoring() {
-        val context = Bridge.getContext() ?: return
+        val context = Bridge.getContext()
 
         // Store initial permission state
         lastHadBluetoothPermission = checkBluetoothPermission(context)
@@ -173,7 +173,7 @@ class MentraManager {
     }
 
     private fun checkPermissionChanges() {
-        val context = Bridge.getContext() ?: return
+        val context = Bridge.getContext()
 
         val currentHasBluetoothPermission = checkBluetoothPermission(context)
         val currentHasMicrophonePermission = checkMicrophonePermission(context)
@@ -1082,11 +1082,11 @@ class MentraManager {
             sgc?.let { sgc ->
                 connectedGlasses["model_name"] = defaultWearable
                 connectedGlasses["battery_level"] = sgc.batteryLevel
-                connectedGlasses["glasses_app_version"] = sgc.glassesAppVersion ?: ""
-                connectedGlasses["glasses_build_number"] = sgc.glassesBuildNumber ?: ""
-                connectedGlasses["glasses_device_model"] = sgc.glassesDeviceModel ?: ""
-                connectedGlasses["glasses_android_version"] = sgc.glassesAndroidVersion ?: ""
-                connectedGlasses["glasses_ota_version_url"] = sgc.glassesOtaVersionUrl ?: ""
+                connectedGlasses["glasses_app_version"] = sgc.glassesAppVersion
+                connectedGlasses["glasses_build_number"] = sgc.glassesBuildNumber
+                connectedGlasses["glasses_device_model"] = sgc.glassesDeviceModel
+                connectedGlasses["glasses_android_version"] = sgc.glassesAndroidVersion
+                connectedGlasses["glasses_ota_version_url"] = sgc.glassesOtaVersionUrl
             }
         }
 
