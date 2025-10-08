@@ -4271,7 +4271,7 @@ public class MentraLive extends SGCManager {
             return;
         }
 
-        int minutes = MentraManager.getInstance().getMaxRecordingTime();
+        int minutes = MentraManager.getInstance().getButtonMaxRecordingTime();
 
         try {
             JSONObject json = new JSONObject();

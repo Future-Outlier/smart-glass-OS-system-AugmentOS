@@ -1098,21 +1098,21 @@ class MentraManager {
             connectedGlasses["case_removed"] = sgc!!.caseRemoved
             connectedGlasses["case_open"] = sgc!!.caseOpen
             connectedGlasses["case_charging"] = sgc!!.caseCharging
-            connectedGlasses["case_battery_level"] = sgc!!.caseBatteryLevel ?: -1
+            connectedGlasses["case_battery_level"] = sgc!!.caseBatteryLevel
 
-            connectedGlasses["glasses_serial_number"] = sgc!!.glassesSerialNumber ?: ""
-            connectedGlasses["glasses_style"] = sgc!!.glassesStyle ?: ""
-            connectedGlasses["glasses_color"] = sgc!!.glassesColor ?: ""
+            connectedGlasses["glasses_serial_number"] = sgc!!.glassesSerialNumber
+            connectedGlasses["glasses_style"] = sgc!!.glassesStyle
+            connectedGlasses["glasses_color"] = sgc!!.glassesColor
         }
 
         if (sgc is MentraLive) {
-            connectedGlasses["glasses_wifi_ssid"] = sgc!!.wifiSsid ?: ""
-            connectedGlasses["glasses_wifi_connected"] = sgc!!.wifiConnected ?: false
-            connectedGlasses["glasses_wifi_local_ip"] = sgc!!.wifiLocalIp ?: ""
-            connectedGlasses["glasses_hotspot_enabled"] = sgc!!.isHotspotEnabled ?: false
-            connectedGlasses["glasses_hotspot_ssid"] = sgc!!.hotspotSsid ?: ""
-            connectedGlasses["glasses_hotspot_password"] = sgc!!.hotspotPassword ?: ""
-            connectedGlasses["glasses_hotspot_gateway_ip"] = sgc!!.hotspotGatewayIp ?: ""
+            connectedGlasses["glasses_wifi_ssid"] = sgc!!.wifiSsid
+            connectedGlasses["glasses_wifi_connected"] = sgc!!.wifiConnected
+            connectedGlasses["glasses_wifi_local_ip"] = sgc!!.wifiLocalIp
+            connectedGlasses["glasses_hotspot_enabled"] = sgc!!.isHotspotEnabled
+            connectedGlasses["glasses_hotspot_ssid"] = sgc!!.hotspotSsid
+            connectedGlasses["glasses_hotspot_password"] = sgc!!.hotspotPassword
+            connectedGlasses["glasses_hotspot_gateway_ip"] = sgc!!.hotspotGatewayIp
         }
 
         // G1 specific info
