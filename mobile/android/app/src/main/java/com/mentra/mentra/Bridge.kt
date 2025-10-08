@@ -352,6 +352,107 @@ public class Bridge private constructor() {
             sendTypedMessage("wifi_scan_results", eventBody as Map<String, Any>)
         }
 
+        /** Send gallery status - matches iOS MentraLive.swift handleGalleryStatus pattern */
+        @JvmStatic
+        fun sendGalleryStatus(
+            photoCount: Int,
+            videoCount: Int,
+            totalCount: Int,
+            totalSize: Long,
+            hasContent: Boolean
+        ) {
+            val galleryData = HashMap<String, Any>()
+            galleryData["photos"] = photoCount
+            galleryData["videos"] = videoCount
+            galleryData["total"] = totalCount
+            galleryData["total_size"] = totalSize
+            galleryData["has_content"] = hasContent
+
+            val eventBody = HashMap<String, Any>()
+            eventBody["glasses_gallery_status"] = galleryData
+
+            sendTypedMessage("glasses_gallery_status", eventBody as Map<String, Any>)
+        }
+
+        /** Send hotspot status change - matches iOS MentraLive.swift emitHotspotStatusChange */
+        @JvmStatic
+        fun sendHotspotStatusChange(
+            enabled: Boolean,
+            ssid: String,
+            password: String,
+            gatewayIp: String
+        ) {
+            val eventBody = HashMap<String, Any>()
+            eventBody["enabled"] = enabled
+            eventBody["ssid"] = ssid
+            eventBody["password"] = password
+            eventBody["local_ip"] = gatewayIp  // Using gateway IP for consistency with iOS
+
+            sendTypedMessage("hotspot_status_change", eventBody as Map<String, Any>)
+        }
+
+        /** Send version info - matches iOS MentraLive.swift emitVersionInfo */
+        @JvmStatic
+        fun sendVersionInfo(
+            appVersion: String,
+            buildNumber: String,
+            deviceModel: String,
+            androidVersion: String,
+            otaVersionUrl: String
+        ) {
+            val eventBody = HashMap<String, Any>()
+            eventBody["app_version"] = appVersion
+            eventBody["build_number"] = buildNumber
+            eventBody["device_model"] = deviceModel
+            eventBody["android_version"] = androidVersion
+            eventBody["ota_version_url"] = otaVersionUrl
+
+            sendTypedMessage("version_info", eventBody as Map<String, Any>)
+        }
+
+        /** Send RTMP stream status - forwards to websocket system (matches iOS) */
+        @JvmStatic
+        fun sendRtmpStreamStatus(statusJson: Map<String, Any>) {
+            sendTypedMessage("rtmp_stream_status", statusJson)
+        }
+
+        /** Send keep alive ACK - forwards to websocket system (matches iOS) */
+        @JvmStatic
+        fun sendKeepAliveAck(ackJson: Map<String, Any>) {
+            sendTypedMessage("keep_alive_ack", ackJson)
+        }
+
+        /** Send IMU data event - matches iOS MentraLive.swift emitImuDataEvent */
+        @JvmStatic
+        fun sendImuDataEvent(
+            accel: DoubleArray,
+            gyro: DoubleArray,
+            mag: DoubleArray,
+            quat: DoubleArray,
+            euler: DoubleArray,
+            timestamp: Long
+        ) {
+            val eventBody = HashMap<String, Any>()
+            eventBody["accel"] = accel.toList()
+            eventBody["gyro"] = gyro.toList()
+            eventBody["mag"] = mag.toList()
+            eventBody["quat"] = quat.toList()
+            eventBody["euler"] = euler.toList()
+            eventBody["timestamp"] = timestamp
+
+            sendTypedMessage("imu_data_event", eventBody as Map<String, Any>)
+        }
+
+        /** Send IMU gesture event - matches iOS MentraLive.swift emitImuGestureEvent */
+        @JvmStatic
+        fun sendImuGestureEvent(gesture: String, timestamp: Long) {
+            val eventBody = HashMap<String, Any>()
+            eventBody["gesture"] = gesture
+            eventBody["timestamp"] = timestamp
+
+            sendTypedMessage("imu_gesture_event", eventBody as Map<String, Any>)
+        }
+
         /** Get supported events Don't add to this list, use a typed message instead */
         @JvmStatic
         fun getSupportedEvents(): Array<String> {

@@ -1566,6 +1566,11 @@ public class G1 extends SGCManager {
     }
 
     @Override
+    public void sendButtonMaxRecordingTime(int minutes) {
+
+    }
+
+    @Override
     public void setBrightness(int level, boolean autoMode) {
 
     }

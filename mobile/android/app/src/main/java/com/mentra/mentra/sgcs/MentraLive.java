@@ -118,13 +118,11 @@ public class MentraLive extends SGCManager {
     // LC3 frame size for Mentra Live
     private static final int LC3_FRAME_SIZE = 40;
 
-    // Glasses version information
-    private String glassesAppVersion = "";
-    private String glassesBuildNumber = "";
+    // Local-only fields (not in parent SGCManager)
     private int glassesBuildNumberInt = 0; // Build number as integer for version checks
-    private String glassesDeviceModel = "";
-    private String glassesAndroidVersion = "";
     private boolean supportsLC3Audio = false; // Whether device supports LC3 audio (false for base K900)
+    // Note: glassesAppVersion, glassesBuildNumber, glassesDeviceModel, glassesAndroidVersion
+    // are inherited from SGCManager parent class
 
     // BLE UUIDs - updated to match K900 BES2800 MCU UUIDs for compatibility with both glass types
     // CRITICAL FIX: Swapped TX and RX UUIDs to match actual usage from central device perspective
@@ -200,9 +198,8 @@ public class MentraLive extends SGCManager {
     private static final long MIN_SEND_DELAY_MS = 160; // 160ms minimum delay (increased from 100ms)
     private long lastSendTimeMs = 0; // Timestamp of last send
 
-    // Battery state tracking
-    private int batteryLevel = 50; // Default until we get actual value
-    private boolean isCharging = false;
+    // Local state tracking (not in parent SGCManager)
+    private boolean isCharging = false;  // Charging status (batteryLevel is in parent)
     private boolean isConnected = false;
 
     // File transfer management
@@ -316,9 +313,9 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    // WiFi state tracking
-    private boolean isWifiConnected = false;
-    private String wifiSsid = "";
+    // Note: WiFi state (wifiConnected, wifiSsid, wifiLocalIp) and hotspot state
+    // (isHotspotEnabled, hotspotSsid, hotspotPassword, hotspotGatewayIp)
+    // are inherited from SGCManager parent class
 
     // Heartbeat tracking
     private Handler heartbeatHandler = new Handler(Looper.getMainLooper());
@@ -1586,6 +1583,9 @@ public class MentraLive extends SGCManager {
             case "transfer_timeout":
                 handleTransferTimeout(json);
                 break;
+            case "transfer_failed":
+                handleTransferFailed(json);
+                break;
             case "ble_photo_ready":
                 processBlePhotoReady(json);
                 break;
@@ -1621,8 +1621,18 @@ public class MentraLive extends SGCManager {
                     }
                 }
 
-                // Forward via EventBus for cloud communication (consistent with battery/WiFi)
-                // EventBus.getDefault().post(new RtmpStreamStatusEvent(json));
+                // Forward to websocket system via Bridge (matches iOS emitRtmpStreamStatus)
+                try {
+                    Map<String, Object> rtmpMap = new HashMap<>();
+                    Iterator<String> keys = json.keys();
+                    while (keys.hasNext()) {
+                        String key = keys.next();
+                        rtmpMap.put(key, json.get(key));
+                    }
+                    Bridge.sendRtmpStreamStatus(rtmpMap);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error converting RTMP status to Map", e);
+                }
                 break;
 
             case "battery_status":
@@ -1649,16 +1659,11 @@ public class MentraLive extends SGCManager {
 
             case "wifi_status":
                 // Process WiFi status information
-                boolean wifiConnected = json.optBoolean("connected", false);
+                boolean wifiConnectedStatus = json.optBoolean("connected", false);
                 String ssid = json.optString("ssid", "");
                 String localIp = json.optString("local_ip", "");
 
-                // Update local tracking
-                isWifiConnected = wifiConnected;
-                wifiSsid = ssid;
-
-                Bridge.log("LIVE: ## Received WiFi status: connected=" + wifiConnected + ", SSID=" + ssid + ", Local IP=" + localIp);
-                Bridge.sendWifiStatusChange(wifiConnected, ssid, localIp);
+                updateWifiStatus(wifiConnectedStatus, ssid, localIp);
                 break;
 
             case "hotspot_status_update":
@@ -1668,17 +1673,7 @@ public class MentraLive extends SGCManager {
                 String hotspotPassword = json.optString("hotspot_password", "");
                 String hotspotGatewayIp = json.optString("hotspot_gateway_ip", "");
 
-                Bridge.log("LIVE: ## Received hotspot status: enabled=" + hotspotEnabled +
-                      ", SSID=" + hotspotSsid + ", IP=" + hotspotGatewayIp);
-
-                // Post EventBus event (exactly like WiFi status)
-                // EventBus.getDefault().post(new GlassesHotspotStatusChange(
-                //         smartGlassesDevice.deviceModelName,
-                //         hotspotEnabled,
-                //         hotspotSsid,
-                //         hotspotPassword,
-                //         hotspotGatewayIp));
-                // Bridge.
+                updateHotspotStatus(hotspotEnabled, hotspotSsid, hotspotPassword, hotspotGatewayIp);
                 break;
 
             case "photo_response":
@@ -1776,14 +1771,8 @@ public class MentraLive extends SGCManager {
                 Bridge.log("LIVE: 📸 Received gallery status: " + photoCount + " photos, " +
                       videoCount + " videos, total size: " + totalSize + " bytes");
 
-                // Post gallery status event to EventBus
-                // EventBus.getDefault().post(new GlassesGalleryStatusEvent(
-                //         smartGlassesDevice.deviceModelName,
-                //         photoCount,
-                //         videoCount,
-                //         totalCount,
-                //         totalSize,
-                //         hasContent));
+                // Send gallery status to React Native frontend (matches iOS pattern)
+                Bridge.sendGalleryStatus(photoCount, videoCount, totalCount, totalSize, hasContent);
                 break;
 
             case "sensor_data":
@@ -1847,22 +1836,39 @@ public class MentraLive extends SGCManager {
                 // Process keep-alive ACK from ASG client
                 Bridge.log("LIVE: Received keep-alive ACK from glasses: " + json.toString());
 
-                // Forward via EventBus for cloud communication (consistent with other message types)
-                // EventBus.getDefault().post(new KeepAliveAckEvent(json));
+                // Forward to websocket system via Bridge (matches iOS emitKeepAliveAck)
+                try {
+                    Map<String, Object> ackMap = new HashMap<>();
+                    Iterator<String> keys = json.keys();
+                    while (keys.hasNext()) {
+                        String key = keys.next();
+                        ackMap.put(key, json.get(key));
+                    }
+                    Bridge.sendKeepAliveAck(ackMap);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error converting keep_alive_ack to Map", e);
+                }
                 break;
 
             case "version_info":
                 // Process version information from ASG client
                 Bridge.log("LIVE: Received version info from ASG client: " + json.toString());
 
-                // Extract version information and post event
+                // Extract version information
                 String appVersion = json.optString("app_version", "");
                 String buildNumber = json.optString("build_number", "");
                 String deviceModel = json.optString("device_model", "");
                 String androidVersion = json.optString("android_version", "");
                 String otaVersionUrl = json.optString("ota_version_url", null);
 
-                // Parse build number as integer for version checks
+                // Update parent SGCManager fields
+                glassesAppVersion = appVersion;
+                glassesBuildNumber = buildNumber;
+                glassesDeviceModel = deviceModel;
+                glassesAndroidVersion = androidVersion;
+                glassesOtaVersionUrl = otaVersionUrl != null ? otaVersionUrl : "";
+
+                // Parse build number as integer for version checks (local field)
                 try {
                     glassesBuildNumberInt = Integer.parseInt(buildNumber);
                     Bridge.log("LIVE: Parsed build number as integer: " + glassesBuildNumberInt);
@@ -1871,7 +1877,7 @@ public class MentraLive extends SGCManager {
                     Log.e(TAG, "Failed to parse build number as integer: " + buildNumber);
                 }
 
-                // Determine LC3 audio support: base K900 doesn't support LC3, variants do
+                // Determine LC3 audio support: base K900 doesn't support LC3, variants do (local field)
                 supportsLC3Audio = !"K900".equals(deviceModel);
                 Bridge.log("LIVE: 📱 LC3 audio support: " + supportsLC3Audio + " (device: " + deviceModel + ")");
 
@@ -1881,9 +1887,12 @@ public class MentraLive extends SGCManager {
                       ", Android: " + androidVersion +
                       ", OTA URL: " + otaVersionUrl);
 
-                // Post event for version information
-                // EventBus.getDefault().post(new GlassesVersionInfoEvent(
-                //     appVersion, buildNumber, deviceModel, androidVersion, otaVersionUrl));
+                // Send version info event (matches iOS emitVersionInfo)
+                Bridge.sendVersionInfo(appVersion, buildNumber, deviceModel, androidVersion,
+                      otaVersionUrl != null ? otaVersionUrl : "");
+
+                // Notify MentraManager to update status and send to frontend
+                MentraManager.getInstance().handle_request_status();
                 break;
 
             case "ota_download_progress":
@@ -2068,6 +2077,43 @@ public class MentraLive extends SGCManager {
     }
 
     /**
+     * Handle transfer failed notification from glasses
+     * Matches iOS MentraLive.swift handleTransferFailed pattern
+     */
+    private void handleTransferFailed(JSONObject json) {
+        try {
+            String fileName = json.optString("fileName", "");
+            String reason = json.optString("reason", "unknown");
+
+            if (fileName.isEmpty()) {
+                Log.e(TAG, "❌ Transfer failed notification missing fileName: " + json.toString());
+                return;
+            }
+
+            Log.e(TAG, "❌ Transfer failed for: " + fileName + " (reason: " + reason + ")");
+
+            // Clean up any active transfer for this file
+            FileTransferSession session = activeFileTransfers.remove(fileName);
+            if (session != null) {
+                Bridge.log("LIVE: 📊 Transfer stats - Received: " + session.receivedPackets.size() + "/" + session.totalPackets + " packets");
+            }
+
+            // Clean up any BLE photo transfer
+            String bleImgId = fileName;
+            int dotIndex = bleImgId.lastIndexOf('.');
+            if (dotIndex > 0) {
+                bleImgId = bleImgId.substring(0, dotIndex);
+            }
+            BlePhotoTransfer photoTransfer = blePhotoTransfers.remove(bleImgId);
+            if (photoTransfer != null) {
+                Bridge.log("LIVE: 🧹 Cleaned up failed BLE photo transfer for: " + bleImgId + " (requestId: " + photoTransfer.requestId + ")");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error processing transfer failed notification", e);
+        }
+    }
+
+    /**
      * Handle file transfer announcement from glasses
      */
     private void handleFileTransferAnnouncement(JSONObject json) {
@@ -2234,20 +2280,51 @@ public class MentraLive extends SGCManager {
 
     /**
      * Update battery status and notify listeners
+     * Matches iOS MentraLive.swift updateBatteryStatus pattern
      */
     private void updateBatteryStatus(int level, boolean charging) {
-        batteryLevel = level;
-        isCharging = charging;
+        // Update parent SGCManager fields
+        batteryLevel = level;  // Parent class field
+        isCharging = charging;  // Local field
 
-        // Post battery event so the system knows the battery level
-        // EventBus.getDefault().post(new BatteryLevelEvent(level, charging));
+        // Notify MentraManager to update status and send to frontend
+        MentraManager.getInstance().handle_request_status();
+    }
 
-        // Send battery status via BLE to connected phone
-        // This was necessary for OG beta units
-        // Not required for newer beta units
-        // TODO: remove this line post hackathon
-        // Commented out to prevent battery status echo loop between phone and glasses
-        // sendBatteryStatusOverBle(level, charging);
+    /**
+     * Update WiFi status and notify listeners
+     * Matches iOS MentraLive.swift updateWifiStatus pattern
+     */
+    private void updateWifiStatus(boolean connected, String ssid, String localIp) {
+        Bridge.log("LIVE: 🌐 Updating WiFi status - connected: " + connected + ", SSID: " + ssid);
+
+        // Update parent SGCManager fields
+        wifiConnected = connected;
+        wifiSsid = ssid;
+        wifiLocalIp = localIp;
+
+        // Send event to bridge for cloud communication
+        Bridge.sendWifiStatusChange(connected, ssid, localIp);
+    }
+
+    /**
+     * Update hotspot status and notify listeners
+     * Matches iOS MentraLive.swift updateHotspotStatus pattern
+     */
+    private void updateHotspotStatus(boolean enabled, String ssid, String password, String gatewayIp) {
+        Bridge.log("LIVE: 🔥 Updating hotspot status - enabled: " + enabled + ", SSID: " + ssid);
+
+        // Update parent SGCManager fields
+        isHotspotEnabled = enabled;
+        hotspotSsid = ssid;
+        hotspotPassword = password;
+        hotspotGatewayIp = gatewayIp;
+
+        // Send hotspot status change event (matches iOS emitHotspotStatusChange)
+        Bridge.sendHotspotStatusChange(enabled, ssid, password, gatewayIp);
+
+        // Trigger a full status update so React Native gets the updated glasses_info
+        MentraManager.getInstance().handle_request_status();
     }
 
     /**
@@ -2743,7 +2820,7 @@ public class MentraLive extends SGCManager {
      * @return true if connected to WiFi, false otherwise
      */
     public boolean isGlassesWifiConnected() {
-        return isWifiConnected;
+        return wifiConnected;  // Using parent SGCManager field
     }
 
     /**
@@ -3372,10 +3449,14 @@ public class MentraLive extends SGCManager {
                 accel.getDouble(0), accel.getDouble(1), accel.getDouble(2),
                 euler.getDouble(0), euler.getDouble(1), euler.getDouble(2)));
 
-            // Post event for other components
-            // EventBus.getDefault().post(new ImuDataEvent(
-                // accel, gyro, mag, quat, euler, System.currentTimeMillis()
-            // ));
+            // Send IMU data event via Bridge (matches iOS emitImuDataEvent)
+            double[] accelArray = new double[]{accel.getDouble(0), accel.getDouble(1), accel.getDouble(2)};
+            double[] gyroArray = new double[]{gyro.getDouble(0), gyro.getDouble(1), gyro.getDouble(2)};
+            double[] magArray = new double[]{mag.getDouble(0), mag.getDouble(1), mag.getDouble(2)};
+            double[] quatArray = new double[]{quat.getDouble(0), quat.getDouble(1), quat.getDouble(2), quat.getDouble(3)};
+            double[] eulerArray = new double[]{euler.getDouble(0), euler.getDouble(1), euler.getDouble(2)};
+
+            Bridge.sendImuDataEvent(accelArray, gyroArray, magArray, quatArray, eulerArray, System.currentTimeMillis());
         } catch (JSONException e) {
             Log.e(TAG, "Error parsing single IMU data", e);
         }
@@ -3401,8 +3482,8 @@ public class MentraLive extends SGCManager {
 
             Bridge.log("LIVE: IMU Gesture detected: " + gesture);
 
-            // Post event for other components
-            // EventBus.getDefault().post(new ImuGestureEvent(gesture, timestamp));
+            // Send IMU gesture event via Bridge (matches iOS emitImuGestureEvent)
+            Bridge.sendImuGestureEvent(gesture, timestamp);
         } catch (JSONException e) {
             Log.e(TAG, "Error parsing IMU gesture", e);
         }
@@ -4137,6 +4218,10 @@ public class MentraLive extends SGCManager {
         // Send button video recording settings
         sendButtonVideoRecordingSettings();
 
+        // Send button max recording time
+        var m = MentraManager.getInstance();
+        sendButtonMaxRecordingTime(m.getButtonMaxRecordingTimeMinutes());
+
         // Send button photo settings
         sendButtonPhotoSettings();
 
@@ -4172,6 +4257,29 @@ public class MentraLive extends SGCManager {
      * Send button camera LED setting to glasses
      */
     public void sendButtonCameraLedSetting() {
+    }
+
+    /**
+     * Send button max recording time to glasses
+     * Matches iOS MentraLive.swift sendButtonMaxRecordingTime pattern
+     */
+    @Override
+    public void sendButtonMaxRecordingTime(int minutes) {
+        Bridge.log("LIVE: Sending button max recording time: " + minutes + " minutes");
+
+        if (!isConnected) {
+            Bridge.log("LIVE: Cannot send button max recording time - not connected");
+            return;
+        }
+
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "button_max_recording_time");
+            json.put("minutes", minutes);
+            sendJson(json, true);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating button max recording time message", e);
+        }
     }
 
     @Override
