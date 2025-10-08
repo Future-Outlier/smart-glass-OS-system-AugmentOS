@@ -114,57 +114,39 @@ enum GlassesError: Error {
 }
 
 class G1: NSObject, SGCManager {
-    var connectionState: String = ConnTypes.DISCONNECTED
+    func sendButtonMaxRecordingTime() {}
 
-    func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
+    var glassesAppVersion: String = ""
 
-    var caseBatteryLevel: Int?
+    var glassesBuildNumber: String = ""
 
-    var glassesAppVersion: String?
+    var glassesDeviceModel: String = ""
 
-    var glassesBuildNumber: String?
+    var glassesAndroidVersion: String = ""
 
-    var glassesDeviceModel: String?
+    var glassesOtaVersionUrl: String = ""
 
-    var glassesAndroidVersion: String?
+    var glassesSerialNumber: String = ""
 
-    var glassesOtaVersionUrl: String?
+    var glassesStyle: String = ""
 
-    var wifiSsid: String?
+    var glassesColor: String = ""
 
-    var wifiConnected: Bool?
+    var caseBatteryLevel: Int = -1
 
-    var wifiLocalIp: String?
+    var wifiSsid: String = ""
 
-    var isHotspotEnabled: Bool?
+    var wifiConnected: Bool = false
 
-    var hotspotSsid: String?
+    var wifiLocalIp: String = ""
 
-    var hotspotPassword: String?
+    var isHotspotEnabled: Bool = false
 
-    var hotspotGatewayIp: String?
+    var hotspotSsid: String = ""
 
-    func sendButtonPhotoSettings() {}
+    var hotspotPassword: String = ""
 
-    func sendButtonModeSetting() {}
-
-    func sendButtonVideoRecordingSettings() {}
-
-    func sendButtonMaxRecordingTime(_: Int) {}
-
-    func sendButtonCameraLedSetting() {}
-
-    func requestWifiScan() {}
-
-    func sendWifiCredentials(_: String, _: String) {}
-
-    func sendHotspotState(_: Bool) {}
-
-    func queryGalleryStatus() {}
-
-    func showDashboard() {}
-
-    func setSilentMode(_: Bool) {}
+    var hotspotGatewayIp: String = ""
 
     func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?) {}
 
@@ -183,6 +165,32 @@ class G1: NSObject, SGCManager {
     func startVideoRecording(requestId _: String, save _: Bool) {}
 
     func stopVideoRecording(requestId _: String) {}
+
+    func sendButtonPhotoSettings() {}
+
+    func sendButtonModeSetting() {}
+
+    func sendButtonVideoRecordingSettings() {}
+
+    func sendButtonMaxRecordingTime(_: Int) {}
+
+    func sendButtonCameraLedSetting() {}
+
+    func showDashboard() {}
+
+    func setSilentMode(_: Bool) {}
+
+    func requestWifiScan() {}
+
+    func sendWifiCredentials(_: String, _: String) {}
+
+    func sendHotspotState(_: Bool) {}
+
+    func queryGalleryStatus() {}
+
+    var connectionState: String = ConnTypes.DISCONNECTED
+
+    func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
 
     let type = DeviceTypes.G1
     let hasMic = true
@@ -244,11 +252,6 @@ class G1: NSObject, SGCManager {
     @Published var caseCharging = false
     @Published var caseOpen = false
     @Published var caseRemoved = true
-
-    // Serial number and color information
-    @Published var glassesSerialNumber: String?
-    @Published var glassesStyle: String?
-    @Published var glassesColor: String?
 
     var isDisconnecting = false
     private var reconnectionTimer: Timer?

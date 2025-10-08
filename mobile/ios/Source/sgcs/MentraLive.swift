@@ -809,10 +809,10 @@ typealias JSONObject = [String: Any]
 class MentraLive: NSObject, SGCManager {
     var connectionState: String = ConnTypes.DISCONNECTED
 
-    var caseBatteryLevel: Int?
-    var glassesSerialNumber: String?
-    var glassesStyle: String?
-    var glassesColor: String?
+    var caseBatteryLevel: Int = -1
+    var glassesSerialNumber: String = ""
+    var glassesStyle: String = ""
+    var glassesColor: String = ""
     func setDashboardPosition(_: Int, _: Int) {}
     func setSilentMode(_: Bool) {}
     func exit() {}
@@ -871,8 +871,6 @@ class MentraLive: NSObject, SGCManager {
 
     @objc static func requiresMainQueueSetup() -> Bool { true }
 
-    var onConnectionStateChanged: (() -> Void)?
-
     // BLE Properties
     private var centralManager: CBCentralManager?
     private var connectedPeripheral: CBPeripheral?
@@ -888,11 +886,11 @@ class MentraLive: NSObject, SGCManager {
     private var isNewVersion = false
     private var globalMessageId = 0
     private var lastReceivedMessageId = 0
-    var glassesAppVersion: String? = ""
-    var glassesBuildNumber: String? = ""
-    var glassesOtaVersionUrl: String? = ""
-    var glassesDeviceModel: String? = ""
-    var glassesAndroidVersion: String? = ""
+    var glassesAppVersion: String = ""
+    var glassesBuildNumber: String = ""
+    var glassesOtaVersionUrl: String = ""
+    var glassesDeviceModel: String = ""
+    var glassesAndroidVersion: String = ""
 
     var _ready = false
     var ready: Bool {
@@ -915,13 +913,13 @@ class MentraLive: NSObject, SGCManager {
     // Data Properties
     @Published var batteryLevel: Int = -1
     @Published var isCharging: Bool = false
-    @Published var wifiConnected: Bool? = false
-    @Published var wifiSsid: String? = ""
-    @Published var wifiLocalIp: String? = ""
-    @Published var isHotspotEnabled: Bool? = false
-    @Published var hotspotSsid: String? = ""
-    @Published var hotspotPassword: String? = ""
-    @Published var hotspotGatewayIp: String? = "" // The gateway IP to connect to when on hotspot
+    @Published var wifiConnected: Bool = false
+    @Published var wifiSsid: String = ""
+    @Published var wifiLocalIp: String = ""
+    @Published var isHotspotEnabled: Bool = false
+    @Published var hotspotSsid: String = ""
+    @Published var hotspotPassword: String = ""
+    @Published var hotspotGatewayIp: String = "" // The gateway IP to connect to when on hotspot
 
     // Queue Management
     private let commandQueue = CommandQueue()
@@ -2552,7 +2550,7 @@ class MentraLive: NSObject, SGCManager {
             "ssid": wifiSsid,
             "local_ip": wifiLocalIp,
         ]
-        Bridge.sendWifiStatusChange(wifiConnected, wifiSsid, wifiLocalIp)
+        Bridge.sendWifiStatusChange(connected: wifiConnected, ssid: wifiSsid, localIp: wifiLocalIp)
     }
 
     private func emitHotspotStatusChange() {
@@ -2915,12 +2913,11 @@ extension MentraLive {
         sendJson(json, wakeUp: true)
     }
 
-    func sendButtonMaxRecordingTime(_ minutes: Int? = nil) {
-        let maxTime = minutes ?? MentraManager.shared.buttonMaxRecordingTimeMinutes
-
+    func sendButtonMaxRecordingTime() {
+        let maxTime = MentraManager.shared.buttonMaxRecordingTime
         Bridge.log("Sending button max recording time: \(maxTime) minutes")
 
-        guard connectionState == .connected else {
+        guard connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Cannot send button max recording time - not connected")
             return
         }

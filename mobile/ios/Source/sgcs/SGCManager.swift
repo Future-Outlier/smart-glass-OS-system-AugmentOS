@@ -26,7 +26,7 @@ protocol SGCManager {
     var caseOpen: Bool { get }
     var caseRemoved: Bool { get }
     var caseCharging: Bool { get }
-    var caseBatteryLevel: Int? { get }
+    var caseBatteryLevel: Int { get }
 
     // MARK: - Network Status
 
@@ -63,7 +63,7 @@ protocol SGCManager {
     func sendButtonPhotoSettings()
     func sendButtonModeSetting()
     func sendButtonVideoRecordingSettings()
-    func sendButtonMaxRecordingTime(_ minutes: Int)
+    func sendButtonMaxRecordingTime()
     func sendButtonCameraLedSetting()
 
     // MARK: - Display Control

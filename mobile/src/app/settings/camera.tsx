@@ -66,7 +66,7 @@ export default function CameraSettingsScreen() {
     return "720p"
   })
   const [maxRecordingTime, setMaxRecordingTime] = useState<MaxRecordingTime>(() => {
-    const maxTime = status.glasses_settings?.button_max_recording_time_minutes
+    const maxTime = status.glasses_settings?.button_max_recording_time
     if (maxTime === 3) return "3m"
     if (maxTime === 5) return "5m"
     if (maxTime === 10) return "10m"
@@ -99,7 +99,7 @@ export default function CameraSettingsScreen() {
   }, [status.glasses_settings?.button_video_settings])
 
   useEffect(() => {
-    const maxTime = status.glasses_settings?.button_max_recording_time_minutes
+    const maxTime = status.glasses_settings?.button_max_recording_time
     if (maxTime !== undefined) {
       if (maxTime === 3) setMaxRecordingTime("3m")
       else if (maxTime === 5) setMaxRecordingTime("5m")
@@ -107,7 +107,7 @@ export default function CameraSettingsScreen() {
       else if (maxTime === 15) setMaxRecordingTime("15m")
       else if (maxTime === 20) setMaxRecordingTime("20m")
     }
-  }, [status.glasses_settings?.button_max_recording_time_minutes])
+  }, [status.glasses_settings?.button_max_recording_time])
 
   useEffect(() => {
     const checkDevMode = async () => {

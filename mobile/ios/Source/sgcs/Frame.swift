@@ -33,39 +33,41 @@ struct FrameCommand {
 // MARK: - FrameManager
 
 @objc(FrameManager) class FrameManager: NSObject, SGCManager {
+    func sendButtonMaxRecordingTime() {}
+
+    var glassesAppVersion: String = ""
+
+    var glassesBuildNumber: String = ""
+
+    var glassesDeviceModel: String = ""
+
+    var glassesAndroidVersion: String = ""
+
+    var glassesOtaVersionUrl: String = ""
+
+    var glassesSerialNumber: String = ""
+
+    var glassesStyle: String = ""
+
+    var glassesColor: String = ""
+
+    var caseBatteryLevel: Int = -1
+
+    var wifiSsid: String = ""
+
+    var wifiConnected: Bool = false
+
+    var wifiLocalIp: String = ""
+
+    var isHotspotEnabled: Bool = false
+
+    var hotspotSsid: String = ""
+
+    var hotspotPassword: String = ""
+
+    var hotspotGatewayIp: String = ""
+
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
-
-    var wifiSsid: String?
-
-    var wifiConnected: Bool?
-
-    var wifiLocalIp: String?
-
-    var isHotspotEnabled: Bool?
-
-    var hotspotSsid: String?
-
-    var hotspotPassword: String?
-
-    var hotspotGatewayIp: String?
-
-    var caseBatteryLevel: Int?
-
-    var glassesAppVersion: String?
-
-    var glassesBuildNumber: String?
-
-    var glassesDeviceModel: String?
-
-    var glassesAndroidVersion: String?
-
-    var glassesOtaVersionUrl: String?
-
-    var glassesSerialNumber: String?
-
-    var glassesStyle: String?
-
-    var glassesColor: String?
 
     func sendButtonPhotoSettings() {}
 

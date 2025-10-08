@@ -89,7 +89,7 @@ struct ViewState {
     var buttonVideoWidth = 1280
     var buttonVideoHeight = 720
     var buttonVideoFps = 30
-    var buttonMaxRecordingTimeMinutes = 10
+    var buttonMaxRecordingTime = 10
     var buttonCameraLed = true
 
     // VAD:
@@ -392,8 +392,8 @@ struct ViewState {
     }
 
     func updateButtonMaxRecordingTime(_ value: Int) {
-        buttonMaxRecordingTimeMinutes = value
-        sgc?.sendButtonMaxRecordingTimeSetting()
+        buttonMaxRecordingTime = value
+        sgc?.sendButtonMaxRecordingTime()
         handle_request_status() // to update the UI
     }
 
@@ -1291,7 +1291,7 @@ struct ViewState {
                 "height": buttonVideoHeight,
                 "fps": buttonVideoFps,
             ],
-            "button_max_recording_time_minutes": buttonMaxRecordingTimeMinutes,
+            "button_max_recording_time": buttonMaxRecordingTime,
             "button_camera_led": buttonCameraLed,
         ]
 
@@ -1442,7 +1442,7 @@ struct ViewState {
             updateButtonPhotoSize(newPhotoSize)
         }
 
-        if let newButtonMaxRecordingTime = settings["button_max_recording_time_minutes"] as? Int, newButtonMaxRecordingTimeMinutes != buttonMaxRecordingTimeMinutes {
+        if let newButtonMaxRecordingTime = settings["button_max_recording_time"] as? Int, newButtonMaxRecordingTime != buttonMaxRecordingTime {
             updateButtonMaxRecordingTime(newButtonMaxRecordingTime)
         }
 

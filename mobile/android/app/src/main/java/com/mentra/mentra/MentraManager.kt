@@ -97,7 +97,7 @@ class MentraManager {
     public var buttonVideoWidth = 1280
     public var buttonVideoHeight = 720
     public var buttonVideoFps = 30
-    public var buttonMaxRecordingTimeMinutes = 10
+    public var buttonMaxRecordingTime = 10
     public var buttonCameraLed = true
 
     // VAD
@@ -548,8 +548,8 @@ class MentraManager {
     }
 
     fun updateButtonMaxRecordingTime(minutes: Int) {
-        buttonMaxRecordingTimeMinutes = minutes
-        sgc?.sendButtonMaxRecordingTime(minutes)
+        buttonMaxRecordingTime = minutes
+        sgc?.sendButtonMaxRecordingTime()
         handle_request_status()
     }
 
@@ -1151,7 +1151,7 @@ class MentraManager {
                         "fps" to buttonVideoFps
                 )
         glassesSettings["button_video_settings"] = buttonVideoSettings
-        glassesSettings["button_max_recording_time_minutes"] = buttonMaxRecordingTimeMinutes
+        glassesSettings["button_max_recording_time"] = buttonMaxRecordingTime
         glassesSettings["button_camera_led"] = buttonCameraLed
 
         val coreInfo =
@@ -1292,8 +1292,8 @@ class MentraManager {
             }
         }
 
-        (settings["button_max_recording_time_minutes"] as? Int)?.let { newMaxTime ->
-            if (buttonMaxRecordingTimeMinutes != newMaxTime) {
+        (settings["button_max_recording_time"] as? Int)?.let { newMaxTime ->
+            if (buttonMaxRecordingTime != newMaxTime) {
                 updateButtonMaxRecordingTime(newMaxTime)
             }
         }

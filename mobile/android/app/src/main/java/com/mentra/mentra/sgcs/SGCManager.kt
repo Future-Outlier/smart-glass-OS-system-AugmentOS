@@ -6,7 +6,8 @@ abstract class SGCManager {
     // Device Information
     @JvmField var type: String = ""
     @JvmField var ready: Boolean = false
-    @JvmField var connectionState: String =
+    @JvmField
+    var connectionState: String =
             ConnTypes.DISCONNECTED // "disconnected" | "connected" | "connecting"
 
     @JvmField var glassesAppVersion: String = ""
@@ -62,7 +63,7 @@ abstract class SGCManager {
     abstract fun sendButtonPhotoSettings()
     abstract fun sendButtonModeSetting()
     abstract fun sendButtonVideoRecordingSettings()
-    abstract fun sendButtonMaxRecordingTime(minutes: Int)
+    abstract fun sendButtonMaxRecordingTime()
     abstract fun sendButtonCameraLedSetting()
 
     // Display Control

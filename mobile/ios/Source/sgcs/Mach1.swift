@@ -13,41 +13,43 @@ import UIKit
 import UltraliteSDK
 
 class Mach1: UltraliteBaseViewController, SGCManager {
+    func sendButtonMaxRecordingTime() {}
+
     var connectionState: String = ConnTypes.DISCONNECTED
 
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
 
-    var caseBatteryLevel: Int?
+    var caseBatteryLevel: Int = -1
 
-    var glassesAppVersion: String?
+    var glassesAppVersion: String = ""
 
-    var glassesBuildNumber: String?
+    var glassesBuildNumber: String = ""
 
-    var glassesDeviceModel: String?
+    var glassesDeviceModel: String = ""
 
-    var glassesAndroidVersion: String?
+    var glassesAndroidVersion: String = ""
 
-    var glassesOtaVersionUrl: String?
+    var glassesOtaVersionUrl: String = ""
 
-    var glassesSerialNumber: String?
+    var glassesSerialNumber: String = ""
 
-    var glassesStyle: String?
+    var glassesStyle: String = ""
 
-    var glassesColor: String?
+    var glassesColor: String = ""
 
-    var wifiSsid: String?
+    var wifiSsid: String = ""
 
-    var wifiConnected: Bool?
+    var wifiConnected: Bool = false
 
-    var wifiLocalIp: String?
+    var wifiLocalIp: String = ""
 
-    var isHotspotEnabled: Bool?
+    var isHotspotEnabled: Bool = false
 
-    var hotspotSsid: String?
+    var hotspotSsid: String = ""
 
-    var hotspotPassword: String?
+    var hotspotPassword: String = ""
 
-    var hotspotGatewayIp: String?
+    var hotspotGatewayIp: String = ""
 
     func sendButtonPhotoSettings() {}
 

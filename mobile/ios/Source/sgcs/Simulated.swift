@@ -10,16 +10,16 @@ class Simulated: SGCManager {
 
     var type: String = DeviceTypes.SIMULATED
     var ready: Bool = true
-    var connectionState: String = "disconnected"
+    var connectionState: String = ConnTypes.CONNECTED
 
-    var glassesAppVersion: String?
-    var glassesBuildNumber: String?
-    var glassesDeviceModel: String?
-    var glassesAndroidVersion: String?
-    var glassesOtaVersionUrl: String?
-    var glassesSerialNumber: String?
-    var glassesStyle: String?
-    var glassesColor: String?
+    var glassesAppVersion: String = ""
+    var glassesBuildNumber: String = ""
+    var glassesDeviceModel: String = ""
+    var glassesAndroidVersion: String = ""
+    var glassesOtaVersionUrl: String = ""
+    var glassesSerialNumber: String = ""
+    var glassesStyle: String = ""
+    var glassesColor: String = ""
 
     // MARK: - Hardware Status
 
@@ -32,17 +32,17 @@ class Simulated: SGCManager {
     var caseOpen: Bool = false
     var caseRemoved: Bool = false
     var caseCharging: Bool = false
-    var caseBatteryLevel: Int?
+    var caseBatteryLevel: Int = -1
 
     // MARK: - Network Status
 
-    var wifiSsid: String?
-    var wifiConnected: Bool?
-    var wifiLocalIp: String?
-    var isHotspotEnabled: Bool?
-    var hotspotSsid: String?
-    var hotspotPassword: String?
-    var hotspotGatewayIp: String?
+    var wifiSsid: String = ""
+    var wifiConnected: Bool = false
+    var wifiLocalIp: String = ""
+    var isHotspotEnabled: Bool = false
+    var hotspotSsid: String = ""
+    var hotspotPassword: String = ""
+    var hotspotGatewayIp: String = ""
 
     // MARK: - Audio Control
 
@@ -111,6 +111,8 @@ class Simulated: SGCManager {
     func sendButtonCameraLedSetting() {
         Bridge.log("sendButtonCameraLedSetting")
     }
+
+    func sendButtonMaxRecordingTime() {}
 
     // MARK: - Display Control
 

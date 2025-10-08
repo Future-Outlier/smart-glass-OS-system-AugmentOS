@@ -4219,8 +4219,7 @@ public class MentraLive extends SGCManager {
         sendButtonVideoRecordingSettings();
 
         // Send button max recording time
-        var m = MentraManager.getInstance();
-        sendButtonMaxRecordingTime(m.getButtonMaxRecordingTimeMinutes());
+        sendButtonMaxRecordingTime();
 
         // Send button photo settings
         sendButtonPhotoSettings();
@@ -4264,13 +4263,15 @@ public class MentraLive extends SGCManager {
      * Matches iOS MentraLive.swift sendButtonMaxRecordingTime pattern
      */
     @Override
-    public void sendButtonMaxRecordingTime(int minutes) {
-        Bridge.log("LIVE: Sending button max recording time: " + minutes + " minutes");
+    public void sendButtonMaxRecordingTime() {
+        Bridge.log("LIVE: Sending button max recording time");
 
         if (!isConnected) {
             Bridge.log("LIVE: Cannot send button max recording time - not connected");
             return;
         }
+
+        int minutes = MentraManager.getInstance().getMaxRecordingTime();
 
         try {
             JSONObject json = new JSONObject();
