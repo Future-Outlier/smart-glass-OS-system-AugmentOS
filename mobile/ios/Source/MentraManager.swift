@@ -89,6 +89,7 @@ struct ViewState {
     var buttonVideoWidth = 1280
     var buttonVideoHeight = 720
     var buttonVideoFps = 30
+    var buttonMaxRecordingTimeMinutes = 10
     var buttonCameraLed = true
 
     // VAD:
@@ -387,6 +388,12 @@ struct ViewState {
     func updateButtonCameraLed(_ enabled: Bool) {
         buttonCameraLed = enabled
         sgc?.sendButtonCameraLedSetting()
+        handle_request_status() // to update the UI
+    }
+
+    func updateButtonMaxRecordingTime(_ value: Int) {
+        buttonMaxRecordingTimeMinutes = value
+        sgc?.sendButtonMaxRecordingTimeSetting()
         handle_request_status() // to update the UI
     }
 
@@ -1284,6 +1291,7 @@ struct ViewState {
                 "height": buttonVideoHeight,
                 "fps": buttonVideoFps,
             ],
+            "button_max_recording_time_minutes": buttonMaxRecordingTimeMinutes,
             "button_camera_led": buttonCameraLed,
         ]
 
@@ -1432,6 +1440,14 @@ struct ViewState {
            newPhotoSize != buttonPhotoSize
         {
             updateButtonPhotoSize(newPhotoSize)
+        }
+
+        if let newButtonMaxRecordingTime = settings["button_max_recording_time_minutes"] as? Int, newButtonMaxRecordingTimeMinutes != buttonMaxRecordingTimeMinutes {
+            updateButtonMaxRecordingTime(newButtonMaxRecordingTime)
+        }
+
+        if let newButtonCameraLed = settings["button_camera_led"] as? Bool, newButtonCameraLed != buttonCameraLed {
+            updateButtonCameraLed(newButtonCameraLed)
         }
 
         // get default wearable from core_info:
