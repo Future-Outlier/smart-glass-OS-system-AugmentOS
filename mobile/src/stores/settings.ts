@@ -45,6 +45,7 @@ export const SETTINGS_KEYS = {
   button_video_settings: "button_video_settings",
   button_camera_led: "button_camera_led",
   button_video_settings_width: "button_video_settings_width",
+  button_max_recording_time: "button_max_recording_time",
   core_token: "core_token",
   server_url: "server_url",
   time_zone: "time_zone",
@@ -98,6 +99,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.dashboard_depth]: 5,
   [SETTINGS_KEYS.button_mode]: "photo",
   [SETTINGS_KEYS.button_photo_size]: "medium",
+  [SETTINGS_KEYS.button_max_recording_time]: 10,
   [SETTINGS_KEYS.time_zone]: "",
   [SETTINGS_KEYS.time_zone_override]: "",
   [SETTINGS_KEYS.location_tier]: "",
@@ -113,19 +115,23 @@ const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.bypass_audio_encoding_for_debugging,
   SETTINGS_KEYS.metric_system,
   SETTINGS_KEYS.enforce_local_transcription,
-  SETTINGS_KEYS.button_press_mode,
   SETTINGS_KEYS.default_wearable,
   SETTINGS_KEYS.device_name,
   SETTINGS_KEYS.device_address,
   SETTINGS_KEYS.preferred_mic,
   SETTINGS_KEYS.contextual_dashboard,
   SETTINGS_KEYS.head_up_angle,
+  // glasses settings:
   SETTINGS_KEYS.brightness,
   SETTINGS_KEYS.auto_brightness,
   SETTINGS_KEYS.dashboard_height,
   SETTINGS_KEYS.dashboard_depth,
+  // button:
   SETTINGS_KEYS.button_mode,
+  SETTINGS_KEYS.button_press_mode,
   SETTINGS_KEYS.button_photo_size,
+  SETTINGS_KEYS.button_max_recording_time,
+  // stt:
   SETTINGS_KEYS.offline_captions_app_running,
 ]
 

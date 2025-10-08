@@ -11,10 +11,7 @@ import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Screen, Header} from "@/components/ignite"
-import {isDeveloperBuildOrTestflight} from "@/utils/buildDetection"
-import {useAuth} from "@/contexts/AuthContext"
-import {isMentraUser} from "@/utils/isMentraUser"
-import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 
 type PhotoSize = "small" | "medium" | "large"
 type VideoResolution = "720p" | "1080p" | "1440p" | "4K"
@@ -45,16 +42,12 @@ export default function CameraSettingsScreen() {
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
   const {goBack} = useNavigationHistory()
-  const {user} = useAuth()
-  const [devMode, setDevMode] = useSetting(SETTINGS_KEYS.dev_mode)
+  const [devMode, _setDevMode] = useSetting(SETTINGS_KEYS.dev_mode)
+  const [photoSize, setPhotoSize] = useSetting(SETTINGS_KEYS.button_photo_size)
+  const [ledEnabled, setLedEnabled] = useSetting(SETTINGS_KEYS.button_camera_led)
+  // const [videoResolution, setVideoResolution] = useSetting(SETTINGS_KEYS.button_video_settings)
+  const [maxRecordingTime, setMaxRecordingTime] = useSetting(SETTINGS_KEYS.button_max_recording_time)
 
-  // Local state for optimistic updates - initialize from status
-  const [photoSize, setPhotoSize] = useState<PhotoSize>(
-    (status.glasses_settings?.button_photo_size as PhotoSize) || "medium",
-  )
-  const [ledEnabled, setLedEnabled] = useState(
-    status.glasses_settings?.button_camera_led !== false, // Default true if not set
-  )
   const [videoResolution, setVideoResolution] = useState<VideoResolution>(() => {
     const videoSettings = status.glasses_settings?.button_video_settings
     if (videoSettings) {
@@ -65,28 +58,6 @@ export default function CameraSettingsScreen() {
     }
     return "720p"
   })
-  const [maxRecordingTime, setMaxRecordingTime] = useState<MaxRecordingTime>(() => {
-    const maxTime = status.glasses_settings?.button_max_recording_time
-    if (maxTime === 3) return "3m"
-    if (maxTime === 5) return "5m"
-    if (maxTime === 10) return "10m"
-    if (maxTime === 15) return "15m"
-    if (maxTime === 20) return "20m"
-    return "10m" // default to 10 minutes
-  })
-
-  // Update local state when status changes
-  useEffect(() => {
-    if (status.glasses_settings?.button_photo_size) {
-      setPhotoSize(status.glasses_settings.button_photo_size as PhotoSize)
-    }
-  }, [status.glasses_settings?.button_photo_size])
-
-  useEffect(() => {
-    if (status.glasses_settings?.button_camera_led !== undefined) {
-      setLedEnabled(status.glasses_settings.button_camera_led)
-    }
-  }, [status.glasses_settings?.button_camera_led])
 
   useEffect(() => {
     const videoSettings = status.glasses_settings?.button_video_settings
@@ -98,40 +69,17 @@ export default function CameraSettingsScreen() {
     }
   }, [status.glasses_settings?.button_video_settings])
 
-  useEffect(() => {
-    const maxTime = status.glasses_settings?.button_max_recording_time
-    if (maxTime !== undefined) {
-      if (maxTime === 3) setMaxRecordingTime("3m")
-      else if (maxTime === 5) setMaxRecordingTime("5m")
-      else if (maxTime === 10) setMaxRecordingTime("10m")
-      else if (maxTime === 15) setMaxRecordingTime("15m")
-      else if (maxTime === 20) setMaxRecordingTime("20m")
-    }
-  }, [status.glasses_settings?.button_max_recording_time])
-
-  useEffect(() => {
-    const checkDevMode = async () => {
-      const devModeSetting = await useSettingsStore.getState().loadSetting(SETTINGS_KEYS.dev_mode)
-      setDevMode(isDeveloperBuildOrTestflight() || isMentraUser(user?.email) || devModeSetting)
-    }
-    checkDevMode()
-  }, [user?.email])
-
   const handlePhotoSizeChange = async (size: PhotoSize) => {
-    if (!status.core_info.puck_connected || !status.glasses_info?.model_name) {
+    if (!status.glasses_info?.model_name) {
       console.log("Cannot change photo size - glasses not connected")
       return
     }
 
     try {
-      setPhotoSize(size) // Optimistic update
+      setPhotoSize(size)
       await bridge.updateButtonPhotoSize(size)
     } catch (error) {
       console.error("Failed to update photo size:", error)
-      // Revert on error if we have the original value
-      if (status.glasses_settings?.button_photo_size) {
-        setPhotoSize(status.glasses_settings.button_photo_size as PhotoSize)
-      }
     }
   }
 
@@ -142,7 +90,7 @@ export default function CameraSettingsScreen() {
     }
 
     try {
-      setVideoResolution(resolution) // Optimistic update
+      setVideoResolution(resolution)
 
       // Convert resolution to width/height/fps
       const width = resolution === "4K" ? 3840 : resolution === "1440p" ? 2560 : resolution === "1080p" ? 1920 : 1280
@@ -164,13 +112,13 @@ export default function CameraSettingsScreen() {
   }
 
   const handleLedToggle = async (enabled: boolean) => {
-    if (!status.core_info.puck_connected || !status.glasses_info?.model_name) {
+    if (!status.glasses_info?.model_name) {
       console.log("Cannot toggle LED - glasses not connected")
       return
     }
 
     try {
-      setLedEnabled(enabled) // Optimistic update
+      setLedEnabled(enabled)
       await bridge.updateSettings({
         button_camera_led: enabled,
       })
@@ -184,29 +132,15 @@ export default function CameraSettingsScreen() {
   }
 
   const handleMaxRecordingTimeChange = async (time: MaxRecordingTime) => {
-    if (!status.core_info.puck_connected || !status.glasses_info?.model_name) {
+    if (!status.glasses_info?.model_name) {
       console.log("Cannot change max recording time - glasses not connected")
       return
     }
 
     try {
-      setMaxRecordingTime(time) // Optimistic update
-
-      // Convert time to minutes
-      const minutes = parseInt(time.replace("m", ""))
-
-      await bridge.sendSetButtonMaxRecordingTime(minutes)
+      setMaxRecordingTime(time)
     } catch (error) {
       console.error("Failed to update max recording time:", error)
-      // Revert on error
-      const maxTime = status.glasses_settings?.button_max_recording_time_minutes
-      if (maxTime !== undefined) {
-        if (maxTime === 3) setMaxRecordingTime("3m")
-        else if (maxTime === 5) setMaxRecordingTime("5m")
-        else if (maxTime === 10) setMaxRecordingTime("10m")
-        else if (maxTime === 15) setMaxRecordingTime("15m")
-        else if (maxTime === 20) setMaxRecordingTime("20m")
-      }
     }
   }
 
