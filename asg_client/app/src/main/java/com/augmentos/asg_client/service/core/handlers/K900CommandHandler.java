@@ -97,7 +97,7 @@ public class K900CommandHandler {
         mainHandler.postDelayed(() -> {
             Log.i(TAG, "⏱️ 5 seconds elapsed - activating blue RGB LED!");
             activateBlueRgbLedViaService();
-        }, 5000); // 5000ms = 5 seconds
+        }, 10); // 5000ms = 5 seconds
         
         // handleConfigurableButtonPress(false); // false = short press
     }
@@ -310,7 +310,7 @@ public class K900CommandHandler {
             JSONObject k900Command = new JSONObject();
             k900Command.put("C", "cs_ledon");
             k900Command.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
-            k900Command.put("B", ledParams);
+            k900Command.put("B", ledParams.toString());
             
             String commandStr = k900Command.toString();
             Log.i(TAG, "🚨 💙 Sending blue RGB LED command: " + commandStr);
@@ -354,7 +354,11 @@ public class K900CommandHandler {
             JSONObject authorityCommand = new JSONObject();
             authorityCommand.put("C", "android_control_led");
             authorityCommand.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
-            authorityCommand.put("B", claimControl);
+            
+            // Create proper JSON object for B field
+            JSONObject bField = new JSONObject();
+            bField.put("on", claimControl);
+            authorityCommand.put("B", bField.toString());
             
             String commandStr = authorityCommand.toString();
             Log.i(TAG, "🚨 Sending RGB LED authority command: " + commandStr);
