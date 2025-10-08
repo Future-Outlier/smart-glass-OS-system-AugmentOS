@@ -6,14 +6,14 @@ protocol SGCManager {
     var connectionState: String { get }
 
     // info:
-    var glassesAppVersion: String? { get }
-    var glassesBuildNumber: String? { get }
-    var glassesDeviceModel: String? { get }
-    var glassesAndroidVersion: String? { get }
-    var glassesOtaVersionUrl: String? { get }
-    var glassesSerialNumber: String? { get }
-    var glassesStyle: String? { get }
-    var glassesColor: String? { get }
+    var glassesAppVersion: String { get }
+    var glassesBuildNumber: String { get }
+    var glassesDeviceModel: String { get }
+    var glassesAndroidVersion: String { get }
+    var glassesOtaVersionUrl: String { get }
+    var glassesSerialNumber: String { get }
+    var glassesStyle: String { get }
+    var glassesColor: String { get }
 
     // MARK: - Hardware Status
 
@@ -30,13 +30,13 @@ protocol SGCManager {
 
     // MARK: - Network Status
 
-    var wifiSsid: String? { get }
-    var wifiConnected: Bool? { get }
-    var wifiLocalIp: String? { get }
-    var isHotspotEnabled: Bool? { get }
-    var hotspotSsid: String? { get }
-    var hotspotPassword: String? { get }
-    var hotspotGatewayIp: String? { get }
+    var wifiSsid: String { get }
+    var wifiConnected: Bool { get }
+    var wifiLocalIp: String { get }
+    var isHotspotEnabled: Bool { get }
+    var hotspotSsid: String { get }
+    var hotspotPassword: String { get }
+    var hotspotGatewayIp: String { get }
 
     // MARK: - Audio Control
 

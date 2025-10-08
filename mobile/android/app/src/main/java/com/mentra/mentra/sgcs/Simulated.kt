@@ -1,42 +1,16 @@
 package com.mentra.mentra.sgcs
 
 import com.mentra.mentra.Bridge
+import com.mentra.mentra.utils.ConnTypes
 import com.mentra.mentra.utils.DeviceTypes
 
 class Simulated : SGCManager() {
 
-    // Device Information
-    var type: String = DeviceTypes.SIMULATED
-    var ready: Boolean = true
-    var connectionState: String = "disconnected" // "disconnected" | "connected" | "connecting"
-    var glassesAppVersion: String = ""
-    var glassesBuildNumber: String = ""
-    var glassesDeviceModel: String = ""
-    var glassesAndroidVersion: String = ""
-    var glassesOtaVersionUrl: String = ""
-    var glassesSerialNumber: String = ""
-    var glassesStyle: String = ""
-    var glassesColor: String = ""
-
-    // Hardware Status
-    var hasMic: Boolean = false
-    var batteryLevel: Int = -1
-    var isHeadUp: Boolean = false
-
-    // Case Status
-    var caseOpen: Boolean = false
-    var caseRemoved: Boolean = false
-    var caseCharging: Boolean = false
-    var caseBatteryLevel: Int? = null
-
-    // Network Status
-    var wifiSsid: String = ""
-    var wifiConnected: Boolean? = null
-    var wifiLocalIp: String = ""
-    var isHotspotEnabled: Boolean? = null
-    var hotspotSsid: String = ""
-    var hotspotPassword: String = ""
-    var hotspotGatewayIp: String = ""
+    init {
+        ready = true
+        type = DeviceTypes.SIMULATED
+        connectionState = ConnTypes.DISCONNECTED
+    }
 
     // Audio Control
     override fun setMicEnabled(enabled: Boolean) {
@@ -48,13 +22,13 @@ class Simulated : SGCManager() {
             requestId: String,
             appId: String,
             size: String,
-            webhookUrl: String,
-            authToken: String
+            webhookUrl: String?,
+            authToken: String?
     ) {
         Bridge.log("requestPhoto")
     }
 
-    override fun startRtmpStream(message: Map<String, Any>) {
+    override fun startRtmpStream(message: MutableMap<String, Any>) {
         Bridge.log("startRtmpStream")
     }
 
@@ -62,7 +36,7 @@ class Simulated : SGCManager() {
         Bridge.log("stopRtmpStream")
     }
 
-    override fun sendRtmpKeepAlive(message: Map<String, Any>) {
+    override fun sendRtmpKeepAlive(message: MutableMap<String, Any>) {
         Bridge.log("sendRtmpKeepAlive")
     }
 

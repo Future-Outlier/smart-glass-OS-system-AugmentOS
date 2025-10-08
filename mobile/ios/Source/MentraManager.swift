@@ -65,8 +65,6 @@ struct ViewState {
     private var dashboardDepth: Int = 5
 
     // glasses state:
-    private var glassesWifiConnected: Bool = false
-    private var glassesWifiSsid: String = ""
     private var isHeadUp: Bool = false
 
     // settings
