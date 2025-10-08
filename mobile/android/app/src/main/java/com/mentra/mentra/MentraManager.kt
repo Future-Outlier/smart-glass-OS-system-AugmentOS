@@ -1104,6 +1104,27 @@ class MentraManager {
             connectedGlasses["model_name"] = defaultWearable
         }
 
+        if (sgc is G1) {
+            connectedGlasses["case_removed"] = sgc!!.caseRemoved ?? true
+            connectedGlasses["case_open"] = sgc!!.caseOpen ?? true
+            connectedGlasses["case_charging"] = sgc!!.caseCharging ?? false
+            connectedGlasses["case_battery_level"] = sgc!!.caseBatteryLevel ?? -1
+
+            connectedGlasses["glasses_serial_number"] = sgc!!.glassesSerialNumber ?? ""
+            connectedGlasses["glasses_style"] = sgc!!.glassesStyle ?? ""
+            connectedGlasses["glasses_color"] = sgc!!.glassesColor ?? ""
+        }
+
+        if (sgc is MentraLive) {
+            connectedGlasses["glasses_wifi_ssid"] = sgc!!.wifiSsid ?? ""
+            connectedGlasses["glasses_wifi_connected"] = sgc!!.wifiConnected ?? false
+            connectedGlasses["glasses_wifi_local_ip"] = sgc!!.wifiLocalIp ?? ""
+            connectedGlasses["glasses_hotspot_enabled"] = sgc!!.isHotspotEnabled ?? false
+            connectedGlasses["glasses_hotspot_ssid"] = sgc!!.hotspotSsid ?? ""
+            connectedGlasses["glasses_hotspot_password"] = sgc!!.hotspotPassword ?? ""
+            connectedGlasses["glasses_hotspot_gateway_ip"] = sgc!!.hotspotGatewayIp ?? ""
+        }
+
         // G1 specific info
         // (sgc as? G1)?.let { g1 ->
         //     connectedGlasses["case_removed"] = g1.caseRemoved

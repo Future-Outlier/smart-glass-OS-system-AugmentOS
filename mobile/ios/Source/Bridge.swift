@@ -143,67 +143,6 @@ class Bridge: RCTEventEmitter {
         }
     }
 
-    func sendAudioPlayResponse(
-        requestId: String, success: Bool, error: String? = nil, duration: Double? = nil
-    ) {
-        Bridge.log(
-            "ServerComms: Sending audio play response - requestId: \(requestId), success: \(success), error: \(error ?? "none")"
-        )
-        let message: [String: Any] = [
-            "type": "audio_play_response",
-            "requestId": requestId,
-            "success": success,
-            "error": error as Any,
-            "duration": duration as Any,
-        ].compactMapValues { $0 }
-
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: message)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendWSText(jsonString)
-                Bridge.log("ServerComms: Sent audio play response to server")
-            }
-        } catch {
-            Bridge.log("ServerComms: Failed to serialize audio play response: \(error)")
-        }
-    }
-
-    // MARK: - App Lifecycle
-
-    func startApp(packageName: String) {
-        do {
-            let msg: [String: Any] = [
-                "type": "start_app",
-                "packageName": packageName,
-                "timestamp": Int(Date().timeIntervalSince1970 * 1000),
-            ]
-
-            let jsonData = try JSONSerialization.data(withJSONObject: msg)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendWSText(jsonString)
-            }
-        } catch {
-            Bridge.log("ServerComms: Error building start_app JSON: \(error)")
-        }
-    }
-
-    func stopApp(packageName: String) {
-        do {
-            let msg: [String: Any] = [
-                "type": "stop_app",
-                "packageName": packageName,
-                "timestamp": Int(Date().timeIntervalSince1970 * 1000),
-            ]
-
-            let jsonData = try JSONSerialization.data(withJSONObject: msg)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendWSText(jsonString)
-            }
-        } catch {
-            Bridge.log("ServerComms: Error building stop_app JSON: \(error)")
-        }
-    }
-
     // MARK: - Hardware Events
 
     static func sendButtonPress(buttonId: String, pressType: String) {

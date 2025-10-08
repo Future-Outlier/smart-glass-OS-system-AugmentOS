@@ -1758,16 +1758,11 @@ public class MentraLive extends SGCManager {
                 // Process button press event
                 String buttonId = json.optString("buttonId", "unknown");
                 String pressType = json.optString("pressType", "short");
-                long timestamp = json.optLong("timestamp", System.currentTimeMillis());
 
                 Bridge.log("LIVE: Received button press - buttonId: " + buttonId + ", pressType: " + pressType);
 
                 // Post button press event to EventBus for core to handle
-                // EventBus.getDefault().post(new ButtonPressEvent(
-                //         smartGlassesDevice.deviceModelName,
-                //         buttonId,
-                //         pressType,
-                //         timestamp));
+                Bridge.sendButtonPress(buttonId, pressType);
                 break;
 
             case "gallery_status":
@@ -2116,7 +2111,7 @@ public class MentraLive extends SGCManager {
                         int ready = bodyObj.optInt("ready", 0);
                         if (ready == 0 && batteryPercentage > 0 && batteryPercentage <= 20) {
                             Bridge.log("LIVE: K900 battery percentage: " + batteryPercentage);
-                            // EventBus.getDefault().post(new PairFailureEvent("errors:pairingBatteryTooLow"));
+                            Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow");
                             return;
                         }
                         if (ready == 1) {

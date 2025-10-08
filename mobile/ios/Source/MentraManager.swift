@@ -1253,21 +1253,15 @@ struct ViewState {
             connectedGlasses["case_charging"] = sgc?.caseCharging ?? false
             connectedGlasses["case_battery_level"] = sgc?.caseBatteryLevel ?? -1
 
-            if let serialNumber = sgc?.glassesSerialNumber, !serialNumber.isEmpty {
-                connectedGlasses["glasses_serial_number"] = serialNumber
-                connectedGlasses["glasses_style"] = sgc?.glassesStyle ?? ""
-                connectedGlasses["glasses_color"] = sgc?.glassesColor ?? ""
-            }
+            connectedGlasses["glasses_serial_number"] = sgc?.glassesSerialNumber ?? ""
+            connectedGlasses["glasses_style"] = sgc?.glassesStyle ?? ""
+            connectedGlasses["glasses_color"] = sgc?.glassesColor ?? ""
         }
 
         if sgc is MentraLive {
-            if let wifiSsid = sgc?.wifiSsid, !wifiSsid.isEmpty {
-                connectedGlasses["glasses_wifi_ssid"] = wifiSsid
-                connectedGlasses["glasses_wifi_connected"] = sgc?.wifiConnected
-                connectedGlasses["glasses_wifi_local_ip"] = sgc?.wifiLocalIp
-            }
-
-            // Add hotspot information - always include all fields for consistency
+            connectedGlasses["glasses_wifi_ssid"] = sgc?.wifiSsid ?? ""
+            connectedGlasses["glasses_wifi_connected"] = sgc?.wifiConnected ?? false
+            connectedGlasses["glasses_wifi_local_ip"] = sgc?.wifiLocalIp ?? ""
             connectedGlasses["glasses_hotspot_enabled"] = sgc?.isHotspotEnabled ?? false
             connectedGlasses["glasses_hotspot_ssid"] = sgc?.hotspotSsid ?? ""
             connectedGlasses["glasses_hotspot_password"] = sgc?.hotspotPassword ?? ""

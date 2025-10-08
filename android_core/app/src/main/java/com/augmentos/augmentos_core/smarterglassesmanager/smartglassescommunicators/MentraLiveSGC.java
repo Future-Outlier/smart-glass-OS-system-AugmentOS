@@ -91,7 +91,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  */
 public class MentraLiveSGC extends SmartGlassesCommunicator {
     private static final String TAG = "WearableAi_MentraLiveSGC";
-    
+
     // LC3 frame size for Mentra Live
     private static final int LC3_FRAME_SIZE = 40;
 
@@ -134,7 +134,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     // Heartbeat parameters
     private static final int HEARTBEAT_INTERVAL_MS = 30000; // 30 seconds
     private static final int BATTERY_REQUEST_EVERY_N_HEARTBEATS = 10; // Every 10 heartbeats (5 minutes)
-    
+
     // Micbeat parameters - periodically enable custom audio TX
     private static final long MICBEAT_INTERVAL_MS = (1000 * 60) * 30; // micbeat every 30 minutes
 
@@ -252,17 +252,17 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             }
             return false;
         }
-        
+
         // Check if this is the final packet (highest index we expect)
         boolean isFinalPacket(int index) {
             return index == (totalPackets - 1);
         }
-        
+
         // Check if we should trigger completion check (either complete or final packet received)
         boolean shouldCheckCompletion(int receivedIndex) {
             return isComplete || isFinalPacket(receivedIndex);
         }
-        
+
         // Get list of missing packet indices
         List<Integer> getMissingPackets() {
             List<Integer> missing = new ArrayList<>();
@@ -303,7 +303,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     private Runnable heartbeatRunnable;
     private int heartbeatCounter = 0;
     private boolean glassesReady = false;
-    
+
     // Micbeat tracking - periodically enable custom audio TX
     private Handler micBeatHandler = new Handler(Looper.getMainLooper());
     private Runnable micBeatRunnable;
@@ -705,9 +705,10 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
 
                     // Save the connected device name for future reconnections
                     if (connectedDevice != null && connectedDevice.getName() != null) {
-                        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                        prefs.edit().putString(PREF_DEVICE_NAME, connectedDevice.getName()).apply();
-                        Log.d(TAG, "Saved device name for future reconnection: " + connectedDevice.getName());
+                        // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                        // prefs.edit().putString(PREF_DEVICE_NAME, connectedDevice.getName()).apply();
+                        // Log.d(TAG, "Saved device name for future reconnection: " + connectedDevice.getName());
+                        Bridge.saveSetting("device_address", connectedDevice.getName())
                     }
 
                     // Discover services
@@ -745,7 +746,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
 
                     // Close LC3 audio logging
                     closeLc3Logging();
-                    
+
                     //stop LC3 player
                     if (lc3AudioPlayer != null) {
                         lc3AudioPlayer.stopPlay();
@@ -785,7 +786,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                 if (service != null) {
                     txCharacteristic = service.getCharacteristic(TX_CHAR_UUID);
                     rxCharacteristic = service.getCharacteristic(RX_CHAR_UUID);
-                    
+
                     // Only attempt to get LC3 characteristics if device supports LC3 audio
                     if (supportsLC3Audio) {
                         lc3ReadCharacteristic = service.getCharacteristic(LC3_READ_UUID);
@@ -799,7 +800,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                     // Check if we have required characteristics based on device capabilities
                     boolean hasRequiredCharacteristics = (rxCharacteristic != null && txCharacteristic != null);
                     if (supportsLC3Audio) {
-                        hasRequiredCharacteristics = hasRequiredCharacteristics && 
+                        hasRequiredCharacteristics = hasRequiredCharacteristics &&
                                                    (lc3ReadCharacteristic != null && lc3WriteCharacteristic != null);
                     }
 
@@ -1286,7 +1287,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                             testWrapper.put("W", 1);
                         }
                         String testWrappedJson = testWrapper.toString();
-                        
+
                         if (MessageChunker.needsChunking(testWrappedJson)) {
                             // Calculate dynamic timeout for chunked message
                             int estimatedChunks = (int) Math.ceil(jsonStr.length() / 300.0);
@@ -1322,7 +1323,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     private void trackMessageForAck(long messageId, String messageData) {
         trackMessageForAck(messageId, messageData, ACK_TIMEOUT_MS);
     }
-    
+
     /**
      * Track a message for ACK response with custom timeout
      */
@@ -1508,7 +1509,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
 
         // NOTE: LC3 audio (0xA0) is now processed exclusively via the dedicated LC3_READ characteristic
         // This prevents duplicate audio processing and follows the proper BLE characteristic separation
-        
+
         // Process non-audio data based on command byte
         switch (commandByte) {
             case '{': // Likely a JSON message (starts with '{')
@@ -1653,9 +1654,9 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                 String hotspotPassword = json.optString("hotspot_password", "");
                 String hotspotGatewayIp = json.optString("hotspot_gateway_ip", "");
 
-                Log.d(TAG, "## Received hotspot status: enabled=" + hotspotEnabled + 
+                Log.d(TAG, "## Received hotspot status: enabled=" + hotspotEnabled +
                       ", SSID=" + hotspotSsid + ", IP=" + hotspotGatewayIp);
-                
+
                 // Post EventBus event (exactly like WiFi status)
                 EventBus.getDefault().post(new GlassesHotspotStatusChange(
                         smartGlassesDevice.deviceModelName,
@@ -1764,7 +1765,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                         pressType,
                         timestamp));
                 break;
-                
+
             case "gallery_status":
                 // Process gallery status response
                 int photoCount = json.optInt("photos", 0);
@@ -1772,10 +1773,10 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                 int totalCount = json.optInt("total", 0);
                 long totalSize = json.optLong("total_size", 0);
                 boolean hasContent = json.optBoolean("has_content", false);
-                
-                Log.d(TAG, "📸 Received gallery status: " + photoCount + " photos, " + 
+
+                Log.d(TAG, "📸 Received gallery status: " + photoCount + " photos, " +
                       videoCount + " videos, total size: " + totalSize + " bytes");
-                
+
                 // Post gallery status event to EventBus
                 EventBus.getDefault().post(new GlassesGalleryStatusEvent(
                         smartGlassesDevice.deviceModelName,
@@ -1837,7 +1838,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                 } else {
                     Log.d(TAG, "⏭️ Skipping LC3 audio logging - device does not support LC3 audio");
                 }
-                
+
                 // Finally, mark the connection as fully established
                 Log.d(TAG, "✅ Glasses connection is now fully established!");
                 connectionEvent(SmartGlassesConnectionState.CONNECTED);
@@ -2038,9 +2039,9 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     private void handleTransferTimeout(JSONObject json) {
         try {
             String fileName = json.optString("fileName", "");
-            
+
             Log.e(TAG, "⏰ Transfer timeout notification received for: " + fileName);
-            
+
             if (!fileName.isEmpty()) {
                 // Clean up any active transfer for this file
                 FileTransferSession session = activeFileTransfers.remove(fileName);
@@ -2048,7 +2049,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                     Log.d(TAG, "🧹 Cleaned up timed out transfer session for: " + fileName);
                     Log.d(TAG, "📊 Transfer stats - Received: " + session.receivedPackets.size() + "/" + session.totalPackets + " packets");
                 }
-                
+
                 // Clean up any BLE photo transfer
                 String bleImgId = fileName;
                 int dotIndex = bleImgId.lastIndexOf('.');
@@ -2060,12 +2061,12 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                     Log.d(TAG, "🧹 Cleaned up timed out BLE photo transfer for: " + bleImgId);
                 }
             }
-            
+
         } catch (Exception e) {
             Log.e(TAG, "⏰ Error processing transfer timeout notification", e);
         }
     }
-    
+
     /**
      * Handle file transfer announcement from glasses
      */
@@ -2075,22 +2076,22 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             String fileName = json.optString("fileName", "");
             int totalPackets = json.optInt("totalPackets", 0);
             int fileSize = json.optInt("fileSize", 0);
-            
+
             Log.d(TAG, "📢 File transfer announcement: " + fileName + ", " + totalPackets + " packets, " + fileSize + " bytes");
-            
+
             if (fileName.isEmpty() || totalPackets <= 0) {
                 Log.w(TAG, "📢 Invalid file transfer announcement");
                 return;
             }
-            
+
             // Create announced file transfer session
             FileTransferSession session = new FileTransferSession(fileName, fileSize);
             // Override calculated packet count with announced count for accuracy
             session.totalPackets = totalPackets;
             activeFileTransfers.put(fileName, session);
-            
+
             Log.d(TAG, "📢 Prepared to receive " + totalPackets + " packets for " + fileName);
-            
+
         } catch (Exception e) {
             Log.e(TAG, "📢 Error processing file transfer announcement", e);
         }
@@ -2301,7 +2302,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             Log.e(TAG, "Error creating WiFi scan request", e);
         }
     }
-    
+
     /**
      * Query gallery status from the glasses
      */
@@ -2388,7 +2389,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     private void startMicBeat() {
         Log.d(TAG, "🎤 Starting micbeat mechanism");
         micBeatCount = 0;
-        
+
         // Initialize custom audio TX immediately
         sendEnableCustomAudioTxMessage(shouldUseGlassesMic);
 
@@ -2398,7 +2399,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                 Log.d(TAG, "🎤 Sending micbeat - enabling custom audio TX");
                 sendEnableCustomAudioTxMessage(shouldUseGlassesMic);
                 micBeatCount++;
-                
+
                 // Schedule next micbeat
                 micBeatHandler.postDelayed(this, MICBEAT_INTERVAL_MS);
             }
@@ -2413,7 +2414,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
      */
     private void stopMicBeat() {
         Log.d(TAG, "🎤 Stopping micbeat mechanism");
-        sendEnableCustomAudioTxMessage(false);        
+        sendEnableCustomAudioTxMessage(false);
         micBeatHandler.removeCallbacks(micBeatRunnable);
         micBeatCount = 0;
     }
@@ -2587,13 +2588,13 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     @Override
     public void changeSmartGlassesMicrophoneState(boolean enable) {
         Log.d(TAG, "Microphone state changed: " + enable);
-        
+
         // Update the microphone state tracker
         isMicrophoneEnabled = enable;
-        
+
         // Post event for frontend notification
         EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
-        
+
         // Update the shouldUseGlassesMic flag to reflect the current state
         this.shouldUseGlassesMic = enable && SmartGlassesManager.getSensingEnabled(context);
         Log.d(TAG, "Updated shouldUseGlassesMic to: " + shouldUseGlassesMic);
@@ -2904,9 +2905,9 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
         int videoWidth = prefs.getInt("button_video_width", 1280);
         int videoHeight = prefs.getInt("button_video_height", 720);
         int videoFps = prefs.getInt("button_video_fps", 30);
-        
+
         Log.d(TAG, "Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
-        
+
         try {
             JSONObject json = new JSONObject();
             json.put("type", "button_video_recording_setting");
@@ -3090,7 +3091,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             Log.e(TAG, "Error creating enable_hfp_audio_server command", e);
         }
     }
-    
+
     /**
      * Enable or disable audio playback through phone speakers when receiving LC3 audio from glasses.
      * @param enable True to enable audio playback, false to disable.
@@ -3113,7 +3114,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     public boolean isAudioPlaybackEnabled() {
         return audioPlaybackEnabled;
     }
-    
+
     /**
      * Set the volume for audio playback.
      * @param volume Volume level from 0.0f (muted) to 1.0f (full volume).
@@ -3126,7 +3127,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             Log.d(TAG, "Audio playback volume request: " + clampedVolume + " (handled by system volume)");
         }
     }
-    
+
     /**
      * Get the current audio playback volume.
      * @return Current volume level from 0.0f to 1.0f.
@@ -3136,7 +3137,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
         // In a real implementation, you might want to track this separately
         return 1.0f; // Default to full volume
     }
-    
+
     /**
      * Stop any currently playing audio immediately.
      */
@@ -3146,7 +3147,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             Log.d(TAG, "Audio playback stopped");
         }
     }
-    
+
     /**
      * Check if audio is currently playing.
      * @return True if audio is currently playing, false otherwise.
@@ -3154,7 +3155,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     public boolean isAudioPlaying() {
         return lc3AudioPlayer != null && audioPlaybackEnabled;
     }
-    
+
     /**
      * Pause audio playback.
      */
@@ -3164,7 +3165,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             Log.d(TAG, "Audio playback paused");
         }
     }
-    
+
     /**
      * Resume audio playback.
      */
@@ -3174,7 +3175,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             Log.d(TAG, "Audio playback resumed");
         }
     }
-    
+
     /**
      * Get audio playback statistics and status information.
      * @return JSONObject containing audio playback information.
@@ -3313,38 +3314,38 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     private void handleImuResponse(JSONObject json) {
         try {
             String type = json.getString("type");
-            
+
             switch(type) {
                 case "imu_response":
                     // Single IMU reading
                     handleSingleImuData(json);
                     break;
-                    
+
                 case "imu_stream_response":
                     // Stream of IMU readings
                     handleStreamImuData(json);
                     break;
-                    
+
                 case "imu_gesture_response":
                     // Gesture detected
                     handleImuGesture(json);
                     break;
-                    
+
                 case "imu_gesture_subscribed":
                     // Gesture subscription confirmed
                     Log.d(TAG, "IMU gesture subscription confirmed: " + json.optJSONArray("gestures"));
                     break;
-                    
+
                 case "imu_ack":
                     // Command acknowledgment
                     Log.d(TAG, "IMU command acknowledged: " + json.optString("message"));
                     break;
-                    
+
                 case "imu_error":
                     // Error response
                     Log.e(TAG, "IMU error: " + json.optString("error"));
                     break;
-                    
+
                 default:
                     Log.w(TAG, "Unknown IMU response type: " + type);
             }
@@ -3361,11 +3362,11 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             JSONArray mag = json.getJSONArray("mag");
             JSONArray quat = json.getJSONArray("quat");
             JSONArray euler = json.getJSONArray("euler");
-            
+
             Log.d(TAG, String.format("IMU Single Reading - Accel: [%.2f, %.2f, %.2f], Euler: [%.1f°, %.1f°, %.1f°]",
                 accel.getDouble(0), accel.getDouble(1), accel.getDouble(2),
                 euler.getDouble(0), euler.getDouble(1), euler.getDouble(2)));
-            
+
             // Post event for other components
             EventBus.getDefault().post(new ImuDataEvent(
                 accel, gyro, mag, quat, euler, System.currentTimeMillis()
@@ -3378,7 +3379,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     private void handleStreamImuData(JSONObject json) {
         try {
             JSONArray readings = json.getJSONArray("readings");
-            
+
             for (int i = 0; i < readings.length(); i++) {
                 JSONObject reading = readings.getJSONObject(i);
                 handleSingleImuData(reading);
@@ -3392,9 +3393,9 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
         try {
             String gesture = json.getString("gesture");
             long timestamp = json.optLong("timestamp", System.currentTimeMillis());
-            
+
             Log.d(TAG, "IMU Gesture detected: " + gesture);
-            
+
             // Post event for other components
             EventBus.getDefault().post(new ImuGestureEvent(gesture, timestamp));
         } catch (JSONException e) {
@@ -3424,11 +3425,11 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                 testWrapper.put("W", 1);
             }
             String testWrappedJson = testWrapper.toString();
-            
+
             // Check if chunking is needed
             if (MessageChunker.needsChunking(testWrappedJson)) {
                 Log.d(TAG, "Message exceeds threshold, chunking required");
-                
+
                 // Extract message ID if present for ACK tracking
                 long messageId = -1;
                 try {
@@ -3437,22 +3438,22 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                 } catch (JSONException e) {
                     // Not a JSON message or no mId, that's okay
                 }
-                
+
                 // Create chunks
                 List<JSONObject> chunks = MessageChunker.createChunks(data, messageId);
                 Log.d(TAG, "Sending " + chunks.size() + " chunks");
-                
+
                 // Send each chunk
                 for (int i = 0; i < chunks.size(); i++) {
                     JSONObject chunk = chunks.get(i);
                     String chunkStr = chunk.toString();
-                    
+
                     // Pack each chunk using the normal K900 protocol
                     byte[] packedData = K900ProtocolUtils.packJsonToK900(chunkStr, wakeup && i == 0); // Only wakeup on first chunk
-                    
+
                     // Queue the chunk for sending
                     queueData(packedData);
-                    
+
                     // Add small delay between chunks to avoid overwhelming the connection
                     if (i < chunks.size() - 1) {
                         try {
@@ -3462,15 +3463,15 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                         }
                     }
                 }
-                
+
                 Log.d(TAG, "All chunks queued for transmission");
             } else {
                 // Normal single message transmission
                 Log.d(TAG, "Sending data to glasses: " + data);
-                
+
                 // Pack the data using the centralized utility
                 byte[] packedData = K900ProtocolUtils.packJsonToK900(data, wakeup);
-                
+
                 // Queue the data for sending
                 queueData(packedData);
             }
@@ -3763,41 +3764,41 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             Log.d(TAG, "✅ No missing packets for " + fileName + " - should not have been called");
             return;
         }
-        
+
         // Check if too many packets are missing (>50% = likely failure)
         FileTransferSession session = activeFileTransfers.get(fileName);
         if (session != null && missingPackets.size() > session.totalPackets / 2) {
             Log.e(TAG, "❌ Too many missing packets (" + missingPackets.size() + "/" + session.totalPackets + ") for " + fileName + " - treating as failed transfer");
-            
+
             // Send failure confirmation to glasses
             sendTransferCompleteConfirmation(fileName, false);
-            
+
             // Clean up the failed session
             activeFileTransfers.remove(fileName);
             return;
         }
-        
+
         Log.d(TAG, "🔍 Requesting retransmission of " + missingPackets.size() + " missing packets for " + fileName + ": " + missingPackets);
-        
+
         try {
             // Send missing packets request to glasses
             JSONObject request = new JSONObject();
             request.put("type", "request_missing_packets");
             request.put("fileName", fileName);
-            
+
             JSONArray missingArray = new JSONArray();
             for (Integer packetIndex : missingPackets) {
                 missingArray.put(packetIndex);
             }
             request.put("missingPackets", missingArray);
-            
+
             sendJson(request, true); // Wake up glasses for this request
-            
+
         } catch (JSONException e) {
             Log.e(TAG, "Error creating missing packets request", e);
         }
     }
-    
+
     /**
      * Send transfer completion confirmation to glasses
      */
@@ -3808,10 +3809,10 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             confirmation.put("fileName", fileName);
             confirmation.put("success", success);
             confirmation.put("timestamp", System.currentTimeMillis());
-            
+
             Log.d(TAG, (success ? "✅" : "❌") + " Sending transfer completion confirmation for: " + fileName + " (success: " + success + ")");
             sendJson(confirmation, true);
-            
+
         } catch (JSONException e) {
             Log.e(TAG, "Error creating transfer completion confirmation", e);
         }
@@ -4157,31 +4158,31 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
         String buttonMode = PreferenceManager.getDefaultSharedPreferences(context)
                 .getString("button_press_mode", "photo");
         sendButtonModeSetting(buttonMode);
-        
+
         // Send button video recording settings
         sendButtonVideoRecordingSettings();
-        
+
         // Send button photo settings
         sendButtonPhotoSettings();
-        
+
         // Send button camera LED setting
         sendButtonCameraLedSetting();
     }
-    
+
     /**
      * Send button photo settings to glasses
      */
     public void sendButtonPhotoSettings() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         String size = prefs.getString("button_photo_size", "medium");
-        
+
         Log.d(TAG, "Sending button photo setting: " + size);
-        
+
         if (!isConnected) {
             Log.w(TAG, "Cannot send button photo settings - not connected");
             return;
         }
-        
+
         try {
             JSONObject json = new JSONObject();
             json.put("type", "button_photo_setting");
@@ -4198,14 +4199,14 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
     public void sendButtonCameraLedSetting() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         boolean enabled = prefs.getBoolean("button_camera_led", true);
-        
+
         Log.d(TAG, "Sending button camera LED setting: " + enabled);
-        
+
         if (!isConnected) {
             Log.w(TAG, "Cannot send button camera LED setting - not connected");
             return;
         }
-        
+
         try {
             JSONObject json = new JSONObject();
             json.put("type", "button_camera_led");
@@ -4215,12 +4216,12 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             Log.e(TAG, "Error creating button camera LED settings message", e);
         }
     }
-    
+
     @Override
     public void startVideoRecording(String requestId, boolean save) {
         startVideoRecording(requestId, save, 0, 0, 0); // Use defaults
     }
-    
+
     /**
      * Start video recording with optional resolution settings
      * @param requestId Request ID for tracking
@@ -4230,9 +4231,9 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
      * @param fps Video frame rate (0 for default)
      */
     public void startVideoRecording(String requestId, boolean save, int width, int height, int fps) {
-        Log.d(TAG, "Starting video recording: requestId=" + requestId + ", save=" + save + 
+        Log.d(TAG, "Starting video recording: requestId=" + requestId + ", save=" + save +
                    ", resolution=" + width + "x" + height + "@" + fps + "fps");
-        
+
         if (!isConnected) {
             Log.w(TAG, "Cannot start video recording - not connected");
             return;
@@ -4243,7 +4244,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             json.put("type", "start_video_recording");
             json.put("requestId", requestId);
             json.put("save", save);
-            
+
             // Add video settings if provided
             if (width > 0 && height > 0) {
                 JSONObject settings = new JSONObject();
@@ -4252,7 +4253,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                 settings.put("fps", fps > 0 ? fps : 30);
                 json.put("settings", settings);
             }
-            
+
             sendJson(json, true); // Wake up glasses for this command
         } catch (JSONException e) {
             Log.e(TAG, "Failed to create start video recording command", e);
@@ -4295,7 +4296,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
         if (data[0] == (byte) 0xF1) {
             byte sequenceNumber = data[1];
             long receiveTime = System.currentTimeMillis();
-            
+
             // Basic sequence validation
             if (lastReceivedLc3Sequence != -1 && (byte)(lastReceivedLc3Sequence + 1) != sequenceNumber) {
                 Log.w(TAG, "LC3 packet sequence mismatch. Expected: " + (lastReceivedLc3Sequence + 1) + ", Got: " + sequenceNumber);
@@ -4303,11 +4304,11 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             lastReceivedLc3Sequence = sequenceNumber;
 
             byte[] lc3Data = Arrays.copyOfRange(data, 2, data.length);
-            
+
             // Enhanced LC3 packet logging and saving
             logLc3PacketDetails(lc3Data, sequenceNumber, receiveTime);
             // saveLc3AudioPacket(lc3Data, sequenceNumber);
-            
+
             // Log.d(TAG, "Received LC3 audio packet seq=" + sequenceNumber + ", size=" + lc3Data.length);
 
             // Decode LC3 to PCM and forward to audio processing system
@@ -4315,7 +4316,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                 if (lc3DecoderPtr != 0) {
                     // Decode LC3 to PCM using the native decoder with Mentra Live frame size
                     byte[] pcmData = L3cCpp.decodeLC3(lc3DecoderPtr, lc3Data, LC3_FRAME_SIZE);
-                    
+
                     if (pcmData != null && pcmData.length > 0) {
                         // Forward PCM data to audio processing system (like Even Realities G1)
                         audioProcessingCallback.onAudioDataAvailable(pcmData);
@@ -4387,7 +4388,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             // Create logs directory
             File logsDir = new File(context.getExternalFilesDir(null), LC3_LOG_DIR);
             Log.d(TAG, "🎯 Attempting to create LC3 logs directory: " + logsDir.getAbsolutePath());
-            
+
             if (!logsDir.exists()) {
                 boolean created = logsDir.mkdirs();
                 if (created) {
@@ -4409,18 +4410,18 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             String timestamp = lc3TimestampFormat.format(new Date());
             currentLc3FileName = "lc3_audio_" + timestamp + ".raw";
             File audioFile = new File(logsDir, currentLc3FileName);
-            
+
             lc3AudioFileStream = new FileOutputStream(audioFile);
-            
+
             // Reset statistics
             totalLc3PacketsReceived = 0;
             totalLc3BytesReceived = 0;
             firstLc3PacketTime = System.currentTimeMillis();
             lastLc3PacketTime = firstLc3PacketTime;
-            
+
             Log.i(TAG, "🎵 LC3 Audio logging initialized - File: " + currentLc3FileName);
             Log.i(TAG, "📁 LC3 logs directory: " + logsDir.getAbsolutePath());
-            
+
         } catch (Exception e) {
             Log.e(TAG, "❌ Failed to initialize LC3 audio logging", e);
         }
@@ -4435,7 +4436,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             Log.d(TAG, "🎵 LC3 audio saving disabled or file stream not initialized");
             return;
         }
-        
+
         // Log the current file path for debugging
         if (currentLc3FileName != null) {
             File logsDir = new File(context.getExternalFilesDir(null), LC3_LOG_DIR);
@@ -4450,17 +4451,17 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             // Write packet header: [timestamp][sequence][length][data]
             long timestamp = System.currentTimeMillis();
             String timeStr = lc3PacketTimestampFormat.format(new Date(timestamp));
-            
+
             // Write timestamp and metadata
             String header = String.format("[%s] SEQ:%d LEN:%d\n", timeStr, sequenceNumber, lc3Data.length);
             lc3AudioFileStream.write(header.getBytes(StandardCharsets.UTF_8));
-            
+
             // Write raw LC3 data
             lc3AudioFileStream.write(lc3Data);
             lc3AudioFileStream.write('\n'); // Newline separator
-            
+
             lc3AudioFileStream.flush();
-            
+
         } catch (Exception e) {
             Log.e(TAG, "❌ Failed to save LC3 audio packet", e);
         }
@@ -4478,7 +4479,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
         totalLc3PacketsReceived++;
         totalLc3BytesReceived += data.length;
         lastLc3PacketTime = receiveTime;
-        
+
         if (firstLc3PacketTime == 0) {
             firstLc3PacketTime = receiveTime;
         }
@@ -4486,7 +4487,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
         // Calculate packet timing
         long timeSinceFirst = receiveTime - firstLc3PacketTime;
         long timeSinceLast = receiveTime - lastLc3PacketTime;
-        
+
         // Log detailed packet information
         // Log.i(TAG, String.format("🎵 LC3 PACKET #%d RECEIVED:", sequenceNumber));
         // Log.i(TAG, String.format("   📊 Size: %d bytes", data.length));
@@ -4495,7 +4496,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
         // Log.i(TAG, String.format("   ⏱️  Since last: +%dms", timeSinceLast));
         // Log.i(TAG, String.format("   📈 Total packets: %d", totalLc3PacketsReceived));
         // Log.i(TAG, String.format("   📈 Total bytes: %d", totalLc3BytesReceived));
-        
+
         // Log first few bytes for debugging
         if (data.length > 0) {
             StringBuilder hexDump = new StringBuilder("   🔍 First 16 bytes: ");
@@ -4504,17 +4505,17 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
             }
             // Log.d(TAG, hexDump.toString());
         }
-        
+
         // Log packet statistics every 10 packets
         if (totalLc3PacketsReceived % 10 == 0) {
             long duration = lastLc3PacketTime - firstLc3PacketTime;
             double packetsPerSecond = duration > 0 ? (totalLc3PacketsReceived * 1000.0) / duration : 0;
             double bytesPerSecond = duration > 0 ? (totalLc3BytesReceived * 1000.0) / duration : 0;
-            
+
             // Log.i(TAG, String.format("📊 LC3 STATS UPDATE:"));
             // Log.i(TAG, String.format("   🎯 Packets/sec: %.2f", packetsPerSecond));
             // Log.i(TAG, String.format("   🎯 Bytes/sec: %.2f", bytesPerSecond));
-            // Log.i(TAG, String.format("   🎯 Average packet size: %.1f bytes", 
+            // Log.i(TAG, String.format("   🎯 Average packet size: %.1f bytes",
             //     totalLc3PacketsReceived > 0 ? (double) totalLc3BytesReceived / totalLc3PacketsReceived : 0));
         }
     }
@@ -4530,30 +4531,30 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                     long duration = lastLc3PacketTime - firstLc3PacketTime;
                     double packetsPerSecond = duration > 0 ? (totalLc3PacketsReceived * 1000.0) / duration : 0;
                     double bytesPerSecond = duration > 0 ? (totalLc3BytesReceived * 1000.0) / duration : 0;
-                    
+
                     String stats = String.format("\n=== LC3 AUDIO SESSION STATISTICS ===\n");
                     stats += String.format("Total packets received: %d\n", totalLc3PacketsReceived);
                     stats += String.format("Total bytes received: %d\n", totalLc3BytesReceived);
                     stats += String.format("Session duration: %d ms\n", duration);
                     stats += String.format("Average packets/sec: %.2f\n", packetsPerSecond);
                     stats += String.format("Average bytes/sec: %.2f\n", bytesPerSecond);
-                    stats += String.format("Average packet size: %.1f bytes\n", 
+                    stats += String.format("Average packet size: %.1f bytes\n",
                         (double) totalLc3BytesReceived / totalLc3PacketsReceived);
-                    stats += String.format("Session ended: %s\n", 
+                    stats += String.format("Session ended: %s\n",
                         lc3TimestampFormat.format(new Date()));
                     stats += "==========================================\n";
-                    
+
                     lc3AudioFileStream.write(stats.getBytes(StandardCharsets.UTF_8));
                 }
-                
+
                 lc3AudioFileStream.close();
                 lc3AudioFileStream = null;
-                
+
                 Log.i(TAG, "🎵 LC3 Audio logging closed - Final stats written to: " + currentLc3FileName);
-                Log.i(TAG, String.format("📊 Final Statistics: %d packets, %d bytes, %.2f packets/sec", 
+                Log.i(TAG, String.format("📊 Final Statistics: %d packets, %d bytes, %.2f packets/sec",
                     totalLc3PacketsReceived, totalLc3BytesReceived,
                     totalLc3PacketsReceived > 0 ? (totalLc3PacketsReceived * 1000.0) / (lastLc3PacketTime - firstLc3PacketTime) : 0));
-                
+
             } catch (Exception e) {
                 Log.e(TAG, "❌ Error closing LC3 audio logging", e);
             }
@@ -4575,11 +4576,11 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
         if (totalLc3PacketsReceived == 0) {
             return "No LC3 packets received yet";
         }
-        
+
         long duration = lastLc3PacketTime - firstLc3PacketTime;
         double packetsPerSecond = duration > 0 ? (totalLc3PacketsReceived * 1000.0) / duration : 0;
         double bytesPerSecond = duration > 0 ? (totalLc3BytesReceived * 1000.0) / duration : 0;
-        
+
         return String.format("LC3 Stats: %d packets, %d bytes, %.2f packets/sec, %.2f bytes/sec, avg size: %.1f bytes",
             totalLc3PacketsReceived, totalLc3BytesReceived, packetsPerSecond, bytesPerSecond,
             (double) totalLc3BytesReceived / totalLc3PacketsReceived);
@@ -4595,7 +4596,7 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
         File logsDir = new File(context.getExternalFilesDir(null), LC3_LOG_DIR);
                  return new File(logsDir, currentLc3FileName).getAbsolutePath();
      }
- 
+
      /**
       * List all LC3 log files with their sizes
       */
@@ -4605,19 +4606,19 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
              if (!logsDir.exists()) {
                  return "LC3 logs directory does not exist";
              }
-             
+
              File[] files = logsDir.listFiles((dir, name) -> name.endsWith(".raw"));
              if (files == null || files.length == 0) {
                  return "No LC3 log files found";
              }
-             
+
              StringBuilder result = new StringBuilder("LC3 Log Files:\n");
              for (File file : files) {
                  long sizeKB = file.length() / 1024;
                  result.append(String.format("  📄 %s (%d KB)\n", file.getName(), sizeKB));
              }
              return result.toString();
-             
+
          } catch (Exception e) {
              return "Error listing LC3 log files: " + e.getMessage();
          }
