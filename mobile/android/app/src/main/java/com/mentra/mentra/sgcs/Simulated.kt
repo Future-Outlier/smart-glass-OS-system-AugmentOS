@@ -73,6 +73,10 @@ class Simulated : SGCManager() {
         Bridge.log("sendButtonVideoRecordingSettings")
     }
 
+    override fun sendButtonMaxRecordingTime(minutes: Int) {
+        Bridge.log("sendButtonMaxRecordingTime")
+    }
+
     override fun sendButtonCameraLedSetting() {
         Bridge.log("sendButtonCameraLedSetting")
     }
