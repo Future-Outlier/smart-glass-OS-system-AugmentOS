@@ -222,7 +222,7 @@ class MentraManager {
     }
 
     private fun startForegroundService() {
-        val context = Bridge.getContext() ?: return
+        val context = Bridge.getContext()
 
         try {
             Bridge.log("Mentra: Starting foreground service")
@@ -242,7 +242,7 @@ class MentraManager {
     }
 
     private fun restartForegroundService() {
-        val context = Bridge.getContext() ?: return
+        val context = Bridge.getContext()
 
         try {
             // Stop the service

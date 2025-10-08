@@ -723,8 +723,8 @@ public class Bridge private constructor() {
                 }
                 "set_stt_model_details" -> {
                     if (params != null) {
-                        val path = params.getString("path")
-                        val languageCode = params.getString("languageCode")
+                        // val path = params.getString("path")
+                        // val languageCode = params.getString("languageCode")
                         // STTTools.setSttModelDetails(path, languageCode)
                     }
                 }
