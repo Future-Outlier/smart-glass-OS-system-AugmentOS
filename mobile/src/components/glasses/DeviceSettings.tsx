@@ -540,7 +540,7 @@ export default function DeviceSettings() {
                 <InfoSection
                   title="Device Information"
                   items={[
-                    {label: "Bluetooth Name", value: status.glasses_info?.bluetooth_name},
+                    {label: "Bluetooth Name", value: status.glasses_info?.bluetooth_name?.split("_")[3]},
                     {label: "Build Number", value: status.glasses_info?.glasses_build_number},
                     {label: "Local IP Address", value: status.glasses_info?.glasses_wifi_local_ip},
                   ]}
