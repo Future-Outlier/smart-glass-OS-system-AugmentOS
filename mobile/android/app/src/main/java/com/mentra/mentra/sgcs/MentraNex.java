@@ -1,3 +1,6 @@
+// TODO: this should be re-written in kotlin so that it can be maintained 1:1 with the swift code!
+
+
 // package com.augmentos.augmentos_core.smarterglassesmanager.smartglassescommunicators;
 
 // import android.os.Bundle;
