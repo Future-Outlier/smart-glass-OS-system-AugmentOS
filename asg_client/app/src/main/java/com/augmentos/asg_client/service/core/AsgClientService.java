@@ -399,9 +399,9 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             payload.put("V", 1);
             JSONObject bData = new JSONObject();
             bData.put("switch", enable);
-            payload.put("B", bData);
+            payload.put("B", bData.toString());
 
-            boolean sent = sendK900Command(payload.toString());
+            boolean sent = sendK900Command(payload);
             if (sent) {
                 Log.i(TAG, "Swipe volume control command sent successfully");
             }
