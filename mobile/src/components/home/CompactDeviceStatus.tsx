@@ -76,21 +76,9 @@ export const CompactDeviceStatus: React.FC = () => {
     }
   }
 
-  const sendDisconnectWearable = async () => {
-    console.log("Disconnecting wearable")
-    try {
-      await bridge.sendDisconnectWearable()
-    } catch (error) {
-      console.error("disconnect wearable error:", error)
-    }
-  }
-
-  const handleConnectOrDisconnect = async () => {
-    if (status.core_info.is_searching) {
-      await sendDisconnectWearable()
-    } else {
-      await connectGlasses()
-    }
+  // Handler: only handles connection, no disconnect functionality
+  const handleConnect = async () => {
+    await connectGlasses()
   }
 
   const getCurrentGlassesImage = () => {
@@ -130,8 +118,8 @@ export const CompactDeviceStatus: React.FC = () => {
           textStyle={[{marginLeft: theme.spacing.xxl}]}
           textAlignment="left"
           LeftAccessory={() => <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginLeft: 5}} />}
-          onPress={handleConnectOrDisconnect}
           tx="home:connectingGlasses"
+          disabled={true}
         />
       </View>
     )
@@ -148,7 +136,7 @@ export const CompactDeviceStatus: React.FC = () => {
           textAlignment="left"
           LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
           RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
-          onPress={handleConnectOrDisconnect}
+          onPress={handleConnect}
           tx="home:connectGlasses"
           disabled={isCheckingConnectivity}
         />

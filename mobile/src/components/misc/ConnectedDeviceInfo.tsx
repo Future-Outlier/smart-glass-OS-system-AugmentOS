@@ -57,23 +57,9 @@ export const ConnectDeviceButton = () => {
     }
   }
 
-  const sendDisconnectWearable = async () => {
-    console.log("Disconnecting wearable")
-
-    try {
-      await bridge.sendDisconnectWearable()
-    } catch (err) {
-      console.error("disconnect error:", err)
-    }
-  }
-
-  // New handler: if already connecting, pressing the button calls disconnect.
-  const handleConnectOrDisconnect = async () => {
-    if (status.core_info.is_searching) {
-      await sendDisconnectWearable()
-    } else {
-      await connectGlasses()
-    }
+  // Handler: only handles connection, no disconnect functionality
+  const handleConnect = async () => {
+    await connectGlasses()
   }
 
   // if we have simulated glasses, show nothing:
@@ -107,8 +93,8 @@ export const ConnectDeviceButton = () => {
         textStyle={[{marginLeft: spacing.xxl}]}
         textAlignment="left"
         LeftAccessory={() => <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginLeft: 5}} />}
-        onPress={handleConnectOrDisconnect}
         tx="home:connectingGlasses"
+        disabled={true}
       />
     )
   }
@@ -120,7 +106,7 @@ export const ConnectDeviceButton = () => {
         textAlignment="left"
         LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
         RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
-        onPress={handleConnectOrDisconnect}
+        onPress={handleConnect}
         tx="home:connectGlasses"
         disabled={isCheckingConnectivity}
       />
@@ -365,20 +351,6 @@ const styles = {
     padding: 10,
     borderRadius: 8,
     width: "80%",
-  },
-  disabledDisconnectButton: {
-    backgroundColor: "#A9A9A9",
-  },
-  disconnectButton: {
-    alignItems: "center",
-    backgroundColor: "#E24A24",
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    marginRight: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    width: "40%",
   },
   disconnectText: {
     color: "#fff",

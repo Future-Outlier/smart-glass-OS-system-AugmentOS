@@ -220,7 +220,6 @@ const en = {
     wifiUnavailable: "Connect a pair of glasses that support WiFi to access WiFi settings.",
     developerSettings: "Developer Settings",
     forgetGlasses: "Forget Glasses",
-    disconnectGlasses: "Disconnect Glasses",
     forgetGlassesConfirm: "Are you sure you want to forget your glasses?",
     signOut: "Sign Out",
     signOutConfirm: "Are you sure you want to sign out?",
