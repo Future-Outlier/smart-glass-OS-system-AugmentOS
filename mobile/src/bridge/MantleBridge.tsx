@@ -1,4 +1,4 @@
-import {NativeEventEmitter, NativeModules, Platform} from "react-native"
+import {Platform} from "react-native"
 import {EventEmitter} from "events"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {INTENSE_LOGGING} from "@/consts"
@@ -11,8 +11,9 @@ import livekitManager from "@/managers/LivekitManager"
 import mantle from "@/managers/MantleManager"
 import {useSettingsStore} from "@/stores/settings"
 
-const {BridgeModule} = NativeModules
-const coreBridge = new NativeEventEmitter(BridgeModule)
+// const {BridgeModule} = NativeModules
+// const coreBridge = new NativeEventEmitter(BridgeModule)
+import Core from "core"
 
 export class MantleBridge extends EventEmitter {
   private static instance: MantleBridge | null = null
