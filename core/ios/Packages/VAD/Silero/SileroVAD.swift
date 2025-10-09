@@ -50,6 +50,12 @@ public class SileroVAD: NSObject {
     // sample rate: 16000; sliceSize: 512/1024/1536
 
     static var modelPath: String {
+        // Try to find the model in the bundle containing this class (for CocoaPods)
+        let bundle = Bundle(for: SileroVAD.self)
+        if let path = bundle.path(forResource: "silero_vad", ofType: "onnx") {
+            return path
+        }
+        // Fall back to main bundle
         return Bundle.main.path(forResource: "silero_vad", ofType: "onnx") ?? ""
     }
 

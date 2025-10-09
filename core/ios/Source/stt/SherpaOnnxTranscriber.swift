@@ -71,6 +71,7 @@ class SherpaOnnxTranscriber {
      * Loads models and configuration, sets up processing thread.
      */
     func initialize() {
+        return
         do {
             var tokensPath: String
             var modelType = "unknown"
@@ -265,6 +266,7 @@ class SherpaOnnxTranscriber {
      */
     private func runLoop() {
         Bridge.log("🔄 Sherpa-ONNX processing loop started")
+        return
 
         while isRunning {
             // Pull data from queue

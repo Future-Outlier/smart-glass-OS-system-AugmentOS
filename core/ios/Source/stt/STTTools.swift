@@ -118,31 +118,31 @@ class STTTools {
         }
     }
 
-    static func extractTarBz2(sourcePath: String, destinationPath: String) -> Bool {
+    static func extractTarBz2(sourcePath _: String, destinationPath _: String) -> Bool {
         do {
-            let fileManager = FileManager.default
+            // let fileManager = FileManager.default
 
-            // Create destination directory if it doesn't exist
-            try fileManager.createDirectory(
-                atPath: destinationPath,
-                withIntermediateDirectories: true,
-                attributes: nil
-            )
+            // // Create destination directory if it doesn't exist
+            // try fileManager.createDirectory(
+            //     atPath: destinationPath,
+            //     withIntermediateDirectories: true,
+            //     attributes: nil
+            // )
 
-            // Use the Swift TarBz2Extractor with SWCompression
-            var extractionError: NSError?
-            let success = TarBz2Extractor.extractTarBz2From(
-                sourcePath,
-                to: destinationPath,
-                error: &extractionError
-            )
+            // // Use the Swift TarBz2Extractor with SWCompression
+            // var extractionError: NSError?
+            // let success = TarBz2Extractor.extractTarBz2From(
+            //     sourcePath,
+            //     to: destinationPath,
+            //     error: &extractionError
+            // )
 
-            if !success || extractionError != nil {
-                print(
-                    "EXTRACTION_ERROR: \(extractionError?.localizedDescription ?? "Failed to extract tar.bz2")"
-                )
-                return false
-            }
+            // if !success || extractionError != nil {
+            //     print(
+            //         "EXTRACTION_ERROR: \(extractionError?.localizedDescription ?? "Failed to extract tar.bz2")"
+            //     )
+            //     return false
+            // }
 
             return true
         } catch {

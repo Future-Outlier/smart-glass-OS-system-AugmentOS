@@ -35,6 +35,15 @@ Pod::Spec.new do |s|
   # iOS frameworks required by MentraOS
   s.frameworks = 'AVFoundation', 'CoreBluetooth', 'UIKit', 'CoreGraphics'
 
+  # System libraries required by MentraOS
+  s.library = 'bz2'
+
+  # Vendored frameworks
+  s.vendored_frameworks = 'Packages/SherpaOnnx/sherpa-onnx.xcframework'
+
+  # Resources (model files)
+  s.resources = 'Packages/VAD/Silero/Model/*.onnx'
+
   # Include all Swift, Objective-C, and C/C++ source files
   s.source_files = "**/*.{h,m,mm,swift,hpp,cpp,c}"
 
