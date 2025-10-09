@@ -13,7 +13,7 @@ import {useSettingsStore} from "@/stores/settings"
 
 // const {BridgeModule} = NativeModules
 // const coreBridge = new NativeEventEmitter(BridgeModule)
-import Core from "core"
+import CoreModule from "core"
 
 export class MantleBridge extends EventEmitter {
   private static instance: MantleBridge | null = null
@@ -187,7 +187,10 @@ export class MantleBridge extends EventEmitter {
     }
 
     // Create a fresh subscription
-    this.messageEventSubscription = coreBridge.addListener("CoreMessageEvent", this.handleCoreMessage.bind(this))
+    this.messageEventSubscription = CoreModule.addListener("CoreMessageEvent", (event: any) => {
+      // expo adds the body to the event object
+      this.handleCoreMessage(event.body)
+    })
 
     console.log("Core message event listener initialized")
   }
@@ -419,7 +422,7 @@ export class MantleBridge extends EventEmitter {
       //   return await CoreCommsService.sendCommandToCore(JSON.stringify(dataObj))
       // }
 
-      return await BridgeModule.sendCommand(JSON.stringify(dataObj))
+      return await CoreModule.handleCommand(JSON.stringify(dataObj))
     } catch (error) {
       console.error("Failed to send data to Core:", error)
       GlobalEventEmitter.emit("SHOW_BANNER", {

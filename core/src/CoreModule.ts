@@ -3,9 +3,8 @@ import {NativeModule, requireNativeModule} from "expo"
 import {CoreModuleEvents} from "./Core.types"
 
 declare class CoreModule extends NativeModule<CoreModuleEvents> {
-  PI: number
   hello(): string
-  setValueAsync(value: string): Promise<void>
+  handleCommand(command: string): Promise<any>
 }
 
 // This call loads the native module object from the JSI.
