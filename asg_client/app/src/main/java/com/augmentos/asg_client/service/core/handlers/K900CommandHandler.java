@@ -107,19 +107,8 @@ public class K900CommandHandler {
      */
     private void handleCameraButtonShortPress() {
         Log.d(TAG, "📸 Camera button short pressed - handling with configurable mode");
-        
-        // Step 1: Immediately claim RGB LED control authority
-        Log.i(TAG, "🔘 🎖️ Camera button pressed - claiming RGB LED authority!");
-        sendRgbLedControlAuthority(true);
-        
-        // Step 2: Schedule blue LED activation for 5 seconds later
-        Log.i(TAG, "⏱️ Scheduling blue LED activation in 5 seconds...");
-        mainHandler.postDelayed(() -> {
-            Log.i(TAG, "⏱️ 5 seconds elapsed - activating blue RGB LED!");
-            activateBlueRgbLedViaService();
-        }, 10); // 5000ms = 5 seconds
-        
-        // handleConfigurableButtonPress(false); // false = short press
+
+        handleConfigurableButtonPress(false); // false = short press
     }
 
     /**
@@ -290,10 +279,10 @@ public class K900CommandHandler {
                 Log.d(TAG, "⏹️ Stopping video recording (short press during recording)");
                 captureService.stopVideoRecording();
             } else {
-                Log.d(TAG, "📸 Taking photo locally (short press) with LED: " + ledEnabled);
+                Log.d(TAG, "📸 Taking photo locally (short press) - LED disabled for button press");
                 // Get saved photo size for button press
                 String photoSize = serviceManager.getAsgSettings().getButtonPhotoSize();
-                captureService.takePhotoLocally(photoSize, ledEnabled);
+                captureService.takePhotoLocally(photoSize, false); // Disable LED for button press
             }
         }
     }
@@ -472,7 +461,7 @@ public class K900CommandHandler {
      * Handle touch event report
      */
     private void handleTouchEventReport(JSONObject bData) {
-        Log.d(TAG, "📦 Processing touch event report");
+        Log.d(TAG, "#@$@@$Processing touch event report");
         
         if (bData != null) {
             int type = bData.optInt("type", -1);
