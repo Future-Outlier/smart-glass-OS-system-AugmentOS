@@ -8,6 +8,7 @@ import com.augmentos.asg_client.io.bluetooth.managers.K900BluetoothManager;
 import com.augmentos.asg_client.io.media.core.MediaCaptureService;
 import com.augmentos.asg_client.settings.AsgSettings;
 import com.augmentos.asg_client.settings.VideoSettings;
+import com.augmentos.asg_client.service.core.AsgClientService;
 import com.augmentos.asg_client.service.legacy.managers.AsgClientServiceManager;
 import com.augmentos.asg_client.service.communication.interfaces.ICommunicationManager;
 import com.augmentos.asg_client.service.system.interfaces.IStateManager;
@@ -190,11 +191,16 @@ public class K900CommandHandler {
      * Handle button press with universal forwarding and gallery mode check
      * Button presses are ALWAYS forwarded to phone/apps
      * Local capture only happens when camera/gallery app is active
+     * Also enables BES touch/swipe event listening
      */
     private void handleConfigurableButtonPress(boolean isLongPress) {
         if (serviceManager != null && serviceManager.getAsgSettings() != null) {
             String pressType = isLongPress ? "long" : "short";
             Log.d(TAG, "Handling " + pressType + " button press");
+
+            // Enable BES touch/swipe event listening immediately
+            Log.d(TAG, "🎯 Enabling BES touch/swipe event listening");
+            enableBESEventListening();
 
             // ALWAYS send button press to phone/apps
             Log.d(TAG, "📱 Forwarding button press to phone/apps (universal forwarding)");
@@ -202,6 +208,29 @@ public class K900CommandHandler {
 
             // Check if camera/gallery app is active for local capture
             handlePhotoCapture(isLongPress);
+        }
+    }
+
+    /**
+     * Enable BES touch/swipe event listening using AsgClientService methods
+     */
+    private void enableBESEventListening() {
+        try {
+            // Get AsgClientService instance
+            AsgClientService service = AsgClientService.getInstance();
+            if (service != null) {
+                Log.d(TAG, "🎯 Enabling touch event reporting");
+                service.handleTouchEventControl(true);
+                
+                Log.d(TAG, "🎯 Enabling swipe volume control");
+                service.handleSwipeVolumeControl(true);
+                
+                Log.i(TAG, "✅ BES touch/swipe event listening enabled");
+            } else {
+                Log.w(TAG, "⚠️ Cannot enable BES event listening - AsgClientService not available");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error enabling BES event listening", e);
         }
     }
 
