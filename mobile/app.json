@@ -167,7 +167,9 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow MentraOS to use your location."
         }
-      ]
+      ],
+      "expo-audio",
+      "expo-av"
     ],
     "experiments": {
       "tsconfigPaths": true,

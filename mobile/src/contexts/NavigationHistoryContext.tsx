@@ -52,25 +52,25 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     }
   }, [pathname])
 
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        // Skip for app settings and webview - they handle their own back navigation
-        if (pathname === "/applet/settings" || pathname === "/applet/webview") {
-          return false // Let the screen's handler execute
-        }
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     const onBackPress = () => {
+  //       // Skip for app settings and webview - they handle their own back navigation
+  //       if (pathname === "/applet/settings" || pathname === "/applet/webview") {
+  //         return false // Let the screen's handler execute
+  //       }
 
-        if (segments.length > 0 && segments[0] != "(tabs)") {
-          goBack()
-        }
-        return true
-      }
+  //       if (segments.length > 0 && segments[0] != "(tabs)") {
+  //         goBack()
+  //       }
+  //       return true
+  //     }
 
-      BackHandler.addEventListener("hardwareBackPress", onBackPress)
+  //     BackHandler.addEventListener("hardwareBackPress", onBackPress)
 
-      return () => BackHandler.removeEventListener("hardwareBackPress", onBackPress)
-    }, [pathname, segments]),
-  )
+  //     return () => BackHandler.removeEventListener("hardwareBackPress", onBackPress)
+  //   }, [pathname, segments]),
+  // )
 
   const goBack = () => {
     console.info("NavHistory: goBack()")
