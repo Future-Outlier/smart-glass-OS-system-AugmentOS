@@ -40,6 +40,8 @@ public class RgbLedCommandHandler implements ICommandHandler {
     // Command types from phone (for RGB LEDs on glasses)
     private static final String CMD_RGB_LED_CONTROL_ON = "rgb_led_control_on";
     private static final String CMD_RGB_LED_CONTROL_OFF = "rgb_led_control_off";
+    private static final String CMD_RGB_LED_PHOTO_FLASH = "rgb_led_photo_flash";
+    private static final String CMD_RGB_LED_VIDEO_PULSE = "rgb_led_video_pulse";
     
     // K900 protocol commands to send to glasses
     private static final String K900_CMD_RGB_LED_ON = "cs_ledon";
@@ -61,7 +63,9 @@ public class RgbLedCommandHandler implements ICommandHandler {
     public Set<String> getSupportedCommandTypes() {
         return Set.of(
             CMD_RGB_LED_CONTROL_ON,
-            CMD_RGB_LED_CONTROL_OFF
+            CMD_RGB_LED_CONTROL_OFF,
+            CMD_RGB_LED_PHOTO_FLASH,
+            CMD_RGB_LED_VIDEO_PULSE
         );
     }
     
@@ -76,6 +80,12 @@ public class RgbLedCommandHandler implements ICommandHandler {
                     
                 case CMD_RGB_LED_CONTROL_OFF:
                     return handleRgbLedOff(data);
+                    
+                case CMD_RGB_LED_PHOTO_FLASH:
+                    return handlePhotoFlash(data);
+                    
+                case CMD_RGB_LED_VIDEO_PULSE:
+                    return handleVideoPulse(data);
                     
                 default:
                     Log.w(TAG, "⚠️ Unknown RGB LED command type: " + commandType);
@@ -141,7 +151,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
             ledParams.put("ontime", ontime);
             ledParams.put("offtime", offtime);
             ledParams.put("count", count);
-            k900Command.put("B", ledParams);
+            k900Command.put("B", ledParams.toString());
             
             // Send command to glasses via Bluetooth
             boolean sent = sendCommandToGlasses(k900Command);
@@ -294,6 +304,132 @@ public class RgbLedCommandHandler implements ICommandHandler {
             }
         } catch (JSONException e) {
             Log.e(TAG, "Error creating error response", e);
+        }
+    }
+    
+    /**
+     * Handle photo flash LED command - blue flash synchronized with shutter sound.
+     * 
+     * Expected data format:
+     * {
+     *   "duration": 200  // Flash duration in milliseconds (optional, default 200ms)
+     * }
+     * 
+     * This creates a quick blue flash that matches the camera shutter sound timing.
+     */
+    private boolean handlePhotoFlash(JSONObject data) {
+        Log.d(TAG, "📸 Processing photo flash LED command");
+        
+        try {
+            // Extract flash duration with default
+            int duration = data.optInt("duration", 5000); // Default 5000ms flash
+            
+            Log.i(TAG, String.format("📸 💙 Photo flash LED - Duration: %dms", duration));
+            
+            // Build K900 protocol command for blue flash
+            JSONObject k900Command = new JSONObject();
+            k900Command.put("C", K900_CMD_RGB_LED_ON);
+            k900Command.put("V", 1);
+            
+            JSONObject ledParams = new JSONObject();
+            ledParams.put("led", RGB_LED_BLUE);
+            ledParams.put("ontime", duration);
+            ledParams.put("offtime", 0);  // No off time for single flash
+            ledParams.put("count", 1);    // Single flash
+            k900Command.put("B", ledParams.toString());
+            
+            // Send command to glasses via Bluetooth
+            boolean sent = sendCommandToGlasses(k900Command);
+            
+            if (sent) {
+                Log.i(TAG, "✅ Photo flash LED command sent successfully to glasses");
+                sendSuccessResponse(CMD_RGB_LED_PHOTO_FLASH);
+            } else {
+                Log.e(TAG, "❌ Failed to send photo flash LED command to glasses");
+                sendErrorResponse("Failed to send photo flash command to glasses");
+            }
+            
+            return sent;
+            
+        } catch (JSONException e) {
+            Log.e(TAG, "💥 Error building photo flash LED command", e);
+            sendErrorResponse("Failed to build photo flash LED command");
+            return false;
+        }
+    }
+    
+    /**
+     * Handle video pulse LED command - continuous blue sine wave pulsing.
+     * 
+     * Expected data format:
+     * {
+     *   "pulse_duration": 1000,  // Duration of each pulse cycle in milliseconds (optional, default 1000ms)
+     *   "on_time": 500,         // LED on time per cycle in milliseconds (optional, default 500ms)
+     *   "off_time": 500         // LED off time per cycle in milliseconds (optional, default 500ms)
+     * }
+     * 
+     * This creates a continuous pulsing pattern for video recording indication.
+     */
+    private boolean handleVideoPulse(JSONObject data) {
+        Log.d(TAG, "🎥 Processing video pulse LED command");
+        
+        try {
+            // Extract pulse parameters with defaults
+            int pulseDuration = data.optInt("pulse_duration", 1000); // Default 1 second cycle
+            int onTime = data.optInt("on_time", 500);              // Default 500ms on
+            int offTime = data.optInt("off_time", 500);            // Default 500ms off
+            
+            // Validate parameters
+            if (pulseDuration < 200 || pulseDuration > 5000) {
+                Log.e(TAG, "❌ Invalid pulse duration: " + pulseDuration + " (must be 200-5000ms)");
+                sendErrorResponse("Invalid pulse duration: " + pulseDuration);
+                return false;
+            }
+            
+            if (onTime < 50 || onTime > pulseDuration) {
+                Log.e(TAG, "❌ Invalid on time: " + onTime + " (must be 50-" + pulseDuration + "ms)");
+                sendErrorResponse("Invalid on time: " + onTime);
+                return false;
+            }
+            
+            if (offTime < 50 || offTime > pulseDuration) {
+                Log.e(TAG, "❌ Invalid off time: " + offTime + " (must be 50-" + pulseDuration + "ms)");
+                sendErrorResponse("Invalid off time: " + offTime);
+                return false;
+            }
+            
+            Log.i(TAG, String.format("🎥 💙 Video pulse LED - Cycle: %dms, On: %dms, Off: %dms", 
+                    pulseDuration, onTime, offTime));
+            
+            // Build K900 protocol command for continuous blue pulsing
+            JSONObject k900Command = new JSONObject();
+            k900Command.put("C", K900_CMD_RGB_LED_ON);
+            k900Command.put("V", 1);
+            
+            JSONObject ledParams = new JSONObject();
+            ledParams.put("led", RGB_LED_BLUE);
+            ledParams.put("ontime", onTime);
+            ledParams.put("offtime", offTime);
+            ledParams.put("count", 10);    // 0 = continuous pulsing until stopped
+            k900Command.put("B", ledParams.toString());
+            
+            // Send command to glasses via Bluetooth
+            boolean sent = sendCommandToGlasses(k900Command);
+            
+            if (sent) {
+                Log.i(TAG, "✅ Video pulse LED command sent successfully to glasses");
+                sendSuccessResponse(CMD_RGB_LED_VIDEO_PULSE);
+            } else {
+                Log.e(TAG, "❌ Failed to send video pulse LED command to glasses");
+                sendErrorResponse("Failed to send video pulse command to glasses");
+            }
+            
+            return sent;
+            
+        } catch (JSONException e) {
+            Log.e(TAG, "💥 Error building video pulse LED command", e);
+            sendErrorResponse("Failed to build video pulse LED command");
+            return false;
         }
     }
     

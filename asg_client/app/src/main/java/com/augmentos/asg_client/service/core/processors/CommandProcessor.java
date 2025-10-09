@@ -66,8 +66,9 @@ public class CommandProcessor {
     private final K900CommandHandler k900CommandHandler;
     private final ResponseSender responseSender;
     private final ChunkReassembler chunkReassembler;
+    private final RgbLedCommandHandler rgbLedCommandHandler;
 
-    public CommandProcessor(Context context, ICommunicationManager communicationManager, IStateManager stateManager, IMediaManager streamingManager, IResponseBuilder responseBuilder, IConfigurationManager configurationManager, AsgClientServiceManager serviceManager, FileManager fileManager) {
+    public CommandProcessor(Context context, ICommunicationManager communicationManager, IStateManager stateManager, IMediaManager streamingManager, IResponseBuilder responseBuilder, IConfigurationManager configurationManager, AsgClientServiceManager serviceManager, FileManager fileManager, RgbLedCommandHandler rgbLedCommandHandler) {
         Log.d(TAG, "🔧 Initializing CommandProcessor with dependencies");
         this.context = context;
         this.communicationManager = communicationManager;
@@ -77,6 +78,7 @@ public class CommandProcessor {
         this.configurationManager = configurationManager;
         this.serviceManager = serviceManager;
         this.fileManager = fileManager;
+        this.rgbLedCommandHandler = rgbLedCommandHandler;
 
         // Initialize components (Single Responsibility Principle)
         Log.d(TAG, "📦 Creating command processing components");
@@ -325,7 +327,7 @@ public class CommandProcessor {
             commandHandlerRegistry.registerHandler(new com.augmentos.asg_client.service.core.handlers.TransferCompleteCommandHandler(serviceManager));
             Log.d(TAG, "✅ Registered TransferCompleteCommandHandler");
 
-            commandHandlerRegistry.registerHandler(new RgbLedCommandHandler(serviceManager));
+            commandHandlerRegistry.registerHandler(rgbLedCommandHandler);
             Log.d(TAG, "✅ Registered RgbLedCommandHandler");
 
             commandHandlerRegistry.registerHandler(new com.augmentos.asg_client.service.core.handlers.GalleryModeCommandHandler(serviceManager));
