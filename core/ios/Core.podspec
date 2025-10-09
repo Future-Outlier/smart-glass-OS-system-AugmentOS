@@ -20,10 +20,17 @@ Pod::Spec.new do |s|
 
   s.dependency 'ExpoModulesCore'
 
+  # External dependencies required by MentraOS native code
+  s.dependency 'SWCompression', '~> 4.8.0'
+  s.dependency 'SwiftProtobuf', '~> 1.0'
+
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
   }
+
+  # iOS frameworks required by MentraOS
+  s.frameworks = 'AVFoundation', 'CoreBluetooth', 'UIKit', 'CoreGraphics'
 
   s.source_files = "**/*.{h,m,mm,swift,hpp,cpp}"
 end

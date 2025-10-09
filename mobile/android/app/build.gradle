@@ -1,7 +1,6 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
-apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
@@ -80,7 +79,6 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
  * this variant is about 6MiB larger per architecture than default.
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
-
 /**
  * Disable Hermes by setting it to false.
  */
@@ -94,8 +92,8 @@ def releaseKeyPassword = project.hasProperty("MENTRAOS_UPLOAD_KEY_PASSWORD") ? p
 def releaseKeyAlias = project.hasProperty("MENTRAOS_UPLOAD_KEY_ALIAS") ? project.property("MENTRAOS_UPLOAD_KEY_ALIAS") : "upload"
 
 
-// Temporarily disabled Sentry source map uploads due to auth token requirement
-// apply from: new File(["node", "--print", "require.resolve('@sentry/react-native/package.json')"].execute().text.trim(), "../sentry.gradle")
+apply from: new File(["node", "--print", "require('path').dirname(require.resolve('@sentry/react-native/package.json'))"].execute().text.trim(), "sentry.gradle")
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
@@ -110,40 +108,6 @@ android {
         versionCode 49
         versionName "2.2.11"
     }
-
-    // External native build configuration
-    // externalNativeBuild {
-    //     cmake {
-    //         path "src/main/cpp/CMakeLists.txt"
-    //         version "3.22.1"
-    //     }
-    // }
-
-
-
-//    externalNativeBuild {
-//        cmake {
-//            '-DCMAKE_OBJECT_PATH_MAX=600'
-//            '-DANDROID_STL=c++_static'
-//        }
-//    }
-
-//    externalNativeBuild {
-//        cmake {
-//            '-DCMAKE_OBJECT_PATH_MAX=600'
-//            '-DANDROID_STL=c++_static'
-//            path file('src/main/cpp/CMakeLists.txt')
-//            version '3.22.1'
-//        }
-//    }
-
-//    externalNativeBuild {
-//        cmake {
-//            path file('src/main/cpp/liblc3/CMakeLists.txt')
-//            version '3.22.1'
-//        }
-//    }
-
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -154,7 +118,7 @@ android {
         release {
             storeFile file('../credentials/upload-keystore.jks')
             storePassword = releaseStorePassword
-            keyAlias = releaseKeyAlias
+            keyAlias = releaseKeyAlias  
             keyPassword = releaseKeyPassword
         }
     }
@@ -164,6 +128,7 @@ android {
         }
         release {
             signingConfig releaseStorePassword ? signingConfigs.release : signingConfigs.debug
+            shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             crunchPngs (findProperty('android.enablePngCrunchInReleaseBuilds')?.toBoolean() ?: true)
@@ -172,16 +137,6 @@ android {
     packagingOptions {
         jniLibs {
             useLegacyPackaging (findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)
-        }
-
-        pickFirst '**/libjsc.so'
-        pickFirst '**/libc++_shared.so'
-        // Sherpa-ONNX AAR dependency and silero-vad import the same lib in android_core/app
-        pickFirst '**/libonnxruntime.so'
-        pickFirst '**/libonnxruntime4j_jni.so'
-
-        resources {
-            excludes += ["META-INF/INDEX.LIST"]
         }
     }
     androidResources {
@@ -212,23 +167,6 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-    implementation "androidx.lifecycle:lifecycle-service:2.6.1"
-    implementation("org.greenrobot:eventbus:3.3.1")
-    implementation 'com.google.code.gson:gson:2.10.1'
-    // lc3Lib which includes the cpp lc3 library dep
-    implementation project(path: ":lc3Lib")
-
-    // Google Play Services for location settings dialog
-    implementation 'com.google.android.gms:play-services-location:21.0.1'
-    implementation 'com.google.android.gms:play-services-base:18.2.0'
-
-    // Media3 ExoPlayer dependencies for audio playback
-    implementation "androidx.media3:media3-exoplayer:1.2.1"
-    implementation "androidx.media3:media3-common:1.2.1"
-    implementation "androidx.media3:media3-ui:1.2.1"
-
-    // Apache Commons Compress for tar.bz2 extraction
-    implementation 'org.apache.commons:commons-compress:1.24.0'
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
@@ -252,21 +190,5 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
-    }
-}
-
-// Force override onnxruntime version to 1.17.1 because sherpa-onnx bundles `libsherpa-onnx-jni.so` which depends on this version
-configurations.all {
-    resolutionStrategy {
-        eachDependency { DependencyResolveDetails details ->
-            if (details.requested.group == 'com.microsoft.onnxruntime') {
-                details.useVersion '1.17.1'
-                details.because('Force override vad’s transitive version')
-            }
-            if (details.requested.name == 'onnxruntime-android') {
-                details.useVersion '1.17.1'
-                details.because('Force override vad’s transitive version')
-            }
-        }
     }
 }
