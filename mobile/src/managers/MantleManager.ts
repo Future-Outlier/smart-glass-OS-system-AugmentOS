@@ -23,7 +23,8 @@ TaskManager.defineTask(LOCATION_TASK_NAME, ({data: {locations}, error}) => {
 
   console.log("Received new locations", locations)
   const first = locs[0]!
-  socketComms.sendLocationUpdate(first.coords.latitude, first.coords.longitude, first.coords.accuracy ?? undefined)
+  // socketComms.sendLocationUpdate(first.coords.latitude, first.coords.longitude, first.coords.accuracy ?? undefined)
+  restComms.sendLocationData(first)
 })
 
 class MantleManager {
