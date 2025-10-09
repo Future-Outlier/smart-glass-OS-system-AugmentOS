@@ -2797,7 +2797,7 @@ class MentraLive: NSObject, SGCManager {
     /**
      * Check if BT Classic is connected via CTKD
      */
-    func isBtClassicConnected() -> Bool {
+    func isBtClassicConnectedViaCtkd() -> Bool {
         return isBtClassicConnected
     }
 
@@ -3082,7 +3082,7 @@ extension MentraLive {
         sendButtonVideoRecordingSettings()
 
         // Send button max recording time
-        sendButtonMaxRecordingTime()
+        sendButtonMaxRecordingTime(MentraManager.shared.buttonMaxRecordingTimeMinutes)
 
         // Send button photo settings
         sendButtonPhotoSettings()
@@ -3116,22 +3116,6 @@ extension MentraLive {
                 "height": finalHeight,
                 "fps": finalFps,
             ],
-        ]
-        sendJson(json, wakeUp: true)
-    }
-
-    func sendButtonMaxRecordingTime() {
-        let maxTime = MentraManager.shared.buttonMaxRecordingTime
-        Bridge.log("Sending button max recording time: \(maxTime) minutes")
-
-        guard connectionState == ConnTypes.CONNECTED else {
-            Bridge.log("Cannot send button max recording time - not connected")
-            return
-        }
-
-        let json: [String: Any] = [
-            "type": "button_max_recording_time",
-            "minutes": maxTime,
         ]
         sendJson(json, wakeUp: true)
     }
@@ -3172,6 +3156,25 @@ extension MentraLive {
 
     func startVideoRecording(requestId: String, save: Bool) {
         startVideoRecording(requestId: requestId, save: save, width: 0, height: 0, fps: 0)
+    }
+
+    // MARK: - SGCManager Protocol Compliance
+
+    func sendButtonMaxRecordingTime(_ minutes: Int) {
+        let maxTime = minutes
+
+        Bridge.log("Sending button max recording time: \(maxTime) minutes")
+
+        guard connectionState == .connected else {
+            Bridge.log("Cannot send button max recording time - not connected")
+            return
+        }
+
+        let json: [String: Any] = [
+            "type": "button_max_recording_time",
+            "minutes": maxTime,
+        ]
+        sendJson(json, wakeUp: true)
     }
 
     func startVideoRecording(requestId: String, save: Bool, width: Int, height: Int, fps: Int) {
