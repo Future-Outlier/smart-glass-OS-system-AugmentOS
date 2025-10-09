@@ -119,7 +119,8 @@
     "react-native-wifi-reborn": "^4.13.6",
     "semver": "^7.7.3",
     "tar-js": "^0.3.0",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.8",
+    "core": "file:../core"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",

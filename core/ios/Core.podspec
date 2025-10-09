@@ -23,14 +23,30 @@ Pod::Spec.new do |s|
   # External dependencies required by MentraOS native code
   s.dependency 'SWCompression', '~> 4.8.0'
   s.dependency 'SwiftProtobuf', '~> 1.0'
+  s.dependency 'onnxruntime-objc', '1.18.0'
 
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
+    'CLANG_CXX_LANGUAGE_STANDARD' => 'c++17',
+    'CLANG_CXX_LIBRARY' => 'libc++'
   }
 
   # iOS frameworks required by MentraOS
   s.frameworks = 'AVFoundation', 'CoreBluetooth', 'UIKit', 'CoreGraphics'
 
-  s.source_files = "**/*.{h,m,mm,swift,hpp,cpp}"
+  # Include all Swift, Objective-C, and C/C++ source files
+  s.source_files = "**/*.{h,m,mm,swift,hpp,cpp,c}"
+
+  # Explicitly mark C++ headers and internal headers as private to prevent exposure in public interface
+  s.private_header_files = [
+    "Packages/CoreObjC/lc3_cpp.h",
+    "Packages/CoreObjC/mdct_neon.h",
+    "Packages/CoreObjC/ltpf_neon.h",
+    "Packages/SherpaOnnx/sherpa-onnx.xcframework/Headers/sherpa-onnx/c-api/cxx-api.h",
+    "Source/Bridging-Header.h"
+  ]
+
+  # Exclude problematic patterns
+  s.exclude_files = "Source/BridgeModule.{h,m}", "Source/Bridge.m"
 end

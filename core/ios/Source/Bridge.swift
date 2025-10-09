@@ -261,11 +261,6 @@ class Bridge {
         Bridge.sendTypedMessage("wifi_scan_results", body: eventBody)
     }
 
-    override func supportedEvents() -> [String] {
-        // don't add to this list, use a typed message instead
-        return ["CoreMessageEvent"]
-    }
-
     // Arbitrary WS Comms (dont use these, make a dedicated function for your use case):
     static func sendWSText(_ msg: String) {
         let data = ["text": msg]
