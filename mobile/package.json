@@ -1,5 +1,5 @@
 {
-  "name": "aos",
+  "name": "mentraos",
   "version": "0.0.1",
   "private": true,
   "main": "expo-router/entry",
@@ -61,7 +61,7 @@
     "expo-calendar": "~15.0.7",
     "expo-camera": "~17.0.8",
     "expo-font": "~14.0.8",
-    "expo-image": "~3.0.9",
+    "expo-image": "2.0.7",
     "expo-linear-gradient": "~15.0.7",
     "expo-linking": "~8.0.8",
     "expo-localization": "~17.0.7",
@@ -119,8 +119,7 @@
     "react-native-wifi-reborn": "^4.13.6",
     "semver": "^7.7.3",
     "tar-js": "^0.3.0",
-    "zustand": "^5.0.8",
-    "core": "file:../core"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",

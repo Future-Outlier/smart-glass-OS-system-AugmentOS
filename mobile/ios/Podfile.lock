@@ -2,10 +2,6 @@ PODS:
   - BitByteData (2.0.4)
   - BVLinearGradient (2.8.3):
     - React-Core
-  - Core (0.1.0):
-    - ExpoModulesCore
-    - SWCompression (~> 4.8.0)
-    - SwiftProtobuf (~> 1.0)
   - EXApplication (7.0.7):
     - ExpoModulesCore
   - EXAV (16.0.7):
@@ -55,13 +51,12 @@ PODS:
   - ExpoHead (6.0.10):
     - ExpoModulesCore
     - RNScreens
-  - ExpoImage (3.0.9):
+  - ExpoImage (2.0.7):
     - ExpoModulesCore
     - libavif/libdav1d
-    - SDWebImage (~> 5.21.0)
+    - SDWebImage (~> 5.19.1)
     - SDWebImageAVIFCoder (~> 0.11.0)
     - SDWebImageSVGCoder (~> 1.7.0)
-    - SDWebImageWebPCoder (~> 0.14.6)
   - ExpoKeepAwake (15.0.7):
     - ExpoModulesCore
   - ExpoLinearGradient (15.0.7):
@@ -119,18 +114,6 @@ PODS:
     - libavif/core
     - libdav1d (>= 0.6.0)
   - libdav1d (1.2.0)
-  - libwebp (1.5.0):
-    - libwebp/demux (= 1.5.0)
-    - libwebp/mux (= 1.5.0)
-    - libwebp/sharpyuv (= 1.5.0)
-    - libwebp/webp (= 1.5.0)
-  - libwebp/demux (1.5.0):
-    - libwebp/webp
-  - libwebp/mux (1.5.0):
-    - libwebp/demux
-  - libwebp/sharpyuv (1.5.0)
-  - libwebp/webp (1.5.0):
-    - libwebp/sharpyuv
   - livekit-react-native (2.9.2):
     - hermes-engine
     - livekit-react-native-webrtc
@@ -160,6 +143,11 @@ PODS:
   - LiveKitExpoPlugin (1.0.1):
     - ExpoModulesCore
     - livekit-react-native
+  - onnxruntime-c (1.18.0)
+  - onnxruntime-objc (1.18.0):
+    - onnxruntime-objc/Core (= 1.18.0)
+  - onnxruntime-objc/Core (1.18.0):
+    - onnxruntime-c (= 1.18.0)
   - PocketSVG (2.7.3)
   - RCTDeprecation (0.81.4)
   - RCTRequired (0.81.4)
@@ -2581,17 +2569,14 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - SDWebImage (5.21.2):
-    - SDWebImage/Core (= 5.21.2)
-  - SDWebImage/Core (5.21.2)
+  - SDWebImage (5.19.7):
+    - SDWebImage/Core (= 5.19.7)
+  - SDWebImage/Core (5.19.7)
   - SDWebImageAVIFCoder (0.11.1):
     - libavif/core (>= 0.11.0)
     - SDWebImage (~> 5.10)
   - SDWebImageSVGCoder (1.7.0):
     - SDWebImage/Core (~> 5.6)
-  - SDWebImageWebPCoder (0.14.6):
-    - libwebp (~> 1.0)
-    - SDWebImage/Core (~> 5.17)
   - Sentry/HybridSDK (8.56.1)
   - SWCompression (4.8.6):
     - BitByteData (~> 2.0)
@@ -2634,7 +2619,6 @@ PODS:
   - SWCompression/Zlib (4.8.6):
     - BitByteData (~> 2.0)
     - SWCompression/Deflate
-  - SwiftProtobuf (1.32.0)
   - SwiftUIIntrospect (1.3.0)
   - UMAppLoader (6.0.7)
   - WebRTC-SDK (137.7151.04)
@@ -2647,7 +2631,6 @@ PODS:
 
 DEPENDENCIES:
   - BVLinearGradient (from `../node_modules/react-native-linear-gradient`)
-  - Core (from `../node_modules/core/ios`)
   - EXApplication (from `../node_modules/expo-application/ios`)
   - EXAV (from `../node_modules/expo-av/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
@@ -2677,6 +2660,7 @@ DEPENDENCIES:
   - "livekit-react-native (from `../node_modules/@livekit/react-native`)"
   - "livekit-react-native-webrtc (from `../node_modules/@livekit/react-native-webrtc`)"
   - "LiveKitExpoPlugin (from `../node_modules/@livekit/react-native-expo-plugin/ios`)"
+  - onnxruntime-objc (= 1.18.0)
   - RCTDeprecation (from `../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
   - RCTRequired (from `../node_modules/react-native/Libraries/Required`)
   - RCTTypeSafety (from `../node_modules/react-native/Libraries/TypeSafety`)
@@ -2772,6 +2756,7 @@ DEPENDENCIES:
   - RNWorklets (from `../node_modules/react-native-worklets`)
   - SDWebImage
   - SDWebImageSVGCoder
+  - SWCompression (~> 4.8.0)
   - UMAppLoader (from `../node_modules/unimodules-app-loader/ios`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -2780,15 +2765,14 @@ SPEC REPOS:
     - BitByteData
     - libavif
     - libdav1d
-    - libwebp
+    - onnxruntime-c
+    - onnxruntime-objc
     - PocketSVG
     - SDWebImage
     - SDWebImageAVIFCoder
     - SDWebImageSVGCoder
-    - SDWebImageWebPCoder
     - Sentry
     - SWCompression
-    - SwiftProtobuf
     - SwiftUIIntrospect
     - WebRTC-SDK
     - ZXingObjC
@@ -2796,8 +2780,6 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   BVLinearGradient:
     :path: "../node_modules/react-native-linear-gradient"
-  Core:
-    :path: "../node_modules/core/ios"
   EXApplication:
     :path: "../node_modules/expo-application/ios"
   EXAV:
@@ -3049,7 +3031,6 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   BitByteData: 2422ed269fcddc44976d97f171a183d25ef535ce
   BVLinearGradient: cb006ba232a1f3e4f341bb62c42d1098c284da70
-  Core: aee95564f30bf750792b94a8241070d5934b1078
   EXApplication: 296622817d459f46b6c5fe8691f4aac44d2b79e7
   EXAV: e3fefaca88f14624bca01d9a128562a5f8e738f8
   EXConstants: a95804601ee4a6aa7800645f9b070d753b1142b3
@@ -3061,7 +3042,7 @@ SPEC CHECKSUMS:
   ExpoFileSystem: f4bf6bac4ede3b6671c22777f01102a02a028412
   ExpoFont: 86ceec09ffed1c99cfee36ceb79ba149074901b5
   ExpoHead: b1843315be5ef6751b4ecb2404b3effffbb33d96
-  ExpoImage: 6356eb13d3a076a991cf191e4bb22cca91a8f317
+  ExpoImage: d840b256050f4428d2942bc2b6e9251f9e0d7021
   ExpoKeepAwake: 1a2e820692e933c94a565ec3fbbe38ac31658ffe
   ExpoLinearGradient: a464898cb95153125e3b81894fd479bcb1c7dd27
   ExpoLinking: f051f28e50ea9269ff539317c166adec81d9342d
@@ -3078,10 +3059,11 @@ SPEC CHECKSUMS:
   hermes-engine: 35c763d57c9832d0eef764316ca1c4d043581394
   libavif: 84bbb62fb232c3018d6f1bab79beea87e35de7b7
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
-  libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
   livekit-react-native: e725301d793255fc1f450b342a9476e8f294eb86
   livekit-react-native-webrtc: c03e72c608fbb8284a99e095dd7835a85bdb0279
   LiveKitExpoPlugin: 8e0f4bdffa921c27c13e1504ea0e668b6f859278
+  onnxruntime-c: a909204639a1f035f575127ac406f781ac797c9c
+  onnxruntime-objc: b6fab0f1787aa6f7190c2013f03037df4718bd8b
   PocketSVG: ca3bc53ea8d68336ba830c47b2e547790507b901
   RCTDeprecation: 7487d6dda857ccd4cb3dd6ecfccdc3170e85dcbc
   RCTRequired: 54128b7df8be566881d48c7234724a78cb9b6157
@@ -3175,19 +3157,17 @@ SPEC CHECKSUMS:
   RNVectorIcons: 4351544f100d4f12cac156a7c13399e60bab3e26
   RNWifi: 6669d0fe0f82592d64383d0d4ac1ff888d15f8bc
   RNWorklets: e2f21d10699f21634e4b9583c10e3596e6d3b353
-  SDWebImage: 9f177d83116802728e122410fb25ad88f5c7608a
+  SDWebImage: 8a6b7b160b4d710e2a22b6900e25301075c34cb3
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
   SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c
-  SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   Sentry: b3ec44d01708fce73f99b544beb57e890eca4406
   SWCompression: 9379873ad5e9f25b31db88c441649b59a4c2bab7
-  SwiftProtobuf: 81e341191afbddd64aa031bd12862dccfab2f639
   SwiftUIIntrospect: fee9aa07293ee280373a591e1824e8ddc869ba5d
   UMAppLoader: e1234c45d2b7da239e9e90fc4bbeacee12afd5b6
   WebRTC-SDK: 40d4f5ba05cadff14e4db5614aec402a633f007e
   Yoga: 051f086b5ccf465ff2ed38a2cf5a558ae01aaaa1
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: cfea8bf4348fdb3e632bc7a054a290db2b4b8d14
+PODFILE CHECKSUM: 111f1ad6383367058a5a6d4046d2436bec4061c4
 
 COCOAPODS: 1.16.2
