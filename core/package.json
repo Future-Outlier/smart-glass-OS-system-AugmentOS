@@ -30,9 +30,7 @@
   "homepage": "https://github.com/fossephate/core#readme",
   "dependencies": {},
   "devDependencies": {
-    "expo-module-scripts": "^5.0.7",
-    "expo": "~52.0.47",
-    "react-native": "0.76.9"
+    "expo-module-scripts": "^5.0.7"
   },
   "peerDependencies": {
     "expo": "*",
