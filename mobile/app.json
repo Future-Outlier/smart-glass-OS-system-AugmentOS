@@ -1,6 +1,4 @@
 {
-  "name": "MentraOS",
-  "displayName": "MentraOS",
   "expo": {
     "name": "MentraOS",
     "slug": "MentraOS",
@@ -175,8 +173,5 @@
       "tsconfigPaths": true,
       "typedRoutes": true
     }
-  },
-  "ignite": {
-    "version": "10.4.0"
   }
 }
