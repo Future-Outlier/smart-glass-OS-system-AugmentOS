@@ -20,6 +20,7 @@ import com.augmentos.asg_client.io.hardware.interfaces.IHardwareManager;
 import com.augmentos.asg_client.io.hardware.core.HardwareManagerFactory;
 import com.augmentos.asg_client.io.streaming.services.RtmpStreamingService;
 import com.augmentos.asg_client.audio.AudioAssets;
+import com.augmentos.asg_client.service.core.handlers.RgbLedCommandHandler;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -198,6 +199,9 @@ public class MediaCaptureService {
     private ServiceCallbackInterface mServiceCallback;
     private CircularVideoBuffer mVideoBuffer;
     private final IHardwareManager hardwareManager;
+    
+    // RGB LED command handler for glasses LED control
+    private RgbLedCommandHandler rgbLedCommandHandler;
 
     // Track current video recording
     private boolean isRecordingVideo = false;
@@ -357,10 +361,86 @@ public class MediaCaptureService {
     public void setServiceCallback(ServiceCallbackInterface callback) {
         this.mServiceCallback = callback;
     }
+    
+    /**
+     * Set the RGB LED command handler for glasses LED control
+     */
+    public void setRgbLedCommandHandler(RgbLedCommandHandler handler) {
+        this.rgbLedCommandHandler = handler;
+        Log.i(TAG, "🚨 RGB LED command handler set: " + (handler != null ? "✅ VALID" : "❌ NULL"));
+        if (handler != null) {
+            Log.i(TAG, "🚨 RGB LED handler supports commands: " + handler.getSupportedCommandTypes());
+        }
+    }
 
     private void playShutterSound() {
         if (hardwareManager != null && hardwareManager.supportsAudioPlayback()) {
             hardwareManager.playAudioAsset(AudioAssets.CAMERA_SOUND);
+        }
+    }
+    
+    /**
+     * Trigger blue LED flash for photo capture (synchronized with shutter sound)
+     */
+    private void triggerPhotoFlashLed() {
+        Log.i(TAG, "📸 triggerPhotoFlashLed() called - RGB LED handler: " + (rgbLedCommandHandler != null ? "✅ AVAILABLE" : "❌ NULL"));
+        
+        if (rgbLedCommandHandler != null) {
+            try {
+                JSONObject flashData = new JSONObject();
+                flashData.put("duration", 5000); // 5000ms flash duration
+                
+                Log.i(TAG, "📸 Sending photo flash LED command: " + flashData.toString());
+                boolean success = rgbLedCommandHandler.handleCommand("rgb_led_photo_flash", flashData);
+                Log.i(TAG, "📸 Photo flash LED triggered: " + (success ? "✅ SUCCESS" : "❌ FAILED"));
+            } catch (JSONException e) {
+                Log.e(TAG, "💥 Error creating photo flash LED command", e);
+            }
+        } else {
+            Log.e(TAG, "❌ RGB LED command handler not available for photo flash - LED will not activate!");
+        }
+    }
+    
+    /**
+     * Trigger blue LED pulse for video recording start
+     */
+    private void triggerVideoPulseLed() {
+        Log.i(TAG, "🎥 triggerVideoPulseLed() called - RGB LED handler: " + (rgbLedCommandHandler != null ? "✅ AVAILABLE" : "❌ NULL"));
+        
+        if (rgbLedCommandHandler != null) {
+            try {
+                JSONObject pulseData = new JSONObject();
+                pulseData.put("pulse_duration", 1000); // 1 second cycle
+                pulseData.put("on_time", 500);         // 500ms on
+                pulseData.put("off_time", 500);        // 500ms off
+                
+                Log.i(TAG, "🎥 Sending video pulse LED command: " + pulseData.toString());
+                boolean success = rgbLedCommandHandler.handleCommand("rgb_led_video_pulse", pulseData);
+                Log.i(TAG, "🎥 Video pulse LED triggered: " + (success ? "✅ SUCCESS" : "❌ FAILED"));
+            } catch (JSONException e) {
+                Log.e(TAG, "💥 Error creating video pulse LED command", e);
+            }
+        } else {
+            Log.e(TAG, "❌ RGB LED command handler not available for video pulse - LED will not activate!");
+        }
+    }
+    
+    /**
+     * Stop video pulse LED (turn off blue LED)
+     */
+    private void stopVideoPulseLed() {
+        if (rgbLedCommandHandler != null) {
+            try {
+                JSONObject offData = new JSONObject();
+                offData.put("led", RgbLedCommandHandler.RGB_LED_BLUE);
+                
+                boolean success = rgbLedCommandHandler.handleCommand("rgb_led_control_off", offData);
+                Log.d(TAG, "🎥 Video pulse LED stopped: " + (success ? "success" : "failed"));
+            } catch (JSONException e) {
+                Log.e(TAG, "💥 Error creating LED off command", e);
+            }
+        } else {
+            Log.w(TAG, "⚠️ RGB LED command handler not available for stopping video pulse");
         }
     }
 
@@ -532,6 +612,7 @@ public class MediaCaptureService {
         try {
             // Play video start sound
             playVideoStartSound();
+            triggerVideoPulseLed(); // Trigger blue LED pulse for video recording
 
             // Start video recording using CameraNeo
             CameraNeo.startVideoRecording(mContext, requestId, videoFilePath, settings, new CameraNeo.VideoRecordingCallback() {
@@ -666,6 +747,7 @@ public class MediaCaptureService {
         try {
             // Play video stop sound
             playVideoStopSound();
+            stopVideoPulseLed(); // Stop blue LED pulse when video recording stops
 
             // Stop the recording via CameraNeo
             CameraNeo.stopVideoRecording(mContext, currentVideoId);
@@ -877,6 +959,8 @@ public class MediaCaptureService {
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_INIT");
 
         playShutterSound();
+        triggerPhotoFlashLed(); // Trigger blue LED flash synchronized with shutter sound
+
 
         // LED control is now handled by CameraNeo tied to camera lifecycle
         // This prevents LED flickering during rapid photo capture
@@ -993,6 +1077,7 @@ public class MediaCaptureService {
 
         try {
             playShutterSound();
+            triggerPhotoFlashLed(); // Trigger blue LED flash synchronized with shutter sound
 
             // Use the new enqueuePhotoRequest for thread-safe rapid capture
             CameraNeo.enqueuePhotoRequest(
@@ -1570,6 +1655,7 @@ public class MediaCaptureService {
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_CAPTURE");
 
         playShutterSound();
+        triggerPhotoFlashLed(); // Trigger blue LED flash synchronized with shutter sound
 
         try {
             // Use CameraNeo for photo capture
