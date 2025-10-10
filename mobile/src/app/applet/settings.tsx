@@ -1,18 +1,6 @@
 // src/AppSettings.tsx
-import React, {useEffect, useState, useMemo, useLayoutEffect, useCallback, useRef} from "react"
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  ViewStyle,
-  TextStyle,
-  Animated,
-  BackHandler,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native"
+import {useEffect, useState, useMemo, useLayoutEffect, useCallback, useRef} from "react"
+import {View, TouchableOpacity, ViewStyle, TextStyle, Animated, BackHandler} from "react-native"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import GroupTitle from "@/components/settings/GroupTitle"
 import ToggleSetting from "@/components/settings/ToggleSetting"
@@ -33,7 +21,7 @@ import TimeSetting from "@/components/settings/TimeSetting"
 import SettingsSkeleton from "@/components/misc/SettingsSkeleton"
 import {useFocusEffect, useLocalSearchParams} from "expo-router"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {Header, Screen, PillButton} from "@/components/ignite"
+import {Header, Screen, PillButton, Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import ActionButton from "@/components/ui/ActionButton"
@@ -41,13 +29,7 @@ import Divider from "@/components/misc/Divider"
 import {InfoRow} from "@/components/settings/InfoRow"
 import {SettingsGroup} from "@/components/settings/SettingsGroup"
 import {showAlert} from "@/utils/AlertUtils"
-import {
-  askPermissionsUI,
-  checkPermissionsUI,
-  PERMISSION_CONFIG,
-  PermissionFeatures,
-  requestPermissionsUI,
-} from "@/utils/PermissionsUtils"
+import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {translate} from "@/i18n"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -56,7 +38,7 @@ export default function AppSettings() {
   const {packageName, appName: appNameParam, fromWebView} = useLocalSearchParams()
   const [isUninstalling, setIsUninstalling] = useState(false)
   const {theme, themed} = useAppTheme()
-  const {goBack, push, replace, navigate} = useNavigationHistory()
+  const {goBack, replace} = useNavigationHistory()
   const insets = useSafeAreaInsets()
   const hasLoadedData = useRef(false)
 
@@ -85,7 +67,7 @@ export default function AppSettings() {
   const SETTINGS_CACHE_KEY = (packageName: string) => `app_settings_cache_${packageName}`
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [hasCachedSettings, setHasCachedSettings] = useState(false)
-  const [newUi, setNewUi] = useSetting(SETTINGS_KEYS.new_ui)
+  const [newUi, _setNewUi] = useSetting(SETTINGS_KEYS.new_ui)
 
   if (!packageName || typeof packageName !== "string") {
     console.error("No packageName found in params")
@@ -110,9 +92,9 @@ export default function AppSettings() {
         goBack()
         return true
       }
-      BackHandler.addEventListener("hardwareBackPress", onBackPress)
+      const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress)
       return () => {
-        BackHandler.removeEventListener("hardwareBackPress", onBackPress)
+        subscription.remove()
       }
     }, [goBack]),
   )
@@ -267,10 +249,6 @@ export default function AppSettings() {
 
       // Initialize local state using the "selected" property.
       if (data.settings && Array.isArray(data.settings)) {
-        // Get cached settings to preserve user values for existing settings
-        const cached = JSON.parse((await AsyncStorage.getItem(SETTINGS_CACHE_KEY(packageName))) ?? "{}")
-        const cachedState = cached?.settingsState || {}
-
         const initialState: {[key: string]: any} = {}
         data.settings.forEach((setting: any) => {
           if (setting.type !== "group") {
@@ -325,11 +303,6 @@ export default function AppSettings() {
     }))
 
     // Build an array of settings to send.
-    const updatedPayload = Object.keys(settingsState).map(settingKey => ({
-      key: settingKey,
-      value: settingKey === key ? value : settingsState[settingKey],
-    }))
-
     restComms
       .updateAppSetting(packageName, {key, value})
       .then(data => {
@@ -794,36 +767,10 @@ const $descriptionSection: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingHorizontal: spacing.md,
 })
 
-const $appInfoHeader: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.background,
-  padding: spacing.md,
-  borderRadius: spacing.sm,
-  borderWidth: 1,
-  elevation: 2,
-  shadowColor: "#000",
-  shadowOffset: {width: 0, height: 2},
-  shadowOpacity: 0.1,
-  shadowRadius: spacing.xxs,
-})
-
-const $descriptionContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  paddingTop: spacing.sm,
-  borderTopWidth: 1,
-  borderTopColor: colors.separator,
-})
-
 const $descriptionText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 16,
   fontFamily: "Montserrat-Regular",
   lineHeight: 22,
-  color: colors.text,
-})
-
-const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 24,
-  fontWeight: "bold",
-  fontFamily: "Montserrat-Bold",
-  marginBottom: spacing.xxs,
   color: colors.text,
 })
 
@@ -866,13 +813,6 @@ const $noSettingsText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   textAlign: "center",
   padding: spacing.md,
   color: colors.textDim,
-})
-
-const $loadingContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  marginHorizontal: spacing.md + spacing.xxs, // 20px
 })
 
 const $groupTitle: ThemedStyle<TextStyle> = () => ({})
