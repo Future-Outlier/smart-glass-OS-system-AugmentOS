@@ -4,9 +4,7 @@
     "": {
       "name": "core",
       "devDependencies": {
-        "expo": "~52.0.47",
         "expo-module-scripts": "^5.0.7",
-        "react-native": "0.76.9",
       },
       "peerDependencies": {
         "@types/react": "*",
