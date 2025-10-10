@@ -70,6 +70,16 @@ dependencies {
 
   // LC3 audio codec library
   implementation project(':lc3Lib')
+
+    // Sherpa-ONNX for local transcription
+    implementation 'com.github.k2-fsa:sherpa-onnx:v1.12.8'
+
+    // Silero VAD (with onnxruntime exclusions to avoid conflicts with sherpa-onnx)
+    implementation ('com.github.gkonovalov:android-vad:2.0.9') {
+        exclude group: 'com.microsoft.onnxruntime', module: 'onnxruntime'
+        exclude group: 'com.microsoft.onnxruntime', module: 'onnxruntime4j'
+        exclude group: 'com.microsoft.onnxruntime', module: 'onnxruntime4j-jni'
+    }
 }
 
 // Force override onnxruntime version to 1.17.1

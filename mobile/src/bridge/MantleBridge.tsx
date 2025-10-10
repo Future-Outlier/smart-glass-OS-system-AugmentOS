@@ -506,6 +506,18 @@ export class MantleBridge extends EventEmitter {
     })
   }
 
+  async sendToggleEnforceLocalTranscription(enabled: boolean) {
+    console.log("Toggling enforce local transcription:", enabled)
+
+    // Send toggle command to native side
+    await this.sendData({
+      command: "update_settings",
+      params: {
+        enforce_local_transcription: enabled,
+      },
+    })
+  }
+
   async updateButtonPhotoSize(size: string) {
     return await this.sendData({
       command: "update_settings",

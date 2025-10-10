@@ -18,8 +18,8 @@ import org.json.JSONException
 import org.json.JSONObject
 
 /**
- * Bridge class for core communication between Expo modules and native Android code
- * This is the Android equivalent of the iOS Bridge.swift
+ * Bridge class for core communication between Expo modules and native Android code This is the
+ * Android equivalent of the iOS Bridge.swift
  */
 public class Bridge private constructor() {
     private var mentraManager: MentraManager? = null
@@ -45,19 +45,20 @@ public class Bridge private constructor() {
         }
 
         /**
-         * Initialize the Bridge with event callback and context
-         * This should be called from CoreModule
+         * Initialize the Bridge with event callback and context This should be called from
+         * CoreModule
          */
         @JvmStatic
-        fun initialize(context: android.content.Context, callback: (String, Map<String, Any>) -> Unit) {
+        fun initialize(
+                context: android.content.Context,
+                callback: (String, Map<String, Any>) -> Unit
+        ) {
             Log.d(TAG, "Initializing Bridge with context and event callback")
             appContext = context
             eventCallback = callback
         }
 
-        /**
-         * Get the Android context for native operations
-         */
+        /** Get the Android context for native operations */
         @JvmStatic
         fun getContext(): android.content.Context {
             return appContext ?: throw IllegalStateException("Bridge not initialized with context")
@@ -474,8 +475,8 @@ public class Bridge private constructor() {
         }
 
         /**
-         * Send a typed message to JavaScript
-         * Don't call this function directly, instead make a function above that calls this function
+         * Send a typed message to JavaScript Don't call this function directly, instead make a
+         * function above that calls this function
          */
         @JvmStatic
         private fun sendTypedMessage(type: String, body: Map<String, Any>) {
@@ -496,7 +497,6 @@ public class Bridge private constructor() {
                 Log.e(TAG, "Error sending typed message", e)
             }
         }
-
     }
 
     init {
