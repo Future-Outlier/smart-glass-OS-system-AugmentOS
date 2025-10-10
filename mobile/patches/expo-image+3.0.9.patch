@@ -1,0 +1,175 @@
+diff --git a/node_modules/expo-image/ios/ExpoImage.podspec b/node_modules/expo-image/ios/ExpoImage.podspec
+index 818e050..21bef71 100644
+--- a/node_modules/expo-image/ios/ExpoImage.podspec
++++ b/node_modules/expo-image/ios/ExpoImage.podspec
+@@ -14,15 +14,14 @@ Pod::Spec.new do |s|
+     :ios => '15.1',
+     :tvos => '15.1'
+   }
+-  s.swift_version  = '5.9'
++  s.swift_version  = '5.4'
+   s.source         = { git: 'https://github.com/expo/expo.git' }
+   s.static_framework = true
+ 
+   s.dependency 'ExpoModulesCore'
+-  s.dependency 'SDWebImage', '~> 5.21.0'
++  s.dependency 'SDWebImage', '~> 5.19.1'
+   s.dependency 'SDWebImageAVIFCoder', '~> 0.11.0'
+   s.dependency 'SDWebImageSVGCoder', '~> 1.7.0'
+-  s.dependency 'SDWebImageWebPCoder', '~> 0.14.6'
+   s.dependency 'libavif/libdav1d'
+ 
+   # Swift/Objective-C compatibility
+diff --git a/node_modules/expo-image/ios/ResizedAnimatedCoder.swift b/node_modules/expo-image/ios/ResizedAnimatedCoder.swift
+new file mode 100644
+index 0000000..a45d860
+--- /dev/null
++++ b/node_modules/expo-image/ios/ResizedAnimatedCoder.swift
+@@ -0,0 +1,68 @@
++// Copyright 2024-present 650 Industries. All rights reserved.
++
++import SDWebImage
++
++/**
++ An animated image resizer that adjusts an already loaded `SDAnimatedImage`.
++ This is not a formal SDWebImage coder; it's used solely to leverage the SDWebImage loading pipeline.
++ */
++internal final class ResizedAnimatedCoder: NSObject, SDAnimatedImageCoder {
++  private let actualCoder: SDAnimatedImageCoder
++  private let size: CGSize
++  private let scale: Double
++
++  // swiftlint:disable:next unavailable_function
++  init(animatedImageData data: Data?, options: [SDImageCoderOption: Any]? = nil) {
++    fatalError("Unsupported initializer")
++  }
++
++  init(actualCoder: SDAnimatedImageCoder, size: CGSize, scale: Double) {
++    self.actualCoder = actualCoder
++    self.size = size
++    self.scale = scale
++    super.init()
++  }
++
++  // MARK: - SDImageCoder implementations
++
++  func canDecode(from data: Data?) -> Bool {
++    return actualCoder.canDecode(from: data)
++  }
++
++  func decodedImage(with data: Data?, options: [SDImageCoderOption: Any]? = nil) -> UIImage? {
++    return actualCoder.decodedImage(with: data, options: options)
++  }
++
++  func canEncode(to format: SDImageFormat) -> Bool {
++    return actualCoder.canEncode(to: format)
++  }
++
++  func encodedData(with image: UIImage?, format: SDImageFormat, options: [SDImageCoderOption: Any]? = nil) -> Data? {
++    return actualCoder.encodedData(with: image, format: format, options: options)
++  }
++
++  // MARK: - SDAnimatedImageProvider implementations
++
++  var animatedImageData: Data? {
++    return actualCoder.animatedImageData
++  }
++
++  var animatedImageFrameCount: UInt {
++    return actualCoder.animatedImageFrameCount
++  }
++
++  var animatedImageLoopCount: UInt {
++    return actualCoder.animatedImageLoopCount
++  }
++
++  func animatedImageFrame(at index: UInt) -> UIImage? {
++    guard let frame = actualCoder.animatedImageFrame(at: index) else {
++      return nil
++    }
++    return resize(image: frame, toSize: self.size, scale: self.scale)
++  }
++
++  func animatedImageDuration(at index: UInt) -> TimeInterval {
++    return actualCoder.animatedImageDuration(at: index)
++  }
++}
+diff --git a/node_modules/expo-image/ios/WebPCoder.swift b/node_modules/expo-image/ios/WebPCoder.swift
+deleted file mode 100644
+index e29e93c..0000000
+--- a/node_modules/expo-image/ios/WebPCoder.swift
++++ /dev/null
+@@ -1,73 +0,0 @@
+-// Copyright 2015-present 650 Industries. All rights reserved.
+-
+-import SDWebImage
+-import SDWebImageWebPCoder
+-
+-internal let imageCoderOptionUseAppleWebpCodec = SDImageCoderOption(rawValue: "useAppleWebpCodec")
+-
+-/**
+- A composite WebP coder that uses either `SDImageAWebPCoder` or `SDImageWebPCoder`
+- based on the passed `imageCoderOptionUseAppleWebpCodec` option.
+- */
+-internal final class WebPCoder: NSObject, SDAnimatedImageCoder {
+-  static let shared = WebPCoder()
+-
+-  private var useAppleWebpCodec: Bool = true
+-  private var instantiatedCoder: SDAnimatedImageCoder?
+-  private var coder: SDAnimatedImageCoder {
+-    if let instantiatedCoder {
+-      return instantiatedCoder
+-    }
+-    return self.useAppleWebpCodec ? SDImageAWebPCoder.shared : SDImageWebPCoder.shared
+-  }
+-
+-  override init() {
+-    super.init()
+-  }
+-
+-  // MARK: - SDAnimatedImageCoder implementations
+-
+-  convenience init(animatedImageData data: Data?, options: [SDImageCoderOption: Any]? = nil) {
+-    self.init()
+-    self.useAppleWebpCodec = options?[imageCoderOptionUseAppleWebpCodec] as? Bool ?? true
+-    self.instantiatedCoder = self.useAppleWebpCodec
+-      ? SDImageAWebPCoder.init(animatedImageData: data, options: options)
+-      : SDImageWebPCoder.init(animatedImageData: data, options: options)
+-  }
+-
+-  func canDecode(from data: Data?) -> Bool {
+-    return self.coder.canDecode(from: data)
+-  }
+-
+-  func decodedImage(with data: Data?, options: [SDImageCoderOption: Any]? = nil) -> UIImage? {
+-    return self.coder.decodedImage(with: data, options: options)
+-  }
+-
+-  func canEncode(to format: SDImageFormat) -> Bool {
+-    return self.coder.canEncode(to: format)
+-  }
+-
+-  func encodedData(with image: UIImage?, format: SDImageFormat, options: [SDImageCoderOption: Any]? = nil) -> Data? {
+-    return self.coder.encodedData(with: image, format: format, options: options)
+-  }
+-
+-  var animatedImageData: Data? {
+-    return self.coder.animatedImageData
+-  }
+-
+-  var animatedImageFrameCount: UInt {
+-    return self.coder.animatedImageFrameCount
+-  }
+-
+-  var animatedImageLoopCount: UInt {
+-    return self.coder.animatedImageLoopCount
+-  }
+-
+-  func animatedImageFrame(at index: UInt) -> UIImage? {
+-    return self.coder.animatedImageFrame(at: index)
+-  }
+-
+-  func animatedImageDuration(at index: UInt) -> TimeInterval {
+-    return self.coder.animatedImageDuration(at: index)
+-  }
+-}
