@@ -59,7 +59,7 @@ export default function SelectGlassesModelScreen() {
             gradientUnits="objectBoundingBox"
             gradientTransform={`rotate(${rotation} 10 10)`}>
             <Stop offset="0" stopColor={theme.colors.tint} />
-            <Stop offset="1" stopColor={theme.colors.accent} />
+            <Stop offset="1" stopColor={theme.colors.backgroundAlt} />
           </RadialGradient>
         </Defs>
         <Rect
