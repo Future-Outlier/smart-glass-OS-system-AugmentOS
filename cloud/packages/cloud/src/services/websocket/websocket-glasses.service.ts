@@ -8,6 +8,7 @@ import { IncomingMessage } from "http";
 import {
   MentraosSettingsUpdateRequest,
   CalendarEvent,
+  CloudToAppMessageType,
   CloudToGlassesMessage,
   CloudToGlassesMessageType,
   ConnectionAck,
@@ -554,32 +555,96 @@ export class GlassesWebSocketService {
             "Touch event received from glasses",
           );
 
-          // Relay to apps subscribed to this specific gesture
-          // Apps can subscribe to "touch_event:forward_swipe" for example
-          const gestureSubscription = `${StreamType.TOUCH_EVENT}:${touchEvent.gesture_name}`;
-          const subscribedApps =
-            userSession.subscriptionManager.getSubscribedApps(
-              gestureSubscription as any,
-            );
+          // Relay to apps with gesture-specific routing
+          // Check subscriptions for both gesture-specific (touch_event:triple_tap) and base (touch_event)
+          const gestureSubscription =
+            `${StreamType.TOUCH_EVENT}:${touchEvent.gesture_name}` as any;
+          const baseSubscription = StreamType.TOUCH_EVENT;
 
-          if (subscribedApps.length > 0) {
+          // Get all subscribed apps (gesture-specific + base)
+          const gestureSubscribers =
+            userSession.subscriptionManager.getSubscribedApps(
+              gestureSubscription,
+            );
+          const baseSubscribers =
+            userSession.subscriptionManager.getSubscribedApps(baseSubscription);
+          const allSubscribers = [
+            ...new Set([...gestureSubscribers, ...baseSubscribers]),
+          ];
+
+          if (allSubscribers.length === 0) {
             userSession.logger.debug(
-              { gesture: touchEvent.gesture_name, apps: subscribedApps },
-              `Relaying touch event to ${subscribedApps.length} subscribed apps`,
+              { gesture: touchEvent.gesture_name },
+              "No apps subscribed to touch event",
             );
-            // Relay to gesture-specific subscribers
-            userSession.relayMessageToApps(touchEvent);
+            break;
           }
 
-          // Also relay to apps subscribed to all touch events (if any)
-          const allTouchSubscribers =
-            userSession.subscriptionManager.getSubscribedApps(
-              StreamType.TOUCH_EVENT,
-            );
-          if (allTouchSubscribers.length > 0) {
-            userSession.relayMessageToApps(touchEvent);
-          }
+          userSession.logger.debug(
+            {
+              gesture: touchEvent.gesture_name,
+              gestureSubscribers,
+              baseSubscribers,
+              allSubscribers,
+            },
+            `Relaying touch event to ${allSubscribers.length} apps`,
+          );
 
+          // Send to each subscribed app and log which app is receiving what
+          for (const packageName of allSubscribers) {
+            const connection = userSession.appWebsockets.get(packageName);
+            if (connection && connection.readyState === WebSocket.OPEN) {
+              const appSessionId = `${userSession.sessionId}-${packageName}`;
+
+              // Determine which subscription this app is using
+              const appSubscription = gestureSubscribers.includes(packageName)
+                ? gestureSubscription
+                : baseSubscription;
+
+              const dataStream = {
+                type: CloudToAppMessageType.DATA_STREAM,
+                sessionId: appSessionId,
+                streamType: appSubscription,
+                data: touchEvent,
+                timestamp: new Date(),
+              };
+
+              userSession.logger.info(
+                {
+                  packageName,
+                  appSubscription,
+                  gesture: touchEvent.gesture_name,
+                  data: touchEvent,
+                  sessionId: appSessionId,
+                },
+                `Sending touch event '${touchEvent.gesture_name}' to app '${packageName}' on subscription '${appSubscription}'`,
+              );
+
+              try {
+                connection.send(JSON.stringify(dataStream));
+                userSession.logger.debug(
+                  { packageName, subscription: appSubscription },
+                  "Sent touch event to app",
+                );
+              } catch (sendError) {
+                userSession.logger.error(
+                  { error: sendError, packageName },
+                  "Error sending touch event to app",
+                );
+              }
+            } else {
+              userSession.logger.warn(
+                {
+                  packageName,
+                  gesture: touchEvent.gesture_name,
+                  reason: !connection
+                    ? "No websocket connection found"
+                    : "Websocket not open",
+                },
+                `Skipping sending touch event to app '${packageName}' due to inactive connection`,
+              );
+            }
+          }
           break;
         }
 
