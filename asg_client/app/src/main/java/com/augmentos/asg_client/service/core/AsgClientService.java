@@ -316,6 +316,13 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             // Release RGB LED control authority back to BES
             Log.d(TAG, "🚨 Releasing RGB LED control authority back to BES");
             sendRgbLedControlAuthority(false);
+            
+            // Disable touch/swipe event reporting on service destroy
+            Log.d(TAG, "🎯 Disabling touch event reporting on service destroy");
+            handleTouchEventControl(false);
+            
+            Log.d(TAG, "🎯 Disabling swipe volume control on service destroy");
+            handleSwipeVolumeControl(true);
 
             Log.i(TAG, "✅ AsgClientServiceV2 onDestroy() completed successfully");
         } catch (Exception e) {
@@ -717,6 +724,13 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             // Claim RGB LED control authority when Bluetooth connects
             Log.d(TAG, "🚨 Claiming RGB LED control authority on Bluetooth connection");
             sendRgbLedControlAuthority(true);
+            
+            // Enable touch/swipe event reporting when Bluetooth connects
+            Log.d(TAG, "🎯 Enabling touch event reporting on Bluetooth connection");
+            handleTouchEventControl(true);
+            
+            Log.d(TAG, "🎯 Enabling swipe volume control on Bluetooth connection");
+            handleSwipeVolumeControl(false);
         } else {
             Log.d(TAG, "📶 Bluetooth disconnected - no additional actions needed");
         }
