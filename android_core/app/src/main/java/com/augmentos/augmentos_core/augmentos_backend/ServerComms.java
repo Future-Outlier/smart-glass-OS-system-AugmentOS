@@ -532,6 +532,20 @@ public class ServerComms {
         }
     }
 
+    public void sendTouchEvent(String deviceModel, int gestureType, String gestureName, long timestamp) {
+        try {
+            JSONObject event = new JSONObject();
+            event.put("type", "touch_event");
+            event.put("device_model", deviceModel);
+            event.put("gesture_type", gestureType);
+            event.put("gesture_name", gestureName);
+            event.put("timestamp", timestamp);
+            wsManager.sendText(event.toString());
+            Log.d(TAG, "Sent touch event to cloud: " + gestureName + " (type: " + gestureType + ")");
+        } catch (JSONException e) {
+            Log.e(TAG, "Error building touch_event JSON", e);
+        }
+    }
 
     public void sendPhoneBatteryUpdate(int level, boolean charging, Integer timeRemaining) {
         try {
