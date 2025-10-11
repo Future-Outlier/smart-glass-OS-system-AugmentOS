@@ -105,6 +105,7 @@ export * from "./logging/logger";
 export {
   ButtonPress,
   HeadPosition,
+  TouchEvent,
   GlassesBatteryUpdate,
   PhoneBatteryUpdate,
   GlassesConnectionState,

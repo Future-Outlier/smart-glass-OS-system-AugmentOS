@@ -24,7 +24,9 @@ import {
   RequestSettings,
   RtmpStreamStatus,
   LocalTranscription,
+  TouchEvent,
   Vad,
+  StreamType,
 } from "@mentra/sdk";
 import UserSession from "../session/UserSession";
 import { logger as rootLogger } from "../logging/pino-logger";
@@ -544,6 +546,42 @@ export class GlassesWebSocketService {
           // Also relay to Apps in case they want to handle head position events
           userSession.relayMessageToApps(message);
           break;
+
+        case GlassesToCloudMessageType.TOUCH_EVENT: {
+          const touchEvent = message as TouchEvent;
+          userSession.logger.debug(
+            { gesture: touchEvent.gesture_name },
+            "Touch event received from glasses",
+          );
+
+          // Relay to apps subscribed to this specific gesture
+          // Apps can subscribe to "touch_event:forward_swipe" for example
+          const gestureSubscription = `${StreamType.TOUCH_EVENT}:${touchEvent.gesture_name}`;
+          const subscribedApps =
+            userSession.subscriptionManager.getSubscribedApps(
+              gestureSubscription as any,
+            );
+
+          if (subscribedApps.length > 0) {
+            userSession.logger.debug(
+              { gesture: touchEvent.gesture_name, apps: subscribedApps },
+              `Relaying touch event to ${subscribedApps.length} subscribed apps`,
+            );
+            // Relay to gesture-specific subscribers
+            userSession.relayMessageToApps(touchEvent);
+          }
+
+          // Also relay to apps subscribed to all touch events (if any)
+          const allTouchSubscribers =
+            userSession.subscriptionManager.getSubscribedApps(
+              StreamType.TOUCH_EVENT,
+            );
+          if (allTouchSubscribers.length > 0) {
+            userSession.relayMessageToApps(touchEvent);
+          }
+
+          break;
+        }
 
         // TODO(isaiah): Add other message type handlers as needed
         default:
