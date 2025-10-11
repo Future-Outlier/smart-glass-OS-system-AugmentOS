@@ -27,10 +27,12 @@ import {
   ExtendedStreamType,
   ButtonPress,
   HeadPosition,
+  TouchEvent,
   PhoneNotification,
   PhoneNotificationDismissed,
   TranscriptionData,
   TranslationData,
+  createTouchEventStream,
 
   // Type guards
   isAppConnectionAck,
@@ -437,6 +439,48 @@ export class AppSession {
    */
   onButtonPress(handler: (data: ButtonPress) => void): () => void {
     return this.events.onButtonPress(handler);
+  }
+
+  /**
+   * 👆 Listen for touch gesture events
+   * @param gestureOrHandler - Gesture name or handler function
+   * @param handler - Handler function (if first param is gesture name)
+   * @returns Cleanup function
+   *
+   * @example
+   * // Subscribe to all touch events
+   * session.onTouchEvent((event) => console.log(event.gesture_name));
+   *
+   * // Subscribe to specific gesture
+   * session.onTouchEvent("forward_swipe", (event) => console.log("Forward swipe!"));
+   */
+  onTouchEvent(
+    gestureOrHandler: string | ((data: TouchEvent) => void),
+    handler?: (data: TouchEvent) => void,
+  ): () => void {
+    return this.events.onTouchEvent(gestureOrHandler as any, handler as any);
+  }
+
+  /**
+   * 👆 Subscribe to multiple touch gestures
+   * @param gestures - Array of gesture names
+   * @returns Cleanup function that unsubscribes from all
+   *
+   * @example
+   * session.subscribeToGestures(["forward_swipe", "backward_swipe"]);
+   */
+  subscribeToGestures(gestures: string[]): () => void {
+    gestures.forEach((gesture) => {
+      const stream = createTouchEventStream(gesture);
+      this.subscribe(stream);
+    });
+
+    return () => {
+      gestures.forEach((gesture) => {
+        const stream = createTouchEventStream(gesture);
+        this.unsubscribe(stream);
+      });
+    };
   }
 
   /**
