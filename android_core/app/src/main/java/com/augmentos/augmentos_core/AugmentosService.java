@@ -1321,25 +1321,6 @@ public class AugmentosService extends LifecycleService implements AugmentOsActio
         // Forward touch event to cloud via ServerComms
         ServerComms.getInstance().sendTouchEvent(event.deviceModel, event.gestureType, 
                 event.gestureName, event.timestamp);
-
-        // Also send to mobile app via BLE peripheral for direct app consumption
-        try {
-            JSONObject touchEventData = new JSONObject();
-            touchEventData.put("gesture_type", event.gestureType);
-            touchEventData.put("gesture_name", event.gestureName);
-            touchEventData.put("device_model", event.deviceModel);
-            touchEventData.put("timestamp", event.timestamp);
-            
-            JSONObject wrapper = new JSONObject();
-            wrapper.put("touch_event", touchEventData);
-            
-            if (blePeripheral != null) {
-                blePeripheral.sendDataToAugmentOsManager(wrapper.toString());
-                Log.d(TAG, "👆 Sent touch event to mobile app via BLE");
-            }
-        } catch (JSONException e) {
-            Log.e(TAG, "👆 Error sending touch event to mobile app", e);
-        }
     }
 
     private JSONObject generateTemplatedJsonFromServer(JSONObject rawMsg) {
