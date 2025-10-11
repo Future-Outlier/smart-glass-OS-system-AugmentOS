@@ -51,6 +51,8 @@ public class RgbLedCommandHandler implements ICommandHandler {
     public static final int RGB_LED_RED = 0;
     public static final int RGB_LED_GREEN = 1;
     public static final int RGB_LED_BLUE = 2;
+    public static final int RGB_LED_ORANGE = 3; 
+    public static final int RGB_LED_WHITE = 4;
     
     private final AsgClientServiceManager serviceManager;
     
@@ -125,7 +127,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
             int count = data.optInt("count", 1);
             
             // Validate parameters
-            if (led < RGB_LED_RED || led > RGB_LED_BLUE) {
+            if (led < RGB_LED_RED || led > RGB_LED_WHITE) {
                 Log.e(TAG, "❌ Invalid RGB LED index: " + led + " (must be 0-2)");
                 sendErrorResponse("Invalid RGB LED index: " + led);
                 return false;
@@ -195,7 +197,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
             int led = data.optInt("led", RGB_LED_RED);
             
             // Validate RGB LED index
-            if (led < RGB_LED_RED || led > RGB_LED_BLUE) {
+            if (led < RGB_LED_RED || led > RGB_LED_WHITE) {
                 Log.e(TAG, "❌ Invalid RGB LED index: " + led + " (must be 0-2)");
                 sendErrorResponse("Invalid RGB LED index: " + led);
                 return false;
@@ -322,7 +324,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
         
         try {
             // Extract flash duration with default
-            int duration = data.optInt("duration", 5000); // Default 5000ms flash
+            int duration = data.optInt("duration", 10000); // Default 5000ms flash
             
             Log.i(TAG, String.format("📸 💙 Photo flash LED - Duration: %dms", duration));
             
@@ -332,7 +334,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
             k900Command.put("V", 1);
             
             JSONObject ledParams = new JSONObject();
-            ledParams.put("led", RGB_LED_BLUE);
+            ledParams.put("led", RGB_LED_WHITE);
             ledParams.put("ontime", duration);
             ledParams.put("offtime", 0);  // No off time for single flash
             ledParams.put("count", 1);    // Single flash
@@ -407,7 +409,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
             k900Command.put("V", 1);
             
             JSONObject ledParams = new JSONObject();
-            ledParams.put("led", RGB_LED_BLUE);
+            ledParams.put("led", RGB_LED_ORANGE);
             ledParams.put("ontime", onTime);
             ledParams.put("offtime", offTime);
             ledParams.put("count", 10);    // 0 = continuous pulsing until stopped
@@ -441,6 +443,8 @@ public class RgbLedCommandHandler implements ICommandHandler {
             case RGB_LED_RED: return "RED";
             case RGB_LED_GREEN: return "GREEN";
             case RGB_LED_BLUE: return "BLUE";
+            case RGB_LED_ORANGE: return "ORANGE";
+            case RGB_LED_WHITE: return "WHITE";
             default: return "UNKNOWN";
         }
     }
