@@ -187,39 +187,12 @@ public class K900CommandHandler {
             String pressType = isLongPress ? "long" : "short";
             Log.d(TAG, "Handling " + pressType + " button press");
 
-            // Enable BES touch/swipe event listening immediately
-            Log.d(TAG, "🎯 Enabling BES touch/swipe event listening");
-            enableBESEventListening();
-
             // ALWAYS send button press to phone/apps
             Log.d(TAG, "📱 Forwarding button press to phone/apps (universal forwarding)");
             sendButtonPressToPhone(isLongPress);
 
             // Check if camera/gallery app is active for local capture
             handlePhotoCapture(isLongPress);
-        }
-    }
-
-    /**
-     * Enable BES touch/swipe event listening using AsgClientService methods
-     */
-    private void enableBESEventListening() {
-        try {
-            // Get AsgClientService instance
-            AsgClientService service = AsgClientService.getInstance();
-            if (service != null) {
-                Log.d(TAG, "🎯 Enabling touch event reporting");
-                service.handleTouchEventControl(true);
-                
-                Log.d(TAG, "🎯 Enabling swipe volume control");
-                service.handleSwipeVolumeControl(true);
-                
-                Log.i(TAG, "✅ BES touch/swipe event listening enabled");
-            } else {
-                Log.w(TAG, "⚠️ Cannot enable BES event listening - AsgClientService not available");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error enabling BES event listening", e);
         }
     }
 
