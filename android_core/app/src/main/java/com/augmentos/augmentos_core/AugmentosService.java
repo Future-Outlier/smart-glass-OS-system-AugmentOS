@@ -1316,11 +1316,11 @@ public class AugmentosService extends LifecycleService implements AugmentOsActio
     @Subscribe
     public void onTouchEvent(TouchEvent event) {
         Log.d(TAG, "👆 Received touch event from glasses - gesture: " + event.gestureName +
-                " (type: " + event.gestureType + "), device: " + event.deviceModel);
+                ", device: " + event.deviceModel);
 
         // Forward touch event to cloud via ServerComms
-        ServerComms.getInstance().sendTouchEvent(event.deviceModel, event.gestureType, 
-                event.gestureName, event.timestamp);
+        ServerComms.getInstance().sendTouchEvent(event.deviceModel, event.gestureName, 
+                event.timestamp);
     }
 
     private JSONObject generateTemplatedJsonFromServer(JSONObject rawMsg) {

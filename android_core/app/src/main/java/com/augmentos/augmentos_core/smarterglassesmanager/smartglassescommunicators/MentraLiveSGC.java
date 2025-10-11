@@ -1789,17 +1789,14 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
 
             case "touch_event":
                 // Process touch event from glasses (swipes, taps, long press)
-                int gestureType = json.optInt("gesture_type", -1);
                 String gestureName = json.optString("gesture_name", "unknown");
                 long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
                 
-                Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName + 
-                      " (type: " + gestureType + ")");
+                Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
                 
                 // Post touch event to EventBus for AugmentosService to handle
                 EventBus.getDefault().post(new TouchEvent(
                         smartGlassesDevice.deviceModelName,
-                        gestureType,
                         gestureName,
                         touchTimestamp));
                 break;
