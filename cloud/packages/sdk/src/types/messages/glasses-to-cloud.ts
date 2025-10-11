@@ -87,6 +87,16 @@ export interface HeadPosition extends BaseMessage {
 }
 
 /**
+ * Touch gesture event from glasses
+ */
+export interface TouchEvent extends BaseMessage {
+  type: GlassesToCloudMessageType.TOUCH_EVENT;
+  device_model: string;
+  gesture_name: string;
+  timestamp: Date;
+}
+
+/**
  * Glasses battery update from glasses
  */
 export interface GlassesBatteryUpdate extends BaseMessage {
@@ -390,6 +400,7 @@ export type GlassesToCloudMessage =
   | OpenDashboard
   | ButtonPress
   | HeadPosition
+  | TouchEvent
   | GlassesBatteryUpdate
   | PhoneBatteryUpdate
   | GlassesConnectionState

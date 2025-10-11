@@ -10,6 +10,7 @@ export enum StreamType {
   // Hardware streams
   BUTTON_PRESS = "button_press",
   HEAD_POSITION = "head_position",
+  TOUCH_EVENT = "touch_event",
   GLASSES_BATTERY_UPDATE = "glasses_battery_update",
   PHONE_BATTERY_UPDATE = "phone_battery_update",
   GLASSES_CONNECTION_STATE = "glasses_connection_state",
@@ -80,6 +81,7 @@ export enum StreamCategory {
 export const STREAM_CATEGORIES: Record<StreamType, StreamCategory> = {
   [StreamType.BUTTON_PRESS]: StreamCategory.HARDWARE,
   [StreamType.HEAD_POSITION]: StreamCategory.HARDWARE,
+  [StreamType.TOUCH_EVENT]: StreamCategory.HARDWARE,
   [StreamType.GLASSES_BATTERY_UPDATE]: StreamCategory.HARDWARE,
   [StreamType.PHONE_BATTERY_UPDATE]: StreamCategory.HARDWARE,
   [StreamType.GLASSES_CONNECTION_STATE]: StreamCategory.HARDWARE,
@@ -303,6 +305,61 @@ export function createTranslationStream(
 }
 
 /**
+ * Parse a touch event subscription to extract gesture information
+ * @param subscription Subscription string (e.g., "touch_event:forward_swipe")
+ * @returns Gesture name or null if not a gesture-specific subscription
+ */
+export function parseTouchEventStream(
+  subscription: ExtendedStreamType,
+): string | null {
+  if (typeof subscription !== "string") {
+    return null;
+  }
+
+  if (subscription.startsWith(`${StreamType.TOUCH_EVENT}:`)) {
+    const [, gestureName] = subscription.split(":");
+    const validGestures = [
+      "double_tap",
+      "triple_tap",
+      "long_press",
+      "forward_swipe",
+      "backward_swipe",
+      "up_swipe",
+      "down_swipe",
+    ];
+
+    if (gestureName && validGestures.includes(gestureName)) {
+      return gestureName;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Create a touch event subscription for a specific gesture
+ * @param gesture Gesture name (e.g., "forward_swipe")
+ * @returns Typed stream identifier
+ */
+export function createTouchEventStream(gesture: string): ExtendedStreamType {
+  const validGestures = [
+    "double_tap",
+    "triple_tap",
+    "long_press",
+    "forward_swipe",
+    "backward_swipe",
+    "up_swipe",
+    "down_swipe",
+  ];
+
+  if (!validGestures.includes(gesture)) {
+    throw new Error(`Invalid gesture: ${gesture}`);
+  }
+
+  return `${StreamType.TOUCH_EVENT}:${gesture}` as ExtendedStreamType;
+}
+
+/**
  * Check if a subscription is a valid stream type
  * This handles both enum-based StreamType values and language-specific stream formats
  *
@@ -317,7 +374,17 @@ export function isValidStreamType(subscription: ExtendedStreamType): boolean {
 
   // Check if it's a valid language-specific stream
   const languageStream = parseLanguageStream(subscription);
-  return languageStream !== null;
+  if (languageStream !== null) {
+    return true;
+  }
+
+  // Check if it's a valid gesture-specific stream
+  const gestureStream = parseTouchEventStream(subscription);
+  if (gestureStream !== null) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -360,7 +427,17 @@ export function getBaseStreamType(
 
   // Check if it's a language-specific stream
   const languageStream = parseLanguageStream(subscription);
-  return languageStream?.type ?? null;
+  if (languageStream) {
+    return languageStream.type;
+  }
+
+  // Check if it's a gesture-specific stream
+  const gestureStream = parseTouchEventStream(subscription);
+  if (gestureStream) {
+    return StreamType.TOUCH_EVENT;
+  }
+
+  return null;
 }
 
 /**
