@@ -4,7 +4,6 @@
  */
 
 import { AppSession } from "..";
-import fetch from "node-fetch";
 
 /**
  * Key-value storage with local caching and cloud sync
@@ -51,7 +50,7 @@ export class SimpleStorage {
       );
 
       if (response.ok) {
-        const result = await response.json();
+        const result = await response.json() as { success: boolean; data?: Record<string, string> };
         if (result.success && result.data) {
           this.storage = result.data;
         } else {
@@ -138,7 +137,7 @@ export class SimpleStorage {
       );
 
       if (response.ok) {
-        const result = await response.json();
+        const result = await response.json() as { success: boolean };
         return result.success;
       } else {
         console.error(
@@ -167,7 +166,7 @@ export class SimpleStorage {
       );
 
       if (response.ok) {
-        const result = await response.json();
+        const result = await response.json() as { success: boolean };
         return result.success;
       } else {
         console.error(
