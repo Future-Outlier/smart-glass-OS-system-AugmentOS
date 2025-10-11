@@ -30,6 +30,7 @@ import androidx.preference.PreferenceManager;
 import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BatteryLevelEvent;
 import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.ButtonPressEvent;
 import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesGalleryStatusEvent;
+import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.TouchEvent;
 import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchDiscoverEvent;
 import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchStopEvent;
 import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesWifiScanResultEvent;
@@ -1795,17 +1796,12 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                 Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName + 
                       " (type: " + gestureType + ")");
                 
-                // TODO: Post touch event to EventBus once TouchEvent class is created
-                // EventBus.getDefault().post(new TouchEvent(
-                //         smartGlassesDevice.deviceModelName,
-                //         gestureType,
-                //         gestureName,
-                //         touchTimestamp));
-                
-                // For now, forward to data observable for app consumption
-                if (dataObservable != null) {
-                    dataObservable.onNext(json);
-                }
+                // Post touch event to EventBus for AugmentosService to handle
+                EventBus.getDefault().post(new TouchEvent(
+                        smartGlassesDevice.deviceModelName,
+                        gestureType,
+                        gestureName,
+                        touchTimestamp));
                 break;
 
             case "swipe_volume_status":
