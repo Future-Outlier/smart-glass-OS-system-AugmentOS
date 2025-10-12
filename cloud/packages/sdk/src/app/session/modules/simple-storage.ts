@@ -4,7 +4,6 @@
  */
 
 import { AppSession } from "..";
-import fetch from "node-fetch";
 
 /**
  * Key-value storage with local caching and cloud sync

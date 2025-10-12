@@ -61,7 +61,6 @@ import { Logger } from "pino";
 import { AppServer } from "../server";
 import axios from "axios";
 import EventEmitter from "events";
-import fetch from "node-fetch";
 
 // Import the cloud-to-app specific type guards
 import {
