@@ -54,6 +54,9 @@ export const SETTINGS_KEYS = {
   offline_captions_app_running: "offline_captions_app_running",
   camera_app_running: "camera_app_running",
   SHOW_ADVANCED_SETTINGS: "SHOW_ADVANCED_SETTINGS",
+  // Button action settings
+  default_button_action_enabled: "default_button_action_enabled",
+  default_button_action_app: "default_button_action_app",
 } as const
 
 const DEFAULT_SETTINGS: Record<string, any> = {
@@ -105,6 +108,8 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.location_tier]: "",
   [SETTINGS_KEYS.offline_captions_app_running]: false,
   [SETTINGS_KEYS.camera_app_running]: false,
+  [SETTINGS_KEYS.default_button_action_enabled]: true,
+  [SETTINGS_KEYS.default_button_action_app]: "com.mentra.camera",
 }
 
 const CORE_SETTINGS_KEYS = [

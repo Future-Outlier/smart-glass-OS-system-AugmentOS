@@ -6,11 +6,9 @@ import AppIcon from "@/components/misc/AppIcon"
 import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
 import {useActiveForegroundApp, useAppStatus, useNewUiForegroundApps} from "@/contexts/AppletStatusProvider"
 import {AppletInterface, isOfflineApp} from "@/types/AppletTypes"
-import {isOfflineAppPackage} from "@/types/OfflineApps"
 import {useAppTheme} from "@/utils/useAppTheme"
 import restComms from "@/managers/RestComms"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import showAlert from "@/utils/AlertUtils"
 import {performHealthCheckFlow} from "@/utils/healthCheckFlow"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {ThemedStyle} from "@/theme"
@@ -50,6 +48,13 @@ export const ForegroundAppsGrid: React.FC = () => {
           refreshAppStatus()
           console.error("Start app error:", error)
         }
+        return
+      }
+
+      // Handle offline apps - activate only (no server communication needed)
+      if (isOfflineApp(app)) {
+        console.log("Starting offline app in ForegroundAppsGrid:", packageName)
+        optimisticallyStartApp(packageName, app.type)
         return
       }
 
@@ -125,7 +130,8 @@ export const ForegroundAppsGrid: React.FC = () => {
       optimisticallyStopApp(packageName)
 
       // Skip offline apps - they don't need server communication
-      if (isOfflineAppPackage(packageName)) {
+      const appToStop = foregroundApps.find(a => a.packageName === packageName)
+      if (appToStop && isOfflineApp(appToStop)) {
         console.log("Skipping offline app stop in ForegroundAppsGrid:", packageName)
         clearPendingOperation(packageName)
         return
@@ -139,7 +145,7 @@ export const ForegroundAppsGrid: React.FC = () => {
         console.error("Stop app error:", error)
       }
     },
-    [optimisticallyStopApp, clearPendingOperation, refreshAppStatus],
+    [foregroundApps, optimisticallyStopApp, clearPendingOperation, refreshAppStatus],
   )
 
   const gridData = useMemo(() => {
@@ -214,23 +220,11 @@ export const ForegroundAppsGrid: React.FC = () => {
         return
       }
 
-      // Check if there's already an active foreground app
+      // Check if there's already an active foreground app and automatically switch
       if (activeForegroundApp) {
-        showAlert(
-          "Only One Foreground App",
-          "There can only be one foreground app active at a time. Would you like to stop the current app and start this one?",
-          [
-            {text: "Cancel", style: "cancel"},
-            {
-              text: "Switch Apps",
-              onPress: async () => {
-                await stopApp(activeForegroundApp.packageName)
-                await startApp(app.packageName)
-              },
-            },
-          ],
-          {cancelable: true},
-        )
+        console.log("Switching from", activeForegroundApp.packageName, "to", app.packageName)
+        await stopApp(activeForegroundApp.packageName)
+        await startApp(app.packageName)
       } else {
         // No active app, just start this one
         console.log("Starting app directly:", app.packageName)
@@ -258,7 +252,7 @@ export const ForegroundAppsGrid: React.FC = () => {
       }
 
       const isOffline = item.isOnline === false
-      const isOfflineApp = item.type === "offline"
+      const isOfflineAppItem = isOfflineApp(item)
 
       return (
         <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
@@ -269,7 +263,8 @@ export const ForegroundAppsGrid: React.FC = () => {
                 <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
               </View>
             )}
-            {isOfflineApp && (
+            {/* Show home badge for offline apps, but not for camera app (it has custom icon) */}
+            {isOfflineAppItem && (
               <View style={themed($offlineAppIndicator)}>
                 <MaterialCommunityIcons name="home" size={theme.spacing.md} color={theme.colors.text} />
               </View>
@@ -337,10 +332,10 @@ const $appContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   marginBottom: spacing.xs,
 })
 
-const $appIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $appIcon: ThemedStyle<ViewStyle> = () => ({
   width: 64,
   height: 64,
-  borderRadius: spacing.sm,
+  // borderRadius is handled by AppIcon component based on squircle settings
 })
 
 const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({

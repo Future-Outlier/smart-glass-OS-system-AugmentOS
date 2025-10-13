@@ -142,9 +142,9 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - livekit-react-native-webrtc (137.0.2):
+  - livekit-react-native-webrtc (137.0.1):
     - React-Core
-    - WebRTC-SDK (= 137.7151.04)
+    - WebRTC-SDK (= 137.7151.02)
   - LiveKitExpoPlugin (1.0.1):
     - ExpoModulesCore
     - livekit-react-native

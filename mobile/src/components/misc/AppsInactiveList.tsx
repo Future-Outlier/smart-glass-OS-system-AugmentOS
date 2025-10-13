@@ -118,31 +118,8 @@ export default function InactiveAppList({
       return Promise.resolve(true)
     }
 
-    const runningStndAppList = getRunningStandardApps(packageName)
-    if (runningStndAppList.length === 0) {
-      return Promise.resolve(true)
-    }
-
-    return new Promise(resolve => {
-      showAlert(
-        translate("home:thereCanOnlyBeOne"),
-        translate("home:thereCanOnlyBeOneMessage"),
-        [
-          {
-            text: translate("common:cancel"),
-            onPress: () => resolve(false),
-            style: "cancel",
-          },
-          {
-            text: translate("common:continue"),
-            onPress: () => resolve(true),
-          },
-        ],
-        {
-          iconName: "tree",
-        },
-      )
-    })
+    // Always allow starting a new foreground app - it will automatically replace any running one
+    return Promise.resolve(true)
   }
 
   const startApp = async (packageName: string) => {
@@ -168,6 +145,25 @@ export default function InactiveAppList({
     if (!appInfo) {
       console.error("App not found:", packageName)
       return
+    }
+
+    // Debug: Log camera app properties
+    if (packageName === "com.mentra.camera") {
+      console.log(
+        "📸 Camera app found in appStatus:",
+        JSON.stringify(
+          {
+            packageName: appInfo.packageName,
+            name: appInfo.name,
+            isOffline: appInfo.isOffline,
+            isOnline: appInfo.isOnline,
+            type: appInfo.type,
+          },
+          null,
+          2,
+        ),
+      )
+      console.log("📸 isOfflineApp check result:", isOfflineApp(appInfo))
     }
 
     // Handle offline apps - activate only
@@ -256,9 +252,6 @@ export default function InactiveAppList({
     optimisticallyStartApp(packageName)
   }
 
-  const getRunningStandardApps = (packageName: string) => {
-    return appStatus.filter(app => app.is_running && app.type == "standard" && app.packageName !== packageName)
-  }
   const openAppSettings = (app: any) => {
     console.log("%%% opening app settings", app)
 
