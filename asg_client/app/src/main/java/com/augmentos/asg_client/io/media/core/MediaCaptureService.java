@@ -428,19 +428,18 @@ public class MediaCaptureService {
     }
     
     /**
-     * Stop video recording LED (turn off white LED)
+     * Stop video recording LED (turn off LED)
+     * Note: Per K900 protocol, LED OFF always uses led:0 regardless of which LED was on
      */
     private void stopVideoPulseLed() {
+        Log.d(TAG, "stopVideoPulseLed called");
+
         if (rgbLedCommandHandler != null) {
-            try {
-                JSONObject offData = new JSONObject();
-                offData.put("led", RgbLedCommandHandler.RGB_LED_WHITE);
-                
-                boolean success = rgbLedCommandHandler.handleCommand("rgb_led_control_off", offData);
-                Log.d(TAG, "🎥 Video recording LED stopped: " + (success ? "success" : "failed"));
-            } catch (JSONException e) {
-                Log.e(TAG, "💥 Error creating LED off command", e);
-            }
+            // LED OFF command uses led:0 per K900 protocol (no need to specify which LED)
+            JSONObject offData = new JSONObject();
+            
+            boolean success = rgbLedCommandHandler.handleCommand("rgb_led_control_off", offData);
+            Log.d(TAG, "🎥 Video recording LED stopped: " + (success ? "success" : "failed"));
         } else {
             Log.w(TAG, "⚠️ RGB LED command handler not available for stopping video recording LED");
         }
@@ -466,6 +465,8 @@ public class MediaCaptureService {
      * @param initialBatteryLevel Initial battery level (for monitoring during recording, -1 = unknown)
      */
     public void startVideoRecording(VideoSettings settings, boolean enableLed, int maxRecordingTimeMinutes, int initialBatteryLevel) {
+        Log.d(TAG, "startVideoRecording called with settings: " + settings + ", enableLed: " + enableLed + ", maxRecordingTimeMinutes: " + maxRecordingTimeMinutes + ", initialBatteryLevel: " + initialBatteryLevel);
+        
         // Check if battery is too low to start recording
         if (initialBatteryLevel >= 0 && initialBatteryLevel < 10) {
             Log.w(TAG, "⚠️ Battery too low to start recording: " + initialBatteryLevel + "% (minimum 10% required)");
@@ -503,6 +504,8 @@ public class MediaCaptureService {
      * @param settings Video settings (resolution, fps) or null for defaults
      */
     public void handleStartVideoCommand(String requestId, boolean save, VideoSettings settings, boolean enableLed) {
+        Log.d(TAG, "handleStartVideoCommand called with requestId: " + requestId + ", save: " + save + ", settings: " + settings + ", enableLed: " + enableLed);
+        
         // Check if already recording
         if (isRecordingVideo) {
             Log.w(TAG, "Already recording video, ignoring start command");
@@ -526,6 +529,8 @@ public class MediaCaptureService {
      * @param requestId Request ID of the video to stop (must match current recording)
      */
     public void handleStopVideoCommand(String requestId) {
+        Log.d(TAG, "handleStopVideoCommand called with requestId: " + requestId);
+
         if (!isRecordingVideo) {
             Log.w(TAG, "No video recording to stop");
             if (mMediaCaptureListener != null) {
@@ -673,6 +678,8 @@ public class MediaCaptureService {
                         recordingTimeCheckRunnable = null;
                     }
 
+                    // Note: RGB white LED already turned off in stopVideoRecording() synchronized with sound
+
                     // Turn off recording LED if it was enabled
                     if (enableLed && hardwareManager.supportsRecordingLed()) {
                         hardwareManager.setRecordingLedOff();
@@ -700,6 +707,9 @@ public class MediaCaptureService {
                     Log.e(TAG, "Video recording error: " + videoId + ", error: " + errorMessage);
                     isRecordingVideo = false;
                     
+                    // Turn off RGB white LED on error (error path may not go through stopVideoRecording)
+                    stopVideoPulseLed();
+                    
                     // Turn off recording LED on error if it was enabled
                     if (enableLed && hardwareManager.supportsRecordingLed()) {
                         hardwareManager.setRecordingLedOff();
@@ -725,6 +735,9 @@ public class MediaCaptureService {
             });
         } catch (Exception e) {
             Log.e(TAG, "Error starting video recording", e);
+
+            // Turn off RGB white LED if error occurred during start
+            stopVideoPulseLed();
 
             if (mMediaCaptureListener != null) {
                 mMediaCaptureListener.onMediaError(requestId, "Error starting video: " + e.getMessage(),
@@ -755,6 +768,8 @@ public class MediaCaptureService {
             CameraNeo.stopVideoRecording(mContext, currentVideoId);
         } catch (Exception e) {
             Log.e(TAG, "Error stopping video recording", e);
+
+            // Note: RGB white LED already turned off above (line 768), no need to call again
 
             if (mMediaCaptureListener != null) {
                 mMediaCaptureListener.onMediaError(currentVideoId, "Error stopping video: " + e.getMessage(),

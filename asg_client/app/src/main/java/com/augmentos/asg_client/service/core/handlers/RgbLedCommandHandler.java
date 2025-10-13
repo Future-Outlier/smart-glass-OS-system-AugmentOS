@@ -178,10 +178,8 @@ public class RgbLedCommandHandler implements ICommandHandler {
     /**
      * Handle RGB LED OFF command.
      * 
-     * Expected data format:
-     * {
-     *   "led": 0-2  // RGB LED index (0=red, 1=green, 2=blue)
-     * }
+     * Note: Per K900 protocol specification, LED OFF always uses led:0
+     * regardless of which LED was turned on. This turns off all active LEDs.
      * 
      * K900 Protocol command sent to glasses:
      * {
@@ -193,17 +191,8 @@ public class RgbLedCommandHandler implements ICommandHandler {
         Log.d(TAG, "🚨 Processing RGB LED OFF command");
         
         try {
-            // Extract RGB LED index
-            int led = data.optInt("led", RGB_LED_RED);
-            
-            // Validate RGB LED index
-            if (led < RGB_LED_RED || led > RGB_LED_WHITE) {
-                Log.e(TAG, "❌ Invalid RGB LED index: " + led + " (must be 0-2)");
-                sendErrorResponse("Invalid RGB LED index: " + led);
-                return false;
-            }
-            
-            Log.i(TAG, "🚨 🔴 RGB LED OFF - Color: " + getRgbLedColorName(led));
+            // Per K900 protocol: LED OFF always uses led:0 regardless of which LED is being turned off
+            Log.i(TAG, "🚨 🔴 RGB LED OFF - Using led:0 per K900 protocol");
             
             // Build K900 protocol command (full format: C, V, B)
             JSONObject k900Command = new JSONObject();
@@ -211,8 +200,8 @@ public class RgbLedCommandHandler implements ICommandHandler {
             k900Command.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
             
             JSONObject ledParams = new JSONObject();
-            ledParams.put("led", led);
-            k900Command.put("B", ledParams);
+            ledParams.put("led", 0);  // Always 0 per K900 protocol specification
+            k900Command.put("B", ledParams.toString());  // Convert to string per K900 protocol spec
             
             // Send command to glasses via Bluetooth
             boolean sent = sendCommandToGlasses(k900Command);
