@@ -238,18 +238,26 @@ public class K900CommandHandler {
         int batteryLevel = stateManager.getBatteryLevel();
 
         if (isLongPress) {
-            Log.d(TAG, "📹 Starting video recording (long press) with LED: " + ledEnabled + ", battery: " + batteryLevel + "%");
+            // Long press behavior:
+            // - If video is recording, stop it (pause/stop with video stop feedback)
+            // - If video is not recording, start it
+            if (captureService.isRecordingVideo()) {
+                Log.d(TAG, "⏹️ Stopping video recording (long press during recording)");
+                captureService.stopVideoRecording();
+            } else {
+                Log.d(TAG, "📹 Starting video recording (long press) with LED: " + ledEnabled + ", battery: " + batteryLevel + "%");
 
-            // Check if battery is too low to start recording
-            if (batteryLevel >= 0 && batteryLevel < 10) {
-                Log.w(TAG, "⚠️ Battery too low to start recording: " + batteryLevel + "% (minimum 10% required)");
-                return;
+                // Check if battery is too low to start recording
+                if (batteryLevel >= 0 && batteryLevel < 10) {
+                    Log.w(TAG, "⚠️ Battery too low to start recording: " + batteryLevel + "% (minimum 10% required)");
+                    return;
+                }
+
+                // Get saved video settings for button press
+                VideoSettings videoSettings = serviceManager.getAsgSettings().getButtonVideoSettings();
+                int maxRecordingTimeMinutes = serviceManager.getAsgSettings().getButtonMaxRecordingTimeMinutes();
+                captureService.startVideoRecording(videoSettings, ledEnabled, maxRecordingTimeMinutes, batteryLevel);
             }
-
-            // Get saved video settings for button press
-            VideoSettings videoSettings = serviceManager.getAsgSettings().getButtonVideoSettings();
-            int maxRecordingTimeMinutes = serviceManager.getAsgSettings().getButtonMaxRecordingTimeMinutes();
-            captureService.startVideoRecording(videoSettings, ledEnabled, maxRecordingTimeMinutes, batteryLevel);
         } else {
             // Short press behavior
             // If video is recording, stop it. Otherwise take a photo.
