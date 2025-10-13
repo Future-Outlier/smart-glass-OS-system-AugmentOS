@@ -25,6 +25,7 @@ public class K900LedController {
     private boolean isLedOn = false;
     private boolean isBlinking = false;
     private boolean isInitialized = false;
+    private int currentBrightness = 100; // Default to full brightness (0-100)
     
     // Blinking parameters
     private static final long BLINK_ON_DURATION_MS = 500;
@@ -241,6 +242,56 @@ public class K900LedController {
                 Log.d(TAG, "LED flash completed");
             }, durationMs);
         });
+    }
+    
+    /**
+     * Set LED brightness with custom duration
+     * @param percent Brightness percentage (0-100, where 0=off, 100=full brightness)
+     * @param showTimeMs Duration in milliseconds to show this brightness (0-65535)
+     */
+    public void setBrightness(int percent, int showTimeMs) {
+        if (!isInitialized) {
+            Log.w(TAG, "LED controller not initialized, attempting to initialize...");
+            initializeLed();
+        }
+        
+        // Clamp values to valid ranges
+        int clampedPercent = Math.max(0, Math.min(100, percent));
+        int clampedShowTime = Math.max(0, Math.min(65535, showTimeMs));
+        
+        ledHandler.post(() -> {
+            try {
+                stopBlinking();
+                DevApi.setLedCustomBright(clampedPercent, clampedShowTime);
+                currentBrightness = clampedPercent;
+                isLedOn = (clampedPercent > 0);
+                Log.d(TAG, String.format("LED brightness set to %d%% for %dms", 
+                                         clampedPercent, clampedShowTime));
+            } catch (UnsatisfiedLinkError e) {
+                Log.e(TAG, "Failed to set LED brightness - libxydev.so not loaded", e);
+                isInitialized = false;
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to set LED brightness", e);
+            }
+        });
+    }
+    
+    /**
+     * Set LED brightness (stays at this brightness indefinitely)
+     * @param percent Brightness percentage (0-100, where 0=off, 100=full brightness)
+     */
+    public void setBrightness(int percent) {
+        // Use maximum duration (65535ms ~= 65 seconds) and caller can call again to maintain
+        // Or set to 0 for indefinite (hardware dependent)
+        setBrightness(percent, 0);
+    }
+    
+    /**
+     * Get current LED brightness
+     * @return Current brightness percentage (0-100)
+     */
+    public int getBrightness() {
+        return currentBrightness;
     }
     
     /**
