@@ -6,6 +6,18 @@
 import { AppSession } from "..";
 
 /**
+ * Response types for Simple Storage API
+ */
+interface StorageResponse {
+  success: boolean;
+  data?: Record<string, string>;
+}
+
+interface StorageOperationResponse {
+  success: boolean;
+}
+
+/**
  * Key-value storage with local caching and cloud sync
  * Data is isolated by userId and packageName
  */
@@ -43,14 +55,16 @@ export class SimpleStorage {
   private async fetchStorageFromCloud(): Promise<void> {
     try {
       const response = await fetch(
-        `${this.baseUrl}/api/sdk/simple-storage/${encodeURIComponent(this.userId)}`,
+        `${this.baseUrl}/api/sdk/simple-storage/${encodeURIComponent(
+          this.userId,
+        )}`,
         {
           headers: this.getAuthHeaders(),
         },
       );
 
       if (response.ok) {
-        const result = await response.json() as { success: boolean; data?: Record<string, string> };
+        const result = (await response.json()) as StorageResponse;
         if (result.success && result.data) {
           this.storage = result.data;
         } else {
@@ -98,7 +112,9 @@ export class SimpleStorage {
 
       // Sync to cloud
       const response = await fetch(
-        `${this.baseUrl}/api/sdk/simple-storage/${encodeURIComponent(this.userId)}/${encodeURIComponent(key)}`,
+        `${this.baseUrl}/api/sdk/simple-storage/${encodeURIComponent(
+          this.userId,
+        )}/${encodeURIComponent(key)}`,
         {
           method: "PUT",
           headers: this.getAuthHeaders(),
@@ -129,7 +145,9 @@ export class SimpleStorage {
 
       // Sync to cloud
       const response = await fetch(
-        `${this.baseUrl}/api/sdk/simple-storage/${encodeURIComponent(this.userId)}/${encodeURIComponent(key)}`,
+        `${this.baseUrl}/api/sdk/simple-storage/${encodeURIComponent(
+          this.userId,
+        )}/${encodeURIComponent(key)}`,
         {
           method: "DELETE",
           headers: this.getAuthHeaders(),
@@ -137,7 +155,7 @@ export class SimpleStorage {
       );
 
       if (response.ok) {
-        const result = await response.json() as { success: boolean };
+        const result = (await response.json()) as StorageOperationResponse;
         return result.success;
       } else {
         console.error(
@@ -158,7 +176,9 @@ export class SimpleStorage {
       this.storage = {};
 
       const response = await fetch(
-        `${this.baseUrl}/api/sdk/simple-storage/${encodeURIComponent(this.userId)}`,
+        `${this.baseUrl}/api/sdk/simple-storage/${encodeURIComponent(
+          this.userId,
+        )}`,
         {
           method: "DELETE",
           headers: this.getAuthHeaders(),
@@ -166,7 +186,7 @@ export class SimpleStorage {
       );
 
       if (response.ok) {
-        const result = await response.json() as { success: boolean };
+        const result = (await response.json()) as StorageOperationResponse;
         return result.success;
       } else {
         console.error(
@@ -247,7 +267,9 @@ export class SimpleStorage {
 
       // Bulk upsert to cloud
       const response = await fetch(
-        `${this.baseUrl}/api/sdk/simple-storage/${encodeURIComponent(this.userId)}`,
+        `${this.baseUrl}/api/sdk/simple-storage/${encodeURIComponent(
+          this.userId,
+        )}`,
         {
           method: "PUT",
           headers: this.getAuthHeaders(),
