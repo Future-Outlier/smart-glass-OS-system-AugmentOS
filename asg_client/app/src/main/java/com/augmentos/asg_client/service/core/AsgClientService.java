@@ -319,7 +319,7 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             
             // Disable touch/swipe event reporting on service destroy
             Log.d(TAG, "🎯 Disabling touch event reporting on service destroy");
-            handleTouchEventControl(false);
+            handleTouchEventControl(true);
             
             Log.d(TAG, "🎯 Disabling swipe volume control on service destroy");
             handleSwipeVolumeControl(true);
