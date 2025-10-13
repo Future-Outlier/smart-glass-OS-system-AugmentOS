@@ -542,6 +542,15 @@ export class GlassesWebSocketService {
           userSession.relayAudioPlayResponseToApp(message);
           break;
 
+        case GlassesToCloudMessageType.RGB_LED_CONTROL_RESPONSE:
+          userSession.logger.debug(
+            { service: SERVICE_NAME, message },
+            `💡 RGB LED control response received from glasses/core`,
+          );
+          // Forward LED control response to Apps
+          userSession.relayMessageToApps(message);
+          break;
+
         case GlassesToCloudMessageType.HEAD_POSITION:
           await this.handleHeadPosition(userSession, message as HeadPosition);
           // Also relay to Apps in case they want to handle head position events
