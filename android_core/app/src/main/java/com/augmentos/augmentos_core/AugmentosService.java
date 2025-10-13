@@ -1992,6 +1992,72 @@ public class AugmentosService extends LifecycleService implements AugmentOsActio
             }
 
             @Override
+            public void onRgbLedControl(String requestId, String packageName, String action, String color, int ontime, int offtime, int count) {
+                Log.d(TAG, "💡 RGB LED control request received: requestId=" + requestId + ", action=" + action + ", color=" + color);
+
+                // Forward the request to the smart glasses manager
+                if (smartGlassesManager != null) {
+                    try {
+                        // Create JSON command for the glasses
+                        JSONObject ledCommand = new JSONObject();
+                        ledCommand.put("type", action.equals("on") ? "rgb_led_control_on" : "rgb_led_control_off");
+                        ledCommand.put("requestId", requestId);
+                        
+                        if (action.equals("on")) {
+                            // Convert color name to LED index (glasses expect numeric index)
+                            int ledIndex = convertColorToLedIndex(color);
+                            ledCommand.put("led", ledIndex);  // Use "led" field with numeric index
+                            ledCommand.put("ontime", ontime);
+                            ledCommand.put("offtime", offtime);
+                            ledCommand.put("count", count);
+                            
+                            Log.d(TAG, String.format("💡 LED command: color=%s -> led=%d, ontime=%d, offtime=%d, count=%d", 
+                                color, ledIndex, ontime, offtime, count));
+                        }
+
+                        // Send via custom command
+                        smartGlassesManager.sendCustomCommand(ledCommand.toString());
+                        Log.d(TAG, "💡 LED control command sent to glasses");
+
+                        // Send success response back to cloud
+                        sendLedControlResponse(requestId, true, null);
+                    } catch (Exception e) {
+                        Log.e(TAG, "💥 Error creating LED control command", e);
+                        sendLedControlResponse(requestId, false, "Failed to create LED command: " + e.getMessage());
+                    }
+                } else {
+                    Log.e(TAG, "Cannot process LED control request: smartGlassesManager is null");
+                    sendLedControlResponse(requestId, false, "SmartGlassesManager service not available");
+                }
+            }
+
+            /**
+             * Convert color name to LED index for glasses
+             * Matches the indices in RgbLedCommandHandler on glasses side
+             */
+            private int convertColorToLedIndex(String color) {
+                if (color == null) {
+                    return 0; // Default to red
+                }
+                
+                switch (color.toLowerCase()) {
+                    case "red":
+                        return 0;
+                    case "green":
+                        return 1;
+                    case "blue":
+                        return 2;
+                    case "orange":
+                        return 3;
+                    case "white":
+                        return 4;
+                    default:
+                        Log.w(TAG, "⚠️ Unknown LED color: " + color + ", defaulting to red");
+                        return 0;
+                }
+            }
+
+            @Override
             public void onRtmpStreamStartRequest(JSONObject message) {
                 String rtmpUrl = message.optString("rtmpUrl", "");
                 Log.d(TAG, "RTMP stream request received: rtmpUrl=" + rtmpUrl);
@@ -2239,6 +2305,23 @@ public class AugmentosService extends LifecycleService implements AugmentOsActio
             smartGlassesManager.sendPhotoErrorResponse(requestId, errorCode, errorMessage);
         } else {
             Log.e(TAG, "❌ Cannot send photo error - SmartGlassesManager not available");
+        }
+    }
+
+    private void sendLedControlResponse(String requestId, boolean success, String error) {
+        try {
+            JSONObject response = new JSONObject();
+            response.put("type", "rgb_led_control_response");
+            response.put("requestId", requestId);
+            response.put("success", success);
+            if (error != null) {
+                response.put("error", error);
+            }
+            
+            Log.d(TAG, "💡 Sending LED control response: " + response.toString());
+            ServerComms.getInstance().sendLedControlResponse(response);
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error creating LED control response", e);
         }
     }
 

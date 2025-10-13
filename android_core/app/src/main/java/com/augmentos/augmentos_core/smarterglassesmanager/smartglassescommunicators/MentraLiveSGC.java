@@ -3652,8 +3652,16 @@ public class MentraLiveSGC extends SmartGlassesCommunicator {
                 case "request_wifi_scan":
                     requestWifiScan();
                     break;
+                case "rgb_led_control_on":
+                case "rgb_led_control_off":
+                    // Forward LED control commands directly to glasses via BLE
+                    Log.d(TAG, "💡 Forwarding LED control command to glasses: " + type);
+                    sendJson(json, true);
+                    break;
                 default:
-                    Log.w(TAG, "Unknown custom command type: " + type);
+                    Log.w(TAG, "Unknown custom command type: " + type + " - attempting to forward to glasses");
+                    // Forward unknown commands to glasses - they might handle them
+                    sendJson(json, true);
                     break;
             }
         } catch (JSONException e) {
