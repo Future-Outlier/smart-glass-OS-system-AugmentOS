@@ -10,6 +10,7 @@ import { LayoutManager } from "./layouts";
 import { SettingsManager } from "./settings";
 import { LocationManager } from "./modules/location";
 import { CameraModule } from "./modules/camera";
+import { LedModule } from "./modules/led";
 import { AudioManager } from "./modules/audio";
 import { ResourceTracker } from "../../utils/resource-tracker";
 import {
@@ -19,6 +20,7 @@ import {
   AppConnectionInit,
   AppSubscriptionUpdate,
   AudioPlayResponse,
+  RgbLedControlResponse,
   AppToCloudMessageType,
   CloudToAppMessageType,
 
@@ -67,6 +69,7 @@ import EventEmitter from "events";
 // Import the cloud-to-app specific type guards
 import {
   isPhotoResponse,
+  isRgbLedControlResponse,
   isRtmpStreamStatus,
   isManagedStreamStatus,
   isStreamStatusCheckResponse,
@@ -194,6 +197,8 @@ export class AppSession {
   public readonly location: LocationManager;
   /** 📷 Camera interface for photos and streaming */
   public readonly camera: CameraModule;
+  /** 💡 LED interface for RGB LED control */
+  public readonly led: LedModule;
   /** 🔊 Audio interface for audio playback */
   public readonly audio: AudioManager;
   /** 🔐 Simple key-value storage interface */
@@ -336,6 +341,14 @@ export class AppSession {
       this.send.bind(this),
       this, // Pass session reference
       this.logger.child({ module: "camera" }),
+    );
+
+    // Initialize LED control module
+    this.led = new LedModule(
+      this.config.packageName,
+      this.sessionId || "unknown-session-id",
+      this.send.bind(this),
+      this.logger.child({ module: "led" }),
     );
 
     // Initialize audio module with session reference
@@ -1487,6 +1500,11 @@ export class AppSession {
             { message },
             "Received legacy photo response - photos should now come via /photo-upload webhook",
           );
+        } else if (isRgbLedControlResponse(message)) {
+          // Handle RGB LED control response
+          if (this.led) {
+            this.led.handleResponse(message as RgbLedControlResponse);
+          }
         }
         // Handle unrecognized message types gracefully
         else {
@@ -2158,6 +2176,7 @@ export {
   PhotoRequestOptions,
   RtmpStreamOptions,
 } from "./modules/camera";
+export { LedModule, LedControlOptions } from "./modules/led";
 export {
   AudioManager,
   AudioPlayOptions,
