@@ -310,25 +310,25 @@ public class RgbLedCommandHandler implements ICommandHandler {
     }
     
     /**
-     * Handle photo flash LED command - blue flash synchronized with shutter sound.
+     * Handle photo flash LED command - white flash synchronized with shutter sound.
      * 
      * Expected data format:
      * {
      *   "duration": 200  // Flash duration in milliseconds (optional, default 200ms)
      * }
      * 
-     * This creates a quick blue flash that matches the camera shutter sound timing.
+     * This creates a quick white flash that matches the camera shutter sound timing.
      */
     private boolean handlePhotoFlash(JSONObject data) {
         Log.d(TAG, "📸 Processing photo flash LED command");
         
         try {
             // Extract flash duration with default
-            int duration = data.optInt("duration", 10000); // Default 5000ms flash
+            int duration = data.optInt("duration", 10000); // Default 10000ms (10 sec) flash
             
-            Log.i(TAG, String.format("📸 💙 Photo flash LED - Duration: %dms", duration));
+            Log.i(TAG, String.format("📸 ⚪ Photo flash LED (WHITE) - Duration: %dms", duration));
             
-            // Build K900 protocol command for blue flash
+            // Build K900 protocol command for white flash
             JSONObject k900Command = new JSONObject();
             k900Command.put("C", K900_CMD_RGB_LED_ON);
             k900Command.put("V", 1);
@@ -344,7 +344,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
             boolean sent = sendCommandToGlasses(k900Command);
             
             if (sent) {
-                Log.i(TAG, "✅ Photo flash LED command sent successfully to glasses");
+                Log.i(TAG, "✅ Photo flash LED (white) command sent successfully to glasses");
                 sendSuccessResponse(CMD_RGB_LED_PHOTO_FLASH);
             } else {
                 Log.e(TAG, "❌ Failed to send photo flash LED command to glasses");
@@ -361,7 +361,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
     }
     
     /**
-     * Handle video pulse LED command - continuous blue sine wave pulsing.
+     * Handle video pulse LED command - solid white LED for duration of video recording.
      * 
      * Expected data format:
      * {
@@ -370,67 +370,43 @@ public class RgbLedCommandHandler implements ICommandHandler {
      *   "off_time": 500         // LED off time per cycle in milliseconds (optional, default 500ms)
      * }
      * 
-     * This creates a continuous pulsing pattern for video recording indication.
+     * This creates a solid white LED that stays on during video recording.
      */
     private boolean handleVideoPulse(JSONObject data) {
-        Log.d(TAG, "🎥 Processing video pulse LED command");
+        Log.d(TAG, "🎥 Processing video recording LED command (solid white)");
         
         try {
-            // Extract pulse parameters with defaults
-            int pulseDuration = data.optInt("pulse_duration", 1000); // Default 1 second cycle
-            int onTime = data.optInt("on_time", 500);              // Default 500ms on
-            int offTime = data.optInt("off_time", 500);            // Default 500ms off
+            Log.i(TAG, "🎥 ⚪ Video recording LED - Solid WHITE for duration of recording");
             
-            // Validate parameters
-            if (pulseDuration < 200 || pulseDuration > 5000) {
-                Log.e(TAG, "❌ Invalid pulse duration: " + pulseDuration + " (must be 200-5000ms)");
-                sendErrorResponse("Invalid pulse duration: " + pulseDuration);
-                return false;
-            }
-            
-            if (onTime < 50 || onTime > pulseDuration) {
-                Log.e(TAG, "❌ Invalid on time: " + onTime + " (must be 50-" + pulseDuration + "ms)");
-                sendErrorResponse("Invalid on time: " + onTime);
-                return false;
-            }
-            
-            if (offTime < 50 || offTime > pulseDuration) {
-                Log.e(TAG, "❌ Invalid off time: " + offTime + " (must be 50-" + pulseDuration + "ms)");
-                sendErrorResponse("Invalid off time: " + offTime);
-                return false;
-            }
-            
-            Log.i(TAG, String.format("🎥 💙 Video pulse LED - Cycle: %dms, On: %dms, Off: %dms", 
-                    pulseDuration, onTime, offTime));
-            
-            // Build K900 protocol command for continuous blue pulsing
+            // Build K900 protocol command for solid white LED
+            // Using a very long ontime (effectively infinite) with count=1 for solid illumination
             JSONObject k900Command = new JSONObject();
             k900Command.put("C", K900_CMD_RGB_LED_ON);
             k900Command.put("V", 1);
             
             JSONObject ledParams = new JSONObject();
-            ledParams.put("led", RGB_LED_ORANGE);
-            ledParams.put("ontime", onTime);
-            ledParams.put("offtime", offTime);
-            ledParams.put("count", 10);    // 0 = continuous pulsing until stopped
+            ledParams.put("led", RGB_LED_WHITE);    // White LED
+            ledParams.put("ontime", 60000);         // 60 seconds (very long, will be manually turned off when recording stops)
+            ledParams.put("offtime", 0);            // No off time - solid
+            ledParams.put("count", 1);              // Single cycle (solid on)
             k900Command.put("B", ledParams.toString());
             
             // Send command to glasses via Bluetooth
             boolean sent = sendCommandToGlasses(k900Command);
             
             if (sent) {
-                Log.i(TAG, "✅ Video pulse LED command sent successfully to glasses");
+                Log.i(TAG, "✅ Video recording LED (solid white) command sent successfully to glasses");
                 sendSuccessResponse(CMD_RGB_LED_VIDEO_PULSE);
             } else {
-                Log.e(TAG, "❌ Failed to send video pulse LED command to glasses");
-                sendErrorResponse("Failed to send video pulse command to glasses");
+                Log.e(TAG, "❌ Failed to send video recording LED command to glasses");
+                sendErrorResponse("Failed to send video recording LED command to glasses");
             }
             
             return sent;
             
         } catch (JSONException e) {
-            Log.e(TAG, "💥 Error building video pulse LED command", e);
-            sendErrorResponse("Failed to build video pulse LED command");
+            Log.e(TAG, "💥 Error building video recording LED command", e);
+            sendErrorResponse("Failed to build video recording LED command");
             return false;
         }
     }
