@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {supabase} from "@/supabase/supabaseClient"
 import bridge from "@/bridge/MantleBridge"
-import {stopExternalService} from "@/bridge/CoreServiceStarter"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS} from "@/stores/settings"
@@ -132,14 +131,6 @@ export class LogoutUtils {
     }
 
     try {
-      // Stop external services
-      stopExternalService()
-      console.log(`${this.TAG}: Stopped external services`)
-    } catch (error) {
-      console.error(`${this.TAG}: Error stopping external services:`, error)
-    }
-
-    try {
       // Clean up communicator resources
       bridge.cleanup()
       console.log(`${this.TAG}: Cleaned up core communicator resources`)
@@ -206,9 +197,6 @@ export class LogoutUtils {
     console.log(`${this.TAG}: Resetting status providers...`)
 
     try {
-      // Emit a logout event for any components that need to reset
-      GlobalEventEmitter.emit("USER_LOGGED_OUT")
-
       // Emit event to clear WebView data and cache
       GlobalEventEmitter.emit("CLEAR_WEBVIEW_DATA")
 
