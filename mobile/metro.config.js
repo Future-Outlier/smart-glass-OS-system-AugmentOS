@@ -18,4 +18,8 @@ config.transformer.getTransformOptions = async () => ({
 // such as Firebase that use the extension cjs.
 config.resolver.sourceExts.push("cjs")
 
+// Enable package exports support for Metro
+// This is needed for @posthog/core/error-tracking subpath exports
+config.resolver.unstable_enablePackageExports = true
+
 module.exports = config
