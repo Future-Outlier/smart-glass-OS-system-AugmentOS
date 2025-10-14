@@ -10,7 +10,7 @@ import androidx.preference.PreferenceManager;
 
 import com.augmentos.asg_client.io.file.core.FileManager;
 import com.augmentos.asg_client.io.file.core.FileManagerFactory;
-import com.augmentos.augmentos_core.utils.ServerConfigUtil;
+import com.augmentos.asg_client.utils.ServerConfigUtil;
 import com.augmentos.asg_client.io.media.upload.MediaUploadService;
 import com.augmentos.asg_client.io.media.managers.MediaUploadQueueManager;
 import com.augmentos.asg_client.io.media.interfaces.ServiceCallbackInterface;
