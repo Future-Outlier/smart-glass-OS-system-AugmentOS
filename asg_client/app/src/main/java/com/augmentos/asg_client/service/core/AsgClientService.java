@@ -29,7 +29,8 @@ import com.augmentos.asg_client.service.system.interfaces.IServiceLifecycle;
 import com.augmentos.asg_client.service.system.interfaces.IStateManager;
 import com.augmentos.asg_client.service.media.interfaces.IMediaManager;
 import com.augmentos.asg_client.service.system.managers.StateManager;
-import com.augmentos.augmentos_core.AugmentosService;
+// Note: AugmentosService removed - legacy dependency no longer needed
+// import com.augmentos.augmentos_core.AugmentosService;
 import com.augmentos.asg_client.service.utils.ServiceUtils;
 
 import org.greenrobot.eventbus.EventBus;
@@ -97,8 +98,9 @@ public class AsgClientService extends Service implements NetworkStateListener, B
     // ---------------------------------------------
     // Service State
     // ---------------------------------------------
-    private AugmentosService augmentosService = null;
-    private boolean isAugmentosBound = false;
+    // Note: AugmentosService removed - legacy dependency no longer needed
+    // private AugmentosService augmentosService = null;
+    // private boolean isAugmentosBound = false;
     private static AsgClientService instance;
     private boolean lastI2sPlaying = false;
     private boolean isConnected = false; // Track connection state based on heartbeat
@@ -126,8 +128,10 @@ public class AsgClientService extends Service implements NetworkStateListener, B
     private Runnable heartbeatTimeoutRunnable;
 
     // ---------------------------------------------
-    // ServiceConnection for AugmentosService
+    // ServiceConnection for AugmentosService - DISABLED (legacy code)
     // ---------------------------------------------
+    // Note: AugmentosService binding removed - no longer needed for standalone ASG client
+    /*
     private final ServiceConnection augmentosConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -173,6 +177,7 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             }
         }
     };
+    */
 
     // ---------------------------------------------
     // Lifecycle Methods
@@ -291,6 +296,8 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             Log.d(TAG, "📻 Unregistering broadcast receivers");
             unregisterReceivers();
 
+            // Note: AugmentosService unbinding removed - no longer used
+            /*
             // Unbind from AugmentosService
             if (isAugmentosBound) {
                 Log.d(TAG, "🔌 Unbinding from AugmentosService");
@@ -300,6 +307,7 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             } else {
                 Log.d(TAG, "⏭️ Not bound to AugmentosService - skipping unbind");
             }
+            */
 
             // Clean up WiFi debouncing
             if (wifiDebounceHandler != null && wifiDebounceRunnable != null) {
@@ -690,11 +698,14 @@ public class AsgClientService extends Service implements NetworkStateListener, B
     private void onWifiConnected() {
         Log.i(TAG, "🌐 Connected to WiFi network");
         
+        // Note: AugmentosService check removed - no longer used
+        /*
         if (isAugmentosBound && augmentosService != null) {
             Log.i(TAG, "🔗 AugmentOS service is available, connecting to backend...");
         } else {
             Log.d(TAG, "⏭️ AugmentOS service not available - waiting for binding");
         }
+        */
     }
 
     private void processMediaQueue() {
