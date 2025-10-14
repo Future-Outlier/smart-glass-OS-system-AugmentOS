@@ -17,7 +17,6 @@ io/media/
 ├── managers/
 │   ├── MediaUploadQueueManager.java     # Media upload queue management
 │   ├── PhotoQueueManager.java           # Photo queue management
-│   └── GlassesMicrophoneManager.java    # Microphone management
 ├── upload/
 │   ├── MediaUploadService.java          # Media upload service
 │   └── PhotoUploadService.java          # Photo upload service
@@ -104,15 +103,6 @@ Specialized queue manager for photo uploads:
 - **Metadata Management**: Track photo metadata and settings
 - **Compression**: Automatic photo compression for upload
 - **Gallery Integration**: Save photos to device gallery
-
-#### **GlassesMicrophoneManager**
-
-Manages microphone on smart glasses:
-
-- **Audio Streaming**: Stream audio to connected devices
-- **LC3 Encoding**: High-quality audio encoding
-- **Bluetooth Integration**: Stream via Bluetooth LE
-- **Real-time Processing**: Low-latency audio processing
 
 ### **Media Upload Services**
 
