@@ -1,10 +1,8 @@
-import React, {createContext, useCallback, useContext, useEffect, useRef, useState} from "react"
-import {useFocusEffect, usePathname, useSegments} from "expo-router"
-import {router} from "expo-router"
-import {BackHandler} from "react-native"
+import {router, usePathname, useSegments} from "expo-router"
+import {createContext, useContext, useEffect, useRef} from "react"
 
-export type NavigationHistoryPush = (path: string, params?: any) => Promise<void>
-export type NavigationHistoryReplace = (path: string, params?: any) => Promise<void>
+export type NavigationHistoryPush = (path: string, params?: any) => void
+export type NavigationHistoryReplace = (path: string, params?: any) => void
 export type NavigationHistoryGoBack = () => void
 
 export type NavObject = {
@@ -35,7 +33,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const historyParamsRef = useRef<any[]>([])
 
   const pathname = usePathname()
-  const segments = useSegments()
+  const _segments = useSegments()
   // const [pendingRoute, setPendingRouteNonClashingName] = useState<string | null>(null)
   const pendingRoute = useRef<string | null>(null)
 
@@ -82,7 +80,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
     // Get previous path
     const previousPath = history[history.length - 1]
-    const previousParams = historyParamsRef.current[historyParamsRef.current.length - 1]
+    const _previousParams = historyParamsRef.current[historyParamsRef.current.length - 1]
 
     console.info(`NavHistory: going back to: ${previousPath}`)
     // if (previousPath) {
@@ -99,28 +97,26 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     }
   }
 
-  const push = (path: string, params?: any): Promise<void> => {
+  const push = (path: string, params?: any): void => {
     console.info("NavHistory: push()", path)
     // if the path is the same as the last path, don't add it to the history
     if (historyRef.current[historyRef.current.length - 1] === path) {
-      return Promise.resolve()
+      return
     }
 
     historyRef.current.push(path)
     historyParamsRef.current.push(params)
 
     router.push({pathname: path as any, params: params as any})
-    return Promise.resolve()
   }
 
-  const replace = (path: string, params?: any): Promise<void> => {
+  const replace = (path: string, params?: any): void => {
     console.info("NavHistory: replace()", path)
     historyRef.current.pop()
     historyParamsRef.current.pop()
     historyRef.current.push(path)
     historyParamsRef.current.push(params)
-    const result = router.replace({pathname: path as any, params: params as any})
-    return result || Promise.resolve()
+    router.replace({pathname: path as any, params: params as any})
   }
 
   const getHistory = () => {
@@ -153,7 +149,10 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     historyRef.current = []
     historyParamsRef.current = []
     try {
-      router.dismissAll()
+      while (router.canGoBack()) {
+        router.back()
+      }
+      // router.dismissAll()
     } catch (error) {
       console.error("NavHistory: clearHistoryAndGoHome() error", error)
     }

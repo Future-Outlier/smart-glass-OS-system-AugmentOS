@@ -3,7 +3,6 @@ import {View, ActivityIndicator, Platform, Linking} from "react-native"
 import Constants from "expo-constants"
 import semver from "semver"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import {router} from "expo-router"
 import {Button, Screen} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useDeeplink} from "@/contexts/DeeplinkContext"
@@ -38,7 +37,7 @@ export default function InitScreen() {
   // Hooks
   const {theme, themed} = useAppTheme()
   const {user, session} = useAuth()
-  const {replace, getPendingRoute, setPendingRoute} = useNavigationHistory()
+  const {replace, getPendingRoute, setPendingRoute, clearHistoryAndGoHome} = useNavigationHistory()
   const {processUrl} = useDeeplink()
 
   // State
@@ -92,8 +91,7 @@ export default function InitScreen() {
     }
 
     setTimeout(() => {
-      router.dismissAll()
-      replace("/(tabs)/home")
+      clearHistoryAndGoHome()
     }, NAVIGATION_DELAY)
   }
 

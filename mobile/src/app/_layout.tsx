@@ -10,7 +10,6 @@ import * as Sentry from "@sentry/react-native"
 import Constants from "expo-constants"
 import {registerGlobals} from "@livekit/react-native-webrtc"
 import {initializeSettings} from "@/stores/settings"
-import {Platform} from "react-native"
 
 Sentry.init({
   dsn: Constants.expoConfig?.extra?.SENTRY_DSN,
@@ -102,8 +101,8 @@ function Root() {
   )
 }
 
-if (!__DEV__ && Platform.OS === "android") {
-  // export default Root
-}
+// if (!__DEV__ && Platform.OS === "android") {
+// export default Root
+// }
 
 export default Sentry.wrap(Root)

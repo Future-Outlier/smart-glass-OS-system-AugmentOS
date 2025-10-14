@@ -1,4 +1,4 @@
-// SelectGlassesBluetoothScreen.tsx
+// scan.tsx
 
 import bridge from "@/bridge/MantleBridge"
 import {Header, Screen, Text} from "@/components/ignite"
@@ -27,7 +27,7 @@ export default function SelectGlassesBluetoothScreen() {
   const {searchResults, setSearchResults} = useSearchResults()
   const {glassesModelName}: {glassesModelName: string} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
-  const {goBack, push, clearHistory, replace} = useNavigationHistory()
+  const {goBack, push, clearHistory, clearHistoryAndGoHome} = useNavigationHistory()
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   // Create a ref to track the current state of searchResults
   const searchResultsRef = useRef<SearchResultDevice[]>(searchResults)
@@ -190,8 +190,7 @@ export default function SelectGlassesBluetoothScreen() {
   useEffect(() => {
     // If pairing successful, return to home
     if (status.glasses_info?.model_name) {
-      router.dismissAll()
-      replace("/(tabs)/home")
+      clearHistoryAndGoHome()
     }
   }, [status])
 

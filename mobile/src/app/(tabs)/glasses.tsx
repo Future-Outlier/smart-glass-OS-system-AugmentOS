@@ -12,7 +12,7 @@ import {Spacer} from "@/components/misc/Spacer"
 import {glassesFeatures} from "@/config/glassesFeatures"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 
-export default function Homepage() {
+export default function Glasses() {
   const {theme} = useAppTheme()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
   const {status} = useCoreStatus()
