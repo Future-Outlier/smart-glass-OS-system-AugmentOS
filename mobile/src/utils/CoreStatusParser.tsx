@@ -1,5 +1,3 @@
-import {MOCK_CONNECTION} from "@/consts"
-
 export interface OtaDownloadProgress {
   status: string
   progress: number
@@ -85,17 +83,13 @@ export interface CoreAuthInfo {
 }
 
 export interface CoreInfo {
-  augmentos_core_version: string | null
   core_token: string | null
   cloud_connection_status: string
-  puck_connected: boolean
-  puck_battery_life: number | null
-  puck_charging_status: boolean
   default_wearable: string | null
   is_mic_enabled_for_frontend: boolean
   is_searching: boolean
-  protobuf_schema_version: string
-  glasses_protobuf_version: string
+  // protobuf_schema_version: string
+  // glasses_protobuf_version: string
 }
 
 export interface CoreStatus {
@@ -111,17 +105,11 @@ export interface CoreStatus {
 export class CoreStatusParser {
   static defaultStatus: CoreStatus = {
     core_info: {
-      augmentos_core_version: null,
       cloud_connection_status: "DISCONNECTED",
       core_token: null,
-      puck_connected: false,
-      puck_battery_life: null,
-      puck_charging_status: false,
       is_mic_enabled_for_frontend: false,
       default_wearable: null,
       is_searching: false,
-      protobuf_schema_version: "Unknown",
-      glasses_protobuf_version: "Unknown",
     },
     glasses_info: null,
     glasses_settings: {
@@ -150,12 +138,8 @@ export class CoreStatusParser {
 
   static mockStatus: CoreStatus = {
     core_info: {
-      augmentos_core_version: "1.0.0",
       cloud_connection_status: "CONNECTED",
       core_token: "1234567890",
-      puck_connected: true,
-      puck_battery_life: 88,
-      puck_charging_status: true,
       is_mic_enabled_for_frontend: false,
       default_wearable: "evenrealities_g1",
       is_searching: false,
@@ -205,9 +189,6 @@ export class CoreStatusParser {
   }
 
   static parseStatus(data: any): CoreStatus {
-    if (MOCK_CONNECTION) {
-      return CoreStatusParser.mockStatus
-    }
     if (data && "status" in data) {
       const status = data.status
       const coreInfo = status.core_info ?? {}
@@ -220,20 +201,14 @@ export class CoreStatusParser {
 
       return {
         core_info: {
-          augmentos_core_version: coreInfo.augmentos_core_version ?? null,
           core_token: coreInfo.core_token ?? null,
           cloud_connection_status: coreInfo.cloud_connection_status ?? "DISCONNECTED",
-          puck_connected: true,
-          puck_battery_life: status.core_info.puck_battery_life ?? null,
-          puck_charging_status: status.core_info.charging_status ?? false,
           default_wearable:
             hasConnectedGlasses && !status.core_info.default_wearable
               ? status.connected_glasses.model_name
               : (status.core_info.default_wearable ?? null),
           is_mic_enabled_for_frontend: status.core_info.is_mic_enabled_for_frontend ?? false,
           is_searching: status.core_info.is_searching ?? false,
-          protobuf_schema_version: status.core_info.protobuf_schema_version ?? "Unknown",
-          glasses_protobuf_version: status.core_info.glasses_protobuf_version ?? "Unknown",
         },
         glasses_info: status.connected_glasses
           ? {
@@ -285,10 +260,6 @@ export class CoreStatusParser {
           core_token_status: authInfo.core_token_status,
           last_verification_timestamp: authInfo.last_verification_timestamp,
         },
-        // TODO: Hardcoding this false fixes a bug that
-        // causes us to jump back to the home screen whenever
-        // a setting is changed. I don't know why this works.
-        // Somebody look at this please.
         ota_progress:
           otaProgress.download || otaProgress.installation
             ? {

@@ -3,7 +3,7 @@ import {Screen} from "@/components/ignite/Screen"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
-import {DeviceTypes} from "@/types/Core"
+import {DeviceTypes} from "@/utils/Constants"
 import {showAlert} from "@/utils/AlertUtils"
 import {getPairingGuide} from "@/utils/getPairingGuide"
 import {PermissionFeatures, checkConnectivityRequirementsUI, requestFeaturePermissions} from "@/utils/PermissionsUtils"
@@ -41,7 +41,7 @@ export default function PairingPrepScreen() {
     // Always request Bluetooth permissions - required for Android 14+ foreground service
     let needsBluetoothPermissions = true
     // we don't need bluetooth permissions for simulated glasses
-    if (glassesModelName.startsWith("Simulated") && Platform.OS === "ios") {
+    if (glassesModelName.startsWith(DeviceTypes.SIMULATED) && Platform.OS === "ios") {
       needsBluetoothPermissions = false
     }
 

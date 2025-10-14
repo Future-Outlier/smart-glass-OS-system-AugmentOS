@@ -5,7 +5,6 @@ import {customFontsToLoad} from "@/theme"
 import {initI18n} from "@/i18n"
 import {loadDateFnsLocale} from "@/utils/formatDate"
 import {AllProviders} from "@/utils/AllProviders"
-import MessageBanner from "@/components/misc/MessageBanner"
 import * as Sentry from "@sentry/react-native"
 import Constants from "expo-constants"
 import {registerGlobals} from "@livekit/react-native-webrtc"
@@ -95,8 +94,8 @@ function Root() {
           // gestureResponseDistance: 100,
           // fullScreenGestureEnabled: true,
           animation: "none",
-        }}></Stack>
-      <MessageBanner />
+        }}
+      />
     </AllProviders>
   )
 }

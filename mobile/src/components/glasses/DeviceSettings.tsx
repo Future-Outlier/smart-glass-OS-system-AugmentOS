@@ -23,6 +23,7 @@ import InfoSection from "@/components/ui/InfoSection"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {AppPicker} from "@/components/misc/AppPicker"
 import {useAppStatus} from "@/contexts/AppletStatusProvider"
+import {DeviceTypes} from "@/utils/Constants"
 
 // Icon components defined directly in this file to avoid path resolution issues
 interface CaseIconProps {
@@ -448,7 +449,7 @@ export default function DeviceSettings() {
         />
       )}
 
-      {defaultWearable && isGlassesConnected && defaultWearable !== "Simulated Glasses" && (
+      {defaultWearable && isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && (
         <ActionButton
           label={translate("settings:disconnectGlasses")}
           variant="destructive"

@@ -7,14 +7,7 @@ object DeviceTypes {
     const val LIVE = "Mentra Live"
     const val Z100 = "Vuzix Z100"
     const val FRAME = "Brilliant Frame"
-    val ALL = arrayOf(
-        SIMULATED,
-        G1,
-        MACH1,
-        LIVE,
-        Z100,
-        FRAME
-    )
+    val ALL = arrayOf(SIMULATED, G1, MACH1, LIVE, Z100, FRAME)
 }
 
 object ConnTypes {

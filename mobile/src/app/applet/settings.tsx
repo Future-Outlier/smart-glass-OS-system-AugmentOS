@@ -1,38 +1,38 @@
 // src/AppSettings.tsx
-import {useEffect, useState, useMemo, useLayoutEffect, useCallback, useRef} from "react"
-import {View, TouchableOpacity, ViewStyle, TextStyle, Animated, BackHandler} from "react-native"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
-import GroupTitle from "@/components/settings/GroupTitle"
-import ToggleSetting from "@/components/settings/ToggleSetting"
-import TextSettingNoSave from "@/components/settings/TextSettingNoSave"
-import SliderSetting from "@/components/settings/SliderSetting"
-import SelectSetting from "@/components/settings/SelectSetting"
-import MultiSelectSetting from "@/components/settings/MultiSelectSetting"
-import TitleValueSetting from "@/components/settings/TitleValueSetting"
-import LoadingOverlay from "@/components/misc/LoadingOverlay"
-import restComms from "@/managers/RestComms"
-import FontAwesome from "react-native-vector-icons/FontAwesome"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {useAppStatus} from "@/contexts/AppletStatusProvider"
+import {Header, PillButton, Screen, Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import SelectWithSearchSetting from "@/components/settings/SelectWithSearchSetting"
-import NumberSetting from "@/components/settings/NumberSetting"
-import TimeSetting from "@/components/settings/TimeSetting"
-import SettingsSkeleton from "@/components/misc/SettingsSkeleton"
-import {useFocusEffect, useLocalSearchParams} from "expo-router"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {Header, Screen, PillButton, Text} from "@/components/ignite"
-import {ThemedStyle} from "@/theme"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import ActionButton from "@/components/ui/ActionButton"
 import Divider from "@/components/misc/Divider"
+import LoadingOverlay from "@/components/misc/LoadingOverlay"
+import SettingsSkeleton from "@/components/misc/SettingsSkeleton"
+import GroupTitle from "@/components/settings/GroupTitle"
 import {InfoRow} from "@/components/settings/InfoRow"
+import MultiSelectSetting from "@/components/settings/MultiSelectSetting"
+import NumberSetting from "@/components/settings/NumberSetting"
+import SelectSetting from "@/components/settings/SelectSetting"
+import SelectWithSearchSetting from "@/components/settings/SelectWithSearchSetting"
 import {SettingsGroup} from "@/components/settings/SettingsGroup"
+import SliderSetting from "@/components/settings/SliderSetting"
+import TextSettingNoSave from "@/components/settings/TextSettingNoSave"
+import TimeSetting from "@/components/settings/TimeSetting"
+import TitleValueSetting from "@/components/settings/TitleValueSetting"
+import ToggleSetting from "@/components/settings/ToggleSetting"
+import ActionButton from "@/components/ui/ActionButton"
+import {useAppStatus} from "@/contexts/AppletStatusProvider"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import restComms from "@/managers/RestComms"
+import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
-import {translate} from "@/i18n"
-import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import {useAppTheme} from "@/utils/useAppTheme"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import {useFocusEffect, useLocalSearchParams} from "expo-router"
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react"
+import {Animated, BackHandler, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
+import Toast from "react-native-toast-message"
+import FontAwesome from "react-native-vector-icons/FontAwesome"
 
 export default function AppSettings() {
   const {packageName, appName: appNameParam, fromWebView} = useLocalSearchParams()
@@ -188,9 +188,9 @@ export default function AppSettings() {
               await restComms.uninstallApp(packageName)
 
               // Show success message
-              GlobalEventEmitter.emit("SHOW_BANNER", {
-                message: `${appInfo?.name || appName} has been uninstalled successfully`,
+              Toast.show({
                 type: "success",
+                text1: `${appInfo?.name || appName} has been uninstalled successfully`,
               })
 
               replace("/(tabs)/home")
@@ -198,9 +198,9 @@ export default function AppSettings() {
               console.error("Error uninstalling app:", error)
               clearPendingOperation(packageName)
               refreshAppStatus()
-              GlobalEventEmitter.emit("SHOW_BANNER", {
-                message: `Error uninstalling app: ${error.message || "Unknown error"}`,
+              Toast.show({
                 type: "error",
+                text1: `Error uninstalling app: ${error.message || "Unknown error"}`,
               })
             } finally {
               setIsUninstalling(false)

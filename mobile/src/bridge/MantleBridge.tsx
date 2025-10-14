@@ -1,4 +1,4 @@
-import {INTENSE_LOGGING} from "@/consts"
+import {INTENSE_LOGGING} from "@/utils/Constants"
 import {translate} from "@/i18n"
 import livekitManager from "@/managers/LivekitManager"
 import mantle from "@/managers/MantleManager"
@@ -9,6 +9,7 @@ import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {EventEmitter} from "events"
 
 import CoreModule from "core"
+import Toast from "react-native-toast-message"
 
 export class MantleBridge extends EventEmitter {
   private static instance: MantleBridge | null = null
@@ -154,9 +155,10 @@ export class MantleBridge extends EventEmitter {
           })
           break
         case "notify_manager":
-          GlobalEventEmitter.emit("SHOW_BANNER", {
-            message: translate(data.notify_manager.message),
+        case "show_banner":
+          Toast.show({
             type: data.notify_manager.type,
+            text1: translate(data.notify_manager.message),
           })
           break
         case "button_press":
@@ -180,12 +182,6 @@ export class MantleBridge extends EventEmitter {
           break
         case "pair_failure":
           GlobalEventEmitter.emit("PAIR_FAILURE", data.error)
-          break
-        case "show_banner":
-          GlobalEventEmitter.emit("SHOW_BANNER", {
-            message: data.message,
-            type: data.type,
-          })
           break
         case "save_setting":
           await useSettingsStore.getState().setSetting(data.key, data.value, false)
@@ -249,9 +245,9 @@ export class MantleBridge extends EventEmitter {
       return await CoreModule.handleCommand(JSON.stringify(dataObj))
     } catch (error) {
       console.error("Failed to send data to Core:", error)
-      GlobalEventEmitter.emit("SHOW_BANNER", {
-        message: `Error sending command to Core: ${error}`,
+      Toast.show({
         type: "error",
+        text1: `Error sending command to Core: ${error}`,
       })
     }
   }

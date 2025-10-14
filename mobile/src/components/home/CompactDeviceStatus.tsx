@@ -23,6 +23,7 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import ChevronRight from "assets/icons/component/ChevronRight"
 import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import SunIcon from "assets/icons/component/SunIcon"
+import {DeviceTypes} from "@/utils/Constants"
 
 export const CompactDeviceStatus: React.FC = () => {
   const {status} = useCoreStatus()
@@ -48,7 +49,7 @@ export const CompactDeviceStatus: React.FC = () => {
   }
 
   // Show simulated glasses view for simulated glasses
-  if (defaultWearable.toLowerCase().includes("simulated")) {
+  if (defaultWearable.toLowerCase().includes(DeviceTypes.SIMULATED)) {
     return <ConnectedSimulatedGlassesInfo />
   }
 
@@ -96,7 +97,7 @@ export const CompactDeviceStatus: React.FC = () => {
   const getCurrentGlassesImage = () => {
     let image = getGlassesImage(defaultWearable)
 
-    if (defaultWearable === "Even Realities G1" || defaultWearable === "evenrealities_g1" || defaultWearable === "g1") {
+    if (defaultWearable === DeviceTypes.G1) {
       const style = status.glasses_info?.glasses_style
       const color = status.glasses_info?.glasses_color
       let state = "folded"

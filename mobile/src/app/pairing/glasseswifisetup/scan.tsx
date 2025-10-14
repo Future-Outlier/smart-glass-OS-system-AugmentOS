@@ -12,6 +12,7 @@ import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useCallback} from "react"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import Toast from "react-native-toast-message"
 
 // Enhanced network info type
 interface NetworkInfo {
@@ -176,9 +177,9 @@ export default function WifiScanScreen() {
         scanTimeoutRef.current = null
       }
       setIsScanning(false)
-      GlobalEventEmitter.emit("SHOW_BANNER", {
-        message: "Failed to scan for WiFi networks",
+      Toast.show({
         type: "error",
+        text1: "Failed to scan for WiFi networks",
       })
     }
   }
@@ -186,9 +187,9 @@ export default function WifiScanScreen() {
   const handleNetworkSelect = (selectedNetwork: NetworkInfo) => {
     // Check if this is the currently connected network
     if (isWifiConnected && currentWifi === selectedNetwork.ssid) {
-      GlobalEventEmitter.emit("SHOW_BANNER", {
-        message: `Already connected to ${selectedNetwork.ssid}`,
+      Toast.show({
         type: "info",
+        text1: `Already connected to ${selectedNetwork.ssid}`,
       })
       return
     }
