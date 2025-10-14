@@ -67,6 +67,8 @@ public class RtmpStreamingService extends Service {
 
     private final IBinder mBinder = new LocalBinder();
     private CameraRtmpLiveStreamer mStreamer;
+    // Tracks the most recent streamer so we can still tear down the camera even if mStreamer is cleared
+    private CameraRtmpLiveStreamer mLastStreamerForCleanup;
     private String mRtmpUrl;
     private boolean mIsStreaming = false;
     private SurfaceTexture mSurfaceTexture;
@@ -589,6 +591,9 @@ public class RtmpStreamingService extends Service {
             mStreamer.configure(videoConfig);
             mStreamer.configure(audioConfig);
 
+            // Remember this streamer so stop flows can clean up even if mStreamer gets swapped/null
+            mLastStreamerForCleanup = mStreamer;
+
             // Start the preview with our surface
             if (mSurface != null && mSurface.isValid()) {
                 mStreamer.startPreview(mSurface, "0"); // Using "0" for back camera
@@ -908,11 +913,15 @@ public class RtmpStreamingService extends Service {
         mReconnecting = false;
         mReconnectAttempts = 0;
 
-        // Stop the stream if we have a streamer
-        if (mStreamer != null) {
+        // Stop the stream if we have a streamer (or the last known instance)
+        CameraRtmpLiveStreamer streamerToCleanup = mStreamer != null ? mStreamer : mLastStreamerForCleanup;
+        if (streamerToCleanup != null) {
+            if (mStreamer == null) {
+                Log.w(TAG, "No active streamer reference, using last known instance for cleanup");
+            }
             try {
                 // Force stop the stream
-                mStreamer.stopStream(new Continuation<kotlin.Unit>() {
+                streamerToCleanup.stopStream(new Continuation<kotlin.Unit>() {
                     @Override
                     public CoroutineContext getContext() {
                         return EmptyCoroutineContext.INSTANCE;
@@ -941,7 +950,7 @@ public class RtmpStreamingService extends Service {
 
             // Stop preview
             try {
-                mStreamer.stopPreview();
+                streamerToCleanup.stopPreview();
                 Log.d(TAG, "Camera preview stopped");
             } catch (Exception e) {
                 Log.e(TAG, "Error stopping preview", e);
@@ -958,7 +967,7 @@ public class RtmpStreamingService extends Service {
 
             // Release the streamer completely
             try {
-                mStreamer.release();
+                streamerToCleanup.release();
                 Log.d(TAG, "Streamer released");
             } catch (Exception e) {
                 Log.e(TAG, "Error releasing streamer", e);
@@ -973,7 +982,10 @@ public class RtmpStreamingService extends Service {
                 }
             }
 
-            mStreamer = null;
+            if (mStreamer == streamerToCleanup) {
+                mStreamer = null;
+            }
+            mLastStreamerForCleanup = null;
         }
 
         // Release surface
