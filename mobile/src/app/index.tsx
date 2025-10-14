@@ -1,5 +1,3 @@
-// app/index.js
-
 import {useEffect} from "react"
 import {useAuth} from "@/contexts/AuthContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"

@@ -77,7 +77,6 @@ export class MantleBridge extends EventEmitter {
         this.lastMessage = jsonString
       }
 
-      this.isConnected = true
       this.emit("dataReceived", data)
       this.parseDataFromCore(data)
     } catch (e) {

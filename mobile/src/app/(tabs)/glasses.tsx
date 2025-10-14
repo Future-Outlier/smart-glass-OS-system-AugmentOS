@@ -1,5 +1,5 @@
-import {ScrollView} from "react-native"
 import {Header, Screen} from "@/components/ignite"
+import {ScrollView} from "react-native"
 import {ConnectDeviceButton, ConnectedGlasses} from "@/components/misc/ConnectedDeviceInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
