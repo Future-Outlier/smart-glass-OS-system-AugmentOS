@@ -157,7 +157,17 @@
         {
           "url": "https://sentry.io/",
           "project": "mentra-os",
-          "organization": "mentra-labs"
+          "organization": "mentra-labs",
+          "experimental_android": {
+            "enableAndroidGradlePlugin": false,
+            "autoUploadProguardMapping": true,
+            "includeProguardMapping": true,
+            "dexguardEnabled": true,
+            "uploadNativeSymbols": true,
+            "autoUploadNativeSymbols": true,
+            "includeNativeSources": true,
+            "includeSourceContext": true
+          }
         }
       ],
       "@livekit/react-native-expo-plugin",

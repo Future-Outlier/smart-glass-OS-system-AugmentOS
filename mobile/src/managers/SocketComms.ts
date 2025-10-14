@@ -21,16 +21,20 @@ class SocketComms {
       this.handle_message(message)
     })
 
-    // Subscribe to changes in default_wearable and call sendGlassesConnectionState() when it updates:
-    useSettingsStore.subscribe(
-      state => state.settings[SETTINGS_KEYS.default_wearable],
-      (modelName: string) => {
-        // TODO: get the connection state from mantlemanager or something
-        if (modelName != "") {
-          this.sendGlassesConnectionState(true)
-        }
-      },
-    )
+    try {
+      // Subscribe to changes in default_wearable and call sendGlassesConnectionState() when it updates:
+      useSettingsStore.subscribe(
+        state => state.settings[SETTINGS_KEYS.default_wearable],
+        (modelName: string) => {
+          // TODO: get the connection state from mantlemanager or something
+          if (modelName != "") {
+            this.sendGlassesConnectionState(true)
+          }
+        },
+      )
+    } catch (error) {
+      console.error("SocketCommsTS: Error subscribing to default_wearable:", error)
+    }
   }
 
   public static getInstance(): SocketComms {
@@ -510,11 +514,11 @@ class SocketComms {
         break
 
       case "start_buffer_recording":
-        this.handle_start_buffer_recording(msg)
+        this.handle_start_buffer_recording()
         break
 
       case "stop_buffer_recording":
-        this.handle_stop_buffer_recording(msg)
+        this.handle_stop_buffer_recording()
         break
 
       case "save_buffer_video":
