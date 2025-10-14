@@ -14,10 +14,6 @@ public class CoreModule: Module {
             }
         }
 
-        Function("hello") {
-            "MentraOS Core Module"
-        }
-
         // Expose Bridge.handleCommand for JavaScript to call
         AsyncFunction("handleCommand") { (command: String) -> Any in
             return Bridge.handleCommand(command)
