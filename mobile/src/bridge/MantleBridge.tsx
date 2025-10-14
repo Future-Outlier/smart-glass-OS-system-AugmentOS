@@ -20,9 +20,6 @@ export class MantleBridge extends EventEmitter {
     super()
     // Initialize message event listener
     this.initializeMessageEventListener()
-
-    // Start periodic status checks
-    this.startStatusPolling()
   }
 
   /**
@@ -269,9 +266,6 @@ export class MantleBridge extends EventEmitter {
       this.messageEventSubscription = null
     }
 
-    // Reset connection state
-    this.isConnected = false
-
     // Reset the singleton instance
     MantleBridge.instance = null
 
@@ -282,10 +276,6 @@ export class MantleBridge extends EventEmitter {
 
   async sendRequestStatus() {
     await this.sendData({command: "request_status"})
-  }
-
-  async sendHeartbeat() {
-    await this.sendData({command: "ping"})
   }
 
   async sendSearchForCompatibleDeviceNames(modelName: string) {
