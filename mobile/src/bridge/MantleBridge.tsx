@@ -1,146 +1,28 @@
-import {Platform} from "react-native"
-import {EventEmitter} from "events"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {INTENSE_LOGGING} from "@/consts"
-import {check, PERMISSIONS, RESULTS} from "react-native-permissions"
-import BleManager from "react-native-ble-manager"
 import {translate} from "@/i18n"
-import {CoreStatusParser} from "@/utils/CoreStatusParser"
-import socketComms from "@/managers/SocketComms"
 import livekitManager from "@/managers/LivekitManager"
 import mantle from "@/managers/MantleManager"
+import socketComms from "@/managers/SocketComms"
 import {useSettingsStore} from "@/stores/settings"
+import {CoreStatusParser} from "@/utils/CoreStatusParser"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {EventEmitter} from "events"
 
-// const {BridgeModule} = NativeModules
-// const coreBridge = new NativeEventEmitter(BridgeModule)
 import CoreModule from "core"
 
 export class MantleBridge extends EventEmitter {
   private static instance: MantleBridge | null = null
   private messageEventSubscription: any = null
-  private reconnectionTimer: NodeJS.Timeout | null = null
-  private isConnected: boolean = false
   private lastMessage: string = ""
 
   // Private constructor to enforce singleton pattern
   private constructor() {
     super()
-  }
+    // Initialize message event listener
+    this.initializeMessageEventListener()
 
-  // Utility methods for checking permissions and device capabilities
-  async isBluetoothEnabled(): Promise<boolean> {
-    try {
-      console.log("Checking Bluetooth state...")
-      await BleManager.start({showAlert: false})
-
-      // Poll for Bluetooth state every 50ms, up to 10 times (max 500ms)
-      for (let attempt = 0; attempt < 10; attempt++) {
-        const state = await BleManager.checkState()
-        console.log(`Bluetooth state check ${attempt + 1}:`, state)
-
-        if (state !== "unknown") {
-          console.log("Bluetooth state determined:", state)
-          return state === "on"
-        }
-
-        // Wait 50ms before next check
-        await new Promise(resolve => setTimeout(resolve, 50))
-      }
-
-      // If still unknown after 10 attempts, assume it's available
-      console.log("Bluetooth state still unknown after 500ms, assuming available")
-      return true
-    } catch (error) {
-      console.error("Error checking Bluetooth state:", error)
-      return false
-    }
-  }
-
-  async isLocationPermissionGranted(): Promise<boolean> {
-    try {
-      if (Platform.OS === "android") {
-        const result = await check(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION)
-        return result === RESULTS.GRANTED
-      } else if (Platform.OS === "ios") {
-        // iOS doesn't require location permission for BLE scanning since iOS 13
-        return true
-      }
-      return false
-    } catch (error) {
-      console.error("Error checking location permission:", error)
-      return false
-    }
-  }
-
-  async isLocationServicesEnabled(): Promise<boolean> {
-    try {
-      if (Platform.OS === "android") {
-        // // Use our native module to check if location services are enabled
-        // const locationServicesEnabled = await checkLocationServices()
-        // console.log("Location services enabled (native check):", locationServicesEnabled)
-        // return locationServicesEnabled
-        return true // TODO: fix this!
-      } else if (Platform.OS === "ios") {
-        // iOS doesn't require location for BLE scanning since iOS 13
-        return true
-      }
-      return true
-    } catch (error) {
-      console.error("Error checking if location services are enabled:", error)
-      return false
-    }
-  }
-
-  async checkConnectivityRequirements(): Promise<{
-    isReady: boolean
-    message?: string
-    requirement?: "bluetooth" | "location" | "locationServices" | "permissions"
-  }> {
-    console.log("Checking connectivity requirements")
-
-    // Check Bluetooth state on both iOS and Android
-    const isBtEnabled = await this.isBluetoothEnabled()
-    console.log("Is Bluetooth enabled:", isBtEnabled)
-    if (!isBtEnabled) {
-      console.log("Bluetooth is disabled, showing error")
-      return {
-        isReady: false,
-        message: "Bluetooth is required to connect to glasses. Please enable Bluetooth and try again.",
-        requirement: "bluetooth",
-      }
-    }
-
-    // Only check location on Android
-    if (Platform.OS === "android") {
-      // First check if location permission is granted
-      const isLocationPermissionGranted = await this.isLocationPermissionGranted()
-      console.log("Is Location permission granted:", isLocationPermissionGranted)
-      if (!isLocationPermissionGranted) {
-        console.log("Location permission missing, showing error")
-        return {
-          isReady: false,
-          message:
-            "Location permission is required to scan for glasses on Android. Please grant location permission and try again.",
-          requirement: "location",
-        }
-      }
-
-      // Then check if location services are enabled
-      const isLocationServicesEnabled = await this.isLocationServicesEnabled()
-      console.log("Are Location services enabled:", isLocationServicesEnabled)
-      if (!isLocationServicesEnabled) {
-        console.log("Location services disabled, showing error")
-        return {
-          isReady: false,
-          message:
-            "Location services are disabled. Please enable location services in your device settings and try again.",
-          requirement: "locationServices",
-        }
-      }
-    }
-
-    console.log("All requirements met")
-    return {isReady: true}
+    // Start periodic status checks
+    this.startStatusPolling()
   }
 
   /**
@@ -151,29 +33,6 @@ export class MantleBridge extends EventEmitter {
       MantleBridge.instance = new MantleBridge()
     }
     return MantleBridge.instance
-  }
-
-  /**
-   * Initializes the communication channel with Core
-   */
-  async init() {
-    setTimeout(async () => {
-      this.sendConnectDefault()
-    }, 3000)
-
-    // Start the external service
-    // startExternalService()
-
-    // Initialize message event listener
-    this.initializeMessageEventListener()
-
-    this.sendSettings()
-
-    // Start periodic status checks
-    this.startStatusPolling()
-
-    // Request initial status
-    this.sendRequestStatus()
   }
 
   /**
@@ -382,57 +241,14 @@ export class MantleBridge extends EventEmitter {
     }
   }
 
-  private async sendSettings() {
-    this.sendData({
-      command: "update_settings",
-      params: {...(await useSettingsStore.getState().getCoreSettings())},
-    })
-  }
-
-  /**
-   * Starts periodic status polling to maintain connection
-   */
-  private startStatusPolling() {
-    this.stopStatusPolling()
-
-    const pollStatus = () => {
-      this.sendRequestStatus()
-      this.reconnectionTimer = setTimeout(
-        pollStatus,
-        this.isConnected ? 999000 : 2000, // Poll more frequently when not connected
-      )
-    }
-
-    pollStatus()
-  }
-
-  /**
-   * Stops the status polling timer
-   */
-  private stopStatusPolling() {
-    if (this.reconnectionTimer) {
-      clearTimeout(this.reconnectionTimer)
-      this.reconnectionTimer = null
-    }
-  }
-
   /**
    * Sends data to Core
    */
   private async sendData(dataObj: any): Promise<any> {
     try {
-      // if (INTENSE_LOGGING) {
-      console.log("Sending data to Core:", JSON.stringify(dataObj))
-      // }
-
-      // if (Platform.OS === "android") {
-      //   // Ensure the service is running
-      //   if (!(await CoreCommsService.isServiceRunning())) {
-      //     CoreCommsService.startService()
-      //   }
-      //   return await CoreCommsService.sendCommandToCore(JSON.stringify(dataObj))
-      // }
-
+      if (INTENSE_LOGGING) {
+        console.log("Sending data to Core:", JSON.stringify(dataObj))
+      }
       return await CoreModule.handleCommand(JSON.stringify(dataObj))
     } catch (error) {
       console.error("Failed to send data to Core:", error)
@@ -447,9 +263,6 @@ export class MantleBridge extends EventEmitter {
    * Cleans up resources and resets the state
    */
   public cleanup() {
-    // Stop the status polling
-    this.stopStatusPolling()
-
     // Remove message event listener
     if (this.messageEventSubscription) {
       this.messageEventSubscription.remove()
@@ -654,18 +467,6 @@ export class MantleBridge extends EventEmitter {
     })
   }
 
-  async stopService() {
-    // Clean up any active listeners
-    this.cleanup()
-
-    // if (Platform.OS === "android") {
-    //   // Stop the service if it's running
-    //   if (CoreCommsService && typeof CoreCommsService.stopService === "function") {
-    //     CoreCommsService.stopService()
-    //   }
-    // }
-  }
-
   async toggleUpdatingScreen(enabled: boolean) {
     return await this.sendData({
       command: "update_settings",
@@ -680,16 +481,6 @@ export class MantleBridge extends EventEmitter {
       command: "simulate_head_position",
       params: {
         position: position,
-      },
-    })
-  }
-
-  async simulateButtonPress(buttonId: string = "camera", pressType: "short" | "long" = "short") {
-    return await this.sendData({
-      command: "simulate_button_press",
-      params: {
-        buttonId: buttonId,
-        pressType: pressType,
       },
     })
   }
@@ -819,7 +610,7 @@ export class MantleBridge extends EventEmitter {
   async queryGalleryStatus() {
     console.log("[Bridge] Querying gallery status from glasses...")
     // Just send the command, the response will come through the event system
-    return this.sendCommand("query_gallery_status")
+    return await this.sendCommand("query_gallery_status")
   }
 }
 

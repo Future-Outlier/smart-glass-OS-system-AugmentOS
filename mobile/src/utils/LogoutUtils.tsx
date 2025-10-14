@@ -123,14 +123,6 @@ export class LogoutUtils {
     console.log(`${this.TAG}: Stopping core services...`)
 
     try {
-      // Stop the core communicator service
-      bridge.stopService()
-      console.log(`${this.TAG}: Stopped core communicator service`)
-    } catch (error) {
-      console.error(`${this.TAG}: Error stopping core service:`, error)
-    }
-
-    try {
       // Clean up communicator resources
       bridge.cleanup()
       console.log(`${this.TAG}: Cleaned up core communicator resources`)

@@ -2,7 +2,7 @@ import {useEffect, useState} from "react"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {fetchVersionInfo, isUpdateAvailable, getLatestVersionInfo} from "@/utils/otaVersionChecker"
 import {glassesFeatures} from "@/config/glassesFeatures"
-import showAlert, {showBluetoothAlert, showLocationAlert, showLocationServicesAlert} from "@/utils/AlertUtils"
+import showAlert from "@/utils/AlertUtils"
 
 export function OtaUpdateChecker() {
   const {status} = useCoreStatus()
@@ -85,11 +85,10 @@ export function OtaUpdateChecker() {
   return null
 }
 
-import bridge from "@/bridge/MantleBridge"
 import {AppState} from "react-native"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {translate} from "@/i18n"
+import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 
 export function Reconnect() {
   // Add a listener for app state changes to detect when the app comes back from background
@@ -105,37 +104,7 @@ export function Reconnect() {
           return
         }
         // check if we have bluetooth perms in case they got removed:
-        const requirementsCheck = await bridge.checkConnectivityRequirements()
-        if (!requirementsCheck.isReady) {
-          switch (requirementsCheck.requirement) {
-            case "bluetooth":
-              showBluetoothAlert(
-                translate("pairing:connectionIssueTitle"),
-                requirementsCheck.message || translate("pairing:connectionIssueMessage"),
-              )
-              break
-            case "location":
-              showLocationAlert(
-                translate("pairing:connectionIssueTitle"),
-                requirementsCheck.message || translate("pairing:connectionIssueMessage"),
-              )
-              break
-            case "locationServices":
-              showLocationServicesAlert(
-                translate("pairing:connectionIssueTitle"),
-                requirementsCheck.message || translate("pairing:connectionIssueMessage"),
-              )
-              break
-            default:
-              showAlert(
-                translate("pairing:connectionIssueTitle"),
-                requirementsCheck.message || translate("pairing:connectionIssueMessage"),
-                [{text: translate("common:ok")}],
-              )
-          }
-        }
-
-        // await bridge.sendConnectDefault()
+        await checkConnectivityRequirementsUI()
       }
     }
 

@@ -1,27 +1,27 @@
-import {useCallback, useRef, useState} from "react"
-import {View, TouchableOpacity, ActivityIndicator, Animated, ViewStyle} from "react-native"
-import {useFocusEffect} from "@react-navigation/native"
-import {Button, Icon, Text} from "@/components/ignite"
 import bridge from "@/bridge/MantleBridge"
+import {Button, Icon, Text} from "@/components/ignite"
+import {glassesFeatures} from "@/config/glassesFeatures"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {spacing, ThemedStyle} from "@/theme"
+import {showAlert} from "@/utils/AlertUtils"
 import {
+  getEvenRealitiesG1Image,
   getGlassesClosedImage,
   getGlassesImage,
   getGlassesOpenImage,
-  getEvenRealitiesG1Image,
 } from "@/utils/getGlassesImage"
+import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {spacing, ThemedStyle} from "@/theme"
-import ConnectedSimulatedGlassesInfo from "./ConnectedSimulatedGlassesInfo"
-import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
+import {useFocusEffect} from "@react-navigation/native"
 import ChevronRight from "assets/icons/component/ChevronRight"
+import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import SunIcon from "assets/icons/component/SunIcon"
-import {glassesFeatures} from "@/config/glassesFeatures"
+import {useCallback, useRef, useState} from "react"
+import {ActivityIndicator, Animated, TouchableOpacity, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import {showAlert, showBluetoothAlert, showLocationAlert, showLocationServicesAlert} from "@/utils/AlertUtils"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useSetting} from "@/stores/settings"
-import {SETTINGS_KEYS} from "@/stores/settings"
+import ConnectedSimulatedGlassesInfo from "./ConnectedSimulatedGlassesInfo"
 
 export const ConnectDeviceButton = () => {
   const {status} = useCoreStatus()
@@ -41,39 +41,9 @@ export const ConnectDeviceButton = () => {
 
     try {
       // Check that Bluetooth and Location are enabled/granted
-      const requirementsCheck = await bridge.checkConnectivityRequirements()
+      const requirementsCheck = await checkConnectivityRequirementsUI()
 
-      if (!requirementsCheck.isReady) {
-        // Show alert about missing requirements with "Turn On" button
-        console.log("Requirements not met, showing alert with message:", requirementsCheck.message)
-
-        // Use the appropriate connectivity alert based on the requirement
-        switch (requirementsCheck.requirement) {
-          case "bluetooth":
-            showBluetoothAlert(
-              "Connection Requirements",
-              requirementsCheck.message || "Bluetooth is required to connect to glasses",
-            )
-            break
-          case "location":
-            showLocationAlert(
-              "Connection Requirements",
-              requirementsCheck.message || "Location permission is required to scan for glasses",
-            )
-            break
-          case "locationServices":
-            showLocationServicesAlert(
-              "Connection Requirements",
-              requirementsCheck.message || "Location services are required to scan for glasses",
-            )
-            break
-          default:
-            showAlert(
-              "Connection Requirements",
-              requirementsCheck.message || "Cannot connect to glasses - check Bluetooth and Location settings",
-              [{text: "OK"}],
-            )
-        }
+      if (!requirementsCheck) {
         return
       }
 

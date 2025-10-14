@@ -1,27 +1,28 @@
-import {useState} from "react"
-import {View, Image, ActivityIndicator, TouchableOpacity, ViewStyle, ImageStyle, TextStyle} from "react-native"
 import {Text} from "@/components/ignite"
+import {useState} from "react"
+import {ActivityIndicator, Image, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
-import {Icon, Button} from "@/components/ignite"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import bridge from "@/bridge/MantleBridge"
+import {Button, Icon} from "@/components/ignite"
+import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
 import {glassesFeatures} from "@/config/glassesFeatures"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import {showAlert} from "@/utils/AlertUtils"
 import {
+  getEvenRealitiesG1Image,
+  getGlassesClosedImage,
   getGlassesImage,
   getGlassesOpenImage,
-  getGlassesClosedImage,
-  getEvenRealitiesG1Image,
 } from "@/utils/getGlassesImage"
+import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import SunIcon from "assets/icons/component/SunIcon"
-import bridge from "@/bridge/MantleBridge"
-import {showAlert, showBluetoothAlert, showLocationAlert, showLocationServicesAlert} from "@/utils/AlertUtils"
-import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import ChevronRight from "assets/icons/component/ChevronRight"
-import {ThemedStyle} from "@/theme"
-import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
+import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
+import SunIcon from "assets/icons/component/SunIcon"
 
 export const CompactDeviceStatus: React.FC = () => {
   const {status} = useCoreStatus()
@@ -60,35 +61,9 @@ export const CompactDeviceStatus: React.FC = () => {
     setIsCheckingConnectivity(true)
 
     try {
-      const requirementsCheck = await bridge.checkConnectivityRequirements()
+      const requirementsCheck = await checkConnectivityRequirementsUI()
 
-      if (!requirementsCheck.isReady) {
-        switch (requirementsCheck.requirement) {
-          case "bluetooth":
-            showBluetoothAlert(
-              "Connection Requirements",
-              requirementsCheck.message || "Bluetooth is required to connect to glasses",
-            )
-            break
-          case "location":
-            showLocationAlert(
-              "Connection Requirements",
-              requirementsCheck.message || "Location permission is required to scan for glasses",
-            )
-            break
-          case "locationServices":
-            showLocationServicesAlert(
-              "Connection Requirements",
-              requirementsCheck.message || "Location services are required to scan for glasses",
-            )
-            break
-          default:
-            showAlert(
-              "Connection Requirements",
-              requirementsCheck.message || "Cannot connect to glasses - check Bluetooth and Location settings",
-              [{text: "OK"}],
-            )
-        }
+      if (!requirementsCheck) {
         return
       }
 

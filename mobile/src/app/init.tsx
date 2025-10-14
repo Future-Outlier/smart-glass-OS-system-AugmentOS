@@ -10,7 +10,6 @@ import {useDeeplink} from "@/contexts/DeeplinkContext"
 import {useAuth} from "@/contexts/AuthContext"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useSettingsStore, SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import bridge from "@/bridge/MantleBridge"
 import {translate} from "@/i18n"
 import {TextStyle, ViewStyle} from "react-native"
 import {ThemedStyle} from "@/theme"
@@ -110,29 +109,27 @@ export default function InitScreen() {
     setState("loading")
     setLoadingStatus(translate("versionCheck:connectingToServer"))
 
-    // try {
-    const supabaseToken = session?.access_token
-    if (!supabaseToken) {
-      setErrorType("auth")
+    try {
+      const supabaseToken = session?.access_token
+      if (!supabaseToken) {
+        setErrorType("auth")
+        setState("error")
+        return
+      }
+
+      const coreToken = await restComms.exchangeToken(supabaseToken)
+      const uid = user?.email || user?.id
+
+      socketComms.setAuthCreds(coreToken, uid)
+      await mantle.init()
+
+      await navigateToDestination()
+    } catch (error) {
+      console.error("Token exchange failed:", error)
+      await checkCustomUrl()
+      setErrorType("connection")
       setState("error")
-      return
     }
-
-    const coreToken = await restComms.exchangeToken(supabaseToken)
-    const uid = user?.email || user?.id
-
-    socketComms.setAuthCreds(coreToken, uid)
-    await mantle.init()
-
-    bridge.updateSettings(await useSettingsStore.getState().getCoreSettings()) // send settings to core
-
-    await navigateToDestination()
-    // } catch (error) {
-    //   console.error("Token exchange failed:", error)
-    //   await checkCustomUrl()
-    //   setErrorType("connection")
-    //   setState("error")
-    // }
   }
 
   const checkCloudVersion = async (isRetry = false): Promise<void> => {
