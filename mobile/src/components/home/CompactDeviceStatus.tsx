@@ -163,7 +163,7 @@ export const CompactDeviceStatus: React.FC = () => {
   const wifiSsid = status.glasses_info?.glasses_wifi_ssid
   const wifiConnected = Boolean(wifiSsid)
   const autoBrightness = status.glasses_settings?.auto_brightness
-  const batteryLevel = status.glasses_info?.battery_level
+  const batteryLevel = status.glasses_info?.battery_level ?? 100
 
   return (
     <View style={themed($container)}>
@@ -173,7 +173,7 @@ export const CompactDeviceStatus: React.FC = () => {
 
       <View style={themed($statusContainer)}>
         <View style={themed($statusRow)}>
-          <Icon icon="battery" size={16} color={theme.colors.text} />
+          <Icon icon="battery" size={16} color={theme.colors.textDim} />
           <Text style={themed($statusText)} numberOfLines={1}>
             {batteryLevel !== -1 ? `${batteryLevel}%` : <ActivityIndicator size="small" color={theme.colors.text} />}
           </Text>
@@ -197,14 +197,18 @@ export const CompactDeviceStatus: React.FC = () => {
                   deviceModel: status.glasses_info?.model_name || "Glasses",
                 })
               }}>
-              <MaterialCommunityIcons name={wifiConnected ? "wifi" : "wifi-off"} size={16} color={theme.colors.text} />
+              <MaterialCommunityIcons
+                name={wifiConnected ? "wifi" : "wifi-off"}
+                size={16}
+                color={theme.colors.textDim}
+              />
               <Text style={themed($statusText)} numberOfLines={1}>
                 {truncateText(wifiSsid || "No WiFi", 12)}
               </Text>
             </TouchableOpacity>
           ) : (
             <>
-              <MaterialCommunityIcons name="bluetooth" size={16} color={theme.colors.text} />
+              <MaterialCommunityIcons name="bluetooth" size={16} color={theme.colors.textDim} />
               <Text style={themed($statusText)} numberOfLines={1} tx="glasses:connected" />
             </>
           )}
@@ -233,20 +237,28 @@ const $glassesImage: ThemedStyle<ImageStyle> = () => ({
   resizeMode: "contain",
 })
 
-const $statusContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $statusContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   flex: 1,
   justifyContent: "center",
   gap: spacing.xs,
+  border: "1px solid #ccc",
+  borderColor: colors.border,
+  borderWidth: spacing.xxxs,
+  padding: spacing.md,
+  backgroundColor: colors.background,
+  borderRadius: spacing.lg,
 })
 
 const $statusRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   gap: spacing.xxs,
+  justifyContent: "space-between",
+  // width: "400,
 })
 
 const $statusText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.text,
+  color: colors.textDim,
   fontSize: 14,
   fontFamily: "Inter-Regular",
   flex: 1,

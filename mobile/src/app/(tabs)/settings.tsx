@@ -21,7 +21,7 @@ export default function SettingsPage() {
 
   const pressCount = useRef(0)
   const lastPressTime = useRef(0)
-  const pressTimeout = useRef<NodeJS.Timeout | null>(null)
+  const pressTimeout = useRef<number | null>(null)
 
   const handleQuickPress = () => {
     push("/settings")
