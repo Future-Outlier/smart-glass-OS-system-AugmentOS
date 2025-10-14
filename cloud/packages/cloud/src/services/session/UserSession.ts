@@ -108,7 +108,7 @@ export class UserSession {
   private readonly PONG_TIMEOUT_MS = 30000; // 30 seconds - 3x heartbeat interval
 
   // SAFETY FLAG: Set to false to disable pong timeout behavior entirely
-  private static readonly PONG_TIMEOUT_ENABLED = false; // TODO: Set to true when ready to enable connection tracking
+  private static readonly PONG_TIMEOUT_ENABLED = true; // Enabled to track phone connection reliability in production
 
   // Connection state tracking
   public phoneConnected: boolean = false;
@@ -173,6 +173,58 @@ export class UserSession {
 
     // Register for leak detection
     memoryLeakDetector.register(this, `UserSession:${userId}`);
+  }
+
+  /**
+   * Update tracked glasses connection state and optionally log source of the update.
+   */
+  public setGlassesConnectionState(
+    isConnected: boolean,
+    modelName?: string | null,
+    options: { source?: string } = {},
+  ): void {
+    const normalizedModel =
+      isConnected && modelName
+        ? String(modelName).trim() || undefined
+        : undefined;
+    const previousState = this.glassesConnected;
+    const previousModel = this.glassesModel;
+
+    this.glassesConnected = isConnected;
+    this.glassesModel = normalizedModel;
+    this.lastGlassesStatusUpdate = new Date();
+
+    if (previousState !== isConnected || previousModel !== normalizedModel) {
+      this.logger.info(
+        {
+          source: options.source || "unknown",
+          previousState,
+          newState: isConnected,
+          previousModel,
+          newModel: normalizedModel,
+        },
+        "[UserSession:setGlassesConnectionState] Updated glasses connection state",
+      );
+    }
+  }
+
+  /**
+   * Handle phone WebSocket closure by resetting connection state trackers.
+   */
+  public handlePhoneConnectionClosed(reason?: string): void {
+    const logContext = { reason };
+    const logMessage =
+      "[UserSession] Phone WebSocket closed, marking connections as disconnected";
+    if (reason && reason.includes("ping_timeout")) {
+      this.logger.warn(logContext, logMessage);
+    } else {
+      this.logger.info(logContext, logMessage);
+    }
+    this.phoneConnected = false;
+    this.setGlassesConnectionState(false, null, {
+      source: reason ? `websocket_close:${reason}` : "websocket_close",
+    });
+    this.clearGlassesHeartbeat();
   }
 
   /**
@@ -279,8 +331,7 @@ export class UserSession {
       );
 
       // Mark connections as dead
-      this.phoneConnected = false;
-      this.glassesConnected = false; // If phone is dead, glasses are unreachable
+      this.handlePhoneConnectionClosed("ping_timeout");
 
       // Close the zombie WebSocket connection
       if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
@@ -289,19 +340,6 @@ export class UserSession {
         );
         this.websocket.close(1001, "Ping timeout - no pong received");
       }
-
-      // Clear the heartbeat since connection is dead
-      this.clearGlassesHeartbeat();
-
-      // Log the disconnection for debugging
-      this.logger.warn(
-        {
-          userId: this.userId,
-          phoneConnected: this.phoneConnected,
-          glassesConnected: this.glassesConnected,
-        },
-        `[UserSession:pongTimeout] Connection state updated after timeout`,
-      );
     }, this.PONG_TIMEOUT_MS);
   }
 

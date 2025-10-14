@@ -21,6 +21,7 @@ import {
   StreamState,
 } from "./StreamRegistry";
 import { StreamLifecycleController } from "./StreamLifecycleController";
+import { ConnectionValidator } from "../validators/ConnectionValidator";
 
 // Keep-alive constants matching UnmanagedStreamingExtension
 const KEEP_ALIVE_INTERVAL_MS = 15000; // 15 seconds
@@ -96,6 +97,29 @@ export class ManagedStreamingExtension {
     // Validate app is running
     if (!userSession.appManager.isAppRunning(packageName)) {
       throw new Error(`App ${packageName} is not running`);
+    }
+
+    const validation = ConnectionValidator.validateForHardwareRequest(
+      userSession,
+      "stream",
+    );
+    if (!validation.valid) {
+      const connectionStatus =
+        ConnectionValidator.getConnectionStatus(userSession);
+      this.logger.error(
+        {
+          userId,
+          packageName,
+          error: validation.error,
+          errorCode: validation.errorCode,
+          connectionStatus,
+        },
+        "Managed stream request blocked by connection validator",
+      );
+      throw new Error(
+        validation.error ||
+          "Cannot process stream request - connection validation failed",
+      );
     }
 
     // Check WebSocket connection
@@ -313,7 +337,9 @@ export class ManagedStreamingExtension {
 
     // If no more viewers, stop the stream entirely
     if (shouldCleanup) {
-      await this.cleanupManagedStream(userSession, userId, stream);
+      await this.cleanupManagedStream(userSession, userId, stream, {
+        status: "stopped",
+      });
     }
   }
 
@@ -383,13 +409,18 @@ export class ManagedStreamingExtension {
     }
 
     // Send status to all viewers
+    const messageForViewers =
+      mappedStatus === "error"
+        ? status.errorDetails || "Stream error reported by glasses"
+        : undefined;
+
     for (const appId of stream.activeViewers) {
       await this.sendManagedStreamStatus(
         userSession,
         appId,
         stream.streamId,
         mappedStatus,
-        undefined,
+        messageForViewers,
         undefined,
         undefined,
         undefined,
@@ -400,8 +431,10 @@ export class ManagedStreamingExtension {
 
     // If stream stopped or errored, cleanup
     if (mappedStatus === "stopped" || mappedStatus === "error") {
-      this.disposeLifecycle(stream.streamId);
-      await this.cleanupManagedStream(userSession, stream.userId, stream);
+      await this.cleanupManagedStream(userSession, stream.userId, stream, {
+        status: mappedStatus,
+        message: messageForViewers,
+      });
     }
 
     return true; // Handled by managed streaming
@@ -1245,7 +1278,10 @@ export class ManagedStreamingExtension {
       "Managed stream timed out after missed keep-alive ACKs",
     );
 
-    await this.cleanupManagedStream(userSession, stream.userId, stream);
+    await this.cleanupManagedStream(userSession, stream.userId, stream, {
+      status: "error",
+      message: "Stream timed out waiting for keep-alive",
+    });
   }
 
   private disposeLifecycle(streamId: string): void {
@@ -1273,6 +1309,7 @@ export class ManagedStreamingExtension {
     userSession: UserSession,
     userId: string,
     stream: ManagedStreamState,
+    options?: { status?: ManagedStreamStatus["status"]; message?: string },
   ): Promise<void> {
     this.logger.info(
       { userId, streamId: stream.streamId },
@@ -1280,6 +1317,28 @@ export class ManagedStreamingExtension {
     );
 
     this.disposeLifecycle(stream.streamId);
+
+    const status = options?.status ?? "stopped";
+    const message = options?.message;
+
+    // Notify all active viewers before removing stream state
+    const viewers = Array.from(stream.activeViewers);
+    for (const viewerPackage of viewers) {
+      try {
+        await this.sendManagedStreamStatus(
+          userSession,
+          viewerPackage,
+          stream.streamId,
+          status,
+          message,
+        );
+      } catch (error) {
+        this.logger.warn(
+          { streamId: stream.streamId, viewerPackage, error },
+          "Failed to notify viewer about managed stream cleanup",
+        );
+      }
+    }
 
     // Stop polling for URLs if still active
     const pollInterval = this.pollingIntervals.get(userId);

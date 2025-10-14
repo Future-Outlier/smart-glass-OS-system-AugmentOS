@@ -910,6 +910,7 @@ class MentraLive: NSObject, SGCManager {
     private var readinessCheckTimer: Timer?
     private var readinessCheckCounter = 0
     private var connectionTimeoutTimer: Timer?
+    private var reconnectionWorkItem: DispatchWorkItem?
 
     // MARK: - Initialization
 
@@ -1239,7 +1240,43 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func handleReconnection() {
-        // TODO: implement reconnection
+        // Check if we've exceeded max attempts
+        if reconnectAttempts >= MAX_RECONNECT_ATTEMPTS {
+            Bridge.log("Maximum reconnection attempts reached (\(MAX_RECONNECT_ATTEMPTS))")
+            reconnectAttempts = 0
+            connectionState = .disconnected
+            return
+        }
+
+        // Calculate delay with exponential backoff
+        let delayNanoseconds = min(BASE_RECONNECT_DELAY_MS * UInt64(1 << reconnectAttempts), MAX_RECONNECT_DELAY_MS)
+        reconnectAttempts += 1
+
+        Bridge.log("Scheduling reconnection attempt \(reconnectAttempts) in \(Double(delayNanoseconds) / 1_000_000_000)s (max \(MAX_RECONNECT_ATTEMPTS))")
+
+        // Schedule reconnection attempt
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+
+            if self.connectionState == .disconnected && !self.isKilled {
+                // Check for last known device name to start scan
+                if let lastDeviceName = UserDefaults.standard.string(forKey: self.PREFS_DEVICE_NAME), !lastDeviceName.isEmpty {
+                    Bridge.log("Reconnection attempt \(self.reconnectAttempts) - looking for device with name: \(lastDeviceName)")
+                    // Start scan to find this device
+                    // The scan will automatically connect if it finds a device with the saved name
+                    self.startScan()
+                } else {
+                    Bridge.log("Reconnection attempt \(self.reconnectAttempts) - no last device name available")
+                    self.connectionState = .disconnected
+                }
+            }
+        }
+
+        // Store the work item so it can be cancelled if needed
+        reconnectionWorkItem = workItem
+
+        // Schedule the work item
+        DispatchQueue.main.asyncAfter(deadline: .now() + .nanoseconds(Int(delayNanoseconds)), execute: workItem)
     }
 
     // MARK: - Data Processing
@@ -2494,6 +2531,8 @@ class MentraLive: NSObject, SGCManager {
         stopConnectionTimeout()
         pendingMessageTimer?.invalidate()
         pendingMessageTimer = nil
+        reconnectionWorkItem?.cancel()
+        reconnectionWorkItem = nil
     }
 
     // MARK: - Event Emission

@@ -74,6 +74,7 @@ public class RtmpStreamingService extends Service {
     private static final int SURFACE_WIDTH = 1280;  // 16:9 aspect ratio for proper video streaming
     private static final int SURFACE_HEIGHT = 720;  // HD resolution (720p)
 
+    private static final int START_BITRATE = 2000000;
     // Reconnection logic parameters
     private int mReconnectAttempts = 0;
     private static final int MAX_RECONNECT_ATTEMPTS = 10;
@@ -561,7 +562,7 @@ public class RtmpStreamingService extends Service {
                     MediaFormat.MIMETYPE_AUDIO_AAC, // Use actual mime type instead of null
                     64000, // 128 kbps
                     44100, // 44.1 kHz
-                    AudioFormat.CHANNEL_IN_STEREO, // Switch to mono for better compatibility
+                    AudioFormat.CHANNEL_IN_MONO, // Switch to mono for better compatibility
                     audioProfile, // Default profile
                     0, // Default byte format
                     false, // Enable echo cancellation
@@ -576,7 +577,7 @@ public class RtmpStreamingService extends Service {
             // Configure video settings using proper constructor
             VideoConfig videoConfig = new VideoConfig(
                     MediaFormat.MIMETYPE_VIDEO_AVC,
-                    2000000, // 1 Mbps
+                    START_BITRATE,
                     new Size(SURFACE_WIDTH, SURFACE_HEIGHT),
                     15, // Increase to 15 FPS minimum
                     profile,

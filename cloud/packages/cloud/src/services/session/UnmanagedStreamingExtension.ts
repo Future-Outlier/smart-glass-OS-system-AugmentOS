@@ -23,6 +23,7 @@ import {
 import { Logger } from "pino";
 import UserSession from "./UserSession";
 import { StreamLifecycleController } from "../streaming/StreamLifecycleController";
+import { ConnectionValidator } from "../validators/ConnectionValidator";
 // session.service no longer needed; using UserSession instance methods
 
 // Constants from the original stream-tracker.service.ts
@@ -94,6 +95,29 @@ export class UnmanagedStreamingExtension {
     // Basic validation
     if (!this.userSession.appManager.isAppRunning(packageName)) {
       throw new Error(`App ${packageName} is not running`);
+    }
+    const validation = ConnectionValidator.validateForHardwareRequest(
+      this.userSession,
+      "stream",
+    );
+    if (!validation.valid) {
+      const connectionStatus = ConnectionValidator.getConnectionStatus(
+        this.userSession,
+      );
+      this.logger.error(
+        {
+          userId: this.userSession.userId,
+          packageName,
+          error: validation.error,
+          errorCode: validation.errorCode,
+          connectionStatus,
+        },
+        "RTMP stream request blocked by connection validator",
+      );
+      throw new Error(
+        validation.error ||
+          "Cannot process stream request - connection validation failed",
+      );
     }
     if (
       !rtmpUrl ||
