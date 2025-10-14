@@ -1,4 +1,4 @@
-import {withWrappers} from "@/utils/with-wrappers"
+import {withWrappers} from "@/utils/structure/with-wrappers"
 import {Suspense} from "react"
 import {KeyboardProvider} from "react-native-keyboard-controller"
 import {CoreStatusProvider} from "@/contexts/CoreStatusProvider"

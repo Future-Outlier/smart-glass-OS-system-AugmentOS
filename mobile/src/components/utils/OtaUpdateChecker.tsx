@@ -1,8 +1,96 @@
 import {useEffect, useState} from "react"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {fetchVersionInfo, isUpdateAvailable, getLatestVersionInfo} from "@/utils/otaVersionChecker"
 import {glassesFeatures} from "@/config/glassesFeatures"
 import showAlert from "@/utils/AlertUtils"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+
+interface VersionInfo {
+  versionCode: number
+  versionName: string
+  downloadUrl: string
+  apkSize: number
+  sha256: string
+  releaseNotes: string
+}
+
+interface VersionJson {
+  apps?: {
+    [packageName: string]: VersionInfo
+  }
+  // Legacy format support
+  versionCode?: number
+  versionName?: string
+  downloadUrl?: string
+  apkSize?: number
+  sha256?: string
+  releaseNotes?: string
+}
+
+export async function fetchVersionInfo(url: string): Promise<VersionJson | null> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      console.error("Failed to fetch version info:", response.status)
+      return null
+    }
+    return await response.json()
+  } catch (error) {
+    console.error("Error fetching version info:", error)
+    return null
+  }
+}
+
+export function isUpdateAvailable(currentBuildNumber: string | undefined, versionJson: VersionJson | null): boolean {
+  if (!currentBuildNumber || !versionJson) {
+    return false
+  }
+
+  const currentVersion = parseInt(currentBuildNumber, 10)
+  if (isNaN(currentVersion)) {
+    return false
+  }
+
+  let serverVersion: number | undefined
+
+  // Check new format first
+  if (versionJson.apps?.["com.augmentos.asg_client"]) {
+    serverVersion = versionJson.apps["com.augmentos.asg_client"].versionCode
+  } else if (versionJson.versionCode) {
+    // Legacy format
+    serverVersion = versionJson.versionCode
+  }
+
+  if (!serverVersion || isNaN(serverVersion)) {
+    return false
+  }
+
+  return serverVersion > currentVersion
+}
+
+export function getLatestVersionInfo(versionJson: VersionJson | null): VersionInfo | null {
+  if (!versionJson) {
+    return null
+  }
+
+  // Check new format first
+  if (versionJson.apps?.["com.augmentos.asg_client"]) {
+    return versionJson.apps["com.augmentos.asg_client"]
+  }
+
+  // Legacy format
+  if (versionJson.versionCode) {
+    return {
+      versionCode: versionJson.versionCode,
+      versionName: versionJson.versionName || "",
+      downloadUrl: versionJson.downloadUrl || "",
+      apkSize: versionJson.apkSize || 0,
+      sha256: versionJson.sha256 || "",
+      releaseNotes: versionJson.releaseNotes || "",
+    }
+  }
+
+  return null
+}
 
 export function OtaUpdateChecker() {
   const {status} = useCoreStatus()
@@ -81,40 +169,6 @@ export function OtaUpdateChecker() {
     }
     checkForOtaUpdate()
   }, [glassesModel, otaVersionUrl, currentBuildNumber, glassesWifiConnected, hasChecked, isChecking])
-
-  return null
-}
-
-import {AppState} from "react-native"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
-
-export function Reconnect() {
-  // Add a listener for app state changes to detect when the app comes back from background
-  useEffect(() => {
-    const handleAppStateChange = async (nextAppState: any) => {
-      console.log("App state changed to:", nextAppState)
-      // If app comes back to foreground, hide the loading overlay
-      if (nextAppState === "active") {
-        const reconnectOnAppForeground = await useSettingsStore
-          .getState()
-          .getSetting(SETTINGS_KEYS.reconnect_on_app_foreground)
-        if (!reconnectOnAppForeground) {
-          return
-        }
-        // check if we have bluetooth perms in case they got removed:
-        await checkConnectivityRequirementsUI()
-      }
-    }
-
-    // Subscribe to app state changes
-    const appStateSubscription = AppState.addEventListener("change", handleAppStateChange)
-
-    return () => {
-      appStateSubscription.remove()
-    }
-  }, []) // subscribe only once
 
   return null
 }
