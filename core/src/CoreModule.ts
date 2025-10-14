@@ -3,7 +3,6 @@ import {NativeModule, requireNativeModule} from "expo"
 import {CoreModuleEvents} from "./Core.types"
 
 declare class CoreModule extends NativeModule<CoreModuleEvents> {
-  hello(): string
   handleCommand(command: string): Promise<any>
 }
 

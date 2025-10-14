@@ -2900,7 +2900,7 @@ extension MentraLive {
         sendButtonVideoRecordingSettings()
 
         // Send button max recording time
-        sendButtonMaxRecordingTime(MentraManager.shared.buttonMaxRecordingTimeMinutes)
+        sendButtonMaxRecordingTime()
 
         // Send button photo settings
         sendButtonPhotoSettings()
