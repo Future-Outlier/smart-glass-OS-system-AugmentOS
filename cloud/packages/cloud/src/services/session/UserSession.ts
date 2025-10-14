@@ -18,7 +18,7 @@ import AudioManager from "./AudioManager";
 import MicrophoneManager from "./MicrophoneManager";
 import DisplayManager from "../layout/DisplayManager6.1";
 import { DashboardManager } from "./dashboard";
-import VideoManager from "./VideoManager";
+import UnmanagedStreamingExtension from "./UnmanagedStreamingExtension";
 import PhotoManager from "./PhotoManager";
 import { GlassesErrorCode } from "../websocket/websocket-glasses.service";
 // Session map will be maintained statically on UserSession to avoid an external SessionStorage singleton
@@ -27,6 +27,7 @@ import { PosthogService } from "../logging/posthog.service";
 import { TranscriptionManager } from "./transcription/TranscriptionManager";
 import { TranslationManager } from "./translation/TranslationManager";
 import { ManagedStreamingExtension } from "../streaming/ManagedStreamingExtension";
+import { StreamRegistry } from "../streaming/StreamRegistry";
 
 import appService from "../core/app.service";
 import SubscriptionManager from "./SubscriptionManager";
@@ -92,7 +93,8 @@ export class UserSession {
   public userSettingsManager: UserSettingsManager;
   public deviceManager: DeviceManager;
 
-  public videoManager: VideoManager;
+  public streamRegistry: StreamRegistry;
+  public unmanagedStreamingExtension: UnmanagedStreamingExtension;
   public photoManager: PhotoManager;
   public managedStreamingExtension: ManagedStreamingExtension;
 
@@ -147,8 +149,12 @@ export class UserSession {
     this.calendarManager = new CalendarManager(this);
     this.locationManager = new LocationManager(this);
     this.photoManager = new PhotoManager(this);
-    this.videoManager = new VideoManager(this);
-    this.managedStreamingExtension = new ManagedStreamingExtension(this.logger);
+    this.streamRegistry = new StreamRegistry(this.logger);
+    this.unmanagedStreamingExtension = new UnmanagedStreamingExtension(this);
+    this.managedStreamingExtension = new ManagedStreamingExtension(
+      this.logger,
+      this.streamRegistry,
+    );
     this.liveKitManager = new LiveKitManager(this);
     this.userSettingsManager = new UserSettingsManager(this);
     this.speakerManager = new SpeakerManager(this);
@@ -628,7 +634,8 @@ export class UserSession {
     if (this.translationManager) this.translationManager.dispose();
     if (this.subscriptionManager) this.subscriptionManager.dispose();
     // if (this.heartbeatManager) this.heartbeatManager.dispose();
-    if (this.videoManager) this.videoManager.dispose();
+    if (this.unmanagedStreamingExtension)
+      this.unmanagedStreamingExtension.dispose();
     if (this.photoManager) this.photoManager.dispose();
     if (this.managedStreamingExtension)
       this.managedStreamingExtension.dispose();

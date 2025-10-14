@@ -1,5 +1,5 @@
 /**
- * @fileoverview VideoManager manages RTMP streaming within a user session.
+ * @fileoverview UnmanagedStreamingExtension manages direct RTMP streaming within a user session.
  * Simplified from complex multi-timeout system to proven stream-tracker.service.ts patterns.
  */
 
@@ -8,59 +8,61 @@ import {
   CloudToGlassesMessageType,
   CloudToAppMessageType,
   AppToCloudMessageType,
-  RtmpStreamStatus, // SDK type for status from glasses
-  KeepAliveAck, // SDK type for ACK from glasses
-  StartRtmpStream, // SDK type for command to glasses
-  StopRtmpStream, // SDK type for command to glasses
-  KeepRtmpStreamAlive, // SDK type for command to glasses
-  VideoConfig, // SDK type
-  AudioConfig, // SDK type
-  StreamConfig, // SDK type
-  RtmpStreamRequest, // SDK type for App request
+  RtmpStreamStatus,
+  KeepAliveAck,
+  StartRtmpStream,
+  StopRtmpStream,
+  KeepRtmpStreamAlive,
+  VideoConfig,
+  AudioConfig,
+  StreamConfig,
+  RtmpStreamRequest,
   RtmpStreamStopRequest,
-  GlassesToCloudMessageType, // SDK type for App request
+  GlassesToCloudMessageType,
 } from "@mentra/sdk";
 import { Logger } from "pino";
 import UserSession from "./UserSession";
+import { StreamLifecycleController } from "../streaming/StreamLifecycleController";
 // session.service no longer needed; using UserSession instance methods
 
 // Constants from the original stream-tracker.service.ts
 const KEEP_ALIVE_INTERVAL_MS = 15000; // 15 seconds keep-alive interval
-const STREAM_TIMEOUT_MS = 60000; // 60 seconds timeout (should match glasses timeout)
-// Increased to tolerate BLE/mobile handoff jitter
 const ACK_TIMEOUT_MS = 10000; // 10 seconds to wait for ACK
 const MAX_MISSED_ACKS = 3; // Max consecutive missed ACKs before considering connection suspect
 
-/**
- * Simplified stream information based on the proven stream-tracker.service.ts logic
- */
-interface SessionStreamInfo {
+type UnmanagedStreamStatus =
+  | "initializing"
+  | "active"
+  | "stopping"
+  | "stopped"
+  | "timeout";
+
+interface UnmanagedStreamRuntime {
   streamId: string;
-  packageName: string; // Renamed from appId for consistency with App messages
+  packageName: string;
   rtmpUrl: string;
-  status: "initializing" | "active" | "stopping" | "stopped" | "timeout";
+  status: UnmanagedStreamStatus;
   startTime: Date;
-  lastKeepAlive: Date; // Tracks any activity
-  keepAliveTimer?: NodeJS.Timeout; // Single timer for keep-alive interval
-  pendingAcks: Map<string, { sentAt: Date; timeout: NodeJS.Timeout }>; // Simplified to match original
-  missedAcks: number;
+  lastActivity: Date;
   options: {
-    // To store configs passed by App
     video?: VideoConfig;
     audio?: AudioConfig;
     stream?: StreamConfig;
   };
+  lifecycle: StreamLifecycleController;
 }
 
-export class VideoManager {
+export class UnmanagedStreamingExtension {
   private userSession: UserSession;
   private logger: Logger;
-  private activeSessionStreams: Map<string, SessionStreamInfo> = new Map(); // streamId -> SessionStreamInfo
+  private unmanagedStreams: Map<string, UnmanagedStreamRuntime> = new Map();
 
   constructor(userSession: UserSession) {
     this.userSession = userSession;
-    this.logger = userSession.logger.child({ service: "VideoManager" });
-    this.logger.info("VideoManager initialized");
+    this.logger = userSession.logger.child({
+      service: "UnmanagedStreamingExtension",
+    });
+    this.logger.info("UnmanagedStreamingExtension initialized");
   }
 
   /**
@@ -82,11 +84,11 @@ export class VideoManager {
         hasVideo: !!video,
         hasAudio: !!audio,
         hasStreamOptions: !!streamOptions,
-        currentActiveStreams: this.activeSessionStreams.size,
+        currentActiveStreams: this.unmanagedStreams.size,
         sessionId: this.userSession.sessionId,
         userId: this.userSession.userId,
       },
-      "RTMP_STREAM_START_REQUEST: VideoManager starting RTMP stream tracking request",
+      "RTMP_STREAM_START_REQUEST: UnmanagedStreamingExtension starting RTMP stream tracking request",
     );
 
     // Basic validation
@@ -139,27 +141,27 @@ export class VideoManager {
     }
 
     // Shorter streamId for BLE efficiency
-    const streamId = `s${Date.now().toString(36).slice(-6)}${Math.random().toString(36).slice(2, 6)}`;
+    const streamId = this.generateStreamId();
 
     // Stop ALL existing unmanaged streams for this user (not just for this app)
     this.logger.info(
       {
         userId: this.userSession.userId,
         packageName,
-        activeStreams: this.activeSessionStreams.size,
+        activeStreams: this.unmanagedStreams.size,
         debugKey: "STOPPING_ALL_UNMANAGED_STREAMS",
       },
       "STOPPING_ALL_UNMANAGED_STREAMS: Stopping all existing unmanaged streams before starting new one",
     );
 
     // Stop all active streams for this session
-    for (const [existingStreamId, stream] of this.activeSessionStreams) {
-      if (["initializing", "active"].includes(stream.status)) {
+    for (const [existingStreamId, runtime] of this.unmanagedStreams) {
+      if (["initializing", "active"].includes(runtime.status)) {
         this.logger.debug(
           {
             streamId: existingStreamId,
-            packageName: stream.packageName,
-            status: stream.status,
+            packageName: runtime.packageName,
+            status: runtime.status,
           },
           "Stopping existing unmanaged stream",
         );
@@ -168,26 +170,29 @@ export class VideoManager {
     }
 
     const now = new Date();
-    const streamInfo: SessionStreamInfo = {
+    const lifecycle = this.createLifecycleController(streamId, packageName);
+    const runtime: UnmanagedStreamRuntime = {
       streamId,
       packageName,
       rtmpUrl,
       status: "initializing",
       startTime: now,
-      lastKeepAlive: now,
-      pendingAcks: new Map(),
-      missedAcks: 0,
+      lastActivity: now,
       options: { video, audio, stream: streamOptions },
+      lifecycle,
     };
 
-    this.activeSessionStreams.set(streamId, streamInfo);
+    this.unmanagedStreams.set(streamId, runtime);
 
-    // Don't start keep-alives yet - wait for first status from glasses
-    // This prevents keep-alives from arriving before the glasses are ready
-    this.logger.debug(
-      { streamId },
-      "Stream created, waiting for first status before starting keep-alives",
-    );
+    this.userSession.streamRegistry.createUnmanagedStream({
+      userId: this.userSession.userId,
+      appId: packageName,
+      rtmpUrl,
+      streamId,
+      video,
+      audio,
+      stream: streamOptions,
+    });
 
     // Send start command to glasses
     const startMessage: StartRtmpStream = {
@@ -213,7 +218,7 @@ export class VideoManager {
           rtmpUrl,
           sessionId: this.userSession.sessionId,
         },
-        "RTMP_STREAM_SEND_START_CMD: VideoManager sending START_RTMP_STREAM message to glasses",
+        "RTMP_STREAM_SEND_START_CMD: UnmanagedStreamingExtension sending START_RTMP_STREAM message to glasses",
       );
 
       this.userSession.websocket.send(JSON.stringify(startMessage));
@@ -225,7 +230,7 @@ export class VideoManager {
           rtmpUrl,
           sessionId: this.userSession.sessionId,
         },
-        "RTMP_STREAM_START_CMD_SENT: VideoManager ✅ START_RTMP_STREAM successfully sent to glasses",
+        "RTMP_STREAM_START_CMD_SENT: UnmanagedStreamingExtension ✅ START_RTMP_STREAM successfully sent to glasses",
       );
 
       // Tell App we're starting (but not active yet)
@@ -235,7 +240,7 @@ export class VideoManager {
           streamId,
           sessionId: this.userSession.sessionId,
         },
-        "RTMP_STREAM_NOTIFY_APP_INIT: VideoManager notifying App that stream is initializing",
+        "RTMP_STREAM_NOTIFY_APP_INIT: UnmanagedStreamingExtension notifying App that stream is initializing",
       );
       await this.sendStreamStatusToApp(streamId, "initializing");
     } catch (error) {
@@ -247,7 +252,7 @@ export class VideoManager {
           packageName,
           sessionId: this.userSession.sessionId,
         },
-        "RTMP_STREAM_START_CMD_FAIL: VideoManager ❌ Failed to send START_RTMP_STREAM to glasses",
+        "RTMP_STREAM_START_CMD_FAIL: UnmanagedStreamingExtension ❌ Failed to send START_RTMP_STREAM to glasses",
       );
       this.stopTracking(streamId);
       throw error;
@@ -261,7 +266,7 @@ export class VideoManager {
         rtmpUrl,
         sessionId: this.userSession.sessionId,
       },
-      "RTMP_STREAM_TRACKING_STARTED: VideoManager 🎬 RTMP stream tracking started successfully",
+      "RTMP_STREAM_TRACKING_STARTED: UnmanagedStreamingExtension 🎬 RTMP stream tracking started successfully",
     );
     return streamId;
   }
@@ -271,34 +276,37 @@ export class VideoManager {
    */
   async updateStatus(
     streamId: string,
-    status: SessionStreamInfo["status"],
+    status: UnmanagedStreamStatus,
   ): Promise<void> {
-    const stream = this.activeSessionStreams.get(streamId);
-    if (stream) {
-      this.logger.info(
-        { streamId, oldStatus: stream.status, newStatus: status },
-        "Updating stream status",
-      );
-      stream.status = status;
-      stream.lastKeepAlive = new Date();
-
-      // Tell App about status change
-      await this.sendStreamStatusToApp(streamId, status);
-
-      // If stream becomes active, ensure keep-alive is running
-      if (status === "active" && !stream.keepAliveTimer) {
-        this.scheduleKeepAlive(streamId);
-      }
-
-      // If stream is stopped or timed out, stop tracking
-      if (status === "stopped" || status === "timeout") {
-        this.stopTracking(streamId);
-      }
-    } else {
+    const runtime = this.unmanagedStreams.get(streamId);
+    if (!runtime) {
       this.logger.warn(
         { streamId },
         "Attempted to update status for unknown stream",
       );
+      return;
+    }
+
+    this.logger.info(
+      { streamId, oldStatus: runtime.status, newStatus: status },
+      "Updating stream status",
+    );
+
+    runtime.status = status;
+    runtime.lastActivity = new Date();
+    this.userSession.streamRegistry.updateLastActivity(this.userSession.userId);
+
+    await this.sendStreamStatusToApp(streamId, status);
+
+    if (status === "active") {
+      runtime.lifecycle.setActive(true);
+    } else if (status === "stopping") {
+      runtime.lifecycle.setActive(false);
+    }
+
+    if (status === "stopped" || status === "timeout") {
+      runtime.lifecycle.setActive(false);
+      this.stopTracking(streamId);
     }
   }
 
@@ -306,22 +314,25 @@ export class VideoManager {
    * Stop tracking a stream and clean up resources (from original)
    */
   stopTracking(streamId: string): void {
-    const stream = this.activeSessionStreams.get(streamId);
-    if (stream) {
-      this.logger.info({ streamId }, "Stopping stream tracking");
+    const runtime = this.unmanagedStreams.get(streamId);
+    if (!runtime) {
+      return;
+    }
 
-      // Cancel keep-alive timer
-      if (stream.keepAliveTimer) {
-        clearInterval(stream.keepAliveTimer);
-      }
+    this.logger.info({ streamId }, "Stopping stream tracking");
 
-      // Cancel all pending ACK timeouts
-      for (const [, ackInfo] of stream.pendingAcks) {
-        clearTimeout(ackInfo.timeout);
-      }
-      stream.pendingAcks.clear();
+    runtime.lifecycle.dispose();
+    this.unmanagedStreams.delete(streamId);
 
-      this.activeSessionStreams.delete(streamId);
+    const currentStream = this.userSession.streamRegistry.getStreamState(
+      this.userSession.userId,
+    );
+    if (
+      currentStream &&
+      currentStream.type === "unmanaged" &&
+      currentStream.streamId === streamId
+    ) {
+      this.userSession.streamRegistry.removeStream(this.userSession.userId);
     }
   }
 
@@ -329,9 +340,9 @@ export class VideoManager {
    * Stop streams by package name
    */
   stopStreamsByPackageName(packageName: string): void {
-    for (const [streamId, stream] of this.activeSessionStreams) {
+    for (const [streamId, stream] of this.unmanagedStreams) {
       if (stream.packageName === packageName) {
-        this.updateStatus(streamId, "stopped");
+        void this.updateStatus(streamId, "stopped");
       }
     }
   }
@@ -340,7 +351,7 @@ export class VideoManager {
    * Check if a stream is active (from original)
    */
   isStreamActive(streamId: string): boolean {
-    const stream = this.activeSessionStreams.get(streamId);
+    const stream = this.unmanagedStreams.get(streamId);
     return stream ? ["initializing", "active"].includes(stream.status) : false;
   }
 
@@ -348,8 +359,8 @@ export class VideoManager {
    * Get information about any active unmanaged streams for this session
    * Returns the first active stream found (there should only be one)
    */
-  getActiveStreamInfo(): SessionStreamInfo | undefined {
-    for (const [streamId, stream] of this.activeSessionStreams) {
+  getActiveStreamInfo(): UnmanagedStreamRuntime | undefined {
+    for (const [, stream] of this.unmanagedStreams) {
       if (["initializing", "active"].includes(stream.status)) {
         return stream;
       }
@@ -357,107 +368,86 @@ export class VideoManager {
     return undefined;
   }
 
-  /**
-   * Schedule keep-alive message for a stream (from original)
-   */
-  private scheduleKeepAlive(streamId: string): void {
-    const stream = this.activeSessionStreams.get(streamId);
+  handleKeepAliveAck(ackMessage: KeepAliveAck): void {
+    const { streamId, ackId } = ackMessage;
+    this.logger.debug(
+      { ackMessage, debugKey: "KEEP_ALIVE_ACK_RECEIVED" },
+      "KEEP_ALIVE_ACK_RECEIVED Handling keep-alive ACK from glasses",
+    );
+
+    const stream = this.unmanagedStreams.get(streamId);
     if (!stream) {
-      this.logger.warn(
-        { streamId },
-        "Cannot schedule keep-alive for unknown stream",
-      );
+      this.logger.warn({ streamId, ackId }, "Received ACK for unknown stream");
       return;
     }
 
-    // Cancel existing timer
-    if (stream.keepAliveTimer) {
-      clearInterval(stream.keepAliveTimer);
-    }
-
-    // Schedule periodic keep-alive
-    stream.keepAliveTimer = setInterval(() => {
-      this.sendKeepAlive(streamId);
-    }, KEEP_ALIVE_INTERVAL_MS);
-
-    this.logger.debug(
-      { streamId },
-      `Scheduled keep-alive every ${KEEP_ALIVE_INTERVAL_MS}ms`,
-    );
+    stream.lifecycle.handleAck(ackId);
+    stream.lastActivity = new Date();
+    this.userSession.streamRegistry.updateLastActivity(this.userSession.userId);
   }
 
-  /**
-   * Send keep-alive message to glasses (from original logic)
-   */
-  private sendKeepAlive(streamId: string): void {
-    const stream = this.activeSessionStreams.get(streamId);
-    if (!stream) {
-      this.logger.warn(
-        { streamId },
-        "Cannot send keep-alive for unknown stream",
-      );
-      return;
-    }
+  private createLifecycleController(
+    streamId: string,
+    packageName: string,
+  ): StreamLifecycleController {
+    const lifecycle = new StreamLifecycleController(
+      {
+        logger: this.logger.child({
+          streamId,
+          packageName,
+          component: "UnmanagedLifecycle",
+        }),
+        streamId,
+        keepAliveIntervalMs: KEEP_ALIVE_INTERVAL_MS,
+        ackTimeoutMs: ACK_TIMEOUT_MS,
+        maxMissedAcks: MAX_MISSED_ACKS,
+        shouldSendKeepAlive: () =>
+          !!this.userSession.websocket &&
+          this.userSession.websocket.readyState === WebSocket.OPEN,
+      },
+      {
+        sendKeepAlive: (ackId) => this.sendKeepAliveMessage(streamId, ackId),
+        onTimeout: () => this.handleLifecycleTimeout(streamId),
+        onKeepAliveSent: (ackId) => {
+          this.logger.debug(
+            { streamId, ackId },
+            "Unmanaged stream keep-alive sent",
+          );
+        },
+        onKeepAliveAcked: (ackId, ageMs) => {
+          this.logger.debug(
+            { streamId, ackId, ageMs },
+            "Unmanaged stream keep-alive ACK received",
+          );
+        },
+        onKeepAliveMissed: (ackId, ageMs, missed) => {
+          this.logger.warn(
+            { streamId, ackId, ageMs, missed },
+            "Unmanaged stream keep-alive ACK missed",
+          );
+        },
+      },
+    );
 
-    // Check if stream is still active
-    if (!["initializing", "active"].includes(stream.status)) {
-      this.logger.debug(
-        { streamId, status: stream.status },
-        "Skipping keep-alive for inactive stream",
-      );
-      this.stopTracking(streamId);
-      return;
-    }
+    lifecycle.setActive(false);
+    return lifecycle;
+  }
 
-    // If glasses are temporarily disconnected, do NOT stop the stream.
-    // Skip sending keep-alive and wait for reconnection.
+  private async sendKeepAliveMessage(
+    streamId: string,
+    ackId: string,
+  ): Promise<void> {
     if (
       !this.userSession.websocket ||
       this.userSession.websocket.readyState !== WebSocket.OPEN
     ) {
       this.logger.warn(
-        { streamId, pendingCount: stream.pendingAcks.size },
-        "Glasses disconnected, skipping keep-alive until reconnect",
+        { streamId },
+        "Cannot send keep-alive because WebSocket is not open",
       );
       return;
     }
 
-    // Check if we've missed too many ACKs (but don't stop sending keep-alives immediately)
-    const timeSinceLastActivity = Date.now() - stream.lastKeepAlive.getTime();
-    if (
-      timeSinceLastActivity > STREAM_TIMEOUT_MS &&
-      stream.missedAcks >= MAX_MISSED_ACKS
-    ) {
-      this.logger.warn(
-        { streamId, timeSinceLastActivity, missedAcks: stream.missedAcks },
-        "Stream has timed out after missing multiple ACKs",
-      );
-      this.updateStatus(streamId, "timeout");
-      return;
-    }
-
-    // Log warning if we haven't received ACKs but continue sending keep-alives
-    if (timeSinceLastActivity > KEEP_ALIVE_INTERVAL_MS * 2) {
-      this.logger.warn(
-        {
-          streamId,
-          timeSinceLastActivity,
-          missedAcks: stream.missedAcks,
-          pendingAcks: stream.pendingAcks.size,
-        },
-        "No ACKs received recently, but continuing to send keep-alives",
-      );
-    }
-
-    // Generate short ACK ID for BLE efficiency
-    const ackId = `a${Date.now().toString(36).slice(-5)}`;
-    this.logger.debug(
-      { streamId, ackId, pendingBefore: stream.pendingAcks.size },
-      "Tracking keep-alive ACK",
-    );
-    this.trackKeepAliveAck(streamId, ackId);
-
-    // Send keep-alive message (minimal size for BLE)
     const keepAliveMsg: KeepRtmpStreamAlive = {
       type: CloudToGlassesMessageType.KEEP_RTMP_STREAM_ALIVE,
       streamId,
@@ -466,116 +456,26 @@ export class VideoManager {
 
     try {
       this.userSession.websocket.send(JSON.stringify(keepAliveMsg));
-      this.logger.debug(
-        { streamId, ackId, pendingAfter: stream.pendingAcks.size },
-        "KEEP_RTMP_STREAM_ALIVE sent",
-      );
     } catch (error) {
-      this.logger.error({ error, streamId }, "Failed to send keep-alive");
-      this.updateStatus(streamId, "stopped");
+      this.logger.error(
+        { error, streamId },
+        "Failed to send keep-alive message",
+      );
     }
   }
 
-  /**
-   * Track a sent keep-alive ACK (from original)
-   */
-  private trackKeepAliveAck(streamId: string, ackId: string): void {
-    const stream = this.activeSessionStreams.get(streamId);
-    if (!stream) return;
-
-    const createdAt = new Date();
-    const timeout = setTimeout(() => {
-      this.handleMissedKeepAliveAck(streamId, ackId, createdAt);
-    }, ACK_TIMEOUT_MS);
-
-    stream.pendingAcks.set(ackId, {
-      sentAt: new Date(),
-      timeout,
-    });
-    this.logger.debug(
-      {
-        streamId,
-        ackId,
-        pendingCount: stream.pendingAcks.size,
-        ackTimeoutMs: ACK_TIMEOUT_MS,
-      },
-      "ACK tracking stored",
+  private async handleLifecycleTimeout(streamId: string): Promise<void> {
+    this.logger.warn(
+      { streamId },
+      "Unmanaged stream keep-alive timeout reached",
     );
+    await this.updateStatus(streamId, "timeout");
   }
 
-  /**
-   * Handle missed keep-alive ACK (from original)
-   */
-  private handleMissedKeepAliveAck(
-    streamId: string,
-    ackId: string,
-    createdAt: Date,
-  ): void {
-    const stream = this.activeSessionStreams.get(streamId);
-    if (!stream || !["initializing", "active"].includes(stream.status)) return;
-
-    // If websocket is not open anymore, ignore this timeout (it will be retried on reconnect)
-    if (
-      !this.userSession.websocket ||
-      this.userSession.websocket.readyState !== WebSocket.OPEN
-    ) {
-      stream.pendingAcks.delete(ackId);
-      this.logger.warn(
-        { streamId, ackId },
-        "Ignoring ACK timeout due to websocket closed",
-      );
-      return;
-    }
-
-    if (stream.pendingAcks.has(ackId)) {
-      stream.pendingAcks.delete(ackId);
-      stream.missedAcks++;
-      const ageMs = Date.now() - createdAt.getTime();
-      this.logger.warn(
-        { streamId, ackId, missedAcks: stream.missedAcks, ageMs },
-        "Keep-alive ACK timeout",
-      );
-
-      if (stream.missedAcks >= MAX_MISSED_ACKS) {
-        // Don't immediately timeout - let sendKeepAlive handle the timeout logic
-        // which considers both missed ACKs AND time since last activity
-        this.logger.warn(
-          { streamId, missedAcks: stream.missedAcks },
-          "Too many missed ACKs, stream may timeout if no activity soon",
-        );
-      }
-    }
-  }
-
-  /**
-   * Handle keep-alive ACK from glasses (from original)
-   */
-  handleKeepAliveAck(ackMessage: KeepAliveAck): void {
-    const { streamId, ackId } = ackMessage;
-    this.logger.debug(
-      { ackMessage, debugKey: "KEEP_ALIVE_ACK_RECEIVED" },
-      "KEEP_ALIVE_ACK_RECEIVED Handling keep-alive ACK from glasses",
-    );
-    const stream = this.activeSessionStreams.get(streamId);
-    if (!stream) {
-      this.logger.warn({ streamId, ackId }, "Received ACK for unknown stream");
-      return;
-    }
-
-    const pendingAck = stream.pendingAcks.get(ackId);
-    if (pendingAck) {
-      clearTimeout(pendingAck.timeout);
-      stream.pendingAcks.delete(ackId);
-      stream.missedAcks = 0; // Reset on successful ACK
-      stream.lastKeepAlive = new Date(); // Update activity time
-      const ageMs = Date.now() - pendingAck.sentAt.getTime();
-      this.logger.debug(
-        { streamId, ackId, pendingAfter: stream.pendingAcks.size, ageMs },
-        "Keep-alive ACK received",
-      );
-    } else {
-      this.logger.warn({ streamId, ackId }, "Received unknown or late ACK");
-    }
+  private generateStreamId(): string {
+    const timestamp = Date.now().toString(36).slice(-6);
+    const random = Math.random().toString(36).slice(2, 6);
+    return `s${timestamp}${random}`;
   }
 
   /**
@@ -596,8 +496,8 @@ export class VideoManager {
       return;
     }
 
-    const stream = this.activeSessionStreams.get(streamId);
-    if (!stream) {
+    const runtime = this.unmanagedStreams.get(streamId);
+    if (!runtime) {
       this.logger.warn(
         { streamId, status },
         "Received status for unknown stream",
@@ -605,27 +505,9 @@ export class VideoManager {
       return;
     }
 
-    // Update last activity time
-    stream.lastKeepAlive = new Date();
+    runtime.lastActivity = new Date();
+    runtime.lifecycle.recordActivity();
 
-    // Start keep-alives on first real status (not initializing)
-    if (
-      !stream.keepAliveTimer &&
-      (status === "streaming" ||
-        status === "active" ||
-        status === "reconnected")
-    ) {
-      this.logger.info(
-        { streamId, status },
-        "Received first active status, starting keep-alive timer",
-      );
-      this.scheduleKeepAlive(streamId);
-      // Send first keep-alive after a short delay
-      setTimeout(() => this.sendKeepAlive(streamId), 1000);
-    }
-
-    // Map glasses status to our status types
-    let mappedStatus: SessionStreamInfo["status"];
     if (!status) {
       this.logger.warn(
         { streamId },
@@ -634,61 +516,57 @@ export class VideoManager {
       return;
     }
 
+    let mappedStatus: UnmanagedStreamStatus;
     switch (status) {
       case "initializing":
       case "connecting":
       case "reconnecting":
         mappedStatus = "initializing";
+        runtime.lifecycle.setActive(false);
         break;
       case "active":
       case "streaming":
+      case "reconnected":
         mappedStatus = "active";
+        runtime.lifecycle.setActive(true);
         break;
       case "stopping":
         mappedStatus = "stopping";
+        runtime.lifecycle.setActive(false);
         break;
       case "stopped":
       case "disconnected":
         mappedStatus = "stopped";
+        runtime.lifecycle.setActive(false);
+        break;
+      case "timeout":
+        mappedStatus = "timeout";
+        runtime.lifecycle.setActive(false);
         break;
       case "error":
-        // For errors, we should stop the stream, not timeout
         mappedStatus = "stopped";
+        runtime.lifecycle.setActive(false);
         this.logger.error(
           { streamId, status },
           "Stream error received from glasses",
         );
         break;
-      case "timeout":
-        // Only map to timeout if it's actually a timeout from glasses
-        mappedStatus = "timeout";
-        break;
-      case "reconnected":
-        // Successfully reconnected after disconnection - stream is active again
-        mappedStatus = "active";
-        this.logger.info(
-          { streamId, status },
-          "Stream reconnected successfully",
-        );
-        break;
       case "reconnect_failed":
-        // Failed to reconnect after max attempts - stream is dead
         mappedStatus = "stopped";
+        runtime.lifecycle.setActive(false);
         this.logger.warn({ streamId, status }, "Stream reconnection failed");
         break;
       default:
-        // Unknown status - log warning but don't ignore
-        // Default to stopped to prevent state limbo
+        mappedStatus = "stopped";
+        runtime.lifecycle.setActive(false);
         this.logger.warn(
           { streamId, status },
           "Received unknown status from glasses, defaulting to stopped",
         );
-        mappedStatus = "stopped";
         break;
     }
 
-    // Update status based on glasses feedback
-    this.updateStatus(streamId, mappedStatus);
+    void this.updateStatus(streamId, mappedStatus);
   }
 
   /**
@@ -703,9 +581,9 @@ export class VideoManager {
 
     if (streamId) {
       // Stop specific stream
-      const stream = this.activeSessionStreams.get(streamId);
+      const stream = this.unmanagedStreams.get(streamId);
       if (stream && stream.packageName === packageName) {
-        this.updateStatus(streamId, "stopped");
+        await this.updateStatus(streamId, "stopped");
       } else if (stream) {
         throw new Error(
           `App ${packageName} cannot stop stream ${streamId} owned by ${stream.packageName}`,
@@ -758,7 +636,7 @@ export class VideoManager {
     errorDetails?: string,
     stats?: RtmpStreamStatus["stats"],
   ): Promise<void> {
-    const streamInfo = this.activeSessionStreams.get(streamId);
+    const streamInfo = this.unmanagedStreams.get(streamId);
     // It's possible streamInfo is gone if cleanup happened due to rapid events.
     const packageName = streamInfo
       ? streamInfo.packageName
@@ -842,14 +720,14 @@ export class VideoManager {
    */
   dispose(): void {
     this.logger.info(
-      "Disposing VideoManager, stopping all active streams for this session",
+      "Disposing UnmanagedStreamingExtension, stopping all active streams for this session",
     );
-    const streamIdsToStop = Array.from(this.activeSessionStreams.keys());
+    const streamIdsToStop = Array.from(this.unmanagedStreams.keys());
     streamIdsToStop.forEach((streamId) => {
       this.stopTracking(streamId);
     });
-    this.activeSessionStreams.clear();
+    this.unmanagedStreams.clear();
   }
 }
 
-export default VideoManager;
+export default UnmanagedStreamingExtension;

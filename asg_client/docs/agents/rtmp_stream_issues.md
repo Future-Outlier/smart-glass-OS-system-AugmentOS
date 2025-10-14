@@ -30,7 +30,7 @@ App → Cloud → Mobile (WebSocket) → Glasses (BLE) → RTMP Server
    - Sends `RTMP_STREAM_REQUEST` message
 
 2. **Cloud → Glasses:** Cloud sends `START_RTMP_STREAM` command
-   - File: `/cloud/packages/cloud/src/services/session/VideoManager.ts:191`
+   - File: `/cloud/packages/cloud/src/services/session/UnmanagedStreamingExtension.ts:191`
    - Generates streamId, starts keep-alive timer
 
 3. **Glasses Receive:** asg_client processes command
@@ -62,7 +62,7 @@ Key files:
 
 Files:
 
-- Cloud: `/cloud/packages/cloud/src/services/session/VideoManager.ts:361`
+- Cloud: `/cloud/packages/cloud/src/services/session/UnmanagedStreamingExtension.ts:361`
 - Glasses: `/asg_client/app/src/main/java/com/augmentos/asg_client/service/core/handlers/RtmpCommandHandler.java:147`
 
 ## Critical Issues Identified
@@ -104,7 +104,7 @@ State names don't align between components.
 | reconnect_failed | timeout        | Misleading          |
 
 **Location:**
-`VideoManager.ts:619-656`
+`UnmanagedStreamingExtension.ts:619-656`
 
 **Impact:**
 

@@ -505,9 +505,11 @@ export class GlassesWebSocketService {
               userSession,
               status,
             );
-          // If not handled by managed streaming, delegate to VideoManager
+          // If not handled by managed streaming, delegate to the unmanaged extension
           if (!managedHandled) {
-            userSession.videoManager.handleRtmpStreamStatus(status);
+            userSession.unmanagedStreamingExtension.handleRtmpStreamStatus(
+              status,
+            );
           }
           break;
         }
@@ -519,7 +521,7 @@ export class GlassesWebSocketService {
             userSession.userId,
             ack,
           );
-          userSession.videoManager.handleKeepAliveAck(ack);
+          userSession.unmanagedStreamingExtension.handleKeepAliveAck(ack);
           break;
         }
 
