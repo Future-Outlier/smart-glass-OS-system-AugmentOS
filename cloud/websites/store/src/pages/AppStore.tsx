@@ -9,7 +9,7 @@ import { useIsMobile } from "../hooks/useMediaQuery";
 import SearchBar from "../components/SearchBar";
 import api, { AppFilterOptions } from "../api";
 import { AppI } from "../types";
-import Header from "../components/Header";
+import Header from "../components/Header_v2";
 import AppCard from "../components/AppCard";
 import { toast } from "sonner";
 import { formatCompatibilityError } from "../utils/errorHandling";
@@ -515,6 +515,46 @@ const AppStore: React.FC = () => {
             </button>
           </div>
         )}
+
+        {
+          <div className="w-full h-[500px] bg-[#ff5252] rounded-3xl relative">
+            {/* Previous Button - Left Side */}
+            <button className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-all">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 19.5L8.25 12l7.5-7.5"
+                />
+              </svg>
+            </button>
+
+            {/* Next Button - Right Side */}
+            <button className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-all">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                />
+              </svg>
+            </button>
+          </div>
+        }
 
         {/* App grid */}
         {!isLoading && !error && (

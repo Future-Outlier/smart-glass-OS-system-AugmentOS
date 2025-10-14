@@ -1,4 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Cuprum:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Cuprum:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 
 /*
@@ -23,14 +25,22 @@
 }
 
 .font-cuprum {
-  font-family: 'Cuprum', sans-serif;
+  font-family: "Cuprum", sans-serif;
+}
+
+.font-roboto {
+  font-family: "Roboto", sans-serif;
+}
+
+.font-poppins {
+  font-family: "Poppins", sans-serif;
 }
 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-/*
+  /*
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424; */
@@ -215,7 +225,7 @@ button:focus-visible {
 }
 
 /* Theme Variables */
-:root[data-theme='light'] {
+:root[data-theme="light"] {
   --bg-primary: #ffffff;
   --bg-secondary: #f8f9fa;
   --bg-tertiary: #e9ecef;
@@ -225,24 +235,25 @@ button:focus-visible {
   --border-color: #dee2e6;
   --accent-primary: #242454;
   --accent-hover: #2d2f5a;
-  --error-color: #E24A24;
+  --error-color: #e24a24;
   --error-hover: #c73e1d;
   --button-bg: #000000;
   --button-text: #ffffff;
   --button-hover: #333333;
 }
 
-:root[data-theme='dark'], :root {
+:root[data-theme="dark"],
+:root {
   --bg-primary: #030514;
-  --bg-secondary: #0A0B19;
-  --bg-tertiary: #080B27;
-  --text-primary: #E4E4E7;
-  --text-secondary: #9CA3AF;
-  --text-muted: #6B7280;
+  --bg-secondary: #0a0b19;
+  --bg-tertiary: #080b27;
+  --text-primary: #e4e4e7;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
   --border-color: #242454;
   --accent-primary: #242454;
   --accent-hover: #2d2f5a;
-  --error-color: #E24A24;
+  --error-color: #e24a24;
   --error-hover: #c73e1d;
   --button-bg: #242454;
   --button-text: #ffffff;
