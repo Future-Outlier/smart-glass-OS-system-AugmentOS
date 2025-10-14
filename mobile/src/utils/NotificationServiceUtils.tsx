@@ -1,4 +1,4 @@
-import {Alert, NativeModules, Platform} from "react-native"
+import {NativeModules, Platform} from "react-native"
 import showAlert from "./AlertUtils"
 
 const {NotificationAccess} = NativeModules
