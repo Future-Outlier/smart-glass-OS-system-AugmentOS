@@ -265,10 +265,10 @@ public class K900CommandHandler {
                 Log.d(TAG, "⏹️ Stopping video recording (short press during recording)");
                 captureService.stopVideoRecording();
             } else {
-                Log.d(TAG, "📸 Taking photo locally (short press) - LED disabled for button press");
+                Log.d(TAG, "📸 Taking photo locally (short press) with LED: " + ledEnabled);
                 // Get saved photo size for button press
                 String photoSize = serviceManager.getAsgSettings().getButtonPhotoSize();
-                captureService.takePhotoLocally(photoSize, false); // Disable LED for button press
+                captureService.takePhotoLocally(photoSize, ledEnabled);
             }
         }
     }
