@@ -107,32 +107,35 @@ export default function InitScreen() {
   }
 
   const handleTokenExchange = async (): Promise<void> => {
+    console.log("HANDLING TOKEN EXCHANGE.......")
     setState("loading")
     setLoadingStatus(translate("versionCheck:connectingToServer"))
 
-    // try {
-    const supabaseToken = session?.access_token
-    if (!supabaseToken) {
-      setErrorType("auth")
+    try {
+      const token = session?.access_token
+      console.log("EXCHANGING TOKEN: ")
+      console.log(token)
+      if (!token) {
+        setErrorType("auth")
+        setState("error")
+        return
+      }
+
+      const coreToken = await restComms.exchangeToken(token)
+      const uid = user?.email || user?.id
+
+      socketComms.setAuthCreds(coreToken, uid)
+      await mantle.init()
+
+      bridge.updateSettings(await useSettingsStore.getState().getCoreSettings()) // send settings to core
+
+      await navigateToDestination()
+    } catch (error) {
+      console.error("Token exchange failed:", error)
+      await checkCustomUrl()
+      setErrorType("connection")
       setState("error")
-      return
     }
-
-    const coreToken = await restComms.exchangeToken(supabaseToken)
-    const uid = user?.email || user?.id
-
-    socketComms.setAuthCreds(coreToken, uid)
-    await mantle.init()
-
-    bridge.updateSettings(await useSettingsStore.getState().getCoreSettings()) // send settings to core
-
-    await navigateToDestination()
-    // } catch (error) {
-    //   console.error("Token exchange failed:", error)
-    //   await checkCustomUrl()
-    //   setErrorType("connection")
-    //   setState("error")
-    // }
   }
 
   const checkCloudVersion = async (isRetry = false): Promise<void> => {

@@ -1,13 +1,11 @@
-import React, {useState, useRef, useEffect} from "react"
+import {useState, useRef, useEffect} from "react"
 import {
   View,
   TouchableOpacity,
   TextInput,
   Animated,
-  SafeAreaView,
   BackHandler,
   Platform,
-  KeyboardAvoidingView,
   ActivityIndicator,
   ScrollView,
   AppState,
@@ -16,24 +14,20 @@ import {
   Keyboard,
   Modal,
 } from "react-native"
-import LinearGradient from "react-native-linear-gradient"
-import {supabase} from "@/supabase/supabaseClient"
-import {Linking} from "react-native"
-import {Screen, Text, Button, Icon} from "@/components/ignite"
-import {translate, TxKeyPath} from "@/i18n"
+import {Screen, Text, Button} from "@/components/ignite"
+import {translate} from "@/i18n"
 import {spacing, ThemedStyle} from "@/theme"
 import {useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {FontAwesome} from "@expo/vector-icons"
 import GoogleIcon from "assets/icons/component/GoogleIcon"
 import AppleIcon from "assets/icons/component/AppleIcon"
-import {router} from "expo-router"
 import showAlert from "@/utils/AlertUtils"
 import {Pressable} from "react-native-gesture-handler"
 import {Spacer} from "@/components/misc/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import * as WebBrowser from "expo-web-browser"
-import Toast from "react-native-toast-message"
 
 export default function LoginScreen() {
   const [isSigningUp, setIsSigningUp] = useState(false)
@@ -43,7 +37,7 @@ export default function LoginScreen() {
   const [isAuthLoading, setIsAuthLoading] = useState(false)
   const [formAction, setFormAction] = useState<"signin" | "signup" | null>(null)
   const [backPressCount, setBackPressCount] = useState(0)
-  const {goBack, push, replace} = useNavigationHistory()
+  const {push, replace} = useNavigationHistory()
 
   // Get theme and safe area insets
   const {theme, themed} = useAppTheme()
@@ -129,21 +123,10 @@ export default function LoginScreen() {
         authOverlayOpacity.setValue(0)
       }, 5000)
 
-      const {data, error} = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          // Must match the deep link scheme/host/path in your AndroidManifest.xml
-          redirectTo: "com.mentra://auth/callback",
-          skipBrowserRedirect: true,
-          queryParams: {
-            prompt: "select_account",
-          },
-        },
-      })
+      const {data, error} = await mentraAuthProvider.googleSignIn()
 
       // 2) If there's an error, handle it
       if (error) {
-        console.error("Supabase Google sign-in error:", error)
         // showAlert(translate('loginScreen.errors.authError'), error.message);
         setIsAuthLoading(false)
         authOverlayOpacity.setValue(0)
@@ -175,13 +158,6 @@ export default function LoginScreen() {
     console.log("signInWithOAuth call finished")
   }
 
-  const showToastMessage = (txPath: TxKeyPath) => {
-    Toast.show({
-      type: "error",
-      text1: translate(txPath),
-      position: "bottom",
-    })
-  }
   const handleAppleSignIn = async () => {
     try {
       setIsAuthLoading(true)
@@ -193,17 +169,10 @@ export default function LoginScreen() {
         useNativeDriver: true,
       }).start()
 
-      const {data, error} = await supabase.auth.signInWithOAuth({
-        provider: "apple",
-        options: {
-          // Match the deep link scheme/host/path in your AndroidManifest.xml
-          redirectTo: "com.mentra://auth/callback",
-        },
-      })
+      const {data, error} = await mentraAuthProvider.appleSignIn()
 
       // If there's an error, handle it
       if (error) {
-        console.error("Supabase Apple sign-in error:", error)
         // showAlert(translate('loginScreen.errors.authError'), error.message);
         setIsAuthLoading(false)
         authOverlayOpacity.setValue(0)
@@ -242,43 +211,22 @@ export default function LoginScreen() {
     setFormAction("signup")
 
     try {
-      const redirectUrl = "https://augmentos.org/verify-email" // No encoding needed
-
-      const {data, error} = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: "com.mentra://auth/callback",
-        },
-      })
+      const {data, error} = await mentraAuthProvider.signup(email, password)
 
       if (error) {
-        console.log("Sign-up error:", error)
-
-        // Check for common Supabase error messages when email already exists
-        const errorMessage = error.message.toLowerCase()
-
-        if (
-          errorMessage.includes("already registered") ||
-          errorMessage.includes("user already registered") ||
-          errorMessage.includes("email already exists") ||
-          errorMessage.includes("identity already linked")
-        ) {
-          // Try to detect if it's a Google or Apple account
-          // Note: Supabase doesn't always tell us which provider, so we show a generic message
+        if (error.message.includes("Email already registered")) {
           showAlert(translate("login:emailAlreadyRegistered"), translate("login:useGoogleSignIn"), [
             {text: translate("common:ok")},
           ])
         } else {
           showAlert(translate("common:error"), error.message, [{text: translate("common:ok")}])
         }
-      } else if (!data.session) {
+      } else if (!data?.session) {
         // Ensure translations are resolved before passing to showAlert
         const successTitle = translate("login:success")
         const verificationMessage = translate("login:checkEmailVerification")
         showAlert(successTitle, verificationMessage, [{text: translate("common:ok")}])
       } else {
-        console.log("Sign-up successful:", data)
         replace("/")
       }
     } catch (err) {
@@ -294,16 +242,12 @@ export default function LoginScreen() {
     Keyboard.dismiss()
     setIsFormLoading(true)
     setFormAction("signin")
-    const {data, error} = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const {error} = await mentraAuthProvider.signIn(email, password)
 
     if (error) {
-      showAlert(translate("common:error"), error.message)
+      showAlert(translate("common:error"), error.message, [{text: translate("common:ok")}])
       // Handle sign-in error
     } else {
-      console.log("Sign-in successful:", data)
       replace("/")
     }
     setIsFormLoading(false)
@@ -531,14 +475,6 @@ const $container: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
 })
 
-const $gradientContainer: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-})
-
-const $keyboardAvoidingView: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-})
-
 const $scrollContent: ThemedStyle<ViewStyle> = () => ({
   flexGrow: 1,
   justifyContent: "center",
@@ -640,10 +576,6 @@ const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDar
     : {}),
 })
 
-const $inputIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.xs,
-})
-
 const $enhancedInput: ThemedStyle<TextStyle> = ({colors}) => ({
   flex: 1,
   fontSize: 16,
@@ -705,9 +637,9 @@ const $appleButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.text, // Same as Google button text
 })
 
-const $primaryButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({})
+const $primaryButton: ThemedStyle<ViewStyle> = () => ({})
 
-const $secondaryButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({})
+const $secondaryButton: ThemedStyle<ViewStyle> = () => ({})
 
 const $pressedButton: ThemedStyle<ViewStyle> = ({colors}) => ({
   backgroundColor: colors.buttonPressed,
@@ -723,28 +655,6 @@ const $buttonText: ThemedStyle<TextStyle> = ({colors}) => ({
 const $emailButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.textAlt,
   fontSize: 16,
-})
-
-const $ghostButton: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  backgroundColor: colors.transparent,
-  height: 48,
-  borderRadius: 8,
-  justifyContent: "center",
-  alignItems: "center",
-  marginTop: spacing.sm,
-})
-
-const $backIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.xs,
-})
-
-const $emailIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.xs,
-})
-
-const $ghostButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.textDim,
-  fontSize: 15,
 })
 
 const $dividerContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({

@@ -1,6 +1,6 @@
-import React, {createContext, useEffect, useState, useContext} from "react"
-import {supabase} from "@/supabase/supabaseClient"
+import {FC, createContext, useEffect, useState, useContext} from "react"
 import {LogoutUtils} from "@/utils/LogoutUtils"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
 
 interface AuthContextProps {
   user: any // or a more specific type from @supabase/supabase-js
@@ -16,7 +16,7 @@ const AuthContext = createContext<AuthContextProps>({
   logout: () => {},
 })
 
-export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
+export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
   const [session, setSession] = useState<any>(null)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
     const getInitialSession = async () => {
       const {
         data: {session},
-      } = await supabase.auth.getSession()
+      } = await mentraAuthProvider.getSession()
 
       console.log("AuthContext: Initial session:", session)
       console.log("AuthContext: Initial user:", session?.user)
@@ -41,20 +41,20 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
     })
 
     // 2. Listen for auth changes
-    const {
-      data: {subscription},
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("AuthContext: Auth state changed:", event)
-      console.log("AuthContext: Session:", session)
-      console.log("AuthContext: User:", session?.user)
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    // const {
+    //   data: {subscription},
+    // } = supabase.auth.onAuthStateChange((event, session) => {
+    //   console.log("AuthContext: Auth state changed:", event)
+    //   console.log("AuthContext: Session:", session)
+    //   console.log("AuthContext: User:", session?.user)
+    //   setSession(session)
+    //   setUser(session?.user ?? null)
+    //   setLoading(false)
+    // })
 
     // Cleanup the listener
     return () => {
-      subscription?.unsubscribe()
+      // subscription?.unsubscribe()
     }
   }, [])
 
