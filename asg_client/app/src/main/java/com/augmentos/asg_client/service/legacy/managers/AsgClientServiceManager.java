@@ -328,16 +328,10 @@ public class AsgClientServiceManager {
 
                 mediaCaptureService.setServiceCallback(service.getServiceCallback());
                 Log.d(TAG, "📡 Service callback set");
-                
-                // Set RGB LED command handler for camera LED control
-                RgbLedCommandHandler rgbLedHandler = getRgbLedCommandHandler();
-                Log.i(TAG, "🚨 Getting RGB LED handler for MediaCaptureService: " + (rgbLedHandler != null ? "✅ FOUND" : "❌ NULL"));
-                if (rgbLedHandler != null) {
-                    mediaCaptureService.setRgbLedCommandHandler(rgbLedHandler);
-                    Log.i(TAG, "📡 RGB LED command handler set for MediaCaptureService");
-                } else {
-                    Log.e(TAG, "❌ RGB LED command handler not available - LED control will not work!");
-                }
+
+                // Note: RGB LED control now handled directly via hardware manager
+                // MediaCaptureService uses HardwareManagerFactory.getInstance() internally
+                // RgbLedCommandHandler initializes the hardware manager's BluetoothManager
 
             } catch (Exception e) {
                 Log.e(TAG, "💥 Error creating MediaCaptureService", e);
@@ -416,6 +410,10 @@ public class AsgClientServiceManager {
     }
 
     // Getters for components
+    public Context getContext() {
+        return context;
+    }
+
     public AsgSettings getAsgSettings() {
         Log.d(TAG, "📋 getAsgSettings() called - returning: " + (asgSettings != null ? "valid" : "null"));
         return asgSettings;

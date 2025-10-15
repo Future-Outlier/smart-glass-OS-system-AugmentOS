@@ -20,7 +20,6 @@ import com.augmentos.asg_client.io.hardware.interfaces.IHardwareManager;
 import com.augmentos.asg_client.io.hardware.core.HardwareManagerFactory;
 import com.augmentos.asg_client.io.streaming.services.RtmpStreamingService;
 import com.augmentos.asg_client.audio.AudioAssets;
-import com.augmentos.asg_client.service.core.handlers.RgbLedCommandHandler;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -199,9 +198,6 @@ public class MediaCaptureService {
     private ServiceCallbackInterface mServiceCallback;
     private CircularVideoBuffer mVideoBuffer;
     private final IHardwareManager hardwareManager;
-    
-    // RGB LED command handler for glasses LED control
-    private RgbLedCommandHandler rgbLedCommandHandler;
 
     // Track current video recording
     private boolean isRecordingVideo = false;
@@ -361,17 +357,6 @@ public class MediaCaptureService {
     public void setServiceCallback(ServiceCallbackInterface callback) {
         this.mServiceCallback = callback;
     }
-    
-    /**
-     * Set the RGB LED command handler for glasses LED control
-     */
-    public void setRgbLedCommandHandler(RgbLedCommandHandler handler) {
-        this.rgbLedCommandHandler = handler;
-        Log.i(TAG, "🚨 RGB LED command handler set: " + (handler != null ? "✅ VALID" : "❌ NULL"));
-        if (handler != null) {
-            Log.i(TAG, "🚨 RGB LED handler supports commands: " + handler.getSupportedCommandTypes());
-        }
-    }
 
     private void playShutterSound() {
         if (hardwareManager != null && hardwareManager.supportsAudioPlayback()) {
@@ -383,21 +368,13 @@ public class MediaCaptureService {
      * Trigger white LED flash for photo capture (synchronized with shutter sound)
      */
     private void triggerPhotoFlashLed() {
-        Log.i(TAG, "📸 triggerPhotoFlashLed() called - RGB LED handler: " + (rgbLedCommandHandler != null ? "✅ AVAILABLE" : "❌ NULL"));
-        
-        if (rgbLedCommandHandler != null) {
-            try {
-                JSONObject flashData = new JSONObject();
-                flashData.put("duration", 5000); // 5000ms flash duration
-                
-                Log.i(TAG, "📸 Sending photo flash LED command (white): " + flashData.toString());
-                boolean success = rgbLedCommandHandler.handleCommand("rgb_led_photo_flash", flashData);
-                Log.i(TAG, "📸 Photo flash LED (white) triggered: " + (success ? "✅ SUCCESS" : "❌ FAILED"));
-            } catch (JSONException e) {
-                Log.e(TAG, "💥 Error creating photo flash LED command", e);
-            }
+        Log.i(TAG, "📸 triggerPhotoFlashLed() called");
+
+        if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
+            hardwareManager.flashRgbLedWhite(5000); // 5 second flash
+            Log.i(TAG, "📸 Photo flash LED (white) triggered via hardware manager");
         } else {
-            Log.e(TAG, "❌ RGB LED command handler not available for photo flash - LED will not activate!");
+            Log.w(TAG, "⚠️ RGB LED not supported on this device");
         }
     }
     
@@ -405,43 +382,27 @@ public class MediaCaptureService {
      * Trigger solid white LED for video recording duration
      */
     private void triggerVideoPulseLed() {
-        Log.i(TAG, "🎥 triggerVideoPulseLed() called - RGB LED handler: " + (rgbLedCommandHandler != null ? "✅ AVAILABLE" : "❌ NULL"));
-        
-        if (rgbLedCommandHandler != null) {
-            try {
-                JSONObject pulseData = new JSONObject();
-                // Note: Parameters are still called pulse_duration etc for backward compatibility,
-                // but the handler now creates a solid white LED instead of pulsing
-                pulseData.put("pulse_duration", 1000); // Not used for solid LED, kept for compatibility
-                pulseData.put("on_time", 500);         // Not used for solid LED, kept for compatibility
-                pulseData.put("off_time", 500);        // Not used for solid LED, kept for compatibility
-                
-                Log.i(TAG, "🎥 Sending video recording LED command (solid white): " + pulseData.toString());
-                boolean success = rgbLedCommandHandler.handleCommand("rgb_led_video_pulse", pulseData);
-                Log.i(TAG, "🎥 Video recording LED (solid white) triggered: " + (success ? "✅ SUCCESS" : "❌ FAILED"));
-            } catch (JSONException e) {
-                Log.e(TAG, "💥 Error creating video recording LED command", e);
-            }
+        Log.i(TAG, "🎥 triggerVideoPulseLed() called");
+
+        if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
+            hardwareManager.setRgbLedSolidWhite(60000); // 60 second solid white LED
+            Log.i(TAG, "🎥 Video recording LED (solid white) triggered via hardware manager");
         } else {
-            Log.e(TAG, "❌ RGB LED command handler not available for video recording LED - LED will not activate!");
+            Log.w(TAG, "⚠️ RGB LED not supported on this device");
         }
     }
     
     /**
      * Stop video recording LED (turn off LED)
-     * Note: Per K900 protocol, LED OFF always uses led:0 regardless of which LED was on
      */
     private void stopVideoPulseLed() {
         Log.d(TAG, "stopVideoPulseLed called");
 
-        if (rgbLedCommandHandler != null) {
-            // LED OFF command uses led:0 per K900 protocol (no need to specify which LED)
-            JSONObject offData = new JSONObject();
-            
-            boolean success = rgbLedCommandHandler.handleCommand("rgb_led_control_off", offData);
-            Log.d(TAG, "🎥 Video recording LED stopped: " + (success ? "success" : "failed"));
+        if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
+            hardwareManager.setRgbLedOff();
+            Log.d(TAG, "🎥 Video recording LED stopped via hardware manager");
         } else {
-            Log.w(TAG, "⚠️ RGB LED command handler not available for stopping video recording LED");
+            Log.w(TAG, "⚠️ RGB LED not supported on this device");
         }
     }
 
