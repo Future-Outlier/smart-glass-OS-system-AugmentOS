@@ -1059,9 +1059,8 @@ public class MediaCaptureService {
 
         try {
             playShutterSound();
-            if (enableLed) {
-                triggerPhotoFlashLed(); // Trigger white LED flash synchronized with shutter sound
-            }
+            // Disable LED for webhook uploads to avoid distracting white flash
+            // LED control is handled by CameraNeo for camera lifecycle management
 
             // Use the new enqueuePhotoRequest for thread-safe rapid capture
             CameraNeo.enqueuePhotoRequest(
@@ -1639,9 +1638,8 @@ public class MediaCaptureService {
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_CAPTURE");
 
         playShutterSound();
-        if (enableLed) {
-            triggerPhotoFlashLed(); // Trigger white LED flash synchronized with shutter sound
-        }
+        // Disable LED for BLE transfers to avoid distracting white flash
+        // LED control is handled by CameraNeo for camera lifecycle management
 
         try {
             // Use CameraNeo for photo capture
