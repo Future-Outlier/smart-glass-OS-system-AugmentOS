@@ -10,13 +10,16 @@ import restComms from "@/managers/RestComms"
 import {showAlert} from "@/utils/AlertUtils"
 import {ThemedStyle} from "@/theme"
 import {isOfflineApp, getOfflineAppRoute} from "@/types/AppletTypes"
-import {useActiveForegroundApp, stopApp, refreshApps} from "@/stores/applets"
+import {useActiveForegroundApp, useStopApplet, useRefreshApplets} from "@/stores/applets"
+
 // Camera app protection removed - now handled by default button action system
 
 export const ActiveForegroundApp: React.FC = () => {
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
   const activeForegroundApp = useActiveForegroundApp()
+  const stopApplet = useStopApplet()
+  const refreshApplets = useRefreshApplets()
 
   const handlePress = () => {
     if (activeForegroundApp) {
@@ -53,7 +56,7 @@ export const ActiveForegroundApp: React.FC = () => {
           text: "Stop",
           style: "destructive",
           onPress: async () => {
-            stopApp(activeForegroundApp.packageName)
+            stopApplet(activeForegroundApp.packageName)
 
             // Skip offline apps - they don't need server communication
             if (isOfflineApp(activeForegroundApp)) {
@@ -67,7 +70,7 @@ export const ActiveForegroundApp: React.FC = () => {
             try {
               await restComms.stopApp(activeForegroundApp.packageName)
             } catch (error) {
-              refreshApps()
+              refreshApplets()
               console.error("Stop app error:", error)
             }
           },
@@ -81,7 +84,7 @@ export const ActiveForegroundApp: React.FC = () => {
     event.stopPropagation()
 
     if (activeForegroundApp) {
-      stopApp(activeForegroundApp.packageName)
+      stopApplet(activeForegroundApp.packageName)
 
       // Skip offline apps - they don't need server communication
       if (isOfflineApp(activeForegroundApp)) {
@@ -92,7 +95,7 @@ export const ActiveForegroundApp: React.FC = () => {
       try {
         await restComms.stopApp(activeForegroundApp.packageName)
       } catch (error) {
-        refreshApps()
+        refreshApplets()
         console.error("Stop app error:", error)
       }
     }

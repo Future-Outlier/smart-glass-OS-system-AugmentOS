@@ -120,7 +120,7 @@ export const $bottomBar: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 export const $connectedContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
   justifyContent: "center",
-  marginBottom: 10,
+  marginBottom: spacing.md,
 })
 
 export const $deviceInfoContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({

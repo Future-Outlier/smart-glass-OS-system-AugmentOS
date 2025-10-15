@@ -16,9 +16,9 @@ export const HomeContainer: React.FC = () => {
     <View>
       <CompactDeviceStatus />
       {/*<Divider variant="full" />*/}
-      <ActiveForegroundApp />
       {/*<Divider variant="full" />*/}
       <BackgroundAppsLink />
+      <ActiveForegroundApp />
       {/*<Divider variant="full" />*/}
       <ForegroundAppsGrid />
       <IncompatibleApps />
