@@ -8,7 +8,6 @@
 import {
   RgbLedControlRequest,
   AppToCloudMessageType,
-  RgbLedControlResponse,
   LedColor,
 } from "../../../types";
 import { Logger } from "pino";
@@ -54,15 +53,6 @@ export class LedModule {
   private sessionId: string;
   private logger: Logger;
 
-  /** Map to store pending LED control request promises */
-  private pendingRequests = new Map<
-    string,
-    {
-      resolve: (value: void) => void;
-      reject: (reason?: string) => void;
-    }
-  >();
-
   /**
    * Create a new LedModule
    *
@@ -91,7 +81,7 @@ export class LedModule {
    * 💡 Turn on an LED with specified timing parameters
    *
    * @param options - LED control options (color, timing, count)
-   * @returns Promise that resolves when the command is acknowledged
+   * @returns Promise that resolves immediately after sending the command
    *
    * @example
    * ```typescript
@@ -103,60 +93,50 @@ export class LedModule {
    * ```
    */
   async turnOn(options: LedControlOptions): Promise<void> {
-    return new Promise((resolve, reject) => {
-      try {
-        // Generate unique request ID
-        const requestId = `led_req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    try {
+      // Generate unique request ID for tracking
+      const requestId = `led_req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-        // Store promise resolvers
-        this.pendingRequests.set(requestId, { resolve, reject });
+      // Create LED control request message
+      const message: RgbLedControlRequest = {
+        type: AppToCloudMessageType.RGB_LED_CONTROL,
+        packageName: this.packageName,
+        sessionId: this.sessionId,
+        requestId,
+        timestamp: new Date(),
+        action: "on",
+        color: options.color || "red",
+        ontime: options.ontime || 1000,
+        offtime: options.offtime || 0,
+        count: options.count || 1,
+      };
 
-        // Create LED control request message
-        const message: RgbLedControlRequest = {
-          type: AppToCloudMessageType.RGB_LED_CONTROL,
-          packageName: this.packageName,
-          sessionId: this.sessionId,
+      // Send request to cloud (fire-and-forget)
+      this.send(message);
+
+      this.logger.info(
+        {
           requestId,
-          timestamp: new Date(),
-          action: "on",
-          color: options.color || "red",
-          ontime: options.ontime || 1000,
-          offtime: options.offtime || 0,
-          count: options.count || 1,
-        };
+          color: options.color,
+          ontime: options.ontime,
+          offtime: options.offtime,
+          count: options.count,
+        },
+        `💡 LED control request sent`,
+      );
 
-        // Send request to cloud
-        this.send(message);
-
-        this.logger.info(
-          {
-            requestId,
-            color: options.color,
-            ontime: options.ontime,
-            offtime: options.offtime,
-            count: options.count,
-          },
-          `💡 LED control request sent`,
-        );
-
-        // Set timeout to avoid hanging promises
-        setTimeout(() => {
-          if (this.pendingRequests.has(requestId)) {
-            this.pendingRequests.delete(requestId);
-            reject(new Error("LED control request timed out"));
-          }
-        }, 5000);
-      } catch (error) {
-        this.logger.error({ error, options }, "❌ Error in LED turnOn request");
-        reject(error);
-      }
-    });
+      // Resolve immediately - no waiting for response
+      return Promise.resolve();
+    } catch (error) {
+      this.logger.error({ error, options }, "❌ Error in LED turnOn request");
+      throw error;
+    }
   }
 
   /**
    * 💡 Turn off all LEDs
    *
-   * @returns Promise that resolves when the command is acknowledged
+   * @returns Promise that resolves immediately after sending the command
    *
    * @example
    * ```typescript
@@ -164,41 +144,31 @@ export class LedModule {
    * ```
    */
   async turnOff(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      try {
-        // Generate unique request ID
-        const requestId = `led_req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    try {
+      // Generate unique request ID for tracking
+      const requestId = `led_req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-        // Store promise resolvers
-        this.pendingRequests.set(requestId, { resolve, reject });
+      // Create LED control request message
+      const message: RgbLedControlRequest = {
+        type: AppToCloudMessageType.RGB_LED_CONTROL,
+        packageName: this.packageName,
+        sessionId: this.sessionId,
+        requestId,
+        timestamp: new Date(),
+        action: "off",
+      };
 
-        // Create LED control request message
-        const message: RgbLedControlRequest = {
-          type: AppToCloudMessageType.RGB_LED_CONTROL,
-          packageName: this.packageName,
-          sessionId: this.sessionId,
-          requestId,
-          timestamp: new Date(),
-          action: "off",
-        };
+      // Send request to cloud (fire-and-forget)
+      this.send(message);
 
-        // Send request to cloud
-        this.send(message);
+      this.logger.info({ requestId }, `💡 LED turn off request sent`);
 
-        this.logger.info({ requestId }, `💡 LED turn off request sent`);
-
-        // Set timeout to avoid hanging promises
-        setTimeout(() => {
-          if (this.pendingRequests.has(requestId)) {
-            this.pendingRequests.delete(requestId);
-            reject(new Error("LED control request timed out"));
-          }
-        }, 5000);
-      } catch (error) {
-        this.logger.error({ error }, "❌ Error in LED turnOff request");
-        reject(error);
-      }
-    });
+      // Resolve immediately - no waiting for response
+      return Promise.resolve();
+    } catch (error) {
+      this.logger.error({ error }, "❌ Error in LED turnOff request");
+      throw error;
+    }
   }
 
   // =====================================
@@ -263,51 +233,15 @@ export class LedModule {
   }
 
   // =====================================
-  // 💡 Response Handling
+  // 💡 Cleanup
   // =====================================
 
   /**
-   * Handle LED control response from glasses
-   *
-   * @param response - The LED control response message
-   * @internal
-   */
-  handleResponse(response: RgbLedControlResponse): void {
-    const { requestId, success, error } = response;
-
-    const pending = this.pendingRequests.get(requestId);
-    if (!pending) {
-      this.logger.warn(
-        { requestId },
-        "⚠️ Received LED control response for unknown request",
-      );
-      return;
-    }
-
-    // Remove from pending
-    this.pendingRequests.delete(requestId);
-
-    if (success) {
-      this.logger.info({ requestId }, "✅ LED control successful");
-      pending.resolve();
-    } else {
-      this.logger.error({ requestId, error }, "❌ LED control failed");
-      pending.reject(error || "LED control failed");
-    }
-  }
-
-  /**
-   * Clean up all pending LED control requests
+   * Clean up LED module
    *
    * @internal
    */
   cleanup(): void {
-    // Reject all pending requests
-    this.pendingRequests.forEach((pending, _requestId) => {
-      pending.reject("Session ended");
-    });
-    this.pendingRequests.clear();
-
     this.logger.info("🧹 LED module cleaned up");
   }
 }
