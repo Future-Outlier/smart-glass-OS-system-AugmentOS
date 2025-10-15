@@ -15,7 +15,10 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -86,6 +89,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.lang.reflect.Method;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
@@ -183,6 +187,12 @@ public class MentraLive extends SGCManager {
     private boolean isScanning = false;
     private boolean isConnecting = false;
     private boolean isKilled = false;
+    
+    // CTKD (Cross-Transport Key Derivation) support for BES devices
+    private boolean isBondingReceiverRegistered = false;
+    private boolean isBtClassicConnected = false;
+    private BroadcastReceiver bondingReceiver;
+    
     private ConcurrentLinkedQueue<byte[]> sendQueue = new ConcurrentLinkedQueue<>();
     private Runnable connectionTimeoutRunnable;
     private Handler connectionTimeoutHandler = new Handler(Looper.getMainLooper());
@@ -391,6 +401,9 @@ public class MentraLive extends SGCManager {
 
         // Initialize connection state
         connectionState = ConnTypes.DISCONNECTED;
+
+        // Initialize CTKD bonding receiver
+        initializeBondingReceiver();
 
         // Initialize the send queue processor
         processSendQueueRunnable = new Runnable() {
@@ -752,6 +765,11 @@ public class MentraLive extends SGCManager {
                         Bridge.log("LIVE: Saved device name for future reconnection: " + connectedDevice.getName());
                     }
 
+                    // CTKD Implementation: Register bonding receiver and create bond for BT Classic
+                    registerBondingReceiver();
+                    Bridge.log("LIVE: CTKD: BLE connection established, initiating CTKD bonding for BT Classic");
+                    createBond(connectedDevice);
+
                     // Discover services
                     gatt.discoverServices();
 
@@ -761,6 +779,13 @@ public class MentraLive extends SGCManager {
                     Bridge.log("LIVE: Disconnected from GATT server");
                     isConnected = false;
                     isConnecting = false;
+                    
+                    // CTKD Implementation: Disconnect BT per documentation
+                    if (connectedDevice != null) {
+                        Bridge.log("LIVE: CTKD: Disconnecting BT via removeBond per documentation");
+                        removeBond(connectedDevice);
+                    }
+                    
                     connectedDevice = null;
                     glassesReady = false; // Reset ready state on disconnect
                     // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
@@ -2907,6 +2932,136 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    // ============================================================================
+    // CTKD (Cross-Transport Key Derivation) Implementation for BES Devices
+    // ============================================================================
+
+    /**
+     * Initialize the bonding receiver for CTKD support
+     */
+    private void initializeBondingReceiver() {
+        bondingReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                if (BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(action)) {
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    int bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
+                    int previousBondState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.ERROR);
+
+                    if (device != null && connectedDevice != null && 
+                        device.getAddress().equals(connectedDevice.getAddress())) {
+                        
+                        Bridge.log("LIVE: CTKD: Bond state changed for device " + device.getName() + 
+                              " - Current: " + bondState + ", Previous: " + previousBondState);
+
+                        switch (bondState) {
+                            case BluetoothDevice.BOND_BONDED:
+                                Bridge.log("LIVE: CTKD: ✅ Successfully bonded with device - BT Classic connection established");
+                                isBtClassicConnected = true;
+                                // Both BLE and BT Classic are now connected via CTKD
+                                break;
+
+                            case BluetoothDevice.BOND_NONE:
+                                Bridge.log("LIVE: CTKD: ❌ Bonding failed or removed for device");
+                                isBtClassicConnected = false;
+                                if (previousBondState == BluetoothDevice.BOND_BONDING) {
+                                    Bridge.log("LIVE: CTKD: Bonding process failed");
+                                }
+                                break;
+
+                            case BluetoothDevice.BOND_BONDING:
+                                Bridge.log("LIVE: CTKD: 🔄 Bonding in progress with device");
+                                break;
+
+                            default:
+                                Bridge.log("LIVE: CTKD: Unknown bond state: " + bondState);
+                                break;
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    /**
+     * Register the bonding receiver for CTKD monitoring
+     */
+    private void registerBondingReceiver() {
+        if (!isBondingReceiverRegistered && bondingReceiver != null) {
+            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+            context.registerReceiver(bondingReceiver, filter);
+            isBondingReceiverRegistered = true;
+            Bridge.log("LIVE: CTKD: Bonding receiver registered");
+        }
+    }
+
+    /**
+     * Unregister the bonding receiver
+     */
+    private void unregisterBondingReceiver() {
+        if (isBondingReceiverRegistered && bondingReceiver != null) {
+            try {
+                context.unregisterReceiver(bondingReceiver);
+                isBondingReceiverRegistered = false;
+                Bridge.log("LIVE: CTKD: Bonding receiver unregistered");
+            } catch (Exception e) {
+                Bridge.log("LIVE: CTKD: Error unregistering bonding receiver: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Create bond with device for CTKD (Cross-Transport Key Derivation)
+     * This will establish both BLE and BT Classic connections automatically
+     */
+    private boolean createBond(BluetoothDevice device) {
+        try {
+            if (device == null) {
+                Bridge.log("LIVE: CTKD: Cannot create bond - device is null");
+                return false;
+            }
+
+            Bridge.log("LIVE: CTKD: Creating bond with device " + device.getName() + " for CTKD");
+            Method method = device.getClass().getMethod("createBond");
+            boolean result = (Boolean) method.invoke(device);
+            Bridge.log("LIVE: CTKD: Bond creation initiated, result: " + result);
+            return result;
+        } catch (Exception e) {
+            Bridge.log("LIVE: CTKD: Error creating bond: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Remove bond with device to disconnect BT Classic
+     */
+    private boolean removeBond(BluetoothDevice device) {
+        try {
+            if (device == null) {
+                Bridge.log("LIVE: CTKD: Cannot remove bond - device is null");
+                return false;
+            }
+
+            Bridge.log("LIVE: CTKD: Removing bond with device " + device.getName());
+            Method method = device.getClass().getMethod("removeBond");
+            boolean result = (Boolean) method.invoke(device);
+            Bridge.log("LIVE: CTKD: Bond removal initiated, result: " + result);
+            isBtClassicConnected = false;
+            return result;
+        } catch (Exception e) {
+            Bridge.log("LIVE: CTKD: Error removing bond: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if BT Classic is connected via CTKD
+     */
+    public boolean isBtClassicConnected() {
+        return isBtClassicConnected;
+    }
+
     public void destroy() {
         Bridge.log("LIVE: Destroying MentraLiveSGC");
 
@@ -2917,6 +3072,15 @@ public class MentraLive extends SGCManager {
         // Stop scanning if in progress
         if (isScanning) {
             stopScan();
+        }
+
+        // CTKD Implementation: Unregister bonding receiver
+        unregisterBondingReceiver();
+
+        // CTKD Implementation: Disconnect BT per documentation
+        if (connectedDevice != null) {
+            Bridge.log("LIVE: CTKD: Destroy - disconnecting BT via removeBond per documentation");
+            removeBond(connectedDevice);
         }
 
         // Stop readiness check loop
