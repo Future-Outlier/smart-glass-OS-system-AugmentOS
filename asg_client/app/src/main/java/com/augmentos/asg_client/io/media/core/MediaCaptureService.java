@@ -580,7 +580,9 @@ public class MediaCaptureService {
         try {
             // Play video start sound
             playVideoStartSound();
-            triggerVideoPulseLed(); // Trigger solid white LED for video recording duration
+            if (enableLed) {
+                triggerVideoPulseLed(); // Trigger solid white LED for video recording duration
+            }
 
             // Start video recording using CameraNeo
             CameraNeo.startVideoRecording(mContext, requestId, videoFilePath, settings, new CameraNeo.VideoRecordingCallback() {
@@ -937,7 +939,9 @@ public class MediaCaptureService {
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_INIT");
 
         playShutterSound();
-        triggerPhotoFlashLed(); // Trigger white LED flash synchronized with shutter sound
+        if (enableLed) {
+            triggerPhotoFlashLed(); // Trigger white LED flash synchronized with shutter sound
+        }
 
 
         // LED control is now handled by CameraNeo tied to camera lifecycle
@@ -1055,7 +1059,9 @@ public class MediaCaptureService {
 
         try {
             playShutterSound();
-            triggerPhotoFlashLed(); // Trigger white LED flash synchronized with shutter sound
+            if (enableLed) {
+                triggerPhotoFlashLed(); // Trigger white LED flash synchronized with shutter sound
+            }
 
             // Use the new enqueuePhotoRequest for thread-safe rapid capture
             CameraNeo.enqueuePhotoRequest(
@@ -1633,7 +1639,9 @@ public class MediaCaptureService {
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_CAPTURE");
 
         playShutterSound();
-        triggerPhotoFlashLed(); // Trigger white LED flash synchronized with shutter sound
+        if (enableLed) {
+            triggerPhotoFlashLed(); // Trigger white LED flash synchronized with shutter sound
+        }
 
         try {
             // Use CameraNeo for photo capture
