@@ -4,7 +4,7 @@ import {View, FlatList, TouchableOpacity, ViewStyle, TextStyle} from "react-nati
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
-import {useActiveForegroundApp, useAppStatus, useNewUiForegroundApps} from "@/contexts/AppletStatusProvider"
+// import {useActiveForegroundApp, useAppStatus, useNewUiForegroundApps} from "@/contexts/AppletStatusProvider"
 import {AppletInterface, isOfflineApp} from "@/types/AppletTypes"
 import {useAppTheme} from "@/utils/useAppTheme"
 import restComms from "@/managers/RestComms"
@@ -13,6 +13,7 @@ import {performHealthCheckFlow} from "@/utils/healthCheckFlow"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {ThemedStyle} from "@/theme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useActiveForegroundApp, useInactiveForegroundApps, useStartApplet, useStopApplet} from "@/stores/applets"
 
 const GRID_COLUMNS = 4
 
@@ -24,129 +25,131 @@ interface GridItem extends AppletInterface {
 export const ForegroundAppsGrid: React.FC = () => {
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
-  const foregroundApps = useNewUiForegroundApps()
+  const foregroundApps = useInactiveForegroundApps()
   const activeForegroundApp = useActiveForegroundApp()
-  const {optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
+  const stopApplet = useStopApplet()
+  const startApplet = useStartApplet()
 
-  // Prepare grid data with placeholders and "Get More Apps"
-  const startApp = useCallback(
-    async (packageName: string) => {
-      console.log("startApp called for:", packageName)
-      // When switching apps, the app might not be in the current filtered list
-      // So we need to check both foregroundApps and pass the app through from handleAppPress
-      let app = foregroundApps.find(a => a.packageName === packageName)
+  // const {optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
 
-      // If not found in foregroundApps, it might be passed as a parameter (when switching)
-      // For now, we'll create a minimal app object if not found
-      if (!app) {
-        console.log("App not in current foreground list, starting without health check:", packageName)
-        optimisticallyStartApp(packageName)
-        try {
-          await restComms.startApp(packageName)
-          clearPendingOperation(packageName)
-        } catch (error) {
-          refreshAppStatus()
-          console.error("Start app error:", error)
-        }
-        return
-      }
+  // // Prepare grid data with placeholders and "Get More Apps"
+  // const startApp = useCallback(
+  //   async (packageName: string) => {
+  //     console.log("startApp called for:", packageName)
+  //     // When switching apps, the app might not be in the current filtered list
+  //     // So we need to check both foregroundApps and pass the app through from handleAppPress
+  //     let app = foregroundApps.find(a => a.packageName === packageName)
 
-      // Handle offline apps - activate only (no server communication needed)
-      if (isOfflineApp(app)) {
-        console.log("Starting offline app in ForegroundAppsGrid:", packageName)
-        optimisticallyStartApp(packageName, app.type)
-        return
-      }
+  //     // If not found in foregroundApps, it might be passed as a parameter (when switching)
+  //     // For now, we'll create a minimal app object if not found
+  //     if (!app) {
+  //       console.log("App not in current foreground list, starting without health check:", packageName)
+  //       startApp(packageName)
+  //       try {
+  //         await restComms.startApp(packageName)
+  //       } catch (error) {
+  //         // refreshAppStatus()
+  //         console.error("Start app error:", error)
+  //       }
+  //       return
+  //     }
 
-      // First check permissions for the app
-      const permissionResult = await askPermissionsUI(app, theme)
-      if (permissionResult === -1) {
-        // User cancelled
-        return
-      } else if (permissionResult === 0) {
-        // Permissions failed, retry
-        await startApp(packageName)
-        return
-      }
+  //     // Handle offline apps - activate only (no server communication needed)
+  //     if (isOfflineApp(app)) {
+  //       console.log("Starting offline app in ForegroundAppsGrid:", packageName)
+  //       optimisticallyStartApp(packageName, app.type)
+  //       return
+  //     }
 
-      // If app is marked as online by backend, start optimistically immediately
-      // We'll do health check in background to verify
-      if (app.isOnline !== false) {
-        console.log("App is online, starting optimistically:", packageName)
-        optimisticallyStartApp(packageName)
+  //     // First check permissions for the app
+  //     const permissionResult = await askPermissionsUI(app, theme)
+  //     if (permissionResult === -1) {
+  //       // User cancelled
+  //       return
+  //     } else if (permissionResult === 0) {
+  //       // Permissions failed, retry
+  //       await startApp(packageName)
+  //       return
+  //     }
 
-        // Do health check in background
-        performHealthCheckFlow({
-          app,
-          onStartApp: async () => {
-            // App already started optimistically, just make the server call
-            try {
-              await restComms.startApp(packageName)
-              clearPendingOperation(packageName)
-            } catch (error) {
-              refreshAppStatus()
-              console.error("Start app error:", error)
-            }
-          },
-          onAppUninstalled: async () => {
-            await refreshAppStatus()
-          },
-          onHealthCheckFailed: async () => {
-            // Health check failed, move app back to inactive
-            console.log("Health check failed, reverting app to inactive:", packageName)
-            optimisticallyStopApp(packageName)
-            refreshAppStatus()
-          },
-          optimisticallyStopApp,
-          clearPendingOperation,
-        })
-      } else {
-        // App is explicitly offline, use normal flow with health check first
-        await performHealthCheckFlow({
-          app,
-          onStartApp: async () => {
-            optimisticallyStartApp(packageName)
-            try {
-              await restComms.startApp(packageName)
-              clearPendingOperation(packageName)
-            } catch (error) {
-              refreshAppStatus()
-              console.error("Start app error:", error)
-            }
-          },
-          onAppUninstalled: async () => {
-            await refreshAppStatus()
-          },
-          optimisticallyStopApp,
-          clearPendingOperation,
-        })
-      }
-    },
-    [foregroundApps, optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation, refreshAppStatus, theme],
-  )
+  //     // If app is marked as online by backend, start optimistically immediately
+  //     // We'll do health check in background to verify
+  //     if (app.isOnline !== false) {
+  //       console.log("App is online, starting optimistically:", packageName)
+  //       optimisticallyStartApp(packageName)
 
-  const stopApp = useCallback(
-    async (packageName: string) => {
-      optimisticallyStopApp(packageName)
+  //       // Do health check in background
+  //       performHealthCheckFlow({
+  //         app,
+  //         onStartApp: async () => {
+  //           // App already started optimistically, just make the server call
+  //           try {
+  //             await restComms.startApp(packageName)
+  //             clearPendingOperation(packageName)
+  //           } catch (error) {
+  //             refreshAppStatus()
+  //             console.error("Start app error:", error)
+  //           }
+  //         },
+  //         onAppUninstalled: async () => {
+  //           await refreshAppStatus()
+  //         },
+  //         onHealthCheckFailed: async () => {
+  //           // Health check failed, move app back to inactive
+  //           console.log("Health check failed, reverting app to inactive:", packageName)
+  //           optimisticallyStopApp(packageName)
+  //           refreshAppStatus()
+  //         },
+  //         optimisticallyStopApp,
+  //         clearPendingOperation,
+  //       })
+  //     } else {
+  //       // App is explicitly offline, use normal flow with health check first
+  //       await performHealthCheckFlow({
+  //         app,
+  //         onStartApp: async () => {
+  //           optimisticallyStartApp(packageName)
+  //           try {
+  //             await restComms.startApp(packageName)
+  //             clearPendingOperation(packageName)
+  //           } catch (error) {
+  //             refreshAppStatus()
+  //             console.error("Start app error:", error)
+  //           }
+  //         },
+  //         onAppUninstalled: async () => {
+  //           await refreshAppStatus()
+  //         },
+  //         optimisticallyStopApp,
+  //         clearPendingOperation,
+  //       })
+  //     }
+  //   },
+  //   [foregroundApps, optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation, refreshAppStatus, theme],
+  // )
 
-      // Skip offline apps - they don't need server communication
-      const appToStop = foregroundApps.find(a => a.packageName === packageName)
-      if (appToStop && isOfflineApp(appToStop)) {
-        console.log("Skipping offline app stop in ForegroundAppsGrid:", packageName)
-        clearPendingOperation(packageName)
-        return
-      }
+  // const stopApp = useCallback(
+  //   async (packageName: string) => {
+  //     optimisticallyStopApp(packageName)
 
-      try {
-        await restComms.stopApp(packageName)
-        clearPendingOperation(packageName)
-      } catch (error) {
-        refreshAppStatus()
-        console.error("Stop app error:", error)
-      }
-    },
-    [foregroundApps, optimisticallyStopApp, clearPendingOperation, refreshAppStatus],
-  )
+  //     // Skip offline apps - they don't need server communication
+  //     const appToStop = foregroundApps.find(a => a.packageName === packageName)
+  //     if (appToStop && isOfflineApp(appToStop)) {
+  //       console.log("Skipping offline app stop in ForegroundAppsGrid:", packageName)
+  //       clearPendingOperation(packageName)
+  //       return
+  //     }
+
+  //     try {
+  //       await restComms.stopApp(packageName)
+  //       clearPendingOperation(packageName)
+  //     } catch (error) {
+  //       refreshAppStatus()
+  //       console.error("Stop app error:", error)
+  //     }
+  //   },
+  //   [foregroundApps, optimisticallyStopApp, clearPendingOperation, refreshAppStatus],
+  // )
 
   const gridData = useMemo(() => {
     // Filter out incompatible apps and running apps
@@ -217,13 +220,13 @@ export const ForegroundAppsGrid: React.FC = () => {
       // This applies to both online and offline apps
       if (activeForegroundApp && app.packageName !== activeForegroundApp.packageName) {
         console.log("Switching from", activeForegroundApp.packageName, "to", app.packageName)
-        await stopApp(activeForegroundApp.packageName)
+        await stopApplet(activeForegroundApp.packageName)
       }
 
       // Now start the new app (offline or online)
-      await startApp(app.packageName)
+      await startApplet(app.packageName)
     },
-    [activeForegroundApp, push, startApp, stopApp],
+    [activeForegroundApp, push],
   )
 
   const renderItem = useCallback(

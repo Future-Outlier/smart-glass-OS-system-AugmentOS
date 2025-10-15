@@ -91,7 +91,8 @@ export default function InitScreen() {
     }
 
     setTimeout(() => {
-      clearHistoryAndGoHome()
+      // clearHistoryAndGoHome()
+      replace("/(tabs)/home")
     }, NAVIGATION_DELAY)
   }
 

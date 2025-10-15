@@ -22,8 +22,8 @@ import OtaProgressSection from "./OtaProgressSection"
 import InfoSection from "@/components/ui/InfoSection"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {AppPicker} from "@/components/misc/AppPicker"
-import {useAppStatus} from "@/contexts/AppletStatusProvider"
 import {DeviceTypes} from "@/utils/Constants"
+import {useApplets} from "@/stores/applets"
 
 // Icon components defined directly in this file to avoid path resolution issues
 interface CaseIconProps {
@@ -94,7 +94,7 @@ export default function DeviceSettings() {
   const [showAppPicker, setShowAppPicker] = useState(false)
 
   const {push} = useNavigationHistory()
-  const {appStatus} = useAppStatus()
+  const applets = useApplets()
 
   // Check if we have any advanced settings to show
   const hasMicrophoneSelector =
@@ -389,7 +389,7 @@ export default function DeviceSettings() {
                     Default App
                   </Text>
                   <Text style={{color: theme.colors.textDim, fontSize: 13}}>
-                    {appStatus.find(app => app.packageName === defaultButtonActionApp)?.name || "Select app"}
+                    {applets.find(app => app.packageName === defaultButtonActionApp)?.name || "Select app"}
                   </Text>
                 </View>
                 <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.textDim} />
@@ -406,7 +406,7 @@ export default function DeviceSettings() {
         onSelect={app => {
           setDefaultButtonActionApp(app.packageName)
         }}
-        apps={appStatus}
+        apps={applets}
         selectedPackageName={defaultButtonActionApp}
         title="Select Default App"
         filterPredicate={app => app.type === "standard"} // Only show foreground apps

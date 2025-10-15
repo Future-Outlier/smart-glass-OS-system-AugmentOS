@@ -6,13 +6,13 @@ import {AppsOfflineList} from "@/components/misc/AppsOfflineList"
 import CloudConnection from "@/components/misc/CloudConnection"
 import Divider from "@/components/misc/Divider"
 import NonProdWarning from "@/components/misc/NonProdWarning"
-import {OfflineModeButton} from "@/components/misc/OfflineModeButton"
-import {OnboardingSpotlight} from "@/components/misc/OnboardingSpotlight"
+import {OfflineModeButton} from "@/components/home/OfflineModeButton"
+import {OnboardingSpotlight} from "@/components/home/OnboardingSpotlight"
 import SensingDisabledWarning from "@/components/misc/SensingDisabledWarning"
 import {OtaUpdateChecker} from "@/components/utils/OtaUpdateChecker"
 import {Reconnect} from "@/components/utils/Reconnect"
-import {useAppStatus} from "@/contexts/AppletStatusProvider"
 import {translate} from "@/i18n"
+import {useRefreshApplets} from "@/stores/applets"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -22,16 +22,16 @@ import {useCallback, useRef, useState} from "react"
 import {ScrollView, View, ViewStyle} from "react-native"
 
 export default function Homepage() {
-  const {refreshAppStatus} = useAppStatus()
   const [onboardingTarget, setOnboardingTarget] = useState<"glasses" | "livecaptions">("glasses")
   const liveCaptionsRef = useRef<any>(null)
   const connectButtonRef = useRef<any>(null)
   const {themed, theme} = useAppTheme()
   const [isOfflineMode, _setIsOfflineMode] = useSetting(SETTINGS_KEYS.offline_mode)
+  const refreshApplets = useRefreshApplets()
 
   useFocusEffect(
     useCallback(() => {
-      refreshAppStatus()
+      refreshApplets()
     }, []),
   )
 

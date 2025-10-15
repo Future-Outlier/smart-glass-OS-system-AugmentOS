@@ -2,7 +2,6 @@ import {View, TouchableOpacity, ViewStyle, ImageStyle, TextStyle} from "react-na
 
 import AppIcon from "@/components/misc/AppIcon"
 import {Text} from "@/components/ignite"
-import {useActiveForegroundApp, useAppStatus} from "@/contexts/AppletStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/utils/useAppTheme"
 import ChevronRight from "assets/icons/component/ChevronRight"
@@ -11,13 +10,13 @@ import restComms from "@/managers/RestComms"
 import {showAlert} from "@/utils/AlertUtils"
 import {ThemedStyle} from "@/theme"
 import {isOfflineApp, getOfflineAppRoute} from "@/types/AppletTypes"
+import {useActiveForegroundApp, stopApp, refreshApps} from "@/stores/applets"
 // Camera app protection removed - now handled by default button action system
 
 export const ActiveForegroundApp: React.FC = () => {
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
   const activeForegroundApp = useActiveForegroundApp()
-  const {optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
 
   const handlePress = () => {
     if (activeForegroundApp) {
@@ -54,7 +53,7 @@ export const ActiveForegroundApp: React.FC = () => {
           text: "Stop",
           style: "destructive",
           onPress: async () => {
-            optimisticallyStopApp(activeForegroundApp.packageName)
+            stopApp(activeForegroundApp.packageName)
 
             // Skip offline apps - they don't need server communication
             if (isOfflineApp(activeForegroundApp)) {
@@ -62,15 +61,13 @@ export const ActiveForegroundApp: React.FC = () => {
                 "Skipping offline app stop in ActiveForegroundApp (long press):",
                 activeForegroundApp.packageName,
               )
-              clearPendingOperation(activeForegroundApp.packageName)
               return
             }
 
             try {
               await restComms.stopApp(activeForegroundApp.packageName)
-              clearPendingOperation(activeForegroundApp.packageName)
             } catch (error) {
-              refreshAppStatus()
+              refreshApps()
               console.error("Stop app error:", error)
             }
           },
@@ -84,20 +81,18 @@ export const ActiveForegroundApp: React.FC = () => {
     event.stopPropagation()
 
     if (activeForegroundApp) {
-      optimisticallyStopApp(activeForegroundApp.packageName)
+      stopApp(activeForegroundApp.packageName)
 
       // Skip offline apps - they don't need server communication
       if (isOfflineApp(activeForegroundApp)) {
         console.log("Skipping offline app stop in ActiveForegroundApp:", activeForegroundApp.packageName)
-        clearPendingOperation(activeForegroundApp.packageName)
         return
       }
 
       try {
         await restComms.stopApp(activeForegroundApp.packageName)
-        clearPendingOperation(activeForegroundApp.packageName)
       } catch (error) {
-        refreshAppStatus()
+        refreshApps()
         console.error("Stop app error:", error)
       }
     }
@@ -121,7 +116,7 @@ export const ActiveForegroundApp: React.FC = () => {
       onLongPress={handleLongPress}
       activeOpacity={0.7}>
       <View style={themed($rowContent)}>
-        <AppIcon app={activeForegroundApp as any} style={themed($appIcon)} hideLoadingIndicator />
+        <AppIcon app={activeForegroundApp as any} style={themed($appIcon)} />
         <View style={themed($appInfo)}>
           <Text style={themed($appName)} numberOfLines={1} ellipsizeMode="tail">
             {activeForegroundApp.name}

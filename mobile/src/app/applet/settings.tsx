@@ -1,4 +1,3 @@
-// src/AppSettings.tsx
 import {Header, PillButton, Screen, Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import Divider from "@/components/misc/Divider"
@@ -17,10 +16,10 @@ import TimeSetting from "@/components/settings/TimeSetting"
 import TitleValueSetting from "@/components/settings/TitleValueSetting"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import ActionButton from "@/components/ui/ActionButton"
-import {useAppStatus} from "@/contexts/AppletStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import restComms from "@/managers/RestComms"
+import {useApplets, useRefreshApplets, useStartApplet, useStopApplet} from "@/stores/applets"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
@@ -58,11 +57,14 @@ export default function AppSettings() {
   // Local state to track current values for each setting.
   const [settingsState, setSettingsState] = useState<{[key: string]: any}>({})
 
-  const {appStatus, refreshAppStatus, optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation} =
-    useAppStatus()
+  const startApp = useStartApplet()
+  const applets = useApplets()
+  const refreshApplets = useRefreshApplets()
+  const stopApp = useStopApplet()
+
   const appInfo = useMemo(() => {
-    return appStatus.find(app => app.packageName === packageName) || null
-  }, [appStatus, packageName])
+    return applets.find(app => app.packageName === packageName) || null
+  }, [applets, packageName])
 
   const SETTINGS_CACHE_KEY = (packageName: string) => `app_settings_cache_${packageName}`
   const [settingsLoading, setSettingsLoading] = useState(true)
@@ -105,7 +107,7 @@ export default function AppSettings() {
 
     try {
       if (appInfo.is_running) {
-        optimisticallyStopApp(packageName)
+        stopApp(packageName)
         return
       }
 
@@ -150,10 +152,10 @@ export default function AppSettings() {
         return
       }
 
-      optimisticallyStartApp(packageName)
+      startApp(packageName)
     } catch (error) {
       // Refresh the app status to get the accurate state from the server
-      refreshAppStatus()
+      refreshApplets()
 
       console.error(`Error ${appInfo.is_running ? "stopping" : "starting"} app:`, error)
     }
@@ -179,9 +181,8 @@ export default function AppSettings() {
               // First stop the app if it's running
               if (appInfo?.is_running) {
                 // Optimistically update UI first
-                optimisticallyStopApp(packageName)
+                stopApp(packageName)
                 await restComms.stopApp(packageName)
-                clearPendingOperation(packageName)
               }
 
               // Then uninstall it
@@ -196,7 +197,6 @@ export default function AppSettings() {
               replace("/(tabs)/home")
             } catch (error: any) {
               console.error("Error uninstalling app:", error)
-              clearPendingOperation(packageName)
               refreshAppStatus()
               Toast.show({
                 type: "error",

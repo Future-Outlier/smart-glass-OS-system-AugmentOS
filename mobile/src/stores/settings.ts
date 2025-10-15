@@ -188,8 +188,12 @@ export const useSettingsStore = create<SettingsState>()(
         }
 
         // Sync with server if needed
-        if (updateServer) {
-          await restComms.writeUserSettings({[key]: value})
+        try {
+          if (updateServer) {
+            await restComms.writeUserSettings({[key]: value})
+          }
+        } catch (e) {
+          console.log("SETTINGS: couldn't sync setting to server: ", e)
         }
       } catch (error) {
         console.error(`Failed to save setting (${key}):`, error)

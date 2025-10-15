@@ -1,25 +1,24 @@
+import {Text} from "@/components/ignite"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import restComms from "@/managers/RestComms"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {FontAwesome} from "@expo/vector-icons"
 import {useEffect, useRef, useState} from "react"
 import {
-  View,
+  Animated,
+  Dimensions,
+  Modal,
   // eslint-disable-next-line
   StyleSheet,
-  Animated,
-  TouchableOpacity,
-  Modal,
-  Dimensions,
   TextStyle,
+  TouchableOpacity,
+  View,
 } from "react-native"
-import {Text} from "@/components/ignite"
-import {FontAwesome} from "@expo/vector-icons"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
-import {translate} from "@/i18n"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {useAppStatus} from "@/contexts/AppletStatusProvider"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import showAlert from "@/utils/AlertUtils"
-import restComms from "@/managers/RestComms"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 
 interface OnboardingSpotlightProps {
   targetRef: React.RefObject<any>
@@ -38,6 +37,7 @@ export const OnboardingSpotlight: React.FC<OnboardingSpotlightProps> = ({
 }) => {
   const [visible, setVisible] = useState(false)
   const {theme, themed} = useAppTheme()
+  const {status} = useCoreStatus()
   const fadeAnim = useRef(new Animated.Value(0)).current
   const [targetMeasurements, setTargetMeasurements] = useState<{
     x: number
@@ -47,52 +47,14 @@ export const OnboardingSpotlight: React.FC<OnboardingSpotlightProps> = ({
   } | null>(null)
 
   const [liveCaptionsPackageName, _setLiveCaptionsPackageName] = useState<string | null>(null)
-  const {status} = useCoreStatus()
-  const {appStatus} = useAppStatus()
+  const [onboardingCompleted, setOnboardingCompleted] = useSetting(SETTINGS_KEYS.onboarding_completed)
   const {push} = useNavigationHistory()
-
-  // Check onboarding status
-  useEffect(() => {
-    const checkOnboarding = async () => {
-      const onboardingCompleted = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.onboarding_completed)
-      if (!onboardingCompleted) {
-        // Check if glasses are connected
-        const glassesConnected = status.glasses_info?.model_name != null
-
-        if (!glassesConnected) {
-          setOnboardingTarget("glasses")
-          setVisible(true)
-        } else {
-          // // Check if Live Captions app exists and is not running
-          // const liveCaptionsApp = appStatus.find(
-          //   app =>
-          //     app.packageName === "com.augmentos.livecaptions" ||
-          //     app.packageName === "cloud.augmentos.live-captions" ||
-          //     app.packageName === "com.mentra.livecaptions",
-          // )
-
-          // if (liveCaptionsApp && !liveCaptionsApp.is_running) {
-          //   setOnboardingTarget("livecaptions")
-          //   setLiveCaptionsPackageName(liveCaptionsApp.packageName)
-          //   setShowOnboardingSpotlight(true)
-          // }
-          // Skip Live Captions spotlight - mark onboarding as complete once glasses are connected                                  │ │
-          setVisible(false)
-          await useSettingsStore.getState().setSetting(SETTINGS_KEYS.onboarding_completed, true)
-        }
-      }
-    }
-
-    checkOnboarding().catch(error => {
-      console.error("Error checking onboarding:", error)
-    })
-  }, [status.glasses_info?.model_name, appStatus])
 
   // Handle spotlight dismiss
   const handleDismiss = () => {
     setVisible(false)
     // Mark onboarding as completed if user skips
-    useSettingsStore.getState().setSetting(SETTINGS_KEYS.onboarding_completed, true)
+    setOnboardingCompleted(true)
   }
 
   // Handle spotlight target press
@@ -108,7 +70,7 @@ export const OnboardingSpotlight: React.FC<OnboardingSpotlightProps> = ({
         await restComms.startApp(liveCaptionsPackageName)
 
         // Mark onboarding as completed
-        await useSettingsStore.getState().setSetting(SETTINGS_KEYS.onboarding_completed, true)
+        setOnboardingCompleted(true)
 
         // Show the success message after a short delay
         setTimeout(() => {
@@ -126,6 +88,29 @@ export const OnboardingSpotlight: React.FC<OnboardingSpotlightProps> = ({
       }
     }
   }
+
+  // Check onboarding status
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (!onboardingCompleted) {
+        // Check if glasses are connected
+        const glassesConnected = status.glasses_info?.model_name != null
+
+        if (!glassesConnected) {
+          setOnboardingTarget("glasses")
+          setVisible(true)
+        } else {
+          // Skip Live Captions spotlight - mark onboarding as complete once glasses are connected
+          setVisible(false)
+          setOnboardingCompleted(true)
+        }
+      }
+    }
+
+    checkOnboarding().catch(error => {
+      console.error("Error checking onboarding:", error)
+    })
+  }, [status.glasses_info?.model_name])
 
   useEffect(() => {
     if (visible && targetRef.current) {

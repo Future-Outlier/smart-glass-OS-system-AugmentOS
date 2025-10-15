@@ -2,7 +2,6 @@ import {withWrappers} from "@/utils/structure/with-wrappers"
 import {Suspense} from "react"
 import {KeyboardProvider} from "react-native-keyboard-controller"
 import {CoreStatusProvider} from "@/contexts/CoreStatusProvider"
-import {AppStatusProvider} from "@/contexts/AppletStatusProvider"
 import {GestureHandlerRootView} from "react-native-gesture-handler"
 import {AuthProvider} from "@/contexts/AuthContext"
 import {SearchResultsProvider} from "@/contexts/SearchResultsContext"
@@ -31,7 +30,6 @@ export const AllProviders = withWrappers(
   AuthProvider,
   SearchResultsProvider,
   AppStoreWebviewPrefetchProvider,
-  AppStatusProvider,
   NavigationHistoryProvider,
   DeeplinkProvider,
   GestureHandlerRootView,

@@ -1,7 +1,7 @@
 import RouteButton from "@/components/ui/RouteButton"
-import {useActiveBackgroundAppsCount} from "@/contexts/AppletStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
+import {useActiveBackgroundAppsCount} from "@/stores/applets"
 // import {TextStyle, ViewStyle} from "react-native"
 // import {ThemedStyle} from "@/theme"
 // import ChevronRight from "assets/icons/component/ChevronRight"

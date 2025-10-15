@@ -4,7 +4,7 @@ import {ThemedStyle} from "@/theme"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
-import {useAppStatus} from "@/contexts/AppletStatusProvider"
+// import {useAppStatus} from "@/contexts/AppletStatusProvider"
 
 export const OfflineModeButton: React.FC = () => {
   const {theme, themed} = useAppTheme()
@@ -12,7 +12,7 @@ export const OfflineModeButton: React.FC = () => {
   const [_offlineCaptionsAppRunning, setOfflineCaptionsAppRunning] = useSetting(
     SETTINGS_KEYS.offline_captions_app_running,
   )
-  const {stopAllApps} = useAppStatus()
+  // const {stopAllApps} = useAppStatus()
 
   const handlePress = () => {
     const title = offlineMode ? "Disable Offline Mode?" : "Enable Offline Mode?"
@@ -31,7 +31,7 @@ export const OfflineModeButton: React.FC = () => {
           onPress: async () => {
             if (!offlineMode) {
               // If enabling offline mode, stop all running apps
-              await stopAllApps()
+              // await stopAllApps()
             } else {
               // If disabling offline mode, turn off offline captions
               setOfflineCaptionsAppRunning(false)

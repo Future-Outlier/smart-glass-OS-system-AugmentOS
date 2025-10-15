@@ -31,7 +31,6 @@ export const CompactDeviceStatus: React.FC = () => {
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
   const [isCheckingConnectivity, setIsCheckingConnectivity] = useState(false)
-
   // If no glasses paired, show Pair Glasses button
   if (!defaultWearable || defaultWearable === "null") {
     return (
@@ -49,7 +48,7 @@ export const CompactDeviceStatus: React.FC = () => {
   }
 
   // Show simulated glasses view for simulated glasses
-  if (defaultWearable.toLowerCase().includes(DeviceTypes.SIMULATED)) {
+  if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
     return <ConnectedSimulatedGlassesInfo />
   }
 
