@@ -23,7 +23,7 @@ const SearchBar = forwardRef<HTMLFormElement, SearchBarProps>(
         onSubmit={onSearchSubmit}
         className={`flex items-center space-x-3 ${className}`}
       >
-        <div className="relative w-full">
+        <div className="relative w-full absolute">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search
               className="h-5 w-5"
@@ -32,7 +32,7 @@ const SearchBar = forwardRef<HTMLFormElement, SearchBarProps>(
           </div>
           <input
             type="text"
-            className="theme-search-input w-full pl-10 pr-10 py-2.5 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#47478E] border"
+            className=" theme-search-input w-full pl-10 pr-10 py-2.5 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#47478E] border"
             style={{
               backgroundColor:
                 theme === "light" ? "var(--bg-secondary)" : "#141834",

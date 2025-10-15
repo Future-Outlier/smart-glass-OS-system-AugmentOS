@@ -1,4 +1,4 @@
-import React, { memo, useState } from "react";
+import { memo, useState } from "react";
 import { Lock } from "lucide-react";
 import { Button } from "./ui/button";
 import { AppI } from "../types";
@@ -26,7 +26,6 @@ const AppCard: React.FC<AppCardProps> = memo(
     isWebView,
     installingApp,
     onInstall,
-    onUninstall,
     onOpen,
     onCardClick,
     onLogin,
@@ -64,7 +63,7 @@ const AppCard: React.FC<AppCardProps> = memo(
 
     return (
       <div
-        className="p-4 sm:p-6 flex gap-3 transition-colors rounded-lg relative cursor-pointer"
+        className="p-4 flex gap-3 rounded-sm relative cursor-pointer "
         onClick={handleCardClick}
         onMouseEnter={(e) =>
           (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")
@@ -80,7 +79,7 @@ const AppCard: React.FC<AppCardProps> = memo(
 
         {/* Image Column */}
         <div className="shrink-0 flex items-start pt-2">
-          <div className="relative w-12 h-12">
+          <div className="relative w-16 h-16">
             {/* Placeholder that shows immediately */}
             <div
               className={`absolute inset-0 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center transition-opacity duration-200 ${
@@ -98,7 +97,7 @@ const AppCard: React.FC<AppCardProps> = memo(
                   : app.logoURL
               }
               alt={`${app.name} logo`}
-              className={`w-12 h-12 object-cover rounded-full transition-opacity duration-200 ${
+              className={`w-16 h-16 object-cover rounded-2xl  transition-opacity duration-200 ${
                 imageLoaded ? "opacity-100" : "opacity-0"
               }`}
               loading="lazy"
