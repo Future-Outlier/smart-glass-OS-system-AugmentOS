@@ -716,6 +716,7 @@ export class MantleBridge extends EventEmitter {
   }
 
   async sendGalleryModeActive(active: boolean) {
+    console.log("sendGalleryModeActive", active)
     return await this.sendData({
       command: "send_gallery_mode_active",
       params: {

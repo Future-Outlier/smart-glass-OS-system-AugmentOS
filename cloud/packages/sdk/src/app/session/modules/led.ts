@@ -43,6 +43,9 @@ export interface LedControlOptions {
  * // Pulse blue LED
  * await session.led.pulse('blue', 2000);
  *
+ * // Solid white LED for 5 seconds
+ * await session.led.solid('white', 5000);
+ *
  * // Turn off LEDs
  * await session.led.turnOff();
  * ```
@@ -229,6 +232,33 @@ export class LedModule {
       ontime: 20,
       offtime: 80,
       count,
+    });
+  }
+
+  /**
+   * 💡 Solid LED mode - LED stays on continuously for specified duration
+   *
+   * Creates a solid LED effect with no off time, perfect for continuous illumination.
+   *
+   * @param color - LED color to use
+   * @param duration - How long LED stays on (ms)
+   * @returns Promise that resolves when the command is sent
+   *
+   * @example
+   * ```typescript
+   * // Solid red LED for 5 seconds
+   * await session.led.solid('red', 5000);
+   *
+   * // Solid white LED for 30 seconds
+   * await session.led.solid('white', 30000);
+   * ```
+   */
+  async solid(color: LedColor, duration: number): Promise<void> {
+    return this.turnOn({
+      color,
+      ontime: duration,
+      offtime: 0, // No off time for solid mode
+      count: 1, // Single cycle
     });
   }
 
