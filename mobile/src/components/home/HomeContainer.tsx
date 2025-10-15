@@ -5,7 +5,6 @@ import {BackgroundAppsLink} from "@/components/home/BackgroundAppsLink"
 import {CompactDeviceStatus} from "@/components/home/CompactDeviceStatus"
 import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
 import {IncompatibleApps} from "@/components/home/IncompatibleApps"
-// import Divider from "@/components/misc/Divider"
 import {Spacer} from "@/components/misc/Spacer"
 import {useAppTheme} from "@/utils/useAppTheme"
 
@@ -15,11 +14,8 @@ export const HomeContainer: React.FC = () => {
   return (
     <View>
       <CompactDeviceStatus />
-      {/*<Divider variant="full" />*/}
-      {/*<Divider variant="full" />*/}
       <BackgroundAppsLink />
       <ActiveForegroundApp />
-      {/*<Divider variant="full" />*/}
       <ForegroundAppsGrid />
       <IncompatibleApps />
       <Spacer height={theme.spacing.xl} />

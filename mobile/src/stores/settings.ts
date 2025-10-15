@@ -57,6 +57,9 @@ export const SETTINGS_KEYS = {
   // Button action settings
   default_button_action_enabled: "default_button_action_enabled",
   default_button_action_app: "default_button_action_app",
+  // notifications
+  notifications_enabled: "notifications_enabled",
+  notifications_blocklist: "notifications_blocklist",
 } as const
 
 const DEFAULT_SETTINGS: Record<string, any> = {
@@ -110,6 +113,8 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.camera_app_running]: false,
   [SETTINGS_KEYS.default_button_action_enabled]: true,
   [SETTINGS_KEYS.default_button_action_app]: "com.mentra.camera",
+  [SETTINGS_KEYS.notifications_enabled]: true,
+  [SETTINGS_KEYS.notifications_blocklist]: [],
 }
 
 const CORE_SETTINGS_KEYS = [
@@ -138,6 +143,9 @@ const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.button_max_recording_time,
   // stt:
   SETTINGS_KEYS.offline_captions_app_running,
+  // notifications:
+  SETTINGS_KEYS.notifications_enabled,
+  SETTINGS_KEYS.notification_blocklist,
 ]
 
 interface SettingsState {

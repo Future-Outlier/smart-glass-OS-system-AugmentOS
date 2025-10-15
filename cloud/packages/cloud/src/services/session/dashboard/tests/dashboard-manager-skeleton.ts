@@ -361,12 +361,12 @@ function handlePhoneNotification(sessionId: string, data: any): void {
     sessionInfo.phoneNotificationCache = [];
   }
 
-  // Check if the app name is blacklisted
+  // Check if the app name is blocklisted
   if (
     data.app &&
     notificationAppBlackList.some((app) => data.app.toLowerCase().includes(app))
   ) {
-    logger.debug(`Notification from ${data.app} is blacklisted.`);
+    logger.debug(`Notification from ${data.app} is blocklisted.`);
     return;
   }
 

@@ -3,10 +3,18 @@ package com.mentra.core.services
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.text.TextUtils
+import android.util.Base64
+import com.mentra.core.Bridge
+import com.mentra.core.MentraManager
+import java.io.ByteArrayOutputStream
 
 class NotificationListener private constructor(private val context: Context) {
 
@@ -77,6 +85,13 @@ class NotificationListener private constructor(private val context: Context) {
                         id = sbn.id,
                         tag = sbn.tag
                 )
+        val blocklist = MentraManager.getInstance().notificationsBlocklist
+        if (blocklist.contains(notification.packageName)) {
+            Bridge.log("NOTIF: Notification in blocklist, returning")
+            return
+        }
+
+        // Bridge.sendNotification(notification)
 
         listeners.forEach { listener -> listener.onNotificationReceived(notification) }
     }
@@ -101,6 +116,53 @@ class NotificationListener private constructor(private val context: Context) {
             val id: Int,
             val tag: String?
     )
+
+    /** Get all installed apps with details */
+    fun getAllApps(): List<Map<String, Any?>> {
+        val packageManager = context.packageManager
+        val packages = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+        val blocklist = MentraManager.getInstance().notificationsBlacklist
+
+        return packages
+                .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 } // Filter out system apps
+                .map { appInfo ->
+                    val icon =
+                            try {
+                                val drawable =
+                                        packageManager.getApplicationIcon(appInfo.packageName)
+                                // Convert drawable to base64 string
+                                val bitmap =
+                                        (drawable as? android.graphics.drawable.BitmapDrawable)
+                                                ?.bitmap
+                                if (bitmap != null) {
+                                    val outputStream = java.io.ByteArrayOutputStream()
+                                    bitmap.compress(
+                                            android.graphics.Bitmap.CompressFormat.PNG,
+                                            100,
+                                            outputStream
+                                    )
+                                    val byteArray = outputStream.toByteArray()
+                                    "data:image/png;base64," +
+                                            android.util.Base64.encodeToString(
+                                                    byteArray,
+                                                    android.util.Base64.NO_WRAP
+                                            )
+                                } else {
+                                    null
+                                }
+                            } catch (e: Exception) {
+                                null
+                            }
+
+                    mapOf(
+                            "packageName" to appInfo.packageName,
+                            "appName" to packageManager.getApplicationLabel(appInfo).toString(),
+                            "isBlocked" to blacklist.contains(appInfo.packageName),
+                            "icon" to icon
+                    )
+                }
+                .sortedBy { it["appName"] as String }
+    }
 }
 
 /** The actual NotificationListenerService implementation */
