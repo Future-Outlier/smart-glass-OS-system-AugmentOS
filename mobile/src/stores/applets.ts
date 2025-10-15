@@ -5,6 +5,7 @@ import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {translate} from "@/i18n"
 import {useMemo} from "react"
+import {OFFLINE_APPS} from "@/types/OfflineApps"
 
 interface AppStatusState {
   apps: AppletInterface[]
@@ -13,6 +14,35 @@ interface AppStatusState {
   stopApp: (packageName: string) => Promise<void>
   stopAllApps: () => Promise<void>
 }
+
+const OFFLINE_APPLETS: AppletInterface[] = [
+  {
+    packageName: "com.mentra.camera",
+    name: "Camera",
+    developerName: "Mentra",
+    logoURL: "https://example.com/logo.png",
+    publicUrl: "https://example.com",
+    permissions: [],
+    webviewURL: "https://example.com",
+    is_running: false,
+    loading: false,
+    isOnline: false,
+    type: "standard",
+  },
+  {
+    packageName: "com.mentra.captions",
+    name: "Captions",
+    developerName: "Mentra",
+    logoURL: "https://example.com/logo.png",
+    publicUrl: "https://example.com",
+    permissions: [],
+    webviewURL: "https://example.com",
+    is_running: false,
+    loading: false,
+    isOnline: false,
+    type: "standard",
+  },
+]
 
 export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   apps: [],
@@ -38,34 +68,48 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
         compatibility: app.compatibility,
       })) as AppletInterface[]
 
-      set({apps: mapped})
+      // merge in the offline apps:
+      const applets = [...mapped, ...OFFLINE_APPLETS]
+
+      set({apps: applets})
     } catch (err) {
       console.error("Error fetching apps:", err)
     }
   },
 
-  startApp: async (packageName: string, appType?: string) => {
-    if (appType === "standard") {
-      const runningStandardApps = get().apps.filter(
-        a => a.is_running && a.type === "standard" && a.packageName !== packageName,
-      )
+  startApp: async (packageName: string) => {
+    console.log("starting app")
+    const applet = get().apps.find(a => a.packageName === packageName)
+    console.log("applet", applet)
 
-      for (const app of runningStandardApps) {
-        await restComms.stopApp(app.packageName).catch(console.error)
-        set(state => ({
-          apps: state.apps.map(a =>
-            a.packageName === app.packageName ? {...a, is_running: false, loading: false} : a,
-          ),
-        }))
-      }
+    if (!applet) {
+      console.error(`Applet not found for package name: ${packageName}`)
+      return
     }
+
+    // if (applet.type === "standard") {
+    //   const runningStandardApps = get().apps.filter(
+    //     a => a.is_running && a.type === "standard" && a.packageName !== packageName,
+    //   )
+
+    //   for (const app of runningStandardApps) {
+    //     await restComms.stopApp(app.packageName).catch(console.error)
+    //     set(state => ({
+    //       apps: state.apps.map(a =>
+    //         a.packageName === app.packageName ? {...a, is_running: false, loading: false} : a,
+    //       ),
+    //     }))
+    //   }
+    // }
 
     set(state => ({
       apps: state.apps.map(a => (a.packageName === packageName ? {...a, is_running: true, loading: true} : a)),
     }))
 
     try {
-      await restComms.startApp(packageName)
+      if (applet?.isOnline) {
+        await restComms.startApp(packageName)
+      }
       await useSettingsStore.getState().setSetting(SETTINGS_KEYS.has_ever_activated_app, true)
     } catch (error: any) {
       console.error("Start app error:", error)
@@ -90,8 +134,10 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     set(state => ({
       apps: state.apps.map(a => (a.packageName === packageName ? {...a, is_running: false, loading: false} : a)),
     }))
-
-    await restComms.stopApp(packageName).catch(console.error)
+    const applet = get().apps.find(a => a.packageName === packageName)
+    if (applet?.isOnline) {
+      await restComms.stopApp(packageName).catch(console.error)
+    }
   },
 
   stopAllApps: async () => {
@@ -109,6 +155,8 @@ export const useApplets = () => useAppletStatusStore(state => state.apps)
 export const useStartApplet = () => useAppletStatusStore(state => state.startApp)
 export const useStopApplet = () => useAppletStatusStore(state => state.stopApp)
 export const useRefreshApplets = () => useAppletStatusStore(state => state.refreshApps)
+
+export const useStopAllApplets = () => useAppletStatusStore(state => state.stopAllApps)
 
 export const useInactiveForegroundApps = () => {
   const apps = useApplets()

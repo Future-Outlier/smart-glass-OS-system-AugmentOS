@@ -217,6 +217,8 @@ export default function DeviceSettings() {
     )
   }
 
+  const features = glassesFeatures[defaultWearable]
+
   // Check if no glasses are paired at all
   if (!defaultWearable) {
     return (
@@ -414,7 +416,7 @@ export default function DeviceSettings() {
       />
 
       {/* Only show WiFi settings if connected glasses support WiFi */}
-      {defaultWearable && glassesFeatures[defaultWearable]?.wifi && (
+      {defaultWearable && features?.wifi && (
         <RouteButton
           label={translate("settings:glassesWifiSettings")}
           subtitle={translate("settings:glassesWifiDescription")}
@@ -427,12 +429,12 @@ export default function DeviceSettings() {
       {/* Device info is rendered within the Advanced Settings section below */}
 
       {/* OTA Progress Section - Only show for Mentra Live glasses */}
-      {defaultWearable && isGlassesConnected && defaultWearable.toLowerCase().includes("live") && (
+      {defaultWearable && isGlassesConnected && defaultWearable.includes(DeviceTypes.LIVE) && (
         <OtaProgressSection otaProgress={status.ota_progress} />
       )}
 
       {/* Only show dashboard settings if glasses have display capability */}
-      {defaultWearable && glassesFeatures[defaultWearable]?.display && (
+      {defaultWearable && features?.display && (
         <RouteButton
           label={translate("settings:dashboardSettings")}
           subtitle={translate("settings:dashboardDescription")}
@@ -441,7 +443,7 @@ export default function DeviceSettings() {
       )}
 
       {/* Screen settings for binocular glasses */}
-      {defaultWearable && glassesFeatures[defaultWearable]?.binocular && (
+      {defaultWearable && features?.binocular && (
         <RouteButton
           label={translate("settings:screenSettings")}
           subtitle={translate("settings:screenDescription")}
@@ -499,11 +501,9 @@ export default function DeviceSettings() {
                     }}
                     onPress={() => setMic("phone")}>
                     <Text style={{color: theme.colors.text}}>{translate("deviceSettings:systemMic")}</Text>
-                    <MaterialCommunityIcons
-                      name="check"
-                      size={24}
-                      color={preferredMic === "phone" ? theme.colors.icon : "transparent"}
-                    />
+                    {preferredMic === "phone" && (
+                      <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                    )}
                   </TouchableOpacity>
                   {/* divider */}
                   <View
@@ -523,11 +523,9 @@ export default function DeviceSettings() {
                     <View style={{flexDirection: "column", gap: 4}}>
                       <Text style={{color: theme.colors.text}}>{translate("deviceSettings:glassesMic")}</Text>
                     </View>
-                    <MaterialCommunityIcons
-                      name="check"
-                      size={24}
-                      color={preferredMic === "glasses" ? theme.colors.icon : "transparent"}
-                    />
+                    {preferredMic === "glasses" && (
+                      <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                    )}
                   </TouchableOpacity>
                 </View>
               )}
