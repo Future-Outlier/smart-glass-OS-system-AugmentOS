@@ -5,6 +5,7 @@ package com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages;
  * This includes swipes, taps, and long press gestures.
  * 
  * Supported gestures:
+ * - single_tap
  * - double_tap
  * - triple_tap
  * - long_press

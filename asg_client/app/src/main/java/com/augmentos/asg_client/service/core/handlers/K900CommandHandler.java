@@ -555,6 +555,7 @@ public class K900CommandHandler {
      */
     private String getTouchGestureType(int type) {
         switch (type) {
+            case 0: return "single_tap";
             case 1: return "double_tap";
             case 2: return "triple_tap";
             case 3: return "long_press";

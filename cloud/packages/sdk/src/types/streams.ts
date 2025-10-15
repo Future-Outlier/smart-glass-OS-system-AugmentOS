@@ -319,6 +319,7 @@ export function parseTouchEventStream(
   if (subscription.startsWith(`${StreamType.TOUCH_EVENT}:`)) {
     const [, gestureName] = subscription.split(":");
     const validGestures = [
+      "single_tap",
       "double_tap",
       "triple_tap",
       "long_press",
@@ -343,6 +344,7 @@ export function parseTouchEventStream(
  */
 export function createTouchEventStream(gesture: string): ExtendedStreamType {
   const validGestures = [
+    "single_tap",
     "double_tap",
     "triple_tap",
     "long_press",
