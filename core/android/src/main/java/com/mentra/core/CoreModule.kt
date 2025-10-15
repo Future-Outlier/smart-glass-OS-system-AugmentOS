@@ -26,12 +26,12 @@ class CoreModule : Module() {
         AsyncFunction("handleCommand") { command: String -> bridge.handleCommand(command) }
 
         // android stubs:
-        AsyncFunction("getAllApps") {
+        AsyncFunction("getInstalledApps") {
             val context =
                     appContext.reactContext
                             ?: appContext.currentActivity
                                     ?: throw IllegalStateException("No context available")
-            NotificationListener.getInstance(context).getAllApps()
+            NotificationListener.getInstance(context).getInstalledApps()
         }
 
         AsyncFunction("hasNotificationListenerPermission") {

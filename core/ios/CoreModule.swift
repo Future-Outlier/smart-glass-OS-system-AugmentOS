@@ -20,7 +20,7 @@ public class CoreModule: Module {
         }
 
         // android stubs:
-        AsyncFunction("getAllApps") { () -> Any in
+        AsyncFunction("getInstalledApps") { () -> Any in
             return nil
         }
 

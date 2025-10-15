@@ -50,7 +50,6 @@ export default function NotificationSettingsScreen() {
       })
 
       setApps(sortedApps)
-      // console.log(`Loaded ${sortedApps.length} apps`)
     } catch (error) {
       console.error("Error loading apps:", error)
       Toast.show({

@@ -118,10 +118,10 @@ class NotificationListener private constructor(private val context: Context) {
     )
 
     /** Get all installed apps with details */
-    fun getAllApps(): List<Map<String, Any?>> {
+    fun getInstalledApps(): List<Map<String, Any?>> {
         val packageManager = context.packageManager
         val packages = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-        val blocklist = MentraManager.getInstance().notificationsBlacklist
+        val blocklist = MentraManager.getInstance().notificationsBlocklist
 
         return packages
                 .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 } // Filter out system apps
@@ -157,7 +157,7 @@ class NotificationListener private constructor(private val context: Context) {
                     mapOf(
                             "packageName" to appInfo.packageName,
                             "appName" to packageManager.getApplicationLabel(appInfo).toString(),
-                            "isBlocked" to blacklist.contains(appInfo.packageName),
+                            "isBlocked" to blocklist.contains(appInfo.packageName),
                             "icon" to icon
                     )
                 }

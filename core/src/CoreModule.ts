@@ -5,7 +5,7 @@ import {CoreModuleEvents} from "./Core.types"
 declare class CoreModule extends NativeModule<CoreModuleEvents> {
   handleCommand(command: string): Promise<any>
   // android:
-  getAllApps(): Promise<any>
+  getInstalledApps(): Promise<any>
   hasNotificationListenerPermission(): Promise<boolean>
 }
 

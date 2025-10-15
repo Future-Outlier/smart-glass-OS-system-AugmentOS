@@ -82,7 +82,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.has_ever_activated_app]: false,
   [SETTINGS_KEYS.theme_preference]: "system",
   [SETTINGS_KEYS.dev_mode]: false,
-  [SETTINGS_KEYS.new_ui]: false,
+  [SETTINGS_KEYS.new_ui]: true,
   [SETTINGS_KEYS.enable_squircles]: false,
   [SETTINGS_KEYS.offline_mode]: false,
   [SETTINGS_KEYS.sensing_enabled]: true,
