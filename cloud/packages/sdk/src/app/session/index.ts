@@ -20,7 +20,6 @@ import {
   AppConnectionInit,
   AppSubscriptionUpdate,
   AudioPlayResponse,
-  RgbLedControlResponse,
   AppToCloudMessageType,
   CloudToAppMessageType,
 
@@ -1501,10 +1500,11 @@ export class AppSession {
             "Received legacy photo response - photos should now come via /photo-upload webhook",
           );
         } else if (isRgbLedControlResponse(message)) {
-          // Handle RGB LED control response
-          if (this.led) {
-            this.led.handleResponse(message as RgbLedControlResponse);
-          }
+          // LED control responses are no longer handled - fire-and-forget mode
+          this.logger.debug(
+            { message },
+            "Received LED control response (ignored - fire-and-forget mode)",
+          );
         }
         // Handle unrecognized message types gracefully
         else {
