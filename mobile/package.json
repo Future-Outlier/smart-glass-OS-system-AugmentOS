@@ -47,7 +47,7 @@
     "apisauce": "3.0.1",
     "babel-plugin-module-resolver": "^5.0.2",
     "bzip2": "^0.1.1",
-    "core": "file:core",
+    "core": "file:../core",
     "date-fns": "^4.1.0",
     "expo": "54.0.13",
     "expo-application": "~7.0.7",

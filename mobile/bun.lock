@@ -20,7 +20,7 @@
         "apisauce": "3.0.1",
         "babel-plugin-module-resolver": "^5.0.2",
         "bzip2": "^0.1.1",
-        "core": "file:core",
+        "core": "file:../core",
         "date-fns": "^4.1.0",
         "expo": "54.0.13",
         "expo-application": "~7.0.7",
@@ -1036,7 +1036,7 @@
 
     "convert-source-map": ["convert-source-map@2.0.0", "", {}, "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="],
 
-    "core": ["core@file:core", { "devDependencies": { "expo-module-scripts": "^5.0.7" }, "peerDependencies": { "@types/react": "*", "expo": "*", "react": "*", "react-native": "*" } }],
+    "core": ["core@file:../core", { "devDependencies": { "expo-module-scripts": "^5.0.7" }, "peerDependencies": { "@types/react": "*", "expo": "*", "react": "*", "react-native": "*" } }],
 
     "core-js-compat": ["core-js-compat@3.45.1", "", { "dependencies": { "browserslist": "^4.25.3" } }, "sha512-tqTt5T4PzsMIZ430XGviK4vzYSoeNJ6CXODi6c/voxOT6IZqBht5/EKaSNnYiEjjRYxjVz7DQIsOsY0XNi8PIA=="],
 
