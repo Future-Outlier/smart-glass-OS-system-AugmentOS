@@ -31,7 +31,7 @@ export default function InactiveAppList({
   liveCaptionsRef?: RefObject<any>
   onClearSearch?: () => void
 }) {
-  const {appStatus, optimisticallyStartApp} = useAppStatus()
+  const {appStatus, optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation} = useAppStatus()
   const {status: _status} = useCoreStatus()
   const [_onboardingModalVisible, _setOnboardingModalVisible] = useState(false)
   const [onboardingCompleted, setOnboardingCompleted] = useState(true)
@@ -118,31 +118,8 @@ export default function InactiveAppList({
       return Promise.resolve(true)
     }
 
-    const runningStndAppList = getRunningStandardApps(packageName)
-    if (runningStndAppList.length === 0) {
-      return Promise.resolve(true)
-    }
-
-    return new Promise(resolve => {
-      showAlert(
-        translate("home:thereCanOnlyBeOne"),
-        translate("home:thereCanOnlyBeOneMessage"),
-        [
-          {
-            text: translate("common:cancel"),
-            onPress: () => resolve(false),
-            style: "cancel",
-          },
-          {
-            text: translate("common:continue"),
-            onPress: () => resolve(true),
-          },
-        ],
-        {
-          iconName: "tree",
-        },
-      )
-    })
+    // Always allow starting a new foreground app - it will automatically replace any running one
+    return Promise.resolve(true)
   }
 
   const startApp = async (packageName: string) => {
@@ -168,6 +145,29 @@ export default function InactiveAppList({
     if (!appInfo) {
       console.error("App not found:", packageName)
       return
+    }
+
+    // If this is a foreground app and there's already one running, stop it first
+    if (appInfo.type === "standard") {
+      const runningForegroundApp = appStatus.find(
+        app => app.is_running && app.type === "standard" && app.packageName !== packageName,
+      )
+      if (runningForegroundApp) {
+        console.log("Stopping running foreground app:", runningForegroundApp.packageName)
+        optimisticallyStopApp(runningForegroundApp.packageName)
+
+        // Skip offline apps - they don't need server communication
+        if (!isOfflineApp(runningForegroundApp)) {
+          try {
+            await restComms.stopApp(runningForegroundApp.packageName)
+            clearPendingOperation(runningForegroundApp.packageName)
+          } catch (error) {
+            console.error("Error stopping foreground app:", error)
+          }
+        } else {
+          clearPendingOperation(runningForegroundApp.packageName)
+        }
+      }
     }
 
     // Debug: Log camera app properties
@@ -275,9 +275,6 @@ export default function InactiveAppList({
     optimisticallyStartApp(packageName)
   }
 
-  const getRunningStandardApps = (packageName: string) => {
-    return appStatus.filter(app => app.is_running && app.type == "standard" && app.packageName !== packageName)
-  }
   const openAppSettings = (app: any) => {
     console.log("%%% opening app settings", app)
 
