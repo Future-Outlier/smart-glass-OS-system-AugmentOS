@@ -236,6 +236,14 @@ public class AsgClientServiceManager {
 
             Log.i(TAG, "📊 Bluetooth initialization complete - Device type: " +
                     (isK900Device ? "K900" : "Standard Android"));
+
+            // Initialize RGB LED handler with Bluetooth Manager (deferred initialization)
+            if (rgbLedCommandHandler != null) {
+                Log.d(TAG, "🚨 Initializing RGB LED Command Handler with Bluetooth Manager");
+                rgbLedCommandHandler.initializeBluetoothManager();
+            } else {
+                Log.w(TAG, "⚠️ RGB LED Command Handler not set - cannot initialize Bluetooth Manager");
+            }
         } catch (Exception e) {
             Log.e(TAG, "💥 Error initializing bluetooth manager", e);
             throw e;

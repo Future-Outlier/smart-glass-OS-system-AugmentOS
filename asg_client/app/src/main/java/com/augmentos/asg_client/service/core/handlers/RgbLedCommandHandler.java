@@ -48,12 +48,28 @@ public class RgbLedCommandHandler implements ICommandHandler {
         this.serviceManager = serviceManager;
         this.hardwareManager = HardwareManagerFactory.getInstance(serviceManager.getContext());
 
-        // Initialize the hardware manager with BluetoothManager for RGB LED support
-        if (hardwareManager != null && serviceManager.getBluetoothManager() != null) {
-            hardwareManager.setBluetoothManager(serviceManager.getBluetoothManager());
-        }
+        Log.d(TAG, "🚨 RGB LED Command Handler constructed (hardware manager ready)");
+        Log.d(TAG, "🔧 Note: Bluetooth Manager will be initialized later via initializeBluetoothManager()");
+    }
 
-        Log.d(TAG, "🚨 RGB LED Command Handler initialized (using hardware manager)");
+    /**
+     * Initialize Bluetooth Manager for RGB LED control.
+     * Called after BluetoothManager is ready in the service lifecycle.
+     * This uses deferred initialization pattern to handle initialization ordering.
+     */
+    public void initializeBluetoothManager() {
+        Log.d(TAG, "🔧 initializeBluetoothManager() called");
+
+        if (hardwareManager != null && serviceManager.getBluetoothManager() != null) {
+            Log.d(TAG, "🚨 Setting Bluetooth Manager for RGB LED control");
+            hardwareManager.setBluetoothManager(serviceManager.getBluetoothManager());
+            Log.i(TAG, "✅ Bluetooth Manager set for RGB LED control - READY FOR OPERATIONS");
+        } else {
+            Log.w(TAG, "⚠️ Cannot set Bluetooth Manager - hardwareManager: " + 
+                      (hardwareManager != null ? "valid" : "null") + 
+                      ", bluetoothManager: " + 
+                      (serviceManager.getBluetoothManager() != null ? "valid" : "null"));
+        }
     }
     
     @Override
