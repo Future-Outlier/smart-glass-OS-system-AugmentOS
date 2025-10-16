@@ -37,7 +37,7 @@ export default function InitScreen() {
   // Hooks
   const {theme, themed} = useAppTheme()
   const {user, session} = useAuth()
-  const {replace, getPendingRoute, setPendingRoute, clearHistoryAndGoHome} = useNavigationHistory()
+  const {replace, getPendingRoute, setPendingRoute} = useNavigationHistory()
   const {processUrl} = useDeeplink()
 
   // State
@@ -314,7 +314,7 @@ export default function InitScreen() {
 
             {(state === "error" || (state === "outdated" && canSkipUpdate)) && (
               <Button
-                preset="accent"
+                preset="warning"
                 style={themed($secondaryButton)}
                 RightAccessory={() => <Icon name="arrow-right" size={24} color={theme.colors.text} />}
                 onPress={navigateToDestination}

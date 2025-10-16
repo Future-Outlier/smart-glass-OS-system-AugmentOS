@@ -1,11 +1,12 @@
 import {translate} from "@/i18n"
 import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import { getThemeIsDark } from "@/theme/getTheme"
 import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
 import {HardwareCompatibility} from "@/utils/HardwareCompatibility"
 import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
-import {Capabilities, HardwareRequirementLevel, HardwareRequirement, HardwareType} from "@cloud/packages/sdk/src/types"
+import {HardwareRequirementLevel, HardwareType} from "@cloud/packages/sdk/src/types"
 import {useMemo} from "react"
 import {create} from "zustand"
 
@@ -35,10 +36,7 @@ const getCameraIcon = (isDark: boolean) => {
 
 // get offline applets:
 export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
-  // const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-  const theme = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.theme_preference)
-  const isDark = theme === "dark"
-
+  const isDark = await getThemeIsDark()
   return [
     {
       packageName: "com.mentra.camera",
@@ -46,13 +44,14 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       type: "standard", // Foreground app (only one at a time)
       isOffline: true, // Works without internet connection
       logoUrl: getCameraIcon(isDark),
-      description: "Capture photos and videos with your Mentra glasses.",
+      // description: "Capture photos and videos with your Mentra glasses.",
       webviewUrl: "",
-      version: "0.0.1",
+      // version: "0.0.1",
       permissions: [],
       offlineRoute: "/asg/gallery",
       running: false,
       loading: false,
+      healthy: true,
       hardwareRequirements: [{type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED}],
     },
     {
@@ -61,10 +60,11 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       type: "standard", // Foreground app (only one at a time)
       isOffline: true, // Works without internet connection
       // logoUrl: getCaptionsIcon(isDark),
-      logoUrl: "",
-      description: "Live captions for your mentra glasses.",
+      logoUrl: "https://appstore.augmentos.org/app-icons/captions.png",
+      // description: "Live captions for your mentra glasses.",
       webviewUrl: "",
-      version: "0.0.1",
+      // version: "0.0.1",
+      healthy: true,
       permissions: [],
       offlineRoute: "/asg/gallery",
       running: false,
@@ -127,7 +127,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   },
 
   startApp: async (packageName: string) => {
-    console.log("starting app")
+
     const applet = get().apps.find(a => a.packageName === packageName)
     console.log("applet", applet)
 

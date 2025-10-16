@@ -4,16 +4,12 @@ import {View, FlatList, TouchableOpacity, ViewStyle, TextStyle} from "react-nati
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
-import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"
+import {ClientAppletInterface} from "@/types/AppletTypes"
 import {useAppTheme} from "@/utils/useAppTheme"
-import restComms from "@/managers/RestComms"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import {performHealthCheckFlow} from "@/utils/healthCheckFlow"
-import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {ThemedStyle} from "@/theme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useActiveForegroundApp, useInactiveForegroundApps, useStartApplet, useStopApplet} from "@/stores/applets"
-import {HardwareCompatibility} from "@/utils/HardwareCompatibility"
 
 const GRID_COLUMNS = 4
 
@@ -249,7 +245,7 @@ export const ForegroundAppsGrid: React.FC = () => {
         <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
           <View style={themed($appContainer)}>
             <AppIcon app={item as any} style={themed($appIcon)} />
-            {item.isOffline && (
+            {!item.healthy && (
               <View style={themed($offlineBadge)}>
                 <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
               </View>
@@ -263,7 +259,7 @@ export const ForegroundAppsGrid: React.FC = () => {
           </View>
           <Text
             text={item.name}
-            style={themed(item.isOffline ? $appNameOffline : $appName)}
+            style={themed(!item.healthy ? $appNameOffline : $appName)}
             numberOfLines={item.name.split(" ").length > 1 ? 2 : 1}
           />
         </TouchableOpacity>
