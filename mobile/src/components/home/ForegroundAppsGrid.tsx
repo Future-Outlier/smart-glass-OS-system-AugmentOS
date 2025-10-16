@@ -4,8 +4,7 @@ import {View, FlatList, TouchableOpacity, ViewStyle, TextStyle} from "react-nati
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
-// import {useActiveForegroundApp, useAppStatus, useNewUiForegroundApps} from "@/contexts/AppletStatusProvider"
-import {AppletInterface, isOfflineApp} from "@/types/AppletTypes"
+import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"
 import {useAppTheme} from "@/utils/useAppTheme"
 import restComms from "@/managers/RestComms"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
@@ -14,11 +13,12 @@ import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {ThemedStyle} from "@/theme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useActiveForegroundApp, useInactiveForegroundApps, useStartApplet, useStopApplet} from "@/stores/applets"
+import {HardwareCompatibility} from "@/utils/HardwareCompatibility"
 
 const GRID_COLUMNS = 4
 
 // Special type for the Get More Apps item
-interface GridItem extends AppletInterface {
+interface GridItem extends ClientAppletInterface {
   isGetMoreApps?: boolean
 }
 
@@ -155,11 +155,8 @@ export const ForegroundAppsGrid: React.FC = () => {
     // Filter out incompatible apps and running apps
     const inactiveApps = foregroundApps.filter(app => {
       // Exclude running apps
-      if (app.is_running) return false
-
-      // Exclude incompatible apps
-      if (app.compatibility && !app.compatibility.isCompatible) return false
-
+      if (app.running) return false
+      if (!app.compatibility?.isCompatible) return false
       return true
     })
 
@@ -181,7 +178,7 @@ export const ForegroundAppsGrid: React.FC = () => {
         name: "Get More Apps",
         type: "standard",
         isGetMoreApps: true,
-        logoURL: "",
+        logoUrl: "",
         permissions: [],
       } as GridItem,
     ]
@@ -198,7 +195,7 @@ export const ForegroundAppsGrid: React.FC = () => {
         packageName: `empty-${i}`,
         name: "",
         type: "standard",
-        logoURL: "",
+        logoUrl: "",
         permissions: [],
       } as GridItem)
     }
@@ -246,20 +243,19 @@ export const ForegroundAppsGrid: React.FC = () => {
         )
       }
 
-      const isOffline = item.isOnline === false
-      const isOfflineAppItem = isOfflineApp(item)
+      // const isOfflineAppItem = isOfflineApp(item)
 
       return (
         <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
           <View style={themed($appContainer)}>
             <AppIcon app={item as any} style={themed($appIcon)} />
-            {isOffline && (
+            {item.isOffline && (
               <View style={themed($offlineBadge)}>
                 <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
               </View>
             )}
             {/* Show home badge for offline apps, but not for camera app (it has custom icon) */}
-            {isOfflineAppItem && (
+            {item.isOffline && (
               <View style={themed($offlineAppIndicator)}>
                 <MaterialCommunityIcons name="home" size={theme.spacing.md} color={theme.colors.text} />
               </View>
@@ -267,7 +263,7 @@ export const ForegroundAppsGrid: React.FC = () => {
           </View>
           <Text
             text={item.name}
-            style={themed(isOffline ? $appNameOffline : $appName)}
+            style={themed(item.isOffline ? $appNameOffline : $appName)}
             numberOfLines={item.name.split(" ").length > 1 ? 2 : 1}
           />
         </TouchableOpacity>
