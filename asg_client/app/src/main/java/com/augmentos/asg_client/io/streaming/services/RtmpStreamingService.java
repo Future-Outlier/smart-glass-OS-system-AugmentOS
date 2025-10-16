@@ -463,11 +463,12 @@ public class RtmpStreamingService extends Service {
 
                             // Only notify server immediately for fatal errors that won't be retried
                             if (!isRetryableErrorString(message)) {
-                                Log.w(TAG, "Fatal error detected - notifying server to stop stream");
+                                Log.w(TAG, "Fatal error detected - stopping stream");
                                 if (sStatusCallback != null) {
                                     sStatusCallback.onStreamError("RTMP connection failed: " + message);
                                 }
-                                return; // Don't attempt recovery for fatal errors
+                                stopStreaming(); // Clean up properly for fatal errors
+                                return;
                             }
 
                             // Give the StreamPack library time to recover internally before we take over
@@ -1411,41 +1412,48 @@ public class RtmpStreamingService extends Service {
         // Log the error for debugging
         Log.d(TAG, "Classifying error message: " + message);
 
+        // Convert to lowercase for case-insensitive matching
+        String lowerMessage = message.toLowerCase();
+
         // Network/connection errors that should trigger reconnection
-        if (message.contains("SocketException") ||
-            message.contains("Connection") ||
-            message.contains("Timeout") ||
-            message.contains("Network") ||
-            message.contains("UnknownHostException") ||
-            message.contains("IOException") ||
-            message.contains("ECONNREFUSED") ||
-            message.contains("ETIMEDOUT")) {
+        if (lowerMessage.contains("socket") ||
+            lowerMessage.contains("connection") ||
+            lowerMessage.contains("timeout") ||
+            lowerMessage.contains("network") ||
+            lowerMessage.contains("unknownhost") ||
+            lowerMessage.contains("ioexception") ||
+            lowerMessage.contains("unreachable") ||
+            lowerMessage.contains("disconnected") ||
+            lowerMessage.contains("pipe") ||        // "Broken pipe"
+            lowerMessage.contains("closed") ||      // "Socket closed"
+            lowerMessage.contains("refused") ||
+            lowerMessage.contains("reset") ||
+            lowerMessage.contains("host") ||        // "Host is unreachable"
+            lowerMessage.contains("econnrefused") ||
+            lowerMessage.contains("etimedout") ||
+            lowerMessage.contains("peer")) {        // "Peer disconnected"
             Log.d(TAG, "Error classified as RETRYABLE (network issue)");
             return true;
         }
 
         // Fatal errors that shouldn't retry
-        if (message.contains("Permission") ||
-            message.contains("permission") ||
-            message.contains("Invalid URL") ||
-            message.contains("invalid url") ||
-            message.contains("Authentication") ||
-            message.contains("authentication") ||
-            message.contains("Unauthorized") ||
-            message.contains("Codec") ||
-            message.contains("codec") ||
-            message.contains("Not supported") ||
-            message.contains("Illegal") ||
-            message.contains("Invalid parameter")) {
+        if (lowerMessage.contains("permission") ||
+            lowerMessage.contains("invalid url") ||
+            lowerMessage.contains("authentication") ||
+            lowerMessage.contains("unauthorized") ||
+            lowerMessage.contains("codec") ||
+            lowerMessage.contains("not supported") ||
+            lowerMessage.contains("illegal") ||
+            lowerMessage.contains("invalid parameter")) {
             Log.d(TAG, "Error classified as FATAL (configuration/permission issue)");
             return false;
         }
 
         // Camera-specific errors that are usually fatal
-        if (message.contains("Camera") &&
-            (message.contains("busy") ||
-             message.contains("in use") ||
-             message.contains("failed to connect"))) {
+        if (lowerMessage.contains("camera") &&
+            (lowerMessage.contains("busy") ||
+             lowerMessage.contains("in use") ||
+             lowerMessage.contains("failed to connect"))) {
             Log.d(TAG, "Error classified as FATAL (camera unavailable)");
             return false;
         }
