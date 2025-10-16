@@ -391,6 +391,24 @@ struct ViewState {
         handle_request_status() // to update the UI
     }
 
+    func updateRgbLed(requestId: String,
+                             packageName: String?,
+                             action: String,
+                             color: String?,
+                             ontime: Int,
+                             offtime: Int,
+                             count: Int)
+    {
+
+        sgc?.sendRgbLedControl(requestId: requestId,
+                                 packageName: packageName,
+                                 action: action,
+                                 color: color,
+                                 ontime: ontime,
+                                 offtime: offtime,
+                                 count: count)
+    }
+
     func updateButtonMaxRecordingTime(_ value: Int) {
         buttonMaxRecordingTime = value
         sgc?.sendButtonMaxRecordingTime()
