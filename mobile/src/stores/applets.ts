@@ -140,7 +140,6 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     //   const runningStandardApps = get().apps.filter(
     //     a => a.is_running && a.type === "standard" && a.packageName !== packageName,
     //   )
-
     //   for (const app of runningStandardApps) {
     //     await restComms.stopApp(app.packageName).catch(console.error)
     //     set(state => ({
@@ -152,7 +151,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     // }
 
     set(state => ({
-      apps: state.apps.map(a => (a.packageName === packageName ? {...a, is_running: true, loading: true} : a)),
+      apps: state.apps.map(a => (a.packageName === packageName ? {...a, running: true, loading: !applet.isOffline} : a)),
     }))
 
     try {
@@ -174,14 +173,14 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       }
 
       set(state => ({
-        apps: state.apps.map(a => (a.packageName === packageName ? {...a, is_running: false, loading: false} : a)),
+        apps: state.apps.map(a => (a.packageName === packageName ? {...a, running: false, loading: false} : a)),
       }))
     }
   },
 
   stopApp: async (packageName: string) => {
     set(state => ({
-      apps: state.apps.map(a => (a.packageName === packageName ? {...a, is_running: false, loading: false} : a)),
+      apps: state.apps.map(a => (a.packageName === packageName ? {...a, running: false, loading: false} : a)),
     }))
     const applet = get().apps.find(a => a.packageName === packageName)
     if (!applet) {
@@ -202,7 +201,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       }
     }
 
-    set({apps: get().apps.map(a => ({...a, is_running: false}))})
+    set({apps: get().apps.map(a => ({...a, running: false}))})
   },
 }))
 

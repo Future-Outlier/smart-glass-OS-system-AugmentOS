@@ -209,12 +209,12 @@ export const ForegroundAppsGrid: React.FC = () => {
         return
       }
 
-      // Check if there's already an active foreground app and automatically switch
-      // This applies to both online and offline apps
-      if (activeForegroundApp && app.packageName !== activeForegroundApp.packageName) {
-        console.log("Switching from", activeForegroundApp.packageName, "to", app.packageName)
-        await stopApplet(activeForegroundApp.packageName)
-      }
+      // // Check if there's already an active foreground app and automatically switch
+      // // This applies to both online and offline apps
+      // if (activeForegroundApp && app.packageName !== activeForegroundApp.packageName) {
+      //   console.log("Switching from", activeForegroundApp.packageName, "to", app.packageName)
+      //   await stopApplet(activeForegroundApp.packageName)
+      // }
 
       // Now start the new app (offline or online)
       await startApplet(app.packageName)

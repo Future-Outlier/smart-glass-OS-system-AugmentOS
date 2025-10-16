@@ -9,7 +9,6 @@ import {CloseXIcon} from "assets/icons/component/CloseXIcon"
 import restComms from "@/managers/RestComms"
 import {showAlert} from "@/utils/AlertUtils"
 import {ThemedStyle} from "@/theme"
-import {isOfflineApp, getOfflineAppRoute} from "@/types/AppletTypes"
 import {useActiveForegroundApp, useStopApplet, useRefreshApplets} from "@/stores/applets"
 
 // Camera app protection removed - now handled by default button action system
@@ -24,8 +23,8 @@ export const ActiveForegroundApp: React.FC = () => {
   const handlePress = () => {
     if (activeForegroundApp) {
       // Handle offline apps - navigate directly to React Native route
-      if (isOfflineApp(activeForegroundApp)) {
-        const offlineRoute = getOfflineAppRoute(activeForegroundApp)
+      if (activeForegroundApp.isOffline) {
+        const offlineRoute = activeForegroundApp.offlineRoute
         if (offlineRoute) {
           push(offlineRoute)
           return
@@ -33,9 +32,9 @@ export const ActiveForegroundApp: React.FC = () => {
       }
 
       // Check if app has webviewURL and navigate directly to it
-      if (activeForegroundApp.webviewURL && activeForegroundApp.isOnline !== false) {
+      if (activeForegroundApp.webviewUrl && activeForegroundApp.healthy) {
         push("/applet/webview", {
-          webviewURL: activeForegroundApp.webviewURL,
+          webviewURL: activeForegroundApp.webviewUrl,
           appName: activeForegroundApp.name,
           packageName: activeForegroundApp.packageName,
         })
@@ -57,22 +56,6 @@ export const ActiveForegroundApp: React.FC = () => {
           style: "destructive",
           onPress: async () => {
             stopApplet(activeForegroundApp.packageName)
-
-            // Skip offline apps - they don't need server communication
-            if (isOfflineApp(activeForegroundApp)) {
-              console.log(
-                "Skipping offline app stop in ActiveForegroundApp (long press):",
-                activeForegroundApp.packageName,
-              )
-              return
-            }
-
-            try {
-              await restComms.stopApp(activeForegroundApp.packageName)
-            } catch (error) {
-              refreshApplets()
-              console.error("Stop app error:", error)
-            }
           },
         },
       ])
@@ -87,7 +70,7 @@ export const ActiveForegroundApp: React.FC = () => {
       stopApplet(activeForegroundApp.packageName)
 
       // Skip offline apps - they don't need server communication
-      if (isOfflineApp(activeForegroundApp)) {
+      if (activeForegroundApp.isOffline) {
         console.log("Skipping offline app stop in ActiveForegroundApp:", activeForegroundApp.packageName)
         return
       }
