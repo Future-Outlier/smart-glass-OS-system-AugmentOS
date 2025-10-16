@@ -1,4 +1,4 @@
-import {Capabilities, HardwareRequirement, HardwareType, HardwareRequirementLevel} from "@cloud/packages/sdk"
+import {Capabilities, HardwareRequirement, HardwareType, HardwareRequirementLevel} from "@cloud/packages/sdk/src/types"
 import {AppI} from "@cloud/packages/cloud/src/models/app.model"
 
 /**

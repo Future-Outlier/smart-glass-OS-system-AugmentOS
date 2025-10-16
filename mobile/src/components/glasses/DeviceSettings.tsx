@@ -1,29 +1,30 @@
-import {useCallback, useEffect, useRef, useState} from "react"
-import {View, TouchableOpacity, Animated, ViewStyle, TextStyle, Platform} from "react-native"
-import {useFocusEffect} from "@react-navigation/native"
-import {Icon, Text} from "@/components/ignite"
 import bridge from "@/bridge/MantleBridge"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
-import ToggleSetting from "@/components/settings/ToggleSetting"
+import {Icon, Text} from "@/components/ignite"
+import {AppPicker} from "@/components/misc/AppPicker"
 import SliderSetting from "@/components/settings/SliderSetting"
-import {MaterialCommunityIcons} from "@expo/vector-icons"
-import {translate} from "@/i18n/translate"
-import showAlert, {showDestructiveAlert} from "@/utils/AlertUtils"
-import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
-import RouteButton from "@/components/ui/RouteButton"
+import ToggleSetting from "@/components/settings/ToggleSetting"
 import ActionButton from "@/components/ui/ActionButton"
+import InfoSection from "@/components/ui/InfoSection"
+import RouteButton from "@/components/ui/RouteButton"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {glassesFeatures, hasBrightness, hasCustomMic, hasConfigurableButton} from "@/config/glassesFeatures"
+import {translate} from "@/i18n/translate"
 import {localStorageService} from "@/services/asg/localStorageService"
+import {useApplets} from "@/stores/applets"
+import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import showAlert, {showDestructiveAlert} from "@/utils/AlertUtils"
+import {DeviceTypes} from "@/utils/Constants"
+import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {Capabilities} from "@cloud/packages/sdk/dist"
+import {MaterialCommunityIcons} from "@expo/vector-icons"
+import {useFocusEffect} from "@react-navigation/native"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {Animated, Platform, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import {SvgXml} from "react-native-svg"
 import OtaProgressSection from "./OtaProgressSection"
-import InfoSection from "@/components/ui/InfoSection"
-import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
-import {AppPicker} from "@/components/misc/AppPicker"
-import {DeviceTypes} from "@/utils/Constants"
-import {useApplets} from "@/stores/applets"
 
 // Icon components defined directly in this file to avoid path resolution issues
 interface CaseIconProps {
@@ -95,12 +96,13 @@ export default function DeviceSettings() {
 
   const {push} = useNavigationHistory()
   const applets = useApplets()
+  const features: Capabilities | null = getCapabilitiesForModel(defaultWearable)
 
   // Check if we have any advanced settings to show
   const hasMicrophoneSelector =
     isGlassesConnected &&
     defaultWearable &&
-    hasCustomMic(defaultWearable) &&
+    features?.hasMicrophone &&
     (defaultWearable !== "Mentra Live" ||
       (Platform.OS === "android" && status.glasses_info?.glasses_device_model !== "K900"))
 
@@ -217,8 +219,6 @@ export default function DeviceSettings() {
     )
   }
 
-  const features = glassesFeatures[defaultWearable]
-
   // Check if no glasses are paired at all
   if (!defaultWearable) {
     return (
@@ -299,7 +299,7 @@ export default function DeviceSettings() {
           </View>
         )}
 
-      {hasBrightness(defaultWearable) && isGlassesConnected && (
+      {features?.display?.adjustBrightness && isGlassesConnected && (
         <View style={themed($settingsGroup)}>
           <ToggleSetting
             label="Auto Brightness"
@@ -342,7 +342,7 @@ export default function DeviceSettings() {
       )}
 
       {/* Nex Developer Settings - Only show when connected to Mentra Nex */}
-      {defaultWearable && defaultWearable.toLowerCase().includes("nex") && (
+      {defaultWearable && defaultWearable.includes(DeviceTypes.NEX) && (
         <RouteButton
           label="Nex Developer Settings"
           subtitle="Advanced developer tools and debugging features"
@@ -354,7 +354,7 @@ export default function DeviceSettings() {
       {/* Camera Settings button moved to Gallery Settings page */}
 
       {/* Button Settings - Only show for glasses with configurable buttons */}
-      {defaultWearable && hasConfigurableButton(defaultWearable) && (
+      {defaultWearable && features?.hasButton && (
         <View style={themed($settingsGroup)}>
           <ToggleSetting
             label="Default Button Action"
@@ -416,7 +416,7 @@ export default function DeviceSettings() {
       />
 
       {/* Only show WiFi settings if connected glasses support WiFi */}
-      {defaultWearable && features?.wifi && (
+      {defaultWearable && features?.hasWifi && (
         <RouteButton
           label={translate("settings:glassesWifiSettings")}
           subtitle={translate("settings:glassesWifiDescription")}
@@ -434,7 +434,7 @@ export default function DeviceSettings() {
       )}
 
       {/* Only show dashboard settings if glasses have display capability */}
-      {defaultWearable && features?.display && (
+      {defaultWearable && features?.hasDisplay && (
         <RouteButton
           label={translate("settings:dashboardSettings")}
           subtitle={translate("settings:dashboardDescription")}
@@ -443,7 +443,7 @@ export default function DeviceSettings() {
       )}
 
       {/* Screen settings for binocular glasses */}
-      {defaultWearable && features?.binocular && (
+      {defaultWearable && (features?.display?.count ?? 0 > 1) && (
         <RouteButton
           label={translate("settings:screenSettings")}
           subtitle={translate("settings:screenDescription")}

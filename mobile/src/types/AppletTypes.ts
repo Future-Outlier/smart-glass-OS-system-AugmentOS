@@ -75,14 +75,13 @@ export type AppletType = "standard" | "background"
 export interface AppletInterface {
   packageName: string
   name: string
-  description: string
   webviewUrl: string
-  version: string
-  logoUrl: string | any
+  logoUrl: string
   type: AppletType // "standard" (foreground) or "background"
   permissions: AppletPermission[]
   running: boolean
   loading: boolean
+  healthy: boolean
   hardwareRequirements: HardwareRequirement[]
 }
 

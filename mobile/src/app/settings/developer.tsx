@@ -10,8 +10,9 @@ import ToggleSetting from "@/components/settings/ToggleSetting"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {spacing} from "@/theme"
-import {glassesFeatures} from "@/config/glassesFeatures"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {DeviceTypes} from "@/utils/Constants"
 
 export default function DeveloperSettingsScreen() {
   // const {status} = useCoreStatus()
@@ -26,6 +27,7 @@ export default function DeveloperSettingsScreen() {
   const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS_KEYS.reconnect_on_app_foreground)
   const [newUi, setNewUi] = useSetting(SETTINGS_KEYS.new_ui)
   const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
+  const features = getCapabilitiesForModel(defaultWearable)
 
   // Triple-tap detection for Asia East button
   const [asiaButtonTapCount, setAsiaButtonTapCount] = useState(0)
@@ -226,7 +228,7 @@ export default function DeveloperSettingsScreen() {
         <Spacer height={theme.spacing.md} />
 
         {/* G1 Specific Settings - Only show when connected to Even Realities G1 */}
-        {defaultWearable && glassesFeatures[defaultWearable] && glassesFeatures[defaultWearable].powerSavingMode && (
+        {defaultWearable && defaultWearable.includes(DeviceTypes.G1) && (
           <>
             <Text style={[styles.sectionTitle, {color: theme.colors.textDim}]}>G1 Specific Settings</Text>
             <ToggleSetting

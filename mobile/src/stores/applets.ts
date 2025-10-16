@@ -5,7 +5,7 @@ import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
 import {HardwareCompatibility} from "@/utils/HardwareCompatibility"
 import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
-import {Capabilities, HardwareRequirementLevel, HardwareRequirement, HardwareType} from "@cloud/packages/sdk"
+import {Capabilities, HardwareRequirementLevel, HardwareRequirement, HardwareType} from "@cloud/packages/sdk/src/types"
 import {useMemo} from "react"
 import {create} from "zustand"
 
@@ -100,6 +100,16 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
 
       // merge in the offline apps:
       let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets())]
+
+      // remove duplicates and keep the online versions:
+      const packageNameMap = new Map<string, ClientAppletInterface>()
+      applets.forEach(app => {
+        const existing = packageNameMap.get(app.packageName)
+        if (!existing || !app.isOffline) {
+          packageNameMap.set(app.packageName, app)
+        }
+      })
+      applets = Array.from(packageNameMap.values())
 
       // add in the compatibility info:
       let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
@@ -224,6 +234,11 @@ export const useActiveForegroundApp = () => {
 export const useActiveBackgroundAppsCount = () => {
   const apps = useApplets()
   return useMemo(() => apps.filter(app => app.type === "background" && app.running).length, [apps])
+}
+
+export const useIncompatibleApps = () => {
+  const apps = useApplets()
+  return useMemo(() => apps.filter(app => !app.compatibility?.isCompatible), [apps])
 }
 
 // export const useIncompatibleApps = async () => {

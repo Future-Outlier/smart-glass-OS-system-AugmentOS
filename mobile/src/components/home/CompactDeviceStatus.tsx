@@ -24,6 +24,7 @@ import ChevronRight from "assets/icons/component/ChevronRight"
 import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import SunIcon from "assets/icons/component/SunIcon"
 import {DeviceTypes} from "@/utils/Constants"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
 
 export const CompactDeviceStatus: React.FC = () => {
   const {status} = useCoreStatus()
@@ -156,9 +157,9 @@ export const CompactDeviceStatus: React.FC = () => {
     )
   }
 
-  const modelName = status.glasses_info?.model_name || ""
-  const hasDisplay = glassesFeatures[modelName]?.display ?? true
-  const hasWifi = glassesFeatures[modelName]?.wifi ?? false
+  const features = getCapabilitiesForModel(defaultWearable)
+  const hasDisplay = features?.hasDisplay ?? true
+  const hasWifi = features?.hasWifi ?? false
   const wifiSsid = status.glasses_info?.glasses_wifi_ssid
   const wifiConnected = Boolean(wifiSsid)
   const autoBrightness = status.glasses_settings?.auto_brightness
