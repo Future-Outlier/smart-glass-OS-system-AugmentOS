@@ -1,7 +1,7 @@
 import {translate} from "@/i18n"
 import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
-import { getThemeIsDark } from "@/theme/getTheme"
+import {getThemeIsDark} from "@/theme/getTheme"
 import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
 import {HardwareCompatibility} from "@/utils/HardwareCompatibility"
@@ -37,9 +37,13 @@ const getCameraIcon = (isDark: boolean) => {
 // get offline applets:
 export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
   const isDark = await getThemeIsDark()
+  const cameraPackageName = "com.mentra.camera"
+  const captionsPackageName = "com.mentra.captions"
+  const offlineCameraRunning = await useSettingsStore.getState().getSetting(cameraPackageName)
+  const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(captionsPackageName)
   return [
     {
-      packageName: "com.mentra.camera",
+      packageName: cameraPackageName,
       name: "Camera",
       type: "standard", // Foreground app (only one at a time)
       isOffline: true, // Works without internet connection
@@ -49,13 +53,13 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       // version: "0.0.1",
       permissions: [],
       offlineRoute: "/asg/gallery",
-      running: false,
+      running: offlineCameraRunning,
       loading: false,
       healthy: true,
       hardwareRequirements: [{type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED}],
     },
     {
-      packageName: "com.mentra.captions",
+      packageName: captionsPackageName,
       name: "Live Captions",
       type: "standard", // Foreground app (only one at a time)
       isOffline: true, // Works without internet connection
@@ -67,7 +71,7 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       healthy: true,
       permissions: [],
       offlineRoute: "/asg/gallery",
-      running: false,
+      running: offlineCaptionsRunning,
       loading: false,
       hardwareRequirements: [],
     },
@@ -127,7 +131,6 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   },
 
   startApp: async (packageName: string) => {
-
     const applet = get().apps.find(a => a.packageName === packageName)
     console.log("applet", applet)
 
@@ -151,12 +154,16 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     // }
 
     set(state => ({
-      apps: state.apps.map(a => (a.packageName === packageName ? {...a, running: true, loading: !applet.isOffline} : a)),
+      apps: state.apps.map(a =>
+        a.packageName === packageName ? {...a, running: true, loading: !applet.isOffline} : a,
+      ),
     }))
 
     try {
       if (!applet.isOffline) {
         await restComms.startApp(packageName)
+      } else {
+        await useSettingsStore.getState().setSetting(packageName, true)
       }
       await useSettingsStore.getState().setSetting(SETTINGS_KEYS.has_ever_activated_app, true)
     } catch (error: any) {
@@ -189,6 +196,8 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     }
     if (!applet.isOffline) {
       await restComms.stopApp(packageName).catch(console.error)
+    } else {
+      await useSettingsStore.getState().setSetting(packageName, false)
     }
   },
 
