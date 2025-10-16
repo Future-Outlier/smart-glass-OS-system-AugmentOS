@@ -124,6 +124,8 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
         applet.compatibility = result
       }
 
+      console.log("applets", applets)
+
       set({apps: applets})
     } catch (err) {
       console.error("Error fetching apps:", err)
