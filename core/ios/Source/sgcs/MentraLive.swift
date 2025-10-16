@@ -1471,7 +1471,7 @@ class MentraLive: NSObject, SGCManager {
         case "touch_event":
             let gestureName = json["gesture_name"] as? String ?? "unknown"
             let timestamp = parseTimestamp(json["timestamp"])
-            let deviceModel = json["device_model"] as? String ?? glassesDeviceModel ?? connectedPeripheral?.name ?? "Mentra Live"
+            let deviceModel = json["device_model"] as? String ?? glassesDeviceModel
             Bridge.sendTouchEvent(deviceModel: deviceModel, gestureName: gestureName, timestamp: timestamp)
 
         case "swipe_volume_status":
@@ -2910,7 +2910,7 @@ extension MentraLive {
                              offtime: Int,
                              count: Int)
     {
-        guard connectionState == .connected, ready else {
+        guard connectionState == ConnTypes.CONNECTED, ready else {
             Bridge.log("MentraLive: Cannot handle RGB LED control - glasses not connected")
             Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "glasses_not_connected")
             return

@@ -114,7 +114,7 @@ class RestComms {
     } catch (error: any) {
       const errorMessage = error.message || error
       console.error(`${this.TAG}: ${method} to ${url} failed with status ${status}`, errorMessage)
-      throw error
+      // throw error
     }
   }
 
@@ -207,7 +207,9 @@ class RestComms {
     const response = await this.authenticatedRequest<ApiResponse<AppletInterface[]>>("GET", "/api/client/apps")
 
     if (!response.success || !response.data) {
-      throw new Error("Invalid response format")
+      // throw new Error("Invalid response format")
+      console.error("Invalid response format calling getApps()")
+      return []
     }
 
     return response.data

@@ -1,10 +1,11 @@
-import bridge from "@/bridge/MantleBridge"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import wsManager from "@/managers/WebSocketManager"
 import {useDisplayStore} from "@/stores/display"
 import livekitManager from "@/managers/LivekitManager"
 import mantle from "@/managers/MantleManager"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
+import CoreModule from "core"
+import {useAppletStatusStore} from "@/stores/applets"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -387,35 +388,17 @@ class SocketComms {
     const bypassVad = msg.bypassVad || false
     const requiredDataStrings = msg.requiredData || []
     // console.log(`SocketCommsTS: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
-    bridge.sendCommand("microphone_state_change", {
-      requiredData: requiredDataStrings,
-      bypassVad,
-    })
+    CoreModule.microphoneStateChange(requiredDataStrings, bypassVad)
   }
 
   public handle_display_event(msg: any) {
     // console.log(`SocketCommsTS: Handling display event: ${JSON.stringify(msg)}`)
     if (msg.view) {
-      bridge.sendCommand("display_event", msg)
+      CoreModule.displayEvent(msg)
       // Update the Zustand store with the display content
       const displayEvent = JSON.stringify(msg)
       useDisplayStore.getState().setDisplayEvent(displayEvent)
     }
-  }
-
-  private handle_audio_play_request(msg: any) {
-    console.log(`SocketCommsTS: Handling audio play request: ${JSON.stringify(msg)}`)
-    console.error("audio play request is deprecated!")
-    // const requestId = msg.requestId
-    // if (!requestId) return
-
-    // AudioPlayService.getInstance().handle_audio_play_request(msg)
-  }
-
-  private handle_audio_stop_request() {
-    console.log("SocketCommsTS: audio_stop_request()")
-    // Forward to native audio handling
-    bridge.sendCommand("audio_stop_request")
   }
 
   private handle_set_location_tier(msg: any) {
@@ -447,15 +430,11 @@ class SocketComms {
       return
     }
     console.log(`SocketCommsTS: Received app_started message for package: ${msg.packageName}`)
-    bridge.sendCommand("app_started", {
-      packageName: msg.packageName,
-    })
+    useAppletStatusStore.getState().refreshApps()
   }
   private handle_app_stopped(msg: any) {
     console.log(`SocketCommsTS: Received app_stopped message for package: ${msg.packageName}`)
-    bridge.sendCommand("app_stopped", {
-      packageName: msg.packageName,
-    })
+    useAppletStatusStore.getState().refreshApps()
   }
 
   private handle_photo_request(msg: any) {
@@ -471,69 +450,55 @@ class SocketComms {
       console.log("Invalid photo request: missing requestId or appId")
       return
     }
-    bridge.sendCommand("photo_request", {
-      requestId,
-      appId,
-      webhookUrl,
-      size,
-      authToken,
-    })
+    CoreModule.photoRequest(requestId, appId, webhookUrl, size, authToken)
   }
 
   private handle_start_rtmp_stream(msg: any) {
     const rtmpUrl = msg.rtmpUrl || ""
     if (rtmpUrl) {
-      bridge.sendCommand("start_rtmp_stream", msg)
+      CoreModule.startRtmpStream(msg)
     } else {
       console.log("Invalid RTMP stream request: missing rtmpUrl")
     }
   }
 
   private handle_stop_rtmp_stream() {
-    bridge.sendCommand("stop_rtmp_stream")
+    CoreModule.stopRtmpStream()
   }
 
   private handle_keep_rtmp_stream_alive(msg: any) {
     console.log(`SocketCommsTS: Received KEEP_RTMP_STREAM_ALIVE: ${JSON.stringify(msg)}`)
-    bridge.sendCommand("keep_rtmp_stream_alive", msg)
+    CoreModule.keepRtmpStreamAlive(msg)
   }
 
   private handle_save_buffer_video(msg: any) {
     console.log(`SocketCommsTS: Received SAVE_BUFFER_VIDEO: ${JSON.stringify(msg)}`)
     const bufferRequestId = msg.requestId || `buffer_${Date.now()}`
     const durationSeconds = msg.durationSeconds || 30
-    bridge.sendCommand("save_buffer_video", {
-      requestId: bufferRequestId,
-      durationSeconds,
-    })
+    CoreModule.saveBufferVideo(bufferRequestId, durationSeconds)
   }
 
   private handle_start_buffer_recording() {
     console.log("SocketCommsTS: Received START_BUFFER_RECORDING")
-    bridge.sendCommand("start_buffer_recording")
+    CoreModule.startBufferRecording()
   }
 
   private handle_stop_buffer_recording() {
     console.log("SocketCommsTS: Received STOP_BUFFER_RECORDING")
-    bridge.sendCommand("stop_buffer_recording")
+    CoreModule.stopBufferRecording()
   }
 
   private handle_start_video_recording(msg: any) {
     console.log(`SocketCommsTS: Received START_VIDEO_RECORDING: ${JSON.stringify(msg)}`)
     const videoRequestId = msg.requestId || `video_${Date.now()}`
     const save = msg.save !== false
-    bridge.sendCommand("start_video_recording", {
-      requestId: videoRequestId,
-      save,
-    })
+    CoreModule.startVideoRecording(videoRequestId, save)
   }
 
   private handle_stop_video_recording(msg: any) {
     console.log(`SocketCommsTS: Received STOP_VIDEO_RECORDING: ${JSON.stringify(msg)}`)
     const stopRequestId = msg.requestId || ""
-    bridge.sendCommand("stop_video_recording", {
-      requestId: stopRequestId,
-    })
+    CoreModule.stopVideoRecording(stopRequestId)
   }
 
   private handle_rgb_led_control(msg: any) {
@@ -547,15 +512,15 @@ class SocketComms {
       return Number.isFinite(coerced) ? coerced : fallback
     }
 
-    bridge.sendCommand("rgb_led_control", {
-      requestId: msg.requestId,
-      packageName: msg.packageName ?? null,
-      action: msg.action ?? "off",
-      color: msg.color ?? null,
-      ontime: coerceNumber(msg.ontime, 1000),
-      offtime: coerceNumber(msg.offtime, 0),
-      count: coerceNumber(msg.count, 1),
-    })
+    CoreModule.rgbLedControl(
+      msg.requestId,
+      msg.packageName ?? null,
+      msg.action ?? "off",
+      msg.color ?? null,
+      coerceNumber(msg.ontime, 1000),
+      coerceNumber(msg.offtime, 0),
+      coerceNumber(msg.count, 1),
+    )
   }
 
   // Message Handling

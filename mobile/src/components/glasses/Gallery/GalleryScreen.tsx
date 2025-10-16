@@ -33,7 +33,9 @@ import {Header, Text} from "@/components/ignite"
 import * as Linking from "expo-linking"
 import {MediaLibraryPermissions} from "@/utils/MediaLibraryPermissions"
 import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
-import {hasGallery} from "@/config/glassesFeatures"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import CoreModule from "core"
 
 // Gallery timing constants
 const TIMING = {
@@ -79,6 +81,8 @@ export function GalleryScreen() {
   const ITEM_SPACING = 2 // Minimal spacing between items (1-2px hairline)
   const numColumns = screenWidth < 320 ? 2 : 3 // 2 columns for very small screens, otherwise 3
   const itemWidth = (screenWidth - ITEM_SPACING * (numColumns - 1)) / numColumns
+  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const features = getCapabilitiesForModel(defaultWearable)
 
   const [networkStatus] = useState<NetworkStatus>(networkConnectivityService.getStatus())
 
@@ -597,7 +601,7 @@ export function GalleryScreen() {
   const handleRequestHotspot = async () => {
     transitionToState(GalleryState.REQUESTING_HOTSPOT)
     try {
-      await bridge.sendCommand("set_hotspot_state", {enabled: true})
+      await CoreModule.setHotspotState(true)
       setGalleryOpenedHotspot(true)
       galleryOpenedHotspotRef.current = true
       console.log("[GalleryScreen] Gallery initiated hotspot")
@@ -614,7 +618,7 @@ export function GalleryScreen() {
   const handleStopHotspot = async () => {
     console.log("[GalleryScreen] Stopping hotspot...")
     try {
-      const result = await bridge.sendCommand("set_hotspot_state", {enabled: false})
+      const result = await CoreModule.setHotspotState(false)
       console.log("[GalleryScreen] Hotspot stop command sent")
       setGalleryOpenedHotspot(false)
       galleryOpenedHotspotRef.current = false
@@ -872,7 +876,7 @@ export function GalleryScreen() {
       loadDownloadedPhotos()
 
       // Only query glasses if we have glasses info (meaning glasses are connected) AND glasses have gallery capability
-      if (status.glasses_info?.model_name && hasGallery(status.glasses_info.model_name)) {
+      if (status.glasses_info?.model_name && features?.hasCamera) {
         console.log(
           "[GalleryScreen] Glasses connected with gallery capability - querying gallery status",
           status.glasses_info,
