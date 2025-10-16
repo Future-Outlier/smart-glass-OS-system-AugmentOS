@@ -7,6 +7,15 @@ export type MentraAuthUser = {
   provider?: string
 }
 
+export type MentraAuthStateChangeSubscriptionResponse = {
+  data: {
+    subscription: any
+  } | null
+  error: {
+    message: string
+  } | null
+}
+
 export type MentraAuthSession = {
   token?: string
   user?: MentraAuthUser

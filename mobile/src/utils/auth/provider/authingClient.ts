@@ -3,7 +3,9 @@ import type {AuthenticationClientOptions, User} from "authing-js-sdk"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {EventEmitter} from "events"
 import {
+  MentraAuthSession,
   MentraAuthSessionResponse,
+  MentraAuthStateChangeSubscriptionResponse,
   MentraAuthUserResponse,
   MentraSigninResponse,
   MentraSignOutResponse,
@@ -28,10 +30,6 @@ type AuthChangeEvent =
   | "PASSWORD_RECOVERY"
 
 type AuthChangeCallback = (event: AuthChangeEvent, session: any) => void
-
-interface Subscription {
-  unsubscribe: () => void
-}
 
 export class AuthingWrapperClient {
   private authing: AuthenticationClient
@@ -65,27 +63,32 @@ export class AuthingWrapperClient {
     return AuthingWrapperClient.instance
   }
 
-  public onAuthStateChange(callback: AuthChangeCallback): Subscription {
+  public onAuthStateChange(callback: AuthChangeCallback): MentraAuthStateChangeSubscriptionResponse {
     const handler = (event: string, session: Session) => {
       callback(event as AuthChangeEvent, session)
     }
 
-    this.eventEmitter.on("SIGNED_IN", handler)
-    this.eventEmitter.on("SIGNED_OUT", handler)
-    this.eventEmitter.on("TOKEN_REFRESHED", handler)
-    this.eventEmitter.on("USER_UPDATED", handler)
-    this.eventEmitter.on("USER_DELETED", handler)
-    this.eventEmitter.on("PASSWORD_RECOVERY", handler)
+    this.eventEmitter.on("SIGNED_IN", (session: Session) => handler("SIGNED_IN", session))
+    this.eventEmitter.on("SIGNED_OUT", (session: Session) => handler("SIGNED_OUT", session))
+    this.eventEmitter.on("TOKEN_REFRESHED", (session: Session) => handler("TOKEN_REFRESHED", session))
+    this.eventEmitter.on("USER_UPDATED", (session: Session) => handler("USER_UPDATED", session))
+    this.eventEmitter.on("USER_DELETED", (session: Session) => handler("USER_DELETED", session))
+    this.eventEmitter.on("PASSWORD_RECOVERY", (session: Session) => handler("PASSWORD_RECOVERY", session))
 
     return {
-      unsubscribe: () => {
-        this.eventEmitter.off("SIGNED_IN", handler)
-        this.eventEmitter.off("SIGNED_OUT", handler)
-        this.eventEmitter.off("TOKEN_REFRESHED", handler)
-        this.eventEmitter.off("USER_UPDATED", handler)
-        this.eventEmitter.off("USER_DELETED", handler)
-        this.eventEmitter.off("PASSWORD_RECOVERY", handler)
+      data: {
+        subscription: {
+          unsubscribe: () => {
+            this.eventEmitter.off("SIGNED_IN", handler)
+            this.eventEmitter.off("SIGNED_OUT", handler)
+            this.eventEmitter.off("TOKEN_REFRESHED", handler)
+            this.eventEmitter.off("USER_UPDATED", handler)
+            this.eventEmitter.off("USER_DELETED", handler)
+            this.eventEmitter.off("PASSWORD_RECOVERY", handler)
+          },
+        },
       },
+      error: null,
     }
   }
 
@@ -169,18 +172,19 @@ export class AuthingWrapperClient {
           user,
         }
         await this.saveSession(session)
-        this.eventEmitter.emit("SIGNED_IN", session)
+        const authSession: MentraAuthSession = {
+          token: session.access_token,
+          user: {
+            id: session.user!.id,
+            email: session.user!.email!,
+            name: session.user!.name || "",
+          },
+        }
+        this.eventEmitter.emit("SIGNED_IN", authSession)
         this.setupTokenRefresh()
         return {
           data: {
-            session: {
-              token: session.access_token,
-              user: {
-                id: session.user!.id,
-                email: session.user!.email!,
-                name: session.user!.name || "",
-              },
-            },
+            session: authSession,
             user: {
               id: session.user!.id,
               email: session.user!.email!,

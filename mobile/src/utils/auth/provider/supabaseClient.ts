@@ -8,6 +8,7 @@ import {
   MentraSignOutResponse,
   MentraUpdateUserPasswordResponse,
   MentraAuthSessionResponse,
+  MentraAuthStateChangeSubscriptionResponse,
 } from "../authProvider.types"
 
 export class SupabaseWrapperClient {
@@ -23,6 +24,24 @@ export class SupabaseWrapperClient {
       SupabaseWrapperClient.instance = new SupabaseWrapperClient()
     }
     return SupabaseWrapperClient.instance
+  }
+
+  public onAuthStateChange(callback: (event: string, session: any) => void): MentraAuthStateChangeSubscriptionResponse {
+    try {
+      const {data} = this.supabase.auth.onAuthStateChange(callback)
+      return {
+        data,
+        error: null,
+      }
+    } catch (error) {
+      console.error(error)
+      return {
+        data: null,
+        error: {
+          message: "Something went wrong. Please try again.",
+        },
+      }
+    }
   }
 
   public async getUser(): Promise<MentraAuthUserResponse> {

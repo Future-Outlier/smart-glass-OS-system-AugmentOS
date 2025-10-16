@@ -1,5 +1,6 @@
 import {
   MentraAuthSessionResponse,
+  MentraAuthStateChangeSubscriptionResponse,
   MentraAuthUserResponse,
   MentraOauthProviderResponse,
   MentraPasswordResetResponse,
@@ -28,6 +29,17 @@ class MentraAuthProvider {
     this.isSettingUpClients = true
     this.supabase = await SupabaseWrapperClient.getInstance()
     this.authing = await AuthingWrapperClient.getInstance()
+  }
+
+  async onAuthStateChange(
+    callback: (event: string, session: any) => void,
+  ): Promise<MentraAuthStateChangeSubscriptionResponse> {
+    await this.checkOrSetupClients()
+    if (IS_CHINA) {
+      return this.authing!.onAuthStateChange(callback)
+    } else {
+      return this.supabase!.onAuthStateChange(callback)
+    }
   }
 
   async getUser(): Promise<MentraAuthUserResponse> {
