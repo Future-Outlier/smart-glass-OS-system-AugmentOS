@@ -1,4 +1,12 @@
-import {MentraOauthProviderResponse, MentraSigninResponse} from "./authProvider.types"
+import {
+  MentraAuthSessionResponse,
+  MentraAuthUserResponse,
+  MentraOauthProviderResponse,
+  MentraPasswordResetResponse,
+  MentraSigninResponse,
+  MentraSignOutResponse,
+  MentraUpdateUserPasswordResponse,
+} from "./authProvider.types"
 import {AuthingWrapperClient} from "./provider/authingClient"
 import {SupabaseWrapperClient} from "./provider/supabaseClient"
 
@@ -21,8 +29,17 @@ class MentraAuthProvider {
     this.authing = await AuthingWrapperClient.getInstance()
   }
 
+  async getUser(): Promise<MentraAuthUserResponse> {
+    await this.checkOrSetupClients()
+    if (IS_CHINA) {
+      throw new Error("Get user not supported in China")
+    } else {
+      return this.supabase!.getUser()
+    }
+  }
+
   async signup(email: string, password: string): Promise<MentraSigninResponse> {
-    this.checkOrSetupClients()
+    await this.checkOrSetupClients()
     if (IS_CHINA) {
       return this.authing!.signUp({
         email,
@@ -37,7 +54,7 @@ class MentraAuthProvider {
   }
 
   async signIn(email: string, password: string): Promise<MentraSigninResponse> {
-    this.checkOrSetupClients()
+    await this.checkOrSetupClients()
     if (IS_CHINA) {
       return this.authing!.signInWithPassword({
         email,
@@ -51,19 +68,45 @@ class MentraAuthProvider {
     }
   }
 
-  async getSession() {
-    this.checkOrSetupClients()
+  async resetPasswordForEmail(email: string): Promise<MentraPasswordResetResponse> {
+    await this.checkOrSetupClients()
     if (IS_CHINA) {
-      console.log("Getting session with Authing...")
-      return await this.authing!.getSession()
+      // return this.authing!.resetPasswordForEmail(email)
+      throw new Error("Reset password for email not supported in China")
     } else {
-      console.log("Getting session with Supabase...")
+      return this.supabase!.resetPasswordForEmail(email)
+    }
+  }
+
+  async updateUserPassword(password: string): Promise<MentraUpdateUserPasswordResponse> {
+    await this.checkOrSetupClients()
+    if (IS_CHINA) {
+      throw new Error("Update user password not supported in China")
+    } else {
+      return this.supabase!.updateUserPassword(password)
+    }
+  }
+
+  async getSession(): Promise<MentraAuthSessionResponse> {
+    await this.checkOrSetupClients()
+    if (IS_CHINA) {
+      return this.authing!.getSession()
+    } else {
       return this.supabase!.getSession()
     }
   }
 
-  async signOut() {
-    this.checkOrSetupClients()
+  async updateSessionWithTokens(tokens: {access_token: string; refresh_token: string}) {
+    await this.checkOrSetupClients()
+    if (IS_CHINA) {
+      throw new Error("Update session with tokens not supported in China")
+    } else {
+      return this.supabase!.updateSessionWithTokens(tokens)
+    }
+  }
+
+  async signOut(): Promise<MentraSignOutResponse> {
+    await this.checkOrSetupClients()
     if (IS_CHINA) {
       return this.authing!.signOut()
     } else {
@@ -72,7 +115,7 @@ class MentraAuthProvider {
   }
 
   async appleSignIn(): Promise<MentraOauthProviderResponse> {
-    this.checkOrSetupClients()
+    await this.checkOrSetupClients()
     if (IS_CHINA) {
       throw new Error("Apple sign in not supported in China")
     } else {
@@ -81,7 +124,7 @@ class MentraAuthProvider {
   }
 
   async googleSignIn(): Promise<MentraOauthProviderResponse> {
-    this.checkOrSetupClients()
+    await this.checkOrSetupClients()
     if (IS_CHINA) {
       throw new Error("Google sign in not supported in China")
     } else {

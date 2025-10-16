@@ -1,6 +1,5 @@
 import {useState, useEffect} from "react"
 import {View, Image, ActivityIndicator, ScrollView, ImageStyle, TextStyle, ViewStyle, Modal} from "react-native"
-import {supabase} from "@/supabase/supabaseClient"
 import {Header, Screen, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
@@ -12,6 +11,7 @@ import showAlert from "@/utils/AlertUtils"
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import restComms from "@/managers/RestComms"
 import {useAuth} from "@/contexts/AuthContext"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
 
 export default function ProfileSettingsPage() {
   const [userData, setUserData] = useState<{
@@ -31,19 +31,16 @@ export default function ProfileSettingsPage() {
     const fetchUserData = async () => {
       setLoading(true)
       try {
-        const {
-          data: {user},
-          error,
-        } = await supabase.auth.getUser()
+        const {data, error} = await mentraAuthProvider.getUser()
         if (error) {
           console.error(error)
           setUserData(null)
-        } else if (user) {
-          const fullName = user.user_metadata?.full_name || user.user_metadata?.name || null
-          const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null
-          const email = user.email || null
-          const createdAt = user.created_at || null
-          const provider = user.app_metadata?.provider || null
+        } else if (data?.user) {
+          const fullName = data.user.name || null
+          const avatarUrl = data.user.avatarUrl || null
+          const email = data.user.email || null
+          const createdAt = data.user.createdAt || null
+          const provider = data.user.provider || null
 
           setUserData({
             fullName,

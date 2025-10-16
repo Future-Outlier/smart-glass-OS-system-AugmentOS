@@ -2,7 +2,7 @@ import {AuthenticationClient} from "authing-js-sdk"
 import type {AuthenticationClientOptions, User} from "authing-js-sdk"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {EventEmitter} from "events"
-import {MentraSigninResponse} from "../authProvider.types"
+import {MentraAuthSessionResponse, MentraSigninResponse, MentraSignOutResponse} from "../authProvider.types"
 
 interface Session {
   access_token?: string
@@ -47,7 +47,7 @@ export class AuthingWrapperClient {
   public static async getInstance(): Promise<AuthingWrapperClient> {
     if (!AuthingWrapperClient.instance) {
       AuthingWrapperClient.instance = new AuthingWrapperClient()
-      const session = await AuthingWrapperClient.instance.getSession()
+      const session = await AuthingWrapperClient.instance.readSessionFromStorage()
 
       if (session?.access_token) {
         AuthingWrapperClient.instance.authing.setToken(session.access_token)
@@ -167,7 +167,7 @@ export class AuthingWrapperClient {
     }
   }
 
-  public async signOut() {
+  public async signOut(): Promise<MentraSignOutResponse> {
     try {
       await this.authing.logout()
       await this.clearSession()
@@ -175,18 +175,51 @@ export class AuthingWrapperClient {
       return {error: null}
     } catch (error) {
       console.error("Sign out error:", error)
-      return {error}
+      return {
+        error: {
+          message: "Failed to sign out",
+        },
+      }
     }
   }
 
-  public async getSession(): Promise<Session | null> {
+  public async getSession(): Promise<MentraAuthSessionResponse> {
+    try {
+      const session = await this.readSessionFromStorage()
+      return {
+        data: {
+          session: session
+            ? {
+                token: session.access_token,
+                user: {
+                  id: session.user!.id,
+                  email: session.user!.email!,
+                  name: session.user!.name || "",
+                },
+              }
+            : null,
+        },
+        error: null,
+      }
+    } catch (error) {
+      console.error("Error getting session:", error)
+      return {
+        data: null,
+        error: {
+          message: "Failed to get session",
+        },
+      }
+    }
+  }
+
+  private async readSessionFromStorage(): Promise<Session | null> {
     const sessionJson = await AsyncStorage.getItem(SESSION_KEY)
     return sessionJson ? JSON.parse(sessionJson) : null
   }
 
   private async setupTokenRefresh() {
     try {
-      const session = await this.getSession()
+      const session = await this.readSessionFromStorage()
       if (!session?.access_token) return
 
       const now = Date.now()
@@ -263,3 +296,7 @@ export class AuthingWrapperClient {
 }
 
 export const authingClient = AuthingWrapperClient.getInstance()
+
+// TODO:
+// Once we close the app the refresh thing would also turn off
+// Fix that

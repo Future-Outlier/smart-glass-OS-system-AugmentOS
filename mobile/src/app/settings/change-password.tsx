@@ -1,6 +1,5 @@
-import React, {useState} from "react"
+import {useState} from "react"
 import {View, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, ViewStyle, TextStyle} from "react-native"
-import {supabase} from "@/supabase/supabaseClient"
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle, spacing} from "@/theme"
@@ -10,6 +9,7 @@ import showAlert from "@/utils/AlertUtils"
 import {FontAwesome} from "@expo/vector-icons"
 import {Spacer} from "@/components/misc/Spacer"
 import Toast from "react-native-toast-message"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
 
 export default function ChangePasswordScreen() {
   const [newPassword, setNewPassword] = useState("")
@@ -39,9 +39,7 @@ export default function ChangePasswordScreen() {
     setIsLoading(true)
 
     try {
-      const {error} = await supabase.auth.updateUser({
-        password: newPassword,
-      })
+      const {error} = await mentraAuthProvider.updateUserPassword(newPassword)
 
       if (error) {
         showAlert(translate("common:error"), error.message)
@@ -205,7 +203,7 @@ const $errorText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   marginTop: spacing.xs,
 })
 
-const $primaryButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+const $primaryButton: ThemedStyle<ViewStyle> = () => ({
   // Using default Button styles from Ignite theme
 })
 

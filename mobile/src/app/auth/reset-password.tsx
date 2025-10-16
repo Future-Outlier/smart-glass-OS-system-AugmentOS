@@ -1,6 +1,5 @@
-import React, {useState, useEffect} from "react"
+import {useState, useEffect} from "react"
 import {View, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, ViewStyle, TextStyle} from "react-native"
-import {supabase} from "@/supabase/supabaseClient"
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle, spacing} from "@/theme"
@@ -10,6 +9,7 @@ import showAlert from "@/utils/AlertUtils"
 import {FontAwesome} from "@expo/vector-icons"
 import {Spacer} from "@/components/misc/Spacer"
 import Toast from "react-native-toast-message"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
 
 export default function ResetPasswordScreen() {
   const [email, setEmail] = useState("")
@@ -33,7 +33,7 @@ export default function ResetPasswordScreen() {
   const checkSession = async () => {
     const {
       data: {session},
-    } = await supabase.auth.getSession()
+    } = await mentraAuthProvider.getSession()
     if (session) {
       setIsValidToken(true)
       // Get the user's email from the session
@@ -62,21 +62,16 @@ export default function ResetPasswordScreen() {
     setIsLoading(true)
 
     try {
-      const {error} = await supabase.auth.updateUser({
-        password: newPassword,
-      })
+      const {error} = await mentraAuthProvider.updateUserPassword(newPassword)
 
       if (error) {
         showAlert(translate("common:error"), error.message)
       } else {
         // Try to automatically log the user in with the new password
         if (email) {
-          const {data: signInData, error: signInError} = await supabase.auth.signInWithPassword({
-            email,
-            password: newPassword,
-          })
+          const {data: signInData, error: signInError} = await mentraAuthProvider.signIn(email, newPassword)
 
-          if (!signInError && signInData.session) {
+          if (!signInError && signInData?.session) {
             Toast.show({
               type: "success",
               text1: translate("login:passwordResetSuccess"),
@@ -96,7 +91,7 @@ export default function ResetPasswordScreen() {
               position: "bottom",
             })
 
-            await supabase.auth.signOut()
+            await mentraAuthProvider.signOut()
 
             setTimeout(() => {
               router.replace("/auth/login")
@@ -111,7 +106,7 @@ export default function ResetPasswordScreen() {
             position: "bottom",
           })
 
-          await supabase.auth.signOut()
+          await mentraAuthProvider.signOut()
 
           setTimeout(() => {
             router.replace("/auth/login")

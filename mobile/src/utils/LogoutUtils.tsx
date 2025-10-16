@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import {supabase} from "@/supabase/supabaseClient"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import bridge from "@/bridge/MantleBridge"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import restComms from "@/managers/RestComms"
@@ -73,13 +73,9 @@ export class LogoutUtils {
   private static async clearSupabaseAuth(): Promise<void> {
     console.log(`${this.TAG}: Clearing Supabase authentication...`)
 
-    try {
-      // Try to sign out with Supabase - may fail in offline mode
-      await supabase.auth.signOut().catch(err => {
-        console.log(`${this.TAG}: Supabase sign-out failed, continuing with local cleanup:`, err)
-      })
-    } catch (error) {
-      console.warn(`${this.TAG}: Supabase signOut failed:`, error)
+    const {error} = await mentraAuthProvider.signOut()
+    if (error) {
+      console.error(`${this.TAG}: Error signing out:`, error)
     }
 
     // Completely clear ALL Supabase Auth storage
