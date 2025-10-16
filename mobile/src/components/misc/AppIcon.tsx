@@ -71,7 +71,7 @@ const AppIcon = ({app, onClick, style, showLabel = false, hideLoadingIndicator =
         <>
           {app.loading && !hideLoadingIndicator && (
             <View style={themed($loadingContainer)}>
-              <ActivityIndicator size="small" color={theme.colors.tint} />
+              <ActivityIndicator size="large" color={theme.colors.tint} />
             </View>
           )}
           <Image

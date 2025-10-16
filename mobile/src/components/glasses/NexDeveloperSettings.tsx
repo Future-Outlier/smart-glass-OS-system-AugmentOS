@@ -4,7 +4,6 @@ import {ScrollView, Text, TextInput, TextStyle, TouchableOpacity, View, ViewStyl
 import bridge from "@/bridge/MantleBridge"
 import {PillButton} from "@/components/ignite"
 import RouteButton from "@/components/ui/RouteButton"
-import {glassesFeatures} from "@/config/glassesFeatures"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
@@ -15,6 +14,7 @@ import {MOCK_CONNECTION} from "@/utils/Constants"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
 import ToggleSetting from "../settings/ToggleSetting"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
 
 // Nex Interface Version - Single source of truth
 export const NEX_INTERFACE_VERSION = "1.0.0"
@@ -257,7 +257,8 @@ export default function NexDeveloperSettings() {
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
   const {push} = useNavigationHistory()
-  const [defaultWearable, setDefaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const features = getCapabilitiesForModel(defaultWearable)
 
   // Mentra Nex BLE test state variables
   const [text, setText] = useState("Hello World")
@@ -325,7 +326,7 @@ export default function NexDeveloperSettings() {
 
   // Mentra Nex BLE test handlers
   const onSendTextClick = async () => {
-    if (status.core_info.puck_connected && status.glasses_info?.model_name) {
+    if (status.glasses_info?.model_name) {
       if (text === "" || positionX === null || positionY === null || size === null) {
         showAlert("Please fill all the fields", "Please fill all the fields", [
           {
@@ -355,7 +356,7 @@ export default function NexDeveloperSettings() {
   }
 
   const onSendImageClick = async () => {
-    if (status.core_info.puck_connected && status.glasses_info?.model_name) {
+    if (status.glasses_info?.model_name) {
       await bridge.sendDisplayImage(selectedImageType, selectedImageSize)
     } else {
       showAlert("Please connect to the device", "Please connect to the device", [
@@ -369,7 +370,7 @@ export default function NexDeveloperSettings() {
   }
 
   const onClearDisplayClick = async () => {
-    if (status.core_info.puck_connected && status.glasses_info?.model_name) {
+    if (status.glasses_info?.model_name) {
       await bridge.sendClearDisplay()
     } else {
       showAlert("Please connect to the device", "Please connect to the device", [
@@ -384,7 +385,7 @@ export default function NexDeveloperSettings() {
 
   const onLc3AudioToggle = async (enabled: boolean) => {
     setLc3AudioEnabled(enabled)
-    if (status.core_info.puck_connected && status.glasses_info?.model_name) {
+    if (status.glasses_info?.model_name) {
       await bridge.setLc3AudioEnabled(enabled)
     }
   }
@@ -787,7 +788,7 @@ const $textInput: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 14,
   marginBottom: 12,
   backgroundColor: colors.background,
-  borderColor: colors.inputBorderHighlight,
+  borderColor: colors.border,
   color: colors.text,
 })
 

@@ -1,11 +1,11 @@
 import bridge from "@/bridge/MantleBridge"
 import {Button, Icon, Text} from "@/components/ignite"
-import {glassesFeatures} from "@/config/glassesFeatures"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {spacing, ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
+import {DeviceTypes} from "@/utils/Constants"
 import {
   getEvenRealitiesG1Image,
   getGlassesClosedImage,
@@ -14,6 +14,7 @@ import {
 } from "@/utils/getGlassesImage"
 import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
 import {useFocusEffect} from "@react-navigation/native"
 import ChevronRight from "assets/icons/component/ChevronRight"
 import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
@@ -22,7 +23,6 @@ import {useCallback, useRef, useState} from "react"
 import {ActivityIndicator, Animated, TouchableOpacity, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import ConnectedSimulatedGlassesInfo from "./ConnectedSimulatedGlassesInfo"
-import {DeviceTypes} from "@/utils/Constants"
 
 export const ConnectDeviceButton = () => {
   const {status} = useCoreStatus()
@@ -216,9 +216,10 @@ export function DeviceToolbar() {
     return null
   }
 
+  const features = getCapabilitiesForModel(defaultWearable)
   const autoBrightness = status.glasses_settings.auto_brightness
-  const hasDisplay = glassesFeatures[defaultWearable]?.display ?? true // Default to true if model not found
-  const hasWifi = glassesFeatures[defaultWearable]?.wifi ?? false // Default to false if model not found
+  const hasDisplay = features?.hasDisplay ?? true // Default to true if model not found
+  const hasWifi = features?.hasWifi ?? false // Default to false if model not found
   const wifiSsid = status.glasses_info?.glasses_wifi_ssid
 
   const textColor = theme.colors.textDim

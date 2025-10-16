@@ -1,18 +1,86 @@
-import {create} from "zustand"
-import {AppletInterface} from "@/types/AppletTypes"
+import {translate} from "@/i18n"
 import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
-import {translate} from "@/i18n"
+import {HardwareCompatibility} from "@/utils/HardwareCompatibility"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {Capabilities, HardwareRequirementLevel, HardwareRequirement, HardwareType} from "@cloud/packages/sdk/src/types"
 import {useMemo} from "react"
+import {create} from "zustand"
 
 interface AppStatusState {
-  apps: AppletInterface[]
+  apps: ClientAppletInterface[]
   refreshApps: () => Promise<void>
   startApp: (packageName: string, appType?: string) => Promise<void>
   stopApp: (packageName: string) => Promise<void>
   stopAllApps: () => Promise<void>
 }
+
+/**
+ * Get theme-appropriate camera icon
+ */
+const getCameraIcon = (isDark: boolean) => {
+  return isDark
+    ? require("../../assets/icons/camera_dark_mode.png")
+    : require("../../assets/icons/camera_light_mode.png")
+}
+
+/**
+ * Offline Apps Configuration
+ *
+ * These are local React Native apps that don't require webviews or server communication.
+ * They navigate directly to specific React Native routes when activated.
+ */
+
+// get offline applets:
+export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
+  // const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+  const theme = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.theme_preference)
+  const isDark = theme === "dark"
+
+  return [
+    {
+      packageName: "com.mentra.camera",
+      name: "Camera",
+      type: "standard", // Foreground app (only one at a time)
+      isOffline: true, // Works without internet connection
+      logoUrl: getCameraIcon(isDark),
+      description: "Capture photos and videos with your Mentra glasses.",
+      webviewUrl: "",
+      version: "0.0.1",
+      permissions: [],
+      offlineRoute: "/asg/gallery",
+      running: false,
+      loading: false,
+      hardwareRequirements: [{type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED}],
+    },
+    {
+      packageName: "com.mentra.captions",
+      name: "Live Captions",
+      type: "standard", // Foreground app (only one at a time)
+      isOffline: true, // Works without internet connection
+      // logoUrl: getCaptionsIcon(isDark),
+      logoUrl: "",
+      description: "Live captions for your mentra glasses.",
+      webviewUrl: "",
+      version: "0.0.1",
+      permissions: [],
+      offlineRoute: "/asg/gallery",
+      running: false,
+      loading: false,
+      hardwareRequirements: [],
+    },
+  ]
+}
+
+// export const isAppCompatible = (app: ClientAppletInterface): boolean => {
+//   const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+//   const capabilities = getCapabilitiesForModel(defaultWearable)
+//   if (!capabilities) return false
+//   const requiredCapabilities = app.required
+//   return requiredCapabilities.every(capability => capabilities.includes(capability))
+// }
 
 export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   apps: [],
@@ -22,50 +90,75 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     if (!coreToken) return
 
     try {
-      const appsData = await restComms.getApps()
-      const mapped = appsData.map(app => ({
-        type: app.type || app.appType,
-        developerName: app.developerName,
-        packageName: app.packageName,
-        name: app.name,
-        publicUrl: app.publicUrl,
-        logoURL: app.logoURL,
-        permissions: app.permissions,
-        webviewURL: app.webviewURL,
-        is_running: app.is_running,
-        loading: false,
-        isOnline: app.isOnline,
-        compatibility: app.compatibility,
-      })) as AppletInterface[]
+      const appsData: AppletInterface[] = await restComms.getApps()
 
-      set({apps: mapped})
+      const onlineApps: ClientAppletInterface[] = appsData.map(app => ({
+        ...app,
+        isOffline: false,
+        offlineRoute: "",
+      }))
+
+      // merge in the offline apps:
+      let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets())]
+
+      // remove duplicates and keep the online versions:
+      const packageNameMap = new Map<string, ClientAppletInterface>()
+      applets.forEach(app => {
+        const existing = packageNameMap.get(app.packageName)
+        if (!existing || !app.isOffline) {
+          packageNameMap.set(app.packageName, app)
+        }
+      })
+      applets = Array.from(packageNameMap.values())
+
+      // add in the compatibility info:
+      let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+      let capabilities = getCapabilitiesForModel(defaultWearable)
+
+      for (const applet of applets) {
+        let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
+        applet.compatibility = result
+      }
+
+      set({apps: applets})
     } catch (err) {
       console.error("Error fetching apps:", err)
     }
   },
 
-  startApp: async (packageName: string, appType?: string) => {
-    if (appType === "standard") {
-      const runningStandardApps = get().apps.filter(
-        a => a.is_running && a.type === "standard" && a.packageName !== packageName,
-      )
+  startApp: async (packageName: string) => {
+    console.log("starting app")
+    const applet = get().apps.find(a => a.packageName === packageName)
+    console.log("applet", applet)
 
-      for (const app of runningStandardApps) {
-        await restComms.stopApp(app.packageName).catch(console.error)
-        set(state => ({
-          apps: state.apps.map(a =>
-            a.packageName === app.packageName ? {...a, is_running: false, loading: false} : a,
-          ),
-        }))
-      }
+    if (!applet) {
+      console.error(`Applet not found for package name: ${packageName}`)
+      return
     }
+
+    // if (applet.type === "standard") {
+    //   const runningStandardApps = get().apps.filter(
+    //     a => a.is_running && a.type === "standard" && a.packageName !== packageName,
+    //   )
+
+    //   for (const app of runningStandardApps) {
+    //     await restComms.stopApp(app.packageName).catch(console.error)
+    //     set(state => ({
+    //       apps: state.apps.map(a =>
+    //         a.packageName === app.packageName ? {...a, is_running: false, loading: false} : a,
+    //       ),
+    //     }))
+    //   }
+    // }
 
     set(state => ({
       apps: state.apps.map(a => (a.packageName === packageName ? {...a, is_running: true, loading: true} : a)),
     }))
 
     try {
-      await restComms.startApp(packageName)
+      if (!applet.isOffline) {
+        await restComms.startApp(packageName)
+      }
       await useSettingsStore.getState().setSetting(SETTINGS_KEYS.has_ever_activated_app, true)
     } catch (error: any) {
       console.error("Start app error:", error)
@@ -90,15 +183,23 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     set(state => ({
       apps: state.apps.map(a => (a.packageName === packageName ? {...a, is_running: false, loading: false} : a)),
     }))
-
-    await restComms.stopApp(packageName).catch(console.error)
+    const applet = get().apps.find(a => a.packageName === packageName)
+    if (!applet) {
+      console.error(`Applet with package name ${packageName} not found`)
+      return
+    }
+    if (!applet.isOffline) {
+      await restComms.stopApp(packageName).catch(console.error)
+    }
   },
 
   stopAllApps: async () => {
-    const runningApps = get().apps.filter(app => app.is_running)
+    const runningApps = get().apps.filter(app => app.running)
 
     for (const app of runningApps) {
-      await restComms.stopApp(app.packageName)
+      if (!app.isOffline) {
+        await restComms.stopApp(app.packageName)
+      }
     }
 
     set({apps: get().apps.map(a => ({...a, is_running: false}))})
@@ -109,18 +210,17 @@ export const useApplets = () => useAppletStatusStore(state => state.apps)
 export const useStartApplet = () => useAppletStatusStore(state => state.startApp)
 export const useStopApplet = () => useAppletStatusStore(state => state.stopApp)
 export const useRefreshApplets = () => useAppletStatusStore(state => state.refreshApps)
-
+export const useStopAllApplets = () => useAppletStatusStore(state => state.stopAllApps)
 export const useInactiveForegroundApps = () => {
   const apps = useApplets()
-  return useMemo(() => apps.filter(app => (app.type === "standard" || !app.type) && !app.is_running), [apps])
+  return useMemo(() => apps.filter(app => (app.type === "standard" || !app.type) && !app.running), [apps])
 }
-
 export const useBackgroundApps = () => {
   const apps = useApplets()
   return useMemo(
     () => ({
-      active: apps.filter(app => app.type === "background" && app.is_running),
-      inactive: apps.filter(app => app.type === "background" && !app.is_running),
+      active: apps.filter(app => app.type === "background" && app.running),
+      inactive: apps.filter(app => app.type === "background" && !app.running),
     }),
     [apps],
   )
@@ -128,18 +228,50 @@ export const useBackgroundApps = () => {
 
 export const useActiveForegroundApp = () => {
   const apps = useApplets()
-  return useMemo(() => apps.find(app => (app.type === "standard" || !app.type) && app.is_running) || null, [apps])
+  return useMemo(() => apps.find(app => (app.type === "standard" || !app.type) && app.running) || null, [apps])
 }
 
 export const useActiveBackgroundAppsCount = () => {
   const apps = useApplets()
-  return useMemo(() => apps.filter(app => app.type === "background" && app.is_running).length, [apps])
+  return useMemo(() => apps.filter(app => app.type === "background" && app.running).length, [apps])
 }
 
 export const useIncompatibleApps = () => {
   const apps = useApplets()
-  return useMemo(
-    () => apps.filter(app => !app.is_running && app.compatibility && !app.compatibility.isCompatible),
-    [apps],
-  )
+  return useMemo(() => apps.filter(app => !app.compatibility?.isCompatible), [apps])
 }
+
+// export const useIncompatibleApps = async () => {
+//   const apps = useApplets()
+//   const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+
+//   const capabilities: Capabilities | null = await getCapabilitiesForModel(defaultWearable)
+//   if (!capabilities) {
+//     console.error("Failed to fetch capabilities")
+//     return []
+//   }
+
+//   return useMemo(() => {
+//     return apps.filter((app) => {
+//       let result = HardwareCompatibility.checkCompatibility(app.hardwareRequirements, capabilities)
+//       return !result.isCompatible
+//     })
+//   }, [apps])
+// }
+
+// export const useFilteredApps = async () => {
+//   const apps = useApplets()
+//   const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+
+//   const capabilities: Capabilities | null = getCapabilitiesForModel(defaultWearable)
+//   if (!capabilities) {
+//     console.error("Failed to fetch capabilities")
+//     throw new Error("Failed to fetch capabilities")
+//   }
+
+//   return useMemo(() => {
+//     return {
+
+//     })
+//   }, [apps])
+// }

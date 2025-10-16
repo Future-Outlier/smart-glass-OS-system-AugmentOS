@@ -66,8 +66,8 @@ export const AllProviders = withWrappers(
     }
     return (
       <>
-        <Toast config={toastConfig} />
         {props.children}
+        <Toast config={toastConfig} />
       </>
     )
   },

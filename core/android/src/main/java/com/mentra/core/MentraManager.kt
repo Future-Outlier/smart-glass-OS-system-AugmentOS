@@ -45,6 +45,9 @@ class MentraManager {
     private var permissionReceiver: BroadcastReceiver? = null
     private val handler = Handler(Looper.getMainLooper())
     private var permissionCheckRunnable: Runnable? = null
+    // notifications settings
+    public var notificationsEnabled = false
+    public var notificationsBlocklist = listOf<String>()
     // MARK: - End Unique
 
     // MARK: - Properties
@@ -550,6 +553,16 @@ class MentraManager {
     fun updateButtonMaxRecordingTime(minutes: Int) {
         buttonMaxRecordingTime = minutes
         sgc?.sendButtonMaxRecordingTime()
+        handle_request_status()
+    }
+
+    fun updateNotificationsBlocklist(blacklist: List<String>) {
+        notificationsBlocklist = blacklist
+        handle_request_status()
+    }
+
+    fun updateNotificationsEnabled(enabled: Boolean) {
+        notificationsEnabled = enabled
         handle_request_status()
     }
 
@@ -1295,6 +1308,12 @@ class MentraManager {
         (settings["button_max_recording_time"] as? Int)?.let { newMaxTime ->
             if (buttonMaxRecordingTime != newMaxTime) {
                 updateButtonMaxRecordingTime(newMaxTime)
+            }
+        }
+
+        (settings["notifications_blocklist"] as? List<String>)?.let { newBlocklist ->
+            if (notificationsBlocklist != newBlocklist) {
+                updateNotificationsBlocklist(newBlocklist)
             }
         }
 

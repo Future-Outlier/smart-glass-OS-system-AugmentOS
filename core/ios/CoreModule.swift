@@ -18,5 +18,14 @@ public class CoreModule: Module {
         AsyncFunction("handleCommand") { (command: String) -> Any in
             return Bridge.handleCommand(command)
         }
+
+        // android stubs:
+        AsyncFunction("getInstalledApps") { () -> Any in
+            return nil
+        }
+
+        AsyncFunction("hasNotificationListenerPermission") { () -> Any in
+            return nil
+        }
     }
 }

@@ -12,7 +12,7 @@ import STTModelManager from "@/services/STTModelManager"
 import showAlert from "@/utils/AlertUtils"
 import {useFocusEffect} from "@react-navigation/native"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {useAppStatus} from "@/contexts/AppletStatusProvider"
+import {useStopAllApplets} from "@/stores/applets"
 
 export default function TranscriptionSettingsScreen() {
   const {theme} = useAppTheme()
@@ -36,7 +36,7 @@ export default function TranscriptionSettingsScreen() {
   const RESTART_TRANSCRIPTION_DEBOUNCE_MS = 8000 // 8 seconds
   const [lastRestartTime, setLastRestartTime] = useState(0)
 
-  const {stopAllApps} = useAppStatus()
+  const stopAllApps = useStopAllApplets()
 
   const handleToggleOfflineMode = () => {
     const title = offlineMode ? "Disable Offline Mode?" : "Enable Offline Mode?"
@@ -59,7 +59,6 @@ export default function TranscriptionSettingsScreen() {
             } else {
               // If disabling offline mode, turn off offline captions
               setOfflineCaptionsAppRunning(false)
-              bridge.toggleOfflineApps(false)
             }
             setOfflineMode(!offlineMode)
           },

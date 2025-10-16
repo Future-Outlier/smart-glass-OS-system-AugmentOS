@@ -2636,7 +2636,8 @@ public class MentraLive extends SGCManager {
 
     public void forget() {
         Bridge.log("LIVE: Forgetting Mentra Live glasses");
-        // TODO:
+        stopScan();
+        disconnect();
     }
 
     public void disconnect() {

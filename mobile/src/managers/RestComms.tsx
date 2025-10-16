@@ -189,10 +189,22 @@ class RestComms {
   }
 
   // App Management
+  // public async getApps(): Promise<AppletInterface[]> {
+  //   console.log(`${this.TAG}: getApps() called`)
+
+  //   const response = await this.authenticatedRequest<ApiResponse<AppletInterface[]>>("GET", "/api/apps/")
+
+  //   if (!response.success || !response.data) {
+  //     throw new Error("Invalid response format")
+  //   }
+
+  //   return response.data
+  // }
+
   public async getApps(): Promise<AppletInterface[]> {
     console.log(`${this.TAG}: getApps() called`)
 
-    const response = await this.authenticatedRequest<ApiResponse<AppletInterface[]>>("GET", "/api/apps/")
+    const response = await this.authenticatedRequest<ApiResponse<AppletInterface[]>>("GET", "/api/client/apps")
 
     if (!response.success || !response.data) {
       throw new Error("Invalid response format")

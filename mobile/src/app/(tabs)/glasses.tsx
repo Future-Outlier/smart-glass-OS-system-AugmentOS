@@ -9,8 +9,8 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import DeviceSettings from "@/components/glasses/DeviceSettings"
 import {translate} from "@/i18n/translate"
 import {Spacer} from "@/components/misc/Spacer"
-import {glassesFeatures} from "@/config/glassesFeatures"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
 
 export default function Glasses() {
   const {theme} = useAppTheme()
@@ -26,6 +26,9 @@ export default function Glasses() {
     pageTitle = translate("glasses:title")
   }
 
+  let connected = status.glasses_info?.model_name ?? false
+  let features = getCapabilitiesForModel(defaultWearable)
+
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
       <Header leftText={pageTitle} />
@@ -33,13 +36,8 @@ export default function Glasses() {
         style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}
         contentInsetAdjustmentBehavior="automatic">
         <CloudConnection />
-        {defaultWearable && status.glasses_info?.model_name && glassesFeatures[defaultWearable]?.display && (
-          <ConnectedSimulatedGlassesInfo />
-        )}
-        {defaultWearable &&
-          status.glasses_info?.model_name &&
-          glassesFeatures[defaultWearable] &&
-          !glassesFeatures[defaultWearable].display && <ConnectedGlasses showTitle={false} />}
+        {connected && features?.hasDisplay && <ConnectedSimulatedGlassesInfo />}
+        {connected && features?.hasDisplay && <ConnectedGlasses showTitle={false} />}
         <Spacer height={theme.spacing.lg} />
         <ConnectDeviceButton />
         <DeviceSettings />

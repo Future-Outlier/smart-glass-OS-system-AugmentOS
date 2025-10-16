@@ -42,13 +42,6 @@ initializeSettings()
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync()
 
-if (__DEV__) {
-  // Load Reactotron configuration in development. We don't want to
-  // include this in our production bundle, so we are using `if (__DEV__)`
-  // to only execute this in development.
-  require("src/devtools/ReactotronConfig.ts")
-}
-
 function Root() {
   const [_fontsLoaded, fontError] = useFonts(customFontsToLoad)
   const [loaded, setLoaded] = useState(false)

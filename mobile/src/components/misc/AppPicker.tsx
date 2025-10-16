@@ -213,7 +213,7 @@ const $modalOverlay: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $modalContent: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.background,
+  backgroundColor: colors.backgroundEnd,
   borderTopLeftRadius: spacing.lg,
   borderTopRightRadius: spacing.lg,
   height: "90%", // Changed from maxHeight to height for consistent sizing
@@ -290,7 +290,7 @@ const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 })
 
 const $appItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.background,
   borderRadius: spacing.sm,
   marginBottom: spacing.sm,
   padding: spacing.md,
@@ -340,7 +340,7 @@ const $warningContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   alignItems: "flex-start",
   marginTop: spacing.xs,
   gap: spacing.xs,
-  backgroundColor: colors.palette.angry100,
+  backgroundColor: colors.backgroundAlt,
   padding: spacing.xs,
   borderRadius: spacing.xs,
 })

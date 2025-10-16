@@ -1,8 +1,9 @@
 import {useEffect, useState} from "react"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {glassesFeatures} from "@/config/glassesFeatures"
 import showAlert from "@/utils/AlertUtils"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {Capabilities} from "@mentra/sdk"
 
 interface VersionInfo {
   versionCode: number
@@ -112,7 +113,7 @@ export function OtaUpdateChecker() {
         return
       }
 
-      const features = glassesFeatures[glassesModel]
+      const features: Capabilities = getCapabilitiesForModel(glassesModel)
       if (!features || !features.wifiSelfOtaUpdate) {
         // Remove console log to reduce spam
         return
