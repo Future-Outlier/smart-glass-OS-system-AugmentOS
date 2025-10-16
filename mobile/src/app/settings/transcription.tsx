@@ -13,6 +13,7 @@ import showAlert from "@/utils/AlertUtils"
 import {useFocusEffect} from "@react-navigation/native"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {useStopAllApplets} from "@/stores/applets"
+import CoreModule from "core"
 
 export default function TranscriptionSettingsScreen() {
   const {theme} = useAppTheme()
@@ -144,7 +145,7 @@ export default function TranscriptionSettingsScreen() {
     const now = Date.now()
     setLastRestartTime(now)
     await STTModelManager.activateModel(modelId)
-    await bridge.restartTranscription()
+    await CoreModule.restartTranscription()
   }
 
   const handleModelChange = async (modelId: string) => {

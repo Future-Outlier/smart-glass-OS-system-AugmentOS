@@ -1783,10 +1783,11 @@ public class MentraLive extends SGCManager {
                 Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
                 
                 // Post touch event to EventBus for AugmentosService to handle
-                EventBus.getDefault().post(new TouchEvent(
-                        smartGlassesDevice.deviceModelName,
-                        gestureName,
-                        touchTimestamp));
+                // EventBus.getDefault().post(new TouchEvent(
+                //         smartGlassesDevice.deviceModelName,
+                //         gestureName,
+                //         touchTimestamp));
+                // Bridge.sendTouchEvent(gestureName, touchTimestamp);
                 break;
 
             case "swipe_volume_status":
@@ -1802,10 +1803,10 @@ public class MentraLive extends SGCManager {
                 //         swipeVolumeEnabled,
                 //         swipeTimestamp));
                 
-                // For now, forward to data observable for app consumption
-                if (dataObservable != null) {
-                    dataObservable.onNext(json);
-                }
+                // // For now, forward to data observable for app consumption
+                // if (dataObservable != null) {
+                //     dataObservable.onNext(json);
+                // }
                 break;
 
             case "switch_status":
@@ -1825,9 +1826,9 @@ public class MentraLive extends SGCManager {
                 //         switchTimestamp));
                 
                 // For now, forward to data observable for app consumption
-                if (dataObservable != null) {
-                    dataObservable.onNext(json);
-                }
+                // if (dataObservable != null) {
+                //     dataObservable.onNext(json);
+                // }
                 break;
 
             case "sensor_data":

@@ -1,4 +1,3 @@
-import bridge from "@/bridge/MantleBridge"
 import {Icon, Text} from "@/components/ignite"
 import {AppPicker} from "@/components/misc/AppPicker"
 import SliderSetting from "@/components/settings/SliderSetting"
@@ -25,6 +24,7 @@ import {useCallback, useEffect, useRef, useState} from "react"
 import {Animated, Platform, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import {SvgXml} from "react-native-svg"
 import OtaProgressSection from "./OtaProgressSection"
+import CoreModule from "core"
 
 // Icon components defined directly in this file to avoid path resolution issues
 interface CaseIconProps {
@@ -209,7 +209,7 @@ export default function DeviceSettings() {
         {
           text: translate("common:yes"),
           onPress: () => {
-            bridge.sendForgetSmartGlasses()
+            CoreModule.forget()
           },
         },
       ],
@@ -456,7 +456,7 @@ export default function DeviceSettings() {
           label={translate("settings:disconnectGlasses")}
           variant="destructive"
           onPress={() => {
-            bridge.sendDisconnectWearable()
+            CoreModule.disconnect()
           }}
         />
       )}

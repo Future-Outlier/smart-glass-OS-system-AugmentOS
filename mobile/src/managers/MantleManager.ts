@@ -5,7 +5,7 @@ import * as TaskManager from "expo-task-manager"
 import * as Location from "expo-location"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
-import bridge from "@/bridge/MantleBridge"
+import CoreModule from "core"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -58,14 +58,14 @@ class MantleManager {
     } catch (e) {
       console.error(`Failed to get settings from server: ${e}`)
     }
-    await bridge.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
+    await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
 
     setTimeout(async () => {
-      await bridge.sendConnectDefault()
+      await CoreModule.sendConnectDefault()
     }, 3000)
 
     // send initial status request:
-    await bridge.sendRequestStatus()
+    await CoreModule.sendRequestStatus()
 
     this.setupPeriodicTasks()
   }

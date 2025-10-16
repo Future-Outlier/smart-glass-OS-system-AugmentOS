@@ -287,36 +287,6 @@ export class MantleBridge extends EventEmitter {
 
   /* Command methods to interact with Core */
 
-  async sendRequestStatus() {
-    return await CoreModule.requestStatus()
-  }
-
-  async sendSearchForCompatibleDeviceNames(modelName: string) {
-    return await CoreModule.findCompatibleDevices(modelName)
-  }
-
-  async sendConnectDefault() {
-    return await CoreModule.connectDefault()
-  }
-
-  async sendConnectByName(deviceName: string = "") {
-    console.log("sendConnectByName:", " deviceName")
-    return await CoreModule.connectByName(deviceName)
-  }
-
-  async sendDisconnectWearable() {
-    return await CoreModule.disconnect()
-  }
-
-  async sendForgetSmartGlasses() {
-    return await CoreModule.forget()
-  }
-
-  async restartTranscription() {
-    console.log("Restarting transcription with new model...")
-    return await CoreModule.restartTranscriber()
-  }
-
   async sendToggleEnforceLocalTranscription(enabled: boolean) {
     console.log("Toggling enforce local transcription:", enabled)
     return await CoreModule.updateSettings({
@@ -350,15 +320,6 @@ export class MantleBridge extends EventEmitter {
     // TODO: Add setGlassesWifiCredentials to CoreModule
     console.warn("setGlassesWifiCredentials not yet implemented in new CoreModule API")
     console.log("Would set credentials:", ssid)
-  }
-
-  async sendWifiCredentials(ssid: string, password: string) {
-    console.log("Sending wifi credentials to Core", ssid, password)
-    return await CoreModule.sendWifiCredentials(ssid, password)
-  }
-
-  async requestWifiScan() {
-    return await CoreModule.requestWifiScan()
   }
 
   async disconnectFromWifi() {

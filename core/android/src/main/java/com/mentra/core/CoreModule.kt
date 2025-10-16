@@ -83,7 +83,7 @@ class CoreModule : Module() {
             MentraManager.getInstance()?.handle_query_gallery_status()
         }
 
-        AsyncFunction("photoRequest") { requestId: String, appId: String, size: String, webhookUrl: String?, authToken: String? ->
+        AsyncFunction("photoRequest") { requestId: String, appId: String, size: String, webhookUrl: String, authToken: String ->
             MentraManager.getInstance()?.handle_photo_request(requestId, appId, size, webhookUrl, authToken)
         }
 

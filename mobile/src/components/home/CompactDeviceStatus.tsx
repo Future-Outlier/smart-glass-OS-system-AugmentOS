@@ -3,10 +3,8 @@ import {useState} from "react"
 import {ActivityIndicator, Image, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
-import bridge from "@/bridge/MantleBridge"
 import {Button, Icon} from "@/components/ignite"
 import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
-import {glassesFeatures} from "@/config/glassesFeatures"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
@@ -25,6 +23,7 @@ import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import SunIcon from "assets/icons/component/SunIcon"
 import {DeviceTypes} from "@/utils/Constants"
 import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import CoreModule from "core"
 
 export const CompactDeviceStatus: React.FC = () => {
   const {status} = useCoreStatus()
@@ -68,7 +67,7 @@ export const CompactDeviceStatus: React.FC = () => {
         return
       }
 
-      await bridge.sendConnectDefault()
+      await CoreModule.sendConnectDefault()
     } catch (error) {
       console.error("connect to glasses error:", error)
       showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
@@ -77,18 +76,9 @@ export const CompactDeviceStatus: React.FC = () => {
     }
   }
 
-  const sendDisconnectWearable = async () => {
-    console.log("Disconnecting wearable")
-    try {
-      await bridge.sendDisconnectWearable()
-    } catch (error) {
-      console.error("disconnect wearable error:", error)
-    }
-  }
-
   const handleConnectOrDisconnect = async () => {
     if (status.core_info.is_searching) {
-      await sendDisconnectWearable()
+      await CoreModule.disconnect()
     } else {
       await connectGlasses()
     }
