@@ -9,8 +9,9 @@ import {
 } from "./authProvider.types"
 import {AuthingWrapperClient} from "./provider/authingClient"
 import {SupabaseWrapperClient} from "./provider/supabaseClient"
+import Constants from "expo-constants"
 
-const DEPLOYMENT_REGION = process.env.DEPLOYMENT_REGION || "global"
+const DEPLOYMENT_REGION = Constants.expoConfig?.extra?.DEPLOYMENT_REGION || "global"
 const IS_CHINA = DEPLOYMENT_REGION === "china"
 
 class MentraAuthProvider {
@@ -32,7 +33,7 @@ class MentraAuthProvider {
   async getUser(): Promise<MentraAuthUserResponse> {
     await this.checkOrSetupClients()
     if (IS_CHINA) {
-      throw new Error("Get user not supported in China")
+      return this.authing!.getUser()
     } else {
       return this.supabase!.getUser()
     }
@@ -56,11 +57,13 @@ class MentraAuthProvider {
   async signIn(email: string, password: string): Promise<MentraSigninResponse> {
     await this.checkOrSetupClients()
     if (IS_CHINA) {
+      console.log("Signing in with password in China")
       return this.authing!.signInWithPassword({
         email,
         password,
       })
     } else {
+      console.log("Signing in with password in Global")
       return this.supabase!.signInWithPassword({
         email,
         password,

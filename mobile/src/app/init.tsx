@@ -112,7 +112,7 @@ export default function InitScreen() {
     setLoadingStatus(translate("versionCheck:connectingToServer"))
 
     try {
-      const token = session?.access_token
+      const token = session?.token
       console.log("EXCHANGING TOKEN: ")
       console.log(token)
       if (!token) {

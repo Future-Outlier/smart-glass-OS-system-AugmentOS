@@ -2,7 +2,13 @@ import {AuthenticationClient} from "authing-js-sdk"
 import type {AuthenticationClientOptions, User} from "authing-js-sdk"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {EventEmitter} from "events"
-import {MentraAuthSessionResponse, MentraSigninResponse, MentraSignOutResponse} from "../authProvider.types"
+import {
+  MentraAuthSessionResponse,
+  MentraAuthUserResponse,
+  MentraSigninResponse,
+  MentraSignOutResponse,
+} from "../authProvider.types"
+import Constants from "expo-constants"
 
 interface Session {
   access_token?: string
@@ -35,8 +41,8 @@ export class AuthingWrapperClient {
 
   private constructor() {
     const authingOptions: AuthenticationClientOptions = {
-      appId: process.env.AUTHING_APP_ID!,
-      appHost: process.env.AUTHING_APP_HOST!,
+      appId: Constants.expoConfig?.extra?.AUTHING_APP_ID || "",
+      appHost: Constants.expoConfig?.extra?.AUTHING_APP_HOST || "",
       lang: "en-US",
     }
     this.authing = new AuthenticationClient(authingOptions)
@@ -83,6 +89,35 @@ export class AuthingWrapperClient {
     }
   }
 
+  public async getUser(): Promise<MentraAuthUserResponse> {
+    try {
+      const user = await this.authing.getCurrentUser()
+      return {
+        data: user
+          ? {
+              user: {
+                id: user.id,
+                email: user.email!,
+                name: user.name || "",
+                avatarUrl: user.photo || "",
+                createdAt: user.createdAt as string,
+                provider: user.identities?.[0]?.provider as string,
+              },
+            }
+          : null,
+        error: null,
+      }
+    } catch (error) {
+      console.error("Error getting user:", error)
+      return {
+        data: null,
+        error: {
+          message: "Failed to get user",
+        },
+      }
+    }
+  }
+
   public async signUp(credentials: {email: string; password: string}): Promise<MentraSigninResponse> {
     try {
       const user = await this.authing.registerByEmail(credentials.email, credentials.password)
@@ -106,12 +141,12 @@ export class AuthingWrapperClient {
           : null,
         error: null,
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing up:", error)
       return {
         data: null,
         error: {
-          message: "Failed to sign up",
+          message: error.message,
         },
       }
     }
@@ -119,16 +154,17 @@ export class AuthingWrapperClient {
 
   public async signInWithPassword(credentials: {email: string; password: string}): Promise<MentraSigninResponse> {
     try {
+      console.log("AuthingWrapperClient: signInWithPassword")
       const user = await this.authing.loginByEmail(credentials.email, credentials.password)
       const token = user.token
-      const tokenExpiresAt = user.tokenExpiredAt
+      const tokenExpiresAt = user.tokenExpiredAt && new Date(user.tokenExpiredAt).getTime()
 
       console.log("Token expires at:", tokenExpiresAt)
 
       if (token && tokenExpiresAt) {
         const session: Session = {
           access_token: token,
-          refresh_token: undefined, // Update this when implementing refresh token flow
+          refresh_token: undefined, // TODO: Update this when implementing refresh token flow
           expires_at: Number(tokenExpiresAt),
           user,
         }
@@ -156,12 +192,12 @@ export class AuthingWrapperClient {
       }
 
       throw new Error("Failed to sign in")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign in error:", error)
       return {
         data: null,
         error: {
-          message: "Failed to sign in",
+          message: error.message,
         },
       }
     }
