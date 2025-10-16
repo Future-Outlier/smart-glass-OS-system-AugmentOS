@@ -332,27 +332,6 @@ export class MantleBridge extends EventEmitter {
     return await CoreModule.sendUpdatingScreen(enabled)
   }
 
-  async sendDisplayText(text: string, x: number, y: number, size: number) {
-    console.log("sendDisplayText", text, x, y, size)
-    return await CoreModule.displayText({
-      text: text,
-      x: x,
-      y: y,
-      size: size,
-    })
-  }
-
-  async sendDisplayImage(imageType: string, imageSize: string) {
-    // TODO: Add displayImage to CoreModule
-    console.warn("sendDisplayImage not yet implemented in new CoreModule API")
-    console.log("Would display image:", imageType, imageSize)
-  }
-
-  async sendClearDisplay() {
-    // TODO: Add clearDisplay to CoreModule
-    console.warn("sendClearDisplay not yet implemented in new CoreModule API")
-  }
-
   async setLc3AudioEnabled(enabled: boolean) {
     console.log("setLc3AudioEnabled", enabled)
     // TODO: Add setLc3AudioEnabled to CoreModule

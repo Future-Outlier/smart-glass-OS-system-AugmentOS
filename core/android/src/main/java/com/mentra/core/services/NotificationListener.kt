@@ -13,7 +13,7 @@ import android.service.notification.StatusBarNotification
 import android.text.TextUtils
 import android.util.Base64
 import com.mentra.core.Bridge
-import com.mentra.core.MentraManager
+import com.mentra.core.CoreManager
 import java.io.ByteArrayOutputStream
 
 class NotificationListener private constructor(private val context: Context) {
@@ -85,7 +85,7 @@ class NotificationListener private constructor(private val context: Context) {
                         id = sbn.id,
                         tag = sbn.tag
                 )
-        val blocklist = MentraManager.getInstance().notificationsBlocklist
+        val blocklist = CoreManager.getInstance().notificationsBlocklist
         if (blocklist.contains(notification.packageName)) {
             Bridge.log("NOTIF: Notification in blocklist, returning")
             return
@@ -121,7 +121,7 @@ class NotificationListener private constructor(private val context: Context) {
     fun getInstalledApps(): List<Map<String, Any?>> {
         val packageManager = context.packageManager
         val packages = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-        val blocklist = MentraManager.getInstance().notificationsBlocklist
+        val blocklist = CoreManager.getInstance().notificationsBlocklist
 
         return packages
                 .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 } // Filter out system apps

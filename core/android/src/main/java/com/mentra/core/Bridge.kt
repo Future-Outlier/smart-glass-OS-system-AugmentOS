@@ -22,7 +22,7 @@ import org.json.JSONObject
  * Android equivalent of the iOS Bridge.swift
  */
 public class Bridge private constructor() {
-    private var mentraManager: MentraManager? = null
+    private var coreManager: CoreManager? = null
 
     companion object {
         private const val TAG = "Bridge"
@@ -500,9 +500,9 @@ public class Bridge private constructor() {
     }
 
     init {
-        mentraManager = MentraManager.Companion.getInstance()
-        if (mentraManager == null) {
-            Log.e(TAG, "Failed to initialize MentraManager in Bridge constructor")
+        coreManager = CoreManager.Companion.getInstance()
+        if (coreManager == null) {
+            Log.e(TAG, "Failed to initialize CoreManager in Bridge constructor")
         }
     }
 

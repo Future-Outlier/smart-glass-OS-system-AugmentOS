@@ -229,7 +229,7 @@ class G1: NSObject, SGCManager {
             let oldValue = _ready
             _ready = newValue
             if oldValue != newValue {
-                MentraManager.shared.handleConnectionStateChanged()
+                CoreManager.shared.handleConnectionStateChanged()
             }
             if !newValue {
                 // Reset battery levels when disconnected
@@ -480,7 +480,7 @@ class G1: NSObject, SGCManager {
 
                 // Trigger status update to include serial number in status JSON
                 DispatchQueue.main.async {
-                    MentraManager.shared.handle_request_status()
+                    CoreManager.shared.handle_request_status()
                 }
             }
         } catch {
@@ -1124,7 +1124,7 @@ class G1: NSObject, SGCManager {
             handleAck(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
         case .BLE_REQ_TRANSFER_MIC_DATA:
             // compressedVoiceData = data
-            MentraManager.shared.handleGlassesMicData(data)
+            CoreManager.shared.handleGlassesMicData(data)
         //                CoreCommsService.log("G1: Got voice data: " + String(data.count))
         case .UNK_1:
             handleAck(from: peripheral, success: true)
@@ -1182,11 +1182,11 @@ class G1: NSObject, SGCManager {
             case .HEAD_UP:
                 Bridge.log("G1: HEAD_UP")
                 isHeadUp = true
-                MentraManager.shared.updateHeadUp(isHeadUp)
+                CoreManager.shared.updateHeadUp(isHeadUp)
             case .HEAD_UP2:
                 Bridge.log("G1: HEAD_UP2")
                 isHeadUp = true
-                MentraManager.shared.updateHeadUp(isHeadUp)
+                CoreManager.shared.updateHeadUp(isHeadUp)
             // case .HEAD_DOWN:
             //   CoreCommsService.log("HEAD_DOWN")
             //   isHeadUp = false
@@ -1194,7 +1194,7 @@ class G1: NSObject, SGCManager {
             case .HEAD_DOWN2:
                 Bridge.log("G1: HEAD_DOWN2")
                 isHeadUp = false
-                MentraManager.shared.updateHeadUp(isHeadUp)
+                CoreManager.shared.updateHeadUp(isHeadUp)
             case .ACTIVATED:
                 Bridge.log("G1: ACTIVATED")
             case .SILENCED:
@@ -1211,21 +1211,21 @@ class G1: NSObject, SGCManager {
             case .CASE_REMOVED:
                 Bridge.log("G1: REMOVED FROM CASE")
                 caseRemoved = true
-                MentraManager.shared.handle_request_status()
+                CoreManager.shared.handle_request_status()
             case .CASE_REMOVED2:
                 Bridge.log("G1: REMOVED FROM CASE2")
                 caseRemoved = true
-                MentraManager.shared.handle_request_status()
+                CoreManager.shared.handle_request_status()
             case .CASE_OPEN:
                 caseOpen = true
                 caseRemoved = false
                 Bridge.log("G1: CASE OPEN")
-                MentraManager.shared.handle_request_status()
+                CoreManager.shared.handle_request_status()
             case .CASE_CLOSED:
                 caseOpen = false
                 caseRemoved = false
                 Bridge.log("G1: CASE CLOSED")
-                MentraManager.shared.handle_request_status()
+                CoreManager.shared.handle_request_status()
             case .CASE_CHARGING_STATUS:
                 guard data.count >= 3 else { break }
                 let status = data[2]

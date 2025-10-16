@@ -126,7 +126,7 @@
 //             let oldValue = _ready
 //             _ready = newValue
 //             if oldValue != newValue {
-//                 MentraManager.shared.handleConnectionStateChanged()
+//                 CoreManager.shared.handleConnectionStateChanged()
 //             }
 //         }
 //     }
@@ -430,7 +430,7 @@
 
 //         guard let device = UltraliteManager.shared.currentDevice else {
 //             Bridge.log("MACH1: No current device")
-//             MentraManager.shared.handle_forget()
+//             CoreManager.shared.handle_forget()
 //             return false
 //         }
 

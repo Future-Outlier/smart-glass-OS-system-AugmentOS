@@ -22,15 +22,15 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class MentraManager {
+class CoreManager {
     companion object {
 
-        @Volatile private var instance: MentraManager? = null
+        @Volatile private var instance: CoreManager? = null
 
         @JvmStatic
-        fun getInstance(): MentraManager {
+        fun getInstance(): CoreManager {
             return instance
-                    ?: synchronized(this) { instance ?: MentraManager().also { instance = it } }
+                    ?: synchronized(this) { instance ?: CoreManager().also { instance = it } }
         }
     }
 
@@ -115,7 +115,7 @@ class MentraManager {
     private val viewStates = mutableListOf<ViewState>()
 
     init {
-        Bridge.log("Mentra: init()")
+        Bridge.log("Core: init()")
         initializeViewStates()
         startForegroundService()
         // setupPermissionMonitoring()

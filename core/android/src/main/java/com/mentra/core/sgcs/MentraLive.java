@@ -55,7 +55,7 @@ import androidx.core.app.ActivityCompat;
 
 // Mentra
 import com.mentra.core.sgcs.SGCManager;
-import com.mentra.core.MentraManager;
+import com.mentra.core.CoreManager;
 import com.mentra.core.Bridge;
 import com.mentra.core.utils.DeviceTypes;
 import com.mentra.core.utils.ConnTypes;
@@ -450,10 +450,10 @@ public class MentraLive extends SGCManager {
 
         if (state.equals(ConnTypes.CONNECTED)) {
             ready = true;
-            MentraManager.getInstance().handleConnectionStateChanged();
+            CoreManager.getInstance().handleConnectionStateChanged();
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
             ready = false;
-            MentraManager.getInstance().handleConnectionStateChanged();
+            CoreManager.getInstance().handleConnectionStateChanged();
         }
     }
 
@@ -1947,8 +1947,8 @@ public class MentraLive extends SGCManager {
                 Bridge.sendVersionInfo(appVersion, buildNumber, deviceModel, androidVersion,
                       otaVersionUrl != null ? otaVersionUrl : "");
 
-                // Notify MentraManager to update status and send to frontend
-                MentraManager.getInstance().handle_request_status();
+                // Notify CoreManager to update status and send to frontend
+                CoreManager.getInstance().handle_request_status();
                 break;
 
             case "ota_download_progress":
@@ -2367,8 +2367,8 @@ public class MentraLive extends SGCManager {
         batteryLevel = level;  // Parent class field
         isCharging = charging;  // Local field
 
-        // Notify MentraManager to update status and send to frontend
-        MentraManager.getInstance().handle_request_status();
+        // Notify CoreManager to update status and send to frontend
+        CoreManager.getInstance().handle_request_status();
     }
 
     /**
@@ -2404,7 +2404,7 @@ public class MentraLive extends SGCManager {
         Bridge.sendHotspotStatusChange(enabled, ssid, password, gatewayIp);
 
         // Trigger a full status update so React Native gets the updated glasses_info
-        MentraManager.getInstance().handle_request_status();
+        CoreManager.getInstance().handle_request_status();
     }
 
     /**
@@ -2754,7 +2754,7 @@ public class MentraLive extends SGCManager {
         // var context = Bridge.getContext();
         // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         // String lastDeviceAddress = prefs.getString(PREF_DEVICE_NAME, null);
-        String lastDeviceAddress = MentraManager.getInstance().getDeviceAddress();
+        String lastDeviceAddress = CoreManager.getInstance().getDeviceAddress();
 
         if (lastDeviceAddress != null && lastDeviceAddress.length() > 0) {
             // Connect to last known device if available
@@ -2791,7 +2791,7 @@ public class MentraLive extends SGCManager {
         // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
 
         // Update the shouldUseGlassesMic flag to reflect the current state
-        var m = MentraManager.getInstance();
+        var m = CoreManager.getInstance();
         this.shouldUseGlassesMic = enable && m.getSensingEnabled();
         Bridge.log("LIVE: Updated shouldUseGlassesMic to: " + shouldUseGlassesMic);
 
@@ -3085,7 +3085,7 @@ public class MentraLive extends SGCManager {
 
     @Override
     public void sendButtonVideoRecordingSettings() {
-        var m = MentraManager.getInstance();
+        var m = CoreManager.getInstance();
         int videoWidth = m.getButtonVideoWidth();
         int videoHeight = m.getButtonVideoHeight();
         int videoFps = m.getButtonVideoFps();
@@ -4211,7 +4211,7 @@ public class MentraLive extends SGCManager {
             return;
         }
 
-        var m = MentraManager.getInstance();
+        var m = CoreManager.getInstance();
         String mode = m.getButtonPressMode();
 
         try {
@@ -4321,7 +4321,7 @@ public class MentraLive extends SGCManager {
      * Send button photo settings to glasses
      */
     public void sendButtonPhotoSettings() {
-        var m = MentraManager.getInstance();
+        var m = CoreManager.getInstance();
         String size = m.getButtonPhotoSize();
 
         Bridge.log("LIVE: Sending button photo setting: " + size);
@@ -4360,7 +4360,7 @@ public class MentraLive extends SGCManager {
             return;
         }
 
-        int minutes = MentraManager.getInstance().getButtonMaxRecordingTime();
+        int minutes = CoreManager.getInstance().getButtonMaxRecordingTime();
 
         try {
             JSONObject json = new JSONObject();
@@ -4475,7 +4475,7 @@ public class MentraLive extends SGCManager {
                     if (pcmData != null && pcmData.length > 0) {
                         // Forward PCM data to audio processing system (like Even Realities G1)
                         // audioProcessingCallback.onAudioDataAvailable(pcmData);
-                        var m = MentraManager.getInstance();
+                        var m = CoreManager.getInstance();
                         m.handlePcm(pcmData);
                         // Bridge.log("LIVE: Decoded and forwarded LC3 to PCM: " + lc3Data.length + " -> " + pcmData.length + " bytes");
                     } else {

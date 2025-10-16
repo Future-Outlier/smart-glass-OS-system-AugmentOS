@@ -902,7 +902,7 @@ class MentraLive: NSObject, SGCManager {
             _ready = newValue
             if oldValue != newValue {
                 // Call the callback when state changes
-                MentraManager.shared.handleConnectionStateChanged()
+                CoreManager.shared.handleConnectionStateChanged()
                 Bridge.log("MentraLive: connection state changed to: \(newValue)")
             }
             if !newValue {
@@ -2026,7 +2026,7 @@ class MentraLive: NSObject, SGCManager {
         let uploadStartTime = Date()
 
         // Get core token for authentication
-        let coreToken = MentraManager.shared.coreToken
+        let coreToken = CoreManager.shared.coreToken
         if coreToken.isEmpty {
             Bridge.log("LIVE: core_token not set!")
             return
@@ -2185,7 +2185,7 @@ class MentraLive: NSObject, SGCManager {
     private func sendCoreTokenToAsgClient() {
         Bridge.log("Preparing to send coreToken to ASG client")
 
-        let coreToken = MentraManager.shared.coreToken
+        let coreToken = CoreManager.shared.coreToken
         if coreToken.isEmpty {
             Bridge.log("No coreToken available to send to ASG client")
             return
@@ -2373,7 +2373,7 @@ class MentraLive: NSObject, SGCManager {
     private func updateBatteryStatus(level: Int, charging: Bool) {
         batteryLevel = level
         isCharging = charging
-        MentraManager.shared.handle_request_status()
+        CoreManager.shared.handle_request_status()
         // emitBatteryLevelEvent(level: level, charging: charging)
     }
 
@@ -2394,7 +2394,7 @@ class MentraLive: NSObject, SGCManager {
         emitHotspotStatusChange()
 
         // Trigger a full status update so React Native gets the updated glasses_info
-        MentraManager.shared.handle_request_status()
+        CoreManager.shared.handle_request_status()
     }
 
     private func handleGalleryStatus(
@@ -3031,7 +3031,7 @@ extension MentraLive {
     // MARK: - Button Mode Settings
 
     func sendButtonModeSetting() {
-        let mode = MentraManager.shared.buttonPressMode
+        let mode = CoreManager.shared.buttonPressMode
         Bridge.log("Sending button mode setting to glasses: \(mode)")
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -3112,9 +3112,9 @@ extension MentraLive {
     }
 
     func sendButtonVideoRecordingSettings() {
-        let width = MentraManager.shared.buttonVideoWidth
-        let height = MentraManager.shared.buttonVideoHeight
-        let fps = MentraManager.shared.buttonVideoFps
+        let width = CoreManager.shared.buttonVideoWidth
+        let height = CoreManager.shared.buttonVideoHeight
+        let fps = CoreManager.shared.buttonVideoFps
 
         // Use defaults if not set
         let finalWidth = width > 0 ? width : 1280
@@ -3141,7 +3141,7 @@ extension MentraLive {
     }
 
     func sendButtonMaxRecordingTime() {
-        let maxTime = MentraManager.shared.buttonMaxRecordingTime
+        let maxTime = CoreManager.shared.buttonMaxRecordingTime
         Bridge.log("Sending button max recording time: \(maxTime) minutes")
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -3157,7 +3157,7 @@ extension MentraLive {
     }
 
     func sendButtonPhotoSettings() {
-        let size = MentraManager.shared.buttonPhotoSize
+        let size = CoreManager.shared.buttonPhotoSize
 
         Bridge.log("Sending button photo setting: \(size)")
 
@@ -3174,7 +3174,7 @@ extension MentraLive {
     }
 
     func sendButtonCameraLedSetting() {
-        let enabled = MentraManager.shared.buttonCameraLed
+        let enabled = CoreManager.shared.buttonCameraLed
 
         Bridge.log("Sending button camera LED setting: \(enabled)")
 

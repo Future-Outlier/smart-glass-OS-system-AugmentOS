@@ -3,6 +3,8 @@ import {NativeModule, requireNativeModule} from "expo"
 import {CoreModuleEvents} from "./Core.types"
 
 declare class CoreModule extends NativeModule<CoreModuleEvents> {
+  // status:
+  isConnected(): Promise<boolean>
   // Display Commands
   displayEvent(params: Record<string, any>): Promise<void>
   displayText(params: Record<string, any>): Promise<void>

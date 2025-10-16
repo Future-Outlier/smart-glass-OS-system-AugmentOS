@@ -1,5 +1,5 @@
 //
-//  MentraManager.swift
+//  CoreManager.swift
 //  MentraOS_Manager
 //
 //  Created by Matthew Fosse on 3/5/25.
@@ -23,11 +23,11 @@ struct ViewState {
 }
 
 // This class handles logic for managing devices and connections to AugmentOS servers
-@objc(MentraManager) class MentraManager: NSObject {
-    static let shared = MentraManager()
+@objc(CoreManager) class CoreManager: NSObject {
+    static let shared = CoreManager()
 
-    @objc static func getInstance() -> MentraManager {
-        return MentraManager.shared
+    @objc static func getInstance() -> CoreManager {
+        return CoreManager.shared
     }
 
     // MARK: - Unique (iOS)

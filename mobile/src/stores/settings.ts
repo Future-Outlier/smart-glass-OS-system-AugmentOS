@@ -2,9 +2,9 @@ import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {getTimeZone} from "react-native-localize"
-import bridge from "@/bridge/MantleBridge"
 import restComms from "@/managers/RestComms"
 import {isDeveloperBuildOrTestflight} from "@/utils/buildDetection"
+import CoreModule from "core"
 
 export const SETTINGS_KEYS = {
   enable_phone_notifications: "enable_phone_notifications",
@@ -200,7 +200,7 @@ export const useSettingsStore = create<SettingsState>()(
 
         // Update core settings if needed
         if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number]) && updateCore) {
-          bridge.updateSettings({[key]: value})
+          CoreModule.updateSettings({[key]: value})
         }
 
         // Sync with server if needed
@@ -245,7 +245,7 @@ export const useSettingsStore = create<SettingsState>()(
             }
           })
           if (Object.keys(coreUpdates).length > 0) {
-            bridge.updateSettings(coreUpdates)
+            CoreModule.updateSettings(coreUpdates)
           }
         }
 
@@ -350,7 +350,7 @@ export const useSettingsStore = create<SettingsState>()(
         }
       })
       if (Object.keys(coreUpdates).length > 0) {
-        bridge.updateSettings(coreUpdates)
+        CoreModule.updateSettings(coreUpdates)
       }
     },
 
