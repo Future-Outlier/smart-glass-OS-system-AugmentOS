@@ -13,17 +13,28 @@ import android.graphics.SurfaceTexture;
 import android.media.AudioFormat;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.URI;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
 import androidx.core.app.NotificationCompat;
@@ -47,11 +58,15 @@ import io.github.thibaultbee.streampack.error.StreamPackError;
 import io.github.thibaultbee.streampack.ext.rtmp.streamers.CameraRtmpLiveStreamer;
 import io.github.thibaultbee.streampack.listeners.OnConnectionListener;
 import io.github.thibaultbee.streampack.listeners.OnErrorListener;
+import io.github.thibaultbee.streampack.listeners.OnPacketListener;
 import io.github.thibaultbee.streampack.views.PreviewView;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 import kotlin.coroutines.CoroutineContext;
 import kotlin.coroutines.EmptyCoroutineContext;
+
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 @SuppressLint("MissingPermission")
 public class RtmpStreamingService extends Service {
@@ -101,6 +116,92 @@ public class RtmpStreamingService extends Service {
     // Notification management
     private boolean mHasShownReconnectingNotification = false;
 
+    // Network validation watchdog
+    private ConnectivityManager mConnectivityManager;
+    private ConnectivityManager.NetworkCallback mNetworkCallback;
+    private Handler mNetworkWatchdogHandler;
+    private boolean mHasValidatedNetwork = true;
+    private long mValidationLostAt = 0L;
+    private static final long NETWORK_VALIDATION_GRACE_MS = 5000; // Allow 5s for upstream to recover
+    private static final long REACHABILITY_PROBE_INTERVAL_MS = 1000;
+    private static final int REACHABILITY_FAILURE_THRESHOLD = 1;
+    private static final int REACHABILITY_TIMEOUT_MS = 1500;
+    private static final long PACKET_WATCHDOG_INTERVAL_MS = 500;
+    private static final long PACKET_STALL_TIMEOUT_MS = 1000;
+    private int mReachabilityFailures = 0;
+    private ExecutorService mReachabilityExecutor;
+    private long mLastPacketSentAt = 0L;
+    private final Runnable mPacketWatchdogRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!shouldRunPacketWatchdog() || mNetworkWatchdogHandler == null) {
+                return;
+            }
+
+            long now = SystemClock.elapsedRealtime();
+            long last = mLastPacketSentAt;
+            if (last > 0) {
+                long delta = now - last;
+                if (delta >= PACKET_STALL_TIMEOUT_MS) {
+                    Log.w(TAG, "No RTMP packets sent for " + delta + "ms - forcing reconnection");
+                    StreamingReporting.reportPacketStall(RtmpStreamingService.this,
+                            mRtmpUrl, delta, PACKET_STALL_TIMEOUT_MS);
+                    mLastPacketSentAt = now;
+                    scheduleReconnect("packet_stalled");
+                    return;
+                }
+            }
+
+            mNetworkWatchdogHandler.postDelayed(this, PACKET_WATCHDOG_INTERVAL_MS);
+        }
+    };
+
+    private final Runnable mReachabilityProbeRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!shouldRunReachabilityProbe() || mNetworkWatchdogHandler == null) {
+                return;
+            }
+
+            if (mReachabilityExecutor == null || mReachabilityExecutor.isShutdown()) {
+                return;
+            }
+
+            mReachabilityExecutor.submit(() -> {
+                boolean success = performReachabilityProbe();
+                if (mNetworkWatchdogHandler != null) {
+                    mNetworkWatchdogHandler.post(() -> handleReachabilityProbeResult(success));
+                }
+            });
+        }
+    };
+    private final Runnable mNetworkWatchdogRunnable = new Runnable() {
+        @Override
+        public void run() {
+            boolean stillStreaming;
+            synchronized (mStateLock) {
+                stillStreaming = (mStreamState == StreamState.STREAMING && mIsStreaming);
+            }
+
+            if (!stillStreaming || mHasValidatedNetwork || mValidationLostAt == 0L) {
+                return;
+            }
+
+            long elapsed = System.currentTimeMillis() - mValidationLostAt;
+            if (elapsed < NETWORK_VALIDATION_GRACE_MS) {
+                long remaining = NETWORK_VALIDATION_GRACE_MS - elapsed;
+                mNetworkWatchdogHandler.postDelayed(this, remaining);
+                return;
+            }
+
+            Log.w(TAG, "Network validation missing for " + NETWORK_VALIDATION_GRACE_MS
+                    + "ms while streaming - triggering proactive reconnection");
+            StreamingReporting.reportNetworkValidationLost(RtmpStreamingService.this,
+                    mCurrentStreamId, NETWORK_VALIDATION_GRACE_MS);
+            scheduleReconnect("network_validation_lost");
+        }
+    };
+
     // Stream state management
     private enum StreamState {
         IDLE,
@@ -148,6 +249,18 @@ public class RtmpStreamingService extends Service {
 
         // Initialize handler for timeout logic
         mTimeoutHandler = new Handler(Looper.getMainLooper());
+
+        // Initialize handler for network watchdog
+        mNetworkWatchdogHandler = new Handler(Looper.getMainLooper());
+        mReachabilityExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r, "RtmpReachabilityProbe");
+                thread.setDaemon(true);
+                return thread;
+            }
+        });
+        setupNetworkValidationWatchdog();
 
         // Initialize hardware manager for LED control
         mHardwareManager = HardwareManagerFactory.getInstance(this);
@@ -216,6 +329,24 @@ public class RtmpStreamingService extends Service {
         if (mTimeoutHandler != null) {
             mTimeoutHandler.removeCallbacksAndMessages(null);
         }
+        if (mNetworkWatchdogHandler != null) {
+            mNetworkWatchdogHandler.removeCallbacksAndMessages(null);
+        }
+        if (mConnectivityManager != null && mNetworkCallback != null) {
+            try {
+                mConnectivityManager.unregisterNetworkCallback(mNetworkCallback);
+                Log.d(TAG, "Network validation watchdog unregistered");
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to unregister network validation watchdog", e);
+            }
+            mNetworkCallback = null;
+        }
+        stopReachabilityProbes();
+        stopPacketWatchdog();
+        if (mReachabilityExecutor != null) {
+            mReachabilityExecutor.shutdownNow();
+            mReachabilityExecutor = null;
+        }
 
         stopStreaming();
         releaseStreamer();
@@ -264,6 +395,219 @@ public class RtmpStreamingService extends Service {
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build();
+    }
+
+    private void setupNetworkValidationWatchdog() {
+        if (mNetworkWatchdogHandler == null) {
+            mNetworkWatchdogHandler = new Handler(Looper.getMainLooper());
+        }
+
+        mConnectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (mConnectivityManager == null) {
+            Log.w(TAG, "ConnectivityManager not available - network watchdog disabled");
+            return;
+        }
+
+        // Seed initial validation state
+        try {
+            NetworkCapabilities caps = mConnectivityManager.getNetworkCapabilities(mConnectivityManager.getActiveNetwork());
+            mHasValidatedNetwork = caps != null &&
+                    caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) &&
+                    caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        } catch (Exception e) {
+            Log.w(TAG, "Unable to query initial network capabilities", e);
+        }
+
+        mNetworkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onCapabilitiesChanged(Network network, NetworkCapabilities networkCapabilities) {
+                boolean validated = networkCapabilities != null &&
+                        networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) &&
+                        networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+
+                if (validated) {
+                    if (!mHasValidatedNetwork) {
+                        Log.i(TAG, "Upstream validation restored while streaming");
+                    }
+                    mHasValidatedNetwork = true;
+                    mValidationLostAt = 0L;
+                    if (mNetworkWatchdogHandler != null) {
+                        mNetworkWatchdogHandler.removeCallbacks(mNetworkWatchdogRunnable);
+                    }
+                } else {
+                    onNetworkValidationLost();
+                }
+            }
+
+            @Override
+            public void onLost(Network network) {
+                onNetworkValidationLost();
+            }
+        };
+
+        try {
+            mConnectivityManager.registerDefaultNetworkCallback(mNetworkCallback);
+            Log.d(TAG, "Registered network validation watchdog");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to register network validation watchdog", e);
+            mNetworkCallback = null;
+        }
+    }
+
+    private void onNetworkValidationLost() {
+        synchronized (mStateLock) {
+            if (mStreamState != StreamState.STREAMING || !mIsStreaming) {
+                return;
+            }
+        }
+
+        if (!mHasValidatedNetwork) {
+            return;
+        }
+
+        mHasValidatedNetwork = false;
+        mValidationLostAt = System.currentTimeMillis();
+        Log.w(TAG, "Lost validated upstream network while streaming - starting grace timer");
+        if (mNetworkWatchdogHandler != null) {
+            mNetworkWatchdogHandler.removeCallbacks(mNetworkWatchdogRunnable);
+            mNetworkWatchdogHandler.postDelayed(mNetworkWatchdogRunnable, NETWORK_VALIDATION_GRACE_MS);
+        }
+    }
+
+    private void startReachabilityProbes() {
+        if (mNetworkWatchdogHandler == null) {
+            return;
+        }
+        mReachabilityFailures = 0;
+        mNetworkWatchdogHandler.removeCallbacks(mReachabilityProbeRunnable);
+        if (shouldRunReachabilityProbe()) {
+            mNetworkWatchdogHandler.postDelayed(mReachabilityProbeRunnable, REACHABILITY_PROBE_INTERVAL_MS);
+        }
+    }
+
+    private void stopReachabilityProbes() {
+        if (mNetworkWatchdogHandler != null) {
+            mNetworkWatchdogHandler.removeCallbacks(mReachabilityProbeRunnable);
+        }
+        mReachabilityFailures = 0;
+    }
+
+    private void startPacketWatchdog() {
+        if (mNetworkWatchdogHandler == null) {
+            return;
+        }
+        mLastPacketSentAt = SystemClock.elapsedRealtime();
+        mNetworkWatchdogHandler.removeCallbacks(mPacketWatchdogRunnable);
+        if (shouldRunPacketWatchdog()) {
+            mNetworkWatchdogHandler.postDelayed(mPacketWatchdogRunnable, PACKET_WATCHDOG_INTERVAL_MS);
+        }
+    }
+
+    private void stopPacketWatchdog() {
+        if (mNetworkWatchdogHandler != null) {
+            mNetworkWatchdogHandler.removeCallbacks(mPacketWatchdogRunnable);
+        }
+        mLastPacketSentAt = 0L;
+    }
+
+    private boolean shouldRunReachabilityProbe() {
+        synchronized (mStateLock) {
+            return mStreamState == StreamState.STREAMING && mIsStreaming && mRtmpUrl != null && !mRtmpUrl.isEmpty();
+        }
+    }
+
+    private boolean shouldRunPacketWatchdog() {
+        synchronized (mStateLock) {
+            return mStreamState == StreamState.STREAMING && mIsStreaming;
+        }
+    }
+
+    private void handleReachabilityProbeResult(boolean success) {
+        if (!shouldRunReachabilityProbe()) {
+            return;
+        }
+
+        if (success) {
+            if (mReachabilityFailures > 0) {
+                Log.d(TAG, "Reachability probe recovered after " + mReachabilityFailures + " failures");
+            }
+            mReachabilityFailures = 0;
+        } else {
+            mReachabilityFailures++;
+            Log.d(TAG, "Reachability probe failed (count: " + mReachabilityFailures + ")");
+            if (mReachabilityFailures >= REACHABILITY_FAILURE_THRESHOLD) {
+                Log.w(TAG, "Reachability probe threshold exceeded - forcing reconnection");
+                StreamingReporting.reportReachabilityProbeFailure(this, mRtmpUrl, mReachabilityFailures, REACHABILITY_PROBE_INTERVAL_MS);
+                mReachabilityFailures = 0;
+                scheduleReconnect("reachability_probe_failed");
+                return;
+            }
+        }
+
+        if (mNetworkWatchdogHandler != null) {
+            mNetworkWatchdogHandler.postDelayed(mReachabilityProbeRunnable, REACHABILITY_PROBE_INTERVAL_MS);
+        }
+    }
+
+    private boolean performReachabilityProbe() {
+        String url = mRtmpUrl;
+        if (url == null || url.isEmpty()) {
+            return true;
+        }
+
+        Socket socket = null;
+        try {
+            URI uri = new URI(url);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+            if ((host == null || host.isEmpty()) && uri.getAuthority() != null) {
+                String authority = uri.getAuthority();
+                int at = authority.lastIndexOf('@');
+                if (at >= 0) {
+                    authority = authority.substring(at + 1);
+                }
+                int colon = authority.lastIndexOf(':');
+                if (colon >= 0) {
+                    host = authority.substring(0, colon);
+                } else {
+                    host = authority;
+                }
+            }
+
+            if (host == null || host.isEmpty()) {
+                Log.w(TAG, "Reachability probe skipped - unable to resolve host from RTMP URL");
+                return true;
+            }
+
+            boolean useTls = scheme != null && scheme.equalsIgnoreCase("rtmps");
+            int port = uri.getPort();
+            if (port == -1) {
+                port = useTls ? 443 : 1935;
+            }
+
+            if (useTls) {
+                SSLSocket sslSocket = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
+                socket = sslSocket;
+                sslSocket.connect(new InetSocketAddress(host, port), REACHABILITY_TIMEOUT_MS);
+                sslSocket.setSoTimeout(REACHABILITY_TIMEOUT_MS);
+                sslSocket.startHandshake();
+            } else {
+                socket = new Socket();
+                socket.connect(new InetSocketAddress(host, port), REACHABILITY_TIMEOUT_MS);
+                socket.setSoTimeout(REACHABILITY_TIMEOUT_MS);
+            }
+            return true;
+        } catch (Exception e) {
+            Log.d(TAG, "Reachability probe failed: " + e.getMessage());
+            return false;
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (Exception ignore) {
+                }
+            }
+        }
     }
 
     private void updateNotification() {
@@ -442,6 +786,9 @@ public class RtmpStreamingService extends Service {
                                 EventBus.getDefault().post(new StreamingEvent.Connected());
                                 EventBus.getDefault().post(new StreamingEvent.Started());
                             }
+
+                            startReachabilityProbes();
+                            startPacketWatchdog();
                         }
 
                         @Override
@@ -553,6 +900,7 @@ public class RtmpStreamingService extends Service {
                         }
                     }
             );
+            mStreamer.setOnPacketListener(packet -> mLastPacketSentAt = SystemClock.elapsedRealtime());
 
             // For MIME type, use the actual mime type instead of null
             String audioMimeType = MediaFormat.MIMETYPE_AUDIO_AAC; // Default to AAC
@@ -909,6 +1257,8 @@ public class RtmpStreamingService extends Service {
 
         // Cancel timeout timer
         cancelStreamTimeout();
+        stopReachabilityProbes();
+        stopPacketWatchdog();
 
         // Reset state flags
         mReconnecting = false;
