@@ -789,6 +789,8 @@ public class RtmpStreamingService extends Service {
 
                             startReachabilityProbes();
                             startPacketWatchdog();
+                            mStreamer.requestKeyFrame();
+                            mLastPacketSentAt = SystemClock.elapsedRealtime();
                         }
 
                         @Override
