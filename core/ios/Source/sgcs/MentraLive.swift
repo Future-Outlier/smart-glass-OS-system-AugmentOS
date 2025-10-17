@@ -552,6 +552,7 @@ extension MentraLive: CBCentralManagerDelegate {
         connectedPeripheral = nil
         ready = false
         connectionState = ConnTypes.DISCONNECTED
+        rgbLedAuthorityClaimed = false
 
         stopAllTimers()
 
@@ -852,6 +853,7 @@ class MentraLive: NSObject, SGCManager {
     private var fileWriteCharacteristic: CBCharacteristic?
     private var activeFileTransfers = [String: FileTransferSession]()
     private var blePhotoTransfers = [String: BlePhotoTransfer]()
+    private var rgbLedAuthorityClaimed = false
 
     // Timing Constants
     private let BASE_RECONNECT_DELAY_MS: UInt64 = 1_000_000_000 // 1 second in nanoseconds
@@ -900,7 +902,7 @@ class MentraLive: NSObject, SGCManager {
             _ready = newValue
             if oldValue != newValue {
                 // Call the callback when state changes
-                MentraManager.shared.handleConnectionStateChanged()
+                CoreManager.shared.handleConnectionStateChanged()
                 Bridge.log("MentraLive: connection state changed to: \(newValue)")
             }
             if !newValue {
@@ -1000,6 +1002,10 @@ class MentraLive: NSObject, SGCManager {
     @objc func disconnect() {
         Bridge.log("Disconnecting from Mentra Live glasses")
 
+        if rgbLedAuthorityClaimed {
+            sendRgbLedControlAuthority(false)
+        }
+
         // Clear any pending messages
         pending = nil
         pendingMessageTimer?.invalidate()
@@ -1011,6 +1017,7 @@ class MentraLive: NSObject, SGCManager {
 
         stopAllTimers()
         connectionState = ConnTypes.DISCONNECTED
+        rgbLedAuthorityClaimed = false
     }
 
     @objc func setMicrophoneEnabled(_ enabled: Bool) {
@@ -1461,6 +1468,29 @@ class MentraLive: NSObject, SGCManager {
         case "version_info":
             handleVersionInfo(json)
 
+        case "touch_event":
+            let gestureName = json["gesture_name"] as? String ?? "unknown"
+            let timestamp = parseTimestamp(json["timestamp"])
+            let deviceModel = json["device_model"] as? String ?? glassesDeviceModel
+            Bridge.sendTouchEvent(deviceModel: deviceModel, gestureName: gestureName, timestamp: timestamp)
+
+        case "swipe_volume_status":
+            let enabled = json["enabled"] as? Bool ?? false
+            let timestamp = parseTimestamp(json["timestamp"])
+            Bridge.sendSwipeVolumeStatus(enabled: enabled, timestamp: timestamp)
+
+        case "switch_status":
+            let switchType = (json["switch_type"] as? Int) ?? (json["switchType"] as? Int) ?? -1
+            let switchValue = (json["switch_value"] as? Int) ?? (json["switchValue"] as? Int) ?? -1
+            let timestamp = parseTimestamp(json["timestamp"])
+            Bridge.sendSwitchStatus(switchType: switchType, value: switchValue, timestamp: timestamp)
+
+        case "rgb_led_control_response":
+            let requestId = json["requestId"] as? String ?? ""
+            let success = json["success"] as? Bool ?? false
+            let error = json["error"] as? String
+            Bridge.sendRgbLedControlResponse(requestId: requestId, success: success, error: error)
+
         case "pong":
             Bridge.log("💓 Received pong response - connection healthy")
 
@@ -1622,6 +1652,11 @@ class MentraLive: NSObject, SGCManager {
 
         // Send user settings to glasses
         sendUserSettings()
+
+        // Claim LED control and enable gesture reporting
+        sendRgbLedControlAuthority(true)
+        setTouchEventReporting(true)
+        setSwipeVolumeControl(false)
 
         // Start heartbeat
         startHeartbeat()
@@ -1991,7 +2026,7 @@ class MentraLive: NSObject, SGCManager {
         let uploadStartTime = Date()
 
         // Get core token for authentication
-        let coreToken = MentraManager.shared.coreToken
+        let coreToken = CoreManager.shared.coreToken
         if coreToken.isEmpty {
             Bridge.log("LIVE: core_token not set!")
             return
@@ -2150,7 +2185,7 @@ class MentraLive: NSObject, SGCManager {
     private func sendCoreTokenToAsgClient() {
         Bridge.log("Preparing to send coreToken to ASG client")
 
-        let coreToken = MentraManager.shared.coreToken
+        let coreToken = CoreManager.shared.coreToken
         if coreToken.isEmpty {
             Bridge.log("No coreToken available to send to ASG client")
             return
@@ -2338,7 +2373,7 @@ class MentraLive: NSObject, SGCManager {
     private func updateBatteryStatus(level: Int, charging: Bool) {
         batteryLevel = level
         isCharging = charging
-        MentraManager.shared.handle_request_status()
+        CoreManager.shared.handle_request_status()
         // emitBatteryLevelEvent(level: level, charging: charging)
     }
 
@@ -2359,7 +2394,7 @@ class MentraLive: NSObject, SGCManager {
         emitHotspotStatusChange()
 
         // Trigger a full status update so React Native gets the updated glasses_info
-        MentraManager.shared.handle_request_status()
+        CoreManager.shared.handle_request_status()
     }
 
     private func handleGalleryStatus(
@@ -2772,6 +2807,173 @@ extension MentraLive {
             && bytes[1] == K900ProtocolUtils.CMD_START_CODE[1]
     }
 
+    private func sendRawK900Command(_ command: [String: Any], wakeUp: Bool = false) -> Bool {
+        do {
+            var payload = command
+            if wakeUp {
+                payload["W"] = 1
+            }
+            let commandData = try JSONSerialization.data(withJSONObject: payload)
+            guard let packet = packDataToK900(commandData, cmdType: K900ProtocolUtils.CMD_TYPE_STRING) else {
+                Bridge.log("MentraLive: Failed to pack raw K900 command")
+                return false
+            }
+            queueSend(packet, id: "-1")
+            return true
+        } catch {
+            Bridge.log("MentraLive: Error building raw K900 command: \(error)")
+            return false
+        }
+    }
+
+    private func sendRgbLedControlAuthority(_ claimControl: Bool) {
+        do {
+            let bodyData = try JSONSerialization.data(withJSONObject: ["on": claimControl])
+            guard let bodyString = String(data: bodyData, encoding: .utf8) else {
+                Bridge.log("MentraLive: Failed to encode RGB LED authority body")
+                return
+            }
+
+            let command: [String: Any] = [
+                "C": "android_control_led",
+                "V": 1,
+                "B": bodyString,
+            ]
+
+            if sendRawK900Command(command, wakeUp: true) {
+                rgbLedAuthorityClaimed = claimControl
+                Bridge.log("MentraLive: RGB LED authority \(claimControl ? "claimed" : "released")")
+            } else {
+                Bridge.log("MentraLive: Failed to send RGB LED authority command")
+                if !claimControl {
+                    rgbLedAuthorityClaimed = false
+                }
+            }
+        } catch {
+            Bridge.log("MentraLive: Error encoding RGB LED authority payload: \(error)")
+        }
+    }
+
+    private func setTouchEventReporting(_ enable: Bool) {
+        do {
+            let bodyData = try JSONSerialization.data(withJSONObject: ["type": 26, "switch": enable])
+            guard let bodyString = String(data: bodyData, encoding: .utf8) else {
+                Bridge.log("MentraLive: Failed to encode touch event control payload")
+                return
+            }
+
+            let command: [String: Any] = [
+                "C": "cs_swit",
+                "V": 1,
+                "B": bodyString,
+            ]
+
+            if sendRawK900Command(command, wakeUp: true) {
+                Bridge.log("MentraLive: Touch event reporting \(enable ? "enabled" : "disabled")")
+            } else {
+                Bridge.log("MentraLive: Failed to send touch event reporting command")
+            }
+        } catch {
+            Bridge.log("MentraLive: Error encoding touch event control payload: \(error)")
+        }
+    }
+
+    private func setSwipeVolumeControl(_ enable: Bool) {
+        do {
+            let bodyData = try JSONSerialization.data(withJSONObject: ["switch": enable])
+            guard let bodyString = String(data: bodyData, encoding: .utf8) else {
+                Bridge.log("MentraLive: Failed to encode swipe volume payload")
+                return
+            }
+
+            let command: [String: Any] = [
+                "C": "cs_fbvol",
+                "V": 1,
+                "B": bodyString,
+            ]
+
+            if sendRawK900Command(command, wakeUp: true) {
+                Bridge.log("MentraLive: Swipe volume control \(enable ? "enabled" : "disabled")")
+            } else {
+                Bridge.log("MentraLive: Failed to send swipe volume command")
+            }
+        } catch {
+            Bridge.log("MentraLive: Error encoding swipe volume payload: \(error)")
+        }
+    }
+
+    func handleRgbLedControl(requestId: String,
+                             packageName: String?,
+                             action: String,
+                             color: String?,
+                             ontime: Int,
+                             offtime: Int,
+                             count: Int)
+    {
+        guard connectionState == ConnTypes.CONNECTED, ready else {
+            Bridge.log("MentraLive: Cannot handle RGB LED control - glasses not connected")
+            Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "glasses_not_connected")
+            return
+        }
+
+        if !rgbLedAuthorityClaimed {
+            sendRgbLedControlAuthority(true)
+        }
+
+        var command: [String: Any] = [
+            "requestId": requestId,
+        ]
+
+        if let packageName, !packageName.isEmpty {
+            command["packageName"] = packageName
+        }
+
+        switch action {
+        case "on":
+            let ledIndex = ledIndex(for: color)
+            command["type"] = "rgb_led_control_on"
+            command["led"] = ledIndex
+            command["ontime"] = ontime
+            command["offtime"] = offtime
+            command["count"] = count
+        case "off":
+            command["type"] = "rgb_led_control_off"
+        default:
+            Bridge.log("MentraLive: Unsupported RGB LED action: \(action)")
+            Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "unsupported_action")
+            return
+        }
+
+        Bridge.log("MentraLive: Forwarding RGB LED command to glasses: \(command)")
+        sendJson(command, wakeUp: true)
+    }
+
+    private func ledIndex(for color: String?) -> Int {
+        guard let color else { return 0 }
+        switch color.lowercased() {
+        case "red": return 0
+        case "green": return 1
+        case "blue": return 2
+        case "orange": return 3
+        case "white": return 4
+        default:
+            return 0
+        }
+    }
+
+    private func parseTimestamp(_ value: Any?) -> Int64 {
+        if let int64 = value as? Int64 {
+            return int64
+        }
+        if let intValue = value as? Int {
+            return Int64(intValue)
+        }
+        if let doubleValue = value as? Double {
+            return Int64(doubleValue)
+        }
+        return Int64(Date().timeIntervalSince1970 * 1000)
+    }
+
     /**
      * Check if a JSON string is already properly formatted for K900 protocol
      */
@@ -2829,7 +3031,7 @@ extension MentraLive {
     // MARK: - Button Mode Settings
 
     func sendButtonModeSetting() {
-        let mode = MentraManager.shared.buttonPressMode
+        let mode = CoreManager.shared.buttonPressMode
         Bridge.log("Sending button mode setting to glasses: \(mode)")
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -2910,9 +3112,9 @@ extension MentraLive {
     }
 
     func sendButtonVideoRecordingSettings() {
-        let width = MentraManager.shared.buttonVideoWidth
-        let height = MentraManager.shared.buttonVideoHeight
-        let fps = MentraManager.shared.buttonVideoFps
+        let width = CoreManager.shared.buttonVideoWidth
+        let height = CoreManager.shared.buttonVideoHeight
+        let fps = CoreManager.shared.buttonVideoFps
 
         // Use defaults if not set
         let finalWidth = width > 0 ? width : 1280
@@ -2939,7 +3141,7 @@ extension MentraLive {
     }
 
     func sendButtonMaxRecordingTime() {
-        let maxTime = MentraManager.shared.buttonMaxRecordingTime
+        let maxTime = CoreManager.shared.buttonMaxRecordingTime
         Bridge.log("Sending button max recording time: \(maxTime) minutes")
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -2955,7 +3157,7 @@ extension MentraLive {
     }
 
     func sendButtonPhotoSettings() {
-        let size = MentraManager.shared.buttonPhotoSize
+        let size = CoreManager.shared.buttonPhotoSize
 
         Bridge.log("Sending button photo setting: \(size)")
 
@@ -2972,7 +3174,7 @@ extension MentraLive {
     }
 
     func sendButtonCameraLedSetting() {
-        let enabled = MentraManager.shared.buttonCameraLed
+        let enabled = CoreManager.shared.buttonCameraLed
 
         Bridge.log("Sending button camera LED setting: \(enabled)")
 

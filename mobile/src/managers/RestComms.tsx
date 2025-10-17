@@ -106,7 +106,10 @@ class RestComms {
         } catch {
           // If we can't parse the error response, use the default message
         }
-        throw new Error(errorMessage)
+        return {
+          success: false,
+          error: errorMessage,
+        } as T
       }
 
       // Parse JSON response
@@ -190,13 +193,23 @@ class RestComms {
   }
 
   // App Management
+  // public async getApps(): Promise<AppletInterface[]> {
+  //   console.log(`${this.TAG}: getApps() called`)
+  //   const response = await this.authenticatedRequest<ApiResponse<AppletInterface[]>>("GET", "/api/apps/")
+  //   if (!response.success || !response.data) {
+  //     throw new Error("Invalid response format")
+  //   }
+  //   return response.data
+  // }
+
   public async getApps(): Promise<AppletInterface[]> {
     console.log(`${this.TAG}: getApps() called`)
 
-    const response = await this.authenticatedRequest<ApiResponse<AppletInterface[]>>("GET", "/api/apps/")
+    const response = await this.authenticatedRequest<ApiResponse<AppletInterface[]>>("GET", "/api/client/apps")
 
     if (!response.success || !response.data) {
-      throw new Error("Invalid response format")
+      // console.error("Invalid response format calling getApps()")
+      return []
     }
 
     return response.data

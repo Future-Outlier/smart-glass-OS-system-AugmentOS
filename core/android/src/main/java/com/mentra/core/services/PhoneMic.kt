@@ -18,7 +18,7 @@ import android.telephony.TelephonyManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.mentra.core.Bridge
-import com.mentra.core.MentraManager
+import com.mentra.core.CoreManager
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicBoolean
@@ -122,7 +122,7 @@ class PhoneMic private constructor(private val context: Context) {
         // Check permissions
         if (!checkPermissions()) {
             Bridge.log("MIC: Microphone permissions not granted")
-            notifyMentraManager("permission_denied", emptyList())
+            notifyCoreManager("permission_denied", emptyList())
             return false
         }
 
@@ -175,8 +175,8 @@ class PhoneMic private constructor(private val context: Context) {
         // Reset audio mode
         audioManager.mode = AudioManager.MODE_NORMAL
 
-        // Notify MentraManager
-        notifyMentraManager("recording_stopped", getAvailableInputDevices().values.toList())
+        // Notify CoreManager
+        notifyCoreManager("recording_stopped", getAvailableInputDevices().values.toList())
 
         Bridge.log("MIC: Recording stopped")
     }
@@ -189,7 +189,7 @@ class PhoneMic private constructor(private val context: Context) {
         // Check for conflicts
         if (isPhoneCallActive) {
             Bridge.log("MIC: Cannot start recording - phone call active")
-            notifyMentraManager("phone_call_active", emptyList())
+            notifyCoreManager("phone_call_active", emptyList())
             return false
         }
 
@@ -200,7 +200,7 @@ class PhoneMic private constructor(private val context: Context) {
             if (isSamsungDevice()) {
                 testMicrophoneAvailabilityOnSamsung()
             } else {
-                notifyMentraManager("audio_focus_denied", emptyList())
+                notifyCoreManager("audio_focus_denied", emptyList())
             }
             return false
         }
@@ -308,10 +308,10 @@ class PhoneMic private constructor(private val context: Context) {
         // Start recording thread
         startRecordingThread(bufferSize)
 
-        // Notify MentraManager
+        // Notify CoreManager
         val activeDevice = getActiveInputDevice() ?: "Unknown"
         Bridge.log("MIC: Started recording from: $activeDevice")
-        notifyMentraManager("recording_started", listOf(activeDevice))
+        notifyCoreManager("recording_started", listOf(activeDevice))
 
         // Reset retry counter on success
         scoRetries = 0
@@ -338,8 +338,8 @@ class PhoneMic private constructor(private val context: Context) {
                                 byteBuffer.putShort(audioBuffer[i])
                             }
 
-                            // Send PCM data to MentraManager
-                            MentraManager.getInstance().handlePcm(pcmData)
+                            // Send PCM data to CoreManager
+                            CoreManager.getInstance().handlePcm(pcmData)
                         }
                     }
                 }
@@ -393,11 +393,11 @@ class PhoneMic private constructor(private val context: Context) {
                                 Bridge.log("MIC: Phone call started - stopping recording")
                                 if (isRecording.get()) {
                                     stopRecording()
-                                    notifyMentraManager("phone_call_interruption", emptyList())
+                                    notifyCoreManager("phone_call_interruption", emptyList())
                                 }
                             } else {
                                 Bridge.log("MIC: Phone call ended")
-                                notifyMentraManager(
+                                notifyCoreManager(
                                         "phone_call_ended",
                                         getAvailableInputDevices().values.toList()
                                 )
@@ -434,7 +434,7 @@ class PhoneMic private constructor(private val context: Context) {
                                                         "MIC: Another app is recording - stopping"
                                                 )
                                                 stopRecording()
-                                                notifyMentraManager(
+                                                notifyCoreManager(
                                                         "external_app_recording",
                                                         emptyList()
                                                 )
@@ -454,7 +454,7 @@ class PhoneMic private constructor(private val context: Context) {
 
                             // Notify that focus is available again
                             if (!isRecording.get()) {
-                                notifyMentraManager(
+                                notifyCoreManager(
                                         "audio_focus_available",
                                         getAvailableInputDevices().values.toList()
                                 )
@@ -487,11 +487,11 @@ class PhoneMic private constructor(private val context: Context) {
                                     Bridge.log("MIC: External app started recording")
                                     if (isRecording.get()) {
                                         stopRecording()
-                                        notifyMentraManager("external_app_recording", emptyList())
+                                        notifyCoreManager("external_app_recording", emptyList())
                                     }
                                 } else {
                                     Bridge.log("MIC: External app stopped recording")
-                                    notifyMentraManager(
+                                    notifyCoreManager(
                                             "external_app_stopped",
                                             getAvailableInputDevices().values.toList()
                                     )
@@ -592,7 +592,7 @@ class PhoneMic private constructor(private val context: Context) {
 
     private fun handleAudioRouteChange() {
         val availableInputs = getAvailableInputDevices().values.toList()
-        notifyMentraManager("audio_route_changed", availableInputs)
+        notifyCoreManager("audio_route_changed", availableInputs)
     }
 
     private fun requestAudioFocus(): Boolean {
@@ -658,7 +658,7 @@ class PhoneMic private constructor(private val context: Context) {
                     } else {
                         Bridge.log("MIC: Samsung - mic taken by another app")
                         isExternalAudioActive = true
-                        notifyMentraManager("samsung_mic_conflict", emptyList())
+                        notifyCoreManager("samsung_mic_conflict", emptyList())
                     }
                 },
                 SAMSUNG_MIC_TEST_DELAY_MS
@@ -746,9 +746,9 @@ class PhoneMic private constructor(private val context: Context) {
         }
     }
 
-    private fun notifyMentraManager(reason: String, availableInputs: List<String>) {
+    private fun notifyCoreManager(reason: String, availableInputs: List<String>) {
         mainHandler.post {
-            MentraManager.getInstance()
+            CoreManager.getInstance()
                     .onRouteChange(reason = reason, availableInputs = availableInputs)
         }
     }

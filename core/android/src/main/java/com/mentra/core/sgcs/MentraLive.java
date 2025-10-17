@@ -55,7 +55,7 @@ import androidx.core.app.ActivityCompat;
 
 // Mentra
 import com.mentra.core.sgcs.SGCManager;
-import com.mentra.core.MentraManager;
+import com.mentra.core.CoreManager;
 import com.mentra.core.Bridge;
 import com.mentra.core.utils.DeviceTypes;
 import com.mentra.core.utils.ConnTypes;
@@ -450,10 +450,10 @@ public class MentraLive extends SGCManager {
 
         if (state.equals(ConnTypes.CONNECTED)) {
             ready = true;
-            MentraManager.getInstance().handleConnectionStateChanged();
+            CoreManager.getInstance().handleConnectionStateChanged();
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
             ready = false;
-            MentraManager.getInstance().handleConnectionStateChanged();
+            CoreManager.getInstance().handleConnectionStateChanged();
         }
     }
 
@@ -1775,6 +1775,62 @@ public class MentraLive extends SGCManager {
                 Bridge.sendGalleryStatus(photoCount, videoCount, totalCount, totalSize, hasContent);
                 break;
 
+            case "touch_event":
+                // Process touch event from glasses (swipes, taps, long press)
+                String gestureName = json.optString("gesture_name", "unknown");
+                long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
+                
+                Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
+                
+                // Post touch event to EventBus for AugmentosService to handle
+                // EventBus.getDefault().post(new TouchEvent(
+                //         smartGlassesDevice.deviceModelName,
+                //         gestureName,
+                //         touchTimestamp));
+                // Bridge.sendTouchEvent(gestureName, touchTimestamp);
+                break;
+
+            case "swipe_volume_status":
+                // Process swipe volume control status from glasses
+                boolean swipeVolumeEnabled = json.optBoolean("enabled", false);
+                long swipeTimestamp = json.optLong("timestamp", System.currentTimeMillis());
+                
+                Log.d(TAG, "🔊 Received swipe volume status - Enabled: " + swipeVolumeEnabled);
+                
+                // TODO: Post swipe volume status event to EventBus once event class is created
+                // EventBus.getDefault().post(new SwipeVolumeStatusEvent(
+                //         smartGlassesDevice.deviceModelName,
+                //         swipeVolumeEnabled,
+                //         swipeTimestamp));
+                
+                // // For now, forward to data observable for app consumption
+                // if (dataObservable != null) {
+                //     dataObservable.onNext(json);
+                // }
+                break;
+
+            case "switch_status":
+                // Process switch status report from glasses
+                int switchType = json.optInt("switch_type", -1);
+                int switchValue = json.optInt("switch_value", -1);
+                long switchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
+                
+                Log.d(TAG, "🔘 Received switch status - Type: " + switchType + 
+                      ", Value: " + switchValue);
+                
+                // TODO: Post switch status event to EventBus once event class is created
+                // EventBus.getDefault().post(new SwitchStatusEvent(
+                //         smartGlassesDevice.deviceModelName,
+                //         switchType,
+                //         switchValue,
+                //         switchTimestamp));
+                
+                // For now, forward to data observable for app consumption
+                // if (dataObservable != null) {
+                //     dataObservable.onNext(json);
+                // }
+                break;
+
             case "sensor_data":
                 // Process sensor data
                 // ...
@@ -1891,8 +1947,8 @@ public class MentraLive extends SGCManager {
                 Bridge.sendVersionInfo(appVersion, buildNumber, deviceModel, androidVersion,
                       otaVersionUrl != null ? otaVersionUrl : "");
 
-                // Notify MentraManager to update status and send to frontend
-                MentraManager.getInstance().handle_request_status();
+                // Notify CoreManager to update status and send to frontend
+                CoreManager.getInstance().handle_request_status();
                 break;
 
             case "ota_download_progress":
@@ -2006,6 +2062,7 @@ public class MentraLive extends SGCManager {
                 break;
 
             default:
+                Log.d(TAG, "📦 Unknown message type: " + type);
                 // Pass the data to the subscriber for custom processing
                 // if (dataObservable != null) {
                     // dataObservable.onNext(json);
@@ -2216,7 +2273,30 @@ public class MentraLive extends SGCManager {
                 break;
 
             default:
-                Bridge.log("LIVE: Unknown K900 command: " + command);
+                Log.d(TAG, "Unknown K900 command: " + command);
+                
+                // Check if this is a C-wrapped standard JSON message (not a true K900 command)
+                // This happens when ASG Client sends standard JSON messages through K900BluetoothManager
+                // which automatically C-wraps them
+                try {
+                    // Try to parse the "C" field as JSON
+                    JSONObject innerJson = new JSONObject(command);
+                    
+                    // If it has a "type" field, it's a standard message that got C-wrapped
+                    if (innerJson.has("type")) {
+                        String messageType = innerJson.optString("type", "");
+                        Log.d(TAG, "📦 Detected C-wrapped standard JSON message with type: " + messageType);
+                        Log.d(TAG, "🔓 Unwrapping and processing through standard message handler");
+                        
+                        // Process through the standard message handler
+                        processJsonMessage(innerJson);
+                        return; // Exit after processing
+                    }
+                } catch (JSONException e) {
+                    // Not valid JSON or doesn't have type field - treat as unknown K900 command
+                    Log.d(TAG, "Command is not a C-wrapped JSON message, passing to data observable");
+                }
+                
                 // Pass to data observable for custom processing
                 // if (dataObservable != null) {
                     // dataObservable.onNext(json);
@@ -2287,8 +2367,8 @@ public class MentraLive extends SGCManager {
         batteryLevel = level;  // Parent class field
         isCharging = charging;  // Local field
 
-        // Notify MentraManager to update status and send to frontend
-        MentraManager.getInstance().handle_request_status();
+        // Notify CoreManager to update status and send to frontend
+        CoreManager.getInstance().handle_request_status();
     }
 
     /**
@@ -2324,7 +2404,7 @@ public class MentraLive extends SGCManager {
         Bridge.sendHotspotStatusChange(enabled, ssid, password, gatewayIp);
 
         // Trigger a full status update so React Native gets the updated glasses_info
-        MentraManager.getInstance().handle_request_status();
+        CoreManager.getInstance().handle_request_status();
     }
 
     /**
@@ -2611,7 +2691,8 @@ public class MentraLive extends SGCManager {
 
     public void forget() {
         Bridge.log("LIVE: Forgetting Mentra Live glasses");
-        // TODO:
+        stopScan();
+        disconnect();
     }
 
     public void disconnect() {
@@ -2673,7 +2754,7 @@ public class MentraLive extends SGCManager {
         // var context = Bridge.getContext();
         // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         // String lastDeviceAddress = prefs.getString(PREF_DEVICE_NAME, null);
-        String lastDeviceAddress = MentraManager.getInstance().getDeviceAddress();
+        String lastDeviceAddress = CoreManager.getInstance().getDeviceAddress();
 
         if (lastDeviceAddress != null && lastDeviceAddress.length() > 0) {
             // Connect to last known device if available
@@ -2710,7 +2791,7 @@ public class MentraLive extends SGCManager {
         // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
 
         // Update the shouldUseGlassesMic flag to reflect the current state
-        var m = MentraManager.getInstance();
+        var m = CoreManager.getInstance();
         this.shouldUseGlassesMic = enable && m.getSensingEnabled();
         Bridge.log("LIVE: Updated shouldUseGlassesMic to: " + shouldUseGlassesMic);
 
@@ -3004,7 +3085,7 @@ public class MentraLive extends SGCManager {
 
     @Override
     public void sendButtonVideoRecordingSettings() {
-        var m = MentraManager.getInstance();
+        var m = CoreManager.getInstance();
         int videoWidth = m.getButtonVideoWidth();
         int videoHeight = m.getButtonVideoHeight();
         int videoFps = m.getButtonVideoFps();
@@ -3655,8 +3736,16 @@ public class MentraLive extends SGCManager {
                 case "request_wifi_scan":
                     requestWifiScan();
                     break;
+                case "rgb_led_control_on":
+                case "rgb_led_control_off":
+                    // Forward LED control commands directly to glasses via BLE
+                    Log.d(TAG, "💡 Forwarding LED control command to glasses: " + type);
+                    sendJson(json, true);
+                    break;
                 default:
-                    Log.w(TAG, "Unknown custom command type: " + type);
+                    Log.w(TAG, "Unknown custom command type: " + type + " - attempting to forward to glasses");
+                    // Forward unknown commands to glasses - they might handle them
+                    sendJson(json, true);
                     break;
             }
         } catch (JSONException e) {
@@ -4122,7 +4211,7 @@ public class MentraLive extends SGCManager {
             return;
         }
 
-        var m = MentraManager.getInstance();
+        var m = CoreManager.getInstance();
         String mode = m.getButtonPressMode();
 
         try {
@@ -4232,7 +4321,7 @@ public class MentraLive extends SGCManager {
      * Send button photo settings to glasses
      */
     public void sendButtonPhotoSettings() {
-        var m = MentraManager.getInstance();
+        var m = CoreManager.getInstance();
         String size = m.getButtonPhotoSize();
 
         Bridge.log("LIVE: Sending button photo setting: " + size);
@@ -4271,7 +4360,7 @@ public class MentraLive extends SGCManager {
             return;
         }
 
-        int minutes = MentraManager.getInstance().getButtonMaxRecordingTime();
+        int minutes = CoreManager.getInstance().getButtonMaxRecordingTime();
 
         try {
             JSONObject json = new JSONObject();
@@ -4386,7 +4475,7 @@ public class MentraLive extends SGCManager {
                     if (pcmData != null && pcmData.length > 0) {
                         // Forward PCM data to audio processing system (like Even Realities G1)
                         // audioProcessingCallback.onAudioDataAvailable(pcmData);
-                        var m = MentraManager.getInstance();
+                        var m = CoreManager.getInstance();
                         m.handlePcm(pcmData);
                         // Bridge.log("LIVE: Decoded and forwarded LC3 to PCM: " + lc3Data.length + " -> " + pcmData.length + " bytes");
                     } else {

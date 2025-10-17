@@ -62,7 +62,7 @@ import java.util.HashMap;
 
 // Mentra
 import com.mentra.core.sgcs.SGCManager;
-import com.mentra.core.MentraManager;
+import com.mentra.core.CoreManager;
 import com.mentra.core.Bridge;
 import com.mentra.core.utils.DeviceTypes;
 import com.mentra.core.utils.BitmapJavaUtils;
@@ -228,9 +228,9 @@ public class G1 extends SGCManager {
         loadPairedDeviceNames();
         // goHomeHandler = new Handler();
         // this.smartGlassesDevice = smartGlassesDevice;
-        preferredG1DeviceId = MentraManager.getInstance().getDeviceName();
-        brightnessValue = MentraManager.getInstance().getBrightness();
-        shouldUseAutoBrightness = MentraManager.getInstance().getAutoBrightness();
+        preferredG1DeviceId = CoreManager.getInstance().getDeviceName();
+        brightnessValue = CoreManager.getInstance().getBrightness();
+        shouldUseAutoBrightness = CoreManager.getInstance().getAutoBrightness();
         this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         this.shouldUseGlassesMic = false;
 
@@ -407,7 +407,7 @@ public class G1 extends SGCManager {
                         attemptGattConnection(rightDevice);
                     }, 400);
                 }
-                MentraManager.getInstance().handleConnectionStateChanged();
+                CoreManager.getInstance().handleConnectionStateChanged();
             }
 
             private void forceSideDisconnection() {
@@ -538,7 +538,7 @@ public class G1 extends SGCManager {
                                     if (shouldUseGlassesMic) {
                                         if (pcmData != null && pcmData.length > 0) {
                                             // audioProcessingCallback.onAudioDataAvailable(pcmData);
-                                            MentraManager.getInstance().handleGlassesMicData(pcmData);
+                                            CoreManager.getInstance().handleGlassesMicData(pcmData);
                                         }
                                     }
 
@@ -551,7 +551,7 @@ public class G1 extends SGCManager {
 
                                 // send through the LC3
                                 // audioProcessingCallback.onLC3AudioDataAvailable(lc3);
-                                // MentraManager.getInstance().handleGlassesMicData(lc3);
+                                // CoreManager.getInstance().handleGlassesMicData(lc3);
 
                             } else {
                                 // Bridge.log("G1: Lc3 Audio data received. Seq: " + seq + ", Data: " +
@@ -564,7 +564,7 @@ public class G1 extends SGCManager {
                             if (deviceName.contains("R_")) {
                                 // Check for head down movement - initial F5 02 signal
                                 Bridge.log("G1: HEAD UP MOVEMENT DETECTED");
-                                MentraManager.getInstance().updateHeadUp(true);
+                                CoreManager.getInstance().updateHeadUp(true);
                             }
                         }
                         // HEAD DOWN MOVEMENTS
@@ -572,7 +572,7 @@ public class G1 extends SGCManager {
                             if (deviceName.contains("R_")) {
                             Bridge.log("G1: HEAD DOWN MOVEMENT DETECTED");
                                 // clearBmpDisplay();
-                                MentraManager.getInstance().updateHeadUp(false);
+                                CoreManager.getInstance().updateHeadUp(false);
                             }
                         }
                         // DOUBLE TAP
@@ -600,7 +600,7 @@ public class G1 extends SGCManager {
                                 // Bridge.log("G1: Minimum Battery Level: " + minBatt);
                                 // EventBus.getDefault().post(new BatteryLevelEvent(minBatt, false));
                                 batteryLevel = minBatt;
-                                MentraManager.getInstance().handle_request_status();
+                                CoreManager.getInstance().handle_request_status();
                             }
                         }
                         // CASE REMOVED
@@ -608,7 +608,7 @@ public class G1 extends SGCManager {
                                 && ((data[1] & 0xFF) == 0x07 || (data[1] & 0xFF) == 0x06)) {
                             caseRemoved = true;
                             Bridge.log("G1: CASE REMOVED");
-                            MentraManager.getInstance().handle_request_status();
+                            CoreManager.getInstance().handle_request_status();
                         }
                         // CASE OPEN
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x08) {
@@ -616,7 +616,7 @@ public class G1 extends SGCManager {
                             caseRemoved = false;
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            MentraManager.getInstance().handle_request_status();
+                            CoreManager.getInstance().handle_request_status();
                         }
                         // CASE CLOSED
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0B) {
@@ -624,21 +624,21 @@ public class G1 extends SGCManager {
                             caseRemoved = false;
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            MentraManager.getInstance().handle_request_status();
+                            CoreManager.getInstance().handle_request_status();
                         }
                         // CASE CHARGING STATUS
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0E) {
                             caseCharging = (data[2] & 0xFF) == 0x01;// TODO: verify this is correct
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            MentraManager.getInstance().handle_request_status();
+                            CoreManager.getInstance().handle_request_status();
                         }
                         // CASE CHARGING INFO
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0F) {
                             caseBatteryLevel = (data[2] & 0xFF);// TODO: verify this is correct
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            MentraManager.getInstance().handle_request_status();
+                            CoreManager.getInstance().handle_request_status();
                         }
                         // HEARTBEAT RESPONSE
                         else if (data.length > 0 && data[0] == 0x25) {
@@ -816,7 +816,7 @@ public class G1 extends SGCManager {
             // connectionEvent(connectionState);
             ready = false;
         }
-        MentraManager.getInstance().handleConnectionStateChanged();
+        CoreManager.getInstance().handleConnectionStateChanged();
     }
 
     private final BroadcastReceiver bondingReceiver = new BroadcastReceiver() {
@@ -1311,7 +1311,7 @@ public class G1 extends SGCManager {
         context.registerReceiver(bondingReceiver, filter);
         isBondingReceiverRegistered = true;
 
-        preferredG1DeviceId = MentraManager.getInstance().getDeviceName();
+        preferredG1DeviceId = CoreManager.getInstance().getDeviceName();
 
         if (!bluetoothAdapter.isEnabled()) {
             return;
@@ -2020,7 +2020,7 @@ public class G1 extends SGCManager {
         }
 
         if (title.trim().isEmpty() && body.trim().isEmpty()) {
-            if (MentraManager.getInstance().getPowerSavingMode()) {
+            if (CoreManager.getInstance().getPowerSavingMode()) {
                 sendExitCommand();
                 return;
             }
@@ -2197,7 +2197,7 @@ public class G1 extends SGCManager {
             return;
 
         if (textTop.trim().isEmpty() && textBottom.trim().isEmpty()) {
-            if (MentraManager.getInstance().getPowerSavingMode()) {
+            if (CoreManager.getInstance().getPowerSavingMode()) {
                 sendExitCommand();
                 return;
             }
@@ -2208,7 +2208,7 @@ public class G1 extends SGCManager {
     }
 
     public void showHomeScreen() {
-        if (MentraManager.getInstance().getPowerSavingMode()) {
+        if (CoreManager.getInstance().getPowerSavingMode()) {
             sendExitCommand();
         } else {
             displayTextWall(" ");
@@ -2249,7 +2249,7 @@ public class G1 extends SGCManager {
         if (updatingScreen)
             return;
         if (a.trim().isEmpty()) {
-            if (MentraManager.getInstance().getPowerSavingMode()) {
+            if (CoreManager.getInstance().getPowerSavingMode()) {
                 sendExitCommand();
                 return;
             }

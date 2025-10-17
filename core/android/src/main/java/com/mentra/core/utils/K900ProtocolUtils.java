@@ -264,7 +264,10 @@ public class K900ProtocolUtils {
             return false;
         }
 
-        return data[0] == CMD_START_CODE[0] &&
+        Log.d("K900ProtocolUtils", "isK900ProtocolFormat: " + data[0] + " " + data[1]);
+        Log.d("K900ProtocolUtils", "CMD_START_CODE: " + CMD_START_CODE[0] + " " + CMD_START_CODE[1]);
+        
+        return data[0] == CMD_START_CODE[0] && 
                data[1] == CMD_START_CODE[1];
     }
 

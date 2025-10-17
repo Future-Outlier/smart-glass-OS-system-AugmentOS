@@ -10,6 +10,7 @@ import restComms from "@/managers/RestComms"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle} from "react-native"
+import {DeviceTypes} from "@/utils/Constants"
 
 export default function OnboardingWelcome() {
   const {appStatus, optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
@@ -53,7 +54,7 @@ export default function OnboardingWelcome() {
     useSettingsStore.getState().setSetting(SETTINGS_KEYS.onboarding_completed, false)
 
     // Go directly to simulated glasses pairing screen
-    push("/pairing/prep", {glassesModelName: "Simulated Glasses"})
+    push("/pairing/prep", {glassesModelName: DeviceTypes.SIMULATED})
   }
 
   return (

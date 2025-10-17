@@ -5,10 +5,11 @@ import * as TaskManager from "expo-task-manager"
 import * as Location from "expo-location"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
-import bridge from "@/bridge/MantleBridge"
+import CoreModule from "core"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
+// @ts-ignore
 TaskManager.defineTask(LOCATION_TASK_NAME, ({data: {locations}, error}) => {
   if (error) {
     // check `error.message` for more details.
@@ -29,10 +30,9 @@ TaskManager.defineTask(LOCATION_TASK_NAME, ({data: {locations}, error}) => {
 
 class MantleManager {
   private static instance: MantleManager | null = null
-
-  private calendarSyncTimer: NodeJS.Timeout | null = null
+  private calendarSyncTimer: number | null = null
+  private clearTextTimeout: number | null = null
   private transcriptProcessor: TranscriptProcessor
-  private clearTextTimeout: NodeJS.Timeout | null = null
   private readonly MAX_CHARS_PER_LINE = 30
   private readonly MAX_LINES = 3
 
@@ -49,16 +49,24 @@ class MantleManager {
 
   // run at app start on the init.tsx screen:
   // should only ever be run once
+  // sets up the bridge and initializes app state
   public async init() {
     try {
-      await bridge.init()
       const loadedSettings = await restComms.loadUserSettings() // get settings from server
       await useSettingsStore.getState().setManyLocally(loadedSettings) // write settings to local storage
       await useSettingsStore.getState().initUserSettings() // initialize user settings
     } catch (e) {
       console.error(`Failed to get settings from server: ${e}`)
     }
-    await bridge.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
+    await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
+
+    setTimeout(async () => {
+      await CoreModule.connectDefault()
+    }, 3000)
+
+    // send initial status request:
+    await CoreModule.requestStatus()
+
     this.setupPeriodicTasks()
   }
 

@@ -122,14 +122,14 @@ class PhoneMic {
             Bridge.log("Audio session interrupted - another app took control")
             // Phone call started, pause recording
             if isRecording {
-                MentraManager.shared.onInterruption(began: true)
+                CoreManager.shared.onInterruption(began: true)
             }
         case .ended:
             Bridge.log("Audio session interruption ended")
             if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
                 let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
                 if options.contains(.shouldResume) {
-                    MentraManager.shared.onInterruption(began: false)
+                    CoreManager.shared.onInterruption(began: false)
                 }
             }
         @unknown default:
@@ -147,7 +147,7 @@ class PhoneMic {
         }
 
         Bridge.log("MIC: handleRouteChange: \(reason)")
-        MentraManager.shared.onRouteChange(reason: reason, availableInputs: audioSession?.availableInputs ?? [])
+        CoreManager.shared.onRouteChange(reason: reason, availableInputs: audioSession?.availableInputs ?? [])
 
         // // If we're recording and the audio route changed (e.g., AirPods connected/disconnected)
         // if isRecording {
@@ -350,7 +350,7 @@ class PhoneMic {
             }
 
             let pcmData = self.extractInt16Data(from: convertedBuffer)
-            MentraManager.shared.handlePcm(pcmData)
+            CoreManager.shared.handlePcm(pcmData)
         }
 
         // Start the audio engine

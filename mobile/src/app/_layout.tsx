@@ -4,12 +4,12 @@ import {useFonts} from "@expo-google-fonts/space-grotesk"
 import {customFontsToLoad} from "@/theme"
 import {initI18n} from "@/i18n"
 import {loadDateFnsLocale} from "@/utils/formatDate"
-import {AllProviders} from "@/utils/AllProviders"
-import MessageBanner from "@/components/misc/MessageBanner"
+import {AllProviders} from "@/utils/structure/AllProviders"
 import * as Sentry from "@sentry/react-native"
 import Constants from "expo-constants"
 import {registerGlobals} from "@livekit/react-native-webrtc"
 import {initializeSettings} from "@/stores/settings"
+// import {ErrorBoundary} from "@/components/ErrorBoundary/ErrorBoundary"
 
 Sentry.init({
   dsn: Constants.expoConfig?.extra?.SENTRY_DSN,
@@ -43,13 +43,6 @@ initializeSettings()
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync()
 
-if (__DEV__) {
-  // Load Reactotron configuration in development. We don't want to
-  // include this in our production bundle, so we are using `if (__DEV__)`
-  // to only execute this in development.
-  require("src/devtools/ReactotronConfig.ts")
-}
-
 function Root() {
   const [_fontsLoaded, fontError] = useFonts(customFontsToLoad)
   const [loaded, setLoaded] = useState(false)
@@ -61,7 +54,7 @@ function Root() {
       // initialize webrtc
       await registerGlobals()
     } catch (error) {
-      console.error("Error loading i18n:", error)
+      console.error("Error loading assets:", error)
     } finally {
       setLoaded(true)
     }
@@ -86,20 +79,25 @@ function Root() {
   }
 
   return (
-    <AllProviders>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: true,
-          gestureDirection: "horizontal",
-          // gestureResponseDistance: 100,
-          // fullScreenGestureEnabled: true,
-          animation: "none",
-        }}></Stack>
-      <MessageBanner />
-    </AllProviders>
+    // <ErrorBoundary catchErrors="always">
+      <AllProviders>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+            // gestureResponseDistance: 100,
+            // fullScreenGestureEnabled: true,
+            animation: "none",
+          }}
+        />
+      </AllProviders>
+    // </ErrorBoundary>
   )
 }
 
-// export default Sentry.wrap(Root)
-export default Root
+// if (!__DEV__ && Platform.OS === "android") {
+// export default Root
+// }
+
+export default Sentry.wrap(Root)

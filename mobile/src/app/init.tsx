@@ -3,14 +3,12 @@ import {View, ActivityIndicator, Platform, Linking} from "react-native"
 import Constants from "expo-constants"
 import semver from "semver"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import {router} from "expo-router"
 import {Button, Screen} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useDeeplink} from "@/contexts/DeeplinkContext"
 import {useAuth} from "@/contexts/AuthContext"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useSettingsStore, SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import bridge from "@/bridge/MantleBridge"
 import {translate} from "@/i18n"
 import {TextStyle, ViewStyle} from "react-native"
 import {ThemedStyle} from "@/theme"
@@ -93,7 +91,7 @@ export default function InitScreen() {
     }
 
     setTimeout(() => {
-      router.dismissAll()
+      // clearHistoryAndGoHome()
       replace("/(tabs)/home")
     }, NAVIGATION_DELAY)
   }
@@ -126,8 +124,6 @@ export default function InitScreen() {
 
       socketComms.setAuthCreds(coreToken, uid)
       await mantle.init()
-
-      bridge.updateSettings(await useSettingsStore.getState().getCoreSettings()) // send settings to core
 
       await navigateToDestination()
     } catch (error) {
@@ -321,7 +317,7 @@ export default function InitScreen() {
 
             {(state === "error" || (state === "outdated" && canSkipUpdate)) && (
               <Button
-                preset="accent"
+                preset="warning"
                 style={themed($secondaryButton)}
                 RightAccessory={() => <Icon name="arrow-right" size={24} color={theme.colors.text} />}
                 onPress={navigateToDestination}

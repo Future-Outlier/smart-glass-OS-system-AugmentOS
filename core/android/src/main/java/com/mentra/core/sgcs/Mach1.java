@@ -15,7 +15,7 @@ import androidx.lifecycle.LiveData;
 
 // Mentra
 import com.mentra.core.sgcs.SGCManager;
-import com.mentra.core.MentraManager;
+import com.mentra.core.CoreManager;
 import com.mentra.core.Bridge;
 import com.mentra.core.utils.DeviceTypes;
 import com.mentra.core.utils.ConnTypes;
@@ -105,10 +105,10 @@ public class Mach1 extends SGCManager {
 
         if (state.equals(ConnTypes.CONNECTED)) {
             ready = true;
-            MentraManager.getInstance().handleConnectionStateChanged();
+            CoreManager.getInstance().handleConnectionStateChanged();
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
             ready = false;
-            MentraManager.getInstance().handleConnectionStateChanged();
+            CoreManager.getInstance().handleConnectionStateChanged();
         }
     }
 
@@ -369,7 +369,7 @@ public class Mach1 extends SGCManager {
 //            // EventBus.getDefault().post(new BatteryLevelEvent(ultraliteSdk.getBatteryLevel(), false));
 //            batteryStatusObserver = ultraliteSdk.getBatteryStatus();
 //            batteryStatusObserver.observe(lifecycleOwner, batteryStatus -> {
-//                MentraManager.getInstance().handle_request_status();
+//                CoreManager.getInstance().handle_request_status();
 //                // onUltraliteBatteryChanged(batteryStatus);
 //            });
 //        } else {
@@ -380,7 +380,7 @@ public class Mach1 extends SGCManager {
 
             // Still send the initial battery level
             // EventBus.getDefault().post(new BatteryLevelEvent(ultraliteSdk.getBatteryLevel(), false));
-            MentraManager.getInstance().handle_request_status();
+            CoreManager.getInstance().handle_request_status();
 
             // Note: We don't need polling anymore since we'll be using LifecycleService
 //        }

@@ -1,28 +1,30 @@
-import {useCallback, useEffect, useRef, useState} from "react"
-import {View, TouchableOpacity, Animated, ViewStyle, TextStyle, Platform} from "react-native"
-import {useFocusEffect} from "@react-navigation/native"
 import {Icon, Text} from "@/components/ignite"
-import bridge from "@/bridge/MantleBridge"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
-import ToggleSetting from "@/components/settings/ToggleSetting"
+import {AppPicker} from "@/components/misc/AppPicker"
 import SliderSetting from "@/components/settings/SliderSetting"
-import {MaterialCommunityIcons} from "@expo/vector-icons"
-import {translate} from "@/i18n/translate"
-import showAlert, {showDestructiveAlert} from "@/utils/AlertUtils"
-import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
-import RouteButton from "@/components/ui/RouteButton"
+import ToggleSetting from "@/components/settings/ToggleSetting"
 import ActionButton from "@/components/ui/ActionButton"
+import InfoSection from "@/components/ui/InfoSection"
+import RouteButton from "@/components/ui/RouteButton"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {glassesFeatures, hasBrightness, hasCustomMic, hasConfigurableButton} from "@/config/glassesFeatures"
+import {translate} from "@/i18n/translate"
 import {localStorageService} from "@/services/asg/localStorageService"
+import {useApplets} from "@/stores/applets"
+import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import showAlert, {showDestructiveAlert} from "@/utils/AlertUtils"
+import {DeviceTypes} from "@/utils/Constants"
+import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {Capabilities} from "@cloud/packages/sdk/dist"
+import {MaterialCommunityIcons} from "@expo/vector-icons"
+import {useFocusEffect} from "@react-navigation/native"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {Animated, Platform, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import {SvgXml} from "react-native-svg"
 import OtaProgressSection from "./OtaProgressSection"
-import InfoSection from "@/components/ui/InfoSection"
-import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
-import {AppPicker} from "@/components/misc/AppPicker"
-import {useAppStatus} from "@/contexts/AppletStatusProvider"
+import CoreModule from "core"
 
 // Icon components defined directly in this file to avoid path resolution issues
 interface CaseIconProps {
@@ -93,13 +95,14 @@ export default function DeviceSettings() {
   const [showAppPicker, setShowAppPicker] = useState(false)
 
   const {push} = useNavigationHistory()
-  const {appStatus} = useAppStatus()
+  const applets = useApplets()
+  const features: Capabilities | null = getCapabilitiesForModel(defaultWearable)
 
   // Check if we have any advanced settings to show
   const hasMicrophoneSelector =
     isGlassesConnected &&
     defaultWearable &&
-    hasCustomMic(defaultWearable) &&
+    features?.hasMicrophone &&
     (defaultWearable !== "Mentra Live" ||
       (Platform.OS === "android" && status.glasses_info?.glasses_device_model !== "K900"))
 
@@ -206,7 +209,7 @@ export default function DeviceSettings() {
         {
           text: translate("common:yes"),
           onPress: () => {
-            bridge.sendForgetSmartGlasses()
+            CoreModule.forget()
           },
         },
       ],
@@ -296,7 +299,7 @@ export default function DeviceSettings() {
           </View>
         )}
 
-      {hasBrightness(defaultWearable) && isGlassesConnected && (
+      {features?.display?.adjustBrightness && isGlassesConnected && (
         <View style={themed($settingsGroup)}>
           <ToggleSetting
             label="Auto Brightness"
@@ -339,7 +342,7 @@ export default function DeviceSettings() {
       )}
 
       {/* Nex Developer Settings - Only show when connected to Mentra Nex */}
-      {defaultWearable && defaultWearable.toLowerCase().includes("nex") && (
+      {defaultWearable && defaultWearable.includes(DeviceTypes.NEX) && (
         <RouteButton
           label="Nex Developer Settings"
           subtitle="Advanced developer tools and debugging features"
@@ -351,7 +354,7 @@ export default function DeviceSettings() {
       {/* Camera Settings button moved to Gallery Settings page */}
 
       {/* Button Settings - Only show for glasses with configurable buttons */}
-      {defaultWearable && hasConfigurableButton(defaultWearable) && (
+      {defaultWearable && features?.hasButton && (
         <View style={themed($settingsGroup)}>
           <ToggleSetting
             label="Default Button Action"
@@ -388,7 +391,7 @@ export default function DeviceSettings() {
                     Default App
                   </Text>
                   <Text style={{color: theme.colors.textDim, fontSize: 13}}>
-                    {appStatus.find(app => app.packageName === defaultButtonActionApp)?.name || "Select app"}
+                    {applets.find(app => app.packageName === defaultButtonActionApp)?.name || "Select app"}
                   </Text>
                 </View>
                 <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.textDim} />
@@ -405,7 +408,7 @@ export default function DeviceSettings() {
         onSelect={app => {
           setDefaultButtonActionApp(app.packageName)
         }}
-        apps={appStatus}
+        apps={applets}
         selectedPackageName={defaultButtonActionApp}
         title="Select Default App"
         filterPredicate={app => app.type === "standard"} // Only show foreground apps
@@ -413,7 +416,7 @@ export default function DeviceSettings() {
       />
 
       {/* Only show WiFi settings if connected glasses support WiFi */}
-      {defaultWearable && glassesFeatures[defaultWearable]?.wifi && (
+      {defaultWearable && features?.hasWifi && (
         <RouteButton
           label={translate("settings:glassesWifiSettings")}
           subtitle={translate("settings:glassesWifiDescription")}
@@ -426,12 +429,12 @@ export default function DeviceSettings() {
       {/* Device info is rendered within the Advanced Settings section below */}
 
       {/* OTA Progress Section - Only show for Mentra Live glasses */}
-      {defaultWearable && isGlassesConnected && defaultWearable.toLowerCase().includes("live") && (
+      {defaultWearable && isGlassesConnected && defaultWearable.includes(DeviceTypes.LIVE) && (
         <OtaProgressSection otaProgress={status.ota_progress} />
       )}
 
       {/* Only show dashboard settings if glasses have display capability */}
-      {defaultWearable && glassesFeatures[defaultWearable]?.display && (
+      {defaultWearable && features?.hasDisplay && (
         <RouteButton
           label={translate("settings:dashboardSettings")}
           subtitle={translate("settings:dashboardDescription")}
@@ -440,7 +443,7 @@ export default function DeviceSettings() {
       )}
 
       {/* Screen settings for binocular glasses */}
-      {defaultWearable && glassesFeatures[defaultWearable]?.binocular && (
+      {defaultWearable && (features?.display?.count ?? 0 > 1) && (
         <RouteButton
           label={translate("settings:screenSettings")}
           subtitle={translate("settings:screenDescription")}
@@ -448,12 +451,12 @@ export default function DeviceSettings() {
         />
       )}
 
-      {defaultWearable && isGlassesConnected && defaultWearable !== "Simulated Glasses" && (
+      {defaultWearable && isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && (
         <ActionButton
           label={translate("settings:disconnectGlasses")}
           variant="destructive"
           onPress={() => {
-            bridge.sendDisconnectWearable()
+            CoreModule.disconnect()
           }}
         />
       )}
@@ -498,11 +501,9 @@ export default function DeviceSettings() {
                     }}
                     onPress={() => setMic("phone")}>
                     <Text style={{color: theme.colors.text}}>{translate("deviceSettings:systemMic")}</Text>
-                    <MaterialCommunityIcons
-                      name="check"
-                      size={24}
-                      color={preferredMic === "phone" ? theme.colors.icon : "transparent"}
-                    />
+                    {preferredMic === "phone" && (
+                      <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                    )}
                   </TouchableOpacity>
                   {/* divider */}
                   <View
@@ -522,11 +523,9 @@ export default function DeviceSettings() {
                     <View style={{flexDirection: "column", gap: 4}}>
                       <Text style={{color: theme.colors.text}}>{translate("deviceSettings:glassesMic")}</Text>
                     </View>
-                    <MaterialCommunityIcons
-                      name="check"
-                      size={24}
-                      color={preferredMic === "glasses" ? theme.colors.icon : "transparent"}
-                    />
+                    {preferredMic === "glasses" && (
+                      <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                    )}
                   </TouchableOpacity>
                 </View>
               )}

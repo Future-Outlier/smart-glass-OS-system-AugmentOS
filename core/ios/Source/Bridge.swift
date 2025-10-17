@@ -153,6 +153,44 @@ class Bridge {
         Bridge.sendTypedMessage("button_press", body: body)
     }
 
+    static func sendTouchEvent(deviceModel: String, gestureName: String, timestamp: Int64) {
+        let body: [String: Any] = [
+            "device_model": deviceModel,
+            "gesture_name": gestureName,
+            "timestamp": timestamp,
+        ]
+        Bridge.sendTypedMessage("touch_event", body: body)
+    }
+
+    static func sendSwipeVolumeStatus(enabled: Bool, timestamp: Int64) {
+        let body: [String: Any] = [
+            "enabled": enabled,
+            "timestamp": timestamp,
+        ]
+        Bridge.sendTypedMessage("swipe_volume_status", body: body)
+    }
+
+    static func sendSwitchStatus(switchType: Int, value: Int, timestamp: Int64) {
+        let body: [String: Any] = [
+            "switch_type": switchType,
+            "switch_value": value,
+            "timestamp": timestamp,
+        ]
+        Bridge.sendTypedMessage("switch_status", body: body)
+    }
+
+    static func sendRgbLedControlResponse(requestId: String, success: Bool, error: String?) {
+        guard !requestId.isEmpty else { return }
+        var body: [String: Any] = [
+            "requestId": requestId,
+            "success": success,
+        ]
+        if let error {
+            body["error"] = error
+        }
+        Bridge.sendTypedMessage("rgb_led_control_response", body: body)
+    }
+
     static func sendPhotoResponse(requestId: String, photoUrl: String) {
         do {
             let event: [String: Any] = [
@@ -275,266 +313,5 @@ class Bridge {
         let jsonString = String(data: jsonData, encoding: .utf8)
         let data: [String: Any] = ["body": jsonString!]
         eventCallback?("CoreMessageEvent", data)
-    }
-
-    // handle commands from the mantle:
-    @objc static func handleCommand(_ command: String) -> Any {
-        // Bridge.log("CommandBridge: Received command: \(command)")
-        let m = MentraManager.shared
-
-        // Define command types enum
-        enum CommandType: String {
-            case request_status
-            case connect_default
-            case connect_by_name
-            case disconnect
-            case find_compatible_devices
-            case ping
-            case forget
-            case show_dashboard
-            case request_wifi_scan
-            case send_wifi_credentials
-            case set_hotspot_state
-            case query_gallery_status
-            case photo_request
-            case start_buffer_recording
-            case stop_buffer_recording
-            case save_buffer_video
-            case start_video_recording
-            case stop_video_recording
-            case start_rtmp_stream
-            case stop_rtmp_stream
-            case keep_rtmp_stream_alive
-            case set_stt_model_details
-            case get_stt_model_path
-            case check_stt_model_available
-            case validate_stt_model
-            case extract_tar_bz2
-            case display_event
-            case display_text
-            case update_settings
-            case microphone_state_change
-            case restart_transcriber
-            case unknown
-        }
-
-        // Try to parse JSON
-        guard let data = command.data(using: .utf8) else {
-            Bridge.log("CommandBridge: Could not convert command string to data")
-            return 0
-        }
-
-        do {
-            if let jsonDict = try JSONSerialization.jsonObject(with: data, options: [])
-                as? [String: Any]
-            {
-                // Extract command type
-                guard let commandString = jsonDict["command"] as? String else {
-                    Bridge.log("CommandBridge: Invalid command format: missing 'command' field")
-                    return 0
-                }
-
-                let commandType = CommandType(rawValue: commandString) ?? .unknown
-                let params = jsonDict["params"] as? [String: Any]
-
-                // Process based on command type
-                switch commandType {
-                case .display_event:
-                    guard let params else {
-                        Bridge.log("CommandBridge: display_event invalid params")
-                        break
-                    }
-                    m.handle_display_event(params)
-                case .display_text:
-                    guard let params else {
-                        Bridge.log("CommandBridge: display_text invalid params")
-                        break
-                    }
-                    m.handle_display_text(params)
-                case .request_status:
-                    m.handle_request_status()
-                case .connect_default:
-                    m.handle_connect_default()
-                case .connect_by_name:
-                    guard let params = params,
-                          let deviceName = params["device_name"] as? String
-                    else {
-                        Bridge.log("CommandBridge: connect_by_name invalid params")
-                        break
-                    }
-                    m.handle_connect_by_name(deviceName)
-                case .disconnect:
-                    m.handle_disconnect()
-                case .forget:
-                    m.handle_forget()
-                case .find_compatible_devices:
-                    guard let params = params, let modelName = params["model_name"] as? String
-                    else {
-                        Bridge.log(
-                            "CommandBridge: find_compatible_devices invalid params")
-                        break
-                    }
-                    m.handle_find_compatible_devices(modelName)
-                case .show_dashboard:
-                    m.handle_show_dashboard()
-                case .request_wifi_scan:
-                    m.handle_request_wifi_scan()
-                case .send_wifi_credentials:
-                    guard let params = params, let ssid = params["ssid"] as? String,
-                          let password = params["password"] as? String
-                    else {
-                        Bridge.log("CommandBridge: send_wifi_credentials invalid params")
-                        break
-                    }
-                    m.handle_send_wifi_credentials(ssid, password)
-                case .set_hotspot_state:
-                    guard let params = params, let enabled = params["enabled"] as? Bool else {
-                        Bridge.log("CommandBridge: set_hotspot_state invalid params")
-                        break
-                    }
-                    m.handle_set_hotspot_state(enabled)
-                case .query_gallery_status:
-                    Bridge.log("CommandBridge: Querying gallery status")
-                    m.handle_query_gallery_status()
-                case .photo_request:
-                    guard let params = params,
-                          let requestId = params["requestId"] as? String,
-                          let appId = params["appId"] as? String,
-                          let size = params["size"] as? String
-                    else {
-                        Bridge.log("CommandBridge: photo_request invalid params")
-                        break
-                    }
-                    let webhookUrl = params["webhookUrl"] as? String
-                    let authToken = params["authToken"] as? String
-                    m.handle_photo_request(requestId, appId, size, webhookUrl, authToken)
-                case .start_buffer_recording:
-                    Bridge.log("CommandBridge: Starting buffer recording")
-                    m.handle_start_buffer_recording()
-                case .stop_buffer_recording:
-                    Bridge.log("CommandBridge: Stopping buffer recording")
-                    m.handle_stop_buffer_recording()
-                case .save_buffer_video:
-                    guard let params = params,
-                          let requestId = params["request_id"] as? String,
-                          let durationSeconds = params["duration_seconds"] as? Int
-                    else {
-                        Bridge.log("CommandBridge: save_buffer_video invalid params")
-                        break
-                    }
-                    Bridge.log(
-                        "CommandBridge: Saving buffer video: requestId=\(requestId), duration=\(durationSeconds)s"
-                    )
-                    m.handle_save_buffer_video(requestId, durationSeconds)
-                case .start_video_recording:
-                    guard let params = params,
-                          let requestId = params["request_id"] as? String,
-                          let save = params["save"] as? Bool
-                    else {
-                        Bridge.log("CommandBridge: start_video_recording invalid params")
-                        break
-                    }
-                    Bridge.log(
-                        "CommandBridge: Starting video recording: requestId=\(requestId), save=\(save)"
-                    )
-                    m.handle_start_video_recording(requestId, save)
-                case .stop_video_recording:
-                    guard let params = params,
-                          let requestId = params["request_id"] as? String
-                    else {
-                        Bridge.log("CommandBridge: stop_video_recording invalid params")
-                        break
-                    }
-                    Bridge.log("CommandBridge: Stopping video recording: requestId=\(requestId)")
-                    m.handle_stop_video_recording(requestId)
-                case .start_rtmp_stream:
-                    guard let params = params else {
-                        Bridge.log("CommandBridge: start_rtmp_stream invalid params")
-                        break
-                    }
-                    Bridge.log("CommandBridge: Starting RTMP stream")
-                    m.handle_start_rtmp_stream(params)
-                case .stop_rtmp_stream:
-                    Bridge.log("CommandBridge: Stopping RTMP stream")
-                    m.handle_stop_rtmp_stream()
-                case .keep_rtmp_stream_alive:
-                    guard let params = params else {
-                        Bridge.log("CommandBridge: keep_rtmp_stream_alive invalid params")
-                        break
-                    }
-                    Bridge.log("CommandBridge: RTMP stream keep alive")
-                    m.handle_keep_rtmp_stream_alive(params)
-                case .unknown:
-                    Bridge.log("CommandBridge: Unknown command type: \(commandString)")
-                    m.handle_request_status()
-                case .ping:
-                    break
-                case .microphone_state_change:
-                    guard let msg = params else {
-                        Bridge.log("CommandBridge: microphone_state_change invalid params")
-                        break
-                    }
-
-                    let bypassVad = msg["bypassVad"] as? Bool ?? false
-                    var requiredDataStrings: [String] = []
-                    if let requiredDataArray = msg["requiredData"] as? [String] {
-                        requiredDataStrings = requiredDataArray
-                    } else if let requiredDataArray = msg["requiredData"] as? [Any] {
-                        // Handle case where it might come as mixed array
-                        requiredDataStrings = requiredDataArray.compactMap { $0 as? String }
-                    }
-                    // Convert string array to enum array
-                    var requiredData = SpeechRequiredDataType.fromStringArray(requiredDataStrings)
-                    Bridge.log(
-                        "ServerComms: requiredData = \(requiredDataStrings), bypassVad = \(bypassVad)"
-                    )
-                    m.handle_microphone_state_change(requiredData, bypassVad)
-                case .update_settings:
-                    guard let params else {
-                        Bridge.log("CommandBridge: update_settings invalid params")
-                        break
-                    }
-                    m.handle_update_settings(params)
-                // STT:
-                case .set_stt_model_details:
-                    guard let params = params,
-                          let path = params["path"] as? String,
-                          let languageCode = params["languageCode"] as? String
-                    else {
-                        Bridge.log("CommandBridge: set_stt_model_details invalid params")
-                        break
-                    }
-                    STTTools.setSttModelDetails(path, languageCode)
-                case .get_stt_model_path:
-                    return STTTools.getSttModelPath()
-                case .check_stt_model_available:
-                    return STTTools.checkSTTModelAvailable()
-                case .validate_stt_model:
-                    guard let params = params,
-                          let path = params["path"] as? String
-                    else {
-                        Bridge.log("CommandBridge: validate_stt_model invalid params")
-                        break
-                    }
-                    return STTTools.validateSTTModel(path)
-                case .extract_tar_bz2:
-                    guard let params = params,
-                          let sourcePath = params["source_path"] as? String,
-                          let destinationPath = params["destination_path"] as? String
-                    else {
-                        Bridge.log("CommandBridge: extract_tar_bz2 invalid params")
-                        break
-                    }
-                    return STTTools.extractTarBz2(
-                        sourcePath: sourcePath, destinationPath: destinationPath
-                    )
-                case .restart_transcriber:
-                    m.restartTranscriber()
-                }
-            }
-        } catch {
-            Bridge.log("CommandBridge: Error parsing JSON command: \(error.localizedDescription)")
-        }
-        return 0
     }
 }

@@ -26,12 +26,11 @@ export interface DeepLinkConfig {
   navObject: NavObject
 }
 
-const DeeplinkContext = createContext<DeeplinkContextType>({})
+const DeeplinkContext = createContext<DeeplinkContextType>({} as DeeplinkContextType)
 
 export const useDeeplink = () => useContext(DeeplinkContext)
 
 export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
-  // const {user} = useAuth()
   const {push, replace, goBack, setPendingRoute, getPendingRoute, navigate} = useNavigationHistory()
   const config = {
     scheme: "com.mentra",

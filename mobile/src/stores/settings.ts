@@ -2,12 +2,11 @@ import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {getTimeZone} from "react-native-localize"
-import bridge from "@/bridge/MantleBridge"
 import restComms from "@/managers/RestComms"
 import {isDeveloperBuildOrTestflight} from "@/utils/buildDetection"
+import CoreModule from "core"
 
 export const SETTINGS_KEYS = {
-  previously_bonded_puck: "previously_bonded_puck",
   enable_phone_notifications: "enable_phone_notifications",
   notification_app_preferences: "notification_app_preferences",
   notification_category_preferences: "notification_category_preferences",
@@ -21,7 +20,6 @@ export const SETTINGS_KEYS = {
   dev_mode: "dev_mode",
   new_ui: "new_ui",
   enable_squircles: "enable_squircles",
-  offline_mode: "offline_mode",
   sensing_enabled: "sensing_enabled",
   power_saving_mode: "power_saving_mode",
   always_on_status_bar: "always_on_status_bar",
@@ -40,6 +38,7 @@ export const SETTINGS_KEYS = {
   auto_brightness: "auto_brightness",
   dashboard_height: "dashboard_height",
   dashboard_depth: "dashboard_depth",
+  // button settings
   button_mode: "button_mode",
   button_photo_size: "button_photo_size",
   button_video_settings: "button_video_settings",
@@ -48,15 +47,21 @@ export const SETTINGS_KEYS = {
   button_max_recording_time: "button_max_recording_time",
   core_token: "core_token",
   server_url: "server_url",
+  location_tier: "location_tier",
+  show_advanced_settings: "show_advanced_settings",
+  // time zone settings
   time_zone: "time_zone",
   time_zone_override: "time_zone_override",
-  location_tier: "location_tier",
-  offline_captions_app_running: "offline_captions_app_running",
-  camera_app_running: "camera_app_running",
-  SHOW_ADVANCED_SETTINGS: "SHOW_ADVANCED_SETTINGS",
+  // offline applets
+  offline_mode: "offline_mode",
+  // offline_camera_running: "offline_camera_running",
+  // offline_captions_running: "offline_captions_running",
   // Button action settings
   default_button_action_enabled: "default_button_action_enabled",
   default_button_action_app: "default_button_action_app",
+  // notifications
+  notifications_enabled: "notifications_enabled",
+  notifications_blocklist: "notifications_blocklist",
 } as const
 
 const DEFAULT_SETTINGS: Record<string, any> = {
@@ -79,7 +84,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.has_ever_activated_app]: false,
   [SETTINGS_KEYS.theme_preference]: "system",
   [SETTINGS_KEYS.dev_mode]: false,
-  [SETTINGS_KEYS.new_ui]: false,
+  [SETTINGS_KEYS.new_ui]: true,
   [SETTINGS_KEYS.enable_squircles]: false,
   [SETTINGS_KEYS.offline_mode]: false,
   [SETTINGS_KEYS.sensing_enabled]: true,
@@ -100,16 +105,23 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.auto_brightness]: true,
   [SETTINGS_KEYS.dashboard_height]: 4,
   [SETTINGS_KEYS.dashboard_depth]: 5,
+  // button settings
   [SETTINGS_KEYS.button_mode]: "photo",
   [SETTINGS_KEYS.button_photo_size]: "medium",
   [SETTINGS_KEYS.button_max_recording_time]: 10,
+  [SETTINGS_KEYS.location_tier]: "",
+  // time zone settings
   [SETTINGS_KEYS.time_zone]: "",
   [SETTINGS_KEYS.time_zone_override]: "",
-  [SETTINGS_KEYS.location_tier]: "",
-  [SETTINGS_KEYS.offline_captions_app_running]: false,
-  [SETTINGS_KEYS.camera_app_running]: false,
+  // // offline applets
+  // [SETTINGS_KEYS.offline_captions_running]: false,
+  // [SETTINGS_KEYS.offline_camera_running]: false,
+  // button action settings
   [SETTINGS_KEYS.default_button_action_enabled]: true,
   [SETTINGS_KEYS.default_button_action_app]: "com.mentra.camera",
+  // notifications
+  [SETTINGS_KEYS.notifications_enabled]: true,
+  [SETTINGS_KEYS.notifications_blocklist]: [],
 }
 
 const CORE_SETTINGS_KEYS = [
@@ -136,8 +148,12 @@ const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.button_press_mode,
   SETTINGS_KEYS.button_photo_size,
   SETTINGS_KEYS.button_max_recording_time,
-  // stt:
-  SETTINGS_KEYS.offline_captions_app_running,
+  // // offline applets:
+  // SETTINGS_KEYS.offline_captions_running,
+  // SETTINGS_KEYS.offline_camera_running,
+  // notifications:
+  SETTINGS_KEYS.notifications_enabled,
+  SETTINGS_KEYS.notifications_blocklist,
 ]
 
 interface SettingsState {
@@ -183,13 +199,17 @@ export const useSettingsStore = create<SettingsState>()(
         await AsyncStorage.setItem(key, jsonValue)
 
         // Update core settings if needed
-        if (CORE_SETTINGS_KEYS.includes(key) && updateCore) {
-          bridge.updateSettings({[key]: value})
+        if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number]) && updateCore) {
+          CoreModule.updateSettings({[key]: value})
         }
 
         // Sync with server if needed
-        if (updateServer) {
-          await restComms.writeUserSettings({[key]: value})
+        try {
+          if (updateServer) {
+            await restComms.writeUserSettings({[key]: value})
+          }
+        } catch (e) {
+          console.log("SETTINGS: couldn't sync setting to server: ", e)
         }
       } catch (error) {
         console.error(`Failed to save setting (${key}):`, error)
@@ -220,12 +240,12 @@ export const useSettingsStore = create<SettingsState>()(
         if (updateCore) {
           const coreUpdates: Record<string, any> = {}
           Object.keys(updates).forEach(key => {
-            if (CORE_SETTINGS_KEYS.includes(key)) {
+            if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number])) {
               coreUpdates[key] = updates[key]
             }
           })
           if (Object.keys(coreUpdates).length > 0) {
-            bridge.updateSettings(coreUpdates)
+            CoreModule.updateSettings(coreUpdates)
           }
         }
 
@@ -325,12 +345,12 @@ export const useSettingsStore = create<SettingsState>()(
       // Update core settings
       const coreUpdates: Record<string, any> = {}
       Object.keys(settings).forEach(key => {
-        if (CORE_SETTINGS_KEYS.includes(key)) {
+        if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number])) {
           coreUpdates[key] = settings[key]
         }
       })
       if (Object.keys(coreUpdates).length > 0) {
-        bridge.updateSettings(coreUpdates)
+        CoreModule.updateSettings(coreUpdates)
       }
     },
 

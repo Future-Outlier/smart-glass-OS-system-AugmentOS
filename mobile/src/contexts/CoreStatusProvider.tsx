@@ -1,14 +1,9 @@
-import React, {createContext, useContext, useState, ReactNode, useCallback, useEffect} from "react"
-import {CoreStatusParser, CoreStatus} from "@/utils/CoreStatusParser"
-import {INTENSE_LOGGING} from "@/consts"
-import bridge from "@/bridge/MantleBridge"
+import {INTENSE_LOGGING} from "@/utils/Constants"
+import {CoreStatus, CoreStatusParser} from "@/utils/CoreStatusParser"
+import {createContext, ReactNode, useCallback, useContext, useEffect, useState} from "react"
 
 import {deepCompare} from "@/utils/debugging"
-import restComms from "@/managers/RestComms"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {useConnectionStore} from "@/stores/connection"
-import {Platform} from "react-native"
-import {WebSocketStatus} from "@/managers/WebSocketManager"
 
 interface CoreStatusContextType {
   status: CoreStatus

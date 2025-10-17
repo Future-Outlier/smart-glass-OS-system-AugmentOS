@@ -84,70 +84,70 @@ class STTTools {
     }
 
     static func validateSTTModel(_ path: String) -> Bool {
-        do {
-            let fileManager = FileManager.default
+        // do {
+        let fileManager = FileManager.default
 
-            // Check for tokens.txt (required for all models)
-            let tokensPath = (path as NSString).appendingPathComponent("tokens.txt")
-            if !fileManager.fileExists(atPath: tokensPath) {
-                return false
-            }
-
-            // Check for CTC model
-            let ctcModelPath = (path as NSString).appendingPathComponent("model.int8.onnx")
-            if fileManager.fileExists(atPath: ctcModelPath) {
-                return true
-            }
-
-            // Check for transducer model
-            let transducerFiles = ["encoder.onnx", "decoder.onnx", "joiner.onnx"]
-            var allTransducerFilesPresent = true
-
-            for file in transducerFiles {
-                let filePath = (path as NSString).appendingPathComponent(file)
-                if !fileManager.fileExists(atPath: filePath) {
-                    allTransducerFilesPresent = false
-                    break
-                }
-            }
-
-            return allTransducerFilesPresent
-        } catch {
-            Bridge.log("STT_ERROR: \(error.localizedDescription)")
+        // Check for tokens.txt (required for all models)
+        let tokensPath = (path as NSString).appendingPathComponent("tokens.txt")
+        if !fileManager.fileExists(atPath: tokensPath) {
             return false
         }
+
+        // Check for CTC model
+        let ctcModelPath = (path as NSString).appendingPathComponent("model.int8.onnx")
+        if fileManager.fileExists(atPath: ctcModelPath) {
+            return true
+        }
+
+        // Check for transducer model
+        let transducerFiles = ["encoder.onnx", "decoder.onnx", "joiner.onnx"]
+        var allTransducerFilesPresent = true
+
+        for file in transducerFiles {
+            let filePath = (path as NSString).appendingPathComponent(file)
+            if !fileManager.fileExists(atPath: filePath) {
+                allTransducerFilesPresent = false
+                break
+            }
+        }
+
+        return allTransducerFilesPresent
+        // } catch {
+        // Bridge.log("STT_ERROR: \(error.localizedDescription)")
+        // return false
+        // }
     }
 
     static func extractTarBz2(sourcePath _: String, destinationPath _: String) -> Bool {
-        do {
-            // let fileManager = FileManager.default
+        // do {
+        // let fileManager = FileManager.default
 
-            // // Create destination directory if it doesn't exist
-            // try fileManager.createDirectory(
-            //     atPath: destinationPath,
-            //     withIntermediateDirectories: true,
-            //     attributes: nil
-            // )
+        // // Create destination directory if it doesn't exist
+        // try fileManager.createDirectory(
+        //     atPath: destinationPath,
+        //     withIntermediateDirectories: true,
+        //     attributes: nil
+        // )
 
-            // // Use the Swift TarBz2Extractor with SWCompression
-            // var extractionError: NSError?
-            // let success = TarBz2Extractor.extractTarBz2From(
-            //     sourcePath,
-            //     to: destinationPath,
-            //     error: &extractionError
-            // )
+        // // Use the Swift TarBz2Extractor with SWCompression
+        // var extractionError: NSError?
+        // let success = TarBz2Extractor.extractTarBz2From(
+        //     sourcePath,
+        //     to: destinationPath,
+        //     error: &extractionError
+        // )
 
-            // if !success || extractionError != nil {
-            //     print(
-            //         "EXTRACTION_ERROR: \(extractionError?.localizedDescription ?? "Failed to extract tar.bz2")"
-            //     )
-            //     return false
-            // }
+        // if !success || extractionError != nil {
+        //     print(
+        //         "EXTRACTION_ERROR: \(extractionError?.localizedDescription ?? "Failed to extract tar.bz2")"
+        //     )
+        //     return false
+        // }
 
-            return true
-        } catch {
-            Bridge.log("EXTRACTION_ERROR: \(error.localizedDescription)")
-            return false
-        }
+        return true
+        // } catch {
+        // Bridge.log("EXTRACTION_ERROR: \(error.localizedDescription)")
+        // return false
+        // }
     }
 }

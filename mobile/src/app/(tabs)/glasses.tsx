@@ -1,5 +1,5 @@
-import {ScrollView} from "react-native"
 import {Header, Screen} from "@/components/ignite"
+import {ScrollView} from "react-native"
 import {ConnectDeviceButton, ConnectedGlasses} from "@/components/misc/ConnectedDeviceInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
@@ -9,10 +9,10 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import DeviceSettings from "@/components/glasses/DeviceSettings"
 import {translate} from "@/i18n/translate"
 import {Spacer} from "@/components/misc/Spacer"
-import {glassesFeatures} from "@/config/glassesFeatures"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
 
-export default function Homepage() {
+export default function Glasses() {
   const {theme} = useAppTheme()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
   const {status} = useCoreStatus()
@@ -26,6 +26,9 @@ export default function Homepage() {
     pageTitle = translate("glasses:title")
   }
 
+  let connected = status.glasses_info?.model_name ?? false
+  let features = getCapabilitiesForModel(defaultWearable)
+
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
       <Header leftText={pageTitle} />
@@ -33,13 +36,8 @@ export default function Homepage() {
         style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}
         contentInsetAdjustmentBehavior="automatic">
         <CloudConnection />
-        {defaultWearable && status.glasses_info?.model_name && glassesFeatures[defaultWearable]?.display && (
-          <ConnectedSimulatedGlassesInfo />
-        )}
-        {defaultWearable &&
-          status.glasses_info?.model_name &&
-          glassesFeatures[defaultWearable] &&
-          !glassesFeatures[defaultWearable].display && <ConnectedGlasses showTitle={false} />}
+        {connected && features?.hasDisplay && <ConnectedSimulatedGlassesInfo />}
+        {connected && features?.hasDisplay && <ConnectedGlasses showTitle={false} />}
         <Spacer height={theme.spacing.lg} />
         <ConnectDeviceButton />
         <DeviceSettings />
