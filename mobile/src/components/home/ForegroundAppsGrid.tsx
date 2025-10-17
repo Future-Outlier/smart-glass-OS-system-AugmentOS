@@ -4,12 +4,12 @@ import {View, FlatList, TouchableOpacity, ViewStyle, TextStyle} from "react-nati
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
-import {ClientAppletInterface} from "@/types/AppletTypes"
+import {ClientAppletInterface, DUMMY_APPLET} from "@/types/AppletTypes"
 import {useAppTheme} from "@/utils/useAppTheme"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import {ThemedStyle} from "@/theme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useActiveForegroundApp, useInactiveForegroundApps, useStartApplet, useStopApplet} from "@/stores/applets"
+import {useActiveForegroundApp, useInactiveForegroundApps, useStartApplet} from "@/stores/applets"
 
 const GRID_COLUMNS = 4
 
@@ -23,7 +23,6 @@ export const ForegroundAppsGrid: React.FC = () => {
   const {push} = useNavigationHistory()
   const foregroundApps = useInactiveForegroundApps()
   const activeForegroundApp = useActiveForegroundApp()
-  const stopApplet = useStopApplet()
   const startApplet = useStartApplet()
 
   // const {optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
@@ -187,13 +186,7 @@ export const ForegroundAppsGrid: React.FC = () => {
     // Add empty placeholders to align items to the left
     const paddedApps = [...appsWithGetMore]
     for (let i = 0; i < emptySlots; i++) {
-      paddedApps.push({
-        packageName: `empty-${i}`,
-        name: "",
-        type: "standard",
-        logoUrl: "",
-        permissions: [],
-      } as GridItem)
+      paddedApps.push(DUMMY_APPLET)
     }
 
     return paddedApps

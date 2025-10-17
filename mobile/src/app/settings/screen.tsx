@@ -1,27 +1,25 @@
-import React, {useState, useEffect, useCallback} from "react"
-import {StyleSheet, ScrollView, Platform, ViewStyle, TextStyle} from "react-native"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import bridge from "@/bridge/MantleBridge"
 import {Header, Screen} from "@/components/ignite"
-import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {useFocusEffect} from "expo-router"
 import {Spacer} from "@/components/misc/Spacer"
 import SliderSetting from "@/components/settings/SliderSetting"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useSettings, useSettingsStore, SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {useAppTheme} from "@/utils/useAppTheme"
+import CoreModule from "core"
+import {useFocusEffect} from "expo-router"
+import {useCallback} from "react"
+import {ScrollView} from "react-native"
 
 export default function ScreenSettingsScreen() {
-  const {theme, themed} = useAppTheme()
-  const {goBack, push} = useNavigationHistory()
+  const {theme} = useAppTheme()
+  const {goBack} = useNavigationHistory()
   const [dashboardDepth, setDashboardDepth] = useSetting(SETTINGS_KEYS.dashboard_depth)
   const [dashboardHeight, setDashboardHeight] = useSetting(SETTINGS_KEYS.dashboard_height)
 
   useFocusEffect(
     useCallback(() => {
-      bridge.toggleUpdatingScreen(true)
+      CoreModule.updateSettings({updating_screen: true})
       return () => {
-        bridge.toggleUpdatingScreen(false)
+        CoreModule.updateSettings({updating_screen: false})
       }
     }, []),
   )
@@ -64,68 +62,3 @@ export default function ScreenSettingsScreen() {
     </Screen>
   )
 }
-
-const $container: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.background,
-})
-
-const $label: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.text,
-  fontSize: 16,
-  flexWrap: "wrap",
-})
-
-const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  titleContainer: {
-    marginBottom: 10,
-    marginHorizontal: -20,
-    marginTop: -20,
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-  // Removed hardcoded theme colors - using dynamic styling
-  settingItem: {
-    alignItems: "center",
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 20,
-    // borderBottomColor moved to dynamic styling
-  },
-  settingTextContainer: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  value: {
-    flexWrap: "wrap",
-    fontSize: 12,
-    marginTop: 5,
-  },
-  disabledItem: {
-    opacity: 0.4,
-  },
-  slider: {
-    height: 40,
-    width: "100%",
-  },
-  thumbTouchSize: {
-    height: 40,
-    width: 40,
-  },
-  trackStyle: {
-    height: 5,
-  },
-  thumbStyle: {
-    height: 20,
-    width: 20,
-  },
-  // Removed hardcoded slider colors - using dynamic styling
-  // minimumTrackTintColor, maximumTrackTintColor, thumbTintColor moved to inline props
-})

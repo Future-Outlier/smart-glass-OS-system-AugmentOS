@@ -163,7 +163,7 @@ export const CompactDeviceStatus: React.FC = () => {
       <View style={themed($statusContainer)}>
         <View style={themed($statusRow)}>
           <Icon icon="battery" size={16} color={theme.colors.textDim} />
-          <Text style={themed($statusText)} numberOfLines={1}>
+          <Text style={[themed($statusText), {height: 22}]} numberOfLines={1}>
             {batteryLevel !== -1 ? `${batteryLevel}%` : <ActivityIndicator size="small" color={theme.colors.text} />}
           </Text>
         </View>
@@ -235,13 +235,11 @@ const $statusContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   minWidth: 100,
   justifyContent: "center",
   gap: spacing.xs,
-  border: "1px solid #ccc",
   borderColor: colors.border,
   borderWidth: spacing.xxxs,
   padding: spacing.md,
   backgroundColor: colors.background,
   borderRadius: spacing.lg,
-  // alignSelf: "stretch",
 })
 
 const $statusRow: ThemedStyle<ViewStyle> = ({spacing}) => ({

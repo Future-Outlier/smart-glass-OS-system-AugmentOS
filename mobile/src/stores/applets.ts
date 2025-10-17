@@ -1,6 +1,6 @@
 import {translate} from "@/i18n"
 import restComms from "@/managers/RestComms"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {getThemeIsDark} from "@/theme/getTheme"
 import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
@@ -234,6 +234,10 @@ export const useRefreshApplets = () => useAppletStatusStore(state => state.refre
 export const useStopAllApplets = () => useAppletStatusStore(state => state.stopAllApps)
 export const useInactiveForegroundApps = () => {
   const apps = useApplets()
+  const [isOffline] = useSetting(SETTINGS_KEYS.offline_mode)
+  if (isOffline) {
+    return useMemo(() => apps.filter(app => app.type === "standard" && !app.running && app.isOffline), [apps])
+  }
   return useMemo(() => apps.filter(app => (app.type === "standard" || !app.type) && !app.running), [apps])
 }
 export const useBackgroundApps = () => {

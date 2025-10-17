@@ -1377,6 +1377,12 @@ struct ViewState {
             updateGlassesDepth(newDashboardDepth)
         }
 
+        if let newUpdatingScreen = settings["updating_screen"] as? Bool,
+           newUpdatingScreen != updatingScreen
+        {
+            updateUpdatingScreen(newUpdatingScreen)
+        }
+
         if let newAutoBrightness = settings["auto_brightness"] as? Bool,
            newAutoBrightness != autoBrightness
         {

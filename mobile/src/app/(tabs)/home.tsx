@@ -1,19 +1,15 @@
-import {CompactDeviceStatus} from "@/components/home/CompactDeviceStatus"
 import {HomeContainer} from "@/components/home/HomeContainer"
-import PermissionsWarning from "@/components/home/PermissionsWarning"
-import {Header, Screen} from "@/components/ignite"
-import {AppsOfflineList} from "@/components/misc/AppsOfflineList"
-import CloudConnection from "@/components/misc/CloudConnection"
-import Divider from "@/components/misc/Divider"
-import NonProdWarning from "@/components/misc/NonProdWarning"
 import {OfflineModeButton} from "@/components/home/OfflineModeButton"
 import {OnboardingSpotlight} from "@/components/home/OnboardingSpotlight"
+import PermissionsWarning from "@/components/home/PermissionsWarning"
+import {Header, Screen} from "@/components/ignite"
+import CloudConnection from "@/components/misc/CloudConnection"
+import NonProdWarning from "@/components/misc/NonProdWarning"
 import SensingDisabledWarning from "@/components/misc/SensingDisabledWarning"
 import {OtaUpdateChecker} from "@/components/utils/OtaUpdateChecker"
 import {Reconnect} from "@/components/utils/Reconnect"
 import {translate} from "@/i18n"
 import {useRefreshApplets} from "@/stores/applets"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useFocusEffect} from "@react-navigation/native"
@@ -26,7 +22,6 @@ export default function Homepage() {
   const liveCaptionsRef = useRef<any>(null)
   const connectButtonRef = useRef<any>(null)
   const {themed, theme} = useAppTheme()
-  const [isOfflineMode, _setIsOfflineMode] = useSetting(SETTINGS_KEYS.offline_mode)
   const refreshApplets = useRefreshApplets()
 
   useFocusEffect(
@@ -52,16 +47,7 @@ export default function Homepage() {
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
         <CloudConnection />
         <SensingDisabledWarning />
-
-        {isOfflineMode ? (
-          <>
-            <CompactDeviceStatus />
-            <Divider variant="full" />
-            <AppsOfflineList />
-          </>
-        ) : (
-          <HomeContainer />
-        )}
+        <HomeContainer />
       </ScrollView>
 
       <OnboardingSpotlight
