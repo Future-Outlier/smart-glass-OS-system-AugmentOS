@@ -4,17 +4,20 @@ import mongoose from "mongoose";
 
 dotenv.config();
 const MONGO_URL: string | undefined = process.env.MONGO_URL;
-// const NODE_ENV: string | undefined = process.env.NODE_ENV;
-// const IS_PROD = NODE_ENV === 'production';
+const DEPLOYMENT_REGION: string | undefined = process.env.DEPLOYMENT_REGION;
+const IS_CHINA = DEPLOYMENT_REGION === "china";
 
 // Connect to mongo db.
 export async function init(): Promise<void> {
   if (!MONGO_URL) throw "MONGO_URL is undefined";
   try {
     mongoose.set("strictQuery", false);
-    // const database = IS_PROD ? 'prod' : 'dev';
+    let modifiedUrl = MONGO_URL + "/prod";
+    if (IS_CHINA) {
+      modifiedUrl += "?ssl=false";
+    }
 
-    await mongoose.connect(MONGO_URL);
+    await mongoose.connect(modifiedUrl);
     // After connection
     await mongoose.connection.db.collection("test").insertOne({ test: true });
 
