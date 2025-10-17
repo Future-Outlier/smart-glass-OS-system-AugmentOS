@@ -24,29 +24,34 @@ export interface LedControlOptions {
   offtime?: number;
   /** Number of on/off cycles */
   count?: number;
+  /** LED ID to control (e.g., "privacy", "user_feedback") */
+  ledId?: string;
+  /** LED purpose to control (e.g., "privacy", "user_feedback") */
+  purpose?: "privacy" | "user_feedback" | "general";
 }
 
 /**
  * 💡 LED Control Module Implementation
  *
- * Provides methods for controlling RGB LEDs on smart glasses.
- * Supports low-level on/off control and higher-level pattern methods.
+ * Provides methods for controlling LEDs on smart glasses.
+ * Supports different LED types (privacy, user feedback, recording indicator) and
+ * both low-level on/off control and higher-level pattern methods.
  *
  * @example
  * ```typescript
- * // Turn on red LED for 1 second
+ * // Control privacy LED (front-facing white light)
+ * await session.led.privacy({ color: 'white', ontime: 5000 });
+ *
+ * // Control user feedback LED (user-facing RGB)
+ * await session.led.userFeedback({ color: 'green', ontime: 2000 });
+ *
+ * // General LED control
  * await session.led.turnOn({ color: 'red', ontime: 1000, count: 1 });
  *
  * // Blink green LED
  * await session.led.blink('green', 500, 500, 5);
  *
- * // Pulse blue LED
- * await session.led.pulse('blue', 2000);
- *
- * // Solid white LED for 5 seconds
- * await session.led.solid('white', 5000);
- *
- * // Turn off LEDs
+ * // Turn off all LEDs
  * await session.led.turnOff();
  * ```
  */
@@ -172,6 +177,78 @@ export class LedModule {
       this.logger.error({ error }, "❌ Error in LED turnOff request");
       throw error;
     }
+  }
+
+  // =====================================
+  // 💡 Purpose-Specific LED Control
+  // =====================================
+
+  /**
+   * 💡 Control privacy LED (front-facing white light for recording indication)
+   *
+   * @param options - LED control options
+   * @returns Promise that resolves immediately after sending the command
+   *
+   * @example
+   * ```typescript
+   * // Turn on privacy LED for recording
+   * await session.led.privacy({ color: 'white', ontime: 5000 });
+   *
+   * // Blink privacy LED
+   * await session.led.privacy({ color: 'white', ontime: 500, offtime: 500, count: 3 });
+   * ```
+   */
+  async privacy(options: LedControlOptions = {}): Promise<void> {
+    return this.turnOn({
+      ...options,
+      purpose: "privacy",
+      color: options.color || "white", // Privacy LED is typically white
+    });
+  }
+
+  /**
+   * 💡 Control user feedback LED (user-facing RGB LED for notifications)
+   *
+   * @param options - LED control options
+   * @returns Promise that resolves immediately after sending the command
+   *
+   * @example
+   * ```typescript
+   * // Green notification
+   * await session.led.userFeedback({ color: 'green', ontime: 2000 });
+   *
+   * // Red error indication
+   * await session.led.userFeedback({ color: 'red', ontime: 1000, count: 3 });
+   * ```
+   */
+  async userFeedback(options: LedControlOptions = {}): Promise<void> {
+    return this.turnOn({
+      ...options,
+      purpose: "user_feedback",
+    });
+  }
+
+  /**
+   * 💡 Get available LED capabilities
+   *
+   * @returns Array of available LED configurations
+   *
+   * @example
+   * ```typescript
+   * const capabilities = session.led.getCapabilities();
+   * console.log('Available LEDs:', capabilities);
+   * ```
+   */
+  getCapabilities(): Array<{
+    id: string;
+    purpose: string;
+    isFullColor: boolean;
+    color?: string;
+    position?: string;
+  }> {
+    // This would need to be implemented with access to session capabilities
+    // For now, return empty array - this would be populated from session.capabilities
+    return [];
   }
 
   // =====================================
