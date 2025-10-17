@@ -51,7 +51,7 @@ struct ViewState {
     private var pendingWearable: String = ""
     private var deviceName: String = ""
     var deviceAddress: String = ""
-    private var isUpdatingScreen: Bool = false
+    private var updatingScreen: Bool = false
     private var isSearching: Bool = false
     private var onboardMicUnavailable: Bool = false
     private var currentRequiredData: [SpeechRequiredDataType] = []
@@ -504,9 +504,9 @@ struct ViewState {
         Bridge.log("Mentra: Toggling updating screen: \(enabled)")
         if enabled {
             sgc?.exit()
-            isUpdatingScreen = true
+            updatingScreen = true
         } else {
-            isUpdatingScreen = false
+            updatingScreen = false
         }
     }
 
@@ -632,7 +632,7 @@ struct ViewState {
     }
 
     func sendCurrentState(_ isDashboard: Bool) {
-        if isUpdatingScreen {
+        if updatingScreen {
             return
         }
 
