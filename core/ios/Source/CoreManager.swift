@@ -1210,11 +1210,9 @@ struct ViewState {
 
     func handle_disconnect() {
         sendText(" ") // clear the screen
-        Task {
-            sgc?.disconnect()
-            self.isSearching = false
-            handle_request_status()
-        }
+        sgc?.disconnect()
+        isSearching = false
+        handle_request_status()
     }
 
     func handle_forget() {
@@ -1473,6 +1471,12 @@ struct ViewState {
         {
             defaultWearable = newDefaultWearable
             Bridge.saveSetting("default_wearable", newDefaultWearable)
+        }
+
+        if let newDeviceName = settings["device_name"] as? String,
+           newDeviceName != deviceName
+        {
+            deviceName = newDeviceName
         }
 
         if let newDeviceAddress = settings["device_address"] as? String,

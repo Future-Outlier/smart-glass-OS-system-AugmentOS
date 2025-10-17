@@ -24,7 +24,7 @@ class Simulated: SGCManager {
     // MARK: - Hardware Status
 
     var hasMic: Bool = false
-    var batteryLevel: Int = -1
+    var batteryLevel: Int = 100
     var isHeadUp: Bool = false
 
     // MARK: - Case Status

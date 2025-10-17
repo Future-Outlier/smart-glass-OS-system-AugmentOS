@@ -4,7 +4,6 @@ import {ActivityIndicator, Image, ImageStyle, TextStyle, TouchableOpacity, View,
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
 import {Button, Icon} from "@/components/ignite"
-import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
@@ -210,15 +209,19 @@ export const CompactDeviceStatus: React.FC = () => {
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  alignItems: "center",
-  paddingVertical: spacing.sm,
+  paddingVertical: spacing.md,
   gap: spacing.sm,
 })
 
-const $imageContainer: ThemedStyle<ViewStyle> = () => ({
+const $imageContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   flex: 2,
   alignItems: "center",
   justifyContent: "center",
+  borderWidth: spacing.xxxs,
+  borderColor: colors.border,
+  borderRadius: spacing.lg,
+  backgroundColor: colors.background,
+  alignSelf: "stretch",
 })
 
 const $glassesImage: ThemedStyle<ImageStyle> = () => ({
@@ -229,6 +232,7 @@ const $glassesImage: ThemedStyle<ImageStyle> = () => ({
 
 const $statusContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   flex: 1,
+  minWidth: 100,
   justifyContent: "center",
   gap: spacing.xs,
   border: "1px solid #ccc",
@@ -237,6 +241,7 @@ const $statusContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   padding: spacing.md,
   backgroundColor: colors.background,
   borderRadius: spacing.lg,
+  // alignSelf: "stretch",
 })
 
 const $statusRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -260,13 +265,19 @@ const $disconnectedContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   gap: spacing.xs,
 })
 
-const $disconnectedImageContainer: ThemedStyle<ViewStyle> = () => ({
+const $disconnectedImageContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   width: "100%",
   alignItems: "center",
+  borderColor: colors.border,
+  borderWidth: spacing.xxxs,
+  padding: spacing.sm,
+  backgroundColor: colors.background,
+  borderRadius: spacing.lg,
+  marginBottom: spacing.sm,
 })
 
 const $disconnectedGlassesImage: ThemedStyle<ImageStyle> = () => ({
-  width: "80%",
-  height: 160,
+  // width: "80%",
+  height: 100,
   resizeMode: "contain",
 })

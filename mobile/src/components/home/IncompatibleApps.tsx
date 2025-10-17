@@ -121,7 +121,7 @@ const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 16,
   fontWeight: "600",
-  color: colors.text,
+  color: colors.textDim,
   flex: 1,
 })
 
