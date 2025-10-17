@@ -480,6 +480,8 @@ struct ViewState {
     func updateOfflineMode(_ enabled: Bool) {
         offlineMode = enabled
 
+        Bridge.log("updating offline mode \(enabled)")
+
         var requiredData: [SpeechRequiredDataType] = []
 
         if enabled {
@@ -1381,7 +1383,7 @@ struct ViewState {
             updateGlassesBrightness(brightness, autoBrightness: newAutoBrightness)
         }
 
-        if let sensingEnabled = settings["sensing"] as? Bool,
+        if let sensingEnabled = settings["sensing_enabled"] as? Bool,
            sensingEnabled != self.sensingEnabled
         {
             updateSensing(sensingEnabled)
@@ -1411,7 +1413,7 @@ struct ViewState {
             updateEnforceLocalTranscription(newEnforceLocalTranscription)
         }
 
-        if let newOfflineMode = settings["offline_captions_app_running"] as? Bool,
+        if let newOfflineMode = settings["offline_captions_running"] as? Bool,
            newOfflineMode != offlineMode
         {
             updateOfflineMode(newOfflineMode)

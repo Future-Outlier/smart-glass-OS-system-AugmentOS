@@ -1087,7 +1087,7 @@ class G1: NSObject, SGCManager {
 
         let side = peripheral == leftPeripheral ? "L" : "R"
         let s = peripheral == leftPeripheral ? "L" : "R"
-        Bridge.log("G1: RECV (\(s)) \(data.hexEncodedString())")
+        // Bridge.log("G1: RECV (\(s)) \(data.hexEncodedString())")
 
         switch Commands(rawValue: command) {
         case .BLE_REQ_INIT:
@@ -2216,6 +2216,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
             guard let self = self else {
                 return
             }
+            self.reconnectionTimer?.invalidate()
             self.reconnectionTimer = Timer.scheduledTimer(
                 timeInterval: self.reconnectionInterval,
                 target: self,

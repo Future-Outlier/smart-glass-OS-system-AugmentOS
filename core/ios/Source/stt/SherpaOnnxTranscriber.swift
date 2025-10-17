@@ -71,7 +71,6 @@ class SherpaOnnxTranscriber {
      * Loads models and configuration, sets up processing thread.
      */
     func initialize() {
-        return
         do {
             var tokensPath: String
             var modelType = "unknown"
@@ -266,7 +265,6 @@ class SherpaOnnxTranscriber {
      */
     private func runLoop() {
         Bridge.log("🔄 Sherpa-ONNX processing loop started")
-        return
 
         while isRunning {
             // Pull data from queue
@@ -288,39 +286,43 @@ class SherpaOnnxTranscriber {
                     continue
                 }
 
-                // Convert PCM to float [-1.0, 1.0]
-                let floatBuf = toFloatArray(from: data)
+                do {
+                    // Convert PCM to float [-1.0, 1.0]
+                    let floatBuf = toFloatArray(from: data)
 
-                // Pass audio data to the Sherpa-ONNX stream
-                recognizer.acceptWaveform(samples: floatBuf, sampleRate: Self.SAMPLE_RATE)
+                    // Pass audio data to the Sherpa-ONNX stream
+                    recognizer.acceptWaveform(samples: floatBuf, sampleRate: Self.SAMPLE_RATE)
 
-                // Decode continuously while model is ready
-                var decodeCount = 0
-                while recognizer.isReady() {
-                    recognizer.decode()
-                    decodeCount += 1
-                }
-
-                // If utterance endpoint detected
-                if recognizer.isEndpoint() {
-                    let result = recognizer.getResult()
-                    let finalText = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-                    if !finalText.isEmpty {
-                        handleTranscriptionResult(text: finalText, isFinal: true)
+                    // Decode continuously while model is ready
+                    var decodeCount = 0
+                    while recognizer.isReady() {
+                        recognizer.decode()
+                        decodeCount += 1
                     }
 
-                    recognizer.reset() // Start new utterance
-                    lastPartialResult = ""
-                } else {
-                    // Emit partial results if changed
-                    let result = recognizer.getResult()
-                    let partial = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    // If utterance endpoint detected
+                    if recognizer.isEndpoint() {
+                        let result = recognizer.getResult()
+                        let finalText = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
 
-                    if partial != lastPartialResult, !partial.isEmpty {
-                        handleTranscriptionResult(text: partial, isFinal: false)
-                        lastPartialResult = partial
+                        if !finalText.isEmpty {
+                            handleTranscriptionResult(text: finalText, isFinal: true)
+                        }
+
+                        recognizer.reset() // Start new utterance
+                        lastPartialResult = ""
+                    } else {
+                        // Emit partial results if changed
+                        let result = recognizer.getResult()
+                        let partial = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                        if partial != lastPartialResult, !partial.isEmpty {
+                            handleTranscriptionResult(text: partial, isFinal: false)
+                            lastPartialResult = partial
+                        }
                     }
+                } catch {
+                    Bridge.log("❌ Error processing audio: \(error.localizedDescription)")
                 }
             } else {
                 // Sleep briefly to avoid tight CPU loop if no audio is available

@@ -68,19 +68,6 @@ export const ActiveForegroundApp: React.FC = () => {
 
     if (activeForegroundApp) {
       stopApplet(activeForegroundApp.packageName)
-
-      // Skip offline apps - they don't need server communication
-      if (activeForegroundApp.isOffline) {
-        console.log("Skipping offline app stop in ActiveForegroundApp:", activeForegroundApp.packageName)
-        return
-      }
-
-      try {
-        await restComms.stopApp(activeForegroundApp.packageName)
-      } catch (error) {
-        refreshApplets()
-        console.error("Stop app error:", error)
-      }
     }
   }
 

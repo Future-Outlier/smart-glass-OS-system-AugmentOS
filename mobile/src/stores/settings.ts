@@ -54,8 +54,8 @@ export const SETTINGS_KEYS = {
   time_zone_override: "time_zone_override",
   // offline applets
   offline_mode: "offline_mode",
+  offline_captions_running: "offline_captions_running",
   // offline_camera_running: "offline_camera_running",
-  // offline_captions_running: "offline_captions_running",
   // Button action settings
   default_button_action_enabled: "default_button_action_enabled",
   default_button_action_app: "default_button_action_app",
@@ -86,7 +86,6 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.dev_mode]: false,
   [SETTINGS_KEYS.new_ui]: true,
   [SETTINGS_KEYS.enable_squircles]: false,
-  [SETTINGS_KEYS.offline_mode]: false,
   [SETTINGS_KEYS.sensing_enabled]: true,
   [SETTINGS_KEYS.power_saving_mode]: false,
   [SETTINGS_KEYS.always_on_status_bar]: false,
@@ -113,8 +112,9 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   // time zone settings
   [SETTINGS_KEYS.time_zone]: "",
   [SETTINGS_KEYS.time_zone_override]: "",
-  // // offline applets
-  // [SETTINGS_KEYS.offline_captions_running]: false,
+  // offline applets
+  [SETTINGS_KEYS.offline_mode]: false,
+  [SETTINGS_KEYS.offline_captions_running]: false,
   // [SETTINGS_KEYS.offline_camera_running]: false,
   // button action settings
   [SETTINGS_KEYS.default_button_action_enabled]: true,
@@ -148,8 +148,8 @@ const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.button_press_mode,
   SETTINGS_KEYS.button_photo_size,
   SETTINGS_KEYS.button_max_recording_time,
-  // // offline applets:
-  // SETTINGS_KEYS.offline_captions_running,
+  // offline applets:
+  SETTINGS_KEYS.offline_captions_running,
   // SETTINGS_KEYS.offline_camera_running,
   // notifications:
   SETTINGS_KEYS.notifications_enabled,
