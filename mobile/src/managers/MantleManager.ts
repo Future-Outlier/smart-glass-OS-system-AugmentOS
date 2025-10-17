@@ -61,11 +61,11 @@ class MantleManager {
     await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
 
     setTimeout(async () => {
-      await CoreModule.sendConnectDefault()
+      await CoreModule.connectDefault()
     }, 3000)
 
     // send initial status request:
-    await CoreModule.sendRequestStatus()
+    await CoreModule.requestStatus()
 
     this.setupPeriodicTasks()
   }

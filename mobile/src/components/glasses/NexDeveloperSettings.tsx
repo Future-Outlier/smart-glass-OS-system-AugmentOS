@@ -377,7 +377,7 @@ export default function NexDeveloperSettings() {
 
   const onClearDisplayClick = async () => {
     if (status.glasses_info?.model_name) {
-      await CoreModule.sendClearDisplay()
+      await CoreModule.clearDisplay()
     } else {
       showAlert("Please connect to the device", "Please connect to the device", [
         {

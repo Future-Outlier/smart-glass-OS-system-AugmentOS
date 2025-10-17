@@ -48,7 +48,7 @@ export const ConnectDeviceButton = () => {
         return
       }
 
-      await CoreModule.sendConnectDefault()
+      await CoreModule.connectDefault()
     } catch (err) {
       console.error("connect to glasses error:", err)
       showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])

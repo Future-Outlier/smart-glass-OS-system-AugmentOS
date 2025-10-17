@@ -228,7 +228,7 @@ export default function SelectGlassesBluetoothScreen() {
 
     // All permissions granted, proceed with connecting to the wearable
     setTimeout(() => {
-      CoreModule.sendConnectByName(deviceName)
+      CoreModule.connectByName(deviceName)
     }, 2000)
     push("/pairing/loading", {glassesModelName: glassesModelName})
   }
