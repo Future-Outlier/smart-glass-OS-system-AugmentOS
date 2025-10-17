@@ -3,10 +3,10 @@ package com.mentra.core
 import com.mentra.core.services.NotificationListener
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
-import org.json.JSONObject
 
 class CoreModule : Module() {
     private val bridge: Bridge by lazy { Bridge.getInstance() }
+    private var coreManager: CoreManager? = null
 
     override fun definition() = ModuleDefinition {
         Name("Core")
@@ -21,9 +21,10 @@ class CoreModule : Module() {
                             ?: appContext.currentActivity
                                     ?: throw IllegalStateException("No context available")
             ) { eventName, data -> sendEvent(eventName, data) }
+
+            // initialize CoreManager after Bridge is ready
+            coreManager = CoreManager.getInstance()
         }
-        
-        val coreManager = CoreManager.getInstance()
 
         // MARK: - Display Commands
 
@@ -37,39 +38,27 @@ class CoreModule : Module() {
 
         // MARK: - Connection Commands
 
-        AsyncFunction("requestStatus") {
-            coreManager?.handle_request_status()
-        }
+        AsyncFunction("requestStatus") { coreManager?.handle_request_status() }
 
-        AsyncFunction("connectDefault") {
-            coreManager?.handle_connect_default()
-        }
+        AsyncFunction("connectDefault") { coreManager?.handle_connect_default() }
 
         AsyncFunction("connectByName") { deviceName: String ->
             coreManager?.handle_connect_by_name(deviceName)
         }
 
-        AsyncFunction("disconnect") {
-            coreManager?.handle_disconnect()
-        }
+        AsyncFunction("disconnect") { coreManager?.handle_disconnect() }
 
-        AsyncFunction("forget") {
-            coreManager?.handle_forget()
-        }
+        AsyncFunction("forget") { coreManager?.handle_forget() }
 
         AsyncFunction("findCompatibleDevices") { modelName: String ->
             coreManager?.handle_find_compatible_devices(modelName)
         }
 
-        AsyncFunction("showDashboard") {
-            coreManager?.handle_show_dashboard()
-        }
+        AsyncFunction("showDashboard") { coreManager?.handle_show_dashboard() }
 
         // MARK: - WiFi Commands
 
-        AsyncFunction("requestWifiScan") {
-            coreManager?.handle_request_wifi_scan()
-        }
+        AsyncFunction("requestWifiScan") { coreManager?.handle_request_wifi_scan() }
 
         AsyncFunction("sendWifiCredentials") { ssid: String, password: String ->
             coreManager?.handle_send_wifi_credentials(ssid, password)
@@ -81,23 +70,22 @@ class CoreModule : Module() {
 
         // MARK: - Gallery Commands
 
-        AsyncFunction("queryGalleryStatus") {
-            coreManager?.handle_query_gallery_status()
-        }
+        AsyncFunction("queryGalleryStatus") { coreManager?.handle_query_gallery_status() }
 
-        AsyncFunction("photoRequest") { requestId: String, appId: String, size: String, webhookUrl: String, authToken: String ->
+        AsyncFunction("photoRequest") {
+                requestId: String,
+                appId: String,
+                size: String,
+                webhookUrl: String,
+                authToken: String ->
             coreManager?.handle_photo_request(requestId, appId, size, webhookUrl, authToken)
         }
 
         // MARK: - Video Recording Commands
 
-        AsyncFunction("startBufferRecording") {
-            coreManager?.handle_start_buffer_recording()
-        }
+        AsyncFunction("startBufferRecording") { coreManager?.handle_start_buffer_recording() }
 
-        AsyncFunction("stopBufferRecording") {
-            coreManager?.handle_stop_buffer_recording()
-        }
+        AsyncFunction("stopBufferRecording") { coreManager?.handle_stop_buffer_recording() }
 
         AsyncFunction("saveBufferVideo") { requestId: String, durationSeconds: Int ->
             coreManager?.handle_save_buffer_video(requestId, durationSeconds)
@@ -127,18 +115,26 @@ class CoreModule : Module() {
 
         // MARK: - Microphone Commands
 
-        AsyncFunction("microphoneStateChange") { requiredDataStrings: List<String>, bypassVad: Boolean ->
+        AsyncFunction("microphoneStateChange") {
+                requiredDataStrings: List<String>,
+                bypassVad: Boolean ->
             coreManager?.handle_microphone_state_change(requiredDataStrings, bypassVad)
         }
 
-        AsyncFunction("restartTranscriber") {
-            coreManager?.restartTranscriber()
-        }
+        AsyncFunction("restartTranscriber") { coreManager?.restartTranscriber() }
 
         // MARK: - RGB LED Control
 
-        AsyncFunction("rgbLedControl") { requestId: String, packageName: String?, action: String, color: String?, ontime: Int, offtime: Int, count: Int ->
-            // CoreManager.getInstance()?.handle_rgb_led_control(requestId, packageName, action, color, ontime, offtime, count)
+        AsyncFunction("rgbLedControl") {
+                requestId: String,
+                packageName: String?,
+                action: String,
+                color: String?,
+                ontime: Int,
+                offtime: Int,
+                count: Int ->
+            // CoreManager.getInstance()?.handle_rgb_led_control(requestId, packageName, action,
+            // color, ontime, offtime, count)
         }
 
         // MARK: - Settings Commands
