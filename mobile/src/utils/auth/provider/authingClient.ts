@@ -64,16 +64,16 @@ export class AuthingWrapperClient {
   }
 
   public onAuthStateChange(callback: AuthChangeCallback): MentraAuthStateChangeSubscriptionResponse {
-    const handler = (event: string, session: Session) => {
+    const handler = (event: string, session: MentraAuthSession) => {
       callback(event as AuthChangeEvent, session)
     }
 
-    this.eventEmitter.on("SIGNED_IN", (session: Session) => handler("SIGNED_IN", session))
-    this.eventEmitter.on("SIGNED_OUT", (session: Session) => handler("SIGNED_OUT", session))
-    this.eventEmitter.on("TOKEN_REFRESHED", (session: Session) => handler("TOKEN_REFRESHED", session))
-    this.eventEmitter.on("USER_UPDATED", (session: Session) => handler("USER_UPDATED", session))
-    this.eventEmitter.on("USER_DELETED", (session: Session) => handler("USER_DELETED", session))
-    this.eventEmitter.on("PASSWORD_RECOVERY", (session: Session) => handler("PASSWORD_RECOVERY", session))
+    this.eventEmitter.on("SIGNED_IN", (session: MentraAuthSession) => handler("SIGNED_IN", session))
+    this.eventEmitter.on("SIGNED_OUT", (session: MentraAuthSession) => handler("SIGNED_OUT", session))
+    this.eventEmitter.on("TOKEN_REFRESHED", (session: MentraAuthSession) => handler("TOKEN_REFRESHED", session))
+    this.eventEmitter.on("USER_UPDATED", (session: MentraAuthSession) => handler("USER_UPDATED", session))
+    this.eventEmitter.on("USER_DELETED", (session: MentraAuthSession) => handler("USER_DELETED", session))
+    this.eventEmitter.on("PASSWORD_RECOVERY", (session: MentraAuthSession) => handler("PASSWORD_RECOVERY", session))
 
     return {
       data: {

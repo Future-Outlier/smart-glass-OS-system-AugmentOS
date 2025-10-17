@@ -1,4 +1,4 @@
-import type {SupabaseClient} from "@supabase/supabase-js"
+import type {AuthChangeEvent, Session, SupabaseClient} from "@supabase/supabase-js"
 import {supabase as supabaseClient} from "@/supabase/supabaseClient"
 import {
   MentraAuthUserResponse,
@@ -28,17 +28,36 @@ export class SupabaseWrapperClient {
 
   public onAuthStateChange(callback: (event: string, session: any) => void): MentraAuthStateChangeSubscriptionResponse {
     try {
-      const {data} = this.supabase.auth.onAuthStateChange(callback)
+      const wrappedCallback = (event: AuthChangeEvent, session: Session | null) => {
+        const modifiedSession = {
+          token: session?.access_token,
+          user: {
+            id: session?.user.id,
+            email: session?.user.email,
+            name: session?.user.user_metadata.full_name as string,
+            avatarUrl: session?.user.user_metadata?.avatar_url || session?.user.user_metadata?.picture,
+            createdAt: session?.user.created_at,
+            provider: session?.user.user_metadata.provider,
+          },
+        }
+
+        console.log("AuthContext: Modified session:", modifiedSession)
+
+        callback(event, modifiedSession)
+      }
+
+      const {data} = this.supabase.auth.onAuthStateChange(wrappedCallback)
+
       return {
         data,
         error: null,
       }
     } catch (error) {
-      console.error(error)
+      console.error("Error in onAuthStateChange:", error)
       return {
         data: null,
         error: {
-          message: "Something went wrong. Please try again.",
+          message: error instanceof Error ? error.message : "Something went wrong. Please try again.",
         },
       }
     }

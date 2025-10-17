@@ -1,10 +1,11 @@
 import {FC, createContext, useEffect, useState, useContext} from "react"
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"
 
 interface AuthContextProps {
-  user: any // or a more specific type from @supabase/supabase-js
-  session: any
+  user: MentraAuthUser | null
+  session: MentraAuthSession | null
   loading: boolean
   logout: () => void
 }

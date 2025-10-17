@@ -39,8 +39,8 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
     routes: deepLinkRoutes,
     authCheckHandler: async () => {
       // TODO: this is a hack when we should really be using the auth context:
-      const session = await mentraAuthProvider.getSession()
-      if (!session.token) {
+      const {data} = await mentraAuthProvider.getSession()
+      if (!data?.session?.token) {
         return false
       }
       return true
@@ -54,7 +54,12 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
     navObject: {push, replace, goBack, setPendingRoute, getPendingRoute},
   }
 
+  const handleUrlRaw = async ({url}: {url: string}) => {
+    processUrl(url, false)
+  }
+
   useEffect(() => {
+    Linking.addEventListener("url", handleUrlRaw)
     Linking.getInitialURL().then(url => {
       console.log("@@@@@@@@@@@@@ INITIAL URL @@@@@@@@@@@@@@@", url)
       if (url) {

@@ -1,5 +1,6 @@
 import {AppState} from "react-native"
 import {
+  MentraAuthSession,
   MentraAuthSessionResponse,
   MentraAuthStateChangeSubscriptionResponse,
   MentraAuthUserResponse,
@@ -33,7 +34,7 @@ class MentraAuthProvider {
   }
 
   async onAuthStateChange(
-    callback: (event: string, session: any) => void,
+    callback: (event: string, session: MentraAuthSession) => void,
   ): Promise<MentraAuthStateChangeSubscriptionResponse> {
     await this.checkOrSetupClients()
     if (IS_CHINA) {
