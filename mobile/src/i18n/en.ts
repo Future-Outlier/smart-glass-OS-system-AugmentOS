@@ -1,5 +1,6 @@
 const en = {
   deviceSettings: {
+    microphoneSelection: "Microphone Selection",
     glassesNeededForGlassesMic: "Connect glasses to enable",
     systemMic: "System Microphone",
     glassesMic: "Glasses Microphone",

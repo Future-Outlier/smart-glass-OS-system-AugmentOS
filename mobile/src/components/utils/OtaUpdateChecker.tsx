@@ -3,7 +3,7 @@ import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import showAlert from "@/utils/AlertUtils"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
-import {Capabilities} from "@mentra/sdk"
+import {Capabilities} from "@cloud/packages/sdk/src/types"
 
 interface VersionInfo {
   versionCode: number

@@ -48,9 +48,9 @@ export const CompactDeviceStatus: React.FC = () => {
   }
 
   // Show simulated glasses view for simulated glasses
-  if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
-    return <ConnectedSimulatedGlassesInfo />
-  }
+  // if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
+  // return <ConnectedSimulatedGlassesInfo />
+  // }
 
   const connectGlasses = async () => {
     if (!defaultWearable) {

@@ -142,7 +142,7 @@ class Simulated : SGCManager() {
     }
 
     override fun connectById(id: String) {
-        Bridge.log("connectById")
+        CoreManager.getInstance().handleConnectionStateChanged()
     }
 
     override fun getConnectedBluetoothName(): String {

@@ -17,7 +17,7 @@ import {DeviceTypes} from "@/utils/Constants"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
-import {Capabilities} from "@cloud/packages/sdk/dist"
+import {Capabilities} from "@cloud/packages/sdk/src/types"
 import {MaterialCommunityIcons} from "@expo/vector-icons"
 import {useFocusEffect} from "@react-navigation/native"
 import {useCallback, useEffect, useRef, useState} from "react"
@@ -77,8 +77,6 @@ const GlassesIcon = ({size = 24, color, isDark = false}: GlassesIconProps) => {
 
 export default function DeviceSettings() {
   const fadeAnim = useRef(new Animated.Value(0)).current
-  const scaleAnim = useRef(new Animated.Value(0.8)).current
-  const slideAnim = useRef(new Animated.Value(-50)).current
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
   const isGlassesConnected = Boolean(status.glasses_info?.model_name)
@@ -86,7 +84,7 @@ export default function DeviceSettings() {
   const [preferredMic, setPreferredMic] = useSetting(SETTINGS_KEYS.preferred_mic)
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS_KEYS.auto_brightness)
   const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
-  const [showAdvancedSettings, setShowAdvancedSettings] = useSetting(SETTINGS_KEYS.SHOW_ADVANCED_SETTINGS)
+  const [showAdvancedSettings, setShowAdvancedSettings] = useSetting(SETTINGS_KEYS.show_advanced_settings)
   const [_hasLocalPhotos, setHasLocalPhotos] = useState(false)
   const [defaultButtonActionEnabled, setDefaultButtonActionEnabled] = useSetting(
     SETTINGS_KEYS.default_button_action_enabled,
@@ -141,39 +139,11 @@ export default function DeviceSettings() {
 
   useFocusEffect(
     useCallback(() => {
-      // Reset animations to initial values
-      fadeAnim.setValue(0)
-      scaleAnim.setValue(0.8)
-      slideAnim.setValue(-50)
-
       // Check for local photos when component gains focus
       checkLocalPhotos()
-
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 8,
-          tension: 60,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ]).start()
       // Cleanup function
-      return () => {
-        fadeAnim.stopAnimation()
-        scaleAnim.stopAnimation()
-        slideAnim.stopAnimation()
-      }
-    }, [fadeAnim, scaleAnim, slideAnim, checkLocalPhotos]),
+      return () => {}
+    }, [checkLocalPhotos]),
   )
 
   const setMic = async (val: string) => {
@@ -491,7 +461,7 @@ export default function DeviceSettings() {
               {/* Microphone Selector - moved from above */}
               {hasMicrophoneSelector && (
                 <View style={themed($settingsGroup)}>
-                  <Text style={[themed($settingLabel), {marginBottom: theme.spacing.sm}]}>Microphone Selection</Text>
+                  <Text tx="deviceSettings:microphoneSelection" style={[themed($settingLabel), {marginBottom: theme.spacing.sm}]} />
                   <TouchableOpacity
                     style={{
                       flexDirection: "row",
@@ -521,7 +491,7 @@ export default function DeviceSettings() {
                     }}
                     onPress={() => setMic("glasses")}>
                     <View style={{flexDirection: "column", gap: 4}}>
-                      <Text style={{color: theme.colors.text}}>{translate("deviceSettings:glassesMic")}</Text>
+                      <Text tx="deviceSettings:glassesMic" style={{color: theme.colors.text}} />
                     </View>
                     {preferredMic === "glasses" && (
                       <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
@@ -554,15 +524,15 @@ export default function DeviceSettings() {
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = () => ({
+const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   borderRadius: 12,
   width: "100%",
   minHeight: 240,
   justifyContent: "center",
-  marginTop: -13, // Reduced space above component
+  // marginTop: -13, // Reduced space above component
   // backgroundColor: colors.palette.neutral200,
   backgroundColor: "transparent",
-  gap: 16,
+  gap: spacing.md,
 })
 
 const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
