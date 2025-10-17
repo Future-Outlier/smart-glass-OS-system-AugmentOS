@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react"
+import {useEffect, useRef, useState} from "react"
 import {View, ViewStyle, TextStyle} from "react-native"
 import LinearGradient from "react-native-linear-gradient"
 import Icon from "react-native-vector-icons/FontAwesome"
@@ -12,7 +12,7 @@ import {translate} from "@/i18n"
 
 export default function CloudConnection() {
   const connectionStatus = useConnectionStore(state => state.status)
-  const {theme, themed} = useAppTheme()
+  const {themed} = useAppTheme()
   const cloudConnectionStatusAnim = useSharedValue(1)
   const [hideCloudConnection, setHideCloudConnection] = useState(true)
 
@@ -134,9 +134,9 @@ export default function CloudConnection() {
   )
 }
 
-const $animatedContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $animatedContainer: ThemedStyle<ViewStyle> = () => ({
   zIndex: 999,
-  marginTop: -56,
+  // marginTop: -56,
   marginBottom: 8,
 })
 
