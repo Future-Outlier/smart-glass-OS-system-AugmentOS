@@ -311,6 +311,17 @@ export class AuthingWrapperClient {
     }
   }
 
+  public async startAutoRefresh(): Promise<void> {
+    this.setupTokenRefresh()
+  }
+
+  public async stopAutoRefresh(): Promise<void> {
+    if (this.refreshTimeout) {
+      clearTimeout(this.refreshTimeout)
+      this.refreshTimeout = null
+    }
+  }
+
   private async getCurrentUser(): Promise<User | null> {
     try {
       return await this.authing.getCurrentUser()
@@ -336,7 +347,3 @@ export class AuthingWrapperClient {
 }
 
 export const authingClient = AuthingWrapperClient.getInstance()
-
-// TODO:
-// Once we close the app the refresh thing would also turn off
-// Fix that

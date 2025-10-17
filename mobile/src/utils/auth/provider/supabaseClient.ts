@@ -124,6 +124,14 @@ export class SupabaseWrapperClient {
     }
   }
 
+  public async startAutoRefresh(): Promise<void> {
+    return this.supabase.auth.startAutoRefresh()
+  }
+
+  public async stopAutoRefresh(): Promise<void> {
+    return this.supabase.auth.stopAutoRefresh()
+  }
+
   public async signOut(): Promise<MentraSignOutResponse> {
     const {error} = await this.supabase.auth.signOut()
     return {error}

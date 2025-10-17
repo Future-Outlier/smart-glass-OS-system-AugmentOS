@@ -1,3 +1,4 @@
+import {AppState} from "react-native"
 import {
   MentraAuthSessionResponse,
   MentraAuthStateChangeSubscriptionResponse,
@@ -120,6 +121,24 @@ class MentraAuthProvider {
     }
   }
 
+  async startAutoRefresh(): Promise<void> {
+    await this.checkOrSetupClients()
+    if (IS_CHINA) {
+      return this.authing!.startAutoRefresh()
+    } else {
+      return this.supabase!.startAutoRefresh()
+    }
+  }
+
+  async stopAutoRefresh(): Promise<void> {
+    await this.checkOrSetupClients()
+    if (IS_CHINA) {
+      return this.authing!.stopAutoRefresh()
+    } else {
+      return this.supabase!.stopAutoRefresh()
+    }
+  }
+
   async signOut(): Promise<MentraSignOutResponse> {
     await this.checkOrSetupClients()
     if (IS_CHINA) {
@@ -149,3 +168,18 @@ class MentraAuthProvider {
 }
 
 export const mentraAuthProvider = new MentraAuthProvider()
+
+// Tells Authing and Supabase Auth to continuously refresh the session automatically
+// if the app is in the foreground. When this is added, you will continue
+// to receive `onAuthStateChange` events with the `TOKEN_REFRESHED` or
+// `SIGNED_OUT` event if the user's session is terminated. This should
+// only be registered once.
+AppState.addEventListener("change", state => {
+  if (state === "active") {
+    console.log("MENTRA AUTH: START AUTO REFRESH")
+    mentraAuthProvider.startAutoRefresh()
+  } else {
+    console.log("MENTRA AUTH: STOP AUTO REFRESH")
+    mentraAuthProvider.stopAutoRefresh()
+  }
+})

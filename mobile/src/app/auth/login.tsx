@@ -28,6 +28,7 @@ import {Spacer} from "@/components/misc/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import * as WebBrowser from "expo-web-browser"
+import Constants from "expo-constants"
 
 export default function LoginScreen() {
   const [isSigningUp, setIsSigningUp] = useState(false)
@@ -38,6 +39,7 @@ export default function LoginScreen() {
   const [formAction, setFormAction] = useState<"signin" | "signup" | null>(null)
   const [backPressCount, setBackPressCount] = useState(0)
   const {push, replace} = useNavigationHistory()
+  const IS_CHINA_DEPLOYMENT = Constants.expoConfig?.extra?.DEPLOYMENT_REGION === "china"
 
   // Get theme and safe area insets
   const {theme, themed} = useAppTheme()
@@ -395,14 +397,16 @@ export default function LoginScreen() {
               </Animated.View>
             ) : (
               <View style={themed($signInOptions)}>
-                <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
-                  <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
-                    <GoogleIcon />
-                  </View>
-                  <Text style={themed($socialButtonText)} tx="login:continueWithGoogle" />
-                </TouchableOpacity>
+                {!IS_CHINA_DEPLOYMENT && (
+                  <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
+                    <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
+                      <GoogleIcon />
+                    </View>
+                    <Text style={themed($socialButtonText)} tx="login:continueWithGoogle" />
+                  </TouchableOpacity>
+                )}
 
-                {Platform.OS === "ios" && (
+                {Platform.OS === "ios" && !IS_CHINA_DEPLOYMENT && (
                   <TouchableOpacity style={[themed($socialButton), themed($appleButton)]} onPress={handleAppleSignIn}>
                     <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
                       <AppleIcon color={theme.colors.text} />
@@ -411,11 +415,13 @@ export default function LoginScreen() {
                   </TouchableOpacity>
                 )}
 
-                <View style={themed($dividerContainer)}>
-                  <View style={themed($divider)} />
-                  <Text style={themed($dividerText)} tx="common:or" />
-                  <View style={themed($divider)} />
-                </View>
+                {!IS_CHINA_DEPLOYMENT && (
+                  <View style={themed($dividerContainer)}>
+                    <View style={themed($divider)} />
+                    <Text style={themed($dividerText)} tx="common:or" />
+                    <View style={themed($divider)} />
+                  </View>
+                )}
 
                 <Button
                   tx="login:continueWithEmail"
