@@ -1,24 +1,20 @@
-import {View, TouchableOpacity, ViewStyle, ImageStyle, TextStyle} from "react-native"
+import {ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
-import AppIcon from "@/components/misc/AppIcon"
 import {Text} from "@/components/ignite"
+import AppIcon from "@/components/misc/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useActiveForegroundApp, useStopApplet} from "@/stores/applets"
+import {ThemedStyle} from "@/theme"
+import {showAlert} from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import ChevronRight from "assets/icons/component/ChevronRight"
 import {CloseXIcon} from "assets/icons/component/CloseXIcon"
-import restComms from "@/managers/RestComms"
-import {showAlert} from "@/utils/AlertUtils"
-import {ThemedStyle} from "@/theme"
-import {useActiveForegroundApp, useStopApplet, useRefreshApplets} from "@/stores/applets"
-
-// Camera app protection removed - now handled by default button action system
 
 export const ActiveForegroundApp: React.FC = () => {
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
   const activeForegroundApp = useActiveForegroundApp()
   const stopApplet = useStopApplet()
-  const refreshApplets = useRefreshApplets()
 
   const handlePress = () => {
     if (activeForegroundApp) {

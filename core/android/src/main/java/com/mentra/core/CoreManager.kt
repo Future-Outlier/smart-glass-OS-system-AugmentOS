@@ -652,6 +652,11 @@ class CoreManager {
 
     fun updateOfflineMode(enabled: Boolean) {
         offlineMode = enabled
+        // var requiredData = []
+        // if (enabled) {
+        //     requiredData.add("TRANSCRIPTION")
+        // }
+
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
     }
 
