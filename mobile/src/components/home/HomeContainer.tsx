@@ -11,18 +11,19 @@ import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
 import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {Capabilities} from "@cloud/packages/sdk/src/types"
 
 export const HomeContainer: React.FC = () => {
   const {theme} = useAppTheme()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
   const {status} = useCoreStatus()
-  const features = getCapabilitiesForModel(defaultWearable)
+  const features: Capabilities | null = getCapabilitiesForModel(defaultWearable)
   const connected = status.glasses_info?.model_name
 
   return (
     <View>
       <CompactDeviceStatus />
-      {connected && features.hasDisplay && <ConnectedSimulatedGlassesInfo />}
+      {connected && features?.hasDisplay && <ConnectedSimulatedGlassesInfo />}
       <BackgroundAppsLink />
       <ActiveForegroundApp />
       <ForegroundAppsGrid />

@@ -16,7 +16,7 @@ interface GlassesDisplayMirrorProps {
 }
 
 const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
-  fallbackMessage = "No display data available",
+  fallbackMessage = "",
   containerStyle,
   fullscreen = false,
   demo = false,
@@ -186,6 +186,9 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
   }, [layout, containerWidth])
 
   if (!layout || !layout.layoutType) {
+    if (!fallbackMessage) {
+      return null
+    }
     return (
       <View style={[themed($glassesScreen), containerStyle]}>
         <View style={themed($emptyContainer)}>
