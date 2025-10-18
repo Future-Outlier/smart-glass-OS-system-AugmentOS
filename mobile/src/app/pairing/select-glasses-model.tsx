@@ -84,7 +84,7 @@ export default function SelectGlassesModelScreen() {
         titleTx="pairing:selectModel"
         leftIcon="caretLeft"
         onLeftPress={() => {
-          if (!onboarding) {
+          if (onboarding) {
             goBack()
           } else {
             replace("/(tabs)/home")
@@ -96,7 +96,7 @@ export default function SelectGlassesModelScreen() {
         {glassesOptions
           .filter(glasses => {
             // Hide simulated glasses during onboarding (users get there via "I don't have glasses yet")
-            if (!onboarding && glasses.modelName === DeviceTypes.SIMULATED) {
+            if (onboarding && glasses.modelName === DeviceTypes.SIMULATED) {
               return false
             }
             return true
