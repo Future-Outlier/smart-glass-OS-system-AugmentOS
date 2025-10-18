@@ -25,7 +25,7 @@ import { ConnectionValidator } from "../validators/ConnectionValidator";
 
 // Keep-alive constants matching UnmanagedStreamingExtension
 const KEEP_ALIVE_INTERVAL_MS = 15000; // 15 seconds
-const ACK_TIMEOUT_MS = 5000; // 5 seconds to wait for ACK
+const ACK_TIMEOUT_MS = 10000; // 10 seconds to wait for ACK
 const MAX_MISSED_ACKS = 3; // Max consecutive missed ACKs
 
 /**

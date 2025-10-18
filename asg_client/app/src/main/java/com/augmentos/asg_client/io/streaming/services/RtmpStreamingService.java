@@ -91,7 +91,7 @@ public class RtmpStreamingService extends Service {
     private static final int SURFACE_WIDTH = 1280;  // 16:9 aspect ratio for proper video streaming
     private static final int SURFACE_HEIGHT = 720;  // HD resolution (720p)
 
-    private static final int START_BITRATE = 1500000;
+    private static final int START_BITRATE = 2000000;
     // Reconnection logic parameters
     private int mReconnectAttempts = 0;
     private static final int MAX_RECONNECT_ATTEMPTS = 10;
@@ -123,14 +123,20 @@ public class RtmpStreamingService extends Service {
     private boolean mHasValidatedNetwork = true;
     private long mValidationLostAt = 0L;
     private static final long NETWORK_VALIDATION_GRACE_MS = 5000; // Allow 5s for upstream to recover
-    private static final long REACHABILITY_PROBE_INTERVAL_MS = 1000;
-    private static final int REACHABILITY_FAILURE_THRESHOLD = 1;
-    private static final int REACHABILITY_TIMEOUT_MS = 1500;
-    private static final long PACKET_WATCHDOG_INTERVAL_MS = 500;
-    private static final long PACKET_STALL_TIMEOUT_MS = 1000;
+    private static final long REACHABILITY_PROBE_INTERVAL_MS = 7000;
+    private static final long REACHABILITY_MIN_IDLE_BEFORE_PROBE_MS = 4000;
+    private static final int REACHABILITY_FAILURE_THRESHOLD = 3;
+    private static final int REACHABILITY_TIMEOUT_MS = 5000;
+    private static final long PACKET_WATCHDOG_INTERVAL_MS = 750;
+    private static final long PACKET_WATCHDOG_GRACE_MS = 3500;
+    private static final long PACKET_STALL_TIMEOUT_MS = 2500;
+    private static final int PACKET_STALL_STRIKE_LIMIT = 2;
     private int mReachabilityFailures = 0;
     private ExecutorService mReachabilityExecutor;
     private long mLastPacketSentAt = 0L;
+    private long mWatchdogArmedAt = 0L;
+    private int mPacketStallStrikes = 0;
+    private long mLastReachabilityProbeAt = 0L;
     private final Runnable mPacketWatchdogRunnable = new Runnable() {
         @Override
         public void run() {
@@ -139,16 +145,42 @@ public class RtmpStreamingService extends Service {
             }
 
             long now = SystemClock.elapsedRealtime();
+            if (mWatchdogArmedAt == 0L) {
+                mWatchdogArmedAt = now;
+            }
+            if (now - mWatchdogArmedAt < PACKET_WATCHDOG_GRACE_MS) {
+                mNetworkWatchdogHandler.postDelayed(this, PACKET_WATCHDOG_INTERVAL_MS);
+                return;
+            }
+
             long last = mLastPacketSentAt;
             if (last > 0) {
                 long delta = now - last;
                 if (delta >= PACKET_STALL_TIMEOUT_MS) {
-                    Log.w(TAG, "No RTMP packets sent for " + delta + "ms - forcing reconnection");
-                    StreamingReporting.reportPacketStall(RtmpStreamingService.this,
-                            mRtmpUrl, delta, PACKET_STALL_TIMEOUT_MS);
-                    mLastPacketSentAt = now;
-                    scheduleReconnect("packet_stalled");
-                    return;
+                    mPacketStallStrikes++;
+                    Log.w(TAG, "RTMP packet flow stalled for " + delta + "ms (strike "
+                            + mPacketStallStrikes + "/" + PACKET_STALL_STRIKE_LIMIT + ")");
+
+                    if (mPacketStallStrikes == 1 && mStreamer != null) {
+                        try {
+                            mStreamer.requestKeyFrame();
+                            Log.d(TAG, "Requested keyframe after first stall strike");
+                        } catch (Exception e) {
+                            Log.w(TAG, "Unable to request keyframe after stall: " + e.getMessage());
+                        }
+                    }
+
+                    if (mPacketStallStrikes >= PACKET_STALL_STRIKE_LIMIT) {
+                        StreamingReporting.reportPacketStall(RtmpStreamingService.this,
+                                mRtmpUrl, delta, PACKET_STALL_TIMEOUT_MS);
+                        mPacketStallStrikes = 0;
+                        mLastPacketSentAt = now;
+                        scheduleReconnect("packet_stalled");
+                        return;
+                    }
+                } else if (mPacketStallStrikes > 0) {
+                    Log.d(TAG, "Packet flow recovered after stall (delta=" + delta + "ms), clearing strikes");
+                    mPacketStallStrikes = 0;
                 }
             }
 
@@ -166,6 +198,13 @@ public class RtmpStreamingService extends Service {
             if (mReachabilityExecutor == null || mReachabilityExecutor.isShutdown()) {
                 return;
             }
+
+            long now = SystemClock.elapsedRealtime();
+            if (mLastPacketSentAt > 0 && now - mLastPacketSentAt < REACHABILITY_MIN_IDLE_BEFORE_PROBE_MS) {
+                mNetworkWatchdogHandler.postDelayed(this, REACHABILITY_PROBE_INTERVAL_MS);
+                return;
+            }
+            mLastReachabilityProbeAt = now;
 
             mReachabilityExecutor.submit(() -> {
                 boolean success = performReachabilityProbe();
@@ -479,6 +518,7 @@ public class RtmpStreamingService extends Service {
             return;
         }
         mReachabilityFailures = 0;
+        mLastReachabilityProbeAt = 0L;
         mNetworkWatchdogHandler.removeCallbacks(mReachabilityProbeRunnable);
         if (shouldRunReachabilityProbe()) {
             mNetworkWatchdogHandler.postDelayed(mReachabilityProbeRunnable, REACHABILITY_PROBE_INTERVAL_MS);
@@ -490,13 +530,17 @@ public class RtmpStreamingService extends Service {
             mNetworkWatchdogHandler.removeCallbacks(mReachabilityProbeRunnable);
         }
         mReachabilityFailures = 0;
+        mLastReachabilityProbeAt = 0L;
     }
 
     private void startPacketWatchdog() {
         if (mNetworkWatchdogHandler == null) {
             return;
         }
-        mLastPacketSentAt = SystemClock.elapsedRealtime();
+        long now = SystemClock.elapsedRealtime();
+        mLastPacketSentAt = now;
+        mWatchdogArmedAt = now;
+        mPacketStallStrikes = 0;
         mNetworkWatchdogHandler.removeCallbacks(mPacketWatchdogRunnable);
         if (shouldRunPacketWatchdog()) {
             mNetworkWatchdogHandler.postDelayed(mPacketWatchdogRunnable, PACKET_WATCHDOG_INTERVAL_MS);
@@ -508,6 +552,8 @@ public class RtmpStreamingService extends Service {
             mNetworkWatchdogHandler.removeCallbacks(mPacketWatchdogRunnable);
         }
         mLastPacketSentAt = 0L;
+        mWatchdogArmedAt = 0L;
+        mPacketStallStrikes = 0;
     }
 
     private boolean shouldRunReachabilityProbe() {
@@ -532,6 +578,7 @@ public class RtmpStreamingService extends Service {
                 Log.d(TAG, "Reachability probe recovered after " + mReachabilityFailures + " failures");
             }
             mReachabilityFailures = 0;
+            mLastReachabilityProbeAt = SystemClock.elapsedRealtime();
         } else {
             mReachabilityFailures++;
             Log.d(TAG, "Reachability probe failed (count: " + mReachabilityFailures + ")");
@@ -544,7 +591,7 @@ public class RtmpStreamingService extends Service {
             }
         }
 
-        if (mNetworkWatchdogHandler != null) {
+        if (mNetworkWatchdogHandler != null && shouldRunReachabilityProbe()) {
             mNetworkWatchdogHandler.postDelayed(mReachabilityProbeRunnable, REACHABILITY_PROBE_INTERVAL_MS);
         }
     }
@@ -685,7 +732,7 @@ public class RtmpStreamingService extends Service {
         synchronized (mStateLock) {
             if (mStreamer != null) {
                 Log.d(TAG, "Releasing existing streamer before reinitializing");
-                releaseStreamer();
+                releaseStreamer(true);
 
                 // Wait a bit for cleanup
                 try {
@@ -971,8 +1018,12 @@ public class RtmpStreamingService extends Service {
     }
 
     private void releaseStreamer() {
+        releaseStreamer(false);
+    }
+
+    private void releaseStreamer(boolean preserveSession) {
         // Just call forceStopStreamingInternal which handles everything
-        forceStopStreamingInternal();
+        forceStopStreamingInternal(preserveSession);
 
         // Release wake locks after everything is cleaned up
         releaseWakeLocks();
@@ -1004,7 +1055,7 @@ public class RtmpStreamingService extends Service {
                 }
 
                 // Force stop and clean up everything
-                forceStopStreamingInternal();
+                forceStopStreamingInternal(mReconnecting);
 
                 // Restore stream ID if this was a reconnection
                 if (preservedStreamId != null) {
@@ -1238,15 +1289,15 @@ public class RtmpStreamingService extends Service {
         }
 
         Log.i(TAG, "Stopping streaming");
-        forceStopStreamingInternal();
+        forceStopStreamingInternal(false);
     }
 
     /**
      * Force stop streaming and clean up all resources
      * This method performs a complete cleanup regardless of current state
      */
-    private void forceStopStreamingInternal() {
-        Log.d(TAG, "Force stopping stream and cleaning up resources");
+    private void forceStopStreamingInternal(boolean preserveSession) {
+        Log.d(TAG, "Force stopping stream and cleaning up resources (preserveSession=" + preserveSession + ")");
 
         // Increment reconnection sequence to invalidate any pending handlers
         mReconnectionSequence++;
@@ -1257,14 +1308,20 @@ public class RtmpStreamingService extends Service {
             mReconnectHandler.removeCallbacksAndMessages(null);
         }
 
-        // Cancel timeout timer
-        cancelStreamTimeout();
+        if (!preserveSession) {
+            cancelStreamTimeout();
+        } else {
+            Log.d(TAG, "Preserving stream timeout and stream ID for reconnection");
+        }
         stopReachabilityProbes();
         stopPacketWatchdog();
 
-        // Reset state flags
-        mReconnecting = false;
-        mReconnectAttempts = 0;
+        if (preserveSession) {
+            mReconnecting = true;
+        } else {
+            mReconnecting = false;
+            mReconnectAttempts = 0;
+        }
 
         // Stop the stream if we have a streamer (or the last known instance)
         CameraRtmpLiveStreamer streamerToCleanup = mStreamer != null ? mStreamer : mLastStreamerForCleanup;
@@ -1344,24 +1401,21 @@ public class RtmpStreamingService extends Service {
         // Release surface
         releaseSurface();
 
-        // Save stream ID before clearing it so callback can include it in status
-        String finalStreamId = mCurrentStreamId;
-
         // Update state
         synchronized (mStateLock) {
             mStreamState = StreamState.IDLE;
             mIsStreaming = false;
-            mIsStreamingActive = false;
-
-            // Log stream ID being cleared for debugging
-            if (mCurrentStreamId != null) {
-                Log.d(TAG, "Clearing stream ID: " + mCurrentStreamId);
+            if (!preserveSession) {
+                mIsStreamingActive = false;
+                if (mCurrentStreamId != null) {
+                    Log.d(TAG, "Clearing stream ID: " + mCurrentStreamId);
+                }
+                mCurrentStreamId = null;
+                mStreamStartTime = 0;
+                mLastReconnectionTime = 0;
+            } else {
+                Log.d(TAG, "Keeping stream ID active for reconnection: " + mCurrentStreamId);
             }
-            mCurrentStreamId = null;
-
-            // Reset stream timing
-            mStreamStartTime = 0;
-            mLastReconnectionTime = 0;
         }
 
         // Notify listeners
@@ -1369,24 +1423,23 @@ public class RtmpStreamingService extends Service {
 
         // Turn off LED if it was on
         if (mLedEnabled && mHardwareManager != null && mHardwareManager.supportsRecordingLed()) {
-            mHardwareManager.setRecordingLedOff();
-            Log.d(TAG, "📹 Recording LED turned OFF (stream stopped)");
+            if (preserveSession) {
+                Log.d(TAG, "📹 Preserving recording LED state during reconnection");
+            } else {
+                mHardwareManager.setRecordingLedOff();
+                Log.d(TAG, "📹 Recording LED turned OFF (stream stopped)");
+            }
         }
 
-        // Temporarily restore stream ID for callback
-        if (finalStreamId != null) {
-            mCurrentStreamId = finalStreamId;
+        if (preserveSession) {
+            Log.d(TAG, "Stream resources released for reconnection");
+        } else {
+            if (sStatusCallback != null) {
+                sStatusCallback.onStreamStopped();
+            }
+            EventBus.getDefault().post(new StreamingEvent.Stopped());
+            Log.i(TAG, "Streaming stopped and cleaned up");
         }
-
-        if (sStatusCallback != null) {
-            sStatusCallback.onStreamStopped();
-        }
-
-        // Clear it again after callback
-        mCurrentStreamId = null;
-        EventBus.getDefault().post(new StreamingEvent.Stopped());
-
-        Log.i(TAG, "Streaming stopped and cleaned up");
     }
 
     /**
@@ -1528,7 +1581,7 @@ public class RtmpStreamingService extends Service {
                 }
 
                 // Force stop the stream immediately
-                forceStopStreamingInternal();
+                forceStopStreamingInternal(false);
             } else {
                 Log.d(TAG, "Ignoring timeout for old stream: " + streamId +
                       " (current: " + mCurrentStreamId + ", active: " + mIsStreamingActive + ")");
