@@ -24,8 +24,6 @@ export interface LedControlOptions {
   offtime?: number;
   /** Number of on/off cycles */
   count?: number;
-  /** LED ID to control (e.g., "led1", "led2") */
-  ledId?: string;
 }
 
 /**
@@ -204,7 +202,7 @@ export class LedModule {
    * @param ontime - How long LED stays on (ms)
    * @param offtime - How long LED stays off (ms)
    * @param count - Number of blink cycles
-   * @returns Promise that resolves when the pattern completes
+   * @returns Promise that resolves immediately after sending the command
    *
    * @example
    * ```typescript
@@ -233,7 +231,7 @@ export class LedModule {
    *
    * @param color - LED color to use
    * @param duration - Total duration of pulse effect (ms)
-   * @returns Promise that resolves when the pulse completes
+   * @returns Promise that resolves immediately after sending the command
    *
    * @example
    * ```typescript

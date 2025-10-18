@@ -1,6 +1,6 @@
 # LedModule API Reference
 
-The `LedModule` class provides comprehensive LED control functionality for MentraOS Apps, including RGB LED control, pattern methods, and purpose-specific LED management. It automatically handles request tracking and provides fire-and-forget LED control with immediate resolution.
+The `LedModule` class provides comprehensive LED control functionality for MentraOS Apps, including RGB LED control and pattern methods. It automatically handles request tracking and provides fire-and-forget LED control with immediate resolution.
 
 ## Import
 
@@ -60,11 +60,10 @@ await session.led.turnOn({
   count: 3 
 });
 
-// Control specific LED by purpose
+// Control LED with specific timing
 await session.led.turnOn({ 
   color: 'green', 
-  ontime: 1000,
-  purpose: 'user_feedback'
+  ontime: 1000
 });
 ```
 
@@ -170,31 +169,6 @@ await session.led.solid('white', 30000);
 await session.led.solid('green', 2000);
 ```
 
-## Purpose-Specific LED Control
-
-### userFeedback
-
-Control user feedback LED (user-facing RGB LED for notifications).
-
-```typescript
-async userFeedback(options: LedControlOptions = {}): Promise<void>
-```
-
-**Parameters:**
-- `options`: LED control options
-
-**Example:**
-```typescript
-// Green notification
-await session.led.userFeedback({ color: 'green', ontime: 2000 });
-
-// Red error indication
-await session.led.userFeedback({ color: 'red', ontime: 1000, count: 3 });
-
-// Blue info notification
-await session.led.userFeedback({ color: 'blue', ontime: 1500 });
-```
-
 ## Capability Methods
 
 ### getCapabilities
@@ -241,10 +215,6 @@ interface LedControlOptions {
   offtime?: number;
   /** Number of on/off cycles */
   count?: number;
-  /** LED ID to control (e.g., "privacy", "user_feedback") */
-  ledId?: string;
-  /** LED purpose to control (e.g., "user_feedback", "general") */
-  purpose?: "user_feedback" | "general";
 }
 ```
 
@@ -412,8 +382,8 @@ class RecordingLEDApp extends AppServer {
   private async startRecording(session: AppSession): Promise<void> {
     this.isRecording = true;
     
-    // Use privacy LED for recording indication
-    await session.led.privacy({ color: 'white', ontime: 30000 });
+    // Use solid LED for recording indication
+    await session.led.solid('white', 30000);
     
     session.layouts.showTextWall("🔴 Recording...");
   }

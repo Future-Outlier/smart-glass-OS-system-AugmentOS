@@ -54,7 +54,7 @@ Always check `session.capabilities?.hasLight` before using LED features to ensur
 ### ✅ Multiple Control Methods
 - **Low-level**: `turnOn()`, `turnOff()` for precise control
 - **Patterns**: `blink()`, `pulse()`, `solid()` for common behaviors
-- **Purpose-specific**: `userFeedback()` for user-facing notifications
+- **Capabilities**: `getCapabilities()` to query available LEDs
 
 ### ✅ Available Colors
 - `red`, `green`, `blue`, `orange`, `white`
@@ -96,8 +96,8 @@ await session.led.solid('white', 30000);
 // Processing status
 await session.led.pulse('orange', 2000);
 
-// User feedback
-await session.led.userFeedback({ color: 'green', ontime: 2000 });
+// Turn off LEDs
+await session.led.turnOff();
 ```
 
 ### Graceful Fallbacks
