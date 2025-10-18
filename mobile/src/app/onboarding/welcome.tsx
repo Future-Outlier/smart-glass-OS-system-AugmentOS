@@ -1,35 +1,17 @@
-import {View} from "react-native"
 import {Screen, Text} from "@/components/ignite"
-import {useAppStatus} from "@/contexts/AppletStatusProvider"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {Button} from "@/components/ignite/Button"
-import {MaterialCommunityIcons, FontAwesome} from "@expo/vector-icons"
 import {Spacer} from "@/components/misc/Spacer"
-import restComms from "@/managers/RestComms"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import {ViewStyle, TextStyle} from "react-native"
 import {DeviceTypes} from "@/utils/Constants"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {FontAwesome, MaterialCommunityIcons} from "@expo/vector-icons"
+import {TextStyle, View, ViewStyle} from "react-native"
 
 export default function OnboardingWelcome() {
-  const {appStatus, optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
   const {theme, themed} = useAppTheme()
   const {push} = useNavigationHistory()
-
-  const stopAllApps = async () => {
-    const runningApps = appStatus.filter(app => app.is_running)
-    for (const runningApp of runningApps) {
-      optimisticallyStopApp(runningApp.packageName)
-      try {
-        await restComms.stopApp(runningApp.packageName)
-        clearPendingOperation(runningApp.packageName)
-      } catch (error) {
-        console.error("stop app error:", error)
-        refreshAppStatus()
-      }
-    }
-  }
 
   // User has smart glasses - go to glasses selection screen
   const handleHasGlasses = async () => {
@@ -38,9 +20,6 @@ export default function OnboardingWelcome() {
 
     // Mark that onboarding should be shown on Home screen
     useSettingsStore.getState().setSetting(SETTINGS_KEYS.onboarding_completed, false)
-
-    // deactivate all running apps:
-    await stopAllApps()
 
     push("/pairing/select-glasses-model")
   }
