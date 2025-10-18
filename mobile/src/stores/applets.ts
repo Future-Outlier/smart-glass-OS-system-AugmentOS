@@ -75,7 +75,7 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       offlineRoute: "",
       running: offlineCaptionsRunning,
       loading: false,
-      hardwareRequirements: [],
+      hardwareRequirements: [{type: HardwareType.DISPLAY, level: HardwareRequirementLevel.REQUIRED}],
     },
   ]
 }
