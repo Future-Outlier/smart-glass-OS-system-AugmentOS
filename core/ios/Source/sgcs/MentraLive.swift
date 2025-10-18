@@ -2412,7 +2412,7 @@ class MentraLive: NSObject, SGCManager {
             "total": totalCount,
             "total_size": totalSize,
             "has_content": hasContent,
-        ]
+        ] as [String: Any]
         Bridge.sendTypedMessage("gallery_status", body: eventBody)
     }
 
