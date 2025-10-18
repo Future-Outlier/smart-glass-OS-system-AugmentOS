@@ -220,7 +220,7 @@ const $imageContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   borderWidth: spacing.xxxs,
   borderColor: colors.border,
   borderRadius: spacing.lg,
-  backgroundColor: colors.background,
+  backgroundColor: colors.backgroundAlt,
   alignSelf: "stretch",
   paddingHorizontal: spacing.md,
 })
@@ -239,7 +239,7 @@ const $statusContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   borderColor: colors.border,
   borderWidth: spacing.xxxs,
   padding: spacing.md,
-  backgroundColor: colors.background,
+  backgroundColor: colors.backgroundAlt,
   borderRadius: spacing.lg,
 })
 
@@ -270,7 +270,7 @@ const $disconnectedImageContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) 
   borderColor: colors.border,
   borderWidth: spacing.xxxs,
   padding: spacing.sm,
-  backgroundColor: colors.background,
+  backgroundColor: colors.backgroundAlt,
   borderRadius: spacing.lg,
   marginBottom: spacing.sm,
 })

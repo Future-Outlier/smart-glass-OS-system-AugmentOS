@@ -105,10 +105,14 @@ export const ActiveForegroundApp: React.FC = () => {
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.sm,
+const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   marginVertical: spacing.xs,
   minHeight: 72,
+  borderWidth: 2,
+  borderColor: colors.border,
+  borderRadius: spacing.md,
+  backgroundColor: colors.backgroundAlt,
+  paddingHorizontal: spacing.sm,
 })
 
 const $rowContent: ThemedStyle<ViewStyle> = ({spacing}) => ({

@@ -262,7 +262,7 @@ const styles = {
   cardTitle: {
     fontFamily: "glassesMirror",
     fontSize: 18,
-    marginBottom: 5,
+    // marginBottom: 5,
   },
 }
 

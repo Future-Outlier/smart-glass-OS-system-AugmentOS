@@ -24,8 +24,10 @@ export const HomeContainer: React.FC = () => {
     <View>
       <CompactDeviceStatus />
       {connected && features?.hasDisplay && <ConnectedSimulatedGlassesInfo />}
-      <BackgroundAppsLink />
+      <Spacer height={theme.spacing.xs} />
       <ActiveForegroundApp />
+      <Spacer height={theme.spacing.xs} />
+      <BackgroundAppsLink />
       <ForegroundAppsGrid />
       <IncompatibleApps />
       <Spacer height={theme.spacing.xxxl} />
