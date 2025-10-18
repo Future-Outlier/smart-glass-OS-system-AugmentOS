@@ -3,6 +3,7 @@ package com.mentra.core.sgcs
 import com.mentra.core.Bridge
 import com.mentra.core.utils.ConnTypes
 import com.mentra.core.utils.DeviceTypes
+import com.mentra.core.CoreManager
 
 class Simulated : SGCManager() {
 

@@ -8,13 +8,13 @@ import {Header} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import Svg, {Defs, RadialGradient, Rect, Stop} from "react-native-svg"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {DeviceTypes} from "@/utils/Constants"
+import {useLocalSearchParams} from "expo-router"
 
 export default function SelectGlassesModelScreen() {
-  const [hasOnboarded, _setHasOnboarded] = useSetting(SETTINGS_KEYS.onboarding_completed)
   const {theme, themed} = useAppTheme()
   const {push, replace, goBack} = useNavigationHistory()
+  const {onboarding} = useLocalSearchParams()
 
   // Platform-specific glasses options
   const glassesOptions =
@@ -84,7 +84,7 @@ export default function SelectGlassesModelScreen() {
         titleTx="pairing:selectModel"
         leftIcon="caretLeft"
         onLeftPress={() => {
-          if (!hasOnboarded) {
+          if (!onboarding) {
             goBack()
           } else {
             replace("/(tabs)/home")
@@ -96,7 +96,7 @@ export default function SelectGlassesModelScreen() {
         {glassesOptions
           .filter(glasses => {
             // Hide simulated glasses during onboarding (users get there via "I don't have glasses yet")
-            if (!hasOnboarded && glasses.modelName === DeviceTypes.SIMULATED) {
+            if (!onboarding && glasses.modelName === DeviceTypes.SIMULATED) {
               return false
             }
             return true

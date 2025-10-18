@@ -2,7 +2,6 @@ import {Screen, Text} from "@/components/ignite"
 import {Button} from "@/components/ignite/Button"
 import {Spacer} from "@/components/misc/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {DeviceTypes} from "@/utils/Constants"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -17,20 +16,13 @@ export default function OnboardingWelcome() {
   const handleHasGlasses = async () => {
     // TODO: Track analytics event - user has glasses
     // analytics.track('onboarding_has_glasses_selected')
-
-    // Mark that onboarding should be shown on Home screen
-    useSettingsStore.getState().setSetting(SETTINGS_KEYS.onboarding_completed, false)
-
-    push("/pairing/select-glasses-model")
+    push("/pairing/select-glasses-model", {onboarding: true})
   }
 
   // User doesn't have glasses yet - go directly to simulated glasses
   const handleNoGlasses = () => {
     // TODO: Track analytics event - user doesn't have glasses
     // analytics.track('onboarding_no_glasses_selected')
-
-    // Mark that onboarding should be shown on Home screen
-    useSettingsStore.getState().setSetting(SETTINGS_KEYS.onboarding_completed, false)
 
     // Go directly to simulated glasses pairing screen
     push("/pairing/prep", {glassesModelName: DeviceTypes.SIMULATED})
