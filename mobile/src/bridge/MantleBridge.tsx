@@ -122,11 +122,11 @@ export class MantleBridge extends EventEmitter {
           break
         case "gallery_status":
           GlobalEventEmitter.emit("GLASSES_GALLERY_STATUS", {
-            photos: data.glasses_gallery_status.photos,
-            videos: data.glasses_gallery_status.videos,
-            total: data.glasses_gallery_status.total,
-            has_content: data.glasses_gallery_status.has_content,
-            camera_busy: data.glasses_gallery_status.camera_busy, // Add camera busy state
+            photos: data.photos,
+            videos: data.videos,
+            total: data.total,
+            has_content: data.has_content,
+            camera_busy: data.camera_busy, // Add camera busy state
           })
           break
         case "compatible_glasses_search_result":
