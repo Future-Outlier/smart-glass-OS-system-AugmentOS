@@ -13,8 +13,6 @@ import java.util.HashMap
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Synchronized
 import kotlin.jvm.Volatile
-import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 
 /**
@@ -364,10 +362,7 @@ public class Bridge private constructor() {
             galleryData["total_size"] = totalSize
             galleryData["has_content"] = hasContent
 
-            val eventBody = HashMap<String, Any>()
-            eventBody["glasses_gallery_status"] = galleryData
-
-            sendTypedMessage("glasses_gallery_status", eventBody as Map<String, Any>)
+            sendTypedMessage("gallery_status", galleryData as Map<String, Any>)
         }
 
         /** Send hotspot status change - matches iOS MentraLive.swift emitHotspotStatusChange */
@@ -505,5 +500,4 @@ public class Bridge private constructor() {
             Log.e(TAG, "Failed to initialize CoreManager in Bridge constructor")
         }
     }
-
 }

@@ -22,7 +22,7 @@ export const HomeContainer: React.FC = () => {
   return (
     <View>
       <CompactDeviceStatus />
-      {connected && <ConnectedSimulatedGlassesInfo />}
+      {connected && features.hasDisplay && <ConnectedSimulatedGlassesInfo />}
       <BackgroundAppsLink />
       <ActiveForegroundApp />
       <ForegroundAppsGrid />

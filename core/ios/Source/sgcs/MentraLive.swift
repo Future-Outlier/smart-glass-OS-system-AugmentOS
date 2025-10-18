@@ -2407,15 +2407,13 @@ class MentraLive: NSObject, SGCManager {
 
         // Emit gallery status event as CoreMessageEvent like other status events
         let eventBody = [
-            "glasses_gallery_status": [
-                "photos": photoCount,
-                "videos": videoCount,
-                "total": totalCount,
-                "total_size": totalSize,
-                "has_content": hasContent,
-            ],
+            "photos": photoCount,
+            "videos": videoCount,
+            "total": totalCount,
+            "total_size": totalSize,
+            "has_content": hasContent,
         ]
-        Bridge.sendTypedMessage("glasses_gallery_status", body: eventBody)
+        Bridge.sendTypedMessage("gallery_status", body: eventBody)
     }
 
     // MARK: - Timers

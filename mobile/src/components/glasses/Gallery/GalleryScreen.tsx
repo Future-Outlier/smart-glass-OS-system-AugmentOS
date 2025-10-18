@@ -1054,8 +1054,7 @@ export function GalleryScreen() {
       if (!galleryOpenedHotspot) return
 
       console.log("[GalleryScreen] Gallery unmounting - closing hotspot")
-      bridge
-        .sendCommand("set_hotspot_state", {enabled: false})
+      CoreModule.setHotspotState(false)
         .then(() => console.log("[GalleryScreen] Closed hotspot on exit"))
         .catch(error => console.error("[GalleryScreen] Failed to close hotspot on exit:", error))
     }
