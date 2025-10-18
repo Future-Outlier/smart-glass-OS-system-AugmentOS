@@ -222,12 +222,12 @@ const $imageContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   borderRadius: spacing.lg,
   backgroundColor: colors.background,
   alignSelf: "stretch",
+  paddingHorizontal: spacing.md,
 })
 
-const $glassesImage: ThemedStyle<ImageStyle> = ({spacing}) => ({
+const $glassesImage: ThemedStyle<ImageStyle> = () => ({
   width: "100%",
   height: 100,
-  paddingHorizontal: spacing.sm,
   resizeMode: "contain",
 })
 
