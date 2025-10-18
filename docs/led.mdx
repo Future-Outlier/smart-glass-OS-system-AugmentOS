@@ -35,7 +35,6 @@ class LEDApp extends AppServer {
     
     // LED patterns
     await session.led.blink('green', 500, 500, 3);
-    await session.led.pulse('blue', 2000);
     await session.led.solid('white', 5000);
     
     // Turn off LEDs
@@ -53,7 +52,7 @@ Always check `session.capabilities?.hasLight` before using LED features to ensur
 
 ### ✅ Multiple Control Methods
 - **Low-level**: `turnOn()`, `turnOff()` for precise control
-- **Patterns**: `blink()`, `pulse()`, `solid()` for common behaviors
+- **Patterns**: `blink()`, `solid()` for common behaviors
 - **Capabilities**: `getCapabilities()` to query available LEDs
 
 ### ✅ Available Colors
@@ -94,7 +93,7 @@ await session.led.blink('blue', 300, 300, 1);
 await session.led.solid('white', 30000);
 
 // Processing status
-await session.led.pulse('orange', 2000);
+await session.led.blink('orange', 200, 200, 10);
 
 // Turn off LEDs
 await session.led.turnOff();
@@ -126,5 +125,3 @@ if (!session.capabilities?.hasLight) {
 
 - 📖 **[LED Manager API Reference](/reference/managers/led-manager)** - Complete method documentation and examples
 - 🔧 **Device Capabilities**: [Capabilities](/capabilities) - Check LED hardware support  
-- 🎤 **Voice Integration**: [Events](/events) - Create voice-activated LED experiences
-- 🔐 **Permissions**: [Permissions](/permissions) - LED-related permissions

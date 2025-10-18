@@ -225,34 +225,6 @@ export class LedModule {
   }
 
   /**
-   * 💡 Pulse an LED (smooth fade effect simulated with rapid blinking)
-   *
-   * Creates a pulsing effect by rapidly blinking the LED with varying timing.
-   *
-   * @param color - LED color to use
-   * @param duration - Total duration of pulse effect (ms)
-   * @returns Promise that resolves immediately after sending the command
-   *
-   * @example
-   * ```typescript
-   * // Pulse blue LED for 2 seconds
-   * await session.led.pulse('blue', 2000);
-   * ```
-   */
-  async pulse(color: LedColor, duration: number): Promise<void> {
-    // Simulate pulse with rapid blinking (20ms on, 80ms off for soft glow effect)
-    const cycleTime = 100; // 100ms per cycle
-    const count = Math.floor(duration / cycleTime);
-
-    return this.turnOn({
-      color,
-      ontime: 20,
-      offtime: 80,
-      count,
-    });
-  }
-
-  /**
    * 💡 Solid LED mode - LED stays on continuously for specified duration
    *
    * Creates a solid LED effect with no off time, perfect for continuous illumination.
