@@ -24,27 +24,18 @@ export interface LedControlOptions {
   offtime?: number;
   /** Number of on/off cycles */
   count?: number;
-  /** LED ID to control (e.g., "privacy", "user_feedback") */
+  /** LED ID to control (e.g., "led1", "led2") */
   ledId?: string;
-  /** LED purpose to control (e.g., "privacy", "user_feedback") */
-  purpose?: "privacy" | "user_feedback" | "general";
 }
 
 /**
  * 💡 LED Control Module Implementation
  *
  * Provides methods for controlling LEDs on smart glasses.
- * Supports different LED types (privacy, user feedback, recording indicator) and
- * both low-level on/off control and higher-level pattern methods.
+ * Supports both low-level on/off control and higher-level pattern methods.
  *
  * @example
  * ```typescript
- * // Control privacy LED (front-facing white light)
- * await session.led.privacy({ color: 'white', ontime: 5000 });
- *
- * // Control user feedback LED (user-facing RGB)
- * await session.led.userFeedback({ color: 'green', ontime: 2000 });
- *
  * // General LED control
  * await session.led.turnOn({ color: 'red', ontime: 1000, count: 1 });
  *
@@ -177,55 +168,6 @@ export class LedModule {
       this.logger.error({ error }, "❌ Error in LED turnOff request");
       throw error;
     }
-  }
-
-  // =====================================
-  // 💡 Purpose-Specific LED Control
-  // =====================================
-
-  /**
-   * 💡 Control privacy LED (front-facing white light for recording indication)
-   *
-   * @param options - LED control options
-   * @returns Promise that resolves immediately after sending the command
-   *
-   * @example
-   * ```typescript
-   * // Turn on privacy LED for recording
-   * await session.led.privacy({ color: 'white', ontime: 5000 });
-   *
-   * // Blink privacy LED
-   * await session.led.privacy({ color: 'white', ontime: 500, offtime: 500, count: 3 });
-   * ```
-   */
-  async privacy(options: LedControlOptions = {}): Promise<void> {
-    return this.turnOn({
-      ...options,
-      purpose: "privacy",
-      color: options.color || "white", // Privacy LED is typically white
-    });
-  }
-
-  /**
-   * 💡 Control user feedback LED (user-facing RGB LED for notifications)
-   *
-   * @param options - LED control options
-   * @returns Promise that resolves immediately after sending the command
-   *
-   * @example
-   * ```typescript
-   * // Green notification
-   * await session.led.userFeedback({ color: 'green', ontime: 2000 });
-   *
-   * // Red error indication
-   * await session.led.userFeedback({ color: 'red', ontime: 1000, count: 3 });
-   * ```
-   */
-  async userFeedback(options: LedControlOptions = {}): Promise<void> {
-    return this.turnOn({
-      ...options,
-      purpose: "user_feedback",
-    });
   }
 
   /**
