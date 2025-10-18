@@ -121,7 +121,7 @@ export class MantleBridge extends EventEmitter {
           })
           break
         case "gallery_status":
-          GlobalEventEmitter.emit("GLASSES_GALLERY_STATUS", {
+          GlobalEventEmitter.emit("GALLERY_STATUS", {
             photos: data.photos,
             videos: data.videos,
             total: data.total,

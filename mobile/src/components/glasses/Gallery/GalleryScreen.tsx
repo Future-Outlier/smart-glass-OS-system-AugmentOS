@@ -985,9 +985,9 @@ export function GalleryScreen() {
       }
     }
 
-    GlobalEventEmitter.addListener("GLASSES_GALLERY_STATUS", handleGalleryStatus)
+    GlobalEventEmitter.addListener("GALLERY_STATUS", handleGalleryStatus)
     return () => {
-      GlobalEventEmitter.removeListener("GLASSES_GALLERY_STATUS", handleGalleryStatus)
+      GlobalEventEmitter.removeListener("GALLERY_STATUS", handleGalleryStatus)
     }
   }, [galleryState, networkStatus.phoneSSID, hotspotSsid])
 
@@ -1007,9 +1007,9 @@ export function GalleryScreen() {
       connectToHotspot(eventData.ssid, eventData.password, eventData.local_ip)
     }
 
-    GlobalEventEmitter.addListener("GLASSES_HOTSPOT_STATUS_CHANGE", handleHotspotStatusChange)
+    GlobalEventEmitter.addListener("HOTSPOT_STATUS_CHANGE", handleHotspotStatusChange)
     return () => {
-      GlobalEventEmitter.removeListener("GLASSES_HOTSPOT_STATUS_CHANGE", handleHotspotStatusChange)
+      GlobalEventEmitter.removeListener("HOTSPOT_STATUS_CHANGE", handleHotspotStatusChange)
     }
   }, [])
 

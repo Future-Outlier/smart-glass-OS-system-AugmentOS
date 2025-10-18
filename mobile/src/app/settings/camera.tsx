@@ -239,7 +239,7 @@ export default function CameraSettingsScreen() {
           </View>
         )}
 
-        {!status.core_info.puck_connected && (
+        {!status.glasses_info?.model_name && (
           <View style={themed($warningContainer)}>
             <Text style={themed($warningText)}>Connect your glasses to change settings</Text>
           </View>
@@ -292,14 +292,14 @@ const $optionText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $warningContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  backgroundColor: colors.warning,
+  backgroundColor: colors.palette.angry600,
   padding: spacing.md,
   margin: spacing.md,
   borderRadius: spacing.xs,
 })
 
 const $warningText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.textDim,
+  color: colors.text,
   textAlign: "center",
 })
 
