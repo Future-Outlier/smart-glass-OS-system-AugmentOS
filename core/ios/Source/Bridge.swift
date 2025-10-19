@@ -9,7 +9,6 @@ import Foundation
 
 // Bridge for core communication between Expo modules and native iOS code
 // Has commands for the core to use to send messages to JavaScript
-// Also has a handleCommand function for the core to communicate with the rest of the core
 class Bridge {
     // Event callback for sending events to JS
     static var eventCallback: ((String, [String: Any]) -> Void)?

@@ -31,6 +31,7 @@ public class CoreModule: Module {
         }
 
         AsyncFunction("connectDefault") {
+            Bridge.log("calling connectDefault!")
             CoreManager.shared.handle_connect_default()
         }
 
@@ -39,14 +40,17 @@ public class CoreModule: Module {
         }
 
         AsyncFunction("connectSimulated") {
+            Bridge.log("calling connectSimulated!")
             CoreManager.shared.handle_connect_simulated()
         }
 
         AsyncFunction("disconnect") {
+            Bridge.log("calling disconnect!")
             CoreManager.shared.handle_disconnect()
         }
 
         AsyncFunction("forget") {
+            Bridge.log("calling forget!")
             CoreManager.shared.handle_forget()
         }
 
@@ -173,12 +177,10 @@ public class CoreModule: Module {
 
         // android stubs:
         AsyncFunction("getInstalledApps") { () -> Any in
-            // return nil
             return false
         }
 
         AsyncFunction("hasNotificationListenerPermission") { () -> Any in
-            // return nil
             return false
         }
     }
