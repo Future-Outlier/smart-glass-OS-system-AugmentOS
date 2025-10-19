@@ -8,19 +8,26 @@ import CoreModule from "core"
 import Toast from "react-native-toast-message"
 
 export const SETTINGS_KEYS = {
-  enable_phone_notifications: "enable_phone_notifications",
-  notification_app_preferences: "notification_app_preferences",
-  notification_category_preferences: "notification_category_preferences",
-  onboarding_completed: "onboarding_completed",
-  settings_access_count: "settings_access_count",
-  visited_livecaptions_settings: "visited_livecaptions_settings",
-  custom_backend_url: "custom_backend_url",
-  reconnect_on_app_foreground: "reconnect_on_app_foreground",
-  has_ever_activated_app: "has_ever_activated_app",
-  theme_preference: "theme_preference",
+  // feature flags:
   dev_mode: "dev_mode",
   new_ui: "new_ui",
   enable_squircles: "enable_squircles",
+  // ui state:
+  default_wearable: "default_wearable",
+  device_name: "device_name",
+  device_address: "device_address",
+  onboarding_completed: "onboarding_completed",
+  has_ever_activated_app: "has_ever_activated_app",
+  visited_livecaptions_settings: "visited_livecaptions_settings",
+  // ui settings:
+  enable_phone_notifications: "enable_phone_notifications",
+  notification_app_preferences: "notification_app_preferences",
+  notification_category_preferences: "notification_category_preferences",
+  settings_access_count: "settings_access_count",
+  custom_backend_url: "custom_backend_url",
+  reconnect_on_app_foreground: "reconnect_on_app_foreground",
+  theme_preference: "theme_preference",
+  // core settings:
   sensing_enabled: "sensing_enabled",
   power_saving_mode: "power_saving_mode",
   always_on_status_bar: "always_on_status_bar",
@@ -29,10 +36,9 @@ export const SETTINGS_KEYS = {
   metric_system: "metric_system",
   enforce_local_transcription: "enforce_local_transcription",
   button_press_mode: "button_press_mode",
-  default_wearable: "default_wearable",
-  device_name: "device_name",
-  device_address: "device_address",
   preferred_mic: "preferred_mic",
+  screen_disabled: "screen_disabled",
+  // glasses settings:
   contextual_dashboard: "contextual_dashboard",
   head_up_angle: "head_up_angle",
   brightness: "brightness",
@@ -99,6 +105,8 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.device_address]: "",
   [SETTINGS_KEYS.device_name]: "",
   [SETTINGS_KEYS.preferred_mic]: "phone",
+  [SETTINGS_KEYS.screen_disabled]: false,
+  // glasses settings:
   [SETTINGS_KEYS.contextual_dashboard]: true,
   [SETTINGS_KEYS.head_up_angle]: 45,
   [SETTINGS_KEYS.brightness]: 50,
@@ -139,6 +147,7 @@ const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.preferred_mic,
   SETTINGS_KEYS.contextual_dashboard,
   SETTINGS_KEYS.head_up_angle,
+  SETTINGS_KEYS.screen_disabled,
   // glasses settings:
   SETTINGS_KEYS.brightness,
   SETTINGS_KEYS.auto_brightness,

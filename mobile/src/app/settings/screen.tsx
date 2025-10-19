@@ -17,9 +17,9 @@ export default function ScreenSettingsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      CoreModule.updateSettings({updating_screen: true})
+      CoreModule.updateSettings({screen_disabled: true})
       return () => {
-        CoreModule.updateSettings({updating_screen: false})
+        CoreModule.updateSettings({screen_disabled: false})
       }
     }, []),
   )

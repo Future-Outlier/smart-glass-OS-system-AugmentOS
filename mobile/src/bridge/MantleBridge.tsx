@@ -329,10 +329,6 @@ export class MantleBridge extends EventEmitter {
     console.warn("disconnectFromWifi not yet implemented in new CoreModule API")
   }
 
-  async sendUpdatingScreen(enabled: boolean) {
-    return await CoreModule.sendUpdatingScreen(enabled)
-  }
-
   async setLc3AudioEnabled(enabled: boolean) {
     console.log("setLc3AudioEnabled", enabled)
     // TODO: Add setLc3AudioEnabled to CoreModule
