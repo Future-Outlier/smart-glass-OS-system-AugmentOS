@@ -320,3 +320,183 @@ console.log(diffString);
 const differences = deepCompare(obj1, obj2);
 console.log(differences);
 */
+
+import {useState, useEffect, useRef} from "react"
+import {Text, ScrollView, StyleSheet, TouchableOpacity} from "react-native"
+
+export const ConsoleLogger = () => {
+  const [logs, setLogs] = useState([])
+  const [isVisible, setIsVisible] = useState(true)
+  const scrollViewRef = useRef(null)
+
+  useEffect(() => {
+    const originalLog = console.log
+    const originalWarn = console.warn
+    const originalError = console.error
+
+    const addLog = (type, args) => {
+      const message = args.map(arg => (typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg))).join(" ")
+
+      setLogs(prev => {
+        const newLogs = [
+          ...prev,
+          {
+            type,
+            message,
+            timestamp: new Date().toLocaleTimeString(),
+          },
+        ]
+        return newLogs.slice(-500) // Keep only last 100
+      })
+    }
+
+    console.log = (...args) => {
+      addLog("log", args)
+      originalLog(...args)
+    }
+
+    console.warn = (...args) => {
+      addLog("warn", args)
+      originalWarn(...args)
+    }
+
+    console.error = (...args) => {
+      addLog("error", args)
+      originalError(...args)
+    }
+
+    return () => {
+      console.log = originalLog
+      console.warn = originalWarn
+      console.error = originalError
+    }
+  }, [])
+
+  if (!isVisible) {
+    return (
+      <TouchableOpacity style={styles.toggleButton} onPress={() => setIsVisible(true)}>
+        <Text style={styles.toggleButtonText}>Show Console</Text>
+      </TouchableOpacity>
+    )
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Console ({logs.length}/100)</Text>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.clearButton} onPress={() => setLogs([])}>
+            <Text style={styles.buttonText}>Clear</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.hideButton} onPress={() => setIsVisible(false)}>
+            <Text style={styles.buttonText}>Hide</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.logContainer}
+        onContentSizeChange={() => scrollViewRef.current?.scrollToEnd()}>
+        {logs.map((log, index) => (
+          <View key={index} style={styles.logEntry}>
+            <Text style={styles.timestamp}>{log.timestamp}</Text>
+            <Text
+              style={[
+                styles.logText,
+                log.type === "error" && styles.errorText,
+                log.type === "warn" && styles.warnText,
+              ]}>
+              [{log.type.toUpperCase()}] {log.message}
+            </Text>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    position: "absolute",
+    top: 50,
+    left: 0,
+    right: 0,
+    height: 250,
+    backgroundColor: "#000",
+    borderTopWidth: 2,
+    borderTopColor: "#333",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 8,
+    backgroundColor: "#1a1a1a",
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
+  },
+  headerText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  headerButtons: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  clearButton: {
+    backgroundColor: "#444",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  hideButton: {
+    backgroundColor: "#444",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 12,
+  },
+  logContainer: {
+    flex: 1,
+    padding: 8,
+  },
+  logEntry: {
+    marginBottom: 4,
+  },
+  timestamp: {
+    color: "#888",
+    fontSize: 10,
+    fontFamily: "monospace",
+  },
+  logText: {
+    color: "#0f0",
+    fontFamily: "monospace",
+    fontSize: 11,
+  },
+  errorText: {
+    color: "#f00",
+  },
+  warnText: {
+    color: "#ff0",
+  },
+  toggleButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "#1a1a1a",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  toggleButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+})

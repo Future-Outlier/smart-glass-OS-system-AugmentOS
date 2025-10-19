@@ -2,6 +2,7 @@ import {Screen, Text} from "@/components/ignite"
 import {Button} from "@/components/ignite/Button"
 import {Spacer} from "@/components/misc/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {DeviceTypes} from "@/utils/Constants"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -11,11 +12,13 @@ import {TextStyle, View, ViewStyle} from "react-native"
 export default function OnboardingWelcome() {
   const {theme, themed} = useAppTheme()
   const {push} = useNavigationHistory()
+  const [_onboarding, setOnboardingCompleted] = useSetting(SETTINGS_KEYS.onboarding_completed)
 
   // User has smart glasses - go to glasses selection screen
   const handleHasGlasses = async () => {
     // TODO: Track analytics event - user has glasses
     // analytics.track('onboarding_has_glasses_selected')
+    setOnboardingCompleted(true)
     push("/pairing/select-glasses-model", {onboarding: true})
   }
 
@@ -23,7 +26,7 @@ export default function OnboardingWelcome() {
   const handleNoGlasses = () => {
     // TODO: Track analytics event - user doesn't have glasses
     // analytics.track('onboarding_no_glasses_selected')
-
+    setOnboardingCompleted(true)
     // Go directly to simulated glasses pairing screen
     push("/pairing/prep", {glassesModelName: DeviceTypes.SIMULATED})
   }

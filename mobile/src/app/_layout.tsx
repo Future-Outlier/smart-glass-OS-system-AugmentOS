@@ -10,6 +10,7 @@ import Constants from "expo-constants"
 import {registerGlobals} from "@livekit/react-native-webrtc"
 import {initializeSettings} from "@/stores/settings"
 // import {ErrorBoundary} from "@/components/ErrorBoundary/ErrorBoundary"
+// import {ConsoleLogger} from "@/utils/debug/console"
 
 Sentry.init({
   dsn: Constants.expoConfig?.extra?.SENTRY_DSN,
@@ -80,18 +81,19 @@ function Root() {
 
   return (
     // <ErrorBoundary catchErrors="always">
-      <AllProviders>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            gestureEnabled: true,
-            gestureDirection: "horizontal",
-            // gestureResponseDistance: 100,
-            // fullScreenGestureEnabled: true,
-            animation: "none",
-          }}
-        />
-      </AllProviders>
+    <AllProviders>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
+          // gestureResponseDistance: 100,
+          // fullScreenGestureEnabled: true,
+          animation: "none",
+        }}
+      />
+      {/*<ConsoleLogger />*/}
+    </AllProviders>
     // </ErrorBoundary>
   )
 }

@@ -65,14 +65,13 @@ export const CompactDeviceStatus: React.FC = () => {
       if (!requirementsCheck) {
         return
       }
-
-      await CoreModule.connectDefault()
     } catch (error) {
       console.error("connect to glasses error:", error)
       showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
     } finally {
       setIsCheckingConnectivity(false)
     }
+    await CoreModule.connectDefault()
   }
 
   const handleConnectOrDisconnect = async () => {
