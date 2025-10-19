@@ -5,6 +5,7 @@ import {getTimeZone} from "react-native-localize"
 import restComms from "@/managers/RestComms"
 import {isDeveloperBuildOrTestflight} from "@/utils/buildDetection"
 import CoreModule from "core"
+import Toast from "react-native-toast-message"
 
 export const SETTINGS_KEYS = {
   enable_phone_notifications: "enable_phone_notifications",
@@ -198,9 +199,13 @@ export const useSettingsStore = create<SettingsState>()(
         const jsonValue = JSON.stringify(value)
         await AsyncStorage.setItem(key, jsonValue)
 
-        // Update core settings if needed
-        if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number]) && updateCore) {
-          CoreModule.updateSettings({[key]: value})
+        try {
+          // Update core settings if needed
+          if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number]) && updateCore) {
+            CoreModule.updateSettings({[key]: value})
+          }
+        } catch (e) {
+          console.log("SETTINGS: couldn't update core settings: ", e)
         }
 
         // Sync with server if needed
@@ -219,6 +224,12 @@ export const useSettingsStore = create<SettingsState>()(
         set(state => ({
           settings: {...state.settings, [key]: oldValue},
         }))
+
+        Toast.show({
+          type: "error",
+          text1: "Failed to save setting",
+          text2: error + "",
+        })
 
         // throw error
       }

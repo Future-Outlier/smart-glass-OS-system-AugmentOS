@@ -218,8 +218,7 @@ export default function PairingPrepScreen() {
 
     // skip pairing for simulated glasses:
     if (glassesModelName.startsWith(DeviceTypes.SIMULATED)) {
-      // await useSettingsStore.getState().setSetting(SETTINGS_KEYS.default_wearable, DeviceTypes.SIMULATED)
-      CoreModule.connectSimulated()
+      await CoreModule.connectSimulated()
       clearHistoryAndGoHome()
       return
     }
