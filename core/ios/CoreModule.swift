@@ -38,6 +38,10 @@ public class CoreModule: Module {
             CoreManager.shared.handle_connect_by_name(deviceName)
         }
 
+        AsyncFunction("connectSimulated") {
+            CoreManager.shared.handle_connect_simulated()
+        }
+
         AsyncFunction("disconnect") {
             CoreManager.shared.handle_disconnect()
         }

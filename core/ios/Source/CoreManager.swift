@@ -801,9 +801,6 @@ struct ViewState {
             return
         }
         Bridge.log("Mentra: handleDeviceReady(): \(sgc.type)")
-        // send to the server our battery status:
-        Bridge.sendBatteryStatus(level: sgc.batteryLevel ?? -1, charging: false)
-        Bridge.sendGlassesConnectionState(modelName: defaultWearable, status: "CONNECTED")
 
         pendingWearable = ""
         defaultWearable = sgc.type
@@ -815,6 +812,10 @@ struct ViewState {
         } else if defaultWearable.contains(DeviceTypes.MACH1) {
             handleMach1Ready()
         }
+
+        // send to the server our battery status:
+        Bridge.sendBatteryStatus(level: sgc.batteryLevel ?? -1, charging: false)
+        Bridge.sendGlassesConnectionState(modelName: defaultWearable, status: "CONNECTED")
 
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
@@ -1208,6 +1209,13 @@ struct ViewState {
             sgc?.connectById(self.deviceName)
             handle_request_status()
         }
+    }
+
+    func handle_connect_simulated() {
+        defaultWearable = DeviceTypes.SIMULATED
+        deviceName = DeviceTypes.SIMULATED
+        initSGC(defaultWearable)
+        handleDeviceReady()
     }
 
     func handle_disconnect() {

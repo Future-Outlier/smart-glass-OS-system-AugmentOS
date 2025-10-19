@@ -46,6 +46,8 @@ class CoreModule : Module() {
             coreManager?.handle_connect_by_name(deviceName)
         }
 
+        AsyncFunction("connectSimulated") { coreManager?.handle_connect_simulated() }
+
         AsyncFunction("disconnect") { coreManager?.handle_disconnect() }
 
         AsyncFunction("forget") { coreManager?.handle_forget() }

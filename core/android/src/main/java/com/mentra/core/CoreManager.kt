@@ -783,6 +783,11 @@ class CoreManager {
             handle_request_status()
         }
 
+        if (sgc is Simulated) {
+            defaultWearable = DeviceTypes.SIMULATED
+            handle_request_status()
+        }
+
         isSearching = false
         handle_request_status()
 
@@ -1051,6 +1056,13 @@ class CoreManager {
         initSGC(pendingWearable)
         sgc?.connectById(deviceName)
         handle_request_status()
+    }
+
+    fun handle_connect_simulated() {
+        defaultWearable = DeviceTypes.SIMULATED
+        deviceName = DeviceTypes.SIMULATED
+        initSGC(defaultWearable)
+        handleDeviceReady()
     }
 
     fun handle_disconnect() {

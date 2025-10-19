@@ -13,6 +13,7 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   requestStatus(): Promise<void>
   connectDefault(): Promise<void>
   connectByName(deviceName: string): Promise<void>
+  connectSimulated(): Promise<void>
   disconnect(): Promise<void>
   forget(): Promise<void>
   findCompatibleDevices(modelName: string): Promise<void>
