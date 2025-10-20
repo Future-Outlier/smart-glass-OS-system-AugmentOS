@@ -37,9 +37,9 @@ export type {
 // Applet types (compile-time only)
 // ============================================================================
 
-// export type {
-//   AppletType,
-//   AppPermissionType,
-//   AppletPermission,
-//   AppletInterface,
-// } from "./applet";
+export type {
+  AppletType,
+  AppPermissionType,
+  AppletPermission,
+  AppletInterface,
+} from "./applet";

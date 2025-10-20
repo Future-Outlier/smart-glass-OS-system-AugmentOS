@@ -2,13 +2,13 @@
 
 ## Completed ✅
 
-### 1. Created @mentra/types Package
+### 1. Created @mentra/types Package ✅
 
 **Location**: `cloud/packages/types/`
 
 Created shared types package with Bun-compatible exports:
 
-- ✅ `src/enums.ts` - Runtime enums (HardwareType, HardwareRequirementLevel)
+- ✅ `src/enums.ts` - Runtime enums (HardwareType, etc.)
 - ✅ `src/hardware.ts` - Hardware capability types
 - ✅ `src/applet.ts` - Client-facing app types
 - ✅ `src/index.ts` - Main export with explicit `export type` syntax
@@ -23,6 +23,27 @@ Created shared types package with Bun-compatible exports:
 - **NO** `export *` statements (Bun compatibility)
 - Compiles successfully: `bun run build` ✅
 - Bun runtime works: `bun run src/index.ts` ✅
+
+### 1a. Fixed CI/CD Builds for @mentra/types ✅
+
+**Files Modified**: Dockerfiles and GitHub Actions workflows
+
+Fixed build order to ensure types package is built before SDK and cloud:
+
+- ✅ `docker/Dockerfile.porter` - Added types build step
+- ✅ `docker/Dockerfile.livekit` - Added types build step
+- ✅ `.github/workflows/cloud-build.yml` - Added types + SDK build steps
+- ✅ `.github/workflows/cloud-sdk-build.yml` - Added types build step
+
+**Build Order**:
+
+```
+1. @mentra/types → bun run build (creates dist/)
+2. @mentra/sdk → bun run build (imports from types dist/)
+3. @mentra/cloud → bun run build (imports from types dist/)
+```
+
+**Why needed**: Production builds use `exports.default` which points to `dist/`, so types must be compiled first.
 
 ### 2. Created ClientAppsService
 
@@ -69,7 +90,7 @@ Fast endpoint for mobile home screen:
 - ✅ Ran `bun install` to link workspace package
 - ✅ Verified import works with test file
 
-### 6. Updated UserSession
+### 6. Updated UserSession ✅
 
 **Location**: `cloud/packages/cloud/src/services/session/UserSession.ts`
 
@@ -77,12 +98,46 @@ Fast endpoint for mobile home screen:
 - ✅ In-memory cache for app health status
 - ✅ Prevents repeated external health checks
 
+### 7. Updated SDK to Use Bun Bundler ✅
+
+**Location**: `cloud/packages/sdk/`
+
+- ✅ Split build into `build:js` (Bun bundler) and `build:types` (tsc)
+- ✅ Added `@mentra/types` as devDependency
+- ✅ Updated `tsconfig.json` with `emitDeclarationOnly: true`
+- ✅ Verified bundling: No `@mentra/types` references in dist/
+
+**Result**: SDK can import from `@mentra/types`, bundles it at build time, published package is self-contained.
+
 ## What We Did NOT Do (By Design)
 
 - ❌ Did **NOT** delete old type definitions (kept for comparison)
 - ❌ Did **NOT** change existing endpoints (backward compatible)
 - ❌ Did **NOT** migrate all SDK types (only what's needed)
 - ❌ Did **NOT** modify app lifecycle operations
+
+## Recent Fixes 🔧
+
+### CI/CD Build Issues (Resolved ✅)
+
+**Problem**: CI builds failing with `Cannot find module '@mentra/types'`
+
+**Root Cause**: Types package wasn't being built before SDK/cloud tried to import from it in production builds.
+
+**Solution**: Updated all Dockerfiles and GitHub Actions to build packages in correct order:
+
+1. Build @mentra/types first
+2. Build @mentra/sdk second
+3. Build @mentra/cloud last
+
+**Files Fixed**:
+
+- `docker/Dockerfile.porter`
+- `docker/Dockerfile.livekit`
+- `.github/workflows/cloud-build.yml`
+- `.github/workflows/cloud-sdk-build.yml`
+
+See `CI-BUILD-FIXES.md` for details.
 
 ## Next Steps 🚀
 
@@ -296,6 +351,9 @@ Old endpoint did 5+ queries (user, apps, orgs, developers, uptime).
 - [x] Service returns AppletInterface
 - [x] API endpoint created and wired
 - [x] Import from @mentra/types works
+- [x] SDK configured to bundle @mentra/types
+- [x] CI/CD builds fixed (types built first)
+- [x] Docker production builds working
 - [ ] Response time <100ms (95th percentile)
 - [ ] Response size ~2KB for 10 apps
 - [ ] Mobile client integration works
@@ -303,11 +361,15 @@ Old endpoint did 5+ queries (user, apps, orgs, developers, uptime).
 
 ## Timeline
 
-**Completed**: Package creation, service, API, wiring (1-2 hours)
+**Completed**:
+
+- Package creation, service, API, wiring (1-2 hours)
+- SDK bundling setup (30 min)
+- CI/CD build fixes (30 min)
 
 **Next**: Testing, mobile integration, rollout (2-4 hours)
 
-**Total**: ~6 hours for complete implementation and deployment
+**Total**: ~6-8 hours for complete implementation and deployment
 
 ## References
 
@@ -317,3 +379,5 @@ Old endpoint did 5+ queries (user, apps, orgs, developers, uptime).
 - [Types Package Guide](./types-package-guide.md)
 - [Bun Export Pattern](./bun-export-pattern.md)
 - [Example Implementation](./example-implementation.md)
+- [SDK Bundling Setup](./SDK-BUNDLING-SETUP.md)
+- [CI Build Fixes](./CI-BUILD-FIXES.md)
