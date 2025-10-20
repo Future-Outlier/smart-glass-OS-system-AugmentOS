@@ -13,7 +13,7 @@ import {localStorageService} from "@/services/asg/localStorageService"
 import {translate} from "@/i18n"
 import showAlert from "@/utils/AlertUtils"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {getModelFeatures} from "@/utils/hardware"
 
 export default function GallerySettingsScreen() {
   const {goBack, push} = useNavigationHistory()
@@ -118,7 +118,7 @@ export default function GallerySettingsScreen() {
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
   }
 
-  let features = getCapabilitiesForModel(defaultWearable)
+  let features = getModelFeatures(defaultWearable)
 
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>

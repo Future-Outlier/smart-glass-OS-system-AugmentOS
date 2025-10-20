@@ -7,7 +7,6 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import DeviceSettings from "@/components/glasses/DeviceSettings"
 import {translate} from "@/i18n/translate"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
 
 export default function Glasses() {
   const {theme} = useAppTheme()

@@ -12,7 +12,7 @@ import {translate} from "@/i18n/translate"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {getCapabilitiesForModel} from "@/cloud"
 
 export default function DashboardSettingsScreen() {
   const {status} = useCoreStatus()

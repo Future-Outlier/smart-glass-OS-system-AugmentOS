@@ -1,6 +1,5 @@
 import {CompatibilityResult} from "@/utils/HardwareCompatibility"
-import {HardwareRequirement} from "@cloud/packages/sdk"
-
+import {AppletInterface} from "@cloud"
 export type AppPermissionType =
   | "ALL"
   | "MICROPHONE"
@@ -72,18 +71,18 @@ export type AppletType = "standard" | "background"
 //   offlineRoute?: string // React Native route for offline apps
 // }
 
-export interface AppletInterface {
-  packageName: string
-  name: string
-  webviewUrl: string
-  logoUrl: string
-  type: AppletType // "standard" (foreground) or "background"
-  permissions: AppletPermission[]
-  running: boolean
-  loading: boolean
-  healthy: boolean
-  hardwareRequirements: HardwareRequirement[]
-}
+// export interface AppletInterface {
+//   packageName: string
+//   name: string
+//   webviewUrl: string
+//   logoUrl: string
+//   type: AppletType // "standard" (foreground) or "background"
+//   permissions: AppletPermission[]
+//   running: boolean
+//   loading: boolean
+//   healthy: boolean
+//   hardwareRequirements: HardwareRequirement[]
+// }
 
 export interface ClientAppletInterface extends AppletInterface {
   isOffline: boolean

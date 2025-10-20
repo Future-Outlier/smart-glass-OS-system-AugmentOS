@@ -1,5 +1,6 @@
 import {Capabilities, HardwareRequirement, HardwareType, HardwareRequirementLevel} from "@cloud/packages/sdk/src/types"
 import {simulatedGlasses} from "@cloud/packages/cloud/src/config/capabilities/simulated-glasses"
+import {HARDWARE_CAPABILITIES} from "@/cloud"
 
 /**
  * Result of a hardware compatibility check
@@ -211,4 +212,12 @@ export class HardwareCompatibility {
 
   //   return parts.join(" | ")
   // }
+}
+
+export const getModelFeatures = (model: string): Capabilities => {
+  if (!HARDWARE_CAPABILITIES[model]) {
+    throw new Error(`Unknown model: ${model}`)
+  }
+  let capabilities = HARDWARE_CAPABILITIES[model]
+  return capabilities
 }

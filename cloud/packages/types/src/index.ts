@@ -14,7 +14,7 @@
 // Enums (runtime values)
 // ============================================================================
 
-export { HardwareType, HardwareRequirementLevel } from "./enums";
+export { HardwareType, HardwareRequirementLevel, DeviceType } from "./enums";
 
 // ============================================================================
 // Hardware types (compile-time only)
@@ -31,6 +31,7 @@ export type {
   LightCapabilities,
   PowerCapabilities,
   Capabilities,
+  HARDWARE_CAPABILITIES,
 } from "./hardware";
 
 // ============================================================================
