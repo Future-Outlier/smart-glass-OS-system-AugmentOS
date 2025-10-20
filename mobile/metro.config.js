@@ -20,7 +20,7 @@ config.transformer.getTransformOptions = async () => ({
 config.resolver.sourceExts.push("cjs")
 
 // Watch the core and cloud modules for changes
-config.watchFolders = [path.resolve(__dirname, "../core"), path.resolve(__dirname, "../cloud")]
+config.watchFolders = [path.resolve(__dirname, "./modules/core"), path.resolve(__dirname, "../cloud")]
 
 // Resolve the core module from the parent directory
 config.resolver.nodeModulesPaths = [path.resolve(__dirname, "node_modules"), path.resolve(__dirname, "..")]

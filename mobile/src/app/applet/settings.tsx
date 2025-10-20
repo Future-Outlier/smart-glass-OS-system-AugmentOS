@@ -18,7 +18,7 @@ import ToggleSetting from "@/components/settings/ToggleSetting"
 import ActionButton from "@/components/ui/ActionButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import restComms from "@/managers/RestComms"
+import restComms from "@/services/RestComms"
 import {useApplets, useRefreshApplets, useStartApplet, useStopApplet} from "@/stores/applets"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
@@ -106,13 +106,13 @@ export default function AppSettings() {
     if (!appInfo) return
 
     try {
-      if (appInfo.is_running) {
+      if (appInfo.running) {
         stopApp(packageName)
         return
       }
 
       // If the app appears offline, confirm before proceeding
-      if (appInfo.isOnline === false) {
+      if (!appInfo.healthy) {
         const developerName = (
           " " +
           ((serverAppInfo as any)?.organization?.name ||
@@ -157,7 +157,7 @@ export default function AppSettings() {
       // Refresh the app status to get the accurate state from the server
       refreshApplets()
 
-      console.error(`Error ${appInfo.is_running ? "stopping" : "starting"} app:`, error)
+      console.error(`Error ${appInfo.running ? "stopping" : "starting"} app:`, error)
     }
   }
 
@@ -179,7 +179,7 @@ export default function AppSettings() {
             try {
               setIsUninstalling(true)
               // First stop the app if it's running
-              if (appInfo?.is_running) {
+              if (appInfo?.running) {
                 // Optimistically update UI first
                 stopApp(packageName)
                 await restComms.stopApp(packageName)
@@ -197,7 +197,7 @@ export default function AppSettings() {
               replace("/(tabs)/home")
             } catch (error: any) {
               console.error("Error uninstalling app:", error)
-              refreshAppStatus()
+              refreshApplets()
               Toast.show({
                 type: "error",
                 text1: `Error uninstalling app: ${error.message || "Unknown error"}`,

@@ -1,6 +1,3 @@
-// scan.tsx
-
-import bridge from "@/bridge/MantleBridge"
 import {Header, Screen, Text} from "@/components/ignite"
 import {PillButton} from "@/components/ignite/PillButton"
 import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
@@ -21,6 +18,7 @@ import {useCallback, useEffect, useRef, useState} from "react"
 import {BackHandler, Platform, ScrollView, TouchableOpacity, View, ViewStyle} from "react-native"
 import Animated, {useAnimatedStyle, useSharedValue, withDelay, withTiming} from "react-native-reanimated"
 import Icon from "react-native-vector-icons/FontAwesome"
+import CoreModule from "core"
 
 export default function SelectGlassesBluetoothScreen() {
   const {status} = useCoreStatus()
@@ -54,8 +52,8 @@ export default function SelectGlassesBluetoothScreen() {
 
   // Shared function to handle the forget glasses logic
   const handleForgetGlasses = useCallback(async () => {
-    await bridge.sendDisconnectWearable()
-    await bridge.sendForgetSmartGlasses()
+    await CoreModule.disconnect()
+    await CoreModule.forget()
     // Clear NavigationHistoryContext history to prevent issues with back navigation
     clearHistory()
     // Use dismissTo to properly go back to select-glasses-model and clear the stack
@@ -148,7 +146,7 @@ export default function SelectGlassesBluetoothScreen() {
             },
             {
               text: "Yes",
-              onPress: () => bridge.sendSearchForCompatibleDeviceNames(glassesModelName), // Retry search
+              onPress: () => CoreModule.findCompatibleDevices(glassesModelName), // Retry search
             },
           ],
           {cancelable: false}, // Prevent closing the alert by tapping outside
@@ -173,7 +171,7 @@ export default function SelectGlassesBluetoothScreen() {
     const initializeAndSearchForDevices = async () => {
       console.log("Searching for compatible devices for: ", glassesModelName)
       setSearchResults([])
-      bridge.sendSearchForCompatibleDeviceNames(glassesModelName)
+      CoreModule.findCompatibleDevices(glassesModelName)
     }
 
     if (Platform.OS === "ios") {
@@ -230,7 +228,7 @@ export default function SelectGlassesBluetoothScreen() {
 
     // All permissions granted, proceed with connecting to the wearable
     setTimeout(() => {
-      bridge.sendConnectByName(deviceName)
+      CoreModule.connectByName(deviceName)
     }, 2000)
     push("/pairing/loading", {glassesModelName: glassesModelName})
   }

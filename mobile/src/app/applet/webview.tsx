@@ -8,7 +8,7 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {useLocalSearchParams, useFocusEffect} from "expo-router"
 import {Header, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import restComms from "@/managers/RestComms"
+import restComms from "@/services/RestComms"
 
 export default function AppWebView() {
   const {theme} = useAppTheme()

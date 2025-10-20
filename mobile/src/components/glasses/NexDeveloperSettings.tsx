@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react"
-import {ScrollView, Text, TextInput, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {ScrollView, TextInput, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {Text} from "@/components/ignite"
 
 import bridge from "@/bridge/MantleBridge"
 import {PillButton} from "@/components/ignite"
@@ -15,6 +16,7 @@ import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
 import ToggleSetting from "../settings/ToggleSetting"
 import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import CoreModule from "core"
 
 // Nex Interface Version - Single source of truth
 export const NEX_INTERFACE_VERSION = "1.0.0"
@@ -258,7 +260,6 @@ export default function NexDeveloperSettings() {
   const {status} = useCoreStatus()
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const features = getCapabilitiesForModel(defaultWearable)
 
   // Mentra Nex BLE test state variables
   const [text, setText] = useState("Hello World")
@@ -336,7 +337,12 @@ export default function NexDeveloperSettings() {
         ])
         return
       }
-      await bridge.sendDisplayText(text, parseInt(positionX, 0), parseInt(positionY, 0), parseInt(size, 10))
+      await CoreModule.displayText({
+        text,
+        x: parseInt(positionX, 0),
+        y: parseInt(positionY, 0),
+        size: parseInt(size, 10),
+      })
     } else {
       showAlert("Please connect to the device", "Please connect to the device", [
         {
@@ -357,7 +363,7 @@ export default function NexDeveloperSettings() {
 
   const onSendImageClick = async () => {
     if (status.glasses_info?.model_name) {
-      await bridge.sendDisplayImage(selectedImageType, selectedImageSize)
+      await CoreModule.displayImage(selectedImageType, selectedImageSize)
     } else {
       showAlert("Please connect to the device", "Please connect to the device", [
         {
@@ -371,7 +377,7 @@ export default function NexDeveloperSettings() {
 
   const onClearDisplayClick = async () => {
     if (status.glasses_info?.model_name) {
-      await bridge.sendClearDisplay()
+      await CoreModule.clearDisplay()
     } else {
       showAlert("Please connect to the device", "Please connect to the device", [
         {

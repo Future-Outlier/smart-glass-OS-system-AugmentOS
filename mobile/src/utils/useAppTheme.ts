@@ -47,7 +47,7 @@ export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
     const loadThemePreference = async () => {
       try {
         if (savedTheme === "system") {
-          setTheme(colorScheme === "dark" ? "dark" : "light")
+          setTheme(undefined)
         } else {
           setTheme(savedTheme)
         }

@@ -12,6 +12,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Screen, Header} from "@/components/ignite"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import CoreModule from "core"
 
 type PhotoSize = "small" | "medium" | "large"
 type VideoResolution = "720p" | "1080p" | "1440p" | "4K"
@@ -84,7 +85,7 @@ export default function CameraSettingsScreen() {
   }
 
   const handleVideoResolutionChange = async (resolution: VideoResolution) => {
-    if (!status.core_info.puck_connected || !status.glasses_info?.model_name) {
+    if (!status.glasses_info?.model_name) {
       console.log("Cannot change video resolution - glasses not connected")
       return
     }
@@ -119,7 +120,7 @@ export default function CameraSettingsScreen() {
 
     try {
       setLedEnabled(enabled)
-      await bridge.updateSettings({
+      await CoreModule.updateSettings({
         button_camera_led: enabled,
       })
     } catch (error) {
@@ -238,7 +239,7 @@ export default function CameraSettingsScreen() {
           </View>
         )}
 
-        {!status.core_info.puck_connected && (
+        {!status.glasses_info?.model_name && (
           <View style={themed($warningContainer)}>
             <Text style={themed($warningText)}>Connect your glasses to change settings</Text>
           </View>
@@ -291,14 +292,14 @@ const $optionText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $warningContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  backgroundColor: colors.warning,
+  backgroundColor: colors.palette.angry600,
   padding: spacing.md,
   margin: spacing.md,
   borderRadius: spacing.xs,
 })
 
 const $warningText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.textDim,
+  color: colors.text,
   textAlign: "center",
 })
 

@@ -1,24 +1,22 @@
 import {INTENSE_LOGGING} from "@/utils/Constants"
 import {translate} from "@/i18n"
-import livekitManager from "@/managers/LivekitManager"
-import mantle from "@/managers/MantleManager"
-import socketComms from "@/managers/SocketComms"
+import livekit from "@/services/Livekit"
+import mantle from "@/services/MantleManager"
+import socketComms from "@/services/SocketComms"
 import {useSettingsStore} from "@/stores/settings"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {EventEmitter} from "events"
 
 import CoreModule from "core"
 import Toast from "react-native-toast-message"
 
-export class MantleBridge extends EventEmitter {
+export class MantleBridge {
   private static instance: MantleBridge | null = null
   private messageEventSubscription: any = null
   private lastMessage: string = ""
 
   // Private constructor to enforce singleton pattern
   private constructor() {
-    super()
     // Initialize message event listener
     this.initializeMessageEventListener()
   }
@@ -31,6 +29,11 @@ export class MantleBridge extends EventEmitter {
       MantleBridge.instance = new MantleBridge()
     }
     return MantleBridge.instance
+  }
+
+  // does nothing but ensures we initialize the class:
+  public async dummy() {
+    await Promise.resolve()
   }
 
   /**
@@ -71,16 +74,15 @@ export class MantleBridge extends EventEmitter {
       // Only check for duplicates on status messages, not other event types
       if ("status" in data) {
         if (this.lastMessage === jsonString) {
-          console.log("DUPLICATE STATUS MESSAGE FROM CORE")
+          console.log("BRIDGE: DUPLICATE STATUS MESSAGE FROM CORE")
           return
         }
         this.lastMessage = jsonString
       }
 
-      this.emit("dataReceived", data)
       this.parseDataFromCore(data)
     } catch (e) {
-      console.error("Failed to parse JSON from core message:", e)
+      console.error("BRIDGE: Failed to parse JSON from core message:", e)
       console.log(jsonString)
     }
   }
@@ -126,6 +128,7 @@ export class MantleBridge extends EventEmitter {
             videos: data.videos,
             total: data.total,
             has_content: data.has_content,
+            camera_busy: data.camera_busy, // Add camera busy state
           })
           break
         case "compatible_glasses_search_result":
@@ -171,9 +174,45 @@ export class MantleBridge extends EventEmitter {
           // Also forward to server for apps that need it
           socketComms.sendButtonPress(data.buttonId, data.pressType)
           break
-        case "audio_stop_request":
-          await bridge.sendCommand("audio_stop_request")
+        case "touch_event": {
+          const deviceModel = data.device_model ?? "Mentra Live"
+          const gestureName = data.gesture_name ?? "unknown"
+          const timestamp = typeof data.timestamp === "number" ? data.timestamp : Date.now()
+          GlobalEventEmitter.emit("TOUCH_EVENT", {
+            deviceModel,
+            gestureName,
+            timestamp,
+          })
+          socketComms.sendTouchEvent({
+            device_model: deviceModel,
+            gesture_name: gestureName,
+            timestamp,
+          })
           break
+        }
+        case "swipe_volume_status": {
+          const enabled = !!data.enabled
+          const timestamp = typeof data.timestamp === "number" ? data.timestamp : Date.now()
+          socketComms.sendSwipeVolumeStatus(enabled, timestamp)
+          GlobalEventEmitter.emit("SWIPE_VOLUME_STATUS", {enabled, timestamp})
+          break
+        }
+        case "switch_status": {
+          const switchType = typeof data.switch_type === "number" ? data.switch_type : (data.switchType ?? -1)
+          const switchValue = typeof data.switch_value === "number" ? data.switch_value : (data.switchValue ?? -1)
+          const timestamp = typeof data.timestamp === "number" ? data.timestamp : Date.now()
+          socketComms.sendSwitchStatus(switchType, switchValue, timestamp)
+          GlobalEventEmitter.emit("SWITCH_STATUS", {switchType, switchValue, timestamp})
+          break
+        }
+        case "rgb_led_control_response": {
+          const requestId = data.requestId ?? ""
+          const success = !!data.success
+          const errorMessage = typeof data.error === "string" ? data.error : null
+          socketComms.sendRgbLedControlResponse(requestId, success, errorMessage)
+          GlobalEventEmitter.emit("RGB_LED_CONTROL_RESPONSE", {requestId, success, error: errorMessage})
+          break
+        }
         case "wifi_scan_results":
           GlobalEventEmitter.emit("WIFI_SCAN_RESULTS", {
             networks: data.networks,
@@ -209,8 +248,8 @@ export class MantleBridge extends EventEmitter {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          if (livekitManager.isRoomConnected()) {
-            livekitManager.addPcm(bytes)
+          if (livekit.isRoomConnected()) {
+            livekit.addPcm(bytes)
           } else {
             socketComms.sendBinary(bytes)
           }
@@ -234,24 +273,6 @@ export class MantleBridge extends EventEmitter {
   }
 
   /**
-   * Sends data to Core
-   */
-  private async sendData(dataObj: any): Promise<any> {
-    try {
-      if (INTENSE_LOGGING) {
-        console.log("Sending data to Core:", JSON.stringify(dataObj))
-      }
-      return await CoreModule.handleCommand(JSON.stringify(dataObj))
-    } catch (error) {
-      console.error("Failed to send data to Core:", error)
-      Toast.show({
-        type: "error",
-        text1: `Error sending command to Core: ${error}`,
-      })
-    }
-  }
-
-  /**
    * Cleans up resources and resets the state
    */
   public cleanup() {
@@ -269,333 +290,93 @@ export class MantleBridge extends EventEmitter {
 
   /* Command methods to interact with Core */
 
-  async sendRequestStatus() {
-    await this.sendData({command: "request_status"})
-  }
-
-  async sendSearchForCompatibleDeviceNames(modelName: string) {
-    return await this.sendData({
-      command: "find_compatible_devices",
-      params: {
-        model_name: modelName,
-      },
-    })
-  }
-
-  async sendConnectDefault() {
-    return await this.sendData({
-      command: "connect_default",
-    })
-  }
-
-  async sendConnectByName(deviceName: string = "") {
-    console.log("sendConnectByName:", " deviceName")
-    return await this.sendData({
-      command: "connect_by_name",
-      params: {
-        device_name: deviceName,
-      },
-    })
-  }
-
-  async sendDisconnectWearable() {
-    return await this.sendData({command: "disconnect"})
-  }
-
-  async sendForgetSmartGlasses() {
-    return await this.sendData({command: "forget"})
-  }
-
-  async restartTranscription() {
-    console.log("Restarting transcription with new model...")
-
-    // Send restart command to native side
-    await this.sendData({
-      command: "restart_transcriber",
-    })
-  }
-
   async sendToggleEnforceLocalTranscription(enabled: boolean) {
     console.log("Toggling enforce local transcription:", enabled)
-
-    // Send toggle command to native side
-    await this.sendData({
-      command: "update_settings",
-      params: {
-        enforce_local_transcription: enabled,
-      },
+    return await CoreModule.updateSettings({
+      enforce_local_transcription: enabled,
     })
   }
 
   async updateButtonPhotoSize(size: string) {
-    return await this.sendData({
-      command: "update_settings",
-      params: {
-        button_photo_size: size,
-      },
+    return await CoreModule.updateSettings({
+      button_photo_size: size,
     })
   }
 
   async updateButtonVideoSettings(width: number, height: number, fps: number) {
-    return await this.sendData({
-      command: "update_settings",
-      params: {
-        button_video_width: width,
-        button_video_height: height,
-        button_video_fps: fps,
-      },
+    return await CoreModule.updateSettings({
+      button_video_width: width,
+      button_video_height: height,
+      button_video_fps: fps,
     })
   }
 
   async showDashboard() {
-    return await this.sendData({
-      command: "show_dashboard",
-    })
-  }
-
-  async startAppByPackageName(packageName: string) {
-    await this.sendData({
-      command: "start_app",
-      params: {
-        target: packageName,
-        repository: packageName,
-      },
-    })
-  }
-
-  async stopAppByPackageName(packageName: string) {
-    await this.sendData({
-      command: "stop_app",
-      params: {
-        target: packageName,
-      },
-    })
-  }
-
-  async installAppByPackageName(packageName: string) {
-    await this.sendData({
-      command: "install_app_from_repository",
-      params: {
-        target: packageName,
-      },
-    })
-  }
-
-  async sendRequestAppDetails(packageName: string) {
-    return await this.sendData({
-      command: "request_app_info",
-      params: {
-        target: packageName,
-      },
-    })
-  }
-
-  async sendUpdateAppSetting(packageName: string, settingsDeltaObj: any) {
-    return await this.sendData({
-      command: "update_app_settings",
-      params: {
-        target: packageName,
-        settings: settingsDeltaObj,
-      },
-    })
-  }
-
-  async sendUninstallApp(packageName: string) {
-    return await this.sendData({
-      command: "uninstall_app",
-      params: {
-        target: packageName,
-      },
-    })
+    return await CoreModule.showDashboard()
   }
 
   async updateSettings(settings: any) {
-    return await this.sendData({
-      command: "update_settings",
-      params: {
-        ...settings,
-      },
-    })
+    return await CoreModule.updateSettings(settings)
   }
 
-  async setGlassesWifiCredentials(ssid: string, password: string) {
-    return await this.sendData({
-      command: "set_glasses_wifi_credentials",
-      params: {
-        ssid,
-        password,
-      },
-    })
-  }
-
-  async sendWifiCredentials(ssid: string, password: string) {
-    console.log("Sending wifi credentials to Core", ssid, password)
-    return await this.sendData({
-      command: "send_wifi_credentials",
-      params: {
-        ssid,
-        password,
-      },
-    })
-  }
-
-  async requestWifiScan() {
-    return await this.sendData({
-      command: "request_wifi_scan",
-    })
+  async setGlassesWifiCredentials(ssid: string, _password: string) {
+    // TODO: Add setGlassesWifiCredentials to CoreModule
+    console.warn("setGlassesWifiCredentials not yet implemented in new CoreModule API")
+    console.log("Would set credentials:", ssid)
   }
 
   async disconnectFromWifi() {
     console.log("Sending WiFi disconnect command to Core")
-    return await this.sendData({
-      command: "disconnect_wifi",
-    })
-  }
-
-  async toggleUpdatingScreen(enabled: boolean) {
-    return await this.sendData({
-      command: "update_settings",
-      params: {
-        enabled: enabled,
-      },
-    })
-  }
-
-  async simulateHeadPosition(position: "up" | "down") {
-    return await this.sendData({
-      command: "simulate_head_position",
-      params: {
-        position: position,
-      },
-    })
-  }
-
-  async sendDisplayText(text: string, x: number, y: number, size: number) {
-    console.log("sendDisplayText", text, x, y, size)
-
-    return await this.sendData({
-      command: "display_text",
-      params: {
-        text: text,
-        x: x,
-        y: y,
-        size: size,
-      },
-    })
-  }
-
-  async sendDisplayImage(imageType: string, imageSize: string) {
-    return await this.sendData({
-      command: "display_image",
-      params: {
-        imageType: imageType,
-        imageSize: imageSize,
-      },
-    })
-  }
-
-  async sendClearDisplay() {
-    return await this.sendData({
-      command: "clear_display",
-    })
+    // TODO: Add disconnectWifi to CoreModule
+    console.warn("disconnectFromWifi not yet implemented in new CoreModule API")
   }
 
   async setLc3AudioEnabled(enabled: boolean) {
     console.log("setLc3AudioEnabled", enabled)
-    return await this.sendData({
-      command: "set_lc3_audio_enabled",
-      enabled: enabled,
-    })
+    // TODO: Add setLc3AudioEnabled to CoreModule
+    console.warn("setLc3AudioEnabled not yet implemented in new CoreModule API")
   }
   // Buffer recording commands
   async sendStartBufferRecording() {
-    return await this.sendData({
-      command: "start_buffer_recording",
-    })
+    return await CoreModule.startBufferRecording()
   }
 
   async sendStopBufferRecording() {
-    return await this.sendData({
-      command: "stop_buffer_recording",
-    })
+    return await CoreModule.stopBufferRecording()
   }
 
   async sendSaveBufferVideo(requestId: string, durationSeconds: number = 30) {
-    return await this.sendData({
-      command: "save_buffer_video",
-      params: {
-        request_id: requestId,
-        duration_seconds: durationSeconds,
-      },
-    })
+    return await CoreModule.saveBufferVideo(requestId, durationSeconds)
   }
 
   // Video recording commands
   async sendStartVideoRecording(requestId: string, save: boolean = true) {
-    return await this.sendData({
-      command: "start_video_recording",
-      params: {
-        request_id: requestId,
-        save: save,
-      },
-    })
+    return await CoreModule.startVideoRecording(requestId, save)
   }
 
   async sendStopVideoRecording(requestId: string) {
-    return await this.sendData({
-      command: "stop_video_recording",
-      params: {
-        request_id: requestId,
-      },
-    })
-  }
-
-  async sendCommand(command: string, params?: any) {
-    return await this.sendData({
-      command: command,
-      params: params || {},
-    })
+    return await CoreModule.stopVideoRecording(requestId)
   }
 
   async setSttModelDetails(path: string, languageCode: string) {
-    return await this.sendData({
-      command: "set_stt_model_details",
-      params: {
-        path: path,
-        languageCode: languageCode,
-      },
-    })
+    return await CoreModule.setSttModelDetails(path, languageCode)
   }
 
   async getSttModelPath(): Promise<string> {
-    return await this.sendData({
-      command: "get_stt_model_path",
-    })
+    return await CoreModule.getSttModelPath()
   }
 
   async validateSTTModel(path: string): Promise<boolean> {
-    return await this.sendData({
-      command: "validate_stt_model",
-      params: {
-        path: path,
-      },
-    })
+    return await CoreModule.validateSttModel(path)
   }
 
   async extractTarBz2(sourcePath: string, destinationPath: string) {
-    return await this.sendData({
-      command: "extract_tar_bz2",
-      params: {
-        source_path: sourcePath,
-        destination_path: destinationPath,
-      },
-    })
+    return await CoreModule.extractTarBz2(sourcePath, destinationPath)
   }
 
   async queryGalleryStatus() {
     console.log("[Bridge] Querying gallery status from glasses...")
-    // Just send the command, the response will come through the event system
-    return await this.sendCommand("query_gallery_status")
+    return await CoreModule.queryGalleryStatus()
   }
 }
 

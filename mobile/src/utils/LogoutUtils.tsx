@@ -2,8 +2,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import {supabase} from "@/supabase/supabaseClient"
 import bridge from "@/bridge/MantleBridge"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import restComms from "@/managers/RestComms"
+import restComms from "@/services/RestComms"
 import {SETTINGS_KEYS} from "@/stores/settings"
+import CoreModule from "core"
 
 export class LogoutUtils {
   private static readonly TAG = "LogoutUtils"
@@ -52,7 +53,7 @@ export class LogoutUtils {
 
     try {
       // First try to disconnect any connected glasses
-      await bridge.sendDisconnectWearable()
+      await CoreModule.disconnect()
       console.log(`${this.TAG}: Disconnected glasses`)
     } catch (error) {
       console.warn(`${this.TAG}: Error disconnecting glasses:`, error)
@@ -60,7 +61,7 @@ export class LogoutUtils {
 
     try {
       // Then forget the glasses completely
-      await bridge.sendForgetSmartGlasses()
+      await CoreModule.forget()
       console.log(`${this.TAG}: Forgot glasses pairing`)
     } catch (error) {
       console.warn(`${this.TAG}: Error forgetting glasses:`, error)
