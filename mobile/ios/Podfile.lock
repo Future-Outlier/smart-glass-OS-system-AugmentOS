@@ -2613,7 +2613,7 @@ PODS:
 
 DEPENDENCIES:
   - BVLinearGradient (from `../node_modules/react-native-linear-gradient`)
-  - Core (from `../node_modules/core/ios`)
+  - Core (from `../modules/core/ios`)
   - EXApplication (from `../node_modules/expo-application/ios`)
   - EXAV (from `../node_modules/expo-av/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
@@ -2763,7 +2763,7 @@ EXTERNAL SOURCES:
   BVLinearGradient:
     :path: "../node_modules/react-native-linear-gradient"
   Core:
-    :path: "../node_modules/core/ios"
+    :path: "../modules/core/ios"
   EXApplication:
     :path: "../node_modules/expo-application/ios"
   EXAV:
