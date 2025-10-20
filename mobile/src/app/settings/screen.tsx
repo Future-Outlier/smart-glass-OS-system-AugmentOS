@@ -24,14 +24,6 @@ export default function ScreenSettingsScreen() {
     }, []),
   )
 
-  const changeDepth = async (newDepth: number) => {
-    await setDashboardDepth(newDepth)
-  }
-
-  const changeHeight = async (newHeight: number) => {
-    await setDashboardHeight(newHeight)
-  }
-
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
       <Header titleTx="screenSettings:title" leftIcon="caretLeft" onLeftPress={goBack} />
@@ -43,8 +35,8 @@ export default function ScreenSettingsScreen() {
           value={dashboardDepth ?? 5}
           min={1}
           max={5}
-          onValueChange={changeDepth}
-          onValueSet={changeDepth}
+          onValueChange={_value => {}}
+          onValueSet={setDashboardDepth}
         />
 
         <Spacer height={theme.spacing.md} />
@@ -55,8 +47,8 @@ export default function ScreenSettingsScreen() {
           value={dashboardHeight ?? 4}
           min={1}
           max={8}
-          onValueChange={changeHeight}
-          onValueSet={changeHeight}
+          onValueChange={_value => {}}
+          onValueSet={setDashboardHeight}
         />
       </ScrollView>
     </Screen>

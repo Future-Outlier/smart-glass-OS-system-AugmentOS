@@ -1,5 +1,4 @@
 // src/index.ts
-
 export * from "./types/token";
 
 // Message type enums

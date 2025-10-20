@@ -1,4 +1,5 @@
 import { Logger } from "pino";
+import { VideoConfig, AudioConfig, StreamConfig } from "@mentra/sdk";
 import { LiveInputResult, CloudflareOutput } from "./CloudflareStreamService";
 
 /**
@@ -45,6 +46,11 @@ export interface UnmanagedStreamState extends BaseStreamState {
   rtmpUrl: string;
   requestingAppId: string;
   streamId: string;
+  options?: {
+    video?: VideoConfig;
+    audio?: AudioConfig;
+    stream?: StreamConfig;
+  };
 }
 
 /**
@@ -61,6 +67,16 @@ export interface CreateManagedStreamOptions {
   liveInput: LiveInputResult;
 }
 
+export interface CreateUnmanagedStreamOptions {
+  userId: string;
+  appId: string;
+  rtmpUrl: string;
+  streamId?: string;
+  video?: VideoConfig;
+  audio?: AudioConfig;
+  stream?: StreamConfig;
+}
+
 /**
  * Result of checking stream conflicts
  */
@@ -74,7 +90,7 @@ export interface StreamConflictResult {
  * Manages in-memory state for both managed and unmanaged streams
  * Enforces single stream per user constraint
  */
-export class StreamStateManager {
+export class StreamRegistry {
   private logger: Logger;
 
   // Map of userId -> current stream state
@@ -87,7 +103,7 @@ export class StreamStateManager {
   private cfInputToUser: Map<string, string>;
 
   constructor(logger: Logger) {
-    this.logger = logger.child({ service: "StreamStateManager" });
+    this.logger = logger.child({ service: "StreamRegistry" });
     this.userStreams = new Map();
     this.streamToUser = new Map();
     this.cfInputToUser = new Map();
@@ -241,11 +257,28 @@ export class StreamStateManager {
    * Create an unmanaged stream
    */
   createUnmanagedStream(
-    userId: string,
-    appId: string,
-    rtmpUrl: string,
+    options: CreateUnmanagedStreamOptions,
   ): UnmanagedStreamState {
-    const streamId = this.generateStreamId();
+    const {
+      userId,
+      appId,
+      rtmpUrl,
+      streamId: providedStreamId,
+      video,
+      audio,
+      stream,
+    } = options;
+
+    const streamId = providedStreamId ?? this.generateStreamId("s");
+
+    const optionsPayload =
+      video || audio || stream
+        ? {
+            video,
+            audio,
+            stream,
+          }
+        : undefined;
 
     const unmanagedStream: UnmanagedStreamState = {
       userId,
@@ -255,6 +288,7 @@ export class StreamStateManager {
       streamId,
       createdAt: new Date(),
       lastActivity: new Date(),
+      options: optionsPayload,
     };
 
     // Update maps
@@ -443,10 +477,10 @@ export class StreamStateManager {
    * Generate a unique stream ID
    * Using shorter format to reduce BLE message size
    */
-  private generateStreamId(): string {
-    // Short format: m + 6 char timestamp + 4 random chars = ~11 chars total
+  private generateStreamId(prefix: string = "m"): string {
+    // Short format: prefix + 6 char timestamp + 4 random chars = ~11 chars total
     const timestamp = Date.now().toString(36).slice(-6);
     const random = Math.random().toString(36).slice(2, 6);
-    return `m${timestamp}${random}`;
+    return `${prefix}${timestamp}${random}`;
   }
 }

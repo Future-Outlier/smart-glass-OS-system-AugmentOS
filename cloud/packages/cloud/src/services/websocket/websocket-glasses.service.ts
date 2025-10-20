@@ -508,9 +508,11 @@ export class GlassesWebSocketService {
               userSession,
               status,
             );
-          // If not handled by managed streaming, delegate to VideoManager
+          // If not handled by managed streaming, delegate to the unmanaged extension
           if (!managedHandled) {
-            userSession.videoManager.handleRtmpStreamStatus(status);
+            userSession.unmanagedStreamingExtension.handleRtmpStreamStatus(
+              status,
+            );
           }
           break;
         }
@@ -522,7 +524,7 @@ export class GlassesWebSocketService {
             userSession.userId,
             ack,
           );
-          userSession.videoManager.handleKeepAliveAck(ack);
+          userSession.unmanagedStreamingExtension.handleKeepAliveAck(ack);
           break;
         }
 
@@ -921,99 +923,24 @@ export class GlassesWebSocketService {
       { service: SERVICE_NAME, message },
       `handleGlassesConnectionState for user ${userSession.userId}`,
     );
+
     await userSession.deviceManager.handleGlassesConnectionState(
       glassesConnectionStateMessage.modelName || null,
       glassesConnectionStateMessage.status,
     );
-    return;
 
-    // Extract glasses model information
-    const modelName = glassesConnectionStateMessage.modelName;
-    const isConnected = glassesConnectionStateMessage.status === "CONNECTED";
+    const isConnected =
+      glassesConnectionStateMessage.status === "CONNECTED" ||
+      glassesConnectionStateMessage.status === "RECONNECTED";
+    const reportedModel = glassesConnectionStateMessage.modelName || undefined;
 
-    // Update connection state tracking in UserSession
-    const wasConnected = userSession.glassesConnected;
-    userSession.glassesConnected = isConnected;
-    userSession.glassesModel = modelName;
-    userSession.lastGlassesStatusUpdate = new Date();
-
-    // Update glasses model in session when connected and model name is available
-    if (isConnected && modelName) {
-      await userSession.updateGlassesModel(modelName);
-    }
-
-    // Log connection state change if state changed
-    if (wasConnected !== isConnected) {
-      userSession.logger.info(
-        {
-          previousState: wasConnected,
-          newState: isConnected,
-          model: modelName,
-          userId: userSession.userId,
-        },
-        `Glasses connection state changed from ${wasConnected} to ${isConnected} for user ${userSession.userId}`,
-      );
-
-      // The existing relayMessageToApps call below will notify subscribed apps
-      // No need for additional broadcasting
-    }
-
-    try {
-      // Get or create user to track glasses model
-      const user = await User.findOrCreateUser(userSession.userId);
-
-      // Track new glasses model if connected and model name exists
-      if (isConnected && modelName) {
-        const isNewModel = !user.getGlassesModels().includes(modelName);
-
-        // Add glasses model to user's history
-        await user.addGlassesModel(modelName);
-
-        // Update PostHog person properties
-        await PosthogService.setPersonProperties(userSession.userId, {
-          current_glasses_model: modelName,
-          glasses_models_used: user.getGlassesModels(),
-          glasses_models_count: user.getGlassesModels().length,
-          glasses_last_connected: new Date().toISOString(),
-          glasses_current_connected: true,
-        });
-
-        // Track first-time connection for new glasses model
-        if (isNewModel) {
-          PosthogService.trackEvent(
-            "glasses_model_first_connect",
-            userSession.userId,
-            {
-              sessionId: userSession.sessionId,
-              modelName,
-              totalModelsUsed: user.getGlassesModels().length,
-              timestamp: new Date().toISOString(),
-            },
-          );
-        }
-      } else if (!isConnected) {
-        // Update PostHog person properties for disconnection
-        await PosthogService.setPersonProperties(userSession.userId, {
-          glasses_current_connected: false,
-        });
-      }
-    } catch (error) {
-      userSession.logger.error(error, "Error tracking glasses model:");
-    }
-
-    // Track the connection state event (enhanced with model info)
-    PosthogService.trackEvent(
-      GlassesToCloudMessageType.GLASSES_CONNECTION_STATE,
-      userSession.userId,
-      {
-        sessionId: userSession.sessionId,
-        eventType: message.type,
-        timestamp: new Date().toISOString(),
-        connectionState: glassesConnectionStateMessage,
-        modelName,
-        isConnected,
-      },
-    );
+    // Update session-level flags for legacy consumers (e.g., validators)
+    const effectiveModel = isConnected
+      ? userSession.deviceManager.getCurrentModel() || reportedModel
+      : undefined;
+    userSession.setGlassesConnectionState(isConnected, effectiveModel, {
+      source: "glasses_connection_state",
+    });
   }
 
   // NOTE(isaiah): This really should be a rest request instead of a websocket message.
@@ -1142,6 +1069,10 @@ export class GlassesWebSocketService {
     userSession.logger.warn(
       { service: SERVICE_NAME, code, reason },
       `[WebsocketGlassesService:handleGlassesConnectionClose]: (${userSession.userId}, ${code}, ${reason}) - Glasses connection closed`,
+    );
+
+    userSession.handlePhoneConnectionClosed(
+      reason ? `${code}:${reason}` : `${code}`,
     );
 
     // Mark session as disconnected
