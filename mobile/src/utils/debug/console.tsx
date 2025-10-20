@@ -42,8 +42,8 @@ export const ConsoleLogger = () => {
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         // Only set pan responder if the gesture has moved significantly
-        // return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5
-        return false
+        return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5
+        // return true
       },
       onPanResponderGrant: () => {
         toggleButtonPan.setOffset({

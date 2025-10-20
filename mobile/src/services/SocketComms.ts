@@ -34,7 +34,7 @@ class SocketComms {
         },
       )
     } catch (error) {
-      console.error("SocketCommsTS: Error subscribing to default_wearable:", error)
+      console.error("SOCKET: Error subscribing to default_wearable:", error)
     }
   }
 
@@ -57,10 +57,10 @@ class SocketComms {
   // Connection Management
 
   private async connectWebsocket() {
-    console.log("SocketCommsTS: connectWebsocket()")
+    console.log("SOCKET: connectWebsocket()")
     const url = useSettingsStore.getState().getWsUrl()
     if (!url) {
-      console.error(`SocketCommsTS: Invalid server URL`)
+      console.error(`SOCKET: Invalid server URL`)
       return
     }
     this.ws.connect(url, this.coreToken)
@@ -89,7 +89,7 @@ class SocketComms {
   }
 
   restartConnection() {
-    console.log(`SocketCommsTS: restartConnection`)
+    console.log(`SOCKET: restartConnection`)
     if (this.ws.isConnected()) {
       this.ws.disconnect()
       this.connectWebsocket()
@@ -97,7 +97,7 @@ class SocketComms {
   }
 
   public setAuthCreds(coreToken: string, userid: string) {
-    console.log(`SocketCommsTS: setAuthCreds(): ${coreToken}, ${userid}`)
+    console.log(`SOCKET: setAuthCreds(): ${coreToken}, ${userid}`)
     this.coreToken = coreToken
     this.userid = userid
     useSettingsStore.getState().setSetting(SETTINGS_KEYS.core_token, coreToken)
@@ -119,9 +119,9 @@ class SocketComms {
     try {
       // Forward the status message directly since it's already in the correct format
       this.ws.sendText(JSON.stringify(statusMessage))
-      console.log("SocketCommsTS: Sent RTMP stream status:", statusMessage)
+      console.log("SOCKET: Sent RTMP stream status:", statusMessage)
     } catch (error) {
-      console.log(`SocketCommsTS: Failed to send RTMP stream status: ${error}`)
+      console.log(`SOCKET: Failed to send RTMP stream status: ${error}`)
     }
   }
 
@@ -129,9 +129,9 @@ class SocketComms {
     try {
       // Forward the ACK message directly since it's already in the correct format
       this.ws.sendText(JSON.stringify(ackMessage))
-      console.log("SocketCommsTS: Sent keep-alive ACK:", ackMessage)
+      console.log("SOCKET: Sent keep-alive ACK:", ackMessage)
     } catch (error) {
-      console.log(`SocketCommsTS: Failed to send keep-alive ACK: ${error}`)
+      console.log(`SOCKET: Failed to send keep-alive ACK: ${error}`)
     }
   }
 
@@ -153,7 +153,7 @@ class SocketComms {
     try {
       this.ws.sendText(text)
     } catch (error) {
-      console.log(`SocketCommsTS: Failed to send text: ${error}`)
+      console.log(`SOCKET: Failed to send text: ${error}`)
     }
   }
 
@@ -161,7 +161,7 @@ class SocketComms {
     try {
       this.ws.sendBinary(data)
     } catch (error) {
-      console.log(`SocketCommsTS: Failed to send binary: ${error}`)
+      console.log(`SOCKET: Failed to send binary: ${error}`)
     }
   }
 
@@ -211,7 +211,7 @@ class SocketComms {
       const jsonString = JSON.stringify(event)
       this.ws.sendText(jsonString)
     } catch (error) {
-      console.log(`SocketCommsTS: Error building location_update JSON: ${error}`)
+      console.log(`SOCKET: Error building location_update JSON: ${error}`)
     }
   }
 
@@ -228,7 +228,7 @@ class SocketComms {
       const jsonString = JSON.stringify(event)
       this.ws.sendText(jsonString)
     } catch (error) {
-      console.log(`SocketCommsTS: Error building button_press JSON: ${error}`)
+      console.log(`SOCKET: Error building button_press JSON: ${error}`)
     }
   }
 
@@ -244,7 +244,7 @@ class SocketComms {
       const jsonString = JSON.stringify(event)
       this.ws.sendText(jsonString)
     } catch (error) {
-      console.log(`SocketCommsTS: Error building photo_response JSON: ${error}`)
+      console.log(`SOCKET: Error building photo_response JSON: ${error}`)
     }
   }
 
@@ -260,7 +260,7 @@ class SocketComms {
       const jsonString = JSON.stringify(event)
       this.ws.sendText(jsonString)
     } catch (error) {
-      console.log(`SocketCommsTS: Error building video_stream_response JSON: ${error}`)
+      console.log(`SOCKET: Error building video_stream_response JSON: ${error}`)
     }
   }
 
@@ -274,7 +274,7 @@ class SocketComms {
       }
       this.ws.sendText(JSON.stringify(payload))
     } catch (error) {
-      console.log(`SocketCommsTS: Error sending touch_event: ${error}`)
+      console.log(`SOCKET: Error sending touch_event: ${error}`)
     }
   }
 
@@ -287,7 +287,7 @@ class SocketComms {
       }
       this.ws.sendText(JSON.stringify(payload))
     } catch (error) {
-      console.log(`SocketCommsTS: Error sending swipe_volume_status: ${error}`)
+      console.log(`SOCKET: Error sending swipe_volume_status: ${error}`)
     }
   }
 
@@ -301,13 +301,13 @@ class SocketComms {
       }
       this.ws.sendText(JSON.stringify(payload))
     } catch (error) {
-      console.log(`SocketCommsTS: Error sending switch_status: ${error}`)
+      console.log(`SOCKET: Error sending switch_status: ${error}`)
     }
   }
 
   public sendRgbLedControlResponse(requestId: string, success: boolean, errorMessage?: string | null) {
     if (!requestId) {
-      console.log("SocketCommsTS: Skipping RGB LED control response - missing requestId")
+      console.log("SOCKET: Skipping RGB LED control response - missing requestId")
       return
     }
     try {
@@ -321,7 +321,7 @@ class SocketComms {
       }
       this.ws.sendText(JSON.stringify(payload))
     } catch (error) {
-      console.log(`SocketCommsTS: Error sending rgb_led_control_response: ${error}`)
+      console.log(`SOCKET: Error sending rgb_led_control_response: ${error}`)
     }
   }
 
@@ -336,7 +336,7 @@ class SocketComms {
       const jsonString = JSON.stringify(event)
       this.ws.sendText(jsonString)
     } catch (error) {
-      console.log(`SocketCommsTS: Error sending head position: ${error}`)
+      console.log(`SOCKET: Error sending head position: ${error}`)
     }
   }
 
@@ -357,7 +357,7 @@ class SocketComms {
       this.ws.sendText(jsonString)
 
       const isFinal = transcription.isFinal || false
-      console.log(`SocketCommsTS: Sent ${isFinal ? "final" : "partial"} transcription: '${text}'`)
+      console.log(`SOCKET: Sent ${isFinal ? "final" : "partial"} transcription: '${text}'`)
     } catch (error) {
       console.log(`Error sending transcription result: ${error}`)
     }
@@ -365,34 +365,34 @@ class SocketComms {
 
   // message handlers, these should only ever be called from handle_message / the server:
   private handle_connection_ack(msg: any) {
-    console.log("SocketCommsTS: connection ack, connecting to livekit")
+    console.log("SOCKET: connection ack, connecting to livekit")
     livekit.connect()
     GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
   }
 
   private handle_app_state_change(msg: any) {
-    // console.log("SocketCommsTS: app state change", msg)
+    // console.log("SOCKET: app state change", msg)
     // this.parse_app_list(msg)
     GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
   }
 
   private handle_connection_error(msg: any) {
-    console.error("SocketCommsTS: connection error", msg)
+    console.error("SOCKET: connection error", msg)
   }
 
   private handle_auth_error() {
-    console.error("SocketCommsTS: auth error")
+    console.error("SOCKET: auth error")
   }
 
   private handle_microphone_state_change(msg: any) {
     const bypassVad = msg.bypassVad || false
     const requiredDataStrings = msg.requiredData || []
-    // console.log(`SocketCommsTS: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
+    // console.log(`SOCKET: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
     CoreModule.microphoneStateChange(requiredDataStrings, bypassVad)
   }
 
   public handle_display_event(msg: any) {
-    // console.log(`SocketCommsTS: Handling display event: ${JSON.stringify(msg)}`)
+    // console.log(`SOCKET: Handling display event: ${JSON.stringify(msg)}`)
     if (msg.view) {
       CoreModule.displayEvent(msg)
       // Update the Zustand store with the display content
@@ -404,36 +404,36 @@ class SocketComms {
   private handle_set_location_tier(msg: any) {
     const tier = msg.tier
     if (!tier) {
-      console.log("SocketCommsTS: No tier provided")
+      console.log("SOCKET: No tier provided")
       return
     }
-    console.log("SocketCommsTS: set_location_tier()", tier)
+    console.log("SOCKET: set_location_tier()", tier)
     mantle.setLocationTier(tier)
   }
 
   private handle_request_single_location(msg: any) {
-    console.log("SocketCommsTS: request_single_location()")
+    console.log("SOCKET: request_single_location()")
     const accuracy = msg.accuracy
     const correlationId = msg.correlationId
     if (!accuracy || !correlationId) {
-      console.log("SocketCommsTS: No accuracy or correlationId provided")
+      console.log("SOCKET: No accuracy or correlationId provided")
       return
     }
-    console.log("SocketCommsTS: request_single_location()", accuracy, correlationId)
+    console.log("SOCKET: request_single_location()", accuracy, correlationId)
     mantle.requestSingleLocation(accuracy, correlationId)
   }
 
   private handle_app_started(msg: any) {
     const packageName = msg.packageName
     if (!packageName) {
-      console.log("SocketCommsTS: No package name provided")
+      console.log("SOCKET: No package name provided")
       return
     }
-    console.log(`SocketCommsTS: Received app_started message for package: ${msg.packageName}`)
+    console.log(`SOCKET: Received app_started message for package: ${msg.packageName}`)
     useAppletStatusStore.getState().refreshApps()
   }
   private handle_app_stopped(msg: any) {
-    console.log(`SocketCommsTS: Received app_stopped message for package: ${msg.packageName}`)
+    console.log(`SOCKET: Received app_stopped message for package: ${msg.packageName}`)
     useAppletStatusStore.getState().refreshApps()
   }
 
@@ -467,43 +467,43 @@ class SocketComms {
   }
 
   private handle_keep_rtmp_stream_alive(msg: any) {
-    console.log(`SocketCommsTS: Received KEEP_RTMP_STREAM_ALIVE: ${JSON.stringify(msg)}`)
+    console.log(`SOCKET: Received KEEP_RTMP_STREAM_ALIVE: ${JSON.stringify(msg)}`)
     CoreModule.keepRtmpStreamAlive(msg)
   }
 
   private handle_save_buffer_video(msg: any) {
-    console.log(`SocketCommsTS: Received SAVE_BUFFER_VIDEO: ${JSON.stringify(msg)}`)
+    console.log(`SOCKET: Received SAVE_BUFFER_VIDEO: ${JSON.stringify(msg)}`)
     const bufferRequestId = msg.requestId || `buffer_${Date.now()}`
     const durationSeconds = msg.durationSeconds || 30
     CoreModule.saveBufferVideo(bufferRequestId, durationSeconds)
   }
 
   private handle_start_buffer_recording() {
-    console.log("SocketCommsTS: Received START_BUFFER_RECORDING")
+    console.log("SOCKET: Received START_BUFFER_RECORDING")
     CoreModule.startBufferRecording()
   }
 
   private handle_stop_buffer_recording() {
-    console.log("SocketCommsTS: Received STOP_BUFFER_RECORDING")
+    console.log("SOCKET: Received STOP_BUFFER_RECORDING")
     CoreModule.stopBufferRecording()
   }
 
   private handle_start_video_recording(msg: any) {
-    console.log(`SocketCommsTS: Received START_VIDEO_RECORDING: ${JSON.stringify(msg)}`)
+    console.log(`SOCKET: Received START_VIDEO_RECORDING: ${JSON.stringify(msg)}`)
     const videoRequestId = msg.requestId || `video_${Date.now()}`
     const save = msg.save !== false
     CoreModule.startVideoRecording(videoRequestId, save)
   }
 
   private handle_stop_video_recording(msg: any) {
-    console.log(`SocketCommsTS: Received STOP_VIDEO_RECORDING: ${JSON.stringify(msg)}`)
+    console.log(`SOCKET: Received STOP_VIDEO_RECORDING: ${JSON.stringify(msg)}`)
     const stopRequestId = msg.requestId || ""
     CoreModule.stopVideoRecording(stopRequestId)
   }
 
   private handle_rgb_led_control(msg: any) {
     if (!msg || !msg.requestId) {
-      console.log("SocketCommsTS: rgb_led_control missing requestId, ignoring")
+      console.log("SOCKET: rgb_led_control missing requestId, ignoring")
       return
     }
 
@@ -527,7 +527,7 @@ class SocketComms {
   private handle_message(msg: any) {
     const type = msg.type
 
-    console.log(`SocketCommsTS: handle_incoming_message: ${type}`)
+    console.log(`SOCKET: handle_incoming_message: ${type}`)
 
     switch (type) {
       case "connection_ack":
@@ -619,7 +619,7 @@ class SocketComms {
         break
 
       default:
-        console.log(`SocketCommsTS: Unknown message type: ${type} / full: ${JSON.stringify(msg)}`)
+        console.log(`SOCKET: Unknown message type: ${type} / full: ${JSON.stringify(msg)}`)
     }
   }
 }

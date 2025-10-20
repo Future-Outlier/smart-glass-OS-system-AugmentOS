@@ -74,7 +74,7 @@ export class MantleBridge {
       // Only check for duplicates on status messages, not other event types
       if ("status" in data) {
         if (this.lastMessage === jsonString) {
-          console.log("DUPLICATE STATUS MESSAGE FROM CORE")
+          console.log("BRIDGE: DUPLICATE STATUS MESSAGE FROM CORE")
           return
         }
         this.lastMessage = jsonString
@@ -82,7 +82,7 @@ export class MantleBridge {
 
       this.parseDataFromCore(data)
     } catch (e) {
-      console.error("Failed to parse JSON from core message:", e)
+      console.error("BRIDGE: Failed to parse JSON from core message:", e)
       console.log(jsonString)
     }
   }
