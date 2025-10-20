@@ -11,7 +11,6 @@ import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {spacing} from "@/theme"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
 import {DeviceTypes} from "@/utils/Constants"
 
 export default function DeveloperSettingsScreen() {
@@ -27,7 +26,7 @@ export default function DeveloperSettingsScreen() {
   const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS_KEYS.reconnect_on_app_foreground)
   const [newUi, setNewUi] = useSetting(SETTINGS_KEYS.new_ui)
   const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
-  const features = getCapabilitiesForModel(defaultWearable)
+  const [debugConsole, setDebugConsole] = useSetting(SETTINGS_KEYS.debug_console)
 
   // Triple-tap detection for Asia East button
   const [asiaButtonTapCount, setAsiaButtonTapCount] = useState(0)
@@ -36,11 +35,6 @@ export default function DeveloperSettingsScreen() {
   const toggleReconnectOnAppForeground = async () => {
     const newSetting = !reconnectOnAppForeground
     await setReconnectOnAppForeground(newSetting)
-  }
-
-  const toggleNewUi = async () => {
-    const newSetting = !newUi
-    await setNewUi(newSetting)
   }
 
   const toggleEnableSquircles = async () => {
@@ -214,7 +208,16 @@ export default function DeveloperSettingsScreen() {
           label={translate("settings:newUi")}
           subtitle={translate("settings:newUiSubtitle")}
           value={newUi}
-          onValueChange={toggleNewUi}
+          onValueChange={newValue => setNewUi(newValue)}
+        />
+
+        <Spacer height={theme.spacing.md} />
+
+        <ToggleSetting
+          label={translate("devSettings:debugConsole")}
+          subtitle={translate("devSettings:debugConsoleSubtitle")}
+          value={debugConsole}
+          onValueChange={value => setDebugConsole(value)}
         />
 
         <Spacer height={theme.spacing.md} />

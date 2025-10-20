@@ -1,5 +1,6 @@
 const en = {
   deviceSettings: {
+    microphoneSelection: "Microphone Selection",
     glassesNeededForGlassesMic: "Connect glasses to enable",
     systemMic: "System Microphone",
     glassesMic: "Glasses Microphone",
@@ -246,6 +247,10 @@ const en = {
     feedback: "Give Feedback",
     offlineSTT: "Offline Transcriptions",
     offlineSTTSubtitle: "Transcribe audio and display on connected glasses completely offline.",
+  },
+  devSettings: {
+    debugConsole: "Debug Console",
+    debugConsoleSubtitle: "Enable the debug console.",
   },
   transcription: {
     downloadModelToEnableLocalTranscription: "Download a model to enable local transcription",

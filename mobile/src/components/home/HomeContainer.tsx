@@ -7,18 +7,32 @@ import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
 import {IncompatibleApps} from "@/components/home/IncompatibleApps"
 import {Spacer} from "@/components/misc/Spacer"
 import {useAppTheme} from "@/utils/useAppTheme"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {Capabilities} from "@cloud/packages/sdk/src/types"
 
 export const HomeContainer: React.FC = () => {
   const {theme} = useAppTheme()
+  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const {status} = useCoreStatus()
+  const features: Capabilities | null = getCapabilitiesForModel(defaultWearable)
+  const connected = status.glasses_info?.model_name
 
   return (
     <View>
       <CompactDeviceStatus />
-      <BackgroundAppsLink />
+      {connected && features?.hasDisplay && <ConnectedSimulatedGlassesInfo />}
+      <Spacer height={theme.spacing.xs} />
       <ActiveForegroundApp />
+      <Spacer height={theme.spacing.xs} />
+      <BackgroundAppsLink />
       <ForegroundAppsGrid />
       <IncompatibleApps />
-      <Spacer height={theme.spacing.xl} />
+      <Spacer height={theme.spacing.xxxl} />
+      <Spacer height={theme.spacing.xxxl} />
+      <Spacer height={theme.spacing.xxxl} />
     </View>
   )
 }

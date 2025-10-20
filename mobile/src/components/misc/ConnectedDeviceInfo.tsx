@@ -1,4 +1,3 @@
-import bridge from "@/bridge/MantleBridge"
 import {Button, Icon, Text} from "@/components/ignite"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -23,6 +22,7 @@ import {useCallback, useRef, useState} from "react"
 import {ActivityIndicator, Animated, TouchableOpacity, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import ConnectedSimulatedGlassesInfo from "./ConnectedSimulatedGlassesInfo"
+import CoreModule from "core"
 
 export const ConnectDeviceButton = () => {
   const {status} = useCoreStatus()
@@ -48,7 +48,7 @@ export const ConnectDeviceButton = () => {
         return
       }
 
-      await bridge.sendConnectDefault()
+      await CoreModule.connectDefault()
     } catch (err) {
       console.error("connect to glasses error:", err)
       showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
@@ -57,9 +57,13 @@ export const ConnectDeviceButton = () => {
     }
   }
 
-  // Handler: only handles connection, no disconnect functionality
-  const handleConnect = async () => {
-    await connectGlasses()
+  // New handler: if already connecting, pressing the button calls disconnect.
+  const handleConnectOrDisconnect = async () => {
+    if (status.core_info.is_searching) {
+      await CoreModule.disconnect()
+    } else {
+      await connectGlasses()
+    }
   }
 
   // if we have simulated glasses, show nothing:
@@ -106,7 +110,7 @@ export const ConnectDeviceButton = () => {
         textAlignment="left"
         LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
         RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
-        onPress={handleConnect}
+        onPress={handleConnectOrDisconnect}
         tx="home:connectGlasses"
         disabled={isCheckingConnectivity}
       />

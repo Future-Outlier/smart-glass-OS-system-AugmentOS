@@ -39,4 +39,4 @@ include ':app'
 includeBuild(expoAutolinking.reactNativeGradlePlugin)
 
 include ':lc3Lib'
-project(':lc3Lib').projectDir = new File(rootDir, '../node_modules/core/android/lc3Lib')
+project(':lc3Lib').projectDir = new File(rootDir, '../modules/core/android/lc3Lib')

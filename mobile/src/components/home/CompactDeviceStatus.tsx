@@ -3,10 +3,7 @@ import {useState} from "react"
 import {ActivityIndicator, Image, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
-import bridge from "@/bridge/MantleBridge"
 import {Button, Icon} from "@/components/ignite"
-import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
-import {glassesFeatures} from "@/config/glassesFeatures"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
@@ -25,6 +22,7 @@ import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import SunIcon from "assets/icons/component/SunIcon"
 import {DeviceTypes} from "@/utils/Constants"
 import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import CoreModule from "core"
 
 export const CompactDeviceStatus: React.FC = () => {
   const {status} = useCoreStatus()
@@ -49,9 +47,9 @@ export const CompactDeviceStatus: React.FC = () => {
   }
 
   // Show simulated glasses view for simulated glasses
-  if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
-    return <ConnectedSimulatedGlassesInfo />
-  }
+  // if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
+  // return <ConnectedSimulatedGlassesInfo />
+  // }
 
   const connectGlasses = async () => {
     if (!defaultWearable) {
@@ -67,19 +65,21 @@ export const CompactDeviceStatus: React.FC = () => {
       if (!requirementsCheck) {
         return
       }
-
-      await bridge.sendConnectDefault()
     } catch (error) {
       console.error("connect to glasses error:", error)
       showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
     } finally {
       setIsCheckingConnectivity(false)
     }
+    await CoreModule.connectDefault()
   }
 
-  // Handler: only handles connection, no disconnect functionality
-  const handleConnect = async () => {
-    await connectGlasses()
+  const handleConnectOrDisconnect = async () => {
+    if (status.core_info.is_searching) {
+      await CoreModule.disconnect()
+    } else {
+      await connectGlasses()
+    }
   }
 
   const getCurrentGlassesImage = () => {
@@ -137,7 +137,7 @@ export const CompactDeviceStatus: React.FC = () => {
           textAlignment="left"
           LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
           RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
-          onPress={handleConnect}
+          onPress={handleConnectOrDisconnect}
           tx="home:connectGlasses"
           disabled={isCheckingConnectivity}
         />
@@ -162,7 +162,7 @@ export const CompactDeviceStatus: React.FC = () => {
       <View style={themed($statusContainer)}>
         <View style={themed($statusRow)}>
           <Icon icon="battery" size={16} color={theme.colors.textDim} />
-          <Text style={themed($statusText)} numberOfLines={1}>
+          <Text style={[themed($statusText), {height: 22}]} numberOfLines={1}>
             {batteryLevel !== -1 ? `${batteryLevel}%` : <ActivityIndicator size="small" color={theme.colors.text} />}
           </Text>
         </View>
@@ -208,15 +208,20 @@ export const CompactDeviceStatus: React.FC = () => {
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  alignItems: "center",
-  paddingVertical: spacing.sm,
+  paddingVertical: spacing.md,
   gap: spacing.sm,
 })
 
-const $imageContainer: ThemedStyle<ViewStyle> = () => ({
+const $imageContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   flex: 2,
   alignItems: "center",
   justifyContent: "center",
+  borderWidth: spacing.xxxs,
+  borderColor: colors.border,
+  borderRadius: spacing.lg,
+  backgroundColor: colors.backgroundAlt,
+  alignSelf: "stretch",
+  paddingHorizontal: spacing.md,
 })
 
 const $glassesImage: ThemedStyle<ImageStyle> = () => ({
@@ -227,13 +232,13 @@ const $glassesImage: ThemedStyle<ImageStyle> = () => ({
 
 const $statusContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   flex: 1,
+  minWidth: 100,
   justifyContent: "center",
   gap: spacing.xs,
-  border: "1px solid #ccc",
   borderColor: colors.border,
   borderWidth: spacing.xxxs,
   padding: spacing.md,
-  backgroundColor: colors.background,
+  backgroundColor: colors.backgroundAlt,
   borderRadius: spacing.lg,
 })
 
@@ -258,13 +263,19 @@ const $disconnectedContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   gap: spacing.xs,
 })
 
-const $disconnectedImageContainer: ThemedStyle<ViewStyle> = () => ({
+const $disconnectedImageContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   width: "100%",
   alignItems: "center",
+  borderColor: colors.border,
+  borderWidth: spacing.xxxs,
+  padding: spacing.sm,
+  backgroundColor: colors.backgroundAlt,
+  borderRadius: spacing.lg,
+  marginBottom: spacing.sm,
 })
 
 const $disconnectedGlassesImage: ThemedStyle<ImageStyle> = () => ({
-  width: "80%",
-  height: 160,
+  // width: "80%",
+  height: 100,
   resizeMode: "contain",
 })

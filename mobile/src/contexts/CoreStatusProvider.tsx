@@ -2,7 +2,7 @@ import {INTENSE_LOGGING} from "@/utils/Constants"
 import {CoreStatus, CoreStatusParser} from "@/utils/CoreStatusParser"
 import {createContext, ReactNode, useCallback, useContext, useEffect, useState} from "react"
 
-import {deepCompare} from "@/utils/debugging"
+import {deepCompare} from "@/utils/debug/debugging"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 interface CoreStatusContextType {

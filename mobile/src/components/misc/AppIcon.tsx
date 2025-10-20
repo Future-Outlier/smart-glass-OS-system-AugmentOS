@@ -60,7 +60,7 @@ const AppIcon = ({app, onClick, style, showLabel = false, hideLoadingIndicator =
             </View>
           )}
           <Image
-            source={typeof app.logoURL === "string" ? {uri: app.logoURL} : app.logoURL}
+            source={app.logoUrl}
             style={themed($icon)}
             contentFit="cover"
             transition={200}
@@ -75,7 +75,7 @@ const AppIcon = ({app, onClick, style, showLabel = false, hideLoadingIndicator =
             </View>
           )}
           <Image
-            source={typeof app.logoURL === "string" ? {uri: app.logoURL} : app.logoURL}
+            source={app.logoUrl}
             style={[themed($icon), {borderRadius: 60, width: style?.width ?? 56, height: style?.height ?? 56}]}
             contentFit="cover"
             transition={200}

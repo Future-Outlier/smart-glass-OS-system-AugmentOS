@@ -1,6 +1,5 @@
 import Icon from "react-native-vector-icons/MaterialIcons"
 
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {CameraType, CameraView, useCameraPermissions} from "expo-camera"
@@ -22,7 +21,6 @@ import {useSafeAreaInsets} from "react-native-safe-area-context"
 import GlassesDisplayMirror from "@/components/misc/GlassesDisplayMirror"
 import {SimulatedGlassesControls} from "@/components/misc/SimulatedGlassesControls"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useDisplayStore} from "@/stores/display"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {DeviceTypes} from "@/utils/Constants"
@@ -35,8 +33,6 @@ const requestMicrophonePermission = async () => {
 }
 
 export default function GlassesMirrorFullscreen() {
-  const {status} = useCoreStatus()
-  const {currentEvent} = useDisplayStore()
   const {theme, themed} = useAppTheme()
   const insets = useSafeAreaInsets()
   const [permission, requestPermission] = useCameraPermissions()
@@ -52,9 +48,6 @@ export default function GlassesMirrorFullscreen() {
 
   const cameraRef = useRef<CameraView | null>(null)
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Helper to check if we have a glasses model name
-  const isGlassesConnected = !!status.glasses_info?.model_name
 
   // Check permissions and setup on component mount
   useEffect(() => {
@@ -313,51 +306,44 @@ export default function GlassesMirrorFullscreen() {
 
   // Toggle recording state
 
-  if (isGlassesConnected && currentEvent.layout) {
-    return (
-      <View style={themed($fullscreenContainer)}>
-        <View style={$contentWrapper}>
-          {/* Camera feed - only render if camera is on */}
-          {isCameraOn && (
-            <CameraView
-              ref={cameraRef}
-              style={$cameraBackground}
-              facing={cameraType}
-              mode="video"
-              enableTorch={false}
-            />
-          )}
+  return (
+    <View style={themed($fullscreenContainer)}>
+      <View style={$contentWrapper}>
+        {/* Camera feed - only render if camera is on */}
+        {isCameraOn && (
+          <CameraView ref={cameraRef} style={$cameraBackground} facing={cameraType} mode="video" enableTorch={false} />
+        )}
 
-          {/* Dark background when camera is off */}
-          {!isCameraOn && <View style={themed($cameraOff)} />}
+        {/* Dark background when camera is off */}
+        {!isCameraOn && <View style={themed($cameraOff)} />}
 
-          {/* Overlay the glasses display content */}
-          <View style={$fullscreenOverlay}>
-            <GlassesDisplayMirror fullscreen={true} fallbackMessage="Unknown layout data" />
-          </View>
+        {/* Overlay the glasses display content */}
+        <View style={$fullscreenOverlay}>
+          <GlassesDisplayMirror fullscreen={true} />
+        </View>
 
-          {/* Fullscreen exit button */}
-          <TouchableOpacity
-            style={[themed($exitFullscreenButton), {top: insets.top + 20}]}
-            onPress={handleExitFullscreen}>
-            <Text style={themed($exitFullscreenText)}>Exit</Text>
+        {/* Fullscreen exit button */}
+        <TouchableOpacity
+          style={[themed($exitFullscreenButton), {top: insets.top + 20}]}
+          onPress={handleExitFullscreen}>
+          <Text style={themed($exitFullscreenText)}>Exit</Text>
+        </TouchableOpacity>
+
+        {/* Camera toggle on/off button */}
+        <TouchableOpacity style={[themed($cameraToggleButton), {top: insets.top + 20}]} onPress={toggleCameraOnOff}>
+          <Icon name={isCameraOn ? "videocam" : "videocam-off"} size={28} color={theme.colors.icon} />
+        </TouchableOpacity>
+
+        {/* Camera flip button - only show when camera is on */}
+        {isCameraOn && (
+          <TouchableOpacity style={[themed($flipCameraButton), {top: insets.top + 20}]} onPress={toggleCamera}>
+            <Icon name="flip-camera-ios" size={28} color={theme.colors.icon} />
           </TouchableOpacity>
+        )}
 
-          {/* Camera toggle on/off button */}
-          <TouchableOpacity style={[themed($cameraToggleButton), {top: insets.top + 20}]} onPress={toggleCameraOnOff}>
-            <Icon name={isCameraOn ? "videocam" : "videocam-off"} size={28} color={theme.colors.icon} />
-          </TouchableOpacity>
-
-          {/* Camera flip button - only show when camera is on */}
-          {isCameraOn && (
-            <TouchableOpacity style={[themed($flipCameraButton), {top: insets.top + 20}]} onPress={toggleCamera}>
-              <Icon name="flip-camera-ios" size={28} color={theme.colors.icon} />
-            </TouchableOpacity>
-          )}
-
-          {/* Recording button */}
-          {/* TEMPORARILY: COMMENT OUT THE RECORD BUTTON UNTIL THIS FEATURE IS COMPLETE */}
-          {/* {permission?.granted && (
+        {/* Recording button */}
+        {/* TEMPORARILY: COMMENT OUT THE RECORD BUTTON UNTIL THIS FEATURE IS COMPLETE */}
+        {/* {permission?.granted && (
           <View style={$recordingContainer}>
             <TouchableOpacity
               style={[
@@ -381,36 +367,20 @@ export default function GlassesMirrorFullscreen() {
           </View>
         )} */}
 
-          {/* Gallery button - goes back to main screen to view gallery */}
-          {!isRecording && (
-            <TouchableOpacity style={[themed($videosButton), {bottom: insets.bottom + 40}]} onPress={() => goBack()}>
-              <Icon name="photo-library" size={24} color={theme.colors.icon} />
-              {recordingCount > 0 && (
-                <View style={themed($badgeContainer)}>
-                  <Text style={themed($badgeText)}>{recordingCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          )}
+        {/* Gallery button - goes back to main screen to view gallery */}
+        {!isRecording && (
+          <TouchableOpacity style={[themed($videosButton), {bottom: insets.bottom + 40}]} onPress={() => goBack()}>
+            <Icon name="photo-library" size={24} color={theme.colors.icon} />
+            {recordingCount > 0 && (
+              <View style={themed($badgeContainer)}>
+                <Text style={themed($badgeText)}>{recordingCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
 
-          {/* Simulated glasses controls - only show for simulated glasses */}
-          {defaultWearable?.includes(DeviceTypes.SIMULATED) && <SimulatedGlassesControls />}
-        </View>
-      </View>
-    )
-  }
-
-  return (
-    <View style={themed($fullscreenContainer)}>
-      <View style={themed($fallbackContainer)}>
-        <Text style={themed($fallbackText)}>
-          {!isGlassesConnected ? "Connect glasses to use the Glasses Mirror" : "No display events available"}
-        </Text>
-        <TouchableOpacity
-          style={[themed($exitFullscreenButton), {top: insets.top + 20}]}
-          onPress={handleExitFullscreen}>
-          <Text style={themed($exitFullscreenText)}>Back</Text>
-        </TouchableOpacity>
+        {/* Simulated glasses controls - only show for simulated glasses */}
+        {defaultWearable?.includes(DeviceTypes.SIMULATED) && <SimulatedGlassesControls />}
       </View>
     </View>
   )
@@ -522,20 +492,4 @@ const $badgeText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 12,
   fontFamily: "Montserrat-Bold",
   fontWeight: "bold",
-})
-
-const $fallbackContainer: ThemedStyle<ViewStyle> = ({colors}) => ({
-  alignItems: "center",
-  flex: 1,
-  justifyContent: "center",
-  backgroundColor: colors.backgroundAlt,
-})
-
-const $fallbackText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  color: colors.icon,
-  fontSize: 18,
-  fontFamily: "Montserrat-Regular",
-  textAlign: "center",
-  marginHorizontal: spacing.lg,
-  marginBottom: spacing.lg,
 })

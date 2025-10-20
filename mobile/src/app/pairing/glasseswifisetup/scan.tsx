@@ -3,7 +3,6 @@ import {View, FlatList, TouchableOpacity, ActivityIndicator, BackHandler} from "
 import {Text} from "@/components/ignite"
 import {useLocalSearchParams, useFocusEffect} from "expo-router"
 import {Screen, Header, Button, Icon} from "@/components/ignite"
-import bridge from "@/bridge/MantleBridge"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
@@ -13,6 +12,7 @@ import {useCallback} from "react"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import Toast from "react-native-toast-message"
+import CoreModule from "core"
 
 // Enhanced network info type
 interface NetworkInfo {
@@ -161,7 +161,7 @@ export default function WifiScanScreen() {
       console.log("⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️⏱️")
 
       // Don't stop scanning, just retry silently
-      bridge.requestWifiScan().catch(error => {
+      CoreModule.requestWifiScan().catch(error => {
         console.error("⏱️ RETRY FAILED:", error)
       })
 
@@ -169,7 +169,7 @@ export default function WifiScanScreen() {
     }, 15000) // 15 second timeout
 
     try {
-      await bridge.requestWifiScan()
+      await CoreModule.requestWifiScan()
     } catch (error) {
       console.error("Error scanning for WiFi networks:", error)
       if (scanTimeoutRef.current) {

@@ -1,5 +1,5 @@
 import {Capabilities, HardwareRequirement, HardwareType, HardwareRequirementLevel} from "@cloud/packages/sdk/src/types"
-import {AppI} from "@cloud/packages/cloud/src/models/app.model"
+import {simulatedGlasses} from "@cloud/packages/cloud/src/config/capabilities/simulated-glasses"
 
 /**
  * Result of a hardware compatibility check
@@ -37,17 +37,14 @@ export class HardwareCompatibility {
       return result
     }
 
-    // If no capabilities available (no glasses connected), we can't verify compatibility
+    // If no capabilities available assume simulated glasses:
     if (!capabilities) {
-      result.warnings.push("No glasses connected - cannot verify hardware compatibility")
-      // Don't mark as incompatible yet, just warn
-      return result
+      capabilities = simulatedGlasses
     }
 
     // Check each hardware requirement
-    for (const requirement of app.hardwareRequirements) {
+    for (const requirement of hardwareRequirements) {
       const hasHardware = this.checkHardwareAvailable(requirement.type, capabilities)
-
       if (!hasHardware) {
         if (requirement.level === HardwareRequirementLevel.REQUIRED) {
           result.missingRequired.push(requirement)
@@ -154,64 +151,64 @@ export class HardwareCompatibility {
     return messages
   }
 
-  /**
-   * Check if an array of apps are compatible with given capabilities
-   * @param apps Array of apps to check
-   * @param capabilities Device capabilities
-   * @returns Map of app packageName to compatibility result
-   */
-  static checkMultipleApps(apps: AppI[], capabilities: Capabilities | null): Map<string, CompatibilityResult> {
-    const results = new Map<string, CompatibilityResult>()
+  // /**
+  //  * Check if an array of apps are compatible with given capabilities
+  //  * @param apps Array of apps to check
+  //  * @param capabilities Device capabilities
+  //  * @returns Map of app packageName to compatibility result
+  //  */
+  // static checkMultipleApps(apps: AppI[], capabilities: Capabilities | null): Map<string, CompatibilityResult> {
+  //   const results = new Map<string, CompatibilityResult>()
 
-    for (const app of apps) {
-      results.set(app.packageName, this.checkCompatibility(app, capabilities))
-    }
+  //   for (const app of apps) {
+  //     results.set(app.packageName, this.checkCompatibility(app, capabilities))
+  //   }
 
-    return results
-  }
+  //   return results
+  // }
 
-  /**
-   * Filter apps by compatibility
-   * @param apps Array of apps to filter
-   * @param capabilities Device capabilities
-   * @param includeOptional Whether to include apps with missing optional hardware
-   * @returns Array of compatible apps
-   */
-  static filterCompatibleApps(apps: AppI[], capabilities: Capabilities | null, includeOptional = true): AppI[] {
-    return apps.filter(app => {
-      const result = this.checkCompatibility(app, capabilities)
-      return result.isCompatible || (includeOptional && result.missingRequired.length === 0)
-    })
-  }
+  // /**
+  //  * Filter apps by compatibility
+  //  * @param apps Array of apps to filter
+  //  * @param capabilities Device capabilities
+  //  * @param includeOptional Whether to include apps with missing optional hardware
+  //  * @returns Array of compatible apps
+  //  */
+  // static filterCompatibleApps(apps: AppI[], capabilities: Capabilities | null, includeOptional = true): AppI[] {
+  //   return apps.filter(app => {
+  //     const result = this.checkCompatibility(app, capabilities)
+  //     return result.isCompatible || (includeOptional && result.missingRequired.length === 0)
+  //   })
+  // }
 
-  /**
-   * Get hardware requirements summary for an app
-   * @param app The app
-   * @returns Human-readable summary of hardware requirements
-   */
-  static getRequirementsSummary(app: AppI): string {
-    if (!app.hardwareRequirements || app.hardwareRequirements.length === 0) {
-      return "No specific hardware requirements"
-    }
+  // /**
+  //  * Get hardware requirements summary for an app
+  //  * @param app The app
+  //  * @returns Human-readable summary of hardware requirements
+  //  */
+  // static getRequirementsSummary(app: AppI): string {
+  //   if (!app.hardwareRequirements || app.hardwareRequirements.length === 0) {
+  //     return "No specific hardware requirements"
+  //   }
 
-    const required = app.hardwareRequirements
-      .filter(req => req.level === HardwareRequirementLevel.REQUIRED)
-      .map(req => req.type.toLowerCase())
+  //   const required = app.hardwareRequirements
+  //     .filter(req => req.level === HardwareRequirementLevel.REQUIRED)
+  //     .map(req => req.type.toLowerCase())
 
-    const optional = app.hardwareRequirements
-      .filter(req => req.level === HardwareRequirementLevel.OPTIONAL)
-      .map(req => req.type.toLowerCase())
+  //   const optional = app.hardwareRequirements
+  //     .filter(req => req.level === HardwareRequirementLevel.OPTIONAL)
+  //     .map(req => req.type.toLowerCase())
 
-    const parts: string[] = []
+  //   const parts: string[] = []
 
-    if (required.length > 0) {
-      parts.push(`Requires: ${required.join(", ")}`)
-    }
+  //   if (required.length > 0) {
+  //     parts.push(`Requires: ${required.join(", ")}`)
+  //   }
 
-    if (optional.length > 0) {
-      parts.push(`Optional: ${optional.join(", ")}`)
-    }
+  //   if (optional.length > 0) {
+  //     parts.push(`Optional: ${optional.join(", ")}`)
+  //   }
 
-    return parts.join(" | ")
-  }
+  //   return parts.join(" | ")
+  // }
 }

@@ -4,16 +4,12 @@ import {View, FlatList, TouchableOpacity, ViewStyle, TextStyle} from "react-nati
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
-import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"
+import {ClientAppletInterface, DUMMY_APPLET} from "@/types/AppletTypes"
 import {useAppTheme} from "@/utils/useAppTheme"
-import restComms from "@/managers/RestComms"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import {performHealthCheckFlow} from "@/utils/healthCheckFlow"
-import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {ThemedStyle} from "@/theme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useActiveForegroundApp, useInactiveForegroundApps, useStartApplet, useStopApplet} from "@/stores/applets"
-import {HardwareCompatibility} from "@/utils/HardwareCompatibility"
+import {useActiveForegroundApp, useInactiveForegroundApps, useStartApplet} from "@/stores/applets"
 
 const GRID_COLUMNS = 4
 
@@ -27,7 +23,6 @@ export const ForegroundAppsGrid: React.FC = () => {
   const {push} = useNavigationHistory()
   const foregroundApps = useInactiveForegroundApps()
   const activeForegroundApp = useActiveForegroundApp()
-  const stopApplet = useStopApplet()
   const startApplet = useStartApplet()
 
   // const {optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
@@ -191,13 +186,7 @@ export const ForegroundAppsGrid: React.FC = () => {
     // Add empty placeholders to align items to the left
     const paddedApps = [...appsWithGetMore]
     for (let i = 0; i < emptySlots; i++) {
-      paddedApps.push({
-        packageName: `empty-${i}`,
-        name: "",
-        type: "standard",
-        logoUrl: "",
-        permissions: [],
-      } as GridItem)
+      paddedApps.push(DUMMY_APPLET)
     }
 
     return paddedApps
@@ -213,12 +202,12 @@ export const ForegroundAppsGrid: React.FC = () => {
         return
       }
 
-      // Check if there's already an active foreground app and automatically switch
-      // This applies to both online and offline apps
-      if (activeForegroundApp && app.packageName !== activeForegroundApp.packageName) {
-        console.log("Switching from", activeForegroundApp.packageName, "to", app.packageName)
-        await stopApplet(activeForegroundApp.packageName)
-      }
+      // // Check if there's already an active foreground app and automatically switch
+      // // This applies to both online and offline apps
+      // if (activeForegroundApp && app.packageName !== activeForegroundApp.packageName) {
+      //   console.log("Switching from", activeForegroundApp.packageName, "to", app.packageName)
+      //   await stopApplet(activeForegroundApp.packageName)
+      // }
 
       // Now start the new app (offline or online)
       await startApplet(app.packageName)
@@ -249,7 +238,7 @@ export const ForegroundAppsGrid: React.FC = () => {
         <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
           <View style={themed($appContainer)}>
             <AppIcon app={item as any} style={themed($appIcon)} />
-            {item.isOffline && (
+            {!item.healthy && (
               <View style={themed($offlineBadge)}>
                 <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
               </View>
@@ -263,7 +252,7 @@ export const ForegroundAppsGrid: React.FC = () => {
           </View>
           <Text
             text={item.name}
-            style={themed(item.isOffline ? $appNameOffline : $appName)}
+            style={themed(!item.healthy ? $appNameOffline : $appName)}
             numberOfLines={item.name.split(" ").length > 1 ? 2 : 1}
           />
         </TouchableOpacity>

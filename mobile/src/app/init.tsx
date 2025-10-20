@@ -12,9 +12,9 @@ import {useSettingsStore, SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {translate} from "@/i18n"
 import {TextStyle, ViewStyle} from "react-native"
 import {ThemedStyle} from "@/theme"
-import restComms from "@/managers/RestComms"
-import socketComms from "@/managers/SocketComms"
-import mantle from "@/managers/MantleManager"
+import restComms from "@/services/RestComms"
+import socketComms from "@/services/SocketComms"
+import mantle from "@/services/MantleManager"
 import {Text} from "@/components/ignite"
 
 // Types
@@ -37,7 +37,7 @@ export default function InitScreen() {
   // Hooks
   const {theme, themed} = useAppTheme()
   const {user, session} = useAuth()
-  const {replace, getPendingRoute, setPendingRoute, clearHistoryAndGoHome} = useNavigationHistory()
+  const {replace, getPendingRoute, setPendingRoute} = useNavigationHistory()
   const {processUrl} = useDeeplink()
 
   // State
@@ -314,7 +314,7 @@ export default function InitScreen() {
 
             {(state === "error" || (state === "outdated" && canSkipUpdate)) && (
               <Button
-                preset="accent"
+                preset="warning"
                 style={themed($secondaryButton)}
                 RightAccessory={() => <Icon name="arrow-right" size={24} color={theme.colors.text} />}
                 onPress={navigateToDestination}

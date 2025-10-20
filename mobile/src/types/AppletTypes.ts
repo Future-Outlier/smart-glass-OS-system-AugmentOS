@@ -103,6 +103,21 @@ export interface ClientAppletInterface extends AppletInterface {
   // }
 }
 
+export const DUMMY_APPLET: ClientAppletInterface = {
+  packageName: "",
+  name: "",
+  webviewUrl: "",
+  logoUrl: "",
+  type: "standard",
+  permissions: [],
+  running: false,
+  loading: false,
+  healthy: true,
+  hardwareRequirements: [],
+  isOffline: true,
+  offlineRoute: "",
+}
+
 // export const getOfflineAppRoute = (app: AppletInterface): string | null => {
 //   if (!isOfflineApp(app)) return null
 //   return app.offlineRoute || null

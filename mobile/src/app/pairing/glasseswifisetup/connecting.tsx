@@ -1,4 +1,3 @@
-import bridge from "@/bridge/MantleBridge"
 import {Button, Header, Screen} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {ThemedStyle} from "@/theme"
@@ -6,9 +5,11 @@ import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {Ionicons, MaterialIcons} from "@expo/vector-icons"
+import CoreModule from "core"
 import {useLocalSearchParams} from "expo-router"
 import {useEffect, useRef, useState} from "react"
-import {ActivityIndicator, Text, TextStyle, View, ViewStyle} from "react-native"
+import {ActivityIndicator, TextStyle, View, ViewStyle} from "react-native"
+import {Text} from "@/components/ignite"
 
 export default function WifiConnectingScreen() {
   const params = useLocalSearchParams()
@@ -83,18 +84,16 @@ export default function WifiConnectingScreen() {
   const attemptConnection = async () => {
     try {
       console.log("Attempting to send wifi credentials to Core", ssid, password)
-      await bridge.sendWifiCredentials(ssid, password)
+      await CoreModule.sendWifiCredentials(ssid, password)
 
       // Set timeout for connection attempt (20 seconds)
       connectionTimeoutRef.current = setTimeout(() => {
         if (connectionStatus === "connecting") {
-          console.log("321321 Connection timed out. Please try again.")
           setConnectionStatus("failed")
           setErrorMessage("Connection timed out. Please try again.")
         }
       }, 20000)
     } catch (error) {
-      console.log("^&*()__+ Error sending WiFi credentials:", error)
       console.error("Error sending WiFi credentials:", error)
       setConnectionStatus("failed")
       setErrorMessage("Failed to send credentials to glasses. Please try again.")
@@ -372,10 +371,4 @@ const $failureTipText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 16,
   color: colors.textDim,
   flex: 1,
-})
-
-const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  gap: spacing.sm,
-  width: "100%",
-  maxWidth: 300,
 })
