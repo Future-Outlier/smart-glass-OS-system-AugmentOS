@@ -162,7 +162,7 @@ await this.userSession.appManager.sendMessageToApp(packageName, rtmpStatusMsg);
 After:
 
 ```ts
-// VideoManager
+// UnmanagedStreamingExtension
 if (this.userSession.appManager.hasSubscribers(StreamType.RTMP_STATUS)) {
   this.userSession.appManager.publish(StreamType.RTMP_STATUS, rtmpStatusMsg);
 }

@@ -51,13 +51,13 @@ interface CloudflareLiveInput {
   created: string;
   modified: string;
   meta: Record<string, any>;
-  status: {
-    current: {
+  status?: {
+    current?: {
       state: "connected" | "disconnected" | null;
       connectedAt?: string;
       disconnectedAt?: string;
     };
-  };
+  } | null;
   recording: {
     mode: "automatic" | "off";
     requireSignedURLs: boolean;
@@ -571,13 +571,18 @@ export class CloudflareStreamService {
       const response = await this.api.get(`/live_inputs/${liveInputId}`);
       const liveInput: CloudflareLiveInput = response.data.result;
 
+      const currentStatus = liveInput.status?.current;
+      if (!currentStatus) {
+        return { isConnected: false };
+      }
+
       return {
-        isConnected: liveInput.status.current.state === "connected",
-        connectedAt: liveInput.status.current.connectedAt
-          ? new Date(liveInput.status.current.connectedAt)
+        isConnected: currentStatus.state === "connected",
+        connectedAt: currentStatus.connectedAt
+          ? new Date(currentStatus.connectedAt)
           : undefined,
-        disconnectedAt: liveInput.status.current.disconnectedAt
-          ? new Date(liveInput.status.current.disconnectedAt)
+        disconnectedAt: currentStatus.disconnectedAt
+          ? new Date(currentStatus.disconnectedAt)
           : undefined,
       };
     } catch (error) {
