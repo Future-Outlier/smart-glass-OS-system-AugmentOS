@@ -50,6 +50,7 @@
         "@livekit/rtc-node": "^0.13.18",
         "@logtail/pino": "^0.5.4",
         "@mentra/sdk": "workspace:*",
+        "@mentra/types": "workspace:*",
         "@sentry/bun": "^9.1.0",
         "@sentry/cli": "^2.42.1",
         "@supabase/supabase-js": "^2.49.1",
@@ -167,12 +168,20 @@
         "ws": "^8.18.2",
       },
       "devDependencies": {
+        "@mentra/types": "workspace:*",
         "@types/babel__core": "^7.20.5",
         "@types/express": "^4.17.17",
         "@types/jsonwebtoken": "^9.0.2",
         "@types/jsrsasign": "^10.5.15",
         "@types/node": "^20.0.0",
         "@types/ws": "^8.5.12",
+        "typescript": "^5.0.0",
+      },
+    },
+    "packages/types": {
+      "name": "@mentra/types",
+      "version": "1.0.0",
+      "devDependencies": {
         "typescript": "^5.0.0",
       },
     },
@@ -488,6 +497,8 @@
     "@mentra/react": ["@mentra/react@workspace:packages/react-sdk"],
 
     "@mentra/sdk": ["@mentra/sdk@workspace:packages/sdk"],
+
+    "@mentra/types": ["@mentra/types@workspace:packages/types"],
 
     "@mentra/utils": ["@mentra/utils@workspace:packages/utils"],
 

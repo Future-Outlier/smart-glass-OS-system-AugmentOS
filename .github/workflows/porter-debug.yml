@@ -1,7 +1,7 @@
 "on":
   push:
     branches:
-      - cloud/livekit-ios-bug
+      - cloud/api/client/apps
     paths:
       - "cloud/**"
 name: 🚀 [debug] Porter.run Deploy
