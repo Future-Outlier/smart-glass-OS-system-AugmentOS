@@ -200,7 +200,7 @@ export class CloudflareStreamService {
 
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
     const apiToken = process.env.CLOUDFLARE_API_TOKEN;
-    const customerSubdomain = process.env.CLOUDFLARE_CUSTOMER_SUBDOMAIN;
+    const _customerSubdomain = process.env.CLOUDFLARE_CUSTOMER_SUBDOMAIN;
 
     if (!accountId || !apiToken) {
       this.logger.error(
@@ -633,7 +633,7 @@ export class CloudflareStreamService {
           id: input.uid,
           userId: input.meta.userId || "unknown",
           createdAt: new Date(input.created),
-          isConnected: input.status.current.state === "connected",
+          isConnected: input.status?.current?.state === "connected",
           quality: input.meta.quality,
         }));
     } catch (error) {
@@ -736,7 +736,9 @@ export class CloudflareStreamService {
       if (axiosError.response?.data) {
         const cfError = axiosError.response.data as any;
         return new Error(
-          `${message}: ${cfError.errors?.[0]?.message || cfError.message || "Unknown error"}`,
+          `${message}: ${
+            cfError.errors?.[0]?.message || cfError.message || "Unknown error"
+          }`,
         );
       }
     }
@@ -788,7 +790,9 @@ export class CloudflareStreamService {
    * - https://developers.cloudflare.com/stream/viewing-videos/using-the-stream-player/using-the-player-api/
    */
   getEmbedUrl(streamId: string, options: EmbedPlayerOptions = {}): string {
-    const baseUrl = `https://iframe.videodelivery.net/${encodeURIComponent(streamId)}`;
+    const baseUrl = `https://iframe.videodelivery.net/${encodeURIComponent(
+      streamId,
+    )}`;
 
     const params = new URLSearchParams();
 
