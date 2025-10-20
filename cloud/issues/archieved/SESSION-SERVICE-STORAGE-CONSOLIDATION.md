@@ -83,7 +83,7 @@ Below is the concrete inventory of code importing/depending on `SessionStorage` 
   - `packages/cloud/src/services/websocket/websocket-glasses.service.ts` (createSession, relay\*, transformUserSessionForClient)
   - `packages/cloud/src/services/websocket/websocket-app.service.ts` (transformUserSessionForClient)
 - Managers / Services
-  - `packages/cloud/src/services/session/VideoManager.ts` (relay via sessionService)
+  - `packages/cloud/src/services/session/UnmanagedStreamingExtension.ts` (relay via sessionService)
   - `packages/cloud/src/services/session/AppManager.ts` (transformUserSessionForClient)
   - `packages/cloud/src/services/streaming/ManagedStreamingExtension.ts` (getSessionByUserId)
   - `packages/cloud/src/services/core/location.service.ts` (relayMessageToApps)
@@ -196,7 +196,7 @@ Primary callers to update imports/usage
 
 - `packages/cloud/src/services/websocket/websocket-glasses.service.ts`
 - `packages/cloud/src/services/websocket/websocket-app.service.ts`
-- `packages/cloud/src/services/session/VideoManager.ts`
+- `packages/cloud/src/services/session/UnmanagedStreamingExtension.ts`
 - `packages/cloud/src/services/session/AppManager.ts`
 - `packages/cloud/src/services/streaming/ManagedStreamingExtension.ts`
 - `packages/cloud/src/services/core/location.service.ts`

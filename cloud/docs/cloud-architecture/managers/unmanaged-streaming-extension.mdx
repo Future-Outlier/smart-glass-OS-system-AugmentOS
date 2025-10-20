@@ -1,13 +1,13 @@
 ---
-title: "VideoManager"
+title: "UnmanagedStreamingExtension"
 description: "Manages RTMP video streaming sessions between apps and smart glasses"
 ---
 
 ## Overview
 
-VideoManager handles RTMP (Real-Time Messaging Protocol) streaming within a user session. It manages the lifecycle of video streams, tracks stream health through keep-alive mechanisms, handles acknowledgments, and ensures reliable communication between apps and smart glasses for video streaming.
+UnmanagedStreamingExtension handles RTMP (Real-Time Messaging Protocol) streaming within a user session. It manages the lifecycle of video streams, tracks stream health through keep-alive mechanisms, handles acknowledgments, and ensures reliable communication between apps and smart glasses for video streaming.
 
-**File**: `packages/cloud/src/services/session/VideoManager.ts`
+**File**: `packages/cloud/src/services/session/UnmanagedStreamingExtension.ts`
 
 ## Key Features
 
@@ -23,7 +23,7 @@ VideoManager handles RTMP (Real-Time Messaging Protocol) streaming within a user
 
 ```mermaid
 graph TD
-    A[App Stream Request] --> B[VideoManager]
+    A[App Stream Request] --> B[UnmanagedStreamingExtension]
     B --> C{Validation}
     C -->|Invalid| D[Throw Error]
     C -->|Valid| E[Create Stream Info]
@@ -432,7 +432,7 @@ interface StreamConfig {
 
 ```typescript
 dispose(): void {
-  this.logger.info('Disposing VideoManager');
+  this.logger.info('Disposing UnmanagedStreamingExtension');
   
   // Stop all active streams
   const streamIdsToStop = Array.from(this.activeSessionStreams.keys());
