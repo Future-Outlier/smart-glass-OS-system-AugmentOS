@@ -113,7 +113,7 @@ export const ConsoleLogger = () => {
   const handleHide = () => {
     setIsVisible(false)
     // Reset toggle button position to default when hiding
-    toggleButtonPan.setValue({x: 0, y: 0})
+    // toggleButtonPan.setValue({x: 0, y: 0})
   }
 
   if (!isVisible) {
@@ -264,8 +264,8 @@ const $warnText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $toggleButton: ThemedStyle<ViewStyle> = ({colors}) => ({
   position: "absolute",
-  bottom: 20,
-  right: 20,
+  bottom: 100,
+  right: 8,
   backgroundColor: colors.palette.neutral100,
   paddingHorizontal: 16,
   paddingVertical: 8,
