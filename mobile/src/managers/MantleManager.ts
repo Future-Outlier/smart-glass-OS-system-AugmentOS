@@ -6,6 +6,7 @@ import * as Location from "expo-location"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
+import bridge from "@/bridge/MantleBridge"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -51,6 +52,7 @@ class MantleManager {
   // should only ever be run once
   // sets up the bridge and initializes app state
   public async init() {
+    await bridge.dummy()
     try {
       const loadedSettings = await restComms.loadUserSettings() // get settings from server
       await useSettingsStore.getState().setManyLocally(loadedSettings) // write settings to local storage

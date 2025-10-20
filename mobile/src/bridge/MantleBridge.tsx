@@ -6,19 +6,17 @@ import socketComms from "@/managers/SocketComms"
 import {useSettingsStore} from "@/stores/settings"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {EventEmitter} from "events"
 
 import CoreModule from "core"
 import Toast from "react-native-toast-message"
 
-export class MantleBridge extends EventEmitter {
+export class MantleBridge {
   private static instance: MantleBridge | null = null
   private messageEventSubscription: any = null
   private lastMessage: string = ""
 
   // Private constructor to enforce singleton pattern
   private constructor() {
-    super()
     // Initialize message event listener
     this.initializeMessageEventListener()
   }
@@ -31,6 +29,11 @@ export class MantleBridge extends EventEmitter {
       MantleBridge.instance = new MantleBridge()
     }
     return MantleBridge.instance
+  }
+
+  // does nothing but ensures we initialize the class:
+  public async dummy() {
+    await Promise.resolve()
   }
 
   /**
@@ -77,7 +80,6 @@ export class MantleBridge extends EventEmitter {
         this.lastMessage = jsonString
       }
 
-      this.emit("dataReceived", data)
       this.parseDataFromCore(data)
     } catch (e) {
       console.error("Failed to parse JSON from core message:", e)
