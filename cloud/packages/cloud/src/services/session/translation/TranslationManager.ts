@@ -52,6 +52,8 @@ export class TranslationManager {
   private isBufferingAudio = false;
   private audioBufferTimeout?: NodeJS.Timeout;
   private audioBufferTimeoutMs = 10000; // 10 second timeout
+  private DEPLOYMENT_REGION: string = process.env.DEPLOYMENT_REGION || "global";
+  private IS_CHINA: boolean = this.DEPLOYMENT_REGION === "china";
 
   // Health Monitoring
   private healthCheckInterval?: NodeJS.Timeout;
@@ -857,6 +859,35 @@ export class TranslationManager {
     targetLanguage: string,
     options?: TranslationProviderSelectionOptions,
   ): Promise<TranslationProvider> {
+    if (this.IS_CHINA) {
+      const chineseProvider = this.providers.get(
+        TranslationProviderType.ALIBABA,
+      ) as TranslationProvider;
+
+      const supportsLanguagePair = chineseProvider?.supportsLanguagePair(
+        sourceLanguage,
+        targetLanguage,
+      );
+      if (chineseProvider && supportsLanguagePair) {
+        return chineseProvider;
+      }
+
+      this.logger.warn(
+        {
+          sourceLanguage,
+          targetLanguage,
+          provider: TranslationProviderType.ALIBABA,
+        },
+        "Chinese provider does not support language pair",
+      );
+
+      throw new InvalidLanguagePairError(
+        `No provider supports translation from ${sourceLanguage} to ${targetLanguage}`,
+        sourceLanguage,
+        targetLanguage,
+      );
+    }
+
     const excludedProviders = new Set(options?.excludeProviders || []);
     const preferredProvider = options?.preferProvider;
 
