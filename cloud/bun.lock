@@ -168,6 +168,7 @@
         "ws": "^8.18.2",
       },
       "devDependencies": {
+        "@mentra/types": "workspace:*",
         "@types/babel__core": "^7.20.5",
         "@types/express": "^4.17.17",
         "@types/jsonwebtoken": "^9.0.2",
