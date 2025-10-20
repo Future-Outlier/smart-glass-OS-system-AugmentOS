@@ -55,6 +55,7 @@
     "@livekit/rtc-node": "^0.13.18",
     "@logtail/pino": "^0.5.4",
     "@mentra/sdk": "workspace:*",
+    "@mentra/types": "workspace:*",
     "@sentry/bun": "^9.1.0",
     "@sentry/cli": "^2.42.1",
     "@supabase/supabase-js": "^2.49.1",
