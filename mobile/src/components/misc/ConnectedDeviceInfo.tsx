@@ -97,8 +97,8 @@ export const ConnectDeviceButton = () => {
         textStyle={[{marginLeft: spacing.xxl}]}
         textAlignment="left"
         LeftAccessory={() => <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginLeft: 5}} />}
-        onPress={handleConnectOrDisconnect}
         tx="home:connectingGlasses"
+        disabled={true}
       />
     )
   }
@@ -356,20 +356,6 @@ const styles = {
     padding: 10,
     borderRadius: 8,
     width: "80%",
-  },
-  disabledDisconnectButton: {
-    backgroundColor: "#A9A9A9",
-  },
-  disconnectButton: {
-    alignItems: "center",
-    backgroundColor: "#E24A24",
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    marginRight: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    width: "40%",
   },
   disconnectText: {
     color: "#fff",
