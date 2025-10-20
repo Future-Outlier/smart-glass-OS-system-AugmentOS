@@ -117,6 +117,9 @@ export class UserSession {
   // Audio play request tracking - maps requestId to packageName
   public audioPlayRequestMapping: Map<string, string> = new Map();
 
+  // App health status cache (for client apps API)
+  public appHealthCache: Map<string, boolean> = new Map();
+
   // Other state
   public userDatetime?: string;
 
