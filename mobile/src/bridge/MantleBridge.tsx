@@ -1,8 +1,8 @@
 import {INTENSE_LOGGING} from "@/utils/Constants"
 import {translate} from "@/i18n"
-import livekitManager from "@/managers/LivekitManager"
-import mantle from "@/managers/MantleManager"
-import socketComms from "@/managers/SocketComms"
+import livekit from "@/services/Livekit"
+import mantle from "@/services/MantleManager"
+import socketComms from "@/services/SocketComms"
 import {useSettingsStore} from "@/stores/settings"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
@@ -248,8 +248,8 @@ export class MantleBridge {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          if (livekitManager.isRoomConnected()) {
-            livekitManager.addPcm(bytes)
+          if (livekit.isRoomConnected()) {
+            livekit.addPcm(bytes)
           } else {
             socketComms.sendBinary(bytes)
           }

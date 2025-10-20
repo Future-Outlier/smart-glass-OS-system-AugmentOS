@@ -1,19 +1,19 @@
 import {Room, RoomEvent, ConnectionState} from "livekit-client"
-import restComms from "@/managers/RestComms"
+import restComms from "@/services/RestComms"
 
-class LivekitManager {
-  private static instance: LivekitManager
+class Livekit {
+  private static instance: Livekit
   private room: Room | null = null
 
   private sequence = 0
 
   private constructor() {}
 
-  public static getInstance(): LivekitManager {
-    if (!LivekitManager.instance) {
-      LivekitManager.instance = new LivekitManager()
+  public static getInstance(): Livekit {
+    if (!Livekit.instance) {
+      Livekit.instance = new Livekit()
     }
-    return LivekitManager.instance
+    return Livekit.instance
   }
 
   private getSequence() {
@@ -68,5 +68,5 @@ class LivekitManager {
   }
 }
 
-const livekitManager = LivekitManager.getInstance()
-export default livekitManager
+const livekit = Livekit.getInstance()
+export default livekit

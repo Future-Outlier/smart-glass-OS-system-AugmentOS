@@ -1,5 +1,5 @@
 import {translate} from "@/i18n"
-import restComms from "@/managers/RestComms"
+import restComms from "@/services/RestComms"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {getThemeIsDark} from "@/theme/getTheme"
 import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"

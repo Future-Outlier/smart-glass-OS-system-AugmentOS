@@ -132,7 +132,7 @@ class RestComms {
     const baseUrl = await useSettingsStore.getState().getRestUrl()
     const url = `${baseUrl}${endpoint}`
 
-    console.log(`${method} request to: ${url}`)
+    console.log(`${method}:${url}`)
 
     const config: RequestConfig = {
       method,
@@ -202,7 +202,7 @@ class RestComms {
   // }
 
   public async getApps(): Promise<AppletInterface[]> {
-    console.log(`${this.TAG}: getApps() called`)
+    // console.log(`${this.TAG}: getApps() called`)
 
     const response = await this.authenticatedRequest<ApiResponse<AppletInterface[]>>("GET", "/api/client/apps")
 

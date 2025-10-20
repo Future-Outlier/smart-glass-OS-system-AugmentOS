@@ -18,7 +18,11 @@ export const ConsoleLogger = () => {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only set pan responder if the gesture has moved significantly
+        // return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5
+        return false
+      },
       onPanResponderGrant: () => {
         pan.setOffset({
           x: pan.x._value,
@@ -36,7 +40,11 @@ export const ConsoleLogger = () => {
   const toggleButtonPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only set pan responder if the gesture has moved significantly
+        // return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5
+        return false
+      },
       onPanResponderGrant: () => {
         toggleButtonPan.setOffset({
           x: toggleButtonPan.x._value,
@@ -61,16 +69,18 @@ export const ConsoleLogger = () => {
     const addLog = (type, args) => {
       const message = args.map(arg => (typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg))).join(" ")
 
-      setLogs(prev => {
-        const newLogs = [
-          ...prev,
-          {
-            type,
-            message,
-            timestamp: new Date().toLocaleTimeString(),
-          },
-        ]
-        return newLogs.slice(-500)
+      queueMicrotask(() => {
+        setLogs(prev => {
+          const newLogs = [
+            ...prev,
+            {
+              type,
+              message,
+              timestamp: new Date().toLocaleTimeString(),
+            },
+          ]
+          return newLogs.slice(-500)
+        })
       })
     }
 
@@ -98,6 +108,12 @@ export const ConsoleLogger = () => {
 
   if (!debugConsole) {
     return null
+  }
+
+  const handleHide = () => {
+    setIsVisible(false)
+    // Reset toggle button position to default when hiding
+    toggleButtonPan.setValue({x: 0, y: 0})
   }
 
   if (!isVisible) {
@@ -131,7 +147,7 @@ export const ConsoleLogger = () => {
           <TouchableOpacity style={themed($clearButton)} onPress={() => setLogs([])}>
             <Text text="Clear" style={themed($buttonText)} />
           </TouchableOpacity>
-          <TouchableOpacity style={themed($hideButton)} onPress={() => setIsVisible(false)}>
+          <TouchableOpacity style={themed($hideButton)} onPress={handleHide}>
             <Text text="Hide" style={themed($buttonText)} />
           </TouchableOpacity>
         </View>
@@ -142,7 +158,7 @@ export const ConsoleLogger = () => {
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd()}>
         {logs.map((log, index) => (
           <View key={index} style={themed($logEntry)}>
-            <Text text={log.timestamp} style={themed($timestamp)} />
+            {/*<Text text={log.timestamp} style={themed($timestamp)} />*/}
             <Text
               text={log.message}
               style={[
@@ -163,20 +179,26 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   left: 0,
   right: 0,
   height: 250,
-  backgroundColor: colors.palette.black,
+  width: "90%",
+  backgroundColor: colors.backgroundAlt,
   borderWidth: 2,
   borderColor: colors.border,
-  borderRadius: spacing.xs,
+  borderRadius: spacing.lg,
 })
 
 const $header: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  padding: spacing.xs,
-  backgroundColor: colors.palette.neutral100,
-  borderBottomWidth: 1,
+  paddingHorizontal: spacing.lg,
+  paddingVertical: spacing.xs,
+  backgroundColor: colors.background,
+  borderRadius: spacing.lg,
+  borderBottomLeftRadius: 0,
+  borderBottomRightRadius: 0,
+  borderBottomWidth: 2,
   borderBottomColor: colors.border,
+  borderColor: colors.backgroundAlt,
 })
 
 const $headerText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -185,23 +207,23 @@ const $headerText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontWeight: "bold",
 })
 
-const $headerButtons: ThemedStyle<ViewStyle> = () => ({
+const $headerButtons: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  gap: 8,
+  gap: spacing.lg,
 })
 
 const $clearButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.palette.neutral400,
   paddingHorizontal: spacing.sm,
   paddingVertical: spacing.xxs,
-  borderRadius: spacing.xxs,
+  borderRadius: spacing.xs,
 })
 
 const $hideButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.palette.neutral400,
   paddingHorizontal: spacing.sm,
   paddingVertical: spacing.xxs,
-  borderRadius: spacing.xxs,
+  borderRadius: spacing.xs,
 })
 
 const $buttonText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -211,11 +233,13 @@ const $buttonText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $logContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.sm,
+  paddingHorizontal: spacing.xs,
+  // marginbottom: spacing.lg,
+  // paddingBottom: spacing.lg,
 })
 
 const $logEntry: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.xxs,
+  // marginBottom: spacing.xxs,
 })
 
 const $timestamp: ThemedStyle<TextStyle> = ({colors}) => ({

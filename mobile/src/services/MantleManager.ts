@@ -1,6 +1,6 @@
-import socketComms from "@/managers/SocketComms"
+import socketComms from "@/services/SocketComms"
 import * as Calendar from "expo-calendar"
-import restComms from "@/managers/RestComms"
+import restComms from "@/services/RestComms"
 import * as TaskManager from "expo-task-manager"
 import * as Location from "expo-location"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
