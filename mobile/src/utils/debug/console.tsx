@@ -8,7 +8,7 @@ import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 export const ConsoleLogger = () => {
   const {themed} = useAppTheme()
   const [logs, setLogs] = useState([])
-  const [isVisible, setIsVisible] = useState(true)
+  const [isVisible, setIsVisible] = useState(false)
   const scrollViewRef = useRef(null)
   const [debugConsole] = useSetting(SETTINGS_KEYS.debug_console)
 

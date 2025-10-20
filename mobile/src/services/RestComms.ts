@@ -132,7 +132,7 @@ class RestComms {
     const baseUrl = await useSettingsStore.getState().getRestUrl()
     const url = `${baseUrl}${endpoint}`
 
-    console.log(`REST:${method}:${url}`)
+    console.log(`REST ${method}:${url}`)
 
     const config: RequestConfig = {
       method,
