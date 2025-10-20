@@ -3,14 +3,17 @@ import {ScrollView, TouchableOpacity, View, PanResponder, Animated, ViewStyle, T
 import {Text} from "@/components/ignite/Text"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 
 export const ConsoleLogger = () => {
   const {themed} = useAppTheme()
   const [logs, setLogs] = useState([])
   const [isVisible, setIsVisible] = useState(true)
   const scrollViewRef = useRef(null)
+  const [debugConsole] = useSetting(SETTINGS_KEYS.debug_console)
 
   const pan = useRef(new Animated.ValueXY({x: 0, y: 50})).current
+  const toggleButtonPan = useRef(new Animated.ValueXY({x: 0, y: 0})).current
 
   const panResponder = useRef(
     PanResponder.create({
@@ -26,6 +29,26 @@ export const ConsoleLogger = () => {
       onPanResponderMove: Animated.event([null, {dx: pan.x, dy: pan.y}], {useNativeDriver: false}),
       onPanResponderRelease: () => {
         pan.flattenOffset()
+      },
+    }),
+  ).current
+
+  const toggleButtonPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        toggleButtonPan.setOffset({
+          x: toggleButtonPan.x._value,
+          y: toggleButtonPan.y._value,
+        })
+        toggleButtonPan.setValue({x: 0, y: 0})
+      },
+      onPanResponderMove: Animated.event([null, {dx: toggleButtonPan.x, dy: toggleButtonPan.y}], {
+        useNativeDriver: false,
+      }),
+      onPanResponderRelease: () => {
+        toggleButtonPan.flattenOffset()
       },
     }),
   ).current
@@ -73,11 +96,24 @@ export const ConsoleLogger = () => {
     }
   }, [])
 
+  if (!debugConsole) {
+    return null
+  }
+
   if (!isVisible) {
     return (
-      <TouchableOpacity style={themed($toggleButton)} onPress={() => setIsVisible(true)}>
-        <Text text="Show Console" style={themed($toggleButtonText)} />
-      </TouchableOpacity>
+      <Animated.View
+        style={[
+          themed($toggleButton),
+          {
+            transform: [{translateX: toggleButtonPan.x}, {translateY: toggleButtonPan.y}],
+          },
+        ]}
+        {...toggleButtonPanResponder.panHandlers}>
+        <TouchableOpacity onPress={() => setIsVisible(true)}>
+          <Text text="Show Console" style={themed($toggleButtonText)} />
+        </TouchableOpacity>
+      </Animated.View>
     )
   }
 
@@ -108,7 +144,7 @@ export const ConsoleLogger = () => {
           <View key={index} style={themed($logEntry)}>
             <Text text={log.timestamp} style={themed($timestamp)} />
             <Text
-              text={`[${log.type.toUpperCase()}] ${log.message}`}
+              text={log.message}
               style={[
                 themed($logText),
                 log.type === "error" && themed($errorText),

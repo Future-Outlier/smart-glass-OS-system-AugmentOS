@@ -12,6 +12,7 @@ export const SETTINGS_KEYS = {
   dev_mode: "dev_mode",
   new_ui: "new_ui",
   enable_squircles: "enable_squircles",
+  debug_console: "debug_console",
   // ui state:
   default_wearable: "default_wearable",
   device_name: "device_name",
@@ -72,6 +73,12 @@ export const SETTINGS_KEYS = {
 } as const
 
 const DEFAULT_SETTINGS: Record<string, any> = {
+  // feature flags / dev:
+  [SETTINGS_KEYS.new_ui]: true,
+  [SETTINGS_KEYS.dev_mode]: false,
+  [SETTINGS_KEYS.enable_squircles]: false,
+  [SETTINGS_KEYS.debug_console]: false,
+  // other
   [SETTINGS_KEYS.custom_backend_url]: "https://api.mentra.glass:443",
   [SETTINGS_KEYS.enable_phone_notifications]: false,
   [SETTINGS_KEYS.notification_app_preferences]: "{}",
@@ -90,9 +97,6 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.reconnect_on_app_foreground]: false,
   [SETTINGS_KEYS.has_ever_activated_app]: false,
   [SETTINGS_KEYS.theme_preference]: "system",
-  [SETTINGS_KEYS.dev_mode]: false,
-  [SETTINGS_KEYS.new_ui]: true,
-  [SETTINGS_KEYS.enable_squircles]: false,
   [SETTINGS_KEYS.sensing_enabled]: true,
   [SETTINGS_KEYS.power_saving_mode]: false,
   [SETTINGS_KEYS.always_on_status_bar]: false,
@@ -445,15 +449,15 @@ export const useSetting = <T = any>(key: string): [T, (value: T) => Promise<void
   return [value ?? DEFAULT_SETTINGS[key], (newValue: T) => setSetting(key, newValue)]
 }
 
-export const useSettings = (keys: string[]): Record<string, any> => {
-  return useSettingsStore(state => {
-    const result: Record<string, any> = {}
-    keys.forEach(key => {
-      result[key] = state.getSetting(key)
-    })
-    return result
-  })
-}
+// export const useSettings = (keys: string[]): Record<string, any> => {
+//   return useSettingsStore(state => {
+//     const result: Record<string, any> = {}
+//     keys.forEach(key => {
+//       result[key] = state.getSetting(key)
+//     })
+//     return result
+//   })
+// }
 
 // Selectors for specific settings (memoized automatically by Zustand)
 // export const useDevMode = () => useSetting<boolean>(SETTINGS_KEYS.dev_mode)

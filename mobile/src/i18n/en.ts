@@ -249,6 +249,10 @@ const en = {
     offlineSTT: "Offline Transcriptions",
     offlineSTTSubtitle: "Transcribe audio and display on connected glasses completely offline.",
   },
+  devSettings: {
+    debugConsole: "Debug Console",
+    debugConsoleSubtitle: "Enable the debug console.",
+  },
   transcription: {
     downloadModelToEnableLocalTranscription: "Download a model to enable local transcription",
   },
