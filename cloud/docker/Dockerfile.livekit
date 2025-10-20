@@ -56,8 +56,11 @@ RUN bun install && \
 
 # Build packages in sequence
 RUN echo "🚀 Starting build process..." && \
+    echo "⚙️ Building packages/types..." && \
+    cd packages/types && bun run build && \
+    echo "✅ Built packages/types..." && \
     echo "⚙️ Building packages/sdk..." && \
-    cd packages/sdk && bun run build && \
+    cd ../sdk && bun run build && \
     echo "✅ Built packages/sdk..." && \
     echo "⚙️ Building packages/cloud..." && \
     cd ../cloud && bun run build && \
