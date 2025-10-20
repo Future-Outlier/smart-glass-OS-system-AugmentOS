@@ -31,8 +31,8 @@ import { StreamRegistry } from "../streaming/StreamRegistry";
 
 import appService from "../core/app.service";
 import SubscriptionManager from "./SubscriptionManager";
-import LiveKitManager from "./LiveKitManager";
-import SpeakerManager from "./SpeakerManager";
+import LiveKitManager from "./livekit/LiveKitManager";
+import SpeakerManager from "./livekit/SpeakerManager";
 import DeviceManager from "./DeviceManager";
 import CalendarManager from "./CalendarManager";
 import LocationManager from "./LocationManager";
