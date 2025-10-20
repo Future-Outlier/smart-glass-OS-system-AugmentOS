@@ -461,7 +461,10 @@ export default function DeviceSettings() {
               {/* Microphone Selector - moved from above */}
               {hasMicrophoneSelector && (
                 <View style={themed($settingsGroup)}>
-                  <Text tx="deviceSettings:microphoneSelection" style={[themed($settingLabel), {marginBottom: theme.spacing.sm}]} />
+                  <Text
+                    tx="deviceSettings:microphoneSelection"
+                    style={[themed($settingLabel), {marginBottom: theme.spacing.sm}]}
+                  />
                   <TouchableOpacity
                     style={{
                       flexDirection: "row",
@@ -470,7 +473,18 @@ export default function DeviceSettings() {
                       paddingTop: theme.spacing.xs,
                     }}
                     onPress={() => setMic("phone")}>
-                    <Text style={{color: theme.colors.text}}>{translate("deviceSettings:systemMic")}</Text>
+                    <View style={{flexDirection: "row", alignItems: "center", gap: 8}}>
+                      <Text style={{color: theme.colors.text}}>{translate("deviceSettings:systemMic")}</Text>
+                      <View
+                        style={{
+                          backgroundColor: theme.colors.primary + "20",
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderRadius: 4,
+                        }}>
+                        <Text style={{color: theme.colors.primary, fontSize: 11, fontWeight: "600"}}>Recommended</Text>
+                      </View>
+                    </View>
                     {preferredMic === "phone" && (
                       <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
                     )}
