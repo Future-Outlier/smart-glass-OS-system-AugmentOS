@@ -283,7 +283,7 @@ export class ManagedStreamingExtension {
     } catch (error) {
       // Cleanup on error
       this.stateManager.removeStream(userId);
-      this.stopKeepAlive(userId);
+      // Keep-alive is now managed by lifecycle, no manual stop needed
       await this.cloudflareService.deleteLiveInput(liveInput.liveInputId);
       throw error;
     }

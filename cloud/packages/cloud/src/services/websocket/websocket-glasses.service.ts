@@ -33,6 +33,7 @@ import UserSession from "../session/UserSession";
 import { logger as rootLogger } from "../logging/pino-logger";
 import { PosthogService } from "../logging/posthog.service";
 // sessionService functionality has been consolidated into UserSession
+import { User } from "../../models/user.model";
 import { SYSTEM_DASHBOARD_PACKAGE_NAME } from "../core/app.service";
 
 const SERVICE_NAME = "websocket-glasses.service";
