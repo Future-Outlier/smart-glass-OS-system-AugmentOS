@@ -15,6 +15,8 @@ import Toast from "react-native-toast-message"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS} from "@/stores/settings"
 import {useSettingsStore} from "@/stores/settings"
+import {Platform} from "react-native"
+import {NativeTabs, Icon, Label} from "expo-router/unstable-native-tabs"
 
 export default function Layout() {
   const {bottom} = useSafeAreaInsets()
@@ -78,18 +80,27 @@ export default function Layout() {
     }, maxTimeDiff)
   }
 
-  // enable new home ui if you tap and hold
-  const handleHomeLongPress = async () => {
-    replace("/home")
-    await setSetting(SETTINGS_KEYS.new_ui, !isNewUi)
-    Toast.show({
-      type: "info",
-      text1: isNewUi ? "New UI disabled" : "New UI enabled",
-      text2: "Restart the app for it to take effect",
-      position: "top",
-      topOffset: 80,
-      visibilityTime: 1000,
-    })
+  if (Platform.OS === "ios") {
+    return (
+      <NativeTabs>
+        <NativeTabs.Trigger name="index">
+          <Label>{translate("navigation:home")}</Label>
+          <Icon sf="house.fill" drawable="custom_android_drawable" />
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="settings">
+          <Icon sf="gear" drawable="custom_settings_drawable" />
+          <Label>{translate("navigation:glasses")}</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="settings">
+          <Icon sf="gear" drawable="custom_settings_drawable" />
+          <Label>{translate("navigation:store")}</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="settings">
+          <Icon sf="gear" drawable="custom_settings_drawable" />
+          <Label>{translate("navigation:account")}</Label>
+        </NativeTabs.Trigger>
+      </NativeTabs>
+    )
   }
 
   return (
@@ -101,11 +112,12 @@ export default function Layout() {
         tabBarStyle: [
           themed($tabBar),
           {
-            height: 90 + bottom,
-            paddingBottom: bottom + 8,
+            // height: 90,
+            // paddingBottom: 10,
+            // marginBottom: 100,
             // borderTopColor moved to View wrapping LinearGradient
             borderTopWidth: 0,
-            backgroundColor: "transparent",
+            // backgroundColor: "transparent",
           },
         ],
         tabBarActiveTintColor: iconFocusedColor,
@@ -155,7 +167,7 @@ export default function Layout() {
           tabBarIcon: ({focused}) => {
             const mColor = focused ? iconFocusedColor : iconInactiveColor
             return (
-              <TouchableOpacity onLongPress={handleHomeLongPress} onPress={() => replace("/home")}>
+              <TouchableOpacity onPress={() => replace("/home")}>
                 <HomeIcon size={28} color={mColor} />
               </TouchableOpacity>
             )
@@ -219,16 +231,18 @@ export default function Layout() {
   )
 }
 
-const $tabBar: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  // backgroundColor: colors.background,
+const $tabBar: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  // backgroundColor: "red",
   // borderTopColor: colors.separator,
   // borderTopWidth: 10,
-  paddingTop: spacing.sm,
+  // paddingTop: spacing.sm,
+  // height: 40,
+  // width: 50,
 })
 
 const $tabBarItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingTop: spacing.sm,
-  paddingBottom: spacing.xs,
+  // paddingTop: spacing.sm,
+  // paddingBottom: spacing.xs,
 })
 
 const $tabBarLabel: ThemedStyle<TextStyle> = ({typography}) => ({

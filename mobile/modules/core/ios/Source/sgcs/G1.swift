@@ -114,6 +114,9 @@ enum GlassesError: Error {
 }
 
 class G1: NSObject, SGCManager {
+
+    func sendGalleryMode() {}
+
     func sendButtonMaxRecordingTime() {}
 
     var glassesAppVersion: String = ""
@@ -1631,11 +1634,10 @@ extension G1 {
         }
     }
 
-    func setHeadUpAngleRaw(_ angle: UInt8) async -> Bool {
+    func setHeadUpAngleRaw(_ angle: UInt8) async {
         Bridge.log("G1: setHeadUpAngle()")
         let command: [UInt8] = [Commands.HEAD_UP_ANGLE.rawValue, angle, 0x01]
         queueChunks([command])
-        return true
     }
 
     func getBatteryStatus() {
@@ -1644,10 +1646,9 @@ extension G1 {
         queueChunks([command])
     }
 
-    func setSilentMode(_ enabled: Bool) async -> Bool {
+    func setSilentMode(_ enabled: Bool) async {
         let command: [UInt8] = [Commands.SILENT_MODE.rawValue, enabled ? 0x0C : 0x0A, 0x00]
         queueChunks([command])
-        return true
     }
 
     func setDashboardPosition(_ height: Int, _ depth: Int) {
@@ -1670,10 +1671,6 @@ extension G1 {
         } else {
             heartbeatCounter = 0
         }
-    }
-
-    @objc func RN_showDashboard() {
-        // nothing for now
     }
 
     func setDashboardPositionRaw(_ height: UInt8, _ depth: UInt8) async -> Bool {

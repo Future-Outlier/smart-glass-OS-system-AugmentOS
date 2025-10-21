@@ -63,11 +63,12 @@ struct ViewState {
     private var autoBrightness: Bool = true
     private var dashboardHeight: Int = 4
     private var dashboardDepth: Int = 5
+    private var galleryMode: Bool = false
 
     // glasses state:
     private var isHeadUp: Bool = false
 
-    // settings
+    // core settings
     private var sensingEnabled: Bool = true
     private var powerSavingMode: Bool = false
     private var alwaysOnStatusBar: Bool = false
@@ -1001,11 +1002,6 @@ struct ViewState {
         sgc?.queryGalleryStatus()
     }
 
-    func handle_send_gallery_mode_active(_ active: Bool) {
-        Bridge.log("Mentra: Sending gallery mode active to glasses: \(active)")
-        sgc?.sendGalleryModeActive(active)
-    }
-
     func handle_start_buffer_recording() {
         Bridge.log("Mentra: onStartBufferRecording")
         sgc?.startBufferRecording()
@@ -1192,7 +1188,7 @@ struct ViewState {
     }
 
     func handle_connect_by_name(_ dName: String) {
-        Bridge.log("Mentra: Connecting to wearable: \(dName ?? "nil")")
+        Bridge.log("Mentra: Connecting to wearable: \(dName)")
 
         if pendingWearable.isEmpty, defaultWearable.isEmpty {
             Bridge.log("Mentra: No pending or default wearable, returning")
@@ -1484,6 +1480,10 @@ struct ViewState {
 
         if let newButtonCameraLed = settings["button_camera_led"] as? Bool, newButtonCameraLed != buttonCameraLed {
             updateButtonCameraLed(newButtonCameraLed)
+        }
+
+        if let newGalleryMode = settings["gallery_mode"] as? Bool, newGalleryMode != galleryMode {
+            updateGalleryMode(newGalleryMode)
         }
 
         // get default wearable from core_info:

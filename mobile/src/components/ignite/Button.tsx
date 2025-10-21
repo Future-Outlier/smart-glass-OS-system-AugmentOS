@@ -288,7 +288,7 @@ const $textPresets: Record<Presets, ThemedStyleArray<TextStyle>> = {
   primary: [$baseTextStyle],
   secondary: [$baseTextStyle],
   accent: [$baseTextStyle],
-  warning: [$baseTextStyle, ({colors}) => ({color: colors.palette.accent100})],
+  warning: [$baseTextStyle, ({colors}) => ({color: colors.textAlt})],
   destructive: [$baseTextStyle, ({colors}) => ({color: colors.palette.angry600})],
   outlined: [$baseTextStyle, ({colors}) => ({color: colors.text})],
 }
