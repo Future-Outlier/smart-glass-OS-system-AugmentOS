@@ -114,7 +114,6 @@ enum GlassesError: Error {
 }
 
 class G1: NSObject, SGCManager {
-
     func sendGalleryMode() {}
 
     func sendButtonMaxRecordingTime() {}
@@ -1627,10 +1626,7 @@ extension G1 {
 
         // Call the async function from a non-async context
         Task {
-            let success = await setHeadUpAngleRaw(UInt8(agl))
-            if !success {
-                NSLog("Failed to set angle to \(angle)")
-            }
+            await setHeadUpAngleRaw(UInt8(agl))
         }
     }
 
