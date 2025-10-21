@@ -1,7 +1,7 @@
 import {View, Text, StyleSheet} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {DeviceTypes, getModelCapabilities} from "../../../../cloud/packages/types/src"
 
 interface GlassesFeatureListProps {
   glassesModel: string
@@ -18,7 +18,7 @@ export const featureLabels: Record<GlassesFeature, string> = {
 
 export function GlassesFeatureList({glassesModel}: GlassesFeatureListProps) {
   const {theme} = useAppTheme()
-  const capabilities = getCapabilitiesForModel(glassesModel)
+  const capabilities = getModelCapabilities(glassesModel as DeviceTypes)
 
   if (!capabilities) {
     console.warn(`No capabilities defined for glasses model: ${glassesModel}`)

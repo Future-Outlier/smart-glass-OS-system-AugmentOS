@@ -20,8 +20,7 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import ChevronRight from "assets/icons/component/ChevronRight"
 import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import SunIcon from "assets/icons/component/SunIcon"
-import {DeviceTypes} from "@/cloud"
-import {getModelFeatures} from "@/utils/hardware"
+import {DeviceTypes, getModelCapabilities} from "../../../../cloud/packages/types/src"
 import CoreModule from "core"
 
 export const CompactDeviceStatus: React.FC = () => {
@@ -145,7 +144,7 @@ export const CompactDeviceStatus: React.FC = () => {
     )
   }
 
-  const features = getCapabilitiesForModel(defaultWearable)
+  const features = getModelCapabilities(defaultWearable)
   const hasDisplay = features?.hasDisplay ?? true
   const hasWifi = features?.hasWifi ?? false
   const wifiSsid = status.glasses_info?.glasses_wifi_ssid

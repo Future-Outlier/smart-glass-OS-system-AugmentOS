@@ -19,7 +19,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "assets/*": ["./assets/*"],
-      "@/cloud": ["../cloud/packages/types/src/index"]
+      "@/cloud": ["../cloud/packages/*"]
     },
     "types": ["node", "react", "react-native", "jest"],
     "typeRoots": ["./node_modules/@types", "./src/types"]

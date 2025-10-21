@@ -1,6 +1,12 @@
-import {Capabilities, HardwareRequirement, HardwareType, HardwareRequirementLevel} from "@/cloud"
-import {simulatedGlasses} from "@/cloud"
-import {HARDWARE_CAPABILITIES} from "@/cloud"
+import {
+  Capabilities,
+  HardwareRequirement,
+  HardwareType,
+  HardwareRequirementLevel,
+  // simulatedGlasses,
+} from "../../../../cloud/packages/types/src"
+
+import {simulatedGlasses} from "../../../../cloud/packages/types/src/hardware"
 
 /**
  * Result of a hardware compatibility check
@@ -45,7 +51,7 @@ export class HardwareCompatibility {
 
     // Check each hardware requirement
     for (const requirement of hardwareRequirements) {
-      const hasHardware = this.checkHardwareAvailable(requirement.type, capabilities)
+      const hasHardware = this.checkHardwareAvailable(requirement.type, capabilities!)
       if (!hasHardware) {
         if (requirement.level === HardwareRequirementLevel.REQUIRED) {
           result.missingRequired.push(requirement)

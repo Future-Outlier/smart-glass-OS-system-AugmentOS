@@ -11,7 +11,7 @@ module.exports = function (api) {
           alias: {
             "@": "./src",
             "assets": "./assets",
-            "@/cloud": "../cloud/packages/types/src",
+            "@/cloud": "../cloud",
           },
           extensions: [".ios.js", ".android.js", ".js", ".ts", ".tsx", ".json"],
         },

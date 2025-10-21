@@ -1,4 +1,6 @@
+import {DeviceTypes, getModelCapabilities} from "../../../../cloud/packages/types/src"
 import {Button, Icon, Text} from "@/components/ignite"
+import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
@@ -12,17 +14,14 @@ import {
 } from "@/utils/getGlassesImage"
 import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {DeviceTypes} from "@/cloud"
-import {getModelCapabilities} from "@/cloud"
 import {useFocusEffect} from "@react-navigation/native"
 import ChevronRight from "assets/icons/component/ChevronRight"
 import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import SunIcon from "assets/icons/component/SunIcon"
+import CoreModule from "core"
 import {useCallback, useRef, useState} from "react"
 import {ActivityIndicator, Animated, TouchableOpacity, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
-import CoreModule from "core"
 
 export const ConnectDeviceButton = () => {
   const {status} = useCoreStatus()
