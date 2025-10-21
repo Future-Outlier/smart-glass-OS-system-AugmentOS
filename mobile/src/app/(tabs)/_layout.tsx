@@ -27,17 +27,17 @@ export default function Layout() {
 
   if (Platform.OS === "ios") {
     return (
-      <NativeTabs>
-        <NativeTabs.Trigger name="index">
+      <NativeTabs backgroundColor={"#FFFFFF"}>
+        <NativeTabs.Trigger name="home">
           <Label>{translate("navigation:home")}</Label>
           <Icon sf="house.fill" drawable="custom_android_drawable" />
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="settings">
-          <Icon sf="gear" drawable="custom_settings_drawable" />
+        <NativeTabs.Trigger name="glasses">
+          <Icon sf="eyes" drawable="custom_settings_drawable" />
           <Label>{translate("navigation:glasses")}</Label>
         </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="settings">
-          <Icon sf="gear" drawable="custom_settings_drawable" />
+        <NativeTabs.Trigger name="store">
+          <Icon sf="cart.fill" drawable="custom_settings_drawable" />
           <Label>{translate("navigation:store")}</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="settings">
