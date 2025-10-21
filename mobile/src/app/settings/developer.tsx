@@ -11,7 +11,7 @@ import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {spacing} from "@/theme"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {DeviceTypes} from "@/utils/Constants"
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export default function DeveloperSettingsScreen() {
   // const {status} = useCoreStatus()

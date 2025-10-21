@@ -23,7 +23,7 @@ import {SimulatedGlassesControls} from "@/components/misc/SimulatedGlassesContro
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import {DeviceTypes} from "@/utils/Constants"
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import RNFS from "react-native-fs"
 
@@ -47,7 +47,7 @@ export default function GlassesMirrorFullscreen() {
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
 
   const cameraRef = useRef<CameraView | null>(null)
-  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const recordingTimerRef = useRef<number | null>(null)
 
   // Check permissions and setup on component mount
   useEffect(() => {

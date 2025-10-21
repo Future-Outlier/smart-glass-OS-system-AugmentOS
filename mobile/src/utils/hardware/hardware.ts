@@ -219,11 +219,3 @@ export class HardwareCompatibility {
   //   return parts.join(" | ")
   // }
 }
-
-export const getModelFeatures = (model: string): Capabilities => {
-  if (!HARDWARE_CAPABILITIES[model]) {
-    throw new Error(`Unknown model: ${model}`)
-  }
-  let capabilities = HARDWARE_CAPABILITIES[model]
-  return capabilities
-}
