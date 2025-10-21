@@ -1001,6 +1001,11 @@ struct ViewState {
         sgc?.queryGalleryStatus()
     }
 
+    func handle_send_gallery_mode_active(_ active: Bool) {
+        Bridge.log("Mentra: Sending gallery mode active to glasses: \(active)")
+        sgc?.sendGalleryModeActive(active)
+    }
+
     func handle_start_buffer_recording() {
         Bridge.log("Mentra: onStartBufferRecording")
         sgc?.startBufferRecording()

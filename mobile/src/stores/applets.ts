@@ -12,6 +12,7 @@ import {
 } from "@/../../cloud/packages/types/src"
 import {useMemo} from "react"
 import {create} from "zustand"
+import bridge from "@/bridge/MantleBridge"
 
 export interface ClientAppletInterface extends AppletInterface {
   isOffline: boolean
@@ -115,8 +116,18 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
 
 const setOfflineApplet = async (packageName: string, status: boolean) => {
   await useSettingsStore.getState().setSetting(packageName, status)
+
+  // Captions app special handling
   if (packageName === captionsPackageName) {
     await useSettingsStore.getState().setSetting(SETTINGS_KEYS.offline_captions_running, status, true)
+  }
+
+  // Camera app special handling - send gallery mode to glasses
+  if (packageName === cameraPackageName) {
+    console.log(`📸 Camera app ${status ? "started" : "stopped"} - sending gallery mode active: ${status}`)
+    bridge.sendGalleryModeActive(status).catch(err => {
+      console.error("Failed to send gallery mode active:", err)
+    })
   }
 }
 

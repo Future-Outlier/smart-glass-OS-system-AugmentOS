@@ -932,6 +932,11 @@ class CoreManager {
         sgc?.queryGalleryStatus()
     }
 
+    fun handle_send_gallery_mode_active(active: Boolean) {
+        Bridge.log("Mentra: Sending gallery mode active to glasses: $active")
+        sgc?.sendGalleryModeActive(active)
+    }
+
     fun handle_start_buffer_recording() {
         Bridge.log("Mentra: onStartBufferRecording")
         sgc?.startBufferRecording()

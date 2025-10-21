@@ -1666,6 +1666,12 @@ public class G1 extends SGCManager {
 
     }
 
+    @Override
+    public void sendGalleryModeActive(boolean active) {
+        // G1 doesn't have a built-in camera/gallery system
+        Bridge.log("G1: sendGalleryModeActive - not supported on G1");
+    }
+
     // private void sendDataSequentially(byte[] data, boolean onlyLeft) {
     // if (stopper) return;
     // stopper = true;

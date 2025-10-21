@@ -378,6 +378,11 @@ export class MantleBridge {
     console.log("[Bridge] Querying gallery status from glasses...")
     return await CoreModule.queryGalleryStatus()
   }
+
+  async sendGalleryModeActive(active: boolean) {
+    console.log(`[Bridge] 📸 Sending gallery mode active to glasses: ${active}`)
+    return await CoreModule.sendGalleryModeActive(active)
+  }
 }
 
 // Create and export the singleton instance
