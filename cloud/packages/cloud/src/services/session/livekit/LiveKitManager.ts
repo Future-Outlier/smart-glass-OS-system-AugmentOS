@@ -16,6 +16,7 @@ export class LiveKitManager {
   private bridgeClient: LiveKitGrpcClient | null = null;
   // private micEnabled = false;
   private healthTimer: NodeJS.Timeout | null = null;
+  private lastRejoinAttemptAt: number | null = null;
 
   constructor(session: UserSession) {
     this.session = session;
@@ -320,6 +321,95 @@ export class LiveKitManager {
       this.logger.info({ feature: "livekit" }, "Disposing bridge client");
       this.bridgeClient.dispose();
       this.bridgeClient = null;
+    }
+  }
+
+  /**
+   * Query the Go bridge for room connectivity status for this session.
+   * Returns null if the bridge client is not available.
+   */
+  public async getBridgeStatus(): Promise<{
+    connected: boolean;
+    participant_id?: string;
+    participant_count?: number;
+    last_disconnect_at?: number;
+    last_disconnect_reason?: string;
+    server_version?: string;
+  } | null> {
+    if (!this.bridgeClient) {
+      this.logger.warn(
+        { feature: "livekit" },
+        "getBridgeStatus: no bridge client",
+      );
+      return null;
+    }
+    try {
+      // LiveKitGrpcClient.getStatus() returns the raw status object
+      const status = await (this.bridgeClient as any).getStatus();
+      this.logger.info({ feature: "livekit", status }, "Bridge status fetched");
+      return status ?? null;
+    } catch (err) {
+      this.logger.warn(
+        { feature: "livekit", err },
+        "Failed to fetch bridge status",
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Rejoin the LiveKit room when the bridge was kicked/disconnected.
+   * Applies a small backoff window to avoid rejoin storms.
+   */
+  public async rejoinBridge(): Promise<void> {
+    const now = Date.now();
+    const backoffMs =
+      parseInt(process.env.LIVEKIT_REJOIN_BACKOFF_MS || "2000", 10) || 2000;
+
+    if (
+      this.lastRejoinAttemptAt &&
+      now - this.lastRejoinAttemptAt < backoffMs
+    ) {
+      this.logger.warn(
+        {
+          feature: "livekit",
+          backoffMs,
+          sinceLast: now - this.lastRejoinAttemptAt,
+        },
+        "Skipping rejoin due to backoff window",
+      );
+      return;
+    }
+    this.lastRejoinAttemptAt = now;
+
+    if (!this.bridgeClient) {
+      this.bridgeClient = new LiveKitGrpcClient(this.session);
+    }
+
+    const token = await this.mintAgentBridgeToken();
+    if (!token) {
+      this.logger.warn(
+        { feature: "livekit" },
+        "Failed to mint bridge token for rejoin",
+      );
+      return;
+    }
+
+    const params = {
+      url: this.getUrl(),
+      roomName: this.getRoomName(),
+      token,
+      targetIdentity: this.session.userId,
+    };
+
+    try {
+      await (this.bridgeClient as any).rejoin(params);
+      this.logger.info(
+        { feature: "livekit", room: params.roomName },
+        "Bridge rejoined LiveKit room",
+      );
+    } catch (err) {
+      this.logger.error({ feature: "livekit", err }, "Bridge rejoin failed");
     }
   }
 }
