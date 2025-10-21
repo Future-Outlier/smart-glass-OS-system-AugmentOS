@@ -1307,7 +1307,7 @@ class MentraLive: NSObject, SGCManager {
         if reconnectAttempts >= MAX_RECONNECT_ATTEMPTS {
             Bridge.log("Maximum reconnection attempts reached (\(MAX_RECONNECT_ATTEMPTS))")
             reconnectAttempts = 0
-            connectionState = .disconnected
+            connectionState = ConnTypes.DISCONNECTED
             return
         }
 
@@ -1321,7 +1321,7 @@ class MentraLive: NSObject, SGCManager {
         let workItem = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
 
-            if self.connectionState == .disconnected && !self.isKilled {
+            if self.connectionState == ConnTypes.DISCONNECTED && !self.isKilled {
                 // Check for last known device name to start scan
                 if let lastDeviceName = UserDefaults.standard.string(forKey: self.PREFS_DEVICE_NAME), !lastDeviceName.isEmpty {
                     Bridge.log("Reconnection attempt \(self.reconnectAttempts) - looking for device with name: \(lastDeviceName)")
@@ -1330,7 +1330,7 @@ class MentraLive: NSObject, SGCManager {
                     self.startScan()
                 } else {
                     Bridge.log("Reconnection attempt \(self.reconnectAttempts) - no last device name available")
-                    self.connectionState = .disconnected
+                    self.connectionState = ConnTypes.DISCONNECTED
                 }
             }
         }
@@ -3321,7 +3321,7 @@ extension MentraLive {
         sendButtonVideoRecordingSettings()
 
         // Send button max recording time
-        sendButtonMaxRecordingTime(MentraManager.shared.buttonMaxRecordingTimeMinutes)
+        sendButtonMaxRecordingTime(CoreManager.shared.buttonMaxRecordingTime)
 
         // Send button photo settings
         sendButtonPhotoSettings()
@@ -3420,7 +3420,7 @@ extension MentraLive {
 
         Bridge.log("Sending button max recording time: \(maxTime) minutes")
 
-        guard connectionState == .connected else {
+        guard connectionState == ConnTypes.CONNECTED else {
             Bridge.log("Cannot send button max recording time - not connected")
             return
         }
