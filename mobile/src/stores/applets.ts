@@ -5,7 +5,7 @@ import {getThemeIsDark} from "@/theme/getTheme"
 import {ClientAppletInterface} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
 import {HardwareCompatibility} from "@/utils/hardware"
-import {HardwareRequirementLevel, HardwareType} from "../../../cloud/packages/types/src"
+import {getModelCapabilities, HardwareRequirementLevel, HardwareType} from "../../../cloud/packages/types/src"
 import {useMemo} from "react"
 import {create} from "zustand"
 
@@ -125,7 +125,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
 
       // add in the compatibility info:
       let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-      let capabilities = getCapabilitiesForModel(defaultWearable)
+      let capabilities = getModelCapabilities(defaultWearable)
 
       for (const applet of applets) {
         let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
