@@ -293,6 +293,12 @@ public class Mach1 extends SGCManager {
 
     }
 
+    @Override
+    public void sendGalleryModeActive(boolean active) {
+        // Mach1 doesn't have a built-in camera/gallery system
+        Bridge.log("Mach1: sendGalleryModeActive - not supported on Mach1");
+    }
+
     public class UltraliteListener implements EventListener{
         @Override
         public void onTap(int tapCount) {
