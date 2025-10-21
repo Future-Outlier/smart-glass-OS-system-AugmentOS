@@ -1152,21 +1152,23 @@ struct ViewState {
         }
     }
 
-    func handle_rgb_led_control(requestId _: String,
-                                packageName _: String?,
-                                action _: String,
-                                color _: String?,
-                                ontime _: Int,
-                                offtime _: Int,
-                                count _: Int)
+    func handle_rgb_led_control(requestId: String,
+                                packageName: String?,
+                                action: String,
+                                color: String?,
+                                ontime: Int,
+                                offtime: Int,
+                                count: Int)
     {
-        // sgc?.sendRgbLedControl(requestId: requestId,
-        //                          packageName: packageName,
-        //                          action: action,
-        //                          color: color,
-        //                          ontime: ontime,
-        //                          offtime: offtime,
-        //                          count: count)
+        sgc?.sendRgbLedControl(
+            requestId: requestId,
+            packageName: packageName,
+            action: action,
+            color: color,
+            ontime: ontime,
+            offtime: offtime,
+            count: count
+        )
     }
 
     func handle_photo_request(

@@ -1025,6 +1025,27 @@ class CoreManager {
         sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken)
     }
 
+    fun handle_rgb_led_control(
+            requestId: String,
+            packageName: String?,
+            action: String,
+            color: String?,
+            ontime: Int,
+            offtime: Int,
+            count: Int
+    ) {
+        Bridge.log("Mentra: RGB LED control: action=$action, color=$color, requestId=$requestId")
+        sgc?.sendRgbLedControl(
+                requestId,
+                packageName,
+                action,
+                color,
+                ontime,
+                offtime,
+                count
+        )
+    }
+
     fun handle_connect_default() {
         if (defaultWearable.isEmpty()) {
             Bridge.log("Mentra: No default wearable, returning")

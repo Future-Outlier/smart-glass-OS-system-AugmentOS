@@ -81,6 +81,10 @@ struct FrameCommand {
 
     func exit() {}
 
+    func sendRgbLedControl(requestId: String, packageName _: String?, action _: String, color _: String?, ontime _: Int, offtime _: Int, count _: Int) {
+        Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "device_not_supported")
+    }
+
     func requestWifiScan() {}
 
     func sendWifiCredentials(_: String, _: String) {}

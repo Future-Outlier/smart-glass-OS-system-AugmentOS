@@ -3133,13 +3133,13 @@ extension MentraLive {
         }
     }
 
-    func handleRgbLedControl(requestId: String,
-                             packageName: String?,
-                             action: String,
-                             color: String?,
-                             ontime: Int,
-                             offtime: Int,
-                             count: Int)
+    func sendRgbLedControl(requestId: String,
+                           packageName: String?,
+                           action: String,
+                           color: String?,
+                           ontime: Int,
+                           offtime: Int,
+                           count: Int)
     {
         guard connectionState == ConnTypes.CONNECTED, ready else {
             Bridge.log("MentraLive: Cannot handle RGB LED control - glasses not connected")

@@ -243,6 +243,12 @@ public class Mach1 extends SGCManager {
     }
 
     @Override
+    public void sendRgbLedControl(String requestId, String packageName, String action, String color, int ontime, int offtime, int count) {
+        Bridge.log("sendRgbLedControl - not supported on Mach1");
+        Bridge.sendRgbLedControlResponse(requestId, false, "device_not_supported");
+    }
+
+    @Override
     public void disconnect() {
 
     }
