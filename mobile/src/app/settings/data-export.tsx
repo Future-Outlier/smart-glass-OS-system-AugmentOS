@@ -1,6 +1,6 @@
 import {useState, useEffect} from "react"
 import {View, ScrollView, ActivityIndicator, Share, Platform, ViewStyle, TextStyle} from "react-native"
-import Clipboard from "@react-native-clipboard/clipboard"
+import * as Clipboard from "expo-clipboard"
 import {Screen, Header, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
