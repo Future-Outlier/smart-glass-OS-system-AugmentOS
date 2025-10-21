@@ -1,5 +1,5 @@
 import {CompatibilityResult} from "@/utils/hardware"
-import {AppletInterface} from "@/cloud"
+import {AppletInterface} from "@/../../cloud/packages/types/src"
 export type AppPermissionType =
   | "ALL"
   | "MICROPHONE"

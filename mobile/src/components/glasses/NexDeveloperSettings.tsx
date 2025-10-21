@@ -15,7 +15,6 @@ import {MOCK_CONNECTION} from "@/utils/Constants"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
 import ToggleSetting from "../settings/ToggleSetting"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
 import CoreModule from "core"
 
 // Nex Interface Version - Single source of truth
