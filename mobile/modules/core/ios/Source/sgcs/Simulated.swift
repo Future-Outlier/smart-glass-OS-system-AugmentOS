@@ -209,4 +209,8 @@ class Simulated: SGCManager {
     func queryGalleryStatus() {
         Bridge.log("queryGalleryStatus")
     }
+
+    func sendGalleryMode() {
+        Bridge.log("sendGalleryMode")
+    }
 }

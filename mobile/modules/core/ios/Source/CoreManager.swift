@@ -392,6 +392,12 @@ struct ViewState {
         handle_request_status() // to update the UI
     }
 
+    func updateButtonGalleryMode(_ enabled: Bool) {
+        buttonGalleryMode = enabled
+        sgc?.sendGalleryMode()
+        handle_request_status() // to update the UI
+    }
+
     func updateButtonMaxRecordingTime(_ value: Int) {
         buttonMaxRecordingTime = value
         sgc?.sendButtonMaxRecordingTime()
