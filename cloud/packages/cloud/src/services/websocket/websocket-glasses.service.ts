@@ -714,6 +714,43 @@ export class GlassesWebSocketService {
       });
     }
 
+    // Reconnect path: ensure LiveKit bridge has rejoined if it was kicked
+    if (reconnection) {
+      try {
+        // If we previously had a bridge (or client explicitly requested LiveKit), check status
+        const hadBridge =
+          typeof userSession.liveKitManager.getBridgeClient === "function" &&
+          !!userSession.liveKitManager.getBridgeClient();
+
+        if (hadBridge || livekitRequested) {
+          const status = await userSession.liveKitManager.getBridgeStatus?.();
+          userSession.logger.info(
+            { feature: "livekit", status, reconnection },
+            "Reconnect: bridge status",
+          );
+
+          // If the bridge is not connected to the room, attempt a rejoin with a fresh token
+          if (!status || status.connected === false) {
+            await userSession.liveKitManager.rejoinBridge?.();
+            userSession.logger.info(
+              { feature: "livekit" },
+              "Reconnect: bridge rejoin attempted",
+            );
+          } else {
+            userSession.logger.info(
+              { feature: "livekit" },
+              "Reconnect: bridge healthy, keeping session",
+            );
+          }
+        }
+      } catch (err) {
+        userSession.logger.warn(
+          { feature: "livekit", err },
+          "Reconnect: bridge status check failed",
+        );
+      }
+    }
+
     // Prepare the base ACK message
     const ackMessage: ConnectionAck = {
       type: CloudToGlassesMessageType.CONNECTION_ACK,
