@@ -101,6 +101,7 @@ export default function Layout() {
         tabBarStyle: [
           themed($tabBar),
           {
+            height: 90 + bottom,
             paddingBottom: bottom + 8,
             // borderTopColor moved to View wrapping LinearGradient
             borderTopWidth: 0,
@@ -222,7 +223,6 @@ const $tabBar: ThemedStyle<ViewStyle> = ({spacing}) => ({
   // backgroundColor: colors.background,
   // borderTopColor: colors.separator,
   // borderTopWidth: 10,
-  height: 90,
   paddingTop: spacing.sm,
 })
 

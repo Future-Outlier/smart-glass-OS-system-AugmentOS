@@ -1,12 +1,13 @@
 import {useState, useEffect} from "react"
-import {View, ScrollView, ActivityIndicator, Share, Platform, ViewStyle, TextStyle, Clipboard} from "react-native"
+import {View, ScrollView, ActivityIndicator, Share, Platform, ViewStyle, TextStyle} from "react-native"
+import Clipboard from "@react-native-clipboard/clipboard"
 import {Screen, Header, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAuth} from "@/contexts/AuthContext"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {useAppStatus} from "@/contexts/AppletStatusProvider"
+import {useApplets} from "@/stores/applets"
 import {DataExportService, UserDataExport} from "@/utils/DataExportService"
 import {translate} from "@/i18n"
 import ActionButton from "@/components/ui/ActionButton"
@@ -22,7 +23,7 @@ export default function DataExportPage() {
 
   const {user, session} = useAuth()
   const {status} = useCoreStatus()
-  const {appStatus} = useAppStatus()
+  const appStatus = useApplets()
   const {goBack} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
 
