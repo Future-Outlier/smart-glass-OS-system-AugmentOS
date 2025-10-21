@@ -144,6 +144,10 @@ export interface TranscriptionMetadata {
     // Azure-specific metadata can be added later
     tokens?: any[];
   };
+  alibaba?: {
+    // Alibaba-specific metadata can be added later
+    tokens?: any[];
+  };
 }
 
 /**
