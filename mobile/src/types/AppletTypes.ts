@@ -1,5 +1,5 @@
-import {CompatibilityResult} from "@/utils/HardwareCompatibility"
-import {AppletInterface} from "@cloud"
+import {CompatibilityResult} from "@/utils/hardware"
+import {AppletInterface} from "@/cloud"
 export type AppPermissionType =
   | "ALL"
   | "MICROPHONE"
@@ -88,6 +88,7 @@ export interface ClientAppletInterface extends AppletInterface {
   isOffline: boolean
   offlineRoute: string
   compatibility?: CompatibilityResult
+  loading: boolean
   // compatibility?: {
   //   isCompatible: boolean
   //   missingRequired: Array<{

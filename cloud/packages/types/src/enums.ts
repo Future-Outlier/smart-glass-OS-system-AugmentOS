@@ -25,7 +25,7 @@ export enum HardwareRequirementLevel {
   OPTIONAL = "OPTIONAL", // App has enhanced features with this hardware
 }
 
-export enum DeviceType {
+export enum DeviceTypes {
   SIMULATED = "Simulated Glasses",
   G1 = "Even Realities G1",
   LIVE = "Mentra Live",

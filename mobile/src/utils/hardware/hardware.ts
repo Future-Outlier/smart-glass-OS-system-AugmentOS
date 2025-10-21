@@ -1,5 +1,5 @@
-import {Capabilities, HardwareRequirement, HardwareType, HardwareRequirementLevel} from "@cloud/packages/sdk/src/types"
-import {simulatedGlasses} from "@cloud/packages/cloud/src/config/capabilities/simulated-glasses"
+import {Capabilities, HardwareRequirement, HardwareType, HardwareRequirementLevel} from "@/cloud"
+import {simulatedGlasses} from "@/cloud"
 import {HARDWARE_CAPABILITIES} from "@/cloud"
 
 /**

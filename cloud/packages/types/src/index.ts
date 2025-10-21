@@ -14,7 +14,7 @@
 // Enums (runtime values)
 // ============================================================================
 
-export { HardwareType, HardwareRequirementLevel, DeviceType } from "./enums";
+export {HardwareType, HardwareRequirementLevel, DeviceTypes} from "./enums"
 
 // ============================================================================
 // Hardware types (compile-time only)
@@ -31,16 +31,13 @@ export type {
   LightCapabilities,
   PowerCapabilities,
   Capabilities,
-  HARDWARE_CAPABILITIES,
-} from "./hardware";
+} from "./hardware"
+
+// not a type:
+export {HARDWARE_CAPABILITIES, getModelCapabilities} from "./hardware"
 
 // ============================================================================
 // Applet types (compile-time only)
 // ============================================================================
 
-export type {
-  AppletType,
-  AppPermissionType,
-  AppletPermission,
-  AppletInterface,
-} from "./applet";
+export type {AppletType, AppPermissionType, AppletPermission, AppletInterface} from "./applet"

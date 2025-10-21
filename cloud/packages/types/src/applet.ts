@@ -2,7 +2,7 @@
  * @mentra/types - App/Applet types for client interfaces
  */
 
-import { HardwareRequirement } from "./hardware";
+import {HardwareRequirement} from "./hardware"
 
 /**
  * App execution model types

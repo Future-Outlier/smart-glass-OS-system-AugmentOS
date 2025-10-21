@@ -4,7 +4,6 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {spacing, ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
-import {DeviceTypes} from "@/utils/Constants"
 import {
   getEvenRealitiesG1Image,
   getGlassesClosedImage,
@@ -13,7 +12,8 @@ import {
 } from "@/utils/getGlassesImage"
 import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {DeviceTypes} from "@/cloud"
+import {getModelCapabilities} from "@/cloud"
 import {useFocusEffect} from "@react-navigation/native"
 import ChevronRight from "assets/icons/component/ChevronRight"
 import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
@@ -21,7 +21,7 @@ import SunIcon from "assets/icons/component/SunIcon"
 import {useCallback, useRef, useState} from "react"
 import {ActivityIndicator, Animated, TouchableOpacity, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import ConnectedSimulatedGlassesInfo from "./ConnectedSimulatedGlassesInfo"
+import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
 import CoreModule from "core"
 
 export const ConnectDeviceButton = () => {
@@ -220,7 +220,7 @@ export function DeviceToolbar() {
     return null
   }
 
-  const features = getCapabilitiesForModel(defaultWearable)
+  const features = getModelCapabilities(defaultWearable)
   const autoBrightness = status.glasses_settings.auto_brightness
   const hasDisplay = features?.hasDisplay ?? true // Default to true if model not found
   const hasWifi = features?.hasWifi ?? false // Default to false if model not found

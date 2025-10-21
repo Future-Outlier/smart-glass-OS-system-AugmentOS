@@ -20,8 +20,8 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import ChevronRight from "assets/icons/component/ChevronRight"
 import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import SunIcon from "assets/icons/component/SunIcon"
-import {DeviceTypes} from "@/utils/Constants"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {DeviceTypes} from "@/cloud"
+import {getModelFeatures} from "@/utils/hardware"
 import CoreModule from "core"
 
 export const CompactDeviceStatus: React.FC = () => {
