@@ -33,7 +33,7 @@ import {Header, Text} from "@/components/ignite"
 import * as Linking from "expo-linking"
 import {MediaLibraryPermissions} from "@/utils/MediaLibraryPermissions"
 import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
-import {getModelCapabilities} from "../../../../../cloud/packages/types/src"
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import CoreModule from "core"
 

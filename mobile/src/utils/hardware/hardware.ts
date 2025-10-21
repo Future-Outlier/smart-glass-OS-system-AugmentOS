@@ -3,10 +3,9 @@ import {
   HardwareRequirement,
   HardwareType,
   HardwareRequirementLevel,
-  // simulatedGlasses,
-} from "../../../../cloud/packages/types/src"
+} from "@/../../cloud/packages/types/src"
 
-import {simulatedGlasses} from "../../../../cloud/packages/types/src/hardware"
+import {simulatedGlasses} from "@/../../cloud/packages/types/src/hardware"
 
 /**
  * Result of a hardware compatibility check

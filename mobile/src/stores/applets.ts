@@ -5,7 +5,7 @@ import {getThemeIsDark} from "@/theme/getTheme"
 import {ClientAppletInterface} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
 import {HardwareCompatibility} from "@/utils/hardware"
-import {getModelCapabilities, HardwareRequirementLevel, HardwareType} from "../../../cloud/packages/types/src"
+import {getModelCapabilities, HardwareRequirementLevel, HardwareType} from "@/../../cloud/packages/types/src"
 import {useMemo} from "react"
 import {create} from "zustand"
 

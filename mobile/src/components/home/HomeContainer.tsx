@@ -8,7 +8,7 @@ import {IncompatibleApps} from "@/components/home/IncompatibleApps"
 import {Spacer} from "@/components/misc/Spacer"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {getModelCapabilities, Capabilities} from "../../../../cloud/packages/types/src"
+import {getModelCapabilities, Capabilities} from "@/../../cloud/packages/types/src"
 import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 
