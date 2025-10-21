@@ -2501,6 +2501,21 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    @Override
+    public void sendGalleryModeActive(boolean active) {
+        Bridge.log("LIVE: 📸 Sending gallery mode active to glasses: " + active);
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "save_in_gallery_mode");
+            json.put("active", active);
+            json.put("timestamp", System.currentTimeMillis());
+            sendJson(json, true);
+            Bridge.log("LIVE: 📸 ✅ Gallery mode command sent successfully");
+        } catch (JSONException e) {
+            Log.e(TAG, "📸 💥 Error creating gallery mode JSON", e);
+        }
+    }
+
     /**
      * Send heartbeat ping to glasses and handle periodic battery requests
      */

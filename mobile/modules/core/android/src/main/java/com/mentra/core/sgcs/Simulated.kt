@@ -173,4 +173,8 @@ class Simulated : SGCManager() {
     override fun queryGalleryStatus() {
         Bridge.log("queryGalleryStatus")
     }
+
+    override fun sendGalleryModeActive(active: Boolean) {
+        Bridge.log("SIMULATED: 📸 Received gallery mode active: $active")
+    }
 }
