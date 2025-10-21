@@ -160,7 +160,7 @@ export const HARDWARE_CAPABILITIES: Record<string, Capabilities> = {
 export const getModelCapabilities = (deviceType: DeviceTypes): Capabilities => {
   let modelName = deviceType as string
   if (!HARDWARE_CAPABILITIES[modelName]) {
-    throw new Error(`Unsupported device type: ${modelName}`)
+    return HARDWARE_CAPABILITIES[simulatedGlasses.modelName]
   }
   return HARDWARE_CAPABILITIES[modelName]
 }

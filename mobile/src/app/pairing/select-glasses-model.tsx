@@ -8,7 +8,7 @@ import {Header} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import Svg, {Defs, RadialGradient, Rect, Stop} from "react-native-svg"
-import {DeviceTypes} from "@/utils/Constants"
+import {DeviceTypes} from "@/../../../cloud/packages/types/src"
 import {useLocalSearchParams} from "expo-router"
 
 export default function SelectGlassesModelScreen() {
