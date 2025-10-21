@@ -57,13 +57,13 @@ struct ViewState {
     private var currentRequiredData: [SpeechRequiredDataType] = []
 
     // glasses settings
-    public var contextualDashboard = true
-    public var headUpAngle = 30
-    public var brightness = 50
-    public var autoBrightness: Bool = true
-    public var dashboardHeight: Int = 4
-    public var dashboardDepth: Int = 5
-    public var galleryMode: Bool = false
+    var contextualDashboard = true
+    var headUpAngle = 30
+    var brightness = 50
+    var autoBrightness: Bool = true
+    var dashboardHeight: Int = 4
+    var dashboardDepth: Int = 5
+    var galleryMode: Bool = false
 
     // glasses state:
     private var isHeadUp: Bool = false
@@ -1154,21 +1154,23 @@ struct ViewState {
         }
     }
 
-    func handle_rgb_led_control(requestId _: String,
-                                packageName _: String?,
-                                action _: String,
-                                color _: String?,
-                                ontime _: Int,
-                                offtime _: Int,
-                                count _: Int)
+    func handle_rgb_led_control(requestId: String,
+                                packageName: String?,
+                                action: String,
+                                color: String?,
+                                ontime: Int,
+                                offtime: Int,
+                                count: Int)
     {
-        // sgc?.sendRgbLedControl(requestId: requestId,
-        //                          packageName: packageName,
-        //                          action: action,
-        //                          color: color,
-        //                          ontime: ontime,
-        //                          offtime: offtime,
-        //                          count: count)
+        sgc?.sendRgbLedControl(
+            requestId: requestId,
+            packageName: packageName,
+            action: action,
+            color: color,
+            ontime: ontime,
+            offtime: offtime,
+            count: count
+        )
     }
 
     func handle_photo_request(

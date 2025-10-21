@@ -130,6 +130,19 @@ class Simulated : SGCManager() {
         Bridge.log("exit")
     }
 
+    override fun sendRgbLedControl(
+            requestId: String,
+            packageName: String?,
+            action: String,
+            color: String?,
+            ontime: Int,
+            offtime: Int,
+            count: Int
+    ) {
+        Bridge.log("sendRgbLedControl - not supported on Simulated")
+        Bridge.sendRgbLedControlResponse(requestId, false, "device_not_supported")
+    }
+
     // Connection Management
     override fun disconnect() {
         Bridge.log("disconnect")

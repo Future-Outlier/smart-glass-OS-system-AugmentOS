@@ -332,6 +332,7 @@ public class MentraLive extends SGCManager {
     private Runnable heartbeatRunnable;
     private int heartbeatCounter = 0;
     private boolean glassesReady = false;
+    private boolean rgbLedAuthorityClaimed = false; // Track if we've claimed RGB LED control from BES
 
     // Micbeat tracking - periodically enable custom audio TX
     private Handler micBeatHandler = new Handler(Looper.getMainLooper());
@@ -1900,6 +1901,9 @@ public class MentraLive extends SGCManager {
                 // Send user settings to glasses
                 sendUserSettings();
 
+                // Claim RGB LED control authority
+                sendRgbLedControlAuthority(true);
+
                 // Initialize LC3 audio logging now that glasses are ready (only if supported)
                 if (supportsLC3Audio) {
                     initializeLc3Logging();
@@ -3204,6 +3208,11 @@ public class MentraLive extends SGCManager {
         pendingMessages.clear();
         Bridge.log("LIVE: Cleared pending message tracking");
 
+        // Release RGB LED control authority before disconnecting
+        if (rgbLedAuthorityClaimed) {
+            sendRgbLedControlAuthority(false);
+        }
+
         // Disconnect from GATT if connected
         if (bluetoothGatt != null) {
             bluetoothGatt.disconnect();
@@ -3947,6 +3956,106 @@ public class MentraLive extends SGCManager {
 
     private void sendJsonWithoutAck(JSONObject json){
         sendJsonWithoutAck(json, false);
+    }
+
+    /**
+     * Claim or release RGB LED control authority from BES chipset
+     * @param claimControl true to claim control, false to release
+     */
+    private void sendRgbLedControlAuthority(boolean claimControl) {
+        try {
+            JSONObject bodyData = new JSONObject();
+            bodyData.put("on", claimControl);
+
+            JSONObject command = new JSONObject();
+            command.put("C", "android_control_led");
+            command.put("V", 1);
+            command.put("B", bodyData.toString());
+
+            Bridge.log("LIVE: " + (claimControl ? "📍 Claiming" : "📍 Releasing") + " RGB LED control authority");
+            sendJson(command, false);
+            rgbLedAuthorityClaimed = claimControl;
+        } catch (JSONException e) {
+            Log.e(TAG, "Error building RGB LED authority command", e);
+        }
+    }
+
+    /**
+     * Send RGB LED control command to glasses
+     * Matches iOS implementation for cross-platform consistency
+     */
+    public void sendRgbLedControl(String requestId,
+                                   String packageName,
+                                   String action,
+                                   String color,
+                                   int ontime,
+                                   int offtime,
+                                   int count) {
+        if (!isConnected || !glassesReady) {
+            Bridge.log("LIVE: Cannot handle RGB LED control - glasses not connected");
+            Bridge.sendRgbLedControlResponse(requestId, false, "glasses_not_connected");
+            return;
+        }
+
+        if (!rgbLedAuthorityClaimed) {
+            sendRgbLedControlAuthority(true);
+        }
+
+        try {
+            JSONObject command = new JSONObject();
+            command.put("requestId", requestId);
+
+            if (packageName != null && !packageName.isEmpty()) {
+                command.put("packageName", packageName);
+            }
+
+            switch (action) {
+                case "on":
+                    int ledIndex = ledIndexForColor(color);
+                    command.put("type", "rgb_led_control_on");
+                    command.put("led", ledIndex);
+                    command.put("ontime", ontime);
+                    command.put("offtime", offtime);
+                    command.put("count", count);
+                    break;
+                case "off":
+                    command.put("type", "rgb_led_control_off");
+                    break;
+                default:
+                    Bridge.log("LIVE: Unsupported RGB LED action: " + action);
+                    Bridge.sendRgbLedControlResponse(requestId, false, "unsupported_action");
+                    return;
+            }
+
+            Bridge.log("LIVE: 💡 Forwarding RGB LED command to glasses: " + command.toString());
+            sendJson(command, true);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error building RGB LED command", e);
+            Bridge.sendRgbLedControlResponse(requestId, false, "json_error");
+        }
+    }
+
+    /**
+     * Convert color string to LED index
+     * Matches iOS implementation
+     */
+    private int ledIndexForColor(String color) {
+        if (color == null) return 0;
+
+        switch (color.toLowerCase()) {
+            case "red":
+                return 0;
+            case "green":
+                return 1;
+            case "blue":
+                return 2;
+            case "orange":
+                return 3;
+            case "white":
+                return 4;
+            default:
+                return 0;
+        }
     }
 
     /**

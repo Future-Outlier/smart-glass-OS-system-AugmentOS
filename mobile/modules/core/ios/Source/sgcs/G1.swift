@@ -1388,6 +1388,11 @@ extension G1 {
         queueChunks([exitDataArray])
     }
 
+    func sendRgbLedControl(requestId: String, packageName _: String?, action _: String, color _: String?, ontime _: Int, offtime _: Int, count _: Int) {
+        Bridge.log("sendRgbLedControl - not supported on G1")
+        Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "device_not_supported")
+    }
+
     // don't call semaphore signals here as it's handled elswhere:
     private func handleInitResponse(from peripheral: CBPeripheral, success: Bool) {
         if peripheral == leftPeripheral {

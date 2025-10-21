@@ -198,8 +198,8 @@ export class MantleBridge {
           break
         }
         case "switch_status": {
-          const switchType = typeof data.switch_type === "number" ? data.switch_type : data.switchType ?? -1
-          const switchValue = typeof data.switch_value === "number" ? data.switch_value : data.switchValue ?? -1
+          const switchType = typeof data.switch_type === "number" ? data.switch_type : (data.switchType ?? -1)
+          const switchValue = typeof data.switch_value === "number" ? data.switch_value : (data.switchValue ?? -1)
           const timestamp = typeof data.timestamp === "number" ? data.timestamp : Date.now()
           socketComms.sendSwitchStatus(switchType, switchValue, timestamp)
           GlobalEventEmitter.emit("SWITCH_STATUS", {switchType, switchValue, timestamp})

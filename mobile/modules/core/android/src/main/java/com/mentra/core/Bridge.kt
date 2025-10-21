@@ -255,6 +255,21 @@ public class Bridge private constructor() {
             }
         }
 
+        /** Send RGB LED control response */
+        @JvmStatic
+        fun sendRgbLedControlResponse(requestId: String, success: Boolean, error: String?) {
+            if (requestId.isEmpty()) return
+            try {
+                val body = HashMap<String, Any>()
+                body["requestId"] = requestId
+                body["success"] = success
+                error?.let { body["error"] = it }
+                sendTypedMessage("rgb_led_control_response", body)
+            } catch (e: Exception) {
+                log("Bridge: Error sending rgb_led_control_response: $e")
+            }
+        }
+
         /** Send video stream response */
         @JvmStatic
         fun sendVideoStreamResponse(appId: String, streamUrl: String) {
