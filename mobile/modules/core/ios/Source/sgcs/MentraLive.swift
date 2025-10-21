@@ -1691,7 +1691,8 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
-    func sendGalleryModeActive(_ active: Bool) {
+    func sendGalleryMode() {
+        let active = CoreManager.shared.galleryMode
         Bridge.log("LiveManager: 📸 Sending gallery mode active to glasses: \(active)")
 
         let json: [String: Any] = [

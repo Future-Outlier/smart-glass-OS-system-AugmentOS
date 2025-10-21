@@ -300,7 +300,7 @@ public class Mach1 extends SGCManager {
     }
 
     @Override
-    public void sendGalleryModeActive(boolean active) {
+    public void sendGalleryMode() {
         // Mach1 doesn't have a built-in camera/gallery system
         Bridge.log("Mach1: sendGalleryModeActive - not supported on Mach1");
     }

@@ -187,12 +187,12 @@ public class MentraLive extends SGCManager {
     private boolean isScanning = false;
     private boolean isConnecting = false;
     private boolean isKilled = false;
-    
+
     // CTKD (Cross-Transport Key Derivation) support for BES devices
     private boolean isBondingReceiverRegistered = false;
     private boolean isBtClassicConnected = false;
     private BroadcastReceiver bondingReceiver;
-    
+
     private ConcurrentLinkedQueue<byte[]> sendQueue = new ConcurrentLinkedQueue<>();
     private Runnable connectionTimeoutRunnable;
     private Handler connectionTimeoutHandler = new Handler(Looper.getMainLooper());
@@ -780,13 +780,13 @@ public class MentraLive extends SGCManager {
                     Bridge.log("LIVE: Disconnected from GATT server");
                     isConnected = false;
                     isConnecting = false;
-                    
+
                     // CTKD Implementation: Disconnect BT per documentation
                     if (connectedDevice != null) {
                         Bridge.log("LIVE: CTKD: Disconnecting BT via removeBond per documentation");
                         removeBond(connectedDevice);
                     }
-                    
+
                     connectedDevice = null;
                     glassesReady = false; // Reset ready state on disconnect
                     // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
@@ -1805,9 +1805,9 @@ public class MentraLive extends SGCManager {
                 // Process touch event from glasses (swipes, taps, long press)
                 String gestureName = json.optString("gesture_name", "unknown");
                 long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
-                
+
                 Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
-                
+
                 // Post touch event to EventBus for AugmentosService to handle
                 // EventBus.getDefault().post(new TouchEvent(
                 //         smartGlassesDevice.deviceModelName,
@@ -1820,15 +1820,15 @@ public class MentraLive extends SGCManager {
                 // Process swipe volume control status from glasses
                 boolean swipeVolumeEnabled = json.optBoolean("enabled", false);
                 long swipeTimestamp = json.optLong("timestamp", System.currentTimeMillis());
-                
+
                 Log.d(TAG, "🔊 Received swipe volume status - Enabled: " + swipeVolumeEnabled);
-                
+
                 // TODO: Post swipe volume status event to EventBus once event class is created
                 // EventBus.getDefault().post(new SwipeVolumeStatusEvent(
                 //         smartGlassesDevice.deviceModelName,
                 //         swipeVolumeEnabled,
                 //         swipeTimestamp));
-                
+
                 // // For now, forward to data observable for app consumption
                 // if (dataObservable != null) {
                 //     dataObservable.onNext(json);
@@ -1840,17 +1840,17 @@ public class MentraLive extends SGCManager {
                 int switchType = json.optInt("switch_type", -1);
                 int switchValue = json.optInt("switch_value", -1);
                 long switchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
-                
-                Log.d(TAG, "🔘 Received switch status - Type: " + switchType + 
+
+                Log.d(TAG, "🔘 Received switch status - Type: " + switchType +
                       ", Value: " + switchValue);
-                
+
                 // TODO: Post switch status event to EventBus once event class is created
                 // EventBus.getDefault().post(new SwitchStatusEvent(
                 //         smartGlassesDevice.deviceModelName,
                 //         switchType,
                 //         switchValue,
                 //         switchTimestamp));
-                
+
                 // For now, forward to data observable for app consumption
                 // if (dataObservable != null) {
                 //     dataObservable.onNext(json);
@@ -2303,20 +2303,20 @@ public class MentraLive extends SGCManager {
 
             default:
                 Log.d(TAG, "Unknown K900 command: " + command);
-                
+
                 // Check if this is a C-wrapped standard JSON message (not a true K900 command)
                 // This happens when ASG Client sends standard JSON messages through K900BluetoothManager
                 // which automatically C-wraps them
                 try {
                     // Try to parse the "C" field as JSON
                     JSONObject innerJson = new JSONObject(command);
-                    
+
                     // If it has a "type" field, it's a standard message that got C-wrapped
                     if (innerJson.has("type")) {
                         String messageType = innerJson.optString("type", "");
                         Log.d(TAG, "📦 Detected C-wrapped standard JSON message with type: " + messageType);
                         Log.d(TAG, "🔓 Unwrapping and processing through standard message handler");
-                        
+
                         // Process through the standard message handler
                         processJsonMessage(innerJson);
                         return; // Exit after processing
@@ -2325,7 +2325,7 @@ public class MentraLive extends SGCManager {
                     // Not valid JSON or doesn't have type field - treat as unknown K900 command
                     Log.d(TAG, "Command is not a C-wrapped JSON message, passing to data observable");
                 }
-                
+
                 // Pass to data observable for custom processing
                 // if (dataObservable != null) {
                     // dataObservable.onNext(json);
@@ -2506,12 +2506,12 @@ public class MentraLive extends SGCManager {
     }
 
     @Override
-    public void sendGalleryModeActive(boolean active) {
+    public void sendGalleryMode() {
         Bridge.log("LIVE: 📸 Sending gallery mode active to glasses: " + active);
         try {
             JSONObject json = new JSONObject();
             json.put("type", "save_in_gallery_mode");
-            json.put("active", active);
+            json.put("active", CoreManager.getInstance().getGalleryMode());
             json.put("timestamp", System.currentTimeMillis());
             sendJson(json, true);
             Bridge.log("LIVE: 📸 ✅ Gallery mode command sent successfully");
@@ -3049,10 +3049,10 @@ public class MentraLive extends SGCManager {
                     int bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
                     int previousBondState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.ERROR);
 
-                    if (device != null && connectedDevice != null && 
+                    if (device != null && connectedDevice != null &&
                         device.getAddress().equals(connectedDevice.getAddress())) {
-                        
-                        Bridge.log("LIVE: CTKD: Bond state changed for device " + device.getName() + 
+
+                        Bridge.log("LIVE: CTKD: Bond state changed for device " + device.getName() +
                               " - Current: " + bondState + ", Previous: " + previousBondState);
 
                         switch (bondState) {

@@ -30,6 +30,8 @@ extension Data {
 class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     @objc static func requiresMainQueueSetup() -> Bool { true }
 
+    func sendGalleryMode() {}
+
     // MARK: - Properties
 
     private var centralManager: CBCentralManager?

@@ -82,10 +82,6 @@ public class CoreModule: Module {
             CoreManager.shared.handle_query_gallery_status()
         }
 
-        AsyncFunction("sendGalleryModeActive") { (active: Bool) in
-            CoreManager.shared.handle_send_gallery_mode_active(active)
-        }
-
         AsyncFunction("photoRequest") { (requestId: String, appId: String, size: String, webhookUrl: String?, authToken: String?) in
             CoreManager.shared.handle_photo_request(requestId, appId, size, webhookUrl, authToken)
         }

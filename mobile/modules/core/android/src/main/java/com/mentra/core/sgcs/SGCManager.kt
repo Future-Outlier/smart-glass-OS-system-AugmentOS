@@ -105,5 +105,5 @@ abstract class SGCManager {
 
     // Gallery
     abstract fun queryGalleryStatus()
-    abstract fun sendGalleryModeActive(active: Boolean)
+    abstract fun sendGalleryMode()
 }

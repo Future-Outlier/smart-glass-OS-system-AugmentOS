@@ -1,18 +1,18 @@
+import {
+  AppletInterface,
+  getModelCapabilities,
+  HardwareRequirementLevel,
+  HardwareType,
+} from "@/../../cloud/packages/types/src"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {getThemeIsDark} from "@/theme/getTheme"
 import showAlert from "@/utils/AlertUtils"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
-import {
-  getModelCapabilities,
-  HardwareRequirementLevel,
-  HardwareType,
-  AppletInterface,
-} from "@/../../cloud/packages/types/src"
+import CoreModule from "core"
 import {useMemo} from "react"
 import {create} from "zustand"
-import bridge from "@/bridge/MantleBridge"
 
 export interface ClientAppletInterface extends AppletInterface {
   isOffline: boolean
@@ -125,7 +125,9 @@ const setOfflineApplet = async (packageName: string, status: boolean) => {
   // Camera app special handling - send gallery mode to glasses
   if (packageName === cameraPackageName) {
     console.log(`📸 Camera app ${status ? "started" : "stopped"} - sending gallery mode active: ${status}`)
-    bridge.sendGalleryModeActive(status).catch(err => {
+    CoreModule.updateSettings({
+      gallery_mode: status,
+    }).catch((err: any) => {
       console.error("Failed to send gallery mode active:", err)
     })
   }

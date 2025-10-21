@@ -17,14 +17,20 @@ import BackgroundGradient from "@/components/misc/BackgroundGradient"
 import {Text} from "@/components/ignite"
 import Toast from "react-native-toast-message"
 import {ThemedStyle} from "@/theme"
+import {ErrorBoundary} from "@/components/error"
+import {SafeAreaProvider} from "react-native-safe-area-context"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
+  props => {
+    return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
+  },
   props => {
     const {themeScheme, setThemeContextOverride, ThemeProvider} = useThemeProvider()
     return <ThemeProvider value={{themeScheme, setThemeContextOverride}}>{props.children}</ThemeProvider>
   },
   Suspense,
+  SafeAreaProvider,
   KeyboardProvider,
   CoreStatusProvider,
   AuthProvider,

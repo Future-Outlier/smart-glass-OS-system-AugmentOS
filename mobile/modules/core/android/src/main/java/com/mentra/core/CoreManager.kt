@@ -74,11 +74,12 @@ class CoreManager {
     public var autoBrightness = true
     public var dashboardHeight = 4
     public var dashboardDepth = 5
+    public var galleryMode = false
 
     // glasses state
     private var isHeadUp = false
 
-    // settings
+    // core settings
     public var sensingEnabled = true
     public var powerSavingMode = false
     private var alwaysOnStatusBar = false
@@ -496,7 +497,7 @@ class CoreManager {
 
     fun onRouteChange(reason: String, availableInputs: List<String>) {
         Bridge.log("Mentra: onRouteChange: reason: $reason")
-        Bridge.log("Mentra: onRouteChange: inputs: $availableInputs")
+        // Bridge.log("Mentra: onRouteChange: inputs: $availableInputs")
     }
 
     fun onInterruption(began: Boolean) {
@@ -533,6 +534,12 @@ class CoreManager {
     fun updateButtonPhotoSize(size: String) {
         buttonPhotoSize = size
         sgc?.sendButtonPhotoSettings()
+        handle_request_status()
+    }
+
+    fun updateGalleryMode(mode: Boolean) {
+        galleryMode = mode
+        sgc?.sendGalleryMode()
         handle_request_status()
     }
 
@@ -1345,6 +1352,12 @@ class CoreManager {
         (settings["button_photo_size"] as? String)?.let { newPhotoSize ->
             if (buttonPhotoSize != newPhotoSize) {
                 updateButtonPhotoSize(newPhotoSize)
+            }
+        }
+
+        (settings["gallery_mode"] as? Boolean)?.let { newGalleryMode ->
+            if (galleryMode != newGalleryMode) {
+                updateGalleryMode(newGalleryMode)
             }
         }
 

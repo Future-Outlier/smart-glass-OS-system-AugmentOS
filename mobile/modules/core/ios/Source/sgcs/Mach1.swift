@@ -13,6 +13,8 @@
 // import UltraliteSDK
 
 // class Mach1: UltraliteBaseViewController, SGCManager {
+//     func sendGalleryMode() {}
+
 //     func sendButtonMaxRecordingTime() {}
 
 //     var connectionState: String = ConnTypes.DISCONNECTED

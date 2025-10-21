@@ -74,10 +74,6 @@ class CoreModule : Module() {
 
         AsyncFunction("queryGalleryStatus") { coreManager?.handle_query_gallery_status() }
 
-        AsyncFunction("sendGalleryModeActive") { active: Boolean ->
-            coreManager?.handle_send_gallery_mode_active(active)
-        }
-
         AsyncFunction("photoRequest") {
                 requestId: String,
                 appId: String,
