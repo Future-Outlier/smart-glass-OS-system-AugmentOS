@@ -6,16 +6,16 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
 import {translate} from "@/i18n"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import {AppletInterface, isOfflineApp} from "@/types/AppletTypes"
+import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"
 
 interface AppPickerProps {
   visible: boolean
   onClose: () => void
-  onSelect: (app: AppletInterface) => void
-  apps: AppletInterface[]
+  onSelect: (app: ClientAppletInterface) => void
+  apps: ClientAppletInterface[]
   selectedPackageName?: string
   title?: string
-  filterPredicate?: (app: AppletInterface) => boolean
+  filterPredicate?: (app: ClientAppletInterface) => boolean
   showCompatibilityWarnings?: boolean
 }
 
@@ -46,21 +46,21 @@ export const AppPicker: FC<AppPickerProps> = ({
   const {themed, theme} = useAppTheme()
   const [searchQuery, setSearchQuery] = useState("")
 
-  // Debug logging when modal opens
-  useEffect(() => {
-    if (visible) {
-      console.log("🔍 AppPicker opened with", apps.length, "total apps")
-      console.log("🔍 Filter predicate exists:", !!filterPredicate)
-      if (filterPredicate) {
-        const filtered = apps.filter(filterPredicate)
-        console.log("🔍 After filter predicate:", filtered.length, "apps")
-        console.log(
-          "🔍 Filtered apps:",
-          filtered.map(a => ({name: a.name, type: a.type, compatible: a.compatibility?.isCompatible})),
-        )
-      }
-    }
-  }, [visible, apps, filterPredicate])
+  // // Debug logging when modal opens
+  // useEffect(() => {
+  //   if (visible) {
+  //     console.log("🔍 AppPicker opened with", apps.length, "total apps")
+  //     console.log("🔍 Filter predicate exists:", !!filterPredicate)
+  //     if (filterPredicate) {
+  //       const filtered = apps.filter(filterPredicate)
+  //       console.log("🔍 After filter predicate:", filtered.length, "apps")
+  //       console.log(
+  //         "🔍 Filtered apps:",
+  //         filtered.map(a => ({name: a.name, type: a.type, compatible: a.compatibility?.isCompatible})),
+  //       )
+  //     }
+  //   }
+  // }, [visible, apps, filterPredicate])
 
   // Filter and search apps
   const filteredApps = useMemo(() => {
@@ -77,8 +77,7 @@ export const AppPicker: FC<AppPickerProps> = ({
       result = result.filter(
         app =>
           app.name.toLowerCase().includes(query) ||
-          app.packageName.toLowerCase().includes(query) ||
-          app.developerName?.toLowerCase().includes(query),
+          app.packageName.toLowerCase().includes(query)
       )
     }
 
@@ -98,7 +97,7 @@ export const AppPicker: FC<AppPickerProps> = ({
   }, [apps, searchQuery, filterPredicate])
 
   const handleAppPress = useCallback(
-    (app: AppletInterface) => {
+    (app: ClientAppletInterface) => {
       onSelect(app)
       onClose()
       setSearchQuery("") // Reset search
@@ -160,7 +159,7 @@ export const AppPicker: FC<AppPickerProps> = ({
                 const isSelected = app.packageName === selectedPackageName
                 const isCompatible = app.compatibility?.isCompatible !== false
                 const compatibilityMessage = app.compatibility?.message || ""
-                const isOffline = isOfflineApp(app)
+                const isOffline = app.isOffline
 
                 return (
                   <TouchableOpacity
@@ -213,7 +212,7 @@ const $modalOverlay: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $modalContent: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.background,
+  backgroundColor: colors.backgroundEnd,
   borderTopLeftRadius: spacing.lg,
   borderTopRightRadius: spacing.lg,
   height: "90%", // Changed from maxHeight to height for consistent sizing
@@ -290,7 +289,7 @@ const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 })
 
 const $appItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.background,
   borderRadius: spacing.sm,
   marginBottom: spacing.sm,
   padding: spacing.md,
@@ -340,7 +339,7 @@ const $warningContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   alignItems: "flex-start",
   marginTop: spacing.xs,
   gap: spacing.xs,
-  backgroundColor: colors.palette.angry100,
+  backgroundColor: colors.backgroundAlt,
   padding: spacing.xs,
   borderRadius: spacing.xs,
 })

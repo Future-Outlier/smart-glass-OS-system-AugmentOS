@@ -24,3 +24,13 @@ export enum HardwareRequirementLevel {
   REQUIRED = "REQUIRED", // App cannot function without this hardware
   OPTIONAL = "OPTIONAL", // App has enhanced features with this hardware
 }
+
+export enum DeviceTypes {
+  SIMULATED = "Simulated Glasses",
+  G1 = "Even Realities G1",
+  LIVE = "Mentra Live",
+  MACH1 = "Mentra Mach1",
+  Z100 = "Vuzix Z100",
+  NEX = "Mentra Nex",
+  FRAME = "Brilliant Frame",
+}

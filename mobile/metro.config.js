@@ -1,4 +1,5 @@
 const {getSentryExpoConfig} = require("@sentry/react-native/metro")
+const path = require("path")
 
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getSentryExpoConfig(__dirname)
@@ -18,8 +19,13 @@ config.transformer.getTransformOptions = async () => ({
 // such as Firebase that use the extension cjs.
 config.resolver.sourceExts.push("cjs")
 
-// Enable package exports support for Metro
-// This is needed for @posthog/core/error-tracking subpath exports
-config.resolver.unstable_enablePackageExports = true
+// Watch the core and cloud modules for changes
+config.watchFolders = [
+  path.resolve(__dirname, "./modules/core"),
+  path.resolve(__dirname, "../cloud/packages/types/src"),
+]
+
+// Resolve the core module from the parent directory
+config.resolver.nodeModulesPaths = [path.resolve(__dirname, "node_modules"), path.resolve(__dirname, "..")]
 
 module.exports = config
