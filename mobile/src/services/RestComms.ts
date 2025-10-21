@@ -36,9 +36,9 @@ class RestComms {
   public setCoreToken(token: string | null): void {
     this.coreToken = token
     console.log(
-      `${this.TAG}: Core token ${token ? "set" : "cleared"} - Length: ${
-        token?.length || 0
-      } - First 20 chars: ${token?.substring(0, 20) || "null"}`,
+      `${this.TAG}: Core token ${token ? "set" : "cleared"} - Length: ${token?.length || 0} - First 20 chars: ${
+        token?.substring(0, 20) || "null"
+      }`,
     )
 
     if (token) {
@@ -77,7 +77,6 @@ class RestComms {
 
   private async makeRequest<T = any>(config: RequestConfig): Promise<T> {
     const {method, url, headers, data, params} = config
-    let status = 0
     try {
       const fullUrl = this.buildUrlWithParams(url, params)
 
@@ -116,8 +115,12 @@ class RestComms {
       return responseData as T
     } catch (error: any) {
       const errorMessage = error.message || error
-      console.error(`${this.TAG}: ${method} to ${url} failed with status ${status}`, errorMessage)
-      throw error
+      // console.error(`${this.TAG}: ${method} to ${url} failed with status ${status}`, errorMessage)
+      return {
+        success: false,
+        error: errorMessage,
+        data: null,
+      } as T
     }
   }
 
@@ -127,7 +130,16 @@ class RestComms {
     data?: any,
     params?: any,
   ): Promise<T> {
-    this.validateToken()
+    try {
+      this.validateToken()
+    } catch (error: any) {
+      const errorMessage = error.message || error
+      return {
+        success: false,
+        error: errorMessage,
+        data: null,
+      } as T
+    }
 
     const baseUrl = await useSettingsStore.getState().getRestUrl()
     const url = `${baseUrl}${endpoint}`
@@ -201,7 +213,7 @@ class RestComms {
   //   return response.data
   // }
 
-  public async getApps(): Promise<AppletInterface[]> {
+  public async getApplets(): Promise<AppletInterface[]> {
     // console.log(`${this.TAG}: getApps() called`)
 
     const response = await this.authenticatedRequest<ApiResponse<AppletInterface[]>>("GET", "/api/client/apps")
