@@ -19,66 +19,11 @@ import {Platform} from "react-native"
 import {NativeTabs, Icon, Label} from "expo-router/unstable-native-tabs"
 
 export default function Layout() {
-  const {bottom} = useSafeAreaInsets()
-
-  const isNewUi = useSettingsStore(state => state.settings[SETTINGS_KEYS.new_ui])
-  const setSetting = useSettingsStore(state => state.setSetting)
   const {theme, themed} = useAppTheme()
   const {replace} = useNavigationHistory()
 
   const iconFocusedColor = theme.colors.primary
   const iconInactiveColor = theme.colors.textDim
-
-  const pressCount = useRef(0)
-  const lastPressTime = useRef(0)
-  const pressTimeout = useRef<number | null>(null)
-
-  const handleQuickPress = () => {
-    replace("/settings")
-
-    const currentTime = Date.now()
-    const timeDiff = currentTime - lastPressTime.current
-    const maxTimeDiff = 2000
-    const maxPressCount = 10
-    const showAlertAtPressCount = 5
-
-    // Reset counter if too much time has passed (more than 500ms between presses)
-    if (timeDiff > maxTimeDiff) {
-      pressCount.current = 1
-    } else {
-      pressCount.current += 1
-    }
-
-    lastPressTime.current = currentTime
-
-    // Clear existing timeout
-    if (pressTimeout.current) {
-      clearTimeout(pressTimeout.current)
-    }
-
-    // Handle different press counts
-    if (pressCount.current === maxPressCount) {
-      // Show alert on 8th press
-      showAlert("Developer Mode", "You are now a developer!", [{text: translate("common:ok")}])
-      useSettingsStore.getState().setSetting(SETTINGS_KEYS.dev_mode, true)
-      pressCount.current = 0
-    } else if (pressCount.current >= showAlertAtPressCount) {
-      const remaining = maxPressCount - pressCount.current
-      Toast.show({
-        type: "info",
-        text1: "Developer Mode",
-        text2: `${remaining} more taps to enable developer mode`,
-        position: "top",
-        topOffset: 80,
-        visibilityTime: 1000,
-      })
-    }
-
-    // Reset counter after 2 seconds of no activity
-    pressTimeout.current = setTimeout(() => {
-      pressCount.current = 0
-    }, maxTimeDiff)
-  }
 
   if (Platform.OS === "ios") {
     return (
@@ -217,11 +162,7 @@ export default function Layout() {
           headerShown: false,
           tabBarIcon: ({focused}) => {
             const mColor = focused ? iconFocusedColor : iconInactiveColor
-            return (
-              <TouchableOpacity onPress={handleQuickPress}>
-                <UserIcon size={28} color={mColor} />
-              </TouchableOpacity>
-            )
+            return <UserIcon size={28} color={mColor} />
           },
           tabBarLabel: translate("navigation:account"),
           // tabBarButton: ({, color}) => userIcon(focused),

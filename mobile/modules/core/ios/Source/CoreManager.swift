@@ -57,13 +57,13 @@ struct ViewState {
     private var currentRequiredData: [SpeechRequiredDataType] = []
 
     // glasses settings
-    private var contextualDashboard = true
-    private var headUpAngle = 30
-    private var brightness = 50
-    private var autoBrightness: Bool = true
-    private var dashboardHeight: Int = 4
-    private var dashboardDepth: Int = 5
-    private var galleryMode: Bool = false
+    public var contextualDashboard = true
+    public var headUpAngle = 30
+    public var brightness = 50
+    public var autoBrightness: Bool = true
+    public var dashboardHeight: Int = 4
+    public var dashboardDepth: Int = 5
+    public var galleryMode: Bool = false
 
     // glasses state:
     private var isHeadUp: Bool = false
@@ -392,8 +392,8 @@ struct ViewState {
         handle_request_status() // to update the UI
     }
 
-    func updateButtonGalleryMode(_ enabled: Bool) {
-        buttonGalleryMode = enabled
+    func updateGalleryMode(_ enabled: Bool) {
+        galleryMode = enabled
         sgc?.sendGalleryMode()
         handle_request_status() // to update the UI
     }
@@ -634,7 +634,7 @@ struct ViewState {
         } else if wearable.contains(DeviceTypes.MACH1) {
             // sgc = Mach1()
         } else if wearable.contains(DeviceTypes.FRAME) {
-            sgc = FrameManager()
+            // sgc = FrameManager()
         }
     }
 
