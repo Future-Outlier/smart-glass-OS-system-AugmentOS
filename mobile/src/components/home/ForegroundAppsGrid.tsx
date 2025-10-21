@@ -1,15 +1,20 @@
 import {useCallback, useMemo} from "react"
-import {View, FlatList, TouchableOpacity, ViewStyle, TextStyle} from "react-native"
+import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
-import {ClientAppletInterface, DUMMY_APPLET} from "@/types/AppletTypes"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {
+  ClientAppletInterface,
+  DUMMY_APPLET,
+  useActiveForegroundApp,
+  useInactiveForegroundApps,
+  useStartApplet,
+} from "@/stores/applets"
+import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import {ThemedStyle} from "@/theme"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useActiveForegroundApp, useInactiveForegroundApps, useStartApplet} from "@/stores/applets"
 
 const GRID_COLUMNS = 4
 

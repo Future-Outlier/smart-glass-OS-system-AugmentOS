@@ -2,9 +2,8 @@ import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {getThemeIsDark} from "@/theme/getTheme"
-import {ClientAppletInterface} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
-import {HardwareCompatibility} from "@/utils/hardware"
+import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
 import {
   getModelCapabilities,
   HardwareRequirementLevel,
@@ -15,12 +14,34 @@ import {useMemo} from "react"
 import {create} from "zustand"
 import bridge from "@/bridge/MantleBridge"
 
+export interface ClientAppletInterface extends AppletInterface {
+  isOffline: boolean
+  offlineRoute: string
+  compatibility?: CompatibilityResult
+  loading: boolean
+}
+
 interface AppStatusState {
   apps: ClientAppletInterface[]
   refreshApps: () => Promise<void>
   startApp: (packageName: string, appType?: string) => Promise<void>
   stopApp: (packageName: string) => Promise<void>
   stopAllApps: () => Promise<void>
+}
+
+export const DUMMY_APPLET: ClientAppletInterface = {
+  packageName: "",
+  name: "",
+  webviewUrl: "",
+  logoUrl: "",
+  type: "standard",
+  permissions: [],
+  running: false,
+  loading: false,
+  healthy: true,
+  hardwareRequirements: [],
+  isOffline: true,
+  offlineRoute: "",
 }
 
 /**
