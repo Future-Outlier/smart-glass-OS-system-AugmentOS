@@ -6,7 +6,7 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
 import {translate} from "@/i18n"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"
+import {ClientAppletInterface} from "@/stores/applets"
 
 interface AppPickerProps {
   visible: boolean
@@ -75,9 +75,7 @@ export const AppPicker: FC<AppPickerProps> = ({
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       result = result.filter(
-        app =>
-          app.name.toLowerCase().includes(query) ||
-          app.packageName.toLowerCase().includes(query)
+        app => app.name.toLowerCase().includes(query) || app.packageName.toLowerCase().includes(query),
       )
     }
 

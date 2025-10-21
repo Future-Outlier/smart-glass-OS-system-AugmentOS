@@ -1,6 +1,7 @@
 import {NativeModules, Platform} from "react-native"
 import showAlert from "./AlertUtils"
 import CoreModule from "modules/core/src/CoreModule"
+import Toast from "react-native-toast-message"
 
 const {NotificationAccess} = NativeModules
 
@@ -20,7 +21,7 @@ export async function checkAndRequestNotificationAccessSpecialPermission() {
   try {
     const hasAccess = await CoreModule.hasNotificationListenerPermission()
     if (!hasAccess) {
-      await showAlert(
+      showAlert(
         "Enable Notification Access",
         "MentraOS needs permission to read your phone notifications to display them on your smart glasses.\n\n" +
           "On the next screen:\n" +
@@ -35,18 +36,19 @@ export async function checkAndRequestNotificationAccessSpecialPermission() {
           {
             text: "Go to Settings",
             onPress: () => {
-              NotificationAccess.requestNotificationAccess()
-                .then(() => {
-                  console.log("Notification access settings opened successfully")
-                })
-                .catch((err: any) => {
-                  console.error("Error opening notification settings:", err)
-                  showAlert(
-                    "Error",
-                    "Could not open notification settings. Please enable notification access manually in your device settings.",
-                    [{text: "OK"}],
-                  )
-                })
+              Toast.show({text1: "TODO"})
+              // CoreModule.requestNotificationAccess()
+              //   .then(() => {
+              //     console.log("Notification access settings opened successfully")
+              //   })
+              //   .catch((err: any) => {
+              //     console.error("Error opening notification settings:", err)
+              //     showAlert(
+              //       "Error",
+              //       "Could not open notification settings. Please enable notification access manually in your device settings.",
+              //       [{text: "OK"}],
+              //     )
+              //   })
             },
           },
         ],
