@@ -2,7 +2,7 @@ import {useEffect, useState} from "react"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import showAlert from "@/utils/AlertUtils"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {Capabilities, getModelCapabilities} from "../../../../cloud/packages/types/src"
+import {Capabilities, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 
 interface VersionInfo {

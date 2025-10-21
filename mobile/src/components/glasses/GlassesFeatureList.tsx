@@ -1,7 +1,8 @@
-import {View, Text, StyleSheet} from "react-native"
+import {View, StyleSheet} from "react-native"
+import {Text} from "@/components/ignite"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {DeviceTypes, getModelCapabilities} from "../../../../cloud/packages/types/src"
+import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 interface GlassesFeatureListProps {
   glassesModel: string

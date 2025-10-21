@@ -5,7 +5,12 @@ import {getThemeIsDark} from "@/theme/getTheme"
 import {ClientAppletInterface} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
 import {HardwareCompatibility} from "@/utils/hardware"
-import {getModelCapabilities, HardwareRequirementLevel, HardwareType} from "../../../cloud/packages/types/src"
+import {
+  getModelCapabilities,
+  HardwareRequirementLevel,
+  HardwareType,
+  AppletInterface,
+} from "@/../../cloud/packages/types/src"
 import {useMemo} from "react"
 import {create} from "zustand"
 import bridge from "@/bridge/MantleBridge"
@@ -35,7 +40,7 @@ const getCameraIcon = (isDark: boolean) => {
  */
 
 const cameraPackageName = "com.mentra.camera"
-const captionsPackageName = "com.mentra.captions"
+const captionsPackageName = "com.augmentos.livecaptions"
 
 // get offline applets:
 export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
@@ -109,44 +114,38 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   apps: [],
 
   refreshApps: async () => {
-    const coreToken = restComms.getCoreToken()
-    if (!coreToken) return
+    const appsData: AppletInterface[] = await restComms.getApplets()
 
-    try {
-      const appsData: AppletInterface[] = await restComms.getApps()
+    const onlineApps: ClientAppletInterface[] = appsData.map(app => ({
+      ...app,
+      loading: false,
+      isOffline: false,
+      offlineRoute: "",
+    }))
 
-      const onlineApps: ClientAppletInterface[] = appsData.map(app => ({
-        ...app,
-        isOffline: false,
-        offlineRoute: "",
-      }))
+    // merge in the offline apps:
+    let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets())]
 
-      // merge in the offline apps:
-      let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets())]
-
-      // remove duplicates and keep the online versions:
-      const packageNameMap = new Map<string, ClientAppletInterface>()
-      applets.forEach(app => {
-        const existing = packageNameMap.get(app.packageName)
-        if (!existing || !app.isOffline) {
-          packageNameMap.set(app.packageName, app)
-        }
-      })
-      applets = Array.from(packageNameMap.values())
-
-      // add in the compatibility info:
-      let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-      let capabilities = getModelCapabilities(defaultWearable)
-
-      for (const applet of applets) {
-        let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
-        applet.compatibility = result
+    // remove duplicates and keep the online versions:
+    const packageNameMap = new Map<string, ClientAppletInterface>()
+    applets.forEach(app => {
+      const existing = packageNameMap.get(app.packageName)
+      if (!existing || !app.isOffline) {
+        packageNameMap.set(app.packageName, app)
       }
+    })
+    applets = Array.from(packageNameMap.values())
 
-      set({apps: applets})
-    } catch (err) {
-      console.error("Error fetching apps:", err)
+    // add in the compatibility info:
+    let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+    let capabilities = getModelCapabilities(defaultWearable)
+
+    for (const applet of applets) {
+      let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
+      applet.compatibility = result
     }
+
+    set({apps: applets})
   },
 
   startApp: async (packageName: string) => {
@@ -157,20 +156,6 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       console.error(`Applet not found for package name: ${packageName}`)
       return
     }
-
-    // if (applet.type === "standard") {
-    //   const runningStandardApps = get().apps.filter(
-    //     a => a.is_running && a.type === "standard" && a.packageName !== packageName,
-    //   )
-    //   for (const app of runningStandardApps) {
-    //     await restComms.stopApp(app.packageName).catch(console.error)
-    //     set(state => ({
-    //       apps: state.apps.map(a =>
-    //         a.packageName === app.packageName ? {...a, is_running: false, loading: false} : a,
-    //       ),
-    //     }))
-    //   }
-    // }
 
     set(state => ({
       apps: state.apps.map(a =>
