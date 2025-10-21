@@ -1,10 +1,11 @@
+import {DeviceTypes, getModelCapabilities} from "../../../../cloud/packages/types/src"
 import {Button, Icon, Text} from "@/components/ignite"
+import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {spacing, ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
-import {DeviceTypes} from "@/utils/Constants"
 import {
   getEvenRealitiesG1Image,
   getGlassesClosedImage,
@@ -13,16 +14,14 @@ import {
 } from "@/utils/getGlassesImage"
 import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
 import {useFocusEffect} from "@react-navigation/native"
 import ChevronRight from "assets/icons/component/ChevronRight"
 import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import SunIcon from "assets/icons/component/SunIcon"
+import CoreModule from "core"
 import {useCallback, useRef, useState} from "react"
 import {ActivityIndicator, Animated, TouchableOpacity, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import ConnectedSimulatedGlassesInfo from "./ConnectedSimulatedGlassesInfo"
-import CoreModule from "core"
 
 export const ConnectDeviceButton = () => {
   const {status} = useCoreStatus()
@@ -97,8 +96,8 @@ export const ConnectDeviceButton = () => {
         textStyle={[{marginLeft: spacing.xxl}]}
         textAlignment="left"
         LeftAccessory={() => <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginLeft: 5}} />}
-        onPress={handleConnectOrDisconnect}
         tx="home:connectingGlasses"
+        disabled={true}
       />
     )
   }
@@ -220,7 +219,7 @@ export function DeviceToolbar() {
     return null
   }
 
-  const features = getCapabilitiesForModel(defaultWearable)
+  const features = getModelCapabilities(defaultWearable)
   const autoBrightness = status.glasses_settings.auto_brightness
   const hasDisplay = features?.hasDisplay ?? true // Default to true if model not found
   const hasWifi = features?.hasWifi ?? false // Default to false if model not found
@@ -356,20 +355,6 @@ const styles = {
     padding: 10,
     borderRadius: 8,
     width: "80%",
-  },
-  disabledDisconnectButton: {
-    backgroundColor: "#A9A9A9",
-  },
-  disconnectButton: {
-    alignItems: "center",
-    backgroundColor: "#E24A24",
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    marginRight: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    width: "40%",
   },
   disconnectText: {
     color: "#fff",

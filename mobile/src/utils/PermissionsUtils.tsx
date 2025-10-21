@@ -1,6 +1,7 @@
 import {translate} from "@/i18n"
 import {Theme} from "@/theme"
-import {AppletInterface, AppletPermission} from "@/types/AppletTypes"
+import {AppletPermission} from "@/types/AppletTypes"
+import {AppletInterface} from "@/../../cloud/packages/types/src"
 import {
   checkAndRequestNotificationAccessSpecialPermission,
   checkNotificationAccessSpecialPermission,

@@ -6,17 +6,17 @@ import {
   GlassesToCloudMessageType,
 } from "../message-types";
 import { ExtendedStreamType, StreamType } from "../streams";
-import { AppSettings, AppConfig } from "../models";
-import { DashboardMode } from "../dashboard";
-import { Capabilities } from "../capabilities";
-import {
+import type { AppSettings, AppConfig } from "../models";
+import type { DashboardMode } from "../dashboard";
+import type { Capabilities } from "../capabilities";
+import type {
   LocationUpdate,
   CalendarEvent,
   RtmpStreamStatus,
   PhotoResponse,
   RgbLedControlResponse,
 } from "./glasses-to-cloud";
-import { AppSession } from "../../app/session";
+import type { AppSession } from "../../app/session";
 
 //===========================================================
 // Responses

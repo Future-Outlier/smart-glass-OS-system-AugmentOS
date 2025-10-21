@@ -9,7 +9,7 @@ import {
   DashboardModeChange,
   DashboardSystemUpdate,
 } from "../dashboard";
-import { VideoConfig, AudioConfig, StreamConfig } from "../rtmp-stream";
+import type { VideoConfig, AudioConfig, StreamConfig } from "../rtmp-stream";
 import { LedColor } from "./cloud-to-glasses";
 
 // a subscription can now be either a simple string or our new rich object

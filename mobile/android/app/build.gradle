@@ -88,8 +88,10 @@ def releaseStorePassword = project.hasProperty("MENTRAOS_UPLOAD_STORE_PASSWORD")
 def releaseKeyPassword = project.hasProperty("MENTRAOS_UPLOAD_KEY_PASSWORD") ? project.property("MENTRAOS_UPLOAD_KEY_PASSWORD") : ""
 def releaseKeyAlias = project.hasProperty("MENTRAOS_UPLOAD_KEY_ALIAS") ? project.property("MENTRAOS_UPLOAD_KEY_ALIAS") : "upload"
 
-
-apply from: new File(["node", "--print", "require('path').dirname(require.resolve('@sentry/react-native/package.json'))"].execute().text.trim(), "sentry.gradle")
+// Conditionally apply Sentry gradle script for source map uploads
+if (project.hasProperty("sentryUploadEnabled") && project.property("sentryUploadEnabled").toBoolean()) {
+    apply from: new File(["node", "--print", "require('path').dirname(require.resolve('@sentry/react-native/package.json'))"].execute().text.trim(), "sentry.gradle")
+}
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -103,7 +105,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 49
-        versionName "0.0.1"
+        versionName "2.2.12"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
 

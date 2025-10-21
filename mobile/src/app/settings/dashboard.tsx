@@ -1,4 +1,4 @@
-import React, {useState} from "react"
+import {useState} from "react"
 import {Alert, Platform, ScrollView, StyleSheet, TextStyle, ViewStyle} from "react-native"
 
 import {Header, Screen} from "@/components/ignite"
@@ -12,7 +12,7 @@ import {translate} from "@/i18n/translate"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export default function DashboardSettingsScreen() {
   const {status} = useCoreStatus()
@@ -23,7 +23,7 @@ export default function DashboardSettingsScreen() {
   const [headUpAngle, setHeadUpAngle] = useSetting(SETTINGS_KEYS.head_up_angle)
   const [contextualDashboardEnabled, setContextualDashboardEnabled] = useSetting(SETTINGS_KEYS.contextual_dashboard)
   const [metricSystemEnabled, setMetricSystemEnabled] = useSetting(SETTINGS_KEYS.metric_system)
-  const features = getCapabilitiesForModel(defaultWearable)
+  const features = getModelCapabilities(defaultWearable)
 
   // -- Handlers --
   const toggleContextualDashboard = async () => {

@@ -2,7 +2,6 @@ import {Button, Header} from "@/components/ignite"
 import {Screen} from "@/components/ignite/Screen"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {DeviceTypes} from "@/utils/Constants"
 import {showAlert} from "@/utils/AlertUtils"
 import {getPairingGuide} from "@/utils/getPairingGuide"
@@ -10,6 +9,7 @@ import {PermissionFeatures, checkConnectivityRequirementsUI, requestFeaturePermi
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useRoute} from "@react-navigation/native"
 import {Linking, PermissionsAndroid, Platform, ScrollView, View} from "react-native"
+import CoreModule from "core"
 
 // Alert handling is now done directly in PermissionsUtils.tsx
 
@@ -218,7 +218,7 @@ export default function PairingPrepScreen() {
 
     // skip pairing for simulated glasses:
     if (glassesModelName.startsWith(DeviceTypes.SIMULATED)) {
-      await useSettingsStore.getState().setSetting(SETTINGS_KEYS.default_wearable, DeviceTypes.SIMULATED)
+      await CoreModule.connectSimulated()
       clearHistoryAndGoHome()
       return
     }

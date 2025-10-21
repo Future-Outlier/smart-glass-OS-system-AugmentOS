@@ -1,16 +1,12 @@
 import {Header, Screen} from "@/components/ignite"
 import {ScrollView} from "react-native"
-import {ConnectDeviceButton, ConnectedGlasses} from "@/components/misc/ConnectedDeviceInfo"
+import {ConnectDeviceButton} from "@/components/misc/ConnectedDeviceInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
-import CloudConnection from "@/components/misc/CloudConnection"
 
 import {useAppTheme} from "@/utils/useAppTheme"
 import DeviceSettings from "@/components/glasses/DeviceSettings"
 import {translate} from "@/i18n/translate"
-import {Spacer} from "@/components/misc/Spacer"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
 
 export default function Glasses() {
   const {theme} = useAppTheme()
@@ -26,8 +22,8 @@ export default function Glasses() {
     pageTitle = translate("glasses:title")
   }
 
-  let connected = status.glasses_info?.model_name ?? false
-  let features = getCapabilitiesForModel(defaultWearable)
+  // let connected = status.glasses_info?.model_name ?? false
+  // let features = getCapabilitiesForModel(defaultWearable)
 
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
@@ -35,10 +31,10 @@ export default function Glasses() {
       <ScrollView
         style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}
         contentInsetAdjustmentBehavior="automatic">
-        <CloudConnection />
-        {connected && features?.hasDisplay && <ConnectedSimulatedGlassesInfo />}
-        {connected && features?.hasDisplay && <ConnectedGlasses showTitle={false} />}
-        <Spacer height={theme.spacing.lg} />
+        {/* <CloudConnection /> */}
+        {/* {connected && features?.hasDisplay && <ConnectedSimulatedGlassesInfo />} */}
+        {/* {connected && features?.hasDisplay && <ConnectedGlasses showTitle={false} />} */}
+        {/* <Spacer height={theme.spacing.lg} /> */}
         <ConnectDeviceButton />
         <DeviceSettings />
       </ScrollView>

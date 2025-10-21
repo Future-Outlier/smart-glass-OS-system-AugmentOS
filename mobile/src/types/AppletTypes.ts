@@ -1,6 +1,5 @@
-import {CompatibilityResult} from "@/utils/HardwareCompatibility"
-import {HardwareRequirement} from "@cloud/packages/sdk"
-
+import {CompatibilityResult} from "@/utils/hardware"
+import {AppletInterface} from "@/../../cloud/packages/types/src"
 export type AppPermissionType =
   | "ALL"
   | "MICROPHONE"
@@ -72,23 +71,24 @@ export type AppletType = "standard" | "background"
 //   offlineRoute?: string // React Native route for offline apps
 // }
 
-export interface AppletInterface {
-  packageName: string
-  name: string
-  webviewUrl: string
-  logoUrl: string
-  type: AppletType // "standard" (foreground) or "background"
-  permissions: AppletPermission[]
-  running: boolean
-  loading: boolean
-  healthy: boolean
-  hardwareRequirements: HardwareRequirement[]
-}
+// export interface AppletInterface {
+//   packageName: string
+//   name: string
+//   webviewUrl: string
+//   logoUrl: string
+//   type: AppletType // "standard" (foreground) or "background"
+//   permissions: AppletPermission[]
+//   running: boolean
+//   loading: boolean
+//   healthy: boolean
+//   hardwareRequirements: HardwareRequirement[]
+// }
 
 export interface ClientAppletInterface extends AppletInterface {
   isOffline: boolean
   offlineRoute: string
   compatibility?: CompatibilityResult
+  loading: boolean
   // compatibility?: {
   //   isCompatible: boolean
   //   missingRequired: Array<{
@@ -101,6 +101,21 @@ export interface ClientAppletInterface extends AppletInterface {
   //   }>
   //   message: string
   // }
+}
+
+export const DUMMY_APPLET: ClientAppletInterface = {
+  packageName: "",
+  name: "",
+  webviewUrl: "",
+  logoUrl: "",
+  type: "standard",
+  permissions: [],
+  running: false,
+  loading: false,
+  healthy: true,
+  hardwareRequirements: [],
+  isOffline: true,
+  offlineRoute: "",
 }
 
 // export const getOfflineAppRoute = (app: AppletInterface): string | null => {

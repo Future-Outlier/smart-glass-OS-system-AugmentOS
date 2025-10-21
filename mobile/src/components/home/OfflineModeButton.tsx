@@ -9,9 +9,7 @@ import showAlert from "@/utils/AlertUtils"
 export const OfflineModeButton: React.FC = () => {
   const {theme, themed} = useAppTheme()
   const [offlineMode, setOfflineMode] = useSetting(SETTINGS_KEYS.offline_mode)
-  const [_offlineCaptionsAppRunning, setOfflineCaptionsAppRunning] = useSetting(
-    SETTINGS_KEYS.offline_captions_app_running,
-  )
+  const [_offlineCaptionsAppRunning, setOfflineCaptionsAppRunning] = useSetting(SETTINGS_KEYS.offline_captions_running)
   // const {stopAllApps} = useAppStatus()
 
   const handlePress = () => {

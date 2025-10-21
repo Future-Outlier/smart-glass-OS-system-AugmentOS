@@ -1,24 +1,22 @@
 import {INTENSE_LOGGING} from "@/utils/Constants"
 import {translate} from "@/i18n"
-import livekitManager from "@/managers/LivekitManager"
-import mantle from "@/managers/MantleManager"
-import socketComms from "@/managers/SocketComms"
+import livekit from "@/services/Livekit"
+import mantle from "@/services/MantleManager"
+import socketComms from "@/services/SocketComms"
 import {useSettingsStore} from "@/stores/settings"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {EventEmitter} from "events"
 
 import CoreModule from "core"
 import Toast from "react-native-toast-message"
 
-export class MantleBridge extends EventEmitter {
+export class MantleBridge {
   private static instance: MantleBridge | null = null
   private messageEventSubscription: any = null
   private lastMessage: string = ""
 
   // Private constructor to enforce singleton pattern
   private constructor() {
-    super()
     // Initialize message event listener
     this.initializeMessageEventListener()
   }
@@ -31,6 +29,11 @@ export class MantleBridge extends EventEmitter {
       MantleBridge.instance = new MantleBridge()
     }
     return MantleBridge.instance
+  }
+
+  // does nothing but ensures we initialize the class:
+  public async dummy() {
+    await Promise.resolve()
   }
 
   /**
@@ -71,16 +74,15 @@ export class MantleBridge extends EventEmitter {
       // Only check for duplicates on status messages, not other event types
       if ("status" in data) {
         if (this.lastMessage === jsonString) {
-          console.log("DUPLICATE STATUS MESSAGE FROM CORE")
+          console.log("BRIDGE: DUPLICATE STATUS MESSAGE FROM CORE")
           return
         }
         this.lastMessage = jsonString
       }
 
-      this.emit("dataReceived", data)
       this.parseDataFromCore(data)
     } catch (e) {
-      console.error("Failed to parse JSON from core message:", e)
+      console.error("BRIDGE: Failed to parse JSON from core message:", e)
       console.log(jsonString)
     }
   }
@@ -126,6 +128,7 @@ export class MantleBridge extends EventEmitter {
             videos: data.videos,
             total: data.total,
             has_content: data.has_content,
+            camera_busy: data.camera_busy, // Add camera busy state
           })
           break
         case "compatible_glasses_search_result":
@@ -245,8 +248,8 @@ export class MantleBridge extends EventEmitter {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          if (livekitManager.isRoomConnected()) {
-            livekitManager.addPcm(bytes)
+          if (livekit.isRoomConnected()) {
+            livekit.addPcm(bytes)
           } else {
             socketComms.sendBinary(bytes)
           }
@@ -326,10 +329,6 @@ export class MantleBridge extends EventEmitter {
     console.log("Sending WiFi disconnect command to Core")
     // TODO: Add disconnectWifi to CoreModule
     console.warn("disconnectFromWifi not yet implemented in new CoreModule API")
-  }
-
-  async sendUpdatingScreen(enabled: boolean) {
-    return await CoreModule.sendUpdatingScreen(enabled)
   }
 
   async setLc3AudioEnabled(enabled: boolean) {

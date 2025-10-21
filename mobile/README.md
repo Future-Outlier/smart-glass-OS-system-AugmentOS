@@ -1,5 +1,11 @@
 ### Quickstart
 
+## Requirements
+
+**⚠️ Physical Device Required**
+
+MentraOS relies heavily on BLE/Bluetooth connectivity to communicate with smart glasses. **Android Emulator and iOS Simulator do not support Bluetooth**, so you **must use a physical device** for testing MentraOS.
+
 ### Windows Setup
 
 ```bash

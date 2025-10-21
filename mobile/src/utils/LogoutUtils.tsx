@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import bridge from "@/bridge/MantleBridge"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import restComms from "@/managers/RestComms"
+import restComms from "@/services/RestComms"
 import {SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
 

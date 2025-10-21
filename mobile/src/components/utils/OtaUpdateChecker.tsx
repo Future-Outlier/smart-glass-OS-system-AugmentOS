@@ -2,8 +2,8 @@ import {useEffect, useState} from "react"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import showAlert from "@/utils/AlertUtils"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
-import {Capabilities} from "@mentra/sdk"
+import {Capabilities, getModelCapabilities} from "../../../../cloud/packages/types/src"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 
 interface VersionInfo {
   versionCode: number
@@ -98,6 +98,7 @@ export function OtaUpdateChecker() {
   const [isChecking, setIsChecking] = useState(false)
   const [hasChecked, setHasChecked] = useState(false)
   const [_latestVersion, setLatestVersion] = useState<string | null>(null)
+  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
   const {push} = useNavigationHistory()
 
   // Extract only the specific values we need to watch to avoid re-renders
@@ -113,7 +114,7 @@ export function OtaUpdateChecker() {
         return
       }
 
-      const features: Capabilities = getCapabilitiesForModel(glassesModel)
+      const features: Capabilities = getModelCapabilities(defaultWearable)
       if (!features || !features.wifiSelfOtaUpdate) {
         // Remove console log to reduce spam
         return
@@ -142,7 +143,9 @@ export function OtaUpdateChecker() {
 
           showAlert(
             "Update Available",
-            `An update for your glasses is available (v${latestVersionInfo?.versionCode || "Unknown"}).\n\nConnect your glasses to WiFi to automatically install the update.`,
+            `An update for your glasses is available (v${
+              latestVersionInfo?.versionCode || "Unknown"
+            }).\n\nConnect your glasses to WiFi to automatically install the update.`,
             [
               {
                 text: "Later",

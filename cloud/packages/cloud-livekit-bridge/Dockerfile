@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     libopus-dev \
     libopusfile-dev \
     libsoxr-dev \
+    protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -22,6 +23,11 @@ RUN go mod download
 
 # Copy source code
 COPY . .
+
+# Generate proto code and install protoc plugins
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest && \
+    bash proto/generate.sh
 
 # Build the gRPC service
 RUN CGO_ENABLED=1 GOOS=linux go build -o livekit-bridge .

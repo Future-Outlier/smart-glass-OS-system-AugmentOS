@@ -35,7 +35,7 @@ export default function NotificationSettingsScreen() {
   const loadInstalledApps = async () => {
     try {
       // console.log("Loading installed apps...")
-      const installedApps = await CoreModule.getAllApps()
+      const installedApps = await CoreModule.getInstalledApps()
       // console.log(installedApps)
 
       // Sort alphabetically by app name

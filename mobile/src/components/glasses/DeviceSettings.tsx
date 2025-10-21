@@ -13,17 +13,15 @@ import {useApplets} from "@/stores/applets"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert, {showDestructiveAlert} from "@/utils/AlertUtils"
-import {DeviceTypes} from "@/utils/Constants"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
-import {Capabilities} from "@cloud/packages/sdk/dist"
+import {getModelCapabilities, Capabilities, DeviceTypes} from "../../../../cloud/packages/types/src"
 import {MaterialCommunityIcons} from "@expo/vector-icons"
 import {useFocusEffect} from "@react-navigation/native"
 import {useCallback, useEffect, useRef, useState} from "react"
 import {Animated, Platform, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import {SvgXml} from "react-native-svg"
-import OtaProgressSection from "./OtaProgressSection"
+import OtaProgressSection from "@/components/glasses/OtaProgressSection"
 import CoreModule from "core"
 
 // Icon components defined directly in this file to avoid path resolution issues
@@ -36,14 +34,22 @@ interface CaseIconProps {
 
 const CaseIcon = ({size = 24, color, isCharging = false, isDark = false}: CaseIconProps) => {
   const caseSvg = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M3 16.125L10.5 16.125L10.5 17.625L3 17.625L3 16.125Z" fill="${color || (isDark ? "#D3D3D3" : "#232323")}"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M3 4.875L21 4.875L21 6.375L3 6.375L3 4.875Z" fill="${color || (isDark ? "#D3D3D3" : "#232323")}"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M3 13.125L10.5 13.125L10.5 14.625L3 14.625L3 13.125Z" fill="${color || (isDark ? "#D3D3D3" : "#232323")}"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M3 16.125L10.5 16.125L10.5 17.625L3 17.625L3 16.125Z" fill="${
+    color || (isDark ? "#D3D3D3" : "#232323")
+  }"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M3 4.875L21 4.875L21 6.375L3 6.375L3 4.875Z" fill="${
+    color || (isDark ? "#D3D3D3" : "#232323")
+  }"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M3 13.125L10.5 13.125L10.5 14.625L3 14.625L3 13.125Z" fill="${
+    color || (isDark ? "#D3D3D3" : "#232323")
+  }"/>
 <rect x="1.5" y="6.375" width="1.5" height="9.75" fill="${color || (isDark ? "#D3D3D3" : "#232323")}"/>
 <rect x="21" y="6.375" width="1.5" height="4.5" fill="${color || (isDark ? "#D3D3D3" : "#232323")}"/>
 <rect x="10.5" y="10.125" width="3" height="1.5" fill="${color || (isDark ? "#D3D3D3" : "#232323")}"/>
 <path d="M13.5 12.375H21V13.875H13.5V12.375Z" fill="${color || (isDark ? "#D3D3D3" : "#232323")}"/>
-<path d="M13.5 13.875H21V17.625H13.5V13.875Z" fill="${isCharging ? "#FEF991" : color || (isDark ? "#D3D3D3" : "#232323")}"/>
+<path d="M13.5 13.875H21V17.625H13.5V13.875Z" fill="${
+    isCharging ? "#FEF991" : color || (isDark ? "#D3D3D3" : "#232323")
+  }"/>
 <path d="M13.5 17.625H21V19.125H13.5V17.625Z" fill="${color || (isDark ? "#D3D3D3" : "#232323")}"/>
 <path d="M21 13.875H22.5V17.625H21V13.875Z" fill="${color || (isDark ? "#D3D3D3" : "#232323")}"/>
 <path d="M22.5 14.625H23.25V16.875H22.5V14.625Z" fill="${color || (isDark ? "#D3D3D3" : "#232323")}"/>
@@ -77,8 +83,6 @@ const GlassesIcon = ({size = 24, color, isDark = false}: GlassesIconProps) => {
 
 export default function DeviceSettings() {
   const fadeAnim = useRef(new Animated.Value(0)).current
-  const scaleAnim = useRef(new Animated.Value(0.8)).current
-  const slideAnim = useRef(new Animated.Value(-50)).current
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
   const isGlassesConnected = Boolean(status.glasses_info?.model_name)
@@ -86,7 +90,7 @@ export default function DeviceSettings() {
   const [preferredMic, setPreferredMic] = useSetting(SETTINGS_KEYS.preferred_mic)
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS_KEYS.auto_brightness)
   const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
-  const [showAdvancedSettings, setShowAdvancedSettings] = useSetting(SETTINGS_KEYS.SHOW_ADVANCED_SETTINGS)
+  const [showAdvancedSettings, setShowAdvancedSettings] = useSetting(SETTINGS_KEYS.show_advanced_settings)
   const [_hasLocalPhotos, setHasLocalPhotos] = useState(false)
   const [defaultButtonActionEnabled, setDefaultButtonActionEnabled] = useSetting(
     SETTINGS_KEYS.default_button_action_enabled,
@@ -96,7 +100,7 @@ export default function DeviceSettings() {
 
   const {push} = useNavigationHistory()
   const applets = useApplets()
-  const features: Capabilities | null = getCapabilitiesForModel(defaultWearable)
+  const features: Capabilities = getModelCapabilities(defaultWearable)
 
   // Check if we have any advanced settings to show
   const hasMicrophoneSelector =
@@ -141,39 +145,11 @@ export default function DeviceSettings() {
 
   useFocusEffect(
     useCallback(() => {
-      // Reset animations to initial values
-      fadeAnim.setValue(0)
-      scaleAnim.setValue(0.8)
-      slideAnim.setValue(-50)
-
       // Check for local photos when component gains focus
       checkLocalPhotos()
-
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 8,
-          tension: 60,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ]).start()
       // Cleanup function
-      return () => {
-        fadeAnim.stopAnimation()
-        scaleAnim.stopAnimation()
-        slideAnim.stopAnimation()
-      }
-    }, [fadeAnim, scaleAnim, slideAnim, checkLocalPhotos]),
+      return () => {}
+    }, [checkLocalPhotos]),
   )
 
   const setMic = async (val: string) => {
@@ -451,7 +427,7 @@ export default function DeviceSettings() {
         />
       )}
 
-      {defaultWearable && isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && (
+      {isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && (
         <ActionButton
           label={translate("settings:disconnectGlasses")}
           variant="destructive"
@@ -491,7 +467,10 @@ export default function DeviceSettings() {
               {/* Microphone Selector - moved from above */}
               {hasMicrophoneSelector && (
                 <View style={themed($settingsGroup)}>
-                  <Text style={[themed($settingLabel), {marginBottom: theme.spacing.sm}]}>Microphone Selection</Text>
+                  <Text
+                    tx="deviceSettings:microphoneSelection"
+                    style={[themed($settingLabel), {marginBottom: theme.spacing.sm}]}
+                  />
                   <TouchableOpacity
                     style={{
                       flexDirection: "row",
@@ -500,7 +479,18 @@ export default function DeviceSettings() {
                       paddingTop: theme.spacing.xs,
                     }}
                     onPress={() => setMic("phone")}>
-                    <Text style={{color: theme.colors.text}}>{translate("deviceSettings:systemMic")}</Text>
+                    <View style={{flexDirection: "row", alignItems: "center", gap: 8}}>
+                      <Text style={{color: theme.colors.text}}>{translate("deviceSettings:systemMic")}</Text>
+                      <View
+                        style={{
+                          backgroundColor: theme.colors.primary + "20",
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderRadius: 4,
+                        }}>
+                        <Text style={{color: theme.colors.primary, fontSize: 11, fontWeight: "600"}}>Recommended</Text>
+                      </View>
+                    </View>
                     {preferredMic === "phone" && (
                       <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
                     )}
@@ -521,7 +511,7 @@ export default function DeviceSettings() {
                     }}
                     onPress={() => setMic("glasses")}>
                     <View style={{flexDirection: "column", gap: 4}}>
-                      <Text style={{color: theme.colors.text}}>{translate("deviceSettings:glassesMic")}</Text>
+                      <Text tx="deviceSettings:glassesMic" style={{color: theme.colors.text}} />
                     </View>
                     {preferredMic === "glasses" && (
                       <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
@@ -538,7 +528,7 @@ export default function DeviceSettings() {
                 <InfoSection
                   title="Device Information"
                   items={[
-                    {label: "Bluetooth Name", value: status.glasses_info?.bluetooth_name},
+                    {label: "Bluetooth Name", value: status.glasses_info?.bluetooth_name?.split("_")[3]},
                     {label: "Build Number", value: status.glasses_info?.glasses_build_number},
                     {label: "Local IP Address", value: status.glasses_info?.glasses_wifi_local_ip},
                   ]}
@@ -554,15 +544,15 @@ export default function DeviceSettings() {
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = () => ({
+const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   borderRadius: 12,
   width: "100%",
   minHeight: 240,
   justifyContent: "center",
-  marginTop: -13, // Reduced space above component
+  // marginTop: -13, // Reduced space above component
   // backgroundColor: colors.palette.neutral200,
   backgroundColor: "transparent",
-  gap: 16,
+  gap: spacing.md,
 })
 
 const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({

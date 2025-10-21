@@ -89,13 +89,11 @@ export default function WifiConnectingScreen() {
       // Set timeout for connection attempt (20 seconds)
       connectionTimeoutRef.current = setTimeout(() => {
         if (connectionStatus === "connecting") {
-          console.log("321321 Connection timed out. Please try again.")
           setConnectionStatus("failed")
           setErrorMessage("Connection timed out. Please try again.")
         }
       }, 20000)
     } catch (error) {
-      console.log("^&*()__+ Error sending WiFi credentials:", error)
       console.error("Error sending WiFi credentials:", error)
       setConnectionStatus("failed")
       setErrorMessage("Failed to send credentials to glasses. Please try again.")

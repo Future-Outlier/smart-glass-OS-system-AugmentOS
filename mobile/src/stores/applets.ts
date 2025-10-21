@@ -1,12 +1,11 @@
 import {translate} from "@/i18n"
-import restComms from "@/managers/RestComms"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import restComms from "@/services/RestComms"
+import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {getThemeIsDark} from "@/theme/getTheme"
-import {AppletInterface, ClientAppletInterface} from "@/types/AppletTypes"
+import {ClientAppletInterface} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
-import {HardwareCompatibility} from "@/utils/HardwareCompatibility"
-import {getCapabilitiesForModel} from "@cloud/packages/cloud/src/config/hardware-capabilities"
-import {HardwareRequirementLevel, HardwareType} from "@cloud/packages/sdk/src/types"
+import {HardwareCompatibility} from "@/utils/hardware"
+import {getModelCapabilities, HardwareRequirementLevel, HardwareType} from "../../../cloud/packages/types/src"
 import {useMemo} from "react"
 import {create} from "zustand"
 
@@ -34,11 +33,13 @@ const getCameraIcon = (isDark: boolean) => {
  * They navigate directly to specific React Native routes when activated.
  */
 
+const cameraPackageName = "com.mentra.camera"
+const captionsPackageName = "com.mentra.captions"
+
 // get offline applets:
 export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
   const isDark = await getThemeIsDark()
-  const cameraPackageName = "com.mentra.camera"
-  const captionsPackageName = "com.mentra.captions"
+
   const offlineCameraRunning = await useSettingsStore.getState().getSetting(cameraPackageName)
   const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(captionsPackageName)
   return [
@@ -70,10 +71,10 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       // version: "0.0.1",
       healthy: true,
       permissions: [],
-      offlineRoute: "/asg/gallery",
+      offlineRoute: "",
       running: offlineCaptionsRunning,
       loading: false,
-      hardwareRequirements: [],
+      hardwareRequirements: [{type: HardwareType.DISPLAY, level: HardwareRequirementLevel.REQUIRED}],
     },
   ]
 }
@@ -85,6 +86,13 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
 //   const requiredCapabilities = app.required
 //   return requiredCapabilities.every(capability => capabilities.includes(capability))
 // }
+
+const setOfflineApplet = async (packageName: string, status: boolean) => {
+  await useSettingsStore.getState().setSetting(packageName, status)
+  if (packageName === captionsPackageName) {
+    await useSettingsStore.getState().setSetting(SETTINGS_KEYS.offline_captions_running, status, true)
+  }
+}
 
 export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   apps: [],
@@ -117,7 +125,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
 
       // add in the compatibility info:
       let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-      let capabilities = getCapabilitiesForModel(defaultWearable)
+      let capabilities = getModelCapabilities(defaultWearable)
 
       for (const applet of applets) {
         let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
@@ -159,11 +167,13 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       ),
     }))
 
+    console.log("applet is offline: ", applet.isOffline)
+
     try {
       if (!applet.isOffline) {
         await restComms.startApp(packageName)
       } else {
-        await useSettingsStore.getState().setSetting(packageName, true)
+        setOfflineApplet(packageName, true)
       }
       await useSettingsStore.getState().setSetting(SETTINGS_KEYS.has_ever_activated_app, true)
     } catch (error: any) {
@@ -197,7 +207,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     if (!applet.isOffline) {
       await restComms.stopApp(packageName).catch(console.error)
     } else {
-      await useSettingsStore.getState().setSetting(packageName, false)
+      setOfflineApplet(packageName, false)
     }
   },
 
@@ -207,6 +217,8 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     for (const app of runningApps) {
       if (!app.isOffline) {
         await restComms.stopApp(app.packageName)
+      } else {
+        setOfflineApplet(app.packageName, false)
       }
     }
 
@@ -221,6 +233,10 @@ export const useRefreshApplets = () => useAppletStatusStore(state => state.refre
 export const useStopAllApplets = () => useAppletStatusStore(state => state.stopAllApps)
 export const useInactiveForegroundApps = () => {
   const apps = useApplets()
+  const [isOffline] = useSetting(SETTINGS_KEYS.offline_mode)
+  if (isOffline) {
+    return useMemo(() => apps.filter(app => app.type === "standard" && !app.running && app.isOffline), [apps])
+  }
   return useMemo(() => apps.filter(app => (app.type === "standard" || !app.type) && !app.running), [apps])
 }
 export const useBackgroundApps = () => {

@@ -12,9 +12,9 @@ import {useSettingsStore, SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {translate} from "@/i18n"
 import {TextStyle, ViewStyle} from "react-native"
 import {ThemedStyle} from "@/theme"
-import restComms from "@/managers/RestComms"
-import socketComms from "@/managers/SocketComms"
-import mantle from "@/managers/MantleManager"
+import restComms from "@/services/RestComms"
+import socketComms from "@/services/SocketComms"
+import mantle from "@/services/MantleManager"
 import {Text} from "@/components/ignite"
 
 // Types
