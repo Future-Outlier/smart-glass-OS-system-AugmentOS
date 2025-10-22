@@ -280,9 +280,6 @@ public class G1 extends SGCManager {
                         if (isLeftConnected && isRightConnected) {
                             stopScan();
                             Bridge.log("G1: Both glasses connected. Stopping BLE scan.");
-                            ready = true;
-                        } else {
-                            ready = false;
                         }
 
                         Bridge.log("G1: Discover services calling...");
@@ -298,8 +295,6 @@ public class G1 extends SGCManager {
 
                         forceSideDisconnection();
                         Bridge.log("G1: Called forceSideDisconnection().");
-
-                        ready = false;
 
                         // Stop any periodic transmissions
                         stopHeartbeat();
@@ -407,7 +402,6 @@ public class G1 extends SGCManager {
                         attemptGattConnection(rightDevice);
                     }, 400);
                 }
-                CoreManager.getInstance().handleConnectionStateChanged();
             }
 
             private void forceSideDisconnection() {
@@ -538,7 +532,7 @@ public class G1 extends SGCManager {
                                     if (shouldUseGlassesMic) {
                                         if (pcmData != null && pcmData.length > 0) {
                                             // audioProcessingCallback.onAudioDataAvailable(pcmData);
-                                            CoreManager.getInstance().handleGlassesMicData(pcmData);
+                                            CoreManager.getInstance().handlePcm(pcmData);
                                         }
                                     }
 
@@ -799,24 +793,24 @@ public class G1 extends SGCManager {
     }
 
     private void updateConnectionState() {
+        Boolean previousReady = ready;
         if (isLeftConnected && isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTED;
             Bridge.log("G1: Both glasses connected");
             lastConnectionTimestamp = System.currentTimeMillis();
             ready = true;
-            // connectionEvent(connectionState);
         } else if (isLeftConnected || isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTING;
             Bridge.log("G1: One glass connected");
             ready = false;
-            // connectionEvent(connectionState);
         } else {
             connectionState = SmartGlassesConnectionState.DISCONNECTED;
             Bridge.log("G1: No glasses connected");
-            // connectionEvent(connectionState);
             ready = false;
         }
-        CoreManager.getInstance().handleConnectionStateChanged();
+        if (previousReady != ready) {
+            CoreManager.getInstance().handleConnectionStateChanged();
+        }
     }
 
     private final BroadcastReceiver bondingReceiver = new BroadcastReceiver() {
@@ -1572,12 +1566,14 @@ public class G1 extends SGCManager {
 
     @Override
     public void setBrightness(int level, boolean autoMode) {
-
+        Bridge.log("G1: setBrightness() - level: " + level + "%, autoMode: " + autoMode);
+        sendBrightnessCommand(level, autoMode);
     }
 
     @Override
     public void clearDisplay() {
-
+        Bridge.log("G1: clearDisplay() - Using 0x18 exit command");
+        sendExitCommand();
     }
 
     @Override
@@ -1592,7 +1588,22 @@ public class G1 extends SGCManager {
 
     @Override
     public boolean displayBitmap(String base64ImageData) {
-        return false;
+        try {
+            // Decode base64 to byte array
+            byte[] bmpData = android.util.Base64.decode(base64ImageData, android.util.Base64.DEFAULT);
+
+            if (bmpData == null || bmpData.length == 0) {
+                Log.e(TAG, "Failed to decode base64 image data");
+                return false;
+            }
+
+            // Call internal implementation
+            displayBitmapImage(bmpData);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error displaying bitmap from base64", e);
+            return false;
+        }
     }
 
     @Override
@@ -1602,12 +1613,14 @@ public class G1 extends SGCManager {
 
     @Override
     public void setDashboardPosition(int height, int depth) {
-
+        Bridge.log("G1: setDashboardPosition() - height: " + height + ", depth: " + depth);
+        sendDashboardPositionCommand(height, depth);
     }
 
     @Override
     public void setHeadUpAngle(int angle) {
-
+        Bridge.log("G1: setHeadUpAngle() - angle: " + angle);
+        sendHeadUpAngleCommand(angle);
     }
 
     @Override
@@ -1623,6 +1636,12 @@ public class G1 extends SGCManager {
     @Override
     public void exit() {
 
+    }
+
+    @Override
+    public void sendRgbLedControl(String requestId, String packageName, String action, String color, int ontime, int offtime, int count) {
+        Bridge.log("sendRgbLedControl - not supported on G1");
+        Bridge.sendRgbLedControlResponse(requestId, false, "device_not_supported");
     }
 
     @Override
@@ -1643,6 +1662,12 @@ public class G1 extends SGCManager {
 
     @Override
     public String getConnectedBluetoothName() {
+        // Return left device name if available, otherwise right device name
+        if (leftDevice != null && leftDevice.getName() != null) {
+            return leftDevice.getName();
+        } else if (rightDevice != null && rightDevice.getName() != null) {
+            return rightDevice.getName();
+        }
         return "";
     }
 
@@ -1664,6 +1689,12 @@ public class G1 extends SGCManager {
     @Override
     public void queryGalleryStatus() {
 
+    }
+
+    @Override
+    public void sendGalleryMode() {
+        // G1 doesn't have a built-in camera/gallery system
+        Bridge.log("G1: sendGalleryModeActive - not supported on G1");
     }
 
     // private void sendDataSequentially(byte[] data, boolean onlyLeft) {
@@ -2586,25 +2617,25 @@ public class G1 extends SGCManager {
 
         isMicrophoneEnabled = enable; // Update the state tracker
         // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
-        micEnableHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (!isConnected()) {
-                    Bridge.log("G1: Tryna start mic: Not connected to glasses");
-                    return;
-                }
+        // micEnableHandler.postDelayed(new Runnable() {
+        //     @Override
+        //     public void run() {
+        //         if (!isConnected()) {
+        //             Bridge.log("G1: Tryna start mic: Not connected to glasses");
+        //             return;
+        //         }
 
-                byte command = 0x0E; // Command for MIC control
-                byte enableByte = (byte) (enable ? 1 : 0); // 1 to enable, 0 to disable
+        //         byte command = 0x0E; // Command for MIC control
+        //         byte enableByte = (byte) (enable ? 1 : 0); // 1 to enable, 0 to disable
 
-                ByteBuffer buffer = ByteBuffer.allocate(2);
-                buffer.put(command);
-                buffer.put(enableByte);
+        //         ByteBuffer buffer = ByteBuffer.allocate(2);
+        //         buffer.put(command);
+        //         buffer.put(enableByte);
 
-                sendDataSequentially(buffer.array(), false, true, 300); // wait some time to setup the mic
-                Bridge.log("G1: Sent MIC command: " + bytesToHex(buffer.array()));
-            }
-        }, delay);
+        //         sendDataSequentially(buffer.array(), false, true, 300); // wait some time to setup the mic
+        //         Bridge.log("G1: Sent MIC command: " + bytesToHex(buffer.array()));
+        //     }
+        // }, delay);
     }
 
     // notifications

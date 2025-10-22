@@ -243,6 +243,12 @@ public class Mach1 extends SGCManager {
     }
 
     @Override
+    public void sendRgbLedControl(String requestId, String packageName, String action, String color, int ontime, int offtime, int count) {
+        Bridge.log("sendRgbLedControl - not supported on Mach1");
+        Bridge.sendRgbLedControlResponse(requestId, false, "device_not_supported");
+    }
+
+    @Override
     public void disconnect() {
 
     }
@@ -291,6 +297,12 @@ public class Mach1 extends SGCManager {
     @Override
     public void queryGalleryStatus() {
 
+    }
+
+    @Override
+    public void sendGalleryMode() {
+        // Mach1 doesn't have a built-in camera/gallery system
+        Bridge.log("Mach1: sendGalleryModeActive - not supported on Mach1");
     }
 
     public class UltraliteListener implements EventListener{

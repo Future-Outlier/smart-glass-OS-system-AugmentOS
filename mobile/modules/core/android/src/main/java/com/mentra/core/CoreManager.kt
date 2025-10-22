@@ -74,11 +74,12 @@ class CoreManager {
     public var autoBrightness = true
     public var dashboardHeight = 4
     public var dashboardDepth = 5
+    public var galleryMode = false
 
     // glasses state
     private var isHeadUp = false
 
-    // settings
+    // core settings
     public var sensingEnabled = true
     public var powerSavingMode = false
     private var alwaysOnStatusBar = false
@@ -496,7 +497,7 @@ class CoreManager {
 
     fun onRouteChange(reason: String, availableInputs: List<String>) {
         Bridge.log("Mentra: onRouteChange: reason: $reason")
-        Bridge.log("Mentra: onRouteChange: inputs: $availableInputs")
+        // Bridge.log("Mentra: onRouteChange: inputs: $availableInputs")
     }
 
     fun onInterruption(began: Boolean) {
@@ -533,6 +534,12 @@ class CoreManager {
     fun updateButtonPhotoSize(size: String) {
         buttonPhotoSize = size
         sgc?.sendButtonPhotoSettings()
+        handle_request_status()
+    }
+
+    fun updateGalleryMode(mode: Boolean) {
+        galleryMode = mode
+        sgc?.sendGalleryMode()
         handle_request_status()
     }
 
@@ -932,6 +939,12 @@ class CoreManager {
         sgc?.queryGalleryStatus()
     }
 
+    fun handle_send_gallery_mode_active(active: Boolean) {
+        Bridge.log("Mentra: Sending gallery mode active to glasses: $active")
+        galleryMode = active
+        sgc?.sendGalleryMode()
+    }
+
     fun handle_start_buffer_recording() {
         Bridge.log("Mentra: onStartBufferRecording")
         sgc?.startBufferRecording()
@@ -1018,6 +1031,19 @@ class CoreManager {
     ) {
         Bridge.log("Mentra: onPhotoRequest: $requestId, $appId, $size")
         sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken)
+    }
+
+    fun handle_rgb_led_control(
+            requestId: String,
+            packageName: String?,
+            action: String,
+            color: String?,
+            ontime: Int,
+            offtime: Int,
+            count: Int
+    ) {
+        Bridge.log("Mentra: RGB LED control: action=$action, color=$color, requestId=$requestId")
+        sgc?.sendRgbLedControl(requestId, packageName, action, color, ontime, offtime, count)
     }
 
     fun handle_connect_default() {
@@ -1319,6 +1345,18 @@ class CoreManager {
         (settings["button_photo_size"] as? String)?.let { newPhotoSize ->
             if (buttonPhotoSize != newPhotoSize) {
                 updateButtonPhotoSize(newPhotoSize)
+            }
+        }
+
+        (settings["button_camera_led"] as? Boolean)?.let { newButtonCameraLed ->
+            if (buttonCameraLed != newButtonCameraLed) {
+                updateButtonCameraLed(newButtonCameraLed)
+            }
+        }
+
+        (settings["gallery_mode"] as? Boolean)?.let { newGalleryMode ->
+            if (galleryMode != newGalleryMode) {
+                updateGalleryMode(newGalleryMode)
             }
         }
 

@@ -219,7 +219,7 @@ public class Bridge private constructor() {
 
         // MARK: - Hardware Events
 
-        /** Send button press */
+        /** Send button press to server (WebSocket) */
         @JvmStatic
         fun sendButtonPress(buttonId: String, pressType: String) {
             try {
@@ -237,6 +237,17 @@ public class Bridge private constructor() {
             }
         }
 
+        /** Send button press event to React Native - matches iOS implementation */
+        @JvmStatic
+        fun sendButtonPressEvent(buttonId: String, pressType: String) {
+            val buttonData = HashMap<String, Any>()
+            buttonData["buttonId"] = buttonId
+            buttonData["pressType"] = pressType
+            buttonData["timestamp"] = System.currentTimeMillis()
+
+            sendTypedMessage("button_press", buttonData as Map<String, Any>)
+        }
+
         /** Send photo response */
         @JvmStatic
         fun sendPhotoResponse(requestId: String, photoUrl: String) {
@@ -252,6 +263,21 @@ public class Bridge private constructor() {
                 sendWSText(jsonString)
             } catch (e: Exception) {
                 log("ServerComms: Error building photo_response JSON: $e")
+            }
+        }
+
+        /** Send RGB LED control response */
+        @JvmStatic
+        fun sendRgbLedControlResponse(requestId: String, success: Boolean, error: String?) {
+            if (requestId.isEmpty()) return
+            try {
+                val body = HashMap<String, Any>()
+                body["requestId"] = requestId
+                body["success"] = success
+                error?.let { body["error"] = it }
+                sendTypedMessage("rgb_led_control_response", body)
+            } catch (e: Exception) {
+                log("Bridge: Error sending rgb_led_control_response: $e")
             }
         }
 

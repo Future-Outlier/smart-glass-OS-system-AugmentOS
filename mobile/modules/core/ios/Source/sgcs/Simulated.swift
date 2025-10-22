@@ -58,7 +58,7 @@ class Simulated: SGCManager {
 
     // MARK: - Camera & Media
 
-    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?) {
+    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?) {
         Bridge.log("requestPhoto")
     }
 
@@ -163,6 +163,11 @@ class Simulated: SGCManager {
         Bridge.log("exit")
     }
 
+    func sendRgbLedControl(requestId: String, packageName _: String?, action _: String, color _: String?, ontime _: Int, offtime _: Int, count _: Int) {
+        Bridge.log("sendRgbLedControl - not supported on Simulated")
+        Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "device_not_supported")
+    }
+
     // MARK: - Connection Management
 
     func disconnect() {
@@ -208,5 +213,9 @@ class Simulated: SGCManager {
 
     func queryGalleryStatus() {
         Bridge.log("queryGalleryStatus")
+    }
+
+    func sendGalleryMode() {
+        Bridge.log("sendGalleryMode")
     }
 }

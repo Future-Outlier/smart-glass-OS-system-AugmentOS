@@ -114,6 +114,8 @@ enum GlassesError: Error {
 }
 
 class G1: NSObject, SGCManager {
+    func sendGalleryMode() {}
+
     func sendButtonMaxRecordingTime() {}
 
     var glassesAppVersion: String = ""
@@ -148,7 +150,7 @@ class G1: NSObject, SGCManager {
 
     var hotspotGatewayIp: String = ""
 
-    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?) {}
+    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?) {}
 
     func startRtmpStream(_: [String: Any]) {}
 
@@ -1386,6 +1388,11 @@ extension G1 {
         queueChunks([exitDataArray])
     }
 
+    func sendRgbLedControl(requestId: String, packageName _: String?, action _: String, color _: String?, ontime _: Int, offtime _: Int, count _: Int) {
+        Bridge.log("sendRgbLedControl - not supported on G1")
+        Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "device_not_supported")
+    }
+
     // don't call semaphore signals here as it's handled elswhere:
     private func handleInitResponse(from peripheral: CBPeripheral, success: Bool) {
         if peripheral == leftPeripheral {
@@ -1624,18 +1631,14 @@ extension G1 {
 
         // Call the async function from a non-async context
         Task {
-            let success = await setHeadUpAngleRaw(UInt8(agl))
-            if !success {
-                NSLog("Failed to set angle to \(angle)")
-            }
+            await setHeadUpAngleRaw(UInt8(agl))
         }
     }
 
-    func setHeadUpAngleRaw(_ angle: UInt8) async -> Bool {
+    func setHeadUpAngleRaw(_ angle: UInt8) async {
         Bridge.log("G1: setHeadUpAngle()")
         let command: [UInt8] = [Commands.HEAD_UP_ANGLE.rawValue, angle, 0x01]
         queueChunks([command])
-        return true
     }
 
     func getBatteryStatus() {
@@ -1644,10 +1647,9 @@ extension G1 {
         queueChunks([command])
     }
 
-    func setSilentMode(_ enabled: Bool) async -> Bool {
+    func setSilentMode(_ enabled: Bool) async {
         let command: [UInt8] = [Commands.SILENT_MODE.rawValue, enabled ? 0x0C : 0x0A, 0x00]
         queueChunks([command])
-        return true
     }
 
     func setDashboardPosition(_ height: Int, _ depth: Int) {
@@ -1670,10 +1672,6 @@ extension G1 {
         } else {
             heartbeatCounter = 0
         }
-    }
-
-    @objc func RN_showDashboard() {
-        // nothing for now
     }
 
     func setDashboardPositionRaw(_ height: UInt8, _ depth: UInt8) async -> Bool {

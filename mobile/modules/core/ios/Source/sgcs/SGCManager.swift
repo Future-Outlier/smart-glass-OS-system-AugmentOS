@@ -48,7 +48,7 @@ protocol SGCManager {
 
     // MARK: - Camera & Media
 
-    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?)
+    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?)
     func startRtmpStream(_ message: [String: Any])
     func stopRtmpStream()
     func sendRtmpKeepAlive(_ message: [String: Any])
@@ -82,6 +82,7 @@ protocol SGCManager {
     func getBatteryStatus()
     func setSilentMode(_ enabled: Bool)
     func exit()
+    func sendRgbLedControl(requestId: String, packageName: String?, action: String, color: String?, ontime: Int, offtime: Int, count: Int)
 
     // MARK: - Connection Management
 
@@ -101,6 +102,7 @@ protocol SGCManager {
     // MARK: - Gallery
 
     func queryGalleryStatus()
+    func sendGalleryMode()
 }
 
 extension SGCManager {

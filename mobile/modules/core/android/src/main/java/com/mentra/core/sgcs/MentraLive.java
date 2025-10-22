@@ -187,12 +187,12 @@ public class MentraLive extends SGCManager {
     private boolean isScanning = false;
     private boolean isConnecting = false;
     private boolean isKilled = false;
-    
+
     // CTKD (Cross-Transport Key Derivation) support for BES devices
     private boolean isBondingReceiverRegistered = false;
     private boolean isBtClassicConnected = false;
     private BroadcastReceiver bondingReceiver;
-    
+
     private ConcurrentLinkedQueue<byte[]> sendQueue = new ConcurrentLinkedQueue<>();
     private Runnable connectionTimeoutRunnable;
     private Handler connectionTimeoutHandler = new Handler(Looper.getMainLooper());
@@ -332,6 +332,7 @@ public class MentraLive extends SGCManager {
     private Runnable heartbeatRunnable;
     private int heartbeatCounter = 0;
     private boolean glassesReady = false;
+    private boolean rgbLedAuthorityClaimed = false; // Track if we've claimed RGB LED control from BES
 
     // Micbeat tracking - periodically enable custom audio TX
     private Handler micBeatHandler = new Handler(Looper.getMainLooper());
@@ -779,13 +780,13 @@ public class MentraLive extends SGCManager {
                     Bridge.log("LIVE: Disconnected from GATT server");
                     isConnected = false;
                     isConnecting = false;
-                    
+
                     // CTKD Implementation: Disconnect BT per documentation
                     if (connectedDevice != null) {
                         Bridge.log("LIVE: CTKD: Disconnecting BT via removeBond per documentation");
                         removeBond(connectedDevice);
                     }
-                    
+
                     connectedDevice = null;
                     glassesReady = false; // Reset ready state on disconnect
                     // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
@@ -1781,8 +1782,7 @@ public class MentraLive extends SGCManager {
 
                 Bridge.log("LIVE: Received button press - buttonId: " + buttonId + ", pressType: " + pressType);
 
-                // Post button press event to EventBus for core to handle
-                Bridge.sendButtonPress(buttonId, pressType);
+                Bridge.sendButtonPressEvent(buttonId, pressType);
                 break;
 
             case "gallery_status":
@@ -1804,9 +1804,9 @@ public class MentraLive extends SGCManager {
                 // Process touch event from glasses (swipes, taps, long press)
                 String gestureName = json.optString("gesture_name", "unknown");
                 long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
-                
+
                 Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
-                
+
                 // Post touch event to EventBus for AugmentosService to handle
                 // EventBus.getDefault().post(new TouchEvent(
                 //         smartGlassesDevice.deviceModelName,
@@ -1819,15 +1819,15 @@ public class MentraLive extends SGCManager {
                 // Process swipe volume control status from glasses
                 boolean swipeVolumeEnabled = json.optBoolean("enabled", false);
                 long swipeTimestamp = json.optLong("timestamp", System.currentTimeMillis());
-                
+
                 Log.d(TAG, "🔊 Received swipe volume status - Enabled: " + swipeVolumeEnabled);
-                
+
                 // TODO: Post swipe volume status event to EventBus once event class is created
                 // EventBus.getDefault().post(new SwipeVolumeStatusEvent(
                 //         smartGlassesDevice.deviceModelName,
                 //         swipeVolumeEnabled,
                 //         swipeTimestamp));
-                
+
                 // // For now, forward to data observable for app consumption
                 // if (dataObservable != null) {
                 //     dataObservable.onNext(json);
@@ -1839,17 +1839,17 @@ public class MentraLive extends SGCManager {
                 int switchType = json.optInt("switch_type", -1);
                 int switchValue = json.optInt("switch_value", -1);
                 long switchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
-                
-                Log.d(TAG, "🔘 Received switch status - Type: " + switchType + 
+
+                Log.d(TAG, "🔘 Received switch status - Type: " + switchType +
                       ", Value: " + switchValue);
-                
+
                 // TODO: Post switch status event to EventBus once event class is created
                 // EventBus.getDefault().post(new SwitchStatusEvent(
                 //         smartGlassesDevice.deviceModelName,
                 //         switchType,
                 //         switchValue,
                 //         switchTimestamp));
-                
+
                 // For now, forward to data observable for app consumption
                 // if (dataObservable != null) {
                 //     dataObservable.onNext(json);
@@ -1899,6 +1899,9 @@ public class MentraLive extends SGCManager {
 
                 // Send user settings to glasses
                 sendUserSettings();
+
+                // Claim RGB LED control authority
+                sendRgbLedControlAuthority(true);
 
                 // Initialize LC3 audio logging now that glasses are ready (only if supported)
                 if (supportsLC3Audio) {
@@ -2299,20 +2302,20 @@ public class MentraLive extends SGCManager {
 
             default:
                 Log.d(TAG, "Unknown K900 command: " + command);
-                
+
                 // Check if this is a C-wrapped standard JSON message (not a true K900 command)
                 // This happens when ASG Client sends standard JSON messages through K900BluetoothManager
                 // which automatically C-wraps them
                 try {
                     // Try to parse the "C" field as JSON
                     JSONObject innerJson = new JSONObject(command);
-                    
+
                     // If it has a "type" field, it's a standard message that got C-wrapped
                     if (innerJson.has("type")) {
                         String messageType = innerJson.optString("type", "");
                         Log.d(TAG, "📦 Detected C-wrapped standard JSON message with type: " + messageType);
                         Log.d(TAG, "🔓 Unwrapping and processing through standard message handler");
-                        
+
                         // Process through the standard message handler
                         processJsonMessage(innerJson);
                         return; // Exit after processing
@@ -2321,7 +2324,7 @@ public class MentraLive extends SGCManager {
                     // Not valid JSON or doesn't have type field - treat as unknown K900 command
                     Log.d(TAG, "Command is not a C-wrapped JSON message, passing to data observable");
                 }
-                
+
                 // Pass to data observable for custom processing
                 // if (dataObservable != null) {
                     // dataObservable.onNext(json);
@@ -2498,6 +2501,22 @@ public class MentraLive extends SGCManager {
             Bridge.log("LIVE: 📸 Sending gallery status query to glasses");
         } catch (JSONException e) {
             Log.e(TAG, "📸 Error creating gallery status query", e);
+        }
+    }
+
+    @Override
+    public void sendGalleryMode() {
+        boolean active = CoreManager.getInstance().getGalleryMode();
+        Bridge.log("LIVE: 📸 Sending gallery mode active to glasses: " + active);
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "save_in_gallery_mode");
+            json.put("active", active);
+            json.put("timestamp", System.currentTimeMillis());
+            sendJson(json, true);
+            Bridge.log("LIVE: 📸 ✅ Gallery mode command sent successfully");
+        } catch (JSONException e) {
+            Log.e(TAG, "📸 💥 Error creating gallery mode JSON", e);
         }
     }
 
@@ -2878,16 +2897,18 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    public void startRtmpStream(Map<String, Object> messagee) {
-    //    try {
-            // JSONObject json = message;
-            // json.remove("timestamp");
-            // json.remove("appId");
-            // json.remove("video");
-            // json.remove("audio");
-            // //String rtmpUrl=json.getString("rtmpUrl");
-            // //Bridge.log("LIVE: Requesting RTMP stream to URL: " + rtmpUrl);
-            // sendJson(json, true);
+    @Override
+    public void startRtmpStream(Map<String, Object> message) {
+        Bridge.log("LIVE: Starting RTMP stream");
+
+        try {
+            JSONObject json = new JSONObject(message);
+            // Remove timestamp as iOS does
+            json.remove("timestamp");
+            sendJson(json, true);
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating RTMP stream start JSON", e);
+        }
     }
 
     public void stopRtmpStream() {
@@ -2902,14 +2923,16 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    @Override
     public void sendRtmpKeepAlive(Map<String, Object> message) {
         Bridge.log("LIVE: Sending RTMP stream keep alive");
-        // try {
-        //     // Forward the keep alive message directly to the glasses
-        //     sendJson(message);
-        // } catch (Exception e) {
-        //     Log.e(TAG, "Error sending RTMP stream keep alive", e);
-        // }
+
+        try {
+            JSONObject json = new JSONObject(message);
+            sendJson(json);
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending RTMP stream keep alive", e);
+        }
     }
 
     /**
@@ -3030,10 +3053,10 @@ public class MentraLive extends SGCManager {
                     int bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
                     int previousBondState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.ERROR);
 
-                    if (device != null && connectedDevice != null && 
+                    if (device != null && connectedDevice != null &&
                         device.getAddress().equals(connectedDevice.getAddress())) {
-                        
-                        Bridge.log("LIVE: CTKD: Bond state changed for device " + device.getName() + 
+
+                        Bridge.log("LIVE: CTKD: Bond state changed for device " + device.getName() +
                               " - Current: " + bondState + ", Previous: " + previousBondState);
 
                         switch (bondState) {
@@ -3188,6 +3211,11 @@ public class MentraLive extends SGCManager {
         // Clean up message tracking
         pendingMessages.clear();
         Bridge.log("LIVE: Cleared pending message tracking");
+
+        // Release RGB LED control authority before disconnecting
+        if (rgbLedAuthorityClaimed) {
+            sendRgbLedControlAuthority(false);
+        }
 
         // Disconnect from GATT if connected
         if (bluetoothGatt != null) {
@@ -3935,6 +3963,106 @@ public class MentraLive extends SGCManager {
     }
 
     /**
+     * Claim or release RGB LED control authority from BES chipset
+     * @param claimControl true to claim control, false to release
+     */
+    private void sendRgbLedControlAuthority(boolean claimControl) {
+        try {
+            JSONObject bodyData = new JSONObject();
+            bodyData.put("on", claimControl);
+
+            JSONObject command = new JSONObject();
+            command.put("C", "android_control_led");
+            command.put("V", 1);
+            command.put("B", bodyData.toString());
+
+            Bridge.log("LIVE: " + (claimControl ? "📍 Claiming" : "📍 Releasing") + " RGB LED control authority");
+            sendJson(command, false);
+            rgbLedAuthorityClaimed = claimControl;
+        } catch (JSONException e) {
+            Log.e(TAG, "Error building RGB LED authority command", e);
+        }
+    }
+
+    /**
+     * Send RGB LED control command to glasses
+     * Matches iOS implementation for cross-platform consistency
+     */
+    public void sendRgbLedControl(String requestId,
+                                   String packageName,
+                                   String action,
+                                   String color,
+                                   int ontime,
+                                   int offtime,
+                                   int count) {
+        if (!isConnected || !glassesReady) {
+            Bridge.log("LIVE: Cannot handle RGB LED control - glasses not connected");
+            Bridge.sendRgbLedControlResponse(requestId, false, "glasses_not_connected");
+            return;
+        }
+
+        if (!rgbLedAuthorityClaimed) {
+            sendRgbLedControlAuthority(true);
+        }
+
+        try {
+            JSONObject command = new JSONObject();
+            command.put("requestId", requestId);
+
+            if (packageName != null && !packageName.isEmpty()) {
+                command.put("packageName", packageName);
+            }
+
+            switch (action) {
+                case "on":
+                    int ledIndex = ledIndexForColor(color);
+                    command.put("type", "rgb_led_control_on");
+                    command.put("led", ledIndex);
+                    command.put("ontime", ontime);
+                    command.put("offtime", offtime);
+                    command.put("count", count);
+                    break;
+                case "off":
+                    command.put("type", "rgb_led_control_off");
+                    break;
+                default:
+                    Bridge.log("LIVE: Unsupported RGB LED action: " + action);
+                    Bridge.sendRgbLedControlResponse(requestId, false, "unsupported_action");
+                    return;
+            }
+
+            Bridge.log("LIVE: 💡 Forwarding RGB LED command to glasses: " + command.toString());
+            sendJson(command, true);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error building RGB LED command", e);
+            Bridge.sendRgbLedControlResponse(requestId, false, "json_error");
+        }
+    }
+
+    /**
+     * Convert color string to LED index
+     * Matches iOS implementation
+     */
+    private int ledIndexForColor(String color) {
+        if (color == null) return 0;
+
+        switch (color.toLowerCase()) {
+            case "red":
+                return 0;
+            case "green":
+                return 1;
+            case "blue":
+                return 2;
+            case "orange":
+                return 3;
+            case "white":
+                return 4;
+            default:
+                return 0;
+        }
+    }
+
+    /**
      * Get statistics about the message tracking system
      * @return String with tracking statistics
      */
@@ -4508,7 +4636,26 @@ public class MentraLive extends SGCManager {
     /**
      * Send button camera LED setting to glasses
      */
+    @Override
     public void sendButtonCameraLedSetting() {
+        var m = CoreManager.getInstance();
+        boolean enabled = m.getButtonCameraLed();
+
+        Bridge.log("LIVE: Sending button camera LED setting: " + enabled);
+
+        if (!isConnected) {
+            Log.w(TAG, "Cannot send button camera LED setting - not connected");
+            return;
+        }
+
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "button_camera_led");
+            json.put("enabled", enabled);
+            sendJson(json, true);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating button camera LED setting message", e);
+        }
     }
 
     /**

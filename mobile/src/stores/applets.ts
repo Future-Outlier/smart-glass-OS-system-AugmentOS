@@ -1,13 +1,25 @@
+import {
+  AppletInterface,
+  getModelCapabilities,
+  HardwareRequirementLevel,
+  HardwareType,
+} from "@/../../cloud/packages/types/src"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {getThemeIsDark} from "@/theme/getTheme"
-import {ClientAppletInterface} from "@/types/AppletTypes"
 import showAlert from "@/utils/AlertUtils"
-import {HardwareCompatibility} from "@/utils/hardware"
-import {getModelCapabilities, HardwareRequirementLevel, HardwareType} from "../../../cloud/packages/types/src"
+import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
+import CoreModule from "core"
 import {useMemo} from "react"
 import {create} from "zustand"
+
+export interface ClientAppletInterface extends AppletInterface {
+  isOffline: boolean
+  offlineRoute: string
+  compatibility?: CompatibilityResult
+  loading: boolean
+}
 
 interface AppStatusState {
   apps: ClientAppletInterface[]
@@ -15,6 +27,21 @@ interface AppStatusState {
   startApp: (packageName: string, appType?: string) => Promise<void>
   stopApp: (packageName: string) => Promise<void>
   stopAllApps: () => Promise<void>
+}
+
+export const DUMMY_APPLET: ClientAppletInterface = {
+  packageName: "",
+  name: "",
+  webviewUrl: "",
+  logoUrl: "",
+  type: "standard",
+  permissions: [],
+  running: false,
+  loading: false,
+  healthy: true,
+  hardwareRequirements: [],
+  isOffline: true,
+  offlineRoute: "",
 }
 
 /**
@@ -34,7 +61,7 @@ const getCameraIcon = (isDark: boolean) => {
  */
 
 const cameraPackageName = "com.mentra.camera"
-const captionsPackageName = "com.mentra.captions"
+const captionsPackageName = "com.augmentos.livecaptions"
 
 // get offline applets:
 export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
@@ -89,8 +116,20 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
 
 const setOfflineApplet = async (packageName: string, status: boolean) => {
   await useSettingsStore.getState().setSetting(packageName, status)
+
+  // Captions app special handling
   if (packageName === captionsPackageName) {
     await useSettingsStore.getState().setSetting(SETTINGS_KEYS.offline_captions_running, status, true)
+  }
+
+  // Camera app special handling - send gallery mode to glasses
+  if (packageName === cameraPackageName) {
+    console.log(`📸 Camera app ${status ? "started" : "stopped"} - sending gallery mode active: ${status}`)
+    CoreModule.updateSettings({
+      gallery_mode: status,
+    }).catch((err: any) => {
+      console.error("Failed to send gallery mode active:", err)
+    })
   }
 }
 
@@ -98,44 +137,38 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   apps: [],
 
   refreshApps: async () => {
-    const coreToken = restComms.getCoreToken()
-    if (!coreToken) return
+    const appsData: AppletInterface[] = await restComms.getApplets()
 
-    try {
-      const appsData: AppletInterface[] = await restComms.getApps()
+    const onlineApps: ClientAppletInterface[] = appsData.map(app => ({
+      ...app,
+      loading: false,
+      isOffline: false,
+      offlineRoute: "",
+    }))
 
-      const onlineApps: ClientAppletInterface[] = appsData.map(app => ({
-        ...app,
-        isOffline: false,
-        offlineRoute: "",
-      }))
+    // merge in the offline apps:
+    let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets())]
 
-      // merge in the offline apps:
-      let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets())]
-
-      // remove duplicates and keep the online versions:
-      const packageNameMap = new Map<string, ClientAppletInterface>()
-      applets.forEach(app => {
-        const existing = packageNameMap.get(app.packageName)
-        if (!existing || !app.isOffline) {
-          packageNameMap.set(app.packageName, app)
-        }
-      })
-      applets = Array.from(packageNameMap.values())
-
-      // add in the compatibility info:
-      let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-      let capabilities = getModelCapabilities(defaultWearable)
-
-      for (const applet of applets) {
-        let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
-        applet.compatibility = result
+    // remove duplicates and keep the online versions:
+    const packageNameMap = new Map<string, ClientAppletInterface>()
+    applets.forEach(app => {
+      const existing = packageNameMap.get(app.packageName)
+      if (!existing || !app.isOffline) {
+        packageNameMap.set(app.packageName, app)
       }
+    })
+    applets = Array.from(packageNameMap.values())
 
-      set({apps: applets})
-    } catch (err) {
-      console.error("Error fetching apps:", err)
+    // add in the compatibility info:
+    let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+    let capabilities = getModelCapabilities(defaultWearable)
+
+    for (const applet of applets) {
+      let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
+      applet.compatibility = result
     }
+
+    set({apps: applets})
   },
 
   startApp: async (packageName: string) => {
@@ -147,20 +180,39 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       return
     }
 
-    // if (applet.type === "standard") {
-    //   const runningStandardApps = get().apps.filter(
-    //     a => a.is_running && a.type === "standard" && a.packageName !== packageName,
-    //   )
-    //   for (const app of runningStandardApps) {
-    //     await restComms.stopApp(app.packageName).catch(console.error)
-    //     set(state => ({
-    //       apps: state.apps.map(a =>
-    //         a.packageName === app.packageName ? {...a, is_running: false, loading: false} : a,
-    //       ),
-    //     }))
-    //   }
-    // }
+    // Handle foreground apps - only one can run at a time
+    if (applet.type === "standard") {
+      const runningForegroundApps = get().apps.filter(
+        app => app.running && app.type === "standard" && app.packageName !== packageName,
+      )
 
+      console.log(`Found ${runningForegroundApps.length} running foreground apps to stop`)
+
+      // Stop all other running foreground apps (both online and offline)
+      for (const runningApp of runningForegroundApps) {
+        console.log(`Stopping foreground app: ${runningApp.name} (${runningApp.packageName})`)
+
+        // Optimistically update UI
+        set(state => ({
+          apps: state.apps.map(a =>
+            a.packageName === runningApp.packageName ? {...a, running: false, loading: false} : a,
+          ),
+        }))
+
+        // Stop the app (handles both online and offline)
+        try {
+          if (!runningApp.isOffline) {
+            await restComms.stopApp(runningApp.packageName)
+          } else {
+            await setOfflineApplet(runningApp.packageName, false)
+          }
+        } catch (error) {
+          console.error(`Error stopping app ${runningApp.packageName}:`, error)
+        }
+      }
+    }
+
+    // Start the new app
     set(state => ({
       apps: state.apps.map(a =>
         a.packageName === packageName ? {...a, running: true, loading: !applet.isOffline} : a,

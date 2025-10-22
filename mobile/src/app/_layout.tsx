@@ -9,7 +9,6 @@ import * as Sentry from "@sentry/react-native"
 import Constants from "expo-constants"
 import {registerGlobals} from "@livekit/react-native-webrtc"
 import {initializeSettings} from "@/stores/settings"
-// import {ErrorBoundary} from "@/components/ErrorBoundary/ErrorBoundary"
 import {ConsoleLogger} from "@/utils/debug/console"
 
 Sentry.init({
@@ -80,7 +79,6 @@ function Root() {
   }
 
   return (
-    // <ErrorBoundary catchErrors="always">
     <AllProviders>
       <Stack
         screenOptions={{
@@ -94,7 +92,6 @@ function Root() {
       />
       <ConsoleLogger />
     </AllProviders>
-    // </ErrorBoundary>
   )
 }
 

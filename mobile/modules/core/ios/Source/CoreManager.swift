@@ -57,17 +57,18 @@ struct ViewState {
     private var currentRequiredData: [SpeechRequiredDataType] = []
 
     // glasses settings
-    private var contextualDashboard = true
-    private var headUpAngle = 30
-    private var brightness = 50
-    private var autoBrightness: Bool = true
-    private var dashboardHeight: Int = 4
-    private var dashboardDepth: Int = 5
+    var contextualDashboard = true
+    var headUpAngle = 30
+    var brightness = 50
+    var autoBrightness: Bool = true
+    var dashboardHeight: Int = 4
+    var dashboardDepth: Int = 5
+    var galleryMode: Bool = false
 
     // glasses state:
     private var isHeadUp: Bool = false
 
-    // settings
+    // core settings
     private var sensingEnabled: Bool = true
     private var powerSavingMode: Bool = false
     private var alwaysOnStatusBar: Bool = false
@@ -391,6 +392,12 @@ struct ViewState {
         handle_request_status() // to update the UI
     }
 
+    func updateGalleryMode(_ enabled: Bool) {
+        galleryMode = enabled
+        sgc?.sendGalleryMode()
+        handle_request_status() // to update the UI
+    }
+
     func updateButtonMaxRecordingTime(_ value: Int) {
         buttonMaxRecordingTime = value
         sgc?.sendButtonMaxRecordingTime()
@@ -627,7 +634,7 @@ struct ViewState {
         } else if wearable.contains(DeviceTypes.MACH1) {
             // sgc = Mach1()
         } else if wearable.contains(DeviceTypes.FRAME) {
-            sgc = FrameManager()
+            // sgc = FrameManager()
         }
     }
 
@@ -1147,21 +1154,23 @@ struct ViewState {
         }
     }
 
-    func handle_rgb_led_control(requestId _: String,
-                                packageName _: String?,
-                                action _: String,
-                                color _: String?,
-                                ontime _: Int,
-                                offtime _: Int,
-                                count _: Int)
+    func handle_rgb_led_control(requestId: String,
+                                packageName: String?,
+                                action: String,
+                                color: String?,
+                                ontime: Int,
+                                offtime: Int,
+                                count: Int)
     {
-        // sgc?.sendRgbLedControl(requestId: requestId,
-        //                          packageName: packageName,
-        //                          action: action,
-        //                          color: color,
-        //                          ontime: ontime,
-        //                          offtime: offtime,
-        //                          count: count)
+        sgc?.sendRgbLedControl(
+            requestId: requestId,
+            packageName: packageName,
+            action: action,
+            color: color,
+            ontime: ontime,
+            offtime: offtime,
+            count: count
+        )
     }
 
     func handle_photo_request(
@@ -1187,7 +1196,7 @@ struct ViewState {
     }
 
     func handle_connect_by_name(_ dName: String) {
-        Bridge.log("Mentra: Connecting to wearable: \(dName ?? "nil")")
+        Bridge.log("Mentra: Connecting to wearable: \(dName)")
 
         if pendingWearable.isEmpty, defaultWearable.isEmpty {
             Bridge.log("Mentra: No pending or default wearable, returning")
@@ -1479,6 +1488,10 @@ struct ViewState {
 
         if let newButtonCameraLed = settings["button_camera_led"] as? Bool, newButtonCameraLed != buttonCameraLed {
             updateButtonCameraLed(newButtonCameraLed)
+        }
+
+        if let newGalleryMode = settings["gallery_mode"] as? Bool, newGalleryMode != galleryMode {
+            updateGalleryMode(newGalleryMode)
         }
 
         // get default wearable from core_info:

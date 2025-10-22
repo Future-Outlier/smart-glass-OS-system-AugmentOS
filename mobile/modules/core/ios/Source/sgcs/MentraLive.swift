@@ -450,6 +450,7 @@ private struct BlePhotoTransfer {
     let bleImgId: String
     let requestId: String
     let webhookUrl: String
+    var authToken: String?
     var session: FileTransferSession?
     let phoneStartTime: Date
     var bleTransferStartTime: Date?
@@ -616,7 +617,7 @@ extension MentraLive: CBPeripheralDelegate {
         for service in services where service.uuid == SERVICE_UUID {
             Bridge.log("Found UART service, discovering characteristics...")
             peripheral.discoverCharacteristics(
-                [TX_CHAR_UUID, RX_CHAR_UUID, FILE_READ_UUID, FILE_WRITE_UUID], for: service
+                [TX_CHAR_UUID, RX_CHAR_UUID, FILE_READ_UUID, FILE_WRITE_UUID, LC3_READ_UUID, LC3_WRITE_UUID], for: service
             )
         }
     }
@@ -645,6 +646,12 @@ extension MentraLive: CBPeripheralDelegate {
             } else if characteristic.uuid == FILE_WRITE_UUID {
                 fileWriteCharacteristic = characteristic
                 Bridge.log("📁 Found FILE_WRITE characteristic (73FF)!")
+            } else if characteristic.uuid == LC3_READ_UUID {
+                lc3ReadCharacteristic = characteristic
+                Bridge.log("🎤 Found LC3_READ characteristic (audio input)!")
+            } else if characteristic.uuid == LC3_WRITE_UUID {
+                lc3WriteCharacteristic = characteristic
+                Bridge.log("🎤 Found LC3_WRITE characteristic (audio output)!")
             }
         }
 
@@ -667,6 +674,12 @@ extension MentraLive: CBPeripheralDelegate {
             // Enable notifications on file characteristics if available
             if let fileRead = fileReadCharacteristic {
                 peripheral.setNotifyValue(true, for: fileRead)
+            }
+
+            // Enable notifications on LC3 audio characteristic if device supports it
+            if supportsLC3Audio, let lc3Read = lc3ReadCharacteristic {
+                peripheral.setNotifyValue(true, for: lc3Read)
+                Bridge.log("🎤 Enabled LC3 audio notifications")
             }
 
             // Start readiness check loop
@@ -708,6 +721,14 @@ extension MentraLive: CBPeripheralDelegate {
         // }
         // Bridge.log("Thread-\(threadId): 🔍 Processing received data - \(data.count) bytes")
 
+        // Handle LC3 audio data separately (dedicated characteristic for LC3-capable devices)
+        if uuid == LC3_READ_UUID && supportsLC3Audio {
+            // Bridge.log("LIVE: Received data on LC3_READ characteristic")
+            processLc3AudioPacket(data)
+            return
+        }
+
+        // Handle regular data (JSON messages, file transfers, etc.)
         processReceivedData(data)
     }
 
@@ -849,8 +870,27 @@ class MentraLive: NSObject, SGCManager {
     var caseOpen = false
     var caseRemoved = true
     var caseCharging = false
-    func setMicEnabled(_: Bool) {
-        // N/A
+    func setMicEnabled(_ enabled: Bool) async -> Bool {
+        Bridge.log("LIVE: setMicEnabled called: \(enabled)")
+
+        // Only enable if device supports LC3 audio
+        guard supportsLC3Audio else {
+            Bridge.log("LIVE: Device does not support LC3 audio, ignoring mic enable request")
+            return false
+        }
+
+        // Update shouldUseGlassesMic based on enabled state
+        shouldUseGlassesMic = enabled
+
+        if shouldUseGlassesMic {
+            Bridge.log("LIVE: Microphone enabled, starting audio input handling")
+            startMicBeat()
+        } else {
+            Bridge.log("LIVE: Microphone disabled, stopping audio input handling")
+            stopMicBeat()
+        }
+
+        return true
     }
 
     // BLE UUIDs
@@ -859,6 +899,11 @@ class MentraLive: NSObject, SGCManager {
     private let TX_CHAR_UUID = CBUUID(string: "000071FF-0000-1000-8000-00805f9b34fb") // Central transmits on peripheral's RX
     private let FILE_READ_UUID = CBUUID(string: "000072FF-0000-1000-8000-00805f9b34fb")
     private let FILE_WRITE_UUID = CBUUID(string: "000073FF-0000-1000-8000-00805f9b34fb")
+
+    // LC3 Audio UUIDs (for K901+ devices with microphone support)
+    private let LC3_READ_UUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
+    private let LC3_WRITE_UUID = CBUUID(string: "6E400003-B5A3-F393-E0A9-E50E24DCCA9E")
+
     private let FILE_SAVE_DIR = "MentraLive_Images"
 
     // NEW: File transfer properties
@@ -867,6 +912,17 @@ class MentraLive: NSObject, SGCManager {
     private var activeFileTransfers = [String: FileTransferSession]()
     private var blePhotoTransfers = [String: BlePhotoTransfer]()
     private var rgbLedAuthorityClaimed = false
+
+    // LC3 Audio properties
+    private var lc3ReadCharacteristic: CBCharacteristic?
+    private var lc3WriteCharacteristic: CBCharacteristic?
+    private var supportsLC3Audio = false
+    private var lastReceivedLc3Sequence: Int8 = -1
+    private let LC3_FRAME_SIZE = 40 // bytes per LC3 frame
+    private let MICBEAT_INTERVAL_MS: TimeInterval = 30 * 60 // 30 minutes in seconds
+    private var micBeatTimer: Timer?
+    private var micBeatCount = 0
+    private var shouldUseGlassesMic = false
 
     // CTKD (Cross-Transport Key Derivation) support for BES devices
     private var isBtClassicConnected = false
@@ -1050,7 +1106,49 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
-    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?) {
+    // MARK: - Micbeat System (LC3 Audio Keepalive)
+
+    /// Start the micbeat mechanism to keep LC3 audio streaming active
+    private func startMicBeat() {
+        Bridge.log("LIVE: 🎤 Starting micbeat mechanism")
+        micBeatCount = 0
+
+        // Send initial command to enable custom audio TX
+        sendEnableCustomAudioTxMessage(shouldUseGlassesMic)
+
+        // Stop any existing timer
+        micBeatTimer?.invalidate()
+
+        // Schedule periodic micbeat (every 30 minutes)
+        micBeatTimer = Timer.scheduledTimer(withTimeInterval: MICBEAT_INTERVAL_MS, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            Bridge.log("LIVE: 🎤 Sending micbeat - enabling custom audio TX")
+            self.sendEnableCustomAudioTxMessage(self.shouldUseGlassesMic)
+            self.micBeatCount += 1
+        }
+
+        Bridge.log("LIVE: Micbeat scheduled every \(MICBEAT_INTERVAL_MS / 60) minutes")
+    }
+
+    /// Stop the micbeat mechanism
+    private func stopMicBeat() {
+        Bridge.log("LIVE: 🎤 Stopping micbeat mechanism")
+        sendEnableCustomAudioTxMessage(false)
+        micBeatTimer?.invalidate()
+        micBeatTimer = nil
+        micBeatCount = 0
+    }
+
+    /// Send command to enable/disable custom audio TX on glasses
+    private func sendEnableCustomAudioTxMessage(_ enabled: Bool) {
+        let json: [String: Any] = [
+            "type": "set_mic_state",
+            "enabled": enabled,
+        ]
+        sendJson(json, wakeUp: true)
+    }
+
+    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?) {
         Bridge.log("Requesting photo: \(requestId) for app: \(appId)")
 
         var json: [String: Any] = [
@@ -1067,9 +1165,22 @@ class MentraLive: NSObject, SGCManager {
 
         if let webhookUrl, !webhookUrl.isEmpty {
             json["webhookUrl"] = webhookUrl
-            blePhotoTransfers[bleImgId] = BlePhotoTransfer(
+
+            var transfer = BlePhotoTransfer(
                 bleImgId: bleImgId, requestId: requestId, webhookUrl: webhookUrl
             )
+
+            // Store authToken for BLE transfer if provided
+            if let authToken, !authToken.isEmpty {
+                transfer.authToken = authToken
+            }
+
+            blePhotoTransfers[bleImgId] = transfer
+        }
+
+        // Add authToken to JSON if provided
+        if let authToken, !authToken.isEmpty {
+            json["authToken"] = authToken
         }
 
         // propagate size (default to medium if invalid)
@@ -1691,6 +1802,19 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
+    func sendGalleryMode() {
+        let active = CoreManager.shared.galleryMode
+        Bridge.log("LiveManager: 📸 Sending gallery mode active to glasses: \(active)")
+
+        let json: [String: Any] = [
+            "type": "save_in_gallery_mode",
+            "active": active,
+            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
+        ]
+
+        sendJson(json, wakeUp: true)
+    }
+
     // MARK: - Message Handlers
 
     private func handleGlassesReady() {
@@ -1756,9 +1880,14 @@ class MentraLive: NSObject, SGCManager {
         glassesDeviceModel = deviceModel
         glassesAndroidVersion = androidVersion
 
+        // Detect LC3 audio support: K901+ devices have microphone, K900 does not
+        supportsLC3Audio = deviceModel != "K900"
+        hasMic = supportsLC3Audio
+
         Bridge.log(
             "Glasses Version - App: \(appVersion), Build: \(buildNumber), Device: \(deviceModel), Android: \(androidVersion), OTA URL: \(otaVersionUrl)"
         )
+        Bridge.log("LIVE: LC3 Audio Support: \(supportsLC3Audio), Has Mic: \(hasMic)")
         emitVersionInfo(
             appVersion: appVersion, buildNumber: buildNumber, deviceModel: deviceModel,
             androidVersion: androidVersion, otaVersionUrl: otaVersionUrl
@@ -1771,6 +1900,44 @@ class MentraLive: NSObject, SGCManager {
         //    if let pendingMessage = pending, pendingMessage.id == messageId {
         //      pending = nil
         //    }
+    }
+
+    // MARK: - LC3 Audio Processing
+
+    /// Process LC3 audio packet received from glasses microphone
+    /// Packet format: [0xF1, sequenceNumber, lc3Data...]
+    private func processLc3AudioPacket(_ data: Data) {
+        guard data.count >= 2 else {
+            Bridge.log("LIVE: Invalid LC3 audio packet: too short (\(data.count) bytes)")
+            return
+        }
+
+        // Check for 0xF1 audio header (same as Android)
+        guard data[0] == 0xF1 else {
+            Bridge.log("LIVE: Invalid LC3 packet header: 0x\(String(format: "%02X", data[0]))")
+            return
+        }
+
+        let sequenceNumber = Int8(bitPattern: data[1])
+        let lc3Data = data.subdata(in: 2 ..< data.count)
+
+        // Validate sequence number for packet loss detection
+        if lastReceivedLc3Sequence != -1 && (lastReceivedLc3Sequence &+ 1) != sequenceNumber {
+            Bridge.log("LIVE: LC3 packet sequence mismatch. Expected: \(lastReceivedLc3Sequence &+ 1), Got: \(sequenceNumber)")
+        }
+        lastReceivedLc3Sequence = sequenceNumber
+
+        // Decode LC3 to PCM using existing PcmConverter
+        let pcmConverter = PcmConverter()
+        guard let pcmData = pcmConverter.decode(lc3Data) as? Data, pcmData.count > 0 else {
+            Bridge.log("LIVE: Failed to decode LC3 data to PCM")
+            return
+        }
+
+        // Forward PCM data to CoreManager for VAD and server transmission (same as Android)
+        CoreManager.shared.handlePcm(pcmData)
+
+        // Bridge.log("LIVE: Processed LC3 audio seq=\(sequenceNumber), \(lc3Data.count)→\(pcmData.count) bytes")
     }
 
     // MARK: - BLE Photo Transfer Handlers
@@ -2080,15 +2247,21 @@ class MentraLive: NSObject, SGCManager {
         Bridge.log("Processing BLE photo for upload. RequestId: \(transfer.requestId)")
         let uploadStartTime = Date()
 
-        // Get core token for authentication
-        let coreToken = CoreManager.shared.coreToken
-        if coreToken.isEmpty {
-            Bridge.log("LIVE: core_token not set!")
-            return
+        // Use provided authToken if available, otherwise use core token
+        let authToken: String
+        if let transferAuthToken = transfer.authToken, !transferAuthToken.isEmpty {
+            authToken = transferAuthToken
+        } else {
+            authToken = CoreManager.shared.coreToken
+            if authToken.isEmpty {
+                Bridge.log("LIVE: No auth token available (neither transfer nor core_token)!")
+                return
+            }
         }
+
         BlePhotoUploadService.processAndUploadPhoto(
             imageData: imageData, requestId: transfer.requestId, webhookUrl: transfer.webhookUrl,
-            authToken: coreToken
+            authToken: authToken
         )
     }
 
@@ -2623,6 +2796,7 @@ class MentraLive: NSObject, SGCManager {
         stopHeartbeat()
         stopReadinessCheckLoop()
         stopConnectionTimeout()
+        stopMicBeat() // Stop LC3 audio micbeat
         pendingMessageTimer?.invalidate()
         pendingMessageTimer = nil
         reconnectionWorkItem?.cancel()
@@ -3121,13 +3295,13 @@ extension MentraLive {
         }
     }
 
-    func handleRgbLedControl(requestId: String,
-                             packageName: String?,
-                             action: String,
-                             color: String?,
-                             ontime: Int,
-                             offtime: Int,
-                             count: Int)
+    func sendRgbLedControl(requestId: String,
+                           packageName: String?,
+                           action: String,
+                           color: String?,
+                           ontime: Int,
+                           offtime: Int,
+                           count: Int)
     {
         guard connectionState == ConnTypes.CONNECTED, ready else {
             Bridge.log("MentraLive: Cannot handle RGB LED control - glasses not connected")

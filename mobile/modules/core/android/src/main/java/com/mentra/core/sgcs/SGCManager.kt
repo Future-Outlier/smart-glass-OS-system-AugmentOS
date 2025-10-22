@@ -80,6 +80,15 @@ abstract class SGCManager {
     abstract fun getBatteryStatus()
     abstract fun setSilentMode(enabled: Boolean)
     abstract fun exit()
+    abstract fun sendRgbLedControl(
+            requestId: String,
+            packageName: String?,
+            action: String,
+            color: String?,
+            ontime: Int,
+            offtime: Int,
+            count: Int
+    )
 
     // Connection Management
     abstract fun disconnect()
@@ -96,4 +105,5 @@ abstract class SGCManager {
 
     // Gallery
     abstract fun queryGalleryStatus()
+    abstract fun sendGalleryMode()
 }

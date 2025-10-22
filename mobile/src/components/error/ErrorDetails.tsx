@@ -16,11 +16,11 @@ export interface ErrorDetailsProps {
  * @returns {JSX.Element} The rendered `ErrorDetails` component.
  */
 export function ErrorDetails(props: ErrorDetailsProps) {
-  const {themed} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   return (
     <Screen preset="fixed" safeAreaEdges={["top", "bottom"]} contentContainerStyle={themed($contentContainer)}>
       <View style={$topSection}>
-        <Icon icon="ladybug" size={64} />
+        <Icon icon="ladybug" size={64} color={theme.colors.palette.angry500} />
         <Text style={themed($heading)} preset="subheading" tx="errorScreen:title" />
         <Text tx="errorScreen:friendlySubtitle" />
       </View>
@@ -30,7 +30,7 @@ export function ErrorDetails(props: ErrorDetailsProps) {
         <Text selectable style={themed($errorBacktrace)} text={`${props.errorInfo?.componentStack ?? ""}`.trim()} />
       </ScrollView>
 
-      <Button preset="reversed" style={themed($resetButton)} onPress={props.onReset} tx="errorScreen:reset" />
+      <Button preset="default" onPress={props.onReset} tx="errorScreen:reset" />
     </Screen>
   )
 }
@@ -40,6 +40,7 @@ const $contentContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingHorizontal: spacing.lg,
   paddingTop: spacing.xl,
   flex: 1,
+  paddingBottom: spacing.xl,
 })
 
 const $topSection: ViewStyle = {
@@ -55,7 +56,7 @@ const $heading: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 const $errorSection: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flex: 2,
   backgroundColor: colors.separator,
-  marginVertical: spacing.md,
+  marginVertical: spacing.lg,
   borderRadius: 6,
 })
 
@@ -70,9 +71,4 @@ const $errorContent: ThemedStyle<TextStyle> = ({colors}) => ({
 const $errorBacktrace: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   marginTop: spacing.md,
   color: colors.textDim,
-})
-
-const $resetButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.error,
-  paddingHorizontal: spacing.xxl,
 })

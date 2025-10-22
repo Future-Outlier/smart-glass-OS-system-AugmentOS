@@ -6,6 +6,7 @@ import {GestureHandlerRootView} from "react-native-gesture-handler"
 import {AuthProvider} from "@/contexts/AuthContext"
 import {SearchResultsProvider} from "@/contexts/SearchResultsContext"
 import {AppStoreWebviewPrefetchProvider} from "@/contexts/AppStoreWebviewPrefetchProvider"
+import {ButtonActionProvider} from "@/contexts/ButtonActionProvider"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {NavigationHistoryProvider} from "@/contexts/NavigationHistoryContext"
 import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
@@ -17,19 +18,26 @@ import BackgroundGradient from "@/components/misc/BackgroundGradient"
 import {Text} from "@/components/ignite"
 import Toast from "react-native-toast-message"
 import {ThemedStyle} from "@/theme"
+import {ErrorBoundary} from "@/components/error"
+import {SafeAreaProvider} from "react-native-safe-area-context"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
+  props => {
+    return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
+  },
   props => {
     const {themeScheme, setThemeContextOverride, ThemeProvider} = useThemeProvider()
     return <ThemeProvider value={{themeScheme, setThemeContextOverride}}>{props.children}</ThemeProvider>
   },
   Suspense,
+  SafeAreaProvider,
   KeyboardProvider,
   CoreStatusProvider,
   AuthProvider,
   SearchResultsProvider,
   AppStoreWebviewPrefetchProvider,
+  ButtonActionProvider,
   NavigationHistoryProvider,
   DeeplinkProvider,
   GestureHandlerRootView,

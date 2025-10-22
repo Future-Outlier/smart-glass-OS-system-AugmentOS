@@ -135,8 +135,8 @@ class CoreModule : Module() {
                 ontime: Int,
                 offtime: Int,
                 count: Int ->
-            // CoreManager.getInstance()?.handle_rgb_led_control(requestId, packageName, action,
-            // color, ontime, offtime, count)
+            coreManager?.handle_rgb_led_control(requestId, packageName, action,
+                    color, ontime, offtime, count)
         }
 
         // MARK: - Settings Commands

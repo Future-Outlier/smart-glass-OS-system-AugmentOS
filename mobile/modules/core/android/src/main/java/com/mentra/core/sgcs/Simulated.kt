@@ -1,9 +1,9 @@
 package com.mentra.core.sgcs
 
 import com.mentra.core.Bridge
+import com.mentra.core.CoreManager
 import com.mentra.core.utils.ConnTypes
 import com.mentra.core.utils.DeviceTypes
-import com.mentra.core.CoreManager
 
 class Simulated : SGCManager() {
 
@@ -130,6 +130,19 @@ class Simulated : SGCManager() {
         Bridge.log("exit")
     }
 
+    override fun sendRgbLedControl(
+            requestId: String,
+            packageName: String?,
+            action: String,
+            color: String?,
+            ontime: Int,
+            offtime: Int,
+            count: Int
+    ) {
+        Bridge.log("sendRgbLedControl - not supported on Simulated")
+        Bridge.sendRgbLedControlResponse(requestId, false, "device_not_supported")
+    }
+
     // Connection Management
     override fun disconnect() {
         Bridge.log("disconnect")
@@ -172,5 +185,9 @@ class Simulated : SGCManager() {
     // Gallery
     override fun queryGalleryStatus() {
         Bridge.log("queryGalleryStatus")
+    }
+
+    override fun sendGalleryMode() {
+        Bridge.log("SIMULATED: 📸 Received gallery mode")
     }
 }
