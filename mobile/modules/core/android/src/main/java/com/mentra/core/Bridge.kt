@@ -90,7 +90,7 @@ public class Bridge private constructor() {
         @JvmStatic
         fun sendHeadUp(isUp: Boolean) {
             val data = HashMap<String, Any>()
-            data["position"] = isUp
+            data["up"] = isUp
             sendTypedMessage("head_up", data as Map<String, Any>)
         }
 

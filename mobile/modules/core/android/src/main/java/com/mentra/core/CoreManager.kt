@@ -460,7 +460,7 @@ class CoreManager {
             "bitmap_view" -> {
                 currentViewState.data?.let { data -> sgc?.displayBitmap(data) }
             }
-            "clear_view" -> clearDisplay()
+            "clear_view" -> sgc?.clearDisplay()
             else -> Bridge.log("Mentra: UNHANDLED LAYOUT_TYPE ${currentViewState.layoutType}")
         }
         // }
@@ -693,31 +693,13 @@ class CoreManager {
         sendCurrentState(isHeadUp)
     }
 
-    private fun clearDisplay() {
-        sgc?.let { sgc ->
-            sgc.sendTextWall(" ")
-
-            if (powerSavingMode) {
-                sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
-
-                Bridge.log("Mentra: Clearing display after 3 seconds")
-                sendStateWorkItem = Runnable {
-                    if (isHeadUp) {
-                        return@Runnable
-                    }
-                    sgc.clearDisplay()
-                }
-                mainHandler.postDelayed(sendStateWorkItem!!, 3000)
-            }
-        }
-    }
-
     private fun sendText(text: String) {
         Bridge.log("Mentra: sendText: $text")
         val currentSgc = sgc ?: return
 
         if (text == " " || text.isEmpty()) {
-            clearDisplay()
+            // clearDisplay()
+            sgc?.clearDisplay()
             return
         }
 
@@ -844,7 +826,7 @@ class CoreManager {
         // Send startup message
         sendText("MENTRAOS CONNECTED")
         Thread.sleep(1000)
-        clearDisplay()
+        sgc?.clearDisplay()
 
         handle_request_status()
     }

@@ -636,6 +636,23 @@ class G1: NSObject, SGCManager {
     }
 
     func sendTextWall(_ text: String) {
+        // clear the screen after 3 seconds if the text is empty or a space:
+        if CoreManager.shared.powerSavingMode && text.isEmpty || text == " " {
+            CoreManager.shared.sendStateWorkItem?.cancel()
+            Bridge.log("Mentra: Clearing display after 3 seconds")
+            // if we're clearing the display, after a delay, send a clear command if not cancelled with another
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self = self else { return }
+                if CoreManager.shared.isHeadUp {
+                    return
+                }
+                self.clearDisplay()
+            }
+            CoreManager.shared.sendStateWorkItem = workItem
+            CoreManager.shared.sendStateQueue.asyncAfter(deadline: .now() + 3, execute: workItem)
+            return
+        }
+
         let chunks = textHelper.createTextWallChunks(text)
         queueChunks(chunks, sleepAfterMs: 10)
     }
@@ -1737,39 +1754,40 @@ extension G1 {
 
     /// Clear display using MentraOS's 0x18 command (exit to dashboard)
     func clearDisplay() {
-        Bridge.log("G1: RN_clearDisplay() - Using 0x18 exit command")
-        Task {
-            // Send 0x18 to both glasses (MentraOS's clear method)
+        Bridge.log("G1: clearDisplay() - Using space")
+        sendTextWall(" ")
+        // Task {
+        //     // Send 0x18 to both glasses (MentraOS's clear method)
 
-            var cmd: [UInt8] = [0x18] // turns off display
-            //     var cmd: [UInt8] = [0x23, 0x72]// restarts the glasses
-            var bufferedCommand = BufferedCommand(
-                chunks: [cmd],
-                sendLeft: false,
-                sendRight: true,
-                waitTime: 50,
-                ignoreAck: false
-            )
+        //     var cmd: [UInt8] = [0x18] // turns off display
+        //     //     var cmd: [UInt8] = [0x23, 0x72]// restarts the glasses
+        //     var bufferedCommand = BufferedCommand(
+        //         chunks: [cmd],
+        //         sendLeft: false,
+        //         sendRight: true,
+        //         waitTime: 50,
+        //         ignoreAck: false
+        //     )
 
-            await commandQueue.enqueue(bufferedCommand)
-            //    Task {
-            //      await setSilentMode(true)
-            //      try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-            //      await setSilentMode(false)
-            //      await setSilentMode(false)
-            //    }
+        //     await commandQueue.enqueue(bufferedCommand)
+        //     //    Task {
+        //     //      await setSilentMode(true)
+        //     //      try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        //     //      await setSilentMode(false)
+        //     //      await setSilentMode(false)
+        //     //    }
 
-            // RN_sendText("DISPLAY SLEEPING...")
+        //     // RN_sendText("DISPLAY SLEEPING...")
 
-            // // queue the command after 0.5 seconds
-            // Task {
-            //   try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-            //   await commandQueue.enqueue(bufferedCommand)
-            // }
+        //     // // queue the command after 0.5 seconds
+        //     // Task {
+        //     //   try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        //     //   await commandQueue.enqueue(bufferedCommand)
+        //     // }
 
-            // CoreCommsService.log("Display cleared with exit command")
-            return true
-        }
+        //     // CoreCommsService.log("Display cleared with exit command")
+        //     return true
+        // }
     }
 
     /// Create a simple test BMP pattern in hex format

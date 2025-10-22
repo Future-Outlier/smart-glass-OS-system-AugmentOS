@@ -1078,12 +1078,12 @@ public class G1 extends SGCManager {
             }
 
             // Log all available device information for debugging
-            Bridge.log("G1: === Device Information ===");
-            Bridge.log("G1: Device Name: " + name);
-            Bridge.log("G1: Device Address: " + device.getAddress());
-            Bridge.log("G1: Device Type: " + device.getType());
-            Bridge.log("G1: Device Class: " + device.getBluetoothClass());
-            Bridge.log("G1: Bond State: " + device.getBondState());
+            // Bridge.log("G1: === Device Information ===");
+            // Bridge.log("G1: Device Name: " + name);
+            // Bridge.log("G1: Device Address: " + device.getAddress());
+            // Bridge.log("G1: Device Type: " + device.getType());
+            // Bridge.log("G1: Device Class: " + device.getBluetoothClass());
+            // Bridge.log("G1: Bond State: " + device.getBondState());
 
             // Try to get additional device information using reflection
             try {
@@ -1101,19 +1101,19 @@ public class G1 extends SGCManager {
                 for (int i = 0; i < allManufacturerData.size(); i++) {
                     String parsedDeviceName = parsePairingIdFromDeviceName(name);
                     if (parsedDeviceName != null) {
-                        Bridge.log("G1: Parsed Device Name: " + parsedDeviceName);
+                        // Bridge.log("G1: Parsed Device Name: " + parsedDeviceName);
                     }
 
                     int manufacturerId = allManufacturerData.keyAt(i);
                     byte[] data = allManufacturerData.valueAt(i);
-                    Bridge.log("G1: Left Device Manufacturer ID " + manufacturerId + ": " + bytesToHex(data));
+                    // Bridge.log("G1: Left Device Manufacturer ID " + manufacturerId + ": " + bytesToHex(data));
 
                     // Try to decode serial number from this manufacturer data
                     String decodedSerial = decodeSerialFromManufacturerData(data);
                     if (decodedSerial != null) {
-                        Bridge.log("G1: LEFT DEVICE DECODED SERIAL NUMBER from ID " + manufacturerId + ": " + decodedSerial);
+                        // Bridge.log("G1: LEFT DEVICE DECODED SERIAL NUMBER from ID " + manufacturerId + ": " + decodedSerial);
                         String[] decoded = decodeEvenG1SerialNumber(decodedSerial);
-                        Bridge.log("G1: LEFT DEVICE Style: " + decoded[0] + ", Color: " + decoded[1]);
+                        // Bridge.log("G1: LEFT DEVICE Style: " + decoded[0] + ", Color: " + decoded[1]);
 
                         if (preferredG1DeviceId != null && preferredG1DeviceId.equals(parsedDeviceName)) {
                             // EventBus.getDefault()
@@ -1126,7 +1126,7 @@ public class G1 extends SGCManager {
 
             // Bridge.log("G1: PREFERRED ID: " + preferredG1DeviceId);
             if (preferredG1DeviceId == null || !name.contains("_" + preferredG1DeviceId + "_")) {
-                Bridge.log("G1: NOT PAIRED GLASSES");
+                // Bridge.log("G1: NOT PAIRED GLASSES");
                 return;
             }
 
@@ -1134,12 +1134,12 @@ public class G1 extends SGCManager {
 
             boolean isLeft = name.contains("_L_");
 
-            // If we already have saved device names for left/right...
-            if (savedG1LeftName != null && savedG1RightName != null) {
-                if (!(name.contains(savedG1LeftName) || name.contains(savedG1RightName))) {
-                    return; // Not a matching device
-                }
-            }
+            // // If we already have saved device names for left/right...
+            // if (savedG1LeftName != null && savedG1RightName != null) {
+            //     if (!(name.contains(savedG1LeftName) || name.contains(savedG1RightName))) {
+            //         return; // Not a matching device
+            //     }
+            // }
 
             // Identify which side (left/right)
             if (isLeft) {
@@ -1572,8 +1572,9 @@ public class G1 extends SGCManager {
 
     @Override
     public void clearDisplay() {
-        Bridge.log("G1: clearDisplay() - Using 0x18 exit command");
-        sendExitCommand();
+        Bridge.log("G1: clearDisplay() - sending space");
+        // sendExitCommand();
+        sendTextWall(" ");
     }
 
     @Override
@@ -2277,8 +2278,6 @@ public class G1 extends SGCManager {
     }
 
     public void displayTextWall(String a) {
-        if (updatingScreen)
-            return;
         if (a.trim().isEmpty()) {
             if (CoreManager.getInstance().getPowerSavingMode()) {
                 sendExitCommand();

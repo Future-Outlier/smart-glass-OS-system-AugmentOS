@@ -33,8 +33,8 @@ struct ViewState {
     // MARK: - Unique (iOS)
 
     private var cancellables = Set<AnyCancellable>()
-    private var sendStateWorkItem: DispatchWorkItem?
-    private let sendStateQueue = DispatchQueue(label: "sendStateQueue", qos: .userInitiated)
+    var sendStateWorkItem: DispatchWorkItem?
+    let sendStateQueue = DispatchQueue(label: "sendStateQueue", qos: .userInitiated)
 
     // MARK: - End Unique
 
@@ -524,31 +524,6 @@ struct ViewState {
         sendCurrentState(sgc?.isHeadUp ?? false)
     }
 
-    private func clearDisplay() {
-        if sgc is G1 {
-            let g1 = sgc as? G1
-            g1?.sendTextWall(" ")
-
-            // clear the screen after 3 seconds if the text is empty or a space:
-            if powerSavingMode {
-                sendStateWorkItem?.cancel()
-                Bridge.log("Mentra: Clearing display after 3 seconds")
-                // if we're clearing the display, after a delay, send a clear command if not cancelled with another
-                let workItem = DispatchWorkItem { [weak self] in
-                    guard let self = self else { return }
-                    if self.isHeadUp {
-                        return
-                    }
-                    g1?.clearDisplay()
-                }
-                sendStateWorkItem = workItem
-                sendStateQueue.asyncAfter(deadline: .now() + 3, execute: workItem)
-            }
-        } else {
-            sgc!.clearDisplay()
-        }
-    }
-
     func sendText(_ text: String) {
         // Core.log("Mentra: Sending text: \(text)")
         if sgc == nil {
@@ -556,7 +531,7 @@ struct ViewState {
         }
 
         if text == " " || text.isEmpty {
-            clearDisplay()
+            sgc?.clearDisplay()
             return
         }
 
@@ -689,9 +664,6 @@ struct ViewState {
                 }
                 Bridge.log("Mentra: Processing bitmap_view with base64 data, length: \(data.count)")
                 await sgc?.displayBitmap(base64ImageData: data)
-            case "clear_view":
-                Bridge.log("Mentra: Processing clear_view layout - clearing display")
-                clearDisplay()
             default:
                 Bridge.log("UNHANDLED LAYOUT_TYPE \(layoutType)")
             }
@@ -868,7 +840,7 @@ struct ViewState {
             // Send startup message
             sendText("MENTRAOS CONNECTED")
             try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            clearDisplay()
+            sgc?.clearDisplay()
 
             self.handle_request_status()
         }
