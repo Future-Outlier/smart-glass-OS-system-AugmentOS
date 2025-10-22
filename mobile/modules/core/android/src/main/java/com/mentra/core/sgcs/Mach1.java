@@ -189,27 +189,56 @@ public class Mach1 extends SGCManager {
 
     @Override
     public void setBrightness(int level, boolean autoMode) {
-
+        Bridge.log("Mach1: setBrightness() - level: " + level + "%, autoMode: " + autoMode);
+        updateGlassesBrightness(level);
+        updateGlassesAutoBrightness(autoMode);
     }
 
     @Override
     public void clearDisplay() {
-
+        Bridge.log("Mach1: clearDisplay()");
+        blankScreen();
     }
 
     @Override
     public void sendTextWall(@NonNull String text) {
-
+        Bridge.log("Mach1: sendTextWall()");
+        displayTextWall(text);
     }
 
     @Override
     public void sendDoubleTextWall(@NonNull String top, @NonNull String bottom) {
-
+        Bridge.log("Mach1: sendDoubleTextWall()");
+        displayDoubleTextWall(top, bottom);
     }
 
     @Override
     public boolean displayBitmap(@NonNull String base64ImageData) {
-        return false;
+        try {
+            Bridge.log("Mach1: displayBitmap() - decoding base64");
+            // Decode base64 to byte array
+            byte[] bmpData = android.util.Base64.decode(base64ImageData, android.util.Base64.DEFAULT);
+
+            if (bmpData == null || bmpData.length == 0) {
+                Log.e(TAG, "Failed to decode base64 image data");
+                return false;
+            }
+
+            // Convert byte array to Bitmap
+            Bitmap bitmap = BitmapFactory.decodeByteArray(bmpData, 0, bmpData.length);
+
+            if (bitmap == null) {
+                Log.e(TAG, "Failed to decode bitmap from byte array");
+                return false;
+            }
+
+            // Call internal implementation
+            displayBitmap(bitmap);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error displaying bitmap from base64", e);
+            return false;
+        }
     }
 
     @Override
@@ -250,27 +279,45 @@ public class Mach1 extends SGCManager {
 
     @Override
     public void disconnect() {
-
+        Bridge.log("Mach1: disconnect()");
+        if (ultraliteSdk != null) {
+            ultraliteSdk.releaseControl();
+            updateConnectionState(ConnTypes.DISCONNECTED);
+        }
     }
 
     @Override
     public void forget() {
-
+        Bridge.log("Mach1: forget()");
+        // Release control and clean up
+        destroy();
     }
 
     @Override
     public void findCompatibleDevices() {
-
+        Bridge.log("Mach1: findCompatibleDevices()");
+        findCompatibleDeviceNames();
     }
 
     @Override
     public void connectById(@NonNull String id) {
-
+        Bridge.log("Mach1: connectById() - id: " + id);
+        // The Mach1 uses UltraliteSDK which handles connection internally
+        // We just need to trigger the connection process
+        connectToSmartGlasses();
     }
 
     @NonNull
     @Override
     public String getConnectedBluetoothName() {
+        // Mach1/Ultralite SDK doesn't expose the peripheral name directly
+        // Return device type if connected
+        if (ultraliteSdk != null) {
+            LiveData<Boolean> connected = ultraliteSdk.getConnected();
+            if (connected != null && Boolean.TRUE.equals(connected.getValue())) {
+                return "Vuzix Ultralite";
+            }
+        }
         return "";
     }
 
