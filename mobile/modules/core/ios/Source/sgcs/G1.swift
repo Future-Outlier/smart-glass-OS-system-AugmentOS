@@ -636,6 +636,23 @@ class G1: NSObject, SGCManager {
     }
 
     func sendTextWall(_ text: String) {
+        // clear the screen after 3 seconds if the text is empty or a space:
+        if CoreManager.shared.powerSavingMode && text.isEmpty || text == " " {
+            CoreManager.shared.sendStateWorkItem?.cancel()
+            Bridge.log("Mentra: Clearing display after 3 seconds")
+            // if we're clearing the display, after a delay, send a clear command if not cancelled with another
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self = self else { return }
+                if CoreManager.shared.isHeadUp {
+                    return
+                }
+                self.clearDisplay()
+            }
+            CoreManager.shared.sendStateWorkItem = workItem
+            CoreManager.shared.sendStateQueue.asyncAfter(deadline: .now() + 3, execute: workItem)
+            return
+        }
+
         let chunks = textHelper.createTextWallChunks(text)
         queueChunks(chunks, sleepAfterMs: 10)
     }
@@ -1737,23 +1754,6 @@ extension G1 {
 
     /// Clear display using MentraOS's 0x18 command (exit to dashboard)
     func clearDisplay() {
-        // clear the screen after 3 seconds if the text is empty or a space:
-        if CoreManager.shared.powerSavingMode {
-            CoreManager.shared.sendStateWorkItem?.cancel()
-            Bridge.log("Mentra: Clearing display after 3 seconds")
-            // if we're clearing the display, after a delay, send a clear command if not cancelled with another
-            let workItem = DispatchWorkItem { [weak self] in
-                guard let self = self else { return }
-                if CoreManager.shared.isHeadUp {
-                    return
-                }
-                self.clearDisplay()
-            }
-            CoreManager.shared.sendStateWorkItem = workItem
-            CoreManager.shared.sendStateQueue.asyncAfter(deadline: .now() + 3, execute: workItem)
-            return
-        }
-
         Bridge.log("G1: clearDisplay() - Using space")
         sendTextWall(" ")
         // Task {

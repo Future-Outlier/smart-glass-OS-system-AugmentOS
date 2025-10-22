@@ -119,7 +119,8 @@ export const CompactDeviceStatus: React.FC = () => {
           textAlignment="left"
           LeftAccessory={() => <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginLeft: 5}} />}
           tx="home:connectingGlasses"
-          disabled={true}
+          // disabled={true}
+          onPress={handleConnectOrDisconnect}
         />
       </View>
     )
