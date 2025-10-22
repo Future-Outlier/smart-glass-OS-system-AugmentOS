@@ -445,6 +445,7 @@ class CoreManager {
 
         var ready = sgc?.ready ?: false
         if (!ready) {
+            Bridge.log("Mentra: CoreManager.sendCurrentState(): sgc not ready")
             return
         }
 
@@ -723,6 +724,11 @@ class CoreManager {
             Bridge.log("Mentra: Cleaning up previous sgc type: ${sgc?.type}")
             sgc?.cleanup()
             sgc = null
+        }
+
+        if (sgc != null) {
+            Bridge.log("Mentra: SGC already initialized")
+            return
         }
 
         if (wearable.contains(DeviceTypes.SIMULATED)) {

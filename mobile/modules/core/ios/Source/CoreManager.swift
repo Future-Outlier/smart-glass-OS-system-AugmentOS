@@ -600,6 +600,11 @@ struct ViewState {
             sgc = nil
         }
 
+        if sgc != nil {
+            Bridge.log("Mentra: SGC already initialized")
+            return
+        }
+
         if wearable.contains(DeviceTypes.SIMULATED) {
             sgc = Simulated()
         } else if wearable.contains(DeviceTypes.G1) {

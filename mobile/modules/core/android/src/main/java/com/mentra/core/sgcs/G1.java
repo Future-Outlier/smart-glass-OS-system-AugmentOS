@@ -59,6 +59,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 
 // Mentra
 import com.mentra.core.sgcs.SGCManager;
@@ -743,7 +745,7 @@ public class G1 extends SGCManager {
                 // start mic beat
                 // startMicBeat(30000);
 
-                showHomeScreen(); // turn on the g1 display
+                // showHomeScreen(); // turn on the g1 display
 
                 updateConnectionState();
 
@@ -1057,6 +1059,8 @@ public class G1 extends SGCManager {
     // reconnectHandler.postDelayed(() -> reconnectToGatt(device), delay);
     // }
 
+    private Set<String> seenDevices = new HashSet<>();
+
     private final ScanCallback modernScanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
@@ -1087,6 +1091,12 @@ public class G1 extends SGCManager {
                 // Try to get the full device name (might contain serial number)
                 Method getAliasMethod = device.getClass().getMethod("getAlias");
                 String alias = (String) getAliasMethod.invoke(device);
+                // add alias to seen device set:
+                if (!seenDevices.contains(alias)) {
+                    seenDevices.add(alias);
+                } else {
+                    return;
+                }
                 Bridge.log("G1: Device Alias: " + alias);
             } catch (Exception e) {
                 Bridge.log("G1: Could not get device alias: " + e.getMessage());
