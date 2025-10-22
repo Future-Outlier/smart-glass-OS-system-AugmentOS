@@ -745,7 +745,7 @@ public class G1 extends SGCManager {
                 // start mic beat
                 // startMicBeat(30000);
 
-                // showHomeScreen(); // turn on the g1 display
+                showHomeScreen(); // turn on the g1 display
 
                 updateConnectionState();
 
@@ -1589,6 +1589,7 @@ public class G1 extends SGCManager {
 
     @Override
     public void sendTextWall(String text) {
+        Bridge.log("G1: sendTextWall() - text: " + text);
         displayTextWall(text);
     }
 
@@ -2250,16 +2251,16 @@ public class G1 extends SGCManager {
     }
 
     public void showHomeScreen() {
-        if (CoreManager.getInstance().getPowerSavingMode()) {
-            sendExitCommand();
-        } else {
+        // if (CoreManager.getInstance().getPowerSavingMode()) {
+            // sendExitCommand();
+        // } else {
             displayTextWall(" ");
-        }
+        // }
 
-        if (lastThingDisplayedWasAnImage) {
-            // clearG1Screen();
-            lastThingDisplayedWasAnImage = false;
-        }
+        // if (lastThingDisplayedWasAnImage) {
+        //     // clearG1Screen();
+        //     lastThingDisplayedWasAnImage = false;
+        // }
     }
 
     public void clearG1Screen() {
@@ -2288,12 +2289,12 @@ public class G1 extends SGCManager {
     }
 
     public void displayTextWall(String a) {
-        if (a.trim().isEmpty()) {
-            if (CoreManager.getInstance().getPowerSavingMode()) {
-                sendExitCommand();
-                return;
-            }
-        }
+        // if (a.trim().isEmpty()) {
+        //     if (CoreManager.getInstance().getPowerSavingMode()) {
+        //         sendExitCommand();
+        //         return;
+        //     }
+        // }
 
         List<byte[]> chunks = createTextWallChunks(a);
         sendChunks(chunks);
@@ -3169,13 +3170,14 @@ public class G1 extends SGCManager {
     private void sendChunks(List<byte[]> chunks) {
         // Send each chunk with a delay between sends
         for (byte[] chunk : chunks) {
+            Bridge.log("G1: Sending chunk: " + Arrays.toString(chunk));
             sendDataSequentially(chunk);
 
-            // try {
-            // Thread.sleep(DELAY_BETWEEN_CHUNKS_SEND); // delay between chunks
-            // } catch (InterruptedException e) {
-            // e.printStackTrace();
-            // }
+            try {
+            Thread.sleep(DELAY_BETWEEN_CHUNKS_SEND); // delay between chunks
+            } catch (InterruptedException e) {
+            e.printStackTrace();
+            }
         }
     }
 

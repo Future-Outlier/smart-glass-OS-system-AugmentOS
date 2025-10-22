@@ -163,8 +163,6 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     for (const applet of applets) {
       let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
       applet.compatibility = result
-      console.log(`applet.packageName: ${applet.packageName}`)
-      console.log(`applet.compatibility: ${applet.compatibility.isCompatible}`)
     }
 
     set({apps: applets})
