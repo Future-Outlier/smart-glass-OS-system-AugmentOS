@@ -1,4 +1,4 @@
-import {useState, useMemo, useCallback, useEffect, FC} from "react"
+import {useState, useMemo, useCallback, FC} from "react"
 import {View, TouchableOpacity, ViewStyle, TextStyle, Modal, ScrollView, TextInput, Platform} from "react-native"
 import {Text} from "@/components/ignite"
 import AppIcon from "./AppIcon"
@@ -157,7 +157,7 @@ export const AppPicker: FC<AppPickerProps> = ({
                 const isSelected = app.packageName === selectedPackageName
                 const isCompatible = app.compatibility?.isCompatible !== false
                 const compatibilityMessage = app.compatibility?.message || ""
-                const isOffline = app.isOffline
+                const isOffline = app.offline
 
                 return (
                   <TouchableOpacity

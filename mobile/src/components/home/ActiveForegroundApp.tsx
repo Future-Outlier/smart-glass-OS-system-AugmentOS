@@ -19,7 +19,7 @@ export const ActiveForegroundApp: React.FC = () => {
   const handlePress = () => {
     if (activeForegroundApp) {
       // Handle offline apps - navigate directly to React Native route
-      if (activeForegroundApp.isOffline) {
+      if (activeForegroundApp.offline) {
         const offlineRoute = activeForegroundApp.offlineRoute
         if (offlineRoute) {
           push(offlineRoute)

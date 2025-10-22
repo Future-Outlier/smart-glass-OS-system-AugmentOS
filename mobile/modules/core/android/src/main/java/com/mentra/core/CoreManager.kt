@@ -15,6 +15,7 @@ import com.mentra.core.sgcs.G1
 import com.mentra.core.sgcs.MentraLive
 import com.mentra.core.sgcs.SGCManager
 import com.mentra.core.sgcs.Simulated
+import com.mentra.core.sgcs.Mach1
 import com.mentra.core.utils.DeviceTypes
 import java.text.SimpleDateFormat
 import java.util.*
@@ -25,12 +26,13 @@ import java.util.concurrent.Executors
 class CoreManager {
     companion object {
 
-        @Volatile private var instance: CoreManager? = null
+        @Volatile
+        private var instance: CoreManager? = null
 
         @JvmStatic
         fun getInstance(): CoreManager {
             return instance
-                    ?: synchronized(this) { instance ?: CoreManager().also { instance = it } }
+                ?: synchronized(this) { instance ?: CoreManager().also { instance = it } }
         }
     }
 
@@ -39,12 +41,14 @@ class CoreManager {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private var sendStateWorkItem: Runnable? = null
+
     // Track last known permissions
     private var lastHadBluetoothPermission = false
     private var lastHadMicrophonePermission = false
     private var permissionReceiver: BroadcastReceiver? = null
     private val handler = Handler(Looper.getMainLooper())
     private var permissionCheckRunnable: Runnable? = null
+
     // notifications settings
     public var notificationsEnabled = false
     public var notificationsBlocklist = listOf<String>()
@@ -131,30 +135,30 @@ class CoreManager {
         lastHadMicrophonePermission = checkMicrophonePermission(context)
 
         Bridge.log(
-                "Mentra: Initial permissions - BT: $lastHadBluetoothPermission, Mic: $lastHadMicrophonePermission"
+            "Mentra: Initial permissions - BT: $lastHadBluetoothPermission, Mic: $lastHadMicrophonePermission"
         )
 
         // Create receiver for package changes (fires when permissions change)
         permissionReceiver =
-                object : BroadcastReceiver() {
-                    override fun onReceive(context: Context?, intent: Intent?) {
-                        if (intent?.action == Intent.ACTION_PACKAGE_CHANGED &&
-                                        intent.data?.schemeSpecificPart == context?.packageName
-                        ) {
+            object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    if (intent?.action == Intent.ACTION_PACKAGE_CHANGED &&
+                        intent.data?.schemeSpecificPart == context?.packageName
+                    ) {
 
-                            Bridge.log("Mentra: Package changed, checking permissions...")
-                            checkPermissionChanges()
-                        }
+                        Bridge.log("Mentra: Package changed, checking permissions...")
+                        checkPermissionChanges()
                     }
                 }
+            }
 
         // Register the receiver
         try {
             val filter =
-                    IntentFilter().apply {
-                        addAction(Intent.ACTION_PACKAGE_CHANGED)
-                        addDataScheme("package")
-                    }
+                IntentFilter().apply {
+                    addAction(Intent.ACTION_PACKAGE_CHANGED)
+                    addDataScheme("package")
+                }
             context.registerReceiver(permissionReceiver, filter)
             Bridge.log("Mentra: Permission monitoring started")
         } catch (e: Exception) {
@@ -167,12 +171,12 @@ class CoreManager {
 
     private fun startPeriodicPermissionCheck() {
         permissionCheckRunnable =
-                object : Runnable {
-                    override fun run() {
-                        checkPermissionChanges()
-                        handler.postDelayed(this, 10000) // Check every 10 seconds
-                    }
+            object : Runnable {
+                override fun run() {
+                    checkPermissionChanges()
+                    handler.postDelayed(this, 10000) // Check every 10 seconds
                 }
+            }
         handler.postDelayed(permissionCheckRunnable!!, 10000)
     }
 
@@ -186,7 +190,7 @@ class CoreManager {
 
         if (currentHasBluetoothPermission != lastHadBluetoothPermission) {
             Bridge.log(
-                    "Mentra: Bluetooth permission changed: $lastHadBluetoothPermission -> $currentHasBluetoothPermission"
+                "Mentra: Bluetooth permission changed: $lastHadBluetoothPermission -> $currentHasBluetoothPermission"
             )
             lastHadBluetoothPermission = currentHasBluetoothPermission
             permissionsChanged = true
@@ -194,7 +198,7 @@ class CoreManager {
 
         if (currentHasMicrophonePermission != lastHadMicrophonePermission) {
             Bridge.log(
-                    "Mentra: Microphone permission changed: $lastHadMicrophonePermission -> $currentHasMicrophonePermission"
+                "Mentra: Microphone permission changed: $lastHadMicrophonePermission -> $currentHasMicrophonePermission"
             )
             lastHadMicrophonePermission = currentHasMicrophonePermission
             permissionsChanged = true
@@ -209,8 +213,8 @@ class CoreManager {
     private fun checkBluetoothPermission(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             ContextCompat.checkSelfPermission(
-                    context,
-                    android.Manifest.permission.BLUETOOTH_CONNECT
+                context,
+                android.Manifest.permission.BLUETOOTH_CONNECT
             ) == PackageManager.PERMISSION_GRANTED
         } else {
             ContextCompat.checkSelfPermission(context, android.Manifest.permission.BLUETOOTH) ==
@@ -220,8 +224,8 @@ class CoreManager {
 
     private fun checkMicrophonePermission(context: Context): Boolean {
         return ContextCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.RECORD_AUDIO
+            context,
+            android.Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
     }
 
@@ -276,35 +280,35 @@ class CoreManager {
         // Matching Swift's 4 view states exactly
         viewStates.add(ViewState(" ", " ", " ", "text_wall", "", null, null))
         viewStates.add(
-                ViewState(
-                        " ",
-                        " ",
-                        " ",
-                        "text_wall",
-                        "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$",
-                        null,
-                        null
-                )
+            ViewState(
+                " ",
+                " ",
+                " ",
+                "text_wall",
+                "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$",
+                null,
+                null
+            )
         )
         viewStates.add(ViewState(" ", " ", " ", "text_wall", "", null, null))
         viewStates.add(
-                ViewState(
-                        " ",
-                        " ",
-                        " ",
-                        "text_wall",
-                        "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$",
-                        null,
-                        null
-                )
+            ViewState(
+                " ",
+                " ",
+                " ",
+                "text_wall",
+                "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$",
+                null,
+                null
+            )
         )
     }
 
     private fun statesEqual(s1: ViewState, s2: ViewState): Boolean {
         val state1 =
-                "${s1.layoutType}${s1.text}${s1.topText}${s1.bottomText}${s1.title}${s1.data ?: ""}"
+            "${s1.layoutType}${s1.text}${s1.topText}${s1.bottomText}${s1.title}${s1.data ?: ""}"
         val state2 =
-                "${s2.layoutType}${s2.text}${s2.topText}${s2.bottomText}${s2.title}${s2.data ?: ""}"
+            "${s2.layoutType}${s2.text}${s2.topText}${s2.bottomText}${s2.title}${s2.data ?: ""}"
         return state1 == state2
     }
 
@@ -315,13 +319,13 @@ class CoreManager {
     // Inner classes
 
     data class ViewState(
-            var topText: String,
-            var bottomText: String,
-            var title: String,
-            var layoutType: String,
-            var text: String,
-            var data: String?,
-            var animationData: Map<String, Any>?
+        var topText: String,
+        var bottomText: String,
+        var title: String,
+        var layoutType: String,
+        var text: String,
+        var data: String?,
+        var animationData: Map<String, Any>?
     )
 
     enum class SpeechRequiredDataType {
@@ -422,11 +426,11 @@ class CoreManager {
 
         // executor.execute {
         val currentViewState =
-                if (isDashboard) {
-                    viewStates[1]
-                } else {
-                    viewStates[0]
-                }
+            if (isDashboard) {
+                viewStates[1]
+            } else {
+                viewStates[0]
+            }
 
         isHeadUp = isDashboard
 
@@ -441,6 +445,7 @@ class CoreManager {
 
         var ready = sgc?.ready ?: false
         if (!ready) {
+            Bridge.log("Mentra: CoreManager.sendCurrentState(): sgc not ready")
             return
         }
 
@@ -454,12 +459,15 @@ class CoreManager {
             "double_text_wall" -> {
                 sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
             }
+
             "reference_card" -> {
                 sendText("${currentViewState.title}\n\n${currentViewState.text}")
             }
+
             "bitmap_view" -> {
                 currentViewState.data?.let { data -> sgc?.displayBitmap(data) }
             }
+
             "clear_view" -> sgc?.clearDisplay()
             else -> Bridge.log("Mentra: UNHANDLED LAYOUT_TYPE ${currentViewState.layoutType}")
         }
@@ -480,15 +488,15 @@ class CoreManager {
         val currentDate = dateFormat.format(Date())
 
         val placeholders =
-                mapOf(
-                        "\$no_datetime$" to formattedDate,
-                        "\$DATE$" to currentDate,
-                        "\$TIME12$" to time12,
-                        "\$TIME24$" to time24,
-                        "\$GBATT$" to
-                                (sgc?.batteryLevel?.let { if (it == -1) "" else "$it%" } ?: ""),
-                        "\$CONNECTION_STATUS$" to "Connected"
-                )
+            mapOf(
+                "\$no_datetime$" to formattedDate,
+                "\$DATE$" to currentDate,
+                "\$TIME12$" to time12,
+                "\$TIME24$" to time24,
+                "\$GBATT$" to
+                        (sgc?.batteryLevel?.let { if (it == -1) "" else "$it%" } ?: ""),
+                "\$CONNECTION_STATUS$" to "Connected"
+            )
 
         return placeholders.entries.fold(text) { result, (key, value) ->
             result.replace(key, value)
@@ -711,10 +719,16 @@ class CoreManager {
 
     fun initSGC(wearable: String) {
         Bridge.log("Initializing manager for wearable: $wearable")
-        if (sgc != null) {
+        if (sgc != null && sgc?.type != wearable) {
             Bridge.log("Mentra: Manager already initialized, cleaning up previous sgc")
+            Bridge.log("Mentra: Cleaning up previous sgc type: ${sgc?.type}")
             sgc?.cleanup()
             sgc = null
+        }
+
+        if (sgc != null) {
+            Bridge.log("Mentra: SGC already initialized")
+            return
         }
 
         if (wearable.contains(DeviceTypes.SIMULATED)) {
@@ -724,7 +738,7 @@ class CoreManager {
         } else if (wearable.contains(DeviceTypes.LIVE)) {
             sgc = MentraLive()
         } else if (wearable.contains(DeviceTypes.MACH1)) {
-            // sgc = Mach1()
+            sgc = Mach1()
         } else if (wearable.contains(DeviceTypes.FRAME)) {
             // sgc = FrameManager()
         }
@@ -759,23 +773,6 @@ class CoreManager {
         Bridge.log("Mentra: handleDeviceReady() ${sgc?.type}")
         pendingWearable = ""
         defaultWearable = sgc?.type ?: ""
-
-        // TODO: fix this hack!
-        if (sgc is G1) {
-            defaultWearable = DeviceTypes.G1
-            handle_request_status()
-            handleG1Ready()
-        }
-
-        if (sgc is MentraLive) {
-            defaultWearable = DeviceTypes.LIVE
-            handle_request_status()
-        }
-
-        if (sgc is Simulated) {
-            defaultWearable = DeviceTypes.SIMULATED
-            handle_request_status()
-        }
 
         isSearching = false
         handle_request_status()
@@ -948,7 +945,7 @@ class CoreManager {
 
     fun handle_microphone_state_change(requiredData: List<String>, bypassVad: Boolean) {
         Bridge.log(
-                "Mentra: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad"
+            "Mentra: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad"
         )
 
         bypassVadForPCM = bypassVad
@@ -958,8 +955,8 @@ class CoreManager {
 
         val mutableRequiredData = requiredData.toMutableList()
         if (offlineMode &&
-                        !mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") &&
-                        !mutableRequiredData.contains("TRANSCRIPTION")
+            !mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") &&
+            !mutableRequiredData.contains("TRANSCRIPTION")
         ) {
             mutableRequiredData.add("TRANSCRIPTION")
         }
@@ -973,14 +970,17 @@ class CoreManager {
                 shouldSendPcmData = true
                 shouldSendTranscript = true
             }
+
             mutableRequiredData.contains("PCM") -> {
                 shouldSendPcmData = true
                 shouldSendTranscript = false
             }
+
             mutableRequiredData.contains("TRANSCRIPTION") -> {
                 shouldSendTranscript = true
                 shouldSendPcmData = false
             }
+
             mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") -> {
                 if (enforceLocalTranscription) {
                     shouldSendTranscript = true
@@ -999,24 +999,24 @@ class CoreManager {
     }
 
     fun handle_photo_request(
-            requestId: String,
-            appId: String,
-            size: String,
-            webhookUrl: String,
-            authToken: String
+        requestId: String,
+        appId: String,
+        size: String,
+        webhookUrl: String,
+        authToken: String
     ) {
         Bridge.log("Mentra: onPhotoRequest: $requestId, $appId, $size")
         sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken)
     }
 
     fun handle_rgb_led_control(
-            requestId: String,
-            packageName: String?,
-            action: String,
-            color: String?,
-            ontime: Int,
-            offtime: Int,
-            count: Int
+        requestId: String,
+        packageName: String?,
+        action: String,
+        color: String?,
+        ontime: Int,
+        offtime: Int,
+        count: Int
     ) {
         Bridge.log("Mentra: RGB LED control: action=$action, color=$color, requestId=$requestId")
         sgc?.sendRgbLedControl(requestId, packageName, action, color, ontime, offtime, count)
@@ -1177,37 +1177,37 @@ class CoreManager {
         glassesSettings["button_photo_size"] = buttonPhotoSize
 
         val buttonVideoSettings =
-                mapOf(
-                        "width" to buttonVideoWidth,
-                        "height" to buttonVideoHeight,
-                        "fps" to buttonVideoFps
-                )
+            mapOf(
+                "width" to buttonVideoWidth,
+                "height" to buttonVideoHeight,
+                "fps" to buttonVideoFps
+            )
         glassesSettings["button_video_settings"] = buttonVideoSettings
         glassesSettings["button_max_recording_time"] = buttonMaxRecordingTime
         glassesSettings["button_camera_led"] = buttonCameraLed
 
         val coreInfo =
-                mapOf(
-                        "default_wearable" to defaultWearable,
-                        "preferred_mic" to preferredMic,
-                        "is_searching" to isSearching,
-                        "is_mic_enabled_for_frontend" to
-                                (micEnabled && preferredMic == "glasses" && sgc?.ready == true),
-                        "core_token" to coreToken,
-                )
+            mapOf(
+                "default_wearable" to defaultWearable,
+                "preferred_mic" to preferredMic,
+                "is_searching" to isSearching,
+                "is_mic_enabled_for_frontend" to
+                        (micEnabled && preferredMic == "glasses" && sgc?.ready == true),
+                "core_token" to coreToken,
+            )
 
         val apps = emptyList<Any>()
 
         val authObj = mapOf("core_token_owner" to coreTokenOwner)
 
         val statusObj =
-                mapOf(
-                        "connected_glasses" to connectedGlasses,
-                        "glasses_settings" to glassesSettings,
-                        "apps" to apps,
-                        "core_info" to coreInfo,
-                        "auth" to authObj
-                )
+            mapOf(
+                "connected_glasses" to connectedGlasses,
+                "glasses_settings" to glassesSettings,
+                "apps" to apps,
+                "core_info" to coreInfo,
+                "auth" to authObj
+            )
 
         Bridge.sendStatus(statusObj)
     }
