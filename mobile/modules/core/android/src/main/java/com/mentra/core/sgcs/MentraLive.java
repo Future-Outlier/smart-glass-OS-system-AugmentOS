@@ -2507,7 +2507,7 @@ public class MentraLive extends SGCManager {
 
     @Override
     public void sendGalleryMode() {
-        Bridge.log("LIVE: 📸 Sending gallery mode active to glasses: " + active);
+        Bridge.log("LIVE: 📸 Sending gallery mode active to glasses");
         try {
             JSONObject json = new JSONObject();
             json.put("type", "save_in_gallery_mode");

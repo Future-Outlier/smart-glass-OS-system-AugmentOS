@@ -280,9 +280,6 @@ public class G1 extends SGCManager {
                         if (isLeftConnected && isRightConnected) {
                             stopScan();
                             Bridge.log("G1: Both glasses connected. Stopping BLE scan.");
-                            ready = true;
-                        } else {
-                            ready = false;
                         }
 
                         Bridge.log("G1: Discover services calling...");
@@ -298,8 +295,6 @@ public class G1 extends SGCManager {
 
                         forceSideDisconnection();
                         Bridge.log("G1: Called forceSideDisconnection().");
-
-                        ready = false;
 
                         // Stop any periodic transmissions
                         stopHeartbeat();
@@ -804,16 +799,13 @@ public class G1 extends SGCManager {
             Bridge.log("G1: Both glasses connected");
             lastConnectionTimestamp = System.currentTimeMillis();
             ready = true;
-            // connectionEvent(connectionState);
         } else if (isLeftConnected || isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTING;
             Bridge.log("G1: One glass connected");
             ready = false;
-            // connectionEvent(connectionState);
         } else {
             connectionState = SmartGlassesConnectionState.DISCONNECTED;
             Bridge.log("G1: No glasses connected");
-            // connectionEvent(connectionState);
             ready = false;
         }
         CoreManager.getInstance().handleConnectionStateChanged();
