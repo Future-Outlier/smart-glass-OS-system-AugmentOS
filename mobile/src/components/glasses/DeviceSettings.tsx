@@ -97,6 +97,7 @@ export default function DeviceSettings() {
   )
   const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS_KEYS.default_button_action_app)
   const [showAppPicker, setShowAppPicker] = useState(false)
+  const [devMode] = useSetting(SETTINGS_KEYS.dev_mode)
 
   const {push} = useNavigationHistory()
   const applets = useApplets()
@@ -427,7 +428,7 @@ export default function DeviceSettings() {
         />
       )}
 
-      {isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && (
+      {isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && devMode && (
         <ActionButton
           label={translate("settings:disconnectGlasses")}
           variant="destructive"

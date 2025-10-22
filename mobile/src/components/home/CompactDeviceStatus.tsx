@@ -145,6 +145,11 @@ export const CompactDeviceStatus: React.FC = () => {
     )
   }
 
+  // Don't show glasses image and stats for simulated glasses
+  if (defaultWearable === DeviceTypes.SIMULATED) {
+    return null
+  }
+
   const features = getModelCapabilities(defaultWearable)
   const hasDisplay = features?.hasDisplay ?? true
   const hasWifi = features?.hasWifi ?? false
