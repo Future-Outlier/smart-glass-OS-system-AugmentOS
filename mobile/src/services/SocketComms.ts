@@ -430,11 +430,11 @@ class SocketComms {
       return
     }
     console.log(`SOCKET: Received app_started message for package: ${msg.packageName}`)
-    useAppletStatusStore.getState().refreshApps()
+    useAppletStatusStore.getState().refreshApplets()
   }
   private handle_app_stopped(msg: any) {
     console.log(`SOCKET: Received app_stopped message for package: ${msg.packageName}`)
-    useAppletStatusStore.getState().refreshApps()
+    useAppletStatusStore.getState().refreshApplets()
   }
 
   private handle_photo_request(msg: any) {
