@@ -1348,6 +1348,12 @@ class CoreManager {
             }
         }
 
+        (settings["button_camera_led"] as? Boolean)?.let { newButtonCameraLed ->
+            if (buttonCameraLed != newButtonCameraLed) {
+                updateButtonCameraLed(newButtonCameraLed)
+            }
+        }
+
         (settings["gallery_mode"] as? Boolean)?.let { newGalleryMode ->
             if (galleryMode != newGalleryMode) {
                 updateGalleryMode(newGalleryMode)

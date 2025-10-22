@@ -83,7 +83,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func setSilentMode(_: Bool) {}
 
-    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?) {}
+    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?) {}
 
     func sendJson(_: [String: Any]) {}
 

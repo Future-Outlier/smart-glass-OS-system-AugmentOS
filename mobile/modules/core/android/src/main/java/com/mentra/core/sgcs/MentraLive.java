@@ -1782,10 +1782,6 @@ public class MentraLive extends SGCManager {
 
                 Bridge.log("LIVE: Received button press - buttonId: " + buttonId + ", pressType: " + pressType);
 
-                // Send to server for apps that need it
-                Bridge.sendButtonPress(buttonId, pressType);
-
-                // Send to React Native for default button action handling (matches iOS)
                 Bridge.sendButtonPressEvent(buttonId, pressType);
                 break;
 
@@ -2901,16 +2897,18 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    public void startRtmpStream(Map<String, Object> messagee) {
-    //    try {
-            // JSONObject json = message;
-            // json.remove("timestamp");
-            // json.remove("appId");
-            // json.remove("video");
-            // json.remove("audio");
-            // //String rtmpUrl=json.getString("rtmpUrl");
-            // //Bridge.log("LIVE: Requesting RTMP stream to URL: " + rtmpUrl);
-            // sendJson(json, true);
+    @Override
+    public void startRtmpStream(Map<String, Object> message) {
+        Bridge.log("LIVE: Starting RTMP stream");
+
+        try {
+            JSONObject json = new JSONObject(message);
+            // Remove timestamp as iOS does
+            json.remove("timestamp");
+            sendJson(json, true);
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating RTMP stream start JSON", e);
+        }
     }
 
     public void stopRtmpStream() {
@@ -2925,14 +2923,16 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    @Override
     public void sendRtmpKeepAlive(Map<String, Object> message) {
         Bridge.log("LIVE: Sending RTMP stream keep alive");
-        // try {
-        //     // Forward the keep alive message directly to the glasses
-        //     sendJson(message);
-        // } catch (Exception e) {
-        //     Log.e(TAG, "Error sending RTMP stream keep alive", e);
-        // }
+
+        try {
+            JSONObject json = new JSONObject(message);
+            sendJson(json);
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending RTMP stream keep alive", e);
+        }
     }
 
     /**
@@ -4636,7 +4636,26 @@ public class MentraLive extends SGCManager {
     /**
      * Send button camera LED setting to glasses
      */
+    @Override
     public void sendButtonCameraLedSetting() {
+        var m = CoreManager.getInstance();
+        boolean enabled = m.getButtonCameraLed();
+
+        Bridge.log("LIVE: Sending button camera LED setting: " + enabled);
+
+        if (!isConnected) {
+            Log.w(TAG, "Cannot send button camera LED setting - not connected");
+            return;
+        }
+
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "button_camera_led");
+            json.put("enabled", enabled);
+            sendJson(json, true);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating button camera LED setting message", e);
+        }
     }
 
     /**
