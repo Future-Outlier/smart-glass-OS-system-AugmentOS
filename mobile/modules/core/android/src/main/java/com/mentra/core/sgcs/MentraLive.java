@@ -391,7 +391,7 @@ public class MentraLive extends SGCManager {
 
     public MentraLive() {
         super();
-        this.type = DeviceTypes.MENTRALIVE;
+        this.type = DeviceTypes.LIVE;
         this.context = Bridge.getContext();
 
         // Initialize bluetooth adapter
