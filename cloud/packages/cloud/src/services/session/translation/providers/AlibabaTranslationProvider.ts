@@ -236,6 +236,7 @@ class AlibabaTranslationStream implements TranslationStreamInstance {
           clearTimeout(connectionTimeout);
           this.logger.debug("Alibaba translation WebSocket connected");
           this.sendRunTaskMessage();
+          this.state = TranslationStreamState.READY;
           resolve();
         });
 

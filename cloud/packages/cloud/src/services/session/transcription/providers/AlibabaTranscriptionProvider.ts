@@ -203,6 +203,7 @@ class AlibabaTranscriptionStream implements StreamInstance {
           clearTimeout(connectionTimeout);
           this.logger.debug("Alibaba transcription WebSocket connected");
           this.sendRunTaskMessage();
+          this.state = StreamState.READY;
           resolve();
         });
 
