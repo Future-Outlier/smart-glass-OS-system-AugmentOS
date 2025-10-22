@@ -651,7 +651,6 @@ struct ViewState {
                 let topText = currentViewState.topText
                 let bottomText = currentViewState.bottomText
                 sgc?.sendDoubleTextWall(topText, bottomText)
-                sgc?.sendDoubleTextWall(topText, bottomText)
             case "reference_card":
                 sendText(currentViewState.title + "\n\n" + currentViewState.text)
             case "bitmap_view":
