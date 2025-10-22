@@ -1595,6 +1595,7 @@ public class G1 extends SGCManager {
 
     @Override
     public void sendDoubleTextWall(String top, String bottom) {
+        Bridge.log("G1: sendDoubleTextWall() - top: " + top + ", bottom: " + bottom);
         displayDoubleTextWall(top, bottom);
     }
 

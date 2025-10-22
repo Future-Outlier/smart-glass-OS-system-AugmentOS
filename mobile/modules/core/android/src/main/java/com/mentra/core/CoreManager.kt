@@ -454,8 +454,11 @@ class CoreManager {
 
         when (currentViewState.layoutType) {
             "text_wall" -> sendText(currentViewState.text)
+            // "double_text_wall" -> {
+            //     sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
+            // }
             "double_text_wall" -> {
-                sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
+                sendText(currentViewState.topText)
             }
 
             "reference_card" -> {
@@ -862,12 +865,11 @@ class CoreManager {
         if (!statesEqual(currentState, newViewState)) {
             Bridge.log("Mentra: Updating view state $stateIndex with $layoutType")
             viewStates[stateIndex] = newViewState
-            sendCurrentState()
-            // if (stateIndex == 0 && !isHeadUp) {
-            //     sendCurrentState(false)
-            // } else if (stateIndex == 1 && isHeadUp) {
-            //     sendCurrentState(true)
-            // }
+            if (stateIndex == 0 && !isHeadUp) {
+                sendCurrentState()
+            } else if (stateIndex == 1 && isHeadUp) {
+                sendCurrentState()
+            }
         }
     }
 
