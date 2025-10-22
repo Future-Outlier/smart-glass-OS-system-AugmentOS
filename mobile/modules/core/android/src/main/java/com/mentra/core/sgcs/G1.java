@@ -1566,12 +1566,14 @@ public class G1 extends SGCManager {
 
     @Override
     public void setBrightness(int level, boolean autoMode) {
-
+        Bridge.log("G1: setBrightness() - level: " + level + "%, autoMode: " + autoMode);
+        sendBrightnessCommand(level, autoMode);
     }
 
     @Override
     public void clearDisplay() {
-
+        Bridge.log("G1: clearDisplay() - Using 0x18 exit command");
+        sendExitCommand();
     }
 
     @Override
@@ -1586,7 +1588,22 @@ public class G1 extends SGCManager {
 
     @Override
     public boolean displayBitmap(String base64ImageData) {
-        return false;
+        try {
+            // Decode base64 to byte array
+            byte[] bmpData = android.util.Base64.decode(base64ImageData, android.util.Base64.DEFAULT);
+
+            if (bmpData == null || bmpData.length == 0) {
+                Log.e(TAG, "Failed to decode base64 image data");
+                return false;
+            }
+
+            // Call internal implementation
+            displayBitmapImage(bmpData);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error displaying bitmap from base64", e);
+            return false;
+        }
     }
 
     @Override
@@ -1596,12 +1613,14 @@ public class G1 extends SGCManager {
 
     @Override
     public void setDashboardPosition(int height, int depth) {
-
+        Bridge.log("G1: setDashboardPosition() - height: " + height + ", depth: " + depth);
+        sendDashboardPositionCommand(height, depth);
     }
 
     @Override
     public void setHeadUpAngle(int angle) {
-
+        Bridge.log("G1: setHeadUpAngle() - angle: " + angle);
+        sendHeadUpAngleCommand(angle);
     }
 
     @Override
@@ -1643,6 +1662,12 @@ public class G1 extends SGCManager {
 
     @Override
     public String getConnectedBluetoothName() {
+        // Return left device name if available, otherwise right device name
+        if (leftDevice != null && leftDevice.getName() != null) {
+            return leftDevice.getName();
+        } else if (rightDevice != null && rightDevice.getName() != null) {
+            return rightDevice.getName();
+        }
         return "";
     }
 
