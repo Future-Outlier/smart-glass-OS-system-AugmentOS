@@ -418,23 +418,21 @@ class CoreManager {
         }
     }
 
-    private fun sendCurrentState(isDashboard: Boolean) {
-        Bridge.log("Mentra: sendCurrentState(): $isDashboard")
+    private fun sendCurrentState() {
+        Bridge.log("Mentra: sendCurrentState(): $isHeadUp")
         if (isUpdatingScreen) {
             return
         }
 
         // executor.execute {
         val currentViewState =
-            if (isDashboard) {
+            if (isHeadUp) {
                 viewStates[1]
             } else {
                 viewStates[0]
             }
 
-        isHeadUp = isDashboard
-
-        if (isDashboard && !contextualDashboard) {
+        if (isHeadUp && !contextualDashboard) {
             return
         }
 
@@ -518,7 +516,7 @@ class CoreManager {
 
     fun updateHeadUp(headUp: Boolean) {
         isHeadUp = headUp
-        sendCurrentState(isHeadUp)
+        sendCurrentState()
         Bridge.sendHeadUp(isHeadUp)
     }
 
@@ -869,13 +867,12 @@ class CoreManager {
         if (!statesEqual(currentState, newViewState)) {
             Bridge.log("Mentra: Updating view state $stateIndex with $layoutType")
             viewStates[stateIndex] = newViewState
-
-            val headUp = isHeadUp
-            if (stateIndex == 0 && !headUp) {
-                sendCurrentState(false)
-            } else if (stateIndex == 1 && headUp) {
-                sendCurrentState(true)
-            }
+            sendCurrentState(isHeadUp)
+            // if (stateIndex == 0 && !isHeadUp) {
+            //     sendCurrentState(false)
+            // } else if (stateIndex == 1 && isHeadUp) {
+            //     sendCurrentState(true)
+            // }
         }
     }
 

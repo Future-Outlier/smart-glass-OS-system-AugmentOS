@@ -351,7 +351,7 @@ struct ViewState {
 
     func updateHeadUp(_ isHeadUp: Bool) {
         self.isHeadUp = isHeadUp
-        sendCurrentState(isHeadUp)
+        sendCurrentState()
         Bridge.sendHeadUp(isHeadUp)
     }
 
@@ -519,11 +519,6 @@ struct ViewState {
 
     // MARK: - Glasses Commands
 
-    // send whatever was there before sending something else:
-    func clearState() {
-        sendCurrentState(sgc?.isHeadUp ?? false)
-    }
-
     func sendText(_ text: String) {
         // Core.log("Mentra: Sending text: \(text)")
         if sgc == nil {
@@ -618,7 +613,7 @@ struct ViewState {
         }
     }
 
-    func sendCurrentState(_ isDashboard: Bool) {
+    func sendCurrentState() {
         if updatingScreen {
             return
         }
@@ -630,9 +625,7 @@ struct ViewState {
             } else {
                 currentViewState = self.viewStates[0]
             }
-            self.isHeadUp = isDashboard
-
-            if isDashboard && !self.contextualDashboard {
+            if isHeadUp && !self.contextualDashboard {
                 return
             }
 
