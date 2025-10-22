@@ -1572,8 +1572,9 @@ public class G1 extends SGCManager {
 
     @Override
     public void clearDisplay() {
-        Bridge.log("G1: clearDisplay() - Using 0x18 exit command");
-        sendExitCommand();
+        Bridge.log("G1: clearDisplay() - sending space");
+        // sendExitCommand();
+        sendTextWall(" ");
     }
 
     @Override
