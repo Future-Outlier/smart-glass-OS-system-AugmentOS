@@ -1043,15 +1043,7 @@ class CoreManager {
             count: Int
     ) {
         Bridge.log("Mentra: RGB LED control: action=$action, color=$color, requestId=$requestId")
-        sgc?.sendRgbLedControl(
-                requestId,
-                packageName,
-                action,
-                color,
-                ontime,
-                offtime,
-                count
-        )
+        sgc?.sendRgbLedControl(requestId, packageName, action, color, ontime, offtime, count)
     }
 
     fun handle_connect_default() {

@@ -280,9 +280,6 @@ public class G1 extends SGCManager {
                         if (isLeftConnected && isRightConnected) {
                             stopScan();
                             Bridge.log("G1: Both glasses connected. Stopping BLE scan.");
-                            ready = true;
-                        } else {
-                            ready = false;
                         }
 
                         Bridge.log("G1: Discover services calling...");
@@ -298,8 +295,6 @@ public class G1 extends SGCManager {
 
                         forceSideDisconnection();
                         Bridge.log("G1: Called forceSideDisconnection().");
-
-                        ready = false;
 
                         // Stop any periodic transmissions
                         stopHeartbeat();
@@ -407,7 +402,6 @@ public class G1 extends SGCManager {
                         attemptGattConnection(rightDevice);
                     }, 400);
                 }
-                CoreManager.getInstance().handleConnectionStateChanged();
             }
 
             private void forceSideDisconnection() {
@@ -799,24 +793,24 @@ public class G1 extends SGCManager {
     }
 
     private void updateConnectionState() {
+        Boolean previousReady = ready;
         if (isLeftConnected && isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTED;
             Bridge.log("G1: Both glasses connected");
             lastConnectionTimestamp = System.currentTimeMillis();
             ready = true;
-            // connectionEvent(connectionState);
         } else if (isLeftConnected || isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTING;
             Bridge.log("G1: One glass connected");
             ready = false;
-            // connectionEvent(connectionState);
         } else {
             connectionState = SmartGlassesConnectionState.DISCONNECTED;
             Bridge.log("G1: No glasses connected");
-            // connectionEvent(connectionState);
             ready = false;
         }
-        CoreManager.getInstance().handleConnectionStateChanged();
+        if (previousReady != ready) {
+            CoreManager.getInstance().handleConnectionStateChanged();
+        }
     }
 
     private final BroadcastReceiver bondingReceiver = new BroadcastReceiver() {
@@ -2598,25 +2592,25 @@ public class G1 extends SGCManager {
 
         isMicrophoneEnabled = enable; // Update the state tracker
         // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
-        micEnableHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (!isConnected()) {
-                    Bridge.log("G1: Tryna start mic: Not connected to glasses");
-                    return;
-                }
+        // micEnableHandler.postDelayed(new Runnable() {
+        //     @Override
+        //     public void run() {
+        //         if (!isConnected()) {
+        //             Bridge.log("G1: Tryna start mic: Not connected to glasses");
+        //             return;
+        //         }
 
-                byte command = 0x0E; // Command for MIC control
-                byte enableByte = (byte) (enable ? 1 : 0); // 1 to enable, 0 to disable
+        //         byte command = 0x0E; // Command for MIC control
+        //         byte enableByte = (byte) (enable ? 1 : 0); // 1 to enable, 0 to disable
 
-                ByteBuffer buffer = ByteBuffer.allocate(2);
-                buffer.put(command);
-                buffer.put(enableByte);
+        //         ByteBuffer buffer = ByteBuffer.allocate(2);
+        //         buffer.put(command);
+        //         buffer.put(enableByte);
 
-                sendDataSequentially(buffer.array(), false, true, 300); // wait some time to setup the mic
-                Bridge.log("G1: Sent MIC command: " + bytesToHex(buffer.array()));
-            }
-        }, delay);
+        //         sendDataSequentially(buffer.array(), false, true, 300); // wait some time to setup the mic
+        //         Bridge.log("G1: Sent MIC command: " + bytesToHex(buffer.array()));
+        //     }
+        // }, delay);
     }
 
     // notifications

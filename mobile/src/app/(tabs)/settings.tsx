@@ -111,14 +111,14 @@ export default function SettingsPage() {
             </>
           )}
         </View>
-      </ScrollView>
 
-      <View style={themed($versionContainer)}>
-        <Text
-          text={translate("common:version", {number: Constants.expoConfig?.extra?.MENTRAOS_VERSION})}
-          style={{color: theme.colors.textDim}}
-        />
-      </View>
+        <View style={themed($versionContainer)}>
+          <Text
+            text={translate("common:version", {number: Constants.expoConfig?.extra?.MENTRAOS_VERSION})}
+            style={{color: theme.colors.textDim}}
+          />
+        </View>
+      </ScrollView>
     </Screen>
   )
 }
@@ -129,6 +129,7 @@ const $versionContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: "100%",
   paddingVertical: spacing.xs,
   borderRadius: spacing.md,
+  marginTop: spacing.xxxl,
   // position: "absolute",
   // flex: 1,
   // borderWidth: 1,
