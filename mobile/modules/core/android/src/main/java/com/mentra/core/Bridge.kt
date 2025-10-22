@@ -248,6 +248,35 @@ public class Bridge private constructor() {
             sendTypedMessage("button_press", buttonData as Map<String, Any>)
         }
 
+        /** Send touch/gesture event from glasses - matches iOS implementation */
+        @JvmStatic
+        fun sendTouchEvent(deviceModel: String, gestureName: String, timestamp: Long) {
+            val body = HashMap<String, Any>()
+            body["device_model"] = deviceModel
+            body["gesture_name"] = gestureName
+            body["timestamp"] = timestamp
+            sendTypedMessage("touch_event", body)
+        }
+
+        /** Send swipe volume control status - matches iOS implementation */
+        @JvmStatic
+        fun sendSwipeVolumeStatus(enabled: Boolean, timestamp: Long) {
+            val body = HashMap<String, Any>()
+            body["enabled"] = enabled
+            body["timestamp"] = timestamp
+            sendTypedMessage("swipe_volume_status", body)
+        }
+
+        /** Send switch status from glasses - matches iOS implementation */
+        @JvmStatic
+        fun sendSwitchStatus(switchType: Int, value: Int, timestamp: Long) {
+            val body = HashMap<String, Any>()
+            body["switch_type"] = switchType
+            body["switch_value"] = value
+            body["timestamp"] = timestamp
+            sendTypedMessage("switch_status", body)
+        }
+
         /** Send photo response */
         @JvmStatic
         fun sendPhotoResponse(requestId: String, photoUrl: String) {

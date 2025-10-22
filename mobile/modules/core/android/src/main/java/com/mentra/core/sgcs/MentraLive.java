@@ -1804,15 +1804,12 @@ public class MentraLive extends SGCManager {
                 // Process touch event from glasses (swipes, taps, long press)
                 String gestureName = json.optString("gesture_name", "unknown");
                 long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
+                String touchDeviceModel = json.optString("device_model", glassesDeviceModel);
 
                 Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
 
-                // Post touch event to EventBus for AugmentosService to handle
-                // EventBus.getDefault().post(new TouchEvent(
-                //         smartGlassesDevice.deviceModelName,
-                //         gestureName,
-                //         touchTimestamp));
-                // Bridge.sendTouchEvent(gestureName, touchTimestamp);
+                // Send touch event to React Native
+                Bridge.sendTouchEvent(touchDeviceModel, gestureName, touchTimestamp);
                 break;
 
             case "swipe_volume_status":
@@ -1822,16 +1819,8 @@ public class MentraLive extends SGCManager {
 
                 Log.d(TAG, "🔊 Received swipe volume status - Enabled: " + swipeVolumeEnabled);
 
-                // TODO: Post swipe volume status event to EventBus once event class is created
-                // EventBus.getDefault().post(new SwipeVolumeStatusEvent(
-                //         smartGlassesDevice.deviceModelName,
-                //         swipeVolumeEnabled,
-                //         swipeTimestamp));
-
-                // // For now, forward to data observable for app consumption
-                // if (dataObservable != null) {
-                //     dataObservable.onNext(json);
-                // }
+                // Send swipe volume status to React Native
+                Bridge.sendSwipeVolumeStatus(swipeVolumeEnabled, swipeTimestamp);
                 break;
 
             case "switch_status":
@@ -1843,17 +1832,8 @@ public class MentraLive extends SGCManager {
                 Log.d(TAG, "🔘 Received switch status - Type: " + switchType +
                       ", Value: " + switchValue);
 
-                // TODO: Post switch status event to EventBus once event class is created
-                // EventBus.getDefault().post(new SwitchStatusEvent(
-                //         smartGlassesDevice.deviceModelName,
-                //         switchType,
-                //         switchValue,
-                //         switchTimestamp));
-
-                // For now, forward to data observable for app consumption
-                // if (dataObservable != null) {
-                //     dataObservable.onNext(json);
-                // }
+                // Send switch status to React Native
+                Bridge.sendSwitchStatus(switchType, switchValue, switchTimestamp);
                 break;
 
             case "sensor_data":
