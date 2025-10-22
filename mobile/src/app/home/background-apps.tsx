@@ -15,7 +15,7 @@ import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {showAlert} from "@/utils/AlertUtils"
 import {ThemedStyle} from "@/theme"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {useBackgroundApps, useRefreshApplets, useStartApplet, useStopApplet} from "@/stores/applets"
+import {useBackgroundApps, useStartApplet, useStopApplet} from "@/stores/applets"
 
 export default function BackgroundAppsScreen() {
   const {themed, theme} = useAppTheme()
@@ -24,7 +24,6 @@ export default function BackgroundAppsScreen() {
   const {active, inactive} = useBackgroundApps()
   const startApplet = useStartApplet()
   const stopApplet = useStopApplet()
-  const refreshApplets = useRefreshApplets()
 
   const incompatibleApplets = useMemo(
     () => inactive.filter(app => app.compatibility != null && app.compatibility.isCompatible === false),
@@ -60,7 +59,7 @@ export default function BackgroundAppsScreen() {
   }
 
   const openAppSettings = (app: ClientAppletInterface) => {
-    if (app.webviewUrl && app.isOffline === false) {
+    if (app.webviewUrl && app.offline === false) {
       push("/applet/webview", {
         webviewURL: app.webviewUrl,
         appName: app.name,
@@ -93,11 +92,11 @@ export default function BackgroundAppsScreen() {
             <View style={themed($appInfo)}>
               <Text
                 text={app.name}
-                style={[themed($appName), app.isOffline && themed($offlineApp)]}
+                style={[themed($appName), app.offline && themed($offlineApp)]}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               />
-              {app.isOffline && (
+              {app.offline && (
                 <View style={themed($offlineRow)}>
                   <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
                   <Text text="Offline" style={themed($offlineText)} />
