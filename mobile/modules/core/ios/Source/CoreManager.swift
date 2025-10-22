@@ -932,9 +932,9 @@ struct ViewState {
         let headUp = isHeadUp
         // send the state we just received if the user is currently in that state:
         if stateIndex == 0, !headUp {
-            sendCurrentState(false)
+            sendCurrentState()
         } else if stateIndex == 1, headUp {
-            sendCurrentState(true)
+            sendCurrentState()
         }
     }
 

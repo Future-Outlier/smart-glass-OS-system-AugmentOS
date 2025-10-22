@@ -694,11 +694,6 @@ class CoreManager {
 
     // MARK: - Glasses Commands
 
-    // send whatever was there before sending something else:
-    fun clearState() {
-        sendCurrentState(isHeadUp)
-    }
-
     private fun sendText(text: String) {
         Bridge.log("Mentra: sendText: $text")
         val currentSgc = sgc ?: return
@@ -867,7 +862,7 @@ class CoreManager {
         if (!statesEqual(currentState, newViewState)) {
             Bridge.log("Mentra: Updating view state $stateIndex with $layoutType")
             viewStates[stateIndex] = newViewState
-            sendCurrentState(isHeadUp)
+            sendCurrentState()
             // if (stateIndex == 0 && !isHeadUp) {
             //     sendCurrentState(false)
             // } else if (stateIndex == 1 && isHeadUp) {
