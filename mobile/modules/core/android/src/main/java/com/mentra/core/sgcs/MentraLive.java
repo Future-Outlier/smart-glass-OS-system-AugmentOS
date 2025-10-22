@@ -116,7 +116,6 @@ import java.util.Locale;
  */
 public class MentraLive extends SGCManager {
     private static final String TAG = "Live";
-    public String type = DeviceTypes.LIVE;
     public String savedDeviceName = "";
 
     // LC3 frame size for Mentra Live
@@ -392,6 +391,7 @@ public class MentraLive extends SGCManager {
 
     public MentraLive() {
         super();
+        this.type = DeviceTypes.MENTRALIVE;
         this.context = Bridge.getContext();
 
         // Initialize bluetooth adapter

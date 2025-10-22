@@ -15,6 +15,7 @@ import com.mentra.core.sgcs.G1
 import com.mentra.core.sgcs.MentraLive
 import com.mentra.core.sgcs.SGCManager
 import com.mentra.core.sgcs.Simulated
+import com.mentra.core.sgcs.Mach1
 import com.mentra.core.utils.DeviceTypes
 import java.text.SimpleDateFormat
 import java.util.*
@@ -719,6 +720,7 @@ class CoreManager {
         Bridge.log("Initializing manager for wearable: $wearable")
         if (sgc != null && sgc?.type != wearable) {
             Bridge.log("Mentra: Manager already initialized, cleaning up previous sgc")
+            Bridge.log("Mentra: Cleaning up previous sgc type: ${sgc?.type}")
             sgc?.cleanup()
             sgc = null
         }
@@ -730,7 +732,7 @@ class CoreManager {
         } else if (wearable.contains(DeviceTypes.LIVE)) {
             sgc = MentraLive()
         } else if (wearable.contains(DeviceTypes.MACH1)) {
-            // sgc = Mach1()
+            sgc = Mach1()
         } else if (wearable.contains(DeviceTypes.FRAME)) {
             // sgc = FrameManager()
         }
@@ -765,23 +767,6 @@ class CoreManager {
         Bridge.log("Mentra: handleDeviceReady() ${sgc?.type}")
         pendingWearable = ""
         defaultWearable = sgc?.type ?: ""
-
-        // TODO: fix this hack!
-        if (sgc is G1) {
-            defaultWearable = DeviceTypes.G1
-            handle_request_status()
-            handleG1Ready()
-        }
-
-        if (sgc is MentraLive) {
-            defaultWearable = DeviceTypes.LIVE
-            handle_request_status()
-        }
-
-        if (sgc is Simulated) {
-            defaultWearable = DeviceTypes.SIMULATED
-            handle_request_status()
-        }
 
         isSearching = false
         handle_request_status()

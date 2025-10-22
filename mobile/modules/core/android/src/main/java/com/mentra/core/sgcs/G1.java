@@ -88,7 +88,6 @@ public class G1 extends SGCManager {
     private int heartbeatCount = 0;
     private int micBeatCount = 0;
     private BluetoothAdapter bluetoothAdapter;
-    public String type = DeviceTypes.G1;
 
     public static final String LEFT_DEVICE_KEY = "SavedG1LeftName";
     public static final String RIGHT_DEVICE_KEY = "SavedG1RightName";
@@ -220,6 +219,7 @@ public class G1 extends SGCManager {
 
     public G1() {
         super();
+        this.type = DeviceTypes.G1;
         Bridge.log("G1: G1 constructor");
         this.context = Bridge.getContext();
         loadPairedDeviceNames();

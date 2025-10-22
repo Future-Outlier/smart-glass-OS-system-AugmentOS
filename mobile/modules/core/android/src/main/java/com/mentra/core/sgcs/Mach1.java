@@ -395,6 +395,7 @@ public class Mach1 extends SGCManager {
 
     public Mach1() {
         super();
+        this.type = DeviceTypes.MACH1;
         // this.lifecycleOwner = lifecycleOwner;
         // this.context = context;
 
