@@ -87,7 +87,7 @@ export default function BackgroundAppsScreen() {
           activeOpacity={app.running ? 0.7 : 1}
           disabled={!app.running}>
           <View style={themed($appContent)}>
-            <AppIcon app={app as any} style={themed($appIcon)} hideLoadingIndicator={app.running} />
+            <AppIcon app={app} style={themed($appIcon)} />
             <View style={themed($appInfo)}>
               <Text
                 text={app.name}
@@ -214,7 +214,7 @@ export default function BackgroundAppsScreen() {
                         }}
                         activeOpacity={0.7}>
                         <View style={themed($appContent)}>
-                          <AppIcon app={app as any} style={themed($incompatibleAppIcon)} />
+                          <AppIcon app={app} style={themed($incompatibleAppIcon)} />
                           <View style={themed($appInfo)}>
                             <Text
                               text={app.name}

@@ -14,10 +14,9 @@ interface AppIconProps {
   onClick?: () => void
   style?: ViewStyle
   showLabel?: boolean
-  hideLoadingIndicator?: boolean
 }
 
-const AppIcon = ({app, onClick, style, showLabel = false, hideLoadingIndicator = false}: AppIconProps) => {
+const AppIcon = ({app, onClick, style, showLabel = false}: AppIconProps) => {
   const {themed, theme} = useAppTheme()
 
   const WrapperComponent = onClick ? TouchableOpacity : View
@@ -56,7 +55,7 @@ const AppIcon = ({app, onClick, style, showLabel = false, hideLoadingIndicator =
               height: style?.height ?? 56,
               borderRadius: style?.borderRadius ?? theme.spacing.md,
             }}>
-            {app.loading && !hideLoadingIndicator && (
+            {app.loading && (
               <View style={themed($loadingContainer)}>
                 <ActivityIndicator size="small" color={theme.colors.palette.white} />
               </View>
@@ -71,7 +70,7 @@ const AppIcon = ({app, onClick, style, showLabel = false, hideLoadingIndicator =
           </SquircleView>
         ) : (
           <>
-            {app.loading && !hideLoadingIndicator && (
+            {app.loading && (
               <View style={themed($loadingContainer)}>
                 <ActivityIndicator size="large" color={theme.colors.tint} />
               </View>

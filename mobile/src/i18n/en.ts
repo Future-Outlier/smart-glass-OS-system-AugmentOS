@@ -144,6 +144,7 @@ const en = {
     tapAnAppSwitch: "Tap an app's switch to activate it",
     activeBackgroundApps: "Active Background Apps",
     inactiveBackgroundApps: "Inactive Background Apps",
+    appletPlaceholder: "Tap an app below to activate it",
   },
   glasses: {
     title: "Glasses",

@@ -22,10 +22,10 @@ export interface ClientAppletInterface extends AppletInterface {
 
 interface AppStatusState {
   apps: ClientAppletInterface[]
-  refreshApps: () => Promise<void>
-  startApp: (packageName: string, appType?: string) => Promise<void>
-  stopApp: (packageName: string) => Promise<void>
-  stopAllApps: () => Promise<void>
+  refreshApplets: () => Promise<void>
+  startApplet: (packageName: string, appType?: string) => Promise<void>
+  stopApplet: (packageName: string) => Promise<void>
+  stopAllApplets: () => Promise<void>
 }
 
 export const DUMMY_APPLET: ClientAppletInterface = {
@@ -129,10 +129,28 @@ const setOfflineApplet = async (packageName: string, status: boolean) => {
   }
 }
 
+const toggleApplet = async (applet: ClientAppletInterface, status: boolean) => {
+  if (applet.offline) {
+    await setOfflineApplet(applet.packageName, status)
+    await useAppletStatusStore.getState().refreshApplets() // update state immediately
+    return
+  }
+
+  if (status) {
+    await restComms.startApp(applet.packageName)
+  } else {
+    await restComms.stopApp(applet.packageName)
+  }
+  // TODO: remove this and just update when we receive the app_state_change event from the server
+  setTimeout(() => {
+    useAppletStatusStore.getState().refreshApplets()
+  }, 1000)
+}
+
 export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   apps: [],
 
-  refreshApps: async () => {
+  refreshApplets: async () => {
     const appsData: AppletInterface[] = await restComms.getApplets()
 
     const onlineApps: ClientAppletInterface[] = appsData.map(app => ({
@@ -168,9 +186,8 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     set({apps: applets})
   },
 
-  startApp: async (packageName: string) => {
+  startApplet: async (packageName: string) => {
     const applet = get().apps.find(a => a.packageName === packageName)
-    console.log("applet", applet)
 
     if (!applet) {
       console.error(`Applet not found for package name: ${packageName}`)
@@ -189,23 +206,14 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       for (const runningApp of runningForegroundApps) {
         console.log(`Stopping foreground app: ${runningApp.name} (${runningApp.packageName})`)
 
-        // Optimistically update UI
-        set(state => ({
-          apps: state.apps.map(a =>
-            a.packageName === runningApp.packageName ? {...a, running: false, loading: false} : a,
-          ),
-        }))
+        // // Optimistically update UI
+        // set(state => ({
+        //   apps: state.apps.map(a =>
+        //     a.packageName === runningApp.packageName ? {...a, running: false, loading: false} : a,
+        //   ),
+        // }))
 
-        // Stop the app (handles both online and offline)
-        try {
-          if (!runningApp.offline) {
-            await restComms.stopApp(runningApp.packageName)
-          } else {
-            await setOfflineApplet(runningApp.packageName, false)
-          }
-        } catch (error) {
-          console.error(`Error stopping app ${runningApp.packageName}:`, error)
-        }
+        toggleApplet(runningApp, false)
       }
     }
 
@@ -215,15 +223,10 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     }))
 
     try {
-      if (!applet.offline) {
-        await restComms.startApp(packageName)
-      } else {
-        setOfflineApplet(packageName, true)
-      }
+      await toggleApplet(applet, true)
+
       await useSettingsStore.getState().setSetting(SETTINGS_KEYS.has_ever_activated_app, true)
     } catch (error: any) {
-      console.error("Start app error:", error)
-
       if (error?.response?.data?.error?.stage === "HARDWARE_CHECK") {
         showAlert(
           translate("home:hardwareIncompatible"),
@@ -240,23 +243,21 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     }
   },
 
-  stopApp: async (packageName: string) => {
-    set(state => ({
-      apps: state.apps.map(a => (a.packageName === packageName ? {...a, running: false, loading: false} : a)),
-    }))
+  stopApplet: async (packageName: string) => {
     const applet = get().apps.find(a => a.packageName === packageName)
     if (!applet) {
       console.error(`Applet with package name ${packageName} not found`)
       return
     }
-    if (!applet.offline) {
-      await restComms.stopApp(packageName).catch(console.error)
-    } else {
-      setOfflineApplet(packageName, false)
-    }
+
+    set(state => ({
+      apps: state.apps.map(a => (a.packageName === packageName ? {...a, running: false, loading: true} : a)),
+    }))
+
+    toggleApplet(applet, false)
   },
 
-  stopAllApps: async () => {
+  stopAllApplets: async () => {
     const runningApps = get().apps.filter(app => app.running)
 
     for (const app of runningApps) {
@@ -272,10 +273,10 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
 }))
 
 export const useApplets = () => useAppletStatusStore(state => state.apps)
-export const useStartApplet = () => useAppletStatusStore(state => state.startApp)
-export const useStopApplet = () => useAppletStatusStore(state => state.stopApp)
-export const useRefreshApplets = () => useAppletStatusStore(state => state.refreshApps)
-export const useStopAllApplets = () => useAppletStatusStore(state => state.stopAllApps)
+export const useStartApplet = () => useAppletStatusStore(state => state.startApplet)
+export const useStopApplet = () => useAppletStatusStore(state => state.stopApplet)
+export const useRefreshApplets = () => useAppletStatusStore(state => state.refreshApplets)
+export const useStopAllApplets = () => useAppletStatusStore(state => state.stopAllApplets)
 export const useInactiveForegroundApps = () => {
   const apps = useApplets()
   const [isOffline] = useSetting(SETTINGS_KEYS.offline_mode)

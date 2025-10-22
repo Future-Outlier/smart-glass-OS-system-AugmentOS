@@ -554,14 +554,6 @@ class SocketComms {
         this.handle_display_event(msg)
         break
 
-      case "audio_play_request":
-        this.handle_audio_play_request(msg)
-        break
-
-      case "audio_stop_request":
-        this.handle_audio_stop_request()
-        break
-
       case "set_location_tier":
         this.handle_set_location_tier(msg)
         break

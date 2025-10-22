@@ -1658,12 +1658,17 @@ public class G1 extends SGCManager {
 
     @Override
     public void disconnect() {
-
+        ready = false;
+        ready = false;
+        destroy();
+        // CoreManager.getInstance().handleConnectionStateChanged();
     }
 
     @Override
     public void forget() {
-
+        ready = false;
+        destroy();
+        CoreManager.getInstance().handleConnectionStateChanged();
     }
 
     @Override
@@ -2087,6 +2092,7 @@ public class G1 extends SGCManager {
         Bridge.log("G1: EvenRealitiesG1SGC ONDESTROY");
         showHomeScreen();
         isKilled = true;
+        ready = false;
 
         // stop BLE scanning
         stopScan();
