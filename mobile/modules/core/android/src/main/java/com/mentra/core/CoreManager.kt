@@ -939,11 +939,6 @@ class CoreManager {
         sgc?.queryGalleryStatus()
     }
 
-    fun handle_send_gallery_mode_active(active: Boolean) {
-        Bridge.log("Mentra: Sending gallery mode active to glasses: $active")
-        sgc?.sendGalleryModeActive(active)
-    }
-
     fun handle_start_buffer_recording() {
         Bridge.log("Mentra: onStartBufferRecording")
         sgc?.startBufferRecording()
@@ -1042,15 +1037,7 @@ class CoreManager {
             count: Int
     ) {
         Bridge.log("Mentra: RGB LED control: action=$action, color=$color, requestId=$requestId")
-        sgc?.sendRgbLedControl(
-                requestId,
-                packageName,
-                action,
-                color,
-                ontime,
-                offtime,
-                count
-        )
+        sgc?.sendRgbLedControl(requestId, packageName, action, color, ontime, offtime, count)
     }
 
     fun handle_connect_default() {

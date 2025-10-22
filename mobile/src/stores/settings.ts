@@ -46,6 +46,7 @@ export const SETTINGS_KEYS = {
   auto_brightness: "auto_brightness",
   dashboard_height: "dashboard_height",
   dashboard_depth: "dashboard_depth",
+  gallery_mode: "gallery_mode",
   // button settings
   button_mode: "button_mode",
   button_photo_size: "button_photo_size",
@@ -157,6 +158,7 @@ const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.auto_brightness,
   SETTINGS_KEYS.dashboard_height,
   SETTINGS_KEYS.dashboard_depth,
+  SETTINGS_KEYS.gallery_mode,
   // button:
   SETTINGS_KEYS.button_mode,
   SETTINGS_KEYS.button_press_mode,
