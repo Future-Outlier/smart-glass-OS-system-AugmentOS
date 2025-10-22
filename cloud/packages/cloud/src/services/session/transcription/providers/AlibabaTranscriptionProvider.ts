@@ -13,7 +13,7 @@ import {
   TranscriptionProvider,
 } from "../types";
 import WebSocket from "ws";
-import { StreamType, TranscriptionData } from "@mentra/sdk";
+import { getLanguageInfo, StreamType, TranscriptionData } from "@mentra/sdk";
 
 interface AlibabaMessage {
   header: {
@@ -415,7 +415,7 @@ class AlibabaTranscriptionStream implements StreamInstance {
         function: "recognition",
         model: "gummy-realtime-v1",
         parameters: {
-          source_language: this.language === "all" ? "auto" : this.language,
+          source_language: this.normalizeLanguage(this.language),
           sample_rate: 16000,
           format: "wav",
           transcription_enabled: true,
@@ -442,6 +442,12 @@ class AlibabaTranscriptionStream implements StreamInstance {
     };
     this.ws.send(JSON.stringify(finishTaskMessage));
   }
+
+  private normalizeLanguage(language: string): string {
+    // TODO: Handle the all language code. if that's possible???
+    const baseLanguage = language.split("-")[0].toLowerCase();
+    return baseLanguage;
+  }
 }
 
 export class AlibabaTranscriptionProvider implements TranscriptionProvider {
@@ -453,7 +459,18 @@ export class AlibabaTranscriptionProvider implements TranscriptionProvider {
   private failureCount = 0;
   private lastFailureTime = 0;
 
-  private GUMMY_REALTIME_SUPPORTED_LANGUAGES: string[] = [];
+  private GUMMY_REALTIME_SUPPORTED_LANGUAGES: string[] = [
+    "zh",
+    "en",
+    "ja",
+    "ko",
+    "yue",
+    "de",
+    "fr",
+    "ru",
+    "it",
+    "es",
+  ];
 
   constructor(
     private config: AlibabaProviderConfig,
@@ -538,7 +555,17 @@ export class AlibabaTranscriptionProvider implements TranscriptionProvider {
   }
 
   supportsSubscription(subscription: string): boolean {
-    return this.GUMMY_REALTIME_SUPPORTED_LANGUAGES.includes(subscription);
+    const languageInfo = getLanguageInfo(subscription);
+    if (!languageInfo) {
+      return false;
+    }
+
+    // Only support transcription
+    if (languageInfo.type === StreamType.TRANSCRIPTION) {
+      return this.supportsLanguage(languageInfo.transcribeLanguage);
+    }
+
+    return false;
   }
 
   supportsLanguage(language: string): boolean {

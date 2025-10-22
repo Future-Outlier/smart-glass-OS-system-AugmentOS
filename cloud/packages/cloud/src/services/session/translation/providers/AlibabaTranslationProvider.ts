@@ -461,13 +461,14 @@ class AlibabaTranslationStream implements TranslationStreamInstance {
         function: "recognition",
         model: "gummy-realtime-v1",
         parameters: {
-          source_language:
-            this.sourceLanguage === "all" ? "auto" : this.sourceLanguage,
+          source_language: this.normalizeLanguage(this.sourceLanguage),
           sample_rate: 16000,
           format: "wav",
           transcription_enabled: true,
           translation_enabled: true,
-          translation_target_languages: ["en"],
+          translation_target_languages: [
+            this.normalizeLanguage(this.targetLanguage),
+          ],
         },
         input: {},
       },
@@ -490,6 +491,12 @@ class AlibabaTranslationStream implements TranslationStreamInstance {
     };
     this.ws.send(JSON.stringify(finishTaskMessage));
   }
+
+  private normalizeLanguage(language: string): string {
+    // TODO: Handle the all language code. if that's possible???
+    const baseLanguage = language.split("-")[0].toLowerCase();
+    return baseLanguage;
+  }
 }
 
 export class AlibabaTranslationProvider implements TranslationProvider {
@@ -508,6 +515,12 @@ export class AlibabaTranslationProvider implements TranslationProvider {
     en: ["zh", "ja", "ko"],
     ja: ["zh", "en"],
     ko: ["zh", "en"],
+    yue: ["zh", "en"],
+    de: ["zh", "en"],
+    fr: ["zh", "en"],
+    ru: ["zh", "en"],
+    it: ["zh", "en"],
+    es: ["zh", "en"],
   };
 
   constructor(
