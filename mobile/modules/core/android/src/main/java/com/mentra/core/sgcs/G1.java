@@ -538,7 +538,7 @@ public class G1 extends SGCManager {
                                     if (shouldUseGlassesMic) {
                                         if (pcmData != null && pcmData.length > 0) {
                                             // audioProcessingCallback.onAudioDataAvailable(pcmData);
-                                            CoreManager.getInstance().handleGlassesMicData(pcmData);
+                                            CoreManager.getInstance().handlePcm(pcmData);
                                         }
                                     }
 

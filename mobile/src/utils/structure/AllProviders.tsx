@@ -6,6 +6,7 @@ import {GestureHandlerRootView} from "react-native-gesture-handler"
 import {AuthProvider} from "@/contexts/AuthContext"
 import {SearchResultsProvider} from "@/contexts/SearchResultsContext"
 import {AppStoreWebviewPrefetchProvider} from "@/contexts/AppStoreWebviewPrefetchProvider"
+import {ButtonActionProvider} from "@/contexts/ButtonActionProvider"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {NavigationHistoryProvider} from "@/contexts/NavigationHistoryContext"
 import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
@@ -36,6 +37,7 @@ export const AllProviders = withWrappers(
   AuthProvider,
   SearchResultsProvider,
   AppStoreWebviewPrefetchProvider,
+  ButtonActionProvider,
   NavigationHistoryProvider,
   DeeplinkProvider,
   GestureHandlerRootView,

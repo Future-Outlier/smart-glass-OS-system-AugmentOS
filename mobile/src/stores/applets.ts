@@ -180,6 +180,39 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       return
     }
 
+    // Handle foreground apps - only one can run at a time
+    if (applet.type === "standard") {
+      const runningForegroundApps = get().apps.filter(
+        app => app.running && app.type === "standard" && app.packageName !== packageName,
+      )
+
+      console.log(`Found ${runningForegroundApps.length} running foreground apps to stop`)
+
+      // Stop all other running foreground apps (both online and offline)
+      for (const runningApp of runningForegroundApps) {
+        console.log(`Stopping foreground app: ${runningApp.name} (${runningApp.packageName})`)
+
+        // Optimistically update UI
+        set(state => ({
+          apps: state.apps.map(a =>
+            a.packageName === runningApp.packageName ? {...a, running: false, loading: false} : a,
+          ),
+        }))
+
+        // Stop the app (handles both online and offline)
+        try {
+          if (!runningApp.isOffline) {
+            await restComms.stopApp(runningApp.packageName)
+          } else {
+            await setOfflineApplet(runningApp.packageName, false)
+          }
+        } catch (error) {
+          console.error(`Error stopping app ${runningApp.packageName}:`, error)
+        }
+      }
+    }
+
+    // Start the new app
     set(state => ({
       apps: state.apps.map(a =>
         a.packageName === packageName ? {...a, running: true, loading: !applet.isOffline} : a,

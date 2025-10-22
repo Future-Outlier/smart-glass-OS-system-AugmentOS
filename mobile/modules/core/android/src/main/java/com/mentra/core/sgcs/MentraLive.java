@@ -1782,8 +1782,11 @@ public class MentraLive extends SGCManager {
 
                 Bridge.log("LIVE: Received button press - buttonId: " + buttonId + ", pressType: " + pressType);
 
-                // Post button press event to EventBus for core to handle
+                // Send to server for apps that need it
                 Bridge.sendButtonPress(buttonId, pressType);
+
+                // Send to React Native for default button action handling (matches iOS)
+                Bridge.sendButtonPressEvent(buttonId, pressType);
                 break;
 
             case "gallery_status":
@@ -2507,11 +2510,12 @@ public class MentraLive extends SGCManager {
 
     @Override
     public void sendGalleryMode() {
+        boolean active = CoreManager.getInstance().getGalleryMode();
         Bridge.log("LIVE: 📸 Sending gallery mode active to glasses: " + active);
         try {
             JSONObject json = new JSONObject();
             json.put("type", "save_in_gallery_mode");
-            json.put("active", CoreManager.getInstance().getGalleryMode());
+            json.put("active", active);
             json.put("timestamp", System.currentTimeMillis());
             sendJson(json, true);
             Bridge.log("LIVE: 📸 ✅ Gallery mode command sent successfully");

@@ -941,7 +941,8 @@ class CoreManager {
 
     fun handle_send_gallery_mode_active(active: Boolean) {
         Bridge.log("Mentra: Sending gallery mode active to glasses: $active")
-        sgc?.sendGalleryModeActive(active)
+        galleryMode = active
+        sgc?.sendGalleryMode()
     }
 
     fun handle_start_buffer_recording() {

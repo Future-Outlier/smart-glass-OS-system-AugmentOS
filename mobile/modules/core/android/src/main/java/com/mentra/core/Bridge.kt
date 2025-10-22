@@ -219,7 +219,7 @@ public class Bridge private constructor() {
 
         // MARK: - Hardware Events
 
-        /** Send button press */
+        /** Send button press to server (WebSocket) */
         @JvmStatic
         fun sendButtonPress(buttonId: String, pressType: String) {
             try {
@@ -235,6 +235,17 @@ public class Bridge private constructor() {
             } catch (e: Exception) {
                 log("ServerComms: Error building button_press JSON: $e")
             }
+        }
+
+        /** Send button press event to React Native - matches iOS implementation */
+        @JvmStatic
+        fun sendButtonPressEvent(buttonId: String, pressType: String) {
+            val buttonData = HashMap<String, Any>()
+            buttonData["buttonId"] = buttonId
+            buttonData["pressType"] = pressType
+            buttonData["timestamp"] = System.currentTimeMillis()
+
+            sendTypedMessage("button_press", buttonData as Map<String, Any>)
         }
 
         /** Send photo response */
