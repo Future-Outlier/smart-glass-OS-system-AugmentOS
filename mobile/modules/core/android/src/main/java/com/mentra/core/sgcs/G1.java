@@ -794,6 +794,7 @@ public class G1 extends SGCManager {
     }
 
     private void updateConnectionState() {
+        Boolean previousReady = ready;
         if (isLeftConnected && isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTED;
             Bridge.log("G1: Both glasses connected");
@@ -808,7 +809,9 @@ public class G1 extends SGCManager {
             Bridge.log("G1: No glasses connected");
             ready = false;
         }
-        CoreManager.getInstance().handleConnectionStateChanged();
+        if (previousReady != ready) {
+            CoreManager.getInstance().handleConnectionStateChanged();
+        }
     }
 
     private final BroadcastReceiver bondingReceiver = new BroadcastReceiver() {

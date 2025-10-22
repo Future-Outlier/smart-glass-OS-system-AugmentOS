@@ -21,8 +21,6 @@ export const SETTINGS_KEYS = {
   visited_livecaptions_settings: "visited_livecaptions_settings",
   // ui settings:
   enable_phone_notifications: "enable_phone_notifications",
-  notification_app_preferences: "notification_app_preferences",
-  notification_category_preferences: "notification_category_preferences",
   settings_access_count: "settings_access_count",
   custom_backend_url: "custom_backend_url",
   reconnect_on_app_foreground: "reconnect_on_app_foreground",
@@ -85,16 +83,6 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.visited_livecaptions_settings]: false,
   // ui settings:
   [SETTINGS_KEYS.enable_phone_notifications]: false,
-  [SETTINGS_KEYS.notification_app_preferences]: "{}",
-  [SETTINGS_KEYS.notification_category_preferences]: JSON.stringify({
-    social: true,
-    communication: true,
-    entertainment: true,
-    productivity: true,
-    news: true,
-    shopping: true,
-    other: true,
-  }),
   [SETTINGS_KEYS.settings_access_count]: 0,
   [SETTINGS_KEYS.custom_backend_url]: "https://api.mentra.glass:443",
   [SETTINGS_KEYS.reconnect_on_app_foreground]: false,
@@ -116,6 +104,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.auto_brightness]: true,
   [SETTINGS_KEYS.dashboard_height]: 4,
   [SETTINGS_KEYS.dashboard_depth]: 5,
+  [SETTINGS_KEYS.gallery_mode]: false,
   // button settings
   [SETTINGS_KEYS.button_mode]: "photo",
   [SETTINGS_KEYS.button_photo_size]: "medium",
@@ -387,6 +376,7 @@ export const useSettingsStore = create<SettingsState>()(
       CORE_SETTINGS_KEYS.forEach(key => {
         coreSettings[key] = state.getSetting(key)
       })
+      console.log(coreSettings)
       return coreSettings
     },
   })),
