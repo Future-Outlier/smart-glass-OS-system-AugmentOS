@@ -2236,15 +2236,15 @@ public class G1 extends SGCManager {
     }
 
     public void displayDoubleTextWall(String textTop, String textBottom) {
-        if (updatingScreen)
-            return;
+        // if (updatingScreen)
+        //     return;
 
-        if (textTop.trim().isEmpty() && textBottom.trim().isEmpty()) {
-            if (CoreManager.getInstance().getPowerSavingMode()) {
-                sendExitCommand();
-                return;
-            }
-        }
+        // if (textTop.trim().isEmpty() && textBottom.trim().isEmpty()) {
+        //     if (CoreManager.getInstance().getPowerSavingMode()) {
+        //         sendExitCommand();
+        //         return;
+        //     }
+        // }
 
         List<byte[]> chunks = createDoubleTextWallChunks(textTop, textBottom);
         sendChunks(chunks);
@@ -2861,8 +2861,8 @@ public class G1 extends SGCManager {
             int spacesNeeded = calculateSpacesForAlignment(leftTextWidth, RIGHT_COLUMN_START, spaceWidth);
 
             // Log detailed alignment info for debugging
-            Bridge.log("G1: " + String.format("Line %d: Left='%s' (width=%dpx) | Spaces=%d | Right='%s'",
-                    i, leftText, leftTextWidth, spacesNeeded, rightText));
+            // Bridge.log("G1: " + String.format("Line %d: Left='%s' (width=%dpx) | Spaces=%d | Right='%s'",
+                    // i, leftText, leftTextWidth, spacesNeeded, rightText));
 
             // Construct the full line with precise alignment
             pageText.append(leftText)
@@ -2948,7 +2948,7 @@ public class G1 extends SGCManager {
         // Split by newlines first
         String[] rawLines = text.split("\n");
 
-        Bridge.log("G1: Splitting text into lines..." + Arrays.toString(rawLines));
+        // Bridge.log("G1: Splitting text into lines..." + Arrays.toString(rawLines));
 
         for (String rawLine : rawLines) {
             // Add empty lines for newlines
@@ -2967,8 +2967,8 @@ public class G1 extends SGCManager {
                 // Calculate width of the entire remaining text
                 int lineWidth = calculateSubstringWidth(rawLine, startIndex, endIndex);
 
-                Bridge.log("G1: Line length: " + rawLine);
-                Bridge.log("G1: Calculating line width: " + lineWidth);
+                // Bridge.log("G1: Line length: " + rawLine);
+                // Bridge.log("G1: Calculating line width: " + lineWidth);
 
                 // If entire line fits, add it and move to next line
                 if (lineWidth <= maxDisplayWidth) {
@@ -3170,14 +3170,14 @@ public class G1 extends SGCManager {
     private void sendChunks(List<byte[]> chunks) {
         // Send each chunk with a delay between sends
         for (byte[] chunk : chunks) {
-            Bridge.log("G1: Sending chunk: " + Arrays.toString(chunk));
+            // Bridge.log("G1: Sending chunk: " + Arrays.toString(chunk));
             sendDataSequentially(chunk);
 
-            try {
-            Thread.sleep(DELAY_BETWEEN_CHUNKS_SEND); // delay between chunks
-            } catch (InterruptedException e) {
-            e.printStackTrace();
-            }
+            // try {
+            // Thread.sleep(DELAY_BETWEEN_CHUNKS_SEND); // delay between chunks
+            // } catch (InterruptedException e) {
+            // e.printStackTrace();
+            // }
         }
     }
 

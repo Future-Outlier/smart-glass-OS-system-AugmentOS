@@ -33,7 +33,6 @@ export default function BackgroundAppsScreen() {
   const inactiveApplets = useMemo(() => inactive.filter(app => app.compatibility?.isCompatible === true), [inactive])
 
   const toggleApp = async (app: ClientAppletInterface) => {
-    console.log("toggleApp called", app.packageName)
     if (app.running) {
       await stopApplet(app.packageName)
     } else {
