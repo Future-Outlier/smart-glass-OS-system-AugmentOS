@@ -594,7 +594,7 @@ struct ViewState {
 
     func initSGC(_ wearable: String) {
         Bridge.log("Initializing manager for wearable: \(wearable)")
-        if sgc != nil {
+        if sgc != nil && sgc?.type != wearable {
             Bridge.log("Mentra: Manager already initialized, cleaning up previous sgc")
             sgc?.cleanup()
             sgc = nil

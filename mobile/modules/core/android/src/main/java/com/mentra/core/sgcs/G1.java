@@ -122,7 +122,6 @@ public class G1 extends SGCManager {
     private boolean stopper = false;
     private boolean debugStopper = false;
     private boolean shouldUseAutoBrightness = false;
-    private int brightnessValue;
     private boolean updatingScreen = false;
 
     private static final long DELAY_BETWEEN_SENDS_MS = 5; // not using now
@@ -130,10 +129,8 @@ public class G1 extends SGCManager {
     private static final long DELAY_BETWEEN_ACTIONS_SEND = 250; // not using now
     private static final long HEARTBEAT_INTERVAL_MS = 15000;
     private static final long MICBEAT_INTERVAL_MS = (1000 * 60) * 30; // micbeat every 30 minutes
-    private int caseBatteryLevel = -1;
-    private boolean caseCharging = false;
-    private boolean caseOpen = false;
-    private boolean caseRemoved = true;
+
+
     private int batteryLeft = -1;
     private int batteryRight = -1;
     private int leftReconnectAttempts = 0;
@@ -229,8 +226,6 @@ public class G1 extends SGCManager {
         // goHomeHandler = new Handler();
         // this.smartGlassesDevice = smartGlassesDevice;
         preferredG1DeviceId = CoreManager.getInstance().getDeviceName();
-        brightnessValue = CoreManager.getInstance().getBrightness();
-        shouldUseAutoBrightness = CoreManager.getInstance().getAutoBrightness();
         this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         this.shouldUseGlassesMic = false;
 
@@ -731,6 +726,8 @@ public class G1 extends SGCManager {
                 queryBatteryStatusHandler.postDelayed(() -> queryBatteryStatus(), 10);
 
                 // setup brightness
+                int brightnessValue = CoreManager.getInstance().getBrightness();
+                Boolean shouldUseAutoBrightness = CoreManager.getInstance().getAutoBrightness();
                 sendBrightnessCommandHandler
                         .postDelayed(() -> sendBrightnessCommand(brightnessValue, shouldUseAutoBrightness), 10);
 
@@ -1173,10 +1170,11 @@ public class G1 extends SGCManager {
                 }
             } else {
                 // Already bonded
-                if (isLeft)
+                if (isLeft) {
                     isLeftBonded = true;
-                else
+                } else {
                     isRightBonded = true;
+                }
 
                 // Both are bonded => connect to GATT
                 if (leftDevice != null && rightDevice != null && isLeftBonded && isRightBonded) {
@@ -1192,6 +1190,8 @@ public class G1 extends SGCManager {
                     }, 2000);
                 } else {
                     Bridge.log("G1: Not running a63dd");
+                    Bridge.log("G1: leftBonded=" + isLeftBonded + ", rightBonded=" + isRightBonded);
+                    Bridge.log("G1: leftDevice=" + leftDevice + ", rightDevice=" + rightDevice);
                 }
             }
         }
