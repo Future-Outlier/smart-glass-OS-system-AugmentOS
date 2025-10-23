@@ -70,7 +70,7 @@ struct ViewState {
 
     // core settings
     private var sensingEnabled: Bool = true
-    private var powerSavingMode: Bool = false
+    var powerSavingMode: Bool = false
     private var alwaysOnStatusBar: Bool = false
     private var bypassVad: Bool = true
     private var bypassVadForPCM: Bool = false // NEW: PCM subscription bypass
@@ -620,7 +620,7 @@ struct ViewState {
 
         Task {
             var currentViewState: ViewState!
-            if isDashboard {
+            if isHeadUp {
                 currentViewState = self.viewStates[1]
             } else {
                 currentViewState = self.viewStates[0]
@@ -1143,10 +1143,10 @@ struct ViewState {
     }
 
     func handle_photo_request(
-        _ requestId: String, _ appId: String, _ size: String, _ webhookUrl: String?, _: String?
+        _ requestId: String, _ appId: String, _ size: String, _ webhookUrl: String?, _ authToken: String?
     ) {
         Bridge.log("Mentra: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size)")
-        sgc?.requestPhoto(requestId, appId: appId, size: size, webhookUrl: webhookUrl)
+        sgc?.requestPhoto(requestId, appId: appId, size: size, webhookUrl: webhookUrl, authToken: authToken)
     }
 
     func handle_connect_default() {
