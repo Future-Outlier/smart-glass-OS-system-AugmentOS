@@ -66,7 +66,7 @@ struct ViewState {
     var galleryMode: Bool = false
 
     // glasses state:
-    private var isHeadUp: Bool = false
+    var isHeadUp: Bool = false
 
     // core settings
     private var sensingEnabled: Bool = true
