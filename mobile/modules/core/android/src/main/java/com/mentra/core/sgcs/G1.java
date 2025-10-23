@@ -1505,7 +1505,7 @@ public class G1 extends SGCManager {
     }
 
     @Override
-    public void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken) {
+    public void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken, String compress) {
 
     }
 
