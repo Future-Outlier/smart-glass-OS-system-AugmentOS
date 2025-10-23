@@ -1236,13 +1236,15 @@ class CoreManager {
             }
         }
 
-        (settings["dashboard_height"] as? Int)?.let { newDashboardHeight ->
+        // Dashboard height - handle both Int and Double from JavaScript
+        (settings["dashboard_height"] as? Number)?.toInt()?.let { newDashboardHeight ->
             if (dashboardHeight != newDashboardHeight) {
                 updateGlassesHeight(newDashboardHeight)
             }
         }
 
-        (settings["dashboard_depth"] as? Int)?.let { newDashboardDepth ->
+        // Dashboard depth - handle both Int and Double from JavaScript
+        (settings["dashboard_depth"] as? Number)?.toInt()?.let { newDashboardDepth ->
             if (dashboardDepth != newDashboardDepth) {
                 updateGlassesDepth(newDashboardDepth)
             }
@@ -1367,6 +1369,10 @@ class CoreManager {
             if (deviceAddress != newDeviceAddress) {
                 deviceAddress = newDeviceAddress
             }
+        }
+
+        (settings["screen_disabled"] as? Boolean)?.let { screenDisabled ->
+            updateUpdatingScreen(screenDisabled)
         }
     }
 

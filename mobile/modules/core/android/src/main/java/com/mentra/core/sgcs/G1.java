@@ -1648,7 +1648,7 @@ public class G1 extends SGCManager {
 
     @Override
     public void exit() {
-
+        sendExitCommand();
     }
 
     @Override
