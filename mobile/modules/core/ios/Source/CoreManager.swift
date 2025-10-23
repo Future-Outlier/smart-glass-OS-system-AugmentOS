@@ -509,11 +509,11 @@ struct ViewState {
 
     func updateScreenDisabled(_ enabled: Bool) {
         Bridge.log("Mentra: Toggling screen disabled: \(enabled)")
+        screenDisabled = enabled
         if enabled {
             sgc?.exit()
-            screenDisabled = true
         } else {
-            screenDisabled = false
+            sgc?.clearDisplay()
         }
     }
 

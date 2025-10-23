@@ -39,11 +39,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.CRC32;
 import java.nio.ByteBuffer;
 
-// import com.augmentos.augmentos_core.smarterglassesmanager.SmartGlassesManager;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.isMicEnabledForFrontendEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.HeadUpAngleEvent;
-// import com.augmentos.augmentos_core.R;
-
 import com.google.gson.Gson;
 import org.greenrobot.eventbus.EventBus;
 import org.json.JSONArray;
@@ -72,17 +67,6 @@ import static com.mentra.core.utils.BitmapJavaUtils.convertBitmapTo1BitBmpBytes;
 import com.mentra.core.utils.G1FontLoader;
 import com.mentra.core.utils.SmartGlassesConnectionState;
 import com.mentra.lc3Lib.Lc3Cpp;
-
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesSerialNumberEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BatteryLevelEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.CaseEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BrightnessLevelEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchDiscoverEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchStopEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesHeadDownEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesHeadUpEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.supportedglasses.SmartGlassesDevice;
-
 
 public class G1 extends SGCManager {
     private static final String TAG = "WearableAi_EvenRealitiesG1SGC";
@@ -1583,7 +1567,6 @@ public class G1 extends SGCManager {
     @Override
     public void clearDisplay() {
         Bridge.log("G1: clearDisplay() - sending space");
-        // sendExitCommand();
         sendTextWall(" ");
     }
 
@@ -2412,14 +2395,6 @@ public class G1 extends SGCManager {
                             Bridge.log("Found smart glasses: " + name);
                             String adjustedName = parsePairingIdFromDeviceName(name);
                             Bridge.sendDiscoveredDevice("Even Realities G1", adjustedName);
-                            // EventBus.getDefault().post(
-                            // new GlassesBluetoothSearchDiscoverEvent(
-                            // smartGlassesDevice.deviceModelName,
-                            // adjustedName
-                            // )
-                            // );
-                            // TODO: finish this
-                            // Bridge.sendEvent("glasses_bluetooth_search_discover", adjustedName);
                         }
                     }
                 }
@@ -2843,10 +2818,12 @@ public class G1 extends SGCManager {
         List<String> lines2 = splitIntoLines(text2, DISPLAY_WIDTH - RIGHT_COLUMN_START);
 
         // Ensure we have exactly LINES_PER_SCREEN lines (typically 5)
-        while (lines1.size() < LINES_PER_SCREEN)
+        while (lines1.size() < LINES_PER_SCREEN) {
             lines1.add("");
-        while (lines2.size() < LINES_PER_SCREEN)
+        }
+        while (lines2.size() < LINES_PER_SCREEN) {
             lines2.add("");
+        }
 
         lines1 = lines1.subList(0, LINES_PER_SCREEN);
         lines2 = lines2.subList(0, LINES_PER_SCREEN);

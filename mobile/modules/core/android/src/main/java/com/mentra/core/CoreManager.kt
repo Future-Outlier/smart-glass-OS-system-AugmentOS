@@ -450,16 +450,17 @@ class CoreManager {
         // Cancel any pending clear display work item
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
         //
-        Bridge.log("Mentra: Entering parseViewState")
+        Bridge.log("Mentra: parsing layoutType: ${currentViewState.layoutType}")
 
         when (currentViewState.layoutType) {
             "text_wall" -> sendText(currentViewState.text)
-            // "double_text_wall" -> {
-            //     sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
-            // }
             "double_text_wall" -> {
-                sendText(currentViewState.topText)
+                sgc?.sendDoubleTextWall("top", "bottom")
+                // sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
             }
+            // "double_text_wall" -> {
+            //     sendText(currentViewState.topText)
+            // }
 
             "reference_card" -> {
                 sendText("${currentViewState.title}\n\n${currentViewState.text}")
@@ -687,11 +688,11 @@ class CoreManager {
 
     fun updateScreenDisabled(enabled: Boolean) {
         Bridge.log("Mentra: Toggling screen disabled: $enabled")
+        screenDisabled = enabled
         if (enabled) {
             sgc?.exit()
-            screenDisabled = true
         } else {
-            screenDisabled = false
+            sgc?.clearDisplay()
         }
     }
 

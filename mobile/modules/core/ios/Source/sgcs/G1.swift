@@ -1759,42 +1759,9 @@ extension G1 {
         return result
     }
 
-    /// Clear display using MentraOS's 0x18 command (exit to dashboard)
     func clearDisplay() {
         Bridge.log("G1: clearDisplay() - Using space")
         sendTextWall(" ")
-        // Task {
-        //     // Send 0x18 to both glasses (MentraOS's clear method)
-
-        //     var cmd: [UInt8] = [0x18] // turns off display
-        //     //     var cmd: [UInt8] = [0x23, 0x72]// restarts the glasses
-        //     var bufferedCommand = BufferedCommand(
-        //         chunks: [cmd],
-        //         sendLeft: false,
-        //         sendRight: true,
-        //         waitTime: 50,
-        //         ignoreAck: false
-        //     )
-
-        //     await commandQueue.enqueue(bufferedCommand)
-        //     //    Task {
-        //     //      await setSilentMode(true)
-        //     //      try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-        //     //      await setSilentMode(false)
-        //     //      await setSilentMode(false)
-        //     //    }
-
-        //     // RN_sendText("DISPLAY SLEEPING...")
-
-        //     // // queue the command after 0.5 seconds
-        //     // Task {
-        //     //   try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-        //     //   await commandQueue.enqueue(bufferedCommand)
-        //     // }
-
-        //     // CoreCommsService.log("Display cleared with exit command")
-        //     return true
-        // }
     }
 
     /// Create a simple test BMP pattern in hex format
