@@ -862,7 +862,10 @@ class MentraLive: NSObject, SGCManager {
     func setBrightness(_: Int, autoMode _: Bool) {}
     func clearDisplay() {}
     func sendTextWall(_: String) {}
-    func forget() {}
+    func forget() {
+        Bridge.log("LIVE: Forgetting Mentra Live glasses")
+        disconnect()
+    }
 
     var type = "Mentra Live"
     var hasMic = false
@@ -870,13 +873,13 @@ class MentraLive: NSObject, SGCManager {
     var caseOpen = false
     var caseRemoved = true
     var caseCharging = false
-    func setMicEnabled(_ enabled: Bool) async -> Bool {
+    func setMicEnabled(_ enabled: Bool) {
         Bridge.log("LIVE: setMicEnabled called: \(enabled)")
 
         // Only enable if device supports LC3 audio
         guard supportsLC3Audio else {
             Bridge.log("LIVE: Device does not support LC3 audio, ignoring mic enable request")
-            return false
+            return
         }
 
         // Update shouldUseGlassesMic based on enabled state
@@ -889,8 +892,6 @@ class MentraLive: NSObject, SGCManager {
             Bridge.log("LIVE: Microphone disabled, stopping audio input handling")
             stopMicBeat()
         }
-
-        return true
     }
 
     // BLE UUIDs

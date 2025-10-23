@@ -15,7 +15,7 @@ import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {showAlert} from "@/utils/AlertUtils"
 import {ThemedStyle} from "@/theme"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {useBackgroundApps, useRefreshApplets, useStartApplet, useStopApplet} from "@/stores/applets"
+import {useBackgroundApps, useStartApplet, useStopApplet} from "@/stores/applets"
 
 export default function BackgroundAppsScreen() {
   const {themed, theme} = useAppTheme()
@@ -24,7 +24,6 @@ export default function BackgroundAppsScreen() {
   const {active, inactive} = useBackgroundApps()
   const startApplet = useStartApplet()
   const stopApplet = useStopApplet()
-  const refreshApplets = useRefreshApplets()
 
   const incompatibleApplets = useMemo(
     () => inactive.filter(app => app.compatibility != null && app.compatibility.isCompatible === false),
@@ -34,7 +33,6 @@ export default function BackgroundAppsScreen() {
   const inactiveApplets = useMemo(() => inactive.filter(app => app.compatibility?.isCompatible === true), [inactive])
 
   const toggleApp = async (app: ClientAppletInterface) => {
-    console.log("toggleApp called", app.packageName)
     if (app.running) {
       await stopApplet(app.packageName)
     } else {
@@ -60,7 +58,7 @@ export default function BackgroundAppsScreen() {
   }
 
   const openAppSettings = (app: ClientAppletInterface) => {
-    if (app.webviewUrl && app.isOffline === false) {
+    if (app.webviewUrl && app.offline === false) {
       push("/applet/webview", {
         webviewURL: app.webviewUrl,
         appName: app.name,
@@ -89,15 +87,15 @@ export default function BackgroundAppsScreen() {
           activeOpacity={app.running ? 0.7 : 1}
           disabled={!app.running}>
           <View style={themed($appContent)}>
-            <AppIcon app={app as any} style={themed($appIcon)} hideLoadingIndicator={app.running} />
+            <AppIcon app={app} style={themed($appIcon)} />
             <View style={themed($appInfo)}>
               <Text
                 text={app.name}
-                style={[themed($appName), app.isOffline && themed($offlineApp)]}
+                style={[themed($appName), app.offline && themed($offlineApp)]}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               />
-              {app.isOffline && (
+              {app.offline && (
                 <View style={themed($offlineRow)}>
                   <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
                   <Text text="Offline" style={themed($offlineText)} />
@@ -216,7 +214,7 @@ export default function BackgroundAppsScreen() {
                         }}
                         activeOpacity={0.7}>
                         <View style={themed($appContent)}>
-                          <AppIcon app={app as any} style={themed($incompatibleAppIcon)} />
+                          <AppIcon app={app} style={themed($incompatibleAppIcon)} />
                           <View style={themed($appInfo)}>
                             <Text
                               text={app.name}

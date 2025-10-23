@@ -175,7 +175,7 @@ class MantleManager {
     }
   }
 
-  public async handleLocalTranscription(data: any) {
+  public async handle_local_transcription(data: any) {
     // TODO: performance!
     const offlineStt = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.offline_captions_running)
     if (offlineStt) {
@@ -220,6 +220,17 @@ class MantleManager {
       socketComms.sendLocalTranscription(data)
       return
     }
+  }
+
+  public async handle_button_press(id: string, type: string, _timestamp: string) {
+    // Emit event to React Native layer for handling
+    // we should phase out the global event emitter
+    // GlobalEventEmitter.emit("BUTTON_PRESS", {
+    //   buttonId: data.buttonId,
+    //   pressType: data.pressType,
+    //   timestamp: data.timestamp,
+    // })
+    socketComms.sendButtonPress(id, type)
   }
 }
 

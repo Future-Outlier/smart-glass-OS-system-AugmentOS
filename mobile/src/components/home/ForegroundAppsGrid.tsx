@@ -14,7 +14,6 @@ import {
 } from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
 const GRID_COLUMNS = 4
 
@@ -243,17 +242,6 @@ export const ForegroundAppsGrid: React.FC = () => {
         <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
           <View style={themed($appContainer)}>
             <AppIcon app={item as any} style={themed($appIcon)} />
-            {!item.healthy && (
-              <View style={themed($offlineBadge)}>
-                <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
-              </View>
-            )}
-            {/* Show home badge for offline apps, but not for camera app (it has custom icon) */}
-            {item.isOffline && (
-              <View style={themed($offlineAppIndicator)}>
-                <MaterialCommunityIcons name="home" size={theme.spacing.md} color={theme.colors.text} />
-              </View>
-            )}
           </View>
           <Text
             text={item.name}
@@ -338,29 +326,6 @@ const $appNameOffline: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   marginTop: spacing.xxs,
   textDecorationLine: "line-through",
   lineHeight: 14,
-})
-
-const $offlineBadge: ThemedStyle<ViewStyle> = ({colors}) => ({
-  position: "absolute",
-  top: -4,
-  right: -4,
-  backgroundColor: colors.background,
-  borderRadius: 10,
-  padding: 2,
-})
-
-const $offlineAppIndicator: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  position: "absolute",
-  right: -spacing.xxs,
-  bottom: 0,
-  width: spacing.lg,
-  height: spacing.lg,
-  justifyContent: "center",
-  alignItems: "center",
-  borderRadius: spacing.md,
-  backgroundColor: colors.palette.secondary400,
-  borderWidth: 2,
-  borderColor: colors.background,
 })
 
 const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({

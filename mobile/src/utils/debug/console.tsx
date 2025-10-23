@@ -100,9 +100,9 @@ export const ConsoleLogger = () => {
     }
 
     return () => {
-      console.log = originalLog
-      console.warn = originalWarn
-      console.error = originalError
+      // console.log = originalLog
+      // console.warn = originalWarn
+      // console.error = originalError
     }
   }, [])
 

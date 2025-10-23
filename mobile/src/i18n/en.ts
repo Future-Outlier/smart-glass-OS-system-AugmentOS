@@ -144,6 +144,7 @@ const en = {
     tapAnAppSwitch: "Tap an app's switch to activate it",
     activeBackgroundApps: "Active Background Apps",
     inactiveBackgroundApps: "Inactive Background Apps",
+    appletPlaceholder: "Tap an app below to activate it",
   },
   glasses: {
     title: "Glasses",
@@ -220,6 +221,7 @@ const en = {
     glassesWifiDescription: "Configure WiFi settings for your smart glasses.",
     wifiUnavailable: "Connect a pair of glasses that support WiFi to access WiFi settings.",
     developerSettings: "Developer Settings",
+    disconnectGlasses: "Disconnect Glasses",
     forgetGlasses: "Forget Glasses",
     forgetGlassesConfirm: "Are you sure you want to forget your glasses?",
     signOut: "Sign Out",

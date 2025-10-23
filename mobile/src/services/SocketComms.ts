@@ -430,11 +430,11 @@ class SocketComms {
       return
     }
     console.log(`SOCKET: Received app_started message for package: ${msg.packageName}`)
-    useAppletStatusStore.getState().refreshApps()
+    useAppletStatusStore.getState().refreshApplets()
   }
   private handle_app_stopped(msg: any) {
     console.log(`SOCKET: Received app_stopped message for package: ${msg.packageName}`)
-    useAppletStatusStore.getState().refreshApps()
+    useAppletStatusStore.getState().refreshApplets()
   }
 
   private handle_photo_request(msg: any) {
@@ -552,14 +552,6 @@ class SocketComms {
 
       case "display_event":
         this.handle_display_event(msg)
-        break
-
-      case "audio_play_request":
-        this.handle_audio_play_request(msg)
-        break
-
-      case "audio_stop_request":
-        this.handle_audio_stop_request()
         break
 
       case "set_location_tier":

@@ -33,8 +33,8 @@ struct ViewState {
     // MARK: - Unique (iOS)
 
     private var cancellables = Set<AnyCancellable>()
-    private var sendStateWorkItem: DispatchWorkItem?
-    private let sendStateQueue = DispatchQueue(label: "sendStateQueue", qos: .userInitiated)
+    var sendStateWorkItem: DispatchWorkItem?
+    let sendStateQueue = DispatchQueue(label: "sendStateQueue", qos: .userInitiated)
 
     // MARK: - End Unique
 
@@ -66,11 +66,11 @@ struct ViewState {
     var galleryMode: Bool = false
 
     // glasses state:
-    private var isHeadUp: Bool = false
+    var isHeadUp: Bool = false
 
     // core settings
     private var sensingEnabled: Bool = true
-    private var powerSavingMode: Bool = false
+    var powerSavingMode: Bool = false
     private var alwaysOnStatusBar: Bool = false
     private var bypassVad: Bool = true
     private var bypassVadForPCM: Bool = false // NEW: PCM subscription bypass
@@ -351,7 +351,7 @@ struct ViewState {
 
     func updateHeadUp(_ isHeadUp: Bool) {
         self.isHeadUp = isHeadUp
-        sendCurrentState(isHeadUp)
+        sendCurrentState()
         Bridge.sendHeadUp(isHeadUp)
     }
 
@@ -519,36 +519,6 @@ struct ViewState {
 
     // MARK: - Glasses Commands
 
-    // send whatever was there before sending something else:
-    func clearState() {
-        sendCurrentState(sgc?.isHeadUp ?? false)
-    }
-
-    private func clearDisplay() {
-        if sgc is G1 {
-            let g1 = sgc as? G1
-            g1?.sendTextWall(" ")
-
-            // clear the screen after 3 seconds if the text is empty or a space:
-            if powerSavingMode {
-                sendStateWorkItem?.cancel()
-                Bridge.log("Mentra: Clearing display after 3 seconds")
-                // if we're clearing the display, after a delay, send a clear command if not cancelled with another
-                let workItem = DispatchWorkItem { [weak self] in
-                    guard let self = self else { return }
-                    if self.isHeadUp {
-                        return
-                    }
-                    g1?.clearDisplay()
-                }
-                sendStateWorkItem = workItem
-                sendStateQueue.asyncAfter(deadline: .now() + 3, execute: workItem)
-            }
-        } else {
-            sgc!.clearDisplay()
-        }
-    }
-
     func sendText(_ text: String) {
         // Core.log("Mentra: Sending text: \(text)")
         if sgc == nil {
@@ -556,7 +526,7 @@ struct ViewState {
         }
 
         if text == " " || text.isEmpty {
-            clearDisplay()
+            sgc?.clearDisplay()
             return
         }
 
@@ -619,10 +589,15 @@ struct ViewState {
 
     func initSGC(_ wearable: String) {
         Bridge.log("Initializing manager for wearable: \(wearable)")
-        if sgc != nil {
+        if sgc != nil && sgc?.type != wearable {
             Bridge.log("Mentra: Manager already initialized, cleaning up previous sgc")
             sgc?.cleanup()
             sgc = nil
+        }
+
+        if sgc != nil {
+            Bridge.log("Mentra: SGC already initialized")
+            return
         }
 
         if wearable.contains(DeviceTypes.SIMULATED) {
@@ -638,21 +613,19 @@ struct ViewState {
         }
     }
 
-    func sendCurrentState(_ isDashboard: Bool) {
+    func sendCurrentState() {
         if updatingScreen {
             return
         }
 
         Task {
             var currentViewState: ViewState!
-            if isDashboard {
+            if isHeadUp {
                 currentViewState = self.viewStates[1]
             } else {
                 currentViewState = self.viewStates[0]
             }
-            self.isHeadUp = isDashboard
-
-            if isDashboard && !self.contextualDashboard {
+            if isHeadUp && !self.contextualDashboard {
                 return
             }
 
@@ -678,7 +651,6 @@ struct ViewState {
                 let topText = currentViewState.topText
                 let bottomText = currentViewState.bottomText
                 sgc?.sendDoubleTextWall(topText, bottomText)
-                sgc?.sendDoubleTextWall(topText, bottomText)
             case "reference_card":
                 sendText(currentViewState.title + "\n\n" + currentViewState.text)
             case "bitmap_view":
@@ -689,9 +661,6 @@ struct ViewState {
                 }
                 Bridge.log("Mentra: Processing bitmap_view with base64 data, length: \(data.count)")
                 await sgc?.displayBitmap(base64ImageData: data)
-            case "clear_view":
-                Bridge.log("Mentra: Processing clear_view layout - clearing display")
-                clearDisplay()
             default:
                 Bridge.log("UNHANDLED LAYOUT_TYPE \(layoutType)")
             }
@@ -868,7 +837,7 @@ struct ViewState {
             // Send startup message
             sendText("MENTRAOS CONNECTED")
             try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            clearDisplay()
+            sgc?.clearDisplay()
 
             self.handle_request_status()
         }
@@ -963,9 +932,9 @@ struct ViewState {
         let headUp = isHeadUp
         // send the state we just received if the user is currently in that state:
         if stateIndex == 0, !headUp {
-            sendCurrentState(false)
+            sendCurrentState()
         } else if stateIndex == 1, headUp {
-            sendCurrentState(true)
+            sendCurrentState()
         }
     }
 
@@ -1174,10 +1143,10 @@ struct ViewState {
     }
 
     func handle_photo_request(
-        _ requestId: String, _ appId: String, _ size: String, _ webhookUrl: String?, _: String?
+        _ requestId: String, _ appId: String, _ size: String, _ webhookUrl: String?, _ authToken: String?
     ) {
         Bridge.log("Mentra: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size)")
-        sgc?.requestPhoto(requestId, appId: appId, size: size, webhookUrl: webhookUrl)
+        sgc?.requestPhoto(requestId, appId: appId, size: size, webhookUrl: webhookUrl, authToken: authToken)
     }
 
     func handle_connect_default() {
@@ -1230,19 +1199,27 @@ struct ViewState {
     func handle_disconnect() {
         sendText(" ") // clear the screen
         sgc?.disconnect()
+        sgc = nil // Clear the SGC reference after disconnect
         isSearching = false
         handle_request_status()
     }
 
     func handle_forget() {
         Bridge.log("Mentra: Forgetting smart glasses")
-        handle_disconnect()
+
+        // Call forget first to stop timers/handlers/reconnect logic
+        sgc?.forget()
+
+        // Then disconnect to close connections
+        sgc?.disconnect()
+
+        // Clear state
         defaultWearable = ""
         deviceName = ""
-        sgc?.forget()
         sgc = nil
         Bridge.saveSetting("default_wearable", "")
         Bridge.saveSetting("device_name", "")
+        isSearching = false
         handle_request_status()
     }
 
