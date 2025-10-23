@@ -417,12 +417,12 @@ struct ViewState {
         Task {
             sgc?.setBrightness(value, autoMode: autoBrightness)
             if autoBrightnessChanged {
-                sendText(autoBrightness ? "Enabled auto brightness" : "Disabled auto brightness")
+                sgc?.sendTextWall(autoBrightness ? "Enabled auto brightness" : "Disabled auto brightness")
             } else {
-                sendText("Set brightness to \(value)%")
+                sgc?.sendTextWall("Set brightness to \(value)%")
             }
             try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
-            sendText(" ") // clear screen
+            sgc?.clearDisplay() // clear screen
         }
         handle_request_status() // to update the UI
     }
@@ -519,20 +519,6 @@ struct ViewState {
 
     // MARK: - Glasses Commands
 
-    func sendText(_ text: String) {
-        // Core.log("Mentra: Sending text: \(text)")
-        if sgc == nil {
-            return
-        }
-
-        if text == " " || text.isEmpty {
-            sgc?.clearDisplay()
-            return
-        }
-
-        sgc?.sendTextWall(text)
-    }
-
     private func playStartupSequence() {
         Bridge.log("Mentra: playStartupSequence()")
         // Arrow frames for the animation
@@ -553,9 +539,9 @@ struct ViewState {
             // Check if we've completed all cycles
             if cycles >= totalCycles {
                 // End animation with final message
-                sendText("                  /// MentraOS Connected \\\\\\")
+                sgc?.sendTextWall("                  /// MentraOS Connected \\\\\\")
                 animationQueue.asyncAfter(deadline: .now() + 1.0) {
-                    self.sendText(" ")
+                    self.sgc?.clearDisplay()
                 }
                 return
             }
@@ -563,7 +549,7 @@ struct ViewState {
             // Display current animation frame
             let frameText =
                 "                    \(arrowFrames[frameIndex]) MentraOS Booting \(arrowFrames[frameIndex])"
-            sendText(frameText)
+            sgc?.sendTextWall(frameText)
 
             // Move to next frame
             frameIndex = (frameIndex + 1) % arrowFrames.count
@@ -646,13 +632,13 @@ struct ViewState {
             switch layoutType {
             case "text_wall":
                 let text = currentViewState.text
-                sendText(text)
+                sgc?.sendTextWall(text)
             case "double_text_wall":
                 let topText = currentViewState.topText
                 let bottomText = currentViewState.bottomText
                 sgc?.sendDoubleTextWall(topText, bottomText)
             case "reference_card":
-                sendText(currentViewState.title + "\n\n" + currentViewState.text)
+                sgc?.sendTextWall(currentViewState.title + "\n\n" + currentViewState.text)
             case "bitmap_view":
                 Bridge.log("Mentra: Processing bitmap_view layout")
                 guard let data = currentViewState.data else {
@@ -808,7 +794,7 @@ struct ViewState {
             await sgc?.getBatteryStatus()
 
             if shouldSendBootingMessage {
-                sendText("// BOOTING MENTRAOS")
+                sgc?.sendTextWall("// BOOTING MENTRAOS")
             }
 
             // send loaded settings to glasses:
@@ -821,9 +807,9 @@ struct ViewState {
             // try? await Task.sleep(nanoseconds: 400_000_000)
             //      playStartupSequence()
             if shouldSendBootingMessage {
-                sendText("// MENTRAOS CONNECTED")
+                sgc?.sendTextWall("// MENTRAOS CONNECTED")
                 try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                sendText(" ") // clear screen
+                sgc?.clearDisplay()
             }
 
             shouldSendBootingMessage = false
@@ -835,7 +821,7 @@ struct ViewState {
     private func handleMach1Ready() {
         Task {
             // Send startup message
-            sendText("MENTRAOS CONNECTED")
+            sgc?.sendTextWall("MENTRAOS CONNECTED")
             try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
             sgc?.clearDisplay()
 
@@ -859,7 +845,7 @@ struct ViewState {
         }
 
         Bridge.log("Mentra: Displaying text: \(text)")
-        sendText(text)
+        sgc?.sendTextWall(text)
     }
 
     func handle_display_event(_ event: [String: Any]) {
@@ -1197,7 +1183,7 @@ struct ViewState {
     }
 
     func handle_disconnect() {
-        sendText(" ") // clear the screen
+        sgc?.clearDisplay() // clear the screen
         sgc?.disconnect()
         sgc = nil // Clear the SGC reference after disconnect
         isSearching = false

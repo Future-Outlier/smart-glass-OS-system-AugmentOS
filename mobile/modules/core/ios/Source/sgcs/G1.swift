@@ -657,7 +657,7 @@ class G1: NSObject, SGCManager {
             }
             CoreManager.shared.sendStateWorkItem = workItem
             CoreManager.shared.sendStateQueue.asyncAfter(deadline: .now() + 3, execute: workItem)
-            return
+            // return
         }
 
         let chunks = textHelper.createTextWallChunks(text)
