@@ -993,14 +993,15 @@ class CoreManager {
     }
 
     fun handle_photo_request(
-        requestId: String,
-        appId: String,
-        size: String,
-        webhookUrl: String,
-        authToken: String
+            requestId: String,
+            appId: String,
+            size: String,
+            webhookUrl: String,
+            authToken: String,
+            compress: String
     ) {
-        Bridge.log("Mentra: onPhotoRequest: $requestId, $appId, $size")
-        sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken)
+        Bridge.log("Mentra: onPhotoRequest: $requestId, $appId, $size, compress=$compress")
+        sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken, compress)
     }
 
     fun handle_rgb_led_control(

@@ -79,8 +79,9 @@ class CoreModule : Module() {
                 appId: String,
                 size: String,
                 webhookUrl: String,
-                authToken: String ->
-            coreManager?.handle_photo_request(requestId, appId, size, webhookUrl, authToken)
+                authToken: String,
+                compress: String ->
+            coreManager?.handle_photo_request(requestId, appId, size, webhookUrl, authToken, compress)
         }
 
         // MARK: - Video Recording Commands
