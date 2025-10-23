@@ -1,12 +1,12 @@
 import InfoSection from "@/components/ui/InfoSection"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 
-interface DeviceInformationProps {
-  bluetoothName?: string
-  buildNumber?: string
-  localIpAddress?: string
-}
+export function DeviceInformation() {
+  const {status} = useCoreStatus()
+  const bluetoothName = status.glasses_info?.bluetooth_name
+  const buildNumber = status.glasses_info?.glasses_build_number
+  const localIpAddress = status.glasses_info?.glasses_wifi_local_ip
 
-export function DeviceInformation({bluetoothName, buildNumber, localIpAddress}: DeviceInformationProps) {
   return (
     <InfoSection
       title="Device Information"

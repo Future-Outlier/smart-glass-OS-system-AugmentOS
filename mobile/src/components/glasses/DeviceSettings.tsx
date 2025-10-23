@@ -1,30 +1,27 @@
+import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
+import OtaProgressSection from "@/components/glasses/OtaProgressSection"
 import ActionButton from "@/components/ui/ActionButton"
 import RouteButton from "@/components/ui/RouteButton"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
-import {localStorageService} from "@/services/asg/localStorageService"
 import {useApplets} from "@/stores/applets"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert, {showDestructiveAlert} from "@/utils/AlertUtils"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {getModelCapabilities, Capabilities, DeviceTypes} from "@/../../cloud/packages/types/src"
-import {useFocusEffect} from "@react-navigation/native"
-import {useCallback, useEffect, useState} from "react"
-import {Platform, View, ViewStyle} from "react-native"
-import OtaProgressSection from "@/components/glasses/OtaProgressSection"
 import CoreModule from "core"
-import {EmptyState} from "./info/EmptyState"
-import {NotConnectedInfo} from "./info/NotConnectedInfo"
+import {Platform, View, ViewStyle} from "react-native"
+import {Spacer} from "../misc/Spacer"
 import {BatteryStatus} from "./info/BatteryStatus"
 import {DeviceInformation} from "./info/DeviceInformation"
-import {BrightnessSettings} from "./settings/BrightnessSettings"
-import {MicrophoneSelector} from "./settings/MicrophoneSelector"
-import {ButtonSettings} from "./settings/ButtonSettings"
+import {EmptyState} from "./info/EmptyState"
+import {NotConnectedInfo} from "./info/NotConnectedInfo"
 import {AdvancedSettingsDropdown} from "./settings/AdvancedSettingsDropdown"
-import {Spacer} from "../misc/Spacer"
+import {BrightnessSettings} from "./settings/BrightnessSettings"
+import {ButtonSettings} from "./settings/ButtonSettings"
+import {MicrophoneSelector} from "./settings/MicrophoneSelector"
 
 export default function DeviceSettings() {
   const {themed} = useAppTheme()
@@ -35,7 +32,6 @@ export default function DeviceSettings() {
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS_KEYS.auto_brightness)
   const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
   const [showAdvancedSettings, setShowAdvancedSettings] = useSetting(SETTINGS_KEYS.show_advanced_settings)
-  const [_hasLocalPhotos, setHasLocalPhotos] = useState(false)
   const [defaultButtonActionEnabled, setDefaultButtonActionEnabled] = useSetting(
     SETTINGS_KEYS.default_button_action_enabled,
   )
@@ -60,32 +56,6 @@ export default function DeviceSettings() {
     status.glasses_info?.glasses_wifi_local_ip
 
   const hasAdvancedSettingsContent = hasMicrophoneSelector || hasDeviceInfo
-
-  // Check for local photos on component mount and when component gains focus
-  const checkLocalPhotos = useCallback(async () => {
-    try {
-      const files = await localStorageService.getDownloadedFiles()
-      const hasPhotos = Object.keys(files).length > 0
-      setHasLocalPhotos(hasPhotos)
-    } catch (error) {
-      console.error("Error checking local photos:", error)
-      setHasLocalPhotos(false)
-    }
-  }, [])
-
-  // Check for local photos on mount
-  useEffect(() => {
-    checkLocalPhotos()
-  }, [checkLocalPhotos])
-
-  useFocusEffect(
-    useCallback(() => {
-      // Check for local photos when component gains focus
-      checkLocalPhotos()
-      // Cleanup function
-      return () => {}
-    }, [checkLocalPhotos]),
-  )
 
   const setMic = async (val: string) => {
     if (val === "phone") {
@@ -246,16 +216,10 @@ export default function DeviceSettings() {
           {hasMicrophoneSelector && <MicrophoneSelector preferredMic={preferredMic} onMicChange={setMic} />}
 
           {/* Spacer between sections */}
-          <View style={{height: 16}} />
+          <Spacer height={16} />
 
           {/* Device Information */}
-          {isGlassesConnected && (
-            <DeviceInformation
-              bluetoothName={status.glasses_info?.bluetooth_name}
-              buildNumber={status.glasses_info?.glasses_build_number}
-              localIpAddress={status.glasses_info?.glasses_wifi_local_ip}
-            />
-          )}
+          {isGlassesConnected && <DeviceInformation />}
         </AdvancedSettingsDropdown>
       )}
 
