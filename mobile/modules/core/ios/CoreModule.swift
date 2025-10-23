@@ -82,8 +82,9 @@ public class CoreModule: Module {
             CoreManager.shared.handle_query_gallery_status()
         }
 
-        AsyncFunction("photoRequest") { (requestId: String, appId: String, size: String, webhookUrl: String?, authToken: String?) in
-            CoreManager.shared.handle_photo_request(requestId, appId, size, webhookUrl, authToken)
+        AsyncFunction("photoRequest") {
+            (requestId: String, appId: String, size: String, webhookUrl: String?, authToken: String?, compress: String?) in
+            CoreManager.shared.handle_photo_request(requestId, appId, size, webhookUrl, authToken, compress)
         }
 
         // MARK: - Video Recording Commands

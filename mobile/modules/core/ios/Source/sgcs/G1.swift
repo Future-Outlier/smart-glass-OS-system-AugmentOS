@@ -150,7 +150,7 @@ class G1: NSObject, SGCManager {
 
     var hotspotGatewayIp: String = ""
 
-    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?) {}
+    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?, compress _: String?) {}
 
     func startRtmpStream(_: [String: Any]) {}
 

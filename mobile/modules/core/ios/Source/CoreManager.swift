@@ -1143,10 +1143,15 @@ struct ViewState {
     }
 
     func handle_photo_request(
-        _ requestId: String, _ appId: String, _ size: String, _ webhookUrl: String?, _ authToken: String?
+        _ requestId: String,
+        _ appId: String,
+        _ size: String,
+        _ webhookUrl: String?,
+        _ authToken: String?,
+        _ compress: String?
     ) {
-        Bridge.log("Mentra: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size)")
-        sgc?.requestPhoto(requestId, appId: appId, size: size, webhookUrl: webhookUrl, authToken: authToken)
+        Bridge.log("Mentra: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size), compress=\(compress ?? "none")")
+        sgc?.requestPhoto(requestId, appId: appId, size: size, webhookUrl: webhookUrl, authToken: authToken, compress: compress)
     }
 
     func handle_connect_default() {
