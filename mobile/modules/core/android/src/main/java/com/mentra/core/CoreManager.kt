@@ -1064,19 +1064,27 @@ class CoreManager {
     fun handle_disconnect() {
         sendText(" ")
         sgc?.disconnect()
+        sgc = null  // Clear the SGC reference after disconnect
         isSearching = false
         handle_request_status()
     }
 
     fun handle_forget() {
         Bridge.log("Mentra: Forgetting smart glasses")
-        handle_disconnect()
+
+        // Call forget first to stop timers/handlers/reconnect logic
+        sgc?.forget()
+
+        // Then disconnect to close connections
+        sgc?.disconnect()
+
+        // Clear state
         defaultWearable = ""
         deviceName = ""
-        sgc?.forget()
         sgc = null
         Bridge.saveSetting("default_wearable", "")
         Bridge.saveSetting("device_name", "")
+        isSearching = false
         handle_request_status()
     }
 

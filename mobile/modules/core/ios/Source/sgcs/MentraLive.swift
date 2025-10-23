@@ -862,7 +862,10 @@ class MentraLive: NSObject, SGCManager {
     func setBrightness(_: Int, autoMode _: Bool) {}
     func clearDisplay() {}
     func sendTextWall(_: String) {}
-    func forget() {}
+    func forget() {
+        Bridge.log("LIVE: Forgetting Mentra Live glasses")
+        disconnect()
+    }
 
     var type = "Mentra Live"
     var hasMic = false

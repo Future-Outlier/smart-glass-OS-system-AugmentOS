@@ -453,7 +453,8 @@ public class MentraLive extends SGCManager {
     }
 
     public void cleanup() {
-        // TODO:
+        Bridge.log("LIVE: Cleaning up MentraLiveSGC");
+        destroy();
     }
 
     private void updateConnectionState(String state) {

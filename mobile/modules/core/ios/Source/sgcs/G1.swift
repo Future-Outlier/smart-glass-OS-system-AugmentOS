@@ -345,10 +345,6 @@ class G1: NSObject, SGCManager {
     }
 
     func forget() {
-        leftGlassUUID = nil
-        rightGlassUUID = nil
-        DEVICE_SEARCH_ID = "NOT_SET"
-
         // Stop the heartbeat timer
         heartbeatTimer?.invalidate()
         heartbeatTimer = nil
@@ -356,12 +352,23 @@ class G1: NSObject, SGCManager {
         // Stop the reconnection timer if active
         stopReconnectionTimer()
 
+        // Disconnect BLE peripherals before clearing references
+        if let left = leftPeripheral {
+            centralManager?.cancelPeripheralConnection(left)
+        }
+        if let right = rightPeripheral {
+            centralManager?.cancelPeripheralConnection(right)
+        }
+
+        // Clear all references
+        leftGlassUUID = nil
+        rightGlassUUID = nil
+        leftPeripheral = nil
+        rightPeripheral = nil
+        DEVICE_SEARCH_ID = "NOT_SET"
+
         // Clean up central manager delegate
         centralManager?.delegate = nil
-
-        // Clean up peripheral delegates
-        leftPeripheral?.delegate = nil
-        rightPeripheral?.delegate = nil
     }
 
     deinit {

@@ -1199,19 +1199,27 @@ struct ViewState {
     func handle_disconnect() {
         sendText(" ") // clear the screen
         sgc?.disconnect()
+        sgc = nil // Clear the SGC reference after disconnect
         isSearching = false
         handle_request_status()
     }
 
     func handle_forget() {
         Bridge.log("Mentra: Forgetting smart glasses")
-        handle_disconnect()
+
+        // Call forget first to stop timers/handlers/reconnect logic
+        sgc?.forget()
+
+        // Then disconnect to close connections
+        sgc?.disconnect()
+
+        // Clear state
         defaultWearable = ""
         deviceName = ""
-        sgc?.forget()
         sgc = nil
         Bridge.saveSetting("default_wearable", "")
         Bridge.saveSetting("device_name", "")
+        isSearching = false
         handle_request_status()
     }
 
