@@ -449,18 +449,15 @@ class CoreManager {
 
         // Cancel any pending clear display work item
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
-        //
+
         Bridge.log("Mentra: parsing layoutType: ${currentViewState.layoutType}")
 
         when (currentViewState.layoutType) {
             "text_wall" -> sendText(currentViewState.text)
+
             "double_text_wall" -> {
-                sgc?.sendDoubleTextWall("top", "bottom")
-                // sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
+                sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
             }
-            // "double_text_wall" -> {
-            //     sendText(currentViewState.topText)
-            // }
 
             "reference_card" -> {
                 sendText("${currentViewState.title}\n\n${currentViewState.text}")
