@@ -1,3 +1,4 @@
+import {useState, useEffect} from "react"
 import {View, ViewStyle} from "react-native"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -19,6 +20,12 @@ export function BrightnessSettings({
   onBrightnessChange,
 }: BrightnessSettingsProps) {
   const {theme, themed} = useAppTheme()
+  const [tempBrightness, setTempBrightness] = useState(brightness)
+
+  // Sync local state when brightness prop changes
+  useEffect(() => {
+    setTempBrightness(brightness)
+  }, [brightness])
 
   return (
     <View style={themed($container)}>
@@ -45,8 +52,8 @@ export function BrightnessSettings({
           />
           <SliderSetting
             label={translate("deviceSettings:brightness")}
-            value={brightness}
-            onValueChange={onBrightnessChange}
+            value={tempBrightness}
+            onValueChange={setTempBrightness}
             min={0}
             max={100}
             onValueSet={onBrightnessChange}

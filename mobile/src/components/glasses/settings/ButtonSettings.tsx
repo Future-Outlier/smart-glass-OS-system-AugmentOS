@@ -74,7 +74,7 @@ export function ButtonSettings({enabled, selectedApp, applets, onEnabledChange, 
         apps={applets}
         selectedPackageName={selectedApp}
         title="Select Default App"
-        filterPredicate={app => app.type === "standard"}
+        filterPredicate={app => app.type === "standard" && app.compatibility?.isCompatible !== false} // Only show compatible foreground apps
         showCompatibilityWarnings={true}
       />
     </>

@@ -1206,13 +1206,15 @@ class CoreManager {
             }
         }
 
-        (settings["head_up_angle"] as? Int)?.let { newHeadUpAngle ->
+        // Head up angle - handle both Int and Double from JavaScript
+        (settings["head_up_angle"] as? Number)?.toInt()?.let { newHeadUpAngle ->
             if (headUpAngle != newHeadUpAngle) {
                 updateGlassesHeadUpAngle(newHeadUpAngle)
             }
         }
 
-        (settings["brightness"] as? Int)?.let { newBrightness ->
+        // Brightness - handle both Int and Double from JavaScript
+        (settings["brightness"] as? Number)?.toInt()?.let { newBrightness ->
             if (brightness != newBrightness) {
                 updateGlassesBrightness(newBrightness, false)
             }
