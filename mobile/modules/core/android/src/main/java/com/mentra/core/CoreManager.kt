@@ -66,7 +66,7 @@ class CoreManager {
     private var pendingWearable = ""
     public var deviceName = ""
     public var deviceAddress = ""
-    private var isUpdatingScreen = false
+    private var screenDisabled = false
     private var isSearching = false
     private var onboardMicUnavailable = false
     public val currentRequiredData = mutableListOf<String>()
@@ -420,7 +420,7 @@ class CoreManager {
 
     private fun sendCurrentState() {
         Bridge.log("Mentra: sendCurrentState(): $isHeadUp")
-        if (isUpdatingScreen) {
+        if (screenDisabled) {
             return
         }
 
@@ -685,13 +685,13 @@ class CoreManager {
         handle_request_status()
     }
 
-    fun updateUpdatingScreen(enabled: Boolean) {
-        Bridge.log("Mentra: Toggling updating screen: $enabled")
+    fun updateScreenDisabled(enabled: Boolean) {
+        Bridge.log("Mentra: Toggling screen disabled: $enabled")
         if (enabled) {
             sgc?.exit()
-            isUpdatingScreen = true
+            screenDisabled = true
         } else {
-            isUpdatingScreen = false
+            screenDisabled = false
         }
     }
 
@@ -1250,6 +1250,10 @@ class CoreManager {
             }
         }
 
+        (settings["screen_disabled"] as? Boolean)?.let { screenDisabled ->
+            updateScreenDisabled(screenDisabled)
+        }
+
         (settings["auto_brightness"] as? Boolean)?.let { newAutoBrightness ->
             if (autoBrightness != newAutoBrightness) {
                 updateGlassesBrightness(brightness, newAutoBrightness)
@@ -1369,10 +1373,6 @@ class CoreManager {
             if (deviceAddress != newDeviceAddress) {
                 deviceAddress = newDeviceAddress
             }
-        }
-
-        (settings["screen_disabled"] as? Boolean)?.let { screenDisabled ->
-            updateUpdatingScreen(screenDisabled)
         }
     }
 

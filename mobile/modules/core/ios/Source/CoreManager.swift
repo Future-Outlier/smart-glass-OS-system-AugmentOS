@@ -51,7 +51,7 @@ struct ViewState {
     private var pendingWearable: String = ""
     private var deviceName: String = ""
     var deviceAddress: String = ""
-    private var updatingScreen: Bool = false
+    private var screenDisabled: Bool = false
     private var isSearching: Bool = false
     private var onboardMicUnavailable: Bool = false
     private var currentRequiredData: [SpeechRequiredDataType] = []
@@ -507,13 +507,13 @@ struct ViewState {
         handle_request_status()
     }
 
-    func updateUpdatingScreen(_ enabled: Bool) {
-        Bridge.log("Mentra: Toggling updating screen: \(enabled)")
+    func updateScreenDisabled(_ enabled: Bool) {
+        Bridge.log("Mentra: Toggling screen disabled: \(enabled)")
         if enabled {
             sgc?.exit()
-            updatingScreen = true
+            screenDisabled = true
         } else {
-            updatingScreen = false
+            screenDisabled = false
         }
     }
 
@@ -614,7 +614,7 @@ struct ViewState {
     }
 
     func sendCurrentState() {
-        if updatingScreen {
+        if screenDisabled {
             return
         }
 
@@ -1371,10 +1371,10 @@ struct ViewState {
             updateGlassesDepth(newDashboardDepth)
         }
 
-        if let newUpdatingScreen = settings["updating_screen"] as? Bool,
-           newUpdatingScreen != updatingScreen
+        if let newScreenDisabled = settings["screen_disabled"] as? Bool,
+           newScreenDisabled != screenDisabled
         {
-            updateUpdatingScreen(newUpdatingScreen)
+            updateScreenDisabled(newScreenDisabled)
         }
 
         if let newAutoBrightness = settings["auto_brightness"] as? Bool,
