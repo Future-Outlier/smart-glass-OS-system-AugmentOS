@@ -6,8 +6,6 @@ import {Header, Screen} from "@/components/ignite"
 import CloudConnection from "@/components/misc/CloudConnection"
 import NonProdWarning from "@/components/misc/NonProdWarning"
 import SensingDisabledWarning from "@/components/misc/SensingDisabledWarning"
-import {OtaUpdateChecker} from "@/components/utils/OtaUpdateChecker"
-import {Reconnect} from "@/components/utils/Reconnect"
 import {translate} from "@/i18n"
 import {useRefreshApplets} from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
@@ -63,8 +61,6 @@ export default function Homepage() {
             : translate("home:tapToStartLiveCaptions")
         }
       />
-      <Reconnect />
-      <OtaUpdateChecker />
     </Screen>
   )
 }
