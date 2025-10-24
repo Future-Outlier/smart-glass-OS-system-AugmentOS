@@ -104,15 +104,15 @@ class CoreModule : Module() {
         // MARK: - RTMP Stream Commands
 
         AsyncFunction("startRtmpStream") { params: Map<String, Any> ->
-            // CoreManager.getInstance()?.handle_start_rtmp_stream(params)
+            coreManager?.handle_send_rtmp_stream_start(params.toMutableMap())
         }
 
         AsyncFunction("stopRtmpStream") {
-            // CoreManager.getInstance()?.handle_stop_rtmp_stream()
+            coreManager?.handle_stop_rtmp_stream()
         }
 
         AsyncFunction("keepRtmpStreamAlive") { params: Map<String, Any> ->
-            // CoreManager.getInstance()?.handle_keep_rtmp_stream_alive(params)
+            coreManager?.handle_keep_rtmp_stream_alive(params.toMutableMap())
         }
 
         // MARK: - Microphone Commands
