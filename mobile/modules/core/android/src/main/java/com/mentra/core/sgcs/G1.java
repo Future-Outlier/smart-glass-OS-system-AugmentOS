@@ -454,7 +454,7 @@ public class G1 extends SGCManager {
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic,
                     int status) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    Bridge.log("G1: PROC_QUEUE - " + side + " glass write successful");
+                    // Bridge.log("G1: PROC_QUEUE - " + side + " glass write successful");
                 } else {
                     Bridge.log("G1: " + side + " glass write failed with status: " + status);
 
@@ -621,14 +621,14 @@ public class G1 extends SGCManager {
                         }
                         // TEXT RESPONSE
                         else if (data.length > 0 && data[0] == 0x4E) {
-                            Bridge.log("G1: Text response on side " + (deviceName.contains("L_") ? "Left" : "Right")
-                                    + " was: " + ((data.length > 1 && (data[1] & 0xFF) == 0xC9) ? "SUCCEED" : "FAIL"));
+                            // Bridge.log("G1: Text response on side " + (deviceName.contains("L_") ? "Left" : "Right")
+                                    // + " was: " + ((data.length > 1 && (data[1] & 0xFF) == 0xC9) ? "SUCCEED" : "FAIL"));
                         }
 
                         // Handle other non-audio responses
                         else {
-                            Bridge.log("G1: PROC - Received other Even Realities response: " + bytesToHex(data) + ", from: "
-                                    + deviceName);
+                            // Bridge.log("G1: PROC - Received other Even Realities response: " + bytesToHex(data) + ", from: "
+                                    // + deviceName);
                         }
 
                         // clear the waiter
@@ -2717,7 +2717,7 @@ public class G1 extends SGCManager {
     private static final float FONT_MULTIPLIER = 1 / 50.0f;
     private static final int OLD_FONT_SIZE = 21; // Font size
     private static final float FONT_DIVIDER = 2.0f;
-    private static final int LINES_PER_SCREEN = 5; // Lines per screen
+    private static final int LINES_PER_SCREEN = 3; // Lines per screen
     private static final int MAX_CHUNK_SIZE = 176; // Maximum chunk size for BLE packets
     // private static final int INDENT_SPACES = 32; // Number of spaces to indent
     // text
@@ -2855,8 +2855,7 @@ public class G1 extends SGCManager {
                     .append("\n");
         }
 
-        String test = pageText.toString().replace(' ', 'A');
-        Bridge.log("G1: pageText:" + test.toString());
+        // Bridge.log("G1: pageText:" + pageText.toString());
 
         // Convert to bytes and chunk for transmission
         // return chunkTextForTransmission(pageText.toString());

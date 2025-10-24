@@ -135,7 +135,7 @@ class CoreManager {
         lastHadMicrophonePermission = checkMicrophonePermission(context)
 
         Bridge.log(
-            "Mentra: Initial permissions - BT: $lastHadBluetoothPermission, Mic: $lastHadMicrophonePermission"
+            "MAN: Initial permissions - BT: $lastHadBluetoothPermission, Mic: $lastHadMicrophonePermission"
         )
 
         // Create receiver for package changes (fires when permissions change)
@@ -146,7 +146,7 @@ class CoreManager {
                         intent.data?.schemeSpecificPart == context?.packageName
                     ) {
 
-                        Bridge.log("Mentra: Package changed, checking permissions...")
+                        Bridge.log("MAN: Package changed, checking permissions...")
                         checkPermissionChanges()
                     }
                 }
@@ -160,9 +160,9 @@ class CoreManager {
                     addDataScheme("package")
                 }
             context.registerReceiver(permissionReceiver, filter)
-            Bridge.log("Mentra: Permission monitoring started")
+            Bridge.log("MAN: Permission monitoring started")
         } catch (e: Exception) {
-            Bridge.log("Mentra: Failed to register permission receiver: ${e.message}")
+            Bridge.log("MAN: Failed to register permission receiver: ${e.message}")
         }
 
         // Also set up a periodic check as backup (some devices don't fire PACKAGE_CHANGED reliably)
@@ -190,7 +190,7 @@ class CoreManager {
 
         if (currentHasBluetoothPermission != lastHadBluetoothPermission) {
             Bridge.log(
-                "Mentra: Bluetooth permission changed: $lastHadBluetoothPermission -> $currentHasBluetoothPermission"
+                "MAN: Bluetooth permission changed: $lastHadBluetoothPermission -> $currentHasBluetoothPermission"
             )
             lastHadBluetoothPermission = currentHasBluetoothPermission
             permissionsChanged = true
@@ -198,14 +198,14 @@ class CoreManager {
 
         if (currentHasMicrophonePermission != lastHadMicrophonePermission) {
             Bridge.log(
-                "Mentra: Microphone permission changed: $lastHadMicrophonePermission -> $currentHasMicrophonePermission"
+                "MAN: Microphone permission changed: $lastHadMicrophonePermission -> $currentHasMicrophonePermission"
             )
             lastHadMicrophonePermission = currentHasMicrophonePermission
             permissionsChanged = true
         }
 
         if (permissionsChanged && serviceStarted) {
-            Bridge.log("Mentra: Permissions changed, restarting service")
+            Bridge.log("MAN: Permissions changed, restarting service")
             restartForegroundService()
         }
     }
@@ -233,7 +233,7 @@ class CoreManager {
         val context = Bridge.getContext()
 
         try {
-            Bridge.log("Mentra: Starting foreground service")
+            Bridge.log("MAN: Starting foreground service")
             val serviceIntent = Intent(context, ForegroundService::class.java)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -243,9 +243,9 @@ class CoreManager {
             }
 
             serviceStarted = true
-            Bridge.log("Mentra: Foreground service started")
+            Bridge.log("MAN: Foreground service started")
         } catch (e: Exception) {
-            Bridge.log("Mentra: Failed to start service: ${e.message}")
+            Bridge.log("MAN: Failed to start service: ${e.message}")
         }
     }
 
@@ -268,9 +268,9 @@ class CoreManager {
                 context.startService(startIntent)
             }
 
-            Bridge.log("Mentra: Service restarted with updated permissions")
+            Bridge.log("MAN: Service restarted with updated permissions")
         } catch (e: Exception) {
-            Bridge.log("Mentra: Failed to restart service: ${e.message}")
+            Bridge.log("MAN: Failed to restart service: ${e.message}")
         }
     }
 
@@ -365,7 +365,7 @@ class CoreManager {
     }
 
     fun handlePcm(pcmData: ByteArray) {
-        // Bridge.log("Mentra: handlePcm()")
+        // Bridge.log("MAN: handlePcm()")
         Bridge.sendMicData(pcmData)
     }
 
@@ -392,7 +392,7 @@ class CoreManager {
             }
 
             if (!useGlassesMic && !useOnboardMic) {
-                Bridge.log("Mentra: no mic to use! falling back to glasses mic!")
+                Bridge.log("MAN: no mic to use! falling back to glasses mic!")
                 useGlassesMic = true
             }
         }
@@ -410,7 +410,7 @@ class CoreManager {
     }
 
     private fun setOnboardMicEnabled(enabled: Boolean) {
-        Bridge.log("Mentra: setOnboardMicEnabled(): $enabled")
+        Bridge.log("MAN: setOnboardMicEnabled(): $enabled")
         if (enabled) {
             PhoneMic.getInstance(Bridge.getContext()).startRecording()
         } else {
@@ -419,7 +419,7 @@ class CoreManager {
     }
 
     private fun sendCurrentState() {
-        Bridge.log("Mentra: sendCurrentState(): $isHeadUp")
+        Bridge.log("MAN: sendCurrentState(): $isHeadUp")
         if (screenDisabled) {
             return
         }
@@ -443,14 +443,14 @@ class CoreManager {
 
         var ready = sgc?.ready ?: false
         if (!ready) {
-            Bridge.log("Mentra: CoreManager.sendCurrentState(): sgc not ready")
+            Bridge.log("MAN: CoreManager.sendCurrentState(): sgc not ready")
             return
         }
 
         // Cancel any pending clear display work item
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
 
-        Bridge.log("Mentra: parsing layoutType: ${currentViewState.layoutType}")
+        Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
 
         when (currentViewState.layoutType) {
             "text_wall" -> sgc?.sendTextWall(currentViewState.text)
@@ -468,7 +468,7 @@ class CoreManager {
             }
 
             "clear_view" -> sgc?.clearDisplay()
-            else -> Bridge.log("Mentra: UNHANDLED LAYOUT_TYPE ${currentViewState.layoutType}")
+            else -> Bridge.log("MAN: UNHANDLED LAYOUT_TYPE ${currentViewState.layoutType}")
         }
         // }
     }
@@ -503,12 +503,12 @@ class CoreManager {
     }
 
     fun onRouteChange(reason: String, availableInputs: List<String>) {
-        Bridge.log("Mentra: onRouteChange: reason: $reason")
-        // Bridge.log("Mentra: onRouteChange: inputs: $availableInputs")
+        Bridge.log("MAN: onRouteChange: reason: $reason")
+        // Bridge.log("MAN: onRouteChange: inputs: $availableInputs")
     }
 
     fun onInterruption(began: Boolean) {
-        Bridge.log("Mentra: Interruption: $began")
+        Bridge.log("MAN: Interruption: $began")
         onboardMicUnavailable = began
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
     }
@@ -613,7 +613,7 @@ class CoreManager {
         dashboardDepth = value
         sgc?.let {
             it.setDashboardPosition(dashboardHeight, dashboardDepth)
-            Bridge.log("Mentra: Set dashboard depth to $value")
+            Bridge.log("MAN: Set dashboard depth to $value")
         }
         handle_request_status()
     }
@@ -622,7 +622,7 @@ class CoreManager {
         dashboardHeight = value
         sgc?.let {
             it.setDashboardPosition(dashboardHeight, dashboardDepth)
-            Bridge.log("Mentra: Set dashboard height to $value")
+            Bridge.log("MAN: Set dashboard height to $value")
         }
         handle_request_status()
     }
@@ -684,7 +684,7 @@ class CoreManager {
     }
 
     fun updateScreenDisabled(enabled: Boolean) {
-        Bridge.log("Mentra: Toggling screen disabled: $enabled")
+        Bridge.log("MAN: Toggling screen disabled: $enabled")
         screenDisabled = enabled
         if (enabled) {
             sgc?.exit()
@@ -698,14 +698,14 @@ class CoreManager {
     fun initSGC(wearable: String) {
         Bridge.log("Initializing manager for wearable: $wearable")
         if (sgc != null && sgc?.type != wearable) {
-            Bridge.log("Mentra: Manager already initialized, cleaning up previous sgc")
-            Bridge.log("Mentra: Cleaning up previous sgc type: ${sgc?.type}")
+            Bridge.log("MAN: Manager already initialized, cleaning up previous sgc")
+            Bridge.log("MAN: Cleaning up previous sgc type: ${sgc?.type}")
             sgc?.cleanup()
             sgc = null
         }
 
         if (sgc != null) {
-            Bridge.log("Mentra: SGC already initialized")
+            Bridge.log("MAN: SGC already initialized")
             return
         }
 
@@ -723,14 +723,14 @@ class CoreManager {
     }
 
     fun restartTranscriber() {
-        Bridge.log("Mentra: Restarting transcriber via command")
+        Bridge.log("MAN: Restarting transcriber via command")
         // TODO: Implement transcriber restart
     }
 
     // MARK: - connection state management
 
     fun handleConnectionStateChanged() {
-        Bridge.log("Mentra: Glasses connection state changed!")
+        Bridge.log("MAN: Glasses connection state changed!")
 
         val currentSgc = sgc ?: return
 
@@ -744,11 +744,11 @@ class CoreManager {
 
     private fun handleDeviceReady() {
         if (sgc == null) {
-            Bridge.log("Mentra: SGC is null, returning")
+            Bridge.log("MAN: SGC is null, returning")
             return
         }
 
-        Bridge.log("Mentra: handleDeviceReady() ${sgc?.type}")
+        Bridge.log("MAN: handleDeviceReady() ${sgc?.type}")
         pendingWearable = ""
         defaultWearable = sgc?.type ?: ""
 
@@ -807,7 +807,7 @@ class CoreManager {
     }
 
     private fun handleDeviceDisconnected() {
-        Bridge.log("Mentra: Device disconnected")
+        Bridge.log("MAN: Device disconnected")
         isHeadUp = false
         handle_request_status()
     }
@@ -816,7 +816,7 @@ class CoreManager {
 
     fun handle_display_text(params: Map<String, Any>) {
         (params["text"] as? String)?.let { text ->
-            Bridge.log("Mentra: Displaying text: $text")
+            Bridge.log("MAN: Displaying text: $text")
             sgc?.sendTextWall(text)
         }
     }
@@ -824,7 +824,7 @@ class CoreManager {
     fun handle_display_event(event: Map<String, Any>) {
         val view = event["view"] as? String
         if (view == null) {
-            Bridge.log("Mentra: Invalid view")
+            Bridge.log("MAN: Invalid view")
             return
         }
 
@@ -845,7 +845,7 @@ class CoreManager {
         val currentState = viewStates[stateIndex]
 
         if (!statesEqual(currentState, newViewState)) {
-            Bridge.log("Mentra: Updating view state $stateIndex with $layoutType")
+            Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
             viewStates[stateIndex] = newViewState
             if (stateIndex == 0 && !isHeadUp) {
                 sendCurrentState()
@@ -860,68 +860,68 @@ class CoreManager {
     }
 
     fun handle_send_rtmp_stream_start(message: MutableMap<String, Any>) {
-        Bridge.log("Mentra: startRtmpStream")
+        Bridge.log("MAN: startRtmpStream")
         sgc?.startRtmpStream(message)
     }
 
     fun handle_stop_rtmp_stream() {
-        Bridge.log("Mentra: stopRtmpStream")
+        Bridge.log("MAN: stopRtmpStream")
         sgc?.stopRtmpStream()
     }
 
     fun handle_keep_rtmp_stream_alive(message: MutableMap<String, Any>) {
-        Bridge.log("Mentra: keepRtmpStreamAlive: (message)")
+        Bridge.log("MAN: keepRtmpStreamAlive: (message)")
         sgc?.sendRtmpKeepAlive(message)
     }
 
     fun handle_request_wifi_scan() {
-        Bridge.log("Mentra: Requesting wifi scan")
+        Bridge.log("MAN: Requesting wifi scan")
         sgc?.requestWifiScan()
     }
 
     fun handle_send_wifi_credentials(ssid: String, password: String) {
-        Bridge.log("Mentra: Sending wifi credentials: $ssid")
+        Bridge.log("MAN: Sending wifi credentials: $ssid")
         sgc?.sendWifiCredentials(ssid, password)
     }
 
     fun handle_set_hotspot_state(enabled: Boolean) {
-        Bridge.log("Mentra: Setting glasses hotspot state: $enabled")
+        Bridge.log("MAN: Setting glasses hotspot state: $enabled")
         sgc?.sendHotspotState(enabled)
     }
 
     fun handle_query_gallery_status() {
-        Bridge.log("Mentra: Querying gallery status from glasses")
+        Bridge.log("MAN: Querying gallery status from glasses")
         sgc?.queryGalleryStatus()
     }
 
     fun handle_start_buffer_recording() {
-        Bridge.log("Mentra: onStartBufferRecording")
+        Bridge.log("MAN: onStartBufferRecording")
         sgc?.startBufferRecording()
     }
 
     fun handle_stop_buffer_recording() {
-        Bridge.log("Mentra: onStopBufferRecording")
+        Bridge.log("MAN: onStopBufferRecording")
         sgc?.stopBufferRecording()
     }
 
     fun handle_save_buffer_video(requestId: String, durationSeconds: Int) {
-        Bridge.log("Mentra: onSaveBufferVideo: requestId=$requestId, duration=$durationSeconds")
+        Bridge.log("MAN: onSaveBufferVideo: requestId=$requestId, duration=$durationSeconds")
         sgc?.saveBufferVideo(requestId, durationSeconds)
     }
 
     fun handle_start_video_recording(requestId: String, save: Boolean) {
-        Bridge.log("Mentra: onStartVideoRecording: requestId=$requestId, save=$save")
+        Bridge.log("MAN: onStartVideoRecording: requestId=$requestId, save=$save")
         sgc?.startVideoRecording(requestId, save)
     }
 
     fun handle_stop_video_recording(requestId: String) {
-        Bridge.log("Mentra: onStopVideoRecording: requestId=$requestId")
+        Bridge.log("MAN: onStopVideoRecording: requestId=$requestId")
         sgc?.stopVideoRecording(requestId)
     }
 
     fun handle_microphone_state_change(requiredData: List<String>, bypassVad: Boolean) {
         Bridge.log(
-            "Mentra: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad"
+            "MAN: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad"
         )
 
         bypassVadForPCM = bypassVad
@@ -982,7 +982,7 @@ class CoreManager {
             authToken: String,
             compress: String
     ) {
-        Bridge.log("Mentra: onPhotoRequest: $requestId, $appId, $size, compress=$compress")
+        Bridge.log("MAN: onPhotoRequest: $requestId, $appId, $size, compress=$compress")
         sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken, compress)
     }
 
@@ -995,17 +995,17 @@ class CoreManager {
         offtime: Int,
         count: Int
     ) {
-        Bridge.log("Mentra: RGB LED control: action=$action, color=$color, requestId=$requestId")
+        Bridge.log("MAN: RGB LED control: action=$action, color=$color, requestId=$requestId")
         sgc?.sendRgbLedControl(requestId, packageName, action, color, ontime, offtime, count)
     }
 
     fun handle_connect_default() {
         if (defaultWearable.isEmpty()) {
-            Bridge.log("Mentra: No default wearable, returning")
+            Bridge.log("MAN: No default wearable, returning")
             return
         }
         if (deviceName.isEmpty()) {
-            Bridge.log("Mentra: No device name, returning")
+            Bridge.log("MAN: No device name, returning")
             return
         }
         initSGC(defaultWearable)
@@ -1015,15 +1015,15 @@ class CoreManager {
     }
 
     fun handle_connect_by_name(dName: String) {
-        Bridge.log("Mentra: Connecting to wearable: $dName")
+        Bridge.log("MAN: Connecting to wearable: $dName")
 
         if (pendingWearable.isEmpty() && defaultWearable.isEmpty()) {
-            Bridge.log("Mentra: No pending or default wearable, returning")
+            Bridge.log("MAN: No pending or default wearable, returning")
             return
         }
 
         if (pendingWearable.isEmpty() && !defaultWearable.isEmpty()) {
-            Bridge.log("Mentra: No pending wearable, using default wearable")
+            Bridge.log("MAN: No pending wearable, using default wearable")
             pendingWearable = defaultWearable
         }
 
@@ -1053,7 +1053,7 @@ class CoreManager {
     }
 
     fun handle_forget() {
-        Bridge.log("Mentra: Forgetting smart glasses")
+        Bridge.log("MAN: Forgetting smart glasses")
 
         // Call forget first to stop timers/handlers/reconnect logic
         sgc?.forget()
@@ -1072,14 +1072,14 @@ class CoreManager {
     }
 
     fun handle_find_compatible_devices(modelName: String) {
-        Bridge.log("Mentra: Searching for compatible device names for: $modelName")
+        Bridge.log("MAN: Searching for compatible device names for: $modelName")
 
         if (DeviceTypes.ALL.contains(modelName)) {
             pendingWearable = modelName
         }
 
         initSGC(pendingWearable)
-        Bridge.log("Mentra: sgc initialized, calling findCompatibleDevices")
+        Bridge.log("MAN: sgc initialized, calling findCompatibleDevices")
         sgc?.findCompatibleDevices()
         handle_request_status()
     }
@@ -1198,7 +1198,7 @@ class CoreManager {
     }
 
     fun handle_update_settings(settings: Map<String, Any>) {
-        Bridge.log("Mentra: Received update settings: $settings")
+        Bridge.log("MAN: Received update settings: $settings")
 
         // Update settings with new values
         (settings["preferred_mic"] as? String)?.let { newPreferredMic ->

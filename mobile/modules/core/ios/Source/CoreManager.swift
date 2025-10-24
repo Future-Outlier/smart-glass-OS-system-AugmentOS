@@ -123,7 +123,7 @@ struct ViewState {
     ]
 
     override init() {
-        Bridge.log("Mentra: init()")
+        Bridge.log("MAN: init()")
         vad = SileroVADStrategy()
         super.init()
 
@@ -200,7 +200,7 @@ struct ViewState {
 
         if bypassVad || bypassVadForPCM {
             Bridge.log(
-                "Mentra: Glasses mic VAD bypassed - bypassVad=\(bypassVad), bypassVadForPCM=\(bypassVadForPCM)"
+                "MAN: Glasses mic VAD bypassed - bypassVad=\(bypassVad), bypassVadForPCM=\(bypassVadForPCM)"
             )
             checkSetVadStatus(speaking: true)
             // first send out whatever's in the vadBuffer (if there is anything):
@@ -272,7 +272,7 @@ struct ViewState {
             //          emptyVadBuffer()
             //          self.serverComms.sendAudioChunk(lc3Data)
             if shouldSendPcmData {
-                // Bridge.log("Mentra: Sending PCM data to server")
+                // Bridge.log("MAN: Sending PCM data to server")
                 Bridge.sendMicData(pcmData)
             }
 
@@ -431,7 +431,7 @@ struct ViewState {
         dashboardDepth = value
         Task {
             await sgc?.setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
-            Bridge.log("Mentra: Set dashboard depth to \(value)")
+            Bridge.log("MAN: Set dashboard depth to \(value)")
         }
         handle_request_status() // to update the UI
     }
@@ -440,7 +440,7 @@ struct ViewState {
         dashboardHeight = value
         Task {
             await sgc?.setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
-            Bridge.log("Mentra: Set dashboard height to \(value)")
+            Bridge.log("MAN: Set dashboard height to \(value)")
         }
         handle_request_status() // to update the UI
     }
@@ -508,7 +508,7 @@ struct ViewState {
     }
 
     func updateScreenDisabled(_ enabled: Bool) {
-        Bridge.log("Mentra: Toggling screen disabled: \(enabled)")
+        Bridge.log("MAN: Toggling screen disabled: \(enabled)")
         screenDisabled = enabled
         if enabled {
             sgc?.exit()
@@ -520,7 +520,7 @@ struct ViewState {
     // MARK: - Glasses Commands
 
     private func playStartupSequence() {
-        Bridge.log("Mentra: playStartupSequence()")
+        Bridge.log("MAN: playStartupSequence()")
         // Arrow frames for the animation
         let arrowFrames = ["↑", "↗", "↑", "↖"]
 
@@ -576,13 +576,13 @@ struct ViewState {
     func initSGC(_ wearable: String) {
         Bridge.log("Initializing manager for wearable: \(wearable)")
         if sgc != nil && sgc?.type != wearable {
-            Bridge.log("Mentra: Manager already initialized, cleaning up previous sgc")
+            Bridge.log("MAN: Manager already initialized, cleaning up previous sgc")
             sgc?.cleanup()
             sgc = nil
         }
 
         if sgc != nil {
-            Bridge.log("Mentra: SGC already initialized")
+            Bridge.log("MAN: SGC already initialized")
             return
         }
 
@@ -640,12 +640,12 @@ struct ViewState {
             case "reference_card":
                 sgc?.sendTextWall(currentViewState.title + "\n\n" + currentViewState.text)
             case "bitmap_view":
-                Bridge.log("Mentra: Processing bitmap_view layout")
+                Bridge.log("MAN: Processing bitmap_view layout")
                 guard let data = currentViewState.data else {
-                    Bridge.log("Mentra: ERROR: bitmap_view missing data field")
+                    Bridge.log("MAN: ERROR: bitmap_view missing data field")
                     return
                 }
-                Bridge.log("Mentra: Processing bitmap_view with base64 data, length: \(data.count)")
+                Bridge.log("MAN: Processing bitmap_view with base64 data, length: \(data.count)")
                 await sgc?.displayBitmap(base64ImageData: data)
             default:
                 Bridge.log("UNHANDLED LAYOUT_TYPE \(layoutType)")
@@ -701,8 +701,8 @@ struct ViewState {
     func onRouteChange(
         reason: AVAudioSession.RouteChangeReason, availableInputs: [AVAudioSessionPortDescription]
     ) {
-        Bridge.log("Mentra: onRouteChange: reason: \(reason)")
-        Bridge.log("Mentra: onRouteChange: inputs: \(availableInputs)")
+        Bridge.log("MAN: onRouteChange: reason: \(reason)")
+        Bridge.log("MAN: onRouteChange: inputs: \(availableInputs)")
 
         // Core.log the available inputs and see if any are an onboard mic:
         // for input in availableInputs {
@@ -733,21 +733,21 @@ struct ViewState {
     }
 
     func onInterruption(began: Bool) {
-        Bridge.log("Mentra: Interruption: \(began)")
+        Bridge.log("MAN: Interruption: \(began)")
 
         onboardMicUnavailable = began
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
     }
 
     func restartTranscriber() {
-        Bridge.log("Mentra: Restarting SherpaOnnxTranscriber via command")
+        Bridge.log("MAN: Restarting SherpaOnnxTranscriber via command")
         transcriber?.restart()
     }
 
     // MARK: - connection state management
 
     func handleConnectionStateChanged() {
-        Bridge.log("Mentra: Glasses: connection state changed!")
+        Bridge.log("MAN: Glasses: connection state changed!")
         if sgc == nil { return }
         if sgc!.ready {
             handleDeviceReady()
@@ -759,10 +759,10 @@ struct ViewState {
 
     private func handleDeviceReady() {
         guard let sgc else {
-            Bridge.log("Mentra: SGC is nil, returning")
+            Bridge.log("MAN: SGC is nil, returning")
             return
         }
-        Bridge.log("Mentra: handleDeviceReady(): \(sgc.type)")
+        Bridge.log("MAN: handleDeviceReady(): \(sgc.type)")
 
         pendingWearable = ""
         defaultWearable = sgc.type
@@ -830,7 +830,7 @@ struct ViewState {
     }
 
     private func handleDeviceDisconnected() {
-        Bridge.log("Mentra: Device disconnected")
+        Bridge.log("MAN: Device disconnected")
         handle_microphone_state_change([], false)
         Bridge.sendGlassesConnectionState(modelName: defaultWearable, status: "DISCONNECTED")
         handle_request_status()
@@ -840,17 +840,17 @@ struct ViewState {
 
     func handle_display_text(_ params: [String: Any]) {
         guard let text = params["text"] as? String else {
-            Bridge.log("Mentra: display_text missing text parameter")
+            Bridge.log("MAN: display_text missing text parameter")
             return
         }
 
-        Bridge.log("Mentra: Displaying text: \(text)")
+        Bridge.log("MAN: Displaying text: \(text)")
         sgc?.sendTextWall(text)
     }
 
     func handle_display_event(_ event: [String: Any]) {
         guard let view = event["view"] as? String else {
-            Bridge.log("Mentra: invalid view")
+            Bridge.log("MAN: invalid view")
             return
         }
         let isDashboard = view == "dashboard"
@@ -891,10 +891,10 @@ struct ViewState {
                 ]
                 newViewState.animationData = animationData
                 Bridge.log(
-                    "Mentra: Parsed bitmap_animation with \(frames.count) frames, interval: \(interval)ms"
+                    "MAN: Parsed bitmap_animation with \(frames.count) frames, interval: \(interval)ms"
                 )
             } else {
-                Bridge.log("Mentra: ERROR: bitmap_animation missing frames or interval")
+                Bridge.log("MAN: ERROR: bitmap_animation missing frames or interval")
             }
         }
 
@@ -906,7 +906,7 @@ struct ViewState {
             nS.layoutType + nS.text + nS.topText + nS.bottomText + nS.title + (nS.data ?? "")
 
         if currentState == newState {
-            // Core.log("Mentra: View state is the same, skipping update")
+            // Core.log("MAN: View state is the same, skipping update")
             return
         }
 
@@ -929,70 +929,70 @@ struct ViewState {
     }
 
     func handle_start_rtmp_stream(_ message: [String: Any]) {
-        Bridge.log("Mentra: startRtmpStream: \(message)")
+        Bridge.log("MAN: startRtmpStream: \(message)")
         sgc?.startRtmpStream(message)
     }
 
     func handle_stop_rtmp_stream() {
-        Bridge.log("Mentra: stopRtmpStream")
+        Bridge.log("MAN: stopRtmpStream")
         sgc?.stopRtmpStream()
     }
 
     func handle_keep_rtmp_stream_alive(_ message: [String: Any]) {
-        Bridge.log("Mentra: sendRtmpKeepAlive: \(message)")
+        Bridge.log("MAN: sendRtmpKeepAlive: \(message)")
         sgc?.sendRtmpKeepAlive(message)
     }
 
     func handle_request_wifi_scan() {
-        Bridge.log("Mentra: Requesting wifi scan")
+        Bridge.log("MAN: Requesting wifi scan")
         sgc?.requestWifiScan()
     }
 
     func handle_send_wifi_credentials(_ ssid: String, _ password: String) {
-        Bridge.log("Mentra: Sending wifi credentials: \(ssid) \(password)")
+        Bridge.log("MAN: Sending wifi credentials: \(ssid) \(password)")
         sgc?.sendWifiCredentials(ssid, password)
     }
 
     func handle_set_hotspot_state(_ enabled: Bool) {
-        Bridge.log("Mentra: 🔥 Setting glasses hotspot state: \(enabled)")
+        Bridge.log("MAN: 🔥 Setting glasses hotspot state: \(enabled)")
         sgc?.sendHotspotState(enabled)
     }
 
     func handle_query_gallery_status() {
-        Bridge.log("Mentra: 📸 Querying gallery status from glasses")
+        Bridge.log("MAN: 📸 Querying gallery status from glasses")
         sgc?.queryGalleryStatus()
     }
 
     func handle_start_buffer_recording() {
-        Bridge.log("Mentra: onStartBufferRecording")
+        Bridge.log("MAN: onStartBufferRecording")
         sgc?.startBufferRecording()
     }
 
     func handle_stop_buffer_recording() {
-        Bridge.log("Mentra: onStopBufferRecording")
+        Bridge.log("MAN: onStopBufferRecording")
         sgc?.stopBufferRecording()
     }
 
     func handle_save_buffer_video(_ requestId: String, _ durationSeconds: Int) {
         Bridge.log(
-            "Mentra: onSaveBufferVideo: requestId=\(requestId), duration=\(durationSeconds)s")
+            "MAN: onSaveBufferVideo: requestId=\(requestId), duration=\(durationSeconds)s")
         sgc?.saveBufferVideo(requestId: requestId, durationSeconds: durationSeconds)
     }
 
     func handle_start_video_recording(_ requestId: String, _ save: Bool) {
-        Bridge.log("Mentra: onStartVideoRecording: requestId=\(requestId), save=\(save)")
+        Bridge.log("MAN: onStartVideoRecording: requestId=\(requestId), save=\(save)")
         sgc?.startVideoRecording(requestId: requestId, save: save)
     }
 
     func handle_stop_video_recording(_ requestId: String) {
-        Bridge.log("Mentra: onStopVideoRecording: requestId=\(requestId)")
+        Bridge.log("MAN: onStopVideoRecording: requestId=\(requestId)")
         sgc?.stopVideoRecording(requestId: requestId)
     }
 
     func handle_microphone_state_change(_ requiredData: [SpeechRequiredDataType], _ bypassVad: Bool) {
         var requiredData = requiredData // make mutable
         Bridge.log(
-            "Mentra: MIC: @@@@@@@@ changing mic with requiredData: \(requiredData) bypassVad=\(bypassVad) enforceLocalTranscription=\(enforceLocalTranscription) @@@@@@@@@@@@@@@@"
+            "MAN: MIC: @@@@@@@@ changing mic with requiredData: \(requiredData) bypassVad=\(bypassVad) enforceLocalTranscription=\(enforceLocalTranscription) @@@@@@@@@@@@@@@@"
         )
 
         bypassVadForPCM = bypassVad
@@ -1029,7 +1029,7 @@ struct ViewState {
             }
         }
 
-        // Core.log("Mentra: MIC: shouldSendPcmData=\(shouldSendPcmData), shouldSendTranscript=\(shouldSendTranscript)")
+        // Core.log("MAN: MIC: shouldSendPcmData=\(shouldSendPcmData), shouldSendTranscript=\(shouldSendTranscript)")
 
         // in any case, clear the vadBuffer:
         vadBuffer.removeAll()
@@ -1066,7 +1066,7 @@ struct ViewState {
 
                 if !useGlassesMic, !useOnboardMic {
                     Bridge.log(
-                        "Mentra: no mic to use! falling back to glasses mic!!!!! (this should not happen)"
+                        "MAN: no mic to use! falling back to glasses mic!!!!! (this should not happen)"
                     )
                     useGlassesMic = true
                 }
@@ -1094,7 +1094,7 @@ struct ViewState {
             useOnboardMic = actuallyEnabled && useOnboardMic
 
             // Core.log(
-            //     "Mentra: MIC: isEnabled: \(isEnabled) sensingEnabled: \(self.sensingEnabled) useOnboardMic: \(useOnboardMic) " +
+            //     "MAN: MIC: isEnabled: \(isEnabled) sensingEnabled: \(self.sensingEnabled) useOnboardMic: \(useOnboardMic) " +
             //         "useGlassesMic: \(useGlassesMic) glassesHasMic: \(glassesHasMic) preferredMic: \(self.preferredMic) " +
             //         "somethingConnected: \(isSomethingConnected()) onboardMicUnavailable: \(self.onboardMicUnavailable)" +
             //         "actuallyEnabled: \(actuallyEnabled)"
@@ -1136,17 +1136,17 @@ struct ViewState {
         _ authToken: String?,
         _ compress: String?
     ) {
-        Bridge.log("Mentra: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size), compress=\(compress ?? "none")")
+        Bridge.log("MAN: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size), compress=\(compress ?? "none")")
         sgc?.requestPhoto(requestId, appId: appId, size: size, webhookUrl: webhookUrl, authToken: authToken, compress: compress)
     }
 
     func handle_connect_default() {
         if defaultWearable.isEmpty {
-            Bridge.log("Mentra: No default wearable, returning")
+            Bridge.log("MAN: No default wearable, returning")
             return
         }
         if deviceName.isEmpty {
-            Bridge.log("Mentra: No device name, returning")
+            Bridge.log("MAN: No device name, returning")
             return
         }
         initSGC(defaultWearable)
@@ -1156,15 +1156,15 @@ struct ViewState {
     }
 
     func handle_connect_by_name(_ dName: String) {
-        Bridge.log("Mentra: Connecting to wearable: \(dName)")
+        Bridge.log("MAN: Connecting to wearable: \(dName)")
 
         if pendingWearable.isEmpty, defaultWearable.isEmpty {
-            Bridge.log("Mentra: No pending or default wearable, returning")
+            Bridge.log("MAN: No pending or default wearable, returning")
             return
         }
 
         if pendingWearable.isEmpty, !defaultWearable.isEmpty {
-            Bridge.log("Mentra: No pending wearable, using default wearable: \(defaultWearable)")
+            Bridge.log("MAN: No pending wearable, using default wearable: \(defaultWearable)")
             pendingWearable = defaultWearable
         }
 
@@ -1196,7 +1196,7 @@ struct ViewState {
     }
 
     func handle_forget() {
-        Bridge.log("Mentra: Forgetting smart glasses")
+        Bridge.log("MAN: Forgetting smart glasses")
 
         // Call forget first to stop timers/handlers/reconnect logic
         sgc?.forget()
@@ -1215,7 +1215,7 @@ struct ViewState {
     }
 
     func handle_find_compatible_devices(_ modelName: String) {
-        Bridge.log("Mentra: Searching for compatible device names for: \(modelName)")
+        Bridge.log("MAN: Searching for compatible device names for: \(modelName)")
 
         if DeviceTypes.ALL.contains(modelName) {
             pendingWearable = modelName
@@ -1333,7 +1333,7 @@ struct ViewState {
     }
 
     func handle_update_settings(_ settings: [String: Any]) {
-        Bridge.log("Mentra: Received update settings: \(settings)")
+        Bridge.log("MAN: Received update settings: \(settings)")
 
         // update our settings with the new values:
         if let newPreferredMic = settings["preferred_mic"] as? String,

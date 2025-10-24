@@ -8,6 +8,7 @@ import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
 import bridge from "@/bridge/MantleBridge"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {useDisplayStore} from "@/stores/display"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -174,6 +175,11 @@ class MantleManager {
     } catch (error) {
       console.error("Mantle: Error requesting single location", error)
     }
+  }
+
+  public async handle_head_up(isUp: boolean) {
+    socketComms.sendHeadPosition(isUp)
+    useDisplayStore.getState().setView(isUp ? "dashboard" : "main")
   }
 
   public async handle_local_transcription(data: any) {

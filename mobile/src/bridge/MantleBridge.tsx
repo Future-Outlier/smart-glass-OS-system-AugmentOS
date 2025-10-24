@@ -218,7 +218,7 @@ export class MantleBridge {
           await useSettingsStore.getState().setSetting(data.key, data.value, false)
           break
         case "head_up":
-          socketComms.sendHeadPosition(data.up)
+          mantle.handle_head_up(data.up)
           break
         case "local_transcription":
           mantle.handle_local_transcription(data)
