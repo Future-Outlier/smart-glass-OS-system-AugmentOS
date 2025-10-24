@@ -18,7 +18,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated"
 import {ThemedStyle} from "@/theme"
-import GlassesDisplayMirror from "../simulated/GlassesDisplayMirror"
+import GlassesDisplayMirror from "../mirror/GlassesDisplayMirror"
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export function MentraNextGlassesPairingGuide() {

@@ -9,7 +9,7 @@ import {Spacer} from "@/components/ui/Spacer"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {getModelCapabilities, Capabilities} from "@/../../cloud/packages/types/src"
-import ConnectedSimulatedGlassesInfo from "@/components/simulated/ConnectedSimulatedGlassesInfo"
+import ConnectedSimulatedGlassesInfo from "@/components/mirror/ConnectedSimulatedGlassesInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 
 export const HomeContainer: React.FC = () => {

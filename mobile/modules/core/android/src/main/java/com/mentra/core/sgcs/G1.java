@@ -2855,11 +2855,7 @@ public class G1 extends SGCManager {
                     .append("\n");
         }
 
-        // Bridge.log("G1: pageText:" + pageText.toString());
-
-        // Convert to bytes and chunk for transmission
-        // return chunkTextForTransmission(pageText.toString());
-        return createTextWallChunks(pageText.toString().trim());
+        return createTextWallChunks(pageText);
     }
 
     private int calculateSpacesForAlignment(int currentWidth, int targetPosition, int spaceWidth) {

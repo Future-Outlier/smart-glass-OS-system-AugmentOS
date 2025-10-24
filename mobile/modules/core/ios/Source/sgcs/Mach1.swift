@@ -13,6 +13,8 @@ import UIKit
 import UltraliteSDK
 
 class Mach1: UltraliteBaseViewController, SGCManager {
+    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?, compress _: String?) {}
+
     func sendGalleryMode() {}
 
     func sendButtonMaxRecordingTime() {}
@@ -82,8 +84,6 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     func setDashboardPosition(_: Int, _: Int) {}
 
     func setSilentMode(_: Bool) {}
-
-    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?) {}
 
     func sendJson(_: [String: Any]) {}
 

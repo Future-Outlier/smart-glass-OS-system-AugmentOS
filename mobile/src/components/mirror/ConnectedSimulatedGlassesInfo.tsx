@@ -7,7 +7,7 @@ import {useCameraPermissions} from "expo-camera"
 import {useEffect, useRef} from "react"
 import {Animated, Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import GlassesDisplayMirror from "@/components/simulated/GlassesDisplayMirror"
+import GlassesDisplayMirror from "@/components/mirror/GlassesDisplayMirror"
 
 export default function ConnectedSimulatedGlassesInfo() {
   const fadeAnim = useRef(new Animated.Value(0)).current

@@ -24,10 +24,9 @@ export default function Homepage() {
 
   useFocusEffect(
     useCallback(() => {
-      // if (Math.random() > 0.5) {
-      // throw new Error("test")
-      // }
-      refreshApplets()
+      setTimeout(() => {
+        refreshApplets()
+      }, 1000)
     }, []),
   )
 
