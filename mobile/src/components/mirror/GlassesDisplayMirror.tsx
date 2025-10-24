@@ -98,15 +98,32 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
   }
 
   const parseText = (text: string) => {
-    // if text contains $GBATT$, replace with battery level
-    if (text.includes("$GBATT$")) {
-      const batteryLevel = status.glasses_info?.battery_level
-      if (typeof batteryLevel === "number" && batteryLevel >= 0) {
-        return text.replace("$GBATT$", `${batteryLevel}%`)
-      }
-      return text.replace("$GBATT$", "")
-    }
+    // Replace date/time placeholders
+    const now = new Date()
+
+    // Format date as MM/dd
+    const dateStr = `${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getDate().toString().padStart(2, "0")}`
+
+    // Format time as hh:mm (12-hour)
+    const hours12 = now.getHours() % 12 || 12
+    const minutes = now.getMinutes().toString().padStart(2, "0")
+    const time12Str = `${hours12.toString().padStart(2, "0")}:${minutes}`
+
+    // Format time as HH:mm (24-hour)
+    const hours24 = now.getHours().toString().padStart(2, "0")
+    const time24Str = `${hours24}:${minutes}`
+
+    // Replace battery level placeholder
+    const batteryLevel = status.glasses_info?.battery_level
+    const batteryStr = typeof batteryLevel === "number" && batteryLevel >= 0 ? `${batteryLevel}%` : ""
+
+    // Replace all placeholders
     return text
+      .replace(/\$DATE\$/g, dateStr)
+      .replace(/\$TIME12\$/g, time12Str)
+      .replace(/\$TIME24\$/g, time24Str)
+      .replace(/\$GBATT\$/g, batteryStr)
+      .replace(/\$CONNECTION_STATUS\$/g, "Connected")
   }
 
   /**
