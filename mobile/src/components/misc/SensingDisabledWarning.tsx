@@ -18,7 +18,8 @@ const SensingDisabledWarning: React.FC = () => {
   }
 
   return (
-    <View style={[themed($container), {backgroundColor: "#FFF3E0", borderColor: theme.colors.warning}]}>
+    <View
+      style={[themed($container), {backgroundColor: theme.colors.backgroundAlt, borderColor: theme.colors.warning}]}>
       <View style={themed($warningContent)}>
         <Icon name="microphone-off" size={22} color="#FF9800" />
         <Text style={themed($warningText)}>{translate("warning:sensingDisabled")}</Text>
@@ -41,7 +42,6 @@ const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   padding: spacing.md,
   borderRadius: spacing.md,
   borderWidth: spacing.xxxs,
-  marginVertical: 16,
   alignSelf: "center",
 })
 
@@ -49,9 +49,9 @@ const $settingsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   padding: spacing.xs,
 })
 
-const $settingsButtonTextBlue: ThemedStyle<TextStyle> = () => ({
-  color: "#007AFF",
-  fontSize: 14,
+const $settingsButtonTextBlue: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
+  color: colors.primary,
+  fontSize: spacing.md,
   fontWeight: "bold",
 })
 
@@ -61,11 +61,10 @@ const $warningContent: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
 })
 
-const $warningText: ThemedStyle<TextStyle> = ({spacing}) => ({
-  color: "#E65100",
+const $warningText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+  color: colors.warning,
   flex: 1,
-  fontSize: 14,
-  fontWeight: "500",
+  fontSize: spacing.md,
   marginLeft: spacing.sm,
 })
 
