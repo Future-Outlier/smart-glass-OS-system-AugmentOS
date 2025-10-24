@@ -360,6 +360,24 @@ public class Bridge private constructor() {
             sendTypedMessage("local_transcription", transcription)
         }
 
+        /** Convenience method for sending local transcription from transcriber */
+        @JvmStatic
+        fun sendLocalTranscription(text: String, isFinal: Boolean, language: String) {
+            if (text.isEmpty()) {
+                log("Skipping empty transcription result")
+                return
+            }
+
+            val transcription = mapOf(
+                "text" to text,
+                "isFinal" to isFinal,
+                "language" to language,
+                "type" to "local_transcription"
+            )
+
+            sendTypedMessage("local_transcription", transcription)
+        }
+
         // Core bridge funcs:
 
         /** Send status update */
