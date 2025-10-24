@@ -15,6 +15,7 @@ import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 export const HomeContainer: React.FC = () => {
   const {theme} = useAppTheme()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [offlineMode] = useSetting(SETTINGS_KEYS.offline_mode)
   const {status} = useCoreStatus()
   const features: Capabilities = getModelCapabilities(defaultWearable)
   const connected = status.glasses_info?.model_name
@@ -26,7 +27,7 @@ export const HomeContainer: React.FC = () => {
       <Spacer height={theme.spacing.xs} />
       <ActiveForegroundApp />
       <Spacer height={theme.spacing.xs} />
-      <BackgroundAppsLink />
+      {!offlineMode && <BackgroundAppsLink />}
       <ForegroundAppsGrid />
       <IncompatibleApps />
       <Spacer height={theme.spacing.xxxl} />
