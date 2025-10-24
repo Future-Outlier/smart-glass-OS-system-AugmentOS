@@ -11,7 +11,7 @@ export const getGlassesImage = (glasses: string | null) => {
       return require("../../assets/glasses/mentra-mach1-glasses.png")
     case "Mentra Live":
     case "mentra_live":
-      return require("../../assets/glasses/mentra_live.png")
+      return require("../../assets/glasses/mentra_live/mentra_live.png")
     case "inmo_air":
       return require("../../assets/glasses/inmo_air.png")
     case "tcl_rayneo_x_two":

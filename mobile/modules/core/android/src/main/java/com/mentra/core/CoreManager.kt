@@ -17,6 +17,7 @@ import com.mentra.core.sgcs.SGCManager
 import com.mentra.core.sgcs.Simulated
 import com.mentra.core.sgcs.Mach1
 import com.mentra.core.utils.DeviceTypes
+import com.mentra.mentra.stt.SherpaOnnxTranscriber
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -113,6 +114,7 @@ class CoreManager {
     private var isSpeaking = false
 
     // STT
+    private var transcriber: SherpaOnnxTranscriber? = null
     private var shouldSendPcmData = false
     private var shouldSendTranscript = false
 
@@ -124,6 +126,28 @@ class CoreManager {
         initializeViewStates()
         startForegroundService()
         // setupPermissionMonitoring()
+
+        // Initialize local STT transcriber
+        try {
+            val context = Bridge.getContext()
+            transcriber = SherpaOnnxTranscriber(context)
+            transcriber?.setTranscriptListener(object : SherpaOnnxTranscriber.TranscriptListener {
+                override fun onPartialResult(text: String, language: String) {
+                    Bridge.log("STT: Partial result: $text")
+                    Bridge.sendLocalTranscription(text, false, language)
+                }
+
+                override fun onFinalResult(text: String, language: String) {
+                    Bridge.log("STT: Final result: $text")
+                    Bridge.sendLocalTranscription(text, true, language)
+                }
+            })
+            transcriber?.initialize()
+            Bridge.log("SherpaOnnxTranscriber fully initialized")
+        } catch (e: Exception) {
+            Bridge.log("Failed to initialize SherpaOnnxTranscriber: ${e.message}")
+            transcriber = null
+        }
     }
 
     // MARK: - Unique (Android)
@@ -366,7 +390,16 @@ class CoreManager {
 
     fun handlePcm(pcmData: ByteArray) {
         // Bridge.log("MAN: handlePcm()")
-        Bridge.sendMicData(pcmData)
+
+        // Send PCM to cloud if needed
+        if (shouldSendPcmData) {
+            Bridge.sendMicData(pcmData)
+        }
+
+        // Send PCM to local transcriber if needed
+        if (shouldSendTranscript) {
+            transcriber?.acceptAudio(pcmData)
+        }
     }
 
     private fun updateMicrophoneState() {
@@ -666,12 +699,14 @@ class CoreManager {
 
     fun updateOfflineMode(enabled: Boolean) {
         offlineMode = enabled
-        // var requiredData = []
-        // if (enabled) {
-        //     requiredData.add("TRANSCRIPTION")
-        // }
+        Bridge.log("Mentra: updating offline mode $enabled")
 
-        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+        val requiredData = mutableListOf<String>()
+        if (enabled) {
+            requiredData.add("TRANSCRIPTION")
+        }
+
+        handle_microphone_state_change(requiredData, bypassVadForPCM)
     }
 
     fun updateBypassAudioEncoding(enabled: Boolean) {
@@ -724,7 +759,7 @@ class CoreManager {
 
     fun restartTranscriber() {
         Bridge.log("MAN: Restarting transcriber via command")
-        // TODO: Implement transcriber restart
+        transcriber?.restart()
     }
 
     // MARK: - connection state management
@@ -921,11 +956,15 @@ class CoreManager {
 
     fun handle_microphone_state_change(requiredData: List<String>, bypassVad: Boolean) {
         Bridge.log(
-            "MAN: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad"
+            "MAN: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad offlineMode=$offlineMode"
         )
 
         bypassVadForPCM = bypassVad
 
+        shouldSendPcmData = false
+        shouldSendTranscript = false
+
+        // This must be done before the requiredData is modified by offline mode
         currentRequiredData.clear()
         currentRequiredData.addAll(requiredData)
 
@@ -934,11 +973,9 @@ class CoreManager {
             !mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") &&
             !mutableRequiredData.contains("TRANSCRIPTION")
         ) {
+            Bridge.log("MAN: MIC: Offline mode active - adding TRANSCRIPTION requirement")
             mutableRequiredData.add("TRANSCRIPTION")
         }
-
-        shouldSendPcmData = false
-        shouldSendTranscript = false
 
         when {
             mutableRequiredData.contains("PCM") &&
@@ -969,7 +1006,7 @@ class CoreManager {
         }
 
         vadBuffer.clear()
-        micEnabled = requiredData.isNotEmpty()
+        micEnabled = mutableRequiredData.isNotEmpty()
 
         updateMicrophoneState()
     }
@@ -1275,6 +1312,12 @@ class CoreManager {
             }
         }
 
+        (settings["offline_captions_running"] as? Boolean)?.let { newOfflineMode ->
+            if (offlineMode != newOfflineMode) {
+                updateOfflineMode(newOfflineMode)
+            }
+        }
+
         (settings["metric_system"] as? Boolean)?.let { newMetricSystem ->
             if (metricSystem != newMetricSystem) {
                 updateMetricSystem(newMetricSystem)
@@ -1363,6 +1406,8 @@ class CoreManager {
 
     // MARK: Cleanup
     fun cleanup() {
-        // Cleanup code here
+        // Clean up transcriber resources
+        transcriber?.shutdown()
+        transcriber = null
     }
 }

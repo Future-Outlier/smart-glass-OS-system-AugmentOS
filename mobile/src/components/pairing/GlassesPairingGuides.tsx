@@ -443,7 +443,7 @@ export function MentraLivePairingGuide() {
 
         {/* Product image would go here */}
         <Image
-          source={require("../../../assets/glasses/mentra_live.png")}
+          source={require("../../../assets/glasses/mentra_live/mentra_live.png")}
           style={[styles.guideImage, {marginVertical: 0}]}
           // Fallback if image doesn't exist
           onError={() => console.log("Image failed to load")}
