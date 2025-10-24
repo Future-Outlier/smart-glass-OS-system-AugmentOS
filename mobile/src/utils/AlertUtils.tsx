@@ -6,7 +6,6 @@ import {useAppTheme} from "./useAppTheme"
 import {SettingsNavigationUtils} from "./SettingsNavigationUtils"
 import {StatusBar} from "expo-status-bar"
 import * as NavigationBar from "expo-navigation-bar"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {useEffect, useRef} from "react"
 // eslint-disable-next-line
 import {StyleSheet} from "react-native"
@@ -69,7 +68,6 @@ const convertToModalButton = (button: AlertButton, index: number, totalButtons: 
 // Global component that will be rendered once at the app root
 export function ModalProvider({children}: {children: React.ReactNode}) {
   const {theme} = useAppTheme()
-  const [showNewUi] = useSetting(SETTINGS_KEYS.new_ui)
   const [visible, setVisible] = useState(false)
   const [title, setTitle] = useState("")
   const [message, setMessage] = useState("")
@@ -83,8 +81,8 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
   const [originalNavBarColor, setOriginalNavBarColor] = useState<string | null>(null)
 
   // Animation values - start at final values if not using new UI
-  const fadeAnim = useRef(new Animated.Value(showNewUi ? 0 : 1)).current
-  const scaleAnim = useRef(new Animated.Value(showNewUi ? 0.93 : 1)).current
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const scaleAnim = useRef(new Animated.Value(0.93)).current
 
   useEffect(() => {
     const backHandler = () => {
@@ -135,14 +133,6 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
 
   // Handle animations when visibility changes
   useEffect(() => {
-    // Skip animations if not using new UI
-    if (!showNewUi) {
-      // Set values immediately without animation
-      fadeAnim.setValue(visible ? 1 : 0)
-      scaleAnim.setValue(1)
-      return
-    }
-
     if (visible) {
       // Animate in (only for new UI)
       Animated.parallel([
@@ -173,7 +163,7 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
         }),
       ]).start()
     }
-  }, [visible, fadeAnim, scaleAnim, showNewUi])
+  }, [visible, fadeAnim, scaleAnim])
 
   useEffect(() => {
     // Register the modal functions for global access
@@ -208,12 +198,6 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
   }, [])
 
   const handleDismiss = () => {
-    if (!showNewUi) {
-      // No animation for old UI - hide immediately
-      setVisible(false)
-      return
-    }
-
     // Animate out before hiding (only for new UI)
     Animated.parallel([
       Animated.timing(fadeAnim, {

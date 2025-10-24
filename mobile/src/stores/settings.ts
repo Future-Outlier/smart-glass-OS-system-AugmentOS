@@ -9,7 +9,6 @@ import Toast from "react-native-toast-message"
 export const SETTINGS_KEYS = {
   // feature flags:
   dev_mode: "dev_mode",
-  new_ui: "new_ui",
   enable_squircles: "enable_squircles",
   debug_console: "debug_console",
   // ui state:
@@ -71,7 +70,6 @@ export const SETTINGS_KEYS = {
 const DEFAULT_SETTINGS: Record<string, any> = {
   // feature flags / dev:
   [SETTINGS_KEYS.dev_mode]: false,
-  [SETTINGS_KEYS.new_ui]: true,
   [SETTINGS_KEYS.enable_squircles]: false,
   [SETTINGS_KEYS.debug_console]: false,
   // ui state:
