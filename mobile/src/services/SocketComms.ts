@@ -451,7 +451,8 @@ class SocketComms {
       console.log("Invalid photo request: missing requestId or appId")
       return
     }
-    CoreModule.photoRequest(requestId, appId, webhookUrl, size, authToken, compress)
+    // Parameter order: requestId, appId, size, webhookUrl, authToken, compress
+    CoreModule.photoRequest(requestId, appId, size, webhookUrl, authToken, compress)
   }
 
   private handle_start_rtmp_stream(msg: any) {
