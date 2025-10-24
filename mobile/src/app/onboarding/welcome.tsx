@@ -1,6 +1,6 @@
 import {Screen, Text} from "@/components/ignite"
 import {Button} from "@/components/ignite/Button"
-import {Spacer} from "@/components/misc/Spacer"
+import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"

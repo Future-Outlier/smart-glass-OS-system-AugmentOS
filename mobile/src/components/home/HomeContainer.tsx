@@ -5,11 +5,11 @@ import {BackgroundAppsLink} from "@/components/home/BackgroundAppsLink"
 import {CompactDeviceStatus} from "@/components/home/CompactDeviceStatus"
 import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
 import {IncompatibleApps} from "@/components/home/IncompatibleApps"
-import {Spacer} from "@/components/misc/Spacer"
+import {Spacer} from "@/components/ui/Spacer"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {getModelCapabilities, Capabilities} from "@/../../cloud/packages/types/src"
-import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
+import ConnectedSimulatedGlassesInfo from "@/components/simulated/ConnectedSimulatedGlassesInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 
 export const HomeContainer: React.FC = () => {

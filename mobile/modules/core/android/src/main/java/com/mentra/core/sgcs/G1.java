@@ -2855,7 +2855,8 @@ public class G1 extends SGCManager {
                     .append("\n");
         }
 
-        // Bridge.log("G1: pageText:" + pageText.toString());
+        String test = pageText.toString().replace(' ', 'A');
+        Bridge.log("G1: pageText:" + test.toString());
 
         // Convert to bytes and chunk for transmission
         // return chunkTextForTransmission(pageText.toString());

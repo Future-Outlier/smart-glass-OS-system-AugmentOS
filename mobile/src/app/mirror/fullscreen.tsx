@@ -18,8 +18,8 @@ import {
 import {Text} from "@/components/ignite"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 
-import GlassesDisplayMirror from "@/components/misc/GlassesDisplayMirror"
-import {SimulatedGlassesControls} from "@/components/misc/SimulatedGlassesControls"
+import GlassesDisplayMirror from "@/components/simulated/GlassesDisplayMirror"
+import {SimulatedGlassesControls} from "@/components/simulated/SimulatedGlassesControls"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"

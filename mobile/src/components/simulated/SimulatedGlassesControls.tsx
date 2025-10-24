@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from "react"
+import {useCallback, useState} from "react"
 import {TouchableOpacity, ViewStyle} from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
 import {Text} from "@/components/ignite"
@@ -48,7 +48,7 @@ export const SimulatedGlassesControls: React.FC<SimulatedGlassesControlsProps> =
   }
 
   // Handle press in/out for detecting short vs long press
-  let pressTimer: NodeJS.Timeout | null = null
+  let pressTimer: number | null = null
 
   const handlePressIn = () => {
     console.log("SimulatedGlassesControls: Button press started")

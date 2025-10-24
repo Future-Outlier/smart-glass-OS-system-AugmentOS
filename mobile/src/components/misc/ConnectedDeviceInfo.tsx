@@ -1,6 +1,6 @@
 import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {Button, Icon, Text} from "@/components/ignite"
-import ConnectedSimulatedGlassesInfo from "@/components/misc/ConnectedSimulatedGlassesInfo"
+import ConnectedSimulatedGlassesInfo from "@/components/simulated/ConnectedSimulatedGlassesInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"

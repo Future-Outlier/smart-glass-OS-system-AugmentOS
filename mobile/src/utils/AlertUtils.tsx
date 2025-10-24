@@ -1,6 +1,6 @@
 import {useState} from "react"
 import {Alert, BackHandler, Platform, Animated} from "react-native"
-import BasicDialog from "@/components/ignite/BasicDialog"
+import BasicDialog from "@/components/ui/BasicDialog"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
 import {useAppTheme} from "./useAppTheme"
 import {SettingsNavigationUtils} from "./SettingsNavigationUtils"

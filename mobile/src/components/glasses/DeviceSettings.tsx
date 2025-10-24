@@ -13,7 +13,7 @@ import {PermissionFeatures, requestFeaturePermissions} from "@/utils/Permissions
 import {useAppTheme} from "@/utils/useAppTheme"
 import CoreModule from "core"
 import {Platform, View, ViewStyle} from "react-native"
-import {Spacer} from "../misc/Spacer"
+import {Spacer} from "@/components/ui/Spacer"
 import {BatteryStatus} from "./info/BatteryStatus"
 import {DeviceInformation} from "./info/DeviceInformation"
 import {EmptyState} from "./info/EmptyState"

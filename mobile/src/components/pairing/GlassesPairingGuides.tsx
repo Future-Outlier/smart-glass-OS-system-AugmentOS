@@ -6,7 +6,7 @@ import {View, Image, TouchableOpacity, Linking, ImageStyle, ViewStyle, TextStyle
 import {Text} from "@/components/ignite"
 import {translate} from "@/i18n"
 import {showAlert} from "@/utils/AlertUtils"
-import {Spacer} from "./Spacer"
+import {Spacer} from "@/components/ui/Spacer"
 import {GlassesFeatureList} from "@/components/glasses/GlassesFeatureList"
 import {MaterialCommunityIcons} from "@expo/vector-icons"
 import Animated, {
@@ -18,7 +18,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated"
 import {ThemedStyle} from "@/theme"
-import GlassesDisplayMirror from "./GlassesDisplayMirror"
+import GlassesDisplayMirror from "../simulated/GlassesDisplayMirror"
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export function MentraNextGlassesPairingGuide() {
   const {theme, themed} = useAppTheme()
@@ -672,4 +673,27 @@ const styles = {
     flex: 1,
     lineHeight: 20,
   },
+}
+
+export const getPairingGuide = (glassesModelName: string) => {
+  switch (glassesModelName) {
+    case DeviceTypes.G1:
+      return <EvenRealitiesG1PairingGuide />
+    case DeviceTypes.NEX:
+      return <MentraNextGlassesPairingGuide />
+    case DeviceTypes.Z100:
+      return <VuzixZ100PairingGuide />
+    case DeviceTypes.LIVE:
+      return <MentraLivePairingGuide />
+    case DeviceTypes.MACH1:
+      return <MentraMach1PairingGuide />
+    case DeviceTypes.AUDIO:
+      return <AudioWearablePairingGuide />
+    case DeviceTypes.SIMULATED:
+      return <VirtualWearablePairingGuide />
+    case "Brilliant Labs Frame":
+      return <BrilliantLabsFramePairingGuide />
+    default:
+      return <View />
+  }
 }
