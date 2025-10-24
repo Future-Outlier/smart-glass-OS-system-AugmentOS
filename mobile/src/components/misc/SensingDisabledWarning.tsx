@@ -49,9 +49,9 @@ const $settingsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   padding: spacing.xs,
 })
 
-const $settingsButtonTextBlue: ThemedStyle<TextStyle> = ({spacing}) => ({
+const $settingsButtonTextBlue: ThemedStyle<TextStyle> = () => ({
   color: "#007AFF",
-  fontSize: spacing.lg,
+  fontSize: 14,
   fontWeight: "bold",
 })
 
@@ -64,7 +64,7 @@ const $warningContent: ThemedStyle<ViewStyle> = () => ({
 const $warningText: ThemedStyle<TextStyle> = ({spacing}) => ({
   color: "#E65100",
   flex: 1,
-  fontSize: spacing.lg,
+  fontSize: 14,
   fontWeight: "500",
   marginLeft: spacing.sm,
 })

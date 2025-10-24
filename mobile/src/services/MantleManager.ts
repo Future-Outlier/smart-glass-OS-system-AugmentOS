@@ -7,6 +7,7 @@ import TranscriptProcessor from "@/utils/TranscriptProcessor"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
 import bridge from "@/bridge/MantleBridge"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -222,14 +223,13 @@ class MantleManager {
     }
   }
 
-  public async handle_button_press(id: string, type: string, _timestamp: string) {
+  public async handle_button_press(id: string, type: string, timestamp: string) {
     // Emit event to React Native layer for handling
-    // we should phase out the global event emitter
-    // GlobalEventEmitter.emit("BUTTON_PRESS", {
-    //   buttonId: data.buttonId,
-    //   pressType: data.pressType,
-    //   timestamp: data.timestamp,
-    // })
+    GlobalEventEmitter.emit("BUTTON_PRESS", {
+      buttonId: id,
+      pressType: type,
+      timestamp: timestamp,
+    })
     socketComms.sendButtonPress(id, type)
   }
 }
