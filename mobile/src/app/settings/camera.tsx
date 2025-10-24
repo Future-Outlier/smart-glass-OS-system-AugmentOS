@@ -1,4 +1,3 @@
-import {useEffect, useState} from "react"
 import {View, ScrollView, TouchableOpacity, Platform} from "react-native"
 import {Text} from "@/components/ignite"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
@@ -12,7 +11,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Screen, Header} from "@/components/ignite"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import CoreModule from "core"
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 type PhotoSize = "small" | "medium" | "large"
 type VideoResolution = "720p" | "1080p" | "1440p" | "4K"
@@ -46,29 +45,18 @@ export default function CameraSettingsScreen() {
   const [devMode, _setDevMode] = useSetting(SETTINGS_KEYS.dev_mode)
   const [photoSize, setPhotoSize] = useSetting(SETTINGS_KEYS.button_photo_size)
   const [ledEnabled, setLedEnabled] = useSetting(SETTINGS_KEYS.button_camera_led)
-  // const [videoResolution, setVideoResolution] = useSetting(SETTINGS_KEYS.button_video_settings)
+  const [videoSettings, setVideoSettings] = useSetting(SETTINGS_KEYS.button_video_settings)
   const [maxRecordingTime, setMaxRecordingTime] = useSetting(SETTINGS_KEYS.button_max_recording_time)
+  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
 
-  const [videoResolution, setVideoResolution] = useState<VideoResolution>(() => {
-    const videoSettings = status.glasses_settings?.button_video_settings
-    if (videoSettings) {
-      if (videoSettings.width >= 3840) return "4K"
-      if (videoSettings.width >= 2560) return "1440p"
-      if (videoSettings.width >= 1920) return "1080p"
-      return "720p"
-    }
+  // Derive video resolution from settings
+  const videoResolution: VideoResolution = (() => {
+    if (!videoSettings) return "1080p"
+    if (videoSettings.width >= 3840) return "4K"
+    if (videoSettings.width >= 2560) return "1440p"
+    if (videoSettings.width >= 1920) return "1080p"
     return "720p"
-  })
-
-  useEffect(() => {
-    const videoSettings = status.glasses_settings?.button_video_settings
-    if (videoSettings) {
-      if (videoSettings.width >= 3840) setVideoResolution("4K")
-      else if (videoSettings.width >= 2560) setVideoResolution("1440p")
-      else if (videoSettings.width >= 1920) setVideoResolution("1080p")
-      else setVideoResolution("720p")
-    }
-  }, [status.glasses_settings?.button_video_settings])
+  })()
 
   const handlePhotoSizeChange = async (size: PhotoSize) => {
     if (!status.glasses_info?.model_name) {
@@ -91,24 +79,15 @@ export default function CameraSettingsScreen() {
     }
 
     try {
-      setVideoResolution(resolution)
-
       // Convert resolution to width/height/fps
       const width = resolution === "4K" ? 3840 : resolution === "1440p" ? 2560 : resolution === "1080p" ? 1920 : 1280
       const height = resolution === "4K" ? 2160 : resolution === "1440p" ? 1920 : resolution === "1080p" ? 1080 : 720
       const fps = resolution === "4K" ? 15 : 30
 
+      setVideoSettings({width, height, fps})
       await bridge.updateButtonVideoSettings(width, height, fps)
     } catch (error) {
       console.error("Failed to update video resolution:", error)
-      // Revert on error
-      const videoSettings = status.glasses_settings?.button_video_settings
-      if (videoSettings) {
-        if (videoSettings.width >= 3840) setVideoResolution("4K")
-        else if (videoSettings.width >= 2560) setVideoResolution("1440p")
-        else if (videoSettings.width >= 1920) setVideoResolution("1080p")
-        else setVideoResolution("720p")
-      }
     }
   }
 
@@ -120,15 +99,8 @@ export default function CameraSettingsScreen() {
 
     try {
       setLedEnabled(enabled)
-      await CoreModule.updateSettings({
-        button_camera_led: enabled,
-      })
     } catch (error) {
       console.error("Failed to update LED setting:", error)
-      // Revert on error
-      if (status.glasses_settings?.button_camera_led !== undefined) {
-        setLedEnabled(status.glasses_settings.button_camera_led)
-      }
     }
   }
 
@@ -139,14 +111,16 @@ export default function CameraSettingsScreen() {
     }
 
     try {
-      setMaxRecordingTime(time)
+      const minutes = parseInt(time.replace("m", ""))
+      setMaxRecordingTime(minutes)
     } catch (error) {
       console.error("Failed to update max recording time:", error)
     }
   }
 
-  // Check if glasses support camera button feature
-  const supportsCameraButton = status.glasses_info?.model_name?.toLowerCase().includes("mentra live")
+  // Check if glasses support camera button feature using capabilities
+  const features = getModelCapabilities(defaultWearable)
+  const supportsCameraButton = features?.hasButton && features?.hasCamera
 
   if (!supportsCameraButton) {
     return (
@@ -174,11 +148,7 @@ export default function CameraSettingsScreen() {
               {index > 0 && <View style={themed($divider)} />}
               <TouchableOpacity style={themed($optionItem)} onPress={() => handlePhotoSizeChange(value as PhotoSize)}>
                 <Text style={themed($optionText)}>{label}</Text>
-                <MaterialCommunityIcons
-                  name="check"
-                  size={24}
-                  color={photoSize === value ? theme.colors.primary : "transparent"}
-                />
+                {photoSize === value && <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />}
               </TouchableOpacity>
             </View>
           ))}
@@ -195,11 +165,9 @@ export default function CameraSettingsScreen() {
                 style={themed($optionItem)}
                 onPress={() => handleVideoResolutionChange(value as VideoResolution)}>
                 <Text style={themed($optionText)}>{label}</Text>
-                <MaterialCommunityIcons
-                  name="check"
-                  size={24}
-                  color={videoResolution === value ? theme.colors.primary : "transparent"}
-                />
+                {videoResolution === value && (
+                  <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                )}
               </TouchableOpacity>
             </View>
           ))}
@@ -217,11 +185,9 @@ export default function CameraSettingsScreen() {
                   style={themed($optionItem)}
                   onPress={() => handleMaxRecordingTimeChange(value as MaxRecordingTime)}>
                   <Text style={themed($optionText)}>{label}</Text>
-                  <MaterialCommunityIcons
-                    name="check"
-                    size={24}
-                    color={maxRecordingTime === value ? theme.colors.primary : "transparent"}
-                  />
+                  {maxRecordingTime === parseInt(value.replace("m", "")) && (
+                    <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                  )}
                 </TouchableOpacity>
               </View>
             ))}
@@ -236,12 +202,6 @@ export default function CameraSettingsScreen() {
               value={ledEnabled}
               onValueChange={handleLedToggle}
             />
-          </View>
-        )}
-
-        {!status.glasses_info?.model_name && (
-          <View style={themed($warningContainer)}>
-            <Text style={themed($warningText)}>Connect your glasses to change settings</Text>
           </View>
         )}
       </ScrollView>
@@ -289,18 +249,6 @@ const $divider: ThemedStyle<ViewStyle> = ({colors}) => ({
 const $optionText: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.text,
   fontSize: 16,
-})
-
-const $warningContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  backgroundColor: colors.palette.angry600,
-  padding: spacing.md,
-  margin: spacing.md,
-  borderRadius: spacing.xs,
-})
-
-const $warningText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.text,
-  textAlign: "center",
 })
 
 const $emptyStateContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({

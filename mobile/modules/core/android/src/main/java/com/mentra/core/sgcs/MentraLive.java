@@ -2228,12 +2228,17 @@ public class MentraLive extends SGCManager {
                         }
                         if (ready == 1) {
                             Bridge.log("LIVE: K900 SOC ready");
-                            JSONObject readyMsg = new JSONObject();
-                            readyMsg.put("type", "phone_ready");
-                            readyMsg.put("timestamp", System.currentTimeMillis());
+                            // Only send phone_ready if we haven't already established connection
+                            // This prevents re-initialization on every heartbeat after initial connection
+                            // The glassesReady flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
+                            if (!glassesReady) {
+                                JSONObject readyMsg = new JSONObject();
+                                readyMsg.put("type", "phone_ready");
+                                readyMsg.put("timestamp", System.currentTimeMillis());
 
-                            // Send it through our data channel
-                            sendJson(readyMsg, true);
+                                // Send it through our data channel
+                                sendJson(readyMsg, true);
+                            }
                         }
                         int charg = bodyObj.optInt("charg", -1);
                         if (batteryPercentage != -1 && charg != -1)

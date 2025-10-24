@@ -1721,12 +1721,17 @@ class MentraLive: NSObject, SGCManager {
 
                 if readyResponse == 1 {
                     Bridge.log("K900 SOC ready")
-                    let readyMsg: [String: Any] = [
-                        "type": "phone_ready",
-                        "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
-                    ]
-                    // Send it through our data channel
-                    sendJson(readyMsg, wakeUp: true)
+                    // Only send phone_ready if we haven't already established connection
+                    // This prevents re-initialization on every heartbeat after initial connection
+                    // The ready flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
+                    if !ready {
+                        let readyMsg: [String: Any] = [
+                            "type": "phone_ready",
+                            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+                        ]
+                        // Send it through our data channel
+                        sendJson(readyMsg, wakeUp: true)
+                    }
                 }
             }
 

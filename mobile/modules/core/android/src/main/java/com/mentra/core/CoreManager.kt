@@ -66,7 +66,7 @@ class CoreManager {
     private var pendingWearable = ""
     public var deviceName = ""
     public var deviceAddress = ""
-    private var isUpdatingScreen = false
+    private var screenDisabled = false
     private var isSearching = false
     private var onboardMicUnavailable = false
     public val currentRequiredData = mutableListOf<String>()
@@ -420,7 +420,7 @@ class CoreManager {
 
     private fun sendCurrentState() {
         Bridge.log("Mentra: sendCurrentState(): $isHeadUp")
-        if (isUpdatingScreen) {
+        if (screenDisabled) {
             return
         }
 
@@ -449,20 +449,18 @@ class CoreManager {
 
         // Cancel any pending clear display work item
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
-        //
-        Bridge.log("Mentra: Entering parseViewState")
+
+        Bridge.log("Mentra: parsing layoutType: ${currentViewState.layoutType}")
 
         when (currentViewState.layoutType) {
-            "text_wall" -> sendText(currentViewState.text)
-            // "double_text_wall" -> {
-            //     sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
-            // }
+            "text_wall" -> sgc?.sendTextWall(currentViewState.text)
+
             "double_text_wall" -> {
-                sendText(currentViewState.topText)
+                sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
             }
 
             "reference_card" -> {
-                sendText("${currentViewState.title}\n\n${currentViewState.text}")
+                sgc?.sendTextWall("${currentViewState.title}\n\n${currentViewState.text}")
             }
 
             "bitmap_view" -> {
@@ -596,16 +594,16 @@ class CoreManager {
         executor.execute {
             sgc?.setBrightness(value, autoMode)
             if (autoBrightnessChanged) {
-                sendText(if (autoMode) "Enabled auto brightness" else "Disabled auto brightness")
+                sgc?.sendTextWall(if (autoMode) "Enabled auto brightness" else "Disabled auto brightness")
             } else {
-                sendText("Set brightness to $value%")
+                sgc?.sendTextWall("Set brightness to $value%")
             }
             try {
                 Thread.sleep(800)
             } catch (e: InterruptedException) {
                 // Ignore
             }
-            sendText(" ")
+            sgc?.clearDisplay()
         }
 
         handle_request_status()
@@ -685,30 +683,14 @@ class CoreManager {
         handle_request_status()
     }
 
-    fun updateUpdatingScreen(enabled: Boolean) {
-        Bridge.log("Mentra: Toggling updating screen: $enabled")
+    fun updateScreenDisabled(enabled: Boolean) {
+        Bridge.log("Mentra: Toggling screen disabled: $enabled")
+        screenDisabled = enabled
         if (enabled) {
             sgc?.exit()
-            isUpdatingScreen = true
         } else {
-            isUpdatingScreen = false
-        }
-    }
-
-    // MARK: - Glasses Commands
-
-    private fun sendText(text: String) {
-        Bridge.log("Mentra: sendText: $text")
-        val currentSgc = sgc ?: return
-
-        if (text == " " || text.isEmpty()) {
-            // clearDisplay()
             sgc?.clearDisplay()
-            return
         }
-
-        val parsed = parsePlaceholders(text)
-        currentSgc.sendTextWall(parsed)
     }
 
     // MARK: - Auxiliary Commands
@@ -792,7 +774,7 @@ class CoreManager {
         // await sgc?.getBatteryStatus()
 
         // if shouldSendBootingMessage {
-        //     sendText("// BOOTING MENTRAOS")
+        //     sgc?.sendTextWall("// BOOTING MENTRAOS")
         // }
 
         // // send loaded settings to glasses:
@@ -805,9 +787,9 @@ class CoreManager {
         // // try? await Task.sleep(nanoseconds: 400_000_000)
         // //      playStartupSequence()
         // if shouldSendBootingMessage {
-        //     sendText("// MENTRAOS CONNECTED")
+        //     sgc?.sendTextWall("// MENTRAOS CONNECTED")
         //     try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-        //     sendText(" ") // clear screen
+        //     sgc?.clearDisplay()
         // }
 
         // shouldSendBootingMessage = false
@@ -817,7 +799,7 @@ class CoreManager {
 
     private fun handleMach1Ready() {
         // Send startup message
-        sendText("MENTRAOS CONNECTED")
+        sgc?.sendTextWall("MENTRAOS CONNECTED")
         Thread.sleep(1000)
         sgc?.clearDisplay()
 
@@ -835,7 +817,7 @@ class CoreManager {
     fun handle_display_text(params: Map<String, Any>) {
         (params["text"] as? String)?.let { text ->
             Bridge.log("Mentra: Displaying text: $text")
-            sendText(text)
+            sgc?.sendTextWall(text)
         }
     }
 
@@ -1063,7 +1045,7 @@ class CoreManager {
     }
 
     fun handle_disconnect() {
-        sendText(" ")
+        sgc?.clearDisplay()
         sgc?.disconnect()
         sgc = null  // Clear the SGC reference after disconnect
         isSearching = false
@@ -1225,13 +1207,15 @@ class CoreManager {
             }
         }
 
-        (settings["head_up_angle"] as? Int)?.let { newHeadUpAngle ->
+        // Head up angle - handle both Int and Double from JavaScript
+        (settings["head_up_angle"] as? Number)?.toInt()?.let { newHeadUpAngle ->
             if (headUpAngle != newHeadUpAngle) {
                 updateGlassesHeadUpAngle(newHeadUpAngle)
             }
         }
 
-        (settings["brightness"] as? Int)?.let { newBrightness ->
+        // Brightness - handle both Int and Double from JavaScript
+        (settings["brightness"] as? Number)?.toInt()?.let { newBrightness ->
             if (brightness != newBrightness) {
                 updateGlassesBrightness(newBrightness, false)
             }
@@ -1249,6 +1233,10 @@ class CoreManager {
             if (dashboardDepth != newDashboardDepth) {
                 updateGlassesDepth(newDashboardDepth)
             }
+        }
+
+        (settings["screen_disabled"] as? Boolean)?.let { screenDisabled ->
+            updateScreenDisabled(screenDisabled)
         }
 
         (settings["auto_brightness"] as? Boolean)?.let { newAutoBrightness ->
@@ -1370,10 +1358,6 @@ class CoreManager {
             if (deviceAddress != newDeviceAddress) {
                 deviceAddress = newDeviceAddress
             }
-        }
-
-        (settings["screen_disabled"] as? Boolean)?.let { screenDisabled ->
-            updateUpdatingScreen(screenDisabled)
         }
     }
 
