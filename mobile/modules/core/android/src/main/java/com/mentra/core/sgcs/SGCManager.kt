@@ -48,7 +48,8 @@ abstract class SGCManager {
             appId: String,
             size: String,
             webhookUrl: String?,
-            authToken: String?
+            authToken: String?,
+            compress: String?
     )
     abstract fun startRtmpStream(message: MutableMap<String, Any>)
     abstract fun stopRtmpStream()

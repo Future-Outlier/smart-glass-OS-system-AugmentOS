@@ -1149,7 +1149,7 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
-    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?) {
+    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?, compress: String?) {
         Bridge.log("Requesting photo: \(requestId) for app: \(appId)")
 
         var json: [String: Any] = [
@@ -1190,6 +1190,9 @@ class MentraLive: NSObject, SGCManager {
         } else {
             json["size"] = "medium"
         }
+
+        // Add compress parameter
+        json["compress"] = compress ?? "none"
 
         Bridge.log("Using auto transfer mode with BLE fallback ID: \(bleImgId)")
 

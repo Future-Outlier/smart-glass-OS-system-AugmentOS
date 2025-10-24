@@ -2842,8 +2842,8 @@ public class MentraLive extends SGCManager {
         return isMicrophoneEnabled;
     }
 
-    public void requestPhoto(String requestId, String appId, String webhookUrl, String authToken, String size) {
-        Bridge.log("LIVE: Requesting photo: " + requestId + " for app: " + appId + " with webhookUrl: " + webhookUrl + ", authToken: " + (authToken.isEmpty() ? "none" : "***") + ", size=" + size);
+    public void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken, String compress) {
+        Bridge.log("LIVE: Requesting photo: " + requestId + " for app: " + appId + " with size: " + size + ", webhookUrl: " + webhookUrl + ", authToken: " + (authToken.isEmpty() ? "none" : "***") + ", compress=" + compress);
 
         try {
             JSONObject json = new JSONObject();
@@ -2858,6 +2858,11 @@ public class MentraLive extends SGCManager {
             }
             if (size != null && !size.isEmpty()) {
                 json.put("size", size);
+            }
+            if (compress != null && !compress.isEmpty()) {
+                json.put("compress", compress);
+            } else {
+                json.put("compress", "none");
             }
 
             // Always generate BLE ID for potential fallback

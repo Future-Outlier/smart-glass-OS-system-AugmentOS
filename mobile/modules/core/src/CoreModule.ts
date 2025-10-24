@@ -32,6 +32,7 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
     size: string,
     webhookUrl: string | null,
     authToken: string | null,
+    compress: string,
   ): Promise<void>
 
   // Video Recording Commands

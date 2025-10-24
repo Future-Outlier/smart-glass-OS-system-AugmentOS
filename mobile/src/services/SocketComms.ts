@@ -443,14 +443,16 @@ class SocketComms {
     const webhookUrl = msg.webhookUrl ?? ""
     const size = msg.size ?? "medium"
     const authToken = msg.authToken ?? ""
+    const compress = msg.compress ?? "none"
     console.log(
-      `Received photo_request, requestId: ${requestId}, appId: ${appId}, webhookUrl: ${webhookUrl}, size: ${size} authToken: ${authToken}`,
+      `Received photo_request, requestId: ${requestId}, appId: ${appId}, webhookUrl: ${webhookUrl}, size: ${size} authToken: ${authToken} compress: ${compress}`,
     )
     if (!requestId || !appId) {
       console.log("Invalid photo request: missing requestId or appId")
       return
     }
-    CoreModule.photoRequest(requestId, appId, webhookUrl, size, authToken)
+    // Parameter order: requestId, appId, size, webhookUrl, authToken, compress
+    CoreModule.photoRequest(requestId, appId, size, webhookUrl, authToken, compress)
   }
 
   private handle_start_rtmp_stream(msg: any) {
