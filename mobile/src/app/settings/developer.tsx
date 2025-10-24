@@ -24,7 +24,6 @@ export default function DeveloperSettingsScreen() {
   const [customBackendUrl, setCustomBackendUrl] = useSetting(SETTINGS_KEYS.custom_backend_url)
   const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS_KEYS.power_saving_mode)
   const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS_KEYS.reconnect_on_app_foreground)
-  const [newUi, setNewUi] = useSetting(SETTINGS_KEYS.new_ui)
   const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
   const [debugConsole, setDebugConsole] = useSetting(SETTINGS_KEYS.debug_console)
 
@@ -200,15 +199,6 @@ export default function DeveloperSettingsScreen() {
           subtitle={translate("settings:reconnectOnAppForegroundSubtitle")}
           value={reconnectOnAppForeground}
           onValueChange={toggleReconnectOnAppForeground}
-        />
-
-        <Spacer height={theme.spacing.md} />
-
-        <ToggleSetting
-          label={translate("settings:newUi")}
-          subtitle={translate("settings:newUiSubtitle")}
-          value={newUi}
-          onValueChange={newValue => setNewUi(newValue)}
         />
 
         <Spacer height={theme.spacing.md} />
