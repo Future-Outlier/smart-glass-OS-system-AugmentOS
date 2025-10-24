@@ -64,7 +64,7 @@ import com.mentra.core.Bridge;
 import com.mentra.core.utils.DeviceTypes;
 import com.mentra.core.utils.BitmapJavaUtils;
 import static com.mentra.core.utils.BitmapJavaUtils.convertBitmapTo1BitBmpBytes;
-import com.mentra.core.utils.G1FontLoader;
+import com.mentra.core.utils.G1Text;
 import com.mentra.core.utils.SmartGlassesConnectionState;
 import com.mentra.lc3Lib.Lc3Cpp;
 
@@ -197,7 +197,7 @@ public class G1 extends SGCManager {
 
     // lock writing until the last write is successful
     // fonts in G1
-    G1FontLoader fontLoader;
+    G1Text g1Text;
 
     private static final long DEBOUNCE_DELAY_MS = 270; // Minimum time between chunk sends
     private volatile long lastSendTimestamp = 0;
@@ -226,7 +226,8 @@ public class G1 extends SGCManager {
         }
 
         // setup fonts
-        fontLoader = new G1FontLoader(context);
+        g1Text = new G1Text();
+        caseRemoved = true;
     }
 
     private final BluetoothGattCallback leftGattCallback = createGattCallback("Left");
@@ -2236,7 +2237,7 @@ public class G1 extends SGCManager {
         //     }
         // }
 
-        List<byte[]> chunks = createDoubleTextWallChunks(textTop, textBottom);
+        List<byte[]> chunks = g1Text.createDoubleTextWallChunks(textTop, textBottom);
         sendChunks(chunks);
     }
 
@@ -2267,7 +2268,6 @@ public class G1 extends SGCManager {
         }
     }
 
-    // public void setFontSize(SmartGlassesFontSize fontSize) {}
 
     public void displayRowsCard(String[] rowStrings) {
     }
@@ -2665,25 +2665,12 @@ public class G1 extends SGCManager {
                 "How much caffeine in dark chocolate?", "25 to 50 grams per piece");
         Bridge.log("G1: the JSON to send: " + json);
         List<byte[]> chunks = createNotificationChunks(json);
-        // Bridge.log("G1: THE CHUNKS:");
-        // Bridge.log(TAG, chunks.get(0).toString());
-        // Bridge.log(TAG, chunks.get(1).toString());
         for (byte[] chunk : chunks) {
             Bridge.log("G1: Sent chunk to glasses: " + bytesToUtf8(chunk));
         }
 
         // Send each chunk with a short sleep between each send
         sendDataSequentially(chunks, false);
-        // for (byte[] chunk : chunks) {
-        // sendDataSequentially(chunk);
-        //
-        //// // Sleep for 100 milliseconds between sending each chunk
-        //// try {
-        //// Thread.sleep(150);
-        //// } catch (InterruptedException e) {
-        //// e.printStackTrace();
-        //// }
-        // }
 
         Bridge.log("G1: Sent periodic notification");
     }
@@ -2729,7 +2716,7 @@ public class G1 extends SGCManager {
         int margin = 5;
 
         // Get width of single space character
-        int spaceWidth = calculateTextWidth(" ");
+        int spaceWidth = g1Text.calculateTextWidth(" ");
 
         // Calculate effective display width after accounting for left and right margins
         // in spaces
@@ -2737,7 +2724,7 @@ public class G1 extends SGCManager {
         int effectiveWidth = DISPLAY_WIDTH - (2 * marginWidth); // Subtract left and right margins
 
         // Split text into lines based on effective display width
-        List<String> lines = splitIntoLines(text, effectiveWidth);
+        List<String> lines = g1Text.splitIntoLines(text, effectiveWidth);
 
         // Calculate total pages
         int totalPages = 1; // hard set to 1 since we only do 1 page - 1PAGECHANGE
@@ -2799,65 +2786,6 @@ public class G1 extends SGCManager {
         return allChunks;
     }
 
-    private int calculateTextWidth(String text) {
-        int width = 0;
-        for (char c : text.toCharArray()) {
-            G1FontLoader.FontGlyph glyph = fontLoader.getGlyph(c);
-            width += glyph.width + 1; // Add 1 pixel per character for spacing
-        }
-        return width * 2;
-    }
-
-    private List<byte[]> createDoubleTextWallChunks(String text1, String text2) {
-        // Define column widths and positions
-        final int LEFT_COLUMN_WIDTH = (int) (DISPLAY_WIDTH * 0.5); // 40% of display for left column
-        final int RIGHT_COLUMN_START = (int) (DISPLAY_WIDTH * 0.55); // Right column starts at 60%
-
-        // Split texts into lines with specific width constraints
-        List<String> lines1 = splitIntoLines(text1, LEFT_COLUMN_WIDTH);
-        List<String> lines2 = splitIntoLines(text2, DISPLAY_WIDTH - RIGHT_COLUMN_START);
-
-        // Ensure we have exactly LINES_PER_SCREEN lines (typically 5)
-        while (lines1.size() < LINES_PER_SCREEN) {
-            lines1.add("");
-        }
-        while (lines2.size() < LINES_PER_SCREEN) {
-            lines2.add("");
-        }
-
-        lines1 = lines1.subList(0, LINES_PER_SCREEN);
-        lines2 = lines2.subList(0, LINES_PER_SCREEN);
-
-        // Get precise space width
-        int spaceWidth = calculateTextWidth(" ");
-
-        // Construct the text output by merging the lines with precise positioning
-        StringBuilder pageText = new StringBuilder();
-        for (int i = 0; i < LINES_PER_SCREEN; i++) {
-            String leftText = lines1.get(i).replace("\u2002", ""); // Drop enspaces
-            String rightText = lines2.get(i).replace("\u2002", "");
-
-            // Calculate width of left text in pixels
-            int leftTextWidth = calculateTextWidth(leftText);
-
-            // Calculate exactly how many spaces are needed to position the right column
-            // correctly
-            int spacesNeeded = calculateSpacesForAlignment(leftTextWidth, RIGHT_COLUMN_START, spaceWidth);
-
-            // Log detailed alignment info for debugging
-            // Bridge.log("G1: " + String.format("Line %d: Left='%s' (width=%dpx) | Spaces=%d | Right='%s'",
-                    // i, leftText, leftTextWidth, spacesNeeded, rightText));
-
-            // Construct the full line with precise alignment
-            pageText.append(leftText)
-                    .append(" ".repeat(spacesNeeded))
-                    .append(rightText)
-                    .append("\n");
-        }
-
-        return createTextWallChunks(pageText);
-    }
-
     private int calculateSpacesForAlignment(int currentWidth, int targetPosition, int spaceWidth) {
         // Calculate space needed in pixels
         int pixelsNeeded = targetPosition - currentWidth;
@@ -2910,105 +2838,6 @@ public class G1 extends SGCManager {
         textSeqNum = (textSeqNum + 1) % 256;
 
         return allChunks;
-    }
-
-    private int calculateSubstringWidth(String text, int start, int end) {
-        return calculateTextWidth(text.substring(start, end));
-    }
-
-    private List<String> splitIntoLines(String text, int maxDisplayWidth) {
-        // Replace specific symbols
-        text = text.replace("⬆", "^").replace("⟶", "-");
-
-        List<String> lines = new ArrayList<>();
-
-        // Handle empty or single space case
-        if (text.isEmpty() || " ".equals(text)) {
-            lines.add(text);
-            return lines;
-        }
-
-        // Split by newlines first
-        String[] rawLines = text.split("\n");
-
-        // Bridge.log("G1: Splitting text into lines..." + Arrays.toString(rawLines));
-
-        for (String rawLine : rawLines) {
-            // Add empty lines for newlines
-            if (rawLine.isEmpty()) {
-                lines.add("");
-                continue;
-            }
-
-            int lineLength = rawLine.length();
-            int startIndex = 0;
-
-            while (startIndex < lineLength) {
-                // Get maximum possible end index
-                int endIndex = lineLength;
-
-                // Calculate width of the entire remaining text
-                int lineWidth = calculateSubstringWidth(rawLine, startIndex, endIndex);
-
-                // Bridge.log("G1: Line length: " + rawLine);
-                // Bridge.log("G1: Calculating line width: " + lineWidth);
-
-                // If entire line fits, add it and move to next line
-                if (lineWidth <= maxDisplayWidth) {
-                    lines.add(rawLine.substring(startIndex));
-                    break;
-                }
-
-                // Binary search to find the maximum number of characters that fit
-                int left = startIndex + 1;
-                int right = lineLength;
-                int bestSplitIndex = startIndex + 1;
-
-                while (left <= right) {
-                    int mid = left + (right - left) / 2;
-                    int width = calculateSubstringWidth(rawLine, startIndex, mid);
-
-                    if (width <= maxDisplayWidth) {
-                        bestSplitIndex = mid;
-                        left = mid + 1;
-                    } else {
-                        right = mid - 1;
-                    }
-                }
-
-                // Now find a good place to break (preferably at a space)
-                int splitIndex = bestSplitIndex;
-
-                // Look for a space to break at
-                boolean foundSpace = false;
-                for (int i = bestSplitIndex; i > startIndex; i--) {
-                    if (rawLine.charAt(i - 1) == ' ') {
-                        splitIndex = i;
-                        foundSpace = true;
-                        break;
-                    }
-                }
-
-                // If we couldn't find a space in a reasonable range, use the calculated split
-                // point
-                if (!foundSpace && bestSplitIndex - startIndex > 2) {
-                    splitIndex = bestSplitIndex;
-                }
-
-                // Add the line
-                String line = rawLine.substring(startIndex, splitIndex).trim();
-                lines.add(line);
-
-                // Skip any spaces at the beginning of the next line
-                while (splitIndex < lineLength && rawLine.charAt(splitIndex) == ' ') {
-                    splitIndex++;
-                }
-
-                startIndex = splitIndex;
-            }
-        }
-
-        return lines;
     }
 
     private void sendPeriodicTextWall() {
