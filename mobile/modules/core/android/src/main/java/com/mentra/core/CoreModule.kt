@@ -149,27 +149,35 @@ class CoreModule : Module() {
         // MARK: - STT Commands
 
         AsyncFunction("setSttModelDetails") { path: String, languageCode: String ->
-            // STTTools.setSttModelDetails(path, languageCode)
+            val context =
+                    appContext.reactContext
+                            ?: appContext.currentActivity
+                                    ?: throw IllegalStateException("No context available")
+            com.mentra.core.stt.STTTools.setSttModelDetails(context, path, languageCode)
         }
 
         AsyncFunction("getSttModelPath") { ->
-            // STTTools.getSttModelPath()
-            ""
+            val context =
+                    appContext.reactContext
+                            ?: appContext.currentActivity
+                                    ?: throw IllegalStateException("No context available")
+            com.mentra.core.stt.STTTools.getSttModelPath(context)
         }
 
         AsyncFunction("checkSttModelAvailable") { ->
-            // STTTools.checkSTTModelAvailable()
-            false
+            val context =
+                    appContext.reactContext
+                            ?: appContext.currentActivity
+                                    ?: throw IllegalStateException("No context available")
+            com.mentra.core.stt.STTTools.checkSTTModelAvailable(context)
         }
 
         AsyncFunction("validateSttModel") { path: String ->
-            // STTTools.validateSTTModel(path)
-            false
+            com.mentra.core.stt.STTTools.validateSTTModel(path)
         }
 
         AsyncFunction("extractTarBz2") { sourcePath: String, destinationPath: String ->
-            // STTTools.extractTarBz2(sourcePath, destinationPath)
-            false
+            com.mentra.core.stt.STTTools.extractTarBz2(sourcePath, destinationPath)
         }
 
         // MARK: - Android-specific Commands
