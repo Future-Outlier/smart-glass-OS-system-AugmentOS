@@ -173,9 +173,9 @@ export class TranscriptProcessor {
     if (this.isChinese !== isChinese) {
       this.isChinese = isChinese
       if (isChinese) {
-        this.maxCharsPerLine = 10
+        this.maxCharsPerLine = 18
       } else {
-        this.maxCharsPerLine = 30
+        this.maxCharsPerLine = 44
       }
       this.clear()
     }
