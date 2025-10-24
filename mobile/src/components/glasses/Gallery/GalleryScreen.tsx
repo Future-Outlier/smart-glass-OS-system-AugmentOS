@@ -940,8 +940,8 @@ export function GalleryScreen() {
           data.camera_busy === "stream"
             ? "streaming"
             : data.camera_busy === "video"
-            ? "recording video"
-            : "using the camera"
+              ? "recording video"
+              : "using the camera"
         const itemText = data.total === 1 ? "item" : "items"
 
         showAlert(
@@ -1066,16 +1066,19 @@ export function GalleryScreen() {
   const allPhotos = useMemo(() => {
     const items: GalleryItem[] = []
 
-    // Server photos
+    // Server photos - only show photos that have been loaded (no placeholders)
     for (let i = 0; i < totalServerCount; i++) {
       const photo = loadedServerPhotos.get(i)
-      items.push({
-        id: `server-${i}`,
-        type: photo ? "server" : "placeholder",
-        index: i,
-        photo,
-        isOnServer: true,
-      })
+      // Only add items that have actually been loaded
+      if (photo) {
+        items.push({
+          id: `server-${i}`,
+          type: "server",
+          index: i,
+          photo,
+          isOnServer: true,
+        })
+      }
     }
 
     // Downloaded-only photos
@@ -1174,12 +1177,12 @@ export function GalleryScreen() {
                       ? "item"
                       : "items"
                     : (glassesGalleryStatus?.photos || 0) > 0
-                    ? (glassesGalleryStatus?.photos || 0) === 1
-                      ? "photo"
-                      : "photos"
-                    : (glassesGalleryStatus?.videos || 0) === 1
-                    ? "video"
-                    : "videos"}
+                      ? (glassesGalleryStatus?.photos || 0) === 1
+                        ? "photo"
+                        : "photos"
+                      : (glassesGalleryStatus?.videos || 0) === 1
+                        ? "video"
+                        : "videos"}
                 </Text>
               </View>
             </View>
@@ -1189,7 +1192,7 @@ export function GalleryScreen() {
           return (
             <View style={themed($syncButtonRow)}>
               <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
-              <Text style={themed($syncButtonText)}>Starting hotspot...</Text>
+              <Text style={themed($syncButtonText)}>Starting connection...</Text>
             </View>
           )
 
@@ -1205,7 +1208,7 @@ export function GalleryScreen() {
           return (
             <View style={themed($syncButtonRow)}>
               <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
-              <Text style={themed($syncButtonText)}>Connecting to hotspot...</Text>
+              <Text style={themed($syncButtonText)}>Connecting...</Text>
             </View>
           )
 
@@ -1235,12 +1238,12 @@ export function GalleryScreen() {
                       ? "item"
                       : "items"
                     : (glassesGalleryStatus?.photos || 0) > 0
-                    ? (glassesGalleryStatus?.photos || 0) === 1
-                      ? "photo"
-                      : "photos"
-                    : (glassesGalleryStatus?.videos || 0) === 1
-                    ? "video"
-                    : "videos"}
+                      ? (glassesGalleryStatus?.photos || 0) === 1
+                        ? "photo"
+                        : "photos"
+                      : (glassesGalleryStatus?.videos || 0) === 1
+                        ? "video"
+                        : "videos"}
                 </Text>
               </View>
             </View>
