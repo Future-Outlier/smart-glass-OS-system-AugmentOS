@@ -36,8 +36,6 @@ class MantleManager {
   private calendarSyncTimer: number | null = null
   private clearTextTimeout: number | null = null
   private transcriptProcessor: TranscriptProcessor
-  private readonly MAX_CHARS_PER_LINE = 30
-  private readonly MAX_LINES = 3
 
   public static getInstance(): MantleManager {
     if (!MantleManager.instance) {
@@ -47,7 +45,7 @@ class MantleManager {
   }
 
   private constructor() {
-    this.transcriptProcessor = new TranscriptProcessor(this.MAX_CHARS_PER_LINE, this.MAX_LINES)
+    this.transcriptProcessor = new TranscriptProcessor()
   }
 
   // run at app start on the init.tsx screen:

@@ -1,22 +1,17 @@
 export class TranscriptProcessor {
-  private maxCharsPerLine: number
-  private maxLines: number
+  private maxCharsPerLine: number = 44
+  private maxLines: number = 5
+  private maxFinalTranscripts: number = 5
+  private isChinese: boolean = false
   private lastUserTranscript: string = ""
   private lines: string[] = []
   private partialText: string = ""
   private finalTranscriptHistory: string[] = []
-  private maxFinalTranscripts: number
-  private isChinese: boolean
   private currentDisplayLines: string[] = []
   private lastPartialUpdateTime: number = 0
   private readonly throttleInterval: number = 300 // 300ms throttle interval
 
-  constructor(maxCharsPerLine: number, maxLines: number, maxFinalTranscripts: number = 3, isChinese: boolean = false) {
-    this.maxCharsPerLine = maxCharsPerLine
-    this.maxLines = maxLines
-    this.maxFinalTranscripts = maxFinalTranscripts
-    this.isChinese = isChinese
-  }
+  constructor() {}
 
   public processString(newText: string | null, isFinal: boolean): string | null {
     const text = (newText || "").trim()
