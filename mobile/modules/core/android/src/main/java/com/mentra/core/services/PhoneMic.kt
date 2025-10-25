@@ -392,7 +392,15 @@ class PhoneMic private constructor(private val context: Context) {
                             if (isPhoneCallActive) {
                                 Bridge.log("MIC: Phone call started - stopping recording")
                                 if (isRecording.get()) {
-                                    stopRecording()
+                                    // Notify CoreManager BEFORE stopping - allows switch to glasses mic
+                                    notifyCoreManager("phone_call_interruption", emptyList())
+                                    // Give CoreManager time to switch to glasses mic
+                                    // 300ms matches the mic setup delay from the old implementation
+                                    mainHandler.postDelayed({
+                                        stopRecording()
+                                    }, 300)
+                                } else {
+                                    // Not currently recording, but still notify about unavailability
                                     notifyCoreManager("phone_call_interruption", emptyList())
                                 }
                             } else {
@@ -433,11 +441,16 @@ class PhoneMic private constructor(private val context: Context) {
                                                 Bridge.log(
                                                         "MIC: Another app is recording - stopping"
                                                 )
-                                                stopRecording()
+                                                // Notify CoreManager BEFORE stopping - allows switch to glasses mic
                                                 notifyCoreManager(
                                                         "external_app_recording",
                                                         emptyList()
                                                 )
+                                                // Give CoreManager time to switch to glasses mic
+                                                // 300ms matches the mic setup delay from the old implementation
+                                                mainHandler.postDelayed({
+                                                    stopRecording()
+                                                }, 300)
                                             }
                                         },
                                         500
@@ -486,11 +499,20 @@ class PhoneMic private constructor(private val context: Context) {
                                 if (isExternalAudioActive) {
                                     Bridge.log("MIC: External app started recording")
                                     if (isRecording.get()) {
-                                        stopRecording()
+                                        // Notify CoreManager BEFORE stopping - allows switch to glasses mic
+                                        notifyCoreManager("external_app_recording", emptyList())
+                                        // Give CoreManager time to switch to glasses mic before releasing phone mic
+                                        // 300ms matches the mic setup delay from the old implementation
+                                        mainHandler.postDelayed({
+                                            stopRecording()
+                                        }, 300)
+                                    } else {
+                                        // Not currently recording, but still notify about unavailability
                                         notifyCoreManager("external_app_recording", emptyList())
                                     }
                                 } else {
                                     Bridge.log("MIC: External app stopped recording")
+                                    // Notify CoreManager that phone mic is available again
                                     notifyCoreManager(
                                             "external_app_stopped",
                                             getAvailableInputDevices().values.toList()
