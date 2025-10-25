@@ -1,7 +1,7 @@
 "on":
   push:
     branches:
-      - cloud/livekit-reconnect
+      - cloud/fix-tsconfig-types
     paths:
       - "cloud/**"
 name: 🚀 [debug] Porter.run Deploy
