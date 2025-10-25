@@ -206,6 +206,7 @@ public class G1 extends SGCManager {
     public G1() {
         super();
         this.type = DeviceTypes.G1;
+        this.hasMic = true;  // G1 has a built-in microphone
         Bridge.log("G1: G1 constructor");
         this.context = Bridge.getContext();
         loadPairedDeviceNames();
@@ -2599,35 +2600,28 @@ public class G1 extends SGCManager {
 
     // microphone stuff
     public void sendSetMicEnabled(boolean enable, int delay) {
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
-        // Bridge.log("G1: Running set mic enabled: " + enable);
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
+        Bridge.log("G1: Running set mic enabled: " + enable);
 
         isMicrophoneEnabled = enable; // Update the state tracker
-        // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
-        // micEnableHandler.postDelayed(new Runnable() {
-        //     @Override
-        //     public void run() {
-        //         if (!isConnected()) {
-        //             Bridge.log("G1: Tryna start mic: Not connected to glasses");
-        //             return;
-        //         }
+        micEnableHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!isConnected()) {
+                    Bridge.log("G1: Tryna start mic: Not connected to glasses");
+                    return;
+                }
 
-        //         byte command = 0x0E; // Command for MIC control
-        //         byte enableByte = (byte) (enable ? 1 : 0); // 1 to enable, 0 to disable
+                byte command = 0x0E; // Command for MIC control
+                byte enableByte = (byte) (enable ? 1 : 0); // 1 to enable, 0 to disable
 
-        //         ByteBuffer buffer = ByteBuffer.allocate(2);
-        //         buffer.put(command);
-        //         buffer.put(enableByte);
+                ByteBuffer buffer = ByteBuffer.allocate(2);
+                buffer.put(command);
+                buffer.put(enableByte);
 
-        //         sendDataSequentially(buffer.array(), false, true, 300); // wait some time to setup the mic
-        //         Bridge.log("G1: Sent MIC command: " + bytesToHex(buffer.array()));
-        //     }
-        // }, delay);
+                sendDataSequentially(buffer.array(), false, true, 300); // wait some time to setup the mic
+                Bridge.log("G1: Sent MIC command: " + bytesToHex(buffer.array()));
+            }
+        }, delay);
     }
 
     // notifications

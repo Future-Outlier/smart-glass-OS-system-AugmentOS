@@ -443,6 +443,9 @@ class CoreManager {
         val actuallyEnabled = micEnabled && sensingEnabled
         val glassesHasMic = sgc?.hasMic ?: false
 
+        Bridge.log("MAN: updateMicrophoneState() - micEnabled=$micEnabled, sensingEnabled=$sensingEnabled, actuallyEnabled=$actuallyEnabled")
+        Bridge.log("MAN: updateMicrophoneState() - preferredMic=$preferredMic, glassesHasMic=$glassesHasMic, onboardMicUnavailable=$onboardMicUnavailable")
+
         var useGlassesMic = preferredMic == "glasses"
         var useOnboardMic = preferredMic == "phone"
 
@@ -467,8 +470,12 @@ class CoreManager {
             }
         }
 
+        Bridge.log("MAN: updateMicrophoneState() - BEFORE actuallyEnabled: useGlassesMic=$useGlassesMic, useOnboardMic=$useOnboardMic")
+
         useGlassesMic = actuallyEnabled && useGlassesMic
         useOnboardMic = actuallyEnabled && useOnboardMic
+
+        Bridge.log("MAN: updateMicrophoneState() - FINAL: useGlassesMic=$useGlassesMic, useOnboardMic=$useOnboardMic")
 
         sgc?.let { sgc ->
             if (sgc.type == DeviceTypes.G1 && sgc.ready) {
