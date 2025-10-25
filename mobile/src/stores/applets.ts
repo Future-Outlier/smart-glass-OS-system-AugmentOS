@@ -7,11 +7,13 @@ import {
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import STTModelManager from "@/services/STTModelManager"
 import {getThemeIsDark} from "@/theme/getTheme"
 import showAlert from "@/utils/AlertUtils"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
 import {useMemo} from "react"
 import {create} from "zustand"
+import {router} from "expo-router"
 
 export interface ClientAppletInterface extends AppletInterface {
   offline: boolean
@@ -192,6 +194,28 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     if (!applet) {
       console.error(`Applet not found for package name: ${packageName}`)
       return
+    }
+
+    // Validate offline Live Captions has a speech model installed
+    if (packageName === captionsPackageName) {
+      const modelAvailable = await STTModelManager.isModelAvailable()
+      if (!modelAvailable) {
+        showAlert(
+          translate("transcription:noModelInstalled"),
+          translate("transcription:noModelInstalledMessage"),
+          [
+            {text: translate("common:cancel"), style: "cancel"},
+            {
+              text: translate("transcription:goToSettings"),
+              onPress: () => {
+                router.push("/settings/transcription")
+              },
+            },
+          ],
+          {iconName: "alert-circle-outline"},
+        )
+        return
+      }
     }
 
     // Handle foreground apps - only one can run at a time
