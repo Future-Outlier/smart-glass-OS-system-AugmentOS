@@ -90,7 +90,7 @@ public class Bridge private constructor() {
         @JvmStatic
         fun sendHeadUp(isUp: Boolean) {
             val data = HashMap<String, Any>()
-            data["position"] = isUp
+            data["up"] = isUp
             sendTypedMessage("head_up", data as Map<String, Any>)
         }
 
@@ -248,6 +248,35 @@ public class Bridge private constructor() {
             sendTypedMessage("button_press", buttonData as Map<String, Any>)
         }
 
+        /** Send touch/gesture event from glasses - matches iOS implementation */
+        @JvmStatic
+        fun sendTouchEvent(deviceModel: String, gestureName: String, timestamp: Long) {
+            val body = HashMap<String, Any>()
+            body["device_model"] = deviceModel
+            body["gesture_name"] = gestureName
+            body["timestamp"] = timestamp
+            sendTypedMessage("touch_event", body)
+        }
+
+        /** Send swipe volume control status - matches iOS implementation */
+        @JvmStatic
+        fun sendSwipeVolumeStatus(enabled: Boolean, timestamp: Long) {
+            val body = HashMap<String, Any>()
+            body["enabled"] = enabled
+            body["timestamp"] = timestamp
+            sendTypedMessage("swipe_volume_status", body)
+        }
+
+        /** Send switch status from glasses - matches iOS implementation */
+        @JvmStatic
+        fun sendSwitchStatus(switchType: Int, value: Int, timestamp: Long) {
+            val body = HashMap<String, Any>()
+            body["switch_type"] = switchType
+            body["switch_value"] = value
+            body["timestamp"] = timestamp
+            sendTypedMessage("switch_status", body)
+        }
+
         /** Send photo response */
         @JvmStatic
         fun sendPhotoResponse(requestId: String, photoUrl: String) {
@@ -327,6 +356,24 @@ public class Bridge private constructor() {
                 log("Skipping empty transcription result")
                 return
             }
+
+            sendTypedMessage("local_transcription", transcription)
+        }
+
+        /** Convenience method for sending local transcription from transcriber */
+        @JvmStatic
+        fun sendLocalTranscription(text: String, isFinal: Boolean, language: String) {
+            if (text.isEmpty()) {
+                log("Skipping empty transcription result")
+                return
+            }
+
+            val transcription = mapOf(
+                "text" to text,
+                "isFinal" to isFinal,
+                "language" to language,
+                "type" to "local_transcription"
+            )
 
             sendTypedMessage("local_transcription", transcription)
         }

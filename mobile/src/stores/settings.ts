@@ -9,7 +9,6 @@ import Toast from "react-native-toast-message"
 export const SETTINGS_KEYS = {
   // feature flags:
   dev_mode: "dev_mode",
-  new_ui: "new_ui",
   enable_squircles: "enable_squircles",
   debug_console: "debug_console",
   // ui state:
@@ -71,7 +70,6 @@ export const SETTINGS_KEYS = {
 const DEFAULT_SETTINGS: Record<string, any> = {
   // feature flags / dev:
   [SETTINGS_KEYS.dev_mode]: false,
-  [SETTINGS_KEYS.new_ui]: true,
   [SETTINGS_KEYS.enable_squircles]: false,
   [SETTINGS_KEYS.debug_console]: false,
   // ui state:
@@ -108,6 +106,8 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   // button settings
   [SETTINGS_KEYS.button_mode]: "photo",
   [SETTINGS_KEYS.button_photo_size]: "medium",
+  [SETTINGS_KEYS.button_video_settings]: {width: 1920, height: 1080, fps: 30},
+  [SETTINGS_KEYS.button_camera_led]: true,
   [SETTINGS_KEYS.button_max_recording_time]: 10,
   [SETTINGS_KEYS.location_tier]: "",
   // time zone settings
@@ -145,6 +145,8 @@ const CORE_SETTINGS_KEYS = [
   // button:
   SETTINGS_KEYS.button_mode,
   SETTINGS_KEYS.button_photo_size,
+  SETTINGS_KEYS.button_video_settings,
+  SETTINGS_KEYS.button_camera_led,
   SETTINGS_KEYS.button_max_recording_time,
   SETTINGS_KEYS.default_wearable,
   SETTINGS_KEYS.device_name,

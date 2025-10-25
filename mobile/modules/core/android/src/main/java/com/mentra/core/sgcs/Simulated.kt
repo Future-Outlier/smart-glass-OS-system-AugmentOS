@@ -25,7 +25,8 @@ class Simulated : SGCManager() {
             appId: String,
             size: String,
             webhookUrl: String?,
-            authToken: String?
+            authToken: String?,
+            compress: String?
     ) {
         Bridge.log("requestPhoto")
     }

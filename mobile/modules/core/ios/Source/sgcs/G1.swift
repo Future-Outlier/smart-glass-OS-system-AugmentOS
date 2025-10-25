@@ -150,7 +150,7 @@ class G1: NSObject, SGCManager {
 
     var hotspotGatewayIp: String = ""
 
-    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?) {}
+    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?, compress _: String?) {}
 
     func startRtmpStream(_: [String: Any]) {}
 
@@ -345,10 +345,6 @@ class G1: NSObject, SGCManager {
     }
 
     func forget() {
-        leftGlassUUID = nil
-        rightGlassUUID = nil
-        DEVICE_SEARCH_ID = "NOT_SET"
-
         // Stop the heartbeat timer
         heartbeatTimer?.invalidate()
         heartbeatTimer = nil
@@ -356,12 +352,23 @@ class G1: NSObject, SGCManager {
         // Stop the reconnection timer if active
         stopReconnectionTimer()
 
+        // Disconnect BLE peripherals before clearing references
+        if let left = leftPeripheral {
+            centralManager?.cancelPeripheralConnection(left)
+        }
+        if let right = rightPeripheral {
+            centralManager?.cancelPeripheralConnection(right)
+        }
+
+        // Clear all references
+        leftGlassUUID = nil
+        rightGlassUUID = nil
+        leftPeripheral = nil
+        rightPeripheral = nil
+        DEVICE_SEARCH_ID = "NOT_SET"
+
         // Clean up central manager delegate
         centralManager?.delegate = nil
-
-        // Clean up peripheral delegates
-        leftPeripheral?.delegate = nil
-        rightPeripheral?.delegate = nil
     }
 
     deinit {
@@ -636,6 +643,22 @@ class G1: NSObject, SGCManager {
     }
 
     func sendTextWall(_ text: String) {
+        // clear the screen with the exit command after 3 seconds if the text is empty or a space:
+        if CoreManager.shared.powerSavingMode && text.isEmpty || text == " " {
+            CoreManager.shared.sendStateWorkItem?.cancel()
+            Bridge.log("Mentra: Clearing display after 3 seconds")
+            // if we're clearing the display, after a delay, send a clear command if not cancelled with another
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self = self else { return }
+                if CoreManager.shared.isHeadUp {
+                    return
+                }
+                self.exit()
+            }
+            CoreManager.shared.sendStateWorkItem = workItem
+            CoreManager.shared.sendStateQueue.asyncAfter(deadline: .now() + 3, execute: workItem)
+        }
+
         let chunks = textHelper.createTextWallChunks(text)
         queueChunks(chunks, sleepAfterMs: 10)
     }
@@ -1735,41 +1758,9 @@ extension G1 {
         return result
     }
 
-    /// Clear display using MentraOS's 0x18 command (exit to dashboard)
     func clearDisplay() {
-        Bridge.log("G1: RN_clearDisplay() - Using 0x18 exit command")
-        Task {
-            // Send 0x18 to both glasses (MentraOS's clear method)
-
-            var cmd: [UInt8] = [0x18] // turns off display
-            //     var cmd: [UInt8] = [0x23, 0x72]// restarts the glasses
-            var bufferedCommand = BufferedCommand(
-                chunks: [cmd],
-                sendLeft: false,
-                sendRight: true,
-                waitTime: 50,
-                ignoreAck: false
-            )
-
-            await commandQueue.enqueue(bufferedCommand)
-            //    Task {
-            //      await setSilentMode(true)
-            //      try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-            //      await setSilentMode(false)
-            //      await setSilentMode(false)
-            //    }
-
-            // RN_sendText("DISPLAY SLEEPING...")
-
-            // // queue the command after 0.5 seconds
-            // Task {
-            //   try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-            //   await commandQueue.enqueue(bufferedCommand)
-            // }
-
-            // CoreCommsService.log("Display cleared with exit command")
-            return true
-        }
+        Bridge.log("G1: clearDisplay() - Using space")
+        sendTextWall(" ")
     }
 
     /// Create a simple test BMP pattern in hex format

@@ -34,7 +34,7 @@ class Bridge {
     }
 
     static func sendHeadUp(_ isUp: Bool) {
-        let data = ["position": isUp]
+        let data = ["up": isUp]
         Bridge.sendTypedMessage("head_up", body: data)
     }
 

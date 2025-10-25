@@ -13,6 +13,41 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
   const applets = useApplets()
   const startApplet = useStartApplet()
 
+  // Validate and update default button action app when device or applets change
+  useEffect(() => {
+    const validateAndSetDefaultApp = async () => {
+      const currentDefaultApp = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_button_action_app)
+
+      // Check if current default app is compatible
+      const currentApp = applets.find(app => app.packageName === currentDefaultApp)
+      const isCurrentAppCompatible = currentApp?.compatibility?.isCompatible !== false
+
+      if (isCurrentAppCompatible && currentDefaultApp) {
+        // Current app is fine, no change needed
+        return
+      }
+
+      // Need to find a new default app
+      // Prefer camera if available and compatible, otherwise first compatible standard app
+      const cameraApp = applets.find(
+        app => app.packageName === "com.mentra.camera" && app.compatibility?.isCompatible !== false,
+      )
+
+      const firstCompatibleApp = applets.find(
+        app => app.type === "standard" && app.compatibility?.isCompatible !== false,
+      )
+
+      const newDefaultApp = cameraApp || firstCompatibleApp
+
+      if (newDefaultApp) {
+        console.log("🔘 Setting default button app to:", newDefaultApp.packageName)
+        await useSettingsStore.getState().setSetting(SETTINGS_KEYS.default_button_action_app, newDefaultApp.packageName)
+      }
+    }
+
+    validateAndSetDefaultApp()
+  }, [applets]) // Run when applets change (which includes compatibility info)
+
   // Listen for button press events from glasses
   useEffect(() => {
     const onButtonPress = async (event: {buttonId: string; pressType: string; timestamp: number}) => {
@@ -53,6 +88,18 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
 
       if (!defaultAppPackageName) {
         console.log("🔘 No default app configured")
+        return
+      }
+
+      // Validate app compatibility before starting
+      const targetApp = applets.find(app => app.packageName === defaultAppPackageName)
+      if (!targetApp) {
+        console.log("🔘 Default app not found:", defaultAppPackageName)
+        return
+      }
+
+      if (targetApp.compatibility?.isCompatible === false) {
+        console.log("🔘 Default app is incompatible with current device:", defaultAppPackageName)
         return
       }
 

@@ -862,7 +862,10 @@ class MentraLive: NSObject, SGCManager {
     func setBrightness(_: Int, autoMode _: Bool) {}
     func clearDisplay() {}
     func sendTextWall(_: String) {}
-    func forget() {}
+    func forget() {
+        Bridge.log("LIVE: Forgetting Mentra Live glasses")
+        disconnect()
+    }
 
     var type = "Mentra Live"
     var hasMic = false
@@ -870,13 +873,13 @@ class MentraLive: NSObject, SGCManager {
     var caseOpen = false
     var caseRemoved = true
     var caseCharging = false
-    func setMicEnabled(_ enabled: Bool) async -> Bool {
+    func setMicEnabled(_ enabled: Bool) {
         Bridge.log("LIVE: setMicEnabled called: \(enabled)")
 
         // Only enable if device supports LC3 audio
         guard supportsLC3Audio else {
             Bridge.log("LIVE: Device does not support LC3 audio, ignoring mic enable request")
-            return false
+            return
         }
 
         // Update shouldUseGlassesMic based on enabled state
@@ -889,8 +892,6 @@ class MentraLive: NSObject, SGCManager {
             Bridge.log("LIVE: Microphone disabled, stopping audio input handling")
             stopMicBeat()
         }
-
-        return true
     }
 
     // BLE UUIDs
@@ -1148,7 +1149,7 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
-    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?) {
+    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?, compress: String?) {
         Bridge.log("Requesting photo: \(requestId) for app: \(appId)")
 
         var json: [String: Any] = [
@@ -1189,6 +1190,9 @@ class MentraLive: NSObject, SGCManager {
         } else {
             json["size"] = "medium"
         }
+
+        // Add compress parameter
+        json["compress"] = compress ?? "none"
 
         Bridge.log("Using auto transfer mode with BLE fallback ID: \(bleImgId)")
 
@@ -1717,12 +1721,17 @@ class MentraLive: NSObject, SGCManager {
 
                 if readyResponse == 1 {
                     Bridge.log("K900 SOC ready")
-                    let readyMsg: [String: Any] = [
-                        "type": "phone_ready",
-                        "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
-                    ]
-                    // Send it through our data channel
-                    sendJson(readyMsg, wakeUp: true)
+                    // Only send phone_ready if we haven't already established connection
+                    // This prevents re-initialization on every heartbeat after initial connection
+                    // The ready flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
+                    if !ready {
+                        let readyMsg: [String: Any] = [
+                            "type": "phone_ready",
+                            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+                        ]
+                        // Send it through our data channel
+                        sendJson(readyMsg, wakeUp: true)
+                    }
                 }
             }
 

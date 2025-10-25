@@ -1,18 +1,17 @@
-import {useRef} from "react"
-import {View, Platform, ViewStyle} from "react-native"
-import {Screen, Header, Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {translate} from "@/i18n"
-import showAlert from "@/utils/AlertUtils"
+import {Header, Screen, Text} from "@/components/ignite"
 import RouteButton from "@/components/ui/RouteButton"
-import {Spacer} from "@/components/misc/Spacer"
+import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {isAppStoreProductionBuild} from "@/utils/buildDetection"
+import {translate} from "@/i18n"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import Toast from "react-native-toast-message"
-import Constants from "expo-constants"
 import {ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
+import Constants from "expo-constants"
+import {useRef} from "react"
+import {Platform, View, ViewStyle} from "react-native"
 import {ScrollView} from "react-native-gesture-handler"
+import Toast from "react-native-toast-message"
 
 export default function SettingsPage() {
   const {theme, themed} = useAppTheme()
@@ -24,13 +23,6 @@ export default function SettingsPage() {
   const pressTimeout = useRef<number | null>(null)
 
   const handleQuickPress = () => {
-    push("/settings")
-
-    // Don't allow secret menu on iOS App Store builds
-    if (Platform.OS === "ios" && isAppStoreProductionBuild()) {
-      return
-    }
-
     const currentTime = Date.now()
     const timeDiff = currentTime - lastPressTime.current
     const maxTimeDiff = 2000
@@ -105,7 +97,6 @@ export default function SettingsPage() {
             <>
               <RouteButton
                 label={translate("settings:developerSettings")}
-                // subtitle={translate("settings:developerSettingsSubtitle")}
                 onPress={() => push("/settings/developer")}
               />
             </>
@@ -130,9 +121,4 @@ const $versionContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingVertical: spacing.xs,
   borderRadius: spacing.md,
   marginTop: spacing.xxxl,
-  // position: "absolute",
-  // flex: 1,
-  // borderWidth: 1,
-  // borderColor: colors.border,
-  // backgroundColor: colors.background,
 })

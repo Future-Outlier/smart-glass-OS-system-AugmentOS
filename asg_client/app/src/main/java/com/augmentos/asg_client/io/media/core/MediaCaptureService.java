@@ -1002,8 +1002,13 @@ public class MediaCaptureService {
      * @param webhookUrl Optional webhook URL for direct upload to app
      * @param authToken Auth token for webhook authentication
      * @param save Whether to keep the photo on device after upload
+     * @param size Photo size
+     * @param enableLed Whether to enable camera LED flash
+     * @param compress Compression level (none, medium, heavy)
      */
-    public void takePhotoAndUpload(String photoFilePath, String requestId, String webhookUrl, String authToken, boolean save, String size, boolean enableLed) {
+    public void takePhotoAndUpload(String photoFilePath, String requestId, String webhookUrl, String authToken, boolean save, String size, boolean enableLed, String compress) {
+        Log.d(TAG, "Taking photo and uploading to " + webhookUrl + " with compression: " + compress);
+
         // Check if RTMP streaming is active - photos cannot interrupt streams
         if (RtmpStreamingService.isStreaming()) {
             Log.e(TAG, "Cannot take photo - RTMP streaming active");
@@ -1084,7 +1089,7 @@ public class MediaCaptureService {
                             // Choose upload destination based on webhookUrl
                             if (webhookUrl != null && !webhookUrl.isEmpty()) {
                                 // Upload directly to app webhook
-                                uploadPhotoToWebhook(filePath, requestId, webhookUrl, authToken);
+                                uploadPhotoToWebhook(filePath, requestId, webhookUrl, authToken, compress);
                             }
                         }
 
@@ -1126,7 +1131,7 @@ public class MediaCaptureService {
     /**
      * Upload photo directly to app webhook
      */
-    private void uploadPhotoToWebhook(String photoFilePath, String requestId, String webhookUrl, String authToken) {
+    private void uploadPhotoToWebhook(String photoFilePath, String requestId, String webhookUrl, String authToken, String compress) {
         // TESTING: Check for fake upload failure
         if (PhotoCaptureTestFramework.shouldFail("UPLOAD")) {
             Log.e(TAG, "TESTING: Simulating upload failure");
@@ -1144,19 +1149,208 @@ public class MediaCaptureService {
             Log.d(TAG, "📤 Starting upload - system marked as busy: " + requestId);
         }
 
+        // Process upload based on SDK compression setting
+        processUploadWithCompression(photoFilePath, requestId, webhookUrl, authToken, compress);
+    }
+
+    /**
+     * Process upload with compression based on SDK setting
+     */
+    private void processUploadWithCompression(String photoFilePath, String requestId, String webhookUrl, String authToken, String compress) {
+        Log.d(TAG, "📸 Processing photo upload with SDK compression setting: " + compress);
+        
+        // Check SDK compression setting
+        if ("none".equals(compress) || compress == null || compress.isEmpty()) {
+            Log.d(TAG, "📸 No compression requested - uploading original image");
+            performDirectUpload(photoFilePath, requestId, webhookUrl, authToken);
+        } else {
+            Log.d(TAG, "🗜️ Compression requested - applying SDK compression setting: " + compress);
+            
+            compressImageForUpload(photoFilePath, requestId, webhookUrl, authToken, compress);
+        }
+    }
+
+    /**
+     * Compress image based on SDK compression level
+     */
+    private void compressImageForUpload(String originalPath, String requestId, String webhookUrl, String authToken, String compress) {
+        new Thread(() -> {
+            try {
+                Log.d(TAG, "🗜️ Starting image compression for " + compress + " level");
+                long compressionStartTime = System.currentTimeMillis();
+                
+                // Load original image
+                android.graphics.Bitmap original = android.graphics.BitmapFactory.decodeFile(originalPath);
+                if (original == null) {
+                    Log.e(TAG, "❌ Failed to load original image for compression");
+                    performDirectUpload(originalPath, requestId, webhookUrl, authToken);
+                    return;
+                }
+                
+                // Calculate compression parameters based on SDK compression level
+                int originalWidth = original.getWidth();
+                int originalHeight = original.getHeight();
+                Log.d(TAG, "📐 Original image dimensions: " + originalWidth + "x" + originalHeight);
+                
+                // Compression parameters based on SDK compression level
+                float compressionRatio;
+                int jpegQuality;
+                String compressionStrategy;
+                
+                if ("heavy".equals(compress)) {
+                    compressionRatio = 0.50f; // 50% of original size
+                    jpegQuality = 60;
+                    compressionStrategy = "50% size + 60% quality (HEAVY)";
+                } else { // "medium"
+                    compressionRatio = 0.75f; // 75% of original size
+                    jpegQuality = 80;
+                    compressionStrategy = "75% size + 80% quality (MEDIUM)";
+                }
+                
+                Log.d(TAG, "🎯 Compression strategy: " + compressionStrategy);
+                
+                // Calculate compressed dimensions
+                int compressedWidth = (int)(originalWidth * compressionRatio);
+                int compressedHeight = (int)(originalHeight * compressionRatio);
+                
+                // Maintain aspect ratio
+                float aspectRatio = (float) originalWidth / originalHeight;
+                if (aspectRatio > 1) {
+                    compressedHeight = (int) (compressedWidth / aspectRatio);
+                } else {
+                    compressedWidth = (int) (compressedHeight * aspectRatio);
+                }
+                
+                Log.d(TAG, "📐 Compressed image dimensions: " + compressedWidth + "x" + compressedHeight);
+                
+                // Create compressed bitmap
+                android.graphics.Bitmap compressed = android.graphics.Bitmap.createScaledBitmap(
+                    original, compressedWidth, compressedHeight, true);
+                original.recycle();
+                
+                // Save compressed image to temporary file
+                String compressedPath = originalPath.replace(".jpg", "_compressed_" + compress + ".jpg");
+                java.io.FileOutputStream fos = new java.io.FileOutputStream(compressedPath);
+                compressed.compress(android.graphics.Bitmap.CompressFormat.JPEG, jpegQuality, fos);
+                fos.close();
+                compressed.recycle();
+                
+                long compressionDuration = System.currentTimeMillis() - compressionStartTime;
+                Log.d(TAG, "⏱️ Image compression completed in: " + compressionDuration + "ms");
+                Log.d(TAG, "✅ Compressed image saved: " + compressedPath);
+                
+                // Calculate compression ratio achieved
+                File originalFile = new File(originalPath);
+                File compressedFile = new File(compressedPath);
+                long originalSize = originalFile.length();
+                long compressedSize = compressedFile.length();
+                float sizeReduction = ((float)(originalSize - compressedSize) / originalSize) * 100;
+                
+                Log.d(TAG, "📊 Compression stats:");
+                Log.d(TAG, "📊 Original size: " + originalSize + " bytes");
+                Log.d(TAG, "📊 Compressed size: " + compressedSize + " bytes");
+                Log.d(TAG, "📊 Size reduction: " + String.format("%.1f", sizeReduction) + "%");
+                
+                // Upload compressed version
+                performDirectUpload(compressedPath, requestId, webhookUrl, authToken);
+                
+                // Clean up compressed file after upload
+                new File(compressedPath).deleteOnExit();
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error compressing image, falling back to original: " + e.getMessage());
+                performDirectUpload(originalPath, requestId, webhookUrl, authToken);
+            }
+        }).start();
+    }
+
+    /**
+     * Compress image for poor connection scenarios (legacy method - kept for compatibility)
+     */
+    private void compressImageForPoorConnection(String originalPath, String requestId, String webhookUrl, String authToken) {
+        new Thread(() -> {
+            try {
+                Log.d(TAG, "🗜️ Compressing image for poor connection: " + originalPath);
+                long compressionStartTime = System.currentTimeMillis();
+                
+                // Load original image
+                android.graphics.Bitmap original = android.graphics.BitmapFactory.decodeFile(originalPath);
+                if (original == null) {
+                    Log.e(TAG, "❌ Failed to load original image for compression");
+                    performDirectUpload(originalPath, requestId, webhookUrl, authToken);
+                    return;
+                }
+                
+                // Calculate compression parameters for poor connection
+                int originalWidth = original.getWidth();
+                int originalHeight = original.getHeight();
+                Log.d(TAG, "📐 Original image dimensions: " + originalWidth + "x" + originalHeight);
+                
+                // Reduce to 50% of original size for poor connections
+                int compressedWidth = originalWidth / 2;
+                int compressedHeight = originalHeight / 2;
+                
+                // Maintain aspect ratio
+                float aspectRatio = (float) originalWidth / originalHeight;
+                if (aspectRatio > 1) {
+                    compressedHeight = (int) (compressedWidth / aspectRatio);
+                } else {
+                    compressedWidth = (int) (compressedHeight * aspectRatio);
+                }
+                
+                Log.d(TAG, "📐 Compressed image dimensions: " + compressedWidth + "x" + compressedHeight);
+                
+                // Create compressed bitmap
+                android.graphics.Bitmap compressed = android.graphics.Bitmap.createScaledBitmap(
+                    original, compressedWidth, compressedHeight, true);
+                original.recycle();
+                
+                // Save compressed image to temporary file
+                String compressedPath = originalPath.replace(".jpg", "_compressed.jpg");
+                java.io.FileOutputStream fos = new java.io.FileOutputStream(compressedPath);
+                compressed.compress(android.graphics.Bitmap.CompressFormat.JPEG, 60, fos); // 60% quality
+                fos.close();
+                compressed.recycle();
+                
+                long compressionDuration = System.currentTimeMillis() - compressionStartTime;
+                Log.d(TAG, "⏱️ Image compression completed in: " + compressionDuration + "ms");
+                Log.d(TAG, "✅ Image compressed for poor connection: " + compressedPath);
+                
+                // Upload compressed version
+                performDirectUpload(compressedPath, requestId, webhookUrl, authToken);
+                
+                // Clean up compressed file after upload
+                new File(compressedPath).deleteOnExit();
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error compressing image, falling back to original: " + e.getMessage());
+                performDirectUpload(originalPath, requestId, webhookUrl, authToken);
+            }
+        }).start();
+    }
+
+    /**
+     * Perform the actual upload operation
+     */
+    private void performDirectUpload(String photoFilePath, String requestId, String webhookUrl, String authToken) {
+        Log.d(TAG, "📤 Starting direct upload operation");
+        Log.d(TAG, "📸 Upload file: " + photoFilePath);
+        Log.d(TAG, "🆔 Request ID: " + requestId);
+        
         // Create a new thread for the upload
         new Thread(() -> {
             try {
                 File photoFile = new File(photoFilePath);
                 if (!photoFile.exists()) {
-                    Log.e(TAG, "Photo file does not exist: " + photoFilePath);
+                    Log.e(TAG, "❌ Photo file does not exist: " + photoFilePath);
                     if (mMediaCaptureListener != null) {
                         mMediaCaptureListener.onMediaError(requestId, "Photo file not found", MediaUploadQueueManager.MEDIA_TYPE_PHOTO);
                     }
                     return;
                 }
 
-                Log.d(TAG, "### Sending photo request");
+                Log.d(TAG, "📊 Photo file size: " + photoFile.length() + " bytes");
+                Log.d(TAG, "🌐 Sending photo request to: " + webhookUrl);
 
                 // Create multipart form request with smarter timeouts:
                 // - 1 second to connect (fails fast if no internet)
@@ -1185,19 +1379,25 @@ public class MediaCaptureService {
                 // Add Authorization header if auth token is available
                 if (authToken != null && !authToken.isEmpty()) {
                     requestBuilder.header("Authorization", "Bearer " + authToken);
-                    Log.d(TAG, "📡 Adding Authorization header to webhook request for: " + requestId);
+                    Log.d(TAG, "🔐 Adding Authorization header to webhook request");
                 } else {
-                    Log.d(TAG, "📡 No auth token available for webhook request: " + requestId);
+                    Log.d(TAG, "⚠️ No auth token available for webhook request");
                 }
 
                 Request request = requestBuilder.build();
-
+                Log.d(TAG, "🚀 Executing HTTP request...");
+                
+                long uploadStartTime = System.currentTimeMillis();
                 Response response = client.newCall(request).execute();
+                long uploadTime = System.currentTimeMillis() - uploadStartTime;
+                
+                Log.d(TAG, "⏱️ Upload completed in: " + uploadTime + "ms");
+                Log.d(TAG, "📈 Response code: " + response.code());
 
                 if (response.isSuccessful()) {
                     String responseBody = response.body() != null ? response.body().string() : "";
-                    Log.d(TAG, "Photo uploaded successfully to webhook: " + webhookUrl);
-                    Log.d(TAG, "Response: " + responseBody);
+                    Log.d(TAG, "✅ Photo uploaded successfully to webhook");
+                    Log.d(TAG, "📄 Response body: " + responseBody);
 
                     // Check if we should save the photo
                     Boolean save = photoSaveFlags.get(requestId);
@@ -1205,15 +1405,15 @@ public class MediaCaptureService {
                         // Delete the photo file to save storage
                         try {
                             if (photoFile.delete()) {
-                                Log.d(TAG, "🗑️ Deleted photo file after successful webhook upload: " + photoFilePath);
+                                Log.d(TAG, "🗑️ Deleted photo file after successful upload");
                             } else {
-                                Log.w(TAG, "Failed to delete photo file: " + photoFilePath);
+                                Log.w(TAG, "⚠️ Failed to delete photo file");
                             }
                         } catch (Exception e) {
-                            Log.e(TAG, "Error deleting photo file after webhook upload", e);
+                            Log.e(TAG, "❌ Error deleting photo file after upload", e);
                         }
                     } else {
-                        Log.d(TAG, "💾 Keeping photo file as requested: " + photoFilePath);
+                        Log.d(TAG, "💾 Keeping photo file as requested");
                     }
 
                     // Clean up the flag
@@ -1228,16 +1428,17 @@ public class MediaCaptureService {
                     // Reset upload state
                     synchronized (uploadLock) {
                         isUploadingPhoto = false;
-                        Log.d(TAG, "✅ Upload completed - system marked as available: " + requestId);
+                        Log.d(TAG, "✅ Upload completed - system marked as available");
                     }
                 } else {
                     String errorMessage = "Upload failed with status: " + response.code();
-                    Log.e(TAG, errorMessage + " to webhook: " + webhookUrl);
+                    Log.e(TAG, "❌ " + errorMessage + " to webhook: " + webhookUrl);
 
                     // Check if we can fallback to BLE
                     String bleImgId = photoBleIds.get(requestId);
                     if (bleImgId != null) {
-                        Log.d(TAG, "📱 Webhook upload failed, attempting BLE fallback for " + requestId);
+                        Log.d(TAG, "📱 Webhook upload failed, attempting BLE fallback");
+                        Log.d(TAG, "🔄 BLE Image ID: " + bleImgId);
 
                         // Clean up tracking (will be re-added by BLE transfer)
                         photoBleIds.remove(requestId);
@@ -1248,12 +1449,12 @@ public class MediaCaptureService {
                         String requestedSize = photoRequestedSizes.get(requestId);
                         if (requestedSize == null || requestedSize.isEmpty()) requestedSize = "medium";
                         // Reuse the existing photo file that was already captured
-                        Log.d(TAG, "♻️ Reusing existing photo for BLE transfer: " + photoFilePath);
+                        Log.d(TAG, "♻️ Reusing existing photo for BLE transfer");
                         
                         // Reset upload state before BLE fallback
                         synchronized (uploadLock) {
                             isUploadingPhoto = false;
-                            Log.d(TAG, "🔄 Upload failed, switching to BLE - system marked as available: " + requestId);
+                            Log.d(TAG, "🔄 Upload failed, switching to BLE - system marked as available");
                         }
                         
                         reusePhotoForBleTransfer(photoFilePath, requestId, bleImgId, shouldSave, requestedSize);
@@ -1261,21 +1462,23 @@ public class MediaCaptureService {
                     }
 
                     // No BLE fallback available
+                    Log.d(TAG, "❌ No BLE fallback available, handling as normal failure");
+                    
                     // Check if we should save the photo
                     Boolean save = photoSaveFlags.get(requestId);
                     if (save == null || !save) {
                         // Delete the photo file on failure
                         try {
                             if (photoFile.delete()) {
-                                Log.d(TAG, "🗑️ Deleted photo file after failed webhook upload: " + photoFilePath);
+                                Log.d(TAG, "🗑️ Deleted photo file after failed upload");
                             } else {
-                                Log.w(TAG, "Failed to delete photo file: " + photoFilePath);
+                                Log.w(TAG, "⚠️ Failed to delete photo file");
                             }
                         } catch (Exception e) {
-                            Log.e(TAG, "Error deleting photo file after failed webhook upload", e);
+                            Log.e(TAG, "❌ Error deleting photo file after failed upload", e);
                         }
                     } else {
-                        Log.d(TAG, "💾 Keeping photo file despite failed upload as requested: " + photoFilePath);
+                        Log.d(TAG, "💾 Keeping photo file despite failed upload as requested");
                     }
 
                     // Clean up tracking
@@ -1291,19 +1494,21 @@ public class MediaCaptureService {
                     // Reset upload state
                     synchronized (uploadLock) {
                         isUploadingPhoto = false;
-                        Log.d(TAG, "❌ Upload failed - system marked as available: " + requestId);
+                        Log.d(TAG, "❌ Upload failed - system marked as available");
                     }
                 }
 
                 response.close();
 
             } catch (Exception e) {
-                Log.e(TAG, "Error uploading photo to webhook: " + webhookUrl, e);
+                Log.e(TAG, "❌ Error uploading photo to webhook: " + e.getMessage());
+                Log.e(TAG, "❌ Exception type: " + e.getClass().getSimpleName());
 
                 // Check if we can fallback to BLE on exception
                 String bleImgId = photoBleIds.get(requestId);
                 if (bleImgId != null) {
-                    Log.d(TAG, "📱 Webhook upload exception, attempting BLE fallback for " + requestId);
+                    Log.d(TAG, "📱 Webhook upload exception, attempting BLE fallback");
+                    Log.d(TAG, "🔄 BLE Image ID: " + bleImgId);
 
                     // Clean up tracking (will be re-added by BLE transfer)
                     photoBleIds.remove(requestId);
@@ -1314,12 +1519,12 @@ public class MediaCaptureService {
                     String requestedSizeFallback1 = photoRequestedSizes.get(requestId);
                     if (requestedSizeFallback1 == null || requestedSizeFallback1.isEmpty()) requestedSizeFallback1 = "medium";
                     // Reuse the existing photo file that was already captured
-                    Log.d(TAG, "♻️ Reusing existing photo for BLE transfer: " + photoFilePath);
+                    Log.d(TAG, "♻️ Reusing existing photo for BLE transfer");
                     
                     // Reset upload state before BLE fallback
                     synchronized (uploadLock) {
                         isUploadingPhoto = false;
-                        Log.d(TAG, "🔄 Upload exception, switching to BLE - system marked as available: " + requestId);
+                        Log.d(TAG, "🔄 Upload exception, switching to BLE - system marked as available");
                     }
                     
                     reusePhotoForBleTransfer(photoFilePath, requestId, bleImgId, shouldSaveFallback1, requestedSizeFallback1);
@@ -1327,6 +1532,8 @@ public class MediaCaptureService {
                 }
 
                 // No BLE fallback available
+                Log.d(TAG, "❌ No BLE fallback available, handling exception");
+                
                 // Check if we should save the photo on exception
                 Boolean save = photoSaveFlags.get(requestId);
                 if (save == null || !save) {
@@ -1334,15 +1541,15 @@ public class MediaCaptureService {
                     try {
                         File photoFile = new File(photoFilePath);
                         if (photoFile.exists() && photoFile.delete()) {
-                            Log.d(TAG, "🗑️ Deleted photo file after webhook upload exception: " + photoFilePath);
+                            Log.d(TAG, "🗑️ Deleted photo file after webhook upload exception");
                         } else {
-                            Log.w(TAG, "Failed to delete photo file: " + photoFilePath);
+                            Log.w(TAG, "⚠️ Failed to delete photo file");
                         }
                     } catch (Exception deleteEx) {
-                        Log.e(TAG, "Error deleting photo file after webhook upload exception", deleteEx);
+                            Log.e(TAG, "❌ Error deleting photo file after webhook upload exception", deleteEx);
                     }
                 } else {
-                    Log.d(TAG, "💾 Keeping photo file despite upload exception as requested: " + photoFilePath);
+                    Log.d(TAG, "💾 Keeping photo file despite upload exception as requested");
                 }
 
                 // Clean up tracking
@@ -1359,7 +1566,7 @@ public class MediaCaptureService {
                 // Reset upload state
                 synchronized (uploadLock) {
                     isUploadingPhoto = false;
-                    Log.d(TAG, "💥 Upload exception - system marked as available: " + requestId);
+                    Log.d(TAG, "💥 Upload exception - system marked as available");
                 }
             }
         }).start();
@@ -1583,8 +1790,9 @@ public class MediaCaptureService {
      * @param webhookUrl Webhook URL for upload
      * @param bleImgId BLE image ID for fallback
      * @param save Whether to keep the photo on device
+     * @param compress Compression level (none, medium, heavy)
      */
-    public void takePhotoAutoTransfer(String photoFilePath, String requestId, String webhookUrl, String authToken, String bleImgId, boolean save, String size, boolean enableLed) {
+    public void takePhotoAutoTransfer(String photoFilePath, String requestId, String webhookUrl, String authToken, String bleImgId, boolean save, String size, boolean enableLed, String compress) {
         // Store the save flag and BLE ID for this request
         photoSaveFlags.put(requestId, save);
         photoBleIds.put(requestId, bleImgId);
@@ -1593,7 +1801,7 @@ public class MediaCaptureService {
 
         // Attempt direct upload (internet test removed due to unreliability)
         Log.d(TAG, "Attempting direct upload for " + requestId);
-            takePhotoAndUpload(photoFilePath, requestId, webhookUrl, authToken, save, size, enableLed);
+            takePhotoAndUpload(photoFilePath, requestId, webhookUrl, authToken, save, size, enableLed, compress);
         
         // Note: BLE fallback will be handled automatically by upload failure detection
         Log.d(TAG, "BLE fallback will be used if upload fails");

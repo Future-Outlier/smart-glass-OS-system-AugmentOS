@@ -20,7 +20,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {useApplets, useRefreshApplets, useStartApplet, useStopApplet} from "@/stores/applets"
-import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import {useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
@@ -28,13 +28,13 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {useFocusEffect, useLocalSearchParams} from "expo-router"
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react"
-import {Animated, BackHandler, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {Animated, BackHandler, TextStyle, View, ViewStyle} from "react-native"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import Toast from "react-native-toast-message"
 import FontAwesome from "react-native-vector-icons/FontAwesome"
 
 export default function AppSettings() {
-  const {packageName, appName: appNameParam, fromWebView} = useLocalSearchParams()
+  const {packageName, appName: appNameParam} = useLocalSearchParams()
   const [isUninstalling, setIsUninstalling] = useState(false)
   const {theme, themed} = useAppTheme()
   const {goBack, replace} = useNavigationHistory()
@@ -69,24 +69,11 @@ export default function AppSettings() {
   const SETTINGS_CACHE_KEY = (packageName: string) => `app_settings_cache_${packageName}`
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [hasCachedSettings, setHasCachedSettings] = useState(false)
-  const [newUi, _setNewUi] = useSetting(SETTINGS_KEYS.new_ui)
 
   if (!packageName || typeof packageName !== "string") {
     console.error("No packageName found in params")
     return null
   }
-
-  // IMMEDIATE TACTICAL BYPASS: Check for webviewURL in app status data and redirect instantly (OLD UI ONLY)
-  useEffect(() => {
-    if (!newUi && appInfo?.webviewURL && fromWebView !== "true" && appInfo?.isOnline !== false) {
-      console.log("OLD UI: webviewURL detected in app status, executing immediate redirect")
-      replace("/applet/webview", {
-        webviewURL: appInfo.webviewURL,
-        appName: appName,
-        packageName: packageName,
-      })
-    }
-  }, [appInfo, fromWebView, appName, packageName, replace, newUi])
 
   useFocusEffect(
     useCallback(() => {
@@ -231,7 +218,7 @@ export default function AppSettings() {
       if (!data) {
         setServerAppInfo({
           name: appInfo?.name || appName,
-          description: appInfo?.description || "No description available.",
+          description: data?.description || "No description available.",
           settings: [],
           uninstallable: true,
         })
@@ -287,7 +274,7 @@ export default function AppSettings() {
       console.error("Error fetching App settings:", err)
       setServerAppInfo({
         name: appInfo?.name || appName,
-        description: appInfo?.description || "No description available.",
+        description: "No description available.",
         settings: [],
         uninstallable: true,
       })
@@ -524,43 +511,7 @@ export default function AppSettings() {
       {isUninstalling && <LoadingOverlay message={`Uninstalling ${appInfo?.name || appName}...`} />}
 
       <View>
-        <Header
-          title=""
-          leftIcon="caretLeft"
-          onLeftPress={() => {
-            if (newUi) {
-              goBack()
-              return
-            }
-
-            if (serverAppInfo?.webviewURL) {
-              replace("/applet/webview", {
-                webviewURL: serverAppInfo.webviewURL,
-                appName: appName as string,
-                packageName: packageName as string,
-                fromSettings: "true",
-              })
-              return
-            }
-            goBack()
-          }}
-          RightActionComponent={
-            !newUi && serverAppInfo?.webviewURL ? (
-              <TouchableOpacity
-                style={{marginRight: 8}}
-                onPress={() => {
-                  replace("/applet/webview", {
-                    webviewURL: serverAppInfo.webviewURL,
-                    appName: appName as string,
-                    packageName: packageName as string,
-                    fromSettings: "true",
-                  })
-                }}>
-                <FontAwesome name="globe" size={22} color={theme.colors.text} />
-              </TouchableOpacity>
-            ) : undefined
-          }
-        />
+        <Header title="" leftIcon="caretLeft" onLeftPress={() => goBack()} />
         <Animated.View
           style={{
             opacity: headerOpacity,
@@ -605,11 +556,13 @@ export default function AppSettings() {
             <View style={themed($rightColumn)}>
               <View style={themed($textContainer)}>
                 <Text style={themed($appNameSmall)}>{appInfo.name}</Text>
-                <Text style={themed($versionText)}>{appInfo.version || "1.0.0"}</Text>
+                {serverAppInfo?.version && (
+                  <Text style={themed($versionText)}>{serverAppInfo?.version || "1.0.0"}</Text>
+                )}
               </View>
               <View style={themed($buttonContainer)}>
                 <PillButton
-                  text={appInfo.is_running ? "Stop" : "Start"}
+                  text={appInfo.running ? "Stop" : "Start"}
                   onPress={handleStartStopApp}
                   variant="icon"
                   buttonStyle={{paddingHorizontal: theme.spacing.lg, minWidth: 80}}
@@ -618,7 +571,7 @@ export default function AppSettings() {
             </View>
           </View>
 
-          {appInfo.isOnline === false && (
+          {!appInfo.healthy && !appInfo.offline && (
             <View
               style={{
                 flexDirection: "row",
@@ -640,7 +593,7 @@ export default function AppSettings() {
 
           {/* Description Section */}
           <View style={themed($descriptionSection)}>
-            <Text style={themed($descriptionText)}>{appInfo.description || "No description available."}</Text>
+            <Text style={themed($descriptionText)}>{serverAppInfo?.description || "No description available."}</Text>
           </View>
 
           <Divider variant="full" />

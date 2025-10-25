@@ -1,34 +1,34 @@
-import {useState, useRef, useEffect} from "react"
-import {
-  View,
-  TouchableOpacity,
-  TextInput,
-  Animated,
-  BackHandler,
-  Platform,
-  ActivityIndicator,
-  ScrollView,
-  AppState,
-  ViewStyle,
-  TextStyle,
-  Keyboard,
-  Modal,
-} from "react-native"
-import {Screen, Text, Button} from "@/components/ignite"
-import {translate} from "@/i18n"
-import {spacing, ThemedStyle} from "@/theme"
-import {useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {FontAwesome} from "@expo/vector-icons"
-import GoogleIcon from "assets/icons/component/GoogleIcon"
-import AppleIcon from "assets/icons/component/AppleIcon"
-import showAlert from "@/utils/AlertUtils"
-import {Pressable} from "react-native-gesture-handler"
-import {Spacer} from "@/components/misc/Spacer"
+import {Button, Screen, Text} from "@/components/ignite"
+import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {spacing, ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
+import {FontAwesome} from "@expo/vector-icons"
+import AppleIcon from "assets/icons/component/AppleIcon"
+import GoogleIcon from "assets/icons/component/GoogleIcon"
 import * as WebBrowser from "expo-web-browser"
 import Constants from "expo-constants"
+import {useEffect, useRef, useState} from "react"
+import {
+  ActivityIndicator,
+  Animated,
+  AppState,
+  BackHandler,
+  Keyboard,
+  Modal,
+  Platform,
+  ScrollView,
+  TextInput,
+  TextStyle,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from "react-native"
+import {Pressable} from "react-native-gesture-handler"
 
 export default function LoginScreen() {
   const [isSigningUp, setIsSigningUp] = useState(false)
@@ -567,7 +567,7 @@ const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDar
   borderColor: colors.border,
   borderRadius: 8,
   paddingHorizontal: spacing.sm,
-  backgroundColor: isDark ? colors.transparent : colors.background,
+  backgroundColor: isDark ? colors.palette.transparent : colors.background,
   // Remove shadows for light theme
   ...(isDark
     ? {
@@ -601,7 +601,7 @@ const $socialButton: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
   borderRadius: 8,
   paddingHorizontal: spacing.sm,
   marginBottom: spacing.xs,
-  backgroundColor: isDark ? colors.transparent : colors.background,
+  backgroundColor: isDark ? colors.palette.transparent : colors.background,
   // Remove shadows for light theme to avoid thick border appearance
   ...(isDark
     ? {
@@ -617,11 +617,11 @@ const $socialButton: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
 })
 
 const $googleButton: ThemedStyle<ViewStyle> = ({colors, isDark}) => ({
-  backgroundColor: isDark ? colors.transparent : colors.background,
+  backgroundColor: isDark ? colors.palette.transparent : colors.background,
 })
 
 const $appleButton: ThemedStyle<ViewStyle> = ({colors, isDark}) => ({
-  backgroundColor: isDark ? colors.transparent : colors.background,
+  backgroundColor: isDark ? colors.palette.transparent : colors.background,
   borderColor: colors.border,
 })
 
@@ -648,7 +648,7 @@ const $primaryButton: ThemedStyle<ViewStyle> = () => ({})
 const $secondaryButton: ThemedStyle<ViewStyle> = () => ({})
 
 const $pressedButton: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.buttonPressed,
+  backgroundColor: colors.background,
   opacity: 0.9,
 })
 

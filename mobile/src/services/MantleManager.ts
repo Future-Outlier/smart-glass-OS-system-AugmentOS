@@ -7,6 +7,8 @@ import TranscriptProcessor from "@/utils/TranscriptProcessor"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
 import bridge from "@/bridge/MantleBridge"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {useDisplayStore} from "@/stores/display"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -34,8 +36,6 @@ class MantleManager {
   private calendarSyncTimer: number | null = null
   private clearTextTimeout: number | null = null
   private transcriptProcessor: TranscriptProcessor
-  private readonly MAX_CHARS_PER_LINE = 30
-  private readonly MAX_LINES = 3
 
   public static getInstance(): MantleManager {
     if (!MantleManager.instance) {
@@ -45,7 +45,7 @@ class MantleManager {
   }
 
   private constructor() {
-    this.transcriptProcessor = new TranscriptProcessor(this.MAX_CHARS_PER_LINE, this.MAX_LINES)
+    this.transcriptProcessor = new TranscriptProcessor()
   }
 
   // run at app start on the init.tsx screen:
@@ -175,7 +175,12 @@ class MantleManager {
     }
   }
 
-  public async handleLocalTranscription(data: any) {
+  public async handle_head_up(isUp: boolean) {
+    socketComms.sendHeadPosition(isUp)
+    useDisplayStore.getState().setView(isUp ? "dashboard" : "main")
+  }
+
+  public async handle_local_transcription(data: any) {
     // TODO: performance!
     const offlineStt = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.offline_captions_running)
     if (offlineStt) {
@@ -220,6 +225,16 @@ class MantleManager {
       socketComms.sendLocalTranscription(data)
       return
     }
+  }
+
+  public async handle_button_press(id: string, type: string, timestamp: string) {
+    // Emit event to React Native layer for handling
+    GlobalEventEmitter.emit("BUTTON_PRESS", {
+      buttonId: id,
+      pressType: type,
+      timestamp: timestamp,
+    })
+    socketComms.sendButtonPress(id, type)
   }
 }
 

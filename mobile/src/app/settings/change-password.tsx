@@ -7,7 +7,7 @@ import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import showAlert from "@/utils/AlertUtils"
 import {FontAwesome} from "@expo/vector-icons"
-import {Spacer} from "@/components/misc/Spacer"
+import {Spacer} from "@/components/ui/Spacer"
 import Toast from "react-native-toast-message"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
 
@@ -177,7 +177,7 @@ const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDar
   borderColor: colors.border,
   borderRadius: 8,
   paddingHorizontal: spacing.sm,
-  backgroundColor: isDark ? colors.transparent : colors.background,
+  backgroundColor: isDark ? colors.palette.transparent : colors.background,
   ...(isDark
     ? {
         shadowOffset: {

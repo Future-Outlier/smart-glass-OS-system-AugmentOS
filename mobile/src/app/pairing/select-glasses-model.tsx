@@ -177,7 +177,7 @@ const $glassesImage: ThemedStyle<ImageStyle> = ({spacing}) => ({
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.lg,
+  fontSize: spacing.md,
   fontWeight: "600",
   flexWrap: "wrap",
   color: colors.text,

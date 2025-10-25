@@ -4,13 +4,21 @@ import {ThemedStyle} from "@/theme"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
+import {
+  cameraPackageName,
+  captionsPackageName,
+  useRefreshApplets,
+  useStopAllApplets,
+  useStopApplet,
+} from "@/stores/applets"
 // import {useAppStatus} from "@/contexts/AppletStatusProvider"
 
 export const OfflineModeButton: React.FC = () => {
   const {theme, themed} = useAppTheme()
   const [offlineMode, setOfflineMode] = useSetting(SETTINGS_KEYS.offline_mode)
-  const [_offlineCaptionsAppRunning, setOfflineCaptionsAppRunning] = useSetting(SETTINGS_KEYS.offline_captions_running)
-  // const {stopAllApps} = useAppStatus()
+  const stopApplet = useStopApplet()
+  const stopAllApplets = useStopAllApplets()
+  const refreshApplets = useRefreshApplets()
 
   const handlePress = () => {
     const title = offlineMode ? "Disable Offline Mode?" : "Enable Offline Mode?"
@@ -29,12 +37,14 @@ export const OfflineModeButton: React.FC = () => {
           onPress: async () => {
             if (!offlineMode) {
               // If enabling offline mode, stop all running apps
-              // await stopAllApps()
+              await stopAllApplets()
             } else {
-              // If disabling offline mode, turn off offline captions
-              setOfflineCaptionsAppRunning(false)
+              // if disabling offline mode, stop all offline-only apps
+              stopApplet(captionsPackageName)
+              stopApplet(cameraPackageName)
             }
             setOfflineMode(!offlineMode)
+            await refreshApplets()
           },
         },
       ],

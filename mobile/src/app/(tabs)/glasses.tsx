@@ -1,7 +1,6 @@
 import {Header, Screen} from "@/components/ignite"
 import {ScrollView} from "react-native"
 import {ConnectDeviceButton} from "@/components/misc/ConnectedDeviceInfo"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 
 import {useAppTheme} from "@/utils/useAppTheme"
 import DeviceSettings from "@/components/glasses/DeviceSettings"
@@ -11,7 +10,6 @@ import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 export default function Glasses() {
   const {theme} = useAppTheme()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const {status} = useCoreStatus()
 
   const formatGlassesTitle = (title: string) => title.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase())
   let pageTitle

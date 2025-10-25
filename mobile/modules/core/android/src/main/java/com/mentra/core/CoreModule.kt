@@ -79,8 +79,9 @@ class CoreModule : Module() {
                 appId: String,
                 size: String,
                 webhookUrl: String,
-                authToken: String ->
-            coreManager?.handle_photo_request(requestId, appId, size, webhookUrl, authToken)
+                authToken: String,
+                compress: String ->
+            coreManager?.handle_photo_request(requestId, appId, size, webhookUrl, authToken, compress)
         }
 
         // MARK: - Video Recording Commands
@@ -104,15 +105,15 @@ class CoreModule : Module() {
         // MARK: - RTMP Stream Commands
 
         AsyncFunction("startRtmpStream") { params: Map<String, Any> ->
-            // CoreManager.getInstance()?.handle_start_rtmp_stream(params)
+            coreManager?.handle_send_rtmp_stream_start(params.toMutableMap())
         }
 
         AsyncFunction("stopRtmpStream") {
-            // CoreManager.getInstance()?.handle_stop_rtmp_stream()
+            coreManager?.handle_stop_rtmp_stream()
         }
 
         AsyncFunction("keepRtmpStreamAlive") { params: Map<String, Any> ->
-            // CoreManager.getInstance()?.handle_keep_rtmp_stream_alive(params)
+            coreManager?.handle_keep_rtmp_stream_alive(params.toMutableMap())
         }
 
         // MARK: - Microphone Commands
@@ -120,7 +121,8 @@ class CoreModule : Module() {
         AsyncFunction("microphoneStateChange") {
                 requiredDataStrings: List<String>,
                 bypassVad: Boolean ->
-            coreManager?.handle_microphone_state_change(requiredDataStrings, bypassVad)
+            val requiredData = CoreManager.SpeechRequiredDataType.fromStringArray(requiredDataStrings)
+            coreManager?.handle_microphone_state_change(requiredData, bypassVad)
         }
 
         AsyncFunction("restartTranscriber") { coreManager?.restartTranscriber() }
@@ -148,27 +150,35 @@ class CoreModule : Module() {
         // MARK: - STT Commands
 
         AsyncFunction("setSttModelDetails") { path: String, languageCode: String ->
-            // STTTools.setSttModelDetails(path, languageCode)
+            val context =
+                    appContext.reactContext
+                            ?: appContext.currentActivity
+                                    ?: throw IllegalStateException("No context available")
+            com.mentra.core.stt.STTTools.setSttModelDetails(context, path, languageCode)
         }
 
         AsyncFunction("getSttModelPath") { ->
-            // STTTools.getSttModelPath()
-            ""
+            val context =
+                    appContext.reactContext
+                            ?: appContext.currentActivity
+                                    ?: throw IllegalStateException("No context available")
+            com.mentra.core.stt.STTTools.getSttModelPath(context)
         }
 
         AsyncFunction("checkSttModelAvailable") { ->
-            // STTTools.checkSTTModelAvailable()
-            false
+            val context =
+                    appContext.reactContext
+                            ?: appContext.currentActivity
+                                    ?: throw IllegalStateException("No context available")
+            com.mentra.core.stt.STTTools.checkSTTModelAvailable(context)
         }
 
         AsyncFunction("validateSttModel") { path: String ->
-            // STTTools.validateSTTModel(path)
-            false
+            com.mentra.core.stt.STTTools.validateSTTModel(path)
         }
 
         AsyncFunction("extractTarBz2") { sourcePath: String, destinationPath: String ->
-            // STTTools.extractTarBz2(sourcePath, destinationPath)
-            false
+            com.mentra.core.stt.STTTools.extractTarBz2(sourcePath, destinationPath)
         }
 
         // MARK: - Android-specific Commands

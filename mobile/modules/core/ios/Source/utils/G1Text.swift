@@ -130,9 +130,6 @@ class G1Text {
         lines1 = Array(lines1.prefix(G1Text.LINES_PER_SCREEN))
         lines2 = Array(lines2.prefix(G1Text.LINES_PER_SCREEN))
 
-//        print("Lines1: \(lines1)")
-//        print("Lines2: \(lines2)")
-
         // Get precise space width
         let spaceWidth = calculateTextWidth(" ")
 

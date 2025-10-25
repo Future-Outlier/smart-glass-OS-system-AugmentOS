@@ -5,6 +5,7 @@ import {customFontsToLoad} from "@/theme"
 import {initI18n} from "@/i18n"
 import {loadDateFnsLocale} from "@/utils/formatDate"
 import {AllProviders} from "@/utils/structure/AllProviders"
+import {AllEffects} from "@/utils/structure/AllEffects"
 import * as Sentry from "@sentry/react-native"
 import Constants from "expo-constants"
 import {registerGlobals} from "@livekit/react-native-webrtc"
@@ -80,6 +81,7 @@ function Root() {
 
   return (
     <AllProviders>
+      <AllEffects />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -94,9 +96,5 @@ function Root() {
     </AllProviders>
   )
 }
-
-// if (!__DEV__ && Platform.OS === "android") {
-// export default Root
-// }
 
 export default Sentry.wrap(Root)

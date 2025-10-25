@@ -9,12 +9,14 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
 import {Text} from "@/components/ignite"
 import {translate} from "@/i18n"
+import {useRefreshApplets} from "@/stores/applets"
 
 export default function CloudConnection() {
   const connectionStatus = useConnectionStore(state => state.status)
   const {themed} = useAppTheme()
   const cloudConnectionStatusAnim = useSharedValue(1)
   const [hideCloudConnection, setHideCloudConnection] = useState(true)
+  const refreshApplets = useRefreshApplets()
 
   // Add delay logic for disconnection alerts
   const [delayedStatus, setDelayedStatus] = useState<WebSocketStatus>(connectionStatus)
@@ -101,6 +103,10 @@ export default function CloudConnection() {
       setHideCloudConnection(connectionStatus === WebSocketStatus.CONNECTED)
       cloudConnectionStatusAnim.value =
         connectionStatus === WebSocketStatus.CONNECTED ? withTiming(0, {duration: 500}) : withTiming(1, {duration: 500})
+    }
+
+    if (connectionStatus === WebSocketStatus.CONNECTED || connectionStatus === WebSocketStatus.DISCONNECTED) {
+      refreshApplets()
     }
 
     // Cleanup function

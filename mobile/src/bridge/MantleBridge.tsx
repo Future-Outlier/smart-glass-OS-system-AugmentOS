@@ -165,14 +165,7 @@ export class MantleBridge {
           break
         case "button_press":
           console.log("🔘 BUTTON_PRESS event received:", data)
-          // Emit event to React Native layer for handling
-          GlobalEventEmitter.emit("BUTTON_PRESS", {
-            buttonId: data.buttonId,
-            pressType: data.pressType,
-            timestamp: data.timestamp,
-          })
-          // Also forward to server for apps that need it
-          socketComms.sendButtonPress(data.buttonId, data.pressType)
+          mantle.handle_button_press(data.buttonId, data.pressType, data.timestamp)
           break
         case "touch_event": {
           const deviceModel = data.device_model ?? "Mentra Live"
@@ -224,11 +217,11 @@ export class MantleBridge {
         case "save_setting":
           await useSettingsStore.getState().setSetting(data.key, data.value, false)
           break
-        case "head_position":
-          socketComms.sendHeadPosition(data.position === "up")
+        case "head_up":
+          mantle.handle_head_up(data.up)
           break
         case "local_transcription":
-          mantle.handleLocalTranscription(data)
+          mantle.handle_local_transcription(data)
           break
         // TODO: this is a bit of a hack, we should have dedicated functions for ws endpoints in the core:
         case "ws_text":

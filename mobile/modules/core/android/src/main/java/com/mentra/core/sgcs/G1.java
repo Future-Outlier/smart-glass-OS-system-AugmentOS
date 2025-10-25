@@ -39,11 +39,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.CRC32;
 import java.nio.ByteBuffer;
 
-// import com.augmentos.augmentos_core.smarterglassesmanager.SmartGlassesManager;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.isMicEnabledForFrontendEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.HeadUpAngleEvent;
-// import com.augmentos.augmentos_core.R;
-
 import com.google.gson.Gson;
 import org.greenrobot.eventbus.EventBus;
 import org.json.JSONArray;
@@ -59,6 +54,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 
 // Mentra
 import com.mentra.core.sgcs.SGCManager;
@@ -67,20 +64,9 @@ import com.mentra.core.Bridge;
 import com.mentra.core.utils.DeviceTypes;
 import com.mentra.core.utils.BitmapJavaUtils;
 import static com.mentra.core.utils.BitmapJavaUtils.convertBitmapTo1BitBmpBytes;
-import com.mentra.core.utils.G1FontLoader;
+import com.mentra.core.utils.G1Text;
 import com.mentra.core.utils.SmartGlassesConnectionState;
 import com.mentra.lc3Lib.Lc3Cpp;
-
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesSerialNumberEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BatteryLevelEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.CaseEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BrightnessLevelEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchDiscoverEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchStopEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesHeadDownEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesHeadUpEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.supportedglasses.SmartGlassesDevice;
-
 
 public class G1 extends SGCManager {
     private static final String TAG = "WearableAi_EvenRealitiesG1SGC";
@@ -88,7 +74,6 @@ public class G1 extends SGCManager {
     private int heartbeatCount = 0;
     private int micBeatCount = 0;
     private BluetoothAdapter bluetoothAdapter;
-    public String type = DeviceTypes.G1;
 
     public static final String LEFT_DEVICE_KEY = "SavedG1LeftName";
     public static final String RIGHT_DEVICE_KEY = "SavedG1RightName";
@@ -122,7 +107,6 @@ public class G1 extends SGCManager {
     private boolean stopper = false;
     private boolean debugStopper = false;
     private boolean shouldUseAutoBrightness = false;
-    private int brightnessValue;
     private boolean updatingScreen = false;
 
     private static final long DELAY_BETWEEN_SENDS_MS = 5; // not using now
@@ -130,10 +114,8 @@ public class G1 extends SGCManager {
     private static final long DELAY_BETWEEN_ACTIONS_SEND = 250; // not using now
     private static final long HEARTBEAT_INTERVAL_MS = 15000;
     private static final long MICBEAT_INTERVAL_MS = (1000 * 60) * 30; // micbeat every 30 minutes
-    private int caseBatteryLevel = -1;
-    private boolean caseCharging = false;
-    private boolean caseOpen = false;
-    private boolean caseRemoved = true;
+
+
     private int batteryLeft = -1;
     private int batteryRight = -1;
     private int leftReconnectAttempts = 0;
@@ -215,7 +197,7 @@ public class G1 extends SGCManager {
 
     // lock writing until the last write is successful
     // fonts in G1
-    G1FontLoader fontLoader;
+    G1Text g1Text;
 
     private static final long DEBOUNCE_DELAY_MS = 270; // Minimum time between chunk sends
     private volatile long lastSendTimestamp = 0;
@@ -223,14 +205,14 @@ public class G1 extends SGCManager {
 
     public G1() {
         super();
+        this.type = DeviceTypes.G1;
+        this.hasMic = true;  // G1 has a built-in microphone
         Bridge.log("G1: G1 constructor");
         this.context = Bridge.getContext();
         loadPairedDeviceNames();
         // goHomeHandler = new Handler();
         // this.smartGlassesDevice = smartGlassesDevice;
         preferredG1DeviceId = CoreManager.getInstance().getDeviceName();
-        brightnessValue = CoreManager.getInstance().getBrightness();
-        shouldUseAutoBrightness = CoreManager.getInstance().getAutoBrightness();
         this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         this.shouldUseGlassesMic = false;
 
@@ -245,7 +227,8 @@ public class G1 extends SGCManager {
         }
 
         // setup fonts
-        fontLoader = new G1FontLoader(context);
+        g1Text = new G1Text();
+        caseRemoved = true;
     }
 
     private final BluetoothGattCallback leftGattCallback = createGattCallback("Left");
@@ -473,7 +456,7 @@ public class G1 extends SGCManager {
             public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic,
                     int status) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    Bridge.log("G1: PROC_QUEUE - " + side + " glass write successful");
+                    // Bridge.log("G1: PROC_QUEUE - " + side + " glass write successful");
                 } else {
                     Bridge.log("G1: " + side + " glass write failed with status: " + status);
 
@@ -640,14 +623,14 @@ public class G1 extends SGCManager {
                         }
                         // TEXT RESPONSE
                         else if (data.length > 0 && data[0] == 0x4E) {
-                            Bridge.log("G1: Text response on side " + (deviceName.contains("L_") ? "Left" : "Right")
-                                    + " was: " + ((data.length > 1 && (data[1] & 0xFF) == 0xC9) ? "SUCCEED" : "FAIL"));
+                            // Bridge.log("G1: Text response on side " + (deviceName.contains("L_") ? "Left" : "Right")
+                                    // + " was: " + ((data.length > 1 && (data[1] & 0xFF) == 0xC9) ? "SUCCEED" : "FAIL"));
                         }
 
                         // Handle other non-audio responses
                         else {
-                            Bridge.log("G1: PROC - Received other Even Realities response: " + bytesToHex(data) + ", from: "
-                                    + deviceName);
+                            // Bridge.log("G1: PROC - Received other Even Realities response: " + bytesToHex(data) + ", from: "
+                                    // + deviceName);
                         }
 
                         // clear the waiter
@@ -731,6 +714,8 @@ public class G1 extends SGCManager {
                 queryBatteryStatusHandler.postDelayed(() -> queryBatteryStatus(), 10);
 
                 // setup brightness
+                int brightnessValue = CoreManager.getInstance().getBrightness();
+                Boolean shouldUseAutoBrightness = CoreManager.getInstance().getAutoBrightness();
                 sendBrightnessCommandHandler
                         .postDelayed(() -> sendBrightnessCommand(brightnessValue, shouldUseAutoBrightness), 10);
 
@@ -1060,6 +1045,8 @@ public class G1 extends SGCManager {
     // reconnectHandler.postDelayed(() -> reconnectToGatt(device), delay);
     // }
 
+    private Set<String> seenDevices = new HashSet<>();
+
     private final ScanCallback modernScanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
@@ -1078,18 +1065,24 @@ public class G1 extends SGCManager {
             }
 
             // Log all available device information for debugging
-            Bridge.log("G1: === Device Information ===");
-            Bridge.log("G1: Device Name: " + name);
-            Bridge.log("G1: Device Address: " + device.getAddress());
-            Bridge.log("G1: Device Type: " + device.getType());
-            Bridge.log("G1: Device Class: " + device.getBluetoothClass());
-            Bridge.log("G1: Bond State: " + device.getBondState());
+            // Bridge.log("G1: === Device Information ===");
+            // Bridge.log("G1: Device Name: " + name);
+            // Bridge.log("G1: Device Address: " + device.getAddress());
+            // Bridge.log("G1: Device Type: " + device.getType());
+            // Bridge.log("G1: Device Class: " + device.getBluetoothClass());
+            // Bridge.log("G1: Bond State: " + device.getBondState());
 
             // Try to get additional device information using reflection
             try {
                 // Try to get the full device name (might contain serial number)
                 Method getAliasMethod = device.getClass().getMethod("getAlias");
                 String alias = (String) getAliasMethod.invoke(device);
+                // add alias to seen device set:
+                if (!seenDevices.contains(alias)) {
+                    seenDevices.add(alias);
+                } else {
+                    return;
+                }
                 Bridge.log("G1: Device Alias: " + alias);
             } catch (Exception e) {
                 Bridge.log("G1: Could not get device alias: " + e.getMessage());
@@ -1101,19 +1094,19 @@ public class G1 extends SGCManager {
                 for (int i = 0; i < allManufacturerData.size(); i++) {
                     String parsedDeviceName = parsePairingIdFromDeviceName(name);
                     if (parsedDeviceName != null) {
-                        Bridge.log("G1: Parsed Device Name: " + parsedDeviceName);
+                        // Bridge.log("G1: Parsed Device Name: " + parsedDeviceName);
                     }
 
                     int manufacturerId = allManufacturerData.keyAt(i);
                     byte[] data = allManufacturerData.valueAt(i);
-                    Bridge.log("G1: Left Device Manufacturer ID " + manufacturerId + ": " + bytesToHex(data));
+                    // Bridge.log("G1: Left Device Manufacturer ID " + manufacturerId + ": " + bytesToHex(data));
 
                     // Try to decode serial number from this manufacturer data
                     String decodedSerial = decodeSerialFromManufacturerData(data);
                     if (decodedSerial != null) {
-                        Bridge.log("G1: LEFT DEVICE DECODED SERIAL NUMBER from ID " + manufacturerId + ": " + decodedSerial);
+                        // Bridge.log("G1: LEFT DEVICE DECODED SERIAL NUMBER from ID " + manufacturerId + ": " + decodedSerial);
                         String[] decoded = decodeEvenG1SerialNumber(decodedSerial);
-                        Bridge.log("G1: LEFT DEVICE Style: " + decoded[0] + ", Color: " + decoded[1]);
+                        // Bridge.log("G1: LEFT DEVICE Style: " + decoded[0] + ", Color: " + decoded[1]);
 
                         if (preferredG1DeviceId != null && preferredG1DeviceId.equals(parsedDeviceName)) {
                             // EventBus.getDefault()
@@ -1126,7 +1119,7 @@ public class G1 extends SGCManager {
 
             // Bridge.log("G1: PREFERRED ID: " + preferredG1DeviceId);
             if (preferredG1DeviceId == null || !name.contains("_" + preferredG1DeviceId + "_")) {
-                Bridge.log("G1: NOT PAIRED GLASSES");
+                // Bridge.log("G1: NOT PAIRED GLASSES");
                 return;
             }
 
@@ -1134,12 +1127,12 @@ public class G1 extends SGCManager {
 
             boolean isLeft = name.contains("_L_");
 
-            // If we already have saved device names for left/right...
-            if (savedG1LeftName != null && savedG1RightName != null) {
-                if (!(name.contains(savedG1LeftName) || name.contains(savedG1RightName))) {
-                    return; // Not a matching device
-                }
-            }
+            // // If we already have saved device names for left/right...
+            // if (savedG1LeftName != null && savedG1RightName != null) {
+            //     if (!(name.contains(savedG1LeftName) || name.contains(savedG1RightName))) {
+            //         return; // Not a matching device
+            //     }
+            // }
 
             // Identify which side (left/right)
             if (isLeft) {
@@ -1173,10 +1166,11 @@ public class G1 extends SGCManager {
                 }
             } else {
                 // Already bonded
-                if (isLeft)
+                if (isLeft) {
                     isLeftBonded = true;
-                else
+                } else {
                     isRightBonded = true;
+                }
 
                 // Both are bonded => connect to GATT
                 if (leftDevice != null && rightDevice != null && isLeftBonded && isRightBonded) {
@@ -1192,6 +1186,8 @@ public class G1 extends SGCManager {
                     }, 2000);
                 } else {
                     Bridge.log("G1: Not running a63dd");
+                    Bridge.log("G1: leftBonded=" + isLeftBonded + ", rightBonded=" + isRightBonded);
+                    Bridge.log("G1: leftDevice=" + leftDevice + ", rightDevice=" + rightDevice);
                 }
             }
         }
@@ -1495,7 +1491,7 @@ public class G1 extends SGCManager {
     }
 
     @Override
-    public void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken) {
+    public void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken, String compress) {
 
     }
 
@@ -1572,17 +1568,19 @@ public class G1 extends SGCManager {
 
     @Override
     public void clearDisplay() {
-        Bridge.log("G1: clearDisplay() - Using 0x18 exit command");
-        sendExitCommand();
+        Bridge.log("G1: clearDisplay() - sending space");
+        sendTextWall(" ");
     }
 
     @Override
     public void sendTextWall(String text) {
+        Bridge.log("G1: sendTextWall() - text: " + text);
         displayTextWall(text);
     }
 
     @Override
     public void sendDoubleTextWall(String top, String bottom) {
+        Bridge.log("G1: sendDoubleTextWall() - top: " + top + ", bottom: " + bottom);
         displayDoubleTextWall(top, bottom);
     }
 
@@ -1608,7 +1606,7 @@ public class G1 extends SGCManager {
 
     @Override
     public void showDashboard() {
-
+        exit();
     }
 
     @Override
@@ -1635,7 +1633,7 @@ public class G1 extends SGCManager {
 
     @Override
     public void exit() {
-
+        sendExitCommand();
     }
 
     @Override
@@ -1646,12 +1644,17 @@ public class G1 extends SGCManager {
 
     @Override
     public void disconnect() {
-
+        ready = false;
+        ready = false;
+        destroy();
+        // CoreManager.getInstance().handleConnectionStateChanged();
     }
 
     @Override
     public void forget() {
-
+        ready = false;
+        destroy();
+        CoreManager.getInstance().handleConnectionStateChanged();
     }
 
     @Override
@@ -2075,6 +2078,7 @@ public class G1 extends SGCManager {
         Bridge.log("G1: EvenRealitiesG1SGC ONDESTROY");
         showHomeScreen();
         isKilled = true;
+        ready = false;
 
         // stop BLE scanning
         stopScan();
@@ -2224,31 +2228,31 @@ public class G1 extends SGCManager {
     }
 
     public void displayDoubleTextWall(String textTop, String textBottom) {
-        if (updatingScreen)
-            return;
+        // if (updatingScreen)
+        //     return;
 
-        if (textTop.trim().isEmpty() && textBottom.trim().isEmpty()) {
-            if (CoreManager.getInstance().getPowerSavingMode()) {
-                sendExitCommand();
-                return;
-            }
-        }
+        // if (textTop.trim().isEmpty() && textBottom.trim().isEmpty()) {
+        //     if (CoreManager.getInstance().getPowerSavingMode()) {
+        //         sendExitCommand();
+        //         return;
+        //     }
+        // }
 
-        List<byte[]> chunks = createDoubleTextWallChunks(textTop, textBottom);
+        List<byte[]> chunks = g1Text.createDoubleTextWallChunks(textTop, textBottom);
         sendChunks(chunks);
     }
 
     public void showHomeScreen() {
-        if (CoreManager.getInstance().getPowerSavingMode()) {
-            sendExitCommand();
-        } else {
+        // if (CoreManager.getInstance().getPowerSavingMode()) {
+            // sendExitCommand();
+        // } else {
             displayTextWall(" ");
-        }
+        // }
 
-        if (lastThingDisplayedWasAnImage) {
-            // clearG1Screen();
-            lastThingDisplayedWasAnImage = false;
-        }
+        // if (lastThingDisplayedWasAnImage) {
+        //     // clearG1Screen();
+        //     lastThingDisplayedWasAnImage = false;
+        // }
     }
 
     public void clearG1Screen() {
@@ -2265,7 +2269,6 @@ public class G1 extends SGCManager {
         }
     }
 
-    // public void setFontSize(SmartGlassesFontSize fontSize) {}
 
     public void displayRowsCard(String[] rowStrings) {
     }
@@ -2277,14 +2280,12 @@ public class G1 extends SGCManager {
     }
 
     public void displayTextWall(String a) {
-        if (updatingScreen)
-            return;
-        if (a.trim().isEmpty()) {
-            if (CoreManager.getInstance().getPowerSavingMode()) {
-                sendExitCommand();
-                return;
-            }
-        }
+        // if (a.trim().isEmpty()) {
+        //     if (CoreManager.getInstance().getPowerSavingMode()) {
+        //         sendExitCommand();
+        //         return;
+        //     }
+        // }
 
         List<byte[]> chunks = createTextWallChunks(a);
         sendChunks(chunks);
@@ -2395,14 +2396,6 @@ public class G1 extends SGCManager {
                             Bridge.log("Found smart glasses: " + name);
                             String adjustedName = parsePairingIdFromDeviceName(name);
                             Bridge.sendDiscoveredDevice("Even Realities G1", adjustedName);
-                            // EventBus.getDefault().post(
-                            // new GlassesBluetoothSearchDiscoverEvent(
-                            // smartGlassesDevice.deviceModelName,
-                            // adjustedName
-                            // )
-                            // );
-                            // TODO: finish this
-                            // Bridge.sendEvent("glasses_bluetooth_search_discover", adjustedName);
                         }
                     }
                 }
@@ -2607,35 +2600,28 @@ public class G1 extends SGCManager {
 
     // microphone stuff
     public void sendSetMicEnabled(boolean enable, int delay) {
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
-        // Bridge.log("G1: Running set mic enabled: " + enable);
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
-        // Bridge.log("G1: ^^^^^^^^^^^^^");
+        Bridge.log("G1: Running set mic enabled: " + enable);
 
         isMicrophoneEnabled = enable; // Update the state tracker
-        // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
-        // micEnableHandler.postDelayed(new Runnable() {
-        //     @Override
-        //     public void run() {
-        //         if (!isConnected()) {
-        //             Bridge.log("G1: Tryna start mic: Not connected to glasses");
-        //             return;
-        //         }
+        micEnableHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!isConnected()) {
+                    Bridge.log("G1: Tryna start mic: Not connected to glasses");
+                    return;
+                }
 
-        //         byte command = 0x0E; // Command for MIC control
-        //         byte enableByte = (byte) (enable ? 1 : 0); // 1 to enable, 0 to disable
+                byte command = 0x0E; // Command for MIC control
+                byte enableByte = (byte) (enable ? 1 : 0); // 1 to enable, 0 to disable
 
-        //         ByteBuffer buffer = ByteBuffer.allocate(2);
-        //         buffer.put(command);
-        //         buffer.put(enableByte);
+                ByteBuffer buffer = ByteBuffer.allocate(2);
+                buffer.put(command);
+                buffer.put(enableByte);
 
-        //         sendDataSequentially(buffer.array(), false, true, 300); // wait some time to setup the mic
-        //         Bridge.log("G1: Sent MIC command: " + bytesToHex(buffer.array()));
-        //     }
-        // }, delay);
+                sendDataSequentially(buffer.array(), false, true, 300); // wait some time to setup the mic
+                Bridge.log("G1: Sent MIC command: " + bytesToHex(buffer.array()));
+            }
+        }, delay);
     }
 
     // notifications
@@ -2673,25 +2659,12 @@ public class G1 extends SGCManager {
                 "How much caffeine in dark chocolate?", "25 to 50 grams per piece");
         Bridge.log("G1: the JSON to send: " + json);
         List<byte[]> chunks = createNotificationChunks(json);
-        // Bridge.log("G1: THE CHUNKS:");
-        // Bridge.log(TAG, chunks.get(0).toString());
-        // Bridge.log(TAG, chunks.get(1).toString());
         for (byte[] chunk : chunks) {
             Bridge.log("G1: Sent chunk to glasses: " + bytesToUtf8(chunk));
         }
 
         // Send each chunk with a short sleep between each send
         sendDataSequentially(chunks, false);
-        // for (byte[] chunk : chunks) {
-        // sendDataSequentially(chunk);
-        //
-        //// // Sleep for 100 milliseconds between sending each chunk
-        //// try {
-        //// Thread.sleep(150);
-        //// } catch (InterruptedException e) {
-        //// e.printStackTrace();
-        //// }
-        // }
 
         Bridge.log("G1: Sent periodic notification");
     }
@@ -2725,7 +2698,7 @@ public class G1 extends SGCManager {
     private static final float FONT_MULTIPLIER = 1 / 50.0f;
     private static final int OLD_FONT_SIZE = 21; // Font size
     private static final float FONT_DIVIDER = 2.0f;
-    private static final int LINES_PER_SCREEN = 5; // Lines per screen
+    private static final int LINES_PER_SCREEN = 3; // Lines per screen
     private static final int MAX_CHUNK_SIZE = 176; // Maximum chunk size for BLE packets
     // private static final int INDENT_SPACES = 32; // Number of spaces to indent
     // text
@@ -2737,7 +2710,7 @@ public class G1 extends SGCManager {
         int margin = 5;
 
         // Get width of single space character
-        int spaceWidth = calculateTextWidth(" ");
+        int spaceWidth = g1Text.calculateTextWidth(" ");
 
         // Calculate effective display width after accounting for left and right margins
         // in spaces
@@ -2745,7 +2718,7 @@ public class G1 extends SGCManager {
         int effectiveWidth = DISPLAY_WIDTH - (2 * marginWidth); // Subtract left and right margins
 
         // Split text into lines based on effective display width
-        List<String> lines = splitIntoLines(text, effectiveWidth);
+        List<String> lines = g1Text.splitIntoLines(text, effectiveWidth);
 
         // Calculate total pages
         int totalPages = 1; // hard set to 1 since we only do 1 page - 1PAGECHANGE
@@ -2807,64 +2780,6 @@ public class G1 extends SGCManager {
         return allChunks;
     }
 
-    private int calculateTextWidth(String text) {
-        int width = 0;
-        for (char c : text.toCharArray()) {
-            G1FontLoader.FontGlyph glyph = fontLoader.getGlyph(c);
-            width += glyph.width + 1; // Add 1 pixel per character for spacing
-        }
-        return width * 2;
-    }
-
-    private List<byte[]> createDoubleTextWallChunks(String text1, String text2) {
-        // Define column widths and positions
-        final int LEFT_COLUMN_WIDTH = (int) (DISPLAY_WIDTH * 0.5); // 40% of display for left column
-        final int RIGHT_COLUMN_START = (int) (DISPLAY_WIDTH * 0.55); // Right column starts at 60%
-
-        // Split texts into lines with specific width constraints
-        List<String> lines1 = splitIntoLines(text1, LEFT_COLUMN_WIDTH);
-        List<String> lines2 = splitIntoLines(text2, DISPLAY_WIDTH - RIGHT_COLUMN_START);
-
-        // Ensure we have exactly LINES_PER_SCREEN lines (typically 5)
-        while (lines1.size() < LINES_PER_SCREEN)
-            lines1.add("");
-        while (lines2.size() < LINES_PER_SCREEN)
-            lines2.add("");
-
-        lines1 = lines1.subList(0, LINES_PER_SCREEN);
-        lines2 = lines2.subList(0, LINES_PER_SCREEN);
-
-        // Get precise space width
-        int spaceWidth = calculateTextWidth(" ");
-
-        // Construct the text output by merging the lines with precise positioning
-        StringBuilder pageText = new StringBuilder();
-        for (int i = 0; i < LINES_PER_SCREEN; i++) {
-            String leftText = lines1.get(i).replace("\u2002", ""); // Drop enspaces
-            String rightText = lines2.get(i).replace("\u2002", "");
-
-            // Calculate width of left text in pixels
-            int leftTextWidth = calculateTextWidth(leftText);
-
-            // Calculate exactly how many spaces are needed to position the right column
-            // correctly
-            int spacesNeeded = calculateSpacesForAlignment(leftTextWidth, RIGHT_COLUMN_START, spaceWidth);
-
-            // Log detailed alignment info for debugging
-            Bridge.log("G1: " + String.format("Line %d: Left='%s' (width=%dpx) | Spaces=%d | Right='%s'",
-                    i, leftText, leftTextWidth, spacesNeeded, rightText));
-
-            // Construct the full line with precise alignment
-            pageText.append(leftText)
-                    .append(" ".repeat(spacesNeeded))
-                    .append(rightText)
-                    .append("\n");
-        }
-
-        // Convert to bytes and chunk for transmission
-        return chunkTextForTransmission(pageText.toString());
-    }
-
     private int calculateSpacesForAlignment(int currentWidth, int targetPosition, int spaceWidth) {
         // Calculate space needed in pixels
         int pixelsNeeded = targetPosition - currentWidth;
@@ -2917,105 +2832,6 @@ public class G1 extends SGCManager {
         textSeqNum = (textSeqNum + 1) % 256;
 
         return allChunks;
-    }
-
-    private int calculateSubstringWidth(String text, int start, int end) {
-        return calculateTextWidth(text.substring(start, end));
-    }
-
-    private List<String> splitIntoLines(String text, int maxDisplayWidth) {
-        // Replace specific symbols
-        text = text.replace("⬆", "^").replace("⟶", "-");
-
-        List<String> lines = new ArrayList<>();
-
-        // Handle empty or single space case
-        if (text.isEmpty() || " ".equals(text)) {
-            lines.add(text);
-            return lines;
-        }
-
-        // Split by newlines first
-        String[] rawLines = text.split("\n");
-
-        Bridge.log("G1: Splitting text into lines..." + Arrays.toString(rawLines));
-
-        for (String rawLine : rawLines) {
-            // Add empty lines for newlines
-            if (rawLine.isEmpty()) {
-                lines.add("");
-                continue;
-            }
-
-            int lineLength = rawLine.length();
-            int startIndex = 0;
-
-            while (startIndex < lineLength) {
-                // Get maximum possible end index
-                int endIndex = lineLength;
-
-                // Calculate width of the entire remaining text
-                int lineWidth = calculateSubstringWidth(rawLine, startIndex, endIndex);
-
-                Bridge.log("G1: Line length: " + rawLine);
-                Bridge.log("G1: Calculating line width: " + lineWidth);
-
-                // If entire line fits, add it and move to next line
-                if (lineWidth <= maxDisplayWidth) {
-                    lines.add(rawLine.substring(startIndex));
-                    break;
-                }
-
-                // Binary search to find the maximum number of characters that fit
-                int left = startIndex + 1;
-                int right = lineLength;
-                int bestSplitIndex = startIndex + 1;
-
-                while (left <= right) {
-                    int mid = left + (right - left) / 2;
-                    int width = calculateSubstringWidth(rawLine, startIndex, mid);
-
-                    if (width <= maxDisplayWidth) {
-                        bestSplitIndex = mid;
-                        left = mid + 1;
-                    } else {
-                        right = mid - 1;
-                    }
-                }
-
-                // Now find a good place to break (preferably at a space)
-                int splitIndex = bestSplitIndex;
-
-                // Look for a space to break at
-                boolean foundSpace = false;
-                for (int i = bestSplitIndex; i > startIndex; i--) {
-                    if (rawLine.charAt(i - 1) == ' ') {
-                        splitIndex = i;
-                        foundSpace = true;
-                        break;
-                    }
-                }
-
-                // If we couldn't find a space in a reasonable range, use the calculated split
-                // point
-                if (!foundSpace && bestSplitIndex - startIndex > 2) {
-                    splitIndex = bestSplitIndex;
-                }
-
-                // Add the line
-                String line = rawLine.substring(startIndex, splitIndex).trim();
-                lines.add(line);
-
-                // Skip any spaces at the beginning of the next line
-                while (splitIndex < lineLength && rawLine.charAt(splitIndex) == ' ') {
-                    splitIndex++;
-                }
-
-                startIndex = splitIndex;
-            }
-        }
-
-        return lines;
     }
 
     private void sendPeriodicTextWall() {
@@ -3160,6 +2976,7 @@ public class G1 extends SGCManager {
     private void sendChunks(List<byte[]> chunks) {
         // Send each chunk with a delay between sends
         for (byte[] chunk : chunks) {
+            // Bridge.log("G1: Sending chunk: " + Arrays.toString(chunk));
             sendDataSequentially(chunk);
 
             // try {

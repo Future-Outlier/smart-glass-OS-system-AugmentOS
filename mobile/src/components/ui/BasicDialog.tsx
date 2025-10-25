@@ -1,13 +1,9 @@
-import AppleIcon from "assets/icons/component/AppleIcon"
-import * as React from "react"
-import {StyleSheet, View} from "react-native"
-import {SafeAreaView} from "react-native-safe-area-context"
-import {Spacer} from "../misc/Spacer"
-import {spacing} from "@/theme"
-import {PillButton} from "./PillButton"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {color} from "react-native-elements/dist/helpers"
-import {Text} from "./Text"
+// eslint-disable-next-line no-restricted-imports
+import {StyleSheet, View} from "react-native"
+import {Spacer} from "@/components/ui/Spacer"
+import {PillButton} from "../ignite/PillButton"
+import {Text} from "../ignite/Text"
 interface BasicDialogProps {
   title: string
   description?: string | React.ReactNode
@@ -77,7 +73,7 @@ const BasicDialog = ({
     </View>
   )
 }
-
+// eslint-disable-next-line no-restricted-imports
 const styles = StyleSheet.create({
   actions: {
     alignItems: "flex-end",
@@ -133,17 +129,8 @@ const styles = StyleSheet.create({
   leftButtonStyle: {
     marginRight: 8,
   },
-  oneForeground: {
-    color: "#abaaff",
-  },
   rightButtonStyle: {
     // Right button takes remaining space
-  },
-  supportingText: {
-    alignSelf: "stretch",
-    fontSize: 15,
-    letterSpacing: 0.6,
-    lineHeight: 20,
   },
   titleDescription: {
     alignSelf: "stretch",

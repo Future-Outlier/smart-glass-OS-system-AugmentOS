@@ -8,7 +8,7 @@ import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import showAlert from "@/utils/AlertUtils"
 import {FontAwesome} from "@expo/vector-icons"
-import {Spacer} from "@/components/misc/Spacer"
+import {Spacer} from "@/components/ui/Spacer"
 import Toast from "react-native-toast-message"
 
 export default function ForgotPasswordScreen() {

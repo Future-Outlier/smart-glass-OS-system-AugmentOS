@@ -116,7 +116,6 @@ import java.util.Locale;
  */
 public class MentraLive extends SGCManager {
     private static final String TAG = "Live";
-    public String type = DeviceTypes.LIVE;
     public String savedDeviceName = "";
 
     // LC3 frame size for Mentra Live
@@ -392,6 +391,7 @@ public class MentraLive extends SGCManager {
 
     public MentraLive() {
         super();
+        this.type = DeviceTypes.LIVE;
         this.context = Bridge.getContext();
 
         // Initialize bluetooth adapter
@@ -453,7 +453,8 @@ public class MentraLive extends SGCManager {
     }
 
     public void cleanup() {
-        // TODO:
+        Bridge.log("LIVE: Cleaning up MentraLiveSGC");
+        destroy();
     }
 
     private void updateConnectionState(String state) {
@@ -1804,15 +1805,12 @@ public class MentraLive extends SGCManager {
                 // Process touch event from glasses (swipes, taps, long press)
                 String gestureName = json.optString("gesture_name", "unknown");
                 long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
+                String touchDeviceModel = json.optString("device_model", glassesDeviceModel);
 
                 Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
 
-                // Post touch event to EventBus for AugmentosService to handle
-                // EventBus.getDefault().post(new TouchEvent(
-                //         smartGlassesDevice.deviceModelName,
-                //         gestureName,
-                //         touchTimestamp));
-                // Bridge.sendTouchEvent(gestureName, touchTimestamp);
+                // Send touch event to React Native
+                Bridge.sendTouchEvent(touchDeviceModel, gestureName, touchTimestamp);
                 break;
 
             case "swipe_volume_status":
@@ -1822,16 +1820,8 @@ public class MentraLive extends SGCManager {
 
                 Log.d(TAG, "🔊 Received swipe volume status - Enabled: " + swipeVolumeEnabled);
 
-                // TODO: Post swipe volume status event to EventBus once event class is created
-                // EventBus.getDefault().post(new SwipeVolumeStatusEvent(
-                //         smartGlassesDevice.deviceModelName,
-                //         swipeVolumeEnabled,
-                //         swipeTimestamp));
-
-                // // For now, forward to data observable for app consumption
-                // if (dataObservable != null) {
-                //     dataObservable.onNext(json);
-                // }
+                // Send swipe volume status to React Native
+                Bridge.sendSwipeVolumeStatus(swipeVolumeEnabled, swipeTimestamp);
                 break;
 
             case "switch_status":
@@ -1843,17 +1833,8 @@ public class MentraLive extends SGCManager {
                 Log.d(TAG, "🔘 Received switch status - Type: " + switchType +
                       ", Value: " + switchValue);
 
-                // TODO: Post switch status event to EventBus once event class is created
-                // EventBus.getDefault().post(new SwitchStatusEvent(
-                //         smartGlassesDevice.deviceModelName,
-                //         switchType,
-                //         switchValue,
-                //         switchTimestamp));
-
-                // For now, forward to data observable for app consumption
-                // if (dataObservable != null) {
-                //     dataObservable.onNext(json);
-                // }
+                // Send switch status to React Native
+                Bridge.sendSwitchStatus(switchType, switchValue, switchTimestamp);
                 break;
 
             case "sensor_data":
@@ -2247,12 +2228,17 @@ public class MentraLive extends SGCManager {
                         }
                         if (ready == 1) {
                             Bridge.log("LIVE: K900 SOC ready");
-                            JSONObject readyMsg = new JSONObject();
-                            readyMsg.put("type", "phone_ready");
-                            readyMsg.put("timestamp", System.currentTimeMillis());
+                            // Only send phone_ready if we haven't already established connection
+                            // This prevents re-initialization on every heartbeat after initial connection
+                            // The glassesReady flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
+                            if (!glassesReady) {
+                                JSONObject readyMsg = new JSONObject();
+                                readyMsg.put("type", "phone_ready");
+                                readyMsg.put("timestamp", System.currentTimeMillis());
 
-                            // Send it through our data channel
-                            sendJson(readyMsg, true);
+                                // Send it through our data channel
+                                sendJson(readyMsg, true);
+                            }
                         }
                         int charg = bodyObj.optInt("charg", -1);
                         if (batteryPercentage != -1 && charg != -1)
@@ -2856,8 +2842,8 @@ public class MentraLive extends SGCManager {
         return isMicrophoneEnabled;
     }
 
-    public void requestPhoto(String requestId, String appId, String webhookUrl, String authToken, String size) {
-        Bridge.log("LIVE: Requesting photo: " + requestId + " for app: " + appId + " with webhookUrl: " + webhookUrl + ", authToken: " + (authToken.isEmpty() ? "none" : "***") + ", size=" + size);
+    public void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken, String compress) {
+        Bridge.log("LIVE: Requesting photo: " + requestId + " for app: " + appId + " with size: " + size + ", webhookUrl: " + webhookUrl + ", authToken: " + (authToken.isEmpty() ? "none" : "***") + ", compress=" + compress);
 
         try {
             JSONObject json = new JSONObject();
@@ -2872,6 +2858,11 @@ public class MentraLive extends SGCManager {
             }
             if (size != null && !size.isEmpty()) {
                 json.put("size", size);
+            }
+            if (compress != null && !compress.isEmpty()) {
+                json.put("compress", compress);
+            } else {
+                json.put("compress", "none");
             }
 
             // Always generate BLE ID for potential fallback
