@@ -121,7 +121,8 @@ class CoreModule : Module() {
         AsyncFunction("microphoneStateChange") {
                 requiredDataStrings: List<String>,
                 bypassVad: Boolean ->
-            coreManager?.handle_microphone_state_change(requiredDataStrings, bypassVad)
+            val requiredData = CoreManager.SpeechRequiredDataType.fromStringArray(requiredDataStrings)
+            coreManager?.handle_microphone_state_change(requiredData, bypassVad)
         }
 
         AsyncFunction("restartTranscriber") { coreManager?.restartTranscriber() }

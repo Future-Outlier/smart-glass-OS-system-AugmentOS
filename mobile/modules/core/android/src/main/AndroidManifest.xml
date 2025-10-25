@@ -39,6 +39,6 @@
         <meta-data android:name="android.service.notification.disabled_filter_types" android:value="ongoing|silent"/>
     </service>
 
-    <service android:name="com.mentra.mentra.services.ForegroundService" android:exported="false" android:foregroundServiceType="dataSync|connectedDevice|microphone"/>
+    <service android:name="com.mentra.core.services.ForegroundService" android:exported="false" android:foregroundServiceType="dataSync|connectedDevice|microphone"/>
   </application>
 </manifest>

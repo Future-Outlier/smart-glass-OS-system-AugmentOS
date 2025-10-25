@@ -1,9 +1,10 @@
 "on":
   push:
     branches:
-      - cloud/livekit-reconnect
+      - cloud/fix-tsconfig-types
     paths:
       - "cloud/**"
+      - ".github/workflows/porter-debug.yml"
 name: 🚀 [debug] Porter.run Deploy
 jobs:
   porter-deploy:

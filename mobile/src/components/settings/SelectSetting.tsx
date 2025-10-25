@@ -129,11 +129,11 @@ const SelectSetting: React.FC<SelectSettingProps> = ({
                           onValueChange(item.value)
                           setModalVisible(false)
                         }}>
-                        <MaterialCommunityIcons
-                          name="check"
-                          size={24}
-                          color={item.value === value ? theme.colors.primary : "transparent"}
-                        />
+                        {item.value === value ? (
+                          <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                        ) : (
+                          <View style={{width: 24, height: 24}} />
+                        )}
                         <Text
                           text={item.label}
                           style={[styles.optionText, {color: theme.colors.text, flex: 1, marginLeft: theme.spacing.xs}]}

@@ -266,6 +266,9 @@ const en = {
   },
   transcription: {
     downloadModelToEnableLocalTranscription: "Download a model to enable local transcription",
+    noModelInstalled: "No Speech Model Installed",
+    noModelInstalledMessage: "To use offline Live Captions, you need to download a speech recognition model first.",
+    goToSettings: "Go to Settings",
   },
   profileSettings: {
     title: "Profile Settings",
