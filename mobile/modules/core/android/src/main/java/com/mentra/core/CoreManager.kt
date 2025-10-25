@@ -70,7 +70,7 @@ class CoreManager {
     private var screenDisabled = false
     private var isSearching = false
     private var onboardMicUnavailable = false
-    public val currentRequiredData = mutableListOf<String>()
+    public val currentRequiredData = mutableListOf<SpeechRequiredDataType>()
 
     // glasses settings
     private var contextualDashboard = true
@@ -352,10 +352,47 @@ class CoreManager {
         var animationData: Map<String, Any>?
     )
 
-    enum class SpeechRequiredDataType {
-        PCM,
-        TRANSCRIPTION,
-        PCM_OR_TRANSCRIPTION
+    enum class SpeechRequiredDataType(val rawValue: String) {
+        PCM("pcm"),
+        TRANSCRIPTION("transcription"),
+        PCM_OR_TRANSCRIPTION("pcm_or_transcription");
+
+        companion object {
+            /**
+             * Convert from string value to enum
+             * @param value The string value to convert
+             * @return The corresponding enum value, or null if not found
+             */
+            fun fromString(value: String): SpeechRequiredDataType? {
+                return values().find { it.rawValue == value }
+            }
+
+            /**
+             * Convert array of strings to array of enums
+             * @param stringArray Array of string values
+             * @return Array of enum values, filtering out invalid strings
+             */
+            fun fromStringArray(stringArray: List<String>): List<SpeechRequiredDataType> {
+                return stringArray.mapNotNull { fromString(it) }
+            }
+
+            /**
+             * Convert array of enums to array of strings
+             * @param enumArray Array of enum values
+             * @return Array of string values
+             */
+            fun toStringArray(enumArray: List<SpeechRequiredDataType>): List<String> {
+                return enumArray.map { it.rawValue }
+            }
+        }
+
+        /**
+         * Convert enum to string value
+         * @return The string representation of the enum
+         */
+        override fun toString(): String {
+            return rawValue
+        }
     }
     // MARK: - End Unique
 
@@ -684,7 +721,7 @@ class CoreManager {
     fun updateEnforceLocalTranscription(enabled: Boolean) {
         enforceLocalTranscription = enabled
 
-        if (currentRequiredData.contains("PCM_OR_TRANSCRIPTION")) {
+        if (currentRequiredData.contains(SpeechRequiredDataType.PCM_OR_TRANSCRIPTION)) {
             if (enforceLocalTranscription) {
                 shouldSendTranscript = true
                 shouldSendPcmData = false
@@ -701,9 +738,9 @@ class CoreManager {
         offlineMode = enabled
         Bridge.log("Mentra: updating offline mode $enabled")
 
-        val requiredData = mutableListOf<String>()
+        val requiredData = mutableListOf<SpeechRequiredDataType>()
         if (enabled) {
-            requiredData.add("TRANSCRIPTION")
+            requiredData.add(SpeechRequiredDataType.TRANSCRIPTION)
         }
 
         handle_microphone_state_change(requiredData, bypassVadForPCM)
@@ -954,7 +991,7 @@ class CoreManager {
         sgc?.stopVideoRecording(requestId)
     }
 
-    fun handle_microphone_state_change(requiredData: List<String>, bypassVad: Boolean) {
+    fun handle_microphone_state_change(requiredData: List<SpeechRequiredDataType>, bypassVad: Boolean) {
         Bridge.log(
             "MAN: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad offlineMode=$offlineMode"
         )
@@ -970,31 +1007,31 @@ class CoreManager {
 
         val mutableRequiredData = requiredData.toMutableList()
         if (offlineMode &&
-            !mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") &&
-            !mutableRequiredData.contains("TRANSCRIPTION")
+            !mutableRequiredData.contains(SpeechRequiredDataType.PCM_OR_TRANSCRIPTION) &&
+            !mutableRequiredData.contains(SpeechRequiredDataType.TRANSCRIPTION)
         ) {
             Bridge.log("MAN: MIC: Offline mode active - adding TRANSCRIPTION requirement")
-            mutableRequiredData.add("TRANSCRIPTION")
+            mutableRequiredData.add(SpeechRequiredDataType.TRANSCRIPTION)
         }
 
         when {
-            mutableRequiredData.contains("PCM") &&
-                    mutableRequiredData.contains("TRANSCRIPTION") -> {
+            mutableRequiredData.contains(SpeechRequiredDataType.PCM) &&
+                    mutableRequiredData.contains(SpeechRequiredDataType.TRANSCRIPTION) -> {
                 shouldSendPcmData = true
                 shouldSendTranscript = true
             }
 
-            mutableRequiredData.contains("PCM") -> {
+            mutableRequiredData.contains(SpeechRequiredDataType.PCM) -> {
                 shouldSendPcmData = true
                 shouldSendTranscript = false
             }
 
-            mutableRequiredData.contains("TRANSCRIPTION") -> {
+            mutableRequiredData.contains(SpeechRequiredDataType.TRANSCRIPTION) -> {
                 shouldSendTranscript = true
                 shouldSendPcmData = false
             }
 
-            mutableRequiredData.contains("PCM_OR_TRANSCRIPTION") -> {
+            mutableRequiredData.contains(SpeechRequiredDataType.PCM_OR_TRANSCRIPTION) -> {
                 if (enforceLocalTranscription) {
                     shouldSendTranscript = true
                     shouldSendPcmData = false
@@ -1007,6 +1044,8 @@ class CoreManager {
 
         vadBuffer.clear()
         micEnabled = mutableRequiredData.isNotEmpty()
+
+        Bridge.log("MAN: MIC: Result - shouldSendPcmData=$shouldSendPcmData, shouldSendTranscript=$shouldSendTranscript, micEnabled=$micEnabled")
 
         updateMicrophoneState()
     }
