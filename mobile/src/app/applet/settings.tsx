@@ -218,7 +218,7 @@ export default function AppSettings() {
       if (!data) {
         setServerAppInfo({
           name: appInfo?.name || appName,
-          description: appInfo?.description || "No description available.",
+          description: data?.description || "No description available.",
           settings: [],
           uninstallable: true,
         })
@@ -274,7 +274,7 @@ export default function AppSettings() {
       console.error("Error fetching App settings:", err)
       setServerAppInfo({
         name: appInfo?.name || appName,
-        description: appInfo?.description || "No description available.",
+        description: "No description available.",
         settings: [],
         uninstallable: true,
       })
@@ -556,11 +556,13 @@ export default function AppSettings() {
             <View style={themed($rightColumn)}>
               <View style={themed($textContainer)}>
                 <Text style={themed($appNameSmall)}>{appInfo.name}</Text>
-                <Text style={themed($versionText)}>{appInfo.version || "1.0.0"}</Text>
+                {serverAppInfo?.version && (
+                  <Text style={themed($versionText)}>{serverAppInfo?.version || "1.0.0"}</Text>
+                )}
               </View>
               <View style={themed($buttonContainer)}>
                 <PillButton
-                  text={appInfo.is_running ? "Stop" : "Start"}
+                  text={appInfo.running ? "Stop" : "Start"}
                   onPress={handleStartStopApp}
                   variant="icon"
                   buttonStyle={{paddingHorizontal: theme.spacing.lg, minWidth: 80}}
@@ -569,7 +571,7 @@ export default function AppSettings() {
             </View>
           </View>
 
-          {appInfo.isOnline === false && (
+          {!appInfo.healthy && !appInfo.offline && (
             <View
               style={{
                 flexDirection: "row",
@@ -591,7 +593,7 @@ export default function AppSettings() {
 
           {/* Description Section */}
           <View style={themed($descriptionSection)}>
-            <Text style={themed($descriptionText)}>{appInfo.description || "No description available."}</Text>
+            <Text style={themed($descriptionText)}>{serverAppInfo?.description || "No description available."}</Text>
           </View>
 
           <Divider variant="full" />
