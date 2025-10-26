@@ -220,10 +220,13 @@ class PhoneMic private constructor(private val context: Context) {
 
     private fun startRecordingWithSco(): Boolean {
         try {
+            // Use MODE_IN_COMMUNICATION instead of MODE_IN_CALL
+            // This allows media playback to coexist with microphone recording
+            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+
             // Start Bluetooth SCO
             audioManager.startBluetoothSco()
             audioManager.isBluetoothScoOn = true
-            audioManager.mode = AudioManager.MODE_IN_CALL
 
             // Wait briefly for SCO to connect
             Thread.sleep(100)
@@ -777,6 +780,23 @@ class PhoneMic private constructor(private val context: Context) {
 
     fun cleanup() {
         stopRecording()
+
+        // CRITICAL: Force reset audio mode to prevent system-wide Bluetooth audio breakage
+        // This ensures that even if stopRecording() failed, we restore normal audio routing
+        try {
+            if (audioManager.isBluetoothScoOn) {
+                Bridge.log("MIC: Force stopping Bluetooth SCO in cleanup")
+                audioManager.stopBluetoothSco()
+                audioManager.isBluetoothScoOn = false
+            }
+
+            if (audioManager.mode != AudioManager.MODE_NORMAL) {
+                Bridge.log("MIC: Force resetting audio mode to NORMAL in cleanup")
+                audioManager.mode = AudioManager.MODE_NORMAL
+            }
+        } catch (e: Exception) {
+            Bridge.log("MIC: Error during audio mode cleanup: ${e.message}")
+        }
 
         // Unregister listeners
         phoneStateListener?.let { telephonyManager?.listen(it, PhoneStateListener.LISTEN_NONE) }
