@@ -62,7 +62,7 @@ const getCameraIcon = (isDark: boolean) => {
  */
 
 export const cameraPackageName = "com.mentra.camera"
-export const captionsPackageName = "com.augmentos.livecaptions"
+export const captionsPackageName = "com.augmentos.offlineCaptions"
 
 // get offline applets:
 export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
@@ -89,7 +89,7 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
     },
     {
       packageName: captionsPackageName,
-      name: "Live Captions",
+      name: "Offline Captions",
       type: "standard", // Foreground app (only one at a time)
       offline: true, // Works without internet connection
       // logoUrl: getCaptionsIcon(isDark),
