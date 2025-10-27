@@ -62,7 +62,7 @@ const getCameraIcon = (isDark: boolean) => {
  */
 
 export const cameraPackageName = "com.mentra.camera"
-export const captionsPackageName = "com.augmentos.offlineCaptions"
+export const captionsPackageName = "com.augmentos.livecaptions"
 
 // get offline applets:
 export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
@@ -89,7 +89,7 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
     },
     {
       packageName: captionsPackageName,
-      name: "Offline Captions",
+      name: "Live Captions",
       type: "standard", // Foreground app (only one at a time)
       offline: true, // Works without internet connection
       // logoUrl: getCaptionsIcon(isDark),
@@ -197,7 +197,8 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     }
 
     // Validate offline Live Captions has a speech model installed
-    if (packageName === captionsPackageName) {
+    // Only check for offline version - online version uses cloud STT
+    if (packageName === captionsPackageName && applet.offline) {
       const modelAvailable = await STTModelManager.isModelAvailable()
       if (!modelAvailable) {
         showAlert(
