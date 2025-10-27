@@ -44,9 +44,15 @@ export const AllProviders = withWrappers(
   ModalProvider,
   props => {
     const posthogApiKey = Constants.expoConfig?.extra?.POSTHOG_API_KEY
+    const deploymentRegion = Constants.expoConfig?.extra?.DEPLOYMENT_REGION
+    const isChina = deploymentRegion === "china"
     // If no API key is provided, disable PostHog to prevent errors
     if (!posthogApiKey || posthogApiKey.trim() === "") {
       console.log("PostHog API key not found, disabling PostHog analytics")
+      return <>{props.children}</>
+    }
+    if (isChina) {
+      console.log("PostHog is disabled for China")
       return <>{props.children}</>
     }
     return (
