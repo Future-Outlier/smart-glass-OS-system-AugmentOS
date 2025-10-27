@@ -895,6 +895,11 @@ class CoreManager {
             handleMach1Ready()
         }
 
+        // Re-apply microphone settings after reconnection
+        // Cache was cleared on disconnect, so this will definitely send commands
+        Bridge.log("MAN: Re-applying microphone settings after reconnection")
+        updateMicrophoneState()
+
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
         Bridge.saveSetting("device_name", deviceName)
@@ -943,6 +948,7 @@ class CoreManager {
     private fun handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         isHeadUp = false
+        lastMicState = null  // Clear cache - hardware is definitely off now
         handle_request_status()
     }
 

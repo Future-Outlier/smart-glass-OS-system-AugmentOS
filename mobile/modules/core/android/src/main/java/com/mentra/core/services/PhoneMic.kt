@@ -47,6 +47,7 @@ class PhoneMic private constructor(private val context: Context) {
         private const val MAX_SCO_RETRIES = 3
         private const val FOCUS_REGAIN_DELAY_MS = 500L
         private const val SAMSUNG_MIC_TEST_DELAY_MS = 500L
+        private const val MIC_SWITCH_DELAY_MS = 300L  // Time for CoreManager to switch mics
     }
 
     // Audio recording components
@@ -398,10 +399,9 @@ class PhoneMic private constructor(private val context: Context) {
                                     // Notify CoreManager BEFORE stopping - allows switch to glasses mic
                                     notifyCoreManager("phone_call_interruption", emptyList())
                                     // Give CoreManager time to switch to glasses mic
-                                    // 300ms matches the mic setup delay from the old implementation
                                     mainHandler.postDelayed({
                                         stopRecording()
-                                    }, 300)
+                                    }, MIC_SWITCH_DELAY_MS)
                                 } else {
                                     // Not currently recording, but still notify about unavailability
                                     notifyCoreManager("phone_call_interruption", emptyList())
@@ -450,10 +450,9 @@ class PhoneMic private constructor(private val context: Context) {
                                                         emptyList()
                                                 )
                                                 // Give CoreManager time to switch to glasses mic
-                                                // 300ms matches the mic setup delay from the old implementation
                                                 mainHandler.postDelayed({
                                                     stopRecording()
-                                                }, 300)
+                                                }, MIC_SWITCH_DELAY_MS)
                                             }
                                         },
                                         500
@@ -505,10 +504,9 @@ class PhoneMic private constructor(private val context: Context) {
                                         // Notify CoreManager BEFORE stopping - allows switch to glasses mic
                                         notifyCoreManager("external_app_recording", emptyList())
                                         // Give CoreManager time to switch to glasses mic before releasing phone mic
-                                        // 300ms matches the mic setup delay from the old implementation
                                         mainHandler.postDelayed({
                                             stopRecording()
-                                        }, 300)
+                                        }, MIC_SWITCH_DELAY_MS)
                                     } else {
                                         // Not currently recording, but still notify about unavailability
                                         notifyCoreManager("external_app_recording", emptyList())
