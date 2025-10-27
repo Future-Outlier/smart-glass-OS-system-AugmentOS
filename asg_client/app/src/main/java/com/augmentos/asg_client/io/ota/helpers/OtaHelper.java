@@ -242,8 +242,8 @@ public class OtaHelper {
                 
                 // Check if new format (multiple apps) or legacy format
                 if (json.has("apps")) {
-                    // New format - process sequentially
-                    processAppsSequentially(json.getJSONObject("apps"), context);
+                    // New format - process sequentially (pass root JSON for firmware access)
+                    processAppsSequentially(json, context);
                 } else {
                     // Legacy format - only ASG client
                     Log.d(TAG, "Using legacy version.json format");
@@ -260,13 +260,39 @@ public class OtaHelper {
     }
     
     private String fetchVersionInfo(String url) throws Exception {
-        BufferedReader reader = new BufferedReader(
-            new InputStreamReader(new URL(url).openStream())
-        );
-        return reader.lines().collect(Collectors.joining("\n"));
+        Log.i(TAG, "📡 Fetching version info from: " + url);
+        
+        // STUB MODE: Return hardcoded version info for testing
+        String versionJson = "{\n" +
+            "  \"apps\": {\n" +
+            "    \"com.augmentos.asg_client\": {\n" +
+            "      \"versionCode\": 13,\n" +
+            "      \"versionName\": \"1.3\",\n" +
+            "      \"apkUrl\": \"https://github.com/Mentra-Community/MentraOS/releases/download/mentra-live-asg-final-2/asg-client-13.apk\",\n" +
+            "      \"sha256\": \"48ddac61123606b77622443ffbe4baae5eb395de572f03e2039a2978c0b850f7\",\n" +
+            "      \"releaseNotes\": \"ASG Client updates\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"bes_firmware\": {\n" +
+            "    \"versionCode\": 10203,\n" +
+            "    \"versionName\": \"1.2.3\",\n" +
+            "    \"firmwareUrl\": \"https://github.com/Mentra-Community/MentraOS/releases/download/mentra-live-asg-final-2/bes_firmware_v1.2.3.bin\",\n" +
+            "    \"sha256\": \"YOUR_SHA256_HASH_HERE\",\n" +
+            "    \"fileSize\": 1048576,\n" +
+            "    \"releaseNotes\": \"BES2700 firmware improvements\"\n" +
+            "  }\n" +
+            "}";
+        
+        Log.d(TAG, "🚧 STUB MODE: Returning hardcoded version info (" + versionJson.length() + " bytes)");
+        Log.d(TAG, "📄 Version JSON content: " + versionJson);
+        
+        return versionJson;
     }
     
-    private void processAppsSequentially(JSONObject apps, Context context) throws Exception {
+    private void processAppsSequentially(JSONObject rootJson, Context context) throws Exception {
+        // Get the apps object from root
+        JSONObject apps = rootJson.getJSONObject("apps");
+        
         // Process apps in order - important for sequential updates
         String[] orderedPackages = {
             "com.augmentos.asg_client",     // Update ASG client first
@@ -308,9 +334,9 @@ public class OtaHelper {
         }
         
         // PHASE 2: Update BES firmware (only if no APK update)
-        if (!apkUpdateNeeded && apps.has("bes_firmware")) {
+        if (!apkUpdateNeeded && rootJson.has("bes_firmware")) {
             Log.i(TAG, "No APK updates needed - checking BES firmware");
-            checkAndUpdateBesFirmware(apps.getJSONObject("bes_firmware"), context);
+            checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context);
         } else if (apkUpdateNeeded) {
             Log.i(TAG, "APK update performed - BES firmware check will happen after restart");
         }
@@ -933,6 +959,27 @@ public class OtaHelper {
             String versionName = firmwareInfo.optString("versionName", "unknown");
             
             Log.i(TAG, "BES firmware available - Version: " + versionName + " (code: " + serverVersion + ")");
+            
+            // Get current firmware version from BES device
+            byte[] currentVersion = BesOtaManager.getCurrentFirmwareVersion();
+            byte[] serverVersionBytes = BesOtaManager.parseServerVersionCode(serverVersion);
+            
+            // Compare versions if both available
+            if (currentVersion != null && serverVersionBytes != null) {
+                boolean isNewer = BesOtaManager.isNewerVersion(serverVersionBytes, currentVersion);
+                Log.d(TAG, "Current firmware: " + (currentVersion[0] & 0xFF) + "." + 
+                      (currentVersion[1] & 0xFF) + "." + (currentVersion[2] & 0xFF) + "." + (currentVersion[3] & 0xFF));
+                Log.d(TAG, "Server firmware: " + (serverVersionBytes[0] & 0xFF) + "." + 
+                      (serverVersionBytes[1] & 0xFF) + "." + (serverVersionBytes[2] & 0xFF) + "." + (serverVersionBytes[3] & 0xFF));
+                
+                if (!isNewer) {
+                    Log.i(TAG, "Server firmware version is not newer - skipping update");
+                    return false;
+                }
+                Log.i(TAG, "Server firmware version is newer - proceeding with update");
+            } else if (currentVersion == null) {
+                Log.w(TAG, "Current firmware version not available - proceeding with update anyway");
+            }
             
             // Download firmware file
             String firmwareUrl = firmwareInfo.getString("firmwareUrl");

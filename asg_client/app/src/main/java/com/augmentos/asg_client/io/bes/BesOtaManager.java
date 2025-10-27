@@ -25,6 +25,7 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
     public static volatile boolean isBesOtaInProgress = false;
     
     private static BesOtaManager mInstance;
+    private static byte[] sCurrentFirmwareVersion = null; // Store current firmware version bytes
     private String filePath;
     private boolean bInit = false;
     private byte[] fileData = null;
@@ -60,6 +61,51 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
      */
     public static void setInstance(BesOtaManager instance) {
         mInstance = instance;
+    }
+    
+    /**
+     * Get current firmware version from BES device
+     * @return byte array with [major, minor, patch, build] or null if not available
+     */
+    public static byte[] getCurrentFirmwareVersion() {
+        return sCurrentFirmwareVersion;
+    }
+    
+    /**
+     * Convert server version code (long) to BES firmware version format (byte array)
+     * Server version format: XYYYYZZ where X=major, Y=minor, Z=patch
+     * BES format: [major, minor, patch, build]
+     * @param versionCode Server version code
+     * @return byte array [major, minor, patch, build]
+     */
+    public static byte[] parseServerVersionCode(long versionCode) {
+        int major = (int)(versionCode / 1000000);
+        int minor = (int)((versionCode / 1000) % 1000);
+        int patch = (int)(versionCode % 1000);
+        int build = 0; // Build not specified in version code
+        
+        return new byte[]{(byte)major, (byte)minor, (byte)patch, (byte)build};
+    }
+    
+    /**
+     * Compare two BES firmware versions
+     * @param v1 First version
+     * @param v2 Second version
+     * @return true if v1 is newer than v2, false otherwise
+     */
+    public static boolean isNewerVersion(byte[] v1, byte[] v2) {
+        if (v1 == null || v2 == null || v1.length < 4 || v2.length < 4) {
+            return false;
+        }
+        
+        // Compare major.minor.patch.build
+        for (int i = 0; i < 4; i++) {
+            int b1 = v1[i] & 0xFF;
+            int b2 = v2[i] & 0xFF;
+            if (b1 > b2) return true;
+            if (b1 < b2) return false;
+        }
+        return false;
     }
     
     public void registerCmdListener(BesOtaCommandListener listener) {
@@ -405,6 +451,8 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
                 if (BesOtaUtil.isMagicCodeValid(msg.body, 0, 4)) {
                     byte[] firmware = BesOtaUtil.getFirmwareVersion(msg.body, 5, 4);
                     if (firmware != null) {
+                        // Store current firmware version for comparison
+                        sCurrentFirmwareVersion = firmware;
                         Log.i(TAG, "Current firmware version: " + firmware[0] + "." + firmware[1] + "." + firmware[2] + "." + firmware[3]);
                     }
                     byte[] data = SCmd_SelectSide();
