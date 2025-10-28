@@ -204,11 +204,11 @@ export class CoreStatusParser {
           core_token: coreInfo.core_token ?? null,
           cloud_connection_status: coreInfo.cloud_connection_status ?? "DISCONNECTED",
           default_wearable:
-            hasConnectedGlasses && !status.core_info.default_wearable
+            hasConnectedGlasses && !coreInfo.default_wearable
               ? status.connected_glasses.model_name
-              : (status.core_info.default_wearable ?? null),
-          is_mic_enabled_for_frontend: status.core_info.is_mic_enabled_for_frontend ?? false,
-          is_searching: status.core_info.is_searching ?? false,
+              : (coreInfo.default_wearable ?? null),
+          is_mic_enabled_for_frontend: coreInfo.is_mic_enabled_for_frontend ?? false,
+          is_searching: coreInfo.is_searching ?? false,
         },
         glasses_info: status.connected_glasses
           ? {
