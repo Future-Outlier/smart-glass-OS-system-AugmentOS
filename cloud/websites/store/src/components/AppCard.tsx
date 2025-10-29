@@ -1,9 +1,24 @@
 import { memo, useState } from "react";
-import { Lock } from "lucide-react";
 import { Button } from "./ui/button";
 import { AppI } from "../types";
 
-// ... existing code ...
+// Tag mapping for apps
+const APP_TAGS: Record<string, string[]> = {
+  X: ["Social", "News", "Media"],
+  Merge: ["Chat", "Social"],
+  "Live Captions": ["Language", "Communication"],
+  Streamer: ["Video", "Broadcast"],
+  Translation: ["Language", "Communication"],
+  LinkLingo: ["Language", "Learning"],
+  "Mentra Notes": ["Tools"],
+  Dash: ["Fitness", "Running"],
+  Calendar: ["Time", "Schedule"],
+  Teleprompter: ["Media", "Tools"],
+  MemCards: ["Learning", "Memory"],
+};
+
+// Fallback tags for apps without specific tags
+const FALLBACK_TAGS = ["App", "Utility"];
 
 interface AppCardProps {
   app: AppI;
@@ -73,7 +88,7 @@ const AppCard: React.FC<AppCardProps> = memo(
         }
       >
         <div
-          className="absolute bottom-0 left-3 right-3 h-px"
+          className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-px w-75"
           style={{ backgroundColor: "var(--border-color)" }}
         ></div>
 
@@ -109,10 +124,10 @@ const AppCard: React.FC<AppCardProps> = memo(
         </div>
 
         {/* Content Column */}
-        <div className="flex-1 flex flex-col justify-center min-w-0">
+        <div className="flex-1 flex flex-col justify-end min-w-0">
           <div>
             <h3
-              className="text-[15px] font-medium mb-1 truncate"
+              className="text-[16px] font-medium -mb-[2px] truncate "
               style={{
                 fontFamily: '"SF Pro Rounded", sans-serif',
                 letterSpacing: "0.04em",
@@ -122,15 +137,42 @@ const AppCard: React.FC<AppCardProps> = memo(
               {app.name}
             </h3>
 
+            {/* Tags */}
+            <div className="flex gap-1 mb-1 flex-wrap items-center">
+              {(APP_TAGS[app.name] || FALLBACK_TAGS).map((tag, index) => (
+                <span key={tag} className="flex items-center gap-1">
+                  <span
+                    className="text-[13px] font-medium  -mb-[4px]"
+                    style={{
+                      fontFamily: '"SF Pro Rounded", sans-serif',
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    {tag}
+                  </span>
+                  {index < (APP_TAGS[app.name] || FALLBACK_TAGS).length - 1 && (
+                    <span
+                      className="text-[12px]"
+                      style={{
+                        color: theme === "light" ? "#9E9E9E" : "#666666",
+                      }}
+                    >
+                      •
+                    </span>
+                  )}
+                </span>
+              ))}
+            </div>
+
             {app.description && (
               <p
-                className="text-[15px] font-normal leading-[1.3] line-clamp-3 break-words"
+                className="text-[11px] font-normal leading-[1.3] line-clamp-1 break-words mb-[3px]"
                 style={{
                   fontFamily: '"SF Pro Rounded", sans-serif',
                   letterSpacing: "0.04em",
                   color: theme === "light" ? "#4a4a4a" : "#9A9CAC",
-                  WebkitLineClamp: 3,
-                  height: "3.9em",
+                  WebkitLineClamp: 1,
+                  height: "1.3em",
                   display: "-webkit-box",
                   WebkitBoxOrient: "vertical",
                   overflow: "hidden",
@@ -170,12 +212,14 @@ const AppCard: React.FC<AppCardProps> = memo(
               ) : (
                 <Button
                   disabled={true}
-                  className="text-[15px] font-normal tracking-[0.1em] px-4 py-[6px] rounded-full w-fit h-fit opacity-30 cursor-not-allowed"
-                  style={{
-                    backgroundColor: "var(--button-bg)",
-                    color: "var(--button-text)",
-                    filter: "grayscale(100%)",
-                  }}
+                  className="text-[11px] font-normal tracking-[0.1em] px-4 py-[6px] rounded-full w-fit h-fit opacity-30 cursor-not-allowed bg-white text-black"
+                  style={
+                    {
+                      // backgroundColor: "var(--button-bg)",
+                      // color: "var(--button-text)",
+                      // filter: "grayscale(100%)",
+                    }
+                  }
                 >
                   Installed
                 </Button>
@@ -184,7 +228,7 @@ const AppCard: React.FC<AppCardProps> = memo(
               <Button
                 onClick={handleInstallClick}
                 disabled={installingApp === app.packageName}
-                className="text-[15px] font-normal tracking-[0.1em] px-4 py-[6px] rounded-full w-fit h-fit"
+                className="text-[11px] font-normal tracking-[0.1em] px-4 py-[6px] rounded-full w-[70px] h-fit "
                 style={{
                   backgroundColor: "var(--button-bg)",
                   color: "var(--button-text)",
@@ -200,7 +244,7 @@ const AppCard: React.FC<AppCardProps> = memo(
                 {installingApp === app.packageName ? (
                   <>
                     <div
-                      className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full mr-2"
+                      className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full mr-2 text-[11px]"
                       style={{
                         borderColor: "var(--button-text)",
                         borderTopColor: "transparent",
@@ -209,7 +253,7 @@ const AppCard: React.FC<AppCardProps> = memo(
                     Installing
                   </>
                 ) : (
-                  "Get"
+                  <div className="text-[11px] font-bold">Get</div>
                 )}
               </Button>
             )
@@ -228,8 +272,8 @@ const AppCard: React.FC<AppCardProps> = memo(
                 (e.currentTarget.style.backgroundColor = "var(--button-bg)")
               }
             >
-              <Lock className="h-4 w-4 mr-1" />
-              Sign in
+              <div className="text-[11px] font-bold">Get</div>
+              {/* <Lock className="h-4 w-4 mr-1" /> */}
             </Button>
           )}
         </div>

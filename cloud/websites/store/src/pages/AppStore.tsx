@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { X, Building } from "lucide-react";
+import { X, Building, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { usePlatform } from "../hooks/usePlatform";
@@ -13,6 +14,12 @@ import Header from "../components/Header_v2";
 import AppCard from "../components/AppCard";
 import { toast } from "sonner";
 import { formatCompatibilityError } from "../utils/errorHandling";
+import {
+  CaptionsSlide,
+  MergeSlide,
+  StreamSlide,
+  XSlide,
+} from "../components/ui/slides";
 
 // Extend window interface for React Native WebView
 declare global {
@@ -52,11 +59,61 @@ const AppStore: React.FC = () => {
   const [activeOrgFilter, setActiveOrgFilter] = useState<string | null>(orgId);
   const [orgName, setOrgName] = useState<string>("");
 
+  // Slideshow state
+  const slideComponents = [CaptionsSlide, MergeSlide, StreamSlide, XSlide];
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const slideIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   // Helper function to check if authentication tokens are ready
   const isAuthTokenReady = () => {
     if (!isAuthenticated) return true; // Not authenticated, no token needed
     return !authLoading && (supabaseToken || coreToken); // Authenticated and has token
   };
+
+  // Slideshow navigation functions
+  const goToNextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % slideComponents.length);
+  }, [slideComponents.length]);
+
+  // Helper function to reset the slideshow timer
+  const resetSlideTimer = useCallback(() => {
+    if (slideIntervalRef.current) {
+      clearInterval(slideIntervalRef.current);
+    }
+    slideIntervalRef.current = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slideComponents.length);
+    }, 1500000);
+  }, [slideComponents.length]);
+
+  const goToPrevSlide = useCallback(() => {
+    setCurrentSlide(
+      (prev) => (prev - 1 + slideComponents.length) % slideComponents.length,
+    );
+    resetSlideTimer();
+  }, [slideComponents.length, resetSlideTimer]);
+
+  const goToSlide = useCallback(
+    (index: number) => {
+      setCurrentSlide(index);
+      resetSlideTimer();
+    },
+    [resetSlideTimer],
+  );
+
+  // Auto-play slideshow
+  useEffect(() => {
+    // Start auto-play
+    slideIntervalRef.current = setInterval(() => {
+      goToNextSlide();
+    }, 1500000); // Change slide every 15 seconds
+
+    // Cleanup on unmount
+    return () => {
+      if (slideIntervalRef.current) {
+        clearInterval(slideIntervalRef.current);
+      }
+    };
+  }, [goToNextSlide]);
 
   // Fetch apps on component mount or when org filter changes
   useEffect(() => {
@@ -445,8 +502,8 @@ const AppStore: React.FC = () => {
       />
 
       {/* Main Content */}
-      <main className="container mx-auto py-4 sm:py-8">
-        {/* Search bar on mobile only */}
+      {/* Search bar on mobile only */}
+      <main className="pr-25 pl-25 pb-10 pt-10">
         {isMobile && (
           <div
             className="mb-4 sm:mb-8 px-4 pb-4 sm:pb-8"
@@ -505,7 +562,7 @@ const AppStore: React.FC = () => {
 
         {/* Error message */}
         {error && !isLoading && (
-          <div className="my-2 sm:my-4 max-w-2xl mx-auto mx-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className=" max-w-2xl mx-auto mx-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
             <p>{error}</p>
             <button
               className="mt-2 text-sm font-medium text-red-700 hover:text-red-600"
@@ -516,49 +573,72 @@ const AppStore: React.FC = () => {
           </div>
         )}
 
-        {
-          <div className="w-full h-[500px] bg-[#ff5252] rounded-3xl relative">
-            {/* Previous Button - Left Side */}
-            <button className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-all">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 19.5L8.25 12l7.5-7.5"
-                />
-              </svg>
-            </button>
+        {/* Slideshow */}
+        <div className="w-full relative mb-8 overflow-hidden">
+          {/* Slides Container - translate horizontally based on currentSlide */}
+          <motion.div
+            className="flex"
+            animate={{ x: `-${currentSlide * 100}%` }}
+            transition={{
+              type: "tween",
+              duration: 0.5,
+              ease: "easeInOut",
+            }}
+          >
+            {slideComponents.map((SlideComponent, index) => (
+              <SlideComponent key={index} />
+            ))}
+          </motion.div>
 
-            {/* Next Button - Right Side */}
-            <button className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-all">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                />
-              </svg>
-            </button>
+          {/* Previous Button - Left Side */}
+          <motion.button
+            onClick={goToPrevSlide}
+            className="absolute left-4 top-1/2 -translate-y-1/2 bg-[#ffffff1a] hover:bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg z-10"
+            aria-label="Previous slide"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <ChevronLeft className="w-6 h-6" strokeWidth={2} />
+          </motion.button>
+
+          {/* Next Button - Right Side */}
+          <motion.button
+            onClick={goToNextSlide}
+            className="absolute right-4 top-1/2 -translate-y-1/2  bg-[#ffffff1a] hover:bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg z-10"
+            aria-label="Next slide"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <ChevronRight className="w-6 h-6" strokeWidth={2} />
+          </motion.button>
+
+          {/* Slide Indicators */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+            {slideComponents.map((_, index) => (
+              <motion.button
+                key={index}
+                onClick={() => goToSlide(index)}
+                className={`h-2 rounded-full ${
+                  index === currentSlide
+                    ? "bg-white"
+                    : "bg-white/50 hover:bg-white/75"
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+                animate={{
+                  width: index === currentSlide ? 32 : 8,
+                }}
+                transition={{ duration: 0.3 }}
+                whileHover={{ scale: 1.2 }}
+              />
+            ))}
           </div>
-        }
+        </div>
+
+        <div className="text-[25px]">Top Apps</div>
 
         {/* App grid */}
         {!isLoading && !error && (
-          <div className="mt-2 mb-2 sm:mt-8 sm:mb-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-2 sm:gap-y-12 px-0">
+          <div className="mt-2 mb-2 sm:mt-8 sm:mb-8 grid grid-cols-1 xl:grid-cols-3 ">
             {filteredApps.map((app) => (
               <AppCard
                 key={app.packageName}
