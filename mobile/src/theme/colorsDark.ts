@@ -15,7 +15,7 @@ const palette = {
   primary800: "#C4B0EE",
   primary700: "#B0B9FF",
   primary600: "#A090E6",
-  primary500: "#8070DE",
+  primary500: "#36DD88",
   primary400: "#6054D6",
   primary300: "#4040CE",
   primary200: "#202761",
@@ -109,7 +109,7 @@ export const colors = {
   textAlt: palette.neutral200,
 
   // Backgrounds
-  background: palette.primary100,
+  background: palette.neutral300,
   backgroundAlt: "#1A2050", // Subtle step lighter than primary100
   modalOverlay: "rgba(0, 0, 0, 0.7)",
 
