@@ -436,28 +436,6 @@ export default function LoginScreen() {
               </Animated.View>
             ) : (
               <View style={themed($signInOptions)}>
-                <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
-                  <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
-                    <GoogleIcon />
-                  </View>
-                  <Text style={themed($socialButtonText)} tx="login:continueWithGoogle" />
-                </TouchableOpacity>
-
-                {Platform.OS === "ios" && (
-                  <TouchableOpacity style={[themed($socialButton), themed($appleButton)]} onPress={handleAppleSignIn}>
-                    <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
-                      <AppleIcon color={theme.colors.text} />
-                    </View>
-                    <Text style={[themed($socialButtonText), themed($appleButtonText)]} tx="login:continueWithApple" />
-                  </TouchableOpacity>
-                )}
-
-                <View style={themed($dividerContainer)}>
-                  <View style={themed($divider)} />
-                  <Text style={themed($dividerText)} tx="common:or" />
-                  <View style={themed($divider)} />
-                </View>
-
                 <Button
                   tx="login:continueWithEmail"
                   style={themed($primaryButton)}
@@ -473,6 +451,21 @@ export default function LoginScreen() {
                     />
                   )}
                 />
+                <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
+                  <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
+                    <GoogleIcon />
+                  </View>
+                  <Text style={themed($socialButtonText)} tx="login:continueWithGoogle" />
+                </TouchableOpacity>
+
+                {Platform.OS === "ios" && (
+                  <TouchableOpacity style={[themed($socialButton), themed($appleButton)]} onPress={handleAppleSignIn}>
+                    <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
+                      <AppleIcon color={theme.colors.text} />
+                    </View>
+                    <Text style={[themed($socialButtonText), themed($appleButtonText)]} tx="login:continueWithApple" />
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </Animated.View>
@@ -624,7 +617,7 @@ const $enhancedInput: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $signInOptions: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  gap: spacing.xs,
+  gap: spacing.md,
 })
 
 const $socialButton: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
@@ -633,30 +626,25 @@ const $socialButton: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
   height: 44,
   borderWidth: 1,
   borderColor: colors.border,
-  borderRadius: 8,
+  borderRadius: spacing.lg,
   paddingHorizontal: spacing.sm,
-  marginBottom: spacing.xs,
-  backgroundColor: isDark ? colors.palette.transparent : colors.background,
+  backgroundColor: colors.background,
   // Remove shadows for light theme to avoid thick border appearance
-  ...(isDark
-    ? {
-        shadowOffset: {
-          width: 0,
-          height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 1,
-        elevation: 1,
-      }
-    : {}),
+  shadowOffset: {
+    width: 0,
+    height: 1,
+  },
+  shadowOpacity: 0.1,
+  shadowRadius: 1,
+  elevation: 1,
 })
 
 const $googleButton: ThemedStyle<ViewStyle> = ({colors, isDark}) => ({
-  backgroundColor: isDark ? colors.palette.transparent : colors.background,
+  backgroundColor: colors.background,
 })
 
 const $appleButton: ThemedStyle<ViewStyle> = ({colors, isDark}) => ({
-  backgroundColor: isDark ? colors.palette.transparent : colors.background,
+  backgroundColor: colors.background,
   borderColor: colors.border,
 })
 

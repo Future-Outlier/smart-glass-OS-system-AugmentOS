@@ -110,7 +110,7 @@ export const colors = {
 
   // Backgrounds
   background: palette.neutral300,
-  backgroundAlt: "#1A2050", // Subtle step lighter than primary100
+  backgroundAlt: palette.neutral200, // Subtle step lighter than primary100
   modalOverlay: "rgba(0, 0, 0, 0.7)",
 
   // Borders
@@ -129,7 +129,7 @@ export const colors = {
   warning: palette.accent300,
 
   // Common:
-  primary: palette.primary700,
+  primary: palette.primary500,
   secondary: palette.secondary300,
   accent: palette.accent300,
 

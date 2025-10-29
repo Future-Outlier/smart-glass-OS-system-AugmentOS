@@ -25,7 +25,7 @@ const palette = {
   primary800: "#E6D0E0",
   primary700: "#D8C0E7",
   primary600: "#C4B0EE",
-  primary500: "#36DD88",
+  primary500: "#00B869",
   primary400: "#8070DE",
   primary300: "#6054D6",
   primary200: "#4040CE",
@@ -138,7 +138,7 @@ export const colors = {
   warning: palette.accent300,
 
   // Common:
-  primary: palette.purpleBlue4,
+  primary: palette.primary500,
   secondary: palette.secondary600,
   accent: palette.accent500,
 

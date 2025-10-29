@@ -24,7 +24,6 @@ export type Typography = typeof typography
 export interface Theme {
   colors: Colors
   spacing: Spacing
-  borderRadius: BorderRadius
   typography: Typography
   timing: Timing
   isDark: boolean
@@ -34,7 +33,6 @@ export interface Theme {
 export const lightTheme: Theme = {
   colors: colorsLight,
   spacing: spacingLight,
-  borderRadius: borderRadiusLight,
   typography,
   timing,
   isDark: false,
@@ -42,7 +40,6 @@ export const lightTheme: Theme = {
 export const darkTheme: Theme = {
   colors: colorsDark,
   spacing: spacingDark,
-  borderRadius: borderRadiusDark,
   typography,
   timing,
   isDark: true,

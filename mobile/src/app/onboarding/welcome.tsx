@@ -7,7 +7,43 @@ import {ThemedStyle} from "@/theme"
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {FontAwesome, MaterialCommunityIcons} from "@expo/vector-icons"
-import {TextStyle, View, ViewStyle} from "react-native"
+import {ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+
+const CardButton = ({onPress, tx}: any) => {
+  const {theme, themed} = useAppTheme()
+  return (
+    <TouchableOpacity onPress={onPress} style={themed($cardButton)}>
+      {/*<Image source={require('@/assets/images/card-icon.png')} style={themed($cardButtonIcon)} />*/}
+      <Text tx={tx} style={themed($cardButtonText)} />
+    </TouchableOpacity>
+  )
+}
+
+const $cardButton: ThemedStyle<ViewStyle> = (colors, spacing) => ({
+  backgroundColor: "white",
+  borderRadius: 8,
+  padding: 16,
+  shadowColor: "#000",
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+  elevation: 5,
+})
+
+const $cardButtonIcon: ThemedStyle<ImageStyle> = (colors, spacing) => ({
+  width: 24,
+  height: 24,
+  marginRight: spacing(2),
+})
+
+const $cardButtonText: ThemedStyle<TextStyle> = (colors, spacing) => ({
+  color: colors.text,
+  fontSize: 16,
+  // fontWeight: "bold",
+})
 
 export default function OnboardingWelcome() {
   const {theme, themed} = useAppTheme()
@@ -44,11 +80,7 @@ export default function OnboardingWelcome() {
 
         <View style={themed($infoContainer)}>
           <Text style={themed($title)} tx="onboarding:welcome" />
-
-          <Text style={themed($description)} tx="onboarding:getStarted" />
-
           <Spacer height={20} />
-
           <Text style={themed($question)} tx="onboarding:doYouHaveGlasses" />
         </View>
 
@@ -110,8 +142,8 @@ const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 
 const $question: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: spacing.lg,
-  fontWeight: "600",
+  // fontWeight: "600",
   textAlign: "center",
   marginBottom: spacing.sm,
-  color: colors.text,
+  color: colors.textDim,
 })
