@@ -1,7 +1,8 @@
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {Text} from "@/components/ignite"
-import ChevronRight from "assets/icons/component/ChevronRight"
+import {ArrowLeftIcon} from "assets/icons/component/ArrowLeftIcon"
+
 import {router as _router} from "expo-router"
 import {View, TouchableOpacity, TextStyle, ViewStyle} from "react-native"
 
@@ -28,12 +29,24 @@ export default function RouteButton({label, subtitle, onPress}: RouteButtonProps
             <Text style={themed($label)}>{label}</Text>
             {subtitle && <Text style={themed($subtitle)}>{subtitle}</Text>}
           </View>
-          <ChevronRight size={24} color={theme.colors.text} />
+          <View style={themed($iconContainer)}>
+            <ArrowLeftIcon size={24} color={theme.colors.text} />
+          </View>
         </View>
       </TouchableOpacity>
     </View>
   )
 }
+
+const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  backgroundColor: colors.border,
+  padding: spacing.sm,
+  width: spacing.xxl,
+  height: spacing.xxl,
+  borderRadius: spacing.xxl,
+  transform: [{scaleX: -1}],
+  alignItems: "center",
+})
 
 const $label: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontWeight: "500",
@@ -46,8 +59,6 @@ const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   paddingVertical: spacing.sm,
   paddingHorizontal: spacing.md,
   borderRadius: spacing.md,
-  // borderWidth: spacing.xxxs,
-  // borderColor: colors.border,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
