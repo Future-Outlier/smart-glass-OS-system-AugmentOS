@@ -92,7 +92,7 @@ jest.mock("@/services/SocketComms", () => ({
 }))
 
 // Mock WebSocketManager to avoid circular dependency issues
-jest.mock("@/managers/WebSocketManager", () => {
+jest.mock("@/services/WebSocketManager", () => {
   const {EventEmitter} = require("events")
 
   const WebSocketStatus = {
