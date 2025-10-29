@@ -63,7 +63,10 @@ jobs:
 
       - name: Install CocoaPods dependencies
         working-directory: ./mobile/ios
-        run: pod install
+        run: |
+          # Remove Podfile.lock to avoid version conflicts in CI
+          rm -f Podfile.lock
+          pod install --repo-update
 
       - name: List available simulators
         run: xcrun simctl list devices available
