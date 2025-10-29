@@ -185,6 +185,25 @@ android {
     }
 }
 
+configurations.all {
+    exclude group: 'com.google.android.exoplayer', module: 'exoplayer'
+    exclude group: 'com.google.android.exoplayer', module: 'exoplayer-core'
+    exclude group: 'com.google.android.exoplayer', module: 'exoplayer-ui'
+    exclude group: 'com.google.android.exoplayer', module: 'exoplayer-hls'
+    exclude group: 'com.google.android.exoplayer', module: 'exoplayer-smoothstreaming'
+    exclude group: 'com.google.android.exoplayer', module: 'exoplayer-dash'
+    exclude group: 'com.google.android.exoplayer', module: 'exoplayer-rtsp'
+    
+    resolutionStrategy {
+        // Force androidx Media3 versions
+        force 'androidx.media3:media3-exoplayer:1.4.0'
+        force 'androidx.media3:media3-ui:1.4.0'
+        force 'androidx.media3:media3-common:1.4.0'
+        force 'androidx.media3:media3-session:1.4.0'
+        force 'androidx.media3:media3-datasource:1.4.0'
+    }
+}
+
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
