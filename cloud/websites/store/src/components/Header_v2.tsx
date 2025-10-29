@@ -28,6 +28,20 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear }) => {
   const isStorePage = location.pathname === "/";
   const [searchMode, setsearchMode] = useState(false);
   const searchRef = useRef<HTMLFormElement>(null);
+
+  // Check URL params for search trigger
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get("search") === "true") {
+      setsearchMode(true);
+      // Clean up URL
+      searchParams.delete("search");
+      const newSearch = searchParams.toString();
+      navigate(location.pathname + (newSearch ? `?${newSearch}` : ""), {
+        replace: true,
+      });
+    }
+  }, [location.search, location.pathname, navigate]);
   const [selectedTab, setSelectedTab] = useState<
     "apps" | "glasses" | "support"
   >("apps");
@@ -139,6 +153,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear }) => {
                     onSearchChange={setSearchQuery}
                     onSearchSubmit={onSearch || ((e) => e.preventDefault())}
                     onClear={onSearchClear || (() => setSearchQuery(""))}
+                    autoFocus={true}
                   />
                 </div>
               </motion.div>
@@ -306,7 +321,12 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear }) => {
                   <button
                     className="flex justify-center items-center rounded-full w-[36px] h-[36px] hover:bg-[#F2F2F2] cursor-pointer"
                     onClick={() => {
-                      setsearchMode(true);
+                      // If not on store page, redirect to it with search param
+                      if (!isStorePage) {
+                        navigate("/?search=true");
+                      } else {
+                        setsearchMode(true);
+                      }
                     }}
                   >
                     <Search size={"20px"} color="#999999" />

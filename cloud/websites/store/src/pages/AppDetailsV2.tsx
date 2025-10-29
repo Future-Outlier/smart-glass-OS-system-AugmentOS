@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import Header from "../components/Header";
 import Header_v2 from "../components/Header_v2";
 import GetMentraOSButton from "../components/GetMentraOSButton";
+import SkeletonAppDetails from "../components/SkeletonAppDetails";
 
 // App tags mapping (same as AppCard)
 const APP_TAGS: Record<string, string[]> = {
@@ -354,12 +355,8 @@ const AppDetails: React.FC = () => {
         {/* Error state */}
         {!isLoading && error && <div className="text-red-500 p-4">{error}</div>}
 
-        {/* Loading state */}
-        {isLoading && (
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        )}
+        {/* Loading state - Skeleton */}
+        {isLoading && <SkeletonAppDetails />}
 
         {/* Main content */}
         {!isLoading && !error && app && (
@@ -389,8 +386,8 @@ const AppDetails: React.FC = () => {
             </button>
 
             {/* Content wrapper with responsive padding */}
-            <div className="px-6 py-6 pb-safe sm:p-12 sm:pb-16 w-[900px]">
-              <div className="max-w-2xl mx-auto sm:max-w-none">
+            <div className="px-6 py-6 pb-safe sm:px-12 sm:py-12 sm:pb-16 w-full">
+              <div className="max-w-2xl mx-auto sm:max-w-[1200px]">
                 {/* Header - Google Play Style Layout */}
                 <div className="mb-8">
                   {/* Mobile Layout */}
@@ -653,7 +650,7 @@ const AppDetails: React.FC = () => {
                       <img
                         src={app.logoURL}
                         alt={`${app.name} logo`}
-                        className="w-[140px] h-[140px] object-cover rounded-[28px] shadow-md"
+                        className="w-[220px] h-[220px] object-cover rounded-[60px] shadow-md"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src =
                             "https://placehold.co/140x140/gray/white?text=App";

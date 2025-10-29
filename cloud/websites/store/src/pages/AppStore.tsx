@@ -12,6 +12,8 @@ import api, { AppFilterOptions } from "../api";
 import { AppI } from "../types";
 import Header from "../components/Header_v2";
 import AppCard from "../components/AppCard";
+import SkeletonAppCard from "../components/SkeletonAppCard";
+import SkeletonSlider from "../components/SkeletonSlider";
 import { toast } from "sonner";
 import { formatCompatibilityError } from "../utils/errorHandling";
 import {
@@ -55,6 +57,7 @@ const AppStore: React.FC = () => {
   const { searchQuery, setSearchQuery } = useSearch();
   const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(true);
+  const [slidesLoaded, setSlidesLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [apps, setApps] = useState<AppI[]>([]);
   const [originalApps, setOriginalApps] = useState<AppI[]>([]);
@@ -104,6 +107,15 @@ const AppStore: React.FC = () => {
     },
     [resetSlideTimer],
   );
+
+  // Set slides as loaded after a short delay to simulate loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSlidesLoaded(true);
+    }, 500); // 500ms delay to show skeleton
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Auto-play slideshow
   useEffect(() => {
@@ -565,13 +577,6 @@ const AppStore: React.FC = () => {
           </div>
         )}
 
-        {/* Loading state */}
-        {isLoading && (
-          <div className="flex justify-center items-center h-64 px-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        )}
-
         {/* Error message */}
         {error && !isLoading && (
           <div className="max-w-2xl mx-auto px-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
@@ -585,95 +590,115 @@ const AppStore: React.FC = () => {
           </div>
         )}
 
-        {/* Slideshow - Hidden when searching */}
+        {/* Slideshow Section - Hidden when searching */}
         {!searchQuery && (
-          <div className="w-full relative mb-4 sm:mb-8 overflow-hidden">
-            {/* Slides Container - translate horizontally based on currentSlide */}
-            <motion.div
-              className="flex"
-              animate={{ x: `-${currentSlide * 100}%` }}
-              transition={{
-                type: "tween",
-                duration: 0.5,
-                ease: "easeInOut",
-              }}
-            >
-              {slideComponents.map((SlideComponent, index) => (
-                <SlideComponent key={index} />
-              ))}
-            </motion.div>
-
-            {/* Previous Button - Left Side */}
-            <motion.button
-              onClick={goToPrevSlide}
-              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-[#ffffff1a] hover:bg-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg z-10"
-              aria-label="Previous slide"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" strokeWidth={2} />
-            </motion.button>
-
-            {/* Next Button - Right Side */}
-            <motion.button
-              onClick={goToNextSlide}
-              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-[#ffffff1a] hover:bg-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg z-10"
-              aria-label="Next slide"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" strokeWidth={2} />
-            </motion.button>
-
-            {/* Slide Indicators */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-10 ">
-              {slideComponents.map((_, index) => (
-                <motion.button
-                  key={index}
-                  onClick={() => goToSlide(index)}
-                  className={` rounded-full h-[2px] ${
-                    index === currentSlide
-                      ? "bg-white"
-                      : "bg-white/50 hover:bg-white/75"
-                  }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                  animate={{
-                    width: index === currentSlide ? 32 : 8,
+          <div className="">
+            {!slidesLoaded ? (
+              <SkeletonSlider />
+            ) : (
+              <div className="w-full relative mb-4 sm:mb-8 overflow-hidden">
+                {/* Slides Container - translate horizontally based on currentSlide */}
+                <motion.div
+                  className="flex"
+                  animate={{ x: `-${currentSlide * 100}%` }}
+                  transition={{
+                    type: "tween",
+                    duration: 0.5,
+                    ease: "easeInOut",
                   }}
-                  transition={{ duration: 0.3 }}
-                  whileHover={{ scale: 1.2 }}
-                />
-              ))}
-            </div>
+                >
+                  {slideComponents.map((SlideComponent, index) => (
+                    <SlideComponent key={index} />
+                  ))}
+                </motion.div>
+
+                {/* Previous Button - Left Side */}
+                <motion.button
+                  onClick={goToPrevSlide}
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-[#ffffff1a] hover:bg-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg z-10"
+                  aria-label="Previous slide"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <ChevronLeft
+                    className="w-4 h-4 sm:w-6 sm:h-6"
+                    strokeWidth={2}
+                  />
+                </motion.button>
+
+                {/* Next Button - Right Side */}
+                <motion.button
+                  onClick={goToNextSlide}
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-[#ffffff1a] hover:bg-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg z-10"
+                  aria-label="Next slide"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <ChevronRight
+                    className="w-4 h-4 sm:w-6 sm:h-6"
+                    strokeWidth={2}
+                  />
+                </motion.button>
+
+                {/* Slide Indicators */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-10 ">
+                  {slideComponents.map((_, index) => (
+                    <motion.button
+                      key={index}
+                      onClick={() => goToSlide(index)}
+                      className={` rounded-full h-[2px] ${
+                        index === currentSlide
+                          ? "bg-white"
+                          : "bg-white/50 hover:bg-white/75"
+                      }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                      animate={{
+                        width: index === currentSlide ? 32 : 8,
+                      }}
+                      transition={{ duration: 0.3 }}
+                      whileHover={{ scale: 1.2 }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {!searchQuery && (
-          <div className="text-[20px] sm:text-[25px] font-medium mb-2 sm:mb-4">
+          <div className=" text-[20px] sm:text-[25px] font-medium mb-2 sm:mb-4">
             Top Apps
           </div>
         )}
 
-        {/* App grid */}
-        {!isLoading && !error && (
-          <div className="mt-2 mb-2 sm:mt-4 sm:mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-1 sm:gap-y-2">
-            {filteredApps.map((app) => (
-              <AppCard
-                key={app.packageName}
-                app={app}
-                theme={theme}
-                isAuthenticated={isAuthenticated}
-                isWebView={isWebView}
-                installingApp={installingApp}
-                onInstall={handleInstall}
-                onUninstall={handleUninstall}
-                onOpen={handleOpen}
-                onCardClick={handleCardClick}
-                onLogin={handleLogin}
-              />
-            ))}
-          </div>
-        )}
+        {/* App grid with loading skeletons */}
+        <div className="">
+          {isLoading ? (
+            <div className="mt-2 mb-2 sm:mt-4 sm:mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-1 sm:gap-y-2">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <SkeletonAppCard key={i} />
+              ))}
+            </div>
+          ) : !error ? (
+            <div className="mt-2 mb-2 sm:mt-4 sm:mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-1 sm:gap-y-2">
+              {filteredApps.map((app) => (
+                <AppCard
+                  key={app.packageName}
+                  app={app}
+                  theme={theme}
+                  isAuthenticated={isAuthenticated}
+                  isWebView={isWebView}
+                  installingApp={installingApp}
+                  onInstall={handleInstall}
+                  onUninstall={handleUninstall}
+                  onOpen={handleOpen}
+                  onCardClick={handleCardClick}
+                  onLogin={handleLogin}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
 
         {/* Empty state */}
         {!isLoading && !error && filteredApps.length === 0 && (

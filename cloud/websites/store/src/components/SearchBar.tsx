@@ -8,11 +8,19 @@ interface SearchBarProps {
   onSearchSubmit: (e: React.FormEvent) => void;
   onClear: () => void;
   className?: string;
+  autoFocus?: boolean;
 }
 
 const SearchBar = forwardRef<HTMLFormElement, SearchBarProps>(
   (
-    { searchQuery, onSearchChange, onSearchSubmit, onClear, className = "" },
+    {
+      searchQuery,
+      onSearchChange,
+      onSearchSubmit,
+      onClear,
+      className = "",
+      autoFocus = false,
+    },
     ref,
   ) => {
     const { theme } = useTheme();
@@ -23,7 +31,7 @@ const SearchBar = forwardRef<HTMLFormElement, SearchBarProps>(
         onSubmit={onSearchSubmit}
         className={`flex items-center space-x-3 ${className}`}
       >
-        <div className="relative w-full absolute">
+        <div className="relative w-full">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search
               className="h-5 w-5"
@@ -44,6 +52,7 @@ const SearchBar = forwardRef<HTMLFormElement, SearchBarProps>(
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               onSearchChange(e.target.value)
             }
+            autoFocus={autoFocus}
           />
           {searchQuery && (
             <button
