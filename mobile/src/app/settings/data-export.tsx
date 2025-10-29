@@ -200,9 +200,9 @@ const $loadingText: ThemedStyle<TextStyle> = ({colors}) => ({
   textAlign: "center",
 })
 
-const $summaryContainer: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => ({
+const $summaryContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
-  borderRadius: borderRadius.md,
+  borderRadius: spacing.md,
   padding: spacing.md,
   borderWidth: spacing.xxxs,
   borderColor: colors.border,
@@ -230,10 +230,10 @@ const $button: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
 })
 
-const $jsonContainer: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => ({
+const $jsonContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flex: 1,
   backgroundColor: colors.backgroundAlt,
-  borderRadius: borderRadius.md,
+  borderRadius: spacing.md,
   borderWidth: spacing.xxxs,
   borderColor: colors.border,
   overflow: "hidden",

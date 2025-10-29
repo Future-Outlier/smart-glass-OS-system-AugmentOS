@@ -122,7 +122,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           styles.selector,
           {
             backgroundColor: theme.colors.backgroundAlt,
-            borderRadius: theme.borderRadius.md,
+            borderRadius: theme.spacing.md,
             borderWidth: theme.spacing.xxxs,
             borderColor: theme.colors.border,
             paddingVertical: theme.spacing.md,
@@ -180,7 +180,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                       backgroundColor: theme.colors.backgroundAlt,
                       borderColor: theme.colors.border,
                       borderWidth: theme.spacing.xxxs,
-                      borderRadius: theme.borderRadius.md,
+                      borderRadius: theme.spacing.md,
                       shadowRadius: theme.spacing.xs,
                     },
                   ]}>

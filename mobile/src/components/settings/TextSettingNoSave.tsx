@@ -44,7 +44,7 @@ const TextSettingNoSave: React.FC<TextSettingNoSaveProps> = ({label, value, onCh
           backgroundColor: theme.colors.backgroundAlt,
           borderWidth: theme.spacing.xxxs,
           borderColor: theme.colors.border,
-          borderRadius: theme.borderRadius.md,
+          borderRadius: theme.spacing.md,
           paddingVertical: theme.spacing.md,
           paddingHorizontal: theme.spacing.lg,
         },

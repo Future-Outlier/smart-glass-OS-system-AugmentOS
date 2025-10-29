@@ -24,7 +24,7 @@ const BasicDialog = ({
   onRightPress,
 }: BasicDialogProps) => {
   const {
-    theme: {isDark, borderRadius, spacing, colors},
+    theme: {isDark, spacing, colors},
   } = useAppTheme()
   return (
     <View
@@ -33,7 +33,7 @@ const BasicDialog = ({
         styles.basicDialogFlexBox,
         {
           backgroundColor: isDark ? "#141834" : "white",
-          borderRadius: borderRadius.md,
+          borderRadius: spacing.md,
           borderWidth: spacing.xxxs,
           borderColor: colors.border,
         },

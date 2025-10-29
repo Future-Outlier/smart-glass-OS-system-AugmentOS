@@ -32,7 +32,7 @@ const $button: ThemedStyle<ViewStyle> = ({spacing}) => ({
   margin: 0,
 })
 
-const $container: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => ({
+const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
@@ -40,7 +40,7 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => 
   backgroundColor: colors.backgroundAlt,
   paddingVertical: spacing.md,
   paddingHorizontal: spacing.md,
-  borderRadius: borderRadius.md,
+  borderRadius: spacing.md,
   borderWidth: spacing.xxxs,
   borderColor: colors.border,
 })

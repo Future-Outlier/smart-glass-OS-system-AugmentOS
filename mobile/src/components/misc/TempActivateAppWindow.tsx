@@ -68,8 +68,8 @@ const $xIcon: ThemedStyle<ViewStyle> = () => ({
   zIndex: 2,
 })
 
-const $tempWindow: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => ({
-  borderRadius: borderRadius.md,
+const $tempWindow: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  borderRadius: spacing.md,
   // backgroundColor: colors.background + "E6",
   backgroundColor: colors.backgroundAlt,
   // flex: 1,

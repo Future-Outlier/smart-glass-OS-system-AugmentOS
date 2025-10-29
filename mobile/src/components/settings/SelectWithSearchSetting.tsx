@@ -100,7 +100,7 @@ const SelectWithSearchSetting: React.FC<SelectWithSearchSettingProps> = ({
                       borderColor: theme.colors.border,
                       borderWidth: theme.spacing.xxxs,
                       padding: theme.spacing.md,
-                      borderRadius: theme.borderRadius.md,
+                      borderRadius: theme.spacing.md,
                       shadowRadius: theme.spacing.xs,
                     },
                   ]}>

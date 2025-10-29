@@ -66,7 +66,7 @@ const SelectSetting: React.FC<SelectSettingProps> = ({
           layout === "horizontal" ? styles.selectRow : styles.selectColumn,
           {
             backgroundColor: theme.colors.backgroundAlt,
-            borderRadius: theme.borderRadius.md,
+            borderRadius: theme.spacing.md,
             borderWidth: theme.spacing.xxxs,
             borderColor: theme.colors.border,
             paddingVertical: theme.spacing.md,
@@ -103,7 +103,7 @@ const SelectSetting: React.FC<SelectSettingProps> = ({
                       borderColor: theme.colors.border,
                       borderWidth: theme.spacing.xxxs,
                       padding: theme.spacing.md,
-                      borderRadius: theme.borderRadius.md,
+                      borderRadius: theme.spacing.md,
                       shadowRadius: theme.spacing.xs,
                     },
                   ]}>

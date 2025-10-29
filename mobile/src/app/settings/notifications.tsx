@@ -259,8 +259,8 @@ export default function NotificationSettingsScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={{
-            backgroundColor: theme.colors.card,
-            borderRadius: theme.borderRadius.sm,
+            // backgroundColor: theme.colors.card,
+            borderRadius: theme.spacing.sm,
             paddingHorizontal: theme.spacing.md,
             paddingVertical: theme.spacing.xs,
             fontSize: 15,

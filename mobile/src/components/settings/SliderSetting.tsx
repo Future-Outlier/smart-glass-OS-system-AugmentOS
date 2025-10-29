@@ -87,7 +87,7 @@ const SliderSetting: React.FC<SliderSettingProps> = ({
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => ({
+const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "column",
   justifyContent: "flex-start",
   alignItems: "flex-start",
@@ -95,7 +95,7 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => 
   backgroundColor: colors.backgroundAlt,
   paddingVertical: spacing.md,
   paddingHorizontal: spacing.lg,
-  borderRadius: borderRadius.md,
+  borderRadius: spacing.md,
   borderWidth: spacing.xxxs,
   borderColor: colors.border,
 })
