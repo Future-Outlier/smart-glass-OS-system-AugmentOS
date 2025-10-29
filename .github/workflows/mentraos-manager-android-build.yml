@@ -22,6 +22,8 @@ jobs:
           rm -rf mobile/node_modules mobile/.pnpm-store mobile/.pnpm
           rm -rf mobile/android/build mobile/android/.gradle
           rm -rf ~/.pnpm-store 2>/dev/null || true
+          # Clean Gradle caches to avoid corrupted artifacts
+          rm -rf ~/.gradle/caches 2>/dev/null || true
 
       - name: Checkout code
         uses: actions/checkout@v4

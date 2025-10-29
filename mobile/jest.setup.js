@@ -80,7 +80,7 @@ jest.mock("@/bridge/MantleBridge", () => {
 })
 
 // Mock SocketComms to avoid complex dependency chains
-jest.mock("@/managers/SocketComms", () => ({
+jest.mock("@/services/SocketComms", () => ({
   default: {
     getInstance: jest.fn(() => ({
       connect: jest.fn(),
