@@ -83,8 +83,8 @@ jobs:
         working-directory: ./mobile/ios
         run: |
           xcodebuild \
-                     -workspace AOS.xcworkspace \
-                     -scheme AOS \
+                     -workspace MentraOS.xcworkspace \
+                     -scheme MentraOS \
                      -configuration Debug \
                      -sdk iphonesimulator \
                      -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
@@ -93,8 +93,8 @@ jobs:
       - name: Build iOS app for Device
         working-directory: ./mobile/ios
         run: |
-          xcodebuild -workspace AOS.xcworkspace \
-                     -scheme AOS \
+          xcodebuild -workspace MentraOS.xcworkspace \
+                     -scheme MentraOS \
                      -configuration Release \
                      -sdk iphoneos \
                      -derivedDataPath build-device \
@@ -106,10 +106,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-simulator-build
-          path: mobile/ios/build/Build/Products/Debug-iphonesimulator/AOS.app
+          path: mobile/ios/build/Build/Products/Debug-iphonesimulator/MentraOS.app
 
       - name: Upload Device Build
         uses: actions/upload-artifact@v4
         with:
           name: ios-device-build
-          path: mobile/ios/build-device/Build/Products/Release-iphoneos/AOS.app
+          path: mobile/ios/build-device/Build/Products/Release-iphoneos/MentraOS.app
