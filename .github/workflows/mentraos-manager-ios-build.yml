@@ -71,6 +71,14 @@ jobs:
       - name: List available simulators
         run: xcrun simctl list devices available
 
+      - name: Debug - List iOS directory contents
+        working-directory: ./mobile/ios
+        run: |
+          echo "Contents of mobile/ios:"
+          ls -la
+          echo "Workspace files:"
+          ls -la *.xcworkspace || echo "No workspace files found"
+
       - name: Build iOS app for Simulator
         working-directory: ./mobile/ios
         run: |
