@@ -78,7 +78,7 @@ const AppCard: React.FC<AppCardProps> = memo(
 
     return (
       <div
-        className="p-4 flex gap-3 rounded-sm relative cursor-pointer "
+        className="p-3 sm:p-4 flex gap-2 sm:gap-3 rounded-sm relative cursor-pointer "
         onClick={handleCardClick}
         onMouseEnter={(e) =>
           (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")
@@ -88,13 +88,13 @@ const AppCard: React.FC<AppCardProps> = memo(
         }
       >
         <div
-          className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-px w-75"
+          className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-px w-[90%] sm:w-75"
           style={{ backgroundColor: "var(--border-color)" }}
         ></div>
 
         {/* Image Column */}
         <div className="shrink-0 flex items-start pt-2">
-          <div className="relative w-16 h-16">
+          <div className="relative w-14 h-14 sm:w-16 sm:h-16">
             {/* Placeholder that shows immediately */}
             <div
               className={`absolute inset-0 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center transition-opacity duration-200 ${
@@ -112,7 +112,7 @@ const AppCard: React.FC<AppCardProps> = memo(
                   : app.logoURL
               }
               alt={`${app.name} logo`}
-              className={`w-16 h-16 object-cover rounded-2xl  transition-opacity duration-200 ${
+              className={`w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-2xl transition-opacity duration-200 ${
                 imageLoaded ? "opacity-100" : "opacity-0"
               }`}
               loading="lazy"
@@ -127,7 +127,7 @@ const AppCard: React.FC<AppCardProps> = memo(
         <div className="flex-1 flex flex-col justify-end min-w-0">
           <div>
             <h3
-              className="text-[16px] font-medium -mb-[2px] truncate "
+              className="text-[14px] sm:text-[16px] font-medium -mb-[2px] truncate "
               style={{
                 fontFamily: '"SF Pro Rounded", sans-serif',
                 letterSpacing: "0.04em",
@@ -142,7 +142,7 @@ const AppCard: React.FC<AppCardProps> = memo(
               {(APP_TAGS[app.name] || FALLBACK_TAGS).map((tag, index) => (
                 <span key={tag} className="flex items-center gap-1">
                   <span
-                    className="text-[13px] font-medium  -mb-[4px]"
+                    className="text-[11px] sm:text-[13px] font-medium -mb-[4px]"
                     style={{
                       fontFamily: '"SF Pro Rounded", sans-serif',
                       letterSpacing: "0.02em",

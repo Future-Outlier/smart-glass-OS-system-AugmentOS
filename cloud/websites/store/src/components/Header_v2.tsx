@@ -71,6 +71,10 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear }) => {
         !searchRef.current.contains(event.target as Node)
       ) {
         setsearchMode(false);
+        setSearchQuery(""); // Clear search query when closing
+        if (onSearchClear) {
+          onSearchClear(); // Call the clear handler to reset results
+        }
       }
     };
 
@@ -83,7 +87,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear }) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [searchMode]);
+  }, [searchMode, onSearchClear, setSearchQuery]);
 
   // Handle sign out
   const handleSignOut = async () => {
@@ -98,7 +102,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear }) => {
 
   return (
     <header
-      className="sticky top-0 z-10 transition-all duration-300"
+      className="hidden lg:block sticky top-0 z-10 transition-all duration-300"
       style={{
         background:
           theme === "light"
@@ -119,7 +123,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
+                transition={{ duration: 0.1, ease: "easeOut" }}
                 className="absolute left-1/2 -translate-x-1/2  w-full"
                 style={{
                   borderTop: !isDesktop
@@ -141,19 +145,19 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear }) => {
             )}
           </AnimatePresence>
           <>
-            <div className="flex items-center justify-between gap-[20px] ">
+            <div className="flex items-center justify-between gap-[20px] w-full lg:w-auto">
               {/* Logo and Site Name */}
               <Link
                 to="/"
-                className="flex items-center gap-4 select-none hover:opacity-80 transition-opacity"
+                className="flex items-center gap-2 sm:gap-4 select-none hover:opacity-80 transition-opacity"
               >
                 <img
                   src="/mentra_logo_gr.png"
                   alt="Mentra Logo"
-                  className="h-7 w-auto object-contain"
+                  className="h-6 sm:h-7 w-auto object-contain"
                 />
                 <span
-                  className="text-[19px] font-light mb-[-0px]"
+                  className="text-[16px] sm:text-[19px] font-light mb-[-0px]"
                   style={{
                     fontFamily: "Poppins, sans-serif",
                     letterSpacing: "0.06em",
@@ -170,8 +174,8 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear }) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2, ease: "easeInOut" }}
-                    className="flex items-center"
+                    transition={{ duration: 0.1, ease: "easeOut" }}
+                    className="hidden lg:flex items-center"
                   >
                     <button
                       className={`ml-[60px] font-poppins pb-1 transition-all hover:text-[#00A814] cursor-pointer text-[15px] ${

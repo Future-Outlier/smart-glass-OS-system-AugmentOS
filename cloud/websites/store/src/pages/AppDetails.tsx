@@ -1,19 +1,11 @@
-import React, { useState, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
-  Download,
   X,
-  ExternalLink,
   Calendar,
-  Clock,
   Info,
-  Star,
-  Package,
-  Building,
-  Globe,
-  Mail,
-  FileText,
   Mic,
   Camera,
   MapPin,

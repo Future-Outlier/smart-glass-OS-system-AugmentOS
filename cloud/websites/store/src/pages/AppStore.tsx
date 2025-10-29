@@ -16,9 +16,12 @@ import { toast } from "sonner";
 import { formatCompatibilityError } from "../utils/errorHandling";
 import {
   CaptionsSlide,
+  CaptionsSlideMobile,
   MergeSlide,
+  MergeSlideMobile,
   StreamSlide,
   XSlide,
+  XSlideMobile,
 } from "../components/ui/slides";
 
 // Extend window interface for React Native WebView
@@ -59,8 +62,10 @@ const AppStore: React.FC = () => {
   const [activeOrgFilter, setActiveOrgFilter] = useState<string | null>(orgId);
   const [orgName, setOrgName] = useState<string>("");
 
-  // Slideshow state
-  const slideComponents = [CaptionsSlide, MergeSlide, StreamSlide, XSlide];
+  // Slideshow state - use mobile or desktop slides based on screen size
+  const slideComponents = isMobile
+    ? [CaptionsSlideMobile, MergeSlideMobile, XSlideMobile]
+    : [CaptionsSlide, MergeSlide, StreamSlide, XSlide];
   const [currentSlide, setCurrentSlide] = useState(0);
   const slideIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -502,24 +507,31 @@ const AppStore: React.FC = () => {
       />
 
       {/* Main Content */}
-      {/* Search bar on mobile only */}
-      <main className="pr-25 pl-25 pb-10 pt-10">
-        {isMobile && (
-          <div
-            className="mb-4 sm:mb-8 px-4 pb-4 sm:pb-8"
-            style={{ borderBottom: "1px solid var(--border-color)" }}
-          >
-            <SearchBar
-              searchQuery={searchQuery}
-              onSearchChange={handleSearchChange}
-              onSearchSubmit={handleSearch}
-              onClear={() => {
-                setSearchQuery("");
-                fetchApps();
-              }}
-              className="w-full"
-            />
-          </div>
+      {/* Search bar on mobile only - sticky at top */}
+      {isMobile && (
+        <div
+          className="sticky top-0 z-20 px-4 py-3"
+          style={{
+            backgroundColor: "var(--bg-primary)",
+            // borderBottom: "1px solid var(--border-color)",
+          }}
+        >
+          <SearchBar
+            searchQuery={searchQuery}
+            onSearchChange={handleSearchChange}
+            onSearchSubmit={handleSearch}
+            onClear={() => {
+              setSearchQuery("");
+              fetchApps();
+            }}
+            className="w-full"
+          />
+        </div>
+      )}
+
+      <main className="px-4 sm:px-8 md:px-16 lg:px-25 pb-6 sm:pb-10 pt-0 sm:pt-10">
+        {isMobile && !searchQuery && (
+          <div className="text-[36px] mb-[20px] text-[#353535]">Apps</div>
         )}
 
         {/* Organization filter indicator */}
@@ -562,7 +574,7 @@ const AppStore: React.FC = () => {
 
         {/* Error message */}
         {error && !isLoading && (
-          <div className=" max-w-2xl mx-auto mx-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="max-w-2xl mx-auto px-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
             <p>{error}</p>
             <button
               className="mt-2 text-sm font-medium text-red-700 hover:text-red-600"
@@ -573,72 +585,78 @@ const AppStore: React.FC = () => {
           </div>
         )}
 
-        {/* Slideshow */}
-        <div className="w-full relative mb-8 overflow-hidden">
-          {/* Slides Container - translate horizontally based on currentSlide */}
-          <motion.div
-            className="flex"
-            animate={{ x: `-${currentSlide * 100}%` }}
-            transition={{
-              type: "tween",
-              duration: 0.5,
-              ease: "easeInOut",
-            }}
-          >
-            {slideComponents.map((SlideComponent, index) => (
-              <SlideComponent key={index} />
-            ))}
-          </motion.div>
+        {/* Slideshow - Hidden when searching */}
+        {!searchQuery && (
+          <div className="w-full relative mb-4 sm:mb-8 overflow-hidden">
+            {/* Slides Container - translate horizontally based on currentSlide */}
+            <motion.div
+              className="flex"
+              animate={{ x: `-${currentSlide * 100}%` }}
+              transition={{
+                type: "tween",
+                duration: 0.5,
+                ease: "easeInOut",
+              }}
+            >
+              {slideComponents.map((SlideComponent, index) => (
+                <SlideComponent key={index} />
+              ))}
+            </motion.div>
 
-          {/* Previous Button - Left Side */}
-          <motion.button
-            onClick={goToPrevSlide}
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-[#ffffff1a] hover:bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg z-10"
-            aria-label="Previous slide"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <ChevronLeft className="w-6 h-6" strokeWidth={2} />
-          </motion.button>
+            {/* Previous Button - Left Side */}
+            <motion.button
+              onClick={goToPrevSlide}
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-[#ffffff1a] hover:bg-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg z-10"
+              aria-label="Previous slide"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" strokeWidth={2} />
+            </motion.button>
 
-          {/* Next Button - Right Side */}
-          <motion.button
-            onClick={goToNextSlide}
-            className="absolute right-4 top-1/2 -translate-y-1/2  bg-[#ffffff1a] hover:bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg z-10"
-            aria-label="Next slide"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <ChevronRight className="w-6 h-6" strokeWidth={2} />
-          </motion.button>
+            {/* Next Button - Right Side */}
+            <motion.button
+              onClick={goToNextSlide}
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-[#ffffff1a] hover:bg-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg z-10"
+              aria-label="Next slide"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" strokeWidth={2} />
+            </motion.button>
 
-          {/* Slide Indicators */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-            {slideComponents.map((_, index) => (
-              <motion.button
-                key={index}
-                onClick={() => goToSlide(index)}
-                className={`h-2 rounded-full ${
-                  index === currentSlide
-                    ? "bg-white"
-                    : "bg-white/50 hover:bg-white/75"
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-                animate={{
-                  width: index === currentSlide ? 32 : 8,
-                }}
-                transition={{ duration: 0.3 }}
-                whileHover={{ scale: 1.2 }}
-              />
-            ))}
+            {/* Slide Indicators */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-10 ">
+              {slideComponents.map((_, index) => (
+                <motion.button
+                  key={index}
+                  onClick={() => goToSlide(index)}
+                  className={` rounded-full h-[2px] ${
+                    index === currentSlide
+                      ? "bg-white"
+                      : "bg-white/50 hover:bg-white/75"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                  animate={{
+                    width: index === currentSlide ? 32 : 8,
+                  }}
+                  transition={{ duration: 0.3 }}
+                  whileHover={{ scale: 1.2 }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="text-[25px]">Top Apps</div>
+        {!searchQuery && (
+          <div className="text-[20px] sm:text-[25px] font-medium mb-2 sm:mb-4">
+            Top Apps
+          </div>
+        )}
 
         {/* App grid */}
         {!isLoading && !error && (
-          <div className="mt-2 mb-2 sm:mt-8 sm:mb-8 grid grid-cols-1 xl:grid-cols-3 ">
+          <div className="mt-2 mb-2 sm:mt-4 sm:mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-1 sm:gap-y-2">
             {filteredApps.map((app) => (
               <AppCard
                 key={app.packageName}
@@ -659,29 +677,76 @@ const AppStore: React.FC = () => {
 
         {/* Empty state */}
         {!isLoading && !error && filteredApps.length === 0 && (
-          <div className="text-center py-12 px-4">
+          <div className="flex flex-col items-center justify-center py-16 px-4">
             {searchQuery ? (
               <>
-                <p className="text-gray-500 text-lg">
-                  No apps found for &quot;{searchQuery}&quot;
+                {/* Search Icon */}
+                <div className="mb-6 w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <svg
+                    className="w-10 h-10 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+
+                {/* No Results Text */}
+                <h3
+                  className="text-xl sm:text-2xl font-semibold mb-2"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  No apps found
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 text-base mb-6 max-w-md">
+                  We couldn&apos;t find any apps matching &quot;{searchQuery}
+                  &quot;
                   {activeOrgFilter && ` in ${orgName}`}
                 </p>
-                <button
-                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+
+                {/* Clear Search Button */}
+                <motion.button
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-md transition-colors"
                   onClick={() => {
                     setSearchQuery("");
                     fetchApps(); // Reset to all apps
                   }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   Clear Search
-                </button>
+                </motion.button>
               </>
             ) : (
-              <p className="text-gray-500 text-lg">
-                {activeOrgFilter
-                  ? `No apps available for ${orgName}.`
-                  : "No apps available at this time."}
-              </p>
+              <>
+                {/* Empty Icon */}
+                <div className="mb-6 w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <svg
+                    className="w-10 h-10 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                    />
+                  </svg>
+                </div>
+                <p className="text-gray-500 dark:text-gray-400 text-lg">
+                  {activeOrgFilter
+                    ? `No apps available for ${orgName}.`
+                    : "No apps available at this time."}
+                </p>
+              </>
             )}
           </div>
         )}

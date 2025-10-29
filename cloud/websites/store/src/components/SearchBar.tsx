@@ -32,7 +32,7 @@ const SearchBar = forwardRef<HTMLFormElement, SearchBarProps>(
           </div>
           <input
             type="text"
-            className=" theme-search-input w-full pl-10 pr-10 py-2.5 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-[#47478E] border"
+            className=" theme-search-input w-full pl-10 pr-10 py-2.5 rounded-full focus:outline-none focus:ring-2 focus:ring-[#47478E] border"
             style={{
               backgroundColor:
                 theme === "light" ? "var(--bg-secondary)" : "#141834",
