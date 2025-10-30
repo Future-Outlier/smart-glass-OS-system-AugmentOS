@@ -117,5 +117,14 @@ jest.mock("@/services/WebSocketManager", () => {
   }
 })
 
+// Mock core native module to avoid native bridge errors
+jest.mock("core", () => ({
+  default: {
+    getBluetoothStatus: jest.fn(() => Promise.resolve("disabled")),
+    requestBluetoothPermissions: jest.fn(() => Promise.resolve(true)),
+    // Add other methods as needed
+  },
+}))
+
 // Silence the warning: Animated: `useNativeDriver` is not supported
 global.__reanimatedWorkletInit = jest.fn()
