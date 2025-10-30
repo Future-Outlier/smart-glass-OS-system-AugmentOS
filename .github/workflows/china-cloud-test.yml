@@ -14,7 +14,7 @@ jobs:
       PORT: "80"
       SYSTEM_DASHBOARD_PACKAGE_NAME: system.augmentos.dashboard
       CLOUD_VERSION: 2.1.2
-      REDPLOY: 2
+      REDEPLOY: 2
       DEPLOYMENT_REGION: china
       ADMIN_EMAILS: israelov@mentra.glass, isaiah@mentra.glass, matt@mentra.glass, cayden@mentra.glass, nicolo@mentra.glass, team@mentra.glass
       CLOUD_PUBLIC_HOST_NAME: api.mentraglass.cn
