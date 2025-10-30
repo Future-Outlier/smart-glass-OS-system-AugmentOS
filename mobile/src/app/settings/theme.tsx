@@ -11,7 +11,7 @@ import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 
 export default function ThemeSettingsPage() {
   const {theme, themed} = useAppTheme()
-  const {replace} = useNavigationHistory()
+  const {goBack} = useNavigationHistory()
 
   const [themePreference, setThemePreference] = useSetting(SETTINGS_KEYS.theme_preference)
 
@@ -45,7 +45,7 @@ export default function ThemeSettingsPage() {
 
   return (
     <Screen preset="scroll" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header title="Theme Settings" leftIcon="caretLeft" onLeftPress={() => replace("/(tabs)/settings")} />
+      <Header title="Theme Settings" leftIcon="caretLeft" onLeftPress={() => goBack()} />
 
       <View style={themed($settingsGroup)}>
         {renderThemeOption("light", "Light Theme", undefined, false)}

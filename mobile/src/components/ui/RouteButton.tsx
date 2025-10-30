@@ -13,9 +13,10 @@ interface RouteButtonProps {
   position?: "top" | "bottom" | "middle"
   text?: string
   style?: ViewStyle
+  icon?: React.ReactNode
 }
 
-export default function RouteButton({label, subtitle, onPress, style, text}: RouteButtonProps) {
+export default function RouteButton({label, subtitle, onPress, style, text, icon}: RouteButtonProps) {
   const {theme, themed} = useAppTheme()
 
   return (
@@ -30,7 +31,10 @@ export default function RouteButton({label, subtitle, onPress, style, text}: Rou
               maxWidth: "90%",
               gap: theme.spacing.xxs,
             }}>
-            <Text style={themed($label)}>{label}</Text>
+            <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.md}}>
+              {icon && <View style={themed($icon)}>{icon}</View>}
+              <Text style={themed($label)}>{label}</Text>
+            </View>
             {subtitle && <Text style={themed($subtitle)}>{subtitle}</Text>}
           </View>
           {onPress && (
@@ -44,6 +48,11 @@ export default function RouteButton({label, subtitle, onPress, style, text}: Rou
     </View>
   )
 }
+
+const $icon: ThemedStyle<ViewStyle> = () => ({
+  justifyContent: "center",
+  alignItems: "center",
+})
 
 const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,

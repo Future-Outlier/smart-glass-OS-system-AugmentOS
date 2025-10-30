@@ -1,42 +1,26 @@
-import {memo} from "react"
-import {View, TouchableOpacity, ViewStyle, ImageStyle, TextStyle, Platform, ActivityIndicator} from "react-native"
-import {Image} from "expo-image"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {Text} from "@/components/ignite"
-import {ThemedStyle} from "@/theme"
-import {SquircleView} from "expo-squircle-view"
-import {useSetting, SETTINGS_KEYS} from "@/stores/settings"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import {ClientAppletInterface} from "@/stores/applets"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {Image} from "expo-image"
+import {SquircleView} from "expo-squircle-view"
+import {memo} from "react"
+import {ActivityIndicator, ImageStyle, Platform, TouchableOpacity, View, ViewStyle} from "react-native"
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
 interface AppIconProps {
   app: ClientAppletInterface
   onClick?: () => void
   style?: ViewStyle
-  showLabel?: boolean
 }
 
-const AppIcon = ({app, onClick, style, showLabel = false}: AppIconProps) => {
+const AppIcon = ({app, onClick, style}: AppIconProps) => {
   const {themed, theme} = useAppTheme()
-
+  const [enableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
   const WrapperComponent = onClick ? TouchableOpacity : View
 
-  const [enableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
-
-  // Use custom camera icon for camera app
-  // const isCameraApp = app.packageName === "com.mentra.camera"
-  // // Determine size based on style prop - handle various sizes used across the app
-  // const getIconSize = (): "small" | "medium" | "large" => {
-  //   const width = style?.width
-  //   if (!width) return "medium"
-  //   if (width <= 40) return "small"
-  //   if (width >= 64) return "large"
-  //   return "medium"
-  // }
-  // const iconSize = getIconSize()
-
   return (
-    <View>
+    <View style={{alignItems: "center"}}>
       <WrapperComponent
         onPress={onClick}
         activeOpacity={onClick ? 0.7 : undefined}
@@ -84,7 +68,6 @@ const AppIcon = ({app, onClick, style, showLabel = false}: AppIconProps) => {
             />
           </>
         )}
-        {showLabel && <Text text={app.name} style={themed($appName)} numberOfLines={2} />}
       </WrapperComponent>
       {!app.healthy && (
         <View style={themed($unhealthyBadge)}>
@@ -123,33 +106,24 @@ const $icon: ThemedStyle<ImageStyle> = () => ({
   resizeMode: "cover",
 })
 
-const $appName: ThemedStyle<TextStyle> = ({isDark}) => ({
-  fontSize: 11,
-  fontWeight: "600",
-  lineHeight: 12,
-  marginTop: 5,
-  textAlign: "left",
-  color: isDark ? "#ced2ed" : "#000000",
-})
-
 const $unhealthyBadge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
   top: -spacing.xxs,
   right: -spacing.xxs,
-  backgroundColor: colors.background,
+  backgroundColor: colors.primary_foreground,
   borderRadius: spacing.md,
   borderWidth: spacing.xxs,
-  borderColor: colors.background,
+  borderColor: colors.primary_foreground,
 })
 
 const $offlineBadge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
   right: -spacing.xxs,
   bottom: -spacing.xxs,
-  backgroundColor: colors.background,
+  backgroundColor: colors.primary_foreground,
   borderRadius: spacing.md,
   borderWidth: spacing.xxs,
-  borderColor: colors.background,
+  borderColor: colors.primary_foreground,
 })
 
 export default memo(AppIcon)

@@ -33,29 +33,6 @@ export default function Layout() {
     )
   }
 
-  // if (Platform.OS === "ios") {
-  //   return (
-  //     <NativeTabs minimizeBehavior="onScrollDown" disableTransparentOnScrollEdge>
-  //       <NativeTabs.Trigger name="home">
-  //         <Label>{translate("navigation:home")}</Label>
-  //         <Icon sf="house.fill" drawable="custom_android_drawable" />
-  //       </NativeTabs.Trigger>
-  //       <NativeTabs.Trigger name="glasses">
-  //         <Icon sf="sunglasses.fill" drawable="custom_settings_drawable" />
-  //         <Label>{translate("navigation:glasses")}</Label>
-  //       </NativeTabs.Trigger>
-  //       <NativeTabs.Trigger name="store">
-  //         <Icon sf="cart.fill" drawable="custom_settings_drawable" />
-  //         <Label>{translate("navigation:store")}</Label>
-  //       </NativeTabs.Trigger>
-  //       <NativeTabs.Trigger name="settings">
-  //         <Icon sf="gear" drawable="custom_settings_drawable" />
-  //         <Label>{translate("navigation:account")}</Label>
-  //       </NativeTabs.Trigger>
-  //     </NativeTabs>
-  //   )
-  // }
-
   return (
     <Tabs>
       <TabSlot />
@@ -77,7 +54,7 @@ export default function Layout() {
   )
 }
 
-const $icon: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+const $icon: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingHorizontal: spacing.sm,
   paddingVertical: spacing.xxs,
   borderRadius: spacing.md,

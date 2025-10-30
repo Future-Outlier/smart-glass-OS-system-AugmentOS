@@ -1,17 +1,9 @@
-import {useState, useEffect} from "react"
-import {View, Image, ActivityIndicator, ScrollView, ImageStyle, TextStyle, ViewStyle, Modal} from "react-native"
+import {Text} from "@/components/ignite"
 import {supabase} from "@/supabase/supabaseClient"
-import {Header, Screen, Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
-import {router} from "expo-router"
-import {translate} from "@/i18n"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import ActionButton from "@/components/ui/ActionButton"
-import showAlert from "@/utils/AlertUtils"
-import {LogoutUtils} from "@/utils/LogoutUtils"
-import restComms from "@/services/RestComms"
-import {useAuth} from "@/contexts/AuthContext"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {useEffect, useState} from "react"
+import {ActivityIndicator, Image, ImageStyle, TextStyle, View, ViewStyle} from "react-native"
 import Svg, {Path} from "react-native-svg"
 
 // Default user icon component for profile pictures
@@ -36,10 +28,7 @@ export const ProfileCard = () => {
     provider: string | null
   } | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
-  const [isSigningOut, setIsSigningOut] = useState(false)
-
-  const {goBack, push, replace} = useNavigationHistory()
-  const {logout} = useAuth()
+  const {theme, themed} = useAppTheme()
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -78,173 +67,9 @@ export const ProfileCard = () => {
     fetchUserData()
   }, [])
 
-  const handleRequestDataExport = () => {
-    console.log("Profile: Navigating to data export screen")
-    push("/settings/data-export")
-  }
-
-  const handleChangePassword = () => {
-    console.log("Profile: Navigating to change password screen")
-    push("/settings/change-password")
-  }
-
-  const handleDeleteAccount = () => {
-    console.log("Profile: Starting account deletion process - Step 1")
-
-    // Step 1: Initial warning
-    showAlert(
-      translate("profileSettings:deleteAccountWarning1Title"),
-      translate("profileSettings:deleteAccountWarning1Message"),
-      [
-        {text: translate("common:cancel"), style: "cancel"},
-        {
-          text: translate("common:continue"),
-          onPress: () => {
-            console.log("Profile: User passed step 1 - Step 2")
-
-            // Step 2: Generic confirmation - delay to let first modal close
-            setTimeout(() => {
-              showAlert(
-                translate("profileSettings:deleteAccountTitle"),
-                translate("profileSettings:deleteAccountMessage"),
-                [
-                  {text: translate("common:cancel"), style: "cancel"},
-                  {
-                    text: translate("common:continue"),
-                    onPress: () => {
-                      console.log("Profile: User passed step 2 - Step 3")
-
-                      // Step 3: Final severe warning - delay to let second modal close
-                      setTimeout(() => {
-                        showAlert(
-                          translate("profileSettings:deleteAccountWarning2Title"),
-                          translate("profileSettings:deleteAccountWarning2Message") +
-                            "\n\n" +
-                            "⚠️ THIS IS YOUR FINAL CHANCE TO CANCEL ⚠️",
-                          [
-                            {text: translate("common:cancel"), style: "cancel"},
-                            {
-                              text: "DELETE PERMANENTLY",
-                              onPress: proceedWithAccountDeletion,
-                            },
-                          ],
-                          {cancelable: false},
-                        )
-                      }, 100)
-                    },
-                  },
-                ],
-                {cancelable: false},
-              )
-            }, 100)
-          },
-        },
-      ],
-      {cancelable: false},
-    )
-  }
-
-  const proceedWithAccountDeletion = async () => {
-    console.log("Profile: User confirmed account deletion - proceeding")
-
-    let deleteRequestSuccessful = false
-
-    try {
-      console.log("Profile: Requesting account deletion from server")
-      const response = await restComms.requestAccountDeletion()
-
-      // Check if the response indicates success
-      deleteRequestSuccessful = response && (response.success === true || response.status === "success")
-      console.log("Profile: Account deletion request successful:", deleteRequestSuccessful)
-    } catch (error) {
-      console.error("Profile: Error requesting account deletion:", error)
-      deleteRequestSuccessful = false
-    }
-
-    // Always perform logout regardless of deletion request success
-    try {
-      console.log("Profile: Starting comprehensive logout")
-      await LogoutUtils.performCompleteLogout()
-      console.log("Profile: Logout completed successfully")
-    } catch (logoutError) {
-      console.error("Profile: Error during logout:", logoutError)
-      // Continue with navigation even if logout fails
-    }
-
-    // Show appropriate message based on deletion request result
-    if (deleteRequestSuccessful) {
-      showAlert(
-        translate("profileSettings:deleteAccountSuccessTitle"),
-        translate("profileSettings:deleteAccountSuccessMessage"),
-        [
-          {
-            text: translate("common:ok"),
-            onPress: () => router.replace("/"),
-          },
-        ],
-        {cancelable: false},
-      )
-    } else {
-      showAlert(
-        translate("profileSettings:deleteAccountPendingTitle"),
-        translate("profileSettings:deleteAccountPendingMessage"),
-        [
-          {
-            text: translate("common:ok"),
-            onPress: () => router.replace("/"),
-          },
-        ],
-        {cancelable: false},
-      )
-    }
-  }
-
-  const handleSignOut = async () => {
-    try {
-      console.log("Profile: Starting sign-out process")
-      setIsSigningOut(true)
-
-      await logout()
-
-      console.log("Profile: Logout completed, navigating to login")
-
-      // Reset the loading state before navigation
-      setIsSigningOut(false)
-
-      // Navigate to Login screen directly instead of SplashScreen
-      // This ensures we skip the SplashScreen logic that might detect stale user data
-      replace("/")
-    } catch (err) {
-      console.error("Profile: Error during sign-out:", err)
-      setIsSigningOut(false)
-
-      // Show user-friendly error but still navigate to login to prevent stuck state
-      showAlert(translate("common:error"), translate("settings:signOutError"), [
-        {
-          text: translate("common:ok"),
-          onPress: () => replace("/"),
-        },
-      ])
-    }
-  }
-
-  const confirmSignOut = () => {
-    showAlert(
-      translate("settings:signOut"),
-      translate("settings:signOutConfirm"),
-      [
-        {text: translate("common:cancel"), style: "cancel"},
-        {text: translate("common:yes"), onPress: handleSignOut},
-      ],
-      {cancelable: false},
-    )
-  }
-
-  const {theme, themed} = useAppTheme()
-
   if (loading) {
     return (
-      <View>
+      <View style={{height: 234, justifyContent: "center"}}>
         <ActivityIndicator size="large" color={theme.colors.palette.primary500} />
       </View>
     )
@@ -301,13 +126,13 @@ const $infoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   marginBottom: spacing.lg,
 })
 
-const $nameText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+const $nameText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 20,
   color: colors.secondary_foreground,
   fontWeight: 600,
 })
 
-const $emailText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+const $emailText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 14,
   color: colors.secondary_foreground,
   fontWeight: 600,

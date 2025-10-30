@@ -2,12 +2,15 @@ import {ProfileCard} from "@/components/account/ProfileCard"
 import {Header, Screen, Text} from "@/components/ignite"
 import {Group} from "@/components/ui/Group"
 import RouteButton from "@/components/ui/RouteButton"
+import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
+import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
+import UserIcon from "assets/icons/navbar/UserIcon"
 import Constants from "expo-constants"
 import {useRef} from "react"
 import {Platform, View, ViewStyle} from "react-native"
@@ -75,39 +78,62 @@ export default function AccountPage() {
       <ScrollView
         style={{marginRight: -theme.spacing.xl, paddingRight: theme.spacing.xl}}
         contentInsetAdjustmentBehavior="automatic">
-        {/*<Spacer height={theme.spacing.xl} />*/}
-
         <ProfileCard />
 
         <View style={{flex: 1, gap: theme.spacing.lg}}>
           <Group title={translate("account:accountSettings")}>
-            <RouteButton label={translate("settings:profileSettings")} onPress={() => push("/settings/profile")} />
-            <RouteButton label={translate("settings:feedback")} onPress={() => push("/settings/feedback")} />
+            <RouteButton
+              icon={<UserIcon color={theme.colors.secondary_foreground} size={theme.spacing.lg} />}
+              label={translate("settings:profileSettings")}
+              onPress={() => push("/settings/profile")}
+            />
+            <RouteButton
+              // icon={<FeedbackIcon color={theme.colors.secondary_foreground} size={theme.spacing.lg} />}
+              icon={<SolarLineIconsSet4 color={theme.colors.secondary_foreground} size={theme.spacing.lg} />}
+              label={translate("settings:feedback")}
+              onPress={() => push("/settings/feedback")}
+            />
           </Group>
 
           {defaultWearable && (
             <Group title={translate("account:deviceSettings")}>
-              <RouteButton label={defaultWearable} onPress={() => push("/settings/glasses")} />
-              {/*<RouteButton label={translate("settings:transcription")} onPress={() => push("/settings/transcription")} />*/}
+              <RouteButton
+                icon={<SolarLineIconsSet4 color={theme.colors.secondary_foreground} size={theme.spacing.lg} />}
+                label={defaultWearable}
+                onPress={() => push("/settings/glasses")}
+              />
             </Group>
           )}
 
           <Group title={translate("account:appSettings")}>
-            <RouteButton label={translate("settings:themeSettings")} onPress={() => push("/settings/theme")} />
-            {/*<RouteButton label={translate("settings:transcription")} onPress={() => push("/settings/transcription")} />*/}
+            <RouteButton
+              icon={<SolarLineIconsSet4 color={theme.colors.secondary_foreground} size={theme.spacing.lg} />}
+              label={translate("settings:appAppearance")}
+              onPress={() => push("/settings/theme")}
+            />
             {Platform.OS === "android" && (
-              <RouteButton label="Notification Settings" onPress={() => push("/settings/notifications")} />
+              <RouteButton
+                icon={<SolarLineIconsSet4 color={theme.colors.secondary_foreground} size={theme.spacing.lg} />}
+                label="Notification Settings"
+                onPress={() => push("/settings/notifications")}
+              />
             )}
             <RouteButton
+              icon={<SolarLineIconsSet4 color={theme.colors.secondary_foreground} size={theme.spacing.lg} />}
               label={translate("settings:transcriptionSettings")}
               onPress={() => push("/settings/transcription")}
             />
-            <RouteButton label={translate("settings:privacySettings")} onPress={() => push("/settings/privacy")} />
+            <RouteButton
+              icon={<SolarLineIconsSet4 color={theme.colors.secondary_foreground} size={theme.spacing.lg} />}
+              label={translate("settings:privacySettings")}
+              onPress={() => push("/settings/privacy")}
+            />
           </Group>
 
           <Group title={translate("deviceSettings:advancedSettings")}>
             {devMode && (
               <RouteButton
+                icon={<SolarLineIconsSet4 color={theme.colors.secondary_foreground} size={theme.spacing.lg} />}
                 label={translate("settings:developerSettings")}
                 onPress={() => push("/settings/developer")}
               />
@@ -121,6 +147,8 @@ export default function AccountPage() {
             style={{color: theme.colors.textDim}}
           />
         </View>
+        <Spacer height={theme.spacing.xxl} />
+        <Spacer height={theme.spacing.xxl} />
       </ScrollView>
     </Screen>
   )

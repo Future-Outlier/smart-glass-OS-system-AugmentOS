@@ -6,10 +6,12 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import DeviceSettings from "@/components/glasses/DeviceSettings"
 import {translate} from "@/i18n/translate"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 export default function Glasses() {
   const {theme} = useAppTheme()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const {goBack} = useNavigationHistory()
 
   const formatGlassesTitle = (title: string) => title.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase())
   let pageTitle
@@ -25,7 +27,7 @@ export default function Glasses() {
 
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header leftText={pageTitle} />
+      <Header title={pageTitle} leftIcon="caretLeft" onLeftPress={() => goBack()} />
       <ScrollView
         style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}
         contentInsetAdjustmentBehavior="automatic">

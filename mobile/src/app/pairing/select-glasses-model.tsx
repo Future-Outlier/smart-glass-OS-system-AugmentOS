@@ -68,8 +68,8 @@ export default function SelectGlassesModelScreen() {
           y={halfStroke}
           width={size - strokeWidth}
           height={size - strokeWidth}
-          rx={theme.borderRadius.md - 2}
-          ry={theme.borderRadius.md - 2}
+          rx={theme.spacing.md - 2}
+          ry={theme.spacing.md - 2}
           fill="url(#grad)"
           stroke={theme.colors.border}
           strokeWidth={strokeWidth}
@@ -138,7 +138,7 @@ export default function SelectGlassesModelScreen() {
   )
 }
 
-const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => ({
+const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
@@ -148,7 +148,7 @@ const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) =
   marginVertical: 8,
 
   // Rounded corners
-  borderRadius: borderRadius.md,
+  borderRadius: spacing.md,
 
   borderWidth: spacing.xxxs,
   borderColor: colors.border,

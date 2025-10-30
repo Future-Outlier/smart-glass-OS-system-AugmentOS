@@ -110,7 +110,7 @@ export const colors = {
   palette,
 
   // Text colors
-  text: palette.neutral800,
+  text: design.secondary_foreground,
   textDim: palette.neutral600,
   textAlt: palette.neutral200,
 

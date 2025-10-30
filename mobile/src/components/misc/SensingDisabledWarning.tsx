@@ -64,7 +64,7 @@ const $warningContent: ThemedStyle<ViewStyle> = () => ({
 const $warningText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.warning,
   flex: 1,
-  fontSize: spacing.md,
+  fontSize: 14,
   marginLeft: spacing.sm,
 })
 

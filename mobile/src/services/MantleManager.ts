@@ -16,7 +16,7 @@ const LOCATION_TASK_NAME = "handleLocationUpdates"
 TaskManager.defineTask(LOCATION_TASK_NAME, ({data: {locations}, error}) => {
   if (error) {
     // check `error.message` for more details.
-    console.error("Error handling location updates", error)
+    // console.error("Error handling location updates", error)
     return
   }
   const locs = locations as Location.LocationObject[]
@@ -85,9 +85,12 @@ class MantleManager {
   private async setupPeriodicTasks() {
     this.sendCalendarEvents()
     // Calendar sync every hour
-    this.calendarSyncTimer = setInterval(() => {
-      this.sendCalendarEvents()
-    }, 60 * 60 * 1000) // 1 hour
+    this.calendarSyncTimer = setInterval(
+      () => {
+        this.sendCalendarEvents()
+      },
+      60 * 60 * 1000,
+    ) // 1 hour
     try {
       let locationAccuracy = await useSettingsStore.getState().loadSetting(SETTINGS_KEYS.location_tier)
       let properAccuracy = this.getLocationAccuracy(locationAccuracy)

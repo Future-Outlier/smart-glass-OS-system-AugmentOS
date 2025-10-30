@@ -233,8 +233,6 @@ const $glassesScreen: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderRadius: spacing.md,
   paddingHorizontal: spacing.md,
   paddingVertical: spacing.sm,
-  borderWidth: 2,
-  borderColor: colors.border,
 })
 
 const $glassesScreenFullscreen: ThemedStyle<ViewStyle> = () => ({

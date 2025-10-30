@@ -240,9 +240,9 @@ export const ForegroundAppsGrid: React.FC = () => {
 
       return (
         <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
-          <View style={themed($appContainer)}>
-            <AppIcon app={item as any} style={themed($appIcon)} />
-          </View>
+          {/*<View style={themed($appContainer)}>*/}
+          <AppIcon app={item} style={themed($appIcon)} />
+          {/*</View>*/}
           <Text
             text={item.name}
             style={themed(!item.healthy ? $appNameOffline : $appName)}
@@ -296,13 +296,6 @@ const $gridItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
   marginVertical: spacing.sm,
   paddingHorizontal: spacing.xs,
-})
-
-const $appContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  position: "relative",
-  width: 64,
-  height: 64,
-  marginBottom: spacing.xs,
 })
 
 const $appIcon: ThemedStyle<ViewStyle> = () => ({

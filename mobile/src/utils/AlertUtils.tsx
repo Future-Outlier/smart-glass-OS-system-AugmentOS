@@ -244,7 +244,11 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
                 icon={
                   options.icon ??
                   (options.iconName ? (
-                    <Icon name={options.iconName} size={options.iconSize ?? 24} color={options.iconColor} />
+                    <Icon
+                      name={options.iconName}
+                      size={options.iconSize ?? 24}
+                      color={options.iconColor ?? theme.colors.secondary_foreground}
+                    />
                   ) : undefined)
                 }
                 leftButtonText={buttons.length > 1 ? buttons[0].text : undefined}
