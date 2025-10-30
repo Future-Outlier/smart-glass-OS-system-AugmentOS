@@ -13,11 +13,11 @@ const palette = {
   neutral900: "#fffaf0",
   neutral800: "#F4F2F1",
   neutral700: "#D7CEC9",
-  neutral600: "#B6ACA6",
+  neutral600: "#F5F5F5",
   neutral500: "#978F8A",
   neutral400: "#564E4A",
   neutral300: "#3C3836",
-  neutral200: "#191015",
+  neutral200: "#222222",
   neutral100: "#000000",
 
   // Primary
@@ -118,8 +118,9 @@ export const colors = {
   textAlt: palette.neutral800,
 
   // Backgrounds
-  background: palette.neutral900,
-  backgroundAlt: palette.neutral800,
+  background: palette.white,
+  backgroundAlt: palette.neutral600,
+  backgroundNeo: palette.neutral900,
   modalOverlay: "rgba(0, 0, 0, 0.7)",
 
   // Borders

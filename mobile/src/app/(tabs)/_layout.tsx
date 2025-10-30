@@ -86,7 +86,7 @@ const $icon: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 
 const $tabList: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
-  backgroundColor: colors.backgroundStart + "cc",
+  backgroundColor: colors.backgroundAlt + "cc",
   position: "absolute",
   bottom: 0,
   borderTopColor: colors.separator,

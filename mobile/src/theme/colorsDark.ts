@@ -7,8 +7,8 @@ const palette = {
   neutral500: "#978F8A",
   neutral400: "#564E4A",
   neutral300: "#3C3836",
-  neutral200: "#191015",
-  neutral100: "#000000",
+  neutral200: "#222222",
+  neutral100: "#171717",
 
   // Primary
   primary900: "#D8C0E7",
@@ -109,8 +109,9 @@ export const colors = {
   textAlt: palette.neutral200,
 
   // Backgrounds
-  background: palette.neutral300,
-  backgroundAlt: palette.neutral200, // Subtle step lighter than primary100
+  background: palette.neutral100,
+  backgroundAlt: palette.neutral200,
+  backgroundNeo: palette.neutral100,
   modalOverlay: "rgba(0, 0, 0, 0.7)",
 
   // Borders

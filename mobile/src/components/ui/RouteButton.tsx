@@ -39,7 +39,7 @@ export default function RouteButton({label, subtitle, onPress}: RouteButtonProps
 }
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.border,
+  backgroundColor: colors.background,
   padding: spacing.sm,
   width: spacing.xxl,
   height: spacing.xxl,
