@@ -92,6 +92,8 @@ jobs:
 
       - name: Build iOS app for Device
         working-directory: ./mobile/ios
+        env:
+          SENTRY_DISABLE_AUTO_UPLOAD: true
         run: |
           xcodebuild -workspace MentraOS.xcworkspace \
                      -scheme MentraOS \
