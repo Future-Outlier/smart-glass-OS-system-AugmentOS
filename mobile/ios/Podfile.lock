@@ -114,9 +114,9 @@ PODS:
     - ExpoModulesCore
     - UMAppLoader
   - FBLazyVector (0.81.5)
-  - hermes-engine (0.81.4):
-    - hermes-engine/Pre-built (= 0.81.4)
-  - hermes-engine/Pre-built (0.81.4)
+  - hermes-engine (0.81.5):
+    - hermes-engine/Pre-built (= 0.81.5)
+  - hermes-engine/Pre-built (0.81.5)
   - libavif/core (0.11.1)
   - libavif/libdav1d (0.11.1):
     - libavif/core
@@ -196,7 +196,7 @@ PODS:
     - React-utils
     - ReactNativeDependencies
     - Yoga
-  - React-Core-prebuilt (0.81.4):
+  - React-Core-prebuilt (0.81.5):
     - ReactNativeDependencies
   - React-Core/CoreModulesHeaders (0.81.5):
     - hermes-engine
@@ -2603,7 +2603,7 @@ PODS:
   - SWCompression/Zlib (4.8.6):
     - BitByteData (~> 2.0)
     - SWCompression/Deflate
-  - SwiftProtobuf (1.32.0)
+  - SwiftProtobuf (1.33.3)
   - SwiftUIIntrospect (1.3.0)
   - UltraliteSDK (1.9.0)
   - UMAppLoader (6.0.7)
@@ -3046,7 +3046,7 @@ SPEC CHECKSUMS:
   ExpoWebBrowser: d04a0d6247a0bea4519fbc2ea816610019ad83e0
   EXTaskManager: cbbb80cbccea6487ccca0631809fbba2ed3e5271
   FBLazyVector: e95a291ad2dadb88e42b06e0c5fb8262de53ec12
-  hermes-engine: 35c763d57c9832d0eef764316ca1c4d043581394
+  hermes-engine: 9f4dfe93326146a1c99eb535b1cb0b857a3cd172
   libavif: 84bbb62fb232c3018d6f1bab79beea87e35de7b7
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
   livekit-react-native: 6ee9e89bccc34c668c76f8090dd1ef56b1e75bf9
@@ -3061,7 +3061,7 @@ SPEC CHECKSUMS:
   React: 914f8695f9bf38e6418228c2ffb70021e559f92f
   React-callinvoker: 1c0808402aee0c6d4a0d8e7220ce6547af9fba71
   React-Core: c61410ef0ca6055e204a963992e363227e0fd1c5
-  React-Core-prebuilt: dde79b89f8863efebb1d532a3335f472927da669
+  React-Core-prebuilt: 02f0ad625ddd47463c009c2d0c5dd35c0d982599
   React-CoreModules: 1f6d1744b5f9f2ec684a4bb5ced25370f87e5382
   React-cxxreact: 3af79478e8187b63ffc22b794cd42d3fc1f1f2da
   React-debug: 6328c2228e268846161f10082e80dc69eac2e90a
@@ -3150,7 +3150,7 @@ SPEC CHECKSUMS:
   SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c
   Sentry: b3ec44d01708fce73f99b544beb57e890eca4406
   SWCompression: 9379873ad5e9f25b31db88c441649b59a4c2bab7
-  SwiftProtobuf: 81e341191afbddd64aa031bd12862dccfab2f639
+  SwiftProtobuf: e1b437c8e31a4c5577b643249a0bb62ed4f02153
   SwiftUIIntrospect: fee9aa07293ee280373a591e1824e8ddc869ba5d
   UltraliteSDK: 5e70833745454008bd55958bb645471e8eed9ea0
   UMAppLoader: e1234c45d2b7da239e9e90fc4bbeacee12afd5b6
@@ -3158,6 +3158,6 @@ SPEC CHECKSUMS:
   Yoga: 5934998fbeaef7845dbf698f698518695ab4cd1a
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: 111f1ad6383367058a5a6d4046d2436bec4061c4
+PODFILE CHECKSUM: 7e898b6fb8ccb6925f5cb5169a7e8872fbe9bec3
 
 COCOAPODS: 1.16.2
