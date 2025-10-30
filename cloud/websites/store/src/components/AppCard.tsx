@@ -79,6 +79,7 @@ const AppCard: React.FC<AppCardProps> = memo(
     return (
       <div
         className=" pb-[15px] sm:p-4 flex gap-2 sm:gap-3 rounded-sm relative cursor-pointer "
+        data-app-card
         onClick={handleCardClick}
         onMouseEnter={(e) =>
           (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")
@@ -88,7 +89,7 @@ const AppCard: React.FC<AppCardProps> = memo(
         }
       >
         <div
-          className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-px w-[90%] sm:w-75"
+          className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-px w-[70%]"
           style={{ backgroundColor: "var(--border-color)" }}
         ></div>
 

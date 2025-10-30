@@ -90,7 +90,7 @@ const AppStore: React.FC = () => {
     }
     slideIntervalRef.current = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slideComponents.length);
-    }, 1500000);
+    }, 7500);
   }, [slideComponents.length]);
 
   const goToPrevSlide = useCallback(() => {
@@ -122,7 +122,7 @@ const AppStore: React.FC = () => {
     // Start auto-play
     slideIntervalRef.current = setInterval(() => {
       goToNextSlide();
-    }, 1500000); // Change slide every 15 seconds
+    }, 7500); // Change slide every 15 seconds
 
     // Cleanup on unmount
     return () => {
@@ -519,37 +519,48 @@ const AppStore: React.FC = () => {
       />
 
       {/* Main Content */}
-      {/* Search bar on mobile only - sticky at top */}
-      {isMobile && (
-        <div
-          className="sticky top-0 z-20 px-4 py-3"
-          style={{
-            backgroundColor: "var(--bg-primary)",
-            // borderBottom: "1px solid var(--border-color)",
+      {/* Search bar on mobile - sticky at top - hidden on desktop (sm and above) */}
+      <div
+        className="sm:hidden sticky top-0 z-20 px-4 py-3"
+        style={{
+          backgroundColor: "var(--bg-primary)",
+          // borderBottom: "1px solid var(--border-color)",
+        }}
+      >
+        <SearchBar
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          onSearchSubmit={handleSearch}
+          onClear={() => {
+            setSearchQuery("");
+            fetchApps();
           }}
-        >
-          <SearchBar
-            searchQuery={searchQuery}
-            onSearchChange={handleSearchChange}
-            onSearchSubmit={handleSearch}
-            onClear={() => {
-              setSearchQuery("");
-              fetchApps();
-            }}
-            className="w-full"
-          />
-        </div>
-      )}
+          className="w-full"
+        />
+      </div>
 
       <main className="px-4 sm:px-8 md:px-16 lg:px-25 pb-6 sm:pb-10 pt-0 sm:pt-10">
         {isMobile && !searchQuery && (
-          <div className="text-[36px] mb-[20px] text-[#353535]">Apps</div>
+          <div
+            className="text-[36px] mb-[20px]"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Apps
+          </div>
         )}
 
         {/* Organization filter indicator */}
         {activeOrgFilter && (
           <div className="my-2 sm:my-4 max-w-2xl mx-auto px-4">
-            <div className="flex items-center text-sm bg-blue-50 text-blue-700 px-3 py-2 rounded-md">
+            <div
+              className="flex items-center text-sm px-3 py-2 rounded-md"
+              style={{
+                backgroundColor:
+                  theme === "light" ? "#dbeafe" : "var(--bg-secondary)",
+                color: theme === "light" ? "#1e40af" : "var(--text-secondary)",
+                border: `1px solid ${theme === "light" ? "#93c5fd" : "var(--border-color)"}`,
+              }}
+            >
               <Building className="h-4 w-4 mr-2" />
               <span>
                 Filtered by:{" "}
@@ -557,7 +568,11 @@ const AppStore: React.FC = () => {
               </span>
               <button
                 onClick={clearOrgFilter}
-                className="ml-auto text-blue-600 hover:text-blue-800"
+                className="ml-auto hover:opacity-70 transition-opacity"
+                style={{
+                  color:
+                    theme === "light" ? "#1e40af" : "var(--text-secondary)",
+                }}
                 aria-label="Clear organization filter"
               >
                 <X className="h-4 w-4" />
@@ -567,7 +582,7 @@ const AppStore: React.FC = () => {
         )}
 
         {/* Search result indicator */}
-        {searchQuery && (
+        {/* {searchQuery && (
           <div className="my-2 sm:my-4 max-w-2xl mx-auto px-4">
             <p className="text-gray-600 text-left sm:text-center">
               {filteredApps.length}{" "}
@@ -575,7 +590,7 @@ const AppStore: React.FC = () => {
               {searchQuery}&quot;{activeOrgFilter && ` in ${orgName}`}
             </p>
           </div>
-        )}
+        )} */}
 
         {/* Error message */}
         {error && !isLoading && (
@@ -596,15 +611,53 @@ const AppStore: React.FC = () => {
             {!slidesLoaded ? (
               <SkeletonSlider />
             ) : (
-              <div className="w-full relative mb-4 sm:mb-8 overflow-hidden">
+              <div
+                className="w-full relative mb-4 sm:mb-8 overflow-hidden touch-pan-y"
+                onTouchStart={(e) => {
+                  if (!isMobile) return;
+                  const touch = e.touches[0];
+                  const target = e.currentTarget as HTMLDivElement & {
+                    startX?: number;
+                    startTime?: number;
+                  };
+                  target.startX = touch.clientX;
+                  target.startTime = Date.now();
+                }}
+                onTouchEnd={(e) => {
+                  if (!isMobile) return;
+
+                  const touch = e.changedTouches[0];
+                  const target = e.currentTarget as HTMLDivElement & {
+                    startX?: number;
+                    startTime?: number;
+                  };
+                  const startX = target.startX || 0;
+                  const startTime = target.startTime || Date.now();
+                  const diff = touch.clientX - startX;
+                  const timeDiff = Date.now() - startTime;
+                  const velocity = Math.abs(diff) / timeDiff;
+
+                  // Check if it's a swipe (fast movement) or a drag (slow movement)
+                  const isSwipe = velocity > 0.5;
+                  const threshold = isSwipe ? 30 : 80;
+
+                  if (diff < -threshold) {
+                    // Swiped left, go to next slide
+                    goToNextSlide();
+                  } else if (diff > threshold) {
+                    // Swiped right, go to previous slide
+                    goToPrevSlide();
+                  }
+                }}
+              >
                 {/* Slides Container - translate horizontally based on currentSlide */}
                 <motion.div
                   className="flex"
                   animate={{ x: `-${currentSlide * 100}%` }}
                   transition={{
                     type: "tween",
-                    duration: 0.5,
-                    ease: "easeInOut",
+                    duration: 0.4,
+                    ease: [0.25, 0.1, 0.25, 1],
                   }}
                 >
                   {slideComponents.map((SlideComponent, index) => (
@@ -612,10 +665,22 @@ const AppStore: React.FC = () => {
                   ))}
                 </motion.div>
 
-                {/* Previous Button - Left Side */}
+                {/* Previous Button - Left Side - Hidden on mobile */}
                 <motion.button
                   onClick={goToPrevSlide}
-                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-[#ffffff1a] hover:bg-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg z-10"
+                  className="hidden sm:flex absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 rounded-full w-8 h-8 sm:w-12 sm:h-12 items-center justify-center shadow-lg z-1 transition-colors"
+                  style={{
+                    backgroundColor:
+                      theme === "light" ? "#ffffff1a" : "#ffffff1a",
+                    color: theme === "light" ? "#000000" : "#ffffff",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor =
+                      theme === "light" ? "#ffffff" : "#ffffff33")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#ffffff1a")
+                  }
                   aria-label="Previous slide"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -626,10 +691,22 @@ const AppStore: React.FC = () => {
                   />
                 </motion.button>
 
-                {/* Next Button - Right Side */}
+                {/* Next Button - Right Side - Hidden on mobile */}
                 <motion.button
                   onClick={goToNextSlide}
-                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-[#ffffff1a] hover:bg-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shadow-lg z-10"
+                  className="hidden sm:flex absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 rounded-full w-8 h-8 sm:w-12 sm:h-12 items-center justify-center shadow-lg transition-colors"
+                  style={{
+                    backgroundColor:
+                      theme === "light" ? "#ffffff1a" : "#ffffff1a",
+                    color: theme === "light" ? "#000000" : "#ffffff",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor =
+                      theme === "light" ? "#ffffff" : "#ffffff33")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#ffffff1a")
+                  }
                   aria-label="Next slide"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -706,9 +783,13 @@ const AppStore: React.FC = () => {
             {searchQuery ? (
               <>
                 {/* Search Icon */}
-                <div className="mb-6 w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                <div
+                  className="mb-6 w-20 h-20 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: "var(--bg-secondary)" }}
+                >
                   <svg
-                    className="w-10 h-10 text-gray-400"
+                    className="w-10 h-10"
+                    style={{ color: "var(--text-muted)" }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -729,7 +810,10 @@ const AppStore: React.FC = () => {
                 >
                   No apps found
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-base mb-6 max-w-md">
+                <p
+                  className="text-base mb-6 max-w-md justify-center text-center"
+                  style={{ color: "var(--text-secondary)" }}
+                >
                   We couldn&apos;t find any apps matching &quot;{searchQuery}
                   &quot;
                   {activeOrgFilter && ` in ${orgName}`}
@@ -737,7 +821,19 @@ const AppStore: React.FC = () => {
 
                 {/* Clear Search Button */}
                 <motion.button
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-md transition-colors"
+                  className="px-6 py-3 font-medium rounded-xl shadow-md transition-colors"
+                  style={{
+                    backgroundColor: "var(--accent-primary)",
+                    color: "#ffffff",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor =
+                      "var(--accent-hover)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor =
+                      "var(--accent-primary)")
+                  }
                   onClick={() => {
                     setSearchQuery("");
                     fetchApps(); // Reset to all apps
@@ -751,9 +847,13 @@ const AppStore: React.FC = () => {
             ) : (
               <>
                 {/* Empty Icon */}
-                <div className="mb-6 w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                <div
+                  className="mb-6 w-20 h-20 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: "var(--bg-secondary)" }}
+                >
                   <svg
-                    className="w-10 h-10 text-gray-400"
+                    className="w-10 h-10"
+                    style={{ color: "var(--text-muted)" }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -766,7 +866,10 @@ const AppStore: React.FC = () => {
                     />
                   </svg>
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 text-lg">
+                <p
+                  className="text-lg"
+                  style={{ color: "var(--text-secondary)" }}
+                >
                   {activeOrgFilter
                     ? `No apps available for ${orgName}.`
                     : "No apps available at this time."}

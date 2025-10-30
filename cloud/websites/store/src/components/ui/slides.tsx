@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../api";
 
 /**
  * Captions Slide - Returns a div with the captions image and custom-placed buttons
  */
 export const CaptionsSlide: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-w-full flex items-center justify-center relative px-4 sm:px-0">
       <motion.img
@@ -26,7 +29,7 @@ export const CaptionsSlide: React.FC = () => {
           fontSize: "clamp(11px, 1vw, 15px)",
           padding: "0 clamp(16px, 2vw, 32px)",
         }}
-        onClick={() => console.log("Captions button clicked")}
+        onClick={() => navigate("/package/com.augmentos.livecaptions")}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.4 }}
@@ -43,6 +46,7 @@ export const CaptionsSlide: React.FC = () => {
  * Captions Slide Mobile - Mobile version with optimized image
  */
 export const CaptionsSlideMobile: React.FC = () => {
+  const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>("");
@@ -141,7 +145,7 @@ export const CaptionsSlideMobile: React.FC = () => {
         {/* Get Now Button */}
         <motion.button
           className="shrink-0 font-bold w-[70px] h-[30px] xs:w-[70px] xs:h-[28px] sm:w-[80px] sm:h-[32px] bg-[#FBFF00] hover:bg-[#ffd500] text-black shadow-lg rounded-full cursor-pointer xs:text-[9px] sm:text-[10px] text-[10px]"
-          onClick={() => console.log("Captions button clicked")}
+          onClick={() => navigate("/package/com.augmentos.livecaptions")}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -156,6 +160,8 @@ export const CaptionsSlideMobile: React.FC = () => {
  * Merge Slide - Returns a div with the merge image and custom-placed buttons
  */
 export const MergeSlide: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-w-full flex items-center justify-center relative px-4 sm:px-0">
       <motion.img
@@ -169,14 +175,14 @@ export const MergeSlide: React.FC = () => {
 
       {/* Custom positioned buttons for this slide */}
       <motion.button
-        className="absolute font-bold bottom-[20px] left-[20px] sm:bottom-[2.2vw] sm:left-[3vw] bg-[#57FFB7] hover:bg-[#00ddff] text-black shadow-lg rounded-full cursor-pointer"
+        className=" absolute font-bold bottom-[20px] left-[20px] sm:bottom-[2.2vw] sm:left-[3vw] bg-[#FF8786] hover:bg-[#00ddff] text-white shadow-lg rounded-full cursor-pointer"
         style={{
           width: "clamp(130px, 12vw, 190px)",
           height: "clamp(30px, 2.2vw, 35px)",
           fontSize: "clamp(11px, 0.85vw, 13px)",
           padding: "0 clamp(16px, 2vw, 32px)",
         }}
-        onClick={() => console.log("Merge button clicked")}
+        onClick={() => navigate("/package/com.mentra.merge")}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.4 }}
@@ -193,6 +199,7 @@ export const MergeSlide: React.FC = () => {
  * Merge Slide Mobile - Mobile version with optimized image
  */
 export const MergeSlideMobile: React.FC = () => {
+  const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>("");
@@ -279,7 +286,7 @@ export const MergeSlideMobile: React.FC = () => {
         {/* Get Now Button */}
         <motion.button
           className="shrink-0 font-bold w-[70px] h-[30px] bg-[#6FB7DC] hover:bg-[#00ddff] text-white shadow-lg rounded-full cursor-pointer text-[10px]"
-          onClick={() => console.log("Merge button clicked")}
+          onClick={() => navigate("/package/com.mentra.merge")}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -294,6 +301,8 @@ export const MergeSlideMobile: React.FC = () => {
  * Stream Slide - Returns a div with the stream image and custom-placed buttons
  */
 export const StreamSlide: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-w-full flex items-center justify-center relative px-4 sm:px-0">
       <motion.img
@@ -307,14 +316,14 @@ export const StreamSlide: React.FC = () => {
 
       {/* Custom positioned buttons for this slide */}
       <motion.button
-        className="absolute font-bold bottom-[20px] left-[20px] sm:bottom-[2.2vw] sm:left-[3vw] bg-[#57FFB7] hover:bg-[#00ddff] text-black shadow-lg rounded-full cursor-pointer"
+        className="absolute font-bold bottom-[20px] left-[20px] sm:bottom-[2.2vw] sm:left-[3vw] bg-[#000000] text-[#fff] shadow-lg rounded-full cursor-pointer"
         style={{
           width: "clamp(130px, 12vw, 190px)",
           height: "clamp(30px, 2.2vw, 35px)",
           fontSize: "clamp(11px, 0.85vw, 13px)",
           padding: "0 clamp(16px, 2vw, 32px)",
         }}
-        onClick={() => console.log("Stream button clicked")}
+        onClick={() => navigate("/package/com.mentra.streamer")}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.4 }}
@@ -331,6 +340,8 @@ export const StreamSlide: React.FC = () => {
  * X Slide - Returns a div with the X image and custom-placed buttons
  */
 export const XSlide: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-w-full flex items-center justify-center relative px-4 sm:px-0">
       <motion.img
@@ -351,7 +362,7 @@ export const XSlide: React.FC = () => {
           fontSize: "clamp(11px, 1vw, 15px)",
           padding: "0 clamp(16px, 2vw, 32px)",
         }}
-        onClick={() => console.log("X button clicked")}
+        onClick={() => navigate("/package/com.augmentos.xstats")}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.4 }}
@@ -368,6 +379,7 @@ export const XSlide: React.FC = () => {
  * X Slide Mobile - Mobile version with optimized image
  */
 export const XSlideMobile: React.FC = () => {
+  const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>("");
@@ -457,7 +469,7 @@ export const XSlideMobile: React.FC = () => {
         {/* Get Now Button */}
         <motion.button
           className="shrink-0 font-bold w-[70px] h-[30px] bg-[#ffffff] hover:bg-[#000000] hover:text-white text-black shadow-lg rounded-full cursor-pointer text-[10px]"
-          onClick={() => console.log("X button clicked")}
+          onClick={() => navigate("/package/com.augmentos.xstats")}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >

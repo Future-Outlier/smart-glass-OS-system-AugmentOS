@@ -227,7 +227,7 @@ button:focus-visible {
 /* Theme Variables */
 :root[data-theme="light"] {
   --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
+  --bg-secondary: #f1f1f1;
   --bg-tertiary: #e9ecef;
   --text-primary: #000000;
   --text-secondary: #6c757d;
@@ -244,20 +244,20 @@ button:focus-visible {
 
 :root[data-theme="dark"],
 :root {
-  --bg-primary: #030514;
-  --bg-secondary: #0a0b19;
-  --bg-tertiary: #080b27;
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #13141a;
+  --bg-tertiary: #1a1b24;
   --text-primary: #e4e4e7;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
-  --border-color: #242454;
-  --accent-primary: #242454;
-  --accent-hover: #2d2f5a;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border-color: #27272a;
+  --accent-primary: #22c55e;
+  --accent-hover: #16a34a;
   --error-color: #e24a24;
   --error-hover: #c73e1d;
-  --button-bg: #242454;
-  --button-text: #ffffff;
-  --button-hover: #2d2f5a;
+  --button-bg: #ffffff;
+  --button-text: #000000;
+  --button-hover: #e5e5e5;
 }
 
 /* Theme-aware search input */

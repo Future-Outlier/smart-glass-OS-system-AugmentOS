@@ -27,7 +27,7 @@ import { AppI, HardwareType, HardwareRequirementLevel } from "../types";
 import { toast } from "sonner";
 import { formatCompatibilityError } from "../utils/errorHandling";
 import { Button } from "@/components/ui/button";
-import Header from "../components/Header";
+// import Header from "../components/Header";
 import Header_v2 from "../components/Header_v2";
 import GetMentraOSButton from "../components/GetMentraOSButton";
 import SkeletonAppDetails from "../components/SkeletonAppDetails";
@@ -336,9 +336,9 @@ const AppDetails: React.FC = () => {
   return (
     <>
       {/* Mobile Header */}
-      <div className="sm:hidden">
+      {/* <div className="sm:hidden">
         <Header />
-      </div>
+      </div> */}
 
       {/* Desktop Header - no wrapper so sticky works */}
       <div className="hidden sm:block sticky top-0 z-50">
@@ -346,7 +346,7 @@ const AppDetails: React.FC = () => {
       </div>
 
       <div
-        className=""
+        className="min-h-screen"
         style={{
           backgroundColor: "var(--bg-primary)",
           color: "var(--text-primary)",
@@ -447,10 +447,6 @@ const AppDetails: React.FC = () => {
                                 ? "Foreground"
                                 : appType;
                             })()}
-                          </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            In-app purchases
                           </span>
                         </div>
                       </div>
