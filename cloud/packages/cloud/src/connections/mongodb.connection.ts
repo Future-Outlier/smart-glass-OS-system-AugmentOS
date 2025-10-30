@@ -12,9 +12,9 @@ export async function init(): Promise<void> {
   if (!MONGO_URL) throw "MONGO_URL is undefined";
   try {
     mongoose.set("strictQuery", false);
-    let modifiedUrl = MONGO_URL + "/prod";
-    if (IS_CHINA) {
-      modifiedUrl += "?ssl=false";
+    let modifiedUrl = MONGO_URL;
+    if (!IS_CHINA) {
+      modifiedUrl = MONGO_URL + "/prod";
     }
 
     await mongoose.connect(modifiedUrl);
