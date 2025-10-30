@@ -13,7 +13,7 @@
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {},
-    "lib": ["ES2020", "DOM"],
+    "lib": ["ES2020"],
     "types": ["node", "ws"]
   },
   "include": ["src/**/*"],
