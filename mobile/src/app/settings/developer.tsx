@@ -1,6 +1,7 @@
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {Header, PillButton, Screen, Text} from "@/components/ignite"
 import ToggleSetting from "@/components/settings/ToggleSetting"
+import {Group} from "@/components/ui/Group"
 import RouteButton from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -172,7 +173,6 @@ export default function DeveloperSettingsScreen() {
         style={[
           styles.warningContainer,
           {
-            backgroundColor: theme.colors.warningBackground,
             borderWidth: theme.spacing.xxxs,
             borderColor: theme.colors.palette.angry600,
           },
@@ -194,36 +194,35 @@ export default function DeveloperSettingsScreen() {
         />
 
         <Spacer height={theme.spacing.md} />
-        <ToggleSetting
-          label={translate("settings:reconnectOnAppForeground")}
-          subtitle={translate("settings:reconnectOnAppForegroundSubtitle")}
-          value={reconnectOnAppForeground}
-          onValueChange={toggleReconnectOnAppForeground}
-        />
 
-        <Spacer height={theme.spacing.md} />
+        <Group>
+          <ToggleSetting
+            label={translate("settings:reconnectOnAppForeground")}
+            subtitle={translate("settings:reconnectOnAppForegroundSubtitle")}
+            value={reconnectOnAppForeground}
+            onValueChange={toggleReconnectOnAppForeground}
+          />
 
-        <ToggleSetting
-          label={translate("devSettings:debugConsole")}
-          subtitle={translate("devSettings:debugConsoleSubtitle")}
-          value={debugConsole}
-          onValueChange={value => setDebugConsole(value)}
-        />
+          <ToggleSetting
+            label={translate("devSettings:debugConsole")}
+            subtitle={translate("devSettings:debugConsoleSubtitle")}
+            value={debugConsole}
+            onValueChange={value => setDebugConsole(value)}
+          />
 
-        <Spacer height={theme.spacing.md} />
+          <ToggleSetting
+            label="Enable Squircles"
+            subtitle="Use iOS-style squircle app icons instead of circles"
+            value={enableSquircles}
+            onValueChange={toggleEnableSquircles}
+          />
+        </Group>
 
-        <ToggleSetting
-          label="Enable Squircles"
-          subtitle="Use iOS-style squircle app icons instead of circles"
-          value={enableSquircles}
-          onValueChange={toggleEnableSquircles}
-        />
         <Spacer height={theme.spacing.md} />
 
         {/* G1 Specific Settings - Only show when connected to Even Realities G1 */}
         {defaultWearable && defaultWearable.includes(DeviceTypes.G1) && (
-          <>
-            <Text style={[styles.sectionTitle, {color: theme.colors.textDim}]}>G1 Specific Settings</Text>
+          <Group title="G1 Specific Settings">
             <ToggleSetting
               label={translate("settings:powerSavingMode")}
               subtitle={translate("settings:powerSavingModeSubtitle")}
@@ -233,7 +232,7 @@ export default function DeveloperSettingsScreen() {
               }}
             />
             <Spacer height={theme.spacing.md} />
-          </>
+          </Group>
         )}
 
         <View

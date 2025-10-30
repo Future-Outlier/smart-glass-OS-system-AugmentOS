@@ -12,22 +12,14 @@ interface RouteButtonProps {
   onPress?: () => void
   position?: "top" | "bottom" | "middle"
   text?: string
+  style?: ViewStyle
 }
 
-export default function RouteButton({label, subtitle, onPress, position, text}: RouteButtonProps) {
+export default function RouteButton({label, subtitle, onPress, style, text}: RouteButtonProps) {
   const {theme, themed} = useAppTheme()
 
-  let containerStyle
-  if (position === "top") {
-    containerStyle = themed($top)
-  } else if (position === "bottom") {
-    containerStyle = themed($bottom)
-  } else if (position === "middle") {
-    containerStyle = themed($middle)
-  }
-
   return (
-    <View style={[themed($settingsGroup), containerStyle, {paddingVertical: 0}]}>
+    <View style={[themed($settingsGroup), {paddingVertical: 0}, style]}>
       <TouchableOpacity onPress={onPress} disabled={!onPress}>
         <View style={{flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, alignItems: "center"}}>
           <View
@@ -64,22 +56,6 @@ const $text: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontWeight: 300,
   color: colors.text,
   fontSize: spacing.md,
-})
-
-const $top: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.md,
-  borderBottomLeftRadius: spacing.xxs,
-  borderBottomRightRadius: spacing.xxs,
-})
-
-const $bottom: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.md,
-  borderTopLeftRadius: spacing.xxs,
-  borderTopRightRadius: spacing.xxs,
-})
-
-const $middle: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.xxs,
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({

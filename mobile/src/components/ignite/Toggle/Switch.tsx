@@ -103,13 +103,13 @@ function _SwitchInput(props: SwitchInputProps) {
       return [
         // $detailStyleOverride?.backgroundColor,
         status === "error" && colors.error,
-        colors.switchThumbOn || colors.switchThumb, // Use switchThumbOn if available, fallback to switchThumb
+        colors.primary, // Use switchThumbOn if available, fallback to switchThumb
       ].filter(Boolean)[0]
     } else {
       return [
         // $innerStyleOverride?.backgroundColor,
         status === "error" && colors.error,
-        colors.switchThumbOff || "#E0E0E0", // More noticeable gray when off
+        colors.background,
       ].filter(Boolean)[0]
     }
   })()
@@ -213,13 +213,13 @@ function ModernSwitchInput(props: SwitchInputProps) {
   const knobSize = 24
   const knobMargin = 2
 
-  const offBackgroundColor = [status === "error" && colors.errorBackground, colors.switchTrackOff].filter(Boolean)[0]
+  const offBackgroundColor = [status === "error" && colors.errorBackground, colors.sidebar_border].filter(Boolean)[0]
 
-  const onBackgroundColor = [status === "error" && colors.errorBackground, colors.switchTrackOn].filter(Boolean)[0]
+  const onBackgroundColor = [status === "error" && colors.errorBackground, colors.primary].filter(Boolean)[0]
 
-  const offKnobColor = [status === "error" && colors.error, colors.switchThumbOff].filter(Boolean)[0]
+  const offKnobColor = [status === "error" && colors.error, colors.background].filter(Boolean)[0]
 
-  const onKnobColor = [status === "error" && colors.error, colors.switchThumbOn].filter(Boolean)[0]
+  const onKnobColor = [status === "error" && colors.error, colors.background].filter(Boolean)[0]
 
   // Calculate all interpolations from single animated value
   const translateX = animValue.interpolate({

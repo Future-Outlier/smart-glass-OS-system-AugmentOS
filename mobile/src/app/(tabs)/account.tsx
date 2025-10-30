@@ -1,5 +1,6 @@
-import {AccountGroup} from "@/components/account/AccountGroup"
+import {ProfileCard} from "@/components/account/ProfileCard"
 import {Header, Screen, Text} from "@/components/ignite"
+import {Group} from "@/components/ui/Group"
 import RouteButton from "@/components/ui/RouteButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
@@ -12,7 +13,6 @@ import {useRef} from "react"
 import {Platform, View, ViewStyle} from "react-native"
 import {ScrollView} from "react-native-gesture-handler"
 import Toast from "react-native-toast-message"
-import {ProfileCard} from "@/components/account/ProfileCard"
 
 export default function AccountPage() {
   const {theme, themed} = useAppTheme()
@@ -80,19 +80,19 @@ export default function AccountPage() {
         <ProfileCard />
 
         <View style={{flex: 1, gap: theme.spacing.lg}}>
-          <AccountGroup title={translate("account:accountSettings")}>
+          <Group title={translate("account:accountSettings")}>
             <RouteButton label={translate("settings:profileSettings")} onPress={() => push("/settings/profile")} />
             <RouteButton label={translate("settings:feedback")} onPress={() => push("/settings/feedback")} />
-          </AccountGroup>
+          </Group>
 
           {defaultWearable && (
-            <AccountGroup title={translate("account:deviceSettings")}>
+            <Group title={translate("account:deviceSettings")}>
               <RouteButton label={defaultWearable} onPress={() => push("/settings/glasses")} />
               {/*<RouteButton label={translate("settings:transcription")} onPress={() => push("/settings/transcription")} />*/}
-            </AccountGroup>
+            </Group>
           )}
 
-          <AccountGroup title={translate("account:appSettings")}>
+          <Group title={translate("account:appSettings")}>
             <RouteButton label={translate("settings:themeSettings")} onPress={() => push("/settings/theme")} />
             {/*<RouteButton label={translate("settings:transcription")} onPress={() => push("/settings/transcription")} />*/}
             {Platform.OS === "android" && (
@@ -103,16 +103,16 @@ export default function AccountPage() {
               onPress={() => push("/settings/transcription")}
             />
             <RouteButton label={translate("settings:privacySettings")} onPress={() => push("/settings/privacy")} />
-          </AccountGroup>
+          </Group>
 
-          {devMode && (
-            <>
+          <Group title={translate("deviceSettings:advancedSettings")}>
+            {devMode && (
               <RouteButton
                 label={translate("settings:developerSettings")}
                 onPress={() => push("/settings/developer")}
               />
-            </>
-          )}
+            )}
+          </Group>
         </View>
 
         <View style={themed($versionContainer)}>

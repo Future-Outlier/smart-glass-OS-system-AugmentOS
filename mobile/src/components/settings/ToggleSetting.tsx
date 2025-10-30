@@ -8,8 +8,8 @@ type ToggleSettingProps = {
   subtitle?: string
   value: boolean
   onValueChange: (newValue: boolean) => void
-  containerStyle?: ViewStyle
   disabled?: boolean
+  style?: ViewStyle
 }
 
 const ToggleSetting: React.FC<ToggleSettingProps> = ({
@@ -17,13 +17,13 @@ const ToggleSetting: React.FC<ToggleSettingProps> = ({
   subtitle,
   value,
   onValueChange,
-  containerStyle,
   disabled = false,
+  style,
 }) => {
   const {themed} = useAppTheme()
 
   return (
-    <View style={[themed($container), containerStyle, disabled && {opacity: 0.5}]}>
+    <View style={[themed($container), style, disabled && {opacity: 0.5}]}>
       <View style={themed($textContainer)}>
         <Text text={label} style={themed($label)} />
         {subtitle && <Text text={subtitle} style={themed($subtitle)} />}
@@ -38,12 +38,12 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   justifyContent: "space-between",
   alignItems: "center",
   width: "100%",
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   paddingVertical: spacing.md,
   paddingHorizontal: spacing.md,
   borderRadius: spacing.md,
-  borderWidth: spacing.xxxs,
-  borderColor: colors.border,
+  // borderWidth: spacing.xxxs,
+  // borderColor: colors.border,
 })
 
 const $textContainer: ThemedStyle<ViewStyle> = () => ({

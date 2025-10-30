@@ -13,7 +13,7 @@ import {LogoutUtils} from "@/utils/LogoutUtils"
 import restComms from "@/services/RestComms"
 import {useAuth} from "@/contexts/AuthContext"
 import Svg, {Path} from "react-native-svg"
-import {AccountGroup} from "@/components/account/AccountGroup"
+import {Group} from "@/components/ui/Group"
 import RouteButton from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 
@@ -261,25 +261,25 @@ export default function ProfileSettingsPage() {
               </View>
             )}
 
-            <AccountGroup>
+            <Group>
               <RouteButton label={translate("profileSettings:name")} text={userData.fullName || "N/A"} />
               <RouteButton label={translate("profileSettings:email")} text={userData.email || "N/A"} />
               <RouteButton
                 label={translate("profileSettings:createdAt")}
                 text={userData.createdAt ? new Date(userData.createdAt).toLocaleString() : "N/A"}
               />
-            </AccountGroup>
+            </Group>
 
             <Spacer height={theme.spacing.lg} />
 
-            <AccountGroup title={translate("account:appSettings")}>
+            <Group title={translate("account:appSettings")}>
               {userData.provider == "email" && (
                 <RouteButton label={translate("profileSettings:changePassword")} onPress={handleChangePassword} />
               )}
               <RouteButton label={translate("profileSettings:requestDataExport")} onPress={handleRequestDataExport} />
               <RouteButton label={translate("profileSettings:deleteAccount")} onPress={handleDeleteAccount} />
               <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} />
-            </AccountGroup>
+            </Group>
           </>
         ) : (
           <Text tx="profileSettings:errorGettingUserInfo" />
