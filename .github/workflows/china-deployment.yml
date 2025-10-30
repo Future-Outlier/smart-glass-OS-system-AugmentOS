@@ -64,6 +64,10 @@ jobs:
       # LLM config
       LLM_MODEL: gpt-4o
       LLM_PROVIDER: azure
+      # Alibaba config
+      ALIBABA_ENDPOINT: ${{ secrets.ALIBABA_ENDPOINT }}
+      ALIBABA_WORKSPACE: ${{ secrets.ALIBABA_WORKSPACE }}
+      ALIBABA_DASHSCOPE_API_KEY: ${{ secrets.ALIBABA_DASHSCOPE_API_KEY }}
       # BetterStack config
       BETTERSTACK_SOURCE_TOKEN: ${{ secrets.BETTERSTACK_SOURCE_TOKEN }}
       # Posthog config

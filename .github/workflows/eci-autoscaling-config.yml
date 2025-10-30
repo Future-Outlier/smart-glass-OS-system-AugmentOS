@@ -117,6 +117,12 @@ spec:
               value: "${AUTHING_APP_SECRET}"
             - name: DEPLOYMENT_REGION
               value: "${DEPLOYMENT_REGION}"
+            - name: ALIBABA_ENDPOINT
+              value: "${ALIBABA_ENDPOINT}"
+            - name: ALIBABA_WORKSPACE
+              value: "${ALIBABA_WORKSPACE}"
+            - name: ALIBABA_DASHSCOPE_API_KEY
+              value: "${ALIBABA_DASHSCOPE_API_KEY}"
           image: mentra-acr-cnsz-a-registry-vpc.cn-shenzhen.cr.aliyuncs.com/mentra-dev/backend:latest
           imagePullPolicy: Always
           lifecycle: {}
