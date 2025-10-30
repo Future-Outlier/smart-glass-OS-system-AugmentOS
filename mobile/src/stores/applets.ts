@@ -197,7 +197,8 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     }
 
     // Validate offline Live Captions has a speech model installed
-    if (packageName === captionsPackageName) {
+    // Only check for offline version - online version uses cloud STT
+    if (packageName === captionsPackageName && applet.offline) {
       const modelAvailable = await STTModelManager.isModelAvailable()
       if (!modelAvailable) {
         showAlert(

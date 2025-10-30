@@ -80,7 +80,7 @@ jest.mock("@/bridge/MantleBridge", () => {
 })
 
 // Mock SocketComms to avoid complex dependency chains
-jest.mock("@/managers/SocketComms", () => ({
+jest.mock("@/services/SocketComms", () => ({
   default: {
     getInstance: jest.fn(() => ({
       connect: jest.fn(),
@@ -92,7 +92,7 @@ jest.mock("@/managers/SocketComms", () => ({
 }))
 
 // Mock WebSocketManager to avoid circular dependency issues
-jest.mock("@/managers/WebSocketManager", () => {
+jest.mock("@/services/WebSocketManager", () => {
   const {EventEmitter} = require("events")
 
   const WebSocketStatus = {
@@ -116,6 +116,15 @@ jest.mock("@/managers/WebSocketManager", () => {
     default: new MockWebSocketManager(),
   }
 })
+
+// Mock core native module to avoid native bridge errors
+jest.mock("core", () => ({
+  default: {
+    getBluetoothStatus: jest.fn(() => Promise.resolve("disabled")),
+    requestBluetoothPermissions: jest.fn(() => Promise.resolve(true)),
+    // Add other methods as needed
+  },
+}))
 
 // Silence the warning: Animated: `useNativeDriver` is not supported
 global.__reanimatedWorkletInit = jest.fn()

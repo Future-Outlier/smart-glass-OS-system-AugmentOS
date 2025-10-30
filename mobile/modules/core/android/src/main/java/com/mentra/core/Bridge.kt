@@ -384,8 +384,8 @@ public class Bridge private constructor() {
         @JvmStatic
         fun sendStatus(statusObj: Map<String, Any>) {
             val body = HashMap<String, Any>()
-            body["status"] = statusObj
-            sendTypedMessage("status", body as Map<String, Any>)
+            body["core_status"] = statusObj
+            sendTypedMessage("core_status_update", body as Map<String, Any>)
         }
 
         /** Send glasses serial number */

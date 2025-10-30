@@ -260,8 +260,8 @@ class Bridge {
     // core bridge funcs:
 
     static func sendStatus(_ statusObj: [String: Any]) {
-        let body = ["status": statusObj]
-        Bridge.sendTypedMessage("status", body: body)
+        let body = ["core_status": statusObj]
+        Bridge.sendTypedMessage("core_status_update", body: body)
     }
 
     static func sendGlassesSerialNumber(_ serialNumber: String, style: String, color: String) {
