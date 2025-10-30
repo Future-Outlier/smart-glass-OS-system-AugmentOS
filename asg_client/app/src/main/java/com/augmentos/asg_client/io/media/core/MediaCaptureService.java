@@ -359,9 +359,17 @@ public class MediaCaptureService {
     }
 
     private void playShutterSound() {
-        if (hardwareManager != null && hardwareManager.supportsAudioPlayback()) {
-            hardwareManager.playAudioAsset(AudioAssets.CAMERA_SOUND);
+        if (hardwareManager == null) {
+            Log.w(TAG, "⚠️ hardwareManager is null, cannot play shutter sound");
+            return;
         }
+
+        if (!hardwareManager.supportsAudioPlayback()) {
+            Log.w(TAG, "⚠️ hardwareManager does not support audio playback");
+            return;
+        }
+
+        hardwareManager.playAudioAsset(AudioAssets.CAMERA_SOUND);
     }
     
     /**

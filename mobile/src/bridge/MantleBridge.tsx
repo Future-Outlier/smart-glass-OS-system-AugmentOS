@@ -73,10 +73,10 @@ export class MantleBridge {
     try {
       const data = JSON.parse(jsonString)
 
-      // Only check for duplicates on status messages, not other event types
-      if ("status" in data) {
+      // Only check for duplicates on core status messages, not other event types
+      if ("core_status" in data) {
         if (this.lastMessage === jsonString) {
-          console.log("BRIDGE: DUPLICATE STATUS MESSAGE FROM CORE")
+          console.log("BRIDGE: DUPLICATE CORE STATUS MESSAGE")
           return
         }
         this.lastMessage = jsonString
@@ -96,11 +96,6 @@ export class MantleBridge {
     if (!data) return
 
     try {
-      if ("status" in data) {
-        GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
-        return
-      }
-
       if (!("type" in data)) {
         return
       }
@@ -109,6 +104,9 @@ export class MantleBridge {
       let bytes
 
       switch (data.type) {
+        case "core_status_update":
+          GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
+          return
         case "wifi_status_change":
           GlobalEventEmitter.emit("WIFI_STATUS_CHANGE", {
             connected: data.connected,

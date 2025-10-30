@@ -364,14 +364,14 @@ public class AsgClientService extends Service implements NetworkStateListener, B
         try {
             JSONObject payload = new JSONObject();
             payload.put("C", command);
-            payload.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
+            payload.put("V", 1);
             payload.put("B", new JSONObject());
 
-            boolean sent = sendK900Command(command);
-            //boolean sent = sendK900Command(payload.toString());
+            boolean sent = sendK900Command(payload.toString());
             if (sent) {
                 lastI2sPlaying = playing;
             }
+            Log.i(TAG, "I2S command sent (" + payload.toString() + ") result=" + sent);
         } catch (JSONException e) {
             Log.e(TAG, "Failed to construct I2S command payload", e);
         }
