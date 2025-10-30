@@ -212,6 +212,19 @@ export class MantleBridge {
         case "pair_failure":
           GlobalEventEmitter.emit("PAIR_FAILURE", data.error)
           break
+        case "audio_pairing_needed":
+          GlobalEventEmitter.emit("AUDIO_PAIRING_NEEDED", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_connected":
+          GlobalEventEmitter.emit("AUDIO_CONNECTED", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_disconnected":
+          GlobalEventEmitter.emit("AUDIO_DISCONNECTED", {})
+          break
         case "save_setting":
           await useSettingsStore.getState().setSetting(data.key, data.value, false)
           break
