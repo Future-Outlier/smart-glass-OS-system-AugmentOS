@@ -114,7 +114,7 @@ public class Mach1 extends SGCManager {
 
     @Override
     public void setMicEnabled(boolean enabled) {
-
+        
     }
 
     @Override

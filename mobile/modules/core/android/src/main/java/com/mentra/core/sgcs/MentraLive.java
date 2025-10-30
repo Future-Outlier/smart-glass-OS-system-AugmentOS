@@ -123,7 +123,7 @@ public class MentraLive extends SGCManager {
 
     // Local-only fields (not in parent SGCManager)
     private int glassesBuildNumberInt = 0; // Build number as integer for version checks
-    private boolean supportsLC3Audio = false; // Whether device supports LC3 audio (false for base K900)
+    private boolean supportsLC3Audio = true; // Whether device supports LC3 audio (false for base K900)
     // Note: glassesAppVersion, glassesBuildNumber, glassesDeviceModel, glassesAndroidVersion
     // are inherited from SGCManager parent class
 
@@ -353,7 +353,9 @@ public class MentraLive extends SGCManager {
     private byte lc3SequenceNumber = 0;
     private long lc3DecoderPtr = 0;
     private Lc3Player lc3AudioPlayer;
-    private boolean audioPlaybackEnabled = false; // Default to enabled
+    // Audio playback control - allows monitoring glasses microphone through phone speakers
+    // Set to false by default - enable via enableAudioPlayback(true) or automatically when mic is enabled
+    private boolean audioPlaybackEnabled = false;
 
     // Periodic test message for ACK testing
     private static final int TEST_MESSAGE_INTERVAL_MS = 5000; // 5 seconds
@@ -438,12 +440,14 @@ public class MentraLive extends SGCManager {
         // Initialize scheduler for keep-alive and reconnection
         scheduler = Executors.newScheduledThreadPool(1);
 
-        //setup LC3 player
-        lc3AudioPlayer = new Lc3Player(context);
-        if (audioPlaybackEnabled) {
-            lc3AudioPlayer.init();
-            lc3AudioPlayer.startPlay();
-        }
+        // Setup LC3 player for audio monitoring
+        // DISABLED: LC3 player initialization disabled to save resources
+        // Audio playback can be enabled later if needed by calling enableAudioPlayback(true)
+        // Note: All lc3AudioPlayer references include null checks, so this is safe
+        // lc3AudioPlayer = new Lc3Player(context);
+        // lc3AudioPlayer.init();
+        lc3AudioPlayer = null; // Explicitly set to null
+        Bridge.log("LIVE: 🔊 LC3 audio player DISABLED (can be enabled via enableAudioPlayback if needed)");
 
         //setup LC3 decoder for PCM conversion
         if (lc3DecoderPtr == 0) {
@@ -975,19 +979,19 @@ public class MentraLive extends SGCManager {
             long threadId = Thread.currentThread().getId();
             UUID uuid = characteristic.getUuid();
 
-            // Bridge.log("LIVE: onCharacteristicChanged triggered for: " + uuid);
+            Bridge.log("LIVE: onCharacteristicChanged triggered for: " + uuid);
 
             boolean isRxCharacteristic = uuid.equals(RX_CHAR_UUID);
             boolean isTxCharacteristic = uuid.equals(TX_CHAR_UUID);
-            boolean isLc3ReadCharacteristic = uuid.equals(LC3_READ_UUID) && supportsLC3Audio;
-            boolean isLc3WriteCharacteristic = uuid.equals(LC3_WRITE_UUID) && supportsLC3Audio;
+            boolean isLc3ReadCharacteristic = uuid.equals(LC3_READ_UUID);
+            boolean isLc3WriteCharacteristic = uuid.equals(LC3_WRITE_UUID);
 
             if (isRxCharacteristic) {
                 Bridge.log("LIVE: Received data on RX characteristic");
             } else if (isTxCharacteristic) {
                 Bridge.log("LIVE: Received data on TX characteristic");
             } else if (isLc3ReadCharacteristic) {
-                // Bridge.log("LIVE: Received data on LC3_READ characteristic");
+                Bridge.log("LIVE: Received data on LC3_READ characteristic");
                 if (supportsLC3Audio) {
                     processLc3AudioPacket(characteristic.getValue());
                 } else {
@@ -1358,6 +1362,7 @@ public class MentraLive extends SGCManager {
     }
 
     public void setMicEnabled(boolean enabled) {
+        changeSmartGlassesMicrophoneState(enabled);
     }
 
     /**
@@ -1943,7 +1948,7 @@ public class MentraLive extends SGCManager {
                 }
 
                 // Determine LC3 audio support: base K900 doesn't support LC3, variants do (local field)
-                supportsLC3Audio = !"K900".equals(deviceModel);
+                supportsLC3Audio = true;
                 Bridge.log("LIVE: 📱 LC3 audio support: " + supportsLC3Audio + " (device: " + deviceModel + ")");
 
                 Bridge.log("LIVE: Glasses Version - App: " + appVersion +
@@ -2812,7 +2817,7 @@ public class MentraLive extends SGCManager {
     }
 
     public void changeSmartGlassesMicrophoneState(boolean enable) {
-        Bridge.log("LIVE: Microphone state changed: " + enable);
+        Bridge.log("LIVE: 🎤 Microphone state changed: " + enable);
 
         // Update the microphone state tracker
         isMicrophoneEnabled = enable;
@@ -2823,14 +2828,30 @@ public class MentraLive extends SGCManager {
         // Update the shouldUseGlassesMic flag to reflect the current state
         var m = CoreManager.getInstance();
         this.shouldUseGlassesMic = enable && m.getSensingEnabled();
-        Bridge.log("LIVE: Updated shouldUseGlassesMic to: " + shouldUseGlassesMic);
+        Bridge.log("LIVE: 🎤 Updated shouldUseGlassesMic to: " + shouldUseGlassesMic);
 
         if (this.shouldUseGlassesMic) {
-            Bridge.log("LIVE: Microphone enabled, starting audio input handling");
+            Bridge.log("LIVE: 🎤 Microphone enabled, starting audio input handling");
             startMicBeat();
+            
+            // Enable audio playback for monitoring (optional - can be controlled separately)
+            // This allows you to hear what the glasses microphone is picking up
+            if (!audioPlaybackEnabled && lc3AudioPlayer != null) {
+                Bridge.log("LIVE: 🔊 Starting LC3 audio playback for mic monitoring");
+                audioPlaybackEnabled = true;
+                lc3AudioPlayer.startPlay();
+            }
         } else {
-            Bridge.log("LIVE: Microphone disabled, stopping audio input handling");
+            Bridge.log("LIVE: 🎤 Microphone disabled, stopping audio input handling");
             stopMicBeat();
+            
+            // Optionally stop audio playback when mic is disabled
+            // Uncomment the lines below if you want playback to stop with mic
+            // if (lc3AudioPlayer != null && audioPlaybackEnabled) {
+            //     Bridge.log("LIVE: 🔊 Stopping LC3 audio playback");
+            //     audioPlaybackEnabled = false;
+            //     lc3AudioPlayer.stopPlay();
+            // }
         }
     }
 
@@ -3440,16 +3461,26 @@ public class MentraLive extends SGCManager {
 
     /**
      * Enable or disable audio playback through phone speakers when receiving LC3 audio from glasses.
+     * This allows you to hear what the glasses microphone is picking up in real-time.
+     * Note: LC3 player is currently disabled. This method is a no-op.
      * @param enable True to enable audio playback, false to disable.
      */
     public void enableAudioPlayback(boolean enable) {
         audioPlaybackEnabled = enable;
         if (enable) {
-            Bridge.log("LIVE: Audio playback enabled - LC3 audio will be played through phone speakers");
-            // Note: LC3Player is already started during initialization
+            Bridge.log("LIVE: 🔊 Audio playback requested but LC3 player is disabled");
+            if (lc3AudioPlayer != null) {
+                lc3AudioPlayer.startPlay();
+                Bridge.log("LIVE: 🔊 LC3 audio player started");
+            } else {
+                Bridge.log("LIVE: ⚠️ LC3 audio player is null - playback not available");
+            }
         } else {
-            Bridge.log("LIVE: Audio playback disabled - LC3 audio will not be played through phone speakers");
-            // Note: We keep LC3Player running but just stop feeding it data
+            Bridge.log("LIVE: 🔊 Audio playback disabled");
+            if (lc3AudioPlayer != null) {
+                lc3AudioPlayer.stopPlay();
+                Bridge.log("LIVE: 🔊 LC3 audio player stopped");
+            }
         }
     }
 
@@ -4744,6 +4775,8 @@ public class MentraLive extends SGCManager {
      * Bytes 2-401: LC3 encoded audio data (400 bytes - 10 frames × 40 bytes per frame)
      */
     private void processLc3AudioPacket(byte[] data) {
+        Bridge.log("LIVE: Processing LC3 audio packet: " + data.length + " bytes");
+
         if (data == null || data.length < 2) {
             Log.w(TAG, "Invalid LC3 audio packet received: too short");
             return;
@@ -4751,6 +4784,7 @@ public class MentraLive extends SGCManager {
 
         // Check for audio packet header
         if (data[0] == (byte) 0xF1) {
+            Bridge.log("LIVE: Valid LC3 audio packet received");
             byte sequenceNumber = data[1];
             long receiveTime = System.currentTimeMillis();
 
@@ -4770,36 +4804,40 @@ public class MentraLive extends SGCManager {
 
             // Decode LC3 to PCM and forward to audio processing system
             // if (audioProcessingCallback != null) {
-                if (lc3DecoderPtr != 0) {
-                    // Decode LC3 to PCM using the native decoder with Mentra Live frame size
-                    byte[] pcmData = Lc3Cpp.decodeLC3(lc3DecoderPtr, lc3Data, LC3_FRAME_SIZE);
+            if (lc3DecoderPtr != 0) {
+                // Decode LC3 to PCM using the native decoder with Mentra Live frame size
+                byte[] pcmData = Lc3Cpp.decodeLC3(lc3DecoderPtr, lc3Data, LC3_FRAME_SIZE);
 
-                    if (pcmData != null && pcmData.length > 0) {
-                        // Forward PCM data to audio processing system (like Even Realities G1)
-                        // audioProcessingCallback.onAudioDataAvailable(pcmData);
-                        var m = CoreManager.getInstance();
-                        m.handlePcm(pcmData);
-                        // Bridge.log("LIVE: Decoded and forwarded LC3 to PCM: " + lc3Data.length + " -> " + pcmData.length + " bytes");
-                    } else {
-                        // Log.e(TAG, "Failed to decode LC3 data to PCM - got null or empty result");
-                    }
+                if (pcmData != null && pcmData.length > 0) {
+                    // Forward PCM data to CoreManager which handles:
+                    // 1. Sending to server (if shouldSendPcmData = true)
+                    // 2. Local transcription (if shouldSendTranscript = true)
+                    // See CoreManager.handlePcm() for routing logic
+                    var m = CoreManager.getInstance();
+                    m.handlePcm(pcmData);
+                    // Bridge.log("LIVE: 🎤 Decoded LC3→PCM: " + lc3Data.length + "→" + pcmData.length + " bytes, forwarded to CoreManager");
                 } else {
-                    Log.e(TAG, "LC3 decoder not initialized - cannot decode to PCM");
-
+                    // Log.e(TAG, "❌ Failed to decode LC3 data to PCM - got null or empty result");
                 }
-            // } else {
-                // Log.w(TAG, "No audio processing callback registered - audio data will not be processed");
-            // }
-
-            // Play LC3 audio directly through LC3 player if enabled
-            if (audioPlaybackEnabled && lc3AudioPlayer != null) {
-                // The data array already contains the full packet with F1 header and sequence
-                // Just pass it directly to the LC3 player
-                lc3AudioPlayer.write(data, 0, data.length);
-                // Bridge.log("LIVE: Playing LC3 audio directly through LC3 player: " + data.length + " bytes");
             } else {
-                Bridge.log("LIVE: Audio playback disabled - skipping LC3 audio output");
+                Log.e(TAG, "❌ LC3 decoder not initialized - cannot decode to PCM");
+
             }
+        // } else {
+            // Log.w(TAG, "No audio processing callback registered - audio data will not be processed");
+        // }
+
+        // Play LC3 audio directly through LC3 player if enabled
+        // This allows monitoring of the glasses microphone in real-time
+        if (audioPlaybackEnabled && lc3AudioPlayer != null) {
+            // The data array already contains the full packet with F1 header and sequence
+            // Just pass it directly to the LC3 player
+            lc3AudioPlayer.write(data, 0, data.length);
+            // Bridge.log("LIVE: 🔊 Playing LC3 audio through phone speakers: " + data.length + " bytes");
+        } else if (!audioPlaybackEnabled) {
+            // Audio playback is disabled - only processing for PCM conversion
+            // Bridge.log("LIVE: 🔇 Audio playback disabled - processing for PCM only");
+        }
 
         } else {
             Log.w(TAG, "Received non-audio packet on LC3 characteristic.");
