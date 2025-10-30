@@ -141,7 +141,7 @@ jobs:
       # 10. Replace secrets in autoscaling config
       - name: Replace secrets in autoscaling config
         run: |
-          envsubst < eci-autoscaling-config.yml > final-deployment.yml
+          envsubst < .github/workflows/eci-autoscaling-config.yml > final-deployment.yml
         shell: bash
 
       # 11. Fetch Scaling Group ID
