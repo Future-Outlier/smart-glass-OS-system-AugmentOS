@@ -1,3 +1,5 @@
+import {getAllColors} from "./colorTools"
+
 const palette = {
   // Neutrals
   neutral900: "#FFFFFF",
@@ -100,6 +102,10 @@ const unique = {
   sliderTrackInactive: palette.purpleGray1,
 } as const
 
+const design = {
+  ...getAllColors("dark mode"),
+}
+
 export const colors = {
   palette,
 
@@ -109,13 +115,13 @@ export const colors = {
   textAlt: palette.neutral200,
 
   // Backgrounds
-  background: palette.neutral100,
+  // background: palette.neutral100,
   backgroundAlt: palette.neutral200,
   backgroundNeo: palette.neutral100,
   modalOverlay: "rgba(0, 0, 0, 0.7)",
 
   // Borders
-  border: palette.primary200,
+  // border: palette.primary200,
   separator: palette.neutral300,
 
   // Primary colors
@@ -130,9 +136,9 @@ export const colors = {
   warning: palette.accent300,
 
   // Common:
-  primary: palette.primary500,
-  secondary: palette.secondary300,
-  accent: palette.accent300,
+  // primary: palette.primary500,
+  // secondary: palette.secondary300,
+  // accent: palette.accent300,
 
   // Iconography
   icon: palette.neutral900,
@@ -143,4 +149,55 @@ export const colors = {
   statusText: palette.neutral900,
 
   ...unique,
+
+  ...design,
+
+  // defined here so auto-complete works:
+  primary: design.primary,
+  primary_foreground: design.primary_foreground,
+
+  ring: design.ring,
+
+  input: design.input,
+  border: design.border,
+
+  secondary: design.secondary,
+  secondary_foreground: design.secondary_foreground,
+
+  muted: design.muted,
+  muted_foreground: design.muted_foreground,
+
+  accent: design.accent,
+  accent_foreground: design.accent_foreground,
+
+  destructive: design.destructive,
+  destructive_foreground: design.destructive_foreground,
+
+  background: design.background,
+  foreground: design.foreground,
+
+  card: design.card,
+  card_foreground: design.card_foreground,
+
+  popover: design.popover,
+  popover_foreground: design.popover_foreground,
+
+  chart_1: design.chart_1,
+  chart_2: design.chart_2,
+  chart_3: design.chart_3,
+  chart_4: design.chart_4,
+  chart_5: design.chart_5,
+
+  sidebar: design.sidebar,
+  sidebar_foreground: design.sidebar_foreground,
+
+  sidebar_primary: design.sidebar_primary,
+  sidebar_primary_foreground: design.sidebar_primary_foreground,
+
+  sidebar_accent: design.sidebar_accent,
+  sidebar_accent_foreground: design.sidebar_accent_foreground,
+
+  sidebar_border: design.sidebar_border,
+  sidebar_ring: design.sidebar_ring,
+  background_color: design.background_color,
 } as const

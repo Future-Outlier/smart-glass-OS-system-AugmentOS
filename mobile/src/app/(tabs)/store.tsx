@@ -10,6 +10,7 @@ import {Text, Screen, Header} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {ThemedStyle} from "@/theme"
 import {useRefreshApplets} from "@/stores/applets"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 export default function AppStoreWeb() {
   const [_webviewLoading, setWebviewLoading] = useState(true)
@@ -21,6 +22,7 @@ export default function AppStoreWeb() {
   const {appStoreUrl, webViewRef: prefetchedWebviewRef} = useAppStoreWebviewPrefetch()
   const refreshApplets = useRefreshApplets()
   const {theme, themed} = useAppTheme()
+  const {bottom} = useSafeAreaInsets()
 
   // Construct the final URL with packageName if provided
   const finalUrl = useMemo(() => {
@@ -169,6 +171,13 @@ export default function AppStoreWeb() {
               meta.setAttribute('name', 'viewport');
               document.getElementsByTagName('head')[0].appendChild(meta);
               true;
+              // append a div with height 200px to the end:
+              const div = document.createElement('div');
+              div.style.height = '${bottom + theme.spacing.lg}px';
+              div.style.width = '100%';
+              div.style.backgroundColor = '${theme.colors.background}';
+              document.body.appendChild(div);
+              // document.body.style.height = 'calc(100vh + 200px)';
             `}
           renderLoading={() => (
             <View style={themed($loadingOverlay)}>

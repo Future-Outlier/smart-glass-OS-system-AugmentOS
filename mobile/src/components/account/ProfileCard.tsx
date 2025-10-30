@@ -13,9 +13,6 @@ import {LogoutUtils} from "@/utils/LogoutUtils"
 import restComms from "@/services/RestComms"
 import {useAuth} from "@/contexts/AuthContext"
 import Svg, {Path} from "react-native-svg"
-import {AccountGroup} from "@/components/account/AccountGroup"
-import RouteButton from "@/components/ui/RouteButton"
-import {Spacer} from "@/components/ui/Spacer"
 
 // Default user icon component for profile pictures
 const DefaultUserIcon = ({size = 100, color = "#999"}: {size?: number; color?: string}) => {
@@ -30,7 +27,7 @@ const DefaultUserIcon = ({size = 100, color = "#999"}: {size?: number; color?: s
   )
 }
 
-export default function ProfileSettingsPage() {
+export const ProfileCard = () => {
   const [userData, setUserData] = useState<{
     fullName: string | null
     avatarUrl: string | null
@@ -245,106 +242,73 @@ export default function ProfileSettingsPage() {
 
   const {theme, themed} = useAppTheme()
 
+  if (loading) {
+    return (
+      <View>
+        <ActivityIndicator size="large" color={theme.colors.palette.primary500} />
+      </View>
+    )
+  }
+
+  if (!userData) {
+    return (
+      <View>
+        <Text tx="profileSettings:errorGettingUserInfo" />
+      </View>
+    )
+  }
+
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header title={translate("profileSettings:title")} leftIcon="caretLeft" onLeftPress={goBack} />
-      <ScrollView>
-        {loading ? (
-          <ActivityIndicator size="large" color={theme.colors.palette.primary500} />
-        ) : userData ? (
-          <>
-            {userData.avatarUrl ? (
-              <Image source={{uri: userData.avatarUrl}} style={themed($profileImage)} />
-            ) : (
-              <View style={themed($profilePlaceholder)}>
-                <DefaultUserIcon size={60} color={theme.colors.textDim} />
-              </View>
-            )}
-
-            <AccountGroup>
-              <RouteButton label={translate("profileSettings:name")} text={userData.fullName || "N/A"} />
-              <RouteButton label={translate("profileSettings:email")} text={userData.email || "N/A"} />
-              <RouteButton
-                label={translate("profileSettings:createdAt")}
-                text={userData.createdAt ? new Date(userData.createdAt).toLocaleString() : "N/A"}
-              />
-            </AccountGroup>
-
-            <Spacer height={theme.spacing.lg} />
-
-            <AccountGroup title={translate("account:appSettings")}>
-              {userData.provider == "email" && (
-                <RouteButton label={translate("profileSettings:changePassword")} onPress={handleChangePassword} />
-              )}
-              <RouteButton label={translate("profileSettings:requestDataExport")} onPress={handleRequestDataExport} />
-              <RouteButton label={translate("profileSettings:deleteAccount")} onPress={handleDeleteAccount} />
-              <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} />
-            </AccountGroup>
-          </>
-        ) : (
-          <Text tx="profileSettings:errorGettingUserInfo" />
-        )}
-      </ScrollView>
-
-      {/* Loading overlay for sign out */}
-      <Modal visible={isSigningOut} transparent={true} animationType="fade">
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}>
-          <View
-            style={{
-              backgroundColor: theme.colors.background,
-              padding: theme.spacing.xl,
-              borderRadius: theme.spacing.md,
-              alignItems: "center",
-              minWidth: 200,
-            }}>
-            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.md}} />
-            <Text preset="bold" style={{color: theme.colors.text}}>
-              {translate("settings:loggingOutMessage")}
-            </Text>
-          </View>
+    <View>
+      {userData.avatarUrl ? (
+        <Image source={{uri: userData.avatarUrl}} style={themed($profileImage)} />
+      ) : (
+        <View style={themed($profilePlaceholder)}>
+          <DefaultUserIcon size={60} color={theme.colors.textDim} />
         </View>
-      </Modal>
-    </Screen>
+      )}
+
+      <View style={themed($infoContainer)}>
+        <Text text={userData.fullName || "N/A"} style={themed($nameText)} />
+        <Text text={userData.email || "N/A"} style={themed($emailText)} />
+      </View>
+    </View>
   )
 }
 
-const $label: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontWeight: "bold",
-  fontSize: 16,
-  color: colors.text,
-})
-
-const $profileImage: ThemedStyle<ImageStyle> = () => ({
-  width: 100,
-  height: 100,
-  borderRadius: 50,
+const $profileImage: ThemedStyle<ImageStyle> = ({spacing}) => ({
+  width: 150,
+  height: 150,
+  borderRadius: 150,
   alignSelf: "center",
-  marginBottom: 20,
+  marginBottom: spacing.xs,
 })
 
-const $profilePlaceholder: ThemedStyle<ViewStyle> = ({colors}) => ({
-  width: 100,
-  height: 100,
-  borderRadius: 50,
+const $profilePlaceholder: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  width: 150,
+  height: 150,
+  borderRadius: 150,
   justifyContent: "center",
   alignItems: "center",
   alignSelf: "center",
-  marginBottom: 20,
+  marginBottom: spacing.xs,
   backgroundColor: colors.border,
 })
 
-const $infoContainer: ThemedStyle<ViewStyle> = () => ({
-  marginBottom: 15,
+const $infoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  alignItems: "center",
+  gap: spacing.xxs,
+  marginBottom: spacing.lg,
 })
 
-const $infoText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 16,
-  marginTop: 4,
-  color: colors.text,
+const $nameText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+  fontSize: 20,
+  color: colors.secondary_foreground,
+  fontWeight: 600,
+})
+
+const $emailText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+  fontSize: 14,
+  color: colors.secondary_foreground,
+  fontWeight: 600,
 })

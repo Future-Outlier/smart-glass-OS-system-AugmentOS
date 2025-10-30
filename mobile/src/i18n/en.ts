@@ -438,6 +438,11 @@ const en = {
     goOfflineMessage:
       "Enabling offline mode will close all running online apps. You'll only be able to use apps that work without an internet connection, and all other apps will be shut down.",
   },
+  account: {
+    accountSettings: "Account settings",
+    deviceSettings: "Device settings",
+    appSettings: "MentraOS settings",
+  },
 }
 
 export default en

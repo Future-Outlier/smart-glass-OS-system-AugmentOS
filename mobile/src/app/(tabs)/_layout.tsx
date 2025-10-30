@@ -2,7 +2,6 @@ import {Text} from "@/components/ignite"
 import {translate} from "@/i18n"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import HomeIcon from "assets/icons/navbar/HomeIcon"
 import StoreIcon from "assets/icons/navbar/StoreIcon"
 import UserIcon from "assets/icons/navbar/UserIcon"
@@ -70,7 +69,7 @@ export default function Layout() {
         <TabTrigger name="store" href="/store" style={themed($tabTrigger)} asChild>
           <TabButton icon={StoreIcon} label={translate("navigation:store")} />
         </TabTrigger>
-        <TabTrigger name="settings" href="/settings" style={themed($tabTrigger)} asChild>
+        <TabTrigger name="account" href="/account" style={themed($tabTrigger)} asChild>
           <TabButton icon={UserIcon} label={translate("navigation:account")} />
         </TabTrigger>
       </TabList>
