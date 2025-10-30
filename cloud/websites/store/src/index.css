@@ -3,6 +3,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 
+/* Custom Font - Red Hat Display */
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay_Reg.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
   ---break--- */
 @plugin "tailwindcss-animate";
@@ -36,8 +45,12 @@
   font-family: "Poppins", sans-serif;
 }
 
+.font-redhat {
+  font-family: "Red Hat Display", sans-serif;
+}
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Red Hat Display", system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   /*
@@ -244,9 +257,10 @@ button:focus-visible {
 
 :root[data-theme="dark"],
 :root {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #13141a;
-  --bg-tertiary: #1a1b24;
+  --bg-primary: #171717;
+
+  --bg-secondary: #1f1f1f;
+  --bg-tertiary: #292929;
   --text-primary: #e4e4e7;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
