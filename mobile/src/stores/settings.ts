@@ -6,6 +6,8 @@ import restComms from "@/services/RestComms"
 import {isDeveloperBuildOrTestflight} from "@/utils/buildDetection"
 import CoreModule from "core"
 import Toast from "react-native-toast-message"
+import Constants from "expo-constants"
+
 export const SETTINGS_KEYS = {
   // feature flags:
   dev_mode: "dev_mode",
@@ -289,6 +291,12 @@ export const useSettingsStore = create<SettingsState>()(
         }
         return getTimeZone()
       }
+      if (key == SETTINGS_KEYS.custom_backend_url) {
+        if (Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE) {
+          return Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE
+        }
+      }
+
       return null
     },
     loadSetting: async (key: string) => {
