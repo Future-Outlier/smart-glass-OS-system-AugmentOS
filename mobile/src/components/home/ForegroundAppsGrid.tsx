@@ -109,7 +109,7 @@ export const ForegroundAppsGrid: React.FC = () => {
       if (item.isGetMoreApps) {
         return (
           <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
-            <GetMoreAppsIcon size="large" style={{marginBottom: theme.spacing.xs}} />
+            <GetMoreAppsIcon size="large" />
             <Text text={item.name} style={themed($appName)} numberOfLines={2} />
           </TouchableOpacity>
         )
@@ -152,6 +152,9 @@ export const ForegroundAppsGrid: React.FC = () => {
 
   return (
     <View style={themed($container)}>
+      <View style={themed($header)}>
+        <Text tx="home:inactiveApps" style={themed($headerText)} />
+      </View>
       <FlatList
         data={gridData}
         renderItem={renderItem}
@@ -178,7 +181,19 @@ const $gridItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   alignItems: "center",
   marginVertical: spacing.sm,
-  paddingHorizontal: spacing.xs,
+})
+
+const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingBottom: spacing.sm,
+})
+
+const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
+  fontSize: 20,
+  fontWeight: 600,
+  color: colors.secondary_foreground,
 })
 
 const $appIcon: ThemedStyle<ViewStyle> = () => ({
