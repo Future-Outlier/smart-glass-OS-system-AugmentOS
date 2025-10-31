@@ -22,6 +22,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
     ...config,
     plugins: [...existingPlugins, require("./plugins/withSplashScreen").withSplashScreen],
     extra: {
+      BACKEND_URL_OVERRIDE: process.env.BACKEND_URL_OVERRIDE,
       MENTRAOS_VERSION: process.env.MENTRAOS_VERSION,
       POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
       SUPABASE_URL: process.env.SUPABASE_URL,
