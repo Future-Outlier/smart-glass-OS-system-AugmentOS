@@ -22,7 +22,7 @@ export default function DeveloperSettingsScreen() {
   const [customUrlInput, setCustomUrlInput] = useState("")
   const [isSavingUrl, setIsSavingUrl] = useState(false)
   const [defaultWearable, _setDefaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const [customBackendUrl, setCustomBackendUrl] = useSetting(SETTINGS_KEYS.custom_backend_url)
+  const [backendUrl, setBackendUrl] = useSetting(SETTINGS_KEYS.backend_url)
   const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS_KEYS.power_saving_mode)
   const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS_KEYS.reconnect_on_app_foreground)
   const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
@@ -82,7 +82,7 @@ export default function DeveloperSettingsScreen() {
           console.log("URL Test Successful:", data)
 
           // Save the URL if the test passes
-          await setCustomBackendUrl(urlToTest)
+          await setBackendUrl(urlToTest)
 
           await showAlert(
             "Success",
@@ -131,7 +131,7 @@ export default function DeveloperSettingsScreen() {
   }
 
   const handleResetUrl = async () => {
-    setCustomBackendUrl(null)
+    setBackendUrl(null)
     setCustomUrlInput("")
     showAlert("Success", "Reset backend URL to default.", [
       {
@@ -237,7 +237,7 @@ export default function DeveloperSettingsScreen() {
           </>
         )}
 
-        {!Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE && (
+        {!Constants.expoConfig?.extra?.BACKEND_URL_OVERRIDE && (
           <View
             style={[
               styles.settingContainer,
@@ -251,7 +251,7 @@ export default function DeveloperSettingsScreen() {
               <Text style={[styles.label, {color: theme.colors.text}]}>Custom Backend URL</Text>
               <Text style={[styles.value, {color: theme.colors.textDim}]}>
                 Override the default backend server URL. Leave blank to use default.
-                {customBackendUrl && `\nCurrently using: ${customBackendUrl}`}
+                {backendUrl && `\nCurrently using: ${backendUrl}`}
               </Text>
               <TextInput
                 style={[

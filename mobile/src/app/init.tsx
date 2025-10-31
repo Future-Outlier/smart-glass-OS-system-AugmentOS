@@ -51,7 +51,7 @@ export default function InitScreen() {
   const [loadingStatus, setLoadingStatus] = useState<string>(translate("versionCheck:checkingForUpdates"))
   const [isRetrying, setIsRetrying] = useState(false)
   // Zustand store hooks
-  const [customBackendUrl, setCustomBackendUrl] = useSetting(SETTINGS_KEYS.custom_backend_url)
+  const [backendUrl, setBackendUrl] = useSetting(SETTINGS_KEYS.backend_url)
   const [onboardingCompleted, _setOnboardingCompleted] = useSetting(SETTINGS_KEYS.onboarding_completed)
 
   // Helper Functions
@@ -65,8 +65,8 @@ export default function InitScreen() {
   }
 
   const checkCustomUrl = async (): Promise<boolean> => {
-    const defaultUrl = useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.custom_backend_url)
-    const isCustom = customBackendUrl !== defaultUrl
+    const defaultUrl = useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.backend_url)
+    const isCustom = backendUrl !== defaultUrl
     setIsUsingCustomUrl(isCustom)
     return isCustom
   }
@@ -194,8 +194,8 @@ export default function InitScreen() {
 
   const handleResetUrl = async (): Promise<void> => {
     try {
-      const defaultUrl = (await useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.custom_backend_url)) as string
-      await setCustomBackendUrl(defaultUrl)
+      const defaultUrl = (await useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.backend_url)) as string
+      await setBackendUrl(defaultUrl)
       setIsUsingCustomUrl(false)
       await checkCloudVersion(true) // Pass true for retry to avoid flash
     } catch (error) {
