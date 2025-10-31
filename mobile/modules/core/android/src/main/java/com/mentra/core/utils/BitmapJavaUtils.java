@@ -85,22 +85,17 @@ public class BitmapJavaUtils {
         // ================== COLOR TABLE (8 bytes: 2 entries × 4 bytes each) ==================
         // Each color entry: (Blue, Green, Red, Reserved)
         // If invert=false, then 0 => White, 1 => Black. Otherwise, 0 => Black, 1 => White.
-        // if (!invert) {
-        //     // color index 0 => white
-        //     baos.write(0xFF); baos.write(0xFF); baos.write(0xFF); baos.write(0x00);
-        //     // color index 1 => black
-        //     baos.write(0x00); baos.write(0x00); baos.write(0x00); baos.write(0x00);
-        // } else {
-        //     // color index 0 => black
-        //     baos.write(0x00); baos.write(0x00); baos.write(0x00); baos.write(0x00);
-        //     // color index 1 => white
-        //     baos.write(0xFF); baos.write(0xFF); baos.write(0xFF); baos.write(0x00);
-        // }
-
-        // color index 0 => white
-        baos.write(0xFF); baos.write(0xFF); baos.write(0xFF); baos.write(0x00);
-        // color index 1 => black
-        baos.write(0x00); baos.write(0x00); baos.write(0x00); baos.write(0x00);
+        if (!invert) {
+            // color index 0 => white
+            baos.write(0xFF); baos.write(0xFF); baos.write(0xFF); baos.write(0x00);
+            // color index 1 => black
+            baos.write(0x00); baos.write(0x00); baos.write(0x00); baos.write(0x00);
+        } else {
+            // color index 0 => black
+            baos.write(0x00); baos.write(0x00); baos.write(0x00); baos.write(0x00);
+            // color index 1 => white
+            baos.write(0xFF); baos.write(0xFF); baos.write(0xFF); baos.write(0x00);
+        }
 
         // ================== PIXEL DATA (1-bpp, bottom-to-top) ==================
         // We'll iterate from top row to bottom row in the Android sense,
