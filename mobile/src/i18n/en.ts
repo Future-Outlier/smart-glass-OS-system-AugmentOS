@@ -112,9 +112,10 @@ const en = {
   },
   home: {
     title: "MentraOS",
-    pairGlasses: "Pair Glasses",
-    connectGlasses: "Connect Glasses",
-    connectingGlasses: "Connecting Glasses...",
+    pairGlasses: "Pair glasses",
+    setupWithoutGlasses: "Setup without glasses",
+    connectGlasses: "Connect glasses",
+    connectingGlasses: "Connecting glasses...",
     emptyActiveAppListInfo: "Your active apps will appear here.",
     emptyInactiveAppListInfo: "Your inactive apps will appear here.",
     noActiveApps: "No Active Apps",
@@ -159,6 +160,7 @@ const en = {
     activeBackgroundApps: "Active Background Apps",
     inactiveBackgroundApps: "Inactive Background Apps",
     appletPlaceholder: "Tap an app below to activate it",
+    simulatedGlasses: "Simulated glasses",
   },
   glasses: {
     title: "Glasses",

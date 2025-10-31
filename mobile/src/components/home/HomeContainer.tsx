@@ -11,6 +11,8 @@ import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {getModelCapabilities, Capabilities, DeviceTypes} from "@/../../cloud/packages/types/src"
 import ConnectedSimulatedGlassesInfo from "@/components/mirror/ConnectedSimulatedGlassesInfo"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {Group} from "@/components/ui/Group"
+import {PairGlassesCard} from "@/components/home/PairGlassesCard"
 
 export const HomeContainer: React.FC = () => {
   const {theme} = useAppTheme()
@@ -23,12 +25,15 @@ export const HomeContainer: React.FC = () => {
 
   return (
     <View>
-      <CompactDeviceStatus />
-      {connected && features?.hasDisplay && isSimulated && <ConnectedSimulatedGlassesInfo />}
+      <Group>
+        {connected && features?.hasDisplay && isSimulated && <ConnectedSimulatedGlassesInfo />}
+        {!defaultWearable && <PairGlassesCard />}
+        {defaultWearable && <CompactDeviceStatus />}
+        {!offlineMode && <BackgroundAppsLink />}
+      </Group>
       <Spacer height={theme.spacing.xs} />
       <ActiveForegroundApp />
       <Spacer height={theme.spacing.xs} />
-      {!offlineMode && <BackgroundAppsLink />}
       <ForegroundAppsGrid />
       <IncompatibleApps />
       <Spacer height={theme.spacing.xxxl} />

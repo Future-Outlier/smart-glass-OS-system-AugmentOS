@@ -27,7 +27,7 @@ export function ButtonSettings({enabled, selectedApp, applets, onEnabledChange, 
           label="Default Button Action"
           value={enabled}
           onValueChange={onEnabledChange}
-          containerStyle={{
+          style={{
             paddingHorizontal: 0,
             paddingTop: 0,
             paddingBottom: enabled ? theme.spacing.sm : 0,
@@ -82,10 +82,8 @@ export function ButtonSettings({enabled, selectedApp, applets, onEnabledChange, 
 }
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   paddingVertical: 12,
   paddingHorizontal: 16,
   borderRadius: spacing.md,
-  borderWidth: 2,
-  borderColor: colors.border,
 })

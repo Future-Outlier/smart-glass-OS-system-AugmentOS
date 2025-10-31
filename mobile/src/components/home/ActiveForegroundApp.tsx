@@ -7,8 +7,8 @@ import {useActiveForegroundApp, useStopApplet} from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import ChevronRight from "assets/icons/component/ChevronRight"
 import {CloseXIcon} from "assets/icons/component/CloseXIcon"
+import {ArrowLeftIcon} from "assets/icons/component/ArrowLeftIcon"
 
 export const ActiveForegroundApp: React.FC = () => {
   const {themed, theme} = useAppTheme()
@@ -106,7 +106,9 @@ export const ActiveForegroundApp: React.FC = () => {
             <CloseXIcon size={24} color={theme.colors.textDim} />
           </TouchableOpacity>
         )}
-        <ChevronRight color={theme.colors.text} />
+        <View style={themed($iconContainer)}>
+          <ArrowLeftIcon size={24} color={theme.colors.text} />
+        </View>
       </View>
     </TouchableOpacity>
   )
@@ -119,7 +121,17 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   // borderColor: colors.border,
   borderRadius: spacing.md,
   backgroundColor: colors.backgroundAlt,
-  paddingHorizontal: spacing.sm,
+  paddingHorizontal: spacing.xs,
+})
+
+const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  backgroundColor: colors.background,
+  padding: spacing.sm,
+  width: spacing.xxl,
+  height: spacing.xxl,
+  borderRadius: spacing.xxl,
+  transform: [{scaleX: -1}],
+  alignItems: "center",
 })
 
 const $rowContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -155,13 +167,13 @@ const $tagContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $activeTag: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   paddingHorizontal: spacing.xs,
   paddingVertical: 2,
-  backgroundColor: colors.success + "20",
-  borderRadius: spacing.xxs,
+  backgroundColor: colors.background,
+  borderRadius: spacing.lg,
 })
 
-const $tagText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 11,
-  color: colors.primary,
+const $tagText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+  fontSize: spacing.sm,
+  color: colors.secondary_foreground,
   fontWeight: "500",
 })
 

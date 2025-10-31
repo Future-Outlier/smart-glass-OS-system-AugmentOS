@@ -1,0 +1,46 @@
+import {TextStyle, View, ViewStyle} from "react-native"
+import {Button, Text} from "@/components/ignite"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {ThemedStyle} from "@/theme"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
+
+export const PairGlassesCard = ({style}: {style?: ViewStyle}) => {
+  const {themed} = useAppTheme()
+  const {push} = useNavigationHistory()
+  return (
+    <View style={[themed($container), style]}>
+      <Text tx="onboarding:doYouHaveGlasses" style={themed($title)} />
+      <View style={themed($buttonContainer)}>
+        <Button tx="home:pairGlasses" preset="primary" onPress={() => push("/pairing/select-glasses-model")} />
+        <Button
+          tx="home:setupWithoutGlasses"
+          preset="secondary"
+          onPress={() => push("/pairing/prep", {glassesModelName: DeviceTypes.SIMULATED})}
+        />
+      </View>
+    </View>
+  )
+}
+
+const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  backgroundColor: colors.primary_foreground,
+  paddingHorizontal: spacing.lg,
+  paddingVertical: spacing.md,
+  borderRadius: spacing.md,
+  height: 180,
+  alignItems: "center",
+  justifyContent: "space-between",
+})
+
+const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "column",
+  gap: spacing.md,
+  width: "100%",
+})
+
+const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+  fontSize: spacing.md,
+  fontWeight: "bold",
+  color: colors.secondary_foreground,
+})

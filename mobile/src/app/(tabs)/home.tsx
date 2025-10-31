@@ -31,7 +31,7 @@ export default function Homepage() {
   )
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}}>
       <Header
         leftTx="home:title"
         RightActionComponent={

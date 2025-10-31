@@ -227,21 +227,21 @@ const $viewPresets: Record<Presets, ThemedStyleArray<ViewStyle>> = {
     $styles.row,
     $baseViewStyle,
     ({colors}) => ({
-      backgroundColor: colors.primary,
+      backgroundColor: colors.secondary_foreground,
     }),
   ],
   primary: [
     $styles.row,
     $baseViewStyle,
     ({colors}) => ({
-      backgroundColor: colors.primary,
+      backgroundColor: colors.secondary_foreground,
     }),
   ],
   secondary: [
     $styles.row,
     $baseViewStyle,
     ({colors}) => ({
-      backgroundColor: colors.secondary,
+      backgroundColor: colors.background,
     }),
   ],
   accent: [
@@ -279,7 +279,7 @@ const $viewPresets: Record<Presets, ThemedStyleArray<ViewStyle>> = {
 const $textPresets: Record<Presets, ThemedStyleArray<TextStyle>> = {
   default: [$baseTextStyle],
   primary: [$baseTextStyle],
-  secondary: [$baseTextStyle],
+  secondary: [$baseTextStyle, ({colors}) => ({color: colors.secondary_foreground})],
   accent: [$baseTextStyle],
   warning: [$baseTextStyle, ({colors}) => ({color: colors.textAlt})],
   destructive: [$baseTextStyle, ({colors}) => ({color: colors.palette.angry600})],

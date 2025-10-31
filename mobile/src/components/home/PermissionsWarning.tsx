@@ -2,13 +2,11 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {checkFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
 import {useFocusEffect} from "@react-navigation/native"
 import NotificationOn from "assets/icons/component/NotificationOn"
-import {useCallback, useRef, useState} from "react"
-import {Animated, Platform, TouchableOpacity} from "react-native"
+import {useCallback, useState} from "react"
+import {Platform, TouchableOpacity} from "react-native"
 
 export default function PermissionsWarning() {
   const [hasMissingPermissions, setHasMissingPermissions] = useState(false)
-
-  const fadeAnim = useRef(new Animated.Value(0)).current
   const {push} = useNavigationHistory()
 
   const handleBellPress = () => {
@@ -24,40 +22,7 @@ export default function PermissionsWarning() {
 
     const shouldShowBell = !hasCalendar || !hasNotifications || !hasLocation
     setHasMissingPermissions(shouldShowBell)
-
-    // Animate bell in if needed
-    if (shouldShowBell) {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start()
-    }
   }
-
-  // Simple animated wrapper so we do not duplicate logic
-  useFocusEffect(
-    useCallback(() => {
-      // Reset animations when screen is about to focus
-      fadeAnim.setValue(0)
-
-      // Start animations after a short delay
-      const animationTimeout = setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ]).start()
-      }, 50)
-
-      return () => {
-        clearTimeout(animationTimeout)
-        fadeAnim.setValue(0)
-      }
-    }, [fadeAnim]),
-  )
 
   // check for permissions when the screen is focused:
   useFocusEffect(
@@ -69,11 +34,9 @@ export default function PermissionsWarning() {
   return (
     <>
       {hasMissingPermissions && (
-        <Animated.View style={{opacity: fadeAnim}}>
-          <TouchableOpacity onPress={handleBellPress}>
-            <NotificationOn />
-          </TouchableOpacity>
-        </Animated.View>
+        <TouchableOpacity onPress={handleBellPress}>
+          <NotificationOn />
+        </TouchableOpacity>
       )}
     </>
   )

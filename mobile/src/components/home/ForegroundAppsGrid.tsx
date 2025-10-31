@@ -29,127 +29,6 @@ export const ForegroundAppsGrid: React.FC = () => {
   const activeForegroundApp = useActiveForegroundApp()
   const startApplet = useStartApplet()
 
-  // const {optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
-
-  // // Prepare grid data with placeholders and "Get More Apps"
-  // const startApp = useCallback(
-  //   async (packageName: string) => {
-  //     console.log("startApp called for:", packageName)
-  //     // When switching apps, the app might not be in the current filtered list
-  //     // So we need to check both foregroundApps and pass the app through from handleAppPress
-  //     let app = foregroundApps.find(a => a.packageName === packageName)
-
-  //     // If not found in foregroundApps, it might be passed as a parameter (when switching)
-  //     // For now, we'll create a minimal app object if not found
-  //     if (!app) {
-  //       console.log("App not in current foreground list, starting without health check:", packageName)
-  //       startApp(packageName)
-  //       try {
-  //         await restComms.startApp(packageName)
-  //       } catch (error) {
-  //         // refreshAppStatus()
-  //         console.error("Start app error:", error)
-  //       }
-  //       return
-  //     }
-
-  //     // Handle offline apps - activate only (no server communication needed)
-  //     if (isOfflineApp(app)) {
-  //       console.log("Starting offline app in ForegroundAppsGrid:", packageName)
-  //       optimisticallyStartApp(packageName, app.type)
-  //       return
-  //     }
-
-  //     // First check permissions for the app
-  //     const permissionResult = await askPermissionsUI(app, theme)
-  //     if (permissionResult === -1) {
-  //       // User cancelled
-  //       return
-  //     } else if (permissionResult === 0) {
-  //       // Permissions failed, retry
-  //       await startApp(packageName)
-  //       return
-  //     }
-
-  //     // If app is marked as online by backend, start optimistically immediately
-  //     // We'll do health check in background to verify
-  //     if (app.isOnline !== false) {
-  //       console.log("App is online, starting optimistically:", packageName)
-  //       optimisticallyStartApp(packageName)
-
-  //       // Do health check in background
-  //       performHealthCheckFlow({
-  //         app,
-  //         onStartApp: async () => {
-  //           // App already started optimistically, just make the server call
-  //           try {
-  //             await restComms.startApp(packageName)
-  //             clearPendingOperation(packageName)
-  //           } catch (error) {
-  //             refreshAppStatus()
-  //             console.error("Start app error:", error)
-  //           }
-  //         },
-  //         onAppUninstalled: async () => {
-  //           await refreshAppStatus()
-  //         },
-  //         onHealthCheckFailed: async () => {
-  //           // Health check failed, move app back to inactive
-  //           console.log("Health check failed, reverting app to inactive:", packageName)
-  //           optimisticallyStopApp(packageName)
-  //           refreshAppStatus()
-  //         },
-  //         optimisticallyStopApp,
-  //         clearPendingOperation,
-  //       })
-  //     } else {
-  //       // App is explicitly offline, use normal flow with health check first
-  //       await performHealthCheckFlow({
-  //         app,
-  //         onStartApp: async () => {
-  //           optimisticallyStartApp(packageName)
-  //           try {
-  //             await restComms.startApp(packageName)
-  //             clearPendingOperation(packageName)
-  //           } catch (error) {
-  //             refreshAppStatus()
-  //             console.error("Start app error:", error)
-  //           }
-  //         },
-  //         onAppUninstalled: async () => {
-  //           await refreshAppStatus()
-  //         },
-  //         optimisticallyStopApp,
-  //         clearPendingOperation,
-  //       })
-  //     }
-  //   },
-  //   [foregroundApps, optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation, refreshAppStatus, theme],
-  // )
-
-  // const stopApp = useCallback(
-  //   async (packageName: string) => {
-  //     optimisticallyStopApp(packageName)
-
-  //     // Skip offline apps - they don't need server communication
-  //     const appToStop = foregroundApps.find(a => a.packageName === packageName)
-  //     if (appToStop && isOfflineApp(appToStop)) {
-  //       console.log("Skipping offline app stop in ForegroundAppsGrid:", packageName)
-  //       clearPendingOperation(packageName)
-  //       return
-  //     }
-
-  //     try {
-  //       await restComms.stopApp(packageName)
-  //       clearPendingOperation(packageName)
-  //     } catch (error) {
-  //       refreshAppStatus()
-  //       console.error("Stop app error:", error)
-  //     }
-  //   },
-  //   [foregroundApps, optimisticallyStopApp, clearPendingOperation, refreshAppStatus],
-  // )
-
   const gridData = useMemo(() => {
     // Filter out incompatible apps and running apps
     const inactiveApps = foregroundApps.filter(app => {
@@ -236,17 +115,21 @@ export const ForegroundAppsGrid: React.FC = () => {
         )
       }
 
-      // const isOfflineAppItem = isOfflineApp(item)
+      // small hack to help with some long app names:
+      const numberOfLines = item.name.split(" ").length > 1 ? 2 : 1
+      let size = 12
+      if (numberOfLines == 1 && item.name.length > 10) {
+        size = 11
+      }
 
       return (
         <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
-          {/*<View style={themed($appContainer)}>*/}
           <AppIcon app={item} style={themed($appIcon)} />
-          {/*</View>*/}
           <Text
             text={item.name}
-            style={themed(!item.healthy ? $appNameOffline : $appName)}
-            numberOfLines={item.name.split(" ").length > 1 ? 2 : 1}
+            style={[themed(!item.healthy ? $appNameOffline : $appName), {fontSize: size}]}
+            numberOfLines={numberOfLines}
+            ellipsizeMode="tail"
           />
         </TouchableOpacity>
       )
@@ -310,6 +193,8 @@ const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   textAlign: "center",
   marginTop: spacing.xxs,
   lineHeight: 14,
+  // overflow: "hidden",
+  // wordWrap: "break-word",
 })
 
 const $appNameOffline: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
