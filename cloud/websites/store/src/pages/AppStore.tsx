@@ -85,7 +85,7 @@ const AppStore: React.FC = () => {
     }
     slideIntervalRef.current = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slideComponents.length)
-    }, 7500)
+    }, 7500000000)
   }, [slideComponents.length])
 
   const goToPrevSlide = useCallback(() => {
@@ -115,7 +115,7 @@ const AppStore: React.FC = () => {
     // Start auto-play
     slideIntervalRef.current = setInterval(() => {
       goToNextSlide()
-    }, 7500) // Change slide every 15 seconds
+    }, 750000000) // Change slide every 15 seconds
 
     // Cleanup on unmount
     return () => {
@@ -498,7 +498,7 @@ const AppStore: React.FC = () => {
       {/* Main Content */}
       {/* Search bar on mobile - sticky at top - hidden on desktop (sm and above) */}
       <div
-        className="sm:hidden sticky top-0 z-20 px-4 py-3"
+        className="sm:hidden sticky top-0 z-20 px-[24px] py-3"
         style={{
           backgroundColor: "var(--bg-primary)",
           // borderBottom: "1px solid var(--border-color)",
@@ -515,13 +515,7 @@ const AppStore: React.FC = () => {
         />
       </div>
 
-      <main className="px-4 sm:px-8 md:px-16 lg:px-25 pb-6 sm:pb-10 sm:pt-1">
-        {isMobile && !searchQuery && (
-          <div className="text-[36px] mb-[20px]" style={{color: "var(--text-primary)"}}>
-            Apps
-          </div>
-        )}
-
+      <main className="px-[24px] sm:px-8 md:px-16 lg:px-25 pb-6 sm:pb-10 sm:pt-1">
         {/* Organization filter indicator */}
         {activeOrgFilter && (
           <div className="my-2 sm:my-4 max-w-2xl mx-auto px-4">
@@ -577,7 +571,7 @@ const AppStore: React.FC = () => {
               <SkeletonSlider />
             ) : (
               <div
-                className="w-full relative mb-4 sm:mb-8 overflow-hidden touch-pan-y"
+                className="w-full relative sm:mb-8 overflow-hidden touch-pan-y mt-3"
                 onTouchStart={(e) => {
                   if (!isMobile) return
                   const touch = e.touches[0]
@@ -687,18 +681,22 @@ const AppStore: React.FC = () => {
           </div>
         )}
 
-        {!searchQuery && <div className=" text-[20px] sm:text-[25px] font-medium ">Top Apps</div>}
+        {!searchQuery && (
+          <div className=" text-[20px] sm:text-[25px] mt-[24px] mb-[24px] font-semibold text-[var(--secondary-foreground)]">
+            Top Apps
+          </div>
+        )}
 
         {/* App grid with loading skeletons */}
         <div className="">
           {isLoading ? (
-            <div className="mt-2 mb-2 sm:mt-4 sm:mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-[30px] gap-y-6 sm:gap-y-6">
+            <div className="mb-2 sm:mt-4 sm:mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-[30px] gap-y-6 sm:gap-y-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <SkeletonAppCard key={i} />
               ))}
             </div>
           ) : !error ? (
-            <div className="mt-2 mb-2 sm:mt-4 sm:mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-[30px] gap-y-6 sm:gap-y-6">
+            <div className="mt-2 mb-2 sm:mt-4 sm:mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-[30px] gap-y-[24px] sm:gap-y-[24px]">
               {filteredApps.map((app, index) => {
                 // Calculate if this card is in the last row
                 const totalApps = filteredApps.length

@@ -131,7 +131,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
         background: theme === "light" ? "#ffffff" : "#171717",
         borderBottom: isScrolled ? `1px solid var(--border-color)` : "1px solid transparent",
       }}>
-      <div className=" mx-auto px py-2 px-4 sm:px-8 md:px-16 lg:px-25  ">
+      <div className=" mx-auto px px-4 sm:px- md:px-16 lg:px-25  ">
         {/* Two-row layout for medium screens, single row for large+ */}
         <div className="flex relative flex-row lg:flex-row lg:items-center lg:justify-between gap-4 min-h-[60px]  items-center">
           {/* Top row: Logo and Buttons */}

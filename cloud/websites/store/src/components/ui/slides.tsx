@@ -398,7 +398,7 @@ export const XSlideMobile: React.FC = () => {
       />
 
       <motion.div
-        className="absolute bottom-0 w-full min-h-[70px] sm:min-h-[90px] bg-[#d9d9d948] backdrop-blur-[25px] flex flex-row items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 rounded-b-xl"
+        className="absolute bottom-0 w-full min-h-[70px] sm:min-h-[90px] bg-[#d9d9d948] backdrop-blur-[25px] flex flex-row items-center gap-2 sm:gap-3 px-[11px] sm:px-[11px] py-[11px] sm:py-[11px] rounded-b-xl"
         initial={{opacity: 0, y: 20}}
         animate={{opacity: 1, y: 0}}
         transition={{delay: 0.2, duration: 0.4}}>
@@ -435,13 +435,13 @@ export const XSlideMobile: React.FC = () => {
 
         {/* App Information */}
         <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5 sm:gap-1">
-          <h3 className="text-[#ffffff] font-bold text-[15px] leading-tight">X</h3>
+          <h3 className="text-[var(--background)] font-bold text-[16px] leading-tight font-semibold">X</h3>
 
-          <span className="text-[#ffffff] text-[11px] -mt-1 line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap">
+          <span className="text-[var(--background)] text-[12px] -mt-1 line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold">
             Social • News • Media
           </span>
 
-          <p className="text-[#CACACA] text-[10px] -mt-1 line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap">
+          <p className="text-[var(--input)] text-[10px] -mt-1 line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap">
             Stay connected with what&apos;s happening on X
           </p>
         </div>
