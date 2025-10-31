@@ -155,6 +155,10 @@ app.use(
       "https://dev.docs.mentra.glass",
       "https://dev.store.mentra.glass",
 
+      // Ngrok domains for development
+      "https://webview.ngrok.dev",
+      "https://mentra-cloud-server.ngrok.app",
+
       // mentraglass.com API
       "https://www.mentraglass.com",
       "https://api.mentraglass.com",
