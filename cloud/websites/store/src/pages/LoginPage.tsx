@@ -1,26 +1,26 @@
-import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { supabase } from '../utils/supabase';
-import Header from '../components/Header';
-import { Button } from '../components/ui/button';
-import EmailAuthModal from '../components/EmailAuthModal';
+import {useState, useEffect} from "react"
+import {useLocation} from "react-router-dom"
+import {Auth} from "@supabase/auth-ui-react"
+import {ThemeSupa} from "@supabase/auth-ui-shared"
+import {supabase} from "../utils/supabase"
+// import Header from '../components/Header';
+import {Button} from "../components/ui/button"
+import EmailAuthModal from "../components/EmailAuthModal"
 
 const LoginPage: React.FC = () => {
   // const navigate = useNavigate();
-  const location = useLocation();
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const location = useLocation()
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
 
   // Get the redirect path from location state or default to home
-  const from = (location.state)?.from?.pathname || (location.state)?.returnTo || '/';
+  const from = location.state?.from?.pathname || location.state?.returnTo || "/"
 
   // Store the redirect path for the email login flow
-  React.useEffect(() => {
-    if (from && from !== '/') {
-      localStorage.setItem('auth_redirect', from);
+  useEffect(() => {
+    if (from && from !== "/") {
+      localStorage.setItem("auth_redirect", from)
     }
-  }, [from]);
+  }, [from])
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -30,7 +30,10 @@ const LoginPage: React.FC = () => {
         <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
           {/* Logo and Site Name */}
           <div className="flex items-end select-none">
-            <img src="https://imagedelivery.net/nrc8B2Lk8UIoyW7fY8uHVg/757b23a3-9ec0-457d-2634-29e28f03fe00/verysmall" alt="Mentra Logo" />
+            <img
+              src="https://imagedelivery.net/nrc8B2Lk8UIoyW7fY8uHVg/757b23a3-9ec0-457d-2634-29e28f03fe00/verysmall"
+              alt="Mentra Logo"
+            />
           </div>
           <span className="ml-2 font-medium text-lg text-gray-800 mb-6">Store</span>
 
@@ -47,27 +50,27 @@ const LoginPage: React.FC = () => {
                 theme: ThemeSupa,
                 style: {
                   button: {
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontWeight: '500',
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    fontWeight: "500",
                   },
                   anchor: {
-                    display: 'none'
+                    display: "none",
                   },
                   container: {
-                    width: '100%'
-                  }
+                    width: "100%",
+                  },
                 },
                 // Hide everything except the google button
                 className: {
-                  message: 'hidden',
-                  divider: 'hidden',
-                  label: 'hidden',
-                  input: 'hidden',
-                  button: 'hidden',
-                }
+                  message: "hidden",
+                  divider: "hidden",
+                  label: "hidden",
+                  input: "hidden",
+                  button: "hidden",
+                },
               }}
-              providers={['google', 'apple']}
+              providers={["google", "apple"]}
               view="sign_in"
               redirectTo={`${window.location.origin}${from}`}
               showLinks={false}
@@ -82,11 +85,7 @@ const LoginPage: React.FC = () => {
                 <div className="flex-grow h-px bg-gray-300"></div>
               </div>
 
-              <Button
-                className="w-full py-2"
-                onClick={() => setIsEmailModalOpen(true)}
-                variant="outline"
-              >
+              <Button className="w-full py-2" onClick={() => setIsEmailModalOpen(true)} variant="outline">
                 Sign in with Email
               </Button>
             </div>
@@ -97,14 +96,11 @@ const LoginPage: React.FC = () => {
           </div>
 
           {/* Email Auth Modal */}
-          <EmailAuthModal
-            open={isEmailModalOpen}
-            onOpenChange={setIsEmailModalOpen}
-          />
+          <EmailAuthModal open={isEmailModalOpen} onOpenChange={setIsEmailModalOpen} />
         </div>
       </main>
     </div>
-  );
-};
+  )
+}
 
-export default LoginPage;
+export default LoginPage

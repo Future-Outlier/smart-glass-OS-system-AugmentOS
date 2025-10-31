@@ -12,14 +12,13 @@ import {registerGlobals} from "@livekit/react-native-webrtc"
 import {initializeSettings} from "@/stores/settings"
 import {ConsoleLogger} from "@/utils/debug/console"
 
-const deploymentRegion = process.env.DEPLOYMENT_REGION
+// Only initialize Sentry if DSN is provided
+const sentryDsn = Constants.expoConfig?.extra?.SENTRY_DSN
+const deploymentRegion = Constants.expoConfig?.extra?.DEPLOYMENT_REGION
 const isChina = deploymentRegion === "china"
-
-if (isChina) {
-  console.log("Sentry is disabled for China")
-} else {
+if (!isChina && sentryDsn && sentryDsn !== "secret" && sentryDsn.trim() !== "") {
   Sentry.init({
-    dsn: Constants.expoConfig?.extra?.SENTRY_DSN,
+    dsn: sentryDsn,
 
     // Adds more context data to events (IP address, cookies, user, etc.)
     // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
