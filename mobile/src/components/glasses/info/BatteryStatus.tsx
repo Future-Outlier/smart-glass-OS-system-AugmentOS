@@ -7,19 +7,56 @@ import {CaseIcon} from "./CaseIcon"
 import {Group} from "@/components/ui/Group"
 import {translate} from "@/i18n"
 import {RouteButton, StatusCard} from "@/components/ui/RouteButton"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 
 interface BatteryStatusProps {
-  glassesBatteryLevel?: number
-  caseBatteryLevel?: number
-  caseCharging?: boolean
-  caseRemoved?: boolean
+  compact?: boolean
 }
 
-export function BatteryStatus({glassesBatteryLevel, caseBatteryLevel, caseCharging, caseRemoved}: BatteryStatusProps) {
+export function BatteryStatus({compact}: BatteryStatusProps) {
+  const {status} = useCoreStatus()
   const {theme, themed} = useAppTheme()
+  const glassesBatteryLevel = status.glasses_info?.battery_level
+  const caseBatteryLevel = status.glasses_info?.case_battery_level
+  const caseCharging = status.glasses_info?.case_charging
+  const caseRemoved = status.glasses_info?.case_removed
 
   if (glassesBatteryLevel === undefined || glassesBatteryLevel === -1) {
     return null
+  }
+
+  if (compact) {
+    return (
+      <View style={themed($sideBySideContainer)}>
+        {glassesBatteryLevel !== -1 && (
+          <StatusCard
+            style={{backgroundColor: theme.colors.background, flex: 1}}
+            textStyle={themed($compactTextStyle)}
+            label={translate("deviceSettings:glasses")}
+            iconEnd={
+              <View style={themed($compactBatteryValue)}>
+                <Icon icon="battery" size={14} color={theme.colors.text} />
+                <Text style={themed($compactTextStyle)}>{glassesBatteryLevel}%</Text>
+              </View>
+            }
+          />
+        )}
+
+        {caseBatteryLevel !== undefined && caseBatteryLevel !== -1 && !caseRemoved && (
+          <StatusCard
+            style={{backgroundColor: theme.colors.background, flex: 1}}
+            textStyle={themed($compactTextStyle)}
+            iconEnd={
+              <View style={themed($compactBatteryValue)}>
+                <Icon icon="battery" size={14} color={theme.colors.text} />
+                <Text style={themed($compactTextStyle)}>{caseBatteryLevel}%</Text>
+              </View>
+            }
+            label={caseCharging ? translate("deviceSettings:caseCharging") : translate("deviceSettings:case")}
+          />
+        )}
+      </View>
+    )
   }
 
   return (
@@ -32,7 +69,7 @@ export function BatteryStatus({glassesBatteryLevel, caseBatteryLevel, caseChargi
           iconEnd={
             <View style={themed($batteryValue)}>
               <Icon icon="battery" size={16} color={theme.colors.text} />
-              <Text style={{color: theme.colors.text, fontWeight: "500"}}>{glassesBatteryLevel}%</Text>
+              <Text style={themed($textStyle)}>{glassesBatteryLevel}%</Text>
             </View>
           }
         />
@@ -45,7 +82,7 @@ export function BatteryStatus({glassesBatteryLevel, caseBatteryLevel, caseChargi
           iconEnd={
             <View style={themed($batteryValue)}>
               <Icon icon="battery" size={16} color={theme.colors.text} />
-              <Text style={{color: theme.colors.text, fontWeight: "500"}}>{caseBatteryLevel}%</Text>
+              <Text style={themed($textStyle)}>{caseBatteryLevel}%</Text>
             </View>
           }
           label={caseCharging ? translate("deviceSettings:caseCharging") : translate("deviceSettings:case")}
@@ -54,6 +91,24 @@ export function BatteryStatus({glassesBatteryLevel, caseBatteryLevel, caseChargi
     </Group>
   )
 }
+
+const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flex: 1,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: spacing.xs,
+  // paddingHorizontal: spacing.xxs,
+  width: "100%",
+})
+
+const $compactTextStyle: ThemedStyle<TextStyle> = ({spacing}) => ({
+  fontSize: spacing.sm,
+})
+
+const $textStyle: ThemedStyle<TextStyle> = ({spacing}) => ({
+  // fontSize: spacing.sm,
+  // fontWeight: "500",
+})
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
@@ -80,6 +135,13 @@ const $batteryLabel: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   gap: spacing.xs,
+})
+
+const $compactBatteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  width: spacing.xl,
+  justifyContent: "space-between",
 })
 
 const $batteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({

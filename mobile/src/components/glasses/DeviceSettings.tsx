@@ -155,14 +155,7 @@ export default function DeviceSettings() {
       </Group>
 
       {/* Battery Status Section */}
-      {isGlassesConnected && (
-        <BatteryStatus
-          glassesBatteryLevel={status.glasses_info?.battery_level}
-          caseBatteryLevel={status.glasses_info?.case_battery_level}
-          caseCharging={status.glasses_info?.case_charging}
-          caseRemoved={status.glasses_info?.case_removed}
-        />
-      )}
+      {isGlassesConnected && <BatteryStatus />}
 
       {/* Nex Developer Settings - Only show when connected to Mentra Nex */}
       {defaultWearable && defaultWearable.includes(DeviceTypes.NEX) && (

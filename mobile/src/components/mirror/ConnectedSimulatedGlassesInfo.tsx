@@ -83,8 +83,6 @@ export default function ConnectedSimulatedGlassesInfo({style}: {style?: ViewStyl
 const $connectedContent: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.primary_foreground,
   padding: spacing.lg,
-  // alignItems: "center",
-  // justifyContent: "center",
 })
 
 const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({

@@ -10,34 +10,31 @@ interface StatusCardProps {
   label: string
   text?: string
   style?: ViewStyle
+  textStyle?: TextStyle
   iconStart?: React.ReactNode
   iconEnd?: React.ReactNode
 }
 
-export function StatusCard({label, style, iconStart, iconEnd}: StatusCardProps) {
+export function StatusCard({label, style, iconStart, iconEnd, textStyle}: StatusCardProps) {
   const {theme, themed} = useAppTheme()
 
   return (
-    <View style={[themed($settingsGroup), {paddingVertical: 0}, style]}>
-      <View style={{flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, alignItems: "center"}}>
-        <View
-          style={{
-            flexDirection: "column",
-            justifyContent: "space-between",
-            paddingVertical: 8,
-            maxWidth: "90%",
-            gap: theme.spacing.xxs,
-          }}>
-          <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.md}}>
-            {iconStart && <View style={themed($icon)}>{iconStart}</View>}
-            <Text style={themed($label)}>{label}</Text>
-          </View>
-        </View>
-        {iconEnd && iconEnd}
+    <View style={[themed($settingsGroup), themed($statusCardContainer), style]}>
+      <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.md}}>
+        {iconStart && <View style={themed($icon)}>{iconStart}</View>}
+        <Text style={[themed($label), textStyle]}>{label}</Text>
       </View>
+      {iconEnd && iconEnd}
     </View>
   )
 }
+
+const $statusCardContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  paddingVertical: 16,
+  alignItems: "center",
+})
 
 interface RouteButtonProps {
   label: string
