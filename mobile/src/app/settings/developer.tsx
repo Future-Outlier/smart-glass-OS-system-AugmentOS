@@ -12,6 +12,7 @@ import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
+import Constants from "expo-constants"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
@@ -85,7 +86,7 @@ export default function DeveloperSettingsScreen() {
           </Group>
         )}
 
-        <BackendUrl />
+        {!Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE && <BackendUrl />}
 
         <Spacer height={theme.spacing.md} />
         <Spacer height={theme.spacing.xxl} />
