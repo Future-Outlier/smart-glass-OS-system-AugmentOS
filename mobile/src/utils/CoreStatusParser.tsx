@@ -189,8 +189,8 @@ export class CoreStatusParser {
   }
 
   static parseStatus(data: any): CoreStatus {
-    if (data && "status" in data) {
-      const status = data.status
+    if (data && "core_status" in data) {
+      const status = data.core_status
       const coreInfo = status.core_info ?? {}
       const glassesInfo = status.connected_glasses ?? {}
       const authInfo = status.auth ?? {}
@@ -204,11 +204,11 @@ export class CoreStatusParser {
           core_token: coreInfo.core_token ?? null,
           cloud_connection_status: coreInfo.cloud_connection_status ?? "DISCONNECTED",
           default_wearable:
-            hasConnectedGlasses && !status.core_info.default_wearable
+            hasConnectedGlasses && !coreInfo.default_wearable
               ? status.connected_glasses.model_name
-              : (status.core_info.default_wearable ?? null),
-          is_mic_enabled_for_frontend: status.core_info.is_mic_enabled_for_frontend ?? false,
-          is_searching: status.core_info.is_searching ?? false,
+              : (coreInfo.default_wearable ?? null),
+          is_mic_enabled_for_frontend: coreInfo.is_mic_enabled_for_frontend ?? false,
+          is_searching: coreInfo.is_searching ?? false,
         },
         glasses_info: status.connected_glasses
           ? {
@@ -238,21 +238,37 @@ export class CoreStatusParser {
               bluetooth_name: glassesInfo.bluetooth_name,
             }
           : null,
-        glasses_settings: {
-          brightness: status.glasses_settings.brightness ?? 50,
-          auto_brightness: status.glasses_settings.auto_brightness ?? false,
-          dashboard_height: status.glasses_settings.dashboard_height ?? 4,
-          dashboard_depth: status.glasses_settings.dashboard_depth ?? 5,
-          head_up_angle: status.glasses_settings.head_up_angle ?? 30,
-          button_mode: status.glasses_settings.button_mode ?? "photo",
-          button_photo_size: status.glasses_settings.button_photo_size ?? "medium",
-          button_video_settings: status.glasses_settings.button_video_settings ?? {
-            width: 1280,
-            height: 720,
-            fps: 30,
-          },
-          button_camera_led: status.glasses_settings.button_camera_led,
-        },
+        glasses_settings: status.glasses_settings
+          ? {
+              brightness: status.glasses_settings.brightness ?? 50,
+              auto_brightness: status.glasses_settings.auto_brightness ?? false,
+              dashboard_height: status.glasses_settings.dashboard_height ?? 4,
+              dashboard_depth: status.glasses_settings.dashboard_depth ?? 5,
+              head_up_angle: status.glasses_settings.head_up_angle ?? 30,
+              button_mode: status.glasses_settings.button_mode ?? "photo",
+              button_photo_size: status.glasses_settings.button_photo_size ?? "medium",
+              button_video_settings: status.glasses_settings.button_video_settings ?? {
+                width: 1280,
+                height: 720,
+                fps: 30,
+              },
+              button_camera_led: status.glasses_settings.button_camera_led,
+            }
+          : {
+              brightness: 50,
+              auto_brightness: false,
+              dashboard_height: 4,
+              dashboard_depth: 5,
+              head_up_angle: 30,
+              button_mode: "photo",
+              button_photo_size: "medium",
+              button_video_settings: {
+                width: 1280,
+                height: 720,
+                fps: 30,
+              },
+              button_camera_led: false,
+            },
         wifi: status.wifi ?? CoreStatusParser.defaultStatus.wifi,
         gsm: status.gsm ?? CoreStatusParser.defaultStatus.gsm,
         auth: {

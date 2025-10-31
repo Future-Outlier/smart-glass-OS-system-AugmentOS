@@ -47,6 +47,7 @@ class PhoneMic private constructor(private val context: Context) {
         private const val MAX_SCO_RETRIES = 3
         private const val FOCUS_REGAIN_DELAY_MS = 500L
         private const val SAMSUNG_MIC_TEST_DELAY_MS = 500L
+        private const val MIC_SWITCH_DELAY_MS = 300L  // Time for CoreManager to switch mics
     }
 
     // Audio recording components
@@ -220,10 +221,13 @@ class PhoneMic private constructor(private val context: Context) {
 
     private fun startRecordingWithSco(): Boolean {
         try {
+            // Use MODE_IN_COMMUNICATION instead of MODE_IN_CALL
+            // This allows media playback to coexist with microphone recording
+            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+
             // Start Bluetooth SCO
             audioManager.startBluetoothSco()
             audioManager.isBluetoothScoOn = true
-            audioManager.mode = AudioManager.MODE_IN_CALL
 
             // Wait briefly for SCO to connect
             Thread.sleep(100)
@@ -392,7 +396,14 @@ class PhoneMic private constructor(private val context: Context) {
                             if (isPhoneCallActive) {
                                 Bridge.log("MIC: Phone call started - stopping recording")
                                 if (isRecording.get()) {
-                                    stopRecording()
+                                    // Notify CoreManager BEFORE stopping - allows switch to glasses mic
+                                    notifyCoreManager("phone_call_interruption", emptyList())
+                                    // Give CoreManager time to switch to glasses mic
+                                    mainHandler.postDelayed({
+                                        stopRecording()
+                                    }, MIC_SWITCH_DELAY_MS)
+                                } else {
+                                    // Not currently recording, but still notify about unavailability
                                     notifyCoreManager("phone_call_interruption", emptyList())
                                 }
                             } else {
@@ -433,11 +444,15 @@ class PhoneMic private constructor(private val context: Context) {
                                                 Bridge.log(
                                                         "MIC: Another app is recording - stopping"
                                                 )
-                                                stopRecording()
+                                                // Notify CoreManager BEFORE stopping - allows switch to glasses mic
                                                 notifyCoreManager(
                                                         "external_app_recording",
                                                         emptyList()
                                                 )
+                                                // Give CoreManager time to switch to glasses mic
+                                                mainHandler.postDelayed({
+                                                    stopRecording()
+                                                }, MIC_SWITCH_DELAY_MS)
                                             }
                                         },
                                         500
@@ -486,11 +501,19 @@ class PhoneMic private constructor(private val context: Context) {
                                 if (isExternalAudioActive) {
                                     Bridge.log("MIC: External app started recording")
                                     if (isRecording.get()) {
-                                        stopRecording()
+                                        // Notify CoreManager BEFORE stopping - allows switch to glasses mic
+                                        notifyCoreManager("external_app_recording", emptyList())
+                                        // Give CoreManager time to switch to glasses mic before releasing phone mic
+                                        mainHandler.postDelayed({
+                                            stopRecording()
+                                        }, MIC_SWITCH_DELAY_MS)
+                                    } else {
+                                        // Not currently recording, but still notify about unavailability
                                         notifyCoreManager("external_app_recording", emptyList())
                                     }
                                 } else {
                                     Bridge.log("MIC: External app stopped recording")
+                                    // Notify CoreManager that phone mic is available again
                                     notifyCoreManager(
                                             "external_app_stopped",
                                             getAvailableInputDevices().values.toList()
@@ -755,6 +778,23 @@ class PhoneMic private constructor(private val context: Context) {
 
     fun cleanup() {
         stopRecording()
+
+        // CRITICAL: Force reset audio mode to prevent system-wide Bluetooth audio breakage
+        // This ensures that even if stopRecording() failed, we restore normal audio routing
+        try {
+            if (audioManager.isBluetoothScoOn) {
+                Bridge.log("MIC: Force stopping Bluetooth SCO in cleanup")
+                audioManager.stopBluetoothSco()
+                audioManager.isBluetoothScoOn = false
+            }
+
+            if (audioManager.mode != AudioManager.MODE_NORMAL) {
+                Bridge.log("MIC: Force resetting audio mode to NORMAL in cleanup")
+                audioManager.mode = AudioManager.MODE_NORMAL
+            }
+        } catch (e: Exception) {
+            Bridge.log("MIC: Error during audio mode cleanup: ${e.message}")
+        }
 
         // Unregister listeners
         phoneStateListener?.let { telephonyManager?.listen(it, PhoneStateListener.LISTEN_NONE) }

@@ -18,7 +18,7 @@ export const CoreStatusProvider = ({children}: {children: ReactNode}) => {
   })
 
   const refreshStatus = useCallback((data: any) => {
-    if (!(data && "status" in data)) {
+    if (!(data && "core_status" in data)) {
       return
     }
 

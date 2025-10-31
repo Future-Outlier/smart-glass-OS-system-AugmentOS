@@ -1,8 +1,11 @@
 package com.mentra.core.utils.audio;
 
+import android.content.Context;
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.os.Build;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
@@ -24,6 +27,8 @@ public class PCMAudioPlayer {
 
     // AudioTrack instance
     private AudioTrack audioTrack;
+    private Context context;
+    private AudioManager audioManager;
 
     // Playback state
     private AtomicBoolean isPlaying = new AtomicBoolean(false);
@@ -35,18 +40,21 @@ public class PCMAudioPlayer {
     /**
      * Constructor with default audio configuration
      */
-    public PCMAudioPlayer() {
-        this(16000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
+    public PCMAudioPlayer(Context context) {
+        this(context, 16000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
     }
 
     /**
      * Constructor with custom audio configuration
      *
+     * @param context Application context
      * @param sampleRate Sample rate in Hz (e.g., 16000, 44100, 48000)
      * @param channelConfig Channel configuration (MONO or STEREO)
      * @param audioFormat Audio format (16-bit, 8-bit, float, etc.)
      */
-    public PCMAudioPlayer(int sampleRate, int channelConfig, int audioFormat) {
+    public PCMAudioPlayer(Context context, int sampleRate, int channelConfig, int audioFormat) {
+        this.context = context;
+        this.audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         this.sampleRate = sampleRate;
         this.channelConfig = channelConfig;
         this.audioFormat = audioFormat;
@@ -66,12 +74,14 @@ public class PCMAudioPlayer {
 
     /**
      * Initialize the AudioTrack
+     *
+     * Uses USAGE_VOICE_COMMUNICATION and routes to Bluetooth SCO if available
      */
     private void initializeAudioTrack() {
         try {
             audioTrack = new AudioTrack.Builder()
                     .setAudioAttributes(new android.media.AudioAttributes.Builder()
-                            .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                            .setUsage(android.media.AudioAttributes.USAGE_VOICE_COMMUNICATION)
                             .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
                             .build())
                     .setAudioFormat(new android.media.AudioFormat.Builder()
@@ -85,12 +95,54 @@ public class PCMAudioPlayer {
 
             if (audioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
                 isInitialized.set(true);
-                Log.d(TAG, "AudioTrack initialized successfully");
+                Log.d(TAG, "AudioTrack initialized successfully with USAGE_VOICE_COMMUNICATION");
+
+                // Route to Bluetooth SCO if available
+                routeToBluetoothIfAvailable();
             } else {
                 Log.e(TAG, "Failed to initialize AudioTrack");
             }
         } catch (Exception e) {
             Log.e(TAG, "Error initializing AudioTrack", e);
+        }
+    }
+
+    /**
+     * Route audio to Bluetooth SCO device if available
+     */
+    private void routeToBluetoothIfAvailable() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || audioManager == null || audioTrack == null) {
+            return;
+        }
+
+        try {
+            // Get all available audio output devices
+            AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+
+            AudioDeviceInfo bluetoothDevice = null;
+
+            // Look for Bluetooth SCO device
+            for (AudioDeviceInfo device : devices) {
+                if (device.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+                    bluetoothDevice = device;
+                    Log.d(TAG, "Found Bluetooth SCO device: " + device.getProductName());
+                    break;
+                }
+            }
+
+            // If we found a Bluetooth SCO device, route audio to it
+            if (bluetoothDevice != null) {
+                boolean success = audioTrack.setPreferredDevice(bluetoothDevice);
+                if (success) {
+                    Log.d(TAG, "Successfully routed audio to Bluetooth SCO device");
+                } else {
+                    Log.w(TAG, "Failed to route audio to Bluetooth SCO device");
+                }
+            } else {
+                Log.d(TAG, "No Bluetooth SCO device available, using default routing");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error routing to Bluetooth: " + e.getMessage());
         }
     }
 

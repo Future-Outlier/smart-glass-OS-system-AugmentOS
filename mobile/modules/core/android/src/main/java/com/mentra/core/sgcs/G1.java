@@ -195,6 +195,11 @@ public class G1 extends SGCManager {
     private boolean shouldUseGlassesMic;
     private boolean lastThingDisplayedWasAnImage = false;
 
+    // Serial number and style/color information
+    public String glassesSerialNumber = "";
+    public String glassesStyle = "";
+    public String glassesColor = "";
+
     // lock writing until the last write is successful
     // fonts in G1
     G1Text g1Text;
@@ -1109,8 +1114,13 @@ public class G1 extends SGCManager {
                         // Bridge.log("G1: LEFT DEVICE Style: " + decoded[0] + ", Color: " + decoded[1]);
 
                         if (preferredG1DeviceId != null && preferredG1DeviceId.equals(parsedDeviceName)) {
-                            // EventBus.getDefault()
-                            //         .post(new GlassesSerialNumberEvent(decodedSerial, decoded[0], decoded[1]));
+                            // Store the information (matching iOS implementation)
+                            glassesSerialNumber = decodedSerial;
+                            glassesStyle = decoded[0];
+                            glassesColor = decoded[1];
+
+                            // Emit the serial number information to React Native
+                            emitSerialNumberInfo(decodedSerial, decoded[0], decoded[1]);
                         }
                         break;
                     }
@@ -2395,6 +2405,11 @@ public class G1 extends SGCManager {
                             foundDeviceNames.add(name);
                             Bridge.log("Found smart glasses: " + name);
                             String adjustedName = parsePairingIdFromDeviceName(name);
+                            // If parsing failed, use the full name as fallback
+                            if (adjustedName == null) {
+                                adjustedName = name;
+                                Bridge.log("G1: Failed to parse device ID from name: " + name);
+                            }
                             Bridge.sendDiscoveredDevice("Even Realities G1", adjustedName);
                         }
                     }
@@ -3042,15 +3057,48 @@ public class G1 extends SGCManager {
         void onError(String side, String error);
     }
 
+    /**
+     * Inverts BMP pixel data by flipping all bits after the header.
+     * Matches iOS implementation exactly (G1.swift line 1790-1811)
+     *
+     * @param bmpData The original BMP data
+     * @return Inverted BMP data with pixel bits flipped
+     */
+    private byte[] invertBmpPixels(byte[] bmpData) {
+        if (bmpData == null || bmpData.length <= 62) {
+            Bridge.log("G1: BMP data too small to contain pixel data");
+            return bmpData;
+        }
+
+        // BMP header is 62 bytes (14 byte file header + 40 byte DIB header + 8 byte color table)
+        final int headerSize = 62;
+        byte[] invertedData = new byte[bmpData.length];
+
+        // Copy header unchanged
+        System.arraycopy(bmpData, 0, invertedData, 0, headerSize);
+
+        // Invert the pixel data (everything after the header)
+        for (int i = headerSize; i < bmpData.length; i++) {
+            // Invert each byte (flip all bits)
+            invertedData[i] = (byte) ~bmpData[i];
+        }
+
+        Bridge.log("G1: Inverted BMP pixels: " + (bmpData.length - headerSize) + " bytes processed");
+        return invertedData;
+    }
+
     public void displayBitmapImage(byte[] bmpData) {
         displayBitmapImage(bmpData, null);
     }
 
     public void displayBitmapImage(byte[] bmpData, BmpProgressCallback callback) {
+        // Invert BMP pixels to match iOS implementation
+        byte[] invertedBmpData = invertBmpPixels(bmpData);
+
         if (USE_OPTIMIZED_BITMAP_DISPLAY) {
-            displayBitmapImageOptimized(bmpData, callback);
+            displayBitmapImageOptimized(invertedBmpData, callback);
         } else {
-            displayBitmapImageLegacy(bmpData, callback);
+            displayBitmapImageLegacy(invertedBmpData, callback);
         }
     }
 
@@ -3818,6 +3866,28 @@ public class G1 extends SGCManager {
         }
 
         return new String[] { style, color };
+    }
+
+    /**
+     * Emits serial number information to React Native (matching iOS implementation)
+     */
+    private void emitSerialNumberInfo(String serialNumber, String style, String color) {
+        try {
+            JSONObject eventBody = new JSONObject();
+            eventBody.put("type", "glasses_serial_number");
+            eventBody.put("serialNumber", serialNumber);
+            eventBody.put("style", style);
+            eventBody.put("color", color);
+
+            String jsonString = eventBody.toString();
+            Bridge.sendEvent("CoreMessageEvent", jsonString);
+            Bridge.log("G1: 📱 Emitted serial number info: " + serialNumber + ", Style: " + style + ", Color: " + color);
+
+            // Trigger status update to include serial number in status JSON
+            CoreManager.getInstance().handle_request_status();
+        } catch (Exception e) {
+            Bridge.log("G1: Error emitting serial number info: " + e.getMessage());
+        }
     }
 
     /**
