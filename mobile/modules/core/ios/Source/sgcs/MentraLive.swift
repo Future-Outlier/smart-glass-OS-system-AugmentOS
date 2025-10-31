@@ -2976,7 +2976,7 @@ class MentraLive: NSObject, SGCManager {
             ])
 
             // Start monitoring for when user pairs manually
-            monitor.startMonitoring(devicePattern: "Mentra") { [weak self] connected, deviceName in
+            monitor.startMonitoring(devicePattern: "Mentra") { [weak self] (connected: Bool, deviceName: String?) in
                 guard let self = self else { return }
 
                 if connected {

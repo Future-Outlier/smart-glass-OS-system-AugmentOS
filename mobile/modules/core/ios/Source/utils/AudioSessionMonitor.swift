@@ -56,10 +56,12 @@ class AudioSessionMonitor {
         let session = AVAudioSession.sharedInstance()
         let outputs = session.currentRoute.outputs
 
+        Bridge.log("AudioMonitor: Checking active route, output count: \(outputs.count)")
         for output in outputs {
+            Bridge.log("AudioMonitor:   - \(output.portName) (type: \(output.portType.rawValue))")
             if output.portType == .bluetoothHFP || output.portType == .bluetoothA2DP {
-                if output.portName.contains(devicePattern) {
-                    Bridge.log("AudioMonitor: Found active audio device: \(output.portName)")
+                if output.portName.localizedCaseInsensitiveContains(devicePattern) {
+                    Bridge.log("AudioMonitor: ✅ Found active audio device: \(output.portName)")
                     return true
                 }
             }
@@ -84,17 +86,22 @@ class AudioSessionMonitor {
 
             // Try to find in availableInputs (includes paired devices)
             guard let availableInputs = session.availableInputs else {
-                Bridge.log("AudioMonitor: No available inputs")
+                Bridge.log("AudioMonitor: ❌ availableInputs is nil")
                 return false
+            }
+
+            Bridge.log("AudioMonitor: availableInputs count: \(availableInputs.count)")
+            for input in availableInputs {
+                Bridge.log("AudioMonitor:   - \(input.portName) (type: \(input.portType.rawValue))")
             }
 
             let bluetoothInput = availableInputs.first { input in
                 input.portType == .bluetoothHFP &&
-                    input.portName.contains(devicePattern)
+                    input.portName.localizedCaseInsensitiveContains(devicePattern)
             }
 
             guard let btInput = bluetoothInput else {
-                Bridge.log("AudioMonitor: Bluetooth HFP device '\(devicePattern)' not found in availableInputs")
+                Bridge.log("AudioMonitor: ❌ Bluetooth HFP device '\(devicePattern)' not found in availableInputs")
                 return false
             }
 
@@ -105,7 +112,7 @@ class AudioSessionMonitor {
             return true
 
         } catch {
-            Bridge.log("AudioMonitor: Failed to set preferred audio output device: \(error)")
+            Bridge.log("AudioMonitor: ❌ Failed to set preferred audio output device: \(error)")
             return false
         }
     }
@@ -189,13 +196,18 @@ class AudioSessionMonitor {
             // This is crucial after returning from Settings where user may have paired
             _ = configureAudioSession()
 
-            if setAsPreferredAudioOutputDevice(devicePattern: pattern) {
-                let session = AVAudioSession.sharedInstance()
-                let deviceName = session.currentRoute.outputs.first?.portName
-                Bridge.log("AudioMonitor: ✅ Successfully activated newly paired device '\(pattern)'")
-                callback?(true, deviceName)
-            } else {
-                Bridge.log("AudioMonitor: New device available but not matching '\(pattern)'")
+            // Add small delay to let iOS populate availableInputs
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                guard let self = self else { return }
+
+                if self.setAsPreferredAudioOutputDevice(devicePattern: pattern) {
+                    let session = AVAudioSession.sharedInstance()
+                    let deviceName = session.currentRoute.outputs.first?.portName
+                    Bridge.log("AudioMonitor: ✅ Successfully activated newly paired device '\(pattern)'")
+                    self.callback?(true, deviceName)
+                } else {
+                    Bridge.log("AudioMonitor: New device available but not matching '\(pattern)'")
+                }
             }
 
         case .oldDeviceUnavailable:
@@ -221,14 +233,38 @@ class AudioSessionMonitor {
             return
         }
 
-        // Try to activate the device
-        if setAsPreferredAudioOutputDevice(devicePattern: pattern) {
-            let session = AVAudioSession.sharedInstance()
-            let deviceName = session.currentRoute.outputs.first?.portName
-            Bridge.log("AudioMonitor: ✅ Activated device after returning from Settings: '\(pattern)'")
-            callback?(true, deviceName)
-        } else {
-            Bridge.log("AudioMonitor: Device '\(pattern)' still not paired after returning to foreground")
+        // iOS needs time to populate availableInputs after setActive()
+        // Use retry with progressive delays: 100ms, 400ms, 500ms = 1s total
+        attemptActivateDevice(pattern: pattern, attempt: 0, maxAttempts: 3)
+    }
+
+    /// Try to activate the audio device with retry logic
+    /// Delays: [100ms, 400ms, 500ms] = 1 second total
+    private func attemptActivateDevice(pattern: String, attempt: Int, maxAttempts: Int) {
+        // Progressive delays in seconds (total: 1 second)
+        let delays: [TimeInterval] = [0.1, 0.4, 0.5]
+
+        if attempt >= maxAttempts {
+            Bridge.log("AudioMonitor: ❌ Failed to activate device '\(pattern)' after \(maxAttempts) attempts")
+            return
+        }
+
+        let delay = attempt < delays.count ? delays[attempt] : 0.5
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self = self else { return }
+
+            Bridge.log("AudioMonitor: Attempt \(attempt + 1)/\(maxAttempts) to activate '\(pattern)'...")
+
+            if self.setAsPreferredAudioOutputDevice(devicePattern: pattern) {
+                let session = AVAudioSession.sharedInstance()
+                let deviceName = session.currentRoute.outputs.first?.portName
+                Bridge.log("AudioMonitor: ✅ Activated device on attempt \(attempt + 1)")
+                self.callback?(true, deviceName)
+            } else {
+                Bridge.log("AudioMonitor: Attempt \(attempt + 1) failed, retrying in \(delays[min(attempt + 1, delays.count - 1)])s...")
+                self.attemptActivateDevice(pattern: pattern, attempt: attempt + 1, maxAttempts: maxAttempts)
+            }
         }
     }
 }
