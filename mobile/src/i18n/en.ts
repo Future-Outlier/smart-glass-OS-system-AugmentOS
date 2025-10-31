@@ -220,7 +220,7 @@ const en = {
     simulatedGlassesNote: "This setting has no effect when using Simulated Glasses",
     profileSettings: "Profile Settings",
     privacySettings: "Permissions and Privacy",
-    transcriptionSettings: "Transcription Settings",
+    transcriptionSettings: "Transcription",
     dashboardSettings: "Dashboard Settings",
     dashboardDescription: "Configure the contextual dashboard and HeadUp settings",
     cameraSettings: "Camera Settings",
