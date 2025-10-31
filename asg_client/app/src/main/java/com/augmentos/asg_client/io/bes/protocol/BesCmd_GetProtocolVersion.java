@@ -9,4 +9,3 @@ public class BesCmd_GetProtocolVersion extends BesBaseCommand {
         super(BesProtocolConstants.SCMD_GET_PROTOCOL_VERSION);
     }
 }
-

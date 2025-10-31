@@ -6,6 +6,7 @@ import com.augmentos.asg_client.io.bes.events.BesOtaProgressEvent;
 import com.augmentos.asg_client.io.bes.protocol.*;
 import com.augmentos.asg_client.io.bes.util.BesOtaUtil;
 import com.augmentos.asg_client.io.bluetooth.core.ComManager;
+import com.augmentos.asg_client.io.bluetooth.utils.ByteUtil;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -35,9 +36,11 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
     private int confirmTimes = 0;
     private int confirmSentPos = 0;
     private boolean bWait4Confirm = false;
+    private boolean isWaitingForAuthorization = false;
     
     private ComManager comManager;
     private BesOtaCommandListener mListener;
+    private static com.augmentos.asg_client.service.core.handlers.K900CommandHandler sK900CommandHandler;
 
     /**
      * Constructor - receives ComManager instance from AsgClientService
@@ -45,6 +48,14 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
      */
     public BesOtaManager(ComManager comManager) {
         this.comManager = comManager;
+    }
+    
+    /**
+     * Set K900CommandHandler for sending authorization requests
+     * @param handler The K900CommandHandler instance
+     */
+    public static void setK900CommandHandler(com.augmentos.asg_client.service.core.handlers.K900CommandHandler handler) {
+        sK900CommandHandler = handler;
     }
     
     /**
@@ -113,35 +124,88 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
     }
     
     /**
+     * Query current firmware version from BES device (without starting OTA)
+     * This sends GET_FIRMWARE_VERSION command and waits for response
+     * Response is stored in sCurrentFirmwareVersion
+     * @return true if request sent successfully
+     */
+    public boolean queryFirmwareVersion() {
+        if (comManager == null) {
+            Log.e(TAG, "Cannot query firmware version - ComManager is null");
+            return false;
+        }
+        
+        if (isBesOtaInProgress) {
+            Log.w(TAG, "Cannot query firmware version - OTA in progress");
+            return false;
+        }
+        
+        // Send GetFirmwareVersion command directly via ComManager
+        BesCmd_GetFirmwareVersion cmd = new BesCmd_GetFirmwareVersion();
+        byte[] data = cmd.getSendData();
+        
+        if (data != null) {
+            Log.d(TAG, "Querying current firmware version...");
+            return comManager.send(data);
+        }
+        return false;
+    }
+    
+    /**
+     * Callback for firmware version response (outside OTA context)
+     * This is called directly from ComManager's normal data handling
+     */
+    public void onFirmwareVersionReceived(byte[] data, int size) {
+        // Parse the firmware version from raw data
+        if (size > 9) {
+            if (BesOtaUtil.isMagicCodeValid(data, 0, 4)) {
+                byte[] firmware = BesOtaUtil.getFirmwareVersion(data, 5, 4);
+                if (firmware != null) {
+                    sCurrentFirmwareVersion = firmware;
+                    Log.i(TAG, "Current firmware version queried: " + 
+                          (firmware[0] & 0xFF) + "." + (firmware[1] & 0xFF) + "." + 
+                          (firmware[2] & 0xFF) + "." + (firmware[3] & 0xFF));
+                }
+            }
+        }
+    }
+    
+    /**
      * Initialize firmware file and prepare for OTA
      * @param filePath Path to firmware .bin file
      * @return true if initialized successfully, false otherwise
      */
     public boolean init(String filePath) {
+        Log.i(TAG, "🔧 Initializing BES OTA with file: " + filePath);
         this.filePath = filePath;
         bInit = false;
         File f = new File(this.filePath);
         if (!f.exists()) {
-            Log.e(TAG, "BES firmware file not exist: " + this.filePath);
+            Log.e(TAG, "❌ BES firmware file not exist: " + this.filePath);
             return false;
         }
+        Log.d(TAG, "✅ File exists, size: " + f.length() + " bytes");
         try {
             FileInputStream inputStream = new FileInputStream(filePath);
             fileLen = inputStream.available();
+            Log.d(TAG, "📥 Loading firmware into memory, size=" + fileLen + " bytes");
             fileData = new byte[fileLen];
-            inputStream.read(fileData, 0, fileLen);
+            int bytesRead = inputStream.read(fileData, 0, fileLen);
             inputStream.close();
+            Log.i(TAG, "✅ Firmware loaded into memory: " + bytesRead + " bytes");
+            Log.d(TAG, "📦 First 20 bytes: " + ByteUtil.outputHexString(fileData, 0, Math.min(fileLen, 20)));
+            Log.d(TAG, "📦 Last 20 bytes: " + ByteUtil.outputHexString(fileData, Math.max(0, fileLen - 20), Math.min(fileLen, 20)));
             bInit = true;
             if (fileLen > BesOtaUtil.MAX_FILE_SIZE) {
-                Log.e(TAG, "BES firmware file too big, len=" + fileLen);
+                Log.e(TAG, "❌ BES firmware file too big, len=" + fileLen + " (max: " + BesOtaUtil.MAX_FILE_SIZE + ")");
                 return false;
             }
-            Log.d(TAG, "BES firmware loaded, size=" + fileLen + " bytes");
+            Log.i(TAG, "✅ BES firmware initialization complete - ready to transmit " + fileLen + " bytes");
             return true;
         } catch (FileNotFoundException e) {
-            Log.e(TAG, "BES firmware file not found", e);
+            Log.e(TAG, "❌ BES firmware file not found", e);
         } catch (IOException e) {
-            Log.e(TAG, "Error reading BES firmware file", e);
+            Log.e(TAG, "❌ Error reading BES firmware file", e);
         }
         return false;
     }
@@ -152,31 +216,32 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
      * @return true if started successfully
      */
     public boolean startFirmwareUpdate(String filePath) {
+        Log.i(TAG, "startFirmwareUpdate: " + filePath);
+
         if (!init(filePath)) {
             Log.e(TAG, "Failed to initialize firmware update");
             return false;
         }
         
-        // Set OTA in progress flag
+        // Set waiting for authorization flag (NOT in OTA mode yet!)
+        isWaitingForAuthorization = true;
         isBesOtaInProgress = true;
         
-        // Enable OTA mode on ComManager
-        if (comManager != null) {
-            comManager.setOtaUpdating(true);
-            comManager.setFastMode(true); // 5ms sleep for fast transfer
-        }
+        // DO NOT enable OTA mode yet - wait for authorization
+        // DO NOT set fast mode yet - wait for authorization
         
         // Emit started event
         EventBus.getDefault().post(BesOtaProgressEvent.createStarted(fileLen));
         
-        // Start protocol sequence - send first command
-        byte[] data = SCmd_GetProtocolVersion();
-        if (send(data)) {
-            Log.i(TAG, "BES firmware update started");
+        // STEP 1: Request authorization from BES chip via K900CommandHandler
+        Log.i(TAG, "Requesting BES OTA authorization from BES chip");
+        
+        if (sK900CommandHandler != null) {
+            sK900CommandHandler.sendBesOtaAuthorizationRequest();
             return true;
         } else {
-            Log.e(TAG, "Failed to send initial command");
-            EventBus.getDefault().post(BesOtaProgressEvent.createFailed("Failed to send initial command"));
+            Log.e(TAG, "❌ K900CommandHandler not available - cannot send authorization request");
+            EventBus.getDefault().post(BesOtaProgressEvent.createFailed("K900CommandHandler not available"));
             cleanup();
             return false;
         }
@@ -187,6 +252,7 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
      */
     private void cleanup() {
         isBesOtaInProgress = false;
+        isWaitingForAuthorization = false;
         if (comManager != null) {
             comManager.setOtaUpdating(false);
             comManager.setFastMode(false);
@@ -195,6 +261,46 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
         fileData = null;
         sentPos = 0;
         confirmTimes = 0;
+    }
+
+    /**
+     * Called when BES chip grants OTA authorization
+     * This is the trigger to actually start the OTA protocol
+     */
+    public void onAuthorizationGranted() {
+        if (!isWaitingForAuthorization) {
+            Log.w(TAG, "Received authorization but not waiting for it");
+            return;
+        }
+        
+        Log.i(TAG, "BES OTA authorization GRANTED - starting protocol");
+        isWaitingForAuthorization = false;
+        
+        // NOW enable OTA mode (routes UART to OTA listener)
+        if (comManager != null) {
+            comManager.setOtaUpdating(true);
+            comManager.setFastMode(true);
+        }
+        
+        // NOW start the actual OTA protocol
+        byte[] data = SCmd_GetProtocolVersion();
+        Log.d(TAG, "Sending GetProtocolVersion command, data=" + (data != null ? ByteUtil.outputHexString(data, 0, data.length) : "null"));
+        if (send(data)) {
+            Log.i(TAG, "BES OTA protocol started successfully");
+        } else {
+            Log.e(TAG, "Failed to send first protocol command");
+            EventBus.getDefault().post(BesOtaProgressEvent.createFailed("Failed to start protocol"));
+            cleanup();
+        }
+    }
+
+    /**
+     * Called when BES chip denies OTA authorization
+     */
+    public void onAuthorizationDenied() {
+        Log.e(TAG, "BES OTA authorization DENIED by BES chip");
+        EventBus.getDefault().post(BesOtaProgressEvent.createFailed("BES chip denied OTA authorization"));
+        cleanup();
     }
 
     // ========== Protocol Commands ==========
@@ -258,26 +364,38 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
     }
     
     public byte[] SCmd_SendFileData() {
-        if (!bInit) return null;
+        if (!bInit) {
+            Log.e(TAG, "❌ SCmd_SendFileData called but not initialized");
+            return null;
+        }
         BesCmd_SendData cmd = new BesCmd_SendData();
         int len = curSentLen;
+        Log.d(TAG, "📦 SCmd_SendFileData - curSentLen=" + len + ", sentPos=" + sentPos + ", fileLen=" + fileLen);
         if (len > 0) {
             byte[] data = new byte[len];
             System.arraycopy(fileData, sentPos, data, 0, len);
+            Log.d(TAG, "📦 Copied " + len + " bytes from fileData[" + sentPos + "], first 10 bytes: " + 
+                  ByteUtil.outputHexString(fileData, sentPos, Math.min(len, 10)));
             cmd.setFileData(data);
-            return cmd.getSendData();
+            byte[] sendData = cmd.getSendData();
+            Log.d(TAG, "📦 Total packet size: " + (sendData != null ? sendData.length : 0) + " bytes");
+            return sendData;
         }
+        Log.w(TAG, "⚠️ curSentLen is 0 - no data to send");
         return null;
     }
 
     public void addSentSize(int size) {
+        int oldPos = sentPos;
         sentPos += size;
+        Log.d(TAG, "📊 Updated sentPos: " + oldPos + " → " + sentPos + " (+" + size + " bytes), remaining: " + (fileLen - sentPos) + " bytes");
     }
 
     public void crc32ConfirmSuccess() {
         confirmTimes++;
         confirmSentPos = sentPos;
         bWait4Confirm = false;
+        Log.i(TAG, "✅ CRC32 verification successful - confirmTimes=" + confirmTimes + ", confirmed " + confirmSentPos + "/" + fileLen + " bytes");
     }
 
     public int getConfirmLength() {
@@ -294,12 +412,14 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
 
     public boolean isNeedSegmentVerify() {
         if (bWait4Confirm) {
+            Log.d(TAG, "⏳ Waiting for segment verification confirmation");
             return true;
         }
         int minSize = Math.min(BesOtaUtil.SEGMENT_SIZE * (confirmTimes + 1), fileLen);
         if (sentPos + BesOtaUtil.PACKET_SIZE >= minSize) {
             curSentLen = minSize - sentPos;
             bWait4Confirm = true;
+            Log.i(TAG, "🔍 Segment boundary reached - requesting verification (segment " + (confirmTimes + 1) + ", size=" + curSentLen + " bytes)");
         } else {
             curSentLen = BesOtaUtil.PACKET_SIZE;
         }
@@ -312,8 +432,11 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
         byte[] crcSegmentData = new byte[sentPos - srcPos];
         System.arraycopy(fileData, srcPos, crcSegmentData, 0, crcSegmentData.length);
         long crc32 = BesOtaUtil.crc32(crcSegmentData, 0, crcSegmentData.length);
-        Log.d(TAG, "Segment CRC32=" + crc32 + ", sentPos=" + sentPos + ", confirmTimes=" + confirmTimes);
+        Log.i(TAG, "🔍 Computing segment CRC32 - segment=" + (confirmTimes + 1) + 
+                   ", srcPos=" + srcPos + ", sentPos=" + sentPos + 
+                   ", segmentLen=" + crcSegmentData.length + ", CRC32=0x" + Long.toHexString(crc32).toUpperCase());
         byte[] crcBytes = BesOtaUtil.long2Bytes(crc32);
+        Log.d(TAG, "🔍 CRC32 bytes: " + ByteUtil.outputHexString(crcBytes, 0, crcBytes.length));
         BesCmd_SegmentVerify cmd = new BesCmd_SegmentVerify();
         cmd.setSegmentCrc32(crcBytes);
         return cmd.getSendData();
@@ -407,10 +530,11 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
     
     @Override
     public void onOtaRecv(byte[] data, int size) {
-        Log.d(TAG, "Received OTA data, size=" + size);
+        Log.d(TAG, "Received OTA data, size=" + size + ", data=" + (data != null ? ByteUtil.outputHexString(data, 0, size) : "null"));
         BesOtaMessage otaMsg = parseRecv(data, 0, size);
         if (otaMsg != null) {
             if (!otaMsg.error) {
+                Log.d(TAG, "Parsed OTA message - cmd=0x" + String.format("%02X", otaMsg.cmd) + ", len=" + otaMsg.len);
                 dealOtaRecvCmd(otaMsg);
             } else {
                 Log.e(TAG, "Received error in OTA message");
@@ -432,14 +556,20 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
     
     private void dealOtaRecvCmd(BesOtaMessage msg) {
         if (msg == null) return;
+
+        Log.d(TAG, "dealOtaRecvCmd, cmd=" + msg.cmd);
+        Log.d(TAG, "dealOtaRecvCmd, len=" + msg.len);
+        Log.d(TAG, "dealOtaRecvCmd, body=" + (msg.body != null ? ByteUtil.outputHexString(msg.body, 0, msg.body.length) : "null"));
         
         if (msg.cmd == BesProtocolConstants.RCMD_GET_PROTOCOL_VERSION) {
             byte[] data = SCmd_SetUser();
+            Log.d(TAG, "Sending SetUser command, data=" + (data != null ? ByteUtil.outputHexString(data, 0, data.length) : "null"));
             send(data);
         }
         else if (msg.cmd == BesProtocolConstants.RCMD_SET_USER) {
-            if (msg.len == 1 && msg.body[0] == 1) {
+            if (msg.len == 1 && msg.body != null && msg.body[0] == 1) {
                 byte[] data = SCmd_GetFirmwareVersion();
+                Log.d(TAG, "Sending GetFirmwareVersion command, data=" + (data != null ? ByteUtil.outputHexString(data, 0, data.length) : "null"));
                 send(data);
             } else {
                 Log.e(TAG, "Set user type error");
@@ -447,7 +577,7 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
         }
         else if (msg.cmd == BesProtocolConstants.RCMD_GET_FIRMWARE_VERSION) {
             Log.d(TAG, "Received firmware version, len=" + msg.len);
-            if (msg.len > 9) {
+            if (msg.len > 9 && msg.body != null) {
                 if (BesOtaUtil.isMagicCodeValid(msg.body, 0, 4)) {
                     byte[] firmware = BesOtaUtil.getFirmwareVersion(msg.body, 5, 4);
                     if (firmware != null) {
@@ -456,6 +586,7 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
                         Log.i(TAG, "Current firmware version: " + firmware[0] + "." + firmware[1] + "." + firmware[2] + "." + firmware[3]);
                     }
                     byte[] data = SCmd_SelectSide();
+                    Log.d(TAG, "Sending SelectSide command, data=" + (data != null ? ByteUtil.outputHexString(data, 0, data.length) : "null"));
                     send(data);
                 } else {
                     Log.e(TAG, "Invalid magic code in firmware version");
@@ -465,8 +596,9 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
             }
         }
         else if (msg.cmd == BesProtocolConstants.RCMD_SELECT_SIDE) {
-            if (msg.len == 1 && msg.body[0] == 1) {
+            if (msg.len == 1 && msg.body != null && msg.body[0] == 1) {
                 byte[] data = SCmd_CheckBreakPoint();
+                Log.d(TAG, "Sending CheckBreakPoint command, data=" + (data != null ? ByteUtil.outputHexString(data, 0, data.length) : "null"));
                 send(data);
             } else {
                 Log.e(TAG, "Select side error");
@@ -475,15 +607,17 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
         else if (msg.cmd == BesProtocolConstants.RCMD_GET_BREAKPOINT) {
             if (msg.len == 40) {
                 byte[] data = SCmd_SetStartInfo();
+                Log.d(TAG, "Sending SetStartInfo command, data=" + (data != null ? ByteUtil.outputHexString(data, 0, data.length) : "null"));
                 send(data);
             } else {
                 Log.e(TAG, "Get breakpoint error");
             }
         }
         else if (msg.cmd == BesProtocolConstants.RCMD_SET_START_INFO) {
-            if (msg.len == 10) {
+            if (msg.len == 10 && msg.body != null) {
                 if (BesOtaUtil.isMagicCodeValid(msg.body, 0, 4)) {
                     byte[] data = SCmd_SetConfig(false, null, null, null, null);
+                    Log.d(TAG, "Sending SetConfig command, data=" + (data != null ? ByteUtil.outputHexString(data, 0, Math.min(data.length, 100)) : "null"));
                     send(data);
                 } else {
                     Log.e(TAG, "Set start info: invalid magic code");
@@ -493,7 +627,7 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
             }
         }
         else if (msg.cmd == BesProtocolConstants.RCMD_SET_CONFIG) {
-            if (msg.len == 1 && msg.body[0] == 1) {
+            if (msg.len == 1 && msg.body != null && msg.body[0] == 1) {
                 sendOtaData();
             } else {
                 Log.e(TAG, "Set config error");
@@ -503,10 +637,12 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
             sendOtaData();
         }
         else if (msg.cmd == BesProtocolConstants.RCMD_SEGMENT_VERIFY) {
-            if (msg.len == 1 && msg.body[0] == 1) {
+            Log.d(TAG, "Received SegmentVerify command, len=" + msg.len);
+            Log.d(TAG, "Received SegmentVerify command, body=" + (msg.body != null ? ByteUtil.outputHexString(msg.body, 0, msg.body.length) : "null"));
+            if (msg.len == 1 && msg.body != null && msg.body[0] == 1) {
                 int sent = getConfirmLength();
                 int percent = 100 * sent / getTotalLength();
-                Log.i(TAG, "OTA progress: " + percent + "%");
+                Log.i(TAG, "OTA progress: " + percent + "% (" + sent + "/" + getTotalLength() + " bytes)");
                 
                 // Emit progress event
                 EventBus.getDefault().post(BesOtaProgressEvent.createProgress(percent, sent, getTotalLength(), "Sending firmware data"));
@@ -514,6 +650,7 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
                 crc32ConfirmSuccess();
                 if (isSentFinish()) {
                     byte[] data = SCmd_FinshSend();
+                    Log.d(TAG, "Sending FinishSend command, data=" + (data != null ? ByteUtil.outputHexString(data, 0, data.length) : "null"));
                     send(data);
                 } else {
                     sendOtaData();
@@ -524,15 +661,16 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
             }
         }
         else if (msg.cmd == BesProtocolConstants.RCMD_SEND_FINISH) {
-            if (msg.len == 1 && msg.body[0] == 1) {
+            if (msg.len == 1 && msg.body != null && msg.body[0] == 1) {
                 byte[] data = SCmd_OtaApply();
+                Log.d(TAG, "Sending OtaApply command, data=" + (data != null ? ByteUtil.outputHexString(data, 0, data.length) : "null"));
                 send(data);
             } else {
                 Log.e(TAG, "Send finish error");
             }
         }
         else if (msg.cmd == BesProtocolConstants.RCMD_APPLY) {
-            if (msg.len == 1 && msg.body[0] == 1) {
+            if (msg.len == 1 && msg.body != null && msg.body[0] == 1) {
                 Log.i(TAG, "BES firmware update SUCCESS! BES will reboot.");
                 EventBus.getDefault().post(BesOtaProgressEvent.createFinished());
             } else {
@@ -545,20 +683,41 @@ public class BesOtaManager implements BesOtaUartListener, BesOtaCommandListener 
     }
 
     private void sendOtaData() {
+        Log.d(TAG, "📤 sendOtaData() called - sentPos=" + sentPos + "/" + fileLen + ", confirmTimes=" + confirmTimes);
+        
         if (isNeedSegmentVerify()) {
             byte[] data = SCmd_SegmentVerify();
+            Log.i(TAG, "🔍 Sending SegmentVerify command, data=" + (data != null ? ByteUtil.outputHexString(data, 0, data.length) : "null"));
             send(data);
             return;
         }
 
         byte[] data = SCmd_SendFileData();
+        if (data != null) {
+            // Log only first 20 bytes to avoid flooding logcat with data packets
+            int logLen = Math.min(data.length, 20);
+            int payloadSize = data.length - BesBaseCommand.MIN_LENGTH;
+            Log.d(TAG, "📤 Sending file data packet (" + data.length + " total, " + payloadSize + " payload), first " + logLen + " bytes: " + 
+                  ByteUtil.outputHexString(data, 0, logLen));
+        }
         if (send(data)) {
-            addSentSize(data.length - BesBaseCommand.MIN_LENGTH);
+            int payloadSize = data.length - BesBaseCommand.MIN_LENGTH;
+            addSentSize(payloadSize);
+        } else {
+            Log.e(TAG, "❌ Failed to send file data packet");
         }
     }
 
     private boolean send(byte[] data) {
+        Log.d(TAG, "send() called with data length: " + (data != null ? data.length : 0));
+        if (comManager == null) {
+            Log.d(TAG, "comManager is null in send()");
+        }
+        if (data == null) {
+            Log.d(TAG, "Data is null in send()");
+        }
         if (comManager != null && data != null) {
+            Log.d(TAG, "Sending " + data.length + " bytes via comManager.sendOta()");
             return comManager.sendOta(data);
         }
         return false;
