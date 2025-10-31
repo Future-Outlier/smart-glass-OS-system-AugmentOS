@@ -2,7 +2,11 @@ name: China Cloud Deployment
 
 on:
   push:
-    branches: [ya/china-cloud-cd]
+    branches:
+      - dev
+    paths:
+      - "cloud/**"
+      - ".github/workflows/china-deployment.yml"
 
 jobs:
   china-cloud-deploy:
