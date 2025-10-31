@@ -30,24 +30,18 @@ class AudioSessionMonitor {
         return instance!
     }
 
-    /// Configure AVAudioSession for Bluetooth audio
-    /// This must be called before checking availableInputs
-    /// Returns true if configuration successful
-    func configureAudioSession() -> Bool {
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(
-                .playAndRecord,
-                mode: .default,
-                options: [.allowBluetooth, .allowBluetoothA2DP]
-            )
-            try session.setActive(true)
-            Bridge.log("AudioMonitor: AVAudioSession configured for Bluetooth")
-            return true
-        } catch {
-            Bridge.log("AudioMonitor: Failed to configure AVAudioSession: \(error)")
-            return false
-        }
+    /// Check if AVAudioSession is configured for Bluetooth
+    /// Returns true if session allows Bluetooth audio
+    /// NOTE: We don't configure the session - PhoneMic.swift handles that when recording
+    func isAudioSessionConfigured() -> Bool {
+        let session = AVAudioSession.sharedInstance()
+
+        // Check if category supports Bluetooth
+        let category = session.category
+        let supportsBluetooth = category == .playAndRecord || category == .record || category == .multiRoute
+
+        Bridge.log("AudioMonitor: Audio session category: \(category.rawValue), supports BT: \(supportsBluetooth)")
+        return supportsBluetooth
     }
 
     /// Check if a Bluetooth audio device matching the pattern is currently the active audio route
@@ -71,48 +65,39 @@ class AudioSessionMonitor {
         return false
     }
 
-    /// Try to set a Bluetooth device matching the pattern as the preferred audio output device
-    /// This works for both already-active and paired-but-inactive devices
-    /// Returns true if device was found and set as preferred (or already active)
-    func setAsPreferredAudioOutputDevice(devicePattern: String) -> Bool {
-        do {
-            let session = AVAudioSession.sharedInstance()
+    /// Check if a Bluetooth device matching the pattern is paired (appears in availableInputs)
+    /// Returns true if device is found (paired), WITHOUT activating it
+    /// This avoids switching A2DP music playback to HFP microphone mode
+    func isDevicePaired(devicePattern: String) -> Bool {
+        let session = AVAudioSession.sharedInstance()
 
-            // Check if already active
-            if isAudioDeviceConnected(devicePattern: devicePattern) {
-                Bridge.log("AudioMonitor: Device '\(devicePattern)' already active")
-                return true
-            }
-
-            // Try to find in availableInputs (includes paired devices)
-            guard let availableInputs = session.availableInputs else {
-                Bridge.log("AudioMonitor: ❌ availableInputs is nil")
-                return false
-            }
-
-            Bridge.log("AudioMonitor: availableInputs count: \(availableInputs.count)")
-            for input in availableInputs {
-                Bridge.log("AudioMonitor:   - \(input.portName) (type: \(input.portType.rawValue))")
-            }
-
-            let bluetoothInput = availableInputs.first { input in
-                input.portType == .bluetoothHFP &&
-                    input.portName.localizedCaseInsensitiveContains(devicePattern)
-            }
-
-            guard let btInput = bluetoothInput else {
-                Bridge.log("AudioMonitor: ❌ Bluetooth HFP device '\(devicePattern)' not found in availableInputs")
-                return false
-            }
-
-            // Set as preferred input (this routes both input AND output for HFP devices)
-            try session.setPreferredInput(btInput)
-
-            Bridge.log("AudioMonitor: ✅ Set '\(btInput.portName)' as preferred audio output device")
+        // Check if already active (using A2DP for music or HFP for calls)
+        if isAudioDeviceConnected(devicePattern: devicePattern) {
+            Bridge.log("AudioMonitor: Device '\(devicePattern)' already active")
             return true
+        }
 
-        } catch {
-            Bridge.log("AudioMonitor: ❌ Failed to set preferred audio output device: \(error)")
+        // Try to find in availableInputs (includes paired devices)
+        guard let availableInputs = session.availableInputs else {
+            Bridge.log("AudioMonitor: ❌ availableInputs is nil")
+            return false
+        }
+
+        Bridge.log("AudioMonitor: availableInputs count: \(availableInputs.count)")
+        for input in availableInputs {
+            Bridge.log("AudioMonitor:   - \(input.portName) (type: \(input.portType.rawValue))")
+        }
+
+        let bluetoothInput = availableInputs.first { input in
+            input.portType == .bluetoothHFP &&
+                input.portName.localizedCaseInsensitiveContains(devicePattern)
+        }
+
+        if let btInput = bluetoothInput {
+            Bridge.log("AudioMonitor: ✅ Found paired device '\(btInput.portName)' (not activating to preserve A2DP)")
+            return true
+        } else {
+            Bridge.log("AudioMonitor: ❌ Bluetooth HFP device '\(devicePattern)' not found in availableInputs")
             return false
         }
     }
@@ -192,18 +177,16 @@ class AudioSessionMonitor {
             // This handles the case where user pairs in Settings and returns to app
             Bridge.log("AudioMonitor: New device available, attempting to activate '\(pattern)'")
 
-            // IMPORTANT: Reconfigure the session to refresh availableInputs
-            // This is crucial after returning from Settings where user may have paired
-            _ = configureAudioSession()
-
             // Add small delay to let iOS populate availableInputs
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                 guard let self = self else { return }
 
-                if self.setAsPreferredAudioOutputDevice(devicePattern: pattern) {
+                if self.isDevicePaired(devicePattern: pattern) {
                     let session = AVAudioSession.sharedInstance()
-                    let deviceName = session.currentRoute.outputs.first?.portName
-                    Bridge.log("AudioMonitor: ✅ Successfully activated newly paired device '\(pattern)'")
+                    let deviceName = session.availableInputs?.first(where: {
+                        $0.portName.localizedCaseInsensitiveContains(pattern)
+                    })?.portName
+                    Bridge.log("AudioMonitor: ✅ Successfully detected newly paired device '\(pattern)'")
                     self.callback?(true, deviceName)
                 } else {
                     Bridge.log("AudioMonitor: New device available but not matching '\(pattern)'")
@@ -227,25 +210,21 @@ class AudioSessionMonitor {
 
         Bridge.log("AudioMonitor: App became active, checking for paired device '\(pattern)'")
 
-        // Reconfigure session now that we're in foreground
-        guard configureAudioSession() else {
-            Bridge.log("AudioMonitor: Failed to configure session in foreground")
-            return
-        }
-
-        // iOS needs time to populate availableInputs after setActive()
+        // Don't reconfigure session - it's already configured from when monitoring started
+        // Just wait a bit for iOS to update availableInputs after returning from background
+        // iOS needs time to populate availableInputs after app foreground
         // Use retry with progressive delays: 100ms, 400ms, 500ms = 1s total
         attemptActivateDevice(pattern: pattern, attempt: 0, maxAttempts: 3)
     }
 
-    /// Try to activate the audio device with retry logic
+    /// Try to detect if the audio device is paired with retry logic
     /// Delays: [100ms, 400ms, 500ms] = 1 second total
     private func attemptActivateDevice(pattern: String, attempt: Int, maxAttempts: Int) {
         // Progressive delays in seconds (total: 1 second)
         let delays: [TimeInterval] = [0.1, 0.4, 0.5]
 
         if attempt >= maxAttempts {
-            Bridge.log("AudioMonitor: ❌ Failed to activate device '\(pattern)' after \(maxAttempts) attempts")
+            Bridge.log("AudioMonitor: ❌ Failed to find paired device '\(pattern)' after \(maxAttempts) attempts")
             return
         }
 
@@ -254,12 +233,15 @@ class AudioSessionMonitor {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self = self else { return }
 
-            Bridge.log("AudioMonitor: Attempt \(attempt + 1)/\(maxAttempts) to activate '\(pattern)'...")
+            Bridge.log("AudioMonitor: Attempt \(attempt + 1)/\(maxAttempts) to detect '\(pattern)'...")
 
-            if self.setAsPreferredAudioOutputDevice(devicePattern: pattern) {
+            if self.isDevicePaired(devicePattern: pattern) {
                 let session = AVAudioSession.sharedInstance()
-                let deviceName = session.currentRoute.outputs.first?.portName
-                Bridge.log("AudioMonitor: ✅ Activated device on attempt \(attempt + 1)")
+                // Try to get device name from availableInputs
+                let deviceName = session.availableInputs?.first(where: {
+                    $0.portName.localizedCaseInsensitiveContains(pattern)
+                })?.portName
+                Bridge.log("AudioMonitor: ✅ Found paired device on attempt \(attempt + 1)")
                 self.callback?(true, deviceName)
             } else {
                 Bridge.log("AudioMonitor: Attempt \(attempt + 1) failed, retrying in \(delays[min(attempt + 1, delays.count - 1)])s...")

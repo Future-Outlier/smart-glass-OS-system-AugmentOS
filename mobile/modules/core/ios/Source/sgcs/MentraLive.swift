@@ -1712,11 +1712,25 @@ class MentraLive: NSObject, SGCManager {
             if let bodyObj = json["B"] as? [String: Any] {
                 let readyResponse = bodyObj["ready"] as? Int ?? 0
 
+                // Extract battery info from heartbeat
                 let percentage = bodyObj["pt"] as? Int ?? 0
+                let voltage = bodyObj["vt"] as? Int ?? 0
+                let charging = (bodyObj["charg"] as? Int ?? 0) == 1
+
+                // Check for low battery during pairing
                 if percentage > 0, percentage <= 20 {
                     if !ready {
                         Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow")
                         return
+                    }
+                }
+
+                // Update battery status if we have valid data
+                if percentage > 0 {
+                    updateBatteryStatus(level: percentage, charging: charging)
+                    if voltage > 0 {
+                        let voltageVolts = Double(voltage) / 1000.0
+                        Bridge.log("🔋 Battery from heartbeat - \(percentage)%, \(voltageVolts)V, charging: \(charging)")
                     }
                 }
 
@@ -2944,18 +2958,18 @@ class MentraLive: NSObject, SGCManager {
     private func setupAudioPairing(deviceName: String) {
         let monitor = AudioSessionMonitor.getInstance()
 
-        // Configure audio session - this populates availableInputs with paired devices
-        guard monitor.configureAudioSession() else {
-            Bridge.log("Audio: Failed to configure audio session")
-            return
+        // Don't configure audio session - PhoneMic.swift handles that
+        // Just check if audio session supports Bluetooth (informational only)
+        if !monitor.isAudioSessionConfigured() {
+            Bridge.log("Audio: Audio session not configured for Bluetooth yet - mic system will configure it when recording")
         }
 
-        // Try to set as preferred audio device (works for both "active" and "paired but not active")
-        let wasSet = monitor.setAsPreferredAudioOutputDevice(devicePattern: "Mentra")
+        // Check if device is paired (don't activate to preserve A2DP music playback)
+        let isPaired = monitor.isDevicePaired(devicePattern: "Mentra")
 
-        if wasSet {
-            // Successfully set as preferred! Device is now active.
-            Bridge.log("Audio: ✅ Successfully activated Mentra Live audio")
+        if isPaired {
+            // Device is paired! Don't activate it - let PhoneMic.swift activate when recording starts
+            Bridge.log("Audio: ✅ Mentra Live is paired (preserving A2DP for music)")
             audioConnected = true
 
             // If glasses_ready was already received, now we're fully ready
@@ -2981,8 +2995,7 @@ class MentraLive: NSObject, SGCManager {
 
                 if connected {
                     Bridge.log("Audio: ✅ Device paired and connected")
-                    // Try to set as preferred now that it's paired
-                    _ = monitor.setAsPreferredAudioOutputDevice(devicePattern: "Mentra")
+                    // Don't activate - let PhoneMic.swift handle that when recording starts
 
                     self.audioConnected = true
 
