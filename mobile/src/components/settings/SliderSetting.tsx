@@ -12,7 +12,7 @@ type SliderSettingProps = {
   max: number
   onValueChange: (value: number) => void // For immediate feedback, e.g., UI updates
   onValueSet: (value: number) => void // For BLE requests or final actions
-  containerStyle?: ViewStyle
+  style?: ViewStyle
   disableBorder?: boolean
 }
 
@@ -24,7 +24,7 @@ const SliderSetting: React.FC<SliderSettingProps> = ({
   max,
   onValueChange,
   onValueSet,
-  containerStyle,
+  style,
   disableBorder = false,
 }) => {
   const handleValueChange = (val: number) => {
@@ -40,7 +40,7 @@ const SliderSetting: React.FC<SliderSettingProps> = ({
   const {theme, themed} = useAppTheme()
 
   return (
-    <View style={[themed($container), disableBorder && {borderWidth: 0}, containerStyle]}>
+    <View style={[themed($container), disableBorder && {borderWidth: 0}, style]}>
       <View style={themed($textContainer)}>
         <View style={themed($labelRow)}>
           <Text text={label} style={themed($label)} />
@@ -60,6 +60,11 @@ const SliderSetting: React.FC<SliderSettingProps> = ({
             maximumValue={max}
             minimumTrackTintColor={theme.colors.sliderTrackActive}
             maximumTrackTintColor={theme.colors.sliderTrackInactive}
+            trackStyle={
+              {
+                // height: 12,
+              }
+            }
             thumbStyle={{
               width: 24,
               height: 24,

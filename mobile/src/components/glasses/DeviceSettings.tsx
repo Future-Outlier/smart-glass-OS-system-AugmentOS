@@ -1,7 +1,7 @@
 import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import OtaProgressSection from "@/components/glasses/OtaProgressSection"
 import ActionButton from "@/components/ui/ActionButton"
-import RouteButton from "@/components/ui/RouteButton"
+import {RouteButton} from "@/components/ui/RouteButton"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
@@ -19,9 +19,11 @@ import {DeviceInformation} from "./info/DeviceInformation"
 import {EmptyState} from "./info/EmptyState"
 import {NotConnectedInfo} from "./info/NotConnectedInfo"
 import {AdvancedSettingsDropdown} from "./settings/AdvancedSettingsDropdown"
-import {BrightnessSettings} from "./settings/BrightnessSettings"
 import {ButtonSettings} from "./settings/ButtonSettings"
 import {MicrophoneSelector} from "./settings/MicrophoneSelector"
+import {Group} from "@/components/ui/Group"
+import SliderSetting from "@/components/settings/SliderSetting"
+import ToggleSetting from "@/components/settings/ToggleSetting"
 
 export default function DeviceSettings() {
   const {themed} = useAppTheme()
@@ -110,6 +112,48 @@ export default function DeviceSettings() {
       {/* Show helper text if glasses are paired but not connected */}
       {!status.glasses_info?.model_name && defaultWearable && <NotConnectedInfo />}
 
+      {/* Screen settings for binocular glasses */}
+      <Group
+        title={translate("deviceSettings:display")}
+        // subtitle={translate("settings:screenDescription")}
+      >
+        {defaultWearable && (features?.display?.count ?? 0 > 1) && (
+          <RouteButton
+            label={translate("settings:screenSettings")}
+            // subtitle={translate("settings:screenDescription")}
+            onPress={() => push("/settings/screen")}
+          />
+        )}
+        {/* Only show dashboard settings if glasses have display capability */}
+        {defaultWearable && features?.hasDisplay && (
+          <RouteButton
+            label={translate("settings:dashboardSettings")}
+            // subtitle={translate("settings:dashboardDescription")}
+            onPress={() => push("/settings/dashboard")}
+          />
+        )}
+        {/* Brightness Settings */}
+        {features?.display?.adjustBrightness && isGlassesConnected && (
+          <ToggleSetting
+            label={translate("deviceSettings:autoBrightness")}
+            value={autoBrightness}
+            onValueChange={setAutoBrightness}
+          />
+        )}
+        {features?.display?.adjustBrightness && isGlassesConnected && !autoBrightness && (
+          <SliderSetting
+            label={translate("deviceSettings:brightness")}
+            value={brightness}
+            min={0}
+            max={100}
+            onValueChange={() => {}}
+            onValueSet={setBrightness}
+            // containerStyle={{paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0}}
+            disableBorder
+          />
+        )}
+      </Group>
+
       {/* Battery Status Section */}
       {isGlassesConnected && (
         <BatteryStatus
@@ -117,16 +161,6 @@ export default function DeviceSettings() {
           caseBatteryLevel={status.glasses_info?.case_battery_level}
           caseCharging={status.glasses_info?.case_charging}
           caseRemoved={status.glasses_info?.case_removed}
-        />
-      )}
-
-      {/* Brightness Settings */}
-      {features?.display?.adjustBrightness && isGlassesConnected && (
-        <BrightnessSettings
-          autoBrightness={autoBrightness}
-          brightness={brightness}
-          onAutoBrightnessChange={setAutoBrightness}
-          onBrightnessChange={setBrightness}
         />
       )}
 
@@ -171,41 +205,25 @@ export default function DeviceSettings() {
         <OtaProgressSection otaProgress={status.ota_progress} />
       )}
 
-      {/* Only show dashboard settings if glasses have display capability */}
-      {defaultWearable && features?.hasDisplay && (
-        <RouteButton
-          label={translate("settings:dashboardSettings")}
-          subtitle={translate("settings:dashboardDescription")}
-          onPress={() => push("/settings/dashboard")}
-        />
-      )}
+      <Group title={translate("deviceSettings:general")}>
+        {isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && devMode && (
+          <RouteButton
+            // icon={}
+            label={translate("deviceSettings:disconnectGlasses")}
+            onPress={() => {
+              CoreModule.disconnect()
+            }}
+          />
+        )}
 
-      {/* Screen settings for binocular glasses */}
-      {defaultWearable && (features?.display?.count ?? 0 > 1) && (
-        <RouteButton
-          label={translate("settings:screenSettings")}
-          subtitle={translate("settings:screenDescription")}
-          onPress={() => push("/settings/screen")}
-        />
-      )}
-
-      {isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && devMode && (
-        <ActionButton
-          label={translate("settings:disconnectGlasses")}
-          variant="destructive"
-          onPress={() => {
-            CoreModule.disconnect()
-          }}
-        />
-      )}
-
-      {defaultWearable && (
-        <ActionButton
-          label={translate("settings:forgetGlasses")}
-          variant="destructive"
-          onPress={confirmForgetGlasses}
-        />
-      )}
+        {defaultWearable && (
+          <RouteButton
+            // icon={}
+            label={translate("deviceSettings:unpairGlasses")}
+            onPress={confirmForgetGlasses}
+          />
+        )}
+      </Group>
 
       {/* Advanced Settings Dropdown - Only show if there's content */}
       {defaultWearable && hasAdvancedSettingsContent && (

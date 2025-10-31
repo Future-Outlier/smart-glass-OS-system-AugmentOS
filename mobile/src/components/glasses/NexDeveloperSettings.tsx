@@ -4,7 +4,7 @@ import {Text} from "@/components/ignite"
 
 import bridge from "@/bridge/MantleBridge"
 import {PillButton} from "@/components/ignite"
-import RouteButton from "@/components/ui/RouteButton"
+import {RouteButton} from "@/components/ui/RouteButton"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"

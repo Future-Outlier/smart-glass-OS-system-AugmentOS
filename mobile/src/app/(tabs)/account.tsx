@@ -1,7 +1,7 @@
 import {ProfileCard} from "@/components/account/ProfileCard"
 import {Header, Screen, Text} from "@/components/ignite"
 import {Group} from "@/components/ui/Group"
-import RouteButton from "@/components/ui/RouteButton"
+import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
@@ -72,11 +72,11 @@ export default function AccountPage() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.xl}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
       <Header leftTx="settings:title" onLeftPress={handleQuickPress} />
 
       <ScrollView
-        style={{marginRight: -theme.spacing.xl, paddingRight: theme.spacing.xl}}
+        style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}
         contentInsetAdjustmentBehavior="automatic">
         <ProfileCard />
 

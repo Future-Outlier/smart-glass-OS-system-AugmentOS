@@ -6,7 +6,7 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle, ScrollView} from "react-native"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import RouteButton from "@/components/ui/RouteButton"
+import {RouteButton} from "@/components/ui/RouteButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 export default function GlassesWifiSetupScreen() {

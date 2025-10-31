@@ -14,7 +14,7 @@ import restComms from "@/services/RestComms"
 import {useAuth} from "@/contexts/AuthContext"
 import Svg, {Path} from "react-native-svg"
 import {Group} from "@/components/ui/Group"
-import RouteButton from "@/components/ui/RouteButton"
+import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 
 // Default user icon component for profile pictures

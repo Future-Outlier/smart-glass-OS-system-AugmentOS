@@ -4,6 +4,9 @@ import {ThemedStyle} from "@/theme"
 import {View, TextStyle, ViewStyle} from "react-native"
 import {GlassesIcon} from "./GlassesIcon"
 import {CaseIcon} from "./CaseIcon"
+import {Group} from "@/components/ui/Group"
+import {translate} from "@/i18n"
+import {RouteButton, StatusCard} from "@/components/ui/RouteButton"
 
 interface BatteryStatusProps {
   glassesBatteryLevel?: number
@@ -20,40 +23,35 @@ export function BatteryStatus({glassesBatteryLevel, caseBatteryLevel, caseChargi
   }
 
   return (
-    <View style={themed($container)}>
-      <Text tx="deviceSettings:batteryStatus" style={[themed($subtitle), {marginBottom: theme.spacing.xs}]} />
-
+    <Group title={translate("deviceSettings:batteryStatus")}>
       {/* Glasses Battery */}
       {glassesBatteryLevel !== -1 && (
-        <View style={themed($batteryRow)}>
-          <View style={themed($batteryLabel)}>
-            <GlassesIcon size={20} isDark={theme.isDark} />
-            <Text tx="deviceSettings:glasses" style={{color: theme.colors.text}} />
-          </View>
-          <View style={themed($batteryValue)}>
-            <Icon icon="battery" size={16} color={theme.colors.text} />
-            <Text style={{color: theme.colors.text, marginLeft: 4, fontWeight: "500"}}>{glassesBatteryLevel}%</Text>
-          </View>
-        </View>
+        <StatusCard
+          label={translate("deviceSettings:glasses")}
+          iconStart={<GlassesIcon size={20} isDark={theme.isDark} />}
+          iconEnd={
+            <View style={themed($batteryValue)}>
+              <Icon icon="battery" size={16} color={theme.colors.text} />
+              <Text style={{color: theme.colors.text, fontWeight: "500"}}>{glassesBatteryLevel}%</Text>
+            </View>
+          }
+        />
       )}
 
       {/* Case Battery */}
       {caseBatteryLevel !== undefined && caseBatteryLevel !== -1 && !caseRemoved && (
-        <View style={themed($batteryRow)}>
-          <View style={themed($batteryLabel)}>
-            <CaseIcon size={20} isCharging={caseCharging} isDark={theme.isDark} />
-
-            <Text style={{color: theme.colors.text}}>
-              {caseCharging ? <Text tx="deviceSettings:caseCharging" /> : <Text tx="deviceSettings:case" />}
-            </Text>
-          </View>
-          <View style={themed($batteryValue)}>
-            <Icon icon="battery" size={16} color={theme.colors.text} />
-            <Text style={{color: theme.colors.text, fontWeight: "500"}}>{caseBatteryLevel}%</Text>
-          </View>
-        </View>
+        <StatusCard
+          iconStart={<CaseIcon size={20} isCharging={caseCharging} isDark={theme.isDark} />}
+          iconEnd={
+            <View style={themed($batteryValue)}>
+              <Icon icon="battery" size={16} color={theme.colors.text} />
+              <Text style={{color: theme.colors.text, fontWeight: "500"}}>{caseBatteryLevel}%</Text>
+            </View>
+          }
+          label={caseCharging ? translate("deviceSettings:caseCharging") : translate("deviceSettings:case")}
+        />
       )}
-    </View>
+    </Group>
   )
 }
 

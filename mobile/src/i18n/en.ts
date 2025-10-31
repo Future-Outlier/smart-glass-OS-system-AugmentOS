@@ -14,6 +14,10 @@ const en = {
     recommended: "Recommended",
     autoBrightness: "Auto Brightness",
     brightness: "Brightness",
+    display: "Display",
+    unpairGlasses: "Unpair glasses",
+    disconnectGlasses: "Disconnect glasses",
+    general: "General",
   },
   screenSettings: {
     title: "Display Position Settings",

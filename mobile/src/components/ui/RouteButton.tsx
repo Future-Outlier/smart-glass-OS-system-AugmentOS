@@ -6,6 +6,39 @@ import {ArrowLeftIcon} from "assets/icons/component/ArrowLeftIcon"
 import {router as _router} from "expo-router"
 import {View, TouchableOpacity, TextStyle, ViewStyle} from "react-native"
 
+interface StatusCardProps {
+  label: string
+  text?: string
+  style?: ViewStyle
+  iconStart?: React.ReactNode
+  iconEnd?: React.ReactNode
+}
+
+export function StatusCard({label, style, iconStart, iconEnd}: StatusCardProps) {
+  const {theme, themed} = useAppTheme()
+
+  return (
+    <View style={[themed($settingsGroup), {paddingVertical: 0}, style]}>
+      <View style={{flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, alignItems: "center"}}>
+        <View
+          style={{
+            flexDirection: "column",
+            justifyContent: "space-between",
+            paddingVertical: 8,
+            maxWidth: "90%",
+            gap: theme.spacing.xxs,
+          }}>
+          <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.md}}>
+            {iconStart && <View style={themed($icon)}>{iconStart}</View>}
+            <Text style={themed($label)}>{label}</Text>
+          </View>
+        </View>
+        {iconEnd && iconEnd}
+      </View>
+    </View>
+  )
+}
+
 interface RouteButtonProps {
   label: string
   subtitle?: string
@@ -16,7 +49,7 @@ interface RouteButtonProps {
   icon?: React.ReactNode
 }
 
-export default function RouteButton({label, subtitle, onPress, style, text, icon}: RouteButtonProps) {
+export function RouteButton({label, subtitle, onPress, style, text, icon}: RouteButtonProps) {
   const {theme, themed} = useAppTheme()
 
   return (
