@@ -99,6 +99,7 @@ class CoreManager {
     public var useOnboardMic = false
     public var preferredMic = "glasses"
     public var micEnabled = false
+    private var lastMicState: Triple<Boolean, Boolean, String>? = null  // (useGlassesMic, useOnboardMic, preferredMic)
 
     // button settings
     public var buttonPressMode = "photo"
@@ -460,9 +461,12 @@ class CoreManager {
         }
 
         if (!useGlassesMic && !useOnboardMic) {
+            Bridge.log("MAN: Preferred mic unavailable - attempting automatic fallback")
             if (glassesHasMic) {
+                Bridge.log("MAN: AUTO-FALLBACK: Switching to glasses mic (preferred mic unavailable)")
                 useGlassesMic = true
             } else if (!onboardMicUnavailable) {
+                Bridge.log("MAN: AUTO-FALLBACK: Switching to phone mic (glasses mic not available)")
                 useOnboardMic = true
             }
 
@@ -478,6 +482,14 @@ class CoreManager {
         useOnboardMic = actuallyEnabled && useOnboardMic
 
         Bridge.log("MAN: updateMicrophoneState() - FINAL: useGlassesMic=$useGlassesMic, useOnboardMic=$useOnboardMic")
+
+        // Check if state has actually changed to avoid redundant processing
+        val newState = Triple(useGlassesMic, useOnboardMic, preferredMic)
+        if (lastMicState == newState) {
+            Bridge.log("MAN: Mic state unchanged - skipping redundant update")
+            return
+        }
+        lastMicState = newState
 
         sgc?.let { sgc ->
             if (true && sgc.ready) {
@@ -583,7 +595,50 @@ class CoreManager {
 
     fun onRouteChange(reason: String, availableInputs: List<String>) {
         Bridge.log("MAN: onRouteChange: reason: $reason")
-        // Bridge.log("MAN: onRouteChange: inputs: $availableInputs")
+        Bridge.log("MAN: onRouteChange: inputs: $availableInputs")
+
+        // Handle external app conflicts - automatically switch to glasses mic if available
+        when (reason) {
+            "external_app_recording" -> {
+                // Another app is using the microphone
+                Bridge.log("MAN: External app took microphone - marking onboard mic as unavailable")
+                onboardMicUnavailable = true
+                // Only trigger mic state change if we're in automatic/phone mode
+                if (preferredMic == "phone") {
+                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+                }
+            }
+            "external_app_stopped", "audio_focus_available" -> {
+                // External app released the microphone
+                Bridge.log("MAN: External app released microphone - marking onboard mic as available")
+                onboardMicUnavailable = false
+                // Only trigger recovery if we're in automatic/phone mode
+                if (preferredMic == "phone") {
+                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+                }
+            }
+            "phone_call_interruption" -> {
+                // Phone call started - mark mic as unavailable
+                Bridge.log("MAN: Phone call interruption - marking onboard mic as unavailable")
+                onboardMicUnavailable = true
+                if (preferredMic == "phone") {
+                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+                }
+            }
+            "phone_call_ended" -> {
+                // Phone call ended - mark mic as available again
+                Bridge.log("MAN: Phone call ended - marking onboard mic as available")
+                onboardMicUnavailable = false
+                if (preferredMic == "phone") {
+                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+                }
+            }
+            else -> {
+                // Other route changes (headset plug/unplug, BT connect/disconnect, etc.)
+                // Just log for now - may want to handle these in the future
+                Bridge.log("MAN: Audio route changed: $reason")
+            }
+        }
     }
 
     fun onInterruption(began: Boolean) {
@@ -842,6 +897,11 @@ class CoreManager {
             handleMach1Ready()
         }
 
+        // Re-apply microphone settings after reconnection
+        // Cache was cleared on disconnect, so this will definitely send commands
+        Bridge.log("MAN: Re-applying microphone settings after reconnection")
+        updateMicrophoneState()
+
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
         Bridge.saveSetting("device_name", deviceName)
@@ -890,6 +950,7 @@ class CoreManager {
     private fun handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         isHeadUp = false
+        lastMicState = null  // Clear cache - hardware is definitely off now
         handle_request_status()
     }
 

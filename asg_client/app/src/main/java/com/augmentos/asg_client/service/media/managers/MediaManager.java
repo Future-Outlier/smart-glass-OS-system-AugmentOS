@@ -91,20 +91,16 @@ public class MediaManager implements IMediaManager {
     public void sendRtmpStatusResponse(boolean success, JSONObject statusObject) {
         if (serviceManager != null && serviceManager.getBluetoothManager() != null &&
             serviceManager.getBluetoothManager().isConnected()) {
-            try {
-                // The statusObject already contains the type and all necessary fields
-                // Just add timestamp if not already present
-                if (!statusObject.has("timestamp")) {
-                    statusObject.put("timestamp", System.currentTimeMillis());
-                }
+            // The statusObject already contains the type and all necessary fields
+            // ❌ REMOVED: timestamp not used by cloud (cloud generates its own)
+            // if (!statusObject.has("timestamp")) {
+            //     statusObject.put("timestamp", System.currentTimeMillis());
+            // }
 
-                String jsonString = statusObject.toString();
-                Log.d(TAG, "📤 Sending RTMP status response: " + jsonString);
-                serviceManager.getBluetoothManager().sendData(jsonString.getBytes());
+            String jsonString = statusObject.toString();
+            Log.d(TAG, "📤 Sending RTMP status response: " + jsonString);
+            serviceManager.getBluetoothManager().sendData(jsonString.getBytes());
 
-            } catch (JSONException e) {
-                Log.e(TAG, "Error creating RTMP status response", e);
-            }
         } else {
             Log.w(TAG, "Cannot send RTMP status response - not connected to BLE device");
         }
@@ -301,17 +297,19 @@ public class MediaManager implements IMediaManager {
                     JSONObject status = new JSONObject();
                     status.put("type", "rtmp_stream_status");
                     status.put("status", "streaming");
-                    status.put("rtmpUrl", rtmpUrl);
+                    // ❌ REMOVED: rtmpUrl not used by cloud (cloud already has it from initial request)
+                    // status.put("rtmpUrl", rtmpUrl);
                     String streamId = RtmpStreamingService.getCurrentStreamId();
                     if (streamId != null && !streamId.isEmpty()) {
                         status.put("streamId", streamId);
                     }
 
-                    JSONObject stats = new JSONObject();
-                    stats.put("bitrate", 1500000);
-                    stats.put("fps", 30);
-                    stats.put("droppedFrames", 0);
-                    status.put("stats", stats);
+                    // ❌ REMOVED: stats not used by cloud (neither managed nor unmanaged read these)
+                    // JSONObject stats = new JSONObject();
+                    // stats.put("bitrate", 1500000);
+                    // stats.put("fps", 30);
+                    // stats.put("droppedFrames", 0);
+                    // status.put("stats", stats);
 
                     sendRtmpStatusResponse(true, status);
                 } catch (JSONException e) {
@@ -338,7 +336,8 @@ public class MediaManager implements IMediaManager {
                     if (streamId != null && !streamId.isEmpty()) {
                         status.put("streamId", streamId);
                     }
-                    status.put("timestamp", System.currentTimeMillis());
+                    // ❌ REMOVED: timestamp not used by cloud (cloud generates its own)
+                    // status.put("timestamp", System.currentTimeMillis());
 
                     sendRtmpStatusResponse(true, status);
                 } catch (JSONException e) {
@@ -362,7 +361,8 @@ public class MediaManager implements IMediaManager {
                     if (streamId != null && !streamId.isEmpty()) {
                         status.put("streamId", streamId);
                     }
-                    status.put("timestamp", System.currentTimeMillis());
+                    // ❌ REMOVED: timestamp not used by cloud (cloud generates its own)
+                    // status.put("timestamp", System.currentTimeMillis());
 
                     sendRtmpStatusResponse(true, status);
                 } catch (JSONException e) {
@@ -378,14 +378,16 @@ public class MediaManager implements IMediaManager {
                     JSONObject status = new JSONObject();
                     status.put("type", "rtmp_stream_status");
                     status.put("status", "reconnected");
-                    status.put("rtmpUrl", rtmpUrl);
+                    // ❌ REMOVED: rtmpUrl not used by cloud (cloud already has it)
+                    // status.put("rtmpUrl", rtmpUrl);
                     status.put("attempt", attempt);
                     // Include streamId for all status updates
                     String streamId = RtmpStreamingService.getCurrentStreamId();
                     if (streamId != null && !streamId.isEmpty()) {
                         status.put("streamId", streamId);
                     }
-                    status.put("timestamp", System.currentTimeMillis());
+                    // ❌ REMOVED: timestamp not used by cloud (cloud generates its own)
+                    // status.put("timestamp", System.currentTimeMillis());
 
                     sendRtmpStatusResponse(true, status);
                 } catch (JSONException e) {
@@ -407,7 +409,8 @@ public class MediaManager implements IMediaManager {
                     if (streamId != null && !streamId.isEmpty()) {
                         status.put("streamId", streamId);
                     }
-                    status.put("timestamp", System.currentTimeMillis());
+                    // ❌ REMOVED: timestamp not used by cloud (cloud generates its own)
+                    // status.put("timestamp", System.currentTimeMillis());
 
                     sendRtmpStatusResponse(false, status);
                 } catch (JSONException e) {
@@ -430,7 +433,8 @@ public class MediaManager implements IMediaManager {
                     if (streamId != null && !streamId.isEmpty()) {
                         status.put("streamId", streamId);
                     }
-                    status.put("timestamp", System.currentTimeMillis());
+                    // ❌ REMOVED: timestamp not used by cloud (cloud generates its own)
+                    // status.put("timestamp", System.currentTimeMillis());
 
                     sendRtmpStatusResponse(false, status);
                 } catch (JSONException e) {

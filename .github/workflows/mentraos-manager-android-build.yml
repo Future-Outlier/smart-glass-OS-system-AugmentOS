@@ -22,6 +22,8 @@ jobs:
           rm -rf mobile/node_modules mobile/.pnpm-store mobile/.pnpm
           rm -rf mobile/android/build mobile/android/.gradle
           rm -rf ~/.pnpm-store 2>/dev/null || true
+          # Clean Gradle caches to avoid corrupted artifacts (especially Kotlin plugin)
+          rm -rf ~/.gradle/caches ~/.gradle/wrapper 2>/dev/null || true
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,6 +41,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
 
       - name: Install pnpm
         run: |
