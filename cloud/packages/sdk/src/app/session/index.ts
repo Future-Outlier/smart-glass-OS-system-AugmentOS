@@ -20,6 +20,7 @@ import {
   AppConnectionInit,
   AppSubscriptionUpdate,
   AudioPlayResponse,
+  RequestWifiSetup,
   AppToCloudMessageType,
   CloudToAppMessageType,
 
@@ -1107,7 +1108,7 @@ export class AppSession {
       throw new Error("Not connected to MentraOS Cloud")
     }
 
-    const message = {
+    const message: RequestWifiSetup = {
       type: AppToCloudMessageType.REQUEST_WIFI_SETUP,
       packageName: this.config.packageName,
       sessionId: this.sessionId || "",
@@ -1214,6 +1215,18 @@ export class AppSession {
             // Only process if we're subscribed to avoid unnecessary processing
             this.events.emit(StreamType.AUDIO_CHUNK, message)
           }
+        } else if (isDataStream(message) && message.streamType === StreamType.GLASSES_CONNECTION_STATE) {
+          // Store latest glasses connection state (includes WiFi info)
+          this.glassesConnectionState = message.data
+
+          // Emit to subscribed listeners
+          if (this.subscriptions.has(StreamType.GLASSES_CONNECTION_STATE)) {
+            const sanitizedData = this.sanitizeEventData(
+              StreamType.GLASSES_CONNECTION_STATE,
+              message.data,
+            ) as EventData<typeof StreamType.GLASSES_CONNECTION_STATE>
+            this.events.emit(StreamType.GLASSES_CONNECTION_STATE, sanitizedData)
+          }
         } else if (isDataStream(message)) {
           // Ensure streamType exists before emitting the event
           const messageStreamType = message.streamType as ExtendedStreamType
@@ -1300,14 +1313,6 @@ export class AppSession {
             modelName: capabilitiesMessage.modelName,
             timestamp: capabilitiesMessage.timestamp,
           })
-        } else if (message.streamType === StreamType.GLASSES_CONNECTION_STATE) {
-          // Store latest glasses connection state (includes WiFi info)
-          this.glassesConnectionState = message.data
-
-          // Emit to subscribed listeners
-          if (this.subscriptions.has(StreamType.GLASSES_CONNECTION_STATE)) {
-            this.events.emit(StreamType.GLASSES_CONNECTION_STATE, message.data)
-          }
         } else if (isAppStopped(message)) {
           const reason = message.reason || "unknown"
           const displayReason = `App stopped: ${reason}`
