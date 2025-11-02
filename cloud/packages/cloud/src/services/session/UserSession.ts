@@ -10,6 +10,7 @@ import {
   CloudToAppMessageType,
   CloudToGlassesMessageType,
   ConnectionError,
+  GlassesConnectionState,
 } from "@mentra/sdk";
 import { logger as rootLogger } from "../logging/pino-logger";
 import { Capabilities } from "@mentra/sdk";
@@ -72,6 +73,9 @@ export class UserSession {
   // Audio
   public bufferedAudio: ArrayBufferLike[] = [];
   public recentAudioBuffer: { data: ArrayBufferLike; timestamp: number }[] = [];
+
+  // Glasses connection state (for validation)
+  public lastGlassesConnectionState: GlassesConnectionState | null = null;
 
   // Cleanup state
   // When disconnected, this will be set to a timer that will clean up the session after the grace period, if user does not reconnect.

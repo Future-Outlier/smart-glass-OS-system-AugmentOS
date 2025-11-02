@@ -364,10 +364,28 @@ export class AppWebSocketService {
                 e,
                 "Error starting RTMP stream via UnmanagedStreamingExtension",
               );
+
+            const errorMessage =
+              (e as Error).message || "Failed to start stream.";
+            const errorCode = (e as any).code;
+
+            // Check if this is a WiFi error (from cloud or asg_client)
+            const isWifiError =
+              errorCode === "WIFI_NOT_CONNECTED" ||
+              errorMessage === "no_wifi_connection"; // from asg_client
+
+            // Map asg_client error to our error code
+            let finalErrorCode = errorCode;
+            if (errorMessage === "no_wifi_connection") {
+              finalErrorCode = "WIFI_NOT_CONNECTED";
+            }
+
             this.sendError(
               appWebsocket,
-              AppErrorCode.INTERNAL_ERROR,
-              (e as Error).message || "Failed to start stream.",
+              isWifiError
+                ? finalErrorCode || "WIFI_NOT_CONNECTED"
+                : AppErrorCode.INTERNAL_ERROR,
+              errorMessage,
             );
           }
           break;

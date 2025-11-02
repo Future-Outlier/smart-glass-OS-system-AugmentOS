@@ -6,6 +6,7 @@ import mantle from "@/services/MantleManager"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
 import {useAppletStatusStore} from "@/stores/applets"
+import {useGlassesStore} from "@/stores/glasses"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -33,8 +34,27 @@ class SocketComms {
           }
         },
       )
+
+      // Subscribe to WiFi status changes and send updates to cloud
+      useGlassesStore.subscribe(
+        state => ({
+          wifi_connected: state.glasses_wifi_connected,
+          wifi_ssid: state.glasses_wifi_ssid,
+          connected: state.connected,
+        }),
+        (wifiInfo, prevWifiInfo) => {
+          // Only send update if WiFi status actually changed and glasses are connected
+          if (
+            wifiInfo.connected &&
+            (wifiInfo.wifi_connected !== prevWifiInfo.wifi_connected || wifiInfo.wifi_ssid !== prevWifiInfo.wifi_ssid)
+          ) {
+            console.log("SOCKET: WiFi status changed, sending update to cloud")
+            this.sendGlassesConnectionState(true)
+          }
+        },
+      )
     } catch (error) {
-      console.error("SOCKET: Error subscribing to default_wearable:", error)
+      console.error("SOCKET: Error subscribing to store changes:", error)
     }
   }
 
@@ -137,7 +157,16 @@ class SocketComms {
 
   sendGlassesConnectionState(connected: boolean): void {
     let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-    // let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+    const glassesInfo = useGlassesStore.getState()
+
+    // Build WiFi info (only if available)
+    let wifiInfo = undefined
+    if (glassesInfo.glasses_wifi_connected !== undefined) {
+      wifiInfo = {
+        connected: glassesInfo.glasses_wifi_connected,
+        ssid: glassesInfo.glasses_wifi_ssid || null,
+      }
+    }
 
     this.ws.sendText(
       JSON.stringify({
@@ -145,6 +174,7 @@ class SocketComms {
         modelName: modelName,
         status: connected ? "CONNECTED" : "DISCONNECTED",
         timestamp: new Date(),
+        wifi: wifiInfo,
       }),
     )
   }
