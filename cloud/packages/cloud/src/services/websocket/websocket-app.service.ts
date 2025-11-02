@@ -772,6 +772,49 @@ export class AppWebSocketService {
           }
           break;
 
+        case AppToCloudMessageType.REQUEST_WIFI_SETUP:
+          try {
+            const wifiSetupRequest = message as any; // Type is RequestWifiSetup but not imported
+
+            // Send SHOW_WIFI_SETUP message to mobile app
+            const showWifiSetup = {
+              type: CloudToGlassesMessageType.SHOW_WIFI_SETUP,
+              reason: wifiSetupRequest.reason,
+              appPackageName: wifiSetupRequest.packageName,
+              timestamp: new Date(),
+            };
+
+            if (
+              userSession.websocket &&
+              userSession.websocket.readyState === WebSocket.OPEN
+            ) {
+              userSession.websocket.send(JSON.stringify(showWifiSetup));
+              this.logger.info(
+                {
+                  packageName: wifiSetupRequest.packageName,
+                  reason: wifiSetupRequest.reason,
+                },
+                "WiFi setup request forwarded to mobile app",
+              );
+            } else {
+              this.logger.error(
+                {
+                  packageName: wifiSetupRequest.packageName,
+                },
+                "Cannot send WiFi setup request - mobile not connected",
+              );
+            }
+          } catch (e) {
+            this.logger.error(
+              {
+                e,
+                packageName: message.packageName,
+              },
+              "Error processing WiFi setup request",
+            );
+          }
+          break;
+
         default:
           logger.warn(`Unhandled App message type: ${message.type}`);
           break;

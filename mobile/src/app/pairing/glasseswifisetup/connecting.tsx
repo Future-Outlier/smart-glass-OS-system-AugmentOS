@@ -6,8 +6,8 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {Ionicons, MaterialIcons} from "@expo/vector-icons"
 import CoreModule from "core"
-import {useLocalSearchParams} from "expo-router"
-import {useEffect, useRef, useState} from "react"
+import {useLocalSearchParams, router} from "expo-router"
+import {useEffect, useRef, useState, useCallback} from "react"
 import {ActivityIndicator, TextStyle, View, ViewStyle} from "react-native"
 import {Text} from "@/components/ignite"
 
@@ -17,6 +17,7 @@ export default function WifiConnectingScreen() {
   const ssid = params.ssid as string
   const password = (params.password as string) || ""
   const rememberPassword = (params.rememberPassword as string) === "true"
+  const returnTo = params.returnTo as string | undefined
 
   const {theme, themed} = useAppTheme()
 
@@ -106,18 +107,29 @@ export default function WifiConnectingScreen() {
     attemptConnection()
   }
 
-  const handleCancel = () => {
-    goBack()
-  }
+  const handleSuccess = useCallback(() => {
+    if (returnTo && typeof returnTo === "string") {
+      router.replace(returnTo)
+    } else {
+      navigate("/")
+    }
+  }, [returnTo, navigate])
 
-  const handleHeaderBack = () => {
-    if (connectionStatus === "connecting") {
-      // If still connecting, ask for confirmation
-      goBack()
+  const handleCancel = useCallback(() => {
+    if (returnTo && typeof returnTo === "string") {
+      router.replace(returnTo)
     } else {
       goBack()
     }
-  }
+  }, [returnTo, goBack])
+
+  const handleHeaderBack = useCallback(() => {
+    if (returnTo && typeof returnTo === "string") {
+      router.replace(returnTo)
+    } else {
+      goBack()
+    }
+  }, [returnTo, goBack])
 
   const renderContent = () => {
     switch (connectionStatus) {
@@ -167,7 +179,7 @@ export default function WifiConnectingScreen() {
             </View>
 
             <View style={themed($successButtonContainer)}>
-              <Button onPress={() => navigate("/")}>
+              <Button onPress={handleSuccess}>
                 <Text>Done</Text>
               </Button>
             </View>

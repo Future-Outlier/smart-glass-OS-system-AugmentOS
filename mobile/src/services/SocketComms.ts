@@ -7,6 +7,8 @@ import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
 import {useAppletStatusStore} from "@/stores/applets"
 import {useGlassesStore} from "@/stores/glasses"
+import {showAlert} from "@/utils/AlertUtils"
+import {router} from "expo-router"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -555,6 +557,30 @@ class SocketComms {
     )
   }
 
+  private handle_show_wifi_setup(msg: any) {
+    const reason = msg.reason || "This operation requires your glasses to be connected to WiFi."
+    const currentRoute = router.pathname || "/"
+
+    showAlert(
+      "WiFi Setup Required",
+      reason,
+      [
+        {text: "Cancel", style: "cancel"},
+        {
+          text: "Setup WiFi",
+          onPress: () => {
+            const returnTo = encodeURIComponent(currentRoute)
+            router.push(`/pairing/glasseswifisetup?returnTo=${returnTo}`)
+          },
+        },
+      ],
+      {
+        iconName: "wifi-off",
+        iconColor: "#FF9500",
+      },
+    )
+  }
+
   // Message Handling
   private handle_message(msg: any) {
     const type = msg.type
@@ -640,6 +666,10 @@ class SocketComms {
 
       case "rgb_led_control":
         this.handle_rgb_led_control(msg)
+        break
+
+      case "show_wifi_setup":
+        this.handle_show_wifi_setup(msg)
         break
 
       default:

@@ -1,6 +1,6 @@
-import {useState, useEffect} from "react"
-import {View, TextInput, TouchableOpacity} from "react-native"
-import {useLocalSearchParams} from "expo-router"
+import {useState, useEffect, useCallback} from "react"
+import {View, TextInput, TouchableOpacity, BackHandler} from "react-native"
+import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
 import {Screen, Icon, Header, Checkbox, Button, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
@@ -14,6 +14,7 @@ export default function WifiPasswordScreen() {
   const params = useLocalSearchParams()
   const deviceModel = (params.deviceModel as string) || "Glasses"
   const initialSsid = (params.ssid as string) || ""
+  const returnTo = params.returnTo as string | undefined
 
   const {theme, themed} = useAppTheme()
   const {push, goBack} = useNavigationHistory()
@@ -22,6 +23,23 @@ export default function WifiPasswordScreen() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberPassword, setRememberPassword] = useState(true)
   const [hasSavedPassword, setHasSavedPassword] = useState(false)
+
+  const handleGoBack = useCallback(() => {
+    if (returnTo && typeof returnTo === "string") {
+      router.replace(returnTo)
+    } else {
+      goBack()
+    }
+    return true // Prevent default back behavior
+  }, [returnTo])
+
+  // Handle Android back button
+  useFocusEffect(
+    useCallback(() => {
+      const backHandler = BackHandler.addEventListener("hardwareBackPress", handleGoBack)
+      return () => backHandler.remove()
+    }, [handleGoBack]),
+  )
 
   // Load saved password when component mounts
   useEffect(() => {
@@ -68,12 +86,13 @@ export default function WifiPasswordScreen() {
       ssid,
       password,
       rememberPassword: rememberPassword.toString(),
+      returnTo,
     })
   }
 
   return (
     <Screen preset="fixed" contentContainerStyle={themed($container)}>
-      <Header title="Enter Glasses WiFi Details" leftIcon="caretLeft" onLeftPress={() => goBack()} />
+      <Header title="Enter Glasses WiFi Details" leftIcon="caretLeft" onLeftPress={handleGoBack} />
       <ScrollView
         style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}>
         <View style={themed($content)}>
@@ -134,7 +153,7 @@ export default function WifiPasswordScreen() {
               text="Cancel"
               style={themed($secondaryButton)}
               pressedStyle={themed($pressedSecondaryButton)}
-              onPress={() => goBack()}
+              onPress={handleGoBack}
               preset="reversed"
             />
           </View>
