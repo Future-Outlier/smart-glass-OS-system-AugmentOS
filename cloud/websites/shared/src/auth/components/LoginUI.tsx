@@ -32,6 +32,11 @@ export const LoginUI: React.FC<LoginUIProps> = ({
   setIsEmailModalOpen,
 }) => {
   const [isSignUp, setIsSignUp] = useState(false);
+
+  const handleForgotPassword = () => {
+    setIsEmailModalOpen(false);
+    window.location.href = '/forgot-password';
+  };
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col" style={{ width: '100%' }}>
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-8" style={{ maxWidth: '100%' }}>
@@ -125,6 +130,18 @@ export const LoginUI: React.FC<LoginUIProps> = ({
                 Don't have an account? Sign up
               </p>
             </div>
+
+            {!isSignUp && (
+              <div className="text-right text-sm text-gray-500 mt-4">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="cursor-pointer underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </main>

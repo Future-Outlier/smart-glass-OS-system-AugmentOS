@@ -117,17 +117,6 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
               />
             </div>
 
-            {!isSignUp && onForgotPassword && (
-              <div className="text-right">
-                <button
-                  type="button"
-                  onClick={onForgotPassword}
-                  className="text-sm text-blue-600 hover:text-blue-800 underline"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-            )}
 
             {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
 
