@@ -136,6 +136,10 @@ export const LoginUI: React.FC<LoginUIProps> = ({
         redirectPath={emailRedirectPath}
         isSignUp={isSignUp}
         setIsSignUp={setIsSignUp}
+        onForgotPassword={() => {
+          setIsEmailModalOpen(false);
+          window.location.href = '/forgot-password';
+        }}
       />
     </div>
   );

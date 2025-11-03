@@ -18,6 +18,7 @@ interface EmailAuthModalProps {
   redirectPath: string;
   isSignUp: boolean;
   setIsSignUp: (arg0: boolean) => void;
+  onForgotPassword?: () => void;
 }
 
 const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
@@ -26,6 +27,7 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
   redirectPath,
   isSignUp,
   setIsSignUp,
+  onForgotPassword,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -114,6 +116,18 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
                 required
               />
             </div>
+
+            {!isSignUp && onForgotPassword && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={onForgotPassword}
+                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            )}
 
             {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
 

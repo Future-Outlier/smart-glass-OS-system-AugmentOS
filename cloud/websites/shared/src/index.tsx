@@ -21,3 +21,7 @@ export {supabase} from './auth/utils/supabase';
 //Export LoginUI
 
 export {LoginUI} from './auth/components/LoginUI';
+
+//Export ForgotPasswordForm
+
+export {default as ForgotPasswordForm} from './auth/components/ForgotPassword';

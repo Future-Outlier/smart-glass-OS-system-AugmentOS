@@ -9,6 +9,7 @@ import { Toaster } from 'sonner';
 const AppStore = lazy(() => import('./pages/AppStore'));
 const AppDetails = lazy(() => import('./pages/AppDetails'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Loading spinner component (simplified)
@@ -41,6 +42,7 @@ const AppRoutes: FC = () => {
         <Route path="/" element={<AppStore />} />
         <Route path="/package/:packageName" element={<AppDetails />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/webview" element={
           <ProtectedRoute>
             <AppStore />
