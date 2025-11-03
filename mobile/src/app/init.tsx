@@ -1,6 +1,5 @@
 import {useState, useEffect} from "react"
 import {View, ActivityIndicator, Platform, Linking} from "react-native"
-import Constants from "expo-constants"
 import semver from "semver"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
 import {Button, Screen} from "@/components/ignite"
@@ -57,7 +56,7 @@ export default function InitScreen() {
   // Helper Functions
   const getLocalVersion = (): string | null => {
     try {
-      return Constants.expoConfig?.extra?.MENTRAOS_VERSION || null
+      return process.env.EXPO_PUBLIC_MENTRAOS_VERSION || null
     } catch (error) {
       console.error("Error getting local version:", error)
       return null

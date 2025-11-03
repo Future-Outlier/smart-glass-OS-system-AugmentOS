@@ -11,7 +11,6 @@ import {ModalProvider} from "@/utils/AlertUtils"
 import {NavigationHistoryProvider} from "@/contexts/NavigationHistoryContext"
 import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
 import {PostHogProvider} from "posthog-react-native"
-import Constants from "expo-constants"
 import {useAppTheme, useThemeProvider} from "@/utils/useAppTheme"
 import {TextStyle, View, ViewStyle} from "react-native"
 import BackgroundGradient from "@/components/ui/BackgroundGradient"
@@ -20,6 +19,7 @@ import Toast from "react-native-toast-message"
 import {ThemedStyle} from "@/theme"
 import {ErrorBoundary} from "@/components/error"
 import {SafeAreaProvider} from "react-native-safe-area-context"
+import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
@@ -43,18 +43,20 @@ export const AllProviders = withWrappers(
   GestureHandlerRootView,
   ModalProvider,
   props => {
-    const posthogApiKey = Constants.expoConfig?.extra?.POSTHOG_API_KEY
-    const deploymentRegion = Constants.expoConfig?.extra?.DEPLOYMENT_REGION
-    const isChina = deploymentRegion === "china"
+    const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY
+    const isChina = useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+
     // If no API key is provided, disable PostHog to prevent errors
-    if (!posthogApiKey || posthogApiKey.trim() === "") {
+    if (!posthogApiKey) {
       console.log("PostHog API key not found, disabling PostHog analytics")
       return <>{props.children}</>
     }
+
     if (isChina) {
       console.log("PostHog is disabled for China")
       return <>{props.children}</>
     }
+
     return (
       <PostHogProvider apiKey={posthogApiKey} options={{disabled: false}}>
         {props.children}

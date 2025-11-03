@@ -11,7 +11,6 @@ import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import UserIcon from "assets/icons/navbar/UserIcon"
-import Constants from "expo-constants"
 import {useRef} from "react"
 import {Platform, View, ViewStyle} from "react-native"
 import {ScrollView} from "react-native-gesture-handler"
@@ -153,7 +152,7 @@ export default function AccountPage() {
 
         <View style={themed($versionContainer)}>
           <Text
-            text={translate("common:version", {number: Constants.expoConfig?.extra?.MENTRAOS_VERSION})}
+            text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
             style={{color: theme.colors.textDim}}
           />
         </View>

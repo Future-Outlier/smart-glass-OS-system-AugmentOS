@@ -6,13 +6,13 @@ import restComms from "@/services/RestComms"
 import {isDeveloperBuildOrTestflight} from "@/utils/buildDetection"
 import CoreModule from "core"
 import Toast from "react-native-toast-message"
-import Constants from "expo-constants"
 
 export const SETTINGS_KEYS = {
   // feature flags:
   dev_mode: "dev_mode",
   enable_squircles: "enable_squircles",
   debug_console: "debug_console",
+  china_deployment: "china_deployment",
   // ui state:
   default_wearable: "default_wearable",
   device_name: "device_name",
@@ -70,11 +70,13 @@ export const SETTINGS_KEYS = {
   notifications_enabled: "notifications_enabled",
   notifications_blocklist: "notifications_blocklist",
 } as const
+
 const DEFAULT_SETTINGS: Record<string, any> = {
   // feature flags / dev:
   [SETTINGS_KEYS.dev_mode]: false,
   [SETTINGS_KEYS.enable_squircles]: false,
   [SETTINGS_KEYS.debug_console]: false,
+  [SETTINGS_KEYS.china_deployment]: process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china" ? true : false,
   // ui state:
   [SETTINGS_KEYS.default_wearable]: "",
   [SETTINGS_KEYS.device_name]: "",
@@ -128,6 +130,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.notifications_enabled]: true,
   [SETTINGS_KEYS.notifications_blocklist]: [],
 }
+
 const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.sensing_enabled,
   SETTINGS_KEYS.power_saving_mode,
@@ -162,6 +165,7 @@ const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.notifications_enabled,
   SETTINGS_KEYS.notifications_blocklist,
 ]
+
 interface SettingsState {
   // Settings values
   settings: Record<string, any>
@@ -294,8 +298,8 @@ export const useSettingsStore = create<SettingsState>()(
         return getTimeZone()
       }
       if (key == SETTINGS_KEYS.backend_url) {
-        if (Constants.expoConfig?.extra?.BACKEND_URL_OVERRIDE) {
-          return Constants.expoConfig?.extra?.BACKEND_URL_OVERRIDE
+        if (process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE) {
+          return process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE
         }
       }
 

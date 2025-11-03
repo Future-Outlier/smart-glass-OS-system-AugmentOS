@@ -12,7 +12,6 @@ import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import Constants from "expo-constants"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
@@ -71,12 +70,8 @@ export default function DeveloperSettingsScreen() {
 
         <Spacer height={theme.spacing.md} />
 
-        <RouteButton
-          label="🔄 Test Mini App"
-          subtitle="Test the Mini App"
-          onPress={() => push("/test/mini-app")}
-        />
-        
+        <RouteButton label="🔄 Test Mini App" subtitle="Test the Mini App" onPress={() => push("/test/mini-app")} />
+
         <Spacer height={theme.spacing.md} />
 
         {/* G1 Specific Settings - Only show when connected to Even Realities G1 */}
@@ -94,7 +89,7 @@ export default function DeveloperSettingsScreen() {
           </Group>
         )}
 
-        {!Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE && <BackendUrl />}
+        {!process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE && <BackendUrl />}
 
         <Spacer height={theme.spacing.md} />
         <Spacer height={theme.spacing.xxl} />

@@ -21,17 +21,5 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
   return {
     ...config,
     plugins: [...existingPlugins, require("./plugins/withSplashScreen").withSplashScreen],
-    extra: {
-      BACKEND_URL_OVERRIDE: process.env.BACKEND_URL_OVERRIDE,
-      MENTRAOS_VERSION: process.env.MENTRAOS_VERSION,
-      POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
-      SUPABASE_URL: process.env.SUPABASE_URL,
-      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
-      SENTRY_DSN: process.env.SENTRY_DSN,
-      AUTHING_APP_ID: process.env.AUTHING_APP_ID,
-      AUTHING_APP_SECRET: process.env.AUTHING_APP_SECRET,
-      AUTHING_APP_DOMAIN: process.env.AUTHING_APP_DOMAIN,
-      DEPLOYMENT_REGION: process.env.DEPLOYMENT_REGION,
-    },
   }
 }

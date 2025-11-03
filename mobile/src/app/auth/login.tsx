@@ -11,7 +11,6 @@ import {FontAwesome} from "@expo/vector-icons"
 import AppleIcon from "assets/icons/component/AppleIcon"
 import GoogleIcon from "assets/icons/component/GoogleIcon"
 import * as WebBrowser from "expo-web-browser"
-import Constants from "expo-constants"
 import {useEffect, useRef, useState} from "react"
 import {
   ActivityIndicator,
@@ -29,6 +28,7 @@ import {
   ViewStyle,
 } from "react-native"
 import {Pressable} from "react-native-gesture-handler"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 
 export default function LoginScreen() {
   const [isSigningUp, setIsSigningUp] = useState(false)
@@ -39,7 +39,7 @@ export default function LoginScreen() {
   const [formAction, setFormAction] = useState<"signin" | "signup" | null>(null)
   const [backPressCount, setBackPressCount] = useState(0)
   const {push, replace} = useNavigationHistory()
-  const IS_CHINA_DEPLOYMENT = Constants.expoConfig?.extra?.DEPLOYMENT_REGION === "china"
+  const [isChina] = useSetting(SETTINGS_KEYS.china_deployment)
 
   // Get theme and safe area insets
   const {theme, themed} = useAppTheme()
@@ -412,7 +412,7 @@ export default function LoginScreen() {
                     />
                   )}
                 />
-                {!IS_CHINA_DEPLOYMENT && (
+                {!isChina && (
                   <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
                     <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
                       <GoogleIcon />
@@ -421,7 +421,7 @@ export default function LoginScreen() {
                   </TouchableOpacity>
                 )}
 
-                {Platform.OS === "ios" && !IS_CHINA_DEPLOYMENT && (
+                {Platform.OS === "ios" && !isChina && (
                   <TouchableOpacity style={[themed($socialButton), themed($appleButton)]} onPress={handleAppleSignIn}>
                     <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
                       <AppleIcon color={theme.colors.text} />

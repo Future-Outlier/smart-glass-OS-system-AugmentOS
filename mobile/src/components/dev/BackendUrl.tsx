@@ -13,7 +13,7 @@ export default function BackendUrl() {
   const {replace} = useNavigationHistory()
   const [customUrlInput, setCustomUrlInput] = useState("")
   const [isSavingUrl, setIsSavingUrl] = useState(false)
-  const [customBackendUrl, setCustomBackendUrl] = useSetting(SETTINGS_KEYS.custom_backend_url)
+  const [backendUrl, setBackendUrl] = useSetting(SETTINGS_KEYS.backend_url)
 
   // Triple-tap detection for Asia East button
   const [asiaButtonTapCount, setAsiaButtonTapCount] = useState(0)
@@ -56,7 +56,7 @@ export default function BackendUrl() {
           const data = await response.json()
           console.log("URL Test Successful:", data)
 
-          await setCustomBackendUrl(urlToTest)
+          await setBackendUrl(urlToTest)
 
           await showAlert(
             "Success",
@@ -100,7 +100,7 @@ export default function BackendUrl() {
   }
 
   const handleResetUrl = async () => {
-    setCustomBackendUrl(null)
+    setBackendUrl(null)
     setCustomUrlInput("")
     showAlert("Success", "Reset backend URL to default.", [
       {
@@ -137,7 +137,7 @@ export default function BackendUrl() {
         <Text style={themed($label)}>Custom Backend URL</Text>
         <Text style={themed($subtitle)}>
           Override the default backend server URL. Leave blank to use default.
-          {customBackendUrl && `\nCurrently using: ${customBackendUrl}`}
+          {backendUrl && `\nCurrently using: ${backendUrl}`}
         </Text>
         <TextInput
           style={themed($urlInput)}
