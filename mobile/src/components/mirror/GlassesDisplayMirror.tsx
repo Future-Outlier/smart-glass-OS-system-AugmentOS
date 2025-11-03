@@ -11,16 +11,14 @@ interface GlassesDisplayMirrorProps {
   fallbackMessage?: string
   containerStyle?: any
   fullscreen?: boolean
-  demo?: boolean
-  demoText?: string
+  demoText: string
 }
 
 const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
   fallbackMessage = "",
   containerStyle,
   fullscreen = false,
-  demo = false,
-  demoText = "Simulated Glasses Display",
+  demoText = "",
 }) => {
   const {themed} = useAppTheme()
   const canvasRef = useRef<Canvas>(null)
@@ -30,7 +28,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
   const {currentEvent} = useDisplayStore()
 
   // Use demo layout if in demo mode, otherwise use real layout
-  const layout = demo ? {layoutType: "text_wall", text: demoText} : currentEvent.layout
+  const layout = demoText !== "" ? {layoutType: "text_wall", text: demoText} : currentEvent.layout
 
   const processBitmap = async () => {
     if (layout?.layoutType !== "bitmap_view" || !layout.data) {
@@ -229,7 +227,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
 const $glassesScreen: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   width: "100%",
   minHeight: 140,
-  backgroundColor: colors.background,
+  backgroundColor: colors.primary_foreground,
   borderRadius: spacing.md,
   paddingHorizontal: spacing.md,
   paddingVertical: spacing.sm,
