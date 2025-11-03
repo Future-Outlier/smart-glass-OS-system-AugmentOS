@@ -175,6 +175,17 @@ class MantleManager {
     }
   }
 
+  public async displayTextMain(text: string) {
+    socketComms.handle_display_event({
+      type: "display_event",
+      view: "main",
+      layout: {
+        layoutType: "text_wall",
+        text: text,
+      },
+    })
+  }
+
   public async handle_head_up(isUp: boolean) {
     socketComms.sendHeadPosition(isUp)
     useDisplayStore.getState().setView(isUp ? "dashboard" : "main")
@@ -196,26 +207,12 @@ class MantleManager {
         }
         this.clearTextTimeout = setTimeout(() => {
           console.log("Mantle: clearing text from wall")
-          socketComms.handle_display_event({
-            type: "display_event",
-            view: "main",
-            layout: {
-              layoutType: "text_wall",
-              text: "",
-            },
-          })
+          this.displayTextMain("")
         }, 10000) // 10 seconds
       }
 
       if (processedText) {
-        socketComms.handle_display_event({
-          type: "display_event",
-          view: "main",
-          layout: {
-            layoutType: "text_wall",
-            text: processedText,
-          },
-        })
+        this.displayTextMain(processedText)
       }
 
       return

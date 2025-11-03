@@ -71,6 +71,14 @@ export default function DeveloperSettingsScreen() {
 
         <Spacer height={theme.spacing.md} />
 
+        <RouteButton
+          label="🔄 Test Mini App"
+          subtitle="Test the Mini App"
+          onPress={() => push("/test/mini-app")}
+        />
+        
+        <Spacer height={theme.spacing.md} />
+
         {/* G1 Specific Settings - Only show when connected to Even Realities G1 */}
         {defaultWearable && defaultWearable.includes(DeviceTypes.G1) && (
           <Group title="G1 Specific Settings">
