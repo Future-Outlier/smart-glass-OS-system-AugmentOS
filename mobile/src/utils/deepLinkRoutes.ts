@@ -1,7 +1,7 @@
 import {NavObject} from "@/contexts/NavigationHistoryContext"
-import {supabase} from "@/supabase/supabaseClient"
-import * as WebBrowser from "expo-web-browser"
 import {Platform} from "react-native"
+import * as WebBrowser from "expo-web-browser"
+import {mentraAuthProvider} from "./auth/authProvider"
 
 export interface DeepLinkRoute {
   pattern: string
@@ -169,15 +169,16 @@ export const deepLinkRoutes: DeepLinkRoute[] = [
       if (authParams && authParams.access_token && authParams.refresh_token) {
         try {
           // Update the Supabase session manually
-          const {data, error} = await supabase.auth.setSession({
+          const {error} = await mentraAuthProvider.updateSessionWithTokens({
             access_token: authParams.access_token,
             refresh_token: authParams.refresh_token,
           })
           if (error) {
             console.error("Error setting session:", error)
           } else {
-            console.log("Session updated:", data.session)
-            console.log("[LOGIN DEBUG] Session set successfully, data.session exists:", !!data.session)
+            // console.log("Session updated:", data.session)
+            // console.log("[LOGIN DEBUG] Session set successfully, data.session exists:", !!data.session)
+            console.log("[LOGIN DEBUG] Session set successfully")
             // Dismiss the WebView after successful authentication (non-blocking)
             console.log("[LOGIN DEBUG] About to dismiss browser, platform:", Platform.OS)
             try {
@@ -216,10 +217,8 @@ export const deepLinkRoutes: DeepLinkRoute[] = [
       // Check if this is an auth callback without tokens
       if (!authParams) {
         // Try checking if user is already authenticated
-        const {
-          data: {session},
-        } = await supabase.auth.getSession()
-        if (session) {
+        const {data} = await mentraAuthProvider.getSession()
+        if (data?.session?.token) {
           navObject.replace("/")
         }
       }
@@ -251,7 +250,7 @@ export const deepLinkRoutes: DeepLinkRoute[] = [
       if (authParams && authParams.access_token && authParams.refresh_token && authParams.type === "recovery") {
         try {
           // Set the recovery session
-          const {error} = await supabase.auth.setSession({
+          const {error} = await mentraAuthProvider.updateSessionWithTokens({
             access_token: authParams.access_token,
             refresh_token: authParams.refresh_token,
           })

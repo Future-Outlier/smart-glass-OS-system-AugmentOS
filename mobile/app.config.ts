@@ -28,6 +28,10 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
       SUPABASE_URL: process.env.SUPABASE_URL,
       SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
       SENTRY_DSN: process.env.SENTRY_DSN,
+      AUTHING_APP_ID: process.env.AUTHING_APP_ID,
+      AUTHING_APP_SECRET: process.env.AUTHING_APP_SECRET,
+      AUTHING_APP_DOMAIN: process.env.AUTHING_APP_DOMAIN,
+      DEPLOYMENT_REGION: process.env.DEPLOYMENT_REGION,
     },
   }
 }

@@ -3,6 +3,9 @@ import pino from "pino";
 // import { pinoPostHogTransport } from "./transports/PostHogTransport";
 
 // Constants and configuration
+const DEPLOYMENT_REGION = process.env.DEPLOYMENT_REGION;
+const isChina = DEPLOYMENT_REGION === "china";
+
 const BETTERSTACK_SOURCE_TOKEN = process.env.BETTERSTACK_SOURCE_TOKEN;
 const BETTERSTACK_ENDPOINT =
   process.env.BETTERSTACK_ENDPOINT ||
@@ -114,7 +117,7 @@ streams.push({
 });
 
 // Add BetterStack transport if token is provided (with filtering)
-if (BETTERSTACK_SOURCE_TOKEN) {
+if (BETTERSTACK_SOURCE_TOKEN && !isChina) {
   const betterStackTransport = pino.transport({
     target: "@logtail/pino",
     options: {
@@ -132,6 +135,8 @@ if (BETTERSTACK_SOURCE_TOKEN) {
     stream: filteredBetterStackStream,
     level: LOG_LEVEL,
   });
+} else if (isChina) {
+  console.log("BetterStack is disabled for China");
 }
 
 // Create multistream
