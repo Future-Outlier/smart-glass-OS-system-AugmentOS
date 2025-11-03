@@ -168,7 +168,8 @@ const AppDetails: React.FC = () => {
         })
       } else {
         // Fallback to generic error message
-        const errorMessage = (err as any)?.response?.data?.message || "Failed to install app"
+        const errorMessage =
+          (err as {response?: {data?: {message?: string}}})?.response?.data?.message || "Failed to install app"
         toast.error(errorMessage)
       }
     } finally {

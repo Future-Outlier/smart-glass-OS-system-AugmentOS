@@ -1,4 +1,3 @@
-import React from "react"
 import {ChevronLeft, Info, Share2} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {toast} from "sonner"
@@ -20,7 +19,6 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
   installingApp,
   handleBackNavigation,
   handleInstall,
-  handleUninstall,
   navigateToLogin,
 }) => {
   return (
@@ -184,7 +182,6 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
               className="flex items-center  p-3 rounded-lg"
               style={{
                 backgroundColor: "var(--error-bg, #fef2f2)",
-
               }}>
               <Info
                 className="h-5 w-5"
@@ -235,10 +232,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                       backgroundColor: "var(--primaary-foreground)",
                     }}>
                     <div className="flex items-center">
-                      <div
-                        className=" h-9 flex items-center justify-center rounded-lg mr-[2px]"
-                        style={{
-                        }}>
+                      <div className=" h-9 flex items-center justify-center rounded-lg mr-[2px]" style={{}}>
                         <div
                           style={{
                             color: "var(--text-secondary)",
@@ -252,7 +246,8 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                           fontFamily: '"Red Hat Display", sans-serif',
                           color: "var(--text-primary)",
                         }}>
-                        {(permission.type || "Display").charAt(0).toUpperCase() + (permission.type || "Display").slice(1).toLowerCase()}
+                        {(permission.type || "Display").charAt(0).toUpperCase() +
+                          (permission.type || "Display").slice(1).toLowerCase()}
                       </div>
                     </div>
                     <div

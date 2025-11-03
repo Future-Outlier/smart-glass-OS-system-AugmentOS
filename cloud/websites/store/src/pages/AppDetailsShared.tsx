@@ -1,18 +1,5 @@
-import React from "react"
-import {
-  Calendar,
-  Camera,
-  MapPin,
-  Mic,
-  Shield,
-  Cpu,
-  Speaker,
-  Wifi,
-  RotateCw,
-  CircleDot,
-  Lightbulb,
-} from "lucide-react"
-import {HardwareType, HardwareRequirementLevel, AppI} from "../types"
+import {Calendar, Camera, MapPin, Mic, Shield, Cpu, Speaker, Wifi, RotateCw, CircleDot, Lightbulb} from "lucide-react"
+import {HardwareType, AppI} from "../types"
 
 // App tags mapping
 export const APP_TAGS: Record<string, string[]> = {
@@ -93,12 +80,18 @@ export const getAppTypeDisplay = (app: AppI) => {
   return appType === "standard" ? "Foreground" : appType
 }
 
+// Theme type
+export type Theme = "light" | "dark"
+
 // Base shared prop types
 export interface AppDetailsBasePropsCore {
   app: AppI
+  theme: Theme
   isAuthenticated: boolean
   isWebView: boolean
   installingApp: boolean
+  activeTab: "description" | "permissions" | "hardware" | "contact" | ""
+  setActiveTab: React.Dispatch<React.SetStateAction<"description" | "permissions" | "hardware" | "contact" | "">>
   handleBackNavigation: () => void
   handleInstall: () => Promise<void>
   navigateToLogin: () => void
@@ -109,8 +102,10 @@ export interface AppDetailsMobileProps extends AppDetailsBasePropsCore {
   handleUninstall: () => Promise<void>
 }
 
-// Desktop-specific props (no tab state or uninstall handler needed)
-export interface AppDetailsDesktopProps extends AppDetailsBasePropsCore {}
+// Desktop-specific props (also includes uninstall handler)
+export interface AppDetailsDesktopProps extends AppDetailsBasePropsCore {
+  handleUninstall: () => Promise<void>
+}
 
 // Backward compatibility
 export type AppDetailsBaseProps = AppDetailsMobileProps
