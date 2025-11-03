@@ -14,7 +14,9 @@ import {ConsoleLogger} from "@/utils/debug/console"
 
 // Only initialize Sentry if DSN is provided
 const sentryDsn = Constants.expoConfig?.extra?.SENTRY_DSN
-if (sentryDsn && sentryDsn !== "secret" && sentryDsn.trim() !== "") {
+const deploymentRegion = Constants.expoConfig?.extra?.DEPLOYMENT_REGION
+const isChina = deploymentRegion === "china"
+if (!isChina && sentryDsn && sentryDsn !== "secret" && sentryDsn.trim() !== "") {
   Sentry.init({
     dsn: sentryDsn,
 
