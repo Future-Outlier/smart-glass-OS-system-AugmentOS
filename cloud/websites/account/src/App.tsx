@@ -5,7 +5,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { Toaster } from "sonner";
-import { AuthProvider, useAuth} from "@mentra/shared";
+import { AuthProvider, useAuth, ForgotPasswordPage, ResetPasswordPage } from "@mentra/shared";
 import LoginPage from "./pages/LoginPage";
 import AccountPage from "./pages/AccountPage";
 import DeleteAccountPage from "./pages/DeleteAccountPage";
@@ -44,6 +44,13 @@ function App() {
         <Toaster position="top-right" richColors />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+
+          {/* Forgot Password Routes */}
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route
+            path="/reset-password"
+            element={<ResetPasswordPage redirectUrl="/account" />}
+          />
 
           {/* OAuth flow route - doesn't require ProtectedRoute wrapper as it handles auth internally */}
           <Route path="/auth" element={<AuthFlowPage />} />
