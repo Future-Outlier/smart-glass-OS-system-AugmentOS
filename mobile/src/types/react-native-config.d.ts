@@ -5,11 +5,7 @@ declare module "react-native-config" {
     SUPABASE_ANON_KEY?: string
 
     // Backend connection settings
-    MENTRAOS_HOST?: string
-    MENTRAOS_PORT?: string
-    MENTRAOS_SECURE?: string
     MENTRAOS_VERSION?: string
-    MENTRAOS_APPSTORE_URL?: string
 
     // PostHog settings
     POSTHOG_API_KEY?: string

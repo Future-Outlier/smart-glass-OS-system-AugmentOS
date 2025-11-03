@@ -9,6 +9,7 @@ import {useLocalSearchParams, useFocusEffect} from "expo-router"
 import {Header, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/services/RestComms"
+import {useSettingsStore} from "@/stores/settings"
 
 export default function AppWebView() {
   const {theme} = useAppTheme()
@@ -69,20 +70,6 @@ export default function AppWebView() {
   //     }
   //   }, [fromSettings, packageName, appName]);
 
-  function determineCloudUrl(): string | undefined {
-    const cloudHostName = process.env.CLOUD_PUBLIC_HOST_NAME || process.env.CLOUD_HOST_NAME || process.env.MENTRAOS_HOST
-    if (
-      cloudHostName &&
-      cloudHostName.trim() !== "prod.augmentos.cloud" &&
-      cloudHostName.trim() !== "cloud" &&
-      cloudHostName.includes(".")
-    ) {
-      console.log(`For App webview token verification, using cloud host name: ${cloudHostName}`)
-      return `https://${cloudHostName}`
-    }
-    return undefined
-  }
-
   // Theme colors
   const theme2 = {
     backgroundColor: theme.isDark ? "#1c1c1c" : "#f9f9f9",
@@ -122,7 +109,7 @@ export default function AppWebView() {
           console.warn("Failed to generate signed user token:", error)
           signedUserToken = undefined
         }
-        const cloudApiUrl = determineCloudUrl()
+        const cloudApiUrl = useSettingsStore.getState().getRestUrl()
 
         // Construct final URL
         const url = new URL(webviewURL)
