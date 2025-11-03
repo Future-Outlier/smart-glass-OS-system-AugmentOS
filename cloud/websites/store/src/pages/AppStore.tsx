@@ -682,7 +682,7 @@ const AppStore: React.FC = () => {
         )}
 
         {!searchQuery && (
-          <div className=" text-[20px] sm:text-[25px] mt-[24px] mb-[24px] font-semibold text-[var(--secondary-foreground)]">
+          <div className=" text-[20px] sm:text-[25px] mt-[24px] mb-[24px] font-semibold text-[var(--secondary-foreground)] leading-tight">
             Top Apps
           </div>
         )}
@@ -696,7 +696,7 @@ const AppStore: React.FC = () => {
               ))}
             </div>
           ) : !error ? (
-            <div className="mt-2 mb-2 sm:mt-4 sm:mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-[30px] gap-y-[24px] sm:gap-y-[24px]">
+            <div className="mt-2 mb-2 sm:mt-4 sm:mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-[48px] gap-y-[24px] sm:gap-y-[24px]">
               {filteredApps.map((app, index) => {
                 // Calculate if this card is in the last row
                 const totalApps = filteredApps.length

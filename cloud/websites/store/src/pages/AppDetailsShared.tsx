@@ -1,0 +1,119 @@
+import React from "react"
+import {
+  Calendar,
+  Camera,
+  MapPin,
+  Mic,
+  Shield,
+  Cpu,
+  Speaker,
+  Wifi,
+  RotateCw,
+  CircleDot,
+  Lightbulb,
+} from "lucide-react"
+import {HardwareType, HardwareRequirementLevel, AppI} from "../types"
+
+// App tags mapping
+export const APP_TAGS: Record<string, string[]> = {
+  "X": ["Social", "News", "Media"],
+  "Merge": ["Chat", "Social"],
+  "Live Captions": ["Language", "Communication"],
+  "Streamer": ["Video", "Broadcast"],
+  "Translation": ["Language", "Communication"],
+  "LinkLingo": ["Language", "Learning"],
+  "Mentra Notes": ["Tools"],
+  "Dash": ["Fitness", "Running"],
+  "Calendar": ["Time", "Schedule"],
+  "Teleprompter": ["Media", "Tools"],
+  "MemCards": ["Learning", "Memory"],
+}
+
+// Hardware icon mapping
+export const hardwareIcons: Record<HardwareType, React.ReactNode> = {
+  [HardwareType.CAMERA]: <Camera className="h-4 w-4" />,
+  [HardwareType.DISPLAY]: <Cpu className="h-4 w-4" />,
+  [HardwareType.MICROPHONE]: <Mic className="h-4 w-4" />,
+  [HardwareType.SPEAKER]: <Speaker className="h-4 w-4" />,
+  [HardwareType.IMU]: <RotateCw className="h-4 w-4" />,
+  [HardwareType.BUTTON]: <CircleDot className="h-4 w-4" />,
+  [HardwareType.LIGHT]: <Lightbulb className="h-4 w-4" />,
+  [HardwareType.WIFI]: <Wifi className="h-4 w-4" />,
+}
+
+// Get icon for permission type
+export const getPermissionIcon = (type: string) => {
+  const normalizedType = type.toLowerCase()
+  if (normalizedType.includes("microphone") || normalizedType.includes("audio")) {
+    return <Mic className="h-5 w-4" />
+  }
+  if (normalizedType.includes("camera") || normalizedType.includes("photo")) {
+    return <Camera className="h-4 w-4" />
+  }
+  if (normalizedType.includes("location") || normalizedType.includes("gps")) {
+    return <MapPin className="h-4 w-4" />
+  }
+  if (normalizedType.includes("calendar")) {
+    return <Calendar className="h-4 w-4" />
+  }
+  return <Shield className="h-4 w-4" />
+}
+
+// Get default description for permission type
+export const getPermissionDescription = (type: string) => {
+  const normalizedType = type.toLowerCase()
+  if (normalizedType.includes("microphone") || normalizedType.includes("audio")) {
+    return "For voice import and audio processing."
+  }
+  if (normalizedType.includes("camera") || normalizedType.includes("photo")) {
+    return "For capturing photos and recording videos."
+  }
+  if (normalizedType.includes("location") || normalizedType.includes("gps")) {
+    return "For location-based features and services."
+  }
+  if (normalizedType.includes("calendar")) {
+    return "For accessing and managing calendar events."
+  }
+  return "For app functionality and features."
+}
+
+// Formatted date for display
+export const formatDate = (dateString?: string) => {
+  if (!dateString) return "N/A"
+  return new Date(dateString).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+}
+
+// Get app type display name
+export const getAppTypeDisplay = (app: AppI) => {
+  const appType = app.appType ?? app.tpaType ?? "Foreground"
+  return appType === "standard" ? "Foreground" : appType
+}
+
+// Base shared prop types
+export interface AppDetailsBasePropsCore {
+  app: AppI
+  theme: string
+  isAuthenticated: boolean
+  isWebView: boolean
+  installingApp: boolean
+  handleBackNavigation: () => void
+  handleInstall: () => Promise<void>
+  navigateToLogin: () => void
+}
+
+// Mobile-specific props (includes tab state and uninstall handler)
+export interface AppDetailsMobileProps extends AppDetailsBasePropsCore {
+  activeTab: "description" | "permissions" | "hardware" | "contact" | ""
+  setActiveTab: (tab: "description" | "permissions" | "hardware" | "contact" | "") => void
+  handleUninstall: () => Promise<void>
+}
+
+// Desktop-specific props (no tab state or uninstall handler needed)
+export interface AppDetailsDesktopProps extends AppDetailsBasePropsCore {}
+
+// Backward compatibility
+export type AppDetailsBaseProps = AppDetailsMobileProps
