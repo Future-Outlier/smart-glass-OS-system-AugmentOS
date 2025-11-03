@@ -322,15 +322,8 @@ const $noteSection: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderRadius: spacing.sm,
   marginTop: spacing.md,
   alignItems: "center",
-  backgroundColor: colors.primary_foreground, 
+  backgroundColor: colors.primary_foreground,
   padding: spacing.md,
-})
-
-const $noteText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 14,
-  flex: 1,
-  lineHeight: 20,
-  color: colors.text,
 })
 
 const $animationContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -490,13 +483,12 @@ export function SimulatedPairingGuide() {
     <View style={themed($guideContainer)}>
       <Text text="Preview MentraOS" style={themed($guideTitle)} />
 
-      {/* Hero description */}
+      <GlassesDisplayMirror demoText="Simulated glasses display" />
+
       <Text
         text="Experience the full power of MentraOS without physical glasses. Simulated Glasses provides a virtual display that mirrors exactly what you would see on real smart glasses."
         style={themed($guideDescription)}
       />
-
-      <GlassesDisplayMirror demoText="Simulated glasses display" />
 
       {/* Note about upgrading */}
       {/* <View style={themed($noteSection)}>
