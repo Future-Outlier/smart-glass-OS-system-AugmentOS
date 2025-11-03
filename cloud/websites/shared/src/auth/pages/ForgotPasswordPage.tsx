@@ -1,5 +1,5 @@
 import React from 'react';
-import { ForgotPasswordForm } from '@mentra/shared';
+import ForgotPasswordForm from '../components/ForgotPassword';
 
 const ForgotPasswordPage: React.FC = () => {
   return (

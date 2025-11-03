@@ -25,3 +25,11 @@ export {LoginUI} from './auth/components/LoginUI';
 //Export ForgotPasswordForm
 
 export {default as ForgotPasswordForm} from './auth/components/ForgotPassword';
+
+//Export ForgotPasswordPage
+
+export {default as ForgotPasswordPage} from './auth/pages/ForgotPasswordPage';
+
+//Export ResetPasswordPage
+
+export {default as ResetPasswordPage} from './auth/pages/ResetPasswordPage';
