@@ -96,7 +96,6 @@ export const getAppTypeDisplay = (app: AppI) => {
 // Base shared prop types
 export interface AppDetailsBasePropsCore {
   app: AppI
-  theme: string
   isAuthenticated: boolean
   isWebView: boolean
   installingApp: boolean
@@ -105,10 +104,8 @@ export interface AppDetailsBasePropsCore {
   navigateToLogin: () => void
 }
 
-// Mobile-specific props (includes tab state and uninstall handler)
+// Mobile-specific props (includes uninstall handler)
 export interface AppDetailsMobileProps extends AppDetailsBasePropsCore {
-  activeTab: "description" | "permissions" | "hardware" | "contact" | ""
-  setActiveTab: (tab: "description" | "permissions" | "hardware" | "contact" | "") => void
   handleUninstall: () => Promise<void>
 }
 

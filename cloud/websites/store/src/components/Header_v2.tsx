@@ -299,7 +299,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                         <Search
                           size={"20px"}
                           style={{
-                            color: theme === "light" ? "#999999" : "#a1a1aa",
+                            color: "var(--text-muted)",
                           }}
                         />
                       </button>
@@ -308,7 +308,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                           <button
                             className="flex justify-center items-center rounded-full w-[44px] h-[44px] overflow-hidden"
                             style={{
-                              backgroundColor: theme === "light" ? "#F2F2F2" : "var(--bg-secondary)",
+                              backgroundColor: "var(--bg-secondary)",
                             }}>
                             {getUserAvatar() ? (
                               <img src={getUserAvatar()!} alt="Profile" className="w-full h-full object-cover" />
@@ -316,7 +316,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                               <User
                                 size={20}
                                 style={{
-                                  color: theme === "light" ? "#999999" : "#a1a1aa",
+                                  color: "var(--text-muted)",
                                 }}
                               />
                             )}
@@ -326,13 +326,13 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                         <div
                           className="flex flex-col rounded-lg"
                           style={{
-                            backgroundColor: theme === "light" ? "#ffffff" : "var(--bg-secondary)",
+                            backgroundColor: "var(--bg-primary)",
                           }}>
                           {/* User Info Section */}
                           <div
                             className="flex flex-col items-center py-6 px-4 border-b"
                             style={{
-                              borderColor: theme === "light" ? "#e5e7eb" : "var(--border-color)",
+                              borderColor: "var(--border-color)",
                             }}>
                             <div
                               className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden mb-3"
@@ -345,7 +345,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                                 <User
                                   size={40}
                                   style={{
-                                    color: theme === "light" ? "#999999" : "#a1a1aa",
+                                    color: "var(--text-muted)",
                                   }}
                                 />
                               )}
@@ -354,14 +354,14 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                               <p
                                 className="font-medium text-base"
                                 style={{
-                                  color: theme === "light" ? "#111827" : "var(--text-primary)",
+                                  color: "var(--text-primary)",
                                 }}>
                                 {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
                               </p>
                               <p
                                 className="text-sm mt-1"
                                 style={{
-                                  color: theme === "light" ? "#6b7280" : "var(--text-secondary)",
+                                  color: "var(--text-secondary)",
                                 }}>
                                 {user?.email || "No email"}
                               </p>
@@ -408,7 +408,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                         <Search
                           size={"20px"}
                           style={{
-                            color: theme === "light" ? "#999999" : "#a1a1aa",
+                            color: "var(--text-muted)",
                           }}
                         />
                       </button>

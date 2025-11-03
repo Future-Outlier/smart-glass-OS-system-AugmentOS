@@ -384,12 +384,13 @@ button:focus-visible {
   --secondary-foreground: #0a0a0a;
   --muted-foreground: #737373;
   --border: #e5e5e5;
+  --error-bg: #fef2f2;
+  --warning-text: #DC2626;
 }
 
 :root[data-theme="dark"],
 :root {
   --bg-primary: #171717;
-
   --bg-secondary: #1f1f1f;
   --bg-tertiary: #292929;
   --text-primary: #e4e4e7;
@@ -403,6 +404,15 @@ button:focus-visible {
   --button-bg: #ffffff;
   --button-text: #000000;
   --button-hover: #e5e5e5;
+  --primary-foreground: #262626;
+  --input: #262626;
+  --background: #0a0a0a;
+  --primaary-foreground: #1f1f1f;
+  --secondary-foreground: #fafafa;
+  --muted-foreground: #a3a3a3;
+  --border: #27272a;
+  --error-bg: #1f1515;
+  --warning-text: #FCA5A5;
 }
 
 /* Theme-aware search input */

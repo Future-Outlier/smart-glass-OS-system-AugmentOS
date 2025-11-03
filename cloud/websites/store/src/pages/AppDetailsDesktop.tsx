@@ -14,7 +14,6 @@ import {
 
 const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
   app,
-  theme,
   isAuthenticated,
   isWebView,
   installingApp,
@@ -27,12 +26,10 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
       {/* Desktop Close Button */}
       <button
         onClick={handleBackNavigation}
-        className="absolute top-6 right-6 transition-colors"
+        className="absolute top-6 right-6 transition-colors hover:opacity-70"
         style={{
-          color: theme === "light" ? "#000000" : "#9CA3AF",
+          color: "var(--text-secondary)",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = theme === "light" ? "#333333" : "#ffffff")}
-        onMouseLeave={(e) => (e.currentTarget.style.color = theme === "light" ? "#000000" : "#9CA3AF")}
         aria-label="Close">
         <X className="h-6 w-6" />
       </button>
@@ -42,16 +39,10 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
           {/* Back Button */}
           <button
             onClick={handleBackNavigation}
-            className="flex items-center justify-center w-[40px] h-[40px] rounded-full mb-[32px] transition-all hover:scale-105"
+            className="flex items-center justify-center w-[40px] h-[40px] rounded-full mb-[32px] transition-all hover:scale-105 hover:opacity-80"
             style={{
-              backgroundColor: theme === "light" ? "#F3F4F6" : "rgba(255, 255, 255, 0.1)",
-              color: theme === "light" ? "#000000" : "#E4E4E7",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = theme === "light" ? "#E5E7EB" : "rgba(255, 255, 255, 0.15)"
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = theme === "light" ? "#F3F4F6" : "rgba(255, 255, 255, 0.1)"
+              backgroundColor: "var(--bg-secondary)",
+              color: "var(--text-primary)",
             }}
             aria-label="Back to App Store">
             <ChevronLeft className="w-5 h-5" />
@@ -77,7 +68,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                   className="flex items-center gap-2 text-[20px] mb-[8px]"
                   style={{
                     fontFamily: '"Red Hat Display", sans-serif',
-                    color: theme === "light" ? "#000000" : "#E4E4E7",
+                    color: "var(--text-primary)",
                   }}>
                   <span>{app.orgName || app.developerProfile?.company || "Mentra"}</span>
                   <span>•</span>
@@ -92,8 +83,8 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                         key={index}
                         className="px-3 py-1.5 rounded-full text-[14px] font-normal"
                         style={{
-                          backgroundColor: theme === "light" ? "#F3F4F6" : "rgba(255, 255, 255, 0.1)",
-                          color: theme === "light" ? "#000000" : "#D1D5DB",
+                          backgroundColor: "var(--bg-secondary)",
+                          color: "var(--text-secondary)",
                           fontFamily: '"Red Hat Display", sans-serif',
                         }}>
                         {tag}
@@ -103,7 +94,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                 )}
 
                 {/* Buttons Section - Desktop only */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-[24px]">
                   {/* Install Button */}
                   {isAuthenticated ? (
                     app.isInstalled ? (
@@ -112,8 +103,8 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                         className="px-8 h-[44px] text-[20px] font-medium rounded-full opacity-40 cursor-not-allowed min-w-[242px]"
                         style={{
                           fontFamily: '"Red Hat Display", sans-serif',
-                          backgroundColor: theme === "light" ? "#000000" : "#ffffff",
-                          color: theme === "light" ? "#ffffff" : "#000000",
+                          backgroundColor: "var(--button-bg)",
+                          color: "var(--button-text)",
                         }}>
                         Installed
                       </Button>
@@ -124,8 +115,8 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                         className="px-8 h-[44px] text-[18px] font-medium rounded-full transition-all min-w-[242px]"
                         style={{
                           fontFamily: '"Red Hat Display", sans-serif',
-                          backgroundColor: theme === "light" ? "#000000" : "#ffffff",
-                          color: theme === "light" ? "#ffffff" : "#000000",
+                          backgroundColor: "var(--button-bg)",
+                          color: "var(--button-text)",
                         }}>
                         {installingApp ? "Getting…" : "Get"}
                       </Button>
@@ -136,8 +127,8 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                       className="px-8 h-[44px] text-[20px] font-medium rounded-full transition-all min-w-[242px]"
                       style={{
                         fontFamily: '"Red Hat Display", sans-serif',
-                        backgroundColor: theme === "light" ? "#000000" : "#ffffff",
-                        color: theme === "light" ? "#ffffff" : "#000000",
+                        backgroundColor: "var(--button-bg)",
+                        color: "var(--button-text)",
                       }}>
                       Get
                     </Button>
@@ -147,8 +138,8 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                   <button
                     className="w-[113px] flex items-center gap-2 px-5 h-[44px] rounded-full border transition-colors"
                     style={{
-                      borderColor: theme === "light" ? "#dadce0" : "rgba(255, 255, 255, 0.2)",
-                      color: theme === "light" ? "#000000" : "#ffffff",
+                      borderColor: "var(--border-color)",
+                      color: "var(--text-primary)",
                       fontFamily: '"Red Hat Display", sans-serif',
                     }}
                     onClick={() => {
@@ -169,7 +160,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                 <div
                   className="flex items-center gap-2 text-[14px] mt-[32px]"
                   style={{
-                    color: theme === "light" ? "#000000" : "#9CA3AF",
+                    color: "var(--text-secondary)",
                     fontFamily: '"Red Hat Display", sans-serif',
                   }}>
                   <Smartphone className="w-[18px] h-[18px] text-[14px]" />
@@ -195,21 +186,21 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
           {app.isOnline === false && (
             <div className="mb-6">
               <div
-                className="flex items-center gap-3 p-3 rounded-lg"
+                className="flex items-center p-3 rounded-lg"
                 style={{
-                  backgroundColor: theme === "light" ? "#FDECEA" : "rgba(255, 255, 255, 0.05)",
-                  border: `1px solid ${theme === "light" ? "#F5C6CB" : "rgba(255, 255, 255, 0.1)"}`,
+                  backgroundColor: "var(--error-bg)",
+                  border: "1px solid var(--error-color)",
                 }}>
                 <Info
                   className="h-5 w-5"
                   style={{
-                    color: theme === "light" ? "#B91C1C" : "#FCA5A5",
+                    color: "var(--error-color)",
                   }}
                 />
                 <span
                   className="text-[14px]"
                   style={{
-                    color: theme === "light" ? "#B91C1C" : "#FCA5A5",
+                    color: "var(--error-color)",
                   }}>
                   This app appears to be offline. Some actions may not work.
                 </span>
@@ -228,7 +219,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                 className="text-[24px] font-semibold mb-[24px]"
                 style={{
                   fontFamily: '"Red Hat Display", sans-serif',
-                  color: theme === "light" ? "#000000" : "#ffffff",
+                  color: "var(--text-primary)",
                 }}>
                 About this app
               </h2>
@@ -236,7 +227,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                 className="text-[20px] font-normal leading-[1.6]"
                 style={{
                   fontFamily: '"Red Hat Display", sans-serif',
-                  color: theme === "light" ? "#000000" : "#E4E4E7",
+                  color: "var(--text-primary)",
                 }}>
                 {app.description || "No description available."}
               </p>
@@ -250,7 +241,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                 className="text-[24px] font-semibold mb-[24px]"
                 style={{
                   fontFamily: '"Red Hat Display", sans-serif',
-                  color: theme === "light" ? "#000000" : "#ffffff",
+                  color: "var(--text-primary)",
                 }}>
                 Permission
               </h2>
@@ -258,7 +249,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                 className="text-[20px] mb-6 leading-[1.6]"
                 style={{
                   fontFamily: '"Red Hat Display", sans-serif',
-                  color: theme === "light" ? "#6B7280" : "#9CA3AF",
+                  color: "var(--text-secondary)",
                 }}>
                 Permissions that will be requested when using this app on your phone.
               </p>
@@ -267,20 +258,20 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                   app.permissions.map((permission, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-[24px] rounded-xl h-[74px]"
+                      className="flex items-center justify-between p-[24px] rounded-[16px] h-[74px]"
                       style={{
-                        backgroundColor: theme === "light" ? "#F9FAFB" : "rgba(255, 255, 255, 0.05)",
-                        border: `1px solid ${theme === "light" ? "#E5E7EB" : "rgba(255, 255, 255, 0.1)"}`,
+                        backgroundColor: "var(--primaary-foreground)",
+
                       }}>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center">
                         <div
                           className="w-10 h-10 flex items-center justify-center rounded-lg"
                           style={{
-                            backgroundColor: theme === "light" ? "#ffffff" : "rgba(255, 255, 255, 0.1)",
+                            backgroundColor: "var(--bg-secondary)",
                           }}>
                           <div
                             style={{
-                              color: theme === "light" ? "#000000" : "#9CA3AF",
+                              color: "var(--text-secondary)",
                             }}>
                             {getPermissionIcon(permission.type || "Display")}
                           </div>
@@ -289,16 +280,16 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                           className="text-[20px] font-medium"
                           style={{
                             fontFamily: '"Red Hat Display", sans-serif',
-                            color: theme === "light" ? "#000000" : "#E4E4E7",
+                            color: "var(--text-primary)",
                           }}>
-                          {permission.type || "Display"}
+                          {(permission.type || "Display").charAt(0).toUpperCase() + (permission.type || "Display").slice(1).toLowerCase()}
                         </div>
                       </div>
                       <div
                         className="text-[20px] text-right max-w-[50%]"
                         style={{
                           fontFamily: '"Red Hat Display", sans-serif',
-                          color: theme === "light" ? "#6B7280" : "#9CA3AF",
+                          color: "var(--text-secondary)",
                         }}>
                         {permission.description || getPermissionDescription(permission.type || "Display")}
                       </div>
@@ -308,20 +299,20 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                   <div
                     className="text-center py-8 rounded-xl"
                     style={{
-                      backgroundColor: theme === "light" ? "#F9FAFB" : "rgba(255, 255, 255, 0.05)",
-                      border: `1px solid ${theme === "light" ? "#E5E7EB" : "rgba(255, 255, 255, 0.1)"}`,
+                      backgroundColor: "var(--primaary-foreground)",
+                      border: "1px solid var(--border-color)",
                     }}>
                     <div
                       className="text-[20px] font-medium"
                       style={{
-                        color: theme === "light" ? "#000000" : "#9CA3AF",
+                        color: "var(--text-secondary)",
                       }}>
                       No special permissions required
                     </div>
                     <div
                       className="text-[13px] mt-2"
                       style={{
-                        color: theme === "light" ? "#6B7280" : "#9CA3AF",
+                        color: "var(--text-secondary)",
                       }}>
                       This app runs with standard system permissions only.
                     </div>
@@ -338,7 +329,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                 className="text-[24px] font-semibold mb-[24px]"
                 style={{
                   fontFamily: '"Red Hat Display", sans-serif',
-                  color: theme === "light" ? "#000000" : "#ffffff",
+                  color: "var(--text-primary)",
                 }}>
                 Hardware
               </h2>
@@ -346,7 +337,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                 className="text-[15px] mb-6 leading-[1.6]"
                 style={{
                   fontFamily: '"Red Hat Display", sans-serif',
-                  color: theme === "light" ? "#6B7280" : "#9CA3AF",
+                  color: "var(--text-secondary)",
                 }}>
                 Hardware components required or recommended for this app.
               </p>
@@ -355,20 +346,20 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                   app.hardwareRequirements.map((req, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-[24px] rounded-xl h-[74px]"
+                      className="flex items-center justify-between p-[24px] rounded-[16px] h-[74px]"
                       style={{
-                        backgroundColor: theme === "light" ? "#F9FAFB" : "rgba(255, 255, 255, 0.05)",
-                        border: `1px solid ${theme === "light" ? "#E5E7EB" : "rgba(255, 255, 255, 0.1)"}`,
+                        backgroundColor: "var(--primaary-foreground)",
+
                       }}>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center">
                         <div
                           className="w-10 h-10 flex items-center justify-center rounded-lg"
                           style={{
-                            backgroundColor: theme === "light" ? "#ffffff" : "rgba(255, 255, 255, 0.1)",
+                            backgroundColor: "var(--bg-secondary)",
                           }}>
                           <div
                             style={{
-                              color: theme === "light" ? "#000000" : "#9CA3AF",
+                              color: "var(--text-secondary)",
                             }}>
                             {hardwareIcons[req.type]}
                           </div>
@@ -377,9 +368,9 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                           className="text-[20px] font-medium"
                           style={{
                             fontFamily: '"Red Hat Display", sans-serif',
-                            color: theme === "light" ? "#000000" : "#E4E4E7",
+                            color: "var(--text-primary)",
                           }}>
-                          {req.type.charAt(0) + req.type.slice(1).toLowerCase()}
+                          {req.type.charAt(0).toUpperCase() + req.type.slice(1).toLowerCase()}
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -389,22 +380,18 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                             style={{
                               color:
                                 req.level === HardwareRequirementLevel.REQUIRED
-                                  ? theme === "light"
-                                    ? "#DC2626"
-                                    : "#FCA5A5"
-                                  : theme === "light"
-                                    ? "#6B7280"
-                                    : "#9CA3AF",
+                                  ? "var(--warning-text)"
+                                  : "var(--text-secondary)",
                             }}>
                             {req.level === HardwareRequirementLevel.REQUIRED ? "Required" : "Optional"}
                           </div>
                         )}
                         {req.description && (
                           <div
-                            className="text-[14px] text-right"
+                            className="text-[20px] text-right"
                             style={{
                               fontFamily: '"Red Hat Display", sans-serif',
-                              color: theme === "light" ? "#6B7280" : "#9CA3AF",
+                              color: "var(--text-secondary)",
                             }}>
                             {req.description}
                           </div>
@@ -416,20 +403,20 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                   <div
                     className="text-center py-8 rounded-xl"
                     style={{
-                      backgroundColor: theme === "light" ? "#F9FAFB" : "rgba(255, 255, 255, 0.05)",
-                      border: `1px solid ${theme === "light" ? "#E5E7EB" : "rgba(255, 255, 255, 0.1)"}`,
+                      backgroundColor: "var(--primaary-foreground)",
+                      border: "1px solid var(--border-color)",
                     }}>
                     <div
                       className="text-[20px] font-medium"
                       style={{
-                        color: theme === "light" ? "#000000" : "#9CA3AF",
+                        color: "var(--text-secondary)",
                       }}>
                       No specific hardware requirements
                     </div>
                     <div
                       className="text-[13px] mt-2"
                       style={{
-                        color: theme === "light" ? "#6B7280" : "#9CA3AF",
+                        color: "var(--text-secondary)",
                       }}>
                       This app works with any glasses configuration.
                     </div>
@@ -446,7 +433,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                 className="text-[24px] font-semibold mb-[24px]"
                 style={{
                   fontFamily: '"Red Hat Display", sans-serif',
-                  color: theme === "light" ? "#000000" : "#ffffff",
+                  color: "var(--text-primary)",
                 }}>
                 Contact
               </h2>
@@ -454,7 +441,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                 className="text-[20px] mb-[24px] leading-[1.6]"
                 style={{
                   fontFamily: '"Red Hat Display", sans-serif',
-                  color: theme === "light" ? "#6B7280" : "#9CA3AF",
+                  color: "var(--text-secondary)",
                 }}>
                 Get in touch with the developer or learn more about this app.
               </p>
@@ -463,14 +450,14 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                   <span
                     className="text-[20px] font-medium"
                     style={{
-                      color: theme === "light" ? "#6B7280" : "#9CA3AF",
+                      color: "var(--text-secondary)",
                     }}>
                     Company
                   </span>
                   <span
                     className="text-[20px] font-normal text-right"
                     style={{
-                      color: theme === "light" ? "#000000" : "#E4E4E7",
+                      color: "var(--text-primary)",
                     }}>
                     {app.orgName || app.developerProfile?.company || "Mentra"}
                   </span>
@@ -481,7 +468,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                     <span
                       className="text-[20px] font-medium"
                       style={{
-                        color: theme === "light" ? "#6B7280" : "#9CA3AF",
+                        color: "var(--text-secondary)",
                       }}>
                       Website
                     </span>
@@ -491,7 +478,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                       rel="noopener noreferrer"
                       className="text-[20px] font-normal hover:underline text-right"
                       style={{
-                        color: theme === "light" ? "#0066CC" : "#4A9EFF",
+                        color: "var(--accent-primary)",
                       }}>
                       {app.developerProfile.website}
                     </a>
@@ -503,7 +490,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                     <span
                       className="text-[20px] font-medium"
                       style={{
-                        color: theme === "light" ? "#6B7280" : "#9CA3AF",
+                        color: "var(--text-secondary)",
                       }}>
                       Contact
                     </span>
@@ -511,7 +498,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                       href={`mailto:${app.developerProfile.contactEmail}`}
                       className="text-[20px] font-normal hover:underline text-right"
                       style={{
-                        color: theme === "light" ? "#0066CC" : "#4A9EFF",
+                        color: "var(--accent-primary)",
                       }}>
                       {app.developerProfile.contactEmail}
                     </a>

@@ -15,6 +15,7 @@ import {
 
 const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
   app,
+  theme,
   isAuthenticated,
   isWebView,
   installingApp,
@@ -29,11 +30,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
         {/* Back Button */}
         <button
           onClick={handleBackNavigation}
-          className="flex items-center justify-center w-[40px] h-[40px] rounded-full mb-[24px] transition-all"
-          style={{
-            backgroundColor: "var(--bg-secondary)",
-            color: "var(--text-primary)",
-          }}
+          className="flex items-center justify-center w-[40px] h-[40px] rounded-full mb-[24px] transition-all bg-secondary text-foreground"
           aria-label="Back to App Store">
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -81,11 +78,9 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                   {APP_TAGS[app.name].slice(0, 2).map((tag, index) => (
                     <div
                       key={index}
-                      className="max-h-[24px] px-3 py-1 rounded-full text-[12px] font-normal leading-tight"
+                      className="max-h-[24px] px-3 py-1 rounded-full text-[12px] font-normal leading-tight bg-secondary text-muted-foreground"
                       style={{
                         fontFamily: '"Red Hat Display", sans-serif',
-                        backgroundColor: "var(--bg-secondary)",
-                        color: "var(--text-secondary)",
                       }}>
                       {tag}
                     </div>
@@ -105,8 +100,8 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                   className="flex-1 h-[36px] text-[14px] font-medium rounded-full opacity-40 cursor-not-allowed"
                   style={{
                     fontFamily: '"Red Hat Display", sans-serif',
-                    backgroundColor: "var(--button-bg)",
-                    color: "var(--button-text)",
+                    backgroundColor: theme === "light" ? "#000000" : "#ffffff",
+                    color: theme === "light" ? "#ffffff" : "#000000",
                   }}>
                   Installed
                 </Button>
@@ -117,8 +112,8 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                   className="flex-1 h-[36px] text-[14px] font-medium rounded-full transition-all"
                   style={{
                     fontFamily: '"Red Hat Display", sans-serif',
-                    backgroundColor: "var(--button-bg)",
-                    color: "var(--button-text)",
+                    backgroundColor: theme === "light" ? "#000000" : "#ffffff",
+                    color: theme === "light" ? "#ffffff" : "#000000",
                   }}>
                   {installingApp ? "Getting…" : "Get"}
                 </Button>
@@ -129,8 +124,8 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                 className="flex-1 h-[36px] text-[14px] font-medium rounded-full transition-all"
                 style={{
                   fontFamily: '"Red Hat Display", sans-serif',
-                  backgroundColor: "var(--button-bg)",
-                  color: "var(--button-text)",
+                  backgroundColor: theme === "light" ? "#000000" : "#ffffff",
+                  color: theme === "light" ? "#ffffff" : "#000000",
                 }}>
                 Get
               </Button>
@@ -140,8 +135,8 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
             <button
               className="min-w-[93px] h-[36px] flex items-center justify-center rounded-full border transition-colors  gap-1 text-[14px]"
               style={{
-                borderColor: "var(--border-color)",
-                color: "var(--text-primary)",
+                borderColor: theme === "light" ? "#dadce0" : "rgba(255, 255, 255, 0.2)",
+                color: theme === "light" ? "#000000" : "#ffffff",
               }}
               onClick={async () => {
                 try {
@@ -183,19 +178,19 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
             <div
               className="flex items-center  p-3 rounded-lg"
               style={{
-                backgroundColor: "var(--error-bg, #fef2f2)",
+                backgroundColor: theme === "light" ? "#FDECEA" : "rgba(255, 255, 255, 0.05)",
 
               }}>
               <Info
                 className="h-5 w-5"
                 style={{
-                  color: "var(--error-color)",
+                  color: theme === "light" ? "#B91C1C" : "#FCA5A5",
                 }}
               />
               <span
                 className="text-[14px]"
                 style={{
-                  color: "var(--error-color)",
+                  color: theme === "light" ? "#B91C1C" : "#FCA5A5",
                 }}>
                 This app appears to be offline. Some actions may not work.
               </span>
@@ -213,7 +208,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
               className="text-[16px] font-semibold mb-[24px]"
               style={{
                 fontFamily: '"Red Hat Display", sans-serif',
-                color: "var(--text-primary)",
+                color: theme === "light" ? "#000000" : "#ffffff",
               }}>
               Permissions
             </h2>
@@ -221,7 +216,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
               className="text-[14px] mb-4 leading-[1.6]"
               style={{
                 fontFamily: '"Red Hat Display", sans-serif',
-                color: "var(--text-secondary)",
+                color: theme === "light" ? "#5f6368" : "#9CA3AF",
               }}>
               Permissions that will be requested when using this app on your phone.
             </p>
@@ -230,10 +225,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                 app.permissions.map((permission, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-[16px] rounded-[16px]"
-                    style={{
-                      backgroundColor: "var(--primaary-foreground)",
-                    }}>
+                    className="flex items-center justify-between p-[16px] rounded-[16px] bg-secondary">
                     <div className="flex items-center">
                       <div
                         className=" h-9 flex items-center justify-center rounded-lg mr-[2px]"
@@ -241,7 +233,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                         }}>
                         <div
                           style={{
-                            color: "var(--text-secondary)",
+                            color: theme === "light" ? "#000000" : "#9CA3AF",
                           }}>
                           {getPermissionIcon(permission.type || "Display")}
                         </div>
@@ -250,7 +242,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                         className="text-[14px] font-medium"
                         style={{
                           fontFamily: '"Red Hat Display", sans-serif',
-                          color: "var(--text-primary)",
+                          color: theme === "light" ? "#000000" : "#E4E4E7",
                         }}>
                         {(permission.type || "Display").charAt(0).toUpperCase() + (permission.type || "Display").slice(1).toLowerCase()}
                       </div>
@@ -259,30 +251,18 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                       className="text-[14px] text-right max-w-[45%]"
                       style={{
                         fontFamily: '"Red Hat Display", sans-serif',
-                        color: "var(--text-secondary)",
+                        color: theme === "light" ? "#5f6368" : "#9CA3AF",
                       }}>
                       {permission.description || getPermissionDescription(permission.type || "Display")}
                     </div>
                   </div>
                 ))
               ) : (
-                <div
-                  className="text-center py-6 rounded-lg"
-                  style={{
-                    backgroundColor: "var(--primaary-foreground)",
-                  }}>
-                  <div
-                    className="text-[14px] font-medium"
-                    style={{
-                      color: "var(--text-primary)",
-                    }}>
+                <div className="text-center py-6 rounded-lg bg-secondary">
+                  <div className="text-[14px] font-medium text-foreground">
                     No special permissions required
                   </div>
-                  <div
-                    className="text-[12px] mt-1"
-                    style={{
-                      color: "var(--text-secondary)",
-                    }}>
+                  <div className="text-[12px] mt-1 text-muted-foreground">
                     This app runs with standard system permissions only.
                   </div>
                 </div>
@@ -298,7 +278,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
               className="text-[16px] font-semibold mb-[24px]"
               style={{
                 fontFamily: '"Red Hat Display", sans-serif',
-                color: "var(--text-primary)",
+                color: theme === "light" ? "#000000" : "#ffffff",
               }}>
               Hardware
             </h2>
@@ -306,7 +286,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
               className="text-[14px] mb-4 leading-[1.6]"
               style={{
                 fontFamily: '"Red Hat Display", sans-serif',
-                color: "var(--text-secondary)",
+                color: theme === "light" ? "#5f6368" : "#9CA3AF",
               }}>
               Hardware components required or recommended for this app.
             </p>
@@ -315,15 +295,12 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                 app.hardwareRequirements.map((req, index) => (
                   <div
                     key={index}
-                    className="flex  justify-between p-[15px] rounded-[16px] items-center"
-                    style={{
-                      backgroundColor: "var(--primaary-foreground)",
-                    }}>
+                    className="flex  justify-between p-[15px] rounded-[16px] bg-secondary items-center">
                     <div className="flex items-center ">
                       <div
                         className=" h-9 flex items-center justify-center rounded-lg"
                         style={{
-                          color: "var(--text-secondary)",
+                          color: theme === "light" ? "#000000" : "#9CA3AF",
                         }}>
                         {hardwareIcons[req.type]}
                       </div>
@@ -331,7 +308,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                         className="text-[14px] font-medium"
                         style={{
                           fontFamily: '"Red Hat Display", sans-serif',
-                          color: "var(--text-primary)",
+                          color: theme === "light" ? "#000000" : "#E4E4E7",
                         }}>
                         {req.type.charAt(0).toUpperCase() + req.type.slice(1).toLowerCase()}
                       </div>
@@ -343,8 +320,12 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                           style={{
                             color:
                               req.level === HardwareRequirementLevel.REQUIRED
-                                ? "var(--warning-text)"
-                                : "var(--text-secondary)",
+                                ? theme === "light"
+                                  ? "#DC2626"
+                                  : "#FCA5A5"
+                                : theme === "light"
+                                  ? "#5f6368"
+                                  : "#9CA3AF",
                           }}>
                           {req.level === HardwareRequirementLevel.REQUIRED ? "Required" : "Optional"}
                         </div>
@@ -354,7 +335,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                           className="text-[12px] text-right"
                           style={{
                             fontFamily: '"Red Hat Display", sans-serif',
-                            color: "var(--text-secondary)",
+                            color: theme === "light" ? "#5f6368" : "#9CA3AF",
                           }}>
                           {req.description}
                         </div>
@@ -363,23 +344,11 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                   </div>
                 ))
               ) : (
-                <div
-                  className="text-center py-6 rounded-lg"
-                  style={{
-                    backgroundColor: "var(--primaary-foreground)",
-                  }}>
-                  <div
-                    className="text-[14px] font-medium"
-                    style={{
-                      color: "var(--text-primary)",
-                    }}>
+                <div className="text-center py-6 rounded-lg bg-secondary">
+                  <div className="text-[14px] font-medium text-foreground">
                     No specific hardware requirements
                   </div>
-                  <div
-                    className="text-[12px] mt-1"
-                    style={{
-                      color: "var(--text-secondary)",
-                    }}>
+                  <div className="text-[12px] mt-1 text-muted-foreground">
                     This app works with any glasses configuration.
                   </div>
                 </div>
@@ -395,7 +364,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
               className="text-[16px] font-semibold mb-[24px]"
               style={{
                 fontFamily: '"Red Hat Display", sans-serif',
-                color: "var(--text-primary)",
+                color: theme === "light" ? "#000000" : "#ffffff",
               }}>
               Contact
             </h2>
@@ -403,7 +372,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
               className="text-[14px] mb-4 leading-[1.6]"
               style={{
                 fontFamily: '"Red Hat Display", sans-serif',
-                color: "var(--text-secondary)",
+                color: theme === "light" ? "#5f6368" : "#9CA3AF",
               }}>
               Get in touch with the developer or learn more about this app.
             </p>
@@ -412,14 +381,14 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                 <span
                   className="text-[14px] font-medium"
                   style={{
-                    color: "var(--text-secondary)",
+                    color: theme === "light" ? "#5f6368" : "#9CA3AF",
                   }}>
                   Company
                 </span>
                 <span
                   className="text-[14px] font-normal text-right"
                   style={{
-                    color: "var(--text-primary)",
+                    color: theme === "light" ? "#000000" : "#E4E4E7",
                   }}>
                   {app.orgName || app.developerProfile?.company || "Mentra"}
                 </span>
@@ -430,7 +399,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                   <span
                     className="text-[14px] font-medium"
                     style={{
-                      color: "var(--text-secondary)",
+                      color: theme === "light" ? "#5f6368" : "#9CA3AF",
                     }}>
                     Website
                   </span>
@@ -440,7 +409,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                     rel="noopener noreferrer"
                     className="text-[14px] font-normal hover:underline text-right"
                     style={{
-                      color: "var(--accent-primary)",
+                      color: theme === "light" ? "#0066CC" : "#4A9EFF",
                     }}>
                     {app.developerProfile.website}
                   </a>
@@ -452,7 +421,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                   <span
                     className="text-[14px] font-medium"
                     style={{
-                      color: "var(--text-secondary)",
+                      color: theme === "light" ? "#5f6368" : "#9CA3AF",
                     }}>
                     Contact
                   </span>
@@ -460,7 +429,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                     href={`mailto:${app.developerProfile.contactEmail}`}
                     className="text-[14px] font-normal hover:underline text-right"
                     style={{
-                      color: "var(--accent-primary)",
+                      color: theme === "light" ? "#0066CC" : "#4A9EFF",
                     }}>
                     {app.developerProfile.contactEmail}
                   </a>
