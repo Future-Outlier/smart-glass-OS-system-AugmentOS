@@ -1,46 +1,159 @@
 ---
-title: MentraOS Developer Documentation
-description: Build smart glasses apps with MentraOS, the cloud OS for wearable devices. Learn what MentraOS is, supported hardware, quickstart, deployment, and resources.
+title: "Welcome to MentraOS"
+description: "Cloud operating system for smart glasses"
+mode: "custom"
 ---
 
-# Intro to the MentraOS SDK
+<div className="px-4 pt-16 pb-12 lg:pt-20 max-w-4xl mx-auto text-center space-y-6">
+  <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-zinc-50 tracking-tight mb-3">
+    Build with <span style={{color: "#00b869"}}>MentraOS</span>
+  </h1>
 
-## What is MentraOS?
+<p className="max-w-2xl mx-auto text-base text-gray-600 dark:text-zinc-400 leading-relaxed">
+  Build and deploy smart glasses apps on MentraOS.
+</p>
 
-MentraOS is a cloud operating system for smart glasses that handles the hard parts: connections, Bluetooth, streaming, and more. This lets you focus on creating great smart glasses apps.
+  <a
+    href="/quickstart"
+    className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-zinc-500 hover:opacity-80 transition-colors"
+    style={{color: "#00b869"}}
+  >
+    Build your first app
+    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+  </a>
+</div>
 
-<img
-  className="block dark:hidden"
-  src="/static/img/mentraos-arch-light.png"
-  alt="MentraOS architecture"
-  />
-<img
-  className="hidden dark:block"
-  src="/static/img/mentraos-arch-dark.png"
-  alt="MentraOS architecture"
-  />
+<section className="px-4 max-w-6xl mx-auto space-y-4">
 
-As a Cloud OS, you can write apps in JavaScript/TypeScript (with Python coming soon) and use our SDK to build for smart glasses. Our SDK enables you to access smart glasses I/O with low latency from a cloud application.
+  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <a
+      href="/quickstart"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/30 bg-gradient-to-br from-slate-50/5 to-green-50/5 dark:from-slate-800/20 dark:to-green-900/10 transition hover:border-green-300/40 hover:bg-gradient-to-br hover:from-green-50/10 hover:to-green-100/10 dark:hover:from-green-900/15 dark:hover:to-green-800/15 shadow-md hover:shadow-lg hover:shadow-green-500/10"
+    >
+      <img
+        src="/static/img/mentraos-arch-dark.png"
+        alt="App Developers"
+        className="aspect-[4/3] w-full object-cover"
+        style={{pointerEvents: "none"}}
+      />
+      <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-left">
+        <h3 className="text-base font-semibold group-hover:opacity-80" style={{color: "#00b869"}}>
+          App Devs
+        </h3>
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          Developers who want to build smart glasses apps.
+        </p>
+      </div>
+    </a>
 
-## Compatible Hardware
+    <a
+      href="/contributing"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/30 bg-gradient-to-br from-slate-50/5 to-green-50/5 dark:from-slate-800/20 dark:to-green-900/10 transition hover:border-green-300/40 hover:bg-gradient-to-br hover:from-green-50/10 hover:to-green-100/10 dark:hover:from-green-900/15 dark:hover:to-green-800/15 shadow-md hover:shadow-lg hover:shadow-green-500/10"
+    >
+      <img
+        src="/static/img/mentraos-arch-dark.png"
+        alt="OS Developers"
+        className="aspect-[4/3] w-full object-cover"
+        style={{pointerEvents: "none"}}
+      />
+      <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-left">
+        <h3 className="text-base font-semibold group-hover:opacity-80" style={{color: "#00b869"}}>
+          OS Devs
+        </h3>
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          Developers working on the core MentraOS platform.
+        </p>
+      </div>
+    </a>
 
-You'll need [compatible smart glasses](https://mentra.glass/os#glasses) to build with MentraOS.
+    <a
+      href="/asg-client/README"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/30 bg-gradient-to-br from-slate-50/5 to-green-50/5 dark:from-slate-800/20 dark:to-green-900/10 transition hover:border-green-300/40 hover:bg-gradient-to-br hover:from-green-50/10 hover:to-green-100/10 dark:hover:from-green-900/15 dark:hover:to-green-800/15 shadow-md hover:shadow-lg hover:shadow-green-500/10"
+    >
+      <img
+        src="/static/img/mentraos-arch-dark.png"
+        alt="Glasses OEMs"
+        className="aspect-[4/3] w-full object-cover"
+        style={{pointerEvents: "none"}}
+      />
+      <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-left">
+        <h3 className="text-base font-semibold group-hover:opacity-80" style={{color: "#00b869"}}>
+          Glasses OEM
+        </h3>
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          Companies building smart glasses that run MentraOS.
+        </p>
+      </div>
+    </a>
+  </div>
+</section>
 
-## Getting Started
+<section className="px-4 pt-12 pb-20 max-w-6xl mx-auto space-y-4">
+  <div className="text-center">
+    <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
+      Example Apps
+    </h2>
+  </div>
 
-- [Quickstart](/quickstart) - Build your first app in minutes
-- [Complete Setup](/getting-started) - Detailed step-by-step guide
+  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <a
+      href="https://github.com/Mentra-Community/MentraOS-Cloud-Example-App"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/30 bg-gradient-to-br from-slate-50/5 to-green-50/5 dark:from-slate-800/20 dark:to-green-900/10 transition hover:border-green-300/40 hover:bg-gradient-to-br hover:from-green-50/10 hover:to-green-100/10 dark:hover:from-green-900/15 dark:hover:to-green-800/15 shadow-md hover:shadow-lg hover:shadow-green-500/10"
+    >
+      <img
+        src="/static/img/mentraos-arch-dark.png"
+        alt="Basic Example App"
+        className="aspect-[4/3] w-full object-cover"
+        style={{pointerEvents: "none"}}
+      />
+      <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-left">
+        <h3 className="text-base font-semibold group-hover:opacity-80" style={{color: "#00b869"}}>
+          Basic Example App
+        </h3>
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          A simple getting started app that demonstrates core MentraOS functionality.
+        </p>
+      </div>
+    </a>
 
-## Deployment
+    <a
+      href="https://github.com/Mentra-Community/MentraOS-Camera-Example-App"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/30 bg-gradient-to-br from-slate-50/5 to-green-50/5 dark:from-slate-800/20 dark:to-green-900/10 transition hover:border-green-300/40 hover:bg-gradient-to-br hover:from-green-50/10 hover:to-green-100/10 dark:hover:from-green-900/15 dark:hover:to-green-800/15 shadow-md hover:shadow-lg hover:shadow-green-500/10"
+    >
+      <img
+        src="/static/img/mentraos-arch-dark.png"
+        alt="Camera Example App"
+        className="aspect-[4/3] w-full object-cover"
+        style={{pointerEvents: "none"}}
+      />
+      <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-left">
+        <h3 className="text-base font-semibold group-hover:opacity-80" style={{color: "#00b869"}}>
+          Camera Example App
+        </h3>
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          Learn how to capture photos and stream video using camera smart glasses.
+        </p>
+      </div>
+    </a>
 
-Developers can deploy finished apps to the [Mentra Store](https://apps.mentra.glass) for users to discover and install.
-
-## Resources
-
-- [Mentra Website](https://mentra.glass)
-- [GitHub Repo](https://github.com/Mentra-Community/MentraOS)
-- [Example App Repo](https://github.com/Mentra-Community/MentraOS-Cloud-Example-App)
-- [Live-Captions Repo](https://github.com/Mentra-Community/LiveCaptionsOnSmartGlasses) - A more in-depth example with app settings support
-- [Discord Community](https://discord.gg/5ukNvkEAqT) - Get help from the team and community
-
-Ready to dive deeper? Follow our [Quickstart guide](/quickstart) to build your first app!
+    <a
+      href="https://github.com/Mentra-Community/LiveCaptionsOnSmartGlasses"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/30 bg-gradient-to-br from-slate-50/5 to-green-50/5 dark:from-slate-800/20 dark:to-green-900/10 transition hover:border-green-300/40 hover:bg-gradient-to-br hover:from-green-50/10 hover:to-green-100/10 dark:hover:from-green-900/15 dark:hover:to-green-800/15 shadow-md hover:shadow-lg hover:shadow-green-500/10"
+    >
+      <img
+        src="/static/img/mentraos-arch-dark.png"
+        alt="Live Captions"
+        className="aspect-[4/3] w-full object-cover"
+        style={{pointerEvents: "none"}}
+      />
+      <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-left">
+        <h3 className="text-base font-semibold group-hover:opacity-80" style={{color: "#00b869"}}>
+          Live Captions
+        </h3>
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          A production app that provides real-time captions on smart glasses.
+        </p>
+      </div>
+    </a>
+  </div>
+</section>

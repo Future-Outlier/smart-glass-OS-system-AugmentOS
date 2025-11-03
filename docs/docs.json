@@ -3,99 +3,130 @@
   "theme": "mint",
   "name": "MentraOS",
   "colors": {
-    "primary": "#40915e",
-    "light": "#5bce84",
-    "dark": "#398254"
+    "primary": "#00b869",
+    "light": "#00b869",
+    "dark": "#00b869"
   },
   "favicon": "/static/img/favicon.ico",
   "navigation": {
-    "pages": ["index"],
-    "groups": [
+    "tabs": [
       {
-        "group": "Getting Started",
-        "pages": [
-          "quickstart",
-          "example-apps",
-          "getting-started",
-          "voice-activation",
-          "railway-deployment",
-          "ubuntu-deployment"
+        "tab": "Welcome",
+        "groups": [
+          {
+            "group": "Welcome",
+            "pages": ["index"]
+          }
         ]
       },
       {
-        "group": "Core Concepts",
-        "pages": [
-          "core-concepts",
-          "app-lifecycle",
-          "events",
-          "permissions",
-          "layouts",
-          "settings",
-          "audio",
-          "led",
-          "tools",
-          "capabilities",
+        "tab": "App Devs",
+        "groups": [
           {
-            "group": "Camera",
-            "pages": ["camera/README", "camera/photo-capture", "camera/rtmp-streaming"]
+            "group": "Getting Started",
+            "pages": [
+              "quickstart",
+              "example-apps",
+              {
+                "group": "Deployment",
+                "pages": [
+                  "deployment",
+                  "railway-deployment", 
+                  "ubuntu-deployment"
+                ]
+              }
+            ]
           },
-          "webview-auth-overview",
-          "react-webviews",
-          "dashboard"
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "core-concepts",
+              "app-lifecycle",
+              "events",
+              "permissions",
+              "layouts",
+              "settings",
+              "audio",
+              "led",
+              "tools",
+              "capabilities",
+              {
+                "group": "Camera",
+                "pages": ["camera/README", "camera/photo-capture", "camera/rtmp-streaming"]
+              },
+              "webview-auth-overview",
+              "react-webviews",
+              "dashboard"
+            ]
+          },
+          {
+            "group": "SDK Reference",
+            "pages": [
+              "reference/index",
+              "reference/app-server",
+              "reference/app-session",
+              {
+                "group": "Managers",
+                "pages": [
+                  "reference/managers/event-manager",
+                  "reference/managers/layout-manager",
+                  "reference/managers/settings-manager",
+                  "reference/managers/audio-manager",
+                  "reference/managers/led-manager",
+                  "reference/managers/camera",
+                  "reference/managers/location-manager"
+                ]
+              },
+              "reference/enums",
+              {
+                "group": "Interfaces",
+                "pages": [
+                  "reference/interfaces/config-types",
+                  "reference/interfaces/event-types",
+                  "reference/interfaces/layout-types",
+                  "reference/interfaces/capabilities",
+                  "reference/interfaces/webhook-types",
+                  "reference/interfaces/message-types",
+                  "reference/interfaces/tool-types",
+                  "reference/interfaces/setting-types"
+                ]
+              },
+              "reference/dashboard-api",
+              "reference/utilities"
+            ]
+          }
         ]
       },
       {
-        "group": "SDK Reference",
-        "pages": [
-          "reference/index",
-          "reference/app-server",
-          "reference/app-session",
+        "tab": "OS Devs",
+        "groups": [
           {
-            "group": "Managers",
+            "group": "Contributing",
             "pages": [
-              "reference/managers/event-manager",
-              "reference/managers/layout-manager",
-              "reference/managers/settings-manager",
-              "reference/managers/audio-manager",
-              "reference/managers/led-manager",
-              "reference/managers/camera",
-              "reference/managers/location-manager"
+              "contributing",
+              "contributing/mentraos-manager-guidelines",
+              "contributing/mentraos-asg-client-guidelines",
+              "contributing/add-new-glasses-support",
+              {
+                "group": "ASG Client",
+                "pages": [
+                  "asg-client/README",
+                  "asg-client/architecture",
+                  "asg-client/mentra-live",
+                  "asg-client/button-system",
+                  "asg-client/rtmp-streaming"
+                ]
+              }
             ]
-          },
-          "reference/enums",
-          {
-            "group": "Interfaces",
-            "pages": [
-              "reference/interfaces/config-types",
-              "reference/interfaces/event-types",
-              "reference/interfaces/layout-types",
-              "reference/interfaces/capabilities",
-              "reference/interfaces/webhook-types",
-              "reference/interfaces/message-types",
-              "reference/interfaces/tool-types",
-              "reference/interfaces/setting-types"
-            ]
-          },
-          "reference/dashboard-api",
-          "reference/utilities"
+          }
         ]
       },
       {
-        "group": "Contributing",
-        "pages": [
-          "contributing",
-          "contributing/mentraos-manager-guidelines",
-          "contributing/mentraos-asg-client-guidelines",
-          "contributing/add-new-glasses-support",
+        "tab": "Glasses OEMs", 
+        "groups": [
           {
-            "group": "ASG Client",
-            "pages": [
-              "asg-client/README",
-              "asg-client/architecture",
-              "asg-client/mentra-live",
-              "asg-client/button-system",
-              "asg-client/rtmp-streaming"
-            ]
+            "group": "Glasses OEMs",
+            "pages": ["glasses-oems"]
           }
         ]
       }
