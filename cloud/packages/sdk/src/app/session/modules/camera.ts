@@ -766,7 +766,7 @@ export class CameraModule {
 
     // Stop streaming if active
     if (this.isStreaming) {
-      this.stopStream().catch(error => {
+      this.stopStream().catch((error) => {
         this.logger.error({error}, "Error stopping stream during cleanup")
       })
     }
