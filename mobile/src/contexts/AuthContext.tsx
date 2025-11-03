@@ -1,10 +1,11 @@
-import {createContext, useEffect, useState, useContext} from "react"
-import {supabase} from "@/supabase/supabaseClient"
+import {FC, createContext, useEffect, useState, useContext} from "react"
 import {LogoutUtils} from "@/utils/LogoutUtils"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"
 
 interface AuthContextProps {
-  user: any // or a more specific type from @supabase/supabase-js
-  session: any
+  user: MentraAuthUser | null
+  session: MentraAuthSession | null
   loading: boolean
   logout: () => void
 }
@@ -16,18 +17,18 @@ const AuthContext = createContext<AuthContextProps>({
   logout: () => {},
 })
 
-export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
+export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
   const [session, setSession] = useState<any>(null)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let subscription: {unsubscribe: () => void} | undefined
+
     // 1. Check for an active session on mount
     const getInitialSession = async () => {
-      const {
-        data: {session},
-      } = await supabase.auth.getSession()
-
+      const {data: initialSessionData} = await mentraAuthProvider.getSession()
+      const session = initialSessionData?.session
       console.log("AuthContext: Initial session:", session)
       console.log("AuthContext: Initial user:", session?.user)
       setSession(session)
@@ -35,22 +36,33 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({children}) 
       setLoading(false)
     }
 
+    // 2. Setup auth state change listener
+    const setupAuthListener = async () => {
+      try {
+        const {data: authStateChangeData} = await mentraAuthProvider.onAuthStateChange((event, session: any) => {
+          console.log("AuthContext: Auth state changed:", event)
+          console.log("AuthContext: Session:", session)
+          console.log("AuthContext: User:", session?.user)
+          setSession(session)
+          setUser(session?.user ?? null)
+          setLoading(false)
+        })
+
+        if (authStateChangeData?.subscription) {
+          subscription = authStateChangeData.subscription
+        }
+      } catch (error) {
+        console.error("AuthContext: Error setting up auth listener:", error)
+      }
+    }
+
+    // Run both initial checks
     getInitialSession().catch(error => {
       console.error("AuthContext: Error getting initial session:", error)
       setLoading(false)
     })
 
-    // 2. Listen for auth changes
-    const {
-      data: {subscription},
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("AuthContext: Auth state changed:", event)
-      console.log("AuthContext: Session:", session)
-      console.log("AuthContext: User:", session?.user)
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    setupAuthListener()
 
     // Cleanup the listener
     return () => {

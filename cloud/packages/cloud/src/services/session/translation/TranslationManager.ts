@@ -52,6 +52,8 @@ export class TranslationManager {
   private isBufferingAudio = false;
   private audioBufferTimeout?: NodeJS.Timeout;
   private audioBufferTimeoutMs = 10000; // 10 second timeout
+  private DEPLOYMENT_REGION: string = process.env.DEPLOYMENT_REGION || "global";
+  private IS_CHINA: boolean = this.DEPLOYMENT_REGION === "china";
 
   // Health Monitoring
   private healthCheckInterval?: NodeJS.Timeout;
@@ -489,19 +491,49 @@ export class TranslationManager {
       const availableProviders: TranslationProviderType[] = [];
       const providerErrors: Array<{ provider: string; error: Error }> = [];
 
-      // Try to initialize Azure provider
       try {
-        const { AzureTranslationProvider } = await import(
-          "./providers/AzureTranslationProvider"
+        const { AlibabaTranslationProvider } = await import(
+          "./providers/AlibabaTranslationProvider"
         );
-        const azureProvider = new AzureTranslationProvider(
-          this.config.azure,
+        const alibabaProvider = new AlibabaTranslationProvider(
+          this.config.alibaba,
           this.logger,
         );
-        await azureProvider.initialize();
-        this.providers.set(TranslationProviderType.AZURE, azureProvider);
-        availableProviders.push(TranslationProviderType.AZURE);
-        this.logger.info("Azure translation provider initialized successfully");
+        await alibabaProvider.initialize();
+        this.providers.set(TranslationProviderType.ALIBABA, alibabaProvider);
+        availableProviders.push(TranslationProviderType.ALIBABA);
+        this.logger.info(
+          "Alibaba translation provider initialized successfully",
+        );
+      } catch (error) {
+        this.logger.error(
+          error,
+          "Failed to initialize Alibaba translation provider",
+        );
+        providerErrors.push({ provider: "Alibaba", error: error as Error });
+      }
+
+      // Try to initialize Azure provider
+      try {
+        if (!this.IS_CHINA) {
+          const { AzureTranslationProvider } = await import(
+            "./providers/AzureTranslationProvider"
+          );
+          const azureProvider = new AzureTranslationProvider(
+            this.config.azure,
+            this.logger,
+          );
+          await azureProvider.initialize();
+          this.providers.set(TranslationProviderType.AZURE, azureProvider);
+          availableProviders.push(TranslationProviderType.AZURE);
+          this.logger.info(
+            "Azure translation provider initialized successfully",
+          );
+        } else {
+          this.logger.info(
+            "Azure translation provider not initialized - China region",
+          );
+        }
       } catch (error) {
         this.logger.error(
           error,
@@ -512,19 +544,25 @@ export class TranslationManager {
 
       // Try to initialize Soniox provider
       try {
-        const { SonioxTranslationProvider } = await import(
-          "./providers/SonioxTranslationProvider"
-        );
-        const sonioxProvider = new SonioxTranslationProvider(
-          this.config.soniox,
-          this.logger,
-        );
-        await sonioxProvider.initialize();
-        this.providers.set(TranslationProviderType.SONIOX, sonioxProvider);
-        availableProviders.push(TranslationProviderType.SONIOX);
-        this.logger.info(
-          "Soniox translation provider initialized successfully",
-        );
+        if (!this.IS_CHINA) {
+          const { SonioxTranslationProvider } = await import(
+            "./providers/SonioxTranslationProvider"
+          );
+          const sonioxProvider = new SonioxTranslationProvider(
+            this.config.soniox,
+            this.logger,
+          );
+          await sonioxProvider.initialize();
+          this.providers.set(TranslationProviderType.SONIOX, sonioxProvider);
+          availableProviders.push(TranslationProviderType.SONIOX);
+          this.logger.info(
+            "Soniox translation provider initialized successfully",
+          );
+        } else {
+          this.logger.info(
+            "Soniox translation provider not initialized - China region",
+          );
+        }
       } catch (error) {
         this.logger.error(
           error,
@@ -857,6 +895,35 @@ export class TranslationManager {
     targetLanguage: string,
     options?: TranslationProviderSelectionOptions,
   ): Promise<TranslationProvider> {
+    if (this.IS_CHINA) {
+      const chineseProvider = this.providers.get(
+        TranslationProviderType.ALIBABA,
+      ) as TranslationProvider;
+
+      const supportsLanguagePair = chineseProvider?.supportsLanguagePair(
+        sourceLanguage,
+        targetLanguage,
+      );
+      if (chineseProvider && supportsLanguagePair) {
+        return chineseProvider;
+      }
+
+      this.logger.warn(
+        {
+          sourceLanguage,
+          targetLanguage,
+          provider: TranslationProviderType.ALIBABA,
+        },
+        "Chinese provider does not support language pair",
+      );
+
+      throw new InvalidLanguagePairError(
+        `No provider supports translation from ${sourceLanguage} to ${targetLanguage}`,
+        sourceLanguage,
+        targetLanguage,
+      );
+    }
+
     const excludedProviders = new Set(options?.excludeProviders || []);
     const preferredProvider = options?.preferProvider;
 

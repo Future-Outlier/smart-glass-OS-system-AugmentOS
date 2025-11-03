@@ -12,31 +12,37 @@ import {registerGlobals} from "@livekit/react-native-webrtc"
 import {initializeSettings} from "@/stores/settings"
 import {ConsoleLogger} from "@/utils/debug/console"
 
-Sentry.init({
-  dsn: Constants.expoConfig?.extra?.SENTRY_DSN,
+// Only initialize Sentry if DSN is provided
+const sentryDsn = Constants.expoConfig?.extra?.SENTRY_DSN
+const deploymentRegion = Constants.expoConfig?.extra?.DEPLOYMENT_REGION
+const isChina = deploymentRegion === "china"
+if (!isChina && sentryDsn && sentryDsn !== "secret" && sentryDsn.trim() !== "") {
+  Sentry.init({
+    dsn: sentryDsn,
 
-  // Adds more context data to events (IP address, cookies, user, etc.)
-  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
-  sendDefaultPii: true,
+    // Adds more context data to events (IP address, cookies, user, etc.)
+    // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+    sendDefaultPii: true,
 
-  // send 1/10th of events in prod:
-  tracesSampleRate: __DEV__ ? 1.0 : 0.1,
+    // send 1/10th of events in prod:
+    tracesSampleRate: __DEV__ ? 1.0 : 0.1,
 
-  // Configure Session Replay
-  // DISABLED: Mobile replay causes MediaCodec spam by recording screen every 5 seconds
-  // replaysSessionSampleRate: 0.1,
-  // replaysOnErrorSampleRate: 1,
-  // integrations: [Sentry.mobileReplayIntegration()],
+    // Configure Session Replay
+    // DISABLED: Mobile replay causes MediaCodec spam by recording screen every 5 seconds
+    // replaysSessionSampleRate: 0.1,
+    // replaysOnErrorSampleRate: 1,
+    // integrations: [Sentry.mobileReplayIntegration()],
 
-  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-  // spotlight: __DEV__,
+    // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+    // spotlight: __DEV__,
 
-  // beforeSend(event, hint) {
-  //   // console.log("Sentry.beforeSend", event, hint)
-  //   console.log("Sentry.beforeSend", hint)
-  //   return event
-  // },
-})
+    // beforeSend(event, hint) {
+    //   // console.log("Sentry.beforeSend", event, hint)
+    //   console.log("Sentry.beforeSend", hint)
+    //   return event
+    // },
+  })
+}
 
 // initialize the settings store
 initializeSettings()

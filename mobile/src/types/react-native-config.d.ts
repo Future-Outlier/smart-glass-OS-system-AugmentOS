@@ -16,6 +16,14 @@ declare module "react-native-config" {
 
     // Sentry settings
     SENTRY_DSN?: string
+
+    // Authing settings
+    AUTHING_APP_ID?: string
+    AUTHING_APP_SECRET?: string
+    AUTHING_APP_DOMAIN?: string
+
+    // Deployment region
+    DEPLOYMENT_REGION?: string
   }
 
   export const Config: NativeConfig

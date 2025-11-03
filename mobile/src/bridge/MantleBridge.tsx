@@ -6,6 +6,7 @@ import socketComms from "@/services/SocketComms"
 import {useSettingsStore} from "@/stores/settings"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import Constants from "expo-constants"
 
 import CoreModule from "core"
 import Toast from "react-native-toast-message"
@@ -14,6 +15,7 @@ export class MantleBridge {
   private static instance: MantleBridge | null = null
   private messageEventSubscription: any = null
   private lastMessage: string = ""
+  private IS_CHINA_DEPLOYMENT: boolean = Constants.expoConfig?.extra?.DEPLOYMENT_REGION === "china"
 
   // Private constructor to enforce singleton pattern
   private constructor() {
@@ -252,7 +254,7 @@ export class MantleBridge {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          if (livekit.isRoomConnected()) {
+          if (!this.IS_CHINA_DEPLOYMENT && livekit.isRoomConnected()) {
             livekit.addPcm(bytes)
           } else {
             socketComms.sendBinary(bytes)
