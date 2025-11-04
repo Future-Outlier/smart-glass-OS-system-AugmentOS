@@ -1,6 +1,5 @@
 import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import OtaProgressSection from "@/components/glasses/OtaProgressSection"
-import ActionButton from "@/components/ui/ActionButton"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -40,7 +39,7 @@ export default function DeviceSettings() {
   const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS_KEYS.default_button_action_app)
   const [devMode] = useSetting(SETTINGS_KEYS.dev_mode)
 
-  const {push} = useNavigationHistory()
+  const {push, goBack} = useNavigationHistory()
   const applets = useApplets()
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
@@ -93,6 +92,7 @@ export default function DeviceSettings() {
           text: translate("common:yes"),
           onPress: () => {
             CoreModule.forget()
+            goBack()
           },
         },
       ],

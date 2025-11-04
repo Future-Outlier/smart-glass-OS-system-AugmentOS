@@ -246,7 +246,7 @@ export default function SelectGlassesBluetoothScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}} safeAreaEdges={["bottom"]}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}} safeAreaEdges={["bottom"]}>
       <Header
         leftIcon="caretLeft"
         onLeftPress={handleForgetGlasses}
@@ -255,39 +255,38 @@ export default function SelectGlassesBluetoothScreen() {
             text="Help"
             variant="icon"
             onPress={() => setShowTroubleshootingModal(true)}
-            buttonStyle={{marginRight: theme.spacing.md}}
+            buttonStyle={{marginRight: theme.spacing.lg}}
           />
         }
       />
       <View style={themed($container)}>
         <View style={themed($contentContainer)}>
           <Image source={getGlassesOpenImage(glassesModelName)} style={themed($glassesImage)} />
+          <ScrollView
+            style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.lg, paddingRight: theme.spacing.lg}}
+            contentContainerStyle={{flex: 1, justifyContent: "center", height: 300}}>
+            <Animated.View style={scrollViewAnimatedStyle}>
+              {searchResults && searchResults.length > 0 && (
+                <Group>
+                  {searchResults.map((device, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={themed($settingItem)}
+                      onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
+                      <View style={themed($settingsTextContainer)}>
+                        <Text text={`${glassesModelName}  ${device.deviceName}`} style={themed($label)} />
+                      </View>
+                      <Icon name="angle-right" size={24} color={theme.colors.text} />
+                    </TouchableOpacity>
+                  ))}
+                </Group>
+              )}
+              {(!searchResults || searchResults.length === 0) && (
+                <ActivityIndicator size="large" color={theme.colors.text} />
+              )}
+            </Animated.View>
+          </ScrollView>
         </View>
-        <ScrollView
-          style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}>
-          <Animated.View style={scrollViewAnimatedStyle}>
-            {searchResults && searchResults.length > 0 && (
-              <Group>
-                {searchResults.map((device, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={themed($settingItem)}
-                    onPress={() => {
-                      triggerGlassesPairingGuide(device.deviceMode, device.deviceName)
-                    }}>
-                    {/* <Image source={glassesImage} style={styles.glassesImage} /> */}
-                    <View style={themed($settingsTextContainer)}>
-                      <Text text={`${glassesModelName}  ${device.deviceName}`} style={themed($label)} />
-                    </View>
-                    <Icon name="angle-right" size={24} color={theme.colors.text} />
-                  </TouchableOpacity>
-                ))}
-              </Group>
-            )}
-            {!searchResults ||
-              (searchResults.length === 0 && <ActivityIndicator size="large" color={theme.colors.text} />)}
-          </Animated.View>
-        </ScrollView>
       </View>
       <GlassesTroubleshootingModal
         isVisible={showTroubleshootingModal}
@@ -298,12 +297,16 @@ export default function SelectGlassesBluetoothScreen() {
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  // flex: 1,
-  marginTop: spacing.xxxl,
-  paddingHorizontal: spacing.md,
+const $container: ThemedStyle<ViewStyle> = () => ({
+  flex: 1,
+  justifyContent: "center",
+})
+
+const $contentContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  height: 320,
   backgroundColor: colors.primary_foreground,
   borderRadius: spacing.lg,
+  padding: spacing.lg,
 })
 
 const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -318,10 +321,7 @@ const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 const $glassesImage: ThemedStyle<ImageStyle> = () => ({
   width: "100%",
   resizeMode: "contain",
-})
-
-const $contentContainer: ThemedStyle<ViewStyle> = () => ({
-  height: 320,
+  height: 90,
 })
 
 const $label: ThemedStyle<TextStyle> = () => ({

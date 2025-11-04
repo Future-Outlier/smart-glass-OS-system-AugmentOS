@@ -1,36 +1,21 @@
-import {Button, Header} from "@/components/ignite"
+import {Header} from "@/components/ignite"
 import {Screen} from "@/components/ignite/Screen"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {showAlert} from "@/utils/AlertUtils"
-import {getPairingGuide} from "@/components/pairing/GlassesPairingGuides"
+import {PairingGuide, PairingOptions} from "@/components/pairing/GlassesPairingGuides"
 import {PermissionFeatures, checkConnectivityRequirementsUI, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useRoute} from "@react-navigation/native"
-import {Linking, PermissionsAndroid, Platform, ScrollView, View} from "react-native"
+import {Linking, PermissionsAndroid, Platform, ScrollView} from "react-native"
 import CoreModule from "core"
-
-// Alert handling is now done directly in PermissionsUtils.tsx
-
-// On Android, we'll check permissions once during the actual request process
-// This simplifies our code and avoids making redundant permission requests
 
 export default function PairingPrepScreen() {
   const route = useRoute()
   const {theme} = useAppTheme()
   const {glassesModelName} = route.params as {glassesModelName: string}
   const {goBack, push, clearHistoryAndGoHome} = useNavigationHistory()
-  // React.useEffect(() => {
-  //   const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-  //     const actionType = e.data?.action?.type;
-  //   });
-
-  //   return unsubscribe;
-  // }, [navigation]);
-
-  // React.useEffect(() => {
-  // }, [glassesModelName]);
 
   const advanceToPairing = async () => {
     if (glassesModelName == null || glassesModelName == "") {
@@ -227,50 +212,12 @@ export default function PairingPrepScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}} safeAreaEdges={["bottom"]}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}} safeAreaEdges={["bottom"]}>
       <Header title={glassesModelName} leftIcon="caretLeft" onLeftPress={goBack} />
-      <ScrollView style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}>
-        <View style={styles.contentContainer}>{getPairingGuide(glassesModelName)}</View>
+      <ScrollView style={{marginRight: -theme.spacing.lg, paddingRight: theme.spacing.lg}}>
+        <PairingGuide model={glassesModelName} />
       </ScrollView>
-      <View style={{marginBottom: theme.spacing.lg}}>
-        <Button onPress={advanceToPairing} disabled={false} tx="common:continue" />
-      </View>
+      <PairingOptions model={glassesModelName} continueFn={advanceToPairing} />
     </Screen>
   )
 }
-
-const styles = {
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  darkBackground: {
-    backgroundColor: "#1c1c1c",
-  },
-  darkText: {
-    color: "#FFFFFF",
-  },
-  glassesImage: {
-    height: 60,
-    marginTop: 20,
-    resizeMode: "contain",
-    width: 100,
-  },
-  lightBackground: {
-    backgroundColor: "#f0f0f0",
-  },
-  lightText: {
-    color: "#333333",
-  },
-  scrollViewContainer: {
-    flex: 1,
-  },
-  text: {
-    fontSize: 16,
-    marginBottom: 10,
-  },
-} as const

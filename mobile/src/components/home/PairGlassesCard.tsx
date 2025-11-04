@@ -6,7 +6,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export const PairGlassesCard = ({style}: {style?: ViewStyle}) => {
-  const {themed} = useAppTheme()
+  const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
   return (
     <View style={[themed($container), style]}>
@@ -16,6 +16,7 @@ export const PairGlassesCard = ({style}: {style?: ViewStyle}) => {
         <Button
           tx="home:setupWithoutGlasses"
           preset="secondary"
+          style={{backgroundColor: theme.colors.background}}
           onPress={() => push("/pairing/prep", {glassesModelName: DeviceTypes.SIMULATED})}
         />
       </View>

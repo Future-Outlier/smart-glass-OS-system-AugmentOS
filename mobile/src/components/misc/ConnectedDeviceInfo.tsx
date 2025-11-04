@@ -78,13 +78,11 @@ export const ConnectDeviceButton = () => {
   if (defaultWearableNull || defaultWearableStringNull || defaultWearableEmpty) {
     return (
       <Button
-        textStyle={[{marginLeft: spacing.xxl}]}
-        textAlignment="left"
-        LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
-        RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
-        onPress={() => {
-          push("/pairing/select-glasses-model")
-        }}
+        // textStyle={[{marginLeft: spacing.xxl}]}
+        // textAlignment="left"
+        // LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
+        // RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
+        onPress={() => push("/pairing/select-glasses-model")}
         tx="home:pairGlasses"
       />
     )
