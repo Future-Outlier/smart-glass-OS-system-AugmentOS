@@ -103,6 +103,10 @@ app.use(
       "https://augmentos.org",
       "https://augmentos.dev",
 
+      // AugmentOS App Store / Developer Portal
+      "https://augmentos.dev",
+      "https://appstore.augmentos.dev",
+
       "https://dev.appstore.augmentos.dev",
       "https://dev.augmentos.dev",
       "https://staging.appstore.augmentos.dev",
@@ -150,10 +154,6 @@ app.use(
       "https://dev.account.mentra.glass",
       "https://dev.docs.mentra.glass",
       "https://dev.store.mentra.glass",
-
-      // Ngrok domains for development
-      "https://webview.ngrok.dev",
-      "https://mentra-cloud-server.ngrok.app",
 
       // mentraglass.com API
       "https://www.mentraglass.com",
