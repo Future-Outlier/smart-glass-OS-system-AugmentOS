@@ -31,6 +31,9 @@ import Icon from "react-native-vector-icons/FontAwesome"
 import CoreModule from "core"
 import {Group} from "@/components/ui/Group"
 import {getGlassesOpenImage} from "@/utils/getGlassesImage"
+import {translate} from "@/i18n"
+import Divider from "@/components/misc/Divider"
+import {Spacer} from "@/components/ui/Spacer"
 
 export default function SelectGlassesBluetoothScreen() {
   const {status} = useCoreStatus()
@@ -259,28 +262,38 @@ export default function SelectGlassesBluetoothScreen() {
       <View style={themed($container)}>
         <View style={themed($contentContainer)}>
           <Image source={getGlassesOpenImage(glassesModelName)} style={themed($glassesImage)} />
-          <View style={{justifyContent: "center", flex: 1}}>
-            {!searchResults || searchResults.length === 0 ? (
+          <Text
+            style={themed($scanningText)}
+            text={translate("pairing:scanningForGlassesModel", {model: glassesModelName})}
+          />
+
+          {!searchResults || searchResults.length === 0 ? (
+            <View style={{justifyContent: "center", flex: 1}}>
               <ActivityIndicator size="large" color={theme.colors.text} />
-            ) : (
-              <ScrollView style={{height: 300}}>
-                {searchResults && searchResults.length > 0 && (
-                  <Group>
-                    {searchResults.map((device, index) => (
-                      <TouchableOpacity
-                        key={index}
-                        style={themed($settingItem)}
-                        onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
-                        <View style={themed($settingsTextContainer)}>
-                          <Text text={`${glassesModelName}  ${device.deviceName}`} style={themed($label)} />
-                        </View>
-                        <Icon name="angle-right" size={24} color={theme.colors.text} />
-                      </TouchableOpacity>
-                    ))}
-                  </Group>
-                )}
-              </ScrollView>
-            )}
+            </View>
+          ) : (
+            <ScrollView style={{height: 800}}>
+              {searchResults && searchResults.length > 0 && (
+                <Group>
+                  {searchResults.map((device, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={themed($settingItem)}
+                      onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
+                      <View style={themed($settingsTextContainer)}>
+                        <Text text={`${glassesModelName}  ${device.deviceName}`} style={themed($label)} />
+                      </View>
+                      <Icon name="angle-right" size={24} color={theme.colors.text} />
+                    </TouchableOpacity>
+                  ))}
+                </Group>
+              )}
+            </ScrollView>
+          )}
+          <Spacer height={theme.spacing.md} />
+          <Divider />
+          <View style={{justifyContent: "flex-end", flexDirection: "row", flex: 1}}>
+            <PillButton tx="common:cancel" variant="secondary" onPress={() => goBack()} />
           </View>
         </View>
       </View>
@@ -299,7 +312,7 @@ const $container: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $contentContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  height: 320,
+  height: 420,
   backgroundColor: colors.primary_foreground,
   borderRadius: spacing.lg,
   padding: spacing.lg,
@@ -313,7 +326,15 @@ const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   paddingVertical: spacing.sm,
   paddingHorizontal: spacing.md,
   backgroundColor: colors.background,
-  height: 50,
+  // height: 50,
+})
+
+const $scanningText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+  fontSize: 20,
+  fontWeight: "600",
+  color: colors.textDim,
+  marginBottom: spacing.lg,
+  textAlign: "center",
 })
 
 const $glassesImage: ThemedStyle<ImageStyle> = () => ({
