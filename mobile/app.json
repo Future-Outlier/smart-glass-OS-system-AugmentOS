@@ -127,7 +127,7 @@
         }
       ],
       "./plugins/remove-ipad-orientations.js",
-      "./plugins/android-signing-config.js",
+      "./plugins/android.ts",
       "react-native-bottom-tabs",
       [
         "expo-build-properties",
