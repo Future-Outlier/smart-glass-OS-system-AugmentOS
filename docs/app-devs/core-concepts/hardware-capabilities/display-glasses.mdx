@@ -3,8 +3,6 @@ title: "Display Glasses"
 description: "Build apps for glasses with screens - G1, Vuzix"
 ---
 
-# Display Glasses
-
 **Display glasses have screens for showing content but no cameras.** Examples: Even Realities G1, Vuzix Z100. These devices are ideal for information display and heads-up interfaces.
 
 ## Common Display Glasses
@@ -60,7 +58,7 @@ protected async onSession(session: AppSession, sessionId: string, userId: string
     session.logger.warn('No display available');
     return;
   }
-  
+
   const display = caps.display;
   if (display) {
     session.logger.info('Resolution:', display.resolution);
@@ -107,7 +105,7 @@ if (!isColor) {
 if (!caps.hasSpeaker) {
   // Audio plays through phone
   await session.audio.speak('Hello!');
-  
+
   // User hears through phone speaker or Bluetooth headphones
 }
 ```
@@ -179,16 +177,16 @@ session.layouts.showDoubleTextWall({
 class DisplayGlassesApp extends AppServer {
   protected async onSession(session: AppSession, sessionId: string, userId: string) {
     const caps = session.capabilities;
-    
+
     if (!caps?.hasDisplay) {
       session.logger.warn('No display - audio only');
       await session.audio.speak('Welcome');
       return;
     }
-    
+
     // Show welcome on display
     session.layouts.showTextWall('Voice Assistant Ready');
-    
+
     // Use microphone if available
     if (caps.hasMicrophone) {
       session.events.onTranscription((data) => {
@@ -205,10 +203,10 @@ class DisplayGlassesApp extends AppServer {
       });
     }
   }
-  
+
   private handleCommand(session: AppSession, text: string) {
     session.layouts.showTextWall(`You said: ${text}`);
-    
+
     // Speak response if no speaker on glasses
     if (!session.capabilities?.hasSpeaker) {
       session.audio.speak('Processing');

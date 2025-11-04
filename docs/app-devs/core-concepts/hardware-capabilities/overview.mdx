@@ -3,8 +3,6 @@ title: "Hardware & Capabilities Overview"
 description: "Detect and adapt to different smart glasses hardware"
 ---
 
-# Hardware & Capabilities Overview
-
 **Check what hardware is available using `session.capabilities`.** Different glasses have different features—displays, cameras, speakers, buttons, LEDs. Your app can detect and adapt to each device.
 
 ## Accessing Capabilities
@@ -12,12 +10,12 @@ description: "Detect and adapt to different smart glasses hardware"
 ```typescript
 protected async onSession(session: AppSession, sessionId: string, userId: string) {
   const caps = session.capabilities;
-  
+
   if (!caps) {
     session.logger.warn('Capabilities not loaded');
     return;
   }
-  
+
   session.logger.info('Device:', caps.modelName);
   session.logger.info('Has camera:', caps.hasCamera);
   session.logger.info('Has display:', caps.hasDisplay);
@@ -43,14 +41,14 @@ protected async onSession(session: AppSession, sessionId: string, userId: string
 protected async onSession(session: AppSession, sessionId: string, userId: string) {
   const caps = session.capabilities;
   if (!caps) return;
-  
+
   // Adapt to available hardware
   if (caps.hasDisplay) {
     session.layouts.showTextWall('Welcome!');
   } else {
     await session.audio.speak('Welcome!');
   }
-  
+
   if (caps.hasCamera) {
     session.logger.info('Camera available');
   }
@@ -84,7 +82,7 @@ if (caps.hasCamera && caps.camera) {
 ```typescript
 if (caps.hasLight && caps.light) {
   session.logger.info('LED count:', caps.light.count);
-  
+
   caps.light.lights?.forEach(led => {
     session.logger.info(`${led.id}: ${led.isFullColor ? 'RGB' : led.color}`);
   });
@@ -110,19 +108,19 @@ See device-specific pages for details:
 protected async onSession(session: AppSession, sessionId: string, userId: string) {
   const caps = session.capabilities;
   if (!caps) return;
-  
+
   // Choose interaction mode
   if (caps.hasDisplay) {
     this.useVisualMode(session);
   } else if (caps.hasSpeaker) {
     this.useAudioMode(session);
   }
-  
+
   // Enable features based on hardware
   if (caps.hasCamera) {
     this.enablePhotoFeatures(session);
   }
-  
+
   if (caps.hasButton) {
     this.enableButtonControls(session);
   }
@@ -134,28 +132,28 @@ protected async onSession(session: AppSession, sessionId: string, userId: string
 ```typescript
 interface Capabilities {
   modelName: string;
-  
+
   hasCamera: boolean;
   camera: CameraCapabilities | null;
-  
+
   hasDisplay: boolean;
   display: DisplayCapabilities | null;
-  
+
   hasMicrophone: boolean;
   microphone: MicrophoneCapabilities | null;
-  
+
   hasSpeaker: boolean;
   speaker: SpeakerCapabilities | null;
-  
+
   hasIMU: boolean;
   imu: IMUCapabilities | null;
-  
+
   hasButton: boolean;
   button: ButtonCapabilities | null;
-  
+
   hasLight: boolean;
   light: LightCapabilities | null;
-  
+
   hasWifi: boolean;
   power: PowerCapabilities;
 }
