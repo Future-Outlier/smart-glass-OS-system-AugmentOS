@@ -120,16 +120,6 @@ const ForgotPasswordForm = ({
                 </div>
               )}
             </div>
-
-            {/* Sign In Link */}
-            <div className="text-center text-sm text-gray-500 mt-6">
-              <p
-                onClick={() => console.log('Navigate to sign in')}
-                className="cursor-pointer underline"
-              >
-                Remember your password? Sign in
-              </p>
-            </div>
           </div>
         </div>
       </main>
