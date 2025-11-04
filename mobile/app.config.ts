@@ -22,11 +22,8 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
     ...config,
     plugins: [...existingPlugins, require("./plugins/withSplashScreen").withSplashScreen],
     extra: {
+      BACKEND_URL_OVERRIDE: process.env.BACKEND_URL_OVERRIDE,
       MENTRAOS_VERSION: process.env.MENTRAOS_VERSION,
-      MENTRAOS_APPSTORE_URL: process.env.MENTRAOS_APPSTORE_URL,
-      MENTRAOS_SECURE: process.env.MENTRAOS_SECURE,
-      MENTRAOS_HOST: process.env.MENTRAOS_HOST,
-      MENTRAOS_PORT: process.env.MENTRAOS_PORT,
       POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
       SUPABASE_URL: process.env.SUPABASE_URL,
       SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
@@ -36,6 +33,5 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
       AUTHING_APP_DOMAIN: process.env.AUTHING_APP_DOMAIN,
       DEPLOYMENT_REGION: process.env.DEPLOYMENT_REGION,
     },
-    version: process.env.MENTRAOS_VERSION,
   }
 }

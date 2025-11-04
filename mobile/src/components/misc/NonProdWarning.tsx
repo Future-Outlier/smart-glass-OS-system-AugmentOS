@@ -13,19 +13,19 @@ export default function NonProdWarning() {
   const {theme, themed} = useAppTheme()
   const [isProdBackend, setIsProdBackend] = useState(true)
   const {push} = useNavigationHistory()
-  const [customBackendUrl, _setCustomBackendUrl] = useSetting(SETTINGS_KEYS.custom_backend_url)
+  const [backendUrl, _setBackendUrl] = useSetting(SETTINGS_KEYS.backend_url)
 
   const checkNonProdBackend = async () => {
     let isProd = false
     if (
-      customBackendUrl.includes("prod.augmentos.cloud") ||
-      customBackendUrl.includes("global.augmentos.cloud") ||
-      customBackendUrl.includes("api.mentra.glass")
+      backendUrl.includes("prod.augmentos.cloud") ||
+      backendUrl.includes("global.augmentos.cloud") ||
+      backendUrl.includes("api.mentra.glass")
     ) {
       isProd = true
     }
 
-    if (customBackendUrl.includes("devapi")) {
+    if (backendUrl.includes("devapi")) {
       isProd = false
     }
 
@@ -34,7 +34,7 @@ export default function NonProdWarning() {
 
   useEffect(() => {
     checkNonProdBackend()
-  }, [customBackendUrl])
+  }, [backendUrl])
 
   if (isProdBackend) {
     return null

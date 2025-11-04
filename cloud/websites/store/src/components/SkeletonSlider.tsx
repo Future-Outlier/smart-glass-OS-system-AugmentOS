@@ -18,7 +18,7 @@ const SkeletonSlider = () => {
       />
 
       {/* Slide Indicators Skeleton */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z0">
         {[1, 2, 3, 4].map((i) => (
           <Skeleton
             key={i}
