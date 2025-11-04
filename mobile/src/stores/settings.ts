@@ -3,7 +3,6 @@ import {subscribeWithSelector} from "zustand/middleware"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {getTimeZone} from "react-native-localize"
 import restComms from "@/services/RestComms"
-import {isDeveloperBuildOrTestflight} from "@/utils/buildDetection"
 import CoreModule from "core"
 import Toast from "react-native-toast-message"
 
@@ -284,7 +283,7 @@ export const useSettingsStore = create<SettingsState>()(
         return getTimeZone()
       }
       if (key === SETTINGS_KEYS.dev_mode) {
-        return isDeveloperBuildOrTestflight()
+        return __DEV__
       }
       return DEFAULT_SETTINGS[key]
     },
