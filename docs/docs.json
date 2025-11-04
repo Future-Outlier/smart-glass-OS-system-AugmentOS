@@ -148,7 +148,7 @@
             "group": "Contributing",
             "icon": "users",
             "pages": [
-              "os-devs/contributing",
+              "os-devs/contributing/overview",
               "os-devs/contributing/mentraos-manager-guidelines",
               "os-devs/contributing/mentraos-asg-client-guidelines",
               "os-devs/contributing/add-new-glasses-support",
