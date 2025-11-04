@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "aspen",
   "name": "MentraOS",
   "colors": {
     "primary": "#00b869",
@@ -24,34 +24,66 @@
         "groups": [
           {
             "group": "Getting Started",
+            "icon": "rocket",
             "pages": [
               "quickstart",
               "example-apps",
               {
                 "group": "Deployment",
-                "pages": [
-                  "deployment",
-                  "railway-deployment", 
-                  "ubuntu-deployment"
-                ]
+                "icon": "server",
+                "pages": ["deployment", "railway-deployment", "ubuntu-deployment"]
               }
             ]
           },
           {
             "group": "Core Concepts",
+            "icon": "brain",
             "pages": [
-              "core-concepts",
-              "app-lifecycle",
-              "events",
-              "permissions",
+              "app-devs/core-concepts/app-lifecycle-overview",
+              "app-devs/core-concepts/app-server",
+              {
+                "group": "AppSession",
+                "icon": "plug",
+                "pages": [
+                  "app-devs/core-concepts/app-session/what-is-app-session",
+                  "app-devs/core-concepts/app-session/display-and-ui",
+                  "app-devs/core-concepts/app-session/events-and-data",
+                  "app-devs/core-concepts/app-session/device-control"
+                ]
+              },
+              "app-devs/core-concepts/permissions",
+              {
+                "group": "Hardware & Capabilities",
+                "icon": "microchip",
+                "pages": [
+                  "app-devs/core-concepts/hardware-capabilities/overview",
+                  "app-devs/core-concepts/hardware-capabilities/display-glasses",
+                  "app-devs/core-concepts/hardware-capabilities/camera-glasses"
+                ]
+              },
+              "app-devs/core-concepts/simple-storage",
+              {
+                "group": "Audio",
+                "icon": "volume",
+                "pages": [
+                  "app-devs/core-concepts/audio/text-to-speech",
+                  "app-devs/core-concepts/audio/playing-audio-files",
+                  "app-devs/core-concepts/audio/speech-to-text",
+                  "app-devs/core-concepts/audio/audio-chunks"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Additional Features",
+            "icon": "puzzle-piece",
+            "pages": [
               "layouts",
-              "settings",
-              "audio",
               "led",
               "tools",
-              "capabilities",
               {
                 "group": "Camera",
+                "icon": "camera",
                 "pages": ["camera/README", "camera/photo-capture", "camera/rtmp-streaming"]
               },
               "webview-auth-overview",
@@ -61,12 +93,14 @@
           },
           {
             "group": "SDK Reference",
+            "icon": "code",
             "pages": [
               "reference/index",
               "reference/app-server",
               "reference/app-session",
               {
                 "group": "Managers",
+                "icon": "sliders",
                 "pages": [
                   "reference/managers/event-manager",
                   "reference/managers/layout-manager",
@@ -80,6 +114,7 @@
               "reference/enums",
               {
                 "group": "Interfaces",
+                "icon": "shapes",
                 "pages": [
                   "reference/interfaces/config-types",
                   "reference/interfaces/event-types",
@@ -102,6 +137,7 @@
         "groups": [
           {
             "group": "Contributing",
+            "icon": "code-pull-request",
             "pages": [
               "contributing",
               "contributing/mentraos-manager-guidelines",
@@ -109,6 +145,7 @@
               "contributing/add-new-glasses-support",
               {
                 "group": "ASG Client",
+                "icon": "mobile",
                 "pages": [
                   "asg-client/README",
                   "asg-client/architecture",
@@ -122,10 +159,11 @@
         ]
       },
       {
-        "tab": "Glasses OEMs", 
+        "tab": "Glasses OEMs",
         "groups": [
           {
-            "group": "Glasses OEMs",
+            "group": "OEM Integration",
+            "icon": "glasses",
             "pages": ["glasses-oems"]
           }
         ]
