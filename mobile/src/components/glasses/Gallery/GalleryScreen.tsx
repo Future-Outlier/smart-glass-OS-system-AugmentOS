@@ -1572,7 +1572,8 @@ const $emptyContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
 })
 
 const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 18,
+  fontSize: 20,
+  fontWeight: "600",
   color: colors.text,
   marginBottom: spacing.xs,
 })
