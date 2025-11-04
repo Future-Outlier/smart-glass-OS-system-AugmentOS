@@ -420,6 +420,23 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                 </span>
               </div>
 
+              <div className="flex justify-between items-center py-3">
+                <span
+                  className="text-[14px] font-medium"
+                  style={{
+                    color: "var(--text-secondary)",
+                  }}>
+                  Package Name
+                </span>
+                <span
+                  className="text-[14px] font-normal hover:underline text-right"
+                  style={{
+                    color: "var(--accent-primary)",
+                  }}>
+                  {app.packageName}
+                </span>
+              </div>
+
               {app.developerProfile?.website && (
                 <div className="flex justify-between items-center py-3">
                   <span

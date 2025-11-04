@@ -1,4 +1,3 @@
-import React from "react"
 import {X, Info, Share2, Smartphone, ChevronLeft} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import GetMentraOSButton from "../components/GetMentraOSButton"
@@ -36,486 +35,501 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
 
       {/* Content wrapper with responsive padding - matches Header_v2 exactly */}
       <div className="px-4 sm:px-8 md:px-16 lg:px-25 pt-[24px] pb-16 w-full">
-          {/* Back Button */}
-          <button
-            onClick={handleBackNavigation}
-            className="flex items-center justify-center w-[40px] h-[40px] rounded-full mb-[32px] transition-all hover:scale-105 hover:opacity-80"
-            style={{
-              backgroundColor: "var(--bg-secondary)",
-              color: "var(--text-primary)",
-            }}
-            aria-label="Back to App Store">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+        {/* Back Button */}
+        <button
+          onClick={handleBackNavigation}
+          className="flex items-center justify-center w-[40px] h-[40px] rounded-full mb-[32px] transition-all hover:scale-105 hover:opacity-80"
+          style={{
+            backgroundColor: "var(--bg-secondary)",
+            color: "var(--text-primary)",
+          }}
+          aria-label="Back to App Store">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
 
-          {/* Header - Desktop Layout */}
-          <div className="mb-8">
-            <div className="flex items-start gap-6 mb-6">
-              {/* Left Side - App Info (takes more space on desktop) */}
-              <div className="flex-1 min-w-0">
-                {/* App Title */}
-                <h1
-                  className="text-[40px] leading-tight mb-[32px] font-bold"
-                  style={{
-                    fontFamily: '"Red Hat Display", sans-serif',
-                    color: "var(--text-primary)",
-                  }}>
-                  {app.name}
-                </h1>
+        {/* Header - Desktop Layout */}
+        <div className="mb-8">
+          <div className="flex items-start gap-6 mb-6">
+            {/* Left Side - App Info (takes more space on desktop) */}
+            <div className="flex-1 min-w-0">
+              {/* App Title */}
+              <h1
+                className="text-[40px] leading-tight mb-[32px] font-bold"
+                style={{
+                  fontFamily: '"Red Hat Display", sans-serif',
+                  color: "var(--text-primary)",
+                }}>
+                {app.name}
+              </h1>
 
-                {/* Company Name • App Type */}
-                <div
-                  className="flex items-center gap-2 text-[20px] mb-[8px]"
-                  style={{
-                    fontFamily: '"Red Hat Display", sans-serif',
-                    color: "var(--text-primary)",
-                  }}>
-                  <span>{app.orgName || app.developerProfile?.company || "Mentra"}</span>
-                  <span>•</span>
-                  <span>{getAppTypeDisplay(app)}</span>
+              {/* Company Name • App Type */}
+              <div
+                className="flex items-center gap-2 text-[20px] mb-[8px]"
+                style={{
+                  fontFamily: '"Red Hat Display", sans-serif',
+                  color: "var(--text-primary)",
+                }}>
+                <span>{app.orgName || app.developerProfile?.company || "Mentra"}</span>
+                <span>•</span>
+                <span>{getAppTypeDisplay(app)}</span>
+              </div>
+
+              {/* Info Tags Section - Horizontal on Desktop only */}
+              {APP_TAGS[app.name] && (
+                <div className="flex items-center gap-2 mb-[32px] flex-wrap">
+                  {APP_TAGS[app.name].map((tag, index) => (
+                    <div
+                      key={index}
+                      className="px-3 py-1.5 rounded-full text-[14px] font-normal"
+                      style={{
+                        backgroundColor: "var(--bg-secondary)",
+                        color: "var(--text-secondary)",
+                        fontFamily: '"Red Hat Display", sans-serif',
+                      }}>
+                      {tag}
+                    </div>
+                  ))}
                 </div>
+              )}
 
-                {/* Info Tags Section - Horizontal on Desktop only */}
-                {APP_TAGS[app.name] && (
-                  <div className="flex items-center gap-2 mb-[32px] flex-wrap">
-                    {APP_TAGS[app.name].map((tag, index) => (
-                      <div
-                        key={index}
-                        className="px-3 py-1.5 rounded-full text-[14px] font-normal"
-                        style={{
-                          backgroundColor: "var(--bg-secondary)",
-                          color: "var(--text-secondary)",
-                          fontFamily: '"Red Hat Display", sans-serif',
-                        }}>
-                        {tag}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Buttons Section - Desktop only */}
-                <div className="flex items-center gap-[24px]">
-                  {/* Install Button */}
-                  {isAuthenticated ? (
-                    app.isInstalled ? (
-                      <Button
-                        disabled={true}
-                        className="px-8 h-[44px] text-[20px] font-medium rounded-full opacity-40 cursor-not-allowed min-w-[242px]"
-                        style={{
-                          fontFamily: '"Red Hat Display", sans-serif',
-                          backgroundColor: "var(--button-bg)",
-                          color: "var(--button-text)",
-                        }}>
-                        Installed
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={handleInstall}
-                        disabled={installingApp}
-                        className="px-8 h-[44px] text-[18px] font-medium rounded-full transition-all min-w-[242px]"
-                        style={{
-                          fontFamily: '"Red Hat Display", sans-serif',
-                          backgroundColor: "var(--button-bg)",
-                          color: "var(--button-text)",
-                        }}>
-                        {installingApp ? "Getting…" : "Get"}
-                      </Button>
-                    )
-                  ) : (
+              {/* Buttons Section - Desktop only */}
+              <div className="flex items-center gap-[24px]">
+                {/* Install Button */}
+                {isAuthenticated ? (
+                  app.isInstalled ? (
                     <Button
-                      onClick={navigateToLogin}
-                      className="px-8 h-[44px] text-[20px] font-medium rounded-full transition-all min-w-[242px]"
+                      disabled={true}
+                      className="px-8 h-[44px] text-[20px] font-medium rounded-full opacity-40 cursor-not-allowed min-w-[242px]"
                       style={{
                         fontFamily: '"Red Hat Display", sans-serif',
                         backgroundColor: "var(--button-bg)",
                         color: "var(--button-text)",
                       }}>
-                      Get
+                      Installed
                     </Button>
-                  )}
-
-                  {/* Share Button */}
-                  <button
-                    className="w-[113px] flex items-center gap-2 px-5 h-[44px] rounded-full border transition-colors"
+                  ) : (
+                    <Button
+                      onClick={handleInstall}
+                      disabled={installingApp}
+                      className="px-8 h-[44px] text-[18px] font-medium rounded-full transition-all min-w-[242px]"
+                      style={{
+                        fontFamily: '"Red Hat Display", sans-serif',
+                        backgroundColor: "var(--button-bg)",
+                        color: "var(--button-text)",
+                      }}>
+                      {installingApp ? "Getting…" : "Get"}
+                    </Button>
+                  )
+                ) : (
+                  <Button
+                    onClick={navigateToLogin}
+                    className="px-8 h-[44px] text-[20px] font-medium rounded-full transition-all min-w-[242px]"
                     style={{
-                      borderColor: "var(--border-color)",
-                      color: "var(--text-primary)",
                       fontFamily: '"Red Hat Display", sans-serif',
-                    }}
-                    onClick={() => {
-                      if (navigator.share) {
-                        navigator.share({
-                          title: app.name,
-                          text: app.description || `Check out ${app.name}`,
-                          url: window.location.href,
-                        })
-                      }
+                      backgroundColor: "var(--button-bg)",
+                      color: "var(--button-text)",
                     }}>
-                    <Share2 className="w-[18px] h-[18px]" />
-                    <span className="text-[18px] font-medium">Share</span>
-                  </button>
-                </div>
+                    Get
+                  </Button>
+                )}
 
-                {/* Device Compatibility Notice - Desktop only */}
-                <div
-                  className="flex items-center gap-2 text-[14px] mt-[32px]"
+                {/* Share Button */}
+                <button
+                  className="w-[113px] flex items-center gap-2 px-5 h-[44px] rounded-full border transition-colors"
                   style={{
-                    color: "var(--text-secondary)",
+                    borderColor: "var(--border-color)",
+                    color: "var(--text-primary)",
                     fontFamily: '"Red Hat Display", sans-serif',
+                  }}
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: app.name,
+                        text: app.description || `Check out ${app.name}`,
+                        url: window.location.href,
+                      })
+                    }
                   }}>
-                  <Smartphone className="w-[18px] h-[18px] text-[14px]" />
-                  <span>This app is available for your device</span>
-                </div>
+                  <Share2 className="w-[18px] h-[18px]" />
+                  <span className="text-[18px] font-medium">Share</span>
+                </button>
               </div>
 
-              {/* Right Side - App Icon (desktop only, larger) */}
-              <div className="flex-shrink-0">
-                <img
-                  src={app.logoURL}
-                  alt={`${app.name} logo`}
-                  className="w-[220px] h-[220px] object-cover rounded-[60px] shadow-md"
-                  onError={(e) => {
-                    ;(e.target as HTMLImageElement).src = "https://placehold.co/140x140/gray/white?text=App"
-                  }}
-                />
+              {/* Device Compatibility Notice - Desktop only */}
+              <div
+                className="flex items-center gap-2 text-[14px] mt-[32px]"
+                style={{
+                  color: "var(--text-secondary)",
+                  fontFamily: '"Red Hat Display", sans-serif',
+                }}>
+                <Smartphone className="w-[18px] h-[18px] text-[14px]" />
+                <span>This app is available for your device</span>
               </div>
+            </div>
+
+            {/* Right Side - App Icon (desktop only, larger) */}
+            <div className="flex-shrink-0">
+              <img
+                src={app.logoURL}
+                alt={`${app.name} logo`}
+                className="w-[220px] h-[220px] object-cover rounded-[60px] shadow-md"
+                onError={(e) => {
+                  ;(e.target as HTMLImageElement).src = "https://placehold.co/140x140/gray/white?text=App"
+                }}
+              />
             </div>
           </div>
+        </div>
 
-          {/* Offline Warning */}
-          {app.isOnline === false && (
-            <div className="mb-6">
-              <div
-                className="flex items-center p-3 rounded-lg"
+        {/* Offline Warning */}
+        {app.isOnline === false && (
+          <div className="mb-6">
+            <div
+              className="flex items-center p-3 rounded-lg"
+              style={{
+                backgroundColor: "var(--error-bg)",
+                border: "1px solid var(--error-color)",
+              }}>
+              <Info
+                className="h-5 w-5"
                 style={{
-                  backgroundColor: "var(--error-bg)",
-                  border: "1px solid var(--error-color)",
+                  color: "var(--error-color)",
+                }}
+              />
+              <span
+                className="text-[14px]"
+                style={{
+                  color: "var(--error-color)",
                 }}>
-                <Info
-                  className="h-5 w-5"
-                  style={{
-                    color: "var(--error-color)",
-                  }}
-                />
-                <span
-                  className="text-[14px]"
-                  style={{
-                    color: "var(--error-color)",
-                  }}>
-                  This app appears to be offline. Some actions may not work.
-                </span>
-              </div>
+                This app appears to be offline. Some actions may not work.
+              </span>
             </div>
-          )}
+          </div>
+        )}
 
-                      <div className="h-[1px] w-full bg-[var(--border)] mb-[24px] mt-[24px]"></div>
+        <div className="h-[1px] w-full bg-[var(--border)] mb-[24px] mt-[24px]"></div>
 
-
-          {/* Vertical Scrollable Layout - All sections visible */}
+        {/* Vertical Scrollable Layout - All sections visible */}
+        <div className="">
+          {/* About this app Section */}
           <div className="">
-            {/* About this app Section */}
-            <div className="">
-              <h2
-                className="text-[24px] font-semibold mb-[24px]"
-                style={{
-                  fontFamily: '"Red Hat Display", sans-serif',
-                  color: "var(--text-primary)",
-                }}>
-                About this app
-              </h2>
-              <p
-                className="text-[20px] font-normal leading-[1.6]"
-                style={{
-                  fontFamily: '"Red Hat Display", sans-serif',
-                  color: "var(--text-primary)",
-                }}>
-                {app.description || "No description available."}
-              </p>
-            </div>
+            <h2
+              className="text-[24px] font-semibold mb-[24px]"
+              style={{
+                fontFamily: '"Red Hat Display", sans-serif',
+                color: "var(--text-primary)",
+              }}>
+              About this app
+            </h2>
+            <p
+              className="text-[20px] font-normal leading-[1.6]"
+              style={{
+                fontFamily: '"Red Hat Display", sans-serif',
+                color: "var(--text-primary)",
+              }}>
+              {app.description || "No description available."}
+            </p>
+          </div>
 
-            <div className="h-[1px] w-full bg-[var(--border)] mb-[24px] mt-[24px]"></div>
+          <div className="h-[1px] w-full bg-[var(--border)] mb-[24px] mt-[24px]"></div>
 
-            {/* Permission Section */}
-            <div>
-              <h2
-                className="text-[24px] font-semibold mb-[24px]"
-                style={{
-                  fontFamily: '"Red Hat Display", sans-serif',
-                  color: "var(--text-primary)",
-                }}>
-                Permission
-              </h2>
-              <p
-                className="text-[20px] mb-6 leading-[1.6]"
-                style={{
-                  fontFamily: '"Red Hat Display", sans-serif',
-                  color: "var(--text-secondary)",
-                }}>
-                Permissions that will be requested when using this app on your phone.
-              </p>
-              <div className="space-y-3">
-                {app.permissions && app.permissions.length > 0 ? (
-                  app.permissions.map((permission, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-[24px] rounded-[16px] h-[74px]"
-                      style={{
-                        backgroundColor: "var(--primaary-foreground)",
-
-                      }}>
-                      <div className="flex items-center">
+          {/* Permission Section */}
+          <div>
+            <h2
+              className="text-[24px] font-semibold mb-[24px]"
+              style={{
+                fontFamily: '"Red Hat Display", sans-serif',
+                color: "var(--text-primary)",
+              }}>
+              Permission
+            </h2>
+            <p
+              className="text-[20px] mb-6 leading-[1.6]"
+              style={{
+                fontFamily: '"Red Hat Display", sans-serif',
+                color: "var(--text-secondary)",
+              }}>
+              Permissions that will be requested when using this app on your phone.
+            </p>
+            <div className="space-y-3">
+              {app.permissions && app.permissions.length > 0 ? (
+                app.permissions.map((permission, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-[24px] rounded-[16px] h-[74px]"
+                    style={{
+                      backgroundColor: "var(--primaary-foreground)",
+                    }}>
+                    <div className="flex items-center">
+                      <div
+                        className="w-10 h-10 flex items-center justify-center rounded-lg"
+                        style={{
+                          backgroundColor: "var(--bg-secondary)",
+                        }}>
                         <div
-                          className="w-10 h-10 flex items-center justify-center rounded-lg"
                           style={{
-                            backgroundColor: "var(--bg-secondary)",
+                            color: "var(--text-secondary)",
                           }}>
-                          <div
-                            style={{
-                              color: "var(--text-secondary)",
-                            }}>
-                            {getPermissionIcon(permission.type || "Display")}
-                          </div>
-                        </div>
-                        <div
-                          className="text-[20px] font-medium"
-                          style={{
-                            fontFamily: '"Red Hat Display", sans-serif',
-                            color: "var(--text-primary)",
-                          }}>
-                          {(permission.type || "Display").charAt(0).toUpperCase() + (permission.type || "Display").slice(1).toLowerCase()}
+                          {getPermissionIcon(permission.type || "Display")}
                         </div>
                       </div>
                       <div
-                        className="text-[20px] text-right max-w-[50%]"
+                        className="text-[20px] font-medium"
                         style={{
                           fontFamily: '"Red Hat Display", sans-serif',
-                          color: "var(--text-secondary)",
+                          color: "var(--text-primary)",
                         }}>
-                        {permission.description || getPermissionDescription(permission.type || "Display")}
+                        {(permission.type || "Display").charAt(0).toUpperCase() +
+                          (permission.type || "Display").slice(1).toLowerCase()}
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div
-                    className="text-center py-8 rounded-xl"
-                    style={{
-                      backgroundColor: "var(--primaary-foreground)",
-                      border: "1px solid var(--border-color)",
-                    }}>
                     <div
-                      className="text-[20px] font-medium"
+                      className="text-[20px] text-right max-w-[50%]"
                       style={{
+                        fontFamily: '"Red Hat Display", sans-serif',
                         color: "var(--text-secondary)",
                       }}>
-                      No special permissions required
-                    </div>
-                    <div
-                      className="text-[13px] mt-2"
-                      style={{
-                        color: "var(--text-secondary)",
-                      }}>
-                      This app runs with standard system permissions only.
+                      {permission.description || getPermissionDescription(permission.type || "Display")}
                     </div>
                   </div>
-                )}
-              </div>
+                ))
+              ) : (
+                <div
+                  className="text-center py-8 rounded-xl"
+                  style={{
+                    backgroundColor: "var(--primaary-foreground)",
+                    border: "1px solid var(--border-color)",
+                  }}>
+                  <div
+                    className="text-[20px] font-medium"
+                    style={{
+                      color: "var(--text-secondary)",
+                    }}>
+                    No special permissions required
+                  </div>
+                  <div
+                    className="text-[13px] mt-2"
+                    style={{
+                      color: "var(--text-secondary)",
+                    }}>
+                    This app runs with standard system permissions only.
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
 
-            <div className="h-[1px] w-full bg-[var(--border)] mb-[24px] mt-[24px]"></div>
+          <div className="h-[1px] w-full bg-[var(--border)] mb-[24px] mt-[24px]"></div>
 
-            {/* Hardware Section */}
-            <div>
-              <h2
-                className="text-[24px] font-semibold mb-[24px]"
-                style={{
-                  fontFamily: '"Red Hat Display", sans-serif',
-                  color: "var(--text-primary)",
-                }}>
-                Hardware
-              </h2>
-              <p
-                className="text-[15px] mb-6 leading-[1.6]"
-                style={{
-                  fontFamily: '"Red Hat Display", sans-serif',
-                  color: "var(--text-secondary)",
-                }}>
-                Hardware components required or recommended for this app.
-              </p>
-              <div className="space-y-3">
-                {app.hardwareRequirements && app.hardwareRequirements.length > 0 ? (
-                  app.hardwareRequirements.map((req, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-[24px] rounded-[16px] h-[74px]"
-                      style={{
-                        backgroundColor: "var(--primaary-foreground)",
-
-                      }}>
-                      <div className="flex items-center">
+          {/* Hardware Section */}
+          <div>
+            <h2
+              className="text-[24px] font-semibold mb-[24px]"
+              style={{
+                fontFamily: '"Red Hat Display", sans-serif',
+                color: "var(--text-primary)",
+              }}>
+              Hardware
+            </h2>
+            <p
+              className="text-[15px] mb-6 leading-[1.6]"
+              style={{
+                fontFamily: '"Red Hat Display", sans-serif',
+                color: "var(--text-secondary)",
+              }}>
+              Hardware components required or recommended for this app.
+            </p>
+            <div className="space-y-3">
+              {app.hardwareRequirements && app.hardwareRequirements.length > 0 ? (
+                app.hardwareRequirements.map((req, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-[24px] rounded-[16px] h-[74px]"
+                    style={{
+                      backgroundColor: "var(--primaary-foreground)",
+                    }}>
+                    <div className="flex items-center">
+                      <div
+                        className="w-10 h-10 flex items-center justify-center rounded-lg"
+                        style={{
+                          backgroundColor: "var(--bg-secondary)",
+                        }}>
                         <div
-                          className="w-10 h-10 flex items-center justify-center rounded-lg"
                           style={{
-                            backgroundColor: "var(--bg-secondary)",
+                            color: "var(--text-secondary)",
                           }}>
-                          <div
-                            style={{
-                              color: "var(--text-secondary)",
-                            }}>
-                            {hardwareIcons[req.type]}
-                          </div>
+                          {hardwareIcons[req.type]}
                         </div>
+                      </div>
+                      <div
+                        className="text-[20px] font-medium"
+                        style={{
+                          fontFamily: '"Red Hat Display", sans-serif',
+                          color: "var(--text-primary)",
+                        }}>
+                        {req.type.charAt(0).toUpperCase() + req.type.slice(1).toLowerCase()}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {req.level && (
                         <div
                           className="text-[20px] font-medium"
                           style={{
-                            fontFamily: '"Red Hat Display", sans-serif',
-                            color: "var(--text-primary)",
+                            color:
+                              req.level === HardwareRequirementLevel.REQUIRED
+                                ? "var(--warning-text)"
+                                : "var(--text-secondary)",
                           }}>
-                          {req.type.charAt(0).toUpperCase() + req.type.slice(1).toLowerCase()}
+                          {req.level === HardwareRequirementLevel.REQUIRED ? "Required" : "Optional"}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        {req.level && (
-                          <div
-                            className="text-[20px] font-medium"
-                            style={{
-                              color:
-                                req.level === HardwareRequirementLevel.REQUIRED
-                                  ? "var(--warning-text)"
-                                  : "var(--text-secondary)",
-                            }}>
-                            {req.level === HardwareRequirementLevel.REQUIRED ? "Required" : "Optional"}
-                          </div>
-                        )}
-                        {req.description && (
-                          <div
-                            className="text-[20px] text-right"
-                            style={{
-                              fontFamily: '"Red Hat Display", sans-serif',
-                              color: "var(--text-secondary)",
-                            }}>
-                            {req.description}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div
-                    className="text-center py-8 rounded-xl"
-                    style={{
-                      backgroundColor: "var(--primaary-foreground)",
-                      border: "1px solid var(--border-color)",
-                    }}>
-                    <div
-                      className="text-[20px] font-medium"
-                      style={{
-                        color: "var(--text-secondary)",
-                      }}>
-                      No specific hardware requirements
-                    </div>
-                    <div
-                      className="text-[13px] mt-2"
-                      style={{
-                        color: "var(--text-secondary)",
-                      }}>
-                      This app works with any glasses configuration.
+                      )}
+                      {req.description && (
+                        <div
+                          className="text-[20px] text-right"
+                          style={{
+                            fontFamily: '"Red Hat Display", sans-serif',
+                            color: "var(--text-secondary)",
+                          }}>
+                          {req.description}
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-              </div>
+                ))
+              ) : (
+                <div
+                  className="text-center py-8 rounded-xl"
+                  style={{
+                    backgroundColor: "var(--primaary-foreground)",
+                    border: "1px solid var(--border-color)",
+                  }}>
+                  <div
+                    className="text-[20px] font-medium"
+                    style={{
+                      color: "var(--text-secondary)",
+                    }}>
+                    No specific hardware requirements
+                  </div>
+                  <div
+                    className="text-[13px] mt-2"
+                    style={{
+                      color: "var(--text-secondary)",
+                    }}>
+                    This app works with any glasses configuration.
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
 
-            <div className="h-[1px] w-full bg-[var(--border)] mb-[24px] mt-[24px]"></div>
+          <div className="h-[1px] w-full bg-[var(--border)] mb-[24px] mt-[24px]"></div>
 
-            {/* Contact Section */}
-            <div>
-              <h2
-                className="text-[24px] font-semibold mb-[24px]"
-                style={{
-                  fontFamily: '"Red Hat Display", sans-serif',
-                  color: "var(--text-primary)",
-                }}>
-                Contact
-              </h2>
-              <p
-                className="text-[20px] mb-[24px] leading-[1.6]"
-                style={{
-                  fontFamily: '"Red Hat Display", sans-serif',
-                  color: "var(--text-secondary)",
-                }}>
-                Get in touch with the developer or learn more about this app.
-              </p>
-              <div className="space-y-4">
+          {/* Contact Section */}
+          <div>
+            <h2
+              className="text-[24px] font-semibold mb-[24px]"
+              style={{
+                fontFamily: '"Red Hat Display", sans-serif',
+                color: "var(--text-primary)",
+              }}>
+              Contact
+            </h2>
+            <p
+              className="text-[20px] mb-[24px] leading-[1.6]"
+              style={{
+                fontFamily: '"Red Hat Display", sans-serif',
+                color: "var(--text-secondary)",
+              }}>
+              Get in touch with the developer or learn more about this app.
+            </p>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-3">
+                <span
+                  className="text-[20px] font-medium"
+                  style={{
+                    color: "var(--text-secondary)",
+                  }}>
+                  Company
+                </span>
+                <span
+                  className="text-[20px] font-normal text-right"
+                  style={{
+                    color: "var(--text-primary)",
+                  }}>
+                  {app.orgName || app.developerProfile?.company || "Mentra"}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center py-3">
+                <span
+                  className="text-[20px] font-medium"
+                  style={{
+                    color: "var(--text-secondary)",
+                  }}>
+                  Package Name
+                </span>
+                <span
+                  className="text-[20px] font-normal hover:underline text-right"
+                  style={{
+                    color: "var(--accent-primary)",
+                  }}>
+                  {app.packageName}
+                </span>
+              </div>
+
+              {app.developerProfile?.website && (
                 <div className="flex justify-between items-center py-3">
                   <span
                     className="text-[20px] font-medium"
                     style={{
                       color: "var(--text-secondary)",
                     }}>
-                    Company
+                    Website
                   </span>
-                  <span
-                    className="text-[20px] font-normal text-right"
+                  <a
+                    href={app.developerProfile.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[20px] font-normal hover:underline text-right"
                     style={{
-                      color: "var(--text-primary)",
+                      color: "var(--accent-primary)",
                     }}>
-                    {app.orgName || app.developerProfile?.company || "Mentra"}
-                  </span>
+                    {app.developerProfile.website}
+                  </a>
                 </div>
+              )}
 
-                {app.developerProfile?.website && (
-                  <div className="flex justify-between items-center py-3">
-                    <span
-                      className="text-[20px] font-medium"
-                      style={{
-                        color: "var(--text-secondary)",
-                      }}>
-                      Website
-                    </span>
-                    <a
-                      href={app.developerProfile.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[20px] font-normal hover:underline text-right"
-                      style={{
-                        color: "var(--accent-primary)",
-                      }}>
-                      {app.developerProfile.website}
-                    </a>
-                  </div>
-                )}
-
-                {app.developerProfile?.contactEmail && (
-                  <div className="flex justify-between items-center py-3">
-                    <span
-                      className="text-[20px] font-medium"
-                      style={{
-                        color: "var(--text-secondary)",
-                      }}>
-                      Contact
-                    </span>
-                    <a
-                      href={`mailto:${app.developerProfile.contactEmail}`}
-                      className="text-[20px] font-normal hover:underline text-right"
-                      style={{
-                        color: "var(--accent-primary)",
-                      }}>
-                      {app.developerProfile.contactEmail}
-                    </a>
-                  </div>
-                )}
-              </div>
+              {app.developerProfile?.contactEmail && (
+                <div className="flex justify-between items-center py-3">
+                  <span
+                    className="text-[20px] font-medium"
+                    style={{
+                      color: "var(--text-secondary)",
+                    }}>
+                    Contact
+                  </span>
+                  <a
+                    href={`mailto:${app.developerProfile.contactEmail}`}
+                    className="text-[20px] font-normal hover:underline text-right"
+                    style={{
+                      color: "var(--accent-primary)",
+                    }}>
+                    {app.developerProfile.contactEmail}
+                  </a>
+                </div>
+              )}
             </div>
           </div>
+        </div>
 
-          {/* Get MentraOS - Hide in React Native WebView */}
-          {!isWebView && (
-            <div className="text-center mb-8 mt-12">
-              <div className="flex justify-center">
-                <GetMentraOSButton size="small" />
-              </div>
+        {/* Get MentraOS - Hide in React Native WebView */}
+        {!isWebView && (
+          <div className="text-center mb-8 mt-12">
+            <div className="flex justify-center">
+              <GetMentraOSButton size="small" />
             </div>
-          )}
+          </div>
+        )}
       </div>
     </div>
   )

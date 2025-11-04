@@ -53,28 +53,13 @@ const AppStoreDesktop: React.FC = () => {
     setCurrentSlide((prev) => (prev + 1) % slideComponents.length)
   }, [slideComponents.length])
 
-  // Helper function to reset the slideshow timer
-  const resetSlideTimer = useCallback(() => {
-    if (slideIntervalRef.current) {
-      clearInterval(slideIntervalRef.current)
-    }
-    slideIntervalRef.current = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slideComponents.length)
-    }, 7500000000)
-  }, [slideComponents.length])
-
   const goToPrevSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev - 1 + slideComponents.length) % slideComponents.length)
-    resetSlideTimer()
-  }, [slideComponents.length, resetSlideTimer])
+  }, [slideComponents.length])
 
-  const goToSlide = useCallback(
-    (index: number) => {
-      setCurrentSlide(index)
-      resetSlideTimer()
-    },
-    [resetSlideTimer],
-  )
+  const goToSlide = useCallback((index: number) => {
+    setCurrentSlide(index)
+  }, [])
 
   // Set slides as loaded after a short delay
   useEffect(() => {
@@ -85,11 +70,11 @@ const AppStoreDesktop: React.FC = () => {
     return () => clearTimeout(timer)
   }, [])
 
-  // Auto-play slideshow
+  // Auto-play slideshow - advance every 8 seconds
   useEffect(() => {
     slideIntervalRef.current = setInterval(() => {
       goToNextSlide()
-    }, 750000000)
+    }, 8000)
 
     return () => {
       if (slideIntervalRef.current) {

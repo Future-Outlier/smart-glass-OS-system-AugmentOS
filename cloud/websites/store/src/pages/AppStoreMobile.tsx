@@ -14,7 +14,7 @@ import SkeletonAppCard from "../components/SkeletonAppCard"
 import SkeletonSlider from "../components/SkeletonSlider"
 import {toast} from "sonner"
 import {formatCompatibilityError} from "../utils/errorHandling"
-import {CaptionsSlideMobile, MergeSlideMobile, XSlideMobile} from "../components/ui/slides"
+import {CaptionsSlideMobile, MergeSlideMobile, StreamSlideMobile, XSlideMobile} from "../components/ui/slides"
 
 /**
  * Mobile-optimized AppStore component
@@ -39,7 +39,7 @@ const AppStoreMobile: React.FC = () => {
   const [orgName, setOrgName] = useState<string>("")
 
   // Slideshow state - mobile slides only
-  const slideComponents = [CaptionsSlideMobile, MergeSlideMobile, XSlideMobile]
+  const slideComponents = [CaptionsSlideMobile, MergeSlideMobile, StreamSlideMobile, XSlideMobile]
   const [currentSlide, setCurrentSlide] = useState(0)
   const slideIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -75,7 +75,7 @@ const AppStoreMobile: React.FC = () => {
   useEffect(() => {
     slideIntervalRef.current = setInterval(() => {
       goToNextSlide()
-    }, 750000000)
+    }, 8000)
 
     return () => {
       if (slideIntervalRef.current) {
@@ -506,7 +506,7 @@ const AppStoreMobile: React.FC = () => {
                 </motion.div>
 
                 {/* Slide Indicators */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2 z-1">
+                <div className="absolute top-[10px] left-1/2 -translate-x-1/2 flex gap-2 z-1">
                   {slideComponents.map((_, index) => (
                     <motion.button
                       key={index}
