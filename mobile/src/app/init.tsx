@@ -71,7 +71,7 @@ export default function InitScreen() {
   }
 
   const navigateToDestination = async () => {
-    if (!user) {
+    if (!user?.email) {
       replace("/auth/login")
       return
     }
@@ -111,7 +111,6 @@ export default function InitScreen() {
     try {
       const token = session?.token
       console.log("EXCHANGING TOKEN: ")
-      console.log(token)
       if (!token) {
         setErrorType("auth")
         setState("error")
