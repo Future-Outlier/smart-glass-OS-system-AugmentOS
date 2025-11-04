@@ -1,0 +1,168 @@
+---
+title: Mira Tool Calls
+description: Let users control your app with natural language through Mira's tool calls.
+---
+
+## What is Mira?
+
+Mira is MentraOS's AI assistant that lets users control your app using natural language. Instead of building UI buttons and menus, you expose functions that Mira automatically calls when users ask for something.
+
+<Info>
+**The magic:** User says "remind me to buy milk" → Mira calls your `add_todo` function → Your app creates the todo → Mira confirms back to the user.
+</Info>
+
+<Tip>
+Your app doesn't even need to be running! Mira can trigger your functions anytime and relay results back to users.
+</Tip>
+
+## Quick Start
+
+<Steps>
+  <Step title="Define your tool in the Developer Console">
+    Go to [console.mentra.glass/apps](https://console.mentra.glass/apps) and add your tool with an ID, description, and parameters.
+  </Step>
+
+  <Step title="Implement the onToolCall method">
+    Override `onToolCall` in your AppServer to handle the tool logic.
+  </Step>
+
+  <Step title="Test with Mira">
+    Talk naturally to Mira and watch your tool get called automatically!
+  </Step>
+</Steps>
+
+## Example Code
+
+Here's how to handle a Mira tool call in your app:
+
+<CodeGroup>
+
+```typescript Simple Example
+import {AppServer, ToolCall} from "@mentra/sdk"
+
+export class TodoAppServer extends AppServer {
+  protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
+    // Check which tool Mira is calling
+    if (toolCall.toolId === "add_todo") {
+      // Get parameters Mira extracted from the user's message
+      const todoItem = toolCall.toolParameters.todo_item as string;
+      const dueDate = toolCall.toolParameters.due_date as string | undefined;
+
+      // Do your app logic
+      await this.todoService.addTodo(toolCall.userId, todoItem, dueDate);
+
+      // Return a message for Mira to tell the user
+      return `✅ Added: "${todoItem}"${dueDate ? ` due ${dueDate}` : ''}`;
+    }
+
+    return undefined; // You don't handle this tool
+  }
+}
+```
+
+```typescript Multiple Tools
+protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
+  switch (toolCall.toolId) {
+    case "add_todo":
+      return this.handleAddTodo(toolCall)
+    case "list_todos":
+      return this.handleListTodos(toolCall)
+    case "complete_todo":
+      return this.handleCompleteTodo(toolCall)
+    default:
+      return undefined // Unknown tool
+  }
+}
+```
+
+</CodeGroup>
+
+<AccordionGroup>
+  <Accordion title="What's happening in this code?">
+    1. **Override** the `onToolCall` method in your AppServer class
+    2. **Check** `toolCall.toolId` to identify which function to run
+    3. **Extract** parameters from `toolCall.toolParameters`
+    4. **Execute** your app logic
+    5. **Return** a message that Mira will use to respond to the user
+  </Accordion>
+
+  <Accordion title="What can I return from onToolCall?">
+    - **A string**: Mira uses it to craft a response to the user
+    - **`GIVE_APP_CONTROL_OF_TOOL_RESPONSE`**: Your app will respond directly (useful for custom UI)
+    - **`undefined`**: You don't handle this tool
+  </Accordion>
+</AccordionGroup>
+
+## Developer Console Setup
+
+<Card title="Define Your Tools" icon="tools" href="https://console.mentra.glass/apps">
+  Configure your Mira tools in the Developer Console:
+
+  1. Select your app
+  2. Navigate to "AI Tools" section
+  3. Add tools with IDs, descriptions, and parameters
+  4. Mira will automatically start recognizing them
+</Card>
+
+<Warning>
+The Developer Console UI is being updated. Screenshots may look different, but the core functionality remains the same.
+</Warning>
+
+## How Mira Works Behind the Scenes
+
+<Steps>
+  <Step title="User speaks to Mira">
+    **Example:** "Hey Mira, remind me to buy milk tomorrow"
+  </Step>
+
+  <Step title="Mira analyzes the request">
+    Mira's AI identifies your `add_todo` tool as the best match
+  </Step>
+
+  <Step title="Mira extracts parameters">
+    - `todo_item: "buy milk"`
+    - `due_date: "2025-11-04"`
+  </Step>
+
+  <Step title="Mira calls your app">
+    Sends a POST request to your `/tool` endpoint (SDK handles this automatically)
+  </Step>
+
+  <Step title="Your code executes">
+    Your `onToolCall` method runs the business logic
+  </Step>
+
+  <Step title="You respond">
+    Return a string like "✅ Added: buy milk"
+  </Step>
+
+  <Step title="Mira responds to user">
+    Mira formats your response into natural language and delivers it
+  </Step>
+</Steps>
+
+<Note>
+**Key insight:** Tool calls work even when your app isn't running. Mira can also chain multiple tools together to fulfill complex requests.
+</Note>
+
+## Tool Configuration
+
+<Card title="Tool Properties" icon="wrench">
+  - **`id`**: Unique identifier (e.g., `"add_todo"`)
+  - **`description`**: What it does (helps Mira know when to call it)
+  - **`activationPhrases`**: Optional trigger phrases
+  - **`parameters`**: What data you need
+</Card>
+
+<Card title="Parameter Properties" icon="sliders">
+  - **`type`**: `"string"`, `"number"`, or `"boolean"`
+  - **`description`**: What this parameter is for
+  - **`required`**: Is it mandatory?
+  - **`enum`**: Limit to specific values (optional)
+</Card>
+
+<Tip>
+See [ToolSchema](/reference/interfaces/tool-types#toolschema) for the complete type reference.
+</Tip>
+
+

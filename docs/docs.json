@@ -31,11 +31,7 @@
               "example-apps",
               {
                 "group": "Deployment",
-                "pages": [
-                  "deployment",
-                  "railway-deployment", 
-                  "ubuntu-deployment"
-                ]
+                "pages": ["deployment", "railway-deployment", "ubuntu-deployment"]
               }
             ]
           },
@@ -51,7 +47,7 @@
               "settings",
               "audio",
               "led",
-              "tools",
+              "mira-tool-calls",
               "capabilities",
               {
                 "group": "Camera",
@@ -103,6 +99,7 @@
           }
         ]
       },
+
       {
         "tab": "OS Devs",
         "groups": [
@@ -130,12 +127,21 @@
         ]
       },
       {
-        "tab": "Glasses OEMs", 
+        "tab": "Glasses OEMs",
         "groups": [
           {
             "group": "Glasses OEMs",
             "icon": "industry",
             "pages": ["glasses-oems"]
+          }
+        ]
+      },
+      {
+        "tab": "Cook Book",
+        "groups": [
+          {
+            "group": "Recipes",
+            "pages": ["cookbook/mira-tool-calls-advanced"]
           }
         ]
       }

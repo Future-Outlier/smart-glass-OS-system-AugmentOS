@@ -1,0 +1,625 @@
+---
+title: Advanced Mira Tool Call Patterns
+description: Master advanced techniques for building powerful Mira Tool Calls
+icon: 'wand-magic-sparkles'
+---
+
+## Overview
+
+This guide covers advanced patterns and best practices for building sophisticated Mira Tool Calls. Learn how to handle complex scenarios, optimize performance, and create seamless voice experiences.
+
+<Info>
+This is a continuation of the [Mira Tool Calls](/tools) guide. Make sure you understand the basics before diving into these advanced patterns.
+</Info>
+
+## Common Tool Patterns
+
+These patterns apply to almost any app you build with Mira Tool Calls.
+
+### CRUD Operations
+
+The Create, Read, Update, Delete pattern is fundamental to most apps:
+
+<Tabs>
+  <Tab title="Create">
+    ```json
+    {
+      "id": "create_item",
+      "description": "Create a new item",
+      "parameters": {
+        "name": {
+          "type": "string",
+          "description": "Name of the item",
+          "required": true
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the item",
+          "enum": ["work", "personal", "shopping"]
+        }
+      }
+    }
+    ```
+
+    **Implementation:**
+    ```typescript
+    case "create_item": {
+      const name = toolParameters.name as string
+      const category = toolParameters.category as string
+
+      const item = await db.items.create({
+        userId,
+        name,
+        category,
+        createdAt: new Date()
+      })
+
+      return `✅ Created: ${name}`
+    }
+    ```
+  </Tab>
+
+  <Tab title="Read">
+    ```json
+    {
+      "id": "get_items",
+      "description": "Get a list of items",
+      "parameters": {
+        "limit": {
+          "type": "number",
+          "description": "Maximum number of items to return"
+        },
+        "category": {
+          "type": "string",
+          "description": "Filter by category"
+        }
+      }
+    }
+    ```
+
+    **Implementation:**
+    ```typescript
+    case "get_items": {
+      const limit = toolParameters.limit as number | undefined
+      const category = toolParameters.category as string | undefined
+
+      const items = await db.items.findMany({
+        where: {
+          userId,
+          ...(category && {category})
+        },
+        take: limit || 10
+      })
+
+      const list = items.map(i => `• ${i.name}`).join('\n')
+      return `Your items:\n${list}`
+    }
+    ```
+  </Tab>
+
+  <Tab title="Update">
+    ```json
+    {
+      "id": "update_item",
+      "description": "Update an existing item",
+      "parameters": {
+        "item_id": {
+          "type": "string",
+          "description": "ID of the item to update",
+          "required": true
+        },
+        "new_name": {
+          "type": "string",
+          "description": "New name for the item"
+        },
+        "new_category": {
+          "type": "string",
+          "description": "New category for the item"
+        }
+      }
+    }
+    ```
+
+    **Implementation:**
+    ```typescript
+    case "update_item": {
+      const itemId = toolParameters.item_id as string
+      const updates: any = {}
+
+      if (toolParameters.new_name) {
+        updates.name = toolParameters.new_name
+      }
+      if (toolParameters.new_category) {
+        updates.category = toolParameters.new_category
+      }
+
+      await db.items.update({
+        where: {id: itemId, userId},
+        data: updates
+      })
+
+      return `✓ Updated item`
+    }
+    ```
+  </Tab>
+
+  <Tab title="Delete">
+    ```json
+    {
+      "id": "delete_item",
+      "description": "Delete an item",
+      "parameters": {
+        "item_id": {
+          "type": "string",
+          "description": "ID of the item to delete",
+          "required": true
+        }
+      }
+    }
+    ```
+
+    **Implementation:**
+    ```typescript
+    case "delete_item": {
+      const itemId = toolParameters.item_id as string
+
+      const item = await db.items.delete({
+        where: {id: itemId, userId}
+      })
+
+      return `🗑️ Deleted: ${item.name}`
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Advanced Response Patterns
+
+### Conditional UI Display
+
+Show custom UI when the app is active, otherwise return text for Mira to speak:
+
+```typescript
+case "get_items": {
+  const items = await fetchUserItems(userId)
+
+  if (toolCall.activeSession) {
+    // App is open - show rich UI
+    toolCall.activeSession.layouts.showList({
+      items: items.map(i => ({
+        title: i.name,
+        subtitle: i.category,
+        icon: i.icon
+      }))
+    })
+    return GIVE_APP_CONTROL_OF_TOOL_RESPONSE
+  } else {
+    // App is closed - return text for Mira
+    const list = items.map(i => `• ${i.name}`).join('\n')
+    return `Your items:\n${list}`
+  }
+}
+```
+
+<Tip>
+Always check `toolCall.activeSession` to provide the best experience whether the app is open or not!
+</Tip>
+
+### Progressive Responses
+
+Handle long-running operations gracefully:
+
+```typescript
+case "process_data": {
+  // Send immediate acknowledgment
+  const response = "Processing your data..."
+
+  // Start async operation
+  processDataAsync(userId, toolParameters).then(result => {
+    // Notify user when complete
+    this.notifyUser(userId, `✅ Processing complete: ${result}`)
+  })
+
+  return response
+}
+```
+
+### Error Handling
+
+Provide clear, actionable error messages:
+
+```typescript
+case "delete_item": {
+  const itemId = toolParameters.item_id as string
+
+  try {
+    const item = await db.items.findUnique({
+      where: {id: itemId, userId}
+    })
+
+    if (!item) {
+      return "❌ Item not found. Say 'list items' to see what you have."
+    }
+
+    await db.items.delete({where: {id: itemId}})
+    return `🗑️ Deleted: ${item.name}`
+
+  } catch (error) {
+    console.error('Delete error:', error)
+    return "Sorry, something went wrong. Please try again."
+  }
+}
+```
+
+<Warning>
+Always handle errors gracefully and provide helpful feedback to users!
+</Warning>
+
+## Parameter Handling Patterns
+
+### Optional Parameters with Defaults
+
+```typescript
+case "search_items": {
+  const query = toolParameters.query as string
+  const limit = (toolParameters.limit as number) || 10
+  const category = toolParameters.category as string | undefined
+
+  const results = await searchItems({
+    userId,
+    query,
+    limit,
+    category
+  })
+
+  return `Found ${results.length} items matching "${query}"`
+}
+```
+
+### Enum Validation
+
+```typescript
+case "set_priority": {
+  const itemId = toolParameters.item_id as string
+  const priority = toolParameters.priority as 'low' | 'medium' | 'high'
+
+  // TypeScript ensures this is one of the enum values
+  await db.items.update({
+    where: {id: itemId, userId},
+    data: {priority}
+  })
+
+  return `Priority set to ${priority}`
+}
+```
+
+### Complex Object Parameters
+
+For complex data, use JSON strings:
+
+```json
+{
+  "id": "create_event",
+  "description": "Create a calendar event",
+  "parameters": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "start_time": {
+      "type": "string",
+      "description": "ISO timestamp"
+    },
+    "attendees": {
+      "type": "string",
+      "description": "Comma-separated email addresses"
+    }
+  }
+}
+```
+
+```typescript
+case "create_event": {
+  const title = toolParameters.title as string
+  const startTime = new Date(toolParameters.start_time as string)
+  const attendeesStr = toolParameters.attendees as string | undefined
+  const attendees = attendeesStr?.split(',').map(e => e.trim()) || []
+
+  await createCalendarEvent({
+    title,
+    startTime,
+    attendees
+  })
+
+  return `📅 Event created: ${title}`
+}
+```
+
+## Multi-Step Workflows
+
+Sometimes you need multiple tool calls to complete a task:
+
+### Pattern 1: Tool Chaining
+
+Let Mira handle the workflow:
+
+```json
+// Step 1: Search
+{
+  "id": "search_products",
+  "description": "Search for products",
+  "parameters": {
+    "query": {"type": "string", "required": true}
+  }
+}
+
+// Step 2: Add to cart (uses result from step 1)
+{
+  "id": "add_to_cart",
+  "description": "Add a product to shopping cart",
+  "parameters": {
+    "product_id": {"type": "string", "required": true}
+  }
+}
+```
+
+**User says:** "Find red shoes and add them to my cart"
+
+**Mira's workflow:**
+1. Calls `search_products` with query="red shoes"
+2. Extracts product_id from results
+3. Calls `add_to_cart` with product_id
+
+### Pattern 2: Stateful Sessions
+
+Store context in the session:
+
+```typescript
+protected async onSessionStart(session: AppSession): Promise<void> {
+  session.data.conversationContext = {}
+}
+
+protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
+  switch (toolCall.toolId) {
+    case "start_booking": {
+      const destination = toolParameters.destination as string
+
+      if (toolCall.activeSession) {
+        toolCall.activeSession.data.bookingContext = {
+          destination,
+          step: 'dates'
+        }
+      }
+
+      return `Great! Where would you like to go to ${destination}? What dates?`
+    }
+
+    case "set_dates": {
+      if (toolCall.activeSession?.data.bookingContext) {
+        toolCall.activeSession.data.bookingContext.dates = toolParameters.dates
+        toolCall.activeSession.data.bookingContext.step = 'confirmation'
+      }
+
+      return "Perfect! Ready to confirm your booking?"
+    }
+  }
+}
+```
+
+## Performance Optimization
+
+### Caching Frequently Used Data
+
+```typescript
+private cache = new Map<string, {data: any, timestamp: number}>()
+
+case "get_popular_items": {
+  const cacheKey = `popular_${userId}`
+  const cached = this.cache.get(cacheKey)
+
+  // Return cached data if less than 5 minutes old
+  if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
+    return this.formatItems(cached.data)
+  }
+
+  // Fetch fresh data
+  const items = await db.items.findMany({
+    where: {userId},
+    orderBy: {popularity: 'desc'},
+    take: 10
+  })
+
+  this.cache.set(cacheKey, {data: items, timestamp: Date.now()})
+  return this.formatItems(items)
+}
+```
+
+### Lazy Loading
+
+Only fetch data when needed:
+
+```typescript
+case "get_item_details": {
+  const itemId = toolParameters.item_id as string
+
+  // Fetch only basic info first
+  const item = await db.items.findUnique({
+    where: {id: itemId},
+    select: {id: true, name: true, category: true}
+  })
+
+  if (!item) return "Item not found"
+
+  // Fetch detailed info only if user asks
+  if (toolParameters.include_details) {
+    const details = await db.itemDetails.findUnique({
+      where: {itemId}
+    })
+    return `${item.name}: ${details.description}`
+  }
+
+  return item.name
+}
+```
+
+## Testing Your Tools
+
+### Unit Testing Tool Handlers
+
+```typescript
+import {describe, it, expect} from 'vitest'
+
+describe('Tool Handlers', () => {
+  it('should create an item', async () => {
+    const server = new MyAppServer(config)
+
+    const result = await server.onToolCall({
+      toolId: 'create_item',
+      userId: 'test-user',
+      toolParameters: {
+        name: 'Test Item',
+        category: 'work'
+      },
+      activeSession: null
+    })
+
+    expect(result).toContain('Created: Test Item')
+  })
+
+  it('should handle missing items', async () => {
+    const server = new MyAppServer(config)
+
+    const result = await server.onToolCall({
+      toolId: 'delete_item',
+      userId: 'test-user',
+      toolParameters: {
+        item_id: 'non-existent'
+      },
+      activeSession: null
+    })
+
+    expect(result).toContain('not found')
+  })
+})
+```
+
+### Testing with Mira
+
+<Steps>
+  <Step title="Test basic invocation">
+    **Say:** "Hey Mira, [your tool's activation phrase]"
+
+    Verify Mira recognizes and calls your tool
+  </Step>
+
+  <Step title="Test parameter extraction">
+    Try variations with different parameter values
+
+    **Example:** "Create a work item called Meeting Notes"
+  </Step>
+
+  <Step title="Test error cases">
+    Try invalid inputs, missing data, etc.
+
+    Ensure error messages are clear and helpful
+  </Step>
+
+  <Step title="Test edge cases">
+    Empty lists, very long inputs, special characters
+  </Step>
+</Steps>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Write clear tool descriptions">
+    Mira uses your tool description to decide when to call it. Be specific!
+
+    ❌ Bad: "Manage items"
+
+    ✅ Good: "Create a new item in the user's list with a name and optional category"
+  </Accordion>
+
+  <Accordion title="Keep activation phrases natural">
+    Use phrases people actually say:
+
+    ❌ Bad: "invoke item creation"
+
+    ✅ Good: "add a", "create", "make a new"
+  </Accordion>
+
+  <Accordion title="Return helpful responses">
+    Your response helps Mira craft the final message. Include relevant details:
+
+    ❌ Bad: "Done"
+
+    ✅ Good: "Added 'Buy milk' to your shopping list, due tomorrow"
+  </Accordion>
+
+  <Accordion title="Handle both app states">
+    Always check if `activeSession` exists and provide appropriate responses for both states
+  </Accordion>
+
+  <Accordion title="Validate user permissions">
+    ```typescript
+    case "delete_all_items": {
+      // Verify this is the user's data
+      const count = await db.items.count({
+        where: {userId}
+      })
+
+      await db.items.deleteMany({where: {userId}})
+
+      return `Deleted ${count} items`
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Common Pitfalls
+
+<Warning>
+**Avoid these common mistakes:**
+
+1. **Not handling undefined parameters** - Always check if optional parameters exist
+2. **Forgetting to validate user ownership** - Never trust the item_id alone
+3. **Returning overly long responses** - Keep responses concise for voice
+4. **Not handling async operations** - Use proper error handling with try/catch
+5. **Ignoring the activeSession** - Provide different experiences based on app state
+</Warning>
+
+## Real-World Examples
+
+<CardGroup cols={2}>
+  <Card title="Note Taking App" icon="note-sticky">
+    Tools: create_note, search_notes, update_note, delete_note, tag_note
+  </Card>
+
+  <Card title="Shopping List" icon="cart-shopping">
+    Tools: add_item, remove_item, mark_bought, clear_list, share_list
+  </Card>
+
+  <Card title="Expense Tracker" icon="money-bill">
+    Tools: log_expense, get_spending, set_budget, categorize_expense
+  </Card>
+
+  <Card title="Fitness Tracker" icon="dumbbell">
+    Tools: log_workout, track_progress, set_goal, view_stats
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Build a Complete App" icon="rocket" href="/cookbook/voice-timer">
+    Try building a full app with these patterns
+  </Card>
+
+  <Card title="API Reference" icon="book" href="/reference/interfaces/tool-types">
+    Explore the complete Tool Types reference
+  </Card>
+
+  <Card title="Join Community" icon="discord" href="https://discord.gg/5ukNvkEAqT">
+    Get help and share your creations
+  </Card>
+</CardGroup>
