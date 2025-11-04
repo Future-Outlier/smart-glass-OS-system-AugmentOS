@@ -4,7 +4,6 @@ import {Text} from "@/components/ignite"
 import {useRoute} from "@react-navigation/native"
 import Icon from "react-native-vector-icons/FontAwesome"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import PairingDeviceInfo from "@/components/misc/PairingDeviceInfo"
 import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
 import GlassesPairingLoader from "@/components/misc/GlassesPairingLoader"
 import {getPairingGuide} from "@/components/pairing/GlassesPairingGuides"
@@ -138,7 +137,6 @@ export default function GlassesPairingGuideScreen() {
       />
       <ScrollView style={themed($scrollView)}>
         <View style={themed($contentContainer)}>
-          <PairingDeviceInfo glassesModelName={glassesModelName} />
           {getPairingGuide(glassesModelName)}
           <TouchableOpacity style={themed($helpButton)} onPress={() => setShowTroubleshootingModal(true)}>
             <Icon name="question-circle" size={16} color="#FFFFFF" style={{marginRight: 8}} />
