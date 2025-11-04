@@ -24,7 +24,9 @@
         "groups": [
           {
             "group": "Getting Started",
+            "icon": "terminal",
             "pages": [
+              "overview",
               "quickstart",
               "example-apps",
               {
@@ -39,6 +41,7 @@
           },
           {
             "group": "Core Concepts",
+            "icon": "lightbulb",
             "pages": [
               "core-concepts",
               "app-lifecycle",
@@ -61,12 +64,14 @@
           },
           {
             "group": "SDK Reference",
+            "icon": "code",
             "pages": [
               "reference/index",
               "reference/app-server",
               "reference/app-session",
               {
                 "group": "Managers",
+                "icon": "gear",
                 "pages": [
                   "reference/managers/event-manager",
                   "reference/managers/layout-manager",
@@ -80,6 +85,7 @@
               "reference/enums",
               {
                 "group": "Interfaces",
+                "icon": "shapes",
                 "pages": [
                   "reference/interfaces/config-types",
                   "reference/interfaces/event-types",
@@ -102,6 +108,7 @@
         "groups": [
           {
             "group": "Contributing",
+            "icon": "users",
             "pages": [
               "contributing",
               "contributing/mentraos-manager-guidelines",
@@ -109,6 +116,7 @@
               "contributing/add-new-glasses-support",
               {
                 "group": "ASG Client",
+                "icon": "microchip",
                 "pages": [
                   "asg-client/README",
                   "asg-client/architecture",
@@ -126,6 +134,7 @@
         "groups": [
           {
             "group": "Glasses OEMs",
+            "icon": "industry",
             "pages": ["glasses-oems"]
           }
         ]
