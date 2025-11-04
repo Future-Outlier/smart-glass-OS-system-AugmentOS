@@ -103,10 +103,6 @@ app.use(
       "https://augmentos.org",
       "https://augmentos.dev",
 
-      // AugmentOS App Store / Developer Portal
-      "https://augmentos.dev",
-      "https://appstore.augmentos.dev",
-
       "https://dev.appstore.augmentos.dev",
       "https://dev.augmentos.dev",
       "https://staging.appstore.augmentos.dev",
