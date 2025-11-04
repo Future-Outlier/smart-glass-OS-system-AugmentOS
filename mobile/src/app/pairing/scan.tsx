@@ -26,7 +26,7 @@ import {
   ViewStyle,
   ActivityIndicator,
 } from "react-native"
-import Animated, {useAnimatedStyle, useSharedValue, withDelay, withTiming} from "react-native-reanimated"
+import {useSharedValue, withDelay, withTiming} from "react-native-reanimated"
 import Icon from "react-native-vector-icons/FontAwesome"
 import CoreModule from "core"
 import {Group} from "@/components/ui/Group"
@@ -43,9 +43,6 @@ export default function SelectGlassesBluetoothScreen() {
   const searchResultsRef = useRef<SearchResultDevice[]>(searchResults)
 
   const scrollViewOpacity = useSharedValue(0)
-  const scrollViewAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: scrollViewOpacity.value,
-  }))
   useEffect(() => {
     scrollViewOpacity.value = withDelay(2000, withTiming(1, {duration: 1000}))
   }, [])
@@ -262,30 +259,29 @@ export default function SelectGlassesBluetoothScreen() {
       <View style={themed($container)}>
         <View style={themed($contentContainer)}>
           <Image source={getGlassesOpenImage(glassesModelName)} style={themed($glassesImage)} />
-          <ScrollView
-            style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.lg, paddingRight: theme.spacing.lg}}
-            contentContainerStyle={{flex: 1, justifyContent: "center", height: 300}}>
-            <Animated.View style={scrollViewAnimatedStyle}>
-              {searchResults && searchResults.length > 0 && (
-                <Group>
-                  {searchResults.map((device, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={themed($settingItem)}
-                      onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
-                      <View style={themed($settingsTextContainer)}>
-                        <Text text={`${glassesModelName}  ${device.deviceName}`} style={themed($label)} />
-                      </View>
-                      <Icon name="angle-right" size={24} color={theme.colors.text} />
-                    </TouchableOpacity>
-                  ))}
-                </Group>
-              )}
-              {(!searchResults || searchResults.length === 0) && (
-                <ActivityIndicator size="large" color={theme.colors.text} />
-              )}
-            </Animated.View>
-          </ScrollView>
+          <View style={{justifyContent: "center", flex: 1}}>
+            {!searchResults || searchResults.length === 0 ? (
+              <ActivityIndicator size="large" color={theme.colors.text} />
+            ) : (
+              <ScrollView style={{height: 300}}>
+                {searchResults && searchResults.length > 0 && (
+                  <Group>
+                    {searchResults.map((device, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={themed($settingItem)}
+                        onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
+                        <View style={themed($settingsTextContainer)}>
+                          <Text text={`${glassesModelName}  ${device.deviceName}`} style={themed($label)} />
+                        </View>
+                        <Icon name="angle-right" size={24} color={theme.colors.text} />
+                      </TouchableOpacity>
+                    ))}
+                  </Group>
+                )}
+              </ScrollView>
+            )}
+          </View>
         </View>
       </View>
       <GlassesTroubleshootingModal
@@ -307,6 +303,7 @@ const $contentContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.primary_foreground,
   borderRadius: spacing.lg,
   padding: spacing.lg,
+  gap: spacing.lg,
 })
 
 const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -316,6 +313,7 @@ const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   paddingVertical: spacing.sm,
   paddingHorizontal: spacing.md,
   backgroundColor: colors.background,
+  height: 50,
 })
 
 const $glassesImage: ThemedStyle<ImageStyle> = () => ({

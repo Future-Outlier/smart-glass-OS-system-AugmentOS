@@ -17,7 +17,7 @@ export const Group = ({title, style, children}: {title?: string; style?: ViewSty
 
     let position: "top" | "middle" | "bottom" | null
     if (childrenArray.length === 1) {
-      position = "middle"
+      position = null // when there is only one element, apply uniform border radius
     } else if (index === 0) {
       position = "top"
     } else if (index === childrenArray.length - 1) {
@@ -33,6 +33,8 @@ export const Group = ({title, style, children}: {title?: string; style?: ViewSty
       containerStyle = themed($bottom)
     } else if (position === "middle") {
       containerStyle = themed($middle)
+    } else {
+      containerStyle = themed($none)
     }
 
     return cloneElement(child, {
@@ -69,4 +71,8 @@ const $bottom: ThemedStyle<ViewStyle> = ({spacing}) => ({
 
 const $middle: ThemedStyle<ViewStyle> = ({spacing}) => ({
   borderRadius: spacing.xxs,
+})
+
+const $none: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  borderRadius: spacing.md,
 })
