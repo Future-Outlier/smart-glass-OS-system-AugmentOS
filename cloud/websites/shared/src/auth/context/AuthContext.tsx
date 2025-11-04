@@ -56,7 +56,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(
  * Props for the AuthProvider component.
  */
 interface AuthProviderProps {
-  children: React.ReactNode;
+  children: any;
   /**
    * Set to true to enable WebView-specific authentication logic.
    * This includes checking for URL tokens and exposing global functions
