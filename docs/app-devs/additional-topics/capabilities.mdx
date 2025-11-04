@@ -3,8 +3,6 @@ title: Device capabilities
 description: Detect and use the hardware and software features of connected smart glasses in MentraOS apps to build adaptive experiences across different devices.
 ---
 
-# Device Capabilities
-
 Device capabilities allow your MentraOS app to discover what hardware and software features are available on the connected smart glasses. This enables you to create adaptive experiences that work across different device models with varying capabilities.
 
 ## Overview
@@ -124,9 +122,9 @@ protected async onSession(session: AppSession, sessionId: string, userId: string
 
   if (caps.hasLight) {
     const light = caps.light!;
-    
+
     session.logger.info(`Device has ${light.count || 0} LEDs`);
-    
+
     // Check specific LED types
     if (light.lights) {
       light.lights.forEach((led, index) => {
@@ -139,7 +137,7 @@ protected async onSession(session: AppSession, sessionId: string, userId: string
     // Adapt LED usage based on available types
     const hasRGB = light.lights?.some(led => led.isFullColor);
     const hasWhite = light.lights?.some(led => !led.isFullColor && led.color === 'white');
-    
+
     if (hasRGB) {
       // Can use all colors
       await session.led.turnOn({ color: 'blue', ontime: 1000 });
