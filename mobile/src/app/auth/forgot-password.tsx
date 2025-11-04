@@ -1,6 +1,6 @@
-import React, {useState} from "react"
+import {useState} from "react"
 import {View, TextInput, ActivityIndicator, ScrollView, ViewStyle, TextStyle} from "react-native"
-import {supabase} from "@/supabase/supabaseClient"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle, spacing} from "@/theme"
@@ -8,7 +8,7 @@ import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import showAlert from "@/utils/AlertUtils"
 import {FontAwesome} from "@expo/vector-icons"
-import {Spacer} from "@/components/misc/Spacer"
+import {Spacer} from "@/components/ui/Spacer"
 import Toast from "react-native-toast-message"
 
 export default function ForgotPasswordScreen() {
@@ -29,9 +29,7 @@ export default function ForgotPasswordScreen() {
     setIsLoading(true)
 
     try {
-      const {error} = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "com.mentra://auth/reset-password",
-      })
+      const {error} = await mentraAuthProvider.resetPasswordForEmail(email)
 
       if (error) {
         showAlert(translate("common:error"), error.message)

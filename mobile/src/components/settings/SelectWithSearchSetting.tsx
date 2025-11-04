@@ -162,11 +162,11 @@ const SelectWithSearchSetting: React.FC<SelectWithSearchSettingProps> = ({
                           setModalVisible(false)
                           setSearch("")
                         }}>
-                        <MaterialCommunityIcons
-                          name="check"
-                          size={24}
-                          color={item.value === value ? theme.colors.primary : "transparent"}
-                        />
+                        {item.value === value ? (
+                          <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                        ) : (
+                          <View style={{width: 24, height: 24}} />
+                        )}
                         <Text
                           style={[
                             styles.optionText,

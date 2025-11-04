@@ -648,6 +648,87 @@ export class LiveKitGrpcClient {
   }
 
   /**
+   * Get bridge room connectivity status for this user.
+   */
+  public async getStatus(): Promise<any> {
+    return new Promise((resolve, _reject) => {
+      if (this.disposed || !this.client) {
+        resolve({
+          connected: false,
+          participant_id: "",
+          participant_count: 0,
+          last_disconnect_at: 0,
+          last_disconnect_reason: "client_disposed",
+          server_version: "",
+        });
+        return;
+      }
+      const req = { user_id: this.userSession.userId };
+      try {
+        this.client.getStatus(
+          req,
+          (err: grpc.ServiceError | null, res: any) => {
+            if (err) {
+              this.logger
+                .child({ feature: "livekit-grpc" })
+                .error(err, "GetStatus RPC failed");
+              resolve({
+                connected: false,
+                participant_id: "",
+                participant_count: 0,
+                last_disconnect_at: 0,
+                last_disconnect_reason: "rpc_error",
+                server_version: "",
+              });
+              return;
+            }
+            resolve(res);
+          },
+        );
+      } catch (e) {
+        this.logger
+          .child({ feature: "livekit-grpc" })
+          .error(e, "GetStatus threw");
+        resolve({
+          connected: false,
+          participant_id: "",
+          participant_count: 0,
+          last_disconnect_at: 0,
+          last_disconnect_reason: "exception",
+          server_version: "",
+        });
+      }
+    });
+  }
+
+  /**
+   * Rejoin the LiveKit room (used on reconnect when the bridge was kicked).
+   * Manager should mint a fresh token and pass params; falls back to currentParams.
+   */
+  public async rejoin(params?: JoinRoomParams): Promise<void> {
+    const p = params ?? this.currentParams;
+    if (!p) {
+      throw new Error(
+        "rejoin called without params and no previous room params",
+      );
+    }
+    // If already joined, perform a clean disconnect first
+    if (this.joinedRoom) {
+      await this.disconnect();
+    }
+    this.connecting = true;
+    this.currentParams = p;
+    await this.joinRoom(p);
+    await this.startAudioStream();
+    this.connected = true;
+    this.connecting = false;
+    this.logger.info(
+      { room: p.roomName, target: p.targetIdentity, feature: "livekit-grpc" },
+      "Rejoined LiveKit room via gRPC",
+    );
+  }
+
+  /**
    * Disconnect from room
    */
   public async disconnect(): Promise<void> {

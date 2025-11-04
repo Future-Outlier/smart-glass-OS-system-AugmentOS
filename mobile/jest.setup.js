@@ -8,34 +8,6 @@ jest.mock("@react-native-async-storage/async-storage", () =>
 // Mock react-native-permissions
 jest.mock("react-native-permissions", () => require("react-native-permissions/mock"))
 
-// Mock react-native-ble-manager
-jest.mock("react-native-ble-manager", () => ({
-  start: jest.fn(),
-  scan: jest.fn(),
-  stopScan: jest.fn(),
-  connect: jest.fn(),
-  disconnect: jest.fn(),
-  enableBluetooth: jest.fn(),
-  getConnectedPeripherals: jest.fn(),
-  getDiscoveredPeripherals: jest.fn(),
-  checkState: jest.fn(),
-  createPeripheralInfo: jest.fn(),
-}))
-
-// Mock react-native-bluetooth-classic
-jest.mock("react-native-bluetooth-classic", () => ({
-  isBluetoothEnabled: jest.fn(),
-  requestBluetoothEnabled: jest.fn(),
-  listPairedDevices: jest.fn(),
-  cancelDiscovery: jest.fn(),
-  pairDevice: jest.fn(),
-  unpairDevice: jest.fn(),
-  accept: jest.fn(),
-  cancelAccept: jest.fn(),
-  isBluetoothAvailable: jest.fn(),
-  startDiscovery: jest.fn(),
-}))
-
 // Mock react-native-mmkv
 jest.mock("react-native-mmkv", () => {
   const mockStorage = new Map([
@@ -108,7 +80,7 @@ jest.mock("@/bridge/MantleBridge", () => {
 })
 
 // Mock SocketComms to avoid complex dependency chains
-jest.mock("@/managers/SocketComms", () => ({
+jest.mock("@/services/SocketComms", () => ({
   default: {
     getInstance: jest.fn(() => ({
       connect: jest.fn(),
@@ -120,7 +92,7 @@ jest.mock("@/managers/SocketComms", () => ({
 }))
 
 // Mock WebSocketManager to avoid circular dependency issues
-jest.mock("@/managers/WebSocketManager", () => {
+jest.mock("@/services/WebSocketManager", () => {
   const {EventEmitter} = require("events")
 
   const WebSocketStatus = {
@@ -144,6 +116,15 @@ jest.mock("@/managers/WebSocketManager", () => {
     default: new MockWebSocketManager(),
   }
 })
+
+// Mock core native module to avoid native bridge errors
+jest.mock("core", () => ({
+  default: {
+    getBluetoothStatus: jest.fn(() => Promise.resolve("disabled")),
+    requestBluetoothPermissions: jest.fn(() => Promise.resolve(true)),
+    // Add other methods as needed
+  },
+}))
 
 // Silence the warning: Animated: `useNativeDriver` is not supported
 global.__reanimatedWorkletInit = jest.fn()

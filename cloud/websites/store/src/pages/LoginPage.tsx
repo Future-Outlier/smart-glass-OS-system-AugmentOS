@@ -13,7 +13,7 @@ const LoginPage: React.FC = () => {
     if (from && from !== '/') {
       localStorage.setItem('auth_redirect', from);
     }
-  }, [from]);
+  }, [from])
 
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
@@ -39,4 +39,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage;
+export default LoginPage

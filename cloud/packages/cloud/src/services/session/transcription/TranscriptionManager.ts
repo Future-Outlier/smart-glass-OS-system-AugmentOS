@@ -30,6 +30,7 @@ import {
 import { ProviderSelector } from "./ProviderSelector";
 import { AzureTranscriptionProvider } from "./providers/AzureTranscriptionProvider";
 import { SonioxTranscriptionProvider } from "./providers/SonioxTranscriptionProvider";
+import { AlibabaTranscriptionProvider } from "./providers/AlibabaTranscriptionProvider";
 // import subscriptionService from "../subscription.service";
 
 export class TranscriptionManager {
@@ -58,6 +59,9 @@ export class TranscriptionManager {
   private isBufferingForVAD = false;
   private vadBufferTimeout?: NodeJS.Timeout;
   private vadBufferTimeoutMs = 10000; // 10 second timeout if VAD never turns off
+
+  private DEPLOYMENT_REGION: string = process.env.DEPLOYMENT_REGION || "global";
+  private IS_CHINA: boolean = this.DEPLOYMENT_REGION === "china";
 
   // Health Monitoring
   private healthCheckInterval?: NodeJS.Timeout;
@@ -935,16 +939,39 @@ export class TranscriptionManager {
       const availableProviders: ProviderType[] = [];
       const providerErrors: Array<{ provider: string; error: Error }> = [];
 
+      // try to initialize Alibaba provider
+      try {
+        if (this.IS_CHINA) {
+          const alibabaProvider = new AlibabaTranscriptionProvider(
+            this.config.alibaba,
+            this.logger,
+          );
+          await alibabaProvider.initialize();
+          this.providers.set(ProviderType.ALIBABA, alibabaProvider);
+          availableProviders.push(ProviderType.ALIBABA);
+          this.logger.info("Alibaba provider initialized successfully");
+        } else {
+          this.logger.info("Alibaba provider not initialized for non-China");
+        }
+      } catch (error) {
+        this.logger.error(error, "Failed to initialize Alibaba provider");
+        providerErrors.push({ provider: "Alibaba", error: error as Error });
+      }
+
       // Try to initialize Azure provider
       try {
-        const azureProvider = new AzureTranscriptionProvider(
-          this.config.azure,
-          this.logger,
-        );
-        await azureProvider.initialize();
-        this.providers.set(ProviderType.AZURE, azureProvider);
-        availableProviders.push(ProviderType.AZURE);
-        this.logger.info("Azure provider initialized successfully");
+        if (this.IS_CHINA) {
+          this.logger.info("Azure provider not initialized for China");
+        } else {
+          const azureProvider = new AzureTranscriptionProvider(
+            this.config.azure,
+            this.logger,
+          );
+          await azureProvider.initialize();
+          this.providers.set(ProviderType.AZURE, azureProvider);
+          availableProviders.push(ProviderType.AZURE);
+          this.logger.info("Azure provider initialized successfully");
+        }
       } catch (error) {
         this.logger.error(error, "Failed to initialize Azure provider");
         providerErrors.push({ provider: "Azure", error: error as Error });
@@ -952,14 +979,18 @@ export class TranscriptionManager {
 
       // Try to initialize Soniox provider
       try {
-        const sonioxProvider = new SonioxTranscriptionProvider(
-          this.config.soniox,
-          this.logger,
-        );
-        await sonioxProvider.initialize();
-        this.providers.set(ProviderType.SONIOX, sonioxProvider);
-        availableProviders.push(ProviderType.SONIOX);
-        this.logger.info("Soniox provider initialized successfully");
+        if (this.IS_CHINA) {
+          this.logger.info("Soniox provider not initialized for China");
+        } else {
+          const sonioxProvider = new SonioxTranscriptionProvider(
+            this.config.soniox,
+            this.logger,
+          );
+          await sonioxProvider.initialize();
+          this.providers.set(ProviderType.SONIOX, sonioxProvider);
+          availableProviders.push(ProviderType.SONIOX);
+          this.logger.info("Soniox provider initialized successfully");
+        }
       } catch (error) {
         this.logger.error(error, "Failed to initialize Soniox provider");
         providerErrors.push({ provider: "Soniox", error: error as Error });

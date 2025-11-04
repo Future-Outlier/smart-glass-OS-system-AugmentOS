@@ -7,7 +7,8 @@ import { Toaster } from 'sonner';
 
 // Lazy load pages for better performance
 const AppStore = lazy(() => import('./pages/AppStore'));
-const AppDetails = lazy(() => import('./pages/AppDetails'));
+// const AppDetails = lazy(() => import('./pages/AppDetails'));
+const AppDetailsV2 = lazy(() => import("./pages/AppDetailsV2"));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const ForgotPasswordPage = lazy(() => import('@mentra/shared').then(m => ({ default: m.ForgotPasswordPage })));
 const ResetPasswordPage = lazy(() => import('@mentra/shared').then(m => ({ default: m.ResetPasswordPage })));
@@ -41,7 +42,7 @@ const AppRoutes: FC = () => {
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
         <Route path="/" element={<AppStore />} />
-        <Route path="/package/:packageName" element={<AppDetails />} />
+        <Route path="/package/:packageName" element={<AppDetailsV2 />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route 

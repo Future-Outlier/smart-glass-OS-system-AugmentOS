@@ -1,8 +1,19 @@
 const en = {
   deviceSettings: {
+    microphoneSelection: "Microphone Selection",
     glassesNeededForGlassesMic: "Connect glasses to enable",
-    systemMic: "System Microphone",
-    glassesMic: "Glasses Microphone",
+    systemMic: "Automatic",
+    glassesMic: "Glasses only",
+    batteryStatus: "Battery Status",
+    glasses: "Glasses",
+    case: "Case",
+    caseCharging: "Case (Charging)",
+    emptyState: "Glasses settings will appear here.\nPair glasses to adjust settings.",
+    notConnectedInfo: "Changes to glasses settings will take effect when glasses are connected.",
+    advancedSettings: "Advanced Settings",
+    recommended: "Recommended",
+    autoBrightness: "Auto Brightness",
+    brightness: "Brightness",
   },
   screenSettings: {
     title: "Display Position Settings",
@@ -143,6 +154,7 @@ const en = {
     tapAnAppSwitch: "Tap an app's switch to activate it",
     activeBackgroundApps: "Active Background Apps",
     inactiveBackgroundApps: "Inactive Background Apps",
+    appletPlaceholder: "Tap an app below to activate it",
   },
   glasses: {
     title: "Glasses",
@@ -219,8 +231,8 @@ const en = {
     glassesWifiDescription: "Configure WiFi settings for your smart glasses.",
     wifiUnavailable: "Connect a pair of glasses that support WiFi to access WiFi settings.",
     developerSettings: "Developer Settings",
-    forgetGlasses: "Forget Glasses",
     disconnectGlasses: "Disconnect Glasses",
+    forgetGlasses: "Forget Glasses",
     forgetGlassesConfirm: "Are you sure you want to forget your glasses?",
     signOut: "Sign Out",
     signOutConfirm: "Are you sure you want to sign out?",
@@ -248,8 +260,15 @@ const en = {
     offlineSTT: "Offline Transcriptions",
     offlineSTTSubtitle: "Transcribe audio and display on connected glasses completely offline.",
   },
+  devSettings: {
+    debugConsole: "Debug Console",
+    debugConsoleSubtitle: "Enable the debug console.",
+  },
   transcription: {
     downloadModelToEnableLocalTranscription: "Download a model to enable local transcription",
+    noModelInstalled: "No Speech Model Installed",
+    noModelInstalledMessage: "To use offline Live Captions, you need to download a speech recognition model first.",
+    goToSettings: "Go to Settings",
   },
   profileSettings: {
     title: "Profile Settings",

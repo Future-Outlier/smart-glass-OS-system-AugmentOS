@@ -1,6 +1,5 @@
 import {useState, useEffect} from "react"
 import {View, Image, ActivityIndicator, ScrollView, ImageStyle, TextStyle, ViewStyle, Modal} from "react-native"
-import {supabase} from "@/supabase/supabaseClient"
 import {Header, Screen, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
@@ -10,8 +9,23 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import ActionButton from "@/components/ui/ActionButton"
 import showAlert from "@/utils/AlertUtils"
 import {LogoutUtils} from "@/utils/LogoutUtils"
-import restComms from "@/managers/RestComms"
+import restComms from "@/services/RestComms"
 import {useAuth} from "@/contexts/AuthContext"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import Svg, {Path} from "react-native-svg"
+
+// Default user icon component for profile pictures
+const DefaultUserIcon = ({size = 100, color = "#999"}: {size?: number; color?: string}) => {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z"
+        fill={color}
+      />
+      <Path d="M12 14C6.47715 14 2 17.5817 2 22H22C22 17.5817 17.5228 14 12 14Z" fill={color} />
+    </Svg>
+  )
+}
 
 export default function ProfileSettingsPage() {
   const [userData, setUserData] = useState<{
@@ -31,19 +45,16 @@ export default function ProfileSettingsPage() {
     const fetchUserData = async () => {
       setLoading(true)
       try {
-        const {
-          data: {user},
-          error,
-        } = await supabase.auth.getUser()
+        const {data, error} = await mentraAuthProvider.getUser()
         if (error) {
           console.error(error)
           setUserData(null)
-        } else if (user) {
-          const fullName = user.user_metadata?.full_name || user.user_metadata?.name || null
-          const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null
-          const email = user.email || null
-          const createdAt = user.created_at || null
-          const provider = user.app_metadata?.provider || null
+        } else if (data?.user) {
+          const fullName = data.user.name || null
+          const avatarUrl = data.user.avatarUrl || null
+          const email = data.user.email || null
+          const createdAt = data.user.createdAt || null
+          const provider = data.user.provider || null
 
           setUserData({
             fullName,
@@ -240,7 +251,7 @@ export default function ProfileSettingsPage() {
               <Image source={{uri: userData.avatarUrl}} style={themed($profileImage)} />
             ) : (
               <View style={themed($profilePlaceholder)}>
-                <Text tx="profileSettings:noProfilePicture" style={themed($profilePlaceholderText)} />
+                <DefaultUserIcon size={60} color={theme.colors.textDim} />
               </View>
             )}
 
@@ -333,7 +344,7 @@ const $profileImage: ThemedStyle<ImageStyle> = () => ({
   marginBottom: 20,
 })
 
-const $profilePlaceholder: ThemedStyle<ViewStyle> = () => ({
+const $profilePlaceholder: ThemedStyle<ViewStyle> = ({colors}) => ({
   width: 100,
   height: 100,
   borderRadius: 50,
@@ -341,11 +352,7 @@ const $profilePlaceholder: ThemedStyle<ViewStyle> = () => ({
   alignItems: "center",
   alignSelf: "center",
   marginBottom: 20,
-})
-
-const $profilePlaceholderText: ThemedStyle<TextStyle> = ({colors}) => ({
-  textAlign: "center",
-  color: colors.text,
+  backgroundColor: colors.border,
 })
 
 const $infoContainer: ThemedStyle<ViewStyle> = () => ({

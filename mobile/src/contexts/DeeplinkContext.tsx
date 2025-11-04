@@ -1,12 +1,11 @@
-import React, {createContext, useContext, useEffect, useRef, useState} from "react"
+import {FC, ReactNode, createContext, useContext, useEffect} from "react"
 // import {Linking} from "react-native"
-import {useRouter} from "expo-router"
-import {useAuth} from "@/contexts/AuthContext"
+// import {useAuth} from "@/contexts/AuthContext"
 import {deepLinkRoutes} from "@/utils/deepLinkRoutes"
 import {NavObject, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {supabase} from "@/supabase/supabaseClient"
 
 import * as Linking from "expo-linking"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
 
 interface DeeplinkContextType {
   processUrl: (url: string) => Promise<void>
@@ -27,13 +26,11 @@ export interface DeepLinkConfig {
   navObject: NavObject
 }
 
-const DeeplinkContext = createContext<DeeplinkContextType>({})
+const DeeplinkContext = createContext<DeeplinkContextType>({} as DeeplinkContextType)
 
 export const useDeeplink = () => useContext(DeeplinkContext)
 
-export const DeeplinkProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
-  const router = useRouter()
-  const {user} = useAuth()
+export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
   const {push, replace, goBack, setPendingRoute, getPendingRoute, navigate} = useNavigationHistory()
   const config = {
     scheme: "com.mentra",
@@ -41,8 +38,8 @@ export const DeeplinkProvider: React.FC<{children: React.ReactNode}> = ({childre
     routes: deepLinkRoutes,
     authCheckHandler: async () => {
       // TODO: this is a hack when we should really be using the auth context:
-      const session = await supabase.auth.getSession()
-      if (session.data.session == null) {
+      const {data} = await mentraAuthProvider.getSession()
+      if (!data?.session?.token) {
         return false
       }
       return true
@@ -61,7 +58,7 @@ export const DeeplinkProvider: React.FC<{children: React.ReactNode}> = ({childre
   }
 
   useEffect(() => {
-    const subscription = Linking.addEventListener("url", handleUrlRaw)
+    Linking.addEventListener("url", handleUrlRaw)
     Linking.getInitialURL().then(url => {
       console.log("@@@@@@@@@@@@@ INITIAL URL @@@@@@@@@@@@@@@", url)
       if (url) {

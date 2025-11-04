@@ -1,15 +1,15 @@
 import {useRef, useState, useEffect, useCallback} from "react"
-import {View, Text, BackHandler} from "react-native"
+import {View, BackHandler} from "react-native"
 import {WebView} from "react-native-webview"
 import LoadingOverlay from "@/components/misc/LoadingOverlay"
 import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useLocalSearchParams, useFocusEffect} from "expo-router"
-import {Header, Screen} from "@/components/ignite"
+import {Header, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import restComms from "@/managers/RestComms"
-
+import restComms from "@/services/RestComms"
+import {useSettingsStore} from "@/stores/settings"
 
 export default function AppWebView() {
   const {theme} = useAppTheme()
@@ -36,9 +36,9 @@ export default function AppWebView() {
         return true
       }
 
-      BackHandler.addEventListener("hardwareBackPress", onBackPress)
+      const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress)
 
-      return () => BackHandler.removeEventListener("hardwareBackPress", onBackPress)
+      return () => subscription.remove()
     }, [goBack]),
   )
 
@@ -69,20 +69,6 @@ export default function AppWebView() {
   //       });
   //     }
   //   }, [fromSettings, packageName, appName]);
-
-  function determineCloudUrl(): string | undefined {
-    const cloudHostName = process.env.CLOUD_PUBLIC_HOST_NAME || process.env.CLOUD_HOST_NAME || process.env.MENTRAOS_HOST
-    if (
-      cloudHostName &&
-      cloudHostName.trim() !== "prod.augmentos.cloud" &&
-      cloudHostName.trim() !== "cloud" &&
-      cloudHostName.includes(".")
-    ) {
-      console.log(`For App webview token verification, using cloud host name: ${cloudHostName}`)
-      return `https://${cloudHostName}`
-    }
-    return undefined
-  }
 
   // Theme colors
   const theme2 = {
@@ -123,7 +109,7 @@ export default function AppWebView() {
           console.warn("Failed to generate signed user token:", error)
           signedUserToken = undefined
         }
-        const cloudApiUrl = determineCloudUrl()
+        const cloudApiUrl = useSettingsStore.getState().getRestUrl()
 
         // Construct final URL
         const url = new URL(webviewURL)

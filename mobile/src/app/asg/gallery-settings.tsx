@@ -12,8 +12,8 @@ import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
 import {localStorageService} from "@/services/asg/localStorageService"
 import {translate} from "@/i18n"
 import showAlert from "@/utils/AlertUtils"
-import {glassesFeatures} from "@/config/glassesFeatures"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export default function GallerySettingsScreen() {
   const {goBack, push} = useNavigationHistory()
@@ -118,12 +118,14 @@ export default function GallerySettingsScreen() {
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
   }
 
+  let features = getModelCapabilities(defaultWearable)
+
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
       <Header title="Gallery Settings" leftIcon="caretLeft" onLeftPress={() => goBack()} />
       <ScrollView>
         {/* Camera Settings button for glasses with configurable button */}
-        {defaultWearable && glassesFeatures[defaultWearable]?.configurableButton && (
+        {features?.hasButton && (
           <View style={themed($section)}>
             <RouteButton
               label={translate("settings:cameraSettings")}

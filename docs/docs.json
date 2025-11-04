@@ -32,6 +32,7 @@
           "layouts",
           "settings",
           "audio",
+          "led",
           "tools",
           "capabilities",
           {
@@ -56,6 +57,7 @@
               "reference/managers/layout-manager",
               "reference/managers/settings-manager",
               "reference/managers/audio-manager",
+              "reference/managers/led-manager",
               "reference/managers/camera",
               "reference/managers/location-manager"
             ]
@@ -138,7 +140,7 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mentraos",
+      "x": "https://x.com/mentralabs",
       "github": "https://github.com/Mentra-Community",
       "discord": "https://discord.gg/5ukNvkEAqT"
     }
