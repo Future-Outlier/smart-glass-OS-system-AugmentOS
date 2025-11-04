@@ -2964,8 +2964,27 @@ class MentraLive: NSObject, SGCManager {
             Bridge.log("Audio: Audio session not configured for Bluetooth yet - mic system will configure it when recording")
         }
 
+        // Extract device ID pattern to match the specific device
+        // BLE name: "MENTRA_LIVE_BLE_ABC123"
+        // BT Classic could be: "MENTRA_LIVE_BLE_ABC123" or "MENTRA_LIVE_BT_ABC123"
+        // We need to match on the unique device ID part (e.g., "ABC123")
+        let audioDevicePattern: String
+        if let idRange = deviceName.range(of: "_BLE_", options: .caseInsensitive) {
+            // Extract the ID after "_BLE_" (e.g., "ABC123")
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
+        } else if let idRange = deviceName.range(of: "_BT_", options: .caseInsensitive) {
+            // Extract the ID after "_BT_"
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
+        } else {
+            // Fallback: use the full device name
+            audioDevicePattern = deviceName
+            Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
+        }
+
         // Check if device is paired (don't activate to preserve A2DP music playback)
-        let isPaired = monitor.isDevicePaired(devicePattern: "Mentra")
+        let isPaired = monitor.isDevicePaired(devicePattern: audioDevicePattern)
 
         if isPaired {
             // Device is paired! Don't activate it - let PhoneMic.swift activate when recording starts
@@ -2990,7 +3009,7 @@ class MentraLive: NSObject, SGCManager {
             ])
 
             // Start monitoring for when user pairs manually
-            monitor.startMonitoring(devicePattern: "Mentra") { [weak self] (connected: Bool, deviceName: String?) in
+            monitor.startMonitoring(devicePattern: audioDevicePattern) { [weak self] (connected: Bool, deviceName: String?) in
                 guard let self = self else { return }
 
                 if connected {
