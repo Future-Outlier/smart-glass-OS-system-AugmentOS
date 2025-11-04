@@ -38,7 +38,7 @@ const ForgotPasswordForm = ({
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && isEmailValid && !isLoading) {
       handleSubmit();
     }
