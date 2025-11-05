@@ -49,6 +49,7 @@ export enum AppErrorCode {
   MALFORMED_MESSAGE = "MALFORMED_MESSAGE",
   PERMISSION_DENIED = "PERMISSION_DENIED",
   INTERNAL_ERROR = "INTERNAL_ERROR",
+  WIFI_NOT_CONNECTED = "WIFI_NOT_CONNECTED",
 }
 
 /**
@@ -374,16 +375,10 @@ export class AppWebSocketService {
               errorCode === "WIFI_NOT_CONNECTED" ||
               errorMessage === "no_wifi_connection"; // from asg_client
 
-            // Map asg_client error to our error code
-            let finalErrorCode = errorCode;
-            if (errorMessage === "no_wifi_connection") {
-              finalErrorCode = "WIFI_NOT_CONNECTED";
-            }
-
             this.sendError(
               appWebsocket,
               isWifiError
-                ? finalErrorCode || "WIFI_NOT_CONNECTED"
+                ? AppErrorCode.WIFI_NOT_CONNECTED
                 : AppErrorCode.INTERNAL_ERROR,
               errorMessage,
             );
