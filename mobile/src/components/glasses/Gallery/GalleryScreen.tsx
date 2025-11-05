@@ -1872,15 +1872,15 @@ const $selectionCheckbox: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $deleteButton: ThemedStyle<ViewStyle> = ({colors}) => ({
   flexDirection: "row",
   alignItems: "center",
-  backgroundColor: colors.backgroundAlt,
-  paddingHorizontal: 8,
-  paddingVertical: 12,
-  borderRadius: 8,
+  backgroundColor: colors.primary_foreground,
+  padding: 8,
+  borderRadius: 32,
   gap: 6,
 })
 
 const $deleteButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.text,
-  fontSize: 14,
+  fontSize: 16,
+  lineHeight: 24,
   fontWeight: "600",
 })
