@@ -51,7 +51,7 @@ export default function InitScreen() {
   const [loadingStatus, setLoadingStatus] = useState<string>(translate("versionCheck:checkingForUpdates"))
   const [isRetrying, setIsRetrying] = useState(false)
   // Zustand store hooks
-  const [customBackendUrl, setCustomBackendUrl] = useSetting(SETTINGS_KEYS.custom_backend_url)
+  const [backendUrl, setBackendUrl] = useSetting(SETTINGS_KEYS.backend_url)
   const [onboardingCompleted, _setOnboardingCompleted] = useSetting(SETTINGS_KEYS.onboarding_completed)
 
   // Helper Functions
@@ -65,8 +65,8 @@ export default function InitScreen() {
   }
 
   const checkCustomUrl = async (): Promise<boolean> => {
-    const defaultUrl = useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.custom_backend_url)
-    const isCustom = customBackendUrl !== defaultUrl
+    const defaultUrl = useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.backend_url)
+    const isCustom = backendUrl !== defaultUrl
     setIsUsingCustomUrl(isCustom)
     return isCustom
   }
@@ -105,18 +105,21 @@ export default function InitScreen() {
   }
 
   const handleTokenExchange = async (): Promise<void> => {
+    console.log("HANDLING TOKEN EXCHANGE.......")
     setState("loading")
     setLoadingStatus(translate("versionCheck:connectingToServer"))
 
     try {
-      const supabaseToken = session?.access_token
-      if (!supabaseToken) {
+      const token = session?.token
+      console.log("EXCHANGING TOKEN: ")
+      console.log(token)
+      if (!token) {
         setErrorType("auth")
         setState("error")
         return
       }
 
-      const coreToken = await restComms.exchangeToken(supabaseToken)
+      const coreToken = await restComms.exchangeToken(token)
       const uid = user?.email || user?.id
 
       socketComms.setAuthCreds(coreToken, uid)
@@ -194,8 +197,8 @@ export default function InitScreen() {
 
   const handleResetUrl = async (): Promise<void> => {
     try {
-      const defaultUrl = (await useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.custom_backend_url)) as string
-      await setCustomBackendUrl(defaultUrl)
+      const defaultUrl = (await useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.backend_url)) as string
+      await setBackendUrl(defaultUrl)
       setIsUsingCustomUrl(false)
       await checkCloudVersion(true) // Pass true for retry to avoid flash
     } catch (error) {

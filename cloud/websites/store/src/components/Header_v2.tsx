@@ -131,36 +131,12 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
         background: theme === "light" ? "#ffffff" : "#171717",
         borderBottom: isScrolled ? `1px solid var(--border-color)` : "1px solid transparent",
       }}>
-      <div className=" mx-auto px py-2 px-4 sm:px-8 md:px-16 lg:px-25  ">
+      <div className=" mx-auto px px-8 sm:px- md:px-16 lg:px-25  pt-[16px] pb-[16px]">
         {/* Two-row layout for medium screens, single row for large+ */}
-        <div className="flex relative flex-row lg:flex-row lg:items-center lg:justify-between gap-4 min-h-[60px]  items-center">
+        <div className="flex relative flex-row lg:flex-row lg:items-center lg:justify-between items-center ">
           {/* Top row: Logo and Buttons */}
-          <AnimatePresence>
-            {searchMode && (
-              <motion.div
-                initial={{opacity: 0, scale: 0.95}}
-                animate={{opacity: 1, scale: 1}}
-                exit={{opacity: 0, scale: 0.95}}
-                transition={{duration: 0.2, ease: "easeOut"}}
-                className="absolute left-0 right-0 w-full px-4"
-                style={{
-                  zIndex: 100,
-                }}>
-                <div className="max-w-3xl mx-auto">
-                  <SearchBar
-                    ref={searchRef}
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    onSearchSubmit={onSearch || ((e) => e.preventDefault())}
-                    onClear={onSearchClear || (() => setSearchQuery(""))}
-                    autoFocus={true}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
           <>
-            <div className="flex flex-row relative lg:flex-row lg:items-center lg:justify-between gap-4 min-h-[60px] w-full">
+            <div className="flex flex-row relative lg:flex-row lg:items-center lg:justify-between gap-4 ">
               {/* Logo and Site Name - hide when search mode is active on small/medium screens */}
               {/* Logo - hide when search mode is active ONLY between 640px-1630px */}
               <AnimatePresence>
@@ -175,7 +151,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                       className="flex items-center gap-2 sm:gap-4 select-none hover:opacity-80 transition-opacity">
                       <img src="/mentra_logo_gr.png" alt="Mentra Logo" className="h-6 sm:h-7 w-auto object-contain" />
                       <span
-                        className="text-[16px] sm:text-[19px] font-light mb-[-0px]"
+                        className="text-[20px] sm:text-[20px] font-light mb-[-0px]"
                         style={{
                           fontFamily: "Red Hat Display, sans-serif",
                           letterSpacing: "0.06em",
@@ -188,9 +164,9 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
 
                     {/* Navigation tabs - show on large screens (1024px+) right after logo */}
                     {!searchMode && windowWidth >= 1024 && (
-                      <div className="flex items-center ml-[60px]">
+                      <div className="flex items-center ml-[73px]">
                         <button
-                          className={`font-redhat pb-1 transition-all hover:text-[#00A814] cursor-pointer text-[15px] ${
+                          className={`font-redhat pb-1 transition-all hover:text-[#00A814] cursor-pointer text-[20px] ${
                             selectedTab === "apps" ? "border-b-2" : ""
                           }`}
                           style={
@@ -203,14 +179,14 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                         </button>
 
                         <button
-                          className="ml-[50px] font-redhat pb-1 transition-all hover:text-[#00A814] cursor-pointer text-[15px]"
+                          className="ml-[73px] font-redhat pb-1 transition-all hover:text-[#00A814] cursor-pointer text-[20px]"
                           style={{color: "var(--text-primary)"}}
                           onClick={() => window.open("https://mentraglass.com/", "_blank")}>
                           Glasses
                         </button>
 
                         <button
-                          className="ml-[50px] font-redhat pb-1 transition-all hover:text-[#00A814] cursor-pointer text-[15px]"
+                          className="ml-[73px] font-redhat pb-1 transition-all hover:text-[#00A814] cursor-pointer text-[20px]"
                           style={{color: "var(--text-primary)"}}
                           onClick={() => window.open("https://mentraglass.com/contact", "_blank")}>
                           Support
@@ -220,58 +196,61 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Buttons container - only visible on mobile (below sm) in top row */}
-              <div className="flex items-center gap-3 sm:hidden ml-auto">
-                {/* Authentication */}
-                {isAuthenticated ? (
-                  <Button
-                    onClick={handleSignOut}
-                    variant={theme === "light" ? "default" : "outline"}
-                    className="rounded-full border-[1.5px]"
-                    style={{
-                      backgroundColor: theme === "light" ? "#000000" : "transparent",
-                      borderColor: theme === "light" ? "#000000" : "#3f3f46",
-                      color: theme === "light" ? "#ffffff" : "#e4e4e7",
-                    }}>
-                    Sign Out
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => navigate("/login")}
-                    variant={theme === "light" ? "default" : "outline"}
-                    className="rounded-full border-[1.5px] flex items-center gap-2"
-                    style={{
-                      backgroundColor: theme === "light" ? "#000000" : "transparent",
-                      borderColor: theme === "light" ? "#000000" : "#3f3f46",
-                      color: theme === "light" ? "#ffffff" : "#e4e4e7",
-                    }}>
-                    <User className="w-4 h-4" />
-                    Login
-                  </Button>
-                )}
-              </div>
             </div>
 
-            {/* Search bar - second row on medium, center on large+ */}
-            {/* {!isMobile && isStorePage && onSearch && (
-              <div
-                className="w-full lg:flex-1 lg:max-w-md lg:mx-auto pt-4 lg:pt-0"
-                style={{
-                  borderTop: !isDesktop
-                    ? `1px solid var(--border-color)`
-                    : "none",
-                  marginTop: !isDesktop ? "1rem" : "0",
-                }}
-              >
-                <SearchBar
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                onSearchSubmit={onSearch}
-                onClear={onSearchClear || (() => setSearchQuery(''))}
-              />
-              </div>
-            )} */}
+            {/* Buttons container - only visible on mobile (below sm) in top row */}
+            <div className="flex items-center gap-3 sm:hidden ml-auto justify-end flex-shrink-0">
+              {/* Authentication */}
+              {isAuthenticated ? (
+                <Button
+                  onClick={handleSignOut}
+                  variant={theme === "light" ? "default" : "outline"}
+                  className="rounded-full border-[1.5px]"
+                  style={{
+                    backgroundColor: theme === "light" ? "#000000" : "transparent",
+                    borderColor: theme === "light" ? "#000000" : "#3f3f46",
+                    color: theme === "light" ? "#ffffff" : "#e4e4e7",
+                  }}>
+                  Sign Out
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => navigate("/login")}
+                  variant={theme === "light" ? "default" : "outline"}
+                  className="rounded-full border-[1.5px] flex items-center gap-2"
+                  style={{
+                    backgroundColor: theme === "light" ? "#000000" : "transparent",
+                    borderColor: theme === "light" ? "#000000" : "#3f3f46",
+                    color: theme === "light" ? "#ffffff" : "#e4e4e7",
+                  }}>
+                  <User className="w-4 h-4" />
+                  Login
+                </Button>
+              )}
+            </div>
+
+            {/* Search bar - inline between logo and buttons when search mode is active */}
+            <AnimatePresence>
+              {searchMode && (
+                <motion.div
+                  initial={{opacity: 0, scale: 0.95}}
+                  animate={{opacity: 1, scale: 1}}
+                  exit={{opacity: 0, scale: 0.95}}
+                  transition={{duration: 0.2, ease: "easeOut"}}
+                  className="flex-1 flex justify-center">
+                  <div className="w-full max-w-3xl">
+                    <SearchBar
+                      ref={searchRef}
+                      searchQuery={searchQuery}
+                      onSearchChange={setSearchQuery}
+                      onSearchSubmit={onSearch || ((e) => e.preventDefault())}
+                      onClear={onSearchClear || (() => setSearchQuery(""))}
+                      autoFocus={true}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Buttons for small screens and above - hide when search mode is active ONLY between 640px-1630px */}
             <AnimatePresence>
@@ -280,13 +259,13 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                   initial={{opacity: 1}}
                   exit={{opacity: 0, x: 20}}
                   transition={{duration: 0.2, ease: "easeOut"}}
-                  className="hidden sm:flex items-center gap-4 ml-auto">
+                  className="hidden sm:flex items-center gap-4 ml-auto  justify-end">
                   {/* Get MentraOS Button */}
                   {/* <GetMentraOSButton size="small" /> */}
 
                   {/* Authentication */}
                   {isAuthenticated ? (
-                    <div className="flex gap-[10px]">
+                    <div className="flex gap-[10px] justify-center items-center">
                       {/* <Button
                   onClick={handleSignOut}
                   variant={theme === 'light' ? 'default' : 'outline'}
@@ -320,16 +299,16 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                         <Search
                           size={"20px"}
                           style={{
-                            color: theme === "light" ? "#999999" : "#a1a1aa",
+                            color: "var(--text-muted)",
                           }}
                         />
                       </button>
                       <DropDown
                         trigger={
                           <button
-                            className="flex justify-center items-center rounded-full w-[36px] h-[36px] overflow-hidden"
+                            className="flex justify-center items-center rounded-full w-[44px] h-[44px] overflow-hidden"
                             style={{
-                              backgroundColor: theme === "light" ? "#F2F2F2" : "var(--bg-secondary)",
+                              backgroundColor: "var(--bg-secondary)",
                             }}>
                             {getUserAvatar() ? (
                               <img src={getUserAvatar()!} alt="Profile" className="w-full h-full object-cover" />
@@ -337,7 +316,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                               <User
                                 size={20}
                                 style={{
-                                  color: theme === "light" ? "#999999" : "#a1a1aa",
+                                  color: "var(--text-muted)",
                                 }}
                               />
                             )}
@@ -347,13 +326,13 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                         <div
                           className="flex flex-col rounded-lg"
                           style={{
-                            backgroundColor: theme === "light" ? "#ffffff" : "var(--bg-secondary)",
+                            backgroundColor: "var(--bg-primary)",
                           }}>
                           {/* User Info Section */}
                           <div
                             className="flex flex-col items-center py-6 px-4 border-b"
                             style={{
-                              borderColor: theme === "light" ? "#e5e7eb" : "var(--border-color)",
+                              borderColor: "var(--border-color)",
                             }}>
                             <div
                               className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden mb-3"
@@ -366,7 +345,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                                 <User
                                   size={40}
                                   style={{
-                                    color: theme === "light" ? "#999999" : "#a1a1aa",
+                                    color: "var(--text-muted)",
                                   }}
                                 />
                               )}
@@ -375,14 +354,14 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                               <p
                                 className="font-medium text-base"
                                 style={{
-                                  color: theme === "light" ? "#111827" : "var(--text-primary)",
+                                  color: "var(--text-primary)",
                                 }}>
                                 {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
                               </p>
                               <p
                                 className="text-sm mt-1"
                                 style={{
-                                  color: theme === "light" ? "#6b7280" : "var(--text-secondary)",
+                                  color: "var(--text-secondary)",
                                 }}>
                                 {user?.email || "No email"}
                               </p>
@@ -429,7 +408,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                         <Search
                           size={"20px"}
                           style={{
-                            color: theme === "light" ? "#999999" : "#a1a1aa",
+                            color: "var(--text-muted)",
                           }}
                         />
                       </button>

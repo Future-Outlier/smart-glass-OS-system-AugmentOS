@@ -14,6 +14,12 @@ export const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION || "";
 export const SONIOX_API_KEY = process.env.SONIOX_API_KEY || "";
 export const SONIOX_ENDPOINT =
   process.env.SONIOX_ENDPOINT || "wss://stt-rt.soniox.com/transcribe-websocket";
+export const ALIBABA_ENDPOINT =
+  process.env.ALIBABA_ENDPOINT ||
+  "wss://dashscope.aliyuncs.com/api-ws/v1/inference";
+export const ALIBABA_WORKSPACE = process.env.ALIBABA_WORKSPACE || "";
+export const ALIBABA_DASHSCOPE_API_KEY =
+  process.env.ALIBABA_DASHSCOPE_API_KEY || "";
 
 // Ensure required environment variables are set (warn if missing in development)
 if (!AZURE_SPEECH_KEY || !AZURE_SPEECH_REGION) {
@@ -51,6 +57,7 @@ export enum StreamState {
 export enum ProviderType {
   AZURE = "azure",
   SONIOX = "soniox",
+  ALIBABA = "alibaba",
 }
 
 export enum AzureErrorType {
@@ -74,6 +81,7 @@ export interface TranscriptionConfig {
 
   azure: AzureProviderConfig;
   soniox: SonioxProviderConfig;
+  alibaba: AlibabaProviderConfig;
 
   performance: {
     maxTotalStreams: number;
@@ -99,6 +107,13 @@ export interface SonioxProviderConfig {
   endpoint: string;
   model?: string; // Default: 'stt-rt-v3-preview'
   maxConnections?: number;
+}
+
+export interface AlibabaProviderConfig {
+  endpoint: string;
+  workspace: string;
+  dashscopeApiKey: string;
+  model: string;
 }
 
 //===========================================================
@@ -350,6 +365,13 @@ export const DEFAULT_TRANSCRIPTION_CONFIG: TranscriptionConfig = {
   soniox: {
     apiKey: SONIOX_API_KEY,
     endpoint: SONIOX_ENDPOINT,
+  },
+
+  alibaba: {
+    endpoint: ALIBABA_ENDPOINT,
+    workspace: ALIBABA_WORKSPACE,
+    dashscopeApiKey: ALIBABA_DASHSCOPE_API_KEY,
+    model: "gummy-realtime-v1",
   },
 
   performance: {

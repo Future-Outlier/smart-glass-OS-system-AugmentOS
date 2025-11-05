@@ -3,7 +3,9 @@ package com.augmentos.asg_client.service.legacy.managers;
 import android.content.Context;
 import android.util.Log;
 
+import com.augmentos.asg_client.io.bes.BesOtaManager;
 import com.augmentos.asg_client.io.bluetooth.core.BluetoothManagerFactory;
+import com.augmentos.asg_client.io.bluetooth.core.ComManager;
 import com.augmentos.asg_client.io.bluetooth.interfaces.IBluetoothManager;
 import com.augmentos.asg_client.io.file.core.FileManager;
 import com.augmentos.asg_client.io.media.core.MediaCaptureService;
@@ -39,6 +41,7 @@ public class AsgClientServiceManager {
     private MediaCaptureService mediaCaptureService;
     private AsgServerManager serverManager;
     private AsgCameraServer cameraServer;
+    private BesOtaManager besOtaManager;
 
     // State tracking
     private boolean isInitialized = false;
@@ -229,6 +232,22 @@ public class AsgClientServiceManager {
                 com.augmentos.asg_client.io.bluetooth.managers.K900BluetoothManager k900Manager = 
                     (com.augmentos.asg_client.io.bluetooth.managers.K900BluetoothManager) bluetoothManager;
                 Log.d(TAG, "📋 K900 Bluetooth manager configured");
+                
+                // Initialize BES OTA Manager for K900 devices
+                Log.d(TAG, "🔧 Initializing BES OTA Manager for firmware updates");
+                try {
+                    ComManager comManager = k900Manager.getComManager();
+                    if (comManager != null) {
+                        besOtaManager = new BesOtaManager(comManager);
+                        BesOtaManager.setInstance(besOtaManager);
+                        comManager.registerOtaListener(besOtaManager);
+                        Log.i(TAG, "✅ BES OTA Manager initialized and registered");
+                    } else {
+                        Log.w(TAG, "⚠️ ComManager not available - BES OTA disabled");
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "💥 Error initializing BES OTA Manager", e);
+                }
             }
 
             bluetoothManager.initialize();

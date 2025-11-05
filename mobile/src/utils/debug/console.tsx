@@ -18,7 +18,7 @@ export const ConsoleLogger = () => {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
+      onMoveShouldSetPanResponder: (_evt, _gestureState) => {
         // Only set pan responder if the gesture has moved significantly
         // return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5
         return false
@@ -238,14 +238,8 @@ const $logContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   // paddingBottom: spacing.lg,
 })
 
-const $logEntry: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $logEntry: ThemedStyle<ViewStyle> = () => ({
   // marginBottom: spacing.xxs,
-})
-
-const $timestamp: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.textDim,
-  fontSize: 10,
-  fontFamily: "monospace",
 })
 
 const $logText: ThemedStyle<TextStyle> = ({colors}) => ({
