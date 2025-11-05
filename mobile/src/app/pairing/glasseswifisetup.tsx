@@ -17,7 +17,7 @@ export default function GlassesWifiSetupScreen() {
 
   const handleGoBack = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
-      router.replace(returnTo)
+      router.replace(decodeURIComponent(returnTo))
     } else {
       goBack()
     }

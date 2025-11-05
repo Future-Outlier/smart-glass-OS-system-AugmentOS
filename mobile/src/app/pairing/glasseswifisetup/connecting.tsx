@@ -109,7 +109,7 @@ export default function WifiConnectingScreen() {
 
   const handleSuccess = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
-      router.replace(returnTo)
+      router.replace(decodeURIComponent(returnTo))
     } else {
       navigate("/")
     }
@@ -117,7 +117,7 @@ export default function WifiConnectingScreen() {
 
   const handleCancel = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
-      router.replace(returnTo)
+      router.replace(decodeURIComponent(returnTo))
     } else {
       goBack()
     }
@@ -125,7 +125,7 @@ export default function WifiConnectingScreen() {
 
   const handleHeaderBack = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
-      router.replace(returnTo)
+      router.replace(decodeURIComponent(returnTo))
     } else {
       goBack()
     }
