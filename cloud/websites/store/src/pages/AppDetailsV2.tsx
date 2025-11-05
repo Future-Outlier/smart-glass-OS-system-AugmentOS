@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {useState, useEffect} from "react"
 import {useParams, useNavigate, useLocation} from "react-router-dom"
-import {useAuth} from "../hooks/useAuth"
+import {useAuth} from "@mentra/shared"
 import {useTheme} from "../hooks/useTheme"
 import {useIsDesktop} from "../hooks/useMediaQuery"
 import {usePlatform} from "../hooks/usePlatform"
