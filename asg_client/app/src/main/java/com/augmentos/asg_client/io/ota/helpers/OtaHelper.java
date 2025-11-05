@@ -258,37 +258,14 @@ public class OtaHelper {
             }
         }).start();
     }
-    
+
     private String fetchVersionInfo(String url) throws Exception {
-        Log.i(TAG, "📡 Fetching version info from: " + url);
-        
-        // STUB MODE: Return hardcoded version info for testing
-        String versionJson = "{\n" +
-            "  \"apps\": {\n" +
-            "    \"com.augmentos.asg_client\": {\n" +
-            "      \"versionCode\": 13,\n" +
-            "      \"versionName\": \"1.3\",\n" +
-            "      \"apkUrl\": \"https://github.com/Mentra-Community/MentraOS/releases/download/mentra-live-asg-final-2/asg-client-13.apk\",\n" +
-            "      \"sha256\": \"48ddac61123606b77622443ffbe4baae5eb395de572f03e2039a2978c0b850f7\",\n" +
-            "      \"releaseNotes\": \"ASG Client updates\"\n" +
-            "    }\n" +
-            "  },\n" +
-            "  \"bes_firmware\": {\n" +
-            "    \"versionCode\": 10203,\n" +
-            "    \"versionName\": \"1.2.3\",\n" +
-            "    \"firmwareUrl\": \"https://github.com/Mentra-Community/MentraOS/releases/download/mentra-live-asg-final-2/bes_firmware_v1.2.3.bin\",\n" +
-            "    \"sha256\": \"YOUR_SHA256_HASH_HERE\",\n" +
-            "    \"fileSize\": 1048576,\n" +
-            "    \"releaseNotes\": \"BES2700 firmware improvements\"\n" +
-            "  }\n" +
-            "}";
-        
-        Log.d(TAG, "🚧 STUB MODE: Returning hardcoded version info (" + versionJson.length() + " bytes)");
-        Log.d(TAG, "📄 Version JSON content: " + versionJson);
-        
-        return versionJson;
+        BufferedReader reader = new BufferedReader(
+            new InputStreamReader(new URL(url).openStream())
+        );
+        return reader.lines().collect(Collectors.joining("\n"));
     }
-    
+
     private void processAppsSequentially(JSONObject rootJson, Context context) throws Exception {
         // Get the apps object from root
         JSONObject apps = rootJson.getJSONObject("apps");
