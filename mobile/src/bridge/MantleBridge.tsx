@@ -2,6 +2,7 @@ import {INTENSE_LOGGING} from "@/utils/Constants"
 import {translate} from "@/i18n"
 import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
+import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {useSettingsStore} from "@/stores/settings"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
@@ -220,6 +221,35 @@ export class MantleBridge {
           break
         case "local_transcription":
           mantle.handle_local_transcription(data)
+          break
+        case "phone_notification":
+          // Send phone notification via REST instead of WebSocket
+          restComms
+            .sendPhoneNotification({
+              notificationId: data.notificationId,
+              app: data.app,
+              title: data.title,
+              content: data.content,
+              priority: data.priority,
+              timestamp: data.timestamp,
+              packageName: data.packageName,
+            })
+            .catch(error => {
+              console.error("Failed to send phone notification:", error)
+              // TODO: Consider retry logic or queuing failed notifications
+            })
+          break
+        case "phone_notification_dismissed":
+          // Send phone notification dismissal via REST
+          restComms
+            .sendPhoneNotificationDismissed({
+              notificationKey: data.notificationKey,
+              packageName: data.packageName,
+              notificationId: data.notificationId,
+            })
+            .catch(error => {
+              console.error("Failed to send phone notification dismissal:", error)
+            })
           break
         // TODO: this is a bit of a hack, we should have dedicated functions for ws endpoints in the core:
         case "ws_text":
