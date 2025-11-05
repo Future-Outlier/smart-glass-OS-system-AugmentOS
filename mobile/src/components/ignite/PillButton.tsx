@@ -106,9 +106,9 @@ const $primaryButton: ThemedStyle<ViewStyle> = ({colors}) => ({
 })
 
 const $secondaryButton: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.palette.transparent,
+  backgroundColor: colors.primary_foreground,
   borderWidth: 1,
-  borderColor: colors.tint,
+  borderColor: colors.border,
 })
 
 const $iconButton: ThemedStyle<ViewStyle> = ({colors}) => ({

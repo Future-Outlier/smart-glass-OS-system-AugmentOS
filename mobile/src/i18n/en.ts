@@ -72,15 +72,31 @@ const en = {
     goHome: "Go Home",
     tryAgain: "Try Again",
     pairingFailed: "Pairing Failed",
+    instructions: "Instructions",
+    g1Ready: "Solid orange LED turned on",
+    g1NotReady: "Orange LED is blinking",
   },
   pairingGuides: {
-    // TODO: add pairing guides for each glasses model
-    // evenRealitiesG1: {
-    //   title: "Even Realities G1",
-    //   step1: "Disconnect your G1 from within the Even Realities app, or uninstall the Even Realities app",
-    //   step2: "Place your G1 in the charging case with the lid open.",
-    //   step3: "Connect your G1 to your device.",
-    // },
+    G1: {
+      step1: "Disconnect your G1 from within the Even Realities app, or uninstall the Even Realities app",
+      step2: "Place your G1 in the charging case with the lid open.",
+    },
+    LIVE: {
+      step1: "Make sure your Mentra Live is fully charged and turned on.",
+      step2: "Check that your Mentra Live is in pairing mode.",
+      step3: "Ensure no other app is currently connected to your glasses.",
+      step4: "Try restarting your glasses.",
+      step5: "Check that your phone's Bluetooth is enabled.",
+    },
+    MACH1: {
+      step1: "Make sure your Mach1 is fully charged and turned on.",
+      step2: "Check that your device is running the latest firmware by using the Vuzix Connect app.",
+      step3:
+        "Put your Mentra Mach1 in pairing mode: hold the power button until you see the Bluetooth icon, then release.",
+    },
+    Z100: {
+      step1: "Make sure your Z100 is fully charged and turned on.",
+    },
   },
   connectivity: {
     bluetoothRequiredTitle: "Bluetooth Required",

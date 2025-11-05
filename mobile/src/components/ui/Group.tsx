@@ -1,25 +1,23 @@
 import {View, ViewStyle} from "react-native"
-import React from "react"
+import {Children, isValidElement, cloneElement} from "react"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 
 export const Group = ({title, style, children}: {title?: string; style?: ViewStyle; children?: React.ReactNode}) => {
-  const {theme, themed} = useAppTheme()
-  const {push} = useNavigationHistory()
+  const {themed} = useAppTheme()
 
-  const childrenArray = React.Children.toArray(children)
+  const childrenArray = Children.toArray(children)
 
   // hide if no child elements:
   if (!childrenArray.length) return null
 
   const childrenWithProps = childrenArray.map((child, index) => {
-    if (!React.isValidElement(child)) return child
+    if (!isValidElement(child)) return child
 
     let position: "top" | "middle" | "bottom" | null
     if (childrenArray.length === 1) {
-      position = null
+      position = null // when there is only one element, apply uniform border radius
     } else if (index === 0) {
       position = "top"
     } else if (index === childrenArray.length - 1) {
@@ -35,14 +33,15 @@ export const Group = ({title, style, children}: {title?: string; style?: ViewSty
       containerStyle = themed($bottom)
     } else if (position === "middle") {
       containerStyle = themed($middle)
+    } else {
+      containerStyle = themed($none)
     }
 
-    return React.cloneElement(child, {
+    return cloneElement(child, {
       key: index,
+      // @ts-ignore
       style: [child.props.style, containerStyle],
     } as any)
-
-    // return React.cloneElement(child, {position} as any)
   })
 
   return (
@@ -53,11 +52,9 @@ export const Group = ({title, style, children}: {title?: string; style?: ViewSty
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   gap: spacing.xs,
-  // padding: spacing.md,
-  // backgroundColor: colors.error,
 })
 
 const $top: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -74,4 +71,8 @@ const $bottom: ThemedStyle<ViewStyle> = ({spacing}) => ({
 
 const $middle: ThemedStyle<ViewStyle> = ({spacing}) => ({
   borderRadius: spacing.xxs,
+})
+
+const $none: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  borderRadius: spacing.md,
 })

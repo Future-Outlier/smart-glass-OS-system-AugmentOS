@@ -6,7 +6,6 @@ import Icon from "react-native-vector-icons/FontAwesome"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
 import GlassesPairingLoader from "@/components/misc/GlassesPairingLoader"
-import {getPairingGuide} from "@/components/pairing/GlassesPairingGuides"
 import {router} from "expo-router"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {Screen} from "@/components/ignite/Screen"
@@ -89,7 +88,7 @@ export default function GlassesPairingGuideScreen() {
   }, [])
 
   useEffect(() => {
-    if (!status.core_info.puck_connected || !status.glasses_info?.model_name) return
+    if (!status.glasses_info?.model_name) return
 
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
@@ -137,7 +136,7 @@ export default function GlassesPairingGuideScreen() {
       />
       <ScrollView style={themed($scrollView)}>
         <View style={themed($contentContainer)}>
-          {getPairingGuide(glassesModelName)}
+          {/* {getPairingGuide(glassesModelName)} */}
           <TouchableOpacity style={themed($helpButton)} onPress={() => setShowTroubleshootingModal(true)}>
             <Icon name="question-circle" size={16} color="#FFFFFF" style={{marginRight: 8}} />
             <Text style={themed($helpButtonText)}>Need Help Pairing?</Text>

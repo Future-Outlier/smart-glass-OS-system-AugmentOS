@@ -241,7 +241,7 @@ const $viewPresets: Record<Presets, ThemedStyleArray<ViewStyle>> = {
     $styles.row,
     $baseViewStyle,
     ({colors}) => ({
-      backgroundColor: colors.background,
+      backgroundColor: colors.primary_foreground,
     }),
   ],
   accent: [
