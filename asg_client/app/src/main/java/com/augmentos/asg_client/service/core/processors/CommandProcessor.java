@@ -92,6 +92,10 @@ public class CommandProcessor {
         // Add chunked message support to protocol detector
         this.protocolDetector.addChunkedMessageSupport(chunkReassembler);
         Log.d(TAG, "✅ Chunked message support initialized");
+        
+        // Wire K900CommandHandler to BesOtaManager for authorization requests
+        com.augmentos.asg_client.io.bes.BesOtaManager.setK900CommandHandler(this.k900CommandHandler);
+        Log.d(TAG, "✅ K900CommandHandler wired to BesOtaManager");
 
         // Register command handlers
         initializeCommandHandlers();

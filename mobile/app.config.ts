@@ -21,5 +21,6 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
   return {
     ...config,
     plugins: [...existingPlugins, require("./plugins/withSplashScreen").withSplashScreen],
+    version: process.env.EXPO_PUBLIC_MENTRAOS_VERSION || "0.0.1",
   }
 }

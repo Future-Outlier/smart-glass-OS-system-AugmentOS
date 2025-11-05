@@ -49,6 +49,7 @@ export enum AppErrorCode {
   MALFORMED_MESSAGE = "MALFORMED_MESSAGE",
   PERMISSION_DENIED = "PERMISSION_DENIED",
   INTERNAL_ERROR = "INTERNAL_ERROR",
+  WIFI_NOT_CONNECTED = "WIFI_NOT_CONNECTED",
 }
 
 /**
@@ -364,10 +365,22 @@ export class AppWebSocketService {
                 e,
                 "Error starting RTMP stream via UnmanagedStreamingExtension",
               );
+
+            const errorMessage =
+              (e as Error).message || "Failed to start stream.";
+            const errorCode = (e as any).code;
+
+            // Check if this is a WiFi error (from cloud or asg_client)
+            const isWifiError =
+              errorCode === "WIFI_NOT_CONNECTED" ||
+              errorMessage === "no_wifi_connection"; // from asg_client
+
             this.sendError(
               appWebsocket,
-              AppErrorCode.INTERNAL_ERROR,
-              (e as Error).message || "Failed to start stream.",
+              isWifiError
+                ? AppErrorCode.WIFI_NOT_CONNECTED
+                : AppErrorCode.INTERNAL_ERROR,
+              errorMessage,
             );
           }
           break;
@@ -750,6 +763,49 @@ export class AppWebSocketService {
               appWebsocket,
               AppErrorCode.INTERNAL_ERROR,
               (e as Error).message || "Failed to check stream status",
+            );
+          }
+          break;
+
+        case AppToCloudMessageType.REQUEST_WIFI_SETUP:
+          try {
+            const wifiSetupRequest = message as any; // Type is RequestWifiSetup but not imported
+
+            // Send SHOW_WIFI_SETUP message to mobile app
+            const showWifiSetup = {
+              type: CloudToGlassesMessageType.SHOW_WIFI_SETUP,
+              reason: wifiSetupRequest.reason,
+              appPackageName: wifiSetupRequest.packageName,
+              timestamp: new Date(),
+            };
+
+            if (
+              userSession.websocket &&
+              userSession.websocket.readyState === WebSocket.OPEN
+            ) {
+              userSession.websocket.send(JSON.stringify(showWifiSetup));
+              this.logger.info(
+                {
+                  packageName: wifiSetupRequest.packageName,
+                  reason: wifiSetupRequest.reason,
+                },
+                "WiFi setup request forwarded to mobile app",
+              );
+            } else {
+              this.logger.error(
+                {
+                  packageName: wifiSetupRequest.packageName,
+                },
+                "Cannot send WiFi setup request - mobile not connected",
+              );
+            }
+          } catch (e) {
+            this.logger.error(
+              {
+                e,
+                packageName: message.packageName,
+              },
+              "Error processing WiFi setup request",
             );
           }
           break;

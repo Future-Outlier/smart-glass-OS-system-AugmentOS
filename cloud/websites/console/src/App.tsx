@@ -18,7 +18,7 @@ import OrganizationSettings from "./pages/OrganizationSettings";
 import Members from "./pages/Members";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
-import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { AuthProvider, useAuth, ForgotPasswordPage, ResetPasswordPage } from "@mentra/shared";
 import { OrganizationProvider } from "./context/OrganizationContext";
 import { useAccountStore } from "./stores/account.store";
 import { useOrgStore } from "./stores/orgs.store";
@@ -158,6 +158,13 @@ const AppShell: React.FC = () => {
 
         {/* Organization Invite */}
         <Route path="/invite/accept" element={<LoginOrSignup />} />
+
+        {/* Forgot Password Routes */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route
+          path="/reset-password"
+          element={<ResetPasswordPage redirectUrl="/dashboard" />}
+        />
 
         {/* Dashboard Routes - No auth for now */}
         <Route

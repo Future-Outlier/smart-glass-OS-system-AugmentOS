@@ -19,6 +19,12 @@ public class OtaConstants {
     public static final String BACKUP_APK_FILENAME = "asg_client_backup.apk";
     public static final String BACKUP_APK_PATH = BASE_DIR + "/" + BACKUP_APK_FILENAME;
 
+    // BES firmware paths
+    public static final String BES_FIRMWARE_FILENAME = "bes_firmware.bin";
+    public static final String BES_FIRMWARE_PATH = BASE_DIR + "/" + BES_FIRMWARE_FILENAME;
+    public static final String BES_BACKUP_FILENAME = "bes_firmware_backup.bin";
+    public static final String BES_BACKUP_PATH = BASE_DIR + "/" + BES_BACKUP_FILENAME;
+
     // OTA update actions
     public static final String ACTION_INSTALL_OTA = "com.augmentos.asg_client.ACTION_INSTALL_OTA";
     public static final String APK_FILENAME = "update.apk";

@@ -260,4 +260,64 @@ public class OtaUtils {
         }
         return baseDir.getFreeSpace();
     }
+    
+    /**
+     * Convert int to byte array (little-endian)
+     * @param value Integer value to convert
+     * @return 4-byte array
+     */
+    public static byte[] int2Bytes(int value) {
+        byte[] src = new byte[4];
+        src[3] = (byte) ((value >> 24) & 0xFF);
+        src[2] = (byte) ((value >> 16) & 0xFF);
+        src[1] = (byte) ((value >> 8) & 0xFF);
+        src[0] = (byte) (value & 0xFF);
+        return src;
+    }
+
+    /**
+     * Convert long to byte array (little-endian)
+     * @param value Long value to convert
+     * @return 4-byte array
+     */
+    public static byte[] long2Bytes(long value) {
+        byte[] src = new byte[4];
+        src[3] = (byte) ((value >> 24) & 0xFF);
+        src[2] = (byte) ((value >> 16) & 0xFF);
+        src[1] = (byte) ((value >> 8) & 0xFF);
+        src[0] = (byte) (value & 0xFF);
+        return src;
+    }
+
+    /**
+     * Calculate CRC32 checksum
+     * @param data Data to calculate checksum for
+     * @param offset Starting offset in data array
+     * @param length Number of bytes to include
+     * @return CRC32 value
+     */
+    public static long crc32(byte[] data, int offset, int length) {
+        java.util.zip.CRC32 crc32 = new java.util.zip.CRC32();
+        crc32.update(data, offset, length);
+        return crc32.getValue();
+    }
+
+    /**
+     * Convert byte array to int (little-endian)
+     * @param src Source byte array
+     * @param offset Starting offset
+     * @param len Number of bytes to read
+     * @return Integer value
+     */
+    public static int bytes2Int(byte[] src, int offset, int len) {
+        if (src == null || offset + len > src.length) {
+            return 0;
+        }
+        int v = 0;
+        for (int i = offset + len - 1; i >= offset; i--) {
+            v = (v << 8);
+            v += (src[i] < 0) ? (256 + src[i]) : src[i];
+        }
+        return v;
+    }
 } 
