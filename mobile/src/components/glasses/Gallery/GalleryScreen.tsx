@@ -948,33 +948,59 @@ export function GalleryScreen() {
       const hasPermission = await MediaLibraryPermissions.checkPermission()
 
       if (!hasPermission) {
-        setIsRequestingPermission(true)
-        const granted = await MediaLibraryPermissions.requestPermission()
-        setIsRequestingPermission(false)
+        // Show explanation BEFORE requesting permission
+        showAlert(
+          "Camera Roll Access",
+          "MentraOS Gallery can automatically save photos and videos from your glasses to your device's camera roll. Would you like to grant camera roll access?",
+          [
+            {
+              text: "Not Now",
+              style: "cancel",
+              onPress: () => goBack(),
+            },
+            {
+              text: "Allow",
+              onPress: async () => {
+                setIsRequestingPermission(true)
+                const granted = await MediaLibraryPermissions.requestPermission()
+                setIsRequestingPermission(false)
 
-        if (!granted) {
-          // Show alert and navigate back
-          showAlert(
-            "Permission Required",
-            "MentraOS needs permission to save photos to your camera roll. Please grant permission in Settings.",
-            [
-              {text: "Cancel", onPress: () => goBack()},
-              {
-                text: "Open Settings",
-                onPress: () => {
-                  Linking.openSettings()
-                  goBack()
-                },
+                if (!granted) {
+                  // Permission was denied - show settings alert
+                  showAlert(
+                    "Permission Required",
+                    "MentraOS needs permission to save photos to your camera roll. Please grant permission in Settings.",
+                    [
+                      {text: "Cancel", onPress: () => goBack()},
+                      {
+                        text: "Open Settings",
+                        onPress: () => {
+                          Linking.openSettings()
+                          goBack()
+                        },
+                      },
+                    ],
+                  )
+                  return
+                }
+
+                // Permission granted, continue with initialization
+                setHasMediaLibraryPermission(true)
+                console.log("[GalleryScreen] Media library permission granted")
+                initializeGallery()
               },
-            ],
-          )
-          return
-        }
+            },
+          ],
+        )
+        return
       }
 
       setHasMediaLibraryPermission(true)
       console.log("[GalleryScreen] Media library permission granted")
+      initializeGallery()
+    }
 
+    const initializeGallery = () => {
       // Continue with existing mount logic
       loadDownloadedPhotos()
 
