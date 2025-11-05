@@ -23,10 +23,10 @@ const InfoCard: React.FC<InfoCardProps> = ({label, value, isFirst, isLast}) => {
       style={[
         themed($infoCardContainer),
         {
-          borderTopLeftRadius: isFirst ? theme.spacing.md : 0,
-          borderTopRightRadius: isFirst ? theme.spacing.md : 0,
-          borderBottomLeftRadius: isLast ? theme.spacing.md : 0,
-          borderBottomRightRadius: isLast ? theme.spacing.md : 0,
+          borderTopLeftRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
+          borderTopRightRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
+          borderBottomLeftRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
+          borderBottomRightRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
           marginBottom: isLast ? 0 : theme.spacing.xs,
         },
       ]}>
