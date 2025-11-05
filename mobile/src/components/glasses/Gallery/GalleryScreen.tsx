@@ -574,6 +574,10 @@ export function GalleryScreen() {
       const newSet = new Set(prev)
       if (newSet.has(photoName)) {
         newSet.delete(photoName)
+        // Exit selection mode if no photos are selected
+        if (newSet.size === 0) {
+          setTimeout(() => exitSelectionMode(), 0)
+        }
       } else {
         newSet.add(photoName)
       }
