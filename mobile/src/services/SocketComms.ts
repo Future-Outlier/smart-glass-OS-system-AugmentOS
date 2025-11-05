@@ -7,6 +7,7 @@ import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
 import {useAppletStatusStore} from "@/stores/applets"
 import Constants from "expo-constants"
+import audioPlayService from "@/services/AudioPlayService"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -529,6 +530,16 @@ class SocketComms {
     )
   }
 
+  private handle_audio_play_request(msg: any) {
+    console.log("SOCKET: Received audio_play_request:", msg)
+    audioPlayService.handle_audio_play_request(msg)
+  }
+
+  private handle_audio_stop_request(msg: any) {
+    console.log("SOCKET: Received audio_stop_request:", msg)
+    audioPlayService.handle_audio_stop_request(msg)
+  }
+
   // Message Handling
   private handle_message(msg: any) {
     const type = msg.type
@@ -614,6 +625,14 @@ class SocketComms {
 
       case "rgb_led_control":
         this.handle_rgb_led_control(msg)
+        break
+
+      case "audio_play_request":
+        this.handle_audio_play_request(msg)
+        break
+
+      case "audio_stop_request":
+        this.handle_audio_stop_request(msg)
         break
 
       default:

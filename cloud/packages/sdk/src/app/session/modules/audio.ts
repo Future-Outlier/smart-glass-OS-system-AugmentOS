@@ -5,24 +5,19 @@
  * Handles audio playback on connected glasses.
  */
 
-import {
-  AudioPlayRequest,
-  AudioPlayResponse,
-  AudioStopRequest,
-  AppToCloudMessageType,
-} from "../../../types";
-import { Logger } from "pino";
+import {AudioPlayRequest, AudioPlayResponse, AudioStopRequest, AppToCloudMessageType} from "../../../types"
+import {Logger} from "pino"
 
 /**
  * Options for audio playback
  */
 export interface AudioPlayOptions {
   /** URL to audio file for download and play */
-  audioUrl: string;
+  audioUrl: string
   /** Volume level 0.0-1.0, defaults to 1.0 */
-  volume?: number;
+  volume?: number
   /** Whether to stop other audio playback, defaults to true */
-  stopOtherAudio?: boolean;
+  stopOtherAudio?: boolean
 }
 
 /**
@@ -30,19 +25,19 @@ export interface AudioPlayOptions {
  */
 export interface SpeakOptions {
   /** Voice ID to use (optional, defaults to server's ELEVENLABS_DEFAULT_VOICE_ID) */
-  voice_id?: string;
+  voice_id?: string
   /** Model ID to use (optional, defaults to eleven_flash_v2_5) */
-  model_id?: string;
+  model_id?: string
   /** Voice settings object (optional) */
   voice_settings?: {
-    stability?: number;
-    similarity_boost?: number;
-    style?: number;
-    use_speaker_boost?: boolean;
-    speed?: number;
-  };
+    stability?: number
+    similarity_boost?: number
+    style?: number
+    use_speaker_boost?: boolean
+    speed?: number
+  }
   /** Volume level 0.0-1.0, defaults to 1.0 */
-  volume?: number;
+  volume?: number
 }
 
 /**
@@ -50,11 +45,11 @@ export interface SpeakOptions {
  */
 export interface AudioPlayResult {
   /** Whether the audio playback was successful */
-  success: boolean;
+  success: boolean
   /** Error message if playback failed */
-  error?: string;
+  error?: string
   /** Duration of the audio file in seconds (if available) */
-  duration?: number;
+  duration?: number
 }
 
 /**
@@ -80,20 +75,20 @@ export interface AudioPlayResult {
  * ```
  */
 export class AudioManager {
-  private send: (message: any) => void;
-  private packageName: string;
-  private sessionId: string;
-  private session?: any; // Reference to AppSession
-  private logger: Logger;
+  private send: (message: any) => void
+  private packageName: string
+  private sessionId: string
+  private session?: any // Reference to AppSession
+  private logger: Logger
 
   /** Map to store pending audio play request promises */
   private pendingAudioRequests = new Map<
     string,
     {
-      resolve: (value: AudioPlayResult) => void;
-      reject: (reason?: string) => void;
+      resolve: (value: AudioPlayResult) => void
+      reject: (reason?: string) => void
     }
-  >();
+  >()
 
   /**
    * Create a new AudioManager
@@ -104,18 +99,12 @@ export class AudioManager {
    * @param session - Reference to the parent AppSession (optional)
    * @param logger - Logger instance for debugging
    */
-  constructor(
-    packageName: string,
-    sessionId: string,
-    send: (message: any) => void,
-    session?: any,
-    logger?: Logger,
-  ) {
-    this.packageName = packageName;
-    this.sessionId = sessionId;
-    this.send = send;
-    this.session = session;
-    this.logger = logger || (console as any);
+  constructor(packageName: string, sessionId: string, send: (message: any) => void, session?: any, logger?: Logger) {
+    this.packageName = packageName
+    this.sessionId = sessionId
+    this.send = send
+    this.session = session
+    this.logger = logger || (console as any)
   }
 
   // =====================================
@@ -141,15 +130,15 @@ export class AudioManager {
       try {
         // Validate input
         if (!options.audioUrl) {
-          reject("audioUrl must be provided");
-          return;
+          reject("audioUrl must be provided")
+          return
         }
 
         // Generate unique request ID
-        const requestId = `audio_req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const requestId = `audio_req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 
         // Store promise resolvers for when we get the response
-        this.pendingAudioRequests.set(requestId, { resolve, reject });
+        this.pendingAudioRequests.set(requestId, {resolve, reject})
 
         // Create audio play request message
         const message: AudioPlayRequest = {
@@ -161,48 +150,37 @@ export class AudioManager {
           audioUrl: options.audioUrl,
           volume: options.volume ?? 1.0,
           stopOtherAudio: options.stopOtherAudio ?? true,
-        };
+        }
 
         // Send request to cloud
-        this.send(message);
+        this.send(message)
 
         // Set timeout to avoid hanging promises
-        const timeoutMs = 60000; // 60 seconds
+        const timeoutMs = 60000 // 60 seconds
         if (this.session && this.session.resources) {
           // Use session's resource tracker for automatic cleeanup
           this.session.resources.setTimeout(() => {
             if (this.pendingAudioRequests.has(requestId)) {
-              this.pendingAudioRequests
-                .get(requestId)!
-                .reject("Audio play request timed out");
-              this.pendingAudioRequests.delete(requestId);
-              this.logger.warn(
-                { requestId },
-                `🔊 Audio play request timed out`,
-              );
+              this.pendingAudioRequests.get(requestId)!.reject("Audio play request timed out")
+              this.pendingAudioRequests.delete(requestId)
+              this.logger.warn({requestId}, `🔊 Audio play request timed out`)
             }
-          }, timeoutMs);
+          }, timeoutMs)
         } else {
           // Fallback to regular setTimeout if session not available
           setTimeout(() => {
             if (this.pendingAudioRequests.has(requestId)) {
-              this.pendingAudioRequests
-                .get(requestId)!
-                .reject("Audio play request timed out");
-              this.pendingAudioRequests.delete(requestId);
-              this.logger.warn(
-                { requestId },
-                `🔊 Audio play request timed out`,
-              );
+              this.pendingAudioRequests.get(requestId)!.reject("Audio play request timed out")
+              this.pendingAudioRequests.delete(requestId)
+              this.logger.warn({requestId}, `🔊 Audio play request timed out`)
             }
-          }, timeoutMs);
+          }, timeoutMs)
         }
       } catch (error: unknown) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        reject(`Failed to play audio: ${errorMessage}`);
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        reject(`Failed to play audio: ${errorMessage}`)
       }
-    });
+    })
   }
 
   /**
@@ -222,16 +200,15 @@ export class AudioManager {
         packageName: this.packageName,
         sessionId: this.sessionId,
         timestamp: new Date(),
-      };
+      }
 
       // Send request to cloud (one-way, no response expected)
-      this.send(message);
+      this.send(message)
 
-      this.logger.info(`🔇 Audio stop request sent`);
+      this.logger.info(`🔇 Audio stop request sent`)
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to stop audio: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      this.logger.error(`Failed to stop audio: ${errorMessage}`)
     }
   }
 
@@ -257,50 +234,50 @@ export class AudioManager {
    * });
    * ```
    */
-  async speak(
-    text: string,
-    options: SpeakOptions = {},
-  ): Promise<AudioPlayResult> {
+  async speak(text: string, options: SpeakOptions = {}): Promise<AudioPlayResult> {
     // Validate input
     if (!text) {
-      throw new Error("text must be provided");
+      throw new Error("text must be provided")
     }
 
     // Get the HTTPS server URL from the session
-    const baseUrl = this.session?.getHttpsServerUrl?.();
+    const baseUrl = this.session?.getHttpsServerUrl?.()
     if (!baseUrl) {
-      throw new Error("Cannot determine server URL for TTS endpoint");
+      throw new Error("Cannot determine server URL for TTS endpoint")
     }
 
     // Build query parameters for the TTS endpoint
-    const queryParams = new URLSearchParams();
-    queryParams.append("text", text);
+    const queryParams = new URLSearchParams()
+    queryParams.append("text", text)
 
     if (options.voice_id) {
-      queryParams.append("voice_id", options.voice_id);
+      queryParams.append("voice_id", options.voice_id)
     }
 
     if (options.model_id) {
-      queryParams.append("model_id", options.model_id);
+      queryParams.append("model_id", options.model_id)
     }
 
     if (options.voice_settings) {
-      queryParams.append(
-        "voice_settings",
-        JSON.stringify(options.voice_settings),
-      );
+      queryParams.append("voice_settings", JSON.stringify(options.voice_settings))
     }
 
     // Construct the TTS URL
-    const ttsUrl = `${baseUrl}/api/tts?${queryParams.toString()}`;
+    const ttsUrl = `${baseUrl}/api/tts?${queryParams.toString()}`
 
-    this.logger.info({ text, ttsUrl }, `🗣️ Generating speech from text`);
+    this.logger.info({text, ttsUrl}, `🗣️ Generating speech from text`)
+
+    // Stop all audio from LiveKit bridge before speaking
+    this.stopAudio()
+
+    // Wait a bit to ensure stop command is processed before starting new audio
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     // Use the existing playAudio method to play the TTS audio
     return this.playAudio({
       audioUrl: ttsUrl,
       volume: options.volume,
-    });
+    })
   }
 
   // =====================================
@@ -317,7 +294,7 @@ export class AudioManager {
    * @internal This method is used internally by AppSession
    */
   handleAudioPlayResponse(response: AudioPlayResponse): void {
-    const pendingRequest = this.pendingAudioRequests.get(response.requestId);
+    const pendingRequest = this.pendingAudioRequests.get(response.requestId)
 
     if (pendingRequest) {
       // Resolve the promise with the response data
@@ -325,10 +302,10 @@ export class AudioManager {
         success: response.success,
         error: response.error,
         duration: response.duration,
-      });
+      })
 
       // Clean up
-      this.pendingAudioRequests.delete(response.requestId);
+      this.pendingAudioRequests.delete(response.requestId)
 
       this.logger.info(
         {
@@ -337,12 +314,9 @@ export class AudioManager {
           duration: response.duration,
         },
         `🔊 Audio play response received`,
-      );
+      )
     } else {
-      this.logger.warn(
-        { requestId: response.requestId },
-        `🔊 Received audio play response for unknown request ID`,
-      );
+      this.logger.warn({requestId: response.requestId}, `🔊 Received audio play response for unknown request ID`)
     }
   }
 
@@ -357,9 +331,9 @@ export class AudioManager {
    */
   hasPendingRequest(requestId?: string): boolean {
     if (requestId) {
-      return this.pendingAudioRequests.has(requestId);
+      return this.pendingAudioRequests.has(requestId)
     }
-    return this.pendingAudioRequests.size > 0;
+    return this.pendingAudioRequests.size > 0
   }
 
   /**
@@ -367,7 +341,7 @@ export class AudioManager {
    * @returns Number of pending requests
    */
   getPendingRequestCount(): number {
-    return this.pendingAudioRequests.size;
+    return this.pendingAudioRequests.size
   }
 
   /**
@@ -375,7 +349,7 @@ export class AudioManager {
    * @returns Array of pending request IDs
    */
   getPendingRequestIds(): string[] {
-    return Array.from(this.pendingAudioRequests.keys());
+    return Array.from(this.pendingAudioRequests.keys())
   }
 
   /**
@@ -384,14 +358,14 @@ export class AudioManager {
    * @returns True if the request was found and cancelled
    */
   cancelAudioRequest(requestId: string): boolean {
-    const pendingRequest = this.pendingAudioRequests.get(requestId);
+    const pendingRequest = this.pendingAudioRequests.get(requestId)
     if (pendingRequest) {
-      pendingRequest.reject("Audio request cancelled");
-      this.pendingAudioRequests.delete(requestId);
-      this.logger.info({ requestId }, `🔊 Audio request cancelled`);
-      return true;
+      pendingRequest.reject("Audio request cancelled")
+      this.pendingAudioRequests.delete(requestId)
+      this.logger.info({requestId}, `🔊 Audio request cancelled`)
+      return true
     }
-    return false;
+    return false
   }
 
   /**
@@ -399,24 +373,18 @@ export class AudioManager {
    * @returns Number of requests that were cancelled
    */
   cancelAllAudioRequests(): number {
-    const count = this.pendingAudioRequests.size;
+    const count = this.pendingAudioRequests.size
     this.pendingAudioRequests.forEach((request, requestId) => {
-      request.reject("Audio request cancelled due to cleanup");
-      this.logger.debug(
-        { requestId },
-        `🔊 Audio request cancelled during cleanup`,
-      );
-    });
-    this.pendingAudioRequests.clear();
+      request.reject("Audio request cancelled due to cleanup")
+      this.logger.debug({requestId}, `🔊 Audio request cancelled during cleanup`)
+    })
+    this.pendingAudioRequests.clear()
 
     if (count > 0) {
-      this.logger.info(
-        { cancelledCount: count },
-        `🧹 Cancelled all pending audio requests`,
-      );
+      this.logger.info({cancelledCount: count}, `🧹 Cancelled all pending audio requests`)
     }
 
-    return count;
+    return count
   }
 
   // =====================================
@@ -429,8 +397,8 @@ export class AudioManager {
    * @internal Used by AppSession during reconnection
    */
   updateSessionId(newSessionId: string): void {
-    this.sessionId = newSessionId;
-    this.logger.debug({ newSessionId }, `🔄 Audio module session ID updated`);
+    this.sessionId = newSessionId
+    this.logger.debug({newSessionId}, `🔄 Audio module session ID updated`)
   }
 
   /**
@@ -438,8 +406,8 @@ export class AudioManager {
    * @returns Object with count of cancelled requests
    * @internal Used by AppSession during cleanup
    */
-  cancelAllRequests(): { audioRequests: number } {
-    const audioRequests = this.cancelAllAudioRequests();
-    return { audioRequests };
+  cancelAllRequests(): {audioRequests: number} {
+    const audioRequests = this.cancelAllAudioRequests()
+    return {audioRequests}
   }
 }

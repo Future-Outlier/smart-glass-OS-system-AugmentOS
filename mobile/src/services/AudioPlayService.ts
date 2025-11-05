@@ -19,8 +19,16 @@ export interface AudioPlayResponse {
 
 export type AudioPlayResponseCallback = (response: AudioPlayResponse) => void
 
+export interface AudioStopRequestMessage {
+  type: "audio_stop_request"
+  sessionId: string
+  appId?: string
+}
+
 export class AudioPlayService {
   private static instance: AudioPlayService
+  private currentPlayer: ReturnType<typeof createAudioPlayer> | null = null
+  private currentSubscription: any = null
 
   private constructor() {}
 
@@ -53,7 +61,12 @@ export class AudioPlayService {
   // }
 
   public async handle_audio_play_request(msg: any) {
-    const {requestId, audioUrl} = msg
+    const {requestId, audioUrl, stopOtherAudio} = msg
+
+    // Stop any currently playing audio if requested
+    if (stopOtherAudio) {
+      this.stopCurrentAudio()
+    }
 
     const player = createAudioPlayer(audioUrl)
 
@@ -67,11 +80,45 @@ export class AudioPlayService {
         // Clean up: remove listener and release the player
         subscription.remove()
         player.remove()
+
+        // Clear references if this is the current player
+        if (this.currentPlayer === player) {
+          this.currentPlayer = null
+          this.currentSubscription = null
+        }
       }
     })
 
+    // Store current player and subscription
+    this.currentPlayer = player
+    this.currentSubscription = subscription
+
     // Start playing the audio
     player.play()
+  }
+
+  public handle_audio_stop_request(msg: any) {
+    console.log("Received audio_stop_request:", msg)
+    this.stopCurrentAudio()
+  }
+
+  private stopCurrentAudio() {
+    if (this.currentPlayer) {
+      console.log("Stopping currently playing audio")
+
+      // Stop the player
+      this.currentPlayer.pause()
+
+      // Clean up subscription
+      if (this.currentSubscription) {
+        this.currentSubscription.remove()
+        this.currentSubscription = null
+      }
+
+      // Release the player
+      this.currentPlayer.remove()
+      this.currentPlayer = null
+    }
   }
 }
 

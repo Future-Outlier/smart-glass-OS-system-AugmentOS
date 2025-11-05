@@ -452,14 +452,21 @@ func (s *LiveKitBridgeService) StopAudio(
 
 	session := sessionVal.(*RoomSession)
 
-	// Convert track_id to track name
-	trackName := trackIDToName(req.TrackId)
-
-	// Cancel playback for this track
+	// Cancel playback for all tracks
 	session.stopPlayback()
 
-	// Close only the specific track
-	session.closeTrack(trackName)
+	// If track_id is specified, close only that track
+	// Otherwise, close ALL audio tracks (speaker, app_audio, tts)
+	if req.TrackId > 0 {
+		// Close specific track
+		trackName := trackIDToName(req.TrackId)
+		session.closeTrack(trackName)
+	} else {
+		// Close all audio playback tracks (track_id 0, 1, 2)
+		session.closeTrack("speaker")    // track_id 0
+		session.closeTrack("app_audio")  // track_id 1
+		session.closeTrack("tts")        // track_id 2
+	}
 
 	return &pb.StopAudioResponse{
 		Success:          true,
