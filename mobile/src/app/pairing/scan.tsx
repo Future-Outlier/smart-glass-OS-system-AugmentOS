@@ -1,4 +1,4 @@
-import {Header, Screen, Text} from "@/components/ignite"
+import {Button, Header, Screen, Text} from "@/components/ignite"
 import {PillButton} from "@/components/ignite/PillButton"
 import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
 import {MOCK_CONNECTION} from "@/utils/Constants"
@@ -272,29 +272,30 @@ export default function SelectGlassesBluetoothScreen() {
               <ActivityIndicator size="large" color={theme.colors.text} />
             </View>
           ) : (
-            <ScrollView style={{height: 800}}>
-              {searchResults && searchResults.length > 0 && (
-                <Group>
-                  {searchResults.map((device, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={themed($settingItem)}
-                      onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
-                      <View style={themed($settingsTextContainer)}>
-                        <Text text={`${glassesModelName}  ${device.deviceName}`} style={themed($label)} />
-                      </View>
-                      <Icon name="angle-right" size={24} color={theme.colors.text} />
-                    </TouchableOpacity>
-                  ))}
-                </Group>
-              )}
+            <ScrollView style={{maxHeight: 300}}>
+              <Group>
+                {searchResults.map((device, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={themed($settingItem)}
+                    onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
+                    <View style={themed($settingsTextContainer)}>
+                      <Text text={`${glassesModelName}  ${device.deviceName}`} style={themed($label)} />
+                    </View>
+                    <Icon name="angle-right" size={24} color={theme.colors.text} />
+                  </TouchableOpacity>
+                ))}
+              </Group>
             </ScrollView>
           )}
           <Spacer height={theme.spacing.md} />
           <Divider />
-          <View style={{justifyContent: "flex-end", flexDirection: "row", flex: 1}}>
-            <PillButton tx="common:cancel" variant="secondary" onPress={() => goBack()} />
-          </View>
+          <Button
+            tx="common:cancel"
+            preset="alternate"
+            onPress={() => goBack()}
+            style={{borderColor: theme.colors.border, borderWidth: 1, flex: undefined}}
+          />
         </View>
       </View>
       <GlassesTroubleshootingModal
@@ -312,11 +313,12 @@ const $container: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $contentContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  height: 420,
+  // height: 520,
   backgroundColor: colors.primary_foreground,
   borderRadius: spacing.lg,
   padding: spacing.lg,
   gap: spacing.lg,
+  // paddingBottom: spacing.xxxl,
 })
 
 const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -326,7 +328,7 @@ const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   paddingVertical: spacing.sm,
   paddingHorizontal: spacing.md,
   backgroundColor: colors.background,
-  // height: 50,
+  height: 50,
 })
 
 const $scanningText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({

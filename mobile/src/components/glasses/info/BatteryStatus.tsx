@@ -6,7 +6,7 @@ import {GlassesIcon} from "./GlassesIcon"
 import {CaseIcon} from "./CaseIcon"
 import {Group} from "@/components/ui/Group"
 import {translate} from "@/i18n"
-import {RouteButton, StatusCard} from "@/components/ui/RouteButton"
+import {StatusCard} from "@/components/ui/RouteButton"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 
 interface BatteryStatusProps {
@@ -30,9 +30,14 @@ export function BatteryStatus({compact}: BatteryStatusProps) {
       <View style={themed($sideBySideContainer)}>
         {glassesBatteryLevel !== -1 && (
           <StatusCard
-            style={{backgroundColor: theme.colors.background, flex: 1}}
-            textStyle={themed($compactTextStyle)}
+            style={{
+              backgroundColor: theme.colors.background,
+              flex: 1,
+              paddingHorizontal: theme.spacing.md,
+              paddingRight: 20,
+            }}
             label={translate("deviceSettings:glasses")}
+            textStyle={themed($compactTextStyle)}
             iconEnd={
               <View style={themed($compactBatteryValue)}>
                 <Icon icon="battery" size={14} color={theme.colors.text} />
@@ -44,7 +49,9 @@ export function BatteryStatus({compact}: BatteryStatusProps) {
 
         {caseBatteryLevel !== undefined && caseBatteryLevel !== -1 && !caseRemoved && (
           <StatusCard
-            style={{backgroundColor: theme.colors.background, flex: 1}}
+            style={{backgroundColor: theme.colors.background, flex: 1, paddingHorizontal: theme.spacing.md}}
+            label={translate("deviceSettings:case")}
+            subtitle={caseCharging ? translate("deviceSettings:charging") : undefined}
             textStyle={themed($compactTextStyle)}
             iconEnd={
               <View style={themed($compactBatteryValue)}>
@@ -52,7 +59,6 @@ export function BatteryStatus({compact}: BatteryStatusProps) {
                 <Text style={themed($compactTextStyle)}>{caseBatteryLevel}%</Text>
               </View>
             }
-            label={caseCharging ? translate("deviceSettings:caseCharging") : translate("deviceSettings:case")}
           />
         )}
       </View>
@@ -101,46 +107,21 @@ const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: "100%",
 })
 
-const $compactTextStyle: ThemedStyle<TextStyle> = ({spacing}) => ({
-  fontSize: spacing.sm,
+const $compactTextStyle: ThemedStyle<TextStyle> = () => ({
+  fontSize: 12,
+  width: 60,
 })
 
-const $textStyle: ThemedStyle<TextStyle> = ({spacing}) => ({
+const $textStyle: ThemedStyle<TextStyle> = () => ({
   // fontSize: spacing.sm,
   // fontWeight: "500",
-})
-
-const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-  borderRadius: spacing.md,
-  borderWidth: 2,
-  borderColor: colors.border,
-})
-
-const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  color: colors.textDim,
-  fontSize: spacing.sm,
-})
-
-const $batteryRow: ThemedStyle<ViewStyle> = () => ({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  paddingVertical: 4,
-})
-
-const $batteryLabel: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: spacing.xs,
 })
 
 const $compactBatteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   width: spacing.xl,
+  marginRight: spacing.md,
   justifyContent: "space-between",
 })
 
@@ -148,5 +129,6 @@ const $batteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   width: spacing.xxxl,
+  marginRight: spacing.xxs,
   justifyContent: "space-between",
 })

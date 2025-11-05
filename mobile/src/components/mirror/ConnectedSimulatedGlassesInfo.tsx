@@ -10,7 +10,15 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons"
 import {Text} from "@/components/ignite"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
-export default function ConnectedSimulatedGlassesInfo({style}: {style?: ViewStyle}) {
+export default function ConnectedSimulatedGlassesInfo({
+  style,
+  mirrorStyle,
+  showHeader = true,
+}: {
+  style?: ViewStyle
+  mirrorStyle?: ViewStyle
+  showHeader?: boolean
+}) {
   const {themed, theme} = useAppTheme()
   const [permission, requestPermission] = useCameraPermissions()
   const {push} = useNavigationHistory()
@@ -64,14 +72,16 @@ export default function ConnectedSimulatedGlassesInfo({style}: {style?: ViewStyl
 
   return (
     <View style={[themed($connectedContent), style]}>
-      <View style={themed($header)}>
-        <Text style={themed($title)} tx="home:simulatedGlasses" />
-        <Pressable onPress={() => push("/settings/glasses")}>
-          <MaterialCommunityIcons name="cog" size={24} color={theme.colors.text} />
-        </Pressable>
-      </View>
+      {showHeader && (
+        <View style={themed($header)}>
+          <Text style={themed($title)} tx="home:simulatedGlasses" />
+          <Pressable onPress={() => push("/settings/glasses")}>
+            <MaterialCommunityIcons name="cog" size={24} color={theme.colors.text} />
+          </Pressable>
+        </View>
+      )}
       <View>
-        <GlassesDisplayMirror fallbackMessage="Glasses Mirror" />
+        <GlassesDisplayMirror fallbackMessage="Glasses Mirror" style={mirrorStyle} />
         <TouchableOpacity style={{position: "absolute", bottom: 10, right: 10}} onPress={navigateToFullScreen}>
           <Icon name="fullscreen" size={24} color={theme.colors.text} />
         </TouchableOpacity>

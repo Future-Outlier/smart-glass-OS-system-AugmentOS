@@ -9,14 +9,14 @@ import {Text} from "@/components/ignite"
 
 interface GlassesDisplayMirrorProps {
   fallbackMessage?: string
-  containerStyle?: any
+  style?: ViewStyle
   fullscreen?: boolean
-  demoText: string
+  demoText?: string
 }
 
 const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
   fallbackMessage = "",
-  containerStyle,
+  style,
   fullscreen = false,
   demoText = "",
 }) => {
@@ -205,7 +205,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
       return null
     }
     return (
-      <View style={[themed($glassesScreen), containerStyle]}>
+      <View style={[themed($glassesScreen), style]}>
         <View style={themed($emptyContainer)}>
           <Text style={themed($emptyText)}>{fallbackMessage}</Text>
         </View>
@@ -221,7 +221,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
     return <View style={themed($glassesScreenFullscreen)}>{content}</View>
   }
 
-  return <View style={[themed($glassesScreen), containerStyle]}>{content}</View>
+  return <View style={[themed($glassesScreen), style]}>{content}</View>
 }
 
 const $glassesScreen: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
