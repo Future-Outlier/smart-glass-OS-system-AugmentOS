@@ -16,19 +16,19 @@ import {
   RotateCw,
   CircleDot,
   Lightbulb,
-} from "lucide-react"
-import {useAuth} from "../hooks/useAuth"
-import {useTheme} from "../hooks/useTheme"
-import {useIsDesktop} from "../hooks/useMediaQuery"
-import {usePlatform} from "../hooks/usePlatform"
-import api from "../api"
-import {AppI, HardwareType, HardwareRequirementLevel} from "../types"
-import {toast} from "sonner"
-import {formatCompatibilityError} from "../utils/errorHandling"
-import {Button} from "@/components/ui/button"
-import Header from "../components/Header"
+} from "lucide-react";
+import { useAuth } from "@mentra/shared";
+import { useTheme } from "../hooks/useTheme";
+import { useIsDesktop } from "../hooks/useMediaQuery";
+import { usePlatform } from "../hooks/usePlatform";
+import api from "../api";
+import { AppI, HardwareType, HardwareRequirementLevel } from "../types";
+import { toast } from "sonner";
+import { formatCompatibilityError } from "../utils/errorHandling";
+import { Button } from "@/components/ui/button";
+import Header from "../components/Header";
 import AppPermissions from "../components/AppPermissions"
-import GetMentraOSButton from "../components/GetMentraOSButton"
+import GetMentraOSButton from "../components/GetMentraOSButton";
 
 // Hardware icon mapping
 const hardwareIcons: Record<HardwareType, React.ReactNode> = {
