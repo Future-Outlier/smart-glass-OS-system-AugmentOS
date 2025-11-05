@@ -149,6 +149,7 @@ export function GalleryScreen() {
   // Track if gallery opened the hotspot
   const galleryOpenedHotspotRef = useRef(false)
   const [galleryOpenedHotspot, setGalleryOpenedHotspot] = useState(false)
+  const hotspotConnectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Track loaded ranges
   const loadedRanges = useRef<Set<string>>(new Set())
@@ -1143,14 +1144,27 @@ export function GalleryScreen() {
       console.log("[GalleryScreen] Hotspot enabled, waiting for it to become discoverable...")
       // Wait for hotspot to become fully active and discoverable before attempting connection
       // On Android 10+, connectToProtectedSSID shows system WiFi picker which needs the network to be broadcasting
-      setTimeout(() => {
+
+      // Clear any existing timeout
+      if (hotspotConnectionTimeoutRef.current) {
+        clearTimeout(hotspotConnectionTimeoutRef.current)
+      }
+
+      hotspotConnectionTimeoutRef.current = setTimeout(() => {
         console.log("[GalleryScreen] Attempting to connect to hotspot...")
         connectToHotspot(eventData.ssid, eventData.password, eventData.local_ip)
+        hotspotConnectionTimeoutRef.current = null
       }, TIMING.HOTSPOT_CONNECT_DELAY_MS)
     }
 
     GlobalEventEmitter.addListener("HOTSPOT_STATUS_CHANGE", handleHotspotStatusChange)
     return () => {
+      // Clean up timeout on unmount
+      if (hotspotConnectionTimeoutRef.current) {
+        console.log("[GalleryScreen] Cleaning up hotspot connection timeout")
+        clearTimeout(hotspotConnectionTimeoutRef.current)
+        hotspotConnectionTimeoutRef.current = null
+      }
       GlobalEventEmitter.removeListener("HOTSPOT_STATUS_CHANGE", handleHotspotStatusChange)
     }
   }, [])
@@ -1165,10 +1179,12 @@ export function GalleryScreen() {
     transitionToState(GalleryState.CONNECTED_LOADING)
     asgCameraApi.setServer(hotspotGatewayIp, 8089)
 
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       console.log("[GalleryScreen] Loading photos via hotspot...")
       loadInitialPhotos(hotspotGatewayIp, true)
     }, 500)
+
+    return () => clearTimeout(timeoutId)
   }, [networkStatus.phoneSSID, hotspotSsid, hotspotGatewayIp])
 
   // Auto-trigger sync
@@ -1179,11 +1195,16 @@ export function GalleryScreen() {
 
     console.log("[GalleryScreen] Ready to sync, auto-starting...")
     syncTriggeredRef.current = true
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       handleSync().finally(() => {
         syncTriggeredRef.current = false
       })
     }, 500)
+
+    return () => {
+      clearTimeout(timeoutId)
+      syncTriggeredRef.current = false
+    }
   }, [galleryState, totalServerCount])
 
   // Note: Hotspot cleanup after sync is now handled directly in syncAllPhotos()
