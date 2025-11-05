@@ -1537,9 +1537,19 @@ export function GalleryScreen() {
   return (
     <>
       <Header
-        title={isSelectionMode ? `${selectedPhotos.size} selected` : "Glasses Gallery"}
-        leftIcon={isSelectionMode ? "x" : "caretLeft"}
-        onLeftPress={() => (isSelectionMode ? exitSelectionMode() : goBack())}
+        title={isSelectionMode ? "" : "Glasses Gallery"}
+        leftIcon={isSelectionMode ? undefined : "caretLeft"}
+        onLeftPress={isSelectionMode ? undefined : () => goBack()}
+        LeftActionComponent={
+          isSelectionMode ? (
+            <TouchableOpacity onPress={() => exitSelectionMode()}>
+              <View style={themed($selectionHeader)}>
+                <MaterialCommunityIcons name="close" size={20} color={theme.colors.text} />
+                <Text style={themed($selectionCountText)}>{selectedPhotos.size}</Text>
+              </View>
+            </TouchableOpacity>
+          ) : undefined
+        }
         RightActionComponent={
           isSelectionMode ? (
             <TouchableOpacity
@@ -1879,6 +1889,22 @@ const $deleteButton: ThemedStyle<ViewStyle> = ({colors}) => ({
 })
 
 const $deleteButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
+  color: colors.text,
+  fontSize: 16,
+  lineHeight: 24,
+  fontWeight: "600",
+})
+
+const $selectionHeader: ThemedStyle<ViewStyle> = ({colors}) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: colors.primary_foreground,
+  padding: 8,
+  borderRadius: 32,
+  gap: 6,
+})
+
+const $selectionCountText: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.text,
   fontSize: 16,
   lineHeight: 24,
