@@ -7,6 +7,8 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -33,6 +35,11 @@ class NotificationListener private constructor(private val context: Context) {
     }
 
     private val listeners = mutableListOf<OnNotificationReceivedListener>()
+
+    // Deduplication tracking
+    private val notificationBuffer = mutableMapOf<String, Runnable>()
+    private val notificationHandler = Handler(Looper.getMainLooper())
+    private val DUPLICATE_THRESHOLD_MS = 200L
 
     /** Check if notification listener permission is granted */
     fun hasNotificationListenerPermission(): Boolean {
@@ -73,32 +80,124 @@ class NotificationListener private constructor(private val context: Context) {
         listeners.remove(listener)
     }
 
+    /** Check if this is a system package that should be blocked */
+    private fun isSystemPackageToBlock(packageName: String): Boolean {
+        val pkg = packageName.lowercase()
+        return pkg.contains("google") || pkg.contains("samsung") || pkg.contains(".sec.")
+    }
+
     /** Called internally by the service when a notification is posted */
     internal fun onNotificationPosted(sbn: StatusBarNotification) {
-        val notification =
-                NotificationData(
-                        packageName = sbn.packageName,
-                        title = sbn.notification.extras.getString("android.title") ?: "",
-                        text = sbn.notification.extras.getCharSequence("android.text")?.toString()
-                                        ?: "",
-                        timestamp = sbn.postTime,
-                        id = sbn.id,
-                        tag = sbn.tag
-                )
+        val packageName = sbn.packageName
+
+        // Filter system packages
+        if (isSystemPackageToBlock(packageName)) {
+            Bridge.log("NOTIF: Blocking system package: $packageName")
+            return
+        }
+
+        // Check blocklist
         val blocklist = CoreManager.getInstance().notificationsBlocklist
-        if (blocklist.contains(notification.packageName)) {
+        if (blocklist.contains(packageName)) {
             Bridge.log("NOTIF: Notification in blocklist, returning")
             return
         }
 
-        // Bridge.sendNotification(notification)
+        // Check if notifications enabled globally
+        if (!CoreManager.getInstance().notificationsEnabled) {
+            Bridge.log("NOTIF: Notifications disabled globally")
+            return
+        }
 
-        listeners.forEach { listener -> listener.onNotificationReceived(notification) }
+        // Extract notification data
+        val notification = sbn.notification
+        val extras = notification.extras
+        val title = extras.getString("android.title") ?: ""
+        val textCharSequence = extras.getCharSequence("android.text")
+        val text = textCharSequence?.toString() ?: ""
+
+        // Ignore empty notifications
+        if (title.isEmpty() || text.isEmpty()) {
+            Bridge.log("NOTIF: Ignoring empty notification")
+            return
+        }
+
+        // Ignore WhatsApp summary notifications (e.g., "5 new messages")
+        if (text.matches(Regex("^\\d+ new messages$"))) {
+            Bridge.log("NOTIF: Ignoring summary notification: $text")
+            return
+        }
+
+        // Get app name
+        val packageManager = context.packageManager
+        val appName = try {
+            val appInfo = packageManager.getApplicationInfo(packageName, 0)
+            packageManager.getApplicationLabel(appInfo).toString()
+        } catch (e: Exception) {
+            packageName
+        }
+
+        // Deduplication key
+        val notificationKey = "$packageName|$title|$text"
+
+        synchronized(notificationBuffer) {
+            // Remove previous notification with same key
+            notificationBuffer[notificationKey]?.let {
+                notificationHandler.removeCallbacks(it)
+                notificationBuffer.remove(notificationKey)
+            }
+
+            // Create delayed task
+            val task = Runnable {
+                // Send to server via Bridge
+                Bridge.sendPhoneNotification(
+                    notificationKey = sbn.key,
+                    packageName = packageName,
+                    appName = appName,
+                    title = title,
+                    text = text,
+                    timestamp = sbn.postTime
+                )
+
+                // Notify listeners (for future extensibility)
+                val notificationData = NotificationData(
+                    packageName = packageName,
+                    title = title,
+                    text = text,
+                    timestamp = sbn.postTime,
+                    id = sbn.id,
+                    tag = sbn.tag
+                )
+                listeners.forEach { listener ->
+                    listener.onNotificationReceived(notificationData)
+                }
+
+                synchronized(notificationBuffer) {
+                    notificationBuffer.remove(notificationKey)
+                }
+            }
+
+            // Buffer for 200ms to deduplicate
+            notificationBuffer[notificationKey] = task
+            notificationHandler.postDelayed(task, DUPLICATE_THRESHOLD_MS)
+        }
     }
 
     /** Called internally by the service when a notification is removed */
     internal fun onNotificationRemoved(sbn: StatusBarNotification) {
-        listeners.forEach { listener -> listener.onNotificationRemoved(sbn.packageName, sbn.id) }
+        val packageName = sbn.packageName
+        val notificationKey = sbn.key
+
+        Bridge.log("NOTIF: Notification removed - package: $packageName, key: $notificationKey")
+
+        // Send dismissal to server
+        Bridge.sendPhoneNotificationDismissed(
+            notificationKey = notificationKey,
+            packageName = packageName
+        )
+
+        // Notify listeners
+        listeners.forEach { listener -> listener.onNotificationRemoved(packageName, sbn.id) }
     }
 
     /** Interface for notification callbacks */

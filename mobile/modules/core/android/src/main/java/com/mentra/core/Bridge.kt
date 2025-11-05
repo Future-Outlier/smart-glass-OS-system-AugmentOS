@@ -532,6 +532,52 @@ public class Bridge private constructor() {
             sendTypedMessage("imu_gesture_event", eventBody as Map<String, Any>)
         }
 
+        /** Send phone notification to server (via REST through TypeScript) */
+        @JvmStatic
+        fun sendPhoneNotification(
+            notificationKey: String,
+            packageName: String,
+            appName: String,
+            title: String,
+            text: String,
+            timestamp: Long
+        ) {
+            try {
+                val data = HashMap<String, Any>()
+                data["notificationId"] = "$packageName-$notificationKey" // Stable ID combining package and Android key
+                data["app"] = appName
+                data["title"] = title
+                data["content"] = text
+                data["priority"] = "normal" // Default priority, could be enhanced later
+                data["timestamp"] = timestamp
+                data["packageName"] = packageName
+
+                sendTypedMessage("phone_notification", data as Map<String, Any>)
+                log("NOTIF: Sent phone notification: $title - $text")
+            } catch (e: Exception) {
+                log("Bridge: Error sending phone notification: $e")
+            }
+        }
+
+        /** Send phone notification dismissed to server (via REST through TypeScript) */
+        @JvmStatic
+        fun sendPhoneNotificationDismissed(
+            notificationKey: String,
+            packageName: String
+        ) {
+            try {
+                val data = HashMap<String, Any>()
+                data["notificationId"] = "$packageName-$notificationKey" // Same format as posting for correlation
+                data["notificationKey"] = notificationKey // Keep Android key for reference
+                data["packageName"] = packageName
+
+                sendTypedMessage("phone_notification_dismissed", data as Map<String, Any>)
+                log("NOTIF: Notification dismissed: $notificationKey")
+            } catch (e: Exception) {
+                log("Bridge: Error sending notification dismissal: $e")
+            }
+        }
+
         /** Get supported events Don't add to this list, use a typed message instead */
         @JvmStatic
         fun getSupportedEvents(): Array<String> {
