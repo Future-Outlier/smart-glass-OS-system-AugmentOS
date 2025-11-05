@@ -1548,13 +1548,11 @@ export function GalleryScreen() {
                   handleDeleteSelectedPhotos()
                 }
               }}
-              style={themed($settingsButton)}
               disabled={selectedPhotos.size === 0}>
-              <MaterialCommunityIcons
-                name="delete"
-                size={24}
-                color={selectedPhotos.size > 0 ? theme.colors.error : theme.colors.textDim}
-              />
+              <View style={themed($deleteButton)}>
+                <MaterialCommunityIcons name="delete" size={20} color={theme.colors.text} />
+                <Text style={themed($deleteButtonText)}>Delete</Text>
+              </View>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={() => push("/asg/gallery-settings")} style={themed($settingsButton)}>
@@ -1869,4 +1867,20 @@ const $selectionCheckbox: ThemedStyle<ViewStyle> = ({spacing}) => ({
   shadowOpacity: 0.3,
   shadowRadius: 2,
   elevation: 3,
+})
+
+const $deleteButton: ThemedStyle<ViewStyle> = ({colors}) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: colors.backgroundAlt,
+  paddingHorizontal: 8,
+  paddingVertical: 12,
+  borderRadius: 8,
+  gap: 6,
+})
+
+const $deleteButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
+  color: colors.text,
+  fontSize: 14,
+  fontWeight: "600",
 })
