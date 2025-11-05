@@ -1,8 +1,8 @@
-import Skeleton from "@mui/material/Skeleton"
-import {useTheme} from "../hooks/useTheme"
+import Skeleton from "@mui/material/Skeleton";
+import { useTheme } from "../hooks/useTheme";
 
 const SkeletonAppDetails = () => {
-  const {theme} = useTheme()
+  const { theme } = useTheme();
 
   return (
     <div className="px-6 py-6 pb-safe sm:p-12 sm:pb-16">
@@ -18,7 +18,10 @@ const SkeletonAppDetails = () => {
                 width={80}
                 height={80}
                 sx={{
-                  bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                  bgcolor:
+                    theme === "light"
+                      ? "rgba(0, 0, 0, 0.11)"
+                      : "rgba(255, 255, 255, 0.11)",
                   borderRadius: "20px",
                 }}
               />
@@ -31,7 +34,10 @@ const SkeletonAppDetails = () => {
                   width="80%"
                   height={32}
                   sx={{
-                    bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                    bgcolor:
+                      theme === "light"
+                        ? "rgba(0, 0, 0, 0.11)"
+                        : "rgba(255, 255, 255, 0.11)",
                     mb: 1,
                   }}
                 />
@@ -42,7 +48,10 @@ const SkeletonAppDetails = () => {
                   width="50%"
                   height={20}
                   sx={{
-                    bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                    bgcolor:
+                      theme === "light"
+                        ? "rgba(0, 0, 0, 0.11)"
+                        : "rgba(255, 255, 255, 0.11)",
                     mb: 1,
                   }}
                 />
@@ -53,7 +62,10 @@ const SkeletonAppDetails = () => {
                   width="60%"
                   height={16}
                   sx={{
-                    bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                    bgcolor:
+                      theme === "light"
+                        ? "rgba(0, 0, 0, 0.11)"
+                        : "rgba(255, 255, 255, 0.11)",
                   }}
                 />
               </div>
@@ -69,7 +81,10 @@ const SkeletonAppDetails = () => {
                 width="60%"
                 height={36}
                 sx={{
-                  bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                  bgcolor:
+                    theme === "light"
+                      ? "rgba(0, 0, 0, 0.11)"
+                      : "rgba(255, 255, 255, 0.11)",
                   mb: 2,
                 }}
               />
@@ -80,7 +95,10 @@ const SkeletonAppDetails = () => {
                 width="40%"
                 height={20}
                 sx={{
-                  bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                  bgcolor:
+                    theme === "light"
+                      ? "rgba(0, 0, 0, 0.11)"
+                      : "rgba(255, 255, 255, 0.11)",
                   mb: 2,
                 }}
               />
@@ -92,7 +110,10 @@ const SkeletonAppDetails = () => {
                   width={80}
                   height={28}
                   sx={{
-                    bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                    bgcolor:
+                      theme === "light"
+                        ? "rgba(0, 0, 0, 0.11)"
+                        : "rgba(255, 255, 255, 0.11)",
                     borderRadius: "14px",
                   }}
                 />
@@ -101,7 +122,10 @@ const SkeletonAppDetails = () => {
                   width={70}
                   height={28}
                   sx={{
-                    bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                    bgcolor:
+                      theme === "light"
+                        ? "rgba(0, 0, 0, 0.11)"
+                        : "rgba(255, 255, 255, 0.11)",
                     borderRadius: "14px",
                   }}
                 />
@@ -114,7 +138,10 @@ const SkeletonAppDetails = () => {
                   width={200}
                   height={36}
                   sx={{
-                    bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                    bgcolor:
+                      theme === "light"
+                        ? "rgba(0, 0, 0, 0.11)"
+                        : "rgba(255, 255, 255, 0.11)",
                     borderRadius: "8px",
                   }}
                 />
@@ -123,7 +150,10 @@ const SkeletonAppDetails = () => {
                   width={100}
                   height={36}
                   sx={{
-                    bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                    bgcolor:
+                      theme === "light"
+                        ? "rgba(0, 0, 0, 0.11)"
+                        : "rgba(255, 255, 255, 0.11)",
                     borderRadius: "8px",
                   }}
                 />
@@ -136,7 +166,10 @@ const SkeletonAppDetails = () => {
               width={140}
               height={140}
               sx={{
-                bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                bgcolor:
+                  theme === "light"
+                    ? "rgba(0, 0, 0, 0.11)"
+                    : "rgba(255, 255, 255, 0.11)",
                 borderRadius: "28px",
               }}
             />
@@ -149,7 +182,10 @@ const SkeletonAppDetails = () => {
               width="100%"
               height={48}
               sx={{
-                bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                bgcolor:
+                  theme === "light"
+                    ? "rgba(0, 0, 0, 0.11)"
+                    : "rgba(255, 255, 255, 0.11)",
                 borderRadius: "8px",
               }}
             />
@@ -162,7 +198,10 @@ const SkeletonAppDetails = () => {
               width="100%"
               height={20}
               sx={{
-                bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                bgcolor:
+                  theme === "light"
+                    ? "rgba(0, 0, 0, 0.11)"
+                    : "rgba(255, 255, 255, 0.11)",
                 mb: 1,
               }}
             />
@@ -171,7 +210,10 @@ const SkeletonAppDetails = () => {
               width="90%"
               height={20}
               sx={{
-                bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                bgcolor:
+                  theme === "light"
+                    ? "rgba(0, 0, 0, 0.11)"
+                    : "rgba(255, 255, 255, 0.11)",
                 mb: 1,
               }}
             />
@@ -180,7 +222,10 @@ const SkeletonAppDetails = () => {
               width="80%"
               height={20}
               sx={{
-                bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                bgcolor:
+                  theme === "light"
+                    ? "rgba(0, 0, 0, 0.11)"
+                    : "rgba(255, 255, 255, 0.11)",
               }}
             />
           </div>
@@ -195,7 +240,10 @@ const SkeletonAppDetails = () => {
               width="100%"
               height={60}
               sx={{
-                bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                bgcolor:
+                  theme === "light"
+                    ? "rgba(0, 0, 0, 0.11)"
+                    : "rgba(255, 255, 255, 0.11)",
                 borderRadius: "12px",
               }}
             />
@@ -208,8 +256,10 @@ const SkeletonAppDetails = () => {
           <div
             className="flex gap-8 mb-6 border-b pb-4"
             style={{
-              borderColor: theme === "light" ? "#E5E7EB" : "rgba(255, 255, 255, 0.1)",
-            }}>
+              borderColor:
+                theme === "light" ? "#E5E7EB" : "rgba(255, 255, 255, 0.1)",
+            }}
+          >
             {[1, 2, 3, 4].map((i) => (
               <Skeleton
                 key={i}
@@ -217,7 +267,10 @@ const SkeletonAppDetails = () => {
                 width={80}
                 height={24}
                 sx={{
-                  bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                  bgcolor:
+                    theme === "light"
+                      ? "rgba(0, 0, 0, 0.11)"
+                      : "rgba(255, 255, 255, 0.11)",
                 }}
               />
             ))}
@@ -230,7 +283,10 @@ const SkeletonAppDetails = () => {
               width="100%"
               height={20}
               sx={{
-                bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                bgcolor:
+                  theme === "light"
+                    ? "rgba(0, 0, 0, 0.11)"
+                    : "rgba(255, 255, 255, 0.11)",
                 mb: 1,
               }}
             />
@@ -239,7 +295,10 @@ const SkeletonAppDetails = () => {
               width="95%"
               height={20}
               sx={{
-                bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                bgcolor:
+                  theme === "light"
+                    ? "rgba(0, 0, 0, 0.11)"
+                    : "rgba(255, 255, 255, 0.11)",
                 mb: 1,
               }}
             />
@@ -248,14 +307,17 @@ const SkeletonAppDetails = () => {
               width="90%"
               height={20}
               sx={{
-                bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+                bgcolor:
+                  theme === "light"
+                    ? "rgba(0, 0, 0, 0.11)"
+                    : "rgba(255, 255, 255, 0.11)",
               }}
             />
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default SkeletonAppDetails
+export default SkeletonAppDetails;

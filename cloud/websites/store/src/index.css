@@ -386,7 +386,7 @@ button:focus-visible {
   --muted-foreground: #737373;
   --border: #e5e5e5;
   --error-bg: #fef2f2;
-  --warning-text: #dc2626;
+  --warning-text: #DC2626;
 }
 
 :root[data-theme="dark"],
@@ -413,7 +413,7 @@ button:focus-visible {
   --muted-foreground: #a3a3a3;
   --border: #27272a;
   --error-bg: #1f1515;
-  --warning-text: #fca5a5;
+  --warning-text: #FCA5A5;
 }
 
 /* Theme-aware search input */

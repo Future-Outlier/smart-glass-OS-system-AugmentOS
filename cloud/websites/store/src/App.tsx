@@ -19,22 +19,22 @@ const LoadingSpinner: FC = () => (
   <div className="flex items-center justify-center min-h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
   </div>
-)
+);
 
 // Protected route component
-const ProtectedRoute: FC<{children: ReactNode}> = ({children}) => {
-  const {isAuthenticated, isLoading} = useAuth()
+const ProtectedRoute: FC<{ children: ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <LoadingSpinner />
+    return <LoadingSpinner />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>
-}
+  return <>{children}</>;
+};
 
 // Main routes component
 const AppRoutes: FC = () => {
@@ -57,8 +57,8 @@ const AppRoutes: FC = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
-  )
-}
+  );
+};
 
 // Main App component
 const App: FC = () => {
@@ -73,7 +73,7 @@ const App: FC = () => {
         </SearchProvider>
       </AuthProvider>
     </PlatformProvider>
-  )
-}
+  );
+};
 
-export default App
+export default App;

@@ -1,8 +1,8 @@
-import Skeleton from "@mui/material/Skeleton"
-import {useTheme} from "../hooks/useTheme"
+import Skeleton from "@mui/material/Skeleton";
+import { useTheme } from "../hooks/useTheme";
 
 const SkeletonAppCard = () => {
-  const {theme} = useTheme()
+  const { theme } = useTheme();
 
   return (
     <div className="flex gap-2 sm:gap-3 rounded-sm relative py-3">
@@ -12,7 +12,10 @@ const SkeletonAppCard = () => {
           variant="rounded"
           className="w-14 h-14 sm:w-16 sm:h-16"
           sx={{
-            bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+            bgcolor:
+              theme === "light"
+                ? "rgba(0, 0, 0, 0.11)"
+                : "rgba(255, 255, 255, 0.11)",
             borderRadius: "16px",
           }}
         />
@@ -26,7 +29,10 @@ const SkeletonAppCard = () => {
           width="60%"
           height={20}
           sx={{
-            bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+            bgcolor:
+              theme === "light"
+                ? "rgba(0, 0, 0, 0.11)"
+                : "rgba(255, 255, 255, 0.11)",
             mb: 0.25,
           }}
         />
@@ -38,7 +44,10 @@ const SkeletonAppCard = () => {
             width={40}
             height={14}
             sx={{
-              bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+              bgcolor:
+                theme === "light"
+                  ? "rgba(0, 0, 0, 0.11)"
+                  : "rgba(255, 255, 255, 0.11)",
             }}
           />
           <Skeleton
@@ -46,7 +55,10 @@ const SkeletonAppCard = () => {
             width={35}
             height={14}
             sx={{
-              bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+              bgcolor:
+                theme === "light"
+                  ? "rgba(0, 0, 0, 0.11)"
+                  : "rgba(255, 255, 255, 0.11)",
             }}
           />
         </div>
@@ -57,7 +69,10 @@ const SkeletonAppCard = () => {
           width="85%"
           height={13}
           sx={{
-            bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+            bgcolor:
+              theme === "light"
+                ? "rgba(0, 0, 0, 0.11)"
+                : "rgba(255, 255, 255, 0.11)",
           }}
         />
       </div>
@@ -69,13 +84,16 @@ const SkeletonAppCard = () => {
           width={56}
           height={36}
           sx={{
-            bgcolor: theme === "light" ? "rgba(0, 0, 0, 0.11)" : "rgba(255, 255, 255, 0.11)",
+            bgcolor:
+              theme === "light"
+                ? "rgba(0, 0, 0, 0.11)"
+                : "rgba(255, 255, 255, 0.11)",
             borderRadius: "9999px",
           }}
         />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default SkeletonAppCard
+export default SkeletonAppCard;
