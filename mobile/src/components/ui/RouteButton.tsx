@@ -13,26 +13,34 @@ interface StatusCardProps {
   textStyle?: TextStyle
   iconStart?: React.ReactNode
   iconEnd?: React.ReactNode
+  subtitle?: string
 }
 
-export function StatusCard({label, style, iconStart, iconEnd, textStyle}: StatusCardProps) {
+export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitle}: StatusCardProps) {
   const {theme, themed} = useAppTheme()
 
   return (
     <View style={[themed($settingsGroup), themed($statusCardContainer), style]}>
       <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.md}}>
         {iconStart && <View style={themed($icon)}>{iconStart}</View>}
-        <Text style={[themed($label), textStyle]}>{label}</Text>
+        <View
+          style={{
+            gap: theme.spacing.xxs,
+          }}>
+          <Text style={[themed($label), textStyle]}>{label}</Text>
+          {subtitle && <Text style={themed($subtitle)}>{subtitle}</Text>}
+        </View>
       </View>
       {iconEnd && iconEnd}
     </View>
   )
 }
 
-const $statusCardContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $statusCardContainer: ThemedStyle<ViewStyle> = () => ({
   flexDirection: "row",
   justifyContent: "space-between",
-  paddingVertical: 16,
+  // paddingVertical: 16,
+  height: 48,
   alignItems: "center",
 })
 
@@ -107,10 +115,10 @@ const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   alignItems: "center",
 })
 
-const $label: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontWeight: "500",
+const $label: ThemedStyle<TextStyle> = ({colors}) => ({
+  fontWeight: 600,
   color: colors.text,
-  fontSize: spacing.md,
+  fontSize: 14,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
