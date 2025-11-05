@@ -2,7 +2,7 @@ import {Button, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {supabase} from "@/supabase/supabaseClient"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import {spacing, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -11,6 +11,7 @@ import {FontAwesome} from "@expo/vector-icons"
 import AppleIcon from "assets/icons/component/AppleIcon"
 import GoogleIcon from "assets/icons/component/GoogleIcon"
 import * as WebBrowser from "expo-web-browser"
+import Constants from "expo-constants"
 import {useEffect, useRef, useState} from "react"
 import {
   ActivityIndicator,
@@ -38,6 +39,7 @@ export default function LoginScreen() {
   const [formAction, setFormAction] = useState<"signin" | "signup" | null>(null)
   const [backPressCount, setBackPressCount] = useState(0)
   const {push, replace} = useNavigationHistory()
+  const IS_CHINA_DEPLOYMENT = Constants.expoConfig?.extra?.DEPLOYMENT_REGION === "china"
 
   // Get theme and safe area insets
   const {theme, themed} = useAppTheme()
@@ -123,21 +125,10 @@ export default function LoginScreen() {
         authOverlayOpacity.setValue(0)
       }, 5000)
 
-      const {data, error} = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          // Must match the deep link scheme/host/path in your AndroidManifest.xml
-          redirectTo: "com.mentra://auth/callback",
-          skipBrowserRedirect: true,
-          queryParams: {
-            prompt: "select_account",
-          },
-        },
-      })
+      const {data, error} = await mentraAuthProvider.googleSignIn()
 
       // 2) If there's an error, handle it
       if (error) {
-        console.error("Supabase Google sign-in error:", error)
         // showAlert(translate('loginScreen.errors.authError'), error.message);
         setIsAuthLoading(false)
         authOverlayOpacity.setValue(0)
@@ -180,17 +171,10 @@ export default function LoginScreen() {
         useNativeDriver: true,
       }).start()
 
-      const {data, error} = await supabase.auth.signInWithOAuth({
-        provider: "apple",
-        options: {
-          // Match the deep link scheme/host/path in your AndroidManifest.xml
-          redirectTo: "com.mentra://auth/callback",
-        },
-      })
+      const {data, error} = await mentraAuthProvider.appleSignIn()
 
       // If there's an error, handle it
       if (error) {
-        console.error("Supabase Apple sign-in error:", error)
         // showAlert(translate('loginScreen.errors.authError'), error.message);
         setIsAuthLoading(false)
         authOverlayOpacity.setValue(0)
@@ -229,41 +213,22 @@ export default function LoginScreen() {
     setFormAction("signup")
 
     try {
-      const {data, error} = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: "com.mentra://auth/callback",
-        },
-      })
+      const {data, error} = await mentraAuthProvider.signup(email, password)
 
       if (error) {
-        console.log("Sign-up error:", error)
-
-        // Check for common Supabase error messages when email already exists
-        const errorMessage = error.message.toLowerCase()
-
-        if (
-          errorMessage.includes("already registered") ||
-          errorMessage.includes("user already registered") ||
-          errorMessage.includes("email already exists") ||
-          errorMessage.includes("identity already linked")
-        ) {
-          // Try to detect if it's a Google or Apple account
-          // Note: Supabase doesn't always tell us which provider, so we show a generic message
+        if (error.message.includes("Email already registered")) {
           showAlert(translate("login:emailAlreadyRegistered"), translate("login:useGoogleSignIn"), [
             {text: translate("common:ok")},
           ])
         } else {
           showAlert(translate("common:error"), error.message, [{text: translate("common:ok")}])
         }
-      } else if (!data.session) {
+      } else if (!data?.session) {
         // Ensure translations are resolved before passing to showAlert
         const successTitle = translate("login:success")
         const verificationMessage = translate("login:checkEmailVerification")
         showAlert(successTitle, verificationMessage, [{text: translate("common:ok")}])
       } else {
-        console.log("Sign-up successful:", data)
         replace("/")
       }
     } catch (err) {
@@ -279,16 +244,12 @@ export default function LoginScreen() {
     Keyboard.dismiss()
     setIsFormLoading(true)
     setFormAction("signin")
-    const {data, error} = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const {error} = await mentraAuthProvider.signIn(email, password)
 
     if (error) {
-      showAlert(translate("common:error"), error.message)
+      showAlert(translate("common:error"), error.message, [{text: translate("common:ok")}])
       // Handle sign-in error
     } else {
-      console.log("Sign-in successful:", data)
       replace("/")
     }
     setIsFormLoading(false)
@@ -436,14 +397,16 @@ export default function LoginScreen() {
               </Animated.View>
             ) : (
               <View style={themed($signInOptions)}>
-                <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
-                  <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
-                    <GoogleIcon />
-                  </View>
-                  <Text style={themed($socialButtonText)} tx="login:continueWithGoogle" />
-                </TouchableOpacity>
+                {!IS_CHINA_DEPLOYMENT && (
+                  <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
+                    <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
+                      <GoogleIcon />
+                    </View>
+                    <Text style={themed($socialButtonText)} tx="login:continueWithGoogle" />
+                  </TouchableOpacity>
+                )}
 
-                {Platform.OS === "ios" && (
+                {Platform.OS === "ios" && !IS_CHINA_DEPLOYMENT && (
                   <TouchableOpacity style={[themed($socialButton), themed($appleButton)]} onPress={handleAppleSignIn}>
                     <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
                       <AppleIcon color={theme.colors.text} />
@@ -452,11 +415,13 @@ export default function LoginScreen() {
                   </TouchableOpacity>
                 )}
 
-                <View style={themed($dividerContainer)}>
-                  <View style={themed($divider)} />
-                  <Text style={themed($dividerText)} tx="common:or" />
-                  <View style={themed($divider)} />
-                </View>
+                {!IS_CHINA_DEPLOYMENT && (
+                  <View style={themed($dividerContainer)}>
+                    <View style={themed($divider)} />
+                    <Text style={themed($dividerText)} tx="common:or" />
+                    <View style={themed($divider)} />
+                  </View>
+                )}
 
                 <Button
                   tx="login:continueWithEmail"

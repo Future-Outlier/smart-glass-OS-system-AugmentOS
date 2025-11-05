@@ -6,6 +6,8 @@ import restComms from "@/services/RestComms"
 import {isDeveloperBuildOrTestflight} from "@/utils/buildDetection"
 import CoreModule from "core"
 import Toast from "react-native-toast-message"
+import Constants from "expo-constants"
+
 export const SETTINGS_KEYS = {
   // feature flags:
   dev_mode: "dev_mode",
@@ -21,7 +23,8 @@ export const SETTINGS_KEYS = {
   // ui settings:
   enable_phone_notifications: "enable_phone_notifications",
   settings_access_count: "settings_access_count",
-  custom_backend_url: "custom_backend_url",
+  backend_url: "backend_url",
+  store_url: "store_url",
   reconnect_on_app_foreground: "reconnect_on_app_foreground",
   theme_preference: "theme_preference",
   // core settings:
@@ -79,10 +82,11 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.onboarding_completed]: false,
   [SETTINGS_KEYS.has_ever_activated_app]: false,
   [SETTINGS_KEYS.visited_livecaptions_settings]: false,
-  // ui settings:
+  // app settings:
   [SETTINGS_KEYS.enable_phone_notifications]: false,
   [SETTINGS_KEYS.settings_access_count]: 0,
-  [SETTINGS_KEYS.custom_backend_url]: "https://api.mentra.glass:443",
+  [SETTINGS_KEYS.backend_url]: "https://api.mentra.glass:443",
+  [SETTINGS_KEYS.store_url]: "https://apps.mentra.glass",
   [SETTINGS_KEYS.reconnect_on_app_foreground]: false,
   [SETTINGS_KEYS.theme_preference]: "system",
   // core settings:
@@ -289,6 +293,12 @@ export const useSettingsStore = create<SettingsState>()(
         }
         return getTimeZone()
       }
+      if (key == SETTINGS_KEYS.backend_url) {
+        if (Constants.expoConfig?.extra?.BACKEND_URL_OVERRIDE) {
+          return Constants.expoConfig?.extra?.BACKEND_URL_OVERRIDE
+        }
+      }
+
       return null
     },
     loadSetting: async (key: string) => {
@@ -361,13 +371,13 @@ export const useSettingsStore = create<SettingsState>()(
       set({isInitialized: true})
     },
     getRestUrl: () => {
-      const serverUrl = get().getSetting(SETTINGS_KEYS.custom_backend_url)
+      const serverUrl = get().getSetting(SETTINGS_KEYS.backend_url)
       const url = new URL(serverUrl)
       const secure = url.protocol === "https:"
       return `${secure ? "https" : "http"}://${url.hostname}:${url.port || (secure ? 443 : 80)}`
     },
     getWsUrl: () => {
-      const serverUrl = get().getSetting(SETTINGS_KEYS.custom_backend_url)
+      const serverUrl = get().getSetting(SETTINGS_KEYS.backend_url)
       const url = new URL(serverUrl)
       const secure = url.protocol === "https:"
       return `${secure ? "wss" : "ws"}://${url.hostname}:${url.port || (secure ? 443 : 80)}/glasses-ws`

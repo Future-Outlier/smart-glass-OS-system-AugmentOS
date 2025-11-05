@@ -1,6 +1,7 @@
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {AppletInterface} from "@/types/AppletTypes"
 import {useSettingsStore} from "@/stores/settings"
+import Constants from "expo-constants"
 
 interface ApiResponse<T = any> {
   success?: boolean
@@ -261,7 +262,9 @@ class RestComms {
     return this.authenticatedRequest("POST", `/appsettings/${appName}`, update)
   }
 
-  public async exchangeToken(supabaseToken: string): Promise<string> {
+  public async exchangeToken(token: string): Promise<string> {
+    const DEPLOYMENT_REGION = Constants.expoConfig?.extra?.DEPLOYMENT_REGION || "global"
+    const IS_CHINA = DEPLOYMENT_REGION === "china"
     const baseUrl = await useSettingsStore.getState().getRestUrl()
     const url = `${baseUrl}/auth/exchange-token`
 
@@ -269,7 +272,10 @@ class RestComms {
       method: "POST",
       url,
       headers: {"Content-Type": "application/json"},
-      data: {supabaseToken},
+      data: {
+        supabaseToken: !IS_CHINA ? token : undefined,
+        authingToken: IS_CHINA ? token : undefined,
+      },
     }
 
     const response = await this.makeRequest<ApiResponse>(config)

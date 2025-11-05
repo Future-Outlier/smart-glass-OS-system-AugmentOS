@@ -12,6 +12,7 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {useState} from "react"
 import {ScrollView, TextInput, View} from "react-native"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
+import Constants from "expo-constants"
 
 export default function DeveloperSettingsScreen() {
   // const {status} = useCoreStatus()
@@ -21,7 +22,7 @@ export default function DeveloperSettingsScreen() {
   const [customUrlInput, setCustomUrlInput] = useState("")
   const [isSavingUrl, setIsSavingUrl] = useState(false)
   const [defaultWearable, _setDefaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const [customBackendUrl, setCustomBackendUrl] = useSetting(SETTINGS_KEYS.custom_backend_url)
+  const [backendUrl, setBackendUrl] = useSetting(SETTINGS_KEYS.backend_url)
   const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS_KEYS.power_saving_mode)
   const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS_KEYS.reconnect_on_app_foreground)
   const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
@@ -81,7 +82,7 @@ export default function DeveloperSettingsScreen() {
           console.log("URL Test Successful:", data)
 
           // Save the URL if the test passes
-          await setCustomBackendUrl(urlToTest)
+          await setBackendUrl(urlToTest)
 
           await showAlert(
             "Success",
@@ -130,7 +131,7 @@ export default function DeveloperSettingsScreen() {
   }
 
   const handleResetUrl = async () => {
-    setCustomBackendUrl(null)
+    setBackendUrl(null)
     setCustomUrlInput("")
     showAlert("Success", "Reset backend URL to default.", [
       {
@@ -236,99 +237,101 @@ export default function DeveloperSettingsScreen() {
           </>
         )}
 
-        <View
-          style={[
-            styles.settingContainer,
-            {
-              backgroundColor: theme.colors.backgroundAlt,
-              borderWidth: theme.spacing.xxxs,
-              borderColor: theme.colors.border,
-            },
-          ]}>
-          <View style={styles.settingTextContainer}>
-            <Text style={[styles.label, {color: theme.colors.text}]}>Custom Backend URL</Text>
-            <Text style={[styles.value, {color: theme.colors.textDim}]}>
-              Override the default backend server URL. Leave blank to use default.
-              {customBackendUrl && `\nCurrently using: ${customBackendUrl}`}
-            </Text>
-            <TextInput
-              style={[
-                styles.urlInput,
-                {
-                  backgroundColor: theme.colors.background,
-                  borderColor: theme.colors.primary,
-                  color: theme.colors.text,
-                },
-              ]}
-              placeholder="e.g., http://192.168.1.100:7002"
-              placeholderTextColor={theme.colors.textDim}
-              value={customUrlInput}
-              onChangeText={setCustomUrlInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              editable={!isSavingUrl}
-            />
-            <View style={styles.buttonRow}>
-              <PillButton
-                text={isSavingUrl ? "Testing..." : "Save & Test URL"}
-                variant="primary"
-                onPress={handleSaveUrl}
-                disabled={isSavingUrl}
-                buttonStyle={styles.saveButton}
+        {!Constants.expoConfig?.extra?.BACKEND_URL_OVERRIDE && (
+          <View
+            style={[
+              styles.settingContainer,
+              {
+                backgroundColor: theme.colors.backgroundAlt,
+                borderWidth: theme.spacing.xxxs,
+                borderColor: theme.colors.border,
+              },
+            ]}>
+            <View style={styles.settingTextContainer}>
+              <Text style={[styles.label, {color: theme.colors.text}]}>Custom Backend URL</Text>
+              <Text style={[styles.value, {color: theme.colors.textDim}]}>
+                Override the default backend server URL. Leave blank to use default.
+                {backendUrl && `\nCurrently using: ${backendUrl}`}
+              </Text>
+              <TextInput
+                style={[
+                  styles.urlInput,
+                  {
+                    backgroundColor: theme.colors.background,
+                    borderColor: theme.colors.primary,
+                    color: theme.colors.text,
+                  },
+                ]}
+                placeholder="e.g., http://192.168.1.100:7002"
+                placeholderTextColor={theme.colors.textDim}
+                value={customUrlInput}
+                onChangeText={setCustomUrlInput}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                editable={!isSavingUrl}
               />
-              <PillButton
-                tx="common:reset"
-                variant="icon"
-                onPress={handleResetUrl}
-                disabled={isSavingUrl}
-                buttonStyle={styles.resetButton}
-              />
-            </View>
-            <View style={styles.buttonColumn}>
-              <PillButton
-                tx="developer:global"
-                variant="icon"
-                onPress={() => setCustomUrlInput("https://api.mentra.glass:443")}
-                buttonStyle={styles.button}
-              />
-              <PillButton
-                tx="developer:dev"
-                variant="icon"
-                onPress={() => setCustomUrlInput("https://devapi.mentra.glass:443")}
-                buttonStyle={styles.button}
-              />
-            </View>
-            <View style={styles.buttonColumn}>
-              <PillButton
-                tx="developer:debug"
-                variant="icon"
-                onPress={() => setCustomUrlInput("https://debug.augmentos.cloud:443")}
-                buttonStyle={styles.button}
-              />
-              <PillButton
-                tx="developer:usCentral"
-                variant="icon"
-                onPress={() => setCustomUrlInput("https://uscentralapi.mentra.glass:443")}
-                buttonStyle={styles.button}
-              />
-            </View>
-            <View style={styles.buttonColumn}>
-              <PillButton
-                tx="developer:france"
-                variant="icon"
-                onPress={() => setCustomUrlInput("https://franceapi.mentra.glass:443")}
-                buttonStyle={styles.button}
-              />
-              <PillButton
-                tx="developer:asiaEast"
-                variant="icon"
-                onPress={handleAsiaButtonPress}
-                buttonStyle={styles.button}
-              />
+              <View style={styles.buttonRow}>
+                <PillButton
+                  text={isSavingUrl ? "Testing..." : "Save & Test URL"}
+                  variant="primary"
+                  onPress={handleSaveUrl}
+                  disabled={isSavingUrl}
+                  buttonStyle={styles.saveButton}
+                />
+                <PillButton
+                  tx="common:reset"
+                  variant="icon"
+                  onPress={handleResetUrl}
+                  disabled={isSavingUrl}
+                  buttonStyle={styles.resetButton}
+                />
+              </View>
+              <View style={styles.buttonColumn}>
+                <PillButton
+                  tx="developer:global"
+                  variant="icon"
+                  onPress={() => setCustomUrlInput("https://api.mentra.glass:443")}
+                  buttonStyle={styles.button}
+                />
+                <PillButton
+                  tx="developer:dev"
+                  variant="icon"
+                  onPress={() => setCustomUrlInput("https://devapi.mentra.glass:443")}
+                  buttonStyle={styles.button}
+                />
+              </View>
+              <View style={styles.buttonColumn}>
+                <PillButton
+                  tx="developer:debug"
+                  variant="icon"
+                  onPress={() => setCustomUrlInput("https://debug.augmentos.cloud:443")}
+                  buttonStyle={styles.button}
+                />
+                <PillButton
+                  tx="developer:usCentral"
+                  variant="icon"
+                  onPress={() => setCustomUrlInput("https://uscentralapi.mentra.glass:443")}
+                  buttonStyle={styles.button}
+                />
+              </View>
+              <View style={styles.buttonColumn}>
+                <PillButton
+                  tx="developer:france"
+                  variant="icon"
+                  onPress={() => setCustomUrlInput("https://franceapi.mentra.glass:443")}
+                  buttonStyle={styles.button}
+                />
+                <PillButton
+                  tx="developer:asiaEast"
+                  variant="icon"
+                  onPress={handleAsiaButtonPress}
+                  buttonStyle={styles.button}
+                />
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         <Spacer height={theme.spacing.md} />
         <Spacer height={theme.spacing.xxl} />
