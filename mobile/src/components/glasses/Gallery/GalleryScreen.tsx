@@ -169,7 +169,7 @@ export function GalleryScreen() {
 
   // Initial load - get total count and first batch
   const loadInitialPhotos = useCallback(
-    async (overrideServerIp?: string) => {
+    async (overrideServerIp?: string, skipThumbnails: boolean = false) => {
       const serverIp = overrideServerIp || hotspotGatewayIp
       const hasConnection = overrideServerIp || (isHotspotEnabled && hotspotGatewayIp)
 
@@ -188,6 +188,15 @@ export function GalleryScreen() {
 
       try {
         asgCameraApi.setServer(serverIp, 8089)
+
+        // If skipThumbnails is true, just transition to READY_TO_SYNC without loading thumbnails
+        // The thumbnails will be loaded progressively during sync
+        if (skipThumbnails) {
+          console.log("[GalleryScreen] Skipping thumbnail load, will show during sync")
+          transitionToState(GalleryState.READY_TO_SYNC)
+          return
+        }
+
         const result = await asgCameraApi.getGalleryPhotos(PAGE_SIZE, 0)
 
         setTotalServerCount(result.totalCount)
@@ -333,6 +342,19 @@ export function GalleryScreen() {
 
           // Use requestAnimationFrame to ensure immediate UI updates
           requestAnimationFrame(() => {
+            // Add thumbnail to gallery when we start downloading this file (first progress update)
+            if (fileProgress === 0 || fileProgress === undefined) {
+              const fileInfo = syncData.changed_files.find(f => f.name === fileName)
+              if (fileInfo) {
+                setLoadedServerPhotos(prev => {
+                  const newMap = new Map(prev)
+                  // Add with index based on current position
+                  newMap.set(current - 1, fileInfo)
+                  return newMap
+                })
+              }
+            }
+
             // Update individual photo progress
             setPhotoSyncStates(prev => {
               const newStates = new Map(prev)
@@ -870,7 +892,7 @@ export function GalleryScreen() {
         }
 
         setTimeout(() => {
-          loadInitialPhotos(ip)
+          loadInitialPhotos(ip, true) // Skip thumbnails, they'll appear during sync
         }, TIMING.HOTSPOT_LOAD_DELAY_MS)
       }
     } catch (error: any) {
@@ -1044,7 +1066,8 @@ export function GalleryScreen() {
       if (phoneConnectedToHotspot) {
         console.log("[GalleryScreen] Already connected to hotspot")
         transitionToState(GalleryState.CONNECTED_LOADING)
-        loadInitialPhotos(hotspotGatewayIp)
+        setTotalServerCount(data.total || 0)
+        loadInitialPhotos(hotspotGatewayIp, true)
         return
       }
 
@@ -1064,6 +1087,7 @@ export function GalleryScreen() {
         } else {
           console.log("[GalleryScreen] 📸 Gallery status update (state: " + galleryState + "), showing sync option")
         }
+        setTotalServerCount(data.total || 0)
         transitionToState(GalleryState.MEDIA_AVAILABLE)
       }
     }
@@ -1113,7 +1137,7 @@ export function GalleryScreen() {
 
     setTimeout(() => {
       console.log("[GalleryScreen] Loading photos via hotspot...")
-      loadInitialPhotos(hotspotGatewayIp)
+      loadInitialPhotos(hotspotGatewayIp, true)
     }, 500)
   }, [networkStatus.phoneSSID, hotspotSsid, hotspotGatewayIp])
 
