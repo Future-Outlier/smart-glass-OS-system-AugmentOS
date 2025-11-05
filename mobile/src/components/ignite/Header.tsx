@@ -7,7 +7,6 @@ import {IconTypes, PressableIcon} from "./Icon"
 import {Text, TextProps} from "./Text"
 import {useAppTheme} from "@/utils/useAppTheme"
 import type {ThemedStyle} from "@/theme"
-import {LinearGradient} from "expo-linear-gradient"
 
 export interface HeaderProps {
   /**
@@ -236,7 +235,7 @@ export function Header(props: HeaderProps) {
  */
 function HeaderAction(props: HeaderActionProps) {
   const {backgroundColor, icon, text, tx, txOptions, onPress, ActionComponent, iconColor} = props
-  const {themed} = useAppTheme()
+  const {theme, themed} = useAppTheme()
 
   const content = tx ? translate(tx, txOptions) : text
 
@@ -261,7 +260,7 @@ function HeaderAction(props: HeaderActionProps) {
         icon={icon}
         color={iconColor}
         onPress={onPress}
-        containerStyle={themed([$actionIconContainer, {backgroundColor}])}
+        containerStyle={themed([$actionIconContainer, {backgroundColor: theme.colors.primary_foreground, borderRadius: theme.spacing.xxxl, width: 40, height: 40 }])}
         style={isRTL ? {transform: [{rotate: "180deg"}]} : {}}
       />
     )

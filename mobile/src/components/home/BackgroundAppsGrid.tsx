@@ -8,8 +8,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {
   ClientAppletInterface,
   DUMMY_APPLET,
-  useActiveForegroundApp,
-  useInactiveForegroundApps,
+  useBackgroundApps,
   useStartApplet,
 } from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
@@ -22,28 +21,21 @@ interface GridItem extends ClientAppletInterface {
   isGetMoreApps?: boolean
 }
 
-export const ForegroundAppsGrid: React.FC = () => {
+export const BackgroundAppsGrid = () => {
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
-  const foregroundApps = useInactiveForegroundApps()
-  const activeForegroundApp = useActiveForegroundApp()
+  const {inactive} = useBackgroundApps()
   const startApplet = useStartApplet()
 
   const gridData = useMemo(() => {
     // Filter out incompatible apps and running apps
-    const inactiveApps = foregroundApps.filter(app => {
-      // Exclude running apps
-      if (app.running) return false
+    const inactiveApps = inactive.filter(app => {
       if (!app.compatibility?.isCompatible) return false
       return true
     })
 
     // Sort to put Camera app first, then alphabetical
     inactiveApps.sort((a, b) => {
-      // Camera app always comes first
-      if (a.packageName === "com.mentra.camera") return -1
-      if (b.packageName === "com.mentra.camera") return 1
-
       // Otherwise sort alphabetically
       return a.name.localeCompare(b.name)
     })
@@ -73,7 +65,7 @@ export const ForegroundAppsGrid: React.FC = () => {
     }
 
     return paddedApps
-  }, [foregroundApps])
+  }, [inactive])
 
   const handleAppPress = useCallback(
     async (app: GridItem) => {
@@ -87,7 +79,7 @@ export const ForegroundAppsGrid: React.FC = () => {
       
       await startApplet(app.packageName)
     },
-    [activeForegroundApp, push],
+    [push],
   )
 
   const renderItem = useCallback(
@@ -129,7 +121,7 @@ export const ForegroundAppsGrid: React.FC = () => {
     [themed, theme, handleAppPress],
   )
 
-  if (foregroundApps.length === 0) {
+  if (inactive.length === 0) {
     // Still show "Get More Apps" even when no apps
     return (
       <View style={themed($container)}>

@@ -10,9 +10,10 @@ import {Header, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/services/RestComms"
 import {useSettingsStore} from "@/stores/settings"
+import { $styles } from "@/theme"
 
 export default function AppWebView() {
-  const {theme} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   const {webviewURL, appName, packageName} = useLocalSearchParams()
   const [hasError, setHasError] = useState(false)
   const webViewRef = useRef<WebView>(null)
@@ -223,7 +224,7 @@ export default function AppWebView() {
 
   // Render WebView only when finalUrl is ready
   return (
-    <Screen preset="fixed" safeAreaEdges={[]}>
+    <Screen preset="fixed" safeAreaEdges={[]} style={themed($styles.screen)}>
       <Header
         title={appName}
         titleMode="center"
@@ -238,10 +239,10 @@ export default function AppWebView() {
             fromWebView: "true",
           })
         }}
-        style={{height: 44}}
-        containerStyle={{paddingTop: 0}}
+        // style={{height: 44}}
+        // containerStyle={{paddingTop: 0}}
       />
-      <View style={{flex: 1}}>
+      <View style={{flex: 1, marginHorizontal: -theme.spacing.lg}}>
         {finalUrl ? (
           <WebView
             ref={webViewRef}

@@ -8,7 +8,7 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {useLocalSearchParams} from "expo-router"
 import {Text, Screen, Header} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {useRefreshApplets} from "@/stores/applets"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 
@@ -122,7 +122,7 @@ export default function AppStoreWeb() {
   // Show loading state while getting the URL
   if (!finalUrl) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+      <Screen preset="fixed" style={themed($styles.screen)}>
         <Header leftTx="store:title" />
         <View style={[themed($loadingContainer), {marginHorizontal: -theme.spacing.md}]}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -134,7 +134,7 @@ export default function AppStoreWeb() {
 
   if (hasError) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+      <Screen preset="fixed" style={themed($styles.screen)}>
         <Header leftTx="store:title" />
         <InternetConnectionFallbackComponent
           retry={handleRetry}
@@ -146,9 +146,9 @@ export default function AppStoreWeb() {
 
   // If the prefetched WebView is ready, show it in the correct style
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={themed($styles.screen)}>
       <Header leftTx="store:title" />
-      <View style={[themed($webViewContainer), {marginHorizontal: -theme.spacing.md}]}>
+      <View style={[themed($webViewContainer), {marginHorizontal: -theme.spacing.lg}]}>
         {/* Show the prefetched WebView, but now visible and full size */}
         <WebView
           ref={prefetchedWebviewRef}
