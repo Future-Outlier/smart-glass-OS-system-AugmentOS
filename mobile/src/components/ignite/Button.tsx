@@ -13,7 +13,7 @@ import {$styles, spacing} from "@/theme"
 import {Text, TextProps} from "./Text"
 import {useAppTheme} from "@/utils/useAppTheme"
 
-type Presets = "default" | "primary" | "secondary" | "accent" | "warning" | "destructive" | "outlined"
+type Presets = "default" | "primary" | "secondary" | "accent" | "warning" | "destructive" | "outlined" | "alternate"
 
 export interface ButtonAccessoryProps {
   style: StyleProp<any>
@@ -242,6 +242,13 @@ const $viewPresets: Record<Presets, ThemedStyleArray<ViewStyle>> = {
     $baseViewStyle,
     ({colors}) => ({
       backgroundColor: colors.primary_foreground,
+    }),
+  ],
+  alternate: [
+    $styles.row,
+    $baseViewStyle,
+    ({colors}) => ({
+      backgroundColor: colors.background,
     }),
   ],
   accent: [
