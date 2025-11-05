@@ -1,7 +1,7 @@
 import {useState, useEffect, useRef} from "react"
 import {View, FlatList, TouchableOpacity, ActivityIndicator, BackHandler} from "react-native"
 import {Text} from "@/components/ignite"
-import {useLocalSearchParams, useFocusEffect} from "expo-router"
+import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
 import {Screen, Header, Button, Icon} from "@/components/ignite"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -22,7 +22,7 @@ interface NetworkInfo {
 }
 
 export default function WifiScanScreen() {
-  const {deviceModel = "Glasses"} = useLocalSearchParams()
+  const {deviceModel = "Glasses", returnTo} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
 
@@ -40,9 +40,13 @@ export default function WifiScanScreen() {
   const isWifiConnected = status.glasses_info?.glasses_wifi_connected
 
   const handleGoBack = useCallback(() => {
-    goBack()
+    if (returnTo && typeof returnTo === "string") {
+      router.replace(decodeURIComponent(returnTo))
+    } else {
+      goBack()
+    }
     return true // Prevent default back behavior
-  }, [])
+  }, [returnTo])
 
   // Handle Android back button
   useFocusEffect(
@@ -201,6 +205,7 @@ export default function WifiScanScreen() {
         deviceModel,
         ssid: selectedNetwork.ssid,
         password: "", // Empty password for open networks
+        returnTo,
       })
     } else {
       console.log(`🔒 Secured network selected: ${selectedNetwork.ssid} - going to password screen`)
@@ -208,6 +213,7 @@ export default function WifiScanScreen() {
         deviceModel,
         ssid: selectedNetwork.ssid,
         requiresPassword: selectedNetwork.requiresPassword.toString(),
+        returnTo,
       })
     }
   }

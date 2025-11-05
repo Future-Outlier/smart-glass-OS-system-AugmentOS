@@ -102,6 +102,21 @@ public class Bridge private constructor() {
             sendTypedMessage("pair_failure", data as Map<String, Any>)
         }
 
+        /** Send audio connected event - matches iOS implementation for platform parity */
+        @JvmStatic
+        fun sendAudioConnected(deviceName: String) {
+            val data = HashMap<String, Any>()
+            data["device_name"] = deviceName
+            sendTypedMessage("audio_connected", data as Map<String, Any>)
+        }
+
+        /** Send audio disconnected event - matches iOS implementation for platform parity */
+        @JvmStatic
+        fun sendAudioDisconnected() {
+            val data = HashMap<String, Any>()
+            sendTypedMessage("audio_disconnected", data as Map<String, Any>)
+        }
+
         /** Send microphone data */
         @JvmStatic
         fun sendMicData(data: ByteArray) {

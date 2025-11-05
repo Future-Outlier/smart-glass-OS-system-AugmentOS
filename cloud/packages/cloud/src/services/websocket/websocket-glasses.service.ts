@@ -293,6 +293,9 @@ export class GlassesWebSocketService {
             userSession,
             message as GlassesConnectionState,
           );
+          // Store latest state for validation
+          userSession.lastGlassesConnectionState =
+            message as GlassesConnectionState;
           userSession.relayMessageToApps(message);
           break;
 
