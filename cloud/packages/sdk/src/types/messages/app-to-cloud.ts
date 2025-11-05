@@ -157,6 +157,16 @@ export interface AudioStopRequest extends BaseMessage {
 }
 
 /**
+ * WiFi setup request from App
+ */
+export interface RequestWifiSetup extends BaseMessage {
+  type: AppToCloudMessageType.REQUEST_WIFI_SETUP
+  packageName: string
+  sessionId: string
+  reason?: string
+}
+
+/**
  * Union type for all messages from Apps to cloud
  */
 export type AppToCloudMessage =
@@ -176,6 +186,7 @@ export type AppToCloudMessage =
   | DashboardContentUpdate
   | DashboardModeChange
   | DashboardSystemUpdate
+  | RequestWifiSetup
   // New App-to-App communication messages
   | AppBroadcastMessage
   | AppDirectMessage

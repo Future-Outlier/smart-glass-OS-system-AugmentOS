@@ -4,6 +4,7 @@ import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
 import socketComms from "@/services/SocketComms"
 import {useSettingsStore} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import Constants from "expo-constants"
@@ -108,6 +109,10 @@ export class MantleBridge {
           GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
           return
         case "wifi_status_change":
+          // Update Zustand store so SocketComms can forward to cloud
+          useGlassesStore.getState().setWifiInfo(data.connected, data.ssid)
+
+          // Also emit event for other listeners (like WiFi setup UI)
           GlobalEventEmitter.emit("WIFI_STATUS_CHANGE", {
             connected: data.connected,
             ssid: data.ssid,
@@ -213,6 +218,19 @@ export class MantleBridge {
           break
         case "pair_failure":
           GlobalEventEmitter.emit("PAIR_FAILURE", data.error)
+          break
+        case "audio_pairing_needed":
+          GlobalEventEmitter.emit("AUDIO_PAIRING_NEEDED", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_connected":
+          GlobalEventEmitter.emit("AUDIO_CONNECTED", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_disconnected":
+          GlobalEventEmitter.emit("AUDIO_DISCONNECTED", {})
           break
         case "save_setting":
           await useSettingsStore.getState().setSetting(data.key, data.value, false)
