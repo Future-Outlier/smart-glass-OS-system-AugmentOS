@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mentra/shared": "workspace:*",
     "@hookform/resolvers": "^5.0.1",
     "@radix-ui/react-alert-dialog": "^1.1.13",
     "@radix-ui/react-dialog": "^1.1.7",
@@ -45,8 +46,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.5",
-    "@types/react": "18.2.21",
-    "@types/react-dom": "18.2.7",
+    "@types/react": "18.2.79",
+    "@types/react-dom": "18.2.25",
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.15",
     "eslint": "^8.45.0",

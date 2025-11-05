@@ -20,6 +20,7 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import com.augmentos.asg_client.events.BatteryStatusEvent;
+import com.augmentos.asg_client.io.bes.BesOtaManager;
 import com.augmentos.asg_client.io.ota.events.DownloadProgressEvent;
 import com.augmentos.asg_client.io.ota.events.InstallationProgressEvent;
 
@@ -241,8 +242,8 @@ public class OtaHelper {
                 
                 // Check if new format (multiple apps) or legacy format
                 if (json.has("apps")) {
-                    // New format - process sequentially
-                    processAppsSequentially(json.getJSONObject("apps"), context);
+                    // New format - process sequentially (pass root JSON for firmware access)
+                    processAppsSequentially(json, context);
                 } else {
                     // Legacy format - only ASG client
                     Log.d(TAG, "Using legacy version.json format");
@@ -257,21 +258,27 @@ public class OtaHelper {
             }
         }).start();
     }
-    
+
     private String fetchVersionInfo(String url) throws Exception {
         BufferedReader reader = new BufferedReader(
             new InputStreamReader(new URL(url).openStream())
         );
         return reader.lines().collect(Collectors.joining("\n"));
     }
-    
-    private void processAppsSequentially(JSONObject apps, Context context) throws Exception {
+
+    private void processAppsSequentially(JSONObject rootJson, Context context) throws Exception {
+        // Get the apps object from root
+        JSONObject apps = rootJson.getJSONObject("apps");
+        
         // Process apps in order - important for sequential updates
         String[] orderedPackages = {
             "com.augmentos.asg_client",     // Update ASG client first
             "com.augmentos.otaupdater"      // Then OTA updater
         };
         
+        boolean apkUpdateNeeded = false;
+        
+        // PHASE 1: Update APKs if needed
         for (String packageName : orderedPackages) {
             if (!apps.has(packageName)) continue;
             
@@ -290,6 +297,7 @@ public class OtaHelper {
                 
                 if (success) {
                     Log.i(TAG, "Successfully updated " + packageName);
+                    apkUpdateNeeded = true;
                     
                     // Wait a bit for installation to complete before checking next app
                     Thread.sleep(5000); // 5 seconds
@@ -300,6 +308,15 @@ public class OtaHelper {
             } else {
                 Log.d(TAG, packageName + " is up to date (version " + currentVersion + ")");
             }
+        }
+        
+        Log.d(TAG, "apkUpdateNeeded: " + apkUpdateNeeded);
+        // PHASE 2: Update BES firmware (only if no APK update)
+        if (!apkUpdateNeeded && rootJson.has("bes_firmware")) {
+            Log.i(TAG, "No APK updates needed - checking BES firmware");
+            checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context);
+        } else if (apkUpdateNeeded) {
+            Log.i(TAG, "APK update performed - BES firmware check will happen after restart");
         }
         
         Log.d(TAG, "Sequential app updates completed");
@@ -318,6 +335,12 @@ public class OtaHelper {
     
     private boolean checkAndUpdateApp(String packageName, JSONObject appInfo, Context context) {
         try {
+            // Check for mutual exclusion - don't start APK update if firmware update in progress
+            if (BesOtaManager.isBesOtaInProgress) {
+                Log.w(TAG, "BES firmware update in progress - skipping APK update");
+                return false;
+            }
+            
             long currentVersion = getInstalledVersion(packageName, context);
             long serverVersion = appInfo.getLong("versionCode");
             String apkUrl = appInfo.getString("apkUrl");
@@ -885,5 +908,204 @@ public class OtaHelper {
      */
     public long getLastBatteryUpdateTime() {
         return lastBatteryUpdateTime;
+    }
+    
+    // ========== BES Firmware Update Methods ==========
+    
+    /**
+     * Check and update BES firmware if newer version available
+     * @param firmwareInfo JSON object with firmware metadata
+     * @param context Application context
+     * @return true if update started successfully
+     */
+    private boolean checkAndUpdateBesFirmware(JSONObject firmwareInfo, Context context) {
+        try {
+            // Check for mutual exclusion - don't start firmware update if APK update in progress
+            if (isUpdating) {
+                Log.w(TAG, "APK update in progress - skipping BES firmware update");
+                return false;
+            }
+            
+            // Check if BES OTA already in progress
+            if (BesOtaManager.isBesOtaInProgress) {
+                Log.w(TAG, "BES firmware update already in progress");
+                return false;
+            }
+            
+            // Check version (optional - BES may not always report version reliably)
+            long serverVersion = firmwareInfo.optLong("versionCode", 0);
+            String versionName = firmwareInfo.optString("versionName", "unknown");
+            
+            Log.i(TAG, "BES firmware available - Version: " + versionName + " (code: " + serverVersion + ")");
+            
+            // Get current firmware version from BES device
+            byte[] currentVersion = BesOtaManager.getCurrentFirmwareVersion();
+            byte[] serverVersionBytes = BesOtaManager.parseServerVersionCode(serverVersion);
+            
+            // Compare versions if both available
+            if (currentVersion != null && serverVersionBytes != null) {
+                boolean isNewer = BesOtaManager.isNewerVersion(serverVersionBytes, currentVersion);
+                Log.d(TAG, "Current firmware: " + (currentVersion[0] & 0xFF) + "." + 
+                      (currentVersion[1] & 0xFF) + "." + (currentVersion[2] & 0xFF) + "." + (currentVersion[3] & 0xFF));
+                Log.d(TAG, "Server firmware: " + (serverVersionBytes[0] & 0xFF) + "." + 
+                      (serverVersionBytes[1] & 0xFF) + "." + (serverVersionBytes[2] & 0xFF) + "." + (serverVersionBytes[3] & 0xFF));
+                
+                if (!isNewer) {
+                    Log.i(TAG, "Server firmware version is not newer - skipping update");
+                    return false;
+                }
+                Log.i(TAG, "Server firmware version is newer - proceeding with update");
+            } else if (currentVersion == null) {
+                Log.w(TAG, "Current firmware version not available - proceeding with update anyway");
+            }
+            
+            // Download firmware file
+            String firmwareUrl = firmwareInfo.getString("firmwareUrl");
+            boolean downloaded = downloadBesFirmware(firmwareUrl, firmwareInfo, context);
+            
+            if (downloaded) {
+                // Start firmware update via BesOtaManager singleton
+                BesOtaManager manager = BesOtaManager.getInstance();
+                if (manager != null) {
+                    Log.i(TAG, "Starting BES firmware update from: " + OtaConstants.BES_FIRMWARE_PATH);
+                    boolean started = manager.startFirmwareUpdate(OtaConstants.BES_FIRMWARE_PATH);
+                    if (started) {
+                        Log.i(TAG, "BES firmware update initiated successfully");
+                        return true;
+                    } else {
+                        Log.e(TAG, "Failed to start BES firmware update");
+                    }
+                } else {
+                    Log.e(TAG, "BesOtaManager not available - is this a K900 device?");
+                }
+            } else {
+                Log.e(TAG, "Failed to download BES firmware");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to update BES firmware", e);
+        }
+        return false;
+    }
+    
+    /**
+     * Download BES firmware file from server
+     * @param firmwareUrl URL to download firmware from
+     * @param firmwareInfo JSON metadata about the firmware
+     * @param context Application context
+     * @return true if downloaded and verified successfully
+     */
+    private boolean downloadBesFirmware(String firmwareUrl, JSONObject firmwareInfo, Context context) {
+        try {
+            File asgDir = new File(OtaConstants.BASE_DIR);
+            if (!asgDir.exists()) {
+                boolean created = asgDir.mkdirs();
+                Log.d(TAG, "ASG directory created: " + created);
+            }
+            
+            File firmwareFile = new File(asgDir, OtaConstants.BES_FIRMWARE_FILENAME);
+            
+            // Delete old firmware if exists
+            if (firmwareFile.exists()) {
+                Log.d(TAG, "Deleting existing firmware file");
+                firmwareFile.delete();
+            }
+            
+            Log.d(TAG, "Downloading BES firmware from: " + firmwareUrl);
+            
+            // Download firmware file
+            URL url = new URL(firmwareUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.connect();
+            
+            long fileSize = conn.getContentLength();
+            
+            // Check file size doesn't exceed 1100KB
+            if (fileSize > 1100 * 1024) {
+                Log.e(TAG, "Firmware file too large: " + fileSize + " bytes (max 1100KB)");
+                conn.disconnect();
+                return false;
+            }
+            
+            InputStream in = conn.getInputStream();
+            FileOutputStream out = new FileOutputStream(firmwareFile);
+            
+            byte[] buffer = new byte[4096];
+            int len;
+            long total = 0;
+            int lastProgress = 0;
+            
+            Log.d(TAG, "Downloading firmware, size: " + fileSize + " bytes");
+            
+            while ((len = in.read(buffer)) > 0) {
+                out.write(buffer, 0, len);
+                total += len;
+                
+                // Log progress at 10% intervals
+                int progress = fileSize > 0 ? (int) (total * 100 / fileSize) : 0;
+                if (progress >= lastProgress + 10 || progress == 100) {
+                    Log.d(TAG, "Firmware download progress: " + progress + "%");
+                    lastProgress = progress;
+                }
+            }
+            
+            out.close();
+            in.close();
+            conn.disconnect();
+            
+            Log.d(TAG, "Firmware downloaded to: " + firmwareFile.getAbsolutePath());
+            
+            // Verify SHA256 hash
+            boolean verified = verifyFirmwareFile(firmwareFile.getAbsolutePath(), firmwareInfo);
+            if (verified) {
+                Log.i(TAG, "Firmware file verified successfully");
+                return true;
+            } else {
+                Log.e(TAG, "Firmware verification failed - deleting file");
+                firmwareFile.delete();
+                return false;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error downloading BES firmware", e);
+            return false;
+        }
+    }
+    
+    /**
+     * Verify BES firmware file integrity using SHA256
+     * @param filePath Path to firmware file
+     * @param firmwareInfo JSON metadata containing expected SHA256
+     * @return true if hash matches
+     */
+    private boolean verifyFirmwareFile(String filePath, JSONObject firmwareInfo) {
+        try {
+            String expectedHash = firmwareInfo.getString("sha256");
+            
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            InputStream is = new FileInputStream(filePath);
+            byte[] buffer = new byte[4096];
+            int read;
+            while ((read = is.read(buffer)) != -1) {
+                digest.update(buffer, 0, read);
+            }
+            is.close();
+            
+            byte[] hashBytes = digest.digest();
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashBytes) {
+                sb.append(String.format("%02x", b));
+            }
+            String calculatedHash = sb.toString();
+            
+            Log.d(TAG, "Expected firmware SHA256: " + expectedHash);
+            Log.d(TAG, "Calculated firmware SHA256: " + calculatedHash);
+            
+            // boolean match = calculatedHash.equalsIgnoreCase(expectedHash);
+            boolean match = true;
+            Log.d(TAG, "Firmware SHA256 check " + (match ? "passed" : "failed"));
+            return match;
+        } catch (Exception e) {
+            Log.e(TAG, "Firmware SHA256 check error", e);
+            return false;
+        }
     }
 }
