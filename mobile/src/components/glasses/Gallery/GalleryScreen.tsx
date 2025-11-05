@@ -1475,15 +1475,16 @@ export function GalleryScreen() {
             <MaterialCommunityIcons name="video" size={14} color="white" />
           </View>
         )}
-        {isSelectionMode && (
-          <View style={themed($selectionCheckbox)}>
-            <MaterialCommunityIcons
-              name={isSelected ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
-              size={24}
-              color={isSelected ? theme.colors.tint : "white"}
-            />
-          </View>
-        )}
+        {isSelectionMode &&
+          (isSelected ? (
+            <View style={themed($selectionCheckbox)}>
+              <MaterialCommunityIcons name={"check"} size={24} color={"white"} />
+            </View>
+          ) : (
+            <View style={themed($unselectedCheckbox)}>
+              <MaterialCommunityIcons name={"checkbox-blank-circle-outline"} size={24} color={"white"} />
+            </View>
+          ))}
         {(() => {
           const syncState = photoSyncStates.get(item.photo.name)
           if (syncState) {
@@ -1889,18 +1890,23 @@ const $settingsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   minHeight: 44,
 })
 
-const $selectionCheckbox: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $selectionCheckbox: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
-  top: spacing.xs,
-  left: spacing.xs,
-  backgroundColor: "rgba(0,0,0,0.5)",
+  top: spacing.xxs,
+  left: spacing.xxs,
+  backgroundColor: colors.primary,
   borderRadius: 20,
   padding: 2,
-  shadowColor: "#000",
-  shadowOffset: {width: 0, height: 1},
-  shadowOpacity: 0.3,
-  shadowRadius: 2,
   elevation: 3,
+})
+
+const $unselectedCheckbox: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  position: "absolute",
+  top: spacing.xxs,
+  left: spacing.xxs,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderRadius: 20,
+  padding: 2,
 })
 
 const $deleteButton: ThemedStyle<ViewStyle> = ({colors}) => ({
