@@ -163,13 +163,10 @@ class SocketComms {
     let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
     const glassesInfo = useGlassesStore.getState()
 
-    // Build WiFi info (only if available)
-    let wifiInfo = undefined
-    if (glassesInfo.glasses_wifi_connected !== undefined) {
-      wifiInfo = {
-        connected: glassesInfo.glasses_wifi_connected,
-        ssid: glassesInfo.glasses_wifi_ssid || null,
-      }
+    // Always include WiFi info - null means "unknown", false means "explicitly disconnected"
+    const wifiInfo = {
+      connected: glassesInfo.glasses_wifi_connected ?? null,
+      ssid: glassesInfo.glasses_wifi_ssid ?? null,
     }
 
     this.ws.sendText(
