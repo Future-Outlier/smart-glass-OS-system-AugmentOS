@@ -5,9 +5,9 @@ import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useCameraPermissions} from "expo-camera"
-import {Linking, Pressable, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import {Text} from "@/components/ignite"
+import {Button, Text} from "@/components/ignite"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
 export default function ConnectedSimulatedGlassesInfo({
@@ -75,9 +75,9 @@ export default function ConnectedSimulatedGlassesInfo({
       {showHeader && (
         <View style={themed($header)}>
           <Text style={themed($title)} tx="home:simulatedGlasses" />
-          <Pressable onPress={() => push("/settings/glasses")}>
-            <MaterialCommunityIcons name="cog" size={24} color={theme.colors.text} />
-          </Pressable>
+          <Button flex={false} flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
+            <MaterialCommunityIcons name="cog" size={20} color={theme.colors.secondary_foreground} />
+          </Button>
         </View>
       )}
       <View>
@@ -99,8 +99,7 @@ const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  paddingRight: spacing.sm,
-  paddingBottom: spacing.sm,
+  marginBottom: spacing.s4,
 })
 
 const $title: ThemedStyle<TextStyle> = ({colors}) => ({
