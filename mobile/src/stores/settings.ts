@@ -5,6 +5,7 @@ import {getTimeZone} from "react-native-localize"
 import restComms from "@/services/RestComms"
 import CoreModule from "core"
 import Toast from "react-native-toast-message"
+import {Platform} from "react-native"
 
 export const SETTINGS_KEYS = {
   // feature flags:
@@ -73,7 +74,7 @@ export const SETTINGS_KEYS = {
 const DEFAULT_SETTINGS: Record<string, any> = {
   // feature flags / dev:
   [SETTINGS_KEYS.dev_mode]: false,
-  [SETTINGS_KEYS.enable_squircles]: false,
+  [SETTINGS_KEYS.enable_squircles]: Platform.OS === "ios",
   [SETTINGS_KEYS.debug_console]: false,
   [SETTINGS_KEYS.china_deployment]: process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china" ? true : false,
   // ui state:
