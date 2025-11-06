@@ -1096,6 +1096,9 @@ const deleteImage = async (req: Request, res: Response) => {
     res.json({ success: true, message: "Image deleted successfully" });
   } catch (error) {
     userLogger.error(error as Error, "Error in image delete handler:");
+    if (error instanceof Error && error.message.includes("Image not found")) {
+      return res.status(404).json({ error: "Image not found" });
+    }
     return res
       .status(500)
       .json({ error: "Internal server error during image deletion" });
