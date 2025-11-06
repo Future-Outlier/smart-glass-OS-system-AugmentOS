@@ -94,15 +94,11 @@
                   "app-devs/core-concepts/hardware-capabilities/overview",
                   "app-devs/core-concepts/hardware-capabilities/display-glasses",
                   "app-devs/core-concepts/hardware-capabilities/camera-glasses",
-                  "app-devs/additional-topics/capabilities"
+                  "app-devs/core-concepts/hardware-capabilities/device-capabilities"
                 ]
-              }
+              },
+              "app-devs/core-concepts/mira-tool-calls"
             ]
-          },
-          {
-            "group": "Additional Topics",
-            "icon": "lightbulb",
-            "pages": ["app-devs/additional-topics/mira-tool-calls"]
           },
           {
             "group": "SDK Reference",

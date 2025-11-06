@@ -120,62 +120,102 @@ Then link to feature-specific pages for details.
 
 ## Implementation Plan
 
-### Phase 1: Restructure Navigation
+### Phase 1: Restructure Navigation ✅ COMPLETE
 
-1. Update `docs.json` with new hierarchy
-2. Create new folder structure
-3. Move existing pages to new locations (use `git mv`)
+1. ✅ Updated `docs.json` with new hierarchy
+2. ✅ Created new folder structure (display/, microphone/, speakers/, camera/, webviews/, led/)
+3. ✅ Moved existing pages to new locations (used `git mv` to preserve history)
 
-### Phase 2: Split Large Pages
+### Phase 2: Split Large Pages ✅ COMPLETE
 
-1. Split `display-and-ui.mdx` → `layouts.mdx` + `dashboard.mdx`
-2. Split `device-control.mdx` → distribute to Camera, LED sections
-3. Reorganize Audio → Microphone + Speakers
-4. Consolidate Hardware & Capabilities
+1. ✅ Split `display-and-ui.mdx` → `layouts.mdx` + `dashboard.mdx`
+2. ✅ Split Audio → Microphone (speech-to-text, audio-chunks) + Speakers (text-to-speech, playing-audio-files)
+3. ✅ Moved Camera from additional-topics to core-concepts/camera/
+4. ✅ Moved Webviews from additional-topics to core-concepts/webviews/
+5. ✅ Moved LED from additional-topics to core-concepts/led/
+6. ✅ Consolidated Hardware & Capabilities with device-capabilities.mdx
+7. ✅ Moved Mira Tool Calls to core-concepts
+8. ✅ Removed empty additional-topics folder
 
-### Phase 3: Update Content
+### Phase 3: Update Content 🚧 IN PROGRESS
 
-1. Rewrite AppSession to be brief overview
-2. Ensure each feature page is self-contained
-3. Add "how to access" note to each feature page (e.g., "via `session.layouts`")
-4. Cross-link related features
+1. ⏳ Rewrite AppSession to be brief overview (TODO)
+2. ✅ Ensured each feature page is self-contained
+3. ✅ Added SDK-grounded examples to all pages
+4. ⏳ Cross-link related features (TODO)
 
-### Phase 4: Verify & Polish
+### Phase 4: Verify & Polish 📋 TODO
 
-1. Check all internal links
-2. Ensure consistent formatting
-3. Verify code examples are accurate
-4. Test navigation flow
+1. ⏳ Check all internal links
+2. ⏳ Ensure consistent formatting
+3. ⏳ Verify code examples are accurate
+4. ⏳ Test navigation flow</parameter>
+   </parameter>
+5. Test navigation flow
 
 ## Success Criteria
 
-- [ ] Developer can find "how to display text" in <2 clicks
-- [ ] Each feature has a dedicated, discoverable section
-- [ ] No feature is buried under implementation details
-- [ ] Hardware documentation is consolidated in ONE place
-- [ ] Navigation hierarchy is <3 levels deep everywhere
-- [ ] AppSession page is brief and links to features
+- [x] Developer can find "how to display text" in <2 clicks (Display → Layouts)
+- [x] Each feature has a dedicated, discoverable section
+- [x] No feature is buried under implementation details
+- [x] Hardware documentation is consolidated in ONE place (Hardware & Capabilities section)
+- [x] Navigation hierarchy is <3 levels deep everywhere
+- [ ] AppSession page is brief and links to features (still needs update)</parameter>
 
-## Open Questions
+## Decisions Made
 
-1. Should we keep "Additional Topics" or fold everything into Core Concepts?
-   - **Recommendation:** Fold into Core Concepts. Everything is core if developers need it.
+1. ✅ **Additional Topics** - RESOLVED: Folded everything into Core Concepts. Mira Tool Calls and Device Capabilities are now core concepts.
 
-2. How detailed should feature pages be?
-   - **Recommendation:** Show API, one good example, link to reference docs for full details.
+2. ✅ **Feature page detail level** - RESOLVED: Each page shows API, one good example, links to reference docs for full details.
 
-3. Should Events get its own top-level section?
-   - **Recommendation:** Keep brief events overview in AppSession, specific events in feature sections (e.g., onTranscription in Microphone)
+3. ✅ **Events organization** - RESOLVED: Keep brief events overview in AppSession, specific events in feature sections (e.g., onTranscription in Microphone section)</parameter>
+
+## Final Structure (As Implemented)
+
+```
+Core Concepts
+├── App Lifecycle
+├── AppServer
+├── AppSession (brief overview - still needs shortening)
+├── Display >
+│   ├── Layouts ✅
+│   └── Dashboard ✅
+├── Microphone >
+│   ├── Speech-to-Text ✅
+│   └── Audio Chunks ✅
+├── Speakers >
+│   ├── Text-to-Speech ✅
+│   └── Playing Audio Files ✅
+├── Camera > ✅
+│   ├── Overview
+│   ├── Photo Capture
+│   └── RTMP Streaming
+├── Webviews > ✅
+│   ├── React Webviews
+│   └── Webview Authentication
+├── Permissions ✅
+├── Simple Storage ✅
+├── LED Control > ✅
+│   └── Overview
+├── Hardware & Capabilities > ✅
+│   ├── Overview
+│   ├── Display Glasses
+│   ├── Camera Glasses
+│   └── Device Capabilities
+└── Mira Tool Calls ✅
+```
 
 ## References
 
 - Current structure: `docs/app-devs/core-concepts/`
 - Feedback source: Developer feedback session, Nov 3, 2024
 - Related: Previous restructure PR (app-lifecycle, app-session split)
+- Implementation: Nov 6, 2024
 
 ## Notes
 
 - All content already written and accurate to SDK
 - This is primarily a **reorganization** not a rewrite
 - Goal: Make docs match developer mental model, not implementation model
-- Use `git mv` to preserve file history during reorganization
+- Used `git mv` to preserve file history during reorganization
+- **Additional Topics section has been removed** - everything is now in Core Concepts</parameter>
