@@ -1351,6 +1351,12 @@ class CoreManager {
             }
         }
 
+        (settings["notifications_enabled"] as? Boolean)?.let { newNotificationsEnabled ->
+            if (notificationsEnabled != newNotificationsEnabled) {
+                updateNotificationsEnabled(newNotificationsEnabled)
+            }
+        }
+
         // Head up angle - handle both Int and Double from JavaScript
         (settings["head_up_angle"] as? Number)?.toInt()?.let { newHeadUpAngle ->
             if (headUpAngle != newHeadUpAngle) {

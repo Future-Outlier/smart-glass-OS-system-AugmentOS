@@ -125,7 +125,7 @@ export default function InitScreen() {
 
       await navigateToDestination()
     } catch (error) {
-      console.error("Token exchange failed:", error)
+      console.log("Token exchange failed:", error)
       await checkCustomUrl()
       setErrorType("connection")
       setState("error")

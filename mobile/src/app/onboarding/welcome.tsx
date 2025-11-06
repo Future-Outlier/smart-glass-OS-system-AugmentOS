@@ -85,6 +85,8 @@ export default function OnboardingWelcome() {
         </View>
 
         <Button
+          flex={false}
+          // flexContainer={false}
           onPress={handleHasGlasses}
           tx="onboarding:haveGlasses"
           textAlignment="center"
@@ -93,6 +95,8 @@ export default function OnboardingWelcome() {
 
         <Spacer height={10} />
         <Button
+          flex={false}
+          // flexContainer={false}
           onPress={handleNoGlasses}
           tx="onboarding:dontHaveGlasses"
           preset="default"

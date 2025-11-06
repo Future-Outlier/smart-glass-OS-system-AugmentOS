@@ -77,10 +77,6 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   hasNotificationListenerPermission(): Promise<boolean>
 
   // Notification management
-  setNotificationsEnabled(enabled: boolean): void
-  getNotificationsEnabled(): boolean
-  setNotificationsBlocklist(blocklist: string[]): void
-  getNotificationsBlocklist(): string[]
   getInstalledAppsForNotifications(): Promise<
     Array<{
       packageName: string
