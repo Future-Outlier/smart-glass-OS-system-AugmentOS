@@ -26,7 +26,7 @@ export default function Glasses() {
   // let features = getCapabilitiesForModel(defaultWearable)
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
       <Header title={pageTitle} leftIcon="caretLeft" onLeftPress={() => goBack()} />
       <ScrollView
         style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}

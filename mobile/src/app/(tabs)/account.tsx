@@ -72,11 +72,11 @@ export default function AccountPage() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
       <Header leftTx="settings:title" onLeftPress={handleQuickPress} />
 
       <ScrollView
-        style={{marginRight: -theme.spacing.lg, paddingRight: theme.spacing.lg}}
+        style={{marginRight: -theme.spacing.lg, paddingRight: theme.spacing.s6}}
         contentInsetAdjustmentBehavior="automatic">
         <ProfileCard />
 

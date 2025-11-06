@@ -287,13 +287,13 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
         <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.xs}}>
           <Button
-          
+            flex
             tx="home:glassesMirror"
             preset="alternate"
             onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}
           />
-          <Button flex={false} flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
-            <MaterialCommunityIcons name="cog" size={20} color={theme.colors.foreground} />
+          <Button flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
+            <Icon icon="bell" size={20} color={theme.colors.foreground} />
           </Button>
         </View>
       </View>

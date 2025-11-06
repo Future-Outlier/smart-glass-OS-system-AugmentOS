@@ -20,6 +20,6 @@ export const $styles = {
     overflow: "hidden",
   } as ViewStyle,
   screen: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.s6,
   },
 }

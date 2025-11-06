@@ -5,7 +5,7 @@ import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
 import {Screen, Header, Button, Icon} from "@/components/ignite"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle} from "react-native"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useCallback} from "react"
@@ -219,7 +219,7 @@ export default function WifiScanScreen() {
   }
 
   return (
-    <Screen preset="fixed" contentContainerStyle={themed($container)}>
+    <Screen preset="fixed" contentContainerStyle={themed($styles.screen)}>
       <Header title="Select Glasses WiFi Network" leftIcon="caretLeft" onLeftPress={handleGoBack} />
       <View style={themed($content)}>
         {isScanning ? (
@@ -302,7 +302,9 @@ const $container: ThemedStyle<ViewStyle> = () => ({
 
 const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.lg,
+  // padding: spacing.lg,
+  // marginHorizontal: -spacing.s6,
+  // paddingHorizontal: spacing.s6,
 })
 
 const $loadingContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({

@@ -3,7 +3,7 @@ import {View, BackHandler} from "react-native"
 import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
 import {Screen, Header, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle, ScrollView} from "react-native"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {RouteButton} from "@/components/ui/RouteButton"
@@ -55,11 +55,10 @@ export default function GlassesWifiSetupScreen() {
   // }
 
   return (
-    <Screen preset="fixed" contentContainerStyle={themed($container)} safeAreaEdges={[]}>
+    <Screen preset="fixed" contentContainerStyle={themed($styles.screen)} safeAreaEdges={[]}>
       <Header title="Glasses WiFi Setup" leftIcon="caretLeft" onLeftPress={handleGoBack} />
 
-      <ScrollView
-        style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}>
+      <ScrollView style={{marginRight: -theme.spacing.s6, paddingRight: theme.spacing.s6}}>
         <View style={themed($content)}>
           <Text style={themed($subtitle)}>Your {deviceModel} glasses needs WiFi to connect to the internet.</Text>
 
@@ -107,14 +106,10 @@ export default function GlassesWifiSetupScreen() {
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-})
-
 const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.lg,
   alignItems: "center",
+  marginTop: spacing.s10,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({

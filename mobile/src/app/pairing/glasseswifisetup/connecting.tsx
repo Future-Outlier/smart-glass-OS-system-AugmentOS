@@ -1,6 +1,6 @@
 import {Button, Header, Screen} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
@@ -67,7 +67,7 @@ export default function WifiConnectingScreen() {
       }
     }
 
-    GlobalEventEmitter.on("GLASSES_WIFI_STATUS_CHANGE", handleWifiStatusChange)
+    GlobalEventEmitter.on("WIFI_STATUS_CHANGE", handleWifiStatusChange)
 
     return () => {
       if (connectionTimeoutRef.current) {
@@ -78,7 +78,7 @@ export default function WifiConnectingScreen() {
         clearTimeout(failureGracePeriodRef.current)
         failureGracePeriodRef.current = null
       }
-      GlobalEventEmitter.removeListener("GLASSES_WIFI_STATUS_CHANGE", handleWifiStatusChange)
+      GlobalEventEmitter.removeListener("WIFI_STATUS_CHANGE", handleWifiStatusChange)
     }
   }, [ssid])
 
@@ -232,7 +232,7 @@ export default function WifiConnectingScreen() {
   }
 
   return (
-    <Screen preset="fixed" contentContainerStyle={themed($container)}>
+    <Screen preset="fixed" contentContainerStyle={themed($styles.screen)}>
       {connectionStatus === "connecting" && (
         <Header title="Connecting" leftIcon="caretLeft" onLeftPress={handleHeaderBack} />
       )}

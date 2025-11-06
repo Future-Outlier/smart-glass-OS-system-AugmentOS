@@ -136,7 +136,7 @@ export function Button(props: ButtonProps) {
     disabled,
     disabledStyle: $disabledViewStyleOverride,
     compact = false,
-    flex = true,
+    flex = false,
     flexContainer = true,
     ...rest
   } = props
