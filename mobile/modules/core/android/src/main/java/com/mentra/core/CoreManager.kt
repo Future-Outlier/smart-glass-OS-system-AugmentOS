@@ -427,7 +427,7 @@ class CoreManager {
     }
 
     fun handlePcm(pcmData: ByteArray) {
-        Bridge.log("MAN: handlePcm()")
+        // Bridge.log("MAN: handlePcm()")
 
         // Send PCM to cloud if needed
         if (shouldSendPcmData) {
@@ -444,13 +444,13 @@ class CoreManager {
 
     private fun updateMicrophoneState() {
         val actuallyEnabled = micEnabled && sensingEnabled
-        val glassesHasMic = true
+        val glassesHasMic = sgc?.hasMic ?: false
 
         Bridge.log("MAN: updateMicrophoneState() - micEnabled=$micEnabled, sensingEnabled=$sensingEnabled, actuallyEnabled=$actuallyEnabled")
         Bridge.log("MAN: updateMicrophoneState() - preferredMic=$preferredMic, glassesHasMic=$glassesHasMic, onboardMicUnavailable=$onboardMicUnavailable")
 
-        var useGlassesMic = true
-        var useOnboardMic = false
+        var useGlassesMic = preferredMic == "glasses"
+        var useOnboardMic = preferredMic == "phone"
 
         if (onboardMicUnavailable) {
             useOnboardMic = false
@@ -478,7 +478,7 @@ class CoreManager {
 
         Bridge.log("MAN: updateMicrophoneState() - BEFORE actuallyEnabled: useGlassesMic=$useGlassesMic, useOnboardMic=$useOnboardMic")
 
-        useGlassesMic = true
+        useGlassesMic = actuallyEnabled && useGlassesMic
         useOnboardMic = actuallyEnabled && useOnboardMic
 
         Bridge.log("MAN: updateMicrophoneState() - FINAL: useGlassesMic=$useGlassesMic, useOnboardMic=$useOnboardMic")
@@ -492,7 +492,7 @@ class CoreManager {
         lastMicState = newState
 
         sgc?.let { sgc ->
-            if (true && sgc.ready) {
+            if (sgc.type == DeviceTypes.G1 && sgc.ready) {
                 sgc.setMicEnabled(useGlassesMic)
             }
         }
