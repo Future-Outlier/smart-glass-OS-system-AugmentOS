@@ -2,7 +2,6 @@ import {useAppTheme} from "@/utils/useAppTheme"
 // eslint-disable-next-line no-restricted-imports
 import {TextStyle, View, ViewStyle} from "react-native"
 import {Spacer} from "@/components/ui/Spacer"
-import {PillButton} from "@/components/ignite/PillButton"
 import {Text} from "@/components/ignite/Text"
 import {ThemedStyle} from "@/theme"
 import {Button} from "@/components/ignite"
@@ -41,8 +40,24 @@ const BasicDialog = ({
       <Spacer height={theme.spacing.xxl} />
       <View style={themed($actions)}>
         <View style={themed($actions1)}>
-          {leftButtonText && <Button compact={true} preset="alternate" text={leftButtonText} onPress={onLeftPress} />}
-          <Button compact={true} preset="primary" text={rightButtonText} onPress={onRightPress} />
+          {leftButtonText && (
+            <Button
+              flexContainer={false}
+              flex={false}
+              compact={true}
+              preset="alternate"
+              text={leftButtonText}
+              onPress={onLeftPress}
+            />
+          )}
+          <Button
+            flexContainer={false}
+            flex={false}
+            compact={true}
+            preset="primary"
+            text={rightButtonText}
+            onPress={onRightPress}
+          />
         </View>
       </View>
     </View>
@@ -110,14 +125,6 @@ const $actions1: ThemedStyle<ViewStyle> = () => ({
   paddingTop: 20,
   alignItems: "center",
   flexDirection: "row",
-})
-
-const $leftButtonStyle: ThemedStyle<ViewStyle> = () => ({
-  marginRight: 8,
-})
-
-const $rightButtonStyle: ThemedStyle<ViewStyle> = () => ({
-  // Right button takes remaining space
 })
 
 export default BasicDialog

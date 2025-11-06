@@ -217,7 +217,7 @@ export default function InitScreen() {
         }
         return {
           icon: "wifi-off",
-          iconColor: theme.colors.error,
+          iconColor: theme.colors.destructive,
           title: "Connection Error",
           description: isUsingCustomUrl
             ? "Could not connect to the custom server. Please try using the default server or check your connection."
@@ -315,8 +315,8 @@ export default function InitScreen() {
 
             {(state === "error" || (state === "outdated" && canSkipUpdate)) && (
               <Button
+                flex
                 preset="warning"
-                style={themed($secondaryButton)}
                 RightAccessory={() => <Icon name="arrow-right" size={24} color={theme.colors.text} />}
                 onPress={navigateToDestination}
                 tx="versionCheck:continueAnyway"

@@ -1,12 +1,13 @@
 import {useState, useMemo, useCallback, FC} from "react"
 import {View, TouchableOpacity, ViewStyle, TextStyle, Modal, ScrollView, TextInput, Platform} from "react-native"
 import {Text} from "@/components/ignite"
-import AppIcon from "./AppIcon"
+import AppIcon from "@/components/misc/AppIcon"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
 import {translate} from "@/i18n"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import {ClientAppletInterface} from "@/stores/applets"
+import {Group} from "@/components/ui/Group"
 
 interface AppPickerProps {
   visible: boolean
@@ -144,57 +145,59 @@ export const AppPicker: FC<AppPickerProps> = ({
             {/* Debug text */}
             <Text style={{color: theme.colors.text, padding: 10}}>Showing {filteredApps.length} apps</Text>
 
-            {filteredApps.length === 0 ? (
-              <View style={themed($emptyState)}>
-                <MaterialCommunityIcons name="application-outline" size={48} color={theme.colors.textDim} />
-                <Text
-                  text={searchQuery ? translate("common:noResults") : translate("common:noApps")}
-                  style={themed($emptyText)}
-                />
-              </View>
-            ) : (
-              filteredApps.map(app => {
-                const isSelected = app.packageName === selectedPackageName
-                const isCompatible = app.compatibility?.isCompatible !== false
-                const compatibilityMessage = app.compatibility?.message || ""
-                const isOffline = app.offline
+            <Group>
+              {filteredApps.length === 0 ? (
+                <View style={themed($emptyState)}>
+                  <MaterialCommunityIcons name="application-outline" size={48} color={theme.colors.textDim} />
+                  <Text
+                    text={searchQuery ? translate("common:noResults") : translate("common:noApps")}
+                    style={themed($emptyText)}
+                  />
+                </View>
+              ) : (
+                filteredApps.map(app => {
+                  const isSelected = app.packageName === selectedPackageName
+                  const isCompatible = app.compatibility?.isCompatible !== false
+                  const compatibilityMessage = app.compatibility?.message || ""
+                  const isOffline = app.offline
 
-                return (
-                  <TouchableOpacity
-                    key={app.packageName}
-                    style={themed($appItem)}
-                    onPress={() => handleAppPress(app)}
-                    disabled={!isCompatible && showCompatibilityWarnings}>
-                    <View style={themed($appItemContent)}>
-                      <AppIcon app={app} style={themed($appIconSmall)} />
-                      <View style={themed($appInfo)}>
-                        <View style={themed($appNameRow)}>
-                          <Text text={app.name} style={themed($appName)} numberOfLines={1} />
-                          {isOffline && (
-                            <View style={themed($badge)}>
-                              <MaterialCommunityIcons name="home" size={12} color={theme.colors.text} />
+                  return (
+                    <TouchableOpacity
+                      key={app.packageName}
+                      style={themed($appItem)}
+                      onPress={() => handleAppPress(app)}
+                      disabled={!isCompatible && showCompatibilityWarnings}>
+                      <View style={themed($appItemContent)}>
+                        <AppIcon app={app} style={themed($appIconSmall)} />
+                        <View style={themed($appInfo)}>
+                          <View style={themed($appNameRow)}>
+                            <Text text={app.name} style={themed($appName)} numberOfLines={1} />
+                            {isOffline && (
+                              <View style={themed($badge)}>
+                                <MaterialCommunityIcons name="home" size={12} color={theme.colors.text} />
+                              </View>
+                            )}
+                            {isSelected && (
+                              <MaterialCommunityIcons
+                                name="check-circle"
+                                size={20}
+                                color={theme.colors.palette.primary400}
+                              />
+                            )}
+                          </View>
+                          {!isCompatible && showCompatibilityWarnings && compatibilityMessage && (
+                            <View style={themed($warningContainer)}>
+                              <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
+                              <Text text={compatibilityMessage} style={themed($warningText)} numberOfLines={2} />
                             </View>
                           )}
-                          {isSelected && (
-                            <MaterialCommunityIcons
-                              name="check-circle"
-                              size={20}
-                              color={theme.colors.palette.primary400}
-                            />
-                          )}
                         </View>
-                        {!isCompatible && showCompatibilityWarnings && compatibilityMessage && (
-                          <View style={themed($warningContainer)}>
-                            <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
-                            <Text text={compatibilityMessage} style={themed($warningText)} numberOfLines={2} />
-                          </View>
-                        )}
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                )
-              })
-            )}
+                    </TouchableOpacity>
+                  )
+                })
+              )}
+            </Group>
           </ScrollView>
         </View>
       </View>
@@ -210,7 +213,7 @@ const $modalOverlay: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $modalContent: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundEnd,
+  backgroundColor: colors.background,
   borderTopLeftRadius: spacing.lg,
   borderTopRightRadius: spacing.lg,
   height: "90%", // Changed from maxHeight to height for consistent sizing
@@ -239,13 +242,11 @@ const $closeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $searchContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   borderRadius: spacing.sm,
   marginHorizontal: spacing.lg,
   marginBottom: spacing.md,
   paddingHorizontal: spacing.sm,
-  borderWidth: 1,
-  borderColor: colors.border,
 })
 
 const $searchIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -287,12 +288,9 @@ const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 })
 
 const $appItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.background,
+  backgroundColor: colors.primary_foreground,
   borderRadius: spacing.sm,
-  marginBottom: spacing.sm,
-  padding: spacing.md,
-  borderWidth: 2,
-  borderColor: colors.border,
+  padding: spacing.sm,
   minHeight: 70, // Ensure minimum height
 })
 
@@ -305,7 +303,6 @@ const $appItemContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $appIconSmall: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: spacing.xxl,
   height: spacing.xxl,
-  borderRadius: spacing.sm,
 })
 
 const $appInfo: ThemedStyle<ViewStyle> = () => ({

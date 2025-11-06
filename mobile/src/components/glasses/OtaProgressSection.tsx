@@ -1,5 +1,5 @@
-import React from "react"
-import {View, Text} from "react-native"
+import {View} from "react-native"
+import {Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
 import {OtaProgress} from "@/utils/CoreStatusParser"
@@ -139,12 +139,12 @@ export default function OtaProgressSection({otaProgress}: OtaProgressSectionProp
 }
 
 const $container: ThemedStyle<any> = ({colors, spacing}) => ({
-  backgroundColor: colors.background,
+  backgroundColor: colors.primary_foreground,
   paddingVertical: 12,
   paddingHorizontal: 16,
   borderRadius: spacing.md,
-  borderWidth: 2,
-  borderColor: colors.border,
+  // borderWidth: 2,
+  // borderColor: colors.border,
 })
 
 const $subtitle: ThemedStyle<any> = ({colors, spacing}) => ({
@@ -170,7 +170,7 @@ const $progressTitle: ThemedStyle<any> = ({colors}) => ({
   fontWeight: "500",
 })
 
-const $progressStatus: ThemedStyle<any> = ({colors}) => ({
+const $progressStatus: ThemedStyle<any> = () => ({
   fontSize: 12,
   fontWeight: "600",
 })

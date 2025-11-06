@@ -15,7 +15,6 @@ import Svg, {Path} from "react-native-svg"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
-import ActionButton from "@/components/ui/ActionButton"
 
 // Default user icon component for profile pictures
 const DefaultUserIcon = ({size = 100, color = "#999"}: {size?: number; color?: string}) => {
@@ -279,14 +278,11 @@ export default function ProfileSettingsPage() {
             </Group>
           </>
         ) : (
-          <Text tx="profileSettings:errorGettingUserInfo" />
-        )}
-
-        {/* Sign out button - always available, even if user data fails to load */}
-        {!loading && (
-          <View style={{gap: theme.spacing.md, marginTop: theme.spacing.lg}}>
-            <ActionButton label={translate("settings:signOut")} variant="destructive" onPress={confirmSignOut} />
-          </View>
+          <>
+            {/* Sign out button - always available, even if user data fails to load */}
+            <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} />
+            <Text tx="profileSettings:errorGettingUserInfo" />
+          </>
         )}
       </ScrollView>
 

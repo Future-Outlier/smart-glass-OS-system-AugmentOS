@@ -12,8 +12,14 @@ export const PairGlassesCard = ({style}: {style?: ViewStyle}) => {
     <View style={[themed($container), style]}>
       <Text tx="onboarding:doYouHaveGlasses" style={themed($title)} />
       <View style={themed($buttonContainer)}>
-        <Button tx="home:pairGlasses" preset="primary" onPress={() => push("/pairing/select-glasses-model")} />
         <Button
+          flex={false}
+          tx="home:pairGlasses"
+          preset="primary"
+          onPress={() => push("/pairing/select-glasses-model")}
+        />
+        <Button
+          flex={false}
           tx="home:setupWithoutGlasses"
           preset="secondary"
           style={{backgroundColor: theme.colors.background}}

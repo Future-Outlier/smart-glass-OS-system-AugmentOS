@@ -54,11 +54,11 @@ const InfoSection: React.FC<InfoSectionProps> = ({title, items, style}) => {
 }
 
 const $infoSectionContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   paddingVertical: 12,
   paddingHorizontal: 16,
   borderRadius: spacing.md,
-  borderWidth: 2,
+  // borderWidth: 2,
   borderColor: colors.border,
 })
 

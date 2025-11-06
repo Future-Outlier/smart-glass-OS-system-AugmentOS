@@ -99,6 +99,11 @@ export interface ButtonProps extends PressableProps {
    * Whether the button is flex
    */
   flex?: boolean
+
+  /**
+   * Whether the button is flex container
+   */
+  flexContainer?: boolean
 }
 
 /**
@@ -131,7 +136,8 @@ export function Button(props: ButtonProps) {
     disabled,
     disabledStyle: $disabledViewStyleOverride,
     compact = false,
-    flex = false,
+    flex = true,
+    flexContainer = true,
     ...rest
   } = props
 
@@ -176,7 +182,7 @@ export function Button(props: ButtonProps) {
       {...rest}
       disabled={disabled}>
       {state => (
-        <View style={{position: "relative", justifyContent: "center"}}>
+        <View style={[{position: "relative", justifyContent: "center"}, flexContainer && {flex: 1}]}>
           {!!LeftAccessory && (
             <View style={{marginLeft: spacing.xxs, position: "absolute", left: 0}}>
               <LeftAccessory style={$leftAccessoryStyle} pressableState={state} disabled={disabled} />
@@ -221,7 +227,6 @@ const $compactViewStyle: StyleProp<ViewStyle> = {
   paddingHorizontal: spacing.s4,
   // flex: 1,
 } as ViewStyle
-
 
 const $baseTextStyle: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 16,
@@ -314,8 +319,9 @@ const $textPresets: Record<Presets, ThemedStyleArray<TextStyle>> = {
   default: [$baseTextStyle],
   primary: [$baseTextStyle],
   secondary: [$baseTextStyle, ({colors}) => ({color: colors.secondary_foreground})],
+  alternate: [$baseTextStyle, ({colors}) => ({color: colors.secondary_foreground})],
   accent: [$baseTextStyle],
-  warning: [$baseTextStyle, ({colors}) => ({color: colors.textAlt})],
+  warning: [$baseTextStyle, ({colors}) => ({color: colors.secondary_foreground})],
   destructive: [$baseTextStyle, ({colors}) => ({color: colors.palette.angry600})],
   outlined: [$baseTextStyle, ({colors}) => ({color: colors.text})],
 }
@@ -324,6 +330,7 @@ const $pressedViewPresets: Record<Presets, ThemedStyle<ViewStyle>> = {
   default: ({colors}) => ({backgroundColor: colors.palette.transparent, borderColor: colors.border}),
   primary: ({colors}) => ({backgroundColor: colors.palette.transparent, borderColor: colors.border}),
   secondary: ({colors}) => ({backgroundColor: colors.palette.transparent, borderColor: colors.border}),
+  alternate: ({colors}) => ({backgroundColor: colors.palette.transparent, borderColor: colors.border}),
   accent: ({colors}) => ({backgroundColor: colors.palette.transparent, borderColor: colors.border}),
   warning: ({colors}) => ({backgroundColor: colors.palette.transparent, borderColor: colors.border}),
   destructive: ({colors}) => ({backgroundColor: colors.palette.transparent, borderColor: colors.border}),
@@ -338,4 +345,5 @@ const $pressedTextPresets: Record<Presets, ThemedStyle<TextStyle>> = {
   warning: () => ({opacity: 0.9}),
   destructive: () => ({opacity: 0.9}),
   outlined: () => ({opacity: 0.9}),
+  alternate: () => ({opacity: 0.9}),
 }

@@ -290,12 +290,7 @@ export default function SelectGlassesBluetoothScreen() {
           )}
           <Spacer height={theme.spacing.md} />
           <Divider />
-          <Button
-            tx="common:cancel"
-            preset="alternate"
-            onPress={() => goBack()}
-            style={{borderColor: theme.colors.border, borderWidth: 1, flex: undefined}}
-          />
+          <Button flex={false} compact={true} tx="common:cancel" preset="alternate" onPress={() => goBack()} />
         </View>
       </View>
       <GlassesTroubleshootingModal

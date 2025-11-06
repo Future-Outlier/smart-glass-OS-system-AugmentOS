@@ -19,6 +19,7 @@ const en = {
     disconnectGlasses: "Disconnect glasses",
     general: "General",
     charging: "Charging",
+    selectDefaultApp: "Select default app",
   },
   screenSettings: {
     title: "Display Position Settings",
@@ -410,6 +411,7 @@ const en = {
     openWebView: "Open Web View",
     version: "MentraOS v{{number}}",
     reset: "Reset",
+    learnMore: "Learn more",
   },
   developer: {
     dev: "Dev",
