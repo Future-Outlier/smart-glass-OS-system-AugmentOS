@@ -9,19 +9,20 @@ export class AlibabaStorageService {
 
   constructor(logger: Logger) {
     this.logger = logger;
-    const region = "cn-sz";
-    const accessKeyId = process.env.ALIBABA_ACCESS_KEY_ID || "";
-    const accessKeySecret = process.env.ALIBABA_ACCESS_KEY_SECRET || "";
-    this.bucketName = "mentra-oss";
+    const region = "oss-cn-shenzhen";
+    const accessKeyId = process.env.ALIBABA_ACCESS_KEY_ID;
+    const accessKeySecret = process.env.ALIBABA_ACCESS_KEY_SECRET;
+    this.bucketName = "mentra-dev-oss-backend-cnsz";
 
     if (!region || !accessKeyId || !accessKeySecret || !this.bucketName) {
       throw new Error("Alibaba OSS credentials or configuration missing");
     }
 
     this.ossClient = new OSS({
-      region,
       accessKeyId,
       accessKeySecret,
+      endpoint: "assets.mentraglass.cn",
+      cname: true,
       bucket: this.bucketName,
     });
   }
@@ -43,19 +44,18 @@ export class AlibabaStorageService {
     orgId?: Types.ObjectId;
     replaceImageId: string;
   }): Promise<{ url?: string; imageId: string }> {
+    this.logger.info("Uploading image to Alibaba OSS");
     // Build file key with metadata context
     const timestamp = Date.now();
-    const safeEmail = email.replace(/[@.]/g, "_");
     const fileKey = [
       orgId ? `orgs/${orgId}` : "public",
       appPackageName || "default",
-      safeEmail,
       `${timestamp}-${filename}`,
     ].join("/");
 
     // Include metadata in headers for traceability
     const metadata: any = {
-      "x-oss-meta-uploadedby": email,
+      "x-oss-meta-uploadedby": email, // TODO: I think we should remove this....
       "x-oss-meta-uploadedat": new Date().toISOString(),
       "x-oss-meta-organizationid": orgId,
     };
@@ -76,6 +76,8 @@ export class AlibabaStorageService {
         },
       });
 
+      this.logger.info("Image uploaded successfully to Alibaba OSS");
+
       // If replacing, delete the old one after upload succeeds
       if (replaceImageId) {
         try {
@@ -91,8 +93,7 @@ export class AlibabaStorageService {
       };
     } catch (err: any) {
       this.logger.error(
-        "AlibabaStorageService.uploadImageAndReplace error:",
-        err,
+        "AlibabaStorageService.uploadImageAndReplace error: " + err,
       );
       throw new Error("Failed to upload image to Alibaba OSS");
     }

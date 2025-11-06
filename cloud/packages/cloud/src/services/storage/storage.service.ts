@@ -7,7 +7,7 @@ export class StorageService {
   private storageService: AlibabaStorageService | CloudflareStorageService;
   constructor(logger: Logger) {
     // check region is china then use alibaba storage else use cloudflare storage
-    const region = process.env.REGION || "global";
+    const region = process.env.DEPLOYMENT_REGION || "global";
     this.storageService =
       region === "china"
         ? new AlibabaStorageService(logger)
