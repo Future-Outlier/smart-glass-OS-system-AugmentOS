@@ -2,6 +2,15 @@
 
 Technical implementation plan for CLI tool.
 
+## Naming Conventions
+
+- **Package:** `@mentra/cli` (npm)
+- **Binary:** `mentra` (command)
+- **Config directory:** `~/.mentra/` (not `~/.mentraos/`)
+- **Credentials:** OS keychain via `Bun.secrets` (service: `mentra-cli`)
+- **Per-project config:** `.mentrarc` (not `.mentraosrc`)
+- **Environment variables:** `MENTRA_CLI_TOKEN`, `MENTRA_API_URL`
+
 ## Core Design Pattern: Middleware at Mount Point
 
 **Key Principle:** Routes are auth-agnostic; authentication is applied at mount time.
@@ -230,6 +239,15 @@ export interface CLICredentials {
   storedAt: string
   expiresAt?: string
 }
+
+/**
+ * Cloud environment configuration
+ */
+export interface Cloud {
+  name: string
+  url: string
+  builtin?: boolean
+}
 ```
 
 **File:** `cloud/packages/types/src/index.ts`
@@ -244,6 +262,7 @@ export type {
   UpdateCLIKeyRequest,
   CLITokenPayload,
   CLICredentials,
+  Cloud,
 } from "./cli"
 ```
 
@@ -731,12 +750,15 @@ cloud/packages/cli/
 │   │   ├── auth.ts          # auth, logout, whoami
 │   │   ├── app.ts           # app list/create/get/update/delete/publish
 │   │   ├── org.ts           # org list/get/switch
+│   │   ├── cloud.ts         # cloud list/use/add/remove
 │   │   └── config.ts        # config get/set/list
 │   ├── api/
 │   │   └── client.ts        # HTTP client with auth
 │   ├── config/
-│   │   ├── credentials.ts   # Read/write ~/.mentraos/credentials.json
-│   │   └── settings.ts      # Read/write ~/.mentraos/config.json
+│   │   ├── credentials.ts   # Bun.secrets + file fallback
+│   │   ├── clouds.ts        # Cloud management
+│   │   ├── clouds.yaml      # Built-in clouds
+│   │   └── settings.ts      # Read/write ~/.mentra/config.json
 │   ├── utils/
 │   │   ├── output.ts        # Table/JSON formatting
 │   │   ├── prompt.ts        # Interactive prompts
@@ -786,18 +808,17 @@ program.parse()
 ```typescript
 import axios, {AxiosInstance} from "axios"
 import {loadCredentials} from "../config/credentials"
-import {getConfig} from "../config/settings"
+import {getApiUrl} from "../config/clouds"
 
 export class APIClient {
   private client: AxiosInstance
 
   constructor() {
-    const config = getConfig()
     const creds = loadCredentials()
 
     this.client = axios.create({
-      baseURL: config.api.url || "https://api.mentra.glass",
-      timeout: config.api.timeout || 30000,
+      baseURL: getApiUrl(), // Uses current cloud or MENTRA_API_URL
+      timeout: 30000,
       headers: {
         "Content-Type": "application/json",
         ...(creds?.token && {Authorization: `Bearer ${creds.token}`}),
@@ -868,10 +889,13 @@ import {readFileSync, writeFileSync, mkdirSync, unlinkSync, existsSync} from "fs
 import {CLICredentials} from "@mentra/types"
 import jwt from "jsonwebtoken"
 
-const MENTRA_DIR = join(homedir(), ".mentraos")
+const MENTRA_DIR = join(homedir(), ".mentra")
 const CREDS_FILE = join(MENTRA_DIR, "credentials.json")
 
-export function saveCredentials(token: string): void {
+/**
+ * Save credentials using Bun.secrets (primary) with file fallback
+ */
+export async function saveCredentials(token: string): Promise<void> {
   // Decode token to extract info
   const decoded = jwt.decode(token) as any
   if (!decoded) throw new Error("Invalid token")
@@ -885,21 +909,94 @@ export function saveCredentials(token: string): void {
     expiresAt: decoded.exp ? new Date(decoded.exp * 1000).toISOString() : undefined,
   }
 
+  // Try Bun.secrets first (requires Bun 1.3+)
+  try {
+    if (typeof Bun?.secrets !== "undefined") {
+      await Bun.secrets.set({
+        service: "mentra-cli",
+        name: "credentials",
+        value: JSON.stringify(creds),
+      })
+      console.log("✓ Credentials saved securely to OS keychain")
+      return
+    }
+  } catch (error) {
+    console.warn("⚠️  OS keychain unavailable, using file-based storage")
+  }
+
+  // Fallback to file-based storage
   mkdirSync(MENTRA_DIR, {recursive: true})
   writeFileSync(CREDS_FILE, JSON.stringify(creds, null, 2), {mode: 0o600})
+  console.log("✓ Credentials saved to ~/.mentra/credentials.json")
 }
 
-export function loadCredentials(): CLICredentials | null {
+/**
+ * Load credentials from Bun.secrets or file fallback
+ */
+export async function loadCredentials(): Promise<CLICredentials | null> {
+  // Try Bun.secrets first
   try {
-    if (!existsSync(CREDS_FILE)) return null
-    const data = readFileSync(CREDS_FILE, "utf-8")
-    return JSON.parse(data) as CLICredentials
+    if (typeof Bun?.secrets !== "undefined") {
+      const value = await Bun.secrets.get({
+        service: "mentra-cli",
+        name: "credentials",
+      })
+      if (value) {
+        return JSON.parse(value) as CLICredentials
+      }
+    }
+  } catch {
+    // Fall through to file
+  }
+
+  // Try file fallback
+  try {
+    if (existsSync(CREDS_FILE)) {
+      const data = readFileSync(CREDS_FILE, "utf-8")
+      return JSON.parse(data) as CLICredentials
+    }
   } catch {
     return null
   }
+
+  // Try environment variable (for CI/CD)
+  if (process.env.MENTRA_CLI_TOKEN) {
+    const token = process.env.MENTRA_CLI_TOKEN
+    const decoded = jwt.decode(token) as any
+    if (decoded) {
+      return {
+        token,
+        email: decoded.email,
+        keyName: decoded.name || "CI/CD",
+        keyId: decoded.keyId,
+        storedAt: new Date().toISOString(),
+        expiresAt: decoded.exp ? new Date(decoded.exp * 1000).toISOString() : undefined,
+      }
+    }
+  }
+
+  return null
 }
 
-export function clearCredentials(): void {
+/**
+ * Clear credentials from Bun.secrets and file
+ */
+export async function clearCredentials(): Promise<void> {
+  // Try to remove from Bun.secrets
+  try {
+    if (typeof Bun?.secrets !== "undefined") {
+      // Bun.secrets doesn't have a delete method yet, so we set to empty
+      await Bun.secrets.set({
+        service: "mentra-cli",
+        name: "credentials",
+        value: "",
+      })
+    }
+  } catch {
+    // Ignore
+  }
+
+  // Remove file
   try {
     if (existsSync(CREDS_FILE)) {
       unlinkSync(CREDS_FILE)
@@ -909,21 +1006,288 @@ export function clearCredentials(): void {
   }
 }
 
-export function requireAuth(): CLICredentials {
-  const creds = loadCredentials()
+/**
+ * Require authentication or exit
+ */
+export async function requireAuth(): Promise<CLICredentials> {
+  const creds = await loadCredentials()
   if (!creds) {
-    console.error("Not authenticated. Run: mentra auth <token>")
+    console.error("✗ Not authenticated")
+    console.error("  Run: mentra auth <token>")
+    console.error("  Or set: MENTRA_CLI_TOKEN=<token>")
     process.exit(3)
   }
 
   // Check expiration
   if (creds.expiresAt && new Date(creds.expiresAt) < new Date()) {
-    console.error("CLI API key expired. Generate a new one in the console.")
+    console.error("✗ CLI API key expired")
+    console.error("  Generate a new key in the console")
     process.exit(3)
   }
 
   return creds
 }
+```
+
+### Cloud Management
+
+**File:** `packages/cli/src/config/clouds.yaml`
+
+```yaml
+# Built-in clouds
+production:
+  name: Production
+  url: https://api.mentra.glass
+  default: true
+
+staging:
+  name: Staging
+  url: https://staging-api.mentra.glass
+
+development:
+  name: Development
+  url: https://dev-api.mentra.glass
+
+local:
+  name: Local Development
+  url: http://localhost:8002
+```
+
+**File:** `packages/cli/src/config/clouds.ts`
+
+```typescript
+import {readFileSync} from "fs"
+import {join} from "path"
+import yaml from "yaml"
+import {getConfig, updateConfig} from "./settings"
+import {Cloud} from "@mentra/types"
+
+interface Clouds {
+  [key: string]: Cloud
+}
+
+/**
+ * Load built-in clouds from YAML
+ */
+function getBuiltinClouds(): Clouds {
+  const yamlPath = join(__dirname, "clouds.yaml")
+  const yamlContent = readFileSync(yamlPath, "utf-8")
+  const clouds = yaml.parse(yamlContent) as Clouds
+
+  // Mark as built-in
+  Object.values(clouds).forEach((cloud) => (cloud.builtin = true))
+
+  return clouds
+}
+
+/**
+ * Get all clouds (built-in + custom)
+ */
+export function getAllClouds(): Clouds {
+  const builtins = getBuiltinClouds()
+  const config = getConfig()
+  const custom = config.clouds || {}
+
+  return {...builtins, ...custom}
+}
+
+/**
+ * Get current cloud
+ */
+export function getCurrentCloud(): {key: string; cloud: Cloud} {
+  const config = getConfig()
+  const cloudKey = config.currentCloud || "production"
+  const allClouds = getAllClouds()
+  const cloud = allClouds[cloudKey]
+
+  if (!cloud) {
+    throw new Error(`Cloud '${cloudKey}' not found`)
+  }
+
+  return {key: cloudKey, cloud}
+}
+
+/**
+ * Get API URL for current cloud
+ * Priority: MENTRA_API_URL env var > current cloud > production
+ */
+export function getApiUrl(): string {
+  // Environment variable takes precedence
+  if (process.env.MENTRA_API_URL) {
+    return process.env.MENTRA_API_URL
+  }
+
+  const {cloud} = getCurrentCloud()
+  return cloud.url
+}
+
+/**
+ * Switch cloud
+ */
+export function switchCloud(cloudKey: string): void {
+  const allClouds = getAllClouds()
+
+  if (!allClouds[cloudKey]) {
+    throw new Error(`Cloud '${cloudKey}' not found`)
+  }
+
+  updateConfig({currentCloud: cloudKey})
+}
+
+/**
+ * Add custom cloud
+ */
+export function addCloud(key: string, cloud: Omit<Cloud, "builtin">): void {
+  if (!key.match(/^[a-z0-9-]+$/)) {
+    throw new Error("Cloud key must be lowercase alphanumeric with hyphens")
+  }
+
+  const builtins = getBuiltinClouds()
+  if (builtins[key]) {
+    throw new Error(`Cannot override built-in cloud '${key}'`)
+  }
+
+  const config = getConfig()
+  const clouds = config.clouds || {}
+
+  clouds[key] = cloud
+  updateConfig({clouds})
+}
+
+/**
+ * Remove custom cloud
+ */
+export function removeCloud(cloudKey: string): void {
+  const builtins = getBuiltinClouds()
+  if (builtins[cloudKey]) {
+    throw new Error(`Cannot remove built-in cloud '${cloudKey}'`)
+  }
+
+  const config = getConfig()
+  const clouds = config.clouds || {}
+
+  if (!clouds[cloudKey]) {
+    throw new Error(`Cloud '${cloudKey}' not found`)
+  }
+
+  delete clouds[cloudKey]
+  updateConfig({clouds})
+
+  // If we removed the current cloud, switch to production
+  if (config.currentCloud === cloudKey) {
+    updateConfig({currentCloud: "production"})
+  }
+}
+```
+
+**File:** `packages/cli/src/commands/cloud.ts`
+
+```typescript
+import {Command} from "commander"
+import {getAllClouds, getCurrentCloud, switchCloud, addCloud, removeCloud} from "../config/clouds"
+import {displayTable} from "../utils/output"
+import {input} from "../utils/prompt"
+
+export const cloudCommand = new Command("cloud").description("Manage Mentra clouds")
+
+// List clouds
+cloudCommand
+  .command("list")
+  .alias("ls")
+  .description("List available clouds")
+  .action(() => {
+    const allClouds = getAllClouds()
+    const {key: currentKey} = getCurrentCloud()
+
+    const rows = Object.entries(allClouds).map(([key, cloud]) => ({
+      current: key === currentKey ? "*" : " ",
+      key,
+      name: cloud.name,
+      url: cloud.url,
+      type: cloud.builtin ? "built-in" : "custom",
+    }))
+
+    displayTable(rows, ["current", "key", "name", "url", "type"])
+    console.log(`\n* = current cloud`)
+  })
+
+// Show current cloud
+cloudCommand
+  .command("current")
+  .description("Show current cloud")
+  .action(() => {
+    const {key, cloud} = getCurrentCloud()
+    console.log(`${key} (${cloud.url})`)
+  })
+
+// Switch cloud
+cloudCommand
+  .command("use")
+  .argument("<cloud>", "Cloud to switch to")
+  .description("Switch to a different cloud")
+  .action((cloudKey: string) => {
+    try {
+      const {cloud: oldCloud} = getCurrentCloud()
+
+      switchCloud(cloudKey)
+      const newCloud = getAllClouds()[cloudKey]
+
+      console.log(`✓ Switched from ${oldCloud.url}`)
+      console.log(`  to ${newCloud.name} (${newCloud.url})`)
+    } catch (error: any) {
+      console.error(`✗ ${error.message}`)
+      process.exit(1)
+    }
+  })
+
+// Add custom cloud
+cloudCommand
+  .command("add")
+  .argument("[key]", "Cloud key (e.g., my-staging)")
+  .option("--name <name>", "Display name")
+  .option("--url <url>", "API URL")
+  .description("Add a custom cloud")
+  .action(async (key?: string, options?: any) => {
+    try {
+      let cloudKey = key
+      let name = options?.name
+      let url = options?.url
+
+      // Interactive mode if no args
+      if (!cloudKey) {
+        cloudKey = await input("Cloud key:", {required: true})
+        name = await input("Display name:", {required: true})
+        url = await input("API URL:", {required: true})
+      }
+
+      if (!name || !url) {
+        console.error("✗ --name and --url are required in non-interactive mode")
+        process.exit(2)
+      }
+
+      addCloud(cloudKey!, {name, url})
+      console.log(`✓ Added cloud '${cloudKey}'`)
+    } catch (error: any) {
+      console.error(`✗ ${error.message}`)
+      process.exit(1)
+    }
+  })
+
+// Remove custom cloud
+cloudCommand
+  .command("remove")
+  .alias("rm")
+  .argument("<cloud>", "Cloud to remove")
+  .description("Remove a custom cloud")
+  .action((cloudKey: string) => {
+    try {
+      removeCloud(cloudKey)
+      console.log(`✓ Removed cloud '${cloudKey}'`)
+    } catch (error: any) {
+      console.error(`✗ ${error.message}`)
+      process.exit(1)
+    }
+  })
 ```
 
 ### Auth Commands
@@ -933,6 +1297,7 @@ export function requireAuth(): CLICredentials {
 ```typescript
 import {Command} from "commander"
 import {saveCredentials, loadCredentials, clearCredentials} from "../config/credentials"
+import {getCurrentCloud} from "../config/clouds"
 import jwt from "jsonwebtoken"
 
 export const authCommand = new Command("auth")
@@ -948,11 +1313,13 @@ export const authCommand = new Command("auth")
       }
 
       // Save credentials
-      saveCredentials(token)
+      await saveCredentials(token)
 
       console.log(`✓ Authenticated as ${decoded.email}`)
       console.log(`✓ CLI key: ${decoded.name}`)
-      console.log(`✓ Credentials saved to ~/.mentraos/credentials.json`)
+
+      const {cloud} = getCurrentCloud()
+      console.log(`✓ Cloud: ${cloud.name} (${cloud.url})`)
     } catch (error: any) {
       console.error("✗ Authentication failed:", error.message)
       process.exit(1)
@@ -963,8 +1330,8 @@ export const authCommand = new Command("auth")
 authCommand
   .command("logout")
   .description("Clear stored credentials")
-  .action(() => {
-    clearCredentials()
+  .action(async () => {
+    await clearCredentials()
     console.log("✓ Logged out")
   })
 
@@ -972,14 +1339,17 @@ authCommand
 authCommand
   .command("whoami")
   .description("Show current authentication info")
-  .action(() => {
-    const creds = loadCredentials()
+  .action(async () => {
+    const creds = await loadCredentials()
     if (!creds) {
       console.error("Not authenticated")
       process.exit(3)
     }
 
+    const {key: cloudKey, cloud} = getCurrentCloud()
+
     console.log(`Email:       ${creds.email}`)
+    console.log(`Cloud:       ${cloud.name} (${cloud.url})`)
     console.log(`CLI Key:     ${creds.keyName}`)
     console.log(`Stored:      ${new Date(creds.storedAt).toLocaleString()}`)
     if (creds.expiresAt) {
@@ -1291,7 +1661,8 @@ appCommand
     "jsonwebtoken": "^9.0.2",
     "cli-table3": "^0.6.3",
     "chalk": "^5.3.0",
-    "inquirer": "^9.2.0"
+    "inquirer": "^9.2.0",
+    "yaml": "^2.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -1738,12 +2109,16 @@ logger.error({error}, "CLI key generation failed")
 
 ## Security Considerations
 
-1. **Token Storage**: `chmod 600` on `~/.mentraos/credentials.json`
+1. **Token Storage**:
+   - Primary: OS keychain via `Bun.secrets` (encrypted at rest)
+   - Fallback: `chmod 600` on `~/.mentra/credentials.json`
+   - CI/CD: `MENTRA_CLI_TOKEN` environment variable
 2. **Token Exposure**: Never log tokens, only keyId
 3. **Revocation**: Immediate via database check
 4. **Rate Limiting**: Limit key generation to 10/hour per user
 5. **Expiration**: Support optional expiration dates
 6. **Audit Trail**: Log all key operations with timestamps
+7. **Bun Version**: Require Bun 1.3+ for `Bun.secrets` support
 
 ## Route Refactoring Checklist
 
@@ -1770,10 +2145,12 @@ logger.error({error}, "CLI key generation failed")
 **Phase 3: CLI Tool & Console UI**
 
 - [ ] Build CLI tool (`packages/cli/`)
+- [ ] Add cloud management (`clouds.yaml`, `clouds.ts`, `cloud.ts` command)
+- [ ] Implement `Bun.secrets` with file fallback
 - [ ] Build console UI page (`CLIKeys.tsx`)
-- [ ] Publish CLI to npm
+- [ ] Publish CLI to npm (require Bun 1.3+)
 - [ ] Deploy console UI updates
-- [ ] Documentation
+- [ ] Documentation (including cloud management and `Bun.secrets`)
 
 ## Open Questions
 
@@ -1782,3 +2159,5 @@ logger.error({error}, "CLI key generation failed")
 3. **Default expiration?** → Never (user can set)
 4. **Track IP per usage?** → Phase 2 (storage cost)
 5. **Email on new key generation?** → Phase 2 (security notification)
+6. **Auto-migrate file to Bun.secrets?** → Yes, on next auth command
+7. **Cloud auto-detection from API?** → Phase 2 (detect region from response)

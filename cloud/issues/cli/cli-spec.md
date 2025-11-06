@@ -141,6 +141,16 @@ mentra org get [org-id]          # Details (default org if no ID)
 mentra org switch <org-id>       # Set default org
 ```
 
+### Cloud Management
+
+```bash
+mentra cloud list                # List available clouds
+mentra cloud current             # Show current cloud
+mentra cloud use <cloud>         # Switch cloud (staging, production, etc.)
+mentra cloud add <key>           # Add custom cloud
+mentra cloud remove <cloud>      # Remove custom cloud
+```
+
 ### Config
 
 ```bash
@@ -234,29 +244,137 @@ Changes detected:
 $ mentra app import config.json --force
 ```
 
-## Configuration Files
+## Cloud Management
 
-### `~/.mentraos/credentials.json` (chmod 600)
+### Built-in Clouds
+
+**File:** `packages/cli/src/config/clouds.yaml`
+
+```yaml
+production:
+  name: Production
+  url: https://api.mentra.glass
+  default: true
+
+staging:
+  name: Staging
+  url: https://staging-api.mentra.glass
+
+development:
+  name: Development
+  url: https://dev-api.mentra.glass
+
+local:
+  name: Local Development
+  url: http://localhost:8002
+```
+
+### Custom Clouds (User Config)
+
+Users can add custom clouds via `~/.mentra/config.json`:
 
 ```json
 {
-  "token": "eyJhbGci...",
-  "email": "dev@example.com",
-  "keyName": "My Laptop",
-  "keyId": "uuid",
-  "storedAt": "2024-01-15T...",
-  "expiresAt": "2025-01-15T..."
+  "clouds": {
+    "isaiah-test": {
+      "name": "Isaiah's Test Cloud",
+      "url": "https://isaiah.mentra.glass"
+    },
+    "team-dev": {
+      "name": "Team Dev Server",
+      "url": "https://dev.team.mentra.glass"
+    }
+  },
+  "currentCloud": "production"
 }
 ```
 
-### `~/.mentraos/config.json` (chmod 600)
+### Commands
+
+```bash
+# List all clouds
+$ mentra cloud list
+
+Available Clouds:
+
+Built-in:
+  * production  Production           https://api.mentra.glass
+    staging     Staging              https://staging-api.mentra.glass
+    development Development          https://dev-api.mentra.glass
+    local       Local Development    http://localhost:8002
+
+Custom:
+    isaiah-test Isaiah's Test Cloud https://isaiah.mentra.glass
+    team-dev    Team Dev Server      https://dev.team.mentra.glass
+
+* = current cloud
+
+# Switch clouds
+$ mentra cloud use staging
+✓ Switched to Staging (https://staging-api.mentra.glass)
+
+# Add custom cloud
+$ mentra cloud add my-cloud \
+  --name "My Cloud" \
+  --url https://my-cloud.mentra.glass
+✓ Added cloud 'my-cloud'
+
+# Remove custom cloud
+$ mentra cloud remove my-cloud
+✓ Removed cloud 'my-cloud'
+
+# Show current
+$ mentra cloud current
+production (https://api.mentra.glass)
+```
+
+### Priority Override
+
+```
+1. MENTRA_API_URL env var (highest priority)
+2. Current cloud from config
+3. "production" (default fallback)
+```
+
+## Configuration Files
+
+### Credentials Storage: `Bun.secrets` (Primary)
+
+Credentials stored securely in OS-native keychain:
+
+- **macOS:** Keychain
+- **Linux:** libsecret
+- **Windows:** Credential Manager
+
+```typescript
+// Stored in OS keychain as:
+await Bun.secrets.set({
+  service: "mentra-cli",
+  name: "credentials",
+  value: JSON.stringify({
+    token: "eyJhbGci...",
+    email: "dev@example.com",
+    keyName: "My Laptop",
+    keyId: "uuid",
+    storedAt: "2024-01-15T...",
+    expiresAt: "2025-01-15T...",
+  }),
+})
+```
+
+**Fallback:** `~/.mentra/credentials.json` (chmod 600) if `Bun.secrets` unavailable
+
+### `~/.mentra/config.json` (chmod 600)
 
 ```json
 {
-  "api": {
-    "url": "https://api.mentra.glass",
-    "timeout": 30000
+  "clouds": {
+    "isaiah-test": {
+      "name": "Isaiah's Test Cloud",
+      "url": "https://isaiah.mentra.glass"
+    }
   },
+  "currentCloud": "production",
   "output": {
     "format": "table",
     "colors": true
@@ -267,7 +385,7 @@ $ mentra app import config.json --force
 }
 ```
 
-### `.mentraosrc` (Optional, per-project)
+### `.mentrarc` (Optional, per-project)
 
 ```json
 {
@@ -361,8 +479,15 @@ git commit -am "Add location permission"
 
 ### 3. CI/CD
 
+# CI/CD
+
 ```yaml
+# Environment variable authentication
+- run: MENTRA_CLI_TOKEN=${{ secrets.MENTRA_CLI_TOKEN }} mentra app list
+
+# Or authenticate explicitly
 - run: mentra auth ${{ secrets.MENTRA_CLI_TOKEN }}
+- run: mentra cloud use staging
 - run: mentra app import config.json --force
 - run: mentra app publish org.example.myapp
 ```
@@ -390,6 +515,37 @@ mentra app import config.json
 git commit -am "Update permissions"
 ```
 
+## Security: Credential Storage
+
+### Primary: `Bun.secrets` (Requires Bun 1.3+)
+
+Stores credentials in OS-native keychain:
+
+- **macOS:** Keychain (prompts for access on first use)
+- **Linux:** libsecret
+- **Windows:** Credential Manager
+
+```bash
+$ mentra auth <token>
+✓ Authenticated as dev@example.com
+✓ Credentials saved securely to macOS Keychain
+```
+
+### Fallback: File-based
+
+If `Bun.secrets` unavailable (older Bun, headless environments):
+
+- Store in `~/.mentra/credentials.json` (chmod 600)
+- Warn user about less secure storage
+- Auto-migrate from file to secrets on upgrade
+
+### CI/CD: Environment Variable
+
+```bash
+export MENTRA_CLI_TOKEN=<token>
+mentra app list  # No auth command needed
+```
+
 ## Open Questions
 
 1. **Member management in CLI?** → Phase 2 (low priority, console works)
@@ -398,14 +554,17 @@ git commit -am "Update permissions"
 4. **Update checks?** → Once per day, show notice
 5. **Bulk operations?** → Phase 2 (wait for usage data)
 6. **Scoped API keys?** → Phase 2 (full access for MVP)
+7. **Cloud auto-detection?** → Phase 2 (detect from API response)
 
 ## Phase 1 Scope
 
 **In:**
 
-- CLI tool (`@mentra/cli` package, Bun runtime)
+- CLI tool (`@mentra/cli` package, Bun 1.3+ runtime)
 - CLI key system (backend model + console UI + middleware)
-- Commands: `auth`, `whoami`, `logout`, `app list/create/get/update/delete/publish/api-key/export/import`, `org list/get/switch`, `config`
+- Credential storage: `Bun.secrets` (primary) + file fallback
+- Cloud management: Built-in clouds + custom clouds
+- Commands: `auth`, `whoami`, `logout`, `app list/create/get/update/delete/publish/api-key/export/import`, `org list/get/switch`, `cloud list/use/add/remove`, `config`
 - Interactive + non-interactive modes
 - JSON export/import
 - Error handling
@@ -413,11 +572,12 @@ git commit -am "Update permissions"
 **Out (Phase 2):**
 
 - Member management
-- App scaffolding
+- App scaffolding (`mentra init`)
 - Real-time logs
 - Scoped keys
 - Bulk operations
 - Shell completion
+- Cloud auto-detection
 
 ## Distribution
 
@@ -431,6 +591,19 @@ bun install -g @mentra/cli
 
 **Package:** `@mentra/cli`  
 **Binary:** `mentra`  
-**Entry:** `packages/cli/src/index.ts`
+**Entry:** `packages/cli/src/index.ts`  
+**Min Bun:** 1.3+ (for `Bun.secrets`)
+
+**Config:**
+
+- `~/.mentra/config.json` - Settings and custom clouds
+- `~/.mentra/credentials.json` - Fallback if no `Bun.secrets`
+- `.mentrarc` - Per-project config
+- OS Keychain - Primary credential storage (via `Bun.secrets`)
+
+**Environment Variables:**
+
+- `MENTRA_CLI_TOKEN` - Token for CI/CD
+- `MENTRA_API_URL` - Override API URL
 
 **Future:** Homebrew, direct download scripts
