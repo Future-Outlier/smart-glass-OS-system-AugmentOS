@@ -119,7 +119,7 @@ public class MentraLive extends SGCManager {
     public String savedDeviceName = "";
 
     // LC3 frame size for Mentra Live
-    private static final int LC3_FRAME_SIZE = 40;
+    private static final int LC3_FRAME_SIZE = 20;
 
     // Local-only fields (not in parent SGCManager)
     private int glassesBuildNumberInt = 0; // Build number as integer for version checks
@@ -200,8 +200,8 @@ public class MentraLive extends SGCManager {
     private int currentMtu = 23; // Default BLE MTU
 
     // Audio microphone state tracking
-    private boolean shouldUseGlassesMic = false; // Whether to use glasses microphone for audio input
-    private boolean isMicrophoneEnabled = false; // Track current microphone state
+    private boolean shouldUseGlassesMic = true; // Whether to use glasses microphone for audio input
+    private boolean isMicrophoneEnabled = true; // Track current microphone state
 
     // Rate limiting - minimum delay between BLE characteristic writes
     private static final long MIN_SEND_DELAY_MS = 160; // 160ms minimum delay (increased from 100ms)
@@ -354,8 +354,8 @@ public class MentraLive extends SGCManager {
     private long lc3DecoderPtr = 0;
     private Lc3Player lc3AudioPlayer;
     // Audio playback control - allows monitoring glasses microphone through phone speakers
-    // Set to false by default - enable via enableAudioPlayback(true) or automatically when mic is enabled
-    private boolean audioPlaybackEnabled = false;
+    // Set to true to enable playback, false to disable. Independent of microphone state.
+    private boolean audioPlaybackEnabled = true;
 
     // Periodic test message for ACK testing
     private static final int TEST_MESSAGE_INTERVAL_MS = 5000; // 5 seconds
@@ -441,13 +441,21 @@ public class MentraLive extends SGCManager {
         scheduler = Executors.newScheduledThreadPool(1);
 
         // Setup LC3 player for audio monitoring
-        // DISABLED: LC3 player initialization disabled to save resources
-        // Audio playback can be enabled later if needed by calling enableAudioPlayback(true)
-        // Note: All lc3AudioPlayer references include null checks, so this is safe
-        // lc3AudioPlayer = new Lc3Player(context);
-        // lc3AudioPlayer.init();
-        lc3AudioPlayer = null; // Explicitly set to null
-        Bridge.log("LIVE: 🔊 LC3 audio player DISABLED (can be enabled via enableAudioPlayback if needed)");
+        // Initialize with frame size matching MentraLive LC3_FRAME_SIZE
+        lc3AudioPlayer = new Lc3Player(context, LC3_FRAME_SIZE);
+        lc3AudioPlayer.init();
+        
+        // Enable rolling recording - saves last 20 seconds as M4A every 20 seconds
+        lc3AudioPlayer.enableRollingRecording(true);
+        Bridge.log("LIVE: 🎙️ Rolling audio recording enabled (saves 20-sec files)");
+        
+        // Start playback only if audioPlaybackEnabled is true
+        if (audioPlaybackEnabled) {
+            lc3AudioPlayer.startPlay();
+            Bridge.log("LIVE: 🔊 LC3 audio player started (frame size: " + LC3_FRAME_SIZE + " bytes)");
+        } else {
+            Bridge.log("LIVE: 🔊 LC3 audio player initialized but playback disabled (frame size: " + LC3_FRAME_SIZE + " bytes)");
+        }
 
         //setup LC3 decoder for PCM conversion
         if (lc3DecoderPtr == 0) {
@@ -2833,25 +2841,9 @@ public class MentraLive extends SGCManager {
         if (this.shouldUseGlassesMic) {
             Bridge.log("LIVE: 🎤 Microphone enabled, starting audio input handling");
             startMicBeat();
-            
-            // Enable audio playback for monitoring (optional - can be controlled separately)
-            // This allows you to hear what the glasses microphone is picking up
-            if (!audioPlaybackEnabled && lc3AudioPlayer != null) {
-                Bridge.log("LIVE: 🔊 Starting LC3 audio playback for mic monitoring");
-                audioPlaybackEnabled = true;
-                lc3AudioPlayer.startPlay();
-            }
         } else {
             Bridge.log("LIVE: 🎤 Microphone disabled, stopping audio input handling");
             stopMicBeat();
-            
-            // Optionally stop audio playback when mic is disabled
-            // Uncomment the lines below if you want playback to stop with mic
-            // if (lc3AudioPlayer != null && audioPlaybackEnabled) {
-            //     Bridge.log("LIVE: 🔊 Stopping LC3 audio playback");
-            //     audioPlaybackEnabled = false;
-            //     lc3AudioPlayer.stopPlay();
-            // }
         }
     }
 
@@ -3415,7 +3407,7 @@ public class MentraLive extends SGCManager {
             JSONObject cmd = new JSONObject();
             cmd.put("C", "enable_custom_audio_tx");
             JSONObject enableObj = new JSONObject();
-            enableObj.put("enable", enable);
+            enableObj.put("enable", true);
             cmd.put("B", enableObj.toString());
 
             String jsonStr = cmd.toString();
@@ -3462,13 +3454,12 @@ public class MentraLive extends SGCManager {
     /**
      * Enable or disable audio playback through phone speakers when receiving LC3 audio from glasses.
      * This allows you to hear what the glasses microphone is picking up in real-time.
-     * Note: LC3 player is currently disabled. This method is a no-op.
      * @param enable True to enable audio playback, false to disable.
      */
     public void enableAudioPlayback(boolean enable) {
         audioPlaybackEnabled = enable;
         if (enable) {
-            Bridge.log("LIVE: 🔊 Audio playback requested but LC3 player is disabled");
+            Bridge.log("LIVE: 🔊 Audio playback enabled");
             if (lc3AudioPlayer != null) {
                 lc3AudioPlayer.startPlay();
                 Bridge.log("LIVE: 🔊 LC3 audio player started");
@@ -3569,6 +3560,20 @@ public class MentraLive extends SGCManager {
             Log.e(TAG, "Error creating audio playback status JSON", e);
         }
         return status;
+    }
+    
+    /**
+     * Enable or disable rolling audio recording
+     * When enabled, saves the last 20 seconds of audio as M4A file every 20 seconds
+     * @param enable True to enable rolling recording, false to disable
+     */
+    public void enableRollingRecording(boolean enable) {
+        if (lc3AudioPlayer != null) {
+            lc3AudioPlayer.enableRollingRecording(enable);
+            Bridge.log("LIVE: 🎙️ Rolling recording " + (enable ? "ENABLED" : "DISABLED"));
+        } else {
+            Bridge.log("LIVE: ⚠️ Cannot enable rolling recording - LC3 player not initialized");
+        }
     }
 
     public void requestReadyK900(){
@@ -4830,6 +4835,7 @@ public class MentraLive extends SGCManager {
         // Play LC3 audio directly through LC3 player if enabled
         // This allows monitoring of the glasses microphone in real-time
         if (audioPlaybackEnabled && lc3AudioPlayer != null) {
+            Log.d(TAG, "LIVE: 🔊 Playing LC3 audio through phone speakers: " + data.length + " bytes");
             // The data array already contains the full packet with F1 header and sequence
             // Just pass it directly to the LC3 player
             lc3AudioPlayer.write(data, 0, data.length);
