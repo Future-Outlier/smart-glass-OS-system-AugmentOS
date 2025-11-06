@@ -65,13 +65,13 @@ mentra auth whoami               # Show current user info
 ```bash
 mentra app list [--org <id>]     # List apps
 mentra app get <package-name>    # View app details
-mentra app create                # Create new app (coming soon)
-mentra app update <package-name> # Update app (coming soon)
-mentra app delete <package-name> # Delete app (coming soon)
-mentra app publish <package-name> # Publish to store (coming soon)
-mentra app api-key <package-name> # Regenerate API key (coming soon)
-mentra app export <package-name>  # Export config (coming soon)
-mentra app import <file>         # Import config (coming soon)
+mentra app create                # Create new app (interactive or with flags)
+mentra app update <package-name> # Update app metadata
+mentra app delete <package-name> # Delete app (requires confirmation)
+mentra app publish <package-name> # Publish to store
+mentra app api-key <package-name> # Regenerate API key (shows once!)
+mentra app export <package-name>  # Export config to JSON
+mentra app import <file>         # Import config from JSON
 ```
 
 ### Organization Management
@@ -179,6 +179,87 @@ jobs:
 ```
 
 ## Examples
+
+### Create an App Interactively
+
+```bash
+mentra app create
+# Prompts for: package name, name, description, type, URL, logo
+```
+
+### Create an App Non-Interactively
+
+```bash
+mentra app create \
+  --package-name com.example.myapp \
+  --name "My App" \
+  --description "My awesome app" \
+  --app-type standard \
+  --public-url https://myapp.example.com \
+  --logo-url https://myapp.example.com/logo.png
+```
+
+### Update an App
+
+```bash
+# Interactive mode - prompts for each field
+mentra app update com.example.myapp
+
+# Non-interactive mode with flags
+mentra app update com.example.myapp --name "New Name" --description "New description"
+```
+
+### Delete an App
+
+```bash
+# Requires double confirmation
+mentra app delete com.example.myapp
+
+# Skip confirmation with --force (use carefully!)
+mentra app delete com.example.myapp --force
+```
+
+### Publish an App to the Store
+
+```bash
+mentra app publish com.example.myapp
+
+# Skip confirmation prompt
+mentra app publish com.example.myapp --force
+```
+
+### Regenerate API Key
+
+```bash
+# Shows the new API key once - save it immediately!
+mentra app api-key com.example.myapp
+
+# Skip confirmation prompt
+mentra app api-key com.example.myapp --force
+```
+
+### Export App Configuration
+
+```bash
+# Export to stdout
+mentra app export com.example.myapp
+
+# Export to file
+mentra app export com.example.myapp -o myapp.json
+```
+
+### Import App Configuration
+
+```bash
+# Import from JSON file
+mentra app import myapp.json
+
+# Specify organization
+mentra app import myapp.json --org org_abc123
+
+# Skip confirmation
+mentra app import myapp.json --force
+```
 
 ### List Apps with JSON Output
 
