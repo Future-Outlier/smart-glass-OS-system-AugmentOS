@@ -1,6 +1,6 @@
 import {Header, PillButton, Screen, Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import Divider from "@/components/misc/Divider"
+import Divider from "@/components/ui/Divider"
 import LoadingOverlay from "@/components/misc/LoadingOverlay"
 import SettingsSkeleton from "@/components/misc/SettingsSkeleton"
 import GroupTitle from "@/components/settings/GroupTitle"

@@ -24,6 +24,11 @@ type BaseIconProps = {
   color?: string
 
   /**
+   * An optional background color for the icon
+   */
+  backgroundColor?: string
+
+  /**
    * An optional size for the icon. If not provided, the icon will be sized to the icon's resolution.
    */
   size?: number
@@ -53,6 +58,7 @@ export function PressableIcon(props: PressableIconProps) {
   const {
     icon,
     color,
+    backgroundColor,
     size,
     style: $imageStyleOverride,
     containerStyle: $containerStyleOverride,
@@ -64,6 +70,7 @@ export function PressableIcon(props: PressableIconProps) {
   const $imageStyle: StyleProp<ImageStyle> = [
     $imageStyleBase,
     {tintColor: color ?? theme.colors.text},
+    backgroundColor && {backgroundColor: backgroundColor},
     size !== undefined && {width: size, height: size},
     $imageStyleOverride,
   ]

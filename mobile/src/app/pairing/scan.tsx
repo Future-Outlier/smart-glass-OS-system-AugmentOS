@@ -32,7 +32,7 @@ import CoreModule from "core"
 import {Group} from "@/components/ui/Group"
 import {getGlassesOpenImage} from "@/utils/getGlassesImage"
 import {translate} from "@/i18n"
-import Divider from "@/components/misc/Divider"
+import Divider from "@/components/ui/Divider"
 import {Spacer} from "@/components/ui/Spacer"
 
 export default function SelectGlassesBluetoothScreen() {

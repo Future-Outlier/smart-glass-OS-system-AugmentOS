@@ -1,4 +1,4 @@
-import {Text} from "@/components/ignite"
+import {Icon, PressableIcon, Text} from "@/components/ignite"
 import {useState} from "react"
 import {ActivityIndicator, Image, ImageStyle, TextStyle, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
@@ -26,8 +26,9 @@ import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
 import CoreModule from "core"
 import SliderSetting from "@/components/settings/SliderSetting"
 import ToggleSetting from "@/components/settings/ToggleSetting"
-import ConnectedSimulatedGlassesInfo from "../mirror/ConnectedSimulatedGlassesInfo"
+import ConnectedSimulatedGlassesInfo from "@/components/mirror/ConnectedSimulatedGlassesInfo"
 import {Spacer} from "@/components/ui/Spacer"
+import {Divider} from "@/components/ui/Divider"
 
 export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const {status} = useCoreStatus()
@@ -141,23 +142,26 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   if (!isConnected || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
-        {/* </View> */}
-
         <View style={themed($compactHeader)}>
           <Text style={themed($headerText)}>{defaultWearable}</Text>
           <MaterialCommunityIcons name="bluetooth" size={20} color={theme.colors.textDim} />
         </View>
 
         <View style={[themed($sideBySideContainer)]}>
-          <Image
-            source={getCurrentGlassesImage()}
-            style={[themed($glassesImage), {width: "90%", paddingHorizontal: theme.spacing.lg}]}
-          />
-          <Button style={{width: 48, height: 48}} preset="alternate" onPress={() => push("/settings/glasses")}>
-            <MaterialCommunityIcons name="cog" size={20} color={theme.colors.foreground} />
+          <Image source={getCurrentGlassesImage()} style={[themed($glassesImage)]} />
+          <Button
+            style={{width: 48, height: 48}}
+            flex={false}
+            flexContainer={false}
+            preset="alternate"
+            onPress={() => push("/settings/glasses")}>
+            <Icon icon="bell" size={20} color={theme.colors.foreground} />
           </Button>
         </View>
-        <Spacer height={theme.spacing.sm} />
+
+        <Divider />
+        <Spacer height={theme.spacing.s6} />
+
         <View
           style={{
             flexDirection: "row",
@@ -283,12 +287,12 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
         <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.xs}}>
           <Button
+          
             tx="home:glassesMirror"
-            style={{flex: 1}}
             preset="alternate"
             onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}
           />
-          <Button style={{width: 48, height: 48}} preset="alternate" onPress={() => push("/settings/glasses")}>
+          <Button flex={false} flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
             <MaterialCommunityIcons name="cog" size={20} color={theme.colors.foreground} />
           </Button>
         </View>
@@ -319,10 +323,9 @@ const $compactImageContainer: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $glassesImage: ThemedStyle<ImageStyle> = ({spacing}) => ({
-  width: "100%",
-  height: 100,
+  maxWidth: 140,
+  height: 72,
   resizeMode: "contain",
-  paddingHorizontal: spacing.xxl,
 })
 
 const $compactHeader: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -330,8 +333,6 @@ const $compactHeader: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  paddingHorizontal: spacing.md,
-  paddingBottom: spacing.sm,
 })
 
 const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -339,7 +340,6 @@ const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
   justifyContent: "space-between",
   alignItems: "center",
   paddingHorizontal: spacing.md,
-  paddingBottom: spacing.sm,
 })
 
 const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -351,9 +351,9 @@ const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
+  justifyContent: "space-between",
+  paddingVertical: spacing.s6,
   alignItems: "center",
-  gap: spacing.xs,
-  paddingHorizontal: spacing.xl,
 })
 
 const $statusContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -365,10 +365,7 @@ const $statusContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
 
 const $disconnectedContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   backgroundColor: colors.primary_foreground,
-  alignItems: "center",
-  paddingBottom: spacing.sm,
-  gap: spacing.xs,
-  paddingTop: spacing.md,
+  padding: spacing.s6,
 })
 
 const $disconnectedImageContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({

@@ -34,5 +34,5 @@ const $dividerInset: ThemedStyle<ViewStyle> = ({colors}) => ({
   width: "90%",
   alignSelf: "center",
 })
-
+export {Divider};
 export default Divider
