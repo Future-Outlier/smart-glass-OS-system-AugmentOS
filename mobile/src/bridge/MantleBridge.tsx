@@ -114,7 +114,7 @@ export class MantleBridge {
           useGlassesStore.getState().setWifiInfo(data.connected, data.ssid)
 
           // Also emit event for other listeners (like WiFi setup UI)
-          GlobalEventEmitter.emit("WIFI_STATUS_CHANGE", {
+          GlobalEventEmitter.emit("GLASSES_WIFI_STATUS_CHANGE", {
             connected: data.connected,
             ssid: data.ssid,
             local_ip: data.local_ip,
