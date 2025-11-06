@@ -2,14 +2,14 @@
  * Media viewer component that handles both images and videos
  */
 
-import React, {useState, useRef, useEffect} from "react"
-import {View, TouchableOpacity, Text, Modal, StyleSheet, Dimensions, StatusBar} from "react-native"
+import {useState, useRef, useEffect, type ElementRef} from "react"
+import {View, TouchableOpacity, Modal, StatusBar} from "react-native"
+// eslint-disable-next-line no-restricted-imports
+import {Text, StyleSheet} from "react-native"
 import Video from "react-native-video"
 import Slider from "@react-native-community/slider"
 import {PhotoInfo} from "../../../types/asg"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle, spacing} from "@/theme"
-import {ViewStyle, TextStyle} from "react-native"
+import {spacing} from "@/theme"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {ImageViewer} from "./ImageViewer"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
@@ -22,10 +22,9 @@ interface MediaViewerProps {
   onDelete?: () => void
 }
 
-export function MediaViewer({visible, photo, onClose, onShare, onDelete}: MediaViewerProps) {
-  const {themed} = useAppTheme()
+export function MediaViewer({visible, photo, onClose, onShare, onDelete: _onDelete}: MediaViewerProps) {
   const insets = useSafeAreaInsets()
-  const videoRef = useRef<Video>(null)
+  const videoRef = useRef<ElementRef<typeof Video>>(null)
   const [isPlaying, setIsPlaying] = useState(true) // Autoplay video
   const [showControls, setShowControls] = useState(true) // Start with controls visible
   const [currentTime, setCurrentTime] = useState(0)
@@ -54,6 +53,7 @@ export function MediaViewer({visible, photo, onClose, onShare, onDelete}: MediaV
       const timer = setTimeout(() => setShowControls(false), 3000)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [isVideo, showControls, isPlaying])
 
   if (!photo) return null
@@ -123,7 +123,7 @@ export function MediaViewer({visible, photo, onClose, onShare, onDelete}: MediaV
             <View style={{flex: 1}} />
             {onShare && (
               <TouchableOpacity onPress={onShare} style={styles.actionButton}>
-                <Text style={styles.actionText}>Share</Text>
+                <MaterialCommunityIcons name="share-variant" size={24} color="white" />
               </TouchableOpacity>
             )}
           </View>
@@ -210,18 +210,8 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: spacing.sm,
   },
-  closeText: {
-    color: "white",
-    fontSize: 28,
-    fontWeight: "300",
-  },
   actionButton: {
     padding: spacing.sm,
-  },
-  actionText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
   },
   videoContainer: {
     flex: 1,
