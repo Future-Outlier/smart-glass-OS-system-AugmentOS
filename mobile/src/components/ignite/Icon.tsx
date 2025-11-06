@@ -75,6 +75,11 @@ export function PressableIcon(props: PressableIconProps) {
   )
 }
 
+
+import { createIconSet } from "@expo/vector-icons";
+const glyphMap = require("@assets/icons/tabler/glyph-map.json");
+// const TablerIcon = createIconSet(glyphMap, "tabler-icons", "tabler-icons.ttf");
+
 /**
  * A component to render a registered icon.
  * It is wrapped in a <View />, use `PressableIcon` if you want to react to input
