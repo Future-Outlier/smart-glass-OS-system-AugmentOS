@@ -366,6 +366,27 @@ class RestComms {
   public async sendLocationData(data: any): Promise<any> {
     return this.authenticatedRequest("POST", "/api/client/location", data)
   }
+
+  // Phone Notifications
+  public async sendPhoneNotification(data: {
+    notificationId: string
+    app: string
+    title: string
+    content: string
+    priority: string
+    timestamp: number
+    packageName: string
+  }): Promise<any> {
+    return this.authenticatedRequest("POST", "/api/client/notifications", data)
+  }
+
+  public async sendPhoneNotificationDismissed(data: {
+    notificationId: string
+    notificationKey: string
+    packageName: string
+  }): Promise<any> {
+    return this.authenticatedRequest("POST", "/api/client/notifications/dismissed", data)
+  }
 }
 
 const restComms = RestComms.getInstance()
