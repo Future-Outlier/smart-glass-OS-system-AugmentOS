@@ -1,6 +1,6 @@
 import {useCallback} from "react"
 import {View, BackHandler} from "react-native"
-import {useLocalSearchParams, useFocusEffect} from "expo-router"
+import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
 import {Screen, Header, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
@@ -10,15 +10,19 @@ import RouteButton from "@/components/ui/RouteButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 export default function GlassesWifiSetupScreen() {
-  const {deviceModel = "Glasses"} = useLocalSearchParams()
+  const {deviceModel = "Glasses", returnTo} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
   const {push, goBack} = useNavigationHistory()
 
   const handleGoBack = useCallback(() => {
-    goBack()
+    if (returnTo && typeof returnTo === "string") {
+      router.replace(decodeURIComponent(returnTo))
+    } else {
+      goBack()
+    }
     return true // Prevent default back behavior
-  }, [])
+  }, [returnTo])
 
   // Handle Android back button
   useFocusEffect(
@@ -33,11 +37,11 @@ export default function GlassesWifiSetupScreen() {
   const isWifiConnected = Boolean(currentWifi)
 
   const handleScanForNetworks = () => {
-    push("/pairing/glasseswifisetup/scan", {deviceModel})
+    push("/pairing/glasseswifisetup/scan", {deviceModel, returnTo})
   }
 
   const handleManualEntry = () => {
-    push("/pairing/glasseswifisetup/password", {deviceModel, ssid: ""})
+    push("/pairing/glasseswifisetup/password", {deviceModel, ssid: "", returnTo})
   }
 
   // const handleDisconnectWifi = async () => {

@@ -219,6 +219,15 @@ export interface AudioStopRequestToGlasses extends BaseMessage {
 }
 
 /**
+ * WiFi setup request to glasses/mobile
+ */
+export interface ShowWifiSetup extends BaseMessage {
+  type: CloudToGlassesMessageType.SHOW_WIFI_SETUP
+  reason?: string
+  appPackageName?: string
+}
+
+/**
  * Union type for all messages from cloud to glasses
  */
 export type CloudToGlassesMessage =
@@ -239,6 +248,7 @@ export type CloudToGlassesMessage =
   | SetLocationTier
   | RequestSingleLocation
   | LiveKitInfo
+  | ShowWifiSetup
 
 //===========================================================
 // Type guards

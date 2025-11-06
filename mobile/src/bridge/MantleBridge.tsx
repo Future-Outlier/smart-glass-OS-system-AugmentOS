@@ -2,8 +2,10 @@ import {INTENSE_LOGGING} from "@/utils/Constants"
 import {translate} from "@/i18n"
 import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
+import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {useSettingsStore} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import Constants from "expo-constants"
@@ -108,6 +110,10 @@ export class MantleBridge {
           GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
           return
         case "wifi_status_change":
+          // Update Zustand store so SocketComms can forward to cloud
+          useGlassesStore.getState().setWifiInfo(data.connected, data.ssid)
+
+          // Also emit event for other listeners (like WiFi setup UI)
           GlobalEventEmitter.emit("WIFI_STATUS_CHANGE", {
             connected: data.connected,
             ssid: data.ssid,
@@ -214,6 +220,19 @@ export class MantleBridge {
         case "pair_failure":
           GlobalEventEmitter.emit("PAIR_FAILURE", data.error)
           break
+        case "audio_pairing_needed":
+          GlobalEventEmitter.emit("AUDIO_PAIRING_NEEDED", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_connected":
+          GlobalEventEmitter.emit("AUDIO_CONNECTED", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_disconnected":
+          GlobalEventEmitter.emit("AUDIO_DISCONNECTED", {})
+          break
         case "save_setting":
           await useSettingsStore.getState().setSetting(data.key, data.value, false)
           break
@@ -222,6 +241,35 @@ export class MantleBridge {
           break
         case "local_transcription":
           mantle.handle_local_transcription(data)
+          break
+        case "phone_notification":
+          // Send phone notification via REST instead of WebSocket
+          restComms
+            .sendPhoneNotification({
+              notificationId: data.notificationId,
+              app: data.app,
+              title: data.title,
+              content: data.content,
+              priority: data.priority,
+              timestamp: data.timestamp,
+              packageName: data.packageName,
+            })
+            .catch(error => {
+              console.error("Failed to send phone notification:", error)
+              // TODO: Consider retry logic or queuing failed notifications
+            })
+          break
+        case "phone_notification_dismissed":
+          // Send phone notification dismissal via REST
+          restComms
+            .sendPhoneNotificationDismissed({
+              notificationKey: data.notificationKey,
+              packageName: data.packageName,
+              notificationId: data.notificationId,
+            })
+            .catch(error => {
+              console.error("Failed to send phone notification dismissal:", error)
+            })
           break
         // TODO: this is a bit of a hack, we should have dedicated functions for ws endpoints in the core:
         case "ws_text":

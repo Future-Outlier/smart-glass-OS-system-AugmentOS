@@ -6,6 +6,9 @@ import mantle from "@/services/MantleManager"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
 import {useAppletStatusStore} from "@/stores/applets"
+import {useGlassesStore} from "@/stores/glasses"
+import {showAlert} from "@/utils/AlertUtils"
+import {router} from "expo-router"
 import Constants from "expo-constants"
 
 class SocketComms {
@@ -35,8 +38,27 @@ class SocketComms {
           }
         },
       )
+
+      // Subscribe to WiFi status changes and send updates to cloud
+      useGlassesStore.subscribe(
+        state => ({
+          wifi_connected: state.glasses_wifi_connected,
+          wifi_ssid: state.glasses_wifi_ssid,
+          connected: state.connected,
+        }),
+        (wifiInfo, prevWifiInfo) => {
+          // Only send update if WiFi status actually changed and glasses are connected
+          if (
+            wifiInfo.connected &&
+            (wifiInfo.wifi_connected !== prevWifiInfo.wifi_connected || wifiInfo.wifi_ssid !== prevWifiInfo.wifi_ssid)
+          ) {
+            console.log("SOCKET: WiFi status changed, sending update to cloud")
+            this.sendGlassesConnectionState(true)
+          }
+        },
+      )
     } catch (error) {
-      console.error("SOCKET: Error subscribing to default_wearable:", error)
+      console.error("SOCKET: Error subscribing to store changes:", error)
     }
   }
 
@@ -139,7 +161,13 @@ class SocketComms {
 
   sendGlassesConnectionState(connected: boolean): void {
     let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-    // let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+    const glassesInfo = useGlassesStore.getState()
+
+    // Always include WiFi info - null means "unknown", false means "explicitly disconnected"
+    const wifiInfo = {
+      connected: glassesInfo.glasses_wifi_connected ?? null,
+      ssid: glassesInfo.glasses_wifi_ssid ?? null,
+    }
 
     this.ws.sendText(
       JSON.stringify({
@@ -147,6 +175,7 @@ class SocketComms {
         modelName: modelName,
         status: connected ? "CONNECTED" : "DISCONNECTED",
         timestamp: new Date(),
+        wifi: wifiInfo,
       }),
     )
   }
@@ -529,6 +558,30 @@ class SocketComms {
     )
   }
 
+  private handle_show_wifi_setup(msg: any) {
+    const reason = msg.reason || "This operation requires your glasses to be connected to WiFi."
+    const currentRoute = router.pathname || "/"
+
+    showAlert(
+      "WiFi Setup Required",
+      reason,
+      [
+        {text: "Cancel", style: "cancel"},
+        {
+          text: "Setup WiFi",
+          onPress: () => {
+            const returnTo = encodeURIComponent(currentRoute)
+            router.push(`/pairing/glasseswifisetup?returnTo=${returnTo}`)
+          },
+        },
+      ],
+      {
+        iconName: "wifi-off",
+        iconColor: "#FF9500",
+      },
+    )
+  }
+
   // Message Handling
   private handle_message(msg: any) {
     const type = msg.type
@@ -614,6 +667,10 @@ class SocketComms {
 
       case "rgb_led_control":
         this.handle_rgb_led_control(msg)
+        break
+
+      case "show_wifi_setup":
+        this.handle_show_wifi_setup(msg)
         break
 
       default:

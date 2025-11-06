@@ -97,6 +97,16 @@ public class K900CommandHandler {
                     handleBesOtaAuthorizationResponse(bData);
                     break;
 
+                case "hs_ntfy":
+                    // Hardware notification (new firmware format for button presses)
+                    handleHardwareNotification(bData);
+                    break;
+
+                case "sr_vad":
+                    // Voice Activity Detection - acknowledge but don't process
+                    handleVoiceActivityDetection(bData);
+                    break;
+
                 default:
                     Log.d(TAG, "📦 Unknown K900 command: " + command);
                     break;
@@ -123,6 +133,46 @@ public class K900CommandHandler {
     private void handleCameraButtonLongPress() {
         Log.d(TAG, "📹 Camera button long pressed - handling with configurable mode");
         handleConfigurableButtonPress(true); // true = long press
+    }
+
+    /**
+     * Handle hardware notification (new firmware format for button presses)
+     * Parses the notification message and routes to appropriate button handler
+     */
+    private void handleHardwareNotification(JSONObject bData) {
+        if (bData == null) {
+            Log.w(TAG, "📦 Hardware notification received but no B field data");
+            return;
+        }
+
+        String message = bData.optString("msg", "");
+        int type = bData.optInt("type", -1);
+
+        Log.d(TAG, "📦 Hardware notification - Type: " + type + ", Message: " + message);
+
+        // Route to appropriate handler based on message content
+        if (message.equals("button click")) {
+            Log.d(TAG, "📦 Routing to short button press handler (new firmware format)");
+            handleCameraButtonShortPress();
+        } else if (message.equals("button long click")) {
+            Log.d(TAG, "📦 Routing to long button press handler (new firmware format)");
+            handleCameraButtonLongPress();
+        } else {
+            Log.d(TAG, "📦 Unknown hardware notification message: " + message);
+        }
+    }
+
+    /**
+     * Handle voice activity detection events
+     * Just log these - no processing needed
+     */
+    private void handleVoiceActivityDetection(JSONObject bData) {
+        if (bData != null) {
+            int on = bData.optInt("on", -1);
+            Log.d(TAG, "🎤 Voice Activity Detection event received - VAD " + (on == 1 ? "ON" : "OFF"));
+        } else {
+            Log.d(TAG, "🎤 Voice Activity Detection event received");
+        }
     }
 
     /**

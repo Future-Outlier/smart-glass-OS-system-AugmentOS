@@ -8,6 +8,7 @@ import PairingDeviceInfo from "@/components/misc/PairingDeviceInfo"
 import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
 import GlassesPairingLoader from "@/components/misc/GlassesPairingLoader"
 import {getPairingGuide} from "@/components/pairing/GlassesPairingGuides"
+import {AudioPairingPrompt} from "@/components/pairing/AudioPairingPrompt"
 import {router} from "expo-router"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {Screen} from "@/components/ignite/Screen"
@@ -26,6 +27,8 @@ export default function GlassesPairingGuideScreen() {
   const {glassesModelName} = route.params as {glassesModelName: string}
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   const [pairingInProgress, setPairingInProgress] = useState(true)
+  const [audioPairingNeeded, setAudioPairingNeeded] = useState(false)
+  const [audioDeviceName, setAudioDeviceName] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const failureErrorRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasAlertShownRef = useRef(false)
@@ -73,6 +76,32 @@ export default function GlassesPairingGuideScreen() {
     }
   }, [])
 
+  // Audio pairing event handlers
+  // Note: These events are only sent from iOS native code, so no need to gate on Platform.OS
+  useEffect(() => {
+    const handleAudioPairingNeeded = (data: {deviceName: string}) => {
+      console.log("Audio pairing needed:", data.deviceName)
+      setAudioPairingNeeded(true)
+      setAudioDeviceName(data.deviceName)
+      setPairingInProgress(false)
+    }
+
+    const handleAudioConnected = (data: {deviceName: string}) => {
+      console.log("Audio connected:", data.deviceName)
+      setAudioPairingNeeded(false)
+      // Continue to home after audio is connected
+      replace("/(tabs)/home")
+    }
+
+    GlobalEventEmitter.on("AUDIO_PAIRING_NEEDED", handleAudioPairingNeeded)
+    GlobalEventEmitter.on("AUDIO_CONNECTED", handleAudioConnected)
+
+    return () => {
+      GlobalEventEmitter.off("AUDIO_PAIRING_NEEDED", handleAudioPairingNeeded)
+      GlobalEventEmitter.off("AUDIO_CONNECTED", handleAudioConnected)
+    }
+  }, [replace])
+
   useEffect(() => {
     hasAlertShownRef.current = false
     setPairingInProgress(true)
@@ -92,10 +121,13 @@ export default function GlassesPairingGuideScreen() {
   useEffect(() => {
     if (!status.core_info.puck_connected || !status.glasses_info?.model_name) return
 
+    // Don't navigate to home if we're waiting for audio pairing
+    if (audioPairingNeeded) return
+
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
     replace("/(tabs)/home")
-  }, [status, replace])
+  }, [status, replace, audioPairingNeeded])
 
   if (pairingInProgress) {
     return (
@@ -113,6 +145,43 @@ export default function GlassesPairingGuideScreen() {
           }
         />
         <GlassesPairingLoader glassesModelName={glassesModelName} />
+        <GlassesTroubleshootingModal
+          isVisible={showTroubleshootingModal}
+          onClose={() => setShowTroubleshootingModal(false)}
+          glassesModelName={glassesModelName}
+        />
+      </Screen>
+    )
+  }
+
+  // Show audio pairing prompt if needed
+  // Note: This will only trigger on iOS since the events are only sent from iOS native code
+  if (audioPairingNeeded && audioDeviceName) {
+    return (
+      <Screen preset="fixed" style={themed($screen)}>
+        <Header
+          leftIcon="caretLeft"
+          onLeftPress={handleForgetGlasses}
+          RightActionComponent={
+            <PillButton
+              text="Help"
+              variant="icon"
+              onPress={() => setShowTroubleshootingModal(true)}
+              buttonStyle={themed($pillButton)}
+            />
+          }
+        />
+        <ScrollView style={themed($scrollView)}>
+          <View style={themed($contentContainer)}>
+            <AudioPairingPrompt
+              deviceName={audioDeviceName}
+              onSkip={() => {
+                setAudioPairingNeeded(false)
+                replace("/(tabs)/home")
+              }}
+            />
+          </View>
+        </ScrollView>
         <GlassesTroubleshootingModal
           isVisible={showTroubleshootingModal}
           onClose={() => setShowTroubleshootingModal(false)}

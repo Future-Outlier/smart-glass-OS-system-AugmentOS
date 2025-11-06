@@ -10,23 +10,32 @@ import {
   DialogTitle,
   DialogFooter,
 } from "./ui/dialog";
-import { supabase } from "../utils/supabase";
+import { useAuth } from '../hooks/useAuth';
 
 interface EmailAuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  redirectPath: string;
+  isSignUp: boolean;
+  setIsSignUp: (arg0: boolean) => void;
+  onForgotPassword?: () => void;
 }
 
 const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
   open,
   onOpenChange,
+  redirectPath,
+  isSignUp,
+  setIsSignUp,
+  onForgotPassword,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const { signIn, signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,37 +46,27 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
     try {
       if (isSignUp) {
         // Handle sign up
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-          },
-        });
+        const { error: signUpError } = await signUp(email, password, redirectPath);
 
         if (signUpError) {
-          setError(signUpError.message);
+          setError(signUpError.toString());
         } else {
           setMessage("Account created! Check your email for confirmation.");
         }
       } else {
         // Handle sign in
-        const { error: signInError, data } =
-          await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
+        const { data, error: signInError } =
+          await signIn(email,password)
 
         if (signInError) {
-          setError(signInError.message);
-        } else if (data.session) {
-          // Successfully logged in, close the modal and let AuthContext handle redirect
+          setError(signInError.toString());
+        } else if (data?.session) {
+          // Successfully logged in, close the modal and let Login Page handle redirect
           setMessage("Login successful! Redirecting...");
-
           // Close the modal after a brief delay
           setTimeout(() => {
             onOpenChange(false);
-            // The AuthContext onAuthStateChange handler will handle the redirect
+            // The LoginPage will handle the redirect
           }, 500);
         }
       }
@@ -79,15 +78,9 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
     }
   };
 
-  const toggleAuthMode = () => {
-    setIsSignUp(!isSignUp);
-    setError(null);
-    setMessage(null);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-w-[375px]">
         <DialogHeader>
           <DialogTitle>
             {isSignUp ? "Create an Account" : "Sign In with Email"}
@@ -124,23 +117,14 @@ const EmailAuthModal: React.FC<EmailAuthModalProps> = ({
               />
             </div>
 
+
             {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
 
             {message && (
               <div className="text-sm text-green-600 mt-2">{message}</div>
             )}
           </div>
-
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:space-x-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={toggleAuthMode}
-              disabled={loading}
-            >
-              {isSignUp ? "Already have an account?" : "Need an account?"}
-            </Button>
-
             <Button type="submit" disabled={loading}>
               {loading
                 ? "Processing..."
