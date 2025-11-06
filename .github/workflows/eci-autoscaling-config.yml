@@ -123,6 +123,10 @@ spec:
               value: "${ALIBABA_WORKSPACE}"
             - name: ALIBABA_DASHSCOPE_API_KEY
               value: "${ALIBABA_DASHSCOPE_API_KEY}"
+            - name: ALIBABA_ACCESS_KEY_ID
+              value: "${ALIBABA_ACCESS_KEY_ID}"
+            - name: ALIBABA_ACCESS_KEY_SECRET
+              value: "${ALIBABA_ACCESS_KEY_SECRET}"
           image: mentra-acr-cnsz-a-registry-vpc.cn-shenzhen.cr.aliyuncs.com/mentra-dev/backend:latest
           imagePullPolicy: Always
           lifecycle: {}
