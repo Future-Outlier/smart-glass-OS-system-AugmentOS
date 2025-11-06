@@ -1,7 +1,7 @@
 import {useState, useRef, useEffect} from "react"
 import {Link, useNavigate, useLocation} from "react-router-dom"
 import {motion, AnimatePresence} from "framer-motion"
-import {useAuth} from "../hooks/useAuth"
+import {useAuth} from "@mentra/shared"
 import {usePlatform} from "../hooks/usePlatform"
 import {useTheme} from "../hooks/useTheme"
 import {useSearch} from "../contexts/SearchContext"

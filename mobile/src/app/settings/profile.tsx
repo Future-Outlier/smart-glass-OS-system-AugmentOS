@@ -293,12 +293,17 @@ export default function ProfileSettingsPage() {
                 variant="destructive"
                 onPress={handleDeleteAccount}
               />
-
-              <ActionButton label={translate("settings:signOut")} variant="destructive" onPress={confirmSignOut} />
             </View>
           </>
         ) : (
           <Text tx="profileSettings:errorGettingUserInfo" />
+        )}
+
+        {/* Sign out button - always available, even if user data fails to load */}
+        {!loading && (
+          <View style={{gap: theme.spacing.md, marginTop: theme.spacing.lg}}>
+            <ActionButton label={translate("settings:signOut")} variant="destructive" onPress={confirmSignOut} />
+          </View>
         )}
       </ScrollView>
 

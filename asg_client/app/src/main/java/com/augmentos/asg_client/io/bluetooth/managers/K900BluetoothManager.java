@@ -222,6 +222,14 @@ public class K900BluetoothManager extends BaseBluetoothManager implements Serial
         Log.d(TAG, "K900BluetoothManager shut down");
     }
 
+    /**
+     * Get the ComManager instance for BES OTA integration
+     * @return ComManager instance, or null if not initialized
+     */
+    public ComManager getComManager() {
+        return comManager;
+    }
+
     @Override
     public void stopAdvertising() {
         // K900 doesn't need to stop advertising manually

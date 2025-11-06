@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.augmentos.asg_client.io.bes.BesOtaManager;
 import com.augmentos.asg_client.io.bluetooth.managers.K900BluetoothManager;
 import com.augmentos.asg_client.io.media.core.MediaCaptureService;
 import com.augmentos.asg_client.settings.AsgSettings;
@@ -91,6 +92,21 @@ public class K900CommandHandler {
                     handleSwipeVolumeStatusReport(bData);
                     break;
 
+                case "hm_ota":
+                    // BES OTA authorization response
+                    handleBesOtaAuthorizationResponse(bData);
+                    break;
+
+                case "hs_ntfy":
+                    // Hardware notification (new firmware format for button presses)
+                    handleHardwareNotification(bData);
+                    break;
+
+                case "sr_vad":
+                    // Voice Activity Detection - acknowledge but don't process
+                    handleVoiceActivityDetection(bData);
+                    break;
+
                 default:
                     Log.d(TAG, "📦 Unknown K900 command: " + command);
                     break;
@@ -117,6 +133,46 @@ public class K900CommandHandler {
     private void handleCameraButtonLongPress() {
         Log.d(TAG, "📹 Camera button long pressed - handling with configurable mode");
         handleConfigurableButtonPress(true); // true = long press
+    }
+
+    /**
+     * Handle hardware notification (new firmware format for button presses)
+     * Parses the notification message and routes to appropriate button handler
+     */
+    private void handleHardwareNotification(JSONObject bData) {
+        if (bData == null) {
+            Log.w(TAG, "📦 Hardware notification received but no B field data");
+            return;
+        }
+
+        String message = bData.optString("msg", "");
+        int type = bData.optInt("type", -1);
+
+        Log.d(TAG, "📦 Hardware notification - Type: " + type + ", Message: " + message);
+
+        // Route to appropriate handler based on message content
+        if (message.equals("button click")) {
+            Log.d(TAG, "📦 Routing to short button press handler (new firmware format)");
+            handleCameraButtonShortPress();
+        } else if (message.equals("button long click")) {
+            Log.d(TAG, "📦 Routing to long button press handler (new firmware format)");
+            handleCameraButtonLongPress();
+        } else {
+            Log.d(TAG, "📦 Unknown hardware notification message: " + message);
+        }
+    }
+
+    /**
+     * Handle voice activity detection events
+     * Just log these - no processing needed
+     */
+    private void handleVoiceActivityDetection(JSONObject bData) {
+        if (bData != null) {
+            int on = bData.optInt("on", -1);
+            Log.d(TAG, "🎤 Voice Activity Detection event received - VAD " + (on == 1 ? "ON" : "OFF"));
+        } else {
+            Log.d(TAG, "🎤 Voice Activity Detection event received");
+        }
     }
 
     /**
@@ -173,6 +229,102 @@ public class K900CommandHandler {
             } else {
                 Log.w(TAG, "cs_flts received but missing state or index");
             }
+        }
+    }
+
+    /**
+     * Send BES OTA authorization request to BES chip
+     * Must be called before starting BES firmware update
+     */
+    public void sendBesOtaAuthorizationRequest() {
+        Log.i(TAG, "🔧 Sending BES OTA authorization request");
+        
+        try {
+            // Build full K900 format: C, V, B (all three required to avoid double-wrapping!)
+            JSONObject k900Command = new JSONObject();
+            k900Command.put("C", "mh_ota");
+            k900Command.put("V", 1);  // Version field - REQUIRED to prevent double-wrapping
+            k900Command.put("B", "{}");  // Empty body for authorization request
+            
+            String commandStr = k900Command.toString();
+            Log.i(TAG, "🔧 Sending BES OTA authorization command: " + commandStr);
+            
+            if (serviceManager == null || serviceManager.getBluetoothManager() == null) {
+                Log.e(TAG, "❌ ServiceManager or Bluetooth manager unavailable");
+                // Notify BesOtaManager of failure
+                BesOtaManager manager = BesOtaManager.getInstance();
+                if (manager != null) {
+                    manager.onAuthorizationDenied();
+                }
+                return;
+            }
+
+            if (!serviceManager.getBluetoothManager().isConnected()) {
+                Log.e(TAG, "❌ Bluetooth not connected; cannot send BES OTA authorization request");
+                // Notify BesOtaManager of failure
+                BesOtaManager manager = BesOtaManager.getInstance();
+                if (manager != null) {
+                    manager.onAuthorizationDenied();
+                }
+                return;
+            }
+
+            boolean sent = serviceManager.getBluetoothManager().sendData(
+                commandStr.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            
+            if (sent) {
+                Log.i(TAG, "✅ BES OTA authorization request sent - waiting for response");
+            } else {
+                Log.e(TAG, "❌ Failed to send BES OTA authorization request");
+                // Notify BesOtaManager of failure
+                BesOtaManager manager = BesOtaManager.getInstance();
+                if (manager != null) {
+                    manager.onAuthorizationDenied();
+                }
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "💥 Error creating BES OTA authorization request", e);
+            // Notify BesOtaManager of failure
+            BesOtaManager manager = BesOtaManager.getInstance();
+            if (manager != null) {
+                manager.onAuthorizationDenied();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error sending BES OTA authorization request", e);
+            // Notify BesOtaManager of failure
+            BesOtaManager manager = BesOtaManager.getInstance();
+            if (manager != null) {
+                manager.onAuthorizationDenied();
+            }
+        }
+    }
+
+    /**
+     * Handle BES OTA authorization response from BES chip
+     * Response to our "mh_ota" request
+     */
+    private void handleBesOtaAuthorizationResponse(JSONObject bData) {
+        Log.i(TAG, "🔧 Received BES OTA authorization response");
+        
+        boolean authorized = false;
+        if (bData != null) {
+            int result = bData.optInt("result", 0);
+            authorized = (result == 1);
+            Log.d(TAG, "🔧 BES OTA authorization: " + (authorized ? "GRANTED" : "DENIED") + " (result=" + result + ")");
+        } else {
+            Log.w(TAG, "⚠️ BES OTA authorization response received but no B field data");
+        }
+        
+        // Notify BesOtaManager of authorization result
+        BesOtaManager manager = BesOtaManager.getInstance();
+        if (manager != null) {
+            if (authorized) {
+                manager.onAuthorizationGranted();
+            } else {
+                manager.onAuthorizationDenied();
+            }
+        } else {
+            Log.e(TAG, "❌ BesOtaManager not available - cannot process authorization response");
         }
     }
 

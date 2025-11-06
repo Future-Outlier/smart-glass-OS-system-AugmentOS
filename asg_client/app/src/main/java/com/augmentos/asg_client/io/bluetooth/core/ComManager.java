@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.lhs.serialport.api.SerialManager;
 import com.augmentos.asg_client.io.bluetooth.interfaces.SerialListener;
+import com.augmentos.asg_client.io.bes.BesOtaUartListener;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,6 +23,7 @@ public class ComManager {
     private static final int COM_BAUDRATE = 460800;
 
     private SerialListener mListener;
+    private BesOtaUartListener mOtaListener;
     private RecvThread mRecvThread = null;
     private byte[] mReadBuf = new byte[1024];
     private boolean mbStart = false;
@@ -29,6 +31,7 @@ public class ComManager {
     protected InputStream mIS;
     private Context mContext = null;
     private boolean mbRequestFast = false;
+    public boolean mbOtaUpdating = false;
 
     /**
      * Create a new ComManager
@@ -46,6 +49,15 @@ public class ComManager {
      */
     public void registerListener(SerialListener listener) {
         mListener = listener;
+    }
+
+    /**
+     * Register a listener for BES OTA UART data
+     *
+     * @param listener The OTA listener to register
+     */
+    public void registerOtaListener(BesOtaUartListener listener) {
+        mOtaListener = listener;
     }
 
     /**
@@ -106,11 +118,12 @@ public class ComManager {
 
     /**
      * Send data over the serial port
+     * Blocked during BES OTA updates
      *
      * @param data The data to send
      */
     public boolean send(byte[] data) {
-        if (mbStart && mOS != null) {
+        if (mbStart && mOS != null && !mbOtaUpdating) {
             try {
                 Log.d(TAG, ">>> sending " + data.length + " bytes");
                 mOS.write(data);
@@ -121,7 +134,11 @@ public class ComManager {
                 Log.e(TAG, "Error writing to serial port: " + e.getMessage());
             }
         } else {
-            Log.d(TAG, "Cannot send data - not started or output stream is null. mbStart=" + mbStart + ", mOS=" + mOS);
+            if (mbOtaUpdating) {
+                Log.d(TAG, "Cannot send data - BES OTA in progress");
+            } else {
+                Log.d(TAG, "Cannot send data - not started or output stream is null. mbStart=" + mbStart + ", mOS=" + mOS);
+            }
         }
 
         return false;
@@ -129,11 +146,12 @@ public class ComManager {
 
     /**
      * Send file data over the serial port (without logging the data content)
+     * Blocked during BES OTA updates
      *
      * @param data The file data to send
      */
     public void sendFile(byte[] data) {
-        if (mbStart && mOS != null) {
+        if (mbStart && mOS != null && !mbOtaUpdating) {
             try {
                 // Don't log file data content, just write it
                 mOS.write(data);
@@ -142,7 +160,11 @@ public class ComManager {
                 Log.e(TAG, "Error writing file to serial port: " + e.getMessage());
             }
         } else {
-            Log.d(TAG, "Cannot send file - not started or output stream is null. mbStart=" + mbStart + ", mOS=" + mOS);
+            if (mbOtaUpdating) {
+                Log.d(TAG, "Cannot send file - BES OTA in progress");
+            } else {
+                Log.d(TAG, "Cannot send file - not started or output stream is null. mbStart=" + mbStart + ", mOS=" + mOS);
+            }
         }
     }
 
@@ -154,6 +176,40 @@ public class ComManager {
     public void setFastMode(boolean bFast) {
         mbRequestFast = bFast;
         Log.d(TAG, "Fast mode " + (bFast ? "enabled" : "disabled"));
+    }
+
+    /**
+     * Set BES OTA updating state
+     * When true, normal UART traffic is blocked and only OTA commands pass through
+     *
+     * @param bOtaUpdate true to enable OTA mode, false to return to normal mode
+     */
+    public void setOtaUpdating(boolean bOtaUpdate) {
+        mbOtaUpdating = bOtaUpdate;
+        Log.d(TAG, "BES OTA updating: " + mbOtaUpdating);
+    }
+
+    /**
+     * Send OTA command data over UART
+     * Only works when mbOtaUpdating is true
+     *
+     * @param data The OTA command data to send
+     * @return true if sent successfully, false otherwise
+     */
+    public boolean sendOta(byte[] data) {
+        if (mbStart && mOS != null && mbOtaUpdating) {
+            try {
+                Log.d(TAG, ">>> OTA sending " + data.length + " bytes");
+                mOS.write(data);
+                mOS.flush();
+                return true;
+            } catch (IOException e) {
+                Log.e(TAG, "Error writing OTA data to serial port: " + e.getMessage());
+            }
+        } else {
+            Log.d(TAG, "Cannot send OTA data - mbStart=" + mbStart + ", mOS=" + mOS + ", mbOtaUpdating=" + mbOtaUpdating);
+        }
+        return false;
     }
 
 
@@ -182,8 +238,16 @@ public class ComManager {
                             // Simple log with byte count only
                             Log.d(TAG, "UART read: " + readSize + " bytes");
 
-                            if (mListener != null)
-                                mListener.onSerialRead(COM_PATH, mReadBuf, readSize);
+                            // Route data based on OTA state
+                            if (mbOtaUpdating) {
+                                if (mOtaListener != null) {
+                                    mOtaListener.onOtaRecv(mReadBuf, readSize);
+                                }
+                            } else {
+                                if (mListener != null) {
+                                    mListener.onSerialRead(COM_PATH, mReadBuf, readSize);
+                                }
+                            }
                         }
                     } catch (IOException e) {
                         Log.e(TAG, "Error reading from serial port", e);

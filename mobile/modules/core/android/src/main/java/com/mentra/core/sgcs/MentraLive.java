@@ -333,6 +333,10 @@ public class MentraLive extends SGCManager {
     private boolean glassesReady = false;
     private boolean rgbLedAuthorityClaimed = false; // Track if we've claimed RGB LED control from BES
 
+    // Audio Pairing: Track readiness separately for BLE and audio (matches iOS implementation)
+    private boolean glassesReadyReceived = false;
+    private boolean audioConnected = false;
+
     // Micbeat tracking - periodically enable custom audio TX
     private Handler micBeatHandler = new Handler(Looper.getMainLooper());
     private Runnable micBeatRunnable;
@@ -462,6 +466,9 @@ public class MentraLive extends SGCManager {
         if (isEqual) {
             return;
         }
+
+        // Actually update the connection state!
+        connectionState = state;
 
         if (state.equals(ConnTypes.CONNECTED)) {
             ready = true;
@@ -790,6 +797,11 @@ public class MentraLive extends SGCManager {
 
                     connectedDevice = null;
                     glassesReady = false; // Reset ready state on disconnect
+
+                    // Reset audio pairing flags
+                    glassesReadyReceived = false;
+                    audioConnected = false;
+
                     // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
 
                     handler.removeCallbacks(processSendQueueRunnable);
@@ -1848,6 +1860,7 @@ public class MentraLive extends SGCManager {
 
                 // Set the ready flag to stop any future readiness checks
                 glassesReady = true;
+                glassesReadyReceived = true;
 
                 // Stop the readiness check loop since we got confirmation
                 stopReadinessCheckLoop();
@@ -1892,9 +1905,15 @@ public class MentraLive extends SGCManager {
                     Bridge.log("LIVE: ⏭️ Skipping LC3 audio logging - device does not support LC3 audio");
                 }
 
-                // Finally, mark the connection as fully established
-                Bridge.log("LIVE: ✅ Glasses connection is now fully established!");
-                updateConnectionState(ConnTypes.CONNECTED);
+                // Audio Pairing: Only mark as fully connected if audio is also ready
+                // On Android, CTKD automatically pairs BT Classic when BLE bonds, so audio is always ready
+                // This check maintains platform parity with iOS
+                if (audioConnected) {
+                    Bridge.log("LIVE: Audio: Both glasses_ready and audio connected - marking as fully connected");
+                    updateConnectionState(ConnTypes.CONNECTED);
+                } else {
+                    Bridge.log("LIVE: Audio: Waiting for CTKD audio bonding before marking as fully connected");
+                }
                 break;
 
             case "keep_alive_ack":
@@ -2232,12 +2251,15 @@ public class MentraLive extends SGCManager {
                             // This prevents re-initialization on every heartbeat after initial connection
                             // The glassesReady flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
                             if (!glassesReady) {
+                                Bridge.log("LIVE: 📱 Sending phone_ready to glasses - waiting for glasses_ready response");
                                 JSONObject readyMsg = new JSONObject();
                                 readyMsg.put("type", "phone_ready");
                                 readyMsg.put("timestamp", System.currentTimeMillis());
 
                                 // Send it through our data channel
                                 sendJson(readyMsg, true);
+                            } else {
+                                Bridge.log("LIVE: ✅ Glasses already marked as ready, skipping phone_ready");
                             }
                         }
                         int charg = bodyObj.optInt("charg", -1);
@@ -3054,14 +3076,28 @@ public class MentraLive extends SGCManager {
                             case BluetoothDevice.BOND_BONDED:
                                 Bridge.log("LIVE: CTKD: ✅ Successfully bonded with device - BT Classic connection established");
                                 isBtClassicConnected = true;
+                                audioConnected = true;
                                 // Both BLE and BT Classic are now connected via CTKD
+
+                                // If glasses_ready was already received, now we're fully ready
+                                if (glassesReadyReceived) {
+                                    Bridge.log("LIVE: Audio: Both audio and glasses_ready confirmed - marking as fully connected");
+                                    updateConnectionState(ConnTypes.CONNECTED);
+                                }
+
+                                // Send audio connected event for platform parity with iOS
+                                Bridge.sendAudioConnected(device.getName());
                                 break;
 
                             case BluetoothDevice.BOND_NONE:
                                 Bridge.log("LIVE: CTKD: ❌ Bonding failed or removed for device");
                                 isBtClassicConnected = false;
+                                audioConnected = false;
                                 if (previousBondState == BluetoothDevice.BOND_BONDING) {
                                     Bridge.log("LIVE: CTKD: Bonding process failed");
+                                } else if (previousBondState == BluetoothDevice.BOND_BONDED) {
+                                    // Send audio disconnected event for platform parity with iOS
+                                    Bridge.sendAudioDisconnected();
                                 }
                                 break;
 
