@@ -1,6 +1,7 @@
 ---
 title: LED Control
 description: Overview of RGB LED control on smart glasses for notifications, status indicators, and user feedback in MentraOS apps.
+icon: lightbulb
 ---
 
 # LED Control Overview
@@ -32,11 +33,11 @@ class LEDApp extends AppServer {
 
     // Basic LED control
     await session.led.turnOn({ color: 'red', ontime: 2000 });
-    
+
     // LED patterns
     await session.led.blink('green', 500, 500, 3);
     await session.led.solid('white', 5000);
-    
+
     // Turn off LEDs
     await session.led.turnOff();
   }
@@ -80,7 +81,7 @@ LED commands resolve immediately after sending - no waiting for responses.
 // Success notification
 await session.led.blink('green', 500, 500, 2);
 
-// Error notification  
+// Error notification
 await session.led.blink('red', 500, 500, 3);
 
 // Info notification
@@ -124,4 +125,4 @@ if (!session.capabilities?.hasLight) {
 ## Next Steps
 
 - 📖 **[LED Manager API Reference](/reference/managers/led-manager)** - Complete method documentation and examples
-- 🔧 **Device Capabilities**: [Capabilities](/capabilities) - Check LED hardware support  
+- 🔧 **Device Capabilities**: [Capabilities](/capabilities) - Check LED hardware support

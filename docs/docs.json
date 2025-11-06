@@ -45,35 +45,56 @@
             "pages": [
               "app-devs/core-concepts/app-lifecycle-overview",
               "app-devs/core-concepts/app-server",
+              "app-devs/core-concepts/app-session/app-session",
               {
-                "group": "AppSession",
-                "icon": "plug",
+                "group": "Display",
+                "icon": "display",
+                "pages": ["app-devs/core-concepts/display/layouts", "app-devs/core-concepts/display/dashboard"]
+              },
+              {
+                "group": "Microphone",
+                "icon": "microphone",
                 "pages": [
-                  "app-devs/core-concepts/app-session/what-is-app-session",
-                  "app-devs/core-concepts/app-session/display-and-ui",
-                  "app-devs/core-concepts/app-session/events-and-data",
-                  "app-devs/core-concepts/app-session/device-control"
+                  "app-devs/core-concepts/microphone/speech-to-text",
+                  "app-devs/core-concepts/microphone/audio-chunks"
+                ]
+              },
+              {
+                "group": "Speakers",
+                "icon": "volume",
+                "pages": [
+                  "app-devs/core-concepts/speakers/text-to-speech",
+                  "app-devs/core-concepts/speakers/playing-audio-files"
+                ]
+              },
+              {
+                "group": "Camera",
+                "icon": "camera",
+                "pages": [
+                  "app-devs/core-concepts/camera/README",
+                  "app-devs/core-concepts/camera/photo-capture",
+                  "app-devs/core-concepts/camera/rtmp-streaming"
+                ]
+              },
+              {
+                "group": "Webviews",
+                "icon": "browser",
+                "pages": [
+                  "app-devs/core-concepts/webviews/react-webviews",
+                  "app-devs/core-concepts/webviews/webview-authentication"
                 ]
               },
               "app-devs/core-concepts/permissions",
+              "app-devs/core-concepts/simple-storage",
+              "app-devs/core-concepts/led/overview",
               {
                 "group": "Hardware & Capabilities",
                 "icon": "microchip",
                 "pages": [
                   "app-devs/core-concepts/hardware-capabilities/overview",
                   "app-devs/core-concepts/hardware-capabilities/display-glasses",
-                  "app-devs/core-concepts/hardware-capabilities/camera-glasses"
-                ]
-              },
-              "app-devs/core-concepts/simple-storage",
-              {
-                "group": "Audio",
-                "icon": "volume",
-                "pages": [
-                  "app-devs/core-concepts/audio/text-to-speech",
-                  "app-devs/core-concepts/audio/playing-audio-files",
-                  "app-devs/core-concepts/audio/speech-to-text",
-                  "app-devs/core-concepts/audio/audio-chunks"
+                  "app-devs/core-concepts/hardware-capabilities/camera-glasses",
+                  "app-devs/additional-topics/capabilities"
                 ]
               }
             ]
@@ -81,24 +102,7 @@
           {
             "group": "Additional Topics",
             "icon": "lightbulb",
-            "pages": [
-              "app-devs/additional-topics/layouts",
-              "app-devs/additional-topics/led",
-              "app-devs/additional-topics/mira-tool-calls",
-              "app-devs/additional-topics/capabilities",
-              {
-                "group": "Camera",
-                "icon": "camera",
-                "pages": [
-                  "app-devs/additional-topics/camera/README",
-                  "app-devs/additional-topics/camera/photo-capture",
-                  "app-devs/additional-topics/camera/rtmp-streaming"
-                ]
-              },
-              "app-devs/additional-topics/webview-auth-overview",
-              "app-devs/additional-topics/react-webviews",
-              "app-devs/additional-topics/dashboard"
-            ]
+            "pages": ["app-devs/additional-topics/mira-tool-calls"]
           },
           {
             "group": "SDK Reference",
