@@ -123,7 +123,6 @@ public class MentraLive extends SGCManager {
 
     // Local-only fields (not in parent SGCManager)
     private int glassesBuildNumberInt = 0; // Build number as integer for version checks
-    private boolean supportsLC3Audio = true; // Whether device supports LC3 audio (false for base K900)
     // Note: glassesAppVersion, glassesBuildNumber, glassesDeviceModel, glassesAndroidVersion
     // are inherited from SGCManager parent class
 
@@ -200,8 +199,8 @@ public class MentraLive extends SGCManager {
     private int currentMtu = 23; // Default BLE MTU
 
     // Audio microphone state tracking
-    private boolean shouldUseGlassesMic = true; // Whether to use glasses microphone for audio input
-    private boolean isMicrophoneEnabled = true; // Track current microphone state
+    private boolean shouldUseGlassesMic = false; // Whether to use glasses microphone for audio input
+    private boolean isMicrophoneEnabled = false; // Track current microphone state
 
     // Rate limiting - minimum delay between BLE characteristic writes
     private static final long MIN_SEND_DELAY_MS = 160; // 160ms minimum delay (increased from 100ms)
@@ -360,6 +359,9 @@ public class MentraLive extends SGCManager {
     // Audio playback control - allows monitoring glasses microphone through phone speakers
     // Set to true to enable playback, false to disable. Independent of microphone state.
     private boolean audioPlaybackEnabled = true;
+    // Rolling recording control - saves last 20 seconds of audio as M4A file every 20 seconds
+    // Set to true to enable rolling recording, false to disable.
+    private boolean rollingRecordingEnabled = true;
 
     // Periodic test message for ACK testing
     private static final int TEST_MESSAGE_INTERVAL_MS = 5000; // 5 seconds
@@ -449,9 +451,11 @@ public class MentraLive extends SGCManager {
         lc3AudioPlayer = new Lc3Player(context, LC3_FRAME_SIZE);
         lc3AudioPlayer.init();
         
-        // Enable rolling recording - saves last 20 seconds as M4A every 20 seconds
-        lc3AudioPlayer.enableRollingRecording(true);
-        Bridge.log("LIVE: 🎙️ Rolling audio recording enabled (saves 20-sec files)");
+        // Enable rolling recording if configured
+        if (rollingRecordingEnabled) {
+            lc3AudioPlayer.enableRollingRecording(true);
+            Bridge.log("LIVE: 🎙️ Rolling audio recording enabled (saves 20-sec files)");
+        }
         
         // Start playback only if audioPlaybackEnabled is true
         if (audioPlaybackEnabled) {
@@ -879,30 +883,17 @@ public class MentraLive extends SGCManager {
                     txCharacteristic = service.getCharacteristic(TX_CHAR_UUID);
                     rxCharacteristic = service.getCharacteristic(RX_CHAR_UUID);
 
-                    // Only attempt to get LC3 characteristics if device supports LC3 audio
-                    if (supportsLC3Audio) {
-                        lc3ReadCharacteristic = service.getCharacteristic(LC3_READ_UUID);
-                        lc3WriteCharacteristic = service.getCharacteristic(LC3_WRITE_UUID);
-                    } else {
-                        lc3ReadCharacteristic = null;
-                        lc3WriteCharacteristic = null;
-                        Bridge.log("LIVE: ⏭️ Skipping LC3 characteristics - device does not support LC3 audio");
-                    }
+                    // Get LC3 characteristics (always supported)
+                    lc3ReadCharacteristic = service.getCharacteristic(LC3_READ_UUID);
+                    lc3WriteCharacteristic = service.getCharacteristic(LC3_WRITE_UUID);
 
-                    // Check if we have required characteristics based on device capabilities
-                    boolean hasRequiredCharacteristics = (rxCharacteristic != null && txCharacteristic != null);
-                    if (supportsLC3Audio) {
-                        hasRequiredCharacteristics = hasRequiredCharacteristics &&
-                                                   (lc3ReadCharacteristic != null && lc3WriteCharacteristic != null);
-                    }
+                    // Check if we have required characteristics
+                    boolean hasRequiredCharacteristics = (rxCharacteristic != null && txCharacteristic != null) &&
+                                                       (lc3ReadCharacteristic != null && lc3WriteCharacteristic != null);
 
                     if (hasRequiredCharacteristics) {
                         // BLE connection established, but we still need to wait for glasses SOC
-                        if (supportsLC3Audio) {
-                            Bridge.log("LIVE: ✅ Core TX/RX and LC3 TX/RX characteristics found - BLE connection ready");
-                        } else {
-                            Bridge.log("LIVE: ✅ Core TX/RX characteristics found - BLE connection ready (LC3 not supported)");
-                        }
+                        Bridge.log("LIVE: ✅ Core TX/RX and LC3 TX/RX characteristics found - BLE connection ready");
                         Bridge.log("LIVE: 🔄 Waiting for glasses SOC to become ready...");
 
                         // Keep the state as CONNECTING until the glasses SOC responds
@@ -934,14 +925,12 @@ public class MentraLive extends SGCManager {
                         if (txCharacteristic == null) {
                             Log.e(TAG, "TX characteristic (peripheral's RX) not found");
                         }
-                        // Log LC3 characteristic errors only if device should support LC3
-                        if (supportsLC3Audio) {
-                            if (lc3ReadCharacteristic == null) {
-                                Log.e(TAG, "LC3_READ characteristic not found on LC3-capable device");
-                            }
-                            if (lc3WriteCharacteristic == null) {
-                                Log.e(TAG, "LC3_WRITE characteristic not found on LC3-capable device");
-                            }
+                        // Log LC3 characteristic errors
+                        if (lc3ReadCharacteristic == null) {
+                            Log.e(TAG, "LC3_READ characteristic not found");
+                        }
+                        if (lc3WriteCharacteristic == null) {
+                            Log.e(TAG, "LC3_WRITE characteristic not found");
                         }
                         gatt.disconnect();
                     }
@@ -1012,11 +1001,7 @@ public class MentraLive extends SGCManager {
                 Bridge.log("LIVE: Received data on TX characteristic");
             } else if (isLc3ReadCharacteristic) {
                 Bridge.log("LIVE: Received data on LC3_READ characteristic");
-                if (supportsLC3Audio) {
-                    processLc3AudioPacket(characteristic.getValue());
-                } else {
-                    Log.w(TAG, "Received LC3 data on device that doesn't support LC3 audio");
-                }
+                processLc3AudioPacket(characteristic.getValue());
             } else if (isLc3WriteCharacteristic) {
                 Bridge.log("LIVE: Received data on LC3_WRITE characteristic");
             } else {
@@ -1379,10 +1364,6 @@ public class MentraLive extends SGCManager {
 
     public void sendJson(Map<String, Object> jsonOriginal, boolean wakeUp) {
 
-    }
-
-    public void setMicEnabled(boolean enabled) {
-        changeSmartGlassesMicrophoneState(enabled);
     }
 
     /**
@@ -1910,13 +1891,9 @@ public class MentraLive extends SGCManager {
                 // Claim RGB LED control authority
                 sendRgbLedControlAuthority(true);
 
-                // Initialize LC3 audio logging now that glasses are ready (only if supported)
-                if (supportsLC3Audio) {
-                    initializeLc3Logging();
-                    Bridge.log("LIVE: ✅ LC3 audio logging initialized for device");
-                } else {
-                    Bridge.log("LIVE: ⏭️ Skipping LC3 audio logging - device does not support LC3 audio");
-                }
+                // Initialize LC3 audio logging now that glasses are ready
+                initializeLc3Logging();
+                Bridge.log("LIVE: ✅ LC3 audio logging initialized for device");
 
                 // Audio Pairing: Only mark as fully connected if audio is also ready
                 // On Android, CTKD automatically pairs BT Classic when BLE bonds, so audio is always ready
@@ -1973,10 +1950,6 @@ public class MentraLive extends SGCManager {
                     glassesBuildNumberInt = 0;
                     Log.e(TAG, "Failed to parse build number as integer: " + buildNumber);
                 }
-
-                // Determine LC3 audio support: base K900 doesn't support LC3, variants do (local field)
-                supportsLC3Audio = true;
-                Bridge.log("LIVE: 📱 LC3 audio support: " + supportsLC3Audio + " (device: " + deviceModel + ")");
 
                 Bridge.log("LIVE: Glasses Version - App: " + appVersion +
                       ", Build: " + buildNumber +
@@ -2846,7 +2819,7 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    public void changeSmartGlassesMicrophoneState(boolean enable) {
+    public void setMicEnabled(boolean enable) {
         Bridge.log("LIVE: 🎤 Microphone state changed: " + enable);
 
         // Update the microphone state tracker
@@ -3443,7 +3416,7 @@ public class MentraLive extends SGCManager {
             JSONObject cmd = new JSONObject();
             cmd.put("C", "enable_custom_audio_tx");
             JSONObject enableObj = new JSONObject();
-            enableObj.put("enable", true);
+            enableObj.put("enable", enable);
             cmd.put("B", enableObj.toString());
 
             String jsonStr = cmd.toString();
@@ -3604,12 +3577,21 @@ public class MentraLive extends SGCManager {
      * @param enable True to enable rolling recording, false to disable
      */
     public void enableRollingRecording(boolean enable) {
+        rollingRecordingEnabled = enable;
         if (lc3AudioPlayer != null) {
             lc3AudioPlayer.enableRollingRecording(enable);
             Bridge.log("LIVE: 🎙️ Rolling recording " + (enable ? "ENABLED" : "DISABLED"));
         } else {
             Bridge.log("LIVE: ⚠️ Cannot enable rolling recording - LC3 player not initialized");
         }
+    }
+
+    /**
+     * Check if rolling recording is currently enabled.
+     * @return True if rolling recording is enabled, false otherwise.
+     */
+    public boolean isRollingRecordingEnabled() {
+        return rollingRecordingEnabled;
     }
 
     public void requestReadyK900(){
@@ -4891,10 +4873,6 @@ public class MentraLive extends SGCManager {
      * @param lc3Data The raw LC3 encoded audio data (e.g., 400 bytes - 10 frames × 40 bytes per frame).
      */
     public void sendLc3AudioPacket(byte[] lc3Data) {
-        if (!supportsLC3Audio) {
-            Log.w(TAG, "Cannot send LC3 audio packet - device does not support LC3 audio.");
-            return;
-        }
         if (lc3WriteCharacteristic == null) {
             Log.w(TAG, "Cannot send LC3 audio packet, characteristic not available.");
             return;
