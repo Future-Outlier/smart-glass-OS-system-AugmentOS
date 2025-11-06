@@ -111,6 +111,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
       // our custom plugins:
       "./plugins/remove-ipad-orientations.js",
       "./plugins/android.ts",
+      "./modules/core/app.plugin.js",
       // "./plugins/withSplashScreen.ts",
       // library plugins:
       "expo-localization",

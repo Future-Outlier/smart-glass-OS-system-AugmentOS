@@ -1,7 +1,7 @@
 import {
   ConfigPlugin,
   withAppBuildGradle,
-  withSettingsGradle,
+  // withSettingsGradle,
   withGradleProperties,
   withAndroidManifest,
 } from "@expo/config-plugins"
@@ -19,7 +19,7 @@ const withAndroidWorkingConfig: ConfigPlugin = config => {
   config = withAndroidManifestModifications(config)
   config = withXmlResourceFiles(config)
   config = withGradlePropertiesModifications(config)
-  config = withSettingsGradleModifications(config)
+  // config = withSettingsGradleModifications(config)
 
   return config
 }
@@ -393,21 +393,21 @@ function withGradlePropertiesModifications(config: any) {
 /**
  * Modify settings.gradle to include lc3Lib module
  */
-function withSettingsGradleModifications(config: any) {
-  return withSettingsGradle(config, config => {
-    let settingsGradle = config.modResults.contents
+// function withSettingsGradleModifications(config: any) {
+//   return withSettingsGradle(config, config => {
+//     let settingsGradle = config.modResults.contents
 
-    // Add lc3Lib module if not present
-    if (!settingsGradle.includes("include ':lc3Lib'")) {
-      settingsGradle += `
-include ':lc3Lib'
-project(':lc3Lib').projectDir = new File(rootDir, '../modules/core/android/lc3Lib')
-`
-    }
+//     // Add lc3Lib module if not present
+//     if (!settingsGradle.includes("include ':lc3Lib'")) {
+//       settingsGradle += `
+// include ':lc3Lib'
+// project(':lc3Lib').projectDir = new File(rootDir, '../modules/core/android/lc3Lib')
+// `
+//     }
 
-    config.modResults.contents = settingsGradle
-    return config
-  })
-}
+//     config.modResults.contents = settingsGradle
+//     return config
+//   })
+// }
 
 export default withAndroidWorkingConfig
