@@ -1,4 +1,4 @@
-import 'tsx/cjs';
+import "tsx/cjs"
 import {ExpoConfig, ConfigContext} from "@expo/config"
 
 /**
@@ -111,7 +111,12 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
       // our custom plugins:
       "./plugins/remove-ipad-orientations.js",
       "./plugins/android.ts",
-      "./modules/core/app.plugin.js",
+      [
+        "./modules/core/app.plugin.js",
+        {
+          node: true,
+        },
+      ],
       // "./plugins/withSplashScreen.ts",
       // library plugins:
       "expo-localization",
