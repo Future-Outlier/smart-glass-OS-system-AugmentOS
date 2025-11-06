@@ -133,6 +133,7 @@ const en = {
     pairGlasses: "Pair glasses",
     setupWithoutGlasses: "Setup without glasses",
     connectGlasses: "Connect glasses",
+    getSupport: "Get support",
     connectingGlasses: "Connecting glasses...",
     emptyActiveAppListInfo: "Your active apps will appear here.",
     emptyInactiveAppListInfo: "Your inactive apps will appear here.",

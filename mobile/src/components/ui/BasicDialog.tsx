@@ -5,6 +5,7 @@ import {Spacer} from "@/components/ui/Spacer"
 import {PillButton} from "@/components/ignite/PillButton"
 import {Text} from "@/components/ignite/Text"
 import {ThemedStyle} from "@/theme"
+import {Button} from "@/components/ignite"
 
 interface BasicDialogProps {
   title: string
@@ -40,20 +41,8 @@ const BasicDialog = ({
       <Spacer height={theme.spacing.xxl} />
       <View style={themed($actions)}>
         <View style={themed($actions1)}>
-          {leftButtonText && (
-            <PillButton
-              text={leftButtonText}
-              variant="icon"
-              onPress={onLeftPress}
-              buttonStyle={themed($leftButtonStyle)}
-            />
-          )}
-          <PillButton
-            text={rightButtonText}
-            variant="primary"
-            onPress={onRightPress}
-            buttonStyle={themed($rightButtonStyle)}
-          />
+          {leftButtonText && <Button compact={true} preset="alternate" text={leftButtonText} onPress={onLeftPress} />}
+          <Button compact={true} preset="primary" text={rightButtonText} onPress={onRightPress} />
         </View>
       </View>
     </View>
@@ -63,7 +52,8 @@ const BasicDialog = ({
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.primary_foreground,
   borderRadius: spacing.md,
-  // borderWidth: spacing.xxxs,
+  borderWidth: 1,
+  borderColor: colors.border,
   overflow: "hidden",
   elevation: 4,
   justifyContent: "center",

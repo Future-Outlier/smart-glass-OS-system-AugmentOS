@@ -90,6 +90,15 @@ export interface ButtonProps extends PressableProps {
    * Alignment for button text, either "left" or "center"
    */
   textAlignment?: "left" | "center"
+  /**
+   * Whether the button is compact
+   */
+  compact?: boolean
+
+  /**
+   * Whether the button is flex
+   */
+  flex?: boolean
 }
 
 /**
@@ -121,6 +130,8 @@ export function Button(props: ButtonProps) {
     LeftAccessory,
     disabled,
     disabledStyle: $disabledViewStyleOverride,
+    compact = false,
+    flex = false,
     ...rest
   } = props
 
@@ -138,6 +149,8 @@ export function Button(props: ButtonProps) {
       $viewStyleOverride,
       !!pressed && themed([$pressedViewPresets[preset], $pressedViewStyleOverride]),
       !!disabled && $disabledViewStyleOverride,
+      !!compact && $compactViewStyle,
+      !!flex && {flex: 1},
     ]
   }
   /**
@@ -151,6 +164,7 @@ export function Button(props: ButtonProps) {
       $textStyleOverride,
       !!pressed && themed([$pressedTextPresets[preset], $pressedTextStyleOverride]),
       !!disabled && $disabledTextStyleOverride,
+      !!compact && $compactTextStyle,
     ]
   }
 
@@ -162,7 +176,7 @@ export function Button(props: ButtonProps) {
       {...rest}
       disabled={disabled}>
       {state => (
-        <View style={{flex: 1, position: "relative", justifyContent: "center"}}>
+        <View style={{position: "relative", justifyContent: "center"}}>
           {!!LeftAccessory && (
             <View style={{marginLeft: spacing.xxs, position: "absolute", left: 0}}>
               <LeftAccessory style={$leftAccessoryStyle} pressableState={state} disabled={disabled} />
@@ -201,6 +215,14 @@ const $baseViewStyle: ThemedStyle<ViewStyle> = ({spacing, colors, isDark}) => ({
   borderColor: isDark ? undefined : colors.border,
 })
 
+const $compactViewStyle: StyleProp<ViewStyle> = {
+  minHeight: 0,
+  paddingVertical: spacing.s2,
+  paddingHorizontal: spacing.s4,
+  // flex: 1,
+} as ViewStyle
+
+
 const $baseTextStyle: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 16,
   lineHeight: 20,
@@ -210,6 +232,11 @@ const $baseTextStyle: ThemedStyle<TextStyle> = ({colors}) => ({
   zIndex: 2,
   color: colors.textAlt,
 })
+
+const $compactTextStyle: StyleProp<TextStyle> = {
+  fontSize: 14,
+  // width: 60,
+} as TextStyle
 
 const $rightAccessoryStyle: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   marginStart: spacing.xs,

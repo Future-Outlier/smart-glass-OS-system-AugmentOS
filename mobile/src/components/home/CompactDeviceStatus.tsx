@@ -161,19 +161,14 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
         <View
           style={{
             flexDirection: "row",
-            alignItems: "center",
+            // alignItems: "center",
             gap: theme.spacing.sm,
             paddingHorizontal: theme.spacing.md,
           }}>
           {!isSearching ? (
             <>
-              <Button
-                tx="home:getSupport"
-                style={{width: "50%"}}
-                preset="primary"
-                // onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}
-              />
-              <Button tx="home:connectGlasses" style={{flex: 1}} preset="alternate" onPress={connectGlasses} />
+              <Button compact flex tx="home:getSupport" preset="primary" />
+              <Button compact flex tx="home:connectGlasses" preset="alternate" onPress={connectGlasses} />
             </>
           ) : (
             <Button
