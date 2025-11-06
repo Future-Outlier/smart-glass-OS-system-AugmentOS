@@ -393,6 +393,12 @@ func (s *LiveKitBridgeService) PlayAudio(
 	}
 	session := sessionVal.(*RoomSession)
 
+	// If stop_other is true, cancel any ongoing playback first
+	if req.StopOther {
+		log.Printf("StopOther flag set, canceling any ongoing playback for user %s", req.UserId)
+		session.stopPlayback() // Signal cancellation and proceed immediately - no wait!
+	}
+
 	// Send STARTED event
 	if err := stream.Send(&pb.PlayAudioEvent{
 		Type:      pb.PlayAudioEvent_STARTED,
@@ -404,33 +410,42 @@ func (s *LiveKitBridgeService) PlayAudio(
 	// Convert track_id to track name
 	trackName := trackIDToName(req.TrackId)
 
-	// Play audio file (implementation in playback.go)
-	duration, err := s.playAudioFile(req, session, stream, trackName)
-	if err != nil {
-		// Send FAILED event
+	// Play audio file asynchronously - don't block the RPC
+	// This allows multiple audio requests to be in-flight simultaneously
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		duration, err := s.playAudioFile(req, session, stream, trackName)
+		if err != nil {
+			// Send FAILED event
+			stream.Send(&pb.PlayAudioEvent{
+				Type:      pb.PlayAudioEvent_FAILED,
+				RequestId: req.RequestId,
+				Error:     err.Error(),
+			})
+
+			// Close only this specific track on error
+			session.closeTrack(trackName)
+			return
+		}
+
+		// Send COMPLETED event
 		stream.Send(&pb.PlayAudioEvent{
-			Type:      pb.PlayAudioEvent_FAILED,
-			RequestId: req.RequestId,
-			Error:     err.Error(),
+			Type:       pb.PlayAudioEvent_COMPLETED,
+			RequestId:  req.RequestId,
+			DurationMs: duration,
 		})
 
-		// Close only this specific track on error
-		session.closeTrack(trackName)
+		// DON'T close the track after playback - keep it alive for reuse
+		// Tracks are only closed when explicitly stopped via StopAudio or session cleanup
+		// This prevents the "no audio after first play" issue
+		log.Printf("Playback completed for track '%s', keeping track alive for reuse", trackName)
+	}()
 
-		return err
-	}
-
-	// Send COMPLETED event
-	if err := stream.Send(&pb.PlayAudioEvent{
-		Type:       pb.PlayAudioEvent_COMPLETED,
-		RequestId:  req.RequestId,
-		DurationMs: duration,
-	}); err != nil {
-		return err
-	}
-
-	// Close only this specific track after playback to prevent static feedback
-	session.closeTrack(trackName)
+	// Wait for playback to complete before closing the stream
+	// This ensures events can be sent, but doesn't block other audio requests
+	<-done
 
 	return nil
 }
@@ -452,21 +467,17 @@ func (s *LiveKitBridgeService) StopAudio(
 
 	session := sessionVal.(*RoomSession)
 
-	// Cancel playback for all tracks
+	// Cancel any ongoing playback (this stops the audio without closing tracks)
 	session.stopPlayback()
+	log.Printf("Stopped playback for user %s", req.UserId)
 
-	// If track_id is specified, close only that track
-	// Otherwise, close ALL audio tracks (speaker, app_audio, tts)
-	if req.TrackId > 0 {
-		// Close specific track
-		trackName := trackIDToName(req.TrackId)
-		session.closeTrack(trackName)
-	} else {
-		// Close all audio playback tracks (track_id 0, 1, 2)
-		session.closeTrack("speaker")    // track_id 0
-		session.closeTrack("app_audio")  // track_id 1
-		session.closeTrack("tts")        // track_id 2
-	}
+	// NOTE: We do NOT close tracks here anymore!
+	// Tracks should remain alive for reuse to prevent "no audio after stop" issues.
+	// Tracks are only closed during:
+	// 1. Session cleanup (session.Close())
+	// 2. PlayAudio errors
+	//
+	// If you need to explicitly close tracks, use a different RPC or add a flag to this request.
 
 	return &pb.StopAudioResponse{
 		Success:          true,

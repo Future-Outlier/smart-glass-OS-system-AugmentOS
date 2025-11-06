@@ -38,6 +38,8 @@ export interface SpeakOptions {
   }
   /** Volume level 0.0-1.0, defaults to 1.0 */
   volume?: number
+  /** Whether to stop other audio playback, defaults to true */
+  stopOtherAudio?: boolean
 }
 
 /**
@@ -185,27 +187,36 @@ export class AudioManager {
 
   /**
    * 🔇 Stop audio playback on the connected glasses
+   * @param trackId - Optional track ID to stop (0=speaker, 1=app_audio, 2=tts). If omitted, stops all tracks.
    *
    * @example
    * ```typescript
    * // Stop all currently playing audio
    * session.audio.stopAudio();
+   *
+   * // Stop only the speaker track (track_id 0)
+   * session.audio.stopAudio(0);
+   *
+   * // Stop only TTS track (track_id 2)
+   * session.audio.stopAudio(2);
    * ```
    */
-  stopAudio(): void {
+  stopAudio(trackId?: number): void {
     try {
       // Create audio stop request message
       const message: AudioStopRequest = {
         type: AppToCloudMessageType.AUDIO_STOP_REQUEST,
         packageName: this.packageName,
         sessionId: this.sessionId,
+        trackId,
         timestamp: new Date(),
       }
 
       // Send request to cloud (one-way, no response expected)
       this.send(message)
 
-      this.logger.info(`🔇 Audio stop request sent`)
+      const trackInfo = trackId !== undefined ? ` (track ${trackId})` : " (all tracks)"
+      this.logger.info(`🔇 Audio stop request sent${trackInfo}`)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       this.logger.error(`Failed to stop audio: ${errorMessage}`)
@@ -231,6 +242,11 @@ export class AudioManager {
    *     speed: 1.2
    *   },
    *   volume: 0.8
+   * });
+   *
+   * // Play TTS without stopping other audio
+   * const result = await session.audio.speak('Hello, world!', {
+   *   stopOtherAudio: false
    * });
    * ```
    */
@@ -267,16 +283,16 @@ export class AudioManager {
 
     this.logger.info({text, ttsUrl}, `🗣️ Generating speech from text`)
 
-    // Stop all audio from LiveKit bridge before speaking
-    this.stopAudio()
-
-    // Wait a bit to ensure stop command is processed before starting new audio
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    // IMPORTANT: Don't call stopAudio() here - it closes tracks completely!
+    // The backend will handle stopping any ongoing playback when it receives
+    // the new audio play request (via stopOtherAudio flag)
 
     // Use the existing playAudio method to play the TTS audio
+    // The stopOtherAudio flag will cancel ongoing playback without closing tracks
     return this.playAudio({
       audioUrl: ttsUrl,
       volume: options.volume,
+      stopOtherAudio: options.stopOtherAudio ?? true, // This flag tells backend to stop current playback
     })
   }
 

@@ -24,6 +24,7 @@ type RoomSession struct {
 	cancel           context.CancelFunc
 	closeOnce        sync.Once
 	playbackCancel   context.CancelFunc
+	playbackDone     chan struct{} // Signals when playback actually stops
 	mu               sync.RWMutex
 
 	// Connectivity state (tracked for status RPC)
@@ -163,14 +164,27 @@ func (s *RoomSession) closeTrack(trackName string) {
 }
 
 // stopPlayback cancels any ongoing audio playback (does not close tracks)
-func (s *RoomSession) stopPlayback() {
+// Returns a channel that closes when the old playback has actually stopped
+func (s *RoomSession) stopPlayback() <-chan struct{} {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
-	if s.playbackCancel != nil {
-		s.playbackCancel()
-		s.playbackCancel = nil
+	// If no playback is running, return closed channel immediately
+	if s.playbackCancel == nil {
+		s.mu.Unlock()
+		done := make(chan struct{})
+		close(done)
+		return done
 	}
+
+	// Cancel the current playback
+	s.playbackCancel()
+	s.playbackCancel = nil
+
+	// Return the done channel so caller can wait for completion
+	done := s.playbackDone
+	s.mu.Unlock()
+
+	return done
 }
 
 // Close cleans up all resources

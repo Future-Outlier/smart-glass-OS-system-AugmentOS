@@ -154,6 +154,15 @@ export interface AudioPlayRequest extends BaseMessage {
 export interface AudioStopRequest extends BaseMessage {
   type: AppToCloudMessageType.AUDIO_STOP_REQUEST
   packageName: string
+  /**
+   * Track ID to stop (optional)
+   * 0: speaker (default audio playback)
+   * 1: app_audio (app-specific audio)
+   * 2: tts (text-to-speech audio)
+   * If omitted, stops all tracks
+   */
+  trackId?: number
+  sessionId?: string // Session ID for routing
 }
 
 /**
