@@ -10,6 +10,7 @@ import {useGlassesStore} from "@/stores/glasses"
 import {showAlert} from "@/utils/AlertUtils"
 import {router} from "expo-router"
 import Constants from "expo-constants"
+import {shallow} from "zustand/shallow"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -40,22 +41,30 @@ class SocketComms {
       )
 
       // Subscribe to WiFi status changes and send updates to cloud
+      // useGlassesStore.subscribe(
+      //   state => ({
+      //     wifi_connected: state.glasses_wifi_connected,
+      //     wifi_ssid: state.glasses_wifi_ssid,
+      //     connected: state.connected,
+      //   }),
+      //   (wifiInfo, prevWifiInfo) => {
+      //     // Only send update if WiFi status actually changed and glasses are connected
+      //     if (
+      //       wifiInfo.connected &&
+      //       (wifiInfo.wifi_connected !== prevWifiInfo.wifi_connected || wifiInfo.wifi_ssid !== prevWifiInfo.wifi_ssid)
+      //     ) {
+      //       console.log("SOCKET: WiFi status changed, sending update to cloud")
+      //       this.sendGlassesConnectionState(true)
+      //     }
+      //   },
+      // )
+      // Subscribe to wifi info
       useGlassesStore.subscribe(
-        state => ({
-          wifi_connected: state.glasses_wifi_connected,
-          wifi_ssid: state.glasses_wifi_ssid,
-          connected: state.connected,
-        }),
-        (wifiInfo, prevWifiInfo) => {
-          // Only send update if WiFi status actually changed and glasses are connected
-          if (
-            wifiInfo.connected &&
-            (wifiInfo.wifi_connected !== prevWifiInfo.wifi_connected || wifiInfo.wifi_ssid !== prevWifiInfo.wifi_ssid)
-          ) {
-            console.log("SOCKET: WiFi status changed, sending update to cloud")
-            this.sendGlassesConnectionState(true)
-          }
+        state => [state.wifiConnected, state.wifiSsid],
+        ([connected, ssid]) => {
+          console.log("WiFi:", connected ? `Connected to ${ssid}` : "Disconnected")
         },
+        {equalityFn: shallow},
       )
     } catch (error) {
       console.error("SOCKET: Error subscribing to store changes:", error)
@@ -165,8 +174,8 @@ class SocketComms {
 
     // Always include WiFi info - null means "unknown", false means "explicitly disconnected"
     const wifiInfo = {
-      connected: glassesInfo.glasses_wifi_connected ?? null,
-      ssid: glassesInfo.glasses_wifi_ssid ?? null,
+      connected: glassesInfo.wifiConnected ?? null,
+      ssid: glassesInfo.wifiSsid ?? null,
     }
 
     this.ws.sendText(

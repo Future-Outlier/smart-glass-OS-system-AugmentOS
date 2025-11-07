@@ -36,6 +36,7 @@ import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
 import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import CoreModule from "core"
+import {useGlassesStore} from "@/stores/glasses"
 
 // Gallery timing constants
 const TIMING = {
@@ -84,23 +85,12 @@ export function GalleryScreen() {
   const itemWidth = (screenWidth - ITEM_SPACING * (numColumns - 1)) / numColumns
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
   const features = getModelCapabilities(defaultWearable)
+  const hotspotSsid = useGlassesStore(state => state.hotspotSsid)
+  const hotspotPassword = useGlassesStore(state => state.hotspotPassword)
+  const hotspotGatewayIp = useGlassesStore(state => state.hotspotGatewayIp)
+  const hotspotEnabled = useGlassesStore(state => state.hotspotEnabled)
 
   const [networkStatus] = useState<NetworkStatus>(networkConnectivityService.getStatus())
-
-  // Memoize connection values
-  const connectionInfo = useMemo(() => {
-    const glassesInfo = status.glasses_info
-    if (!glassesInfo) return {}
-
-    return {
-      isHotspotEnabled: glassesInfo.glasses_hotspot_enabled,
-      hotspotSsid: glassesInfo.glasses_hotspot_ssid,
-      hotspotPassword: glassesInfo.glasses_hotspot_password,
-      hotspotGatewayIp: glassesInfo.glasses_hotspot_gateway_ip,
-    }
-  }, [status.glasses_info])
-
-  const {hotspotSsid, hotspotPassword, hotspotGatewayIp, isHotspotEnabled} = connectionInfo
 
   // Permission state
   const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState(false)
@@ -999,27 +989,28 @@ export function GalleryScreen() {
 
   // Listen for hotspot ready
   useEffect(() => {
-    const handleHotspotStatusChange = (eventData: any) => {
-      console.log("[GalleryScreen] Received GLASSES_HOTSPOT_STATUS_CHANGE event:", eventData)
+    console.log(
+      "[GalleryScreen] hotspot status changed:",
+      hotspotEnabled,
+      hotspotSsid,
+      hotspotPassword,
+      hotspotGatewayIp,
+    )
 
-      if (!eventData.enabled || !eventData.ssid || !eventData.password || !galleryOpenedHotspotRef.current) {
-        return
-      }
-
-      console.log("[GalleryScreen] Hotspot enabled, waiting for it to become discoverable...")
-      // Wait for hotspot to become fully active and discoverable before attempting connection
-      // On Android 10+, connectToProtectedSSID shows system WiFi picker which needs the network to be broadcasting
-      setTimeout(() => {
-        console.log("[GalleryScreen] Attempting to connect to hotspot...")
-        connectToHotspot(eventData.ssid, eventData.password, eventData.local_ip)
-      }, TIMING.HOTSPOT_CONNECT_DELAY_MS)
+    if (!hotspotEnabled || !hotspotSsid || !hotspotPassword || !galleryOpenedHotspotRef.current) {
+      return
     }
 
-    GlobalEventEmitter.addListener("HOTSPOT_STATUS_CHANGE", handleHotspotStatusChange)
-    return () => {
-      GlobalEventEmitter.removeListener("HOTSPOT_STATUS_CHANGE", handleHotspotStatusChange)
-    }
-  }, [])
+    console.log("[GalleryScreen] Hotspot enabled, waiting for it to become discoverable...")
+    // Wait for hotspot to become fully active and discoverable before attempting connection
+    // On Android 10+, connectToProtectedSSID shows system WiFi picker which needs the network to be broadcasting
+    setTimeout(() => {
+      console.log("[GalleryScreen] Attempting to connect to hotspot...")
+      connectToHotspot(hotspotSsid, hotspotPassword, hotspotGatewayIp)
+    }, TIMING.HOTSPOT_CONNECT_DELAY_MS)
+
+    return () => {}
+  }, [hotspotEnabled, hotspotSsid, hotspotPassword, hotspotGatewayIp])
 
   // Monitor phone SSID
   useEffect(() => {
