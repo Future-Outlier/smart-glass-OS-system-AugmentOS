@@ -631,6 +631,28 @@ class CoreManager {
                     handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
                 }
             }
+            "phone_call_active" -> {
+                // Tried to start recording while phone call already active
+                Bridge.log("MAN: Phone call already active - marking onboard mic as unavailable")
+                onboardMicUnavailable = true
+                if (micSourceUsesPhone()) {
+                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+                }
+            }
+            "audio_focus_denied" -> {
+                // Another app has audio focus
+                Bridge.log("MAN: Audio focus denied - marking onboard mic as unavailable")
+                onboardMicUnavailable = true
+                if (micSourceUsesPhone()) {
+                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+                }
+            }
+            "permission_denied" -> {
+                // Microphone permission not granted
+                Bridge.log("MAN: Microphone permission denied - cannot use phone mic")
+                onboardMicUnavailable = true
+                // Don't trigger fallback - need to request permission from user
+            }
             else -> {
                 // Other route changes (headset plug/unplug, BT connect/disconnect, etc.)
                 // Just log for now - may want to handle these in the future
