@@ -1,7 +1,6 @@
 import {Button, Header, Screen} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {$styles, ThemedStyle} from "@/theme"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {Ionicons, MaterialIcons} from "@expo/vector-icons"
@@ -10,6 +9,7 @@ import {useLocalSearchParams, router} from "expo-router"
 import {useEffect, useRef, useState, useCallback} from "react"
 import {ActivityIndicator, TextStyle, View, ViewStyle} from "react-native"
 import {Text} from "@/components/ignite"
+import {useGlassesStore} from "@/stores/glasses"
 
 export default function WifiConnectingScreen() {
   const params = useLocalSearchParams()
@@ -26,48 +26,12 @@ export default function WifiConnectingScreen() {
   const connectionTimeoutRef = useRef<number | null>(null)
   const failureGracePeriodRef = useRef<number | null>(null)
   const {goBack, navigate} = useNavigationHistory()
+  const wifiConnected = useGlassesStore(state => state.wifiConnected)
+  const wifiSsid = useGlassesStore(state => state.wifiSsid)
 
   useEffect(() => {
     // Start connection attempt
     attemptConnection()
-
-    const handleWifiStatusChange = (data: {connected: boolean; ssid?: string}) => {
-      console.log("WiFi connection status changed:", data)
-
-      if (connectionTimeoutRef.current) {
-        clearTimeout(connectionTimeoutRef.current)
-        connectionTimeoutRef.current = null
-      }
-
-      if (data.connected && data.ssid === ssid) {
-        // Clear any failure grace period if it exists
-        if (failureGracePeriodRef.current) {
-          clearTimeout(failureGracePeriodRef.current)
-          failureGracePeriodRef.current = null
-        }
-
-        // Save credentials ONLY on successful connection if checkbox was checked
-        // This ensures we never save wrong passwords
-        if (password && rememberPassword) {
-          WifiCredentialsService.saveCredentials(ssid, password, true)
-          WifiCredentialsService.updateLastConnected(ssid)
-        }
-
-        setConnectionStatus("success")
-        // Don't show banner anymore since we have a dedicated success screen
-        // User will manually dismiss with Done button
-      } else if (!data.connected && connectionStatus === "connecting") {
-        // Set up 5-second grace period before showing failure
-        failureGracePeriodRef.current = setTimeout(() => {
-          console.log("#$%^& Failed to connect to the network. Please check your password and try again.")
-          setConnectionStatus("failed")
-          setErrorMessage("Failed to connect to the network. Please check your password and try again.")
-          failureGracePeriodRef.current = null
-        }, 10000)
-      }
-    }
-
-    GlobalEventEmitter.on("WIFI_STATUS_CHANGE", handleWifiStatusChange)
 
     return () => {
       if (connectionTimeoutRef.current) {
@@ -78,9 +42,44 @@ export default function WifiConnectingScreen() {
         clearTimeout(failureGracePeriodRef.current)
         failureGracePeriodRef.current = null
       }
-      GlobalEventEmitter.removeListener("WIFI_STATUS_CHANGE", handleWifiStatusChange)
     }
   }, [ssid])
+
+  useEffect(() => {
+    console.log("WiFi connection status changed:", wifiConnected, wifiSsid)
+
+    if (connectionTimeoutRef.current) {
+      clearTimeout(connectionTimeoutRef.current)
+      connectionTimeoutRef.current = null
+    }
+
+    if (wifiConnected && wifiSsid === ssid) {
+      // Clear any failure grace period if it exists
+      if (failureGracePeriodRef.current) {
+        clearTimeout(failureGracePeriodRef.current)
+        failureGracePeriodRef.current = null
+      }
+
+      // Save credentials ONLY on successful connection if checkbox was checked
+      // This ensures we never save wrong passwords
+      if (password && rememberPassword) {
+        WifiCredentialsService.saveCredentials(ssid, password, true)
+        WifiCredentialsService.updateLastConnected(ssid)
+      }
+
+      setConnectionStatus("success")
+      // Don't show banner anymore since we have a dedicated success screen
+      // User will manually dismiss with Done button
+    } else if (!wifiConnected && connectionStatus === "connecting") {
+      // Set up 5-second grace period before showing failure
+      failureGracePeriodRef.current = setTimeout(() => {
+        console.log("#$%^& Failed to connect to the network. Please check your password and try again.")
+        setConnectionStatus("failed")
+        setErrorMessage("Failed to connect to the network. Please check your password and try again.")
+        failureGracePeriodRef.current = null
+      }, 10000)
+    }
+  }, [wifiConnected, wifiSsid])
 
   const attemptConnection = async () => {
     try {
@@ -240,10 +239,6 @@ export default function WifiConnectingScreen() {
     </Screen>
   )
 }
-
-const $container: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-})
 
 const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,

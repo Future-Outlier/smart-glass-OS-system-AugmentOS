@@ -92,20 +92,23 @@ export default function WifiScanScreen() {
 
       // Handle network results - replace on first result of new session, append on subsequent
       setNetworks(prevNetworks => {
+        console.log("🎯 Current scan session ID:", currentScanSessionRef.current)
         console.log(
-          "🎯 Previous networks:",
+          "🎯 Previous networks count:",
+          prevNetworks.length,
+          "SSIDs:",
           prevNetworks.map(n => n.ssid),
         )
-        console.log("🎯 Received results for current session:", receivedResultsForSessionRef.current)
+        console.log("🎯 Is first result of this scan session?", !receivedResultsForSessionRef.current)
 
         let baseNetworks: NetworkInfo[]
         if (receivedResultsForSessionRef.current) {
           // This is additional results from the same scan session - append
-          console.log("🎯 Appending to existing networks from current session")
+          console.log("🎯 APPENDING: Adding to existing networks from current scan session")
           baseNetworks = prevNetworks
         } else {
           // This is the first result of a new scan session - replace
-          console.log("🎯 Starting fresh with new scan session results")
+          console.log("🎯 REPLACING: Starting fresh with new scan session results")
           baseNetworks = []
         }
 
@@ -119,7 +122,9 @@ export default function WifiScanScreen() {
         })
         const newNetworks = Array.from(existingMap.values())
         console.log(
-          "🎯 Updated networks list:",
+          "🎯 Final networks count:",
+          newNetworks.length,
+          "SSIDs:",
           newNetworks.map(n => `${n.ssid} (${n.requiresPassword ? "secured" : "open"})`),
         )
         return newNetworks
@@ -128,6 +133,7 @@ export default function WifiScanScreen() {
       // Mark that we've received results for the current session
       receivedResultsForSessionRef.current = true
       setIsScanning(false)
+      console.log("🎯 Marked receivedResultsForSessionRef as true for this session")
       console.log("🎯 ========= END SCAN.TSX WIFI RESULTS =========")
     }
 
@@ -144,13 +150,21 @@ export default function WifiScanScreen() {
   }, [])
 
   const startScan = async () => {
+    console.log("🔄 ========= STARTING NEW WIFI SCAN =========")
+    console.log("🔄 Resetting scan session state...")
+
     setIsScanning(true)
     // Start a new scan session - results from this session will replace previous networks
     currentScanSessionRef.current = Date.now()
     receivedResultsForSessionRef.current = false
 
-    // Don't clear networks immediately - let the user see existing results while scanning
-    // Networks will be refreshed when new results arrive
+    console.log("🔄 New scan session ID:", currentScanSessionRef.current)
+    console.log("🔄 receivedResultsForSessionRef reset to:", receivedResultsForSessionRef.current)
+    console.log("🔄 ========= END START SCAN SETUP =========")
+
+    // Clear the networks list immediately when starting a new scan
+    // This ensures users see fresh results, not old ones
+    setNetworks([])
 
     // Clear any existing timeout
     if (scanTimeoutRef.current) {
@@ -174,6 +188,7 @@ export default function WifiScanScreen() {
 
     try {
       await CoreModule.requestWifiScan()
+      console.log("🔄 WiFi scan request sent successfully")
     } catch (error) {
       console.error("Error scanning for WiFi networks:", error)
       if (scanTimeoutRef.current) {
@@ -231,7 +246,7 @@ export default function WifiScanScreen() {
           <>
             <FlatList
               data={networks}
-              keyExtractor={(item, index) => `network-${index}`}
+              keyExtractor={item => `network-${item.ssid}`}
               renderItem={({item}) => {
                 const isConnected = isWifiConnected && currentWifi === item.ssid
                 const isSaved = savedNetworks.includes(item.ssid)
@@ -296,15 +311,8 @@ export default function WifiScanScreen() {
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = () => ({
+const $content: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
-})
-
-const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  // padding: spacing.lg,
-  // marginHorizontal: -spacing.s6,
-  // paddingHorizontal: spacing.s6,
 })
 
 const $loadingContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
