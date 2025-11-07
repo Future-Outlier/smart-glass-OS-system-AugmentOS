@@ -142,8 +142,8 @@ export function AuthProvider({
     try {
       console.log("Exchanging temporary token...");
       const response = await axios.post(
-        `${CORE_API_URL}/auth/exchange-temporary-token`,
-        { token: tempToken, packageName: STORE_PACKAGE_NAME },
+        `${CORE_API_URL}/auth/exchange-store-token`,
+        { aos_temp_token: tempToken, packageName: STORE_PACKAGE_NAME },
         { headers: { "Content-Type": "application/json" } },
       );
 
