@@ -104,6 +104,11 @@ export interface ButtonProps extends PressableProps {
    * Whether the button is flex container
    */
   flexContainer?: boolean
+
+  /**
+   * Whether the button is compact icon
+   */
+  compactIcon?: boolean
 }
 
 /**
@@ -138,6 +143,7 @@ export function Button(props: ButtonProps) {
     compact = false,
     flex = false,
     flexContainer = true,
+    compactIcon = false,
     ...rest
   } = props
 
@@ -155,8 +161,9 @@ export function Button(props: ButtonProps) {
       $viewStyleOverride,
       !!pressed && themed([$pressedViewPresets[preset], $pressedViewStyleOverride]),
       !!disabled && $disabledViewStyleOverride,
-      !!compact && $compactViewStyle,
       !!flex && {flex: 1},
+      (!!compact || !!compactIcon) && $compactViewStyle,
+      !!compactIcon && $compactIconStyle,
     ]
   }
   /**
@@ -210,7 +217,7 @@ export function Button(props: ButtonProps) {
 
 const $baseViewStyle: ThemedStyle<ViewStyle> = ({spacing, colors, isDark}) => ({
   minHeight: 44,
-  borderRadius: 30,
+  borderRadius: 50,
   justifyContent: "center",
   alignItems: "center",
   paddingVertical: spacing.sm,
@@ -223,9 +230,14 @@ const $baseViewStyle: ThemedStyle<ViewStyle> = ({spacing, colors, isDark}) => ({
 
 const $compactViewStyle: StyleProp<ViewStyle> = {
   minHeight: 0,
+  maxHeight: 36,
   paddingVertical: spacing.s2,
-  paddingHorizontal: spacing.s4,
+  paddingHorizontal: spacing.s2,
   // flex: 1,
+} as ViewStyle
+
+const $compactIconStyle: StyleProp<ViewStyle> = {
+  maxWidth: 36,
 } as ViewStyle
 
 const $baseTextStyle: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -235,12 +247,11 @@ const $baseTextStyle: ThemedStyle<TextStyle> = ({colors}) => ({
   flexShrink: 1,
   flexGrow: 0,
   zIndex: 2,
-  color: colors.textAlt,
+  color: colors.primary_foreground,
 })
 
 const $compactTextStyle: StyleProp<TextStyle> = {
   fontSize: 14,
-  // width: 60,
 } as TextStyle
 
 const $rightAccessoryStyle: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
