@@ -29,40 +29,11 @@ class SocketComms {
     })
 
     try {
-      // Subscribe to changes in default_wearable and call sendGlassesConnectionState() when it updates:
-      useSettingsStore.subscribe(
-        state => state.settings[SETTINGS_KEYS.default_wearable],
-        (modelName: string) => {
-          // TODO: get the connection state from mantlemanager or something
-          if (modelName != "") {
-            this.sendGlassesConnectionState(true)
-          }
-        },
-      )
-
-      // Subscribe to WiFi status changes and send updates to cloud
-      // useGlassesStore.subscribe(
-      //   state => ({
-      //     wifi_connected: state.glasses_wifi_connected,
-      //     wifi_ssid: state.glasses_wifi_ssid,
-      //     connected: state.connected,
-      //   }),
-      //   (wifiInfo, prevWifiInfo) => {
-      //     // Only send update if WiFi status actually changed and glasses are connected
-      //     if (
-      //       wifiInfo.connected &&
-      //       (wifiInfo.wifi_connected !== prevWifiInfo.wifi_connected || wifiInfo.wifi_ssid !== prevWifiInfo.wifi_ssid)
-      //     ) {
-      //       console.log("SOCKET: WiFi status changed, sending update to cloud")
-      //       this.sendGlassesConnectionState(true)
-      //     }
-      //   },
-      // )
       // Subscribe to wifi info
       useGlassesStore.subscribe(
-        state => [state.wifiConnected, state.wifiSsid],
-        ([connected, ssid]) => {
-          console.log("WiFi:", connected ? `Connected to ${ssid}` : "Disconnected")
+        state => ({glassesConnected: state.connected, wifiConnected: state.wifiConnected, wifiSsid: state.wifiSsid}),
+        _state => {
+          this.sendGlassesConnectionState()
         },
         {equalityFn: shallow},
       )
@@ -168,7 +139,7 @@ class SocketComms {
     }
   }
 
-  sendGlassesConnectionState(connected: boolean): void {
+  sendGlassesConnectionState(): void {
     let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
     const glassesInfo = useGlassesStore.getState()
 
@@ -177,6 +148,8 @@ class SocketComms {
       connected: glassesInfo.wifiConnected ?? null,
       ssid: glassesInfo.wifiSsid ?? null,
     }
+
+    const connected = glassesInfo.connected
 
     this.ws.sendText(
       JSON.stringify({
