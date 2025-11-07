@@ -72,28 +72,6 @@ public class WifiCommandHandler implements ICommandHandler {
             if (!ssid.isEmpty()) {
                 INetworkManager networkManager = serviceManager.getNetworkManager();
                 if (networkManager != null) {
-                    // Check if we're already connected to a different network
-                    String currentSsid = networkManager.getCurrentWifiSsid();
-                    boolean isConnected = networkManager.isConnectedToWifi();
-
-                    Log.d(TAG, "📶 Current WiFi state - Connected: " + isConnected + ", SSID: " + currentSsid);
-                    Log.d(TAG, "📶 Requested WiFi - SSID: " + ssid);
-
-                    // If connected to a different network, disconnect first
-                    if (isConnected && !currentSsid.isEmpty() && !currentSsid.equals(ssid)) {
-                        Log.d(TAG, "📶 Already connected to different network (" + currentSsid + "), disconnecting first...");
-                        networkManager.disconnectFromWifi();
-
-                        // Wait a moment for disconnect to complete
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e) {
-                            Log.w(TAG, "Sleep interrupted while waiting for disconnect", e);
-                        }
-                    }
-
-                    // Now connect to the new network
-                    Log.d(TAG, "📶 Connecting to WiFi: " + ssid);
                     networkManager.connectToWifi(ssid, password);
                     serviceManager.initializeCameraWebServer();
                     return true;
