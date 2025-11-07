@@ -101,7 +101,7 @@ export default function DataExportPage() {
     <Screen preset="fixed" style={themed($container)}>
       <Header
         title="Data Export"
-        leftIcon="caretLeft"
+        leftIcon="arrow-left"
         onLeftPress={goBack}
         rightIcon={!loading ? "more" : undefined}
         rightIconColor={theme.colors.text}

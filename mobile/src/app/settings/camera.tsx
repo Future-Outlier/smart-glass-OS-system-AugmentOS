@@ -1,11 +1,10 @@
 import {View, ScrollView, TouchableOpacity, Platform} from "react-native"
-import {Text} from "@/components/ignite"
+import {Icon, Text} from "@/components/ignite"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import bridge from "@/bridge/MantleBridge"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {spacing, ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle} from "react-native"
-import {MaterialCommunityIcons} from "@expo/vector-icons"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import ToggleSetting from "@/components/settings/ToggleSetting"
@@ -162,7 +161,7 @@ export default function CameraSettingsScreen() {
                 ]}
                 onPress={() => handlePhotoSizeChange(value as PhotoSize)}>
                 <Text style={themed($optionText)}>{label}</Text>
-                {photoSize === value && <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />}
+                {photoSize === value && <Icon name="check" size={24} color={theme.colors.primary} />}
               </TouchableOpacity>
             )
           })}
@@ -192,7 +191,7 @@ export default function CameraSettingsScreen() {
                 onPress={() => handleVideoResolutionChange(value as VideoResolution)}>
                 <Text style={themed($optionText)}>{label}</Text>
                 {videoResolution === value && (
-                  <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                  <Icon name="check" size={24} color={theme.colors.primary} />
                 )}
               </TouchableOpacity>
             )
@@ -225,7 +224,7 @@ export default function CameraSettingsScreen() {
                   onPress={() => handleMaxRecordingTimeChange(value as MaxRecordingTime)}>
                   <Text style={themed($optionText)}>{label}</Text>
                   {maxRecordingTime === parseInt(value.replace("m", "")) && (
-                    <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                    <Icon name="check" size={24} color={theme.colors.primary} />
                   )}
                 </TouchableOpacity>
               )

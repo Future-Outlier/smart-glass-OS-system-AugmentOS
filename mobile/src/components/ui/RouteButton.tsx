@@ -1,6 +1,6 @@
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {Text} from "@/components/ignite"
+import {Icon, Text} from "@/components/ignite"
 import {ArrowLeftIcon} from "assets/icons/component/ArrowLeftIcon"
 
 import {router as _router} from "expo-router"
@@ -77,7 +77,7 @@ export function RouteButton({label, subtitle, onPress, style, text, icon}: Route
           </View>
           {onPress && (
             <View style={themed($iconContainer)}>
-              <ArrowLeftIcon size={24} color={theme.colors.text} />
+              <Icon name="arrow-right" size={24} color={theme.colors.foreground} />
             </View>
           )}
           {text && <Text style={themed($text)}>{text}</Text>}
@@ -111,13 +111,12 @@ const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   width: spacing.xxl,
   height: spacing.xxl,
   borderRadius: spacing.xxl,
-  transform: [{scaleX: -1}],
   alignItems: "center",
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors}) => ({
   fontWeight: 600,
-  color: colors.text,
+  color: colors.secondary_foreground,
   fontSize: 14,
 })
 

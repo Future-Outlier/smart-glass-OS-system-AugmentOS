@@ -1,16 +1,13 @@
-import {Text} from "@/components/ignite"
+import {Icon, IconTypes, Text} from "@/components/ignite"
 import {translate} from "@/i18n"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import HomeIcon from "assets/icons/navbar/HomeIcon"
-import StoreIcon from "assets/icons/navbar/StoreIcon"
-import UserIcon from "assets/icons/navbar/UserIcon"
 import {TabList, Tabs, TabSlot, TabTrigger, TabTriggerSlotProps} from "expo-router/ui"
 import {Pressable, TextStyle, View, ViewStyle} from "react-native"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 type TabButtonProps = TabTriggerSlotProps & {
-  icon: React.ComponentType<{size: number; color: string}>
+  iconName: IconTypes
   label: string
 }
 
@@ -18,15 +15,15 @@ export default function Layout() {
   const {theme, themed} = useAppTheme()
   const {bottom} = useSafeAreaInsets()
 
-  function TabButton({icon: Icon, isFocused, label, ...props}: TabButtonProps) {
+  function TabButton({iconName, isFocused, label, ...props}: TabButtonProps) {
     // const iconColor = isFocused ? theme.colors.primary : theme.colors.textDim
-    const iconColor = isFocused ? theme.colors.textAlt : theme.colors.textDim
-    const textColor = isFocused ? theme.colors.text : theme.colors.textDim
+    const iconColor = isFocused ? theme.colors.background : theme.colors.muted_foreground
+    const textColor = isFocused ? theme.colors.secondary_foreground : theme.colors.muted_foreground
     const iconBgColor = isFocused ? theme.colors.primary : theme.colors.background
     return (
       <Pressable {...props} style={[themed($tabButton), {marginBottom: bottom}]}>
         <View style={[themed($icon), {backgroundColor: iconBgColor}]}>
-          <Icon size={26} color={iconColor} />
+          <Icon name={iconName} size={24} color={iconColor} />
         </View>
         <Text text={label} style={[themed($tabLabel), {color: textColor}]} />
       </Pressable>
@@ -38,16 +35,13 @@ export default function Layout() {
       <TabSlot />
       <TabList style={themed($tabList)}>
         <TabTrigger name="home" href="/home" style={themed($tabTrigger)} asChild>
-          <TabButton icon={HomeIcon} label={translate("navigation:home")} />
+          <TabButton iconName="home" label={translate("navigation:home")} />
         </TabTrigger>
-        {/*<TabTrigger name="glasses" href="/glasses" style={themed($tabTrigger)} asChild>
-          <TabButton icon={SolarLineIconsSet4} label={translate("navigation:glasses")} />
-        </TabTrigger>*/}
         <TabTrigger name="store" href="/store" style={themed($tabTrigger)} asChild>
-          <TabButton icon={StoreIcon} label={translate("navigation:store")} />
+          <TabButton iconName="shopping-bag" label={translate("navigation:store")} />
         </TabTrigger>
         <TabTrigger name="account" href="/account" style={themed($tabTrigger)} asChild>
-          <TabButton icon={UserIcon} label={translate("navigation:account")} />
+          <TabButton iconName={"user-round-filled"} label={translate("navigation:account")} />
         </TabTrigger>
       </TabList>
     </Tabs>

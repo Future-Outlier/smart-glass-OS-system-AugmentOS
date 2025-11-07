@@ -1,7 +1,6 @@
 import {Icon, Text} from "@/components/ignite"
 import {useState} from "react"
 import {ActivityIndicator, Image, ImageStyle, TextStyle, View, ViewStyle} from "react-native"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
 import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
@@ -127,8 +126,8 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
     return (
       <View style={[themed($disconnectedContainer), style]}>
         <View style={themed($header)}>
-          <Text style={themed($headerText)}>{defaultWearable}</Text>
-          <MaterialCommunityIcons name="bluetooth" size={18} color={theme.colors.destructive} />
+          <Text style={themed($headerText)} text={defaultWearable} />
+          <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
         </View>
 
         <View style={[themed($sideBySideContainer)]}>
@@ -138,7 +137,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             flexContainer={false}
             preset="alternate"
             onPress={() => push("/settings/glasses")}>
-            <Icon icon="settings" size={20} color={theme.colors.foreground} />
+            <Icon name="settings" size={20} color={theme.colors.foreground} />
           </Button>
         </View>
 
@@ -158,7 +157,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           ) : (
             <>
               <Button compactIcon flexContainer={false} preset="alternate" onPress={handleConnectOrDisconnect}>
-                <Icon icon="x" size={20} color={theme.colors.foreground} />
+                <Icon name="x" size={20} color={theme.colors.foreground} />
               </Button>
               <Button
                 flex
@@ -196,7 +195,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             <Image source={getCurrentGlassesImage()} style={[themed($glassesImage), {width: 54, maxHeight: 24}]} />
             <Text style={themed($headerText)}>{defaultWearable}</Text>
           </View>
-          <MaterialCommunityIcons name="bluetooth" size={18} color={theme.colors.textDim} />
+          {/* <Icon icon="bluetooth-connected" size={18} color={theme.colors.textDim} /> */}
         </View>
         <View style={{marginHorizontal: -theme.spacing.s6}}>
           <ConnectedSimulatedGlassesInfo showHeader={false} mirrorStyle={{backgroundColor: theme.colors.background}} />
@@ -206,10 +205,10 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             flexContainer={false}
             preset="alternate"
             onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}>
-            <Icon icon="caretLeft" size={18} color={theme.colors.foreground} />
+            <Icon name="caretLeft" size={18} color={theme.colors.foreground} />
           </Button>
           <Button flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
-            <Icon icon="settings" size={18} color={theme.colors.foreground} />
+            <Icon name="settings" size={18} color={theme.colors.foreground} />
           </Button>
         </View>
       </View>
@@ -220,7 +219,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
     <View style={[themed($container), style]}>
       <View style={themed($header)}>
         <Text style={themed($headerText)}>{defaultWearable}</Text>
-        <MaterialCommunityIcons name="bluetooth" size={20} color={theme.colors.textDim} />
+        <Icon name="bluetooth-connected" size={18} color={theme.colors.foreground} />
       </View>
       <View style={[themed($imageContainer), {paddingVertical: theme.spacing.s6}]}>
         <Image source={getCurrentGlassesImage()} style={themed($glassesImage)} />
@@ -275,7 +274,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}
           />
           <Button flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
-            <Icon icon="settings" size={20} color={theme.colors.foreground} />
+            <Icon name="settings" size={18} color={theme.colors.foreground} />
           </Button>
         </View>
       </View>

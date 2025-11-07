@@ -174,7 +174,7 @@ export function Header(props: HeaderProps) {
 
   const titleContent = titleTx ? translate(titleTx, titleTxOptions) : title
 
-  const {theme} = useAppTheme()
+  // const {theme} = useAppTheme()
 
   return (
     <View style={[$container, $containerInsets, {backgroundColor}, $containerStyleOverride]}>
@@ -257,10 +257,10 @@ function HeaderAction(props: HeaderActionProps) {
     return (
       <PressableIcon
         size={24}
-        icon={icon}
+        name={icon}
         color={iconColor}
         onPress={onPress}
-        containerStyle={themed([$actionIconContainer, {backgroundColor: theme.colors.primary_foreground, borderRadius: theme.spacing.xxxl, width: 40, height: 40 }])}
+        containerStyle={themed([$actionIconContainer, {backgroundColor: theme.colors.primary_foreground, borderRadius: theme.spacing.s10, width: 40, height: 40 }])}
         style={isRTL ? {transform: [{rotate: "180deg"}]} : {}}
       />
     )

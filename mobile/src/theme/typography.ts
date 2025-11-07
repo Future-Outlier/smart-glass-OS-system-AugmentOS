@@ -16,7 +16,8 @@ export const customFontsToLoad = {
   spaceGroteskMedium,
   spaceGroteskSemiBold,
   spaceGroteskBold,
-  glassesMirror: require("../../assets/fonts/glassesmirror.ttf"),
+  glassesMirror: require("@assets/fonts/glassesmirror.ttf"),
+  tablerIcons: require("@assets/icons/tabler/tabler-icons.ttf"),
 }
 
 const fonts = {

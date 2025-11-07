@@ -1,5 +1,5 @@
 import {ProfileCard} from "@/components/account/ProfileCard"
-import {Header, Screen, Text} from "@/components/ignite"
+import {Header, Icon, Screen, Text} from "@/components/ignite"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
@@ -15,7 +15,6 @@ import {useRef} from "react"
 import {Platform, View, ViewStyle} from "react-native"
 import {ScrollView} from "react-native-gesture-handler"
 import Toast from "react-native-toast-message"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
 export default function AccountPage() {
   const {theme, themed} = useAppTheme()
@@ -83,13 +82,13 @@ export default function AccountPage() {
         <View style={{flex: 1, gap: theme.spacing.lg}}>
           <Group title={translate("account:accountSettings")}>
             <RouteButton
-              icon={<UserIcon color={theme.colors.secondary_foreground} size={theme.spacing.lg} />}
+              icon={<Icon name="circle-user" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:profileSettings")}
               onPress={() => push("/settings/profile")}
             />
             <RouteButton
               icon={
-                <MaterialCommunityIcons name="message-outline" size={24} color={theme.colors.secondary_foreground} />
+                <Icon name="message-2-star" size={24} color={theme.colors.secondary_foreground} />
               }
               label={translate("settings:feedback")}
               onPress={() => push("/settings/feedback")}
@@ -99,7 +98,7 @@ export default function AccountPage() {
           {defaultWearable && (
             <Group title={translate("account:deviceSettings")}>
               <RouteButton
-                icon={<SolarLineIconsSet4 color={theme.colors.secondary_foreground} size={theme.spacing.lg} />}
+                icon={<Icon name="glasses" color={theme.colors.secondary_foreground} size={24} />}
                 label={defaultWearable}
                 onPress={() => push("/settings/glasses")}
               />
@@ -108,28 +107,28 @@ export default function AccountPage() {
 
           <Group title={translate("account:appSettings")}>
             <RouteButton
-              icon={<MaterialCommunityIcons name="palette" size={24} color={theme.colors.secondary_foreground} />}
+              icon={<Icon name="sun" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:appAppearance")}
               onPress={() => push("/settings/theme")}
             />
             {Platform.OS === "android" && (
               <RouteButton
-                icon={<MaterialCommunityIcons name="bell" size={24} color={theme.colors.secondary_foreground} />}
+                icon={<Icon name="bell" size={24} color={theme.colors.secondary_foreground} />}
                 label="Notification Settings"
                 onPress={() => push("/settings/notifications")}
               />
             )}
             <RouteButton
               icon={
-                <MaterialCommunityIcons name="microphone-outline" size={24} color={theme.colors.secondary_foreground} />
+                <Icon name="file-type-2" size={24} color={theme.colors.secondary_foreground} />
               }
               label={translate("settings:transcriptionSettings")}
               onPress={() => push("/settings/transcription")}
             />
             <RouteButton
               icon={
-                <MaterialCommunityIcons
-                  name="shield-lock-outline"
+                <Icon
+                  name="shield-lock"
                   size={24}
                   color={theme.colors.secondary_foreground}
                 />
@@ -142,7 +141,7 @@ export default function AccountPage() {
           <Group title={translate("deviceSettings:advancedSettings")}>
             {devMode && (
               <RouteButton
-                icon={<MaterialCommunityIcons name="bug-outline" size={24} color={theme.colors.secondary_foreground} />}
+                icon={<Icon name="user-code" size={24} color={theme.colors.secondary_foreground} />}
                 label={translate("settings:developerSettings")}
                 onPress={() => push("/settings/developer")}
               />

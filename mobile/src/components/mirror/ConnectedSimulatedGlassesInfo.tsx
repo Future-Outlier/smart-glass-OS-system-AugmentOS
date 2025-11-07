@@ -6,9 +6,7 @@ import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useCameraPermissions} from "expo-camera"
 import {Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import {Button, Text} from "@/components/ignite"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
+import {Button, Icon, Text} from "@/components/ignite"
 
 export default function ConnectedSimulatedGlassesInfo({
   style,
@@ -76,7 +74,7 @@ export default function ConnectedSimulatedGlassesInfo({
         <View style={themed($header)}>
           <Text style={themed($title)} tx="home:simulatedGlasses" />
           <Button flex={false} flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
-            <MaterialCommunityIcons name="cog" size={20} color={theme.colors.secondary_foreground} />
+            <Icon name="settings" size={18} color={theme.colors.secondary_foreground} />
           </Button>
         </View>
       )}

@@ -1,13 +1,16 @@
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {checkFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
 import {useFocusEffect} from "@react-navigation/native"
 import NotificationOn from "assets/icons/component/NotificationOn"
 import {useCallback, useState} from "react"
 import {Platform, TouchableOpacity} from "react-native"
+// import {Icon} from "@/components/ignite"
 
 export default function PermissionsWarning() {
   const [hasMissingPermissions, setHasMissingPermissions] = useState(false)
   const {push} = useNavigationHistory()
+  // const {theme} = useAppTheme()
 
   const handleBellPress = () => {
     push("/settings/privacy")
@@ -36,6 +39,7 @@ export default function PermissionsWarning() {
       {hasMissingPermissions && (
         <TouchableOpacity onPress={handleBellPress}>
           <NotificationOn />
+          {/* <Icon name="bell" size={24} color={theme.colors.icon} /> */}
         </TouchableOpacity>
       )}
     </>

@@ -243,7 +243,7 @@ export default function ProfileSettingsPage() {
 
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header title={translate("profileSettings:title")} leftIcon="caretLeft" onLeftPress={goBack} />
+      <Header title={translate("profileSettings:title")} leftIcon="arrow-left" onLeftPress={goBack} />
       <ScrollView>
         {loading ? (
           <ActivityIndicator size="large" color={theme.colors.palette.primary500} />

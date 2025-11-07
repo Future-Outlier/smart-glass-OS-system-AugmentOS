@@ -1,7 +1,6 @@
 import {View, TouchableOpacity, ViewStyle} from "react-native"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {
@@ -11,7 +10,7 @@ import {
   useStopAllApplets,
   useStopApplet,
 } from "@/stores/applets"
-// import {useAppStatus} from "@/contexts/AppletStatusProvider"
+import { Icon } from "@/components/ignite"
 
 export const OfflineModeButton: React.FC = () => {
   const {theme, themed} = useAppTheme()
@@ -58,7 +57,7 @@ export const OfflineModeButton: React.FC = () => {
   return (
     <View style={themed($container)}>
       <TouchableOpacity onPress={handlePress} style={themed($button)}>
-        <MaterialCommunityIcons name={offlineMode ? "wifi-off" : "wifi"} size={24} color={theme.colors.icon} />
+        <Icon name={offlineMode ? "wifi-off" : "wifi"} size={24} color={theme.colors.icon} />
       </TouchableOpacity>
     </View>
   )
