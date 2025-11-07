@@ -161,7 +161,7 @@ export function GalleryScreen() {
   const loadInitialPhotos = useCallback(
     async (overrideServerIp?: string, skipThumbnails: boolean = false) => {
       const serverIp = overrideServerIp || hotspotGatewayIp
-      const hasConnection = overrideServerIp || (isHotspotEnabled && hotspotGatewayIp)
+      const hasConnection = overrideServerIp || (hotspotEnabled && hotspotGatewayIp)
 
       if (!hasConnection || !serverIp) {
         console.log("[GalleryScreen] Glasses not connected")
@@ -230,13 +230,13 @@ export function GalleryScreen() {
         transitionToState(GalleryState.ERROR)
       }
     },
-    [galleryState, isHotspotEnabled, hotspotGatewayIp],
+    [galleryState, hotspotEnabled, hotspotGatewayIp],
   )
 
   // Load photos for specific indices
   const loadPhotosForIndices = useCallback(
     async (indices: number[]) => {
-      if (!isHotspotEnabled || !hotspotGatewayIp || indices.length === 0) return
+      if (!hotspotEnabled || !hotspotGatewayIp || indices.length === 0) return
 
       const unloadedIndices = indices.filter(i => !loadedServerPhotos.has(i))
       if (unloadedIndices.length === 0) return
@@ -270,12 +270,12 @@ export function GalleryScreen() {
         loadingRanges.current.delete(rangeKey)
       }
     },
-    [isHotspotEnabled, hotspotGatewayIp, loadedServerPhotos],
+    [hotspotEnabled, hotspotGatewayIp, loadedServerPhotos],
   )
 
   // Sync files from server
   const handleSync = async () => {
-    const hasConnection = isHotspotEnabled && hotspotGatewayIp
+    const hasConnection = hotspotEnabled && hotspotGatewayIp
     const serverIp = hotspotGatewayIp
 
     if (!hasConnection || !serverIp) {
@@ -695,7 +695,7 @@ export function GalleryScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            const hasConnection = isHotspotEnabled && hotspotGatewayIp
+            const hasConnection = hotspotEnabled && hotspotGatewayIp
             const photosToDelete = Array.from(selectedPhotos)
 
             // Separate server photos and local photos
@@ -804,7 +804,7 @@ export function GalleryScreen() {
   //           let deleteErrors: string[] = []
 
   //           // Delete all server photos if connected
-  //           if (totalServerPhotos > 0 && isHotspotEnabled && hotspotGatewayIp) {
+  //           if (totalServerPhotos > 0 && hotspotEnabled && hotspotGatewayIp) {
   //             try {
   //               // Get all server photo names
   //               const serverPhotoNames: string[] = []
@@ -848,7 +848,7 @@ export function GalleryScreen() {
   //           await loadDownloadedPhotos()
 
   //           // Refresh server photos if connected
-  //           if (isHotspotEnabled && hotspotGatewayIp) {
+  //           if (hotspotEnabled && hotspotGatewayIp) {
   //             loadInitialPhotos()
   //           }
 
