@@ -492,19 +492,21 @@ export class TranslationManager {
       const providerErrors: Array<{ provider: string; error: Error }> = [];
 
       try {
-        const { AlibabaTranslationProvider } = await import(
-          "./providers/AlibabaTranslationProvider"
-        );
-        const alibabaProvider = new AlibabaTranslationProvider(
-          this.config.alibaba,
-          this.logger,
-        );
-        await alibabaProvider.initialize();
-        this.providers.set(TranslationProviderType.ALIBABA, alibabaProvider);
-        availableProviders.push(TranslationProviderType.ALIBABA);
-        this.logger.info(
-          "Alibaba translation provider initialized successfully",
-        );
+        if (this.IS_CHINA) {
+          const { AlibabaTranslationProvider } = await import(
+            "./providers/AlibabaTranslationProvider"
+          );
+          const alibabaProvider = new AlibabaTranslationProvider(
+            this.config.alibaba,
+            this.logger,
+          );
+          await alibabaProvider.initialize();
+          this.providers.set(TranslationProviderType.ALIBABA, alibabaProvider);
+          availableProviders.push(TranslationProviderType.ALIBABA);
+          this.logger.info(
+            "Alibaba translation provider initialized successfully",
+          );
+        }
       } catch (error) {
         this.logger.error(
           error,
