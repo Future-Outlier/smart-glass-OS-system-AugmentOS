@@ -52,6 +52,14 @@ class MentraAuthProvider {
     }
   }
 
+  onAuthStateChange(callback: (event: string, session: any) => void): MentraAuthStateChangeSubscriptionResponse {
+    if (IS_CHINA) {
+      return this.authingClient.onAuthStateChange(callback)
+    } else {
+      return this.supabaseClient.onAuthStateChange(callback)
+    }
+  }
+
   async resetPasswordForEmail(email: string, redirectTo?: string): Promise<MentraPasswordResetResponse> {
     if (IS_CHINA) {
       throw new Error("Method not implemented.")
@@ -65,14 +73,6 @@ class MentraAuthProvider {
       throw new Error("Method not implemented.")
     } else {
       return this.supabaseClient.refreshUser()
-    }
-  }
-
-  onAuthStateChange(callback: (event: string, session: any) => void): MentraAuthStateChangeSubscriptionResponse {
-    if (IS_CHINA) {
-      throw new Error("Method not implemented.")
-    } else {
-      return this.supabaseClient.onAuthStateChange(callback)
     }
   }
 }
