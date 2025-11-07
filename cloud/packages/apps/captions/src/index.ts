@@ -8,12 +8,17 @@
  * - User visits localhost:3333 → Express proxies to Bun → Gets React app
  * - MentraOS Cloud calls /session-start → Express handles it
  * - Browser requests /api/hello → Express proxies to Bun
+ * - Auth headers (x-auth-user-id) are forwarded from Express to Bun
+ *
+ * API Patterns:
+ * - Express routes: Use (req as any).authUserId - authenticated by middleware
+ * - Bun routes: Use req.headers.get('x-auth-user-id') - forwarded from Express
  */
 
 import {serve} from "bun"
 import {routes} from "./api/routes"
 import index from "./webview/index.html"
-import {CaptionsApp} from "./app/CaptionsApp"
+import {LiveCaptionsApp} from "./app"
 
 // Configuration
 const PORT = parseInt(process.env.PORT || "3333", 10)
@@ -68,7 +73,7 @@ console.log(`   - API: ${bunServer.url}/api/hello\n`)
 
 console.log(`📱 Starting MentraOS AppServer on port ${PORT}...`)
 
-const captionsApp = new CaptionsApp({
+const captionsApp = new LiveCaptionsApp({
   packageName: PACKAGE_NAME,
   apiKey: API_KEY,
   port: PORT,
@@ -80,16 +85,52 @@ await captionsApp.start()
 // Get Express app instance AFTER starting (routes are registered)
 const expressApp = captionsApp.getExpressApp()
 
+// ============================================
+// Optional: Add Express API routes here
+// ============================================
+// Example Express route that uses auth middleware:
+// expressApp.get("/api/express-example", (req, res) => {
+//   const authReq = req as any
+//   if (authReq.authUserId) {
+//     res.json({ message: "Hello from Express!", userId: authReq.authUserId })
+//   } else {
+//     res.status(401).json({ error: "Not authenticated" })
+//   }
+// })
+
+// ============================================
+// Proxy: Forward unmatched routes to Bun
+// ============================================
 // Add catch-all proxy as LAST route - only matches if no other route did
 // This forwards any unmatched routes to Bun (webview, custom API)
 expressApp.all("*", async (req, res) => {
   try {
     const bunUrl = `http://localhost:${BUN_PORT}${req.originalUrl || req.url}`
 
+    // Build headers - forward existing headers AND add auth info
+    const proxyHeaders: Record<string, string> = {}
+
+    // Copy existing headers
+    Object.entries(req.headers).forEach(([key, value]) => {
+      if (value) {
+        proxyHeaders[key] = Array.isArray(value) ? value.join(", ") : value
+      }
+    })
+
+    // Forward authenticated user from Express middleware to Bun
+    const authReq = req as any
+    if (authReq.authUserId) {
+      proxyHeaders["x-auth-user-id"] = authReq.authUserId
+    }
+
+    if (authReq.activeSession) {
+      proxyHeaders["x-has-active-session"] = "true"
+    }
+
     // Proxy request to Bun
     const response = await fetch(bunUrl, {
       method: req.method,
-      headers: req.headers as HeadersInit,
+      headers: proxyHeaders as HeadersInit,
       body: req.method !== "GET" && req.method !== "HEAD" ? JSON.stringify(req.body) : undefined,
     })
 
@@ -121,7 +162,7 @@ console.log(`\n📝 Access the app at: http://localhost:${PORT}\n`)
 
 const shutdown = async () => {
   console.log("\n🛑 Shutting down...")
-  await captionsApp.stop()
+  captionsApp.stop()
   process.exit(0)
 }
 

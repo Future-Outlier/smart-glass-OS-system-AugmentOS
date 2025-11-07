@@ -2,6 +2,11 @@
 
 A real-time live captions app for MentraOS smart glasses. Displays transcriptions from the glasses microphone directly in the user's field of view.
 
+## 📚 Documentation
+
+- **[Authentication Guide](./AUTH-GUIDE.md)** - Complete guide for authentication in local development
+- **[Project Structure](#project-structure)** - See below
+
 ## Project Structure
 
 Clean separation of concerns:
@@ -14,7 +19,8 @@ captions/
 │   ├── mentra-app.ts      # 📱 MentraOS AppServer integration
 │   │
 │   ├── api/               # API Routes
-│   │   └── routes.ts      # HTTP API endpoints
+│   │   ├── routes.ts      # HTTP API endpoints (Bun)
+│   │   └── auth-helpers.ts # Auth utilities for Bun routes
 │   │
 │   ├── app/               # MentraOS App Logic
 │   │   └── CaptionsApp.ts # AppServer handler (onStart, onStop)
@@ -28,28 +34,32 @@ captions/
 │
 ├── package.json
 ├── tsconfig.json
+├── AUTH-GUIDE.md          # 📖 Authentication documentation
 └── .env
 ```
 
 ## Architecture
 
-**Three independent modules:**
+**Two-Server Hybrid Architecture:**
 
-1. **Web Server** (`server.ts`)
-   - Pure Bun server
-   - Serves React webview
-   - Handles API routes
-   - No MentraOS dependencies
+1. **Express Server (Port 3333)** - "Front Door"
+   - MentraOS AppServer integration
+   - Authentication middleware
+   - Session/webhook endpoints
+   - Proxies to Bun for unmatched routes
 
-2. **MentraOS Integration** (`mentra-app.ts`)
-   - Pure AppServer logic
-   - Handles glasses sessions
-   - No web server logic
+2. **Bun Server (Port 3334)** - "Backend"
+   - React webview with hot reload
+   - API routes with auth forwarding
+   - JSX/Tailwind processing
 
-3. **Coordinator** (`index.ts`)
-   - Starts both servers
-   - 3 lines of code
-   - Can disable MentraOS if needed
+**Authentication Flow:**
+
+- Auth middleware runs in Express
+- User info forwarded to Bun via headers (`x-auth-user-id`)
+- Developers can build routes in either Express or Bun
+  - 3 lines of code
+  - Can disable MentraOS if needed
 
 ## Getting Started
 
@@ -78,39 +88,60 @@ Edit `.env`:
 ```env
 PORT=3333
 PACKAGE_NAME=com.mentra.captions
-MENTRAOS_API_KEY=your_api_key_here  # Optional: leave empty for webview-only
+MENTRAOS_API_KEY=your_api_key_here  # Required
 NODE_ENV=development
 ```
+
+### Authentication Setup
+
+For local development, authenticate by visiting:
+
+```
+http://localhost:3333/mentra-auth
+```
+
+This will:
+
+1. Redirect you to the MentraOS login page
+2. Ask you to authorize the app
+3. Redirect back with authentication
+4. Set a session cookie
+
+See **[AUTH-GUIDE.md](./AUTH-GUIDE.md)** for complete authentication documentation.
 
 ### Development
 
 **Run everything:**
+
 ```bash
 bun run dev
 ```
 
 **Webview only (no MentraOS):**
+
 ```bash
 # Leave MENTRAOS_API_KEY empty in .env
 bun run dev
 ```
 
-The app will:
-- ✅ Always start web server at `http://localhost:3333`
-- ✅ Start MentraOS AppServer if API key is present
-- ⚠️  Show warning if API key missing (webview still works)
+The app will start:
+
+- ✅ Express server at `http://localhost:3333` (with auth middleware)
+- ✅ Bun server at `http://localhost:3334` (webview + API routes)
+- ✅ Express proxies requests to Bun
 
 ## Usage
 
-### As a Web App
+### Testing the Webview
 
 1. Start the server: `bun run dev`
-2. Open browser: `http://localhost:3333`
-3. See the React webview
+2. Authenticate: Visit `http://localhost:3333/mentra-auth`
+3. Open browser: `http://localhost:3333`
+4. Check auth status: `http://localhost:3333/api/me`
 
-### As a MentraOS App
+### Testing with Glasses
 
-1. Add `MENTRAOS_API_KEY` to `.env`
+1. Ensure `MENTRAOS_API_KEY` is set in `.env`
 2. Start the server: `bun run dev`
 3. Launch app from MentraOS phone app
 4. Captions appear on glasses
@@ -118,18 +149,18 @@ The app will:
 ### As an Importable Module
 
 ```typescript
-import { startWebServer } from "./src/server";
-import { startMentraApp } from "./src/mentra-app";
+import {startWebServer} from "./src/server"
+import {startMentraApp} from "./src/mentra-app"
 
 // Start just the web server
-const server = startWebServer({ port: 3333 });
+const server = startWebServer({port: 3333})
 
 // Or start MentraOS integration
 const app = await startMentraApp({
   packageName: "com.example.app",
   apiKey: "your-key",
-  port: 3333
-});
+  port: 3333,
+})
 ```
 
 ## How It Works
@@ -137,17 +168,17 @@ const app = await startMentraApp({
 ### Web Server (`server.ts`)
 
 ```typescript
-import { serve } from "bun";
-import index from "./webview/index.html";
+import {serve} from "bun"
+import index from "./webview/index.html"
 
 export function startWebServer(config) {
   return serve({
     port: config.port,
     routes: {
       ...apiRoutes,
-      "/*": index  // Bun handles React/Tailwind automatically
-    }
-  });
+      "/*": index, // Bun handles React/Tailwind automatically
+    },
+  })
 }
 ```
 
@@ -159,17 +190,17 @@ export function startWebServer(config) {
 ### MentraOS Integration (`mentra-app.ts`)
 
 ```typescript
-import { CaptionsApp } from "./app/CaptionsApp";
+import {CaptionsApp} from "./app/CaptionsApp"
 
 export async function startMentraApp(config) {
   const app = new CaptionsApp({
     packageName: config.packageName,
     apiKey: config.apiKey,
-    port: config.port
-  });
-  
-  await app.start();
-  return app;
+    port: config.port,
+  })
+
+  await app.start()
+  return app
 }
 ```
 
@@ -200,17 +231,45 @@ if (API_KEY) {
 
 ### Adding API Routes
 
+You can add routes in **either Express or Bun**:
+
+#### Option 1: Bun Routes (Recommended - Hot Reload)
+
 Edit `src/api/routes.ts`:
 
 ```typescript
+import {requireAuth} from "./auth-helpers"
+
 export const routes = {
-  "/api/my-endpoint": {
+  // Public route
+  "/api/hello": {
     async GET(req) {
-      return Response.json({ data: "hello" });
-    }
-  }
-};
+      return Response.json({message: "Hello!"})
+    },
+  },
+
+  // Protected route
+  "/api/profile": requireAuth(async (req, userId) => {
+    return Response.json({userId, data: "secret"})
+  }),
+}
 ```
+
+#### Option 2: Express Routes (Traditional)
+
+Edit `src/index.ts` (before the proxy):
+
+```typescript
+expressApp.get("/api/express-example", (req, res) => {
+  const authReq = req as any
+  if (!authReq.authUserId) {
+    return res.status(401).json({error: "Not authenticated"})
+  }
+  res.json({message: "Hello from Express!", userId: authReq.authUserId})
+})
+```
+
+**See [AUTH-GUIDE.md](./AUTH-GUIDE.md) for complete authentication patterns.**
 
 ### Editing Webview
 
@@ -233,7 +292,7 @@ Edit `src/app/CaptionsApp.ts`:
 private async onStart(session: AppSession) {
   // Subscribe to transcription
   session.subscribe("transcription");
-  
+
   // Handle transcriptions
   session.events.onTranscription((data) => {
     console.log("Caption:", data.text);
@@ -245,28 +304,43 @@ private async onStart(session: AppSession) {
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `PORT` | No | `3333` | Server port |
-| `PACKAGE_NAME` | No | `com.mentra.captions` | MentraOS package name |
-| `MENTRAOS_API_KEY` | No | - | API key from console (optional) |
-| `NODE_ENV` | No | `development` | Environment mode |
+| Variable           | Required | Default               | Description                     |
+| ------------------ | -------- | --------------------- | ------------------------------- |
+| `PORT`             | No       | `3333`                | Server port                     |
+| `PACKAGE_NAME`     | No       | `com.mentra.captions` | MentraOS package name           |
+| `MENTRAOS_API_KEY` | No       | -                     | API key from console (optional) |
+| `NODE_ENV`         | No       | `development`         | Environment mode                |
 
 ## Troubleshooting
 
+**Authentication not working?**
+
+- Visit `http://localhost:3333/mentra-auth` to authenticate
+- Check `/api/me` returns `authenticated: true`
+- See [AUTH-GUIDE.md](./AUTH-GUIDE.md#troubleshooting)
+
 **Webview not loading?**
+
+- Always use port 3333 (Express), not 3334 (Bun)
 - Check `src/webview/index.html` exists
-- Verify `import index from "./webview/index.html"` in `server.ts`
 - Restart dev server
 
-**MentraOS not working?**
-- Check `MENTRAOS_API_KEY` is set
-- Verify package name matches console
-- Check app is installed in console
+**API routes returning 401?**
+
+- Authenticate first via `/mentra-auth`
+- Use `getAuthUserId(req)` in Bun routes
+- Use `req.authUserId` in Express routes
+- See [AUTH-GUIDE.md](./AUTH-GUIDE.md)
+
+**Changes not reflecting?**
+
+- Bun routes: Auto-reload (refresh browser)
+- Express routes: Restart required
 
 **Port already in use?**
+
 ```bash
-PORT=4000 bun run dev
+PORT=4000 bun run dev  # Uses 4000 and 4001
 ```
 
 ## Scripts

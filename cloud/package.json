@@ -1,7 +1,8 @@
 {
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "packages/*/*"
   ],
   "scripts": {
     "build": "cd packages/sdk && bun run build",

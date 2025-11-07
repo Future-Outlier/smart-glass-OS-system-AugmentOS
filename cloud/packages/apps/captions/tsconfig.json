@@ -17,7 +17,8 @@
     "types": ["bun-types"],
     "paths": {
       "@/*": ["./src/webview/*"],
-      "@mentra/sdk": ["./node_modules/@mentra/sdk"]
+      "@mentra/sdk": ["../../sdk"]
+      // "@mentra/sdk": ["./node_modules/@mentra/sdk"]
     }
   },
   "include": ["src/**/*"],
