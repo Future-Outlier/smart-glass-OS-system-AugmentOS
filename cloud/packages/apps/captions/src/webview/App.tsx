@@ -9,7 +9,7 @@ export function App() {
   const {settings, updateLanguage, updateLanguageHints} = useSettings()
 
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col w-screen h-screen bg-white">
       <Header
         connected={connected}
         settings={settings}

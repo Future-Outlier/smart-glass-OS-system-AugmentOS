@@ -1,8 +1,9 @@
 import {useState, useEffect} from "react"
+import {X} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
-import {AVAILABLE_LANGUAGES, getLanguageName as _, getAvailableHints} from "../lib/languages"
+import {AVAILABLE_LANGUAGES, getLanguageName, getAvailableHints} from "../lib/languages"
 
 interface LanguageModalProps {
   currentLanguage: string
@@ -16,6 +17,7 @@ export function LanguageModal({currentLanguage, currentHints, onSave, trigger}: 
   const [tempLanguage, setTempLanguage] = useState(currentLanguage)
   const [tempHints, setTempHints] = useState<string[]>(currentHints)
   const [saving, setSaving] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
   // Reset temp state when modal opens
   useEffect(() => {
@@ -25,8 +27,14 @@ export function LanguageModal({currentLanguage, currentHints, onSave, trigger}: 
     }
   }, [open, currentLanguage, currentHints])
 
-  const toggleHint = (code: string) => {
-    setTempHints((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]))
+  const addHint = (code: string) => {
+    if (!tempHints.includes(code)) {
+      setTempHints((prev) => [...prev, code])
+    }
+  }
+
+  const removeHint = (code: string) => {
+    setTempHints((prev) => prev.filter((c) => c !== code))
   }
 
   const handleSave = async () => {
@@ -45,7 +53,11 @@ export function LanguageModal({currentLanguage, currentHints, onSave, trigger}: 
     setOpen(false)
   }
 
-  const availableHints = getAvailableHints(tempLanguage)
+  const availableHints = getAvailableHints(tempLanguage).filter((lang) => !tempHints.includes(lang.code))
+
+  const filteredHints = searchQuery
+    ? availableHints.filter((lang) => lang.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : availableHints
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -75,20 +87,59 @@ export function LanguageModal({currentLanguage, currentHints, onSave, trigger}: 
           {/* Language Hints */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Language Hints (Optional)</label>
-            <p className="text-xs text-gray-500">Select languages that might appear in conversation</p>
-            <div className="flex flex-wrap gap-2 pt-2 max-h-48 overflow-y-auto">
-              {availableHints.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => toggleHint(lang.code)}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                    tempHints.includes(lang.code)
-                      ? "bg-green-100 text-green-800 border-2 border-green-500"
-                      : "bg-gray-100 text-gray-700 border-2 border-transparent hover:border-gray-300"
-                  }`}>
-                  {lang.name}
-                </button>
-              ))}
+            <p className="text-xs text-gray-500">Add languages that might appear in conversation</p>
+
+            {/* Selected hints as chips */}
+            {tempHints.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {tempHints.map((code) => (
+                  <div
+                    key={code}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-green-100 text-green-800 border-2 border-green-500">
+                    <span>{getLanguageName(code)}</span>
+                    <button
+                      onClick={() => removeHint(code)}
+                      className="hover:bg-green-200 rounded-full p-0.5 transition-colors">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Searchable dropdown to add hints */}
+            <div className="space-y-2">
+              <Select
+                value=""
+                onValueChange={(value) => {
+                  addHint(value)
+                  setSearchQuery("")
+                }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Add a language hint..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <div className="p-2">
+                    <input
+                      type="text"
+                      placeholder="Search languages..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full px-2 py-1 text-sm border rounded"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  {filteredHints.length > 0 ? (
+                    filteredHints.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-2 py-4 text-sm text-gray-500 text-center">No languages found</div>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

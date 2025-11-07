@@ -4,12 +4,15 @@
 
 Build webview UI for live captions app. Displays real-time transcript history to user in browser with language/display settings control.
 
-## Problem
+**Status:** ✅ Complete and Working
 
-1. Captions work on glasses (`index.ts`) but user can't see transcript history
-2. No web interface to change language settings
-3. Transcripts not tracked - lost after displayed on glasses
-4. No way to review what was said during conversation
+## Problem (Solved)
+
+1. ~~Captions work on glasses (`index.ts`) but user can't see transcript history~~ ✅
+2. ~~No web interface to change language settings~~ ✅
+3. ~~Transcripts not tracked - lost after displayed on glasses~~ ✅
+4. ~~No way to review what was said during conversation~~ ✅
+5. ~~Global state scattered across `index.ts` (300 lines)~~ ✅
 
 ## Goals
 
@@ -38,24 +41,25 @@ Build webview UI for live captions app. Displays real-time transcript history to
 
 ## Non-Goals
 
-- Transcript persistence across sessions (memory-only)
+- Transcript persistence across sessions (memory-only) ✅
 - Export/download transcripts
 - Multi-user collaboration
 - Translation features
 - Audio playback
+- Settings modal for glasses display (removed - language modal only)
 
-## Technical Constraints
+## Technical Constraints (Implemented)
 
-- Don't modify `index.ts` (messy but works)
-- Use `UserSession` + `TranscriptsManager` for new architecture
-- Memory-only transcript storage (session lifetime)
-- Auth via existing Express → Bun header forwarding
-- Settings persistence via SDK SimpleStorage
-- Must work with existing glasses transcription flow
+- ✅ Cleaned `index.ts` (300 → 90 lines, removed global state)
+- ✅ Built `UserSession` with 3 managers (Transcripts, Settings, Display)
+- ✅ Memory-only transcript storage (session lifetime, max 100)
+- ✅ Auth via Express → Bun header forwarding (`x-auth-user-id`)
+- ✅ Settings persistence via SimpleStorage (not SDK settings)
+- ✅ SSE in Express (bypasses proxy due to streaming requirements)
 
-## API Design
+## API Design (Implemented)
 
-### REST Endpoints
+### REST Endpoints (Bun routes, proxied via Express)
 
 **Transcripts:**
 
@@ -64,10 +68,10 @@ GET /api/transcripts
 Response: {
   transcripts: [
     {
-      id: string
-      speaker: string
+      id: string              // UUID
+      speaker: string         // "Speaker 1", "Speaker 2"
       text: string
-      timestamp: string | null
+      timestamp: string | null // "2:30 PM" or null
       isFinal: boolean
     }
   ]
@@ -79,10 +83,10 @@ Response: {
 ```
 GET /api/settings
 Response: {
-  language: string              // e.g., "en", "es"
-  languageHints: string[]       // e.g., ["fr", "de"]
+  language: string              // "English", "Spanish", etc.
+  languageHints: string[]       // ["es", "fr", "de"]
   displayLines: number          // 2-5
-  displayWidth: number          // Narrow/Medium/Wide (maps to pixels)
+  displayWidth: number          // pixels (30, 45, 60)
 }
 
 POST /api/settings/language
@@ -90,37 +94,44 @@ Body: { language: string }
 Response: { success: boolean }
 
 POST /api/settings/language-hints
-Body: { hints: string[] }
+Body: { hints: string[] }        // Array of language codes
 Response: { success: boolean }
 
 POST /api/settings/display-lines
-Body: { lines: number }
+Body: { lines: number }          // 2-5
 Response: { success: boolean }
 
 POST /api/settings/display-width
-Body: { width: number }
+Body: { width: number }          // pixels
 Response: { success: boolean }
 ```
 
-### SSE Stream
+### SSE Stream (Express route, bypasses proxy)
 
 ```
 GET /api/transcripts/stream
 Content-Type: text/event-stream
+Auth: Required via Express middleware (authUserId)
 
 Events:
+data: {"type":"connected"}
 data: {"type":"interim","id":"abc123","speaker":"Speaker 1","text":"hello..."}
 data: {"type":"final","id":"abc123","speaker":"Speaker 1","text":"hello world","timestamp":"2:30 PM"}
-data: {"type":"speaker_change","speaker":"Speaker 2"}
 ```
 
-## Data Structures
+**Why SSE in Express?**
+
+- Proxy can't handle long-lived streaming connections (ECONNRESET errors)
+- Express handles SSE properly with Connection: keep-alive
+- Auth middleware already available in Express
+
+## Data Structures (Implemented)
 
 ### Transcript Entry
 
 ```typescript
 interface TranscriptEntry {
-  id: string // Unique ID
+  id: string // UUID (crypto.randomUUID)
   speaker: string // "Speaker 1", "Speaker 2", etc.
   text: string // Transcript text
   timestamp: string | null // "2:30 PM" or null for interim
@@ -129,137 +140,158 @@ interface TranscriptEntry {
 }
 ```
 
+**Key behaviors:**
+
+- History contains only **final transcripts + 1 current interim**
+- When final arrives, replaces last interim (no duplicates)
+- Circular buffer with 100 max transcripts
+
 ### Settings Schema (SimpleStorage)
 
 ```typescript
 interface CaptionSettings {
-  language: string // Primary language code
-  languageHints: string[] // Additional language codes
+  language: string // "English", "Spanish", etc.
+  languageHints: string[] // ["es", "fr", "de"]
   displayLines: number // 2-5 lines on glasses
-  displayWidth: number // Character width on glasses
+  displayWidth: number // pixels (30, 45, 60)
 }
 ```
 
-## Architecture
+**Storage location:** `appSession.simpleStorage` (NOT `appSession.settings`)
+
+## Architecture (Implemented)
 
 ### Data Flow
 
 ```
 Transcription Event (from MentraOS)
     ↓
-index.ts (unchanged - displays on glasses)
-    ↓
-TranscriptsManager.onTranscription()
-    ↓
-Store in memory: transcripts[]
-    ↓
-Push via SSE to connected webviews
-    ↓
-Browser updates UI
+index.ts handleTranscription() [cleaned up, 90 lines]
+    ↓ parallel
+    ├─→ DisplayManager.processAndDisplay()
+    │   ↓ formats, debounces (400ms)
+    │   ↓ shows on glasses via layouts.showTextWall()
+    │
+    └─→ TranscriptsManager.onTranscription()
+        ↓ stores in memory (finals + 1 interim)
+        ↓ broadcasts to SSE clients
+        ↓ Browser updates UI
 ```
 
-### Component Structure
+### Component Structure (Implemented)
 
 ```
 src/app/session/
-  ├── UserSession.ts          # Existing
-  ├── TranscriptsManager.ts   # Stores transcripts, manages SSE
-  └── SettingsManager.ts      # NEW: SimpleStorage wrapper
+  ├── UserSession.ts          # Orchestrates 3 managers
+  ├── TranscriptsManager.ts   # History + SSE broadcasting
+  ├── SettingsManager.ts      # SimpleStorage wrapper
+  └── DisplayManager.ts       # Glasses display (renamed from TranscriptProcessorManager)
 
 src/api/
-  ├── routes.ts               # Existing
-  ├── transcripts.ts          # NEW: GET /api/transcripts
-  ├── transcripts-stream.ts   # NEW: SSE endpoint
-  └── settings.ts             # NEW: Settings CRUD
+  ├── routes.ts               # Merges all route modules
+  ├── transcripts.ts          # GET /api/transcripts
+  ├── transcripts-stream.ts   # SSE endpoint (NOT USED - moved to Express)
+  ├── settings.ts             # Settings CRUD
+  └── auth-helpers.ts         # getAuthUserId, requireAuth
+
+src/index.ts                  # Express SSE route added here (bypasses proxy)
 
 src/webview/
-  ├── App.tsx                 # NEW: Main webview UI
+  ├── App.tsx                 # Main orchestrator (22 lines)
   ├── components/
-  │   ├── TranscriptList.tsx  # Scrollable transcript display
-  │   ├── TranscriptItem.tsx  # Individual transcript entry
-  │   ├── LanguageModal.tsx   # Language picker
-  │   └── SettingsModal.tsx   # Display settings
-  └── hooks/
-      ├── useTranscripts.ts   # SSE connection + state
-      └── useSettings.ts      # Settings API calls
+  │   ├── Header.tsx          # Title, connection, language button
+  │   ├── TranscriptList.tsx  # Scrollable list + auto-scroll + FAB
+  │   ├── TranscriptItem.tsx  # Transcript with speaker colors
+  │   └── LanguageModal.tsx   # Searchable dropdown + chips
+  ├── hooks/
+  │   ├── useTranscripts.ts   # SSE + auto-reconnect
+  │   └── useSettings.ts      # REST API calls
+  └── lib/
+      ├── languages.ts        # ~30 languages + search
+      └── colors.ts           # Speaker color utilities
 ```
 
-## Implementation Plan
+## Implementation Summary (Completed)
 
-### Phase 1: Backend Foundation
+### ✅ Phase 1: Backend Foundation
 
-1. Create `SettingsManager` with SimpleStorage
-2. Create `TranscriptsManager` to store transcripts in memory
-3. Wire `TranscriptsManager` to listen to transcription events
+- Created `SettingsManager` with SimpleStorage
+- Created `DisplayManager` (glasses display logic)
+- Created `TranscriptsManager` (history + SSE)
+- Cleaned `index.ts` (removed global state)
 
-### Phase 2: REST APIs
+### ✅ Phase 2: REST APIs
 
-1. Build `/api/transcripts` endpoint (returns history)
-2. Build `/api/settings/*` endpoints (CRUD)
-3. Test with curl/Postman
+- Built `/api/transcripts` endpoint
+- Built `/api/settings/*` endpoints (4 routes)
+- Tested and working
 
-### Phase 3: SSE Stream
+### ✅ Phase 3: SSE Stream
 
-1. Build `/api/transcripts/stream` SSE endpoint
-2. Push events when new transcripts arrive
-3. Handle client disconnects
+- Built SSE in Express (not Bun - proxy issue)
+- Events: connected, interim, final
+- Proper client disconnect handling
 
-### Phase 4: Frontend
+### ✅ Phase 4: Frontend
 
-1. Build basic webview UI (TranscriptList component)
-2. Connect to SSE stream
-3. Add language picker modal
-4. Add settings modal
-5. Implement auto-scroll behavior
+- Clean component structure (Header, TranscriptList, TranscriptItem, LanguageModal)
+- SSE connection with auto-reconnect
+- Language picker with searchable dropdown + chips
+- Auto-scroll with FAB (floating action button)
 
-### Phase 5: Polish
+### ✅ Phase 5: Polish
 
-1. Speaker color coding
-2. Empty state
-3. Mobile responsiveness
-4. Error handling
+- Speaker color coding (6 pastel colors)
+- Empty state ("Waiting for conversation")
+- Mobile-first responsive design
+- Connection status indicator
 
-## Open Questions
+## Questions (Resolved)
 
-1. **Speaker normalization**: Does Soniox give us "Speaker 1" format or do we normalize server-side?
-   - Need to check transcription event format
+1. **Speaker normalization**: ✅ Currently hardcoded "Speaker 1" - Soniox provides speaker IDs
+2. **Transcript limits**: ✅ Set to 100 max (circular buffer)
 
-2. **Transcript limits**: Max transcripts in memory? 100? 500?
-   - Need to test memory usage
+3. **SSE reconnection**: ✅ Load full history on initial connect, then stream updates
 
-3. **SSE reconnection**: How to handle webview disconnect/reconnect?
-   - Send full history on reconnect? Or just new transcripts?
+4. **Settings apply timing**: ✅ Settings only affect future transcripts (DisplayManager updated on change)
 
-4. **Settings apply timing**: Do settings changes need to affect existing transcripts?
-   - Probably not - only affect future transcripts
+5. **Multiple webview connections**: ✅ Yes - SSE supports multiple clients per user
 
-5. **Multiple webview connections**: Can multiple browsers connect for same user?
-   - Probably yes - SSE supports multiple clients
+6. **SSE in Bun or Express?**: ✅ Express - proxy can't handle streaming (ECONNRESET)
 
-## Security Considerations
+7. **SDK settings vs SimpleStorage?**: ✅ SimpleStorage only - removed SDK settings sync
 
-- All endpoints require auth (via `x-auth-user-id` header)
-- SSE connection authenticated via initial HTTP request
-- Settings isolated per user (SimpleStorage handles this)
-- No XSS risk (React escapes by default)
-- No transcript leakage between users
+8. **Language hints UI?**: ✅ Searchable dropdown with chips (not 30+ buttons)
+
+## Security (Implemented)
+
+- ✅ All Bun routes require auth (via `x-auth-user-id` header from proxy)
+- ✅ Express SSE route uses auth middleware (`req.authUserId`)
+- ✅ Settings isolated per user (SimpleStorage per userId)
+- ✅ No XSS risk (React escapes by default)
+- ✅ No transcript leakage (UserSession per userId)
 
 ## Testing Strategy
 
-**Unit tests:**
+**Manual testing (completed):**
 
-- `TranscriptsManager`: add/get transcripts
+- ✅ Webview loads and connects via SSE
+- ✅ Transcripts appear in real-time (interim → final)
+- ✅ Language modal opens with searchable dropdown
+- ✅ Language hints appear as chips with × to remove
+- ✅ Auto-scroll works, FAB appears when scrolled up
+- ✅ Settings persist across sessions (SimpleStorage)
+- ✅ Speaker colors display correctly
+- ✅ DisplayManager shows text on glasses (verified in logs)
+
+**Unit tests (future):**
+
+- `TranscriptsManager`: interim/final replacement logic
 - `SettingsManager`: SimpleStorage CRUD
+- `DisplayManager`: debouncing, inactivity timer
 
-**Integration tests:**
+**Integration tests (future):**
 
 - REST API endpoints with auth
-- SSE stream sends events correctly
-- Settings changes persist
-
-**Manual testing:**
-
-- Open webview, see transcripts appear live
-- Change language, verify applies
-- Scroll up, verify auto-scroll disables
-- Close/reopen webview, verify settings persist
+- SSE stream event delivery
+- Settings changes propagate to DisplayManager</parameter>
