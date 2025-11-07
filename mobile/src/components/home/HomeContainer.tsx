@@ -18,6 +18,7 @@ export const HomeContainer: React.FC = () => {
 
   return (
     <View>
+      <Spacer height={theme.spacing.s6} />
       <Group>
         {!defaultWearable && <PairGlassesCard />}
         {defaultWearable && <CompactDeviceStatus />}

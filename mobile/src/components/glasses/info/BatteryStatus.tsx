@@ -110,6 +110,7 @@ const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $compactTextStyle: ThemedStyle<TextStyle> = () => ({
   fontSize: 12,
   width: 60,
+  fontWeight: 600,
 })
 
 const $textStyle: ThemedStyle<TextStyle> = () => ({
@@ -121,8 +122,9 @@ const $compactBatteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   width: spacing.xl,
-  marginRight: spacing.md,
+  // marginRight: spacing.md,
   justifyContent: "space-between",
+  gap: spacing.s1,
 })
 
 const $batteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({

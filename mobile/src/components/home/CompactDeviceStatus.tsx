@@ -1,4 +1,4 @@
-import {Icon, PressableIcon, Text} from "@/components/ignite"
+import {Icon, Text} from "@/components/ignite"
 import {useState} from "react"
 import {ActivityIndicator, Image, ImageStyle, TextStyle, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
@@ -128,7 +128,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
       <View style={[themed($disconnectedContainer), style]}>
         <View style={themed($header)}>
           <Text style={themed($headerText)}>{defaultWearable}</Text>
-          <MaterialCommunityIcons name="bluetooth" size={24} color={theme.colors.destructive} />
+          <MaterialCommunityIcons name="bluetooth" size={18} color={theme.colors.destructive} />
         </View>
 
         <View style={[themed($sideBySideContainer)]}>
@@ -157,11 +157,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             </>
           ) : (
             <>
-              <Button
-                compactIcon
-                flexContainer={false}
-                preset="alternate"
-                onPress={handleConnectOrDisconnect}>
+              <Button compactIcon flexContainer={false} preset="alternate" onPress={handleConnectOrDisconnect}>
                 <Icon icon="x" size={20} color={theme.colors.foreground} />
               </Button>
               <Button
@@ -200,19 +196,20 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             <Image source={getCurrentGlassesImage()} style={[themed($glassesImage), {width: 54, maxHeight: 24}]} />
             <Text style={themed($headerText)}>{defaultWearable}</Text>
           </View>
-          <MaterialCommunityIcons name="bluetooth" size={20} color={theme.colors.textDim} />
+          <MaterialCommunityIcons name="bluetooth" size={18} color={theme.colors.textDim} />
         </View>
-        <ConnectedSimulatedGlassesInfo showHeader={false} mirrorStyle={{backgroundColor: theme.colors.background}} />
-
+        <View style={{marginHorizontal: -theme.spacing.s6}}>
+          <ConnectedSimulatedGlassesInfo showHeader={false} mirrorStyle={{backgroundColor: theme.colors.background}} />
+        </View>
         <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.xs}}>
           <Button
-            style={{width: 48, height: 48}}
+            flexContainer={false}
             preset="alternate"
             onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}>
-            <MaterialCommunityIcons name="chevron-left" size={20} color={theme.colors.foreground} />
+            <Icon icon="caretLeft" size={18} color={theme.colors.foreground} />
           </Button>
-          <Button style={{width: 48, height: 48}} preset="alternate" onPress={() => push("/settings/glasses")}>
-            <MaterialCommunityIcons name="cog" size={20} color={theme.colors.foreground} />
+          <Button flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
+            <Icon icon="settings" size={18} color={theme.colors.foreground} />
           </Button>
         </View>
       </View>
