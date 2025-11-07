@@ -19,6 +19,7 @@ import {serve} from "bun"
 import {routes} from "./api/routes"
 import index from "./webview/index.html"
 import {LiveCaptionsApp} from "./app"
+import {UserSession} from "./app/session/UserSession"
 
 // Configuration
 const PORT = parseInt(process.env.PORT || "3333", 10)
@@ -84,6 +85,53 @@ await captionsApp.start()
 
 // Get Express app instance AFTER starting (routes are registered)
 const expressApp = captionsApp.getExpressApp()
+
+// ============================================
+// SSE Stream Route (bypasses proxy)
+// ============================================
+expressApp.get("/api/transcripts/stream", (req, res) => {
+  const authReq = req as any
+  const userId = authReq.authUserId
+
+  if (!userId) {
+    return res.status(401).send("Unauthorized")
+  }
+
+  const userSession = UserSession.getUserSession(userId)
+
+  if (!userSession) {
+    return res.status(404).send("No active session")
+  }
+
+  // Set SSE headers
+  res.setHeader("Content-Type", "text/event-stream")
+  res.setHeader("Cache-Control", "no-cache")
+  res.setHeader("Connection", "keep-alive")
+  res.setHeader("X-Accel-Buffering", "no")
+
+  // Send initial connection message
+  res.write(`data: ${JSON.stringify({type: "connected"})}\n\n`)
+
+  // Create SSE client
+  const client = {
+    send: (data: any) => {
+      try {
+        res.write(`data: ${JSON.stringify(data)}\n\n`)
+      } catch {
+        // Client disconnected
+        userSession.transcripts.removeSSEClient(client)
+      }
+    },
+  }
+
+  // Register client
+  userSession.transcripts.addSSEClient(client)
+
+  // Cleanup on disconnect
+  req.on("close", () => {
+    userSession.transcripts.removeSSEClient(client)
+  })
+})
 
 // ============================================
 // Optional: Add Express API routes here

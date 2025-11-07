@@ -1,4 +1,7 @@
 import {requireAuth, optionalAuth, getAuthInfo} from "./auth-helpers"
+import {transcriptsRoutes} from "./transcripts"
+import {settingsRoutes} from "./settings"
+import {transcriptStreamRoute} from "./transcripts-stream"
 
 /**
  * API Routes for Captions App
@@ -29,6 +32,11 @@ import {requireAuth, optionalAuth, getAuthInfo} from "./auth-helpers"
  */
 
 export const routes = {
+  // Merge all route modules
+  ...transcriptsRoutes,
+  ...settingsRoutes,
+  ...transcriptStreamRoute,
+
   // Auth info endpoint - uses manual check pattern
   "/api/me": {
     async GET(req: Request) {
