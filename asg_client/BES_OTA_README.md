@@ -61,7 +61,7 @@ Add `bes_firmware` section to your version.json:
 ```json
 {
   "apps": {
-    "com.augmentos.asg_client": {
+    "com.mentra.asg_client": {
       "versionCode": 1000,
       "versionName": "1.0.0",
       "apkUrl": "https://server.com/asg_client_v1.0.0.apk",
