@@ -29,10 +29,10 @@ class PhoneMic private constructor(private val context: Context) {
     companion object {
         @Volatile private var instance: PhoneMic? = null
 
-        fun getInstance(context: Context): PhoneMic {
+        fun getInstance(): PhoneMic {
             return instance
                     ?: synchronized(this) {
-                        instance ?: PhoneMic(context.applicationContext).also { instance = it }
+                        instance ?: PhoneMic(Bridge.getContext()).also { instance = it }
                     }
         }
 
@@ -53,7 +53,7 @@ class PhoneMic private constructor(private val context: Context) {
     // Audio recording components
     private var audioRecord: AudioRecord? = null
     private var recordingThread: Thread? = null
-    private val isRecording = AtomicBoolean(false)
+    public val isRecording = AtomicBoolean(false)
     private var preferScoMode = true // Try SCO first, fallback to normal if needed
 
     // Audio manager and routing
