@@ -60,7 +60,7 @@ export default function ChangePasswordScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
       <Header title={translate("profileSettings:changePassword")} leftIcon="caretLeft" onLeftPress={goBack} />
       <ScrollView contentContainerStyle={themed($scrollContent)} showsVerticalScrollIndicator={false}>
         <View style={themed($card)}>
@@ -71,7 +71,7 @@ export default function ChangePasswordScreen() {
               <Text tx="profileSettings:newPassword" style={themed($inputLabel)} />
               <View style={themed($enhancedInputContainer)}>
                 <FontAwesome name="lock" size={16} color={theme.colors.text} />
-                <Spacer width={spacing.xxs} />
+                <Spacer width={spacing.s1} />
                 <TextInput
                   hitSlop={{top: 16, bottom: 16}}
                   style={themed($enhancedInput)}
@@ -94,7 +94,7 @@ export default function ChangePasswordScreen() {
               <Text tx="profileSettings:confirmPassword" style={themed($inputLabel)} />
               <View style={themed($enhancedInputContainer)}>
                 <FontAwesome name="lock" size={16} color={theme.colors.text} />
-                <Spacer width={spacing.xxs} />
+                <Spacer width={spacing.s1} />
                 <TextInput
                   hitSlop={{top: 16, bottom: 16}}
                   style={themed($enhancedInput)}
@@ -117,7 +117,7 @@ export default function ChangePasswordScreen() {
               <Text tx="profileSettings:passwordsDoNotMatch" style={themed($errorText)} />
             )}
 
-            <Spacer height={spacing.lg} />
+            <Spacer height={spacing.s6} />
 
             <Button
               tx="profileSettings:updatePassword"
@@ -144,14 +144,14 @@ const $scrollContent: ThemedStyle<ViewStyle> = () => ({
 
 const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.lg,
+  padding: spacing.s6,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
   fontSize: 16,
   color: colors.text,
   textAlign: "left",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $form: ThemedStyle<ViewStyle> = () => ({
@@ -159,7 +159,7 @@ const $form: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $inputGroup: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $inputLabel: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -176,7 +176,7 @@ const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDar
   borderWidth: 1,
   borderColor: colors.border,
   borderRadius: 8,
-  paddingHorizontal: spacing.sm,
+  paddingHorizontal: spacing.s3,
   backgroundColor: isDark ? colors.palette.transparent : colors.background,
   ...(isDark
     ? {
@@ -200,7 +200,7 @@ const $enhancedInput: ThemedStyle<TextStyle> = ({colors}) => ({
 const $errorText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 14,
   color: colors.error,
-  marginTop: spacing.xs,
+  marginTop: spacing.s2,
 })
 
 const $primaryButton: ThemedStyle<ViewStyle> = () => ({

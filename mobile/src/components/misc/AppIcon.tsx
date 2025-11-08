@@ -37,7 +37,7 @@ const AppIcon = ({app, onClick, style}: AppIconProps) => {
               justifyContent: "center",
               width: style?.width ?? 56,
               height: style?.height ?? 56,
-              borderRadius: style?.borderRadius ?? theme.spacing.md,
+              borderRadius: style?.borderRadius ?? theme.spacing.s4,
             }}>
             {app.loading && (
               <View style={themed($loadingContainer)}>
@@ -71,13 +71,13 @@ const AppIcon = ({app, onClick, style}: AppIconProps) => {
       </WrapperComponent>
       {!app.healthy && (
         <View style={themed($unhealthyBadge)}>
-          <MaterialCommunityIcons name="alert-circle" size={theme.spacing.md} color={theme.colors.error} />
+          <MaterialCommunityIcons name="alert-circle" size={theme.spacing.s4} color={theme.colors.error} />
         </View>
       )}
       {/* Show wifi-off badge for offline apps */}
       {app.offline && (
         <View style={themed($offlineBadge)}>
-          <MaterialCommunityIcons name="wifi-off" size={theme.spacing.md} color={theme.colors.text} />
+          <MaterialCommunityIcons name="wifi-off" size={theme.spacing.s4} color={theme.colors.text} />
         </View>
       )}
     </View>
@@ -108,21 +108,21 @@ const $icon: ThemedStyle<ImageStyle> = () => ({
 
 const $unhealthyBadge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
-  top: -spacing.xxs,
-  right: -spacing.xxs,
+  top: -spacing.s1,
+  right: -spacing.s1,
   backgroundColor: colors.primary_foreground,
-  borderRadius: spacing.md,
-  borderWidth: spacing.xxs,
+  borderRadius: spacing.s4,
+  borderWidth: spacing.s1,
   borderColor: colors.primary_foreground,
 })
 
 const $offlineBadge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
-  right: -spacing.xxs,
-  bottom: -spacing.xxs,
+  right: -spacing.s1,
+  bottom: -spacing.s1,
   backgroundColor: colors.primary_foreground,
-  borderRadius: spacing.md,
-  borderWidth: spacing.xxs,
+  borderRadius: spacing.s4,
+  borderWidth: spacing.s1,
   borderColor: colors.primary_foreground,
 })
 

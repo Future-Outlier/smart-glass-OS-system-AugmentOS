@@ -90,22 +90,22 @@ export const AllProviders = withWrappers(
 )
 
 const $toastIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.md,
+  marginRight: spacing.s4,
   justifyContent: "center",
   alignItems: "center",
 })
 
 const $toastText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.text,
-  fontSize: spacing.md,
+  fontSize: spacing.s4,
 })
 
 const $toastContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   backgroundColor: colors.background,
-  borderRadius: spacing.md,
-  paddingVertical: spacing.sm,
-  paddingHorizontal: spacing.md,
-  marginHorizontal: spacing.md,
+  borderRadius: spacing.s4,
+  paddingVertical: spacing.s3,
+  paddingHorizontal: spacing.s4,
+  marginHorizontal: spacing.s4,
 })

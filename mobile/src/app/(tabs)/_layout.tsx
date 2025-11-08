@@ -49,9 +49,9 @@ export default function Layout() {
 }
 
 const $icon: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xxs,
-  borderRadius: spacing.md,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s1,
+  borderRadius: spacing.s4,
 })
 
 const $tabList: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -60,15 +60,15 @@ const $tabList: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
   bottom: 0,
   borderTopColor: colors.separator,
-  paddingVertical: spacing.xs,
-  paddingHorizontal: spacing.sm,
+  paddingVertical: spacing.s2,
+  paddingHorizontal: spacing.s3,
 })
 
 const $tabTrigger: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   alignItems: "center",
   justifyContent: "center",
-  paddingVertical: spacing.xs,
+  paddingVertical: spacing.s2,
 })
 
 const $tabLabel: ThemedStyle<TextStyle> = ({typography}) => ({
@@ -81,6 +81,6 @@ const $tabButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   justifyContent: "space-between",
   alignItems: "center",
   flexDirection: "column",
-  gap: spacing.xxs,
+  gap: spacing.s1,
   flex: 1,
 })

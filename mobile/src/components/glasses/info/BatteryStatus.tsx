@@ -31,7 +31,7 @@ export function BatteryStatus({compact}: BatteryStatusProps) {
             style={{
               backgroundColor: theme.colors.background,
               flex: 1,
-              paddingHorizontal: theme.spacing.md,
+              paddingHorizontal: theme.spacing.s4,
               paddingRight: 20,
             }}
             label={translate("deviceSettings:glasses")}
@@ -47,7 +47,7 @@ export function BatteryStatus({compact}: BatteryStatusProps) {
 
         {caseBatteryLevel !== undefined && caseBatteryLevel !== -1 && !caseRemoved && (
           <StatusCard
-            style={{backgroundColor: theme.colors.background, flex: 1, paddingHorizontal: theme.spacing.md}}
+            style={{backgroundColor: theme.colors.background, flex: 1, paddingHorizontal: theme.spacing.s4}}
             label={translate("deviceSettings:case")}
             subtitle={caseCharging ? translate("deviceSettings:charging") : undefined}
             textStyle={themed($compactTextStyle)}
@@ -100,8 +100,8 @@ const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   flexDirection: "row",
   alignItems: "center",
-  gap: spacing.xs,
-  // paddingHorizontal: spacing.xxs,
+  gap: spacing.s2,
+  // paddingHorizontal: spacing.s1,
   width: "100%",
 })
 
@@ -112,15 +112,15 @@ const $compactTextStyle: ThemedStyle<TextStyle> = () => ({
 })
 
 const $textStyle: ThemedStyle<TextStyle> = () => ({
-  // fontSize: spacing.sm,
+  // fontSize: spacing.s3,
   // fontWeight: "500",
 })
 
 const $compactBatteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  width: spacing.xl,
-  // marginRight: spacing.md,
+  width: spacing.s8,
+  // marginRight: spacing.s4,
   justifyContent: "space-between",
   gap: spacing.s1,
 })
@@ -128,7 +128,7 @@ const $compactBatteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $batteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  width: spacing.xxxl,
-  // marginRight: spacing.xxs,
+  width: spacing.s16,
+  // marginRight: spacing.s1,
   justifyContent: "space-between",
 })

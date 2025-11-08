@@ -70,7 +70,7 @@ const GlassesTroubleshootingModal: React.FC<TroubleshootingModalProps> = ({isVis
             borderRadius: 16,
             elevation: 5,
             maxHeight: "80%",
-            padding: theme.spacing.lg,
+            padding: theme.spacing.s6,
             shadowColor: "#000",
             shadowOffset: {
               width: 0,
@@ -86,7 +86,7 @@ const GlassesTroubleshootingModal: React.FC<TroubleshootingModalProps> = ({isVis
               alignItems: "center",
               flexDirection: "row",
               justifyContent: "space-between",
-              marginBottom: theme.spacing.md,
+              marginBottom: theme.spacing.s4,
             }}>
             <Text
               style={{
@@ -98,7 +98,7 @@ const GlassesTroubleshootingModal: React.FC<TroubleshootingModalProps> = ({isVis
               }}>
               Troubleshooting {glassesModelName}
             </Text>
-            <TouchableOpacity onPress={onClose} style={{padding: theme.spacing.xs}}>
+            <TouchableOpacity onPress={onClose} style={{padding: theme.spacing.s2}}>
               <MaterialIcons name="close" size={24} color={theme.colors.text} />
             </TouchableOpacity>
           </View>
@@ -107,13 +107,13 @@ const GlassesTroubleshootingModal: React.FC<TroubleshootingModalProps> = ({isVis
             style={{
               fontFamily: "Montserrat-Regular",
               fontSize: 16,
-              marginBottom: theme.spacing.md,
+              marginBottom: theme.spacing.s4,
               color: theme.colors.text,
             }}>
             Having trouble pairing your glasses? Try these tips:
           </Text>
 
-          <ScrollView style={{marginBottom: theme.spacing.lg, maxHeight: 350}}>
+          <ScrollView style={{marginBottom: theme.spacing.s6, maxHeight: 350}}>
             {tips.map((tip, index) => (
               <View
                 key={index}
@@ -121,8 +121,8 @@ const GlassesTroubleshootingModal: React.FC<TroubleshootingModalProps> = ({isVis
                   alignItems: "flex-start",
                   borderRadius: 8,
                   flexDirection: "row",
-                  marginBottom: theme.spacing.sm,
-                  padding: theme.spacing.sm,
+                  marginBottom: theme.spacing.s3,
+                  padding: theme.spacing.s3,
                   backgroundColor: theme.colors.backgroundAlt,
                 }}>
                 <Text
@@ -130,7 +130,7 @@ const GlassesTroubleshootingModal: React.FC<TroubleshootingModalProps> = ({isVis
                     fontFamily: "Montserrat-Bold",
                     fontSize: 16,
                     fontWeight: "bold",
-                    marginRight: theme.spacing.sm,
+                    marginRight: theme.spacing.s3,
                     minWidth: 20,
                     color: theme.colors.primary,
                   }}>
@@ -154,7 +154,7 @@ const GlassesTroubleshootingModal: React.FC<TroubleshootingModalProps> = ({isVis
               alignItems: "center",
               borderRadius: 8,
               justifyContent: "center",
-              padding: theme.spacing.md,
+              padding: theme.spacing.s4,
               backgroundColor: theme.colors.primary,
             }}
             onPress={onClose}>

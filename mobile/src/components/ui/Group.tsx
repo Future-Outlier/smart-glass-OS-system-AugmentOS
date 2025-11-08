@@ -58,21 +58,21 @@ const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
 })
 
 const $top: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.md,
-  borderBottomLeftRadius: spacing.xxs,
-  borderBottomRightRadius: spacing.xxs,
+  borderRadius: spacing.s4,
+  borderBottomLeftRadius: spacing.s1,
+  borderBottomRightRadius: spacing.s1,
 })
 
 const $bottom: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.md,
-  borderTopLeftRadius: spacing.xxs,
-  borderTopRightRadius: spacing.xxs,
+  borderRadius: spacing.s4,
+  borderTopLeftRadius: spacing.s1,
+  borderTopRightRadius: spacing.s1,
 })
 
 const $middle: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.xxs,
+  borderRadius: spacing.s1,
 })
 
 const $none: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
 })

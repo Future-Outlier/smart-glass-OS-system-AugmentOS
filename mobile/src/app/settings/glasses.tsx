@@ -33,12 +33,12 @@ export default function Glasses() {
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
       <Header title={pageTitle} leftIcon="caretLeft" onLeftPress={() => goBack()} />
       <ScrollView
-        style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}
+        style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}
         contentInsetAdjustmentBehavior="automatic">
         {/* <CloudConnection /> */}
         {/* {connected && features?.hasDisplay && <ConnectedSimulatedGlassesInfo />} */}
         {/* {connected && features?.hasDisplay && <ConnectedGlasses showTitle={false} />} */}
-        {/* <Spacer height={theme.spacing.lg} /> */}
+        {/* <Spacer height={theme.spacing.s6} /> */}
         {!connected && <Spacer height={theme.spacing.s6} />}
         {!connected && <ConnectDeviceButton />}
         {/* Show helper text if glasses are paired but not connected */}

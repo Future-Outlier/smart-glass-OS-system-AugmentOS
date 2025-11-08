@@ -55,7 +55,7 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
       <Header title={translate("login:forgotPasswordTitle")} leftIcon="caretLeft" onLeftPress={goBack} />
       <ScrollView
         contentContainerStyle={themed($scrollContent)}
@@ -69,7 +69,7 @@ export default function ForgotPasswordScreen() {
               <Text tx="login:email" style={themed($inputLabel)} />
               <View style={themed($enhancedInputContainer)}>
                 <FontAwesome name="envelope" size={16} color={theme.colors.textDim} />
-                <Spacer width={spacing.sm} />
+                <Spacer width={spacing.s3} />
                 <TextInput
                   hitSlop={{top: 16, bottom: 16}}
                   style={themed($enhancedInput)}
@@ -85,7 +85,7 @@ export default function ForgotPasswordScreen() {
               </View>
             </View>
 
-            <Spacer height={spacing.lg} />
+            <Spacer height={spacing.s6} />
 
             <Button
               tx="login:sendResetEmail"
@@ -99,7 +99,7 @@ export default function ForgotPasswordScreen() {
               }
             />
 
-            <Spacer height={spacing.md} />
+            <Spacer height={spacing.s4} />
 
             <Text tx="login:rememberPassword" style={themed($helperText)} />
             <Button
@@ -122,14 +122,14 @@ const $scrollContent: ThemedStyle<ViewStyle> = () => ({
 
 const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.lg,
+  padding: spacing.s6,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
   fontSize: 16,
   color: colors.text,
   textAlign: "left",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
   lineHeight: 22,
 })
 
@@ -138,7 +138,7 @@ const $form: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $inputGroup: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $inputLabel: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -155,7 +155,7 @@ const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDar
   borderWidth: 1,
   borderColor: colors.border,
   borderRadius: 8,
-  paddingHorizontal: spacing.sm,
+  paddingHorizontal: spacing.s3,
   backgroundColor: isDark ? colors.transparent : colors.background,
   ...(isDark
     ? {
@@ -204,5 +204,5 @@ const $helperText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 14,
   color: colors.textDim,
   textAlign: "center",
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })

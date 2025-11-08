@@ -123,7 +123,7 @@ export default function CameraSettingsScreen() {
 
   if (!supportsCameraButton) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}}>
+      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
         <Header leftIcon="caretLeft" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
         <View style={themed($emptyStateContainer)}>
           <Text style={themed($emptyStateText)}>Camera settings are not available for this device</Text>
@@ -133,10 +133,10 @@ export default function CameraSettingsScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
       <Header leftIcon="caretLeft" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
       <ScrollView
-        style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}
+        style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}
         contentInsetAdjustmentBehavior="automatic">
         <View style={themed($settingsGroup)}>
           <Text style={themed($settingLabel)}>Action Button Photo Settings</Text>
@@ -151,10 +151,10 @@ export default function CameraSettingsScreen() {
                 style={[
                   themed($optionItem),
                   {
-                    borderTopLeftRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                    borderTopRightRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                    borderBottomLeftRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
-                    borderBottomRightRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
+                    borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
                     borderWidth: photoSize === value ? 1 : undefined,
                     borderColor: photoSize === value ? theme.colors.primary : undefined,
                   },
@@ -180,10 +180,10 @@ export default function CameraSettingsScreen() {
                 style={[
                   themed($optionItem),
                   {
-                    borderTopLeftRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                    borderTopRightRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                    borderBottomLeftRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
-                    borderBottomRightRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
+                    borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
                     borderWidth: videoResolution === value ? 1 : undefined,
                     borderColor: videoResolution === value ? theme.colors.primary : undefined,
                   },
@@ -212,10 +212,10 @@ export default function CameraSettingsScreen() {
                   style={[
                     themed($optionItem),
                     {
-                      borderTopLeftRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                      borderTopRightRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                      borderBottomLeftRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
-                      borderBottomRightRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
+                      borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                      borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                      borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                      borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
                       borderWidth: maxRecordingTime === parseInt(value.replace("m", "")) ? 1 : undefined,
                       borderColor:
                         maxRecordingTime === parseInt(value.replace("m", "")) ? theme.colors.primary : undefined,
@@ -233,7 +233,7 @@ export default function CameraSettingsScreen() {
         )}
 
         {devMode && (
-          <View style={{marginVertical: theme.spacing.sm}}>
+          <View style={{marginVertical: theme.spacing.s3}}>
             <ToggleSetting
               label="Recording LED"
               subtitle="Shows when camera is active"
@@ -251,30 +251,30 @@ const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
   paddingVertical: 14,
   paddingHorizontal: 16,
-  borderRadius: spacing.md,
-  marginVertical: spacing.sm,
+  borderRadius: spacing.s4,
+  marginVertical: spacing.s3,
 })
 
 const $settingLabel: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.text,
   fontSize: 14,
   fontWeight: "600",
-  marginBottom: spacing.xxs,
+  marginBottom: spacing.s1,
 })
 
 const $settingSubtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
   fontSize: 12,
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $optionItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  padding: spacing.md,
+  padding: spacing.s4,
   backgroundColor: colors.background,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $optionText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -286,7 +286,7 @@ const $emptyStateContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingVertical: spacing.xxl,
+  paddingVertical: spacing.s12,
   minHeight: 300,
 })
 

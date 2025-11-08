@@ -75,11 +75,11 @@ export default function AccountPage() {
       <Header leftTx="settings:title" onLeftPress={handleQuickPress} />
 
       <ScrollView
-        style={{marginRight: -theme.spacing.lg, paddingRight: theme.spacing.s6}}
+        style={{marginRight: -theme.spacing.s6, paddingRight: theme.spacing.s6}}
         contentInsetAdjustmentBehavior="automatic">
         <ProfileCard />
 
-        <View style={{flex: 1, gap: theme.spacing.lg}}>
+        <View style={{flex: 1, gap: theme.spacing.s6}}>
           <Group title={translate("account:accountSettings")}>
             <RouteButton
               icon={<Icon name="circle-user" size={24} color={theme.colors.secondary_foreground} />}
@@ -155,8 +155,8 @@ export default function AccountPage() {
             style={{color: theme.colors.textDim}}
           />
         </View>
-        <Spacer height={theme.spacing.xxl} />
-        <Spacer height={theme.spacing.xxl} />
+        <Spacer height={theme.spacing.s12} />
+        <Spacer height={theme.spacing.s12} />
       </ScrollView>
     </Screen>
   )
@@ -164,9 +164,9 @@ export default function AccountPage() {
 
 const $versionContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
-  bottom: spacing.xs,
+  bottom: spacing.s2,
   width: "100%",
-  paddingVertical: spacing.xs,
-  borderRadius: spacing.md,
-  marginTop: spacing.xxxl,
+  paddingVertical: spacing.s2,
+  borderRadius: spacing.s4,
+  marginTop: spacing.s16,
 })

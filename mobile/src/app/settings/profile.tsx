@@ -242,7 +242,7 @@ export default function ProfileSettingsPage() {
   const {theme, themed} = useAppTheme()
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
       <Header title={translate("profileSettings:title")} leftIcon="arrow-left" onLeftPress={goBack} />
       <ScrollView>
         {loading ? (
@@ -266,7 +266,7 @@ export default function ProfileSettingsPage() {
               />
             </Group>
 
-            <Spacer height={theme.spacing.lg} />
+            <Spacer height={theme.spacing.s6} />
 
             <Group title={translate("account:appSettings")}>
               {userData.provider == "email" && (
@@ -298,12 +298,12 @@ export default function ProfileSettingsPage() {
           <View
             style={{
               backgroundColor: theme.colors.background,
-              padding: theme.spacing.xl,
-              borderRadius: theme.spacing.md,
+              padding: theme.spacing.s8,
+              borderRadius: theme.spacing.s4,
               alignItems: "center",
               minWidth: 200,
             }}>
-            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.md}} />
+            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.s4}} />
             <Text preset="bold" style={{color: theme.colors.text}}>
               {translate("settings:loggingOutMessage")}
             </Text>

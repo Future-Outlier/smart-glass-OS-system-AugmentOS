@@ -31,11 +31,11 @@ const MultiSelectSetting: React.FC<MultiSelectSettingProps> = ({label, values = 
         styles.container,
         {
           backgroundColor: theme.colors.backgroundAlt,
-          borderWidth: theme.spacing.xxxs,
+          borderWidth: theme.spacing.s0_5,
           borderColor: theme.colors.border,
-          borderRadius: theme.spacing.md,
-          paddingVertical: theme.spacing.md,
-          paddingHorizontal: theme.spacing.lg,
+          borderRadius: theme.spacing.s4,
+          paddingVertical: theme.spacing.s4,
+          paddingHorizontal: theme.spacing.s6,
         },
       ]}>
       <Text style={[styles.label, {color: theme.colors.text}]}>{label}</Text>

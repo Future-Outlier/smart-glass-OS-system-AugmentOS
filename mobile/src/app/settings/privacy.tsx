@@ -198,7 +198,7 @@ export default function PrivacySettingsScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
       <Header titleTx="privacySettings:title" leftIcon="caretLeft" onLeftPress={goBack} />
       <ScrollView>
         {/* Notification Permission - Android Only */}
@@ -210,7 +210,7 @@ export default function PrivacySettingsScreen() {
               value={notificationsEnabled}
               onPress={handleToggleNotifications}
             />
-            <Spacer height={theme.spacing.md} />
+            <Spacer height={theme.spacing.s4} />
           </>
         )}
 
@@ -223,7 +223,7 @@ export default function PrivacySettingsScreen() {
               value={calendarEnabled}
               onPress={handleToggleCalendar}
             />
-            <Spacer height={theme.spacing.md} />
+            <Spacer height={theme.spacing.s4} />
           </>
         )}
 
@@ -236,7 +236,7 @@ export default function PrivacySettingsScreen() {
               value={locationEnabled}
               onPress={handleToggleLocation}
             />
-            <Spacer height={theme.spacing.md} />
+            <Spacer height={theme.spacing.s4} />
           </>
         )}
 

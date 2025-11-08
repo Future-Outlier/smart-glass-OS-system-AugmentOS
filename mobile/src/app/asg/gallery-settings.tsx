@@ -189,11 +189,11 @@ export default function GallerySettingsScreen() {
 }
 
 const $section: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $sectionCompact: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $sectionTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -202,6 +202,6 @@ const $sectionTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.text,
   lineHeight: 20,
   letterSpacing: 0,
-  marginBottom: spacing.xs,
-  marginTop: spacing.sm,
+  marginBottom: spacing.s2,
+  marginTop: spacing.s3,
 })

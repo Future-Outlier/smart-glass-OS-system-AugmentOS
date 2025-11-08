@@ -282,10 +282,10 @@ export default function TranscriptionSettingsScreen() {
   }, [])
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
       <Header title={translate("settings:transcriptionSettings")} leftIcon="caretLeft" onLeftPress={handleGoBack} />
 
-      <Spacer height={theme.spacing.md} />
+      <Spacer height={theme.spacing.s4} />
 
       <ScrollView>
         <ToggleSetting
@@ -295,7 +295,7 @@ export default function TranscriptionSettingsScreen() {
           onValueChange={toggleBypassVadForDebugging}
         />
 
-        <Spacer height={theme.spacing.md} />
+        <Spacer height={theme.spacing.s4} />
 
         <ToggleSetting
           label={"Offline Mode"}
@@ -306,12 +306,12 @@ export default function TranscriptionSettingsScreen() {
 
         {
           <>
-            <Spacer height={theme.spacing.md} />
+            <Spacer height={theme.spacing.s4} />
 
             {isCheckingModel ? (
-              <View style={{alignItems: "center", padding: theme.spacing.lg}}>
+              <View style={{alignItems: "center", padding: theme.spacing.s6}}>
                 <ActivityIndicator size="large" color={theme.colors.text} />
-                <Spacer height={theme.spacing.sm} />
+                <Spacer height={theme.spacing.s3} />
                 <Text>Checking model status...</Text>
               </View>
             ) : (
@@ -329,7 +329,7 @@ export default function TranscriptionSettingsScreen() {
                   currentModelInfo={modelInfo}
                 />
 
-                <Spacer height={theme.spacing.md} />
+                <Spacer height={theme.spacing.s4} />
               </>
             )}
           </>

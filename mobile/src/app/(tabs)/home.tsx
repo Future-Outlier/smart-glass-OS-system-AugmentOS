@@ -31,7 +31,7 @@ export default function Homepage() {
   )
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
       <Header
         leftTx="home:title"
         RightActionComponent={
@@ -67,5 +67,5 @@ export default function Homepage() {
 const $headerRight: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  gap: spacing.sm,
+  gap: spacing.s3,
 })

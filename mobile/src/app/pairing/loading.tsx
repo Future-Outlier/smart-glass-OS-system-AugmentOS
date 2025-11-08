@@ -221,11 +221,11 @@ export default function GlassesPairingGuideScreen() {
 }
 
 const $screen: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
 })
 
 const $pillButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.md,
+  marginRight: spacing.s4,
 })
 
 const $scrollView: ThemedStyle<ViewStyle> = () => ({

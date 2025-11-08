@@ -94,7 +94,7 @@ export default function WifiPasswordScreen() {
     <Screen preset="fixed" contentContainerStyle={themed($container)}>
       <Header title="Enter Glasses WiFi Details" leftIcon="caretLeft" onLeftPress={handleGoBack} />
       <ScrollView
-        style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}>
+        style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}>
         <View style={themed($content)}>
           <View style={themed($inputContainer)}>
             <Text style={themed($label)}>Network Name (SSID)</Text>
@@ -169,26 +169,26 @@ const $container: ThemedStyle<ViewStyle> = () => ({
 
 const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  paddingHorizontal: spacing.lg,
+  paddingHorizontal: spacing.s6,
 })
 
 const $inputContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   fontWeight: "500",
   color: colors.text,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $input: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   height: 50,
   borderWidth: 1,
   borderColor: colors.border,
-  borderRadius: spacing.xs,
-  padding: spacing.sm,
+  borderRadius: spacing.s2,
+  padding: spacing.s3,
   fontSize: 16,
   color: colors.text,
   backgroundColor: colors.background,
@@ -205,8 +205,8 @@ const $passwordInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   height: 50,
   borderWidth: 1,
   borderColor: colors.border,
-  borderRadius: spacing.xs,
-  padding: spacing.sm,
+  borderRadius: spacing.s2,
+  padding: spacing.s3,
   paddingRight: 50,
   fontSize: 16,
   color: colors.text,
@@ -215,7 +215,7 @@ const $passwordInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 
 const $eyeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   position: "absolute",
-  right: spacing.sm,
+  right: spacing.s3,
   height: 50,
   width: 40,
   justifyContent: "center",
@@ -225,27 +225,27 @@ const $eyeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $savedPasswordText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 12,
   color: colors.tint,
-  marginTop: spacing.xs,
+  marginTop: spacing.s2,
   fontStyle: "italic",
 })
 
 const $checkboxContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "flex-start",
-  marginBottom: spacing.lg,
-  paddingVertical: spacing.sm,
+  marginBottom: spacing.s6,
+  paddingVertical: spacing.s3,
 })
 
 const $checkboxContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  marginLeft: spacing.sm,
+  marginLeft: spacing.s3,
 })
 
 const $checkboxLabel: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   fontWeight: "500",
   color: colors.text,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $checkboxDescription: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -254,8 +254,8 @@ const $checkboxDescription: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginTop: spacing.xl,
-  gap: spacing.sm,
+  marginTop: spacing.s8,
+  gap: spacing.s3,
 })
 
 const $primaryButton: ThemedStyle<ViewStyle> = () => ({})

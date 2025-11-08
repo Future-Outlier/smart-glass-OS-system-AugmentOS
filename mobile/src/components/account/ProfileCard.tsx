@@ -106,7 +106,7 @@ const $profileImage: ThemedStyle<ImageStyle> = ({spacing}) => ({
   height: 150,
   borderRadius: 150,
   alignSelf: "center",
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $profilePlaceholder: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -116,14 +116,14 @@ const $profilePlaceholder: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   justifyContent: "center",
   alignItems: "center",
   alignSelf: "center",
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
   backgroundColor: colors.border,
 })
 
 const $infoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
-  gap: spacing.xxs,
-  marginBottom: spacing.lg,
+  gap: spacing.s1,
+  marginBottom: spacing.s6,
 })
 
 const $nameText: ThemedStyle<TextStyle> = ({colors}) => ({

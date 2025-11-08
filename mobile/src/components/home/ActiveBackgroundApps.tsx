@@ -123,21 +123,21 @@ export const ActiveBackgroundApps: React.FC = () => {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-//   marginVertical: spacing.xs,
+//   marginVertical: spacing.s2,
   minHeight: 72,
   // borderWidth: 2,
   // borderColor: colors.border,
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
   backgroundColor: colors.backgroundAlt,
-  paddingHorizontal: spacing.xs,
+  paddingHorizontal: spacing.s2,
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
-  padding: spacing.sm,
-  width: spacing.xxl,
-  height: spacing.xxl,
-  borderRadius: spacing.xxl,
+  padding: spacing.s3,
+  width: spacing.s12,
+  height: spacing.s12,
+  borderRadius: spacing.s12,
   transform: [{scaleX: -1}],
   alignItems: "center",
 })
@@ -145,9 +145,9 @@ const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 const $rowContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  paddingHorizontal: spacing.xs,
-  paddingVertical: spacing.sm,
-  gap: spacing.sm,
+  paddingHorizontal: spacing.s2,
+  paddingVertical: spacing.s3,
+  gap: spacing.s3,
 })
 
 const $appIcon: ThemedStyle<ImageStyle> = () => ({
@@ -164,38 +164,38 @@ const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   fontWeight: "500",
   color: colors.text,
-  marginBottom: spacing.xxs,
+  marginBottom: spacing.s1,
 })
 
 const $tagContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  gap: spacing.xs,
+  gap: spacing.s2,
 })
 
 const $activeTag: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  paddingHorizontal: spacing.xs,
+  paddingHorizontal: spacing.s2,
   paddingVertical: 2,
   backgroundColor: colors.background,
-  borderRadius: spacing.lg,
+  borderRadius: spacing.s6,
 })
 
 const $tagText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.sm,
+  fontSize: spacing.s3,
   color: colors.secondary_foreground,
   fontWeight: "500",
 })
 
 const $closeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.xs,
+  padding: spacing.s2,
   justifyContent: "center",
   alignItems: "center",
 })
 
 const $placeholderContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.lg,
+  padding: spacing.s6,
   alignItems: "center",
   justifyContent: "center",
-  paddingVertical: spacing.xl,
+  paddingVertical: spacing.s8,
 })
 
 const $placeholderText: ThemedStyle<TextStyle> = ({colors}) => ({

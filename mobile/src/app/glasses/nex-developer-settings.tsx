@@ -10,7 +10,7 @@ export default function NexDeveloperSettingsPage() {
   const {goBack} = useNavigationHistory()
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
       <Stack.Screen
         options={{
           headerShown: false,

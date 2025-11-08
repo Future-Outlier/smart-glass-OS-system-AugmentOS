@@ -115,7 +115,7 @@ export default function NotificationSettingsScreen() {
           flexDirection: "row",
           alignItems: "center",
           height: ITEM_HEIGHT,
-          paddingHorizontal: theme.spacing.md,
+          paddingHorizontal: theme.spacing.s4,
           backgroundColor: theme.colors.card,
           borderBottomWidth: 1,
           borderBottomColor: theme.colors.border,
@@ -125,7 +125,7 @@ export default function NotificationSettingsScreen() {
           style={{
             width: 36,
             height: 36,
-            marginRight: theme.spacing.md,
+            marginRight: theme.spacing.s4,
             borderRadius: 8,
             backgroundColor: theme.colors.backgroundAlt,
             alignItems: "center",
@@ -146,7 +146,7 @@ export default function NotificationSettingsScreen() {
         </View>
 
         {/* App Info - Flex to fill space */}
-        <View style={{flex: 1, marginRight: theme.spacing.sm, justifyContent: "center"}}>
+        <View style={{flex: 1, marginRight: theme.spacing.s3, justifyContent: "center"}}>
           <Text
             style={{
               fontSize: 14,
@@ -191,11 +191,11 @@ export default function NotificationSettingsScreen() {
 
   if (loading) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
         <Header title="Notification Settings" leftIcon="caretLeft" onLeftPress={goBack} />
         <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={{color: theme.colors.textDim, marginTop: theme.spacing.md}}>Loading apps...</Text>
+          <Text style={{color: theme.colors.textDim, marginTop: theme.spacing.s4}}>Loading apps...</Text>
         </View>
       </Screen>
     )
@@ -204,16 +204,16 @@ export default function NotificationSettingsScreen() {
   // Show iOS message if on iOS
   if (Platform.OS === "ios") {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
         <Header title="Notification Settings" leftIcon="caretLeft" onLeftPress={goBack} />
-        <View style={{flex: 1, justifyContent: "center", alignItems: "center", padding: theme.spacing.lg}}>
+        <View style={{flex: 1, justifyContent: "center", alignItems: "center", padding: theme.spacing.s6}}>
           <Text
             style={{
               fontSize: 18,
               fontWeight: "600",
               color: theme.colors.text,
               textAlign: "center",
-              marginBottom: theme.spacing.md,
+              marginBottom: theme.spacing.s4,
             }}>
             iOS Notification Settings
           </Text>
@@ -232,15 +232,15 @@ export default function NotificationSettingsScreen() {
       {/* Explanatory Text */}
       <View
         style={{
-          paddingHorizontal: theme.spacing.md,
-          paddingVertical: theme.spacing.sm,
+          paddingHorizontal: theme.spacing.s4,
+          paddingVertical: theme.spacing.s3,
         }}>
         <Text
           style={{
             fontSize: 13,
             color: theme.colors.textDim,
             lineHeight: 18,
-            marginBottom: theme.spacing.xs,
+            marginBottom: theme.spacing.s2,
           }}>
           Control which apps can send notifications to MentraOS. When enabled, notifications from these apps will be
           available to MentraOS.
@@ -250,8 +250,8 @@ export default function NotificationSettingsScreen() {
       {/* Search Bar */}
       <View
         style={{
-          paddingHorizontal: theme.spacing.md,
-          paddingBottom: theme.spacing.sm,
+          paddingHorizontal: theme.spacing.s4,
+          paddingBottom: theme.spacing.s3,
         }}>
         <TextInput
           placeholder="Search apps..."
@@ -260,9 +260,9 @@ export default function NotificationSettingsScreen() {
           onChangeText={setSearchQuery}
           style={{
             // backgroundColor: theme.colors.card,
-            borderRadius: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.md,
-            paddingVertical: theme.spacing.xs,
+            borderRadius: theme.spacing.s3,
+            paddingHorizontal: theme.spacing.s4,
+            paddingVertical: theme.spacing.s2,
             fontSize: 15,
             color: theme.colors.text,
             borderWidth: 1,
@@ -274,8 +274,8 @@ export default function NotificationSettingsScreen() {
       {/* Stats */}
       <View
         style={{
-          paddingHorizontal: theme.spacing.md,
-          paddingVertical: theme.spacing.xs,
+          paddingHorizontal: theme.spacing.s4,
+          paddingVertical: theme.spacing.s2,
           borderBottomWidth: 1,
           borderBottomColor: theme.colors.border,
         }}>
@@ -289,7 +289,7 @@ export default function NotificationSettingsScreen() {
         data={filteredApps}
         keyExtractor={keyExtractor}
         renderItem={renderAppItem}
-        contentContainerStyle={{paddingBottom: theme.spacing.xl}}
+        contentContainerStyle={{paddingBottom: theme.spacing.s8}}
         onRefresh={onRefresh}
         refreshing={refreshing}
         getItemLayout={getItemLayout}
@@ -300,7 +300,7 @@ export default function NotificationSettingsScreen() {
         updateCellsBatchingPeriod={50}
         maintainVisibleContentPosition={{minIndexForVisible: 0}}
         ListEmptyComponent={
-          <View style={{flex: 1, alignItems: "center", marginTop: theme.spacing.xxl}}>
+          <View style={{flex: 1, alignItems: "center", marginTop: theme.spacing.s12}}>
             <Text style={{color: theme.colors.textDim}}>
               {searchQuery ? "No apps found matching your search" : "No apps found"}
             </Text>

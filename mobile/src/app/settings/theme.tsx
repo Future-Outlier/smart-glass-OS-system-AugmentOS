@@ -29,7 +29,7 @@ export default function ThemeSettingsPage() {
   )
 
   return (
-    <Screen preset="scroll" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="scroll" style={{paddingHorizontal: theme.spacing.s4}}>
       <Header title="Theme Settings" leftIcon="caretLeft" onLeftPress={() => goBack()} />
 
       <Group style={{marginTop: theme.spacing.s8}}>
@@ -45,11 +45,11 @@ const $settingsItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   paddingVertical: spacing.s5,
-  paddingHorizontal: spacing.lg,
+  paddingHorizontal: spacing.s6,
   backgroundColor: colors.primary_foreground,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
-  fontSize: spacing.sm,
+  fontSize: spacing.s3,
 })

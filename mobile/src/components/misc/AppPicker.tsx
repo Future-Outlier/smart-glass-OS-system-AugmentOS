@@ -214,18 +214,18 @@ const $modalOverlay: ThemedStyle<ViewStyle> = () => ({
 
 const $modalContent: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
-  borderTopLeftRadius: spacing.lg,
-  borderTopRightRadius: spacing.lg,
+  borderTopLeftRadius: spacing.s6,
+  borderTopRightRadius: spacing.s6,
   height: "90%", // Changed from maxHeight to height for consistent sizing
-  paddingBottom: Platform.OS === "ios" ? spacing.xl : spacing.lg,
+  paddingBottom: Platform.OS === "ios" ? spacing.s8 : spacing.s6,
 })
 
 const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  padding: spacing.lg,
-  paddingBottom: spacing.md,
+  padding: spacing.s6,
+  paddingBottom: spacing.s4,
 })
 
 const $title: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -236,32 +236,32 @@ const $title: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $closeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.xs,
+  padding: spacing.s2,
 })
 
 const $searchContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   backgroundColor: colors.primary_foreground,
-  borderRadius: spacing.sm,
-  marginHorizontal: spacing.lg,
-  marginBottom: spacing.md,
-  paddingHorizontal: spacing.sm,
+  borderRadius: spacing.s3,
+  marginHorizontal: spacing.s6,
+  marginBottom: spacing.s4,
+  paddingHorizontal: spacing.s3,
 })
 
 const $searchIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.xs,
+  marginRight: spacing.s2,
 })
 
 const $searchInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   flex: 1,
   fontSize: 16,
   color: colors.text,
-  paddingVertical: spacing.sm,
+  paddingVertical: spacing.s3,
 })
 
 const $clearButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.xs,
+  padding: spacing.s2,
 })
 
 const $scrollView: ThemedStyle<ViewStyle> = () => ({
@@ -270,39 +270,39 @@ const $scrollView: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $scrollContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.lg,
-  paddingBottom: spacing.lg,
+  paddingHorizontal: spacing.s6,
+  paddingBottom: spacing.s6,
   flexGrow: 1, // Ensure content can grow
 })
 
 const $emptyState: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
   justifyContent: "center",
-  paddingVertical: spacing.xxl,
+  paddingVertical: spacing.s12,
 })
 
 const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   color: colors.textDim,
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
 })
 
 const $appItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.primary_foreground,
-  borderRadius: spacing.sm,
-  padding: spacing.sm,
+  borderRadius: spacing.s3,
+  padding: spacing.s3,
   minHeight: 70, // Ensure minimum height
 })
 
 const $appItemContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  gap: spacing.sm,
+  gap: spacing.s3,
 })
 
 const $appIconSmall: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  width: spacing.xxl,
-  height: spacing.xxl,
+  width: spacing.s12,
+  height: spacing.s12,
 })
 
 const $appInfo: ThemedStyle<ViewStyle> = () => ({
@@ -312,7 +312,7 @@ const $appInfo: ThemedStyle<ViewStyle> = () => ({
 const $appNameRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  gap: spacing.xs,
+  gap: spacing.s2,
 })
 
 const $appName: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -324,19 +324,19 @@ const $appName: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $badge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.palette.secondary400,
-  borderRadius: spacing.xs,
-  padding: spacing.xxs,
-  paddingHorizontal: spacing.xs,
+  borderRadius: spacing.s2,
+  padding: spacing.s1,
+  paddingHorizontal: spacing.s2,
 })
 
 const $warningContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   alignItems: "flex-start",
-  marginTop: spacing.xs,
-  gap: spacing.xs,
+  marginTop: spacing.s2,
+  gap: spacing.s2,
   backgroundColor: colors.backgroundAlt,
-  padding: spacing.xs,
-  borderRadius: spacing.xs,
+  padding: spacing.s2,
+  borderRadius: spacing.s2,
 })
 
 const $warningText: ThemedStyle<TextStyle> = ({colors}) => ({

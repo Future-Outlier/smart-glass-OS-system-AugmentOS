@@ -25,7 +25,7 @@ export default function ScreenSettingsScreen() {
   )
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
       <Header titleTx="screenSettings:title" leftIcon="caretLeft" onLeftPress={goBack} />
 
       <ScrollView>
@@ -39,7 +39,7 @@ export default function ScreenSettingsScreen() {
           onValueSet={setDashboardDepth}
         />
 
-        <Spacer height={theme.spacing.md} />
+        <Spacer height={theme.spacing.s4} />
 
         <SliderSetting
           label="Display Height"

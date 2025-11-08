@@ -246,7 +246,7 @@ export default function SelectGlassesBluetoothScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}} safeAreaEdges={["bottom"]}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}} safeAreaEdges={["bottom"]}>
       <Header
         leftIcon="caretLeft"
         onLeftPress={handleForgetGlasses}
@@ -255,7 +255,7 @@ export default function SelectGlassesBluetoothScreen() {
             text="Help"
             variant="icon"
             onPress={() => setShowTroubleshootingModal(true)}
-            buttonStyle={{marginRight: theme.spacing.lg}}
+            buttonStyle={{marginRight: theme.spacing.s6}}
           />
         }
       />
@@ -288,7 +288,7 @@ export default function SelectGlassesBluetoothScreen() {
               </Group>
             </ScrollView>
           )}
-          <Spacer height={theme.spacing.md} />
+          <Spacer height={theme.spacing.s4} />
           <Divider />
           <Button flex={false} compact={true} tx="common:cancel" preset="alternate" onPress={() => goBack()} />
         </View>
@@ -310,18 +310,18 @@ const $container: ThemedStyle<ViewStyle> = () => ({
 const $contentContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   // height: 520,
   backgroundColor: colors.primary_foreground,
-  borderRadius: spacing.lg,
-  padding: spacing.lg,
-  gap: spacing.lg,
-  // paddingBottom: spacing.xxxl,
+  borderRadius: spacing.s6,
+  padding: spacing.s6,
+  gap: spacing.s6,
+  // paddingBottom: spacing.s16,
 })
 
 const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  paddingVertical: spacing.sm,
-  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.s3,
+  paddingHorizontal: spacing.s4,
   backgroundColor: colors.background,
   height: 50,
 })
@@ -330,7 +330,7 @@ const $scanningText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 20,
   fontWeight: "600",
   color: colors.textDim,
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
   textAlign: "center",
 })
 

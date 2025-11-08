@@ -39,19 +39,19 @@ const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  padding: spacing.md,
-  borderRadius: spacing.md,
-  borderWidth: spacing.xxxs,
+  padding: spacing.s4,
+  borderRadius: spacing.s4,
+  borderWidth: spacing.s0_5,
   alignSelf: "center",
 })
 
 const $settingsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.xs,
+  padding: spacing.s2,
 })
 
 const $settingsButtonTextBlue: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
   color: colors.primary,
-  fontSize: spacing.md,
+  fontSize: spacing.s4,
   fontWeight: "bold",
 })
 
@@ -65,7 +65,7 @@ const $warningText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.warning,
   flex: 1,
   fontSize: 14,
-  marginLeft: spacing.sm,
+  marginLeft: spacing.s3,
 })
 
 export default SensingDisabledWarning

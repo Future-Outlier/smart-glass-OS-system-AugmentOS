@@ -159,7 +159,7 @@ function _SwitchInput(props: SwitchInputProps) {
           {
             backgroundColor: animatedTrackColor,
             borderColor: colors.switchBorder,
-            borderWidth: spacing.xxxs,
+            borderWidth: spacing.s0_5,
           },
           $outerStyleOverride,
         ]}></Animated.View>
@@ -172,7 +172,7 @@ function _SwitchInput(props: SwitchInputProps) {
           {
             backgroundColor: knobBackgroundColor,
             borderColor: colors.switchBorder,
-            borderWidth: theme.spacing.xxxs,
+            borderWidth: theme.spacing.s0_5,
           },
         ]}
       />

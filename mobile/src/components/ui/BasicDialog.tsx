@@ -37,7 +37,7 @@ const BasicDialog = ({
           </Text>
         )}
       </View>
-      <Spacer height={theme.spacing.xxl} />
+      <Spacer height={theme.spacing.s12} />
       <View style={themed($actions)}>
         <View style={themed($actions1)}>
           {leftButtonText && (
@@ -66,7 +66,7 @@ const BasicDialog = ({
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.primary_foreground,
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
   borderWidth: 1,
   borderColor: colors.border,
   overflow: "hidden",
@@ -86,7 +86,7 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 
 const $titleDescription: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignSelf: "stretch",
-  gap: spacing.md,
+  gap: spacing.s4,
   justifyContent: "center",
   paddingHorizontal: 24,
   paddingTop: 24,

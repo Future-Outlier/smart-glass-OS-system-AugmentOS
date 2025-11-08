@@ -22,7 +22,7 @@ export default function DeveloperSettingsScreen() {
   const [debugConsole, setDebugConsole] = useSetting(SETTINGS_KEYS.debug_console)
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
       <Header title="Developer Settings" leftIcon="arrow-left" onLeftPress={() => goBack()} />
 
       <View style={themed($warningContainer)}>
@@ -33,16 +33,16 @@ export default function DeveloperSettingsScreen() {
         <Text tx="warning:developerSettingsWarning" style={themed($warningSubtitle)} />
       </View>
 
-      <Spacer height={theme.spacing.md} />
+      <Spacer height={theme.spacing.s4} />
 
-      <ScrollView style={{flex: 1, marginHorizontal: -theme.spacing.md, paddingHorizontal: theme.spacing.md}}>
+      <ScrollView style={{flex: 1, marginHorizontal: -theme.spacing.s4, paddingHorizontal: theme.spacing.s4}}>
         <RouteButton
           label="🎥 Buffer Recording Debug"
           subtitle="Control 30-second video buffer on glasses"
           onPress={() => push("/settings/buffer-debug")}
         />
 
-        <Spacer height={theme.spacing.md} />
+        <Spacer height={theme.spacing.s4} />
 
         <Group>
           <ToggleSetting
@@ -67,11 +67,11 @@ export default function DeveloperSettingsScreen() {
           />
         </Group>
 
-        <Spacer height={theme.spacing.md} />
+        <Spacer height={theme.spacing.s4} />
 
         <RouteButton label="🔄 Test Mini App" subtitle="Test the Mini App" onPress={() => push("/test/mini-app")} />
 
-        <Spacer height={theme.spacing.md} />
+        <Spacer height={theme.spacing.s4} />
 
         {/* G1 Specific Settings - Only show when connected to Even Realities G1 */}
         {defaultWearable && defaultWearable.includes(DeviceTypes.G1) && (
@@ -84,24 +84,24 @@ export default function DeveloperSettingsScreen() {
                 await setPowerSavingMode(value)
               }}
             />
-            <Spacer height={theme.spacing.md} />
+            <Spacer height={theme.spacing.s4} />
           </Group>
         )}
 
         {!process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE && <BackendUrl />}
 
-        <Spacer height={theme.spacing.md} />
-        <Spacer height={theme.spacing.xxl} />
+        <Spacer height={theme.spacing.s4} />
+        <Spacer height={theme.spacing.s12} />
       </ScrollView>
     </Screen>
   )
 }
 
 const $warningContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
-  borderRadius: spacing.sm,
-  paddingHorizontal: spacing.md,
-  paddingVertical: spacing.sm,
-  borderWidth: spacing.xxxs,
+  borderRadius: spacing.s3,
+  paddingHorizontal: spacing.s4,
+  paddingVertical: spacing.s3,
+  borderWidth: spacing.s0_5,
   borderColor: colors.destructive,
   backgroundColor: isDark ? "#2B1E1A" : "#FEEBE7",
 })

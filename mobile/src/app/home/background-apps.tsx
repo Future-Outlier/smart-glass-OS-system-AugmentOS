@@ -46,18 +46,18 @@ export default function BackgroundAppsScreen() {
         contentContainerStyle={themed($scrollViewContent)}
         showsVerticalScrollIndicator={false}>
         <ActiveBackgroundApps />
-        <Spacer height={theme.spacing.md} />
+        <Spacer height={theme.spacing.s4} />
         <BackgroundAppsGrid />
 
-        <Spacer height={theme.spacing.xxl} />
+        <Spacer height={theme.spacing.s12} />
       </ScrollView>
     </Screen>
   )
 }
 
 const $headerInfo: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  paddingHorizontal: spacing.md,
-  paddingVertical: spacing.sm,
+  paddingHorizontal: spacing.s4,
+  paddingVertical: spacing.s3,
   borderBottomWidth: 1,
   borderBottomColor: colors.border,
 })
@@ -73,5 +73,5 @@ const $scrollView: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $scrollViewContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingTop: spacing.md,
+  paddingTop: spacing.s4,
 })

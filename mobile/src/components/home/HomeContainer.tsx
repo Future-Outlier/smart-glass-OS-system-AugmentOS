@@ -24,14 +24,14 @@ export const HomeContainer: React.FC = () => {
         {defaultWearable && <CompactDeviceStatus />}
         {!offlineMode && <BackgroundAppsLink />}
       </Group>
-      <Spacer height={theme.spacing.xs} />
+      <Spacer height={theme.spacing.s2} />
       <ActiveForegroundApp />
-      <Spacer height={theme.spacing.xs} />
+      <Spacer height={theme.spacing.s2} />
       <ForegroundAppsGrid />
       <IncompatibleApps />
-      <Spacer height={theme.spacing.xxxl} />
-      <Spacer height={theme.spacing.xxxl} />
-      <Spacer height={theme.spacing.xxxl} />
+      <Spacer height={theme.spacing.s16} />
+      <Spacer height={theme.spacing.s16} />
+      <Spacer height={theme.spacing.s16} />
     </View>
   )
 }

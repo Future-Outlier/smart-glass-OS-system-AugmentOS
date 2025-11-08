@@ -1306,7 +1306,7 @@ export function GalleryScreen() {
                   name="download-circle-outline"
                   size={20}
                   color={theme.colors.text}
-                  style={{marginRight: spacing.xs}}
+                  style={{marginRight: spacing.s2}}
                 />
                 <Text style={themed($syncButtonText)}>
                   Sync {glassesGalleryStatus?.total || 0}{" "}
@@ -1329,7 +1329,7 @@ export function GalleryScreen() {
         case GalleryState.REQUESTING_HOTSPOT:
           return (
             <View style={themed($syncButtonRow)}>
-              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
+              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
               <Text style={themed($syncButtonText)}>Starting connection...</Text>
             </View>
           )
@@ -1337,7 +1337,7 @@ export function GalleryScreen() {
         case GalleryState.WAITING_FOR_WIFI_PROMPT:
           return (
             <View style={themed($syncButtonRow)}>
-              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
+              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
               <Text style={themed($syncButtonText)}>Waiting for connection...</Text>
             </View>
           )
@@ -1345,7 +1345,7 @@ export function GalleryScreen() {
         case GalleryState.CONNECTING_TO_HOTSPOT:
           return (
             <View style={themed($syncButtonRow)}>
-              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
+              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
               <Text style={themed($syncButtonText)}>Connecting...</Text>
             </View>
           )
@@ -1353,7 +1353,7 @@ export function GalleryScreen() {
         case GalleryState.CONNECTED_LOADING:
           return (
             <View style={themed($syncButtonRow)}>
-              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
+              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
               <Text style={themed($syncButtonText)}>Loading photos...</Text>
             </View>
           )
@@ -1367,7 +1367,7 @@ export function GalleryScreen() {
                   name="wifi-alert"
                   size={20}
                   color={theme.colors.text}
-                  style={{marginRight: spacing.xs}}
+                  style={{marginRight: spacing.s2}}
                 />
                 <Text style={themed($syncButtonText)}>
                   Sync {glassesGalleryStatus?.total || 0}{" "}
@@ -1399,7 +1399,7 @@ export function GalleryScreen() {
           if (!syncProgress) {
             return (
               <View style={themed($syncButtonRow)}>
-                <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
+                <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
                 <Text style={themed($syncButtonText)}>Syncing {serverPhotosToSync} items...</Text>
               </View>
             )
@@ -1654,7 +1654,7 @@ export function GalleryScreen() {
                     name="image-outline"
                     size={64}
                     color={theme.colors.textDim}
-                    style={{marginBottom: spacing.lg}}
+                    style={{marginBottom: spacing.s6}}
                   />
                   <Text style={themed($emptyText)}>Gallery is empty</Text>
                   <Text style={themed($emptySubtext)}>
@@ -1672,7 +1672,7 @@ export function GalleryScreen() {
                   keyExtractor={item => item.id}
                   contentContainerStyle={[
                     themed($photoGridContent),
-                    {paddingBottom: shouldShowSyncButton ? 100 : spacing.lg},
+                    {paddingBottom: shouldShowSyncButton ? 100 : spacing.s6},
                   ]}
                   columnWrapperStyle={numColumns > 1 ? themed($columnWrapper) : undefined}
                   ItemSeparatorComponent={() => <View style={{height: ITEM_SPACING}} />}
@@ -1706,14 +1706,14 @@ export function GalleryScreen() {
 const $screenContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   // backgroundColor: colors.background,
-  marginHorizontal: -spacing.lg,
+  marginHorizontal: -spacing.s6,
 })
 
 const $errorContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.palette.angry100,
-  padding: spacing.sm,
-  borderRadius: spacing.xs,
-  margin: spacing.lg,
+  padding: spacing.s3,
+  borderRadius: spacing.s2,
+  margin: spacing.s6,
   alignItems: "center",
 })
 
@@ -1721,7 +1721,7 @@ const $errorText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 14,
   color: colors.palette.angry500,
   textAlign: "center",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $photoGridContent: ThemedStyle<ViewStyle> = () => ({
@@ -1738,14 +1738,14 @@ const $emptyContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  padding: spacing.xl,
+  padding: spacing.s8,
 })
 
 const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 20,
   fontWeight: "600",
   color: colors.text,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $emptySubtext: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -1753,7 +1753,7 @@ const $emptySubtext: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
   textAlign: "center",
   lineHeight: 20,
-  paddingHorizontal: spacing.lg,
+  paddingHorizontal: spacing.s6,
 })
 
 const $photoItem: ThemedStyle<ViewStyle> = () => ({
@@ -1769,8 +1769,8 @@ const $photoImage: ThemedStyle<ImageStyle> = () => ({
 
 const $videoIndicator: ThemedStyle<ViewStyle> = ({spacing}) => ({
   position: "absolute",
-  top: spacing.xs,
-  left: spacing.xs,
+  top: spacing.s2,
+  left: spacing.s2,
   backgroundColor: "rgba(0,0,0,0.7)",
   borderRadius: 12,
   paddingHorizontal: 6,
@@ -1799,16 +1799,16 @@ const $galleryContainer: ThemedStyle<ViewStyle> = () => ({
 
 const $syncButtonFixed: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
   position: "absolute",
-  bottom: spacing.xl,
-  left: spacing.lg,
-  right: spacing.lg,
+  bottom: spacing.s8,
+  left: spacing.s6,
+  right: spacing.s6,
   backgroundColor: colors.primary_foreground,
   color: colors.text,
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
   borderWidth: 1,
   borderColor: colors.border,
-  paddingVertical: spacing.md,
-  paddingHorizontal: spacing.lg,
+  paddingVertical: spacing.s4,
+  paddingHorizontal: spacing.s6,
   ...(isDark
     ? {}
     : {
@@ -1840,8 +1840,8 @@ const $syncButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $serverBadge: ThemedStyle<ViewStyle> = ({spacing}) => ({
   position: "absolute",
-  top: spacing.xs,
-  right: spacing.xs,
+  top: spacing.s2,
+  right: spacing.s2,
   backgroundColor: "rgba(0,0,0,0.7)",
   borderRadius: 12,
   paddingHorizontal: 6,
@@ -1856,9 +1856,9 @@ const $serverBadge: ThemedStyle<ViewStyle> = ({spacing}) => ({
 })
 
 // const _$deleteAllButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-//   paddingHorizontal: spacing.sm,
-//   paddingVertical: spacing.xs,
-//   borderRadius: spacing.sm,
+//   paddingHorizontal: spacing.s3,
+//   paddingVertical: spacing.s2,
+//   borderRadius: spacing.s3,
 //   justifyContent: "center",
 //   alignItems: "center",
 //   minWidth: 44,
@@ -1870,7 +1870,7 @@ const $syncButtonProgressBar: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.border,
   borderRadius: 3,
   overflow: "hidden",
-  marginTop: spacing.xs,
+  marginTop: spacing.s2,
   width: "100%",
 })
 
@@ -1898,20 +1898,20 @@ const $permissionContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  padding: spacing.xl,
+  padding: spacing.s8,
 })
 
 const $permissionText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   color: colors.textDim,
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
   textAlign: "center",
 })
 
 const $settingsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  borderRadius: spacing.sm,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
+  borderRadius: spacing.s3,
   justifyContent: "center",
   alignItems: "center",
   minWidth: 44,
@@ -1920,8 +1920,8 @@ const $settingsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
 
 const $selectionCheckbox: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
-  top: spacing.xxs,
-  left: spacing.xxs,
+  top: spacing.s1,
+  left: spacing.s1,
   backgroundColor: colors.primary,
   borderRadius: 20,
   padding: 2,
@@ -1930,8 +1930,8 @@ const $selectionCheckbox: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 
 const $unselectedCheckbox: ThemedStyle<ViewStyle> = ({spacing}) => ({
   position: "absolute",
-  top: spacing.xxs,
-  left: spacing.xxs,
+  top: spacing.s1,
+  left: spacing.s1,
   backgroundColor: "rgba(0, 0, 0, 0.3)",
   borderRadius: 20,
   padding: 2,

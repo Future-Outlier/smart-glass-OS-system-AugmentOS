@@ -64,12 +64,12 @@ export const OfflineModeButton: React.FC = () => {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginLeft: spacing.xs,
-  marginRight: spacing.xs,
+  marginLeft: spacing.s2,
+  marginRight: spacing.s2,
 })
 
 const $button: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.xs,
+  padding: spacing.s2,
   borderRadius: 20,
   justifyContent: "center",
   alignItems: "center",

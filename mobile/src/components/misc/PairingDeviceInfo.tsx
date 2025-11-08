@@ -36,11 +36,11 @@
 //       <Text style={themed($connectText)}>
 //         {translate("pairing:scanningForGlassesModel", {model: glassesModelName})}
 //       </Text>
-//       <Spacer height={theme.spacing.md} />
+//       <Spacer height={theme.spacing.s4} />
 //       <Text style={themed($subText)}>{translate("pairing:scanningForGlasses2")}</Text>
-//       <Spacer height={theme.spacing.lg} />
+//       <Spacer height={theme.spacing.s6} />
 //       <ActivityIndicator size="large" color={theme.colors.text} />
-//       <Spacer height={theme.spacing.lg} />
+//       <Spacer height={theme.spacing.s6} />
 //       <View style={{width: "100%", height: 160, justifyContent: "center", alignItems: "center"}}>
 //         <Animated.View
 //           style={[

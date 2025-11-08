@@ -44,7 +44,7 @@ export default function SelectGlassesModelScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}} safeAreaEdges={["bottom"]}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}} safeAreaEdges={["bottom"]}>
       <Header
         titleTx="pairing:selectModel"
         leftIcon="caretLeft"
@@ -56,8 +56,8 @@ export default function SelectGlassesModelScreen() {
           }
         }}
       />
-      <ScrollView style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}>
-        <View style={{flexDirection: "column", gap: theme.spacing.md}}>
+      <ScrollView style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}>
+        <View style={{flexDirection: "column", gap: theme.spacing.s4}}>
           {glassesOptions
             .filter(glasses => {
               // Hide simulated glasses during onboarding (users get there via "I don't have glasses yet")
@@ -85,9 +85,9 @@ const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: spacing.sm,
+  gap: spacing.s3,
   height: 190,
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
   backgroundColor: colors.primary_foreground,
 })
 
@@ -98,7 +98,7 @@ const $glassesImage: ThemedStyle<ImageStyle> = () => ({
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.md,
+  fontSize: spacing.s4,
   fontWeight: "600",
   flexWrap: "wrap",
   color: colors.text,

@@ -309,7 +309,7 @@ const $loadingOverlay: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $loadingText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.md,
+  fontSize: spacing.s4,
   marginTop: 10,
   color: colors.text,
 })

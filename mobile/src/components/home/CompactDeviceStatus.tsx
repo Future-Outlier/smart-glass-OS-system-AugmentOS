@@ -45,7 +45,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
     return (
       <View style={themed($disconnectedContainer)}>
         <Button
-          textStyle={[{marginLeft: theme.spacing.xxl}]}
+          textStyle={[{marginLeft: theme.spacing.s12}]}
           textAlignment="left"
           LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
           RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
@@ -173,7 +173,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
         {/* <View style={[themed($disconnectedImageContainer)]}> */}
         {/* </View> */}
         {/* <Button
-          textStyle={[{marginLeft: theme.spacing.xxl}]}
+          textStyle={[{marginLeft: theme.spacing.s12}]}
           textAlignment="left"
           LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
           RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
@@ -200,7 +200,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
         <View style={{marginHorizontal: -theme.spacing.s6}}>
           <ConnectedSimulatedGlassesInfo showHeader={false} mirrorStyle={{backgroundColor: theme.colors.background}} />
         </View>
-        <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.xs}}>
+        <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2}}>
           <Button
             flexContainer={false}
             preset="alternate"
@@ -266,7 +266,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
         <BatteryStatus compact={true} />
 
-        <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.xs}}>
+        <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2}}>
           <Button
             flex
             tx="home:glassesMirror"
@@ -292,7 +292,7 @@ const $imageContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
   justifyContent: "center",
   alignSelf: "stretch",
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
 })
 
 const $compactImageContainer: ThemedStyle<ViewStyle> = () => ({
@@ -338,10 +338,10 @@ const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
 })
 
 const $statusContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  // paddingTop: spacing.sm,
+  // paddingTop: spacing.s3,
   flex: 1,
-  // paddingHorizontal: spacing.md,
-  gap: spacing.sm,
+  // paddingHorizontal: spacing.s4,
+  gap: spacing.s3,
 })
 
 const $disconnectedContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
@@ -353,11 +353,11 @@ const $disconnectedImageContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) 
   width: "100%",
   alignItems: "center",
   // borderColor: colors.border,
-  // borderWidth: spacing.xxxs,
-  padding: spacing.sm,
+  // borderWidth: spacing.s0_5,
+  padding: spacing.s3,
   backgroundColor: colors.primary_foreground,
-  borderRadius: spacing.lg,
-  marginBottom: spacing.sm,
+  borderRadius: spacing.s6,
+  marginBottom: spacing.s3,
 })
 
 const $disconnectedGlassesImage: ThemedStyle<ImageStyle> = () => ({

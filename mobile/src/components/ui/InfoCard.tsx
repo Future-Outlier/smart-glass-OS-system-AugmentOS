@@ -23,11 +23,11 @@ const InfoCard: React.FC<InfoCardProps> = ({label, value, isFirst, isLast}) => {
       style={[
         themed($infoCardContainer),
         {
-          borderTopLeftRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-          borderTopRightRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-          borderBottomLeftRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
-          borderBottomRightRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
-          marginBottom: isLast ? 0 : theme.spacing.xs,
+          borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+          borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+          borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+          borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+          marginBottom: isLast ? 0 : theme.spacing.s2,
         },
       ]}>
       <Text style={themed($infoCardTitle)}>{label}</Text>
@@ -73,7 +73,7 @@ const $infoCardContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
   paddingVertical: 18.5,
   paddingHorizontal: 16,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $infoCardTitle: ThemedStyle<TextStyle> = ({colors}) => ({

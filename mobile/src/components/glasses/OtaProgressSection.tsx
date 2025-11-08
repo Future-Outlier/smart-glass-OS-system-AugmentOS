@@ -67,7 +67,7 @@ export default function OtaProgressSection({otaProgress}: OtaProgressSectionProp
 
   return (
     <View style={themed($container)}>
-      <Text style={[themed($subtitle), {marginBottom: theme.spacing.xs}]}>Mentra Live Software Update</Text>
+      <Text style={[themed($subtitle), {marginBottom: theme.spacing.s2}]}>Mentra Live Software Update</Text>
 
       {/* Show Installation Progress (if active) */}
       {showInstallation && (
@@ -142,26 +142,26 @@ const $container: ThemedStyle<any> = ({colors, spacing}) => ({
   backgroundColor: colors.primary_foreground,
   paddingVertical: 12,
   paddingHorizontal: 16,
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
   // borderWidth: 2,
   // borderColor: colors.border,
 })
 
 const $subtitle: ThemedStyle<any> = ({colors, spacing}) => ({
   color: colors.textDim,
-  fontSize: spacing.sm,
+  fontSize: spacing.s3,
   fontWeight: "600",
 })
 
 const $progressItem: ThemedStyle<any> = ({spacing}) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $progressHeader: ThemedStyle<any> = ({spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $progressTitle: ThemedStyle<any> = ({colors}) => ({
@@ -179,7 +179,7 @@ const $progressBarContainer: ThemedStyle<any> = ({colors, spacing}) => ({
   height: 8,
   borderRadius: 4,
   backgroundColor: colors.palette.neutral300,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
   overflow: "hidden",
 })
 
@@ -189,7 +189,7 @@ const $progressBar: ThemedStyle<any> = ({colors}) => ({
 })
 
 const $progressDetails: ThemedStyle<any> = ({spacing}) => ({
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $progressText: ThemedStyle<any> = ({colors}) => ({

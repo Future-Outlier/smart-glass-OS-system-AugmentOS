@@ -191,7 +191,7 @@ export function Button(props: ButtonProps) {
       {state => (
         <View style={[{position: "relative", justifyContent: "center"}, flexContainer && {flex: 1}]}>
           {!!LeftAccessory && (
-            <View style={{marginLeft: spacing.xxs, position: "absolute", left: 0}}>
+            <View style={{marginLeft: spacing.s1, position: "absolute", left: 0}}>
               <LeftAccessory style={$leftAccessoryStyle} pressableState={state} disabled={disabled} />
             </View>
           )}
@@ -220,8 +220,8 @@ const $baseViewStyle: ThemedStyle<ViewStyle> = ({spacing, colors, isDark}) => ({
   borderRadius: 50,
   justifyContent: "center",
   alignItems: "center",
-  paddingVertical: spacing.sm,
-  paddingHorizontal: spacing.sm,
+  paddingVertical: spacing.s3,
+  paddingHorizontal: spacing.s3,
   overflow: "hidden",
   // Add subtle border for light theme
   borderWidth: isDark ? 0 : 1,
@@ -255,12 +255,12 @@ const $compactTextStyle: StyleProp<TextStyle> = {
 } as TextStyle
 
 const $rightAccessoryStyle: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  marginStart: spacing.xs,
+  marginStart: spacing.s2,
   zIndex: 1,
   color: colors.textAlt,
 })
 const $leftAccessoryStyle: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  marginEnd: spacing.xs,
+  marginEnd: spacing.s2,
   zIndex: 1,
   color: colors.textAlt,
 })

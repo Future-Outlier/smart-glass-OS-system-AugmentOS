@@ -43,7 +43,7 @@ export default function FeedbackPage() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
       <Header title={translate("feedback:giveFeedback")} leftIcon="caretLeft" onLeftPress={goBack} />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
         <ScrollView contentContainerStyle={themed($scrollContainer)} keyboardShouldPersistTaps="handled">
@@ -74,20 +74,20 @@ export default function FeedbackPage() {
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  gap: spacing.lg,
+  gap: spacing.s6,
 })
 
 const $scrollContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexGrow: 1,
-  paddingVertical: spacing.md,
+  paddingVertical: spacing.s4,
 })
 
 const $textInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
   borderWidth: 1,
   borderColor: colors.border,
-  borderRadius: spacing.sm,
-  padding: spacing.md,
+  borderRadius: spacing.s3,
+  padding: spacing.s4,
   fontSize: 16,
   color: colors.text,
   minHeight: 200,

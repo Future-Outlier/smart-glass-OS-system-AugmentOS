@@ -135,7 +135,7 @@ export const ForegroundAppsGrid: React.FC = () => {
       <View style={themed($container)}>
         <Text style={themed($emptyText)}>No foreground apps available</Text>
         <TouchableOpacity style={themed($getMoreAppsButton)} onPress={() => push("/store")} activeOpacity={0.7}>
-          <GetMoreAppsIcon size="large" style={{marginBottom: theme.spacing.xs}} />
+          <GetMoreAppsIcon size="large" style={{marginBottom: theme.spacing.s2}} />
           <Text text="Get More Apps" style={themed($appName)} />
         </TouchableOpacity>
       </View>
@@ -162,24 +162,24 @@ export const ForegroundAppsGrid: React.FC = () => {
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  marginTop: spacing.sm,
+  marginTop: spacing.s3,
 })
 
 const $gridContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingBottom: spacing.md,
+  paddingBottom: spacing.s4,
 })
 
 const $gridItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   alignItems: "center",
-  marginVertical: spacing.sm,
+  marginVertical: spacing.s3,
 })
 
 const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  paddingBottom: spacing.sm,
+  paddingBottom: spacing.s3,
 })
 
 const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -198,7 +198,7 @@ const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 12,
   color: colors.text,
   textAlign: "center",
-  marginTop: spacing.xxs,
+  marginTop: spacing.s1,
   lineHeight: 14,
   // overflow: "hidden",
   // wordWrap: "break-word",
@@ -208,7 +208,7 @@ const $appNameOffline: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 12,
   color: colors.textDim,
   textAlign: "center",
-  marginTop: spacing.xxs,
+  marginTop: spacing.s1,
   textDecorationLine: "line-through",
   lineHeight: 14,
 })
@@ -217,10 +217,10 @@ const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 15,
   color: colors.textDim,
   textAlign: "center",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $getMoreAppsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
 })

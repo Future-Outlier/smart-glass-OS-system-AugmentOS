@@ -312,7 +312,7 @@ export default function LoginScreen() {
                       color={theme.colors.textDim}
                       // style={themed($inputIcon)}
                     />
-                    <Spacer width={spacing.sm} />
+                    <Spacer width={spacing.s3} />
                     <TextInput
                       hitSlop={{top: 16, bottom: 16}}
                       style={themed($enhancedInput)}
@@ -336,7 +336,7 @@ export default function LoginScreen() {
                       color={theme.colors.textDim}
                       // style={themed($inputIcon)}
                     />
-                    <Spacer width={spacing.sm} />
+                    <Spacer width={spacing.s3} />
                     <TextInput
                       hitSlop={{top: 16, bottom: 16}}
                       style={themed($enhancedInput)}
@@ -361,7 +361,7 @@ export default function LoginScreen() {
                   <Text tx="login:forgotPassword" style={themed($forgotPasswordText)} />
                 </TouchableOpacity>
 
-                <Spacer height={spacing.sm} />
+                <Spacer height={spacing.s3} />
 
                 <Button
                   tx="login:login"
@@ -371,7 +371,7 @@ export default function LoginScreen() {
                   onPress={() => handleEmailSignIn(email, password)}
                   disabled={isFormLoading}
                 />
-                <Spacer height={spacing.sm} />
+                <Spacer height={spacing.s3} />
                 <Button
                   tx="login:createAccount"
                   style={themed($secondaryButton)}
@@ -381,7 +381,7 @@ export default function LoginScreen() {
                   disabled={isFormLoading}
                 />
 
-                <Spacer height={spacing.sm} />
+                <Spacer height={spacing.s3} />
 
                 <Pressable onPress={() => setIsSigningUp(false)}>
                   <View style={{flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
@@ -451,12 +451,12 @@ export default function LoginScreen() {
           <View
             style={{
               backgroundColor: theme.colors.background,
-              padding: theme.spacing.xl,
-              borderRadius: theme.spacing.md,
+              padding: theme.spacing.s8,
+              borderRadius: theme.spacing.s4,
               alignItems: "center",
               minWidth: 200,
             }}>
-            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.md}} />
+            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.s4}} />
             <Text preset="bold" style={{color: theme.colors.text}}>
               {formAction === "signup" ? "Creating your account..." : "Signing in..."}
             </Text>
@@ -480,7 +480,7 @@ const $scrollContent: ThemedStyle<ViewStyle> = () => ({
 const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
-  padding: spacing.lg,
+  padding: spacing.s6,
 })
 
 const $authLoadingOverlay: ThemedStyle<ViewStyle> = ({colors}) => ({
@@ -497,7 +497,7 @@ const $authLoadingOverlay: ThemedStyle<ViewStyle> = ({colors}) => ({
 
 const $authLoadingContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
-  padding: spacing.md,
+  padding: spacing.s4,
 })
 
 const $authLoadingLogoPlaceholder: ThemedStyle<ViewStyle> = () => ({
@@ -507,7 +507,7 @@ const $authLoadingLogoPlaceholder: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $authLoadingIndicator: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $authLoadingText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -519,20 +519,20 @@ const $title: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
   fontSize: 46,
   color: colors.text,
   textAlign: "center",
-  marginBottom: spacing.xs,
-  paddingTop: spacing.xl,
-  paddingBottom: spacing.md,
+  marginBottom: spacing.s2,
+  paddingTop: spacing.s8,
+  paddingBottom: spacing.s4,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
   fontSize: 16,
   color: colors.text,
   textAlign: "center",
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
 })
 
 const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
 })
 
 const $form: ThemedStyle<ViewStyle> = () => ({
@@ -540,7 +540,7 @@ const $form: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $inputGroup: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $inputLabel: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -557,7 +557,7 @@ const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDar
   borderWidth: 1,
   borderColor: colors.border,
   borderRadius: 8,
-  paddingHorizontal: spacing.sm,
+  paddingHorizontal: spacing.s3,
   backgroundColor: isDark ? colors.palette.transparent : colors.background,
   // Remove shadows for light theme
   ...(isDark
@@ -580,7 +580,7 @@ const $enhancedInput: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $signInOptions: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  gap: spacing.md,
+  gap: spacing.s4,
 })
 
 const $socialButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -589,8 +589,8 @@ const $socialButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   height: 44,
   borderWidth: 1,
   borderColor: colors.border,
-  borderRadius: spacing.lg,
-  paddingHorizontal: spacing.sm,
+  borderRadius: spacing.s6,
+  paddingHorizontal: spacing.s3,
   backgroundColor: colors.background,
   // Remove shadows for light theme to avoid thick border appearance
   shadowOffset: {
@@ -658,7 +658,7 @@ const $termsText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $forgotPasswordContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignSelf: "flex-end",
-  marginTop: spacing.xs,
+  marginTop: spacing.s2,
 })
 
 const $forgotPasswordText: ThemedStyle<TextStyle> = ({colors}) => ({

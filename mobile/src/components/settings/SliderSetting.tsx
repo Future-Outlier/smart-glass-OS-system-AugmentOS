@@ -98,10 +98,10 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   alignItems: "flex-start",
   width: "100%",
   backgroundColor: colors.backgroundAlt,
-  paddingVertical: spacing.md,
-  paddingHorizontal: spacing.lg,
-  borderRadius: spacing.md,
-  borderWidth: spacing.xxxs,
+  paddingVertical: spacing.s4,
+  paddingHorizontal: spacing.s6,
+  borderRadius: spacing.s4,
+  borderWidth: spacing.s0_5,
   borderColor: colors.border,
 })
 
@@ -127,7 +127,7 @@ const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
 const $sliderRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  gap: spacing.xs,
+  gap: spacing.s2,
   width: "100%",
 })
 

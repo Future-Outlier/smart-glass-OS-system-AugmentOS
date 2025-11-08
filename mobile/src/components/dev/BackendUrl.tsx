@@ -215,9 +215,9 @@ export default function BackendUrl() {
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
-  borderRadius: spacing.md,
-  paddingHorizontal: spacing.lg,
-  paddingVertical: spacing.md,
+  borderRadius: spacing.s4,
+  paddingHorizontal: spacing.s6,
+  paddingVertical: spacing.s4,
 })
 
 const $textContainer: ThemedStyle<ViewStyle> = () => ({
@@ -240,7 +240,7 @@ const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
 const $urlInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
   borderColor: colors.primary,
-  borderRadius: spacing.sm,
+  borderRadius: spacing.s3,
   paddingHorizontal: 12,
   paddingVertical: 10,
   fontSize: 14,

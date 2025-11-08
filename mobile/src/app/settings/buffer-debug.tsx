@@ -90,26 +90,26 @@ export default function BufferDebugPage() {
   }
 
   return (
-    <Screen preset="scroll" style={{paddingHorizontal: theme.spacing.lg}}>
+    <Screen preset="scroll" style={{paddingHorizontal: theme.spacing.s6}}>
       <Header title="Camera Debug" leftIcon="caretLeft" onLeftPress={goBack} />
 
-      <Spacer height={theme.spacing.xl} />
+      <Spacer height={theme.spacing.s8} />
 
-      <View style={{flex: 1, gap: theme.spacing.md}}>
+      <View style={{flex: 1, gap: theme.spacing.s4}}>
         <View
           style={{
-            padding: theme.spacing.lg,
+            padding: theme.spacing.s6,
             backgroundColor: theme.colors.surface,
-            borderRadius: theme.spacing.sm,
+            borderRadius: theme.spacing.s3,
             alignItems: "center",
           }}>
-          <Text style={{fontSize: 48, marginBottom: theme.spacing.sm}}>{isBufferRecording ? "🔴" : "⏸️"}</Text>
+          <Text style={{fontSize: 48, marginBottom: theme.spacing.s3}}>{isBufferRecording ? "🔴" : "⏸️"}</Text>
           <Text
             style={{
               fontSize: 18,
               fontWeight: "bold",
               color: theme.colors.text,
-              marginBottom: theme.spacing.xs,
+              marginBottom: theme.spacing.s2,
             }}>
             {isBufferRecording ? "Buffer Recording Active" : "Buffer Recording Stopped"}
           </Text>
@@ -137,13 +137,13 @@ export default function BufferDebugPage() {
               fontSize: 16,
               fontWeight: "600",
               color: theme.colors.text,
-              marginBottom: theme.spacing.sm,
-              marginTop: theme.spacing.md,
+              marginBottom: theme.spacing.s3,
+              marginTop: theme.spacing.s4,
             }}>
             Save Buffer
           </Text>
 
-          <View style={{gap: theme.spacing.sm}}>
+          <View style={{gap: theme.spacing.s3}}>
             <ActionButton
               label="Save Last 30 Seconds"
               variant="secondary"
@@ -170,18 +170,18 @@ export default function BufferDebugPage() {
         {/* Video Recording Section */}
         <View
           style={{
-            padding: theme.spacing.lg,
+            padding: theme.spacing.s6,
             backgroundColor: theme.colors.surface,
-            borderRadius: theme.spacing.sm,
+            borderRadius: theme.spacing.s3,
             alignItems: "center",
           }}>
-          <Text style={{fontSize: 48, marginBottom: theme.spacing.sm}}>{isVideoRecording ? "🔴" : "📹"}</Text>
+          <Text style={{fontSize: 48, marginBottom: theme.spacing.s3}}>{isVideoRecording ? "🔴" : "📹"}</Text>
           <Text
             style={{
               fontSize: 18,
               fontWeight: "bold",
               color: theme.colors.text,
-              marginBottom: theme.spacing.xs,
+              marginBottom: theme.spacing.s2,
             }}>
             {isVideoRecording ? "Recording Video" : "Standard Video Recording"}
           </Text>
@@ -190,7 +190,7 @@ export default function BufferDebugPage() {
               fontSize: 14,
               color: theme.colors.textDim,
               textAlign: "center",
-              marginBottom: theme.spacing.md,
+              marginBottom: theme.spacing.s4,
             }}>
             {isVideoRecording ? "Recording standard video to file..." : "Record a regular video (not buffer mode)"}
           </Text>
@@ -204,10 +204,10 @@ export default function BufferDebugPage() {
 
         <View
           style={{
-            padding: theme.spacing.md,
+            padding: theme.spacing.s4,
             backgroundColor: theme.colors.surface,
-            borderRadius: theme.spacing.sm,
-            marginTop: theme.spacing.md,
+            borderRadius: theme.spacing.s3,
+            marginTop: theme.spacing.s4,
           }}>
           <Text style={{fontSize: 12, color: theme.colors.textDim}}>
             <Text style={{fontWeight: "bold"}}>Recording Modes:</Text>

@@ -30,7 +30,7 @@ export function ButtonSettings({enabled, selectedApp, applets, onEnabledChange, 
           style={{
             paddingHorizontal: 0,
             paddingTop: 0,
-            paddingBottom: enabled ? theme.spacing.sm : 0,
+            paddingBottom: enabled ? theme.spacing.s3 : 0,
             borderWidth: 0,
           }}
         />
@@ -41,7 +41,7 @@ export function ButtonSettings({enabled, selectedApp, applets, onEnabledChange, 
               style={{
                 height: 1,
                 backgroundColor: theme.colors.separator,
-                marginBottom: theme.spacing.sm,
+                marginBottom: theme.spacing.s3,
               }}
             />
             <TouchableOpacity
@@ -85,5 +85,5 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.primary_foreground,
   paddingVertical: 12,
   paddingHorizontal: 16,
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
 })

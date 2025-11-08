@@ -32,9 +32,9 @@ export const PairGlassesCard = ({style}: {style?: ViewStyle}) => {
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.primary_foreground,
-  paddingHorizontal: spacing.lg,
-  paddingVertical: spacing.md,
-  borderRadius: spacing.md,
+  paddingHorizontal: spacing.s6,
+  paddingVertical: spacing.s4,
+  borderRadius: spacing.s4,
   height: 180,
   alignItems: "center",
   justifyContent: "space-between",
@@ -42,12 +42,12 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 
 const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "column",
-  gap: spacing.md,
+  gap: spacing.s4,
   width: "100%",
 })
 
 const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.md,
+  fontSize: spacing.s4,
   fontWeight: "bold",
   color: colors.secondary_foreground,
 })

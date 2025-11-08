@@ -115,22 +115,22 @@ const $mainContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   flexDirection: "column",
   justifyContent: "center",
-  padding: spacing.lg,
+  padding: spacing.s6,
 })
 
 const $infoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
   flex: 0,
   justifyContent: "center",
-  marginBottom: spacing.xxl,
+  marginBottom: spacing.s12,
   width: "100%",
 })
 
 const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.xl,
+  fontSize: spacing.s8,
   lineHeight: 32,
   fontWeight: "bold",
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
   textAlign: "center",
   color: colors.text,
 })
@@ -138,16 +138,16 @@ const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 18,
   lineHeight: 26,
-  marginBottom: spacing.xl,
-  paddingHorizontal: spacing.lg,
+  marginBottom: spacing.s8,
+  paddingHorizontal: spacing.s6,
   textAlign: "center",
   color: colors.textDim,
 })
 
 const $question: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.lg,
+  fontSize: spacing.s6,
   // fontWeight: "600",
   textAlign: "center",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
   color: colors.textDim,
 })

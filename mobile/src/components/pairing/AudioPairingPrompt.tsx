@@ -82,43 +82,43 @@ export function AudioPairingPrompt({deviceName, onSkip}: AudioPairingPromptProps
 }
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.lg,
+  padding: spacing.s6,
   alignItems: "center",
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
 })
 
 const $title: ThemedStyle<TextStyle> = ({spacing}) => ({
   fontSize: 24,
   fontWeight: "bold",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
   textAlign: "center",
 })
 
 const $description: ThemedStyle<TextStyle> = ({spacing}) => ({
   fontSize: 16,
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
   textAlign: "center",
   opacity: 0.8,
 })
 
 const $instructionsContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: "100%",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $instructionRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
   alignItems: "flex-start",
 })
 
 const $stepNumber: ThemedStyle<TextStyle> = ({spacing}) => ({
   fontSize: 16,
   fontWeight: "bold",
-  marginRight: spacing.xs,
+  marginRight: spacing.s2,
   minWidth: 24,
 })
 
@@ -129,7 +129,7 @@ const $instructionText: ThemedStyle<TextStyle> = () => ({
 
 const $pairButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: "100%",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $pairButtonText: ThemedStyle<TextStyle> = () => ({

@@ -289,7 +289,7 @@ const $actionTextContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
   justifyContent: "center",
   height: "100%",
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
   zIndex: 2,
 })
 
@@ -302,7 +302,7 @@ const $actionIconContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
   justifyContent: "center",
   height: "100%",
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
   zIndex: 2,
 })
 
@@ -316,7 +316,7 @@ const $titleWrapperCenter: ThemedStyle<ViewStyle> = ({spacing}) => ({
   height: "100%",
   width: "100%",
   position: "absolute",
-  paddingHorizontal: spacing.xxl,
+  paddingHorizontal: spacing.s12,
   zIndex: 1,
 })
 

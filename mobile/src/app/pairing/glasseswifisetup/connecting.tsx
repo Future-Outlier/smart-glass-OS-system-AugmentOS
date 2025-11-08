@@ -219,7 +219,7 @@ export default function WifiConnectingScreen() {
               <Button onPress={handleTryAgain}>
                 <Text>Try Again</Text>
               </Button>
-              <View style={{height: theme.spacing.sm}} />
+              <View style={{height: theme.spacing.s3}} />
               <Button onPress={handleCancel} preset="alternate">
                 <Text>Cancel</Text>
               </Button>
@@ -241,7 +241,7 @@ export default function WifiConnectingScreen() {
 
 const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.lg,
+  padding: spacing.s6,
   justifyContent: "center",
   alignItems: "center",
 })
@@ -250,14 +250,14 @@ const $statusText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 20,
   fontWeight: "500",
   color: colors.text,
-  marginTop: spacing.lg,
+  marginTop: spacing.s6,
   textAlign: "center",
 })
 
 const $subText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 14,
   color: colors.textDim,
-  marginTop: spacing.xs,
+  marginTop: spacing.s2,
   textAlign: "center",
 })
 
@@ -274,8 +274,8 @@ const $successContent: ThemedStyle<ViewStyle> = () => ({
 
 const $successIconContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
-  marginTop: spacing.xxl,
-  marginBottom: spacing.lg,
+  marginTop: spacing.s12,
+  marginBottom: spacing.s6,
 })
 
 const $successTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -283,29 +283,29 @@ const $successTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontWeight: "600",
   color: colors.text,
   textAlign: "center",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $successDescription: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   color: colors.textDim,
   textAlign: "center",
-  marginBottom: spacing.xl,
-  paddingHorizontal: spacing.lg,
+  marginBottom: spacing.s8,
+  paddingHorizontal: spacing.s6,
 })
 
 const $conditionsList: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.xl,
+  paddingHorizontal: spacing.s8,
 })
 
 const $conditionItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $conditionIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.md,
+  marginRight: spacing.s4,
   width: 32,
 })
 
@@ -316,7 +316,7 @@ const $conditionText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $successButtonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $failureContainer: ThemedStyle<ViewStyle> = () => ({
@@ -332,8 +332,8 @@ const $failureContent: ThemedStyle<ViewStyle> = () => ({
 
 const $failureIconContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
-  marginTop: spacing.xxl,
-  marginBottom: spacing.lg,
+  marginTop: spacing.s12,
+  marginBottom: spacing.s6,
 })
 
 const $failureTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -341,35 +341,35 @@ const $failureTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontWeight: "600",
   color: colors.error,
   textAlign: "center",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $failureDescription: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   color: colors.textDim,
   textAlign: "center",
-  marginBottom: spacing.xl,
-  paddingHorizontal: spacing.xl,
+  marginBottom: spacing.s8,
+  paddingHorizontal: spacing.s8,
 })
 
 const $failureButtonsContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  //marginHorizontal: spacing.lg,
-  marginBottom: spacing.lg,
+  //marginHorizontal: spacing.s6,
+  marginBottom: spacing.s6,
 })
 
 const $failureTipsList: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.xl,
-  marginTop: spacing.md,
+  paddingHorizontal: spacing.s8,
+  marginTop: spacing.s4,
 })
 
 const $failureTipItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $failureTipIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.md,
+  marginRight: spacing.s4,
   width: 32,
 })
 

@@ -9,6 +9,6 @@ export const Card = ({children}: {children: React.ReactNode}) => {
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
-  borderRadius: spacing.xs,
-  padding: spacing.sm,
+  borderRadius: spacing.s2,
+  padding: spacing.s3,
 })

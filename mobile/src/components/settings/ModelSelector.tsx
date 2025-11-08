@@ -80,8 +80,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         style={[
           styles.optionItem,
           {
-            paddingVertical: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.s3,
+            paddingHorizontal: theme.spacing.s4,
           },
         ]}
         onPress={() => {
@@ -122,12 +122,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           styles.selector,
           {
             backgroundColor: theme.colors.backgroundAlt,
-            borderRadius: theme.spacing.md,
-            borderWidth: theme.spacing.xxxs,
+            borderRadius: theme.spacing.s4,
+            borderWidth: theme.spacing.s0_5,
             borderColor: theme.colors.border,
-            paddingVertical: theme.spacing.md,
-            paddingHorizontal: theme.spacing.md,
-            marginTop: theme.spacing.xs,
+            paddingVertical: theme.spacing.s4,
+            paddingHorizontal: theme.spacing.s4,
+            marginTop: theme.spacing.s2,
           },
         ]}
         onPress={() => setModalVisible(true)}
@@ -139,7 +139,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           </View>
           <View style={styles.selectorIcons}>
             {getStatusIcon()}
-            <Icon name="arrow-right" size={16} color={theme.colors.textDim} style={{marginLeft: theme.spacing.xs}} />
+            <Icon name="arrow-right" size={16} color={theme.colors.textDim} style={{marginLeft: theme.spacing.s2}} />
           </View>
         </View>
       </TouchableOpacity>
@@ -149,7 +149,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         <Button
           text="Download Model"
           onPress={() => onDownload(selectedModelId)}
-          style={{marginTop: theme.spacing.sm}}
+          style={{marginTop: theme.spacing.s3}}
         />
       )}
 
@@ -159,7 +159,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           text="Delete Model"
           preset="secondary"
           onPress={() => onDelete(selectedModelId)}
-          style={{marginTop: theme.spacing.sm}}
+          style={{marginTop: theme.spacing.s3}}
           textStyle={{color: theme.colors.error}}
         />
       )} */}
@@ -179,17 +179,17 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                     {
                       backgroundColor: theme.colors.backgroundAlt,
                       borderColor: theme.colors.border,
-                      borderWidth: theme.spacing.xxxs,
-                      borderRadius: theme.spacing.md,
-                      shadowRadius: theme.spacing.xs,
+                      borderWidth: theme.spacing.s0_5,
+                      borderRadius: theme.spacing.s4,
+                      shadowRadius: theme.spacing.s2,
                     },
                   ]}>
                   <View
                     style={[
                       styles.modalHeader,
                       {
-                        marginBottom: theme.spacing.sm,
-                        padding: theme.spacing.md,
+                        marginBottom: theme.spacing.s3,
+                        padding: theme.spacing.s4,
                         borderBottomColor: theme.colors.separator,
                       },
                     ]}>
@@ -200,7 +200,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                     keyExtractor={item => item.modelId}
                     renderItem={renderModelOption}
                     style={[styles.optionsList, {backgroundColor: theme.colors.backgroundAlt}]}
-                    contentContainerStyle={{paddingBottom: theme.spacing.md}}
+                    contentContainerStyle={{paddingBottom: theme.spacing.s4}}
                   />
                 </View>
               </TouchableWithoutFeedback>

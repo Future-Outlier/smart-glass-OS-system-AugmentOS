@@ -21,11 +21,11 @@ export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitl
 
   return (
     <View style={[themed($settingsGroup), themed($statusCardContainer), style]}>
-      <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.md}}>
+      <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s4}}>
         {iconStart && <View style={themed($icon)}>{iconStart}</View>}
         <View
           style={{
-            gap: theme.spacing.xxs,
+            gap: theme.spacing.s1,
           }}>
           <Text style={[themed($label), textStyle]}>{label}</Text>
           {subtitle && <Text style={themed($subtitle)}>{subtitle}</Text>}
@@ -67,9 +67,9 @@ export function RouteButton({label, subtitle, onPress, style, text, icon}: Route
               justifyContent: "space-between",
               paddingVertical: 8,
               maxWidth: "90%",
-              gap: theme.spacing.xxs,
+              gap: theme.spacing.s1,
             }}>
-            <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.md}}>
+            <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s4}}>
               {icon && <View style={themed($icon)}>{icon}</View>}
               <Text style={themed($label)}>{label}</Text>
             </View>
@@ -94,23 +94,23 @@ const $icon: ThemedStyle<ViewStyle> = () => ({
 
 const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
-  paddingVertical: spacing.sm,
-  paddingHorizontal: spacing.md,
-  borderRadius: spacing.md,
+  paddingVertical: spacing.s3,
+  paddingHorizontal: spacing.s4,
+  borderRadius: spacing.s4,
 })
 
 const $text: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontWeight: 300,
   color: colors.text,
-  fontSize: spacing.md,
+  fontSize: spacing.s4,
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
-  padding: spacing.sm,
-  width: spacing.xxl,
-  height: spacing.xxl,
-  borderRadius: spacing.xxl,
+  padding: spacing.s3,
+  width: spacing.s12,
+  height: spacing.s12,
+  borderRadius: spacing.s12,
   alignItems: "center",
 })
 
@@ -122,6 +122,6 @@ const $label: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
-  fontSize: spacing.sm,
+  fontSize: spacing.s3,
   fontWeight: "400",
 })

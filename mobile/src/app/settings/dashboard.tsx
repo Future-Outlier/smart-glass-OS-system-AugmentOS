@@ -57,7 +57,7 @@ export default function DashboardSettingsScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
       <Header titleTx="settings:dashboardSettings" leftIcon="caretLeft" onLeftPress={goBack} />
       <ScrollView>
         <ToggleSetting
@@ -67,7 +67,7 @@ export default function DashboardSettingsScreen() {
           onValueChange={toggleContextualDashboard}
         />
 
-        <Spacer height={theme.spacing.md} />
+        <Spacer height={theme.spacing.s4} />
 
         <ToggleSetting
           label={translate("settings:metricSystemLabel")}
@@ -76,7 +76,7 @@ export default function DashboardSettingsScreen() {
           onValueChange={toggleMetricSystem}
         />
 
-        <Spacer height={theme.spacing.md} />
+        <Spacer height={theme.spacing.s4} />
 
         {defaultWearable && features?.hasIMU && (
           <RouteButton

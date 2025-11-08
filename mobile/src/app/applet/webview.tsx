@@ -242,7 +242,7 @@ export default function AppWebView() {
         // style={{height: 44}}
         // containerStyle={{paddingTop: 0}}
       />
-      <View style={{flex: 1, marginHorizontal: -theme.spacing.lg}}>
+      <View style={{flex: 1, marginHorizontal: -theme.spacing.s6}}>
         {finalUrl ? (
           <WebView
             ref={webViewRef}

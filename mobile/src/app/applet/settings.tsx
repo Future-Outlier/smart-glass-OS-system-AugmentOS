@@ -507,7 +507,7 @@ export default function AppSettings() {
   }
 
   return (
-    <Screen preset="fixed" safeAreaEdges={[]} style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" safeAreaEdges={[]} style={{paddingHorizontal: theme.spacing.s4}}>
       {isUninstalling && <LoadingOverlay message={`Uninstalling ${appInfo?.name || appName}...`} />}
 
       <View>
@@ -542,13 +542,13 @@ export default function AppSettings() {
         style={{flex: 1}}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}> */}
       <Animated.ScrollView
-        style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}
+        style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event([{nativeEvent: {contentOffset: {y: scrollY}}}], {useNativeDriver: true})}
         scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled">
-        <View style={{gap: theme.spacing.lg}}>
+        <View style={{gap: theme.spacing.s6}}>
           {/* Combined App Info and Action Section */}
           <View style={themed($topSection)}>
             <AppIcon app={appInfo} style={themed($appIconLarge)} />
@@ -565,7 +565,7 @@ export default function AppSettings() {
                   text={appInfo.running ? "Stop" : "Start"}
                   onPress={handleStartStopApp}
                   variant="icon"
-                  buttonStyle={{paddingHorizontal: theme.spacing.lg, minWidth: 80}}
+                  buttonStyle={{paddingHorizontal: theme.spacing.s6, minWidth: 80}}
                 />
               </View>
             </View>
@@ -576,11 +576,11 @@ export default function AppSettings() {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                gap: theme.spacing.xs,
+                gap: theme.spacing.s2,
                 backgroundColor: theme.colors.errorBackground,
                 borderRadius: 8,
-                paddingHorizontal: theme.spacing.sm,
-                paddingVertical: theme.spacing.xs,
+                paddingHorizontal: theme.spacing.s3,
+                paddingVertical: theme.spacing.s2,
               }}>
               <FontAwesome name="warning" size={16} color={theme.colors.error} />
               <Text style={{color: theme.colors.error, flex: 1}}>
@@ -625,9 +625,9 @@ export default function AppSettings() {
               style={[
                 themed($groupTitle),
                 {
-                  marginTop: theme.spacing.md,
-                  marginBottom: theme.spacing.xs,
-                  paddingHorizontal: theme.spacing.md,
+                  marginTop: theme.spacing.s4,
+                  marginBottom: theme.spacing.s2,
+                  paddingHorizontal: theme.spacing.s4,
                   fontSize: 16,
                   fontFamily: "Montserrat-Regular",
                   color: theme.colors.textDim,
@@ -636,7 +636,7 @@ export default function AppSettings() {
               Other
             </Text>
             <SettingsGroup>
-              <View style={{paddingVertical: theme.spacing.sm}}>
+              <View style={{paddingVertical: theme.spacing.s3}}>
                 <Text style={{fontSize: 15, color: theme.colors.text}}>Additional Information</Text>
               </View>
               <InfoRow label="Company" value={serverAppInfo?.organization?.name || "-"} showDivider={false} />
@@ -678,7 +678,7 @@ export default function AppSettings() {
 
 const $topSection: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  gap: spacing.lg,
+  gap: spacing.s6,
   alignItems: "center",
 })
 
@@ -688,12 +688,12 @@ const $rightColumn: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $textContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  gap: spacing.xxs,
+  gap: spacing.s1,
 })
 
 const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignSelf: "flex-start",
-  marginTop: spacing.sm,
+  marginTop: spacing.s3,
 })
 
 const $appIconLarge: ThemedStyle<ViewStyle> = () => ({
@@ -716,8 +716,8 @@ const $versionText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $descriptionSection: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingVertical: spacing.xs,
-  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.s2,
+  paddingHorizontal: spacing.s4,
 })
 
 const $descriptionText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -728,14 +728,14 @@ const $descriptionText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $sectionContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  borderRadius: spacing.sm,
+  borderRadius: spacing.s3,
   borderWidth: 1,
-  padding: spacing.md,
+  padding: spacing.s4,
   elevation: 2,
   shadowColor: "#000",
   shadowOffset: {width: 0, height: 2},
   shadowOpacity: 0.1,
-  shadowRadius: spacing.xxs,
+  shadowRadius: spacing.s1,
   backgroundColor: colors.background,
   borderColor: colors.border,
 })
@@ -744,7 +744,7 @@ const $sectionTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 18,
   fontWeight: "bold",
   fontFamily: "Montserrat-Bold",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
   color: colors.text,
 })
 
@@ -756,7 +756,7 @@ const $instructionsText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $settingsContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  gap: spacing.md,
+  gap: spacing.s4,
 })
 
 const $noSettingsText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -764,7 +764,7 @@ const $noSettingsText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontFamily: "Montserrat-Regular",
   fontStyle: "italic",
   textAlign: "center",
-  padding: spacing.md,
+  padding: spacing.s4,
   color: colors.textDim,
 })
 

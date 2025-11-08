@@ -44,10 +44,10 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   alignItems: "center",
   width: "100%",
   backgroundColor: colors.primary_foreground,
-  paddingVertical: spacing.md,
-  paddingHorizontal: spacing.md,
-  borderRadius: spacing.md,
-  // borderWidth: spacing.xxxs,
+  paddingVertical: spacing.s4,
+  paddingHorizontal: spacing.s4,
+  borderRadius: spacing.s4,
+  // borderWidth: spacing.s0_5,
   // borderColor: colors.border,
 })
 

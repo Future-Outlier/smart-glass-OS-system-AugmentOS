@@ -64,7 +64,7 @@ export const ConnectDeviceButton = () => {
   if (defaultWearableNull || defaultWearableStringNull || defaultWearableEmpty) {
     return (
       <Button
-        // textStyle={[{marginLeft: spacing.xxl}]}
+        // textStyle={[{marginLeft: spacing.s12}]}
         // textAlignment="left"
         // LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
         // RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}

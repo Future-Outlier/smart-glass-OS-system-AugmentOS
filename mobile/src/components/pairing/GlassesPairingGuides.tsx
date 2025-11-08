@@ -147,7 +147,7 @@ export function G1PairingGuide() {
         <Image source={require("../../../assets/guide/image_g1_pair.png")} style={themed($caseImage)} />
       </View>
 
-      <Spacer height={theme.spacing.lg} />
+      <Spacer height={theme.spacing.s6} />
 
       <View style={{justifyContent: "flex-start", flexDirection: "column"}}>
         <Text tx="pairing:instructions" style={themed($guideTitle)} />
@@ -162,7 +162,7 @@ export function G1PairingGuide() {
 }
 
 const $guideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginTop: spacing.lg,
+  marginTop: spacing.s6,
   width: "100%",
   alignSelf: "center",
   flex: 1,
@@ -172,14 +172,14 @@ const $guideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $guideTitle: ThemedStyle<TextStyle> = ({colors, typography, spacing}) => ({
   fontSize: 24,
   fontWeight: "bold",
-  marginBottom: spacing.sm + 2,
+  marginBottom: spacing.s3 + 2,
   color: colors.text,
   fontFamily: typography.primary.bold,
 })
 
 const $guideStep: ThemedStyle<TextStyle> = ({colors, spacing, typography}) => ({
   fontSize: 16,
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
   color: colors.text,
   fontFamily: typography.primary.normal,
 })
@@ -187,20 +187,20 @@ const $guideStep: ThemedStyle<TextStyle> = ({colors, spacing, typography}) => ({
 const $guideDescription: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 14,
   lineHeight: 20,
-  marginBottom: spacing.lg,
-  marginTop: spacing.lg,
+  marginBottom: spacing.s6,
+  marginTop: spacing.s6,
   color: colors.text,
 })
 
 const $guideImage: ThemedStyle<ImageStyle> = ({spacing}) => ({
   height: 180,
-  marginVertical: spacing.md,
+  marginVertical: spacing.s4,
   resizeMode: "contain",
   width: "100%",
 })
 
 const $buySection: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
 })
 
 const $preorderButton: ThemedStyle<ViewStyle> = ({colors}) => ({
@@ -230,21 +230,21 @@ const $shippingText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $noteSection: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   width: "100%",
-  borderRadius: spacing.sm,
-  marginTop: spacing.md,
+  borderRadius: spacing.s3,
+  marginTop: spacing.s4,
   alignItems: "center",
   backgroundColor: colors.primary_foreground,
-  padding: spacing.md,
+  padding: spacing.s4,
 })
 
 const $animationContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   // height: 400,
-  // marginVertical: spacing.lg,
+  // marginVertical: spacing.s6,
   position: "relative",
   alignItems: "center",
   justifyContent: "center",
   backgroundColor: colors.primary_foreground,
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
 })
 
 const $glassesContainer: ThemedStyle<ViewStyle> = () => ({
@@ -413,13 +413,13 @@ export function SimulatedPairingGuide() {
       </View> */}
 
       <View style={themed($noteSection)}>
-        <View style={{flex: 1, flexDirection: "row", gap: theme.spacing.md}}>
+        <View style={{flex: 1, flexDirection: "row", gap: theme.spacing.s4}}>
           <Image
             source={require("../../../assets/glasses/mentra_live/mentra_live.png")}
             style={[themed($guideImage), {width: 80, height: 80}]}
             onError={() => console.log("Image failed to load")}
           />
-          <View style={{flex: 1, flexDirection: "column", gap: theme.spacing.md}}>
+          <View style={{flex: 1, flexDirection: "column", gap: theme.spacing.s4}}>
             <Text text="Mentra Live" />
             <Text tx="pairingGuide:mentraLivePreorder" />
           </View>
@@ -505,6 +505,6 @@ export const PairingOptions = ({model, continueFn}: {model: string; continueFn?:
 }
 
 const $buttonsContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  gap: spacing.lg,
-  marginBottom: spacing.lg,
+  gap: spacing.s6,
+  marginBottom: spacing.s6,
 })
