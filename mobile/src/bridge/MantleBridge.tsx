@@ -110,23 +110,10 @@ export class MantleBridge {
           GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
           return
         case "wifi_status_change":
-          // Update Zustand store so SocketComms can forward to cloud
           useGlassesStore.getState().setWifiInfo(data.connected, data.ssid)
-
-          // Also emit event for other listeners (like WiFi setup UI)
-          GlobalEventEmitter.emit("WIFI_STATUS_CHANGE", {
-            connected: data.connected,
-            ssid: data.ssid,
-            local_ip: data.local_ip,
-          })
           break
         case "hotspot_status_change":
-          GlobalEventEmitter.emit("HOTSPOT_STATUS_CHANGE", {
-            enabled: data.enabled,
-            ssid: data.ssid,
-            password: data.password,
-            local_ip: data.local_ip,
-          })
+          useGlassesStore.getState().setHotspotInfo(data.enabled, data.ssid, data.password, data.local_ip)
           break
         case "gallery_status":
           GlobalEventEmitter.emit("GALLERY_STATUS", {
