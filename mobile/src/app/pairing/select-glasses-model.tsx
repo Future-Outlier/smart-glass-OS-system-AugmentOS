@@ -4,7 +4,7 @@ import {getGlassesImage} from "@/utils/getGlassesImage"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {Screen} from "@/components/ignite/Screen"
 import {Header} from "@/components/ignite"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {useLocalSearchParams} from "expo-router"
@@ -44,10 +44,10 @@ export default function SelectGlassesModelScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}} safeAreaEdges={["bottom"]}>
+    <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
       <Header
         titleTx="pairing:selectModel"
-        leftIcon="caretLeft"
+        leftIcon="arrow-left"
         onLeftPress={() => {
           if (onboarding) {
             goBack()

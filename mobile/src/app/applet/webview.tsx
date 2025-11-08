@@ -10,7 +10,7 @@ import {Header, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/services/RestComms"
 import {useSettingsStore} from "@/stores/settings"
-import { $styles } from "@/theme"
+import {$styles} from "@/theme"
 
 export default function AppWebView() {
   const {theme, themed} = useAppTheme()
@@ -228,7 +228,7 @@ export default function AppWebView() {
       <Header
         title={appName}
         titleMode="center"
-        leftIcon="caretLeft"
+        leftIcon="arrow-left"
         onLeftPress={() => goBack()}
         rightIcon="settings"
         rightIconColor={theme.colors.icon}

@@ -2,7 +2,7 @@ import {useState} from "react"
 import {View, TextInput, ScrollView, TextStyle, ViewStyle, KeyboardAvoidingView, Platform} from "react-native"
 import {Header, Screen} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import ActionButton from "@/components/ui/ActionButton"
@@ -43,8 +43,8 @@ export default function FeedbackPage() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
-      <Header title={translate("feedback:giveFeedback")} leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title={translate("feedback:giveFeedback")} leftIcon="arrow-left" onLeftPress={goBack} />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
         <ScrollView contentContainerStyle={themed($scrollContainer)} keyboardShouldPersistTaps="handled">
           <View style={themed($container)}>

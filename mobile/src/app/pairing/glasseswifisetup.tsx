@@ -56,7 +56,7 @@ export default function GlassesWifiSetupScreen() {
 
   return (
     <Screen preset="fixed" contentContainerStyle={themed($styles.screen)} safeAreaEdges={[]}>
-      <Header title="Glasses WiFi Setup" leftIcon="caretLeft" onLeftPress={handleGoBack} />
+      <Header title="Glasses WiFi Setup" leftIcon="arrow-left" onLeftPress={handleGoBack} />
 
       <ScrollView style={{marginRight: -theme.spacing.s6, paddingRight: theme.spacing.s6}}>
         <View style={themed($content)}>

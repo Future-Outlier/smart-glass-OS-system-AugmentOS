@@ -3,12 +3,10 @@ import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-nati
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import {GetMoreAppsIcon} from "@/components/home/GetMoreAppsIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {
   ClientAppletInterface,
   DUMMY_APPLET,
-  getMoreAppsApplet,
   useActiveForegroundApp,
   useInactiveForegroundApps,
   useStartApplet,
@@ -71,7 +69,7 @@ export const ForegroundAppsGrid: React.FC = () => {
         push("/store")
         return
       }
-      
+
       await startApplet(app.packageName)
     },
     [activeForegroundApp, push],
@@ -177,8 +175,6 @@ const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   textAlign: "center",
   marginTop: spacing.s1,
   lineHeight: 14,
-  // overflow: "hidden",
-  // wordWrap: "break-word",
 })
 
 const $appNameOffline: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -188,16 +184,4 @@ const $appNameOffline: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   marginTop: spacing.s1,
   textDecorationLine: "line-through",
   lineHeight: 14,
-})
-
-const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 15,
-  color: colors.textDim,
-  textAlign: "center",
-  marginBottom: spacing.s6,
-})
-
-const $getMoreAppsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  alignItems: "center",
-  marginTop: spacing.s4,
 })

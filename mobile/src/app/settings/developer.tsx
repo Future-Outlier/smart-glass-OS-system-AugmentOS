@@ -8,7 +8,7 @@ import BackendUrl from "@/components/dev/BackendUrl"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
 
@@ -22,7 +22,7 @@ export default function DeveloperSettingsScreen() {
   const [debugConsole, setDebugConsole] = useSetting(SETTINGS_KEYS.debug_console)
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
+    <Screen preset="fixed" style={themed($styles.screen)}>
       <Header title="Developer Settings" leftIcon="arrow-left" onLeftPress={() => goBack()} />
 
       <View style={themed($warningContainer)}>

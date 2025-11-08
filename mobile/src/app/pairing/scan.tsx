@@ -6,7 +6,7 @@ import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SearchResultDevice, useSearchResults} from "@/contexts/SearchResultsContext"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
@@ -246,9 +246,9 @@ export default function SelectGlassesBluetoothScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}} safeAreaEdges={["bottom"]}>
+    <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
       <Header
-        leftIcon="caretLeft"
+        leftIcon="arrow-left"
         onLeftPress={handleForgetGlasses}
         RightActionComponent={
           <PillButton

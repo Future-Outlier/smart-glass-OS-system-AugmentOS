@@ -2,7 +2,7 @@ import {useState, useEffect} from "react"
 import {View, Image, ActivityIndicator, ScrollView, ImageStyle, ViewStyle, Modal} from "react-native"
 import {Header, Screen, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {router} from "expo-router"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -242,7 +242,7 @@ export default function ProfileSettingsPage() {
   const {theme, themed} = useAppTheme()
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
+    <Screen preset="fixed" style={themed($styles.screen)}>
       <Header title={translate("profileSettings:title")} leftIcon="arrow-left" onLeftPress={goBack} />
       <ScrollView>
         {loading ? (

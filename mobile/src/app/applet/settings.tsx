@@ -21,7 +21,7 @@ import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {useApplets, useRefreshApplets, useStartApplet, useStopApplet} from "@/stores/applets"
 import {useSettingsStore} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -507,11 +507,11 @@ export default function AppSettings() {
   }
 
   return (
-    <Screen preset="fixed" safeAreaEdges={[]} style={{paddingHorizontal: theme.spacing.s4}}>
+    <Screen preset="fixed" safeAreaEdges={[]} style={themed($styles.screen)}>
       {isUninstalling && <LoadingOverlay message={`Uninstalling ${appInfo?.name || appName}...`} />}
 
       <View>
-        <Header title="" leftIcon="caretLeft" onLeftPress={() => goBack()} />
+        <Header title="" leftIcon="arrow-left" onLeftPress={() => goBack()} />
         <Animated.View
           style={{
             opacity: headerOpacity,

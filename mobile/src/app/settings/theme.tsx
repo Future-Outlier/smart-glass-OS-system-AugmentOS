@@ -1,7 +1,7 @@
 import {View, TouchableOpacity, ViewStyle, TextStyle} from "react-native"
 import {Screen, Header, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {MaterialCommunityIcons} from "@expo/vector-icons"
 import {type ThemeType} from "@/utils/useAppTheme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -29,8 +29,8 @@ export default function ThemeSettingsPage() {
   )
 
   return (
-    <Screen preset="scroll" style={{paddingHorizontal: theme.spacing.s4}}>
-      <Header title="Theme Settings" leftIcon="caretLeft" onLeftPress={() => goBack()} />
+    <Screen preset="scroll" style={themed($styles.screen)}>
+      <Header title="Theme Settings" leftIcon="arrow-left" onLeftPress={() => goBack()} />
 
       <Group style={{marginTop: theme.spacing.s8}}>
         {renderThemeOption("light", "Light Theme", undefined)}

@@ -3,6 +3,7 @@ import SliderSetting from "@/components/settings/SliderSetting"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {$styles} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import CoreModule from "core"
 import {useFocusEffect} from "expo-router"
@@ -10,7 +11,7 @@ import {useCallback} from "react"
 import {ScrollView} from "react-native"
 
 export default function ScreenSettingsScreen() {
-  const {theme} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
   const [dashboardDepth, setDashboardDepth] = useSetting(SETTINGS_KEYS.dashboard_depth)
   const [dashboardHeight, setDashboardHeight] = useSetting(SETTINGS_KEYS.dashboard_height)
@@ -25,8 +26,8 @@ export default function ScreenSettingsScreen() {
   )
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
-      <Header titleTx="screenSettings:title" leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header titleTx="screenSettings:title" leftIcon="arrow-left" onLeftPress={goBack} />
 
       <ScrollView>
         <SliderSetting

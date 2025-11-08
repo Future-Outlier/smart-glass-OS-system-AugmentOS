@@ -8,6 +8,7 @@ import {translate} from "@/i18n"
 import STTModelManager from "@/services/STTModelManager"
 import {useStopAllApplets} from "@/stores/applets"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {$styles} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useFocusEffect} from "@react-navigation/native"
@@ -16,7 +17,7 @@ import {useCallback, useEffect, useState} from "react"
 import {ActivityIndicator, BackHandler, Platform, ScrollView, View} from "react-native"
 
 export default function TranscriptionSettingsScreen() {
-  const {theme} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
 
   const [selectedModelId, setSelectedModelId] = useState(STTModelManager.getCurrentModelId())
@@ -282,8 +283,8 @@ export default function TranscriptionSettingsScreen() {
   }, [])
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
-      <Header title={translate("settings:transcriptionSettings")} leftIcon="caretLeft" onLeftPress={handleGoBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title={translate("settings:transcriptionSettings")} leftIcon="arrow-left" onLeftPress={handleGoBack} />
 
       <Spacer height={theme.spacing.s4} />
 

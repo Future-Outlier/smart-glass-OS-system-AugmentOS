@@ -7,6 +7,7 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import CoreModule from "core"
+import {$styles} from "@/theme"
 
 interface InstalledApp {
   packageName: string
@@ -19,7 +20,7 @@ interface InstalledApp {
 const ITEM_HEIGHT = 64
 
 export default function NotificationSettingsScreen() {
-  const {theme} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
 
   const [apps, setApps] = useState<InstalledApp[]>([])
@@ -191,8 +192,8 @@ export default function NotificationSettingsScreen() {
 
   if (loading) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
-        <Header title="Notification Settings" leftIcon="caretLeft" onLeftPress={goBack} />
+      <Screen preset="fixed" style={themed($styles.screen)}>
+        <Header title="Notification Settings" leftIcon="arrow-left" onLeftPress={goBack} />
         <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={{color: theme.colors.textDim, marginTop: theme.spacing.s4}}>Loading apps...</Text>
@@ -204,8 +205,8 @@ export default function NotificationSettingsScreen() {
   // Show iOS message if on iOS
   if (Platform.OS === "ios") {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
-        <Header title="Notification Settings" leftIcon="caretLeft" onLeftPress={goBack} />
+      <Screen preset="fixed" style={themed($styles.screen)}>
+        <Header title="Notification Settings" leftIcon="arrow-left" onLeftPress={goBack} />
         <View style={{flex: 1, justifyContent: "center", alignItems: "center", padding: theme.spacing.s6}}>
           <Text
             style={{
@@ -226,8 +227,8 @@ export default function NotificationSettingsScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{flex: 1}}>
-      <Header title="Notification Settings" leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title="Notification Settings" leftIcon="arrow-left" onLeftPress={goBack} />
 
       {/* Explanatory Text */}
       <View

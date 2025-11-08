@@ -205,7 +205,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             flexContainer={false}
             preset="alternate"
             onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}>
-            <Icon name="caretLeft" size={18} color={theme.colors.foreground} />
+            <Icon name="arrow-left" size={18} color={theme.colors.foreground} />
           </Button>
           <Button flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
             <Icon name="settings" size={18} color={theme.colors.foreground} />
@@ -295,33 +295,16 @@ const $imageContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingHorizontal: spacing.s4,
 })
 
-const $compactImageContainer: ThemedStyle<ViewStyle> = () => ({
-  // width: 64,
-  // height: 24,
-  // alignItems: "center",
-  // justifyContent: "center",
-  // alignSelf: "stretch",
-})
-
-const $glassesImage: ThemedStyle<ImageStyle> = ({spacing}) => ({
+const $glassesImage: ThemedStyle<ImageStyle> = () => ({
   maxWidth: 140,
   height: 72,
   resizeMode: "contain",
 })
 
-// const $compactHeader: ThemedStyle<ViewStyle> = ({spacing}) => ({
-//   backgroundColor: "red",
-//   // width: "100%",
-//   flexDirection: "row",
-//   justifyContent: "space-between",
-//   alignItems: "center",
-// })
-
-const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $header: ThemedStyle<ViewStyle> = () => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  // backgroundColor: "red",
 })
 
 const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -338,30 +321,11 @@ const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
 })
 
 const $statusContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  // paddingTop: spacing.s3,
   flex: 1,
-  // paddingHorizontal: spacing.s4,
   gap: spacing.s3,
 })
 
 const $disconnectedContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   backgroundColor: colors.primary_foreground,
   padding: spacing.s6,
-})
-
-const $disconnectedImageContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  width: "100%",
-  alignItems: "center",
-  // borderColor: colors.border,
-  // borderWidth: spacing.s0_5,
-  padding: spacing.s3,
-  backgroundColor: colors.primary_foreground,
-  borderRadius: spacing.s6,
-  marginBottom: spacing.s3,
-})
-
-const $disconnectedGlassesImage: ThemedStyle<ImageStyle> = () => ({
-  // width: "80%",
-  height: 100,
-  resizeMode: "contain",
 })

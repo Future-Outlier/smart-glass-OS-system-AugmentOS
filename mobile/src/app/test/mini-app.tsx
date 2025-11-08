@@ -1,4 +1,4 @@
-import {useRef, useState, useEffect} from "react"
+import {useRef, useEffect} from "react"
 import {View, ViewStyle, TextStyle, ActivityIndicator} from "react-native"
 import {WebView} from "react-native-webview"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -261,7 +261,7 @@ export default function MiniApp() {
       <Header
         title="MiniApp"
         titleMode="center"
-        leftIcon="caretLeft"
+        leftIcon="arrow-left"
         onLeftPress={() => goBack()}
         style={{height: 44}}
         containerStyle={{paddingTop: 0}}

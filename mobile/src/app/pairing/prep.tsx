@@ -10,10 +10,11 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {useRoute} from "@react-navigation/native"
 import {Linking, PermissionsAndroid, Platform, ScrollView} from "react-native"
 import CoreModule from "core"
+import {$styles} from "@/theme"
 
 export default function PairingPrepScreen() {
   const route = useRoute()
-  const {theme} = useAppTheme()
+  const {themed, theme} = useAppTheme()
   const {glassesModelName} = route.params as {glassesModelName: string}
   const {goBack, push, clearHistoryAndGoHome} = useNavigationHistory()
 
@@ -212,8 +213,8 @@ export default function PairingPrepScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}} safeAreaEdges={["bottom"]}>
-      <Header title={glassesModelName} leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
+      <Header title={glassesModelName} leftIcon="arrow-left" onLeftPress={goBack} />
       <ScrollView style={{marginRight: -theme.spacing.s6, paddingRight: theme.spacing.s6}}>
         <PairingGuide model={glassesModelName} />
       </ScrollView>

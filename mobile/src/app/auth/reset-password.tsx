@@ -1,7 +1,7 @@
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {translate} from "@/i18n"
-import {ThemedStyle, spacing} from "@/theme"
+import {$styles, ThemedStyle, spacing} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {FontAwesome} from "@expo/vector-icons"
@@ -10,6 +10,7 @@ import {useEffect, useState} from "react"
 import {ActivityIndicator, ScrollView, TextInput, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import Toast from "react-native-toast-message"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 export default function ResetPasswordScreen() {
   const [email, setEmail] = useState("")
@@ -21,6 +22,7 @@ export default function ResetPasswordScreen() {
   const [isValidToken, setIsValidToken] = useState(false)
 
   const {theme, themed} = useAppTheme()
+  const {goBack} = useNavigationHistory()
 
   const passwordsMatch = newPassword === confirmPassword && newPassword.length > 0
   const isFormValid = passwordsMatch && newPassword.length >= 6
@@ -123,7 +125,7 @@ export default function ResetPasswordScreen() {
 
   if (!isValidToken) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
+      <Screen preset="fixed" style={themed($styles.screen)}>
         <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
           <ActivityIndicator size="large" color={theme.colors.tint} />
           <Spacer height={spacing.s4} />
@@ -134,12 +136,8 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
-      <Header
-        title={translate("login:resetPasswordTitle")}
-        leftIcon="caretLeft"
-        onLeftPress={() => router.replace("/auth/login")}
-      />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title={translate("login:resetPasswordTitle")} leftIcon="arrow-left" onLeftPress={() => goBack()} />
       <ScrollView
         contentContainerStyle={themed($scrollContent)}
         showsVerticalScrollIndicator={false}

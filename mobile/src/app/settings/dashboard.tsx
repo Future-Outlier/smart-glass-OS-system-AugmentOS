@@ -12,10 +12,11 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {useAppTheme} from "@/utils/useAppTheme"
+import {$styles} from "@/theme"
 
 export default function DashboardSettingsScreen() {
   const {status} = useCoreStatus()
-  const {theme} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
   const [headUpAngleComponentVisible, setHeadUpAngleComponentVisible] = useState(false)
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
@@ -57,8 +58,8 @@ export default function DashboardSettingsScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
-      <Header titleTx="settings:dashboardSettings" leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header titleTx="settings:dashboardSettings" leftIcon="arrow-left" onLeftPress={goBack} />
       <ScrollView>
         <ToggleSetting
           label={translate("settings:contextualDashboardLabel")}

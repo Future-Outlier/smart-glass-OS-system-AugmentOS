@@ -3,7 +3,7 @@ import {View, TextInput, ActivityIndicator, ScrollView, ViewStyle, TextStyle} fr
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle, spacing} from "@/theme"
+import {$styles, ThemedStyle, spacing} from "@/theme"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import showAlert from "@/utils/AlertUtils"
@@ -55,8 +55,8 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s4}}>
-      <Header title={translate("login:forgotPasswordTitle")} leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title={translate("login:forgotPasswordTitle")} leftIcon="arrow-left" onLeftPress={goBack} />
       <ScrollView
         contentContainerStyle={themed($scrollContent)}
         showsVerticalScrollIndicator={false}

@@ -92,7 +92,7 @@ export default function WifiPasswordScreen() {
 
   return (
     <Screen preset="fixed" contentContainerStyle={themed($container)}>
-      <Header title="Enter Glasses WiFi Details" leftIcon="caretLeft" onLeftPress={handleGoBack} />
+      <Header title="Enter Glasses WiFi Details" leftIcon="arrow-left" onLeftPress={handleGoBack} />
       <ScrollView
         style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}>
         <View style={themed($content)}>

@@ -6,7 +6,7 @@ import {Image} from "expo-image"
 import {SquircleView} from "expo-squircle-view"
 import {memo} from "react"
 import {ActivityIndicator, ImageStyle, Platform, TouchableOpacity, View, ViewStyle} from "react-native"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
+import {Icon} from "@/components/ignite"
 
 interface AppIconProps {
   app: ClientAppletInterface
@@ -71,13 +71,13 @@ const AppIcon = ({app, onClick, style}: AppIconProps) => {
       </WrapperComponent>
       {!app.healthy && (
         <View style={themed($unhealthyBadge)}>
-          <MaterialCommunityIcons name="alert-circle" size={theme.spacing.s4} color={theme.colors.error} />
+          <Icon name="alert" size={theme.spacing.s4} color={theme.colors.error} />
         </View>
       )}
       {/* Show wifi-off badge for offline apps */}
-      {app.offline && (app.packageName !== getMoreAppsApplet().packageName) && (
+      {app.offline && app.packageName !== getMoreAppsApplet().packageName && (
         <View style={themed($offlineBadge)}>
-          <MaterialCommunityIcons name="wifi-off" size={theme.spacing.s4} color={theme.colors.text} />
+          <Icon name="wifi-off" size={theme.spacing.s4} color={theme.colors.text} />
         </View>
       )}
     </View>

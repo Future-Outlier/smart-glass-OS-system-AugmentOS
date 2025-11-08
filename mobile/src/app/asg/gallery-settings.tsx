@@ -3,7 +3,7 @@ import {View, ViewStyle, TextStyle, ScrollView} from "react-native"
 import {Header, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import ActionButton from "@/components/ui/ActionButton"
 import {RouteButton} from "@/components/ui/RouteButton"
@@ -17,7 +17,7 @@ import InfoCardSection from "@/components/ui/InfoCard"
 
 export default function GallerySettingsScreen() {
   const {goBack, push} = useNavigationHistory()
-  const {theme, themed} = useAppTheme()
+  const {themed} = useAppTheme()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
 
   const [autoSaveToCameraRoll, setAutoSaveToCameraRoll] = useState(true)
@@ -121,8 +121,8 @@ export default function GallerySettingsScreen() {
   let features = getModelCapabilities(defaultWearable)
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
-      <Header title="Gallery Settings" leftIcon="caretLeft" onLeftPress={() => goBack()} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title="Gallery Settings" leftIcon="arrow-left" onLeftPress={() => goBack()} />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Camera Settings button for glasses with configurable button */}
         {features?.hasButton && (
