@@ -1,4 +1,4 @@
-import {forwardRef} from "react"
+import {forwardRef, useRef, useEffect} from "react"
 import {X} from "lucide-react"
 
 interface SearchBarProps {
@@ -12,6 +12,19 @@ interface SearchBarProps {
 
 const SearchBar = forwardRef<HTMLFormElement, SearchBarProps>(
   ({searchQuery, onSearchChange, onSearchSubmit, onClear, className = "", autoFocus = false}, ref) => {
+    const inputRef = useRef<HTMLInputElement>(null)
+
+    // Handle autoFocus with useEffect for more reliable focusing
+    useEffect(() => {
+      if (autoFocus && inputRef.current) {
+        // Small delay to ensure the component is fully mounted and visible
+        const timer = setTimeout(() => {
+          inputRef.current?.focus()
+        }, 50)
+        return () => clearTimeout(timer)
+      }
+    }, [autoFocus])
+
     return (
       <form ref={ref} onSubmit={onSearchSubmit} className={`flex items-center space-x-3 ${className}`}>
         <div className="relative w-full">
@@ -40,6 +53,7 @@ const SearchBar = forwardRef<HTMLFormElement, SearchBarProps>(
             </svg>
           </div>
           <input
+            ref={inputRef}
             type="text"
             className=" h-[45px] theme-search-input text-[14px] w-full pl-10 pr-10 py-2.5 rounded-full focus:outline-none bg-[var(--primary-foreground)] text-[var(--text-primary)]"
             placeholder="Search app"

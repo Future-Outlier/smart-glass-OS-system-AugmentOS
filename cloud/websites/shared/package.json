@@ -19,6 +19,7 @@
     "@radix-ui/react-dialog": "^1.1.7"
   },
   "dependencies": {
+    "tailwind-merge": "^3.0.2",
     "@tailwindcss/vite": "^4.0.8",
     "@types/dotenv": "^8.2.3",
     "authing-js-sdk": "^4.23.55",
