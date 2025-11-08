@@ -8,7 +8,6 @@ import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import STTModelManager from "@/services/STTModelManager"
-import {getThemeIsDark} from "@/theme/getTheme"
 import showAlert from "@/utils/AlertUtils"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
 import {useMemo} from "react"
@@ -57,8 +56,6 @@ export const captionsPackageName = "com.augmentos.livecaptions"
 
 // get offline applets:
 export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
-  const isDark = await getThemeIsDark()
-
   const offlineCameraRunning = await useSettingsStore.getState().getSetting(cameraPackageName)
   const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(captionsPackageName)
   return [
@@ -192,7 +189,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
       applet.compatibility = result
     }
-    
+
     applets.push(getMoreAppsApplet())
 
     set({apps: applets})
@@ -203,6 +200,12 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
 
     if (!applet) {
       console.error(`Applet not found for package name: ${packageName}`)
+      return
+    }
+
+    // do nothing if any applet is currently loading:
+    if (get().apps.some(a => a.loading)) {
+      console.log(`APPLET: Skipping start applet ${packageName} because another applet is currently loading`)
       return
     }
 
