@@ -14,7 +14,7 @@ export default function BackgroundAppsScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
-      <Header leftIcon="arrow-left" onLeftPress={goBack} titleTx="home:backgroundApps" />
+      <Header leftIcon="chevron-left" onLeftPress={goBack} titleTx="home:backgroundApps" />
 
       <View style={themed($headerInfo)}>
         <Text style={themed($headerText)}>Multiple background apps can be active at once.</Text>

@@ -56,7 +56,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
-      <Header title={translate("login:forgotPasswordTitle")} leftIcon="arrow-left" onLeftPress={goBack} />
+      <Header title={translate("login:forgotPasswordTitle")} leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView
         contentContainerStyle={themed($scrollContent)}
         showsVerticalScrollIndicator={false}

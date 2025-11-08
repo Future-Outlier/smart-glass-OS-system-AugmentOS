@@ -59,7 +59,7 @@ export default function DashboardSettingsScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
-      <Header titleTx="settings:dashboardSettings" leftIcon="arrow-left" onLeftPress={goBack} />
+      <Header titleTx="settings:dashboardSettings" leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView>
         <ToggleSetting
           label={translate("settings:contextualDashboardLabel")}

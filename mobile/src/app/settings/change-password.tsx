@@ -61,7 +61,7 @@ export default function ChangePasswordScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
-      <Header title={translate("profileSettings:changePassword")} leftIcon="arrow-left" onLeftPress={goBack} />
+      <Header title={translate("profileSettings:changePassword")} leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView contentContainerStyle={themed($scrollContent)} showsVerticalScrollIndicator={false}>
         <View style={themed($card)}>
           <Text tx="profileSettings:changePasswordSubtitle" style={themed($subtitle)} />

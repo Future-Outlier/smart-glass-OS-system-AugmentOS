@@ -137,7 +137,7 @@ export default function ResetPasswordScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
-      <Header title={translate("login:resetPasswordTitle")} leftIcon="arrow-left" onLeftPress={() => goBack()} />
+      <Header title={translate("login:resetPasswordTitle")} leftIcon="chevron-left" onLeftPress={() => goBack()} />
       <ScrollView
         contentContainerStyle={themed($scrollContent)}
         showsVerticalScrollIndicator={false}

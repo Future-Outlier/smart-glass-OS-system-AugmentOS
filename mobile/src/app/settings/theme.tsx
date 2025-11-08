@@ -30,7 +30,7 @@ export default function ThemeSettingsPage() {
 
   return (
     <Screen preset="scroll" style={themed($styles.screen)}>
-      <Header title="Theme Settings" leftIcon="arrow-left" onLeftPress={() => goBack()} />
+      <Header title="Theme Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
 
       <Group style={{marginTop: theme.spacing.s8}}>
         {renderThemeOption("light", "Light Theme", undefined)}

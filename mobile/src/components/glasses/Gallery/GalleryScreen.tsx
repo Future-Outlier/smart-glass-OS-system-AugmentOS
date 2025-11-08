@@ -1574,7 +1574,7 @@ export function GalleryScreen() {
   if (isRequestingPermission || !hasMediaLibraryPermission) {
     return (
       <>
-        <Header title="Glasses Gallery" leftIcon="arrow-left" onLeftPress={() => goBack()} />
+        <Header title="Glasses Gallery" leftIcon="chevron-left" onLeftPress={() => goBack()} />
         <View style={themed($screenContainer)}>
           <View style={themed($permissionContainer)}>
             <ActivityIndicator size="large" color={theme.colors.tint} />

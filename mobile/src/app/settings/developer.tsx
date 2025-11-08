@@ -23,7 +23,7 @@ export default function DeveloperSettingsScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
-      <Header title="Developer Settings" leftIcon="arrow-left" onLeftPress={() => goBack()} />
+      <Header title="Developer Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
 
       <View style={themed($warningContainer)}>
         <View style={themed($warningContent)}>

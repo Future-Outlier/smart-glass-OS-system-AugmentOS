@@ -122,7 +122,7 @@ export default function GallerySettingsScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
-      <Header title="Gallery Settings" leftIcon="arrow-left" onLeftPress={() => goBack()} />
+      <Header title="Gallery Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Camera Settings button for glasses with configurable button */}
         {features?.hasButton && (

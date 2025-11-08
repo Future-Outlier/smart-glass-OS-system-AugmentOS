@@ -188,6 +188,7 @@ export const iconRegistry = {
   "brightness-half": 1,
   "battery-charging": 1,
   "alert": 1,
+  "chevron-left": 1,
   // lucide-react-native icons:
   ...lucideIcons,
 }

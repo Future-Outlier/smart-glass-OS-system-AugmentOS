@@ -232,7 +232,7 @@ export default function WifiConnectingScreen() {
   return (
     <Screen preset="fixed" contentContainerStyle={themed($styles.screen)}>
       {connectionStatus === "connecting" && (
-        <Header title="Connecting" leftIcon="arrow-left" onLeftPress={handleHeaderBack} />
+        <Header title="Connecting" leftIcon="chevron-left" onLeftPress={handleHeaderBack} />
       )}
       <View style={themed($content)}>{renderContent()}</View>
     </Screen>

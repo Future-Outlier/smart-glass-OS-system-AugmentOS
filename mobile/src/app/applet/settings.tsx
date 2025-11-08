@@ -511,7 +511,7 @@ export default function AppSettings() {
       {isUninstalling && <LoadingOverlay message={`Uninstalling ${appInfo?.name || appName}...`} />}
 
       <View>
-        <Header title="" leftIcon="arrow-left" onLeftPress={() => goBack()} />
+        <Header title="" leftIcon="chevron-left" onLeftPress={() => goBack()} />
         <Animated.View
           style={{
             opacity: headerOpacity,

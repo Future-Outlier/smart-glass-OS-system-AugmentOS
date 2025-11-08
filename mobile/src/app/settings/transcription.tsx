@@ -284,7 +284,7 @@ export default function TranscriptionSettingsScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
-      <Header title={translate("settings:transcriptionSettings")} leftIcon="arrow-left" onLeftPress={handleGoBack} />
+      <Header title={translate("settings:transcriptionSettings")} leftIcon="chevron-left" onLeftPress={handleGoBack} />
 
       <Spacer height={theme.spacing.s4} />
 

@@ -228,7 +228,7 @@ export default function AppWebView() {
       <Header
         title={appName}
         titleMode="center"
-        leftIcon="arrow-left"
+        leftIcon="chevron-left"
         onLeftPress={() => goBack()}
         rightIcon="settings"
         rightIconColor={theme.colors.icon}

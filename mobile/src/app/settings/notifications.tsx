@@ -193,7 +193,7 @@ export default function NotificationSettingsScreen() {
   if (loading) {
     return (
       <Screen preset="fixed" style={themed($styles.screen)}>
-        <Header title="Notification Settings" leftIcon="arrow-left" onLeftPress={goBack} />
+        <Header title="Notification Settings" leftIcon="chevron-left" onLeftPress={goBack} />
         <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={{color: theme.colors.textDim, marginTop: theme.spacing.s4}}>Loading apps...</Text>
@@ -206,7 +206,7 @@ export default function NotificationSettingsScreen() {
   if (Platform.OS === "ios") {
     return (
       <Screen preset="fixed" style={themed($styles.screen)}>
-        <Header title="Notification Settings" leftIcon="arrow-left" onLeftPress={goBack} />
+        <Header title="Notification Settings" leftIcon="chevron-left" onLeftPress={goBack} />
         <View style={{flex: 1, justifyContent: "center", alignItems: "center", padding: theme.spacing.s6}}>
           <Text
             style={{
@@ -228,7 +228,7 @@ export default function NotificationSettingsScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
-      <Header title="Notification Settings" leftIcon="arrow-left" onLeftPress={goBack} />
+      <Header title="Notification Settings" leftIcon="chevron-left" onLeftPress={goBack} />
 
       {/* Explanatory Text */}
       <View

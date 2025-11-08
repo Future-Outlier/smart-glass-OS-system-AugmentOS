@@ -200,7 +200,7 @@ export default function PrivacySettingsScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
-      <Header titleTx="privacySettings:title" leftIcon="arrow-left" onLeftPress={goBack} />
+      <Header titleTx="privacySettings:title" leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView>
         {/* Notification Permission - Android Only */}
         {Platform.OS === "android" && !notificationsEnabled && (

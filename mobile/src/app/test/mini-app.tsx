@@ -261,7 +261,7 @@ export default function MiniApp() {
       <Header
         title="MiniApp"
         titleMode="center"
-        leftIcon="arrow-left"
+        leftIcon="chevron-left"
         onLeftPress={() => goBack()}
         style={{height: 44}}
         containerStyle={{paddingTop: 0}}

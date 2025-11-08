@@ -214,7 +214,7 @@ export default function PairingPrepScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
-      <Header title={glassesModelName} leftIcon="arrow-left" onLeftPress={goBack} />
+      <Header title={glassesModelName} leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView style={{marginRight: -theme.spacing.s6, paddingRight: theme.spacing.s6}}>
         <PairingGuide model={glassesModelName} />
       </ScrollView>

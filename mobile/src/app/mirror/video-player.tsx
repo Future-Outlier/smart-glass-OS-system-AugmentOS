@@ -12,7 +12,7 @@ export default function VideoPlayer() {
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]}>
-      <Header title="Video Player" leftIcon="arrow-left" onLeftPress={() => goBack()} />
+      <Header title="Video Player" leftIcon="chevron-left" onLeftPress={() => goBack()} />
       <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
         <Text style={{color: theme.colors.text}}>Video player not implemented yet</Text>
         <Text style={{color: theme.colors.textDim, marginTop: 8}}>{fileName || "No file selected"}</Text>

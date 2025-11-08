@@ -16,7 +16,7 @@ export default function NexDeveloperSettingsPage() {
           headerShown: false,
         }}
       />
-      <Header title="Nex Developer Settings" leftIcon="arrow-left" onLeftPress={() => goBack()} />
+      <Header title="Nex Developer Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
       <NexDeveloperSettings />
     </Screen>
   )

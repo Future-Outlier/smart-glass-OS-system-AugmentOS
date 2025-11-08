@@ -131,7 +131,7 @@ export default function GlassesPairingGuideScreen() {
     return (
       <Screen preset="fixed" style={themed($screen)}>
         <Header
-          leftIcon="arrow-left"
+          leftIcon="chevron-left"
           onLeftPress={handleForgetGlasses}
           RightActionComponent={
             <PillButton
@@ -158,7 +158,7 @@ export default function GlassesPairingGuideScreen() {
     return (
       <Screen preset="fixed" style={themed($screen)}>
         <Header
-          leftIcon="arrow-left"
+          leftIcon="chevron-left"
           onLeftPress={handleForgetGlasses}
           RightActionComponent={
             <PillButton
@@ -192,7 +192,7 @@ export default function GlassesPairingGuideScreen() {
   return (
     <Screen preset="fixed" style={themed($screen)}>
       <Header
-        leftIcon="arrow-left"
+        leftIcon="chevron-left"
         onLeftPress={handleForgetGlasses}
         RightActionComponent={
           <PillButton

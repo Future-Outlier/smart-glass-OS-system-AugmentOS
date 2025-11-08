@@ -47,7 +47,7 @@ export default function SelectGlassesModelScreen() {
     <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
       <Header
         titleTx="pairing:selectModel"
-        leftIcon="arrow-left"
+        leftIcon="chevron-left"
         onLeftPress={() => {
           if (onboarding) {
             goBack()

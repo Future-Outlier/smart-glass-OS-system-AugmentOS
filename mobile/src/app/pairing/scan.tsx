@@ -248,7 +248,7 @@ export default function SelectGlassesBluetoothScreen() {
   return (
     <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
       <Header
-        leftIcon="arrow-left"
+        leftIcon="chevron-left"
         onLeftPress={handleForgetGlasses}
         RightActionComponent={
           <PillButton
