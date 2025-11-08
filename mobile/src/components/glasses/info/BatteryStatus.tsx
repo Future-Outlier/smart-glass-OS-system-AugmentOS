@@ -2,8 +2,6 @@ import {Text, Icon} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
 import {View, TextStyle, ViewStyle} from "react-native"
-import {GlassesIcon} from "./GlassesIcon"
-import {CaseIcon} from "./CaseIcon"
 import {Group} from "@/components/ui/Group"
 import {translate} from "@/i18n"
 import {StatusCard} from "@/components/ui/RouteButton"
@@ -40,7 +38,7 @@ export function BatteryStatus({compact}: BatteryStatusProps) {
             textStyle={themed($compactTextStyle)}
             iconEnd={
               <View style={themed($compactBatteryValue)}>
-                <Icon icon="battery" size={14} color={theme.colors.text} />
+                <Icon name="battery-3" size={14} color={theme.colors.text} />
                 <Text style={themed($compactTextStyle)}>{glassesBatteryLevel}%</Text>
               </View>
             }
@@ -55,7 +53,7 @@ export function BatteryStatus({compact}: BatteryStatusProps) {
             textStyle={themed($compactTextStyle)}
             iconEnd={
               <View style={themed($compactBatteryValue)}>
-                <Icon icon="battery" size={14} color={theme.colors.text} />
+                <Icon name="battery-3" size={14} color={theme.colors.text} />
                 <Text style={themed($compactTextStyle)}>{caseBatteryLevel}%</Text>
               </View>
             }
@@ -71,10 +69,10 @@ export function BatteryStatus({compact}: BatteryStatusProps) {
       {glassesBatteryLevel !== -1 && (
         <StatusCard
           label={translate("deviceSettings:glasses")}
-          iconStart={<GlassesIcon size={20} isDark={theme.isDark} />}
+          iconStart={<Icon name="glasses" size={24} color={theme.colors.foreground} />}
           iconEnd={
             <View style={themed($batteryValue)}>
-              <Icon icon="battery" size={16} color={theme.colors.text} />
+              <Icon name="battery-3" size={16} color={theme.colors.text} />
               <Text style={themed($textStyle)}>{glassesBatteryLevel}%</Text>
             </View>
           }
@@ -84,10 +82,10 @@ export function BatteryStatus({compact}: BatteryStatusProps) {
       {/* Case Battery */}
       {caseBatteryLevel !== undefined && caseBatteryLevel !== -1 && !caseRemoved && (
         <StatusCard
-          iconStart={<CaseIcon size={20} isCharging={caseCharging} isDark={theme.isDark} />}
+          iconStart={<Icon name="device-airpods-case" size={24} color={theme.colors.foreground} />}
           iconEnd={
             <View style={themed($batteryValue)}>
-              <Icon icon="battery" size={16} color={theme.colors.text} />
+              <Icon name={caseCharging ? "battery-charging" : "battery-3"} size={16} color={theme.colors.text} />
               <Text style={themed($textStyle)}>{caseBatteryLevel}%</Text>
             </View>
           }
@@ -131,6 +129,6 @@ const $batteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   width: spacing.xxxl,
-  marginRight: spacing.xxs,
+  // marginRight: spacing.xxs,
   justifyContent: "space-between",
 })

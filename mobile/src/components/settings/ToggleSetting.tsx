@@ -10,6 +10,7 @@ type ToggleSettingProps = {
   onValueChange: (newValue: boolean) => void
   disabled?: boolean
   style?: ViewStyle
+  icon?: React.ReactNode
 }
 
 const ToggleSetting: React.FC<ToggleSettingProps> = ({
@@ -19,13 +20,17 @@ const ToggleSetting: React.FC<ToggleSettingProps> = ({
   onValueChange,
   disabled = false,
   style,
+  icon,
 }) => {
-  const {themed} = useAppTheme()
+  const {theme, themed} = useAppTheme()
 
   return (
     <View style={[themed($container), style, disabled && {opacity: 0.5}]}>
       <View style={themed($textContainer)}>
-        <Text text={label} style={themed($label)} />
+        <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s4, justifyContent: "center"}}>
+          {icon && icon}
+          <Text text={label} style={themed($label)} />
+        </View>
         {subtitle && <Text text={subtitle} style={themed($subtitle)} />}
       </View>
       <Switch value={value} onValueChange={onValueChange} disabled={disabled} />

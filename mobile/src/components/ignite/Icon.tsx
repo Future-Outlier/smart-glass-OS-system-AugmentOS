@@ -10,7 +10,7 @@ import {
   ViewStyle,
 } from "react-native"
 import {useAppTheme} from "@/utils/useAppTheme"
-import { Bell, CircleUser, FileType2, Fullscreen, Glasses, Home, UserRound, Wifi } from 'lucide-react-native';
+import { Bell, CircleUser, FileType2, Fullscreen, Glasses, Home, LayoutDashboard, Locate, Unlink, Unplug, UserRound, Wifi } from 'lucide-react-native';
 
 
 export type IconTypes = keyof typeof iconRegistry
@@ -70,14 +70,6 @@ export function PressableIcon(props: PressableIconProps) {
 
   const {theme} = useAppTheme()
 
-  // const $imageStyle: StyleProp<ImageStyle> = [
-  //   $imageStyleBase,
-  //   {tintColor: color ?? theme.colors.text},
-  //   backgroundColor && {backgroundColor: backgroundColor},
-  //   size !== undefined && {width: size, height: size},
-  //   $imageStyleOverride,
-  // ]
-
   return (
     <TouchableOpacity {...pressableProps} style={$containerStyleOverride}>
       <Icon name={name} size={size} color={color ?? theme.colors.secondary_foreground} />
@@ -99,6 +91,10 @@ const lucideIcons = {
   "user-round-filled": UserRound,
   "home": Home,
   "wifi": Wifi,
+  "unplug": Unplug,
+  "unlink": Unlink,
+  "locate": Locate,
+  "layout-dashboard": LayoutDashboard,
 }
 
 /**
@@ -197,6 +193,11 @@ export const iconRegistry = {
   "user-code": 1,
   "shopping-bag": 1,
   "sun": 1,
+  "microphone": 1,
+  "device-ipad": 1,
+  "device-airpods-case": 1,
+  "brightness-half": 1,
+  "battery-charging": 1,
   // lucide-react-native icons:
   ...lucideIcons,
 }

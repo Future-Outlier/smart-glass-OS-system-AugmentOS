@@ -77,7 +77,7 @@ export class MantleBridge {
       if ("core_status" in data) {
         if (this.lastMessage === jsonString) {
           console.log("BRIDGE: DUPLICATE CORE STATUS MESSAGE")
-          return
+          // return
         }
         this.lastMessage = jsonString
       }
