@@ -1,15 +1,15 @@
-import { ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native"
+import {ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
-import { Text } from "@/components/ignite"
+import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import { useNavigationHistory } from "@/contexts/NavigationHistoryContext"
-import { ClientAppletInterface, useBackgroundApps, useStopApplet } from "@/stores/applets"
-import { ThemedStyle } from "@/theme"
-import { showAlert } from "@/utils/AlertUtils"
-import { useAppTheme } from "@/utils/useAppTheme"
-import { ArrowLeftIcon } from "assets/icons/component/ArrowLeftIcon"
-import { CloseXIcon } from "assets/icons/component/CloseXIcon"
-import { Group } from "../ui/Group"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {ClientAppletInterface, useBackgroundApps, useStopApplet} from "@/stores/applets"
+import {ThemedStyle} from "@/theme"
+import {showAlert} from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {ArrowLeftIcon} from "assets/icons/component/ArrowLeftIcon"
+import {CloseXIcon} from "assets/icons/component/CloseXIcon"
+import {Group} from "../ui/Group"
 
 export const ActiveBackgroundApps: React.FC = () => {
   const {themed, theme} = useAppTheme()
@@ -59,14 +59,14 @@ export const ActiveBackgroundApps: React.FC = () => {
     }
   }
 
-  const handleStopApp = async (applet: ClientAppletInterface, _event: any) => {
+  const handleStopApp = async (applet: ClientAppletInterface, event: any) => {
     if (applet?.loading) {
       // don't do anything if still loading
       return
     }
 
     // Prevent the parent TouchableOpacity from triggering
-    // event.stopPropagation()
+    event.stopPropagation()
 
     if (applet) {
       stopApplet(applet.packageName)
@@ -88,6 +88,7 @@ export const ActiveBackgroundApps: React.FC = () => {
     <Group>
       {active.map((applet: ClientAppletInterface) => (
         <TouchableOpacity
+          key={applet.packageName}
           style={themed($container)}
           onPress={() => handlePress(applet)}
           onLongPress={() => handleLongPress(applet)}
@@ -106,7 +107,7 @@ export const ActiveBackgroundApps: React.FC = () => {
             </View>
             {!applet.loading && (
               <TouchableOpacity
-                onPress={() => handleStopApp(applet, event)}
+                onPress={e => handleStopApp(applet, e)}
                 style={themed($closeButton)}
                 activeOpacity={0.7}>
                 <CloseXIcon size={24} color={theme.colors.textDim} />
@@ -123,7 +124,7 @@ export const ActiveBackgroundApps: React.FC = () => {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-//   marginVertical: spacing.s2,
+  //   marginVertical: spacing.s2,
   minHeight: 72,
   // borderWidth: 2,
   // borderColor: colors.border,
