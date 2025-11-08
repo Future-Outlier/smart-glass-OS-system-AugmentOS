@@ -163,10 +163,29 @@ func (s *RoomSession) closeTrack(trackName string) {
 	}
 }
 
-// stopPlayback cancels any ongoing audio playback (does not close tracks)
+// stopPlayback cancels any ongoing audio playback and unpublishes all tracks to immediately stop audio
 // Returns a channel that closes when the old playback has actually stopped
 func (s *RoomSession) stopPlayback() <-chan struct{} {
 	s.mu.Lock()
+
+	// Unpublish all tracks immediately to stop audio output
+	// This ensures the currently playing audio is cut off right away
+	if s.room != nil && s.room.LocalParticipant != nil {
+		for trackName, publication := range s.publications {
+			s.room.LocalParticipant.UnpublishTrack(publication.SID())
+			log.Printf("Unpublished track '%s' (SID: %s) to interrupt audio for user %s", trackName, publication.SID(), s.userId)
+		}
+		// Clear publications map - tracks will be recreated on next playback
+		s.publications = make(map[string]*lksdk.LocalTrackPublication)
+	}
+
+	// Close all tracks to clean up resources
+	for trackName, track := range s.tracks {
+		track.Close()
+		log.Printf("Closed track '%s' to interrupt audio for user %s", trackName, s.userId)
+	}
+	// Clear tracks map - tracks will be recreated on next playback
+	s.tracks = make(map[string]*lkmedia.PCMLocalTrack)
 
 	// If no playback is running, return closed channel immediately
 	if s.playbackCancel == nil {
