@@ -1,4 +1,4 @@
-import {ClientAppletInterface} from "@/stores/applets"
+import {ClientAppletInterface, getMoreAppsApplet} from "@/stores/applets"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -75,7 +75,7 @@ const AppIcon = ({app, onClick, style}: AppIconProps) => {
         </View>
       )}
       {/* Show wifi-off badge for offline apps */}
-      {app.offline && (
+      {app.offline && (app.packageName !== getMoreAppsApplet().packageName) && (
         <View style={themed($offlineBadge)}>
           <MaterialCommunityIcons name="wifi-off" size={theme.spacing.s4} color={theme.colors.text} />
         </View>

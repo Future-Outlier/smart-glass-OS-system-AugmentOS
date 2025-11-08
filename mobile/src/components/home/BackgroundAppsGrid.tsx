@@ -3,11 +3,12 @@ import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-nati
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
+import {GetMoreAppsIcon} from "@/components/home/GetMoreAppsIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {
   ClientAppletInterface,
   DUMMY_APPLET,
+  getMoreAppsApplet,
   useBackgroundApps,
   useStartApplet,
 } from "@/stores/applets"
@@ -29,7 +30,7 @@ export const BackgroundAppsGrid = () => {
 
   const gridData = useMemo(() => {
     // Filter out incompatible apps and running apps
-    const inactiveApps = inactive.filter(app => {
+    let inactiveApps = inactive.filter(app => {
       if (!app.compatibility?.isCompatible) return false
       return true
     })
@@ -40,31 +41,17 @@ export const BackgroundAppsGrid = () => {
       return a.name.localeCompare(b.name)
     })
 
-    // Add "Get More Apps" as the last item
-    const appsWithGetMore = [
-      ...inactiveApps,
-      {
-        packageName: "get-more-apps",
-        name: "Get More Apps",
-        type: "standard",
-        isGetMoreApps: true,
-        logoUrl: "",
-        permissions: [],
-      } as GridItem,
-    ]
-
     // Calculate how many empty placeholders we need to fill the last row
-    const totalItems = appsWithGetMore.length
+    const totalItems = inactiveApps.length
     const remainder = totalItems % GRID_COLUMNS
     const emptySlots = remainder === 0 ? 0 : GRID_COLUMNS - remainder
 
     // Add empty placeholders to align items to the left
-    const paddedApps = [...appsWithGetMore]
     for (let i = 0; i < emptySlots; i++) {
-      paddedApps.push(DUMMY_APPLET)
+      inactiveApps.push(DUMMY_APPLET)
     }
 
-    return paddedApps
+    return inactiveApps
   }, [inactive])
 
   const handleAppPress = useCallback(
@@ -85,18 +72,8 @@ export const BackgroundAppsGrid = () => {
   const renderItem = useCallback(
     ({item}: {item: GridItem}) => {
       // Don't render empty placeholders
-      if (!item.name && !item.isGetMoreApps) {
+      if (!item.name) {
         return <View style={themed($gridItem)} />
-      }
-
-      // Render "Get More Apps" item
-      if (item.isGetMoreApps) {
-        return (
-          <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
-            <GetMoreAppsIcon size="large" />
-            <Text text={item.name} style={themed($appName)} numberOfLines={2} />
-          </TouchableOpacity>
-        )
       }
 
       // small hack to help with some long app names:
@@ -121,18 +98,18 @@ export const BackgroundAppsGrid = () => {
     [themed, theme, handleAppPress],
   )
 
-  if (inactive.length === 0) {
-    // Still show "Get More Apps" even when no apps
-    return (
-      <View style={themed($container)}>
-        <Text style={themed($emptyText)}>No foreground apps available</Text>
-        <TouchableOpacity style={themed($getMoreAppsButton)} onPress={() => push("/store")} activeOpacity={0.7}>
-          <GetMoreAppsIcon size="large" style={{marginBottom: theme.spacing.s2}} />
-          <Text text="Get More Apps" style={themed($appName)} />
-        </TouchableOpacity>
-      </View>
-    )
-  }
+  // if (inactive.length === 0) {
+  //   // Still show "Get More Apps" even when no apps
+  //   return (
+  //     <View style={themed($container)}>
+  //       <Text style={themed($emptyText)}>No foreground apps available</Text>
+  //       <TouchableOpacity style={themed($getMoreAppsButton)} onPress={() => push("/store")} activeOpacity={0.7}>
+  //         <GetMoreAppsIcon size="large" style={{marginBottom: theme.spacing.s2}} />
+  //         <Text text="Get More Apps" style={themed($appName)} />
+  //       </TouchableOpacity>
+  //     </View>
+  //   )
+  // }
 
   return (
     <View style={themed($container)}>
