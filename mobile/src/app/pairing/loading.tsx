@@ -10,7 +10,7 @@ import {AudioPairingPrompt} from "@/components/pairing/AudioPairingPrompt"
 import {router} from "expo-router"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {Screen} from "@/components/ignite/Screen"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {Header} from "@/components/ignite/Header"
 import {PillButton} from "@/components/ignite/PillButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -129,7 +129,7 @@ export default function GlassesPairingGuideScreen() {
 
   if (pairingInProgress) {
     return (
-      <Screen preset="fixed" style={themed($screen)}>
+      <Screen preset="fixed" style={themed($styles.screen)}>
         <Header
           leftIcon="chevron-left"
           onLeftPress={handleForgetGlasses}
@@ -156,7 +156,7 @@ export default function GlassesPairingGuideScreen() {
   // Note: This will only trigger on iOS since the events are only sent from iOS native code
   if (audioPairingNeeded && audioDeviceName) {
     return (
-      <Screen preset="fixed" style={themed($screen)}>
+      <Screen preset="fixed" style={themed($styles.screen)}>
         <Header
           leftIcon="chevron-left"
           onLeftPress={handleForgetGlasses}

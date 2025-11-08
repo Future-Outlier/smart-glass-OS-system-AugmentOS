@@ -120,7 +120,7 @@ const $compactBatteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   width: spacing.s8,
-  // marginRight: spacing.s4,
+  marginRight: spacing.s4,
   justifyContent: "space-between",
   gap: spacing.s1,
 })

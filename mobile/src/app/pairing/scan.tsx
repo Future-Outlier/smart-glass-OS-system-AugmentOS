@@ -280,7 +280,11 @@ export default function SelectGlassesBluetoothScreen() {
                     style={themed($settingItem)}
                     onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
                     <View style={themed($settingsTextContainer)}>
-                      <Text text={`${glassesModelName}  ${device.deviceName}`} style={themed($label)} />
+                      <Text
+                        text={`${glassesModelName}  ${device.deviceName}`}
+                        style={themed($label)}
+                        numberOfLines={2}
+                      />
                     </View>
                     <Icon name="angle-right" size={24} color={theme.colors.text} />
                   </TouchableOpacity>
@@ -341,7 +345,7 @@ const $glassesImage: ThemedStyle<ImageStyle> = () => ({
 })
 
 const $label: ThemedStyle<TextStyle> = () => ({
-  fontSize: 16,
+  fontSize: 10,
   fontWeight: "600",
   flexWrap: "wrap",
   marginTop: 5,
