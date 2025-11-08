@@ -64,10 +64,12 @@ export function AuthProvider({
   const [session, setSession] = useState<MentraAuthSession | null>(null)
   const [user, setUser] = useState<MentraAuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [supabaseToken, setSupabaseToken] = useState<string | null>(null)
+  const [providerToken, setProviderToken] = useState<string | null>(null)
   const [coreToken, setCoreToken] = useState<string | null>(null)
   const [tokenReady, setTokenReady] = useState(false)
   const [isWebViewAuth, setIsWebViewAuth] = useState(false) // Will remain false if webView is disabled
+  const DEPLOYMENT_REGION = process.env.DEPLOYMENT_REGION || "global"
+  const isChina = DEPLOYMENT_REGION === "china"
 
   const prevUserIdRef = useRef<string | undefined>(undefined)
   const prevTokenRef = useRef<string | null>(null)
@@ -80,14 +82,17 @@ export function AuthProvider({
     }
   }
 
-  const exchangeForCoreToken = async (supabaseToken: string) => {
+  const exchangeForCoreToken = async (providerToken: string) => {
     try {
       setTokenReady(false)
       console.log("Exchanging Supabase token for Core token...")
 
       const response = await axios.post(
         `${CORE_API_URL}/auth/exchange-token`,
-        {supabaseToken},
+        {
+          supabaseToken: isChina ? undefined : providerToken,
+          authingToken: isChina ? providerToken : undefined,
+        },
         {headers: {"Content-Type": "application/json"}},
       )
 
@@ -103,7 +108,7 @@ export function AuthProvider({
       }
     } catch (error) {
       console.error("Failed to exchange token, falling back to Supabase token:", error)
-      setupAxiosAuth(supabaseToken)
+      setupAxiosAuth(providerToken)
       return null
     } finally {
       await new Promise((resolve) => setTimeout(resolve, 300))
@@ -143,7 +148,7 @@ export function AuthProvider({
           localStorage.setItem("core_token", result.tokens.coreToken)
         }
         if (result.tokens.supabaseToken) {
-          setSupabaseToken(result.tokens.supabaseToken)
+          setProviderToken(result.tokens.supabaseToken)
           localStorage.setItem("supabase_token", result.tokens.supabaseToken)
         }
 
@@ -183,7 +188,7 @@ export function AuthProvider({
 
       if (data && data.session?.token && !error) {
         console.log("Sign in successful, setting up tokens")
-        setSupabaseToken(data.session.token)
+        setProviderToken(data.session.token)
         setSession(data.session)
         setUser(data.user)
 
@@ -208,7 +213,7 @@ export function AuthProvider({
 
       if (data && data.session?.token && !error) {
         console.log("Sign up successful, setting up tokens")
-        setSupabaseToken(data.session.token)
+        setProviderToken(data.session.token)
         setSession(data.session)
         setUser(data.user)
 
@@ -239,7 +244,7 @@ export function AuthProvider({
     try {
       const {error} = await mentraAuthProvider.signOut()
       setupAxiosAuth(null)
-      setSupabaseToken(null)
+      setProviderToken(null)
       setCoreToken(null)
       setUser(null)
       setSession(null)
@@ -296,7 +301,7 @@ export function AuthProvider({
             console.log("Restoring saved WebView session.")
             setupAxiosAuth(savedCoreToken)
             setCoreToken(savedCoreToken)
-            setSupabaseToken(savedSupabaseToken)
+            setProviderToken(savedSupabaseToken)
             setSession({token: savedSupabaseToken} as MentraAuthSession)
             setUser({id: "webview-user"} as MentraAuthUser)
             setIsWebViewAuth(true)
@@ -324,7 +329,7 @@ export function AuthProvider({
 
         if (data?.session?.token) {
           console.log("Found active Supabase session.")
-          setSupabaseToken(data.session.token)
+          setProviderToken(data.session.token)
           if (!savedCoreToken) {
             await exchangeForCoreToken(data.session.token)
           }
@@ -346,7 +351,7 @@ export function AuthProvider({
       console.log("WebView auth enabled. Attaching global token handlers.")
       window.setSupabaseToken = (token: string) => {
         console.log("Supabase token received from WebView")
-        setSupabaseToken(token)
+        setProviderToken(token)
         localStorage.setItem("supabase_token", token)
 
         exchangeForCoreToken(token).then(() => {
@@ -401,7 +406,7 @@ export function AuthProvider({
 
       if (isSignIn && session?.token) {
         setTokenReady(false)
-        setSupabaseToken(session.token)
+        setProviderToken(session.token)
         await exchangeForCoreToken(session.token)
 
         const isLoginPage = window.location.pathname.includes("/login") || window.location.pathname.includes("/signin")
@@ -414,7 +419,7 @@ export function AuthProvider({
         // Full sign-out logic is in the signOut() function,
         // but we clear tokens here too as a safeguard.
         setupAxiosAuth(null)
-        setSupabaseToken(null)
+        setProviderToken(null)
         setCoreToken(null)
         setIsWebViewAuth(false)
         setTokenReady(false)
@@ -427,7 +432,7 @@ export function AuthProvider({
       } else if (event === "USER_UPDATED" && session?.token && isTokenChanged) {
         console.log("Token refreshed, exchanging for new Core token...")
         setTokenReady(false)
-        setSupabaseToken(session.token)
+        setProviderToken(session.token)
         await exchangeForCoreToken(session.token)
       } else {
         setTokenReady(true)
@@ -455,7 +460,7 @@ export function AuthProvider({
       user,
       isLoading,
       isAuthenticated,
-      supabaseToken,
+      supabaseToken: providerToken,
       coreToken,
       tokenReady,
       isWebViewAuth,
@@ -464,7 +469,7 @@ export function AuthProvider({
       signOut,
       refreshUser,
     }),
-    [session, user, isLoading, isAuthenticated, supabaseToken, coreToken, tokenReady, isWebViewAuth],
+    [session, user, isLoading, isAuthenticated, providerToken, coreToken, tokenReady, isWebViewAuth],
   )
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
