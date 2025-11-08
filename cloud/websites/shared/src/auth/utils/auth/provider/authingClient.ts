@@ -23,8 +23,8 @@ export class AuthingWrapperClient {
   private eventEmitter: EventEmitter
   constructor() {
     const authingOptions: AuthenticationClientOptions = {
-      appId: process.env.AUTHING_APP_ID || "",
-      appHost: process.env.AUTHING_APP_HOST || "",
+      appId: import.meta.env.VITE_AUTHING_APP_ID || "",
+      appHost: import.meta.env.VITE_AUTHING_APP_HOST || "",
       lang: "en-US",
     }
     this.authing = new AuthenticationClient(authingOptions)
@@ -83,12 +83,12 @@ export class AuthingWrapperClient {
         },
         error: null,
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign in error:", error)
       return {
         data: null,
         error: {
-          message: "Failed to sign in",
+          message: error.message || "Failed to sign in",
         },
       }
     }
@@ -115,12 +115,12 @@ export class AuthingWrapperClient {
         },
         error: null,
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign up error:", error)
       return {
         data: null,
         error: {
-          message: "Failed to sign up",
+          message: error.message || "Failed to sign up",
         },
       }
     }
@@ -131,9 +131,9 @@ export class AuthingWrapperClient {
       await this.authing.logout()
       this.eventEmitter.emit("SIGNED_OUT", null)
       return {error: null}
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign out error:", error)
-      return {error: {message: "Failed to sign out"}}
+      return {error: {message: error.message || "Failed to sign out"}}
     }
   }
 

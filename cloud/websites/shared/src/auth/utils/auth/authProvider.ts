@@ -8,7 +8,7 @@ import {
   MentraSignOutResponse,
 } from "./authingProvider.types"
 
-const DEPLOYMENT_REGION = process.env.DEPLOYMENT_REGION || "global"
+const DEPLOYMENT_REGION = import.meta.env.VITE_DEPLOYMENT_REGION || "global"
 const IS_CHINA = DEPLOYMENT_REGION === "china"
 
 class MentraAuthProvider {
