@@ -1,5 +1,5 @@
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
-import {Header, Screen, Text} from "@/components/ignite"
+import {Header, Icon, Screen, Text} from "@/components/ignite"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
@@ -11,7 +11,6 @@ import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
@@ -24,7 +23,7 @@ export default function DeveloperSettingsScreen() {
 
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header title="Developer Settings" leftIcon="caretLeft" onLeftPress={() => goBack()} />
+      <Header title="Developer Settings" leftIcon="arrow-left" onLeftPress={() => goBack()} />
 
       <View style={themed($warningContainer)}>
         <View style={themed($warningContent)}>

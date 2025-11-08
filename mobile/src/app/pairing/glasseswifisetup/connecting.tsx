@@ -1,9 +1,8 @@
-import {Button, Header, Screen} from "@/components/ignite"
+import {Button, Header, Icon, Screen} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {$styles, ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
-import {Ionicons, MaterialIcons} from "@expo/vector-icons"
 import CoreModule from "core"
 import {useLocalSearchParams, router} from "expo-router"
 import {useEffect, useRef, useState, useCallback} from "react"
@@ -156,21 +155,21 @@ export default function WifiConnectingScreen() {
               <View style={themed($conditionsList)}>
                 <View style={themed($conditionItem)}>
                   <View style={themed($conditionIcon)}>
-                    <MaterialIcons name="power-settings-new" size={24} color={theme.colors.text} />
+                    <Icon name="power-settings-new" size={24} color={theme.colors.text} />
                   </View>
                   <Text style={themed($conditionText)}>Powered on</Text>
                 </View>
 
                 <View style={themed($conditionItem)}>
                   <View style={themed($conditionIcon)}>
-                    <MaterialIcons name="bolt" size={24} color={theme.colors.text} />
+                    <Icon name="bolt" size={24} color={theme.colors.text} />
                   </View>
                   <Text style={themed($conditionText)}>Charging</Text>
                 </View>
 
                 <View style={themed($conditionItem)}>
                   <View style={themed($conditionIcon)}>
-                    <MaterialIcons name="wifi" size={24} color={theme.colors.text} />
+                    <Icon name="wifi" size={24} color={theme.colors.text} />
                   </View>
                   <Text style={themed($conditionText)}>Connected to a saved Wi-Fi network</Text>
                 </View>
@@ -190,7 +189,7 @@ export default function WifiConnectingScreen() {
           <View style={themed($failureContainer)}>
             <View style={themed($failureContent)}>
               <View style={themed($failureIconContainer)}>
-                <Ionicons name="close-circle" size={80} color={theme.colors.error} />
+                <Icon name="x" size={80} color={theme.colors.error} />
               </View>
 
               <Text style={themed($failureTitle)}>Connection Failed</Text>
@@ -200,14 +199,14 @@ export default function WifiConnectingScreen() {
               <View style={themed($failureTipsList)}>
                 <View style={themed($failureTipItem)}>
                   <View style={themed($failureTipIcon)}>
-                    <MaterialIcons name="lock" size={24} color={theme.colors.textDim} />
+                    <Icon name="lock" size={24} color={theme.colors.textDim} />
                   </View>
                   <Text style={themed($failureTipText)}>Make sure the password was entered correctly</Text>
                 </View>
 
                 <View style={themed($failureTipItem)}>
                   <View style={themed($failureTipIcon)}>
-                    <MaterialIcons name="wifi" size={24} color={theme.colors.textDim} />
+                    <Icon name="wifi" size={24} color={theme.colors.textDim} />
                   </View>
                   <Text style={themed($failureTipText)}>
                     Mentra Live Beta can only connect to pure 2.4GHz WiFi networks (not 5GHz or dual-band 2.4/5GHz)
@@ -221,7 +220,7 @@ export default function WifiConnectingScreen() {
                 <Text>Try Again</Text>
               </Button>
               <View style={{height: theme.spacing.sm}} />
-              <Button onPress={handleCancel} preset="reversed">
+              <Button onPress={handleCancel} preset="alternate">
                 <Text>Cancel</Text>
               </Button>
             </View>
@@ -233,7 +232,7 @@ export default function WifiConnectingScreen() {
   return (
     <Screen preset="fixed" contentContainerStyle={themed($styles.screen)}>
       {connectionStatus === "connecting" && (
-        <Header title="Connecting" leftIcon="caretLeft" onLeftPress={handleHeaderBack} />
+        <Header title="Connecting" leftIcon="arrow-left" onLeftPress={handleHeaderBack} />
       )}
       <View style={themed($content)}>{renderContent()}</View>
     </Screen>

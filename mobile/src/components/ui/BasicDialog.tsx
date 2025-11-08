@@ -44,7 +44,7 @@ const BasicDialog = ({
             <Button
               flexContainer={false}
               flex={false}
-              compact={true}
+              // compact
               preset="alternate"
               text={leftButtonText}
               onPress={onLeftPress}
@@ -53,7 +53,7 @@ const BasicDialog = ({
           <Button
             flexContainer={false}
             flex={false}
-            compact={true}
+            // compact
             preset="primary"
             text={rightButtonText}
             onPress={onRightPress}
@@ -116,8 +116,8 @@ const $actions: ThemedStyle<ViewStyle> = () => ({
   overflow: "hidden",
 })
 
-const $actions1: ThemedStyle<ViewStyle> = () => ({
-  gap: 8,
+const $actions1: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  gap: spacing.s4,
   overflow: "hidden",
   paddingBottom: 20,
   paddingLeft: 8,

@@ -29,7 +29,7 @@ import bridge from "@/bridge/MantleBridge"
 import WifiManager from "react-native-wifi-reborn"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {networkConnectivityService, NetworkStatus} from "@/services/asg/networkConnectivityService"
-import {Header, Text} from "@/components/ignite"
+import {Header, Icon, Text} from "@/components/ignite"
 import * as Linking from "expo-linking"
 import {MediaLibraryPermissions} from "@/utils/MediaLibraryPermissions"
 import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
@@ -1302,7 +1302,7 @@ export function GalleryScreen() {
           return (
             <View>
               <View style={themed($syncButtonRow)}>
-                <MaterialCommunityIcons
+                <Icon
                   name="download-circle-outline"
                   size={20}
                   color={theme.colors.text}
@@ -1363,7 +1363,7 @@ export function GalleryScreen() {
           return (
             <View>
               <View style={themed($syncButtonRow)}>
-                <MaterialCommunityIcons
+                <Icon
                   name="wifi-alert"
                   size={20}
                   color={theme.colors.text}
@@ -1495,22 +1495,22 @@ export function GalleryScreen() {
         </View>
         {item.isOnServer && !isSelectionMode && (
           <View style={themed($serverBadge)}>
-            <MaterialCommunityIcons name="glasses" size={14} color="white" />
+            <Icon name="glasses" size={14} color="white" />
           </View>
         )}
         {item.photo.is_video && !isSelectionMode && (
           <View style={themed($videoIndicator)}>
-            <MaterialCommunityIcons name="video" size={14} color="white" />
+            <Icon name="video" size={14} color="white" />
           </View>
         )}
         {isSelectionMode &&
           (isSelected ? (
             <View style={themed($selectionCheckbox)}>
-              <MaterialCommunityIcons name={"check"} size={24} color={"white"} />
+              <Icon name={"check"} size={24} color={"white"} />
             </View>
           ) : (
             <View style={themed($unselectedCheckbox)}>
-              <MaterialCommunityIcons name={"checkbox-blank-circle-outline"} size={24} color={"white"} />
+              <Icon name={"checkbox-blank-circle-outline"} size={24} color={"white"} />
             </View>
           ))}
         {(() => {
@@ -1546,7 +1546,7 @@ export function GalleryScreen() {
                       width: 50,
                       height: 50,
                     }}>
-                    <MaterialCommunityIcons name="alert-circle" size={20} color={theme.colors.error} />
+                    <Icon name="alert-circle" size={20} color={theme.colors.error} />
                   </View>
                 )}
                 {isCompleted && (
@@ -1558,7 +1558,7 @@ export function GalleryScreen() {
                       width: 50,
                       height: 50,
                     }}>
-                    <MaterialCommunityIcons name="check-circle" size={20} color={theme.colors.tint} />
+                    <Icon name="check-circle" size={20} color={theme.colors.tint} />
                   </View>
                 )}
               </View>
@@ -1574,7 +1574,7 @@ export function GalleryScreen() {
   if (isRequestingPermission || !hasMediaLibraryPermission) {
     return (
       <>
-        <Header title="Glasses Gallery" leftIcon="caretLeft" onLeftPress={() => goBack()} />
+        <Header title="Glasses Gallery" leftIcon="arrow-left" onLeftPress={() => goBack()} />
         <View style={themed($screenContainer)}>
           <View style={themed($permissionContainer)}>
             <ActivityIndicator size="large" color={theme.colors.tint} />
@@ -1591,13 +1591,13 @@ export function GalleryScreen() {
     <>
       <Header
         title={isSelectionMode ? "" : "Glasses Gallery"}
-        leftIcon={isSelectionMode ? undefined : "caretLeft"}
+        leftIcon={isSelectionMode ? undefined : "arrow-left"}
         onLeftPress={isSelectionMode ? undefined : () => goBack()}
         LeftActionComponent={
           isSelectionMode ? (
             <TouchableOpacity onPress={() => exitSelectionMode()}>
               <View style={themed($selectionHeader)}>
-                <MaterialCommunityIcons name="close" size={20} color={theme.colors.text} />
+                <Icon name="x" size={20} color={theme.colors.text} />
                 <Text style={themed($selectionCountText)}>{selectedPhotos.size}</Text>
               </View>
             </TouchableOpacity>
@@ -1613,13 +1613,13 @@ export function GalleryScreen() {
               }}
               disabled={selectedPhotos.size === 0}>
               <View style={themed($deleteButton)}>
-                <MaterialCommunityIcons name="delete" size={20} color={theme.colors.text} />
+                <Icon name="delete" size={20} color={theme.colors.text} />
                 <Text style={themed($deleteButtonText)}>Delete</Text>
               </View>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={() => push("/asg/gallery-settings")} style={themed($settingsButton)}>
-              <MaterialCommunityIcons name="cog" size={24} color={theme.colors.text} />
+              <Icon name="settings" size={24} color={theme.colors.text} />
             </TouchableOpacity>
           )
         }
@@ -1650,7 +1650,7 @@ export function GalleryScreen() {
             } else if (showEmpty) {
               return (
                 <View style={themed($emptyContainer)}>
-                  <MaterialCommunityIcons
+                  <Icon
                     name="image-outline"
                     size={64}
                     color={theme.colors.textDim}

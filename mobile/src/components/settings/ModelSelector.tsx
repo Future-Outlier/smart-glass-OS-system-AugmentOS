@@ -139,7 +139,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           </View>
           <View style={styles.selectorIcons}>
             {getStatusIcon()}
-            <Icon icon="caretRight" size={16} color={theme.colors.textDim} style={{marginLeft: theme.spacing.xs}} />
+            <Icon name="arrow-right" size={16} color={theme.colors.textDim} style={{marginLeft: theme.spacing.xs}} />
           </View>
         </View>
       </TouchableOpacity>

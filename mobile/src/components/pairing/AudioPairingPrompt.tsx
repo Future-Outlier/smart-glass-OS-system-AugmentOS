@@ -1,10 +1,9 @@
 import {useAppTheme} from "@/utils/useAppTheme"
 import {View, ViewStyle, TextStyle, Platform} from "react-native"
-import {Text} from "@/components/ignite"
+import {Icon, Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {PillButton} from "@/components/ignite/PillButton"
 import {BluetoothSettingsHelper} from "@/utils/BluetoothSettingsHelper"
-import {MaterialCommunityIcons} from "@expo/vector-icons"
 
 interface AudioPairingPromptProps {
   deviceName: string
@@ -33,7 +32,7 @@ export function AudioPairingPrompt({deviceName, onSkip}: AudioPairingPromptProps
   return (
     <View style={themed($container)}>
       <View style={themed($iconContainer)}>
-        <MaterialCommunityIcons name="headphones-bluetooth" size={48} color={theme.colors.tint} />
+        <Icon name="device-airpods-case" size={48} color={theme.colors.tint} />
       </View>
 
       <Text style={themed($title)} preset="heading">
