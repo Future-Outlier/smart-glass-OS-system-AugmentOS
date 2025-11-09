@@ -6,8 +6,11 @@ import mantle from "@/services/MantleManager"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
 import {useAppletStatusStore} from "@/stores/applets"
+import {useGlassesStore} from "@/stores/glasses"
+import {showAlert} from "@/utils/AlertUtils"
+import {router} from "expo-router"
 import Constants from "expo-constants"
-import audioPlayService from "@/services/AudioPlayService"
+import {shallow} from "zustand/shallow"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -26,18 +29,16 @@ class SocketComms {
     })
 
     try {
-      // Subscribe to changes in default_wearable and call sendGlassesConnectionState() when it updates:
-      useSettingsStore.subscribe(
-        state => state.settings[SETTINGS_KEYS.default_wearable],
-        (modelName: string) => {
-          // TODO: get the connection state from mantlemanager or something
-          if (modelName != "") {
-            this.sendGlassesConnectionState(true)
-          }
+      // Subscribe to wifi info
+      useGlassesStore.subscribe(
+        state => ({glassesConnected: state.connected, wifiConnected: state.wifiConnected, wifiSsid: state.wifiSsid}),
+        _state => {
+          this.sendGlassesConnectionState()
         },
+        {equalityFn: shallow},
       )
     } catch (error) {
-      console.error("SOCKET: Error subscribing to default_wearable:", error)
+      console.error("SOCKET: Error subscribing to store changes:", error)
     }
   }
 
@@ -138,9 +139,17 @@ class SocketComms {
     }
   }
 
-  sendGlassesConnectionState(connected: boolean): void {
+  sendGlassesConnectionState(): void {
     let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-    // let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+    const glassesInfo = useGlassesStore.getState()
+
+    // Always include WiFi info - null means "unknown", false means "explicitly disconnected"
+    const wifiInfo = {
+      connected: glassesInfo.wifiConnected ?? null,
+      ssid: glassesInfo.wifiSsid ?? null,
+    }
+
+    const connected = glassesInfo.connected
 
     this.ws.sendText(
       JSON.stringify({
@@ -148,6 +157,7 @@ class SocketComms {
         modelName: modelName,
         status: connected ? "CONNECTED" : "DISCONNECTED",
         timestamp: new Date(),
+        wifi: wifiInfo,
       }),
     )
   }
@@ -530,14 +540,28 @@ class SocketComms {
     )
   }
 
-  private handle_audio_play_request(msg: any) {
-    console.log("SOCKET: Received audio_play_request:", msg)
-    audioPlayService.handle_audio_play_request(msg)
-  }
+  private handle_show_wifi_setup(msg: any) {
+    const reason = msg.reason || "This operation requires your glasses to be connected to WiFi."
+    const currentRoute = router.pathname || "/"
 
-  private handle_audio_stop_request(msg: any) {
-    console.log("SOCKET: Received audio_stop_request:", msg)
-    audioPlayService.handle_audio_stop_request(msg)
+    showAlert(
+      "WiFi Setup Required",
+      reason,
+      [
+        {text: "Cancel", style: "cancel"},
+        {
+          text: "Setup WiFi",
+          onPress: () => {
+            const returnTo = encodeURIComponent(currentRoute)
+            router.push(`/pairing/glasseswifisetup?returnTo=${returnTo}`)
+          },
+        },
+      ],
+      {
+        iconName: "wifi-off",
+        iconColor: "#FF9500",
+      },
+    )
   }
 
   // Message Handling
@@ -627,12 +651,8 @@ class SocketComms {
         this.handle_rgb_led_control(msg)
         break
 
-      case "audio_play_request":
-        this.handle_audio_play_request(msg)
-        break
-
-      case "audio_stop_request":
-        this.handle_audio_stop_request(msg)
+      case "show_wifi_setup":
+        this.handle_show_wifi_setup(msg)
         break
 
       default:
