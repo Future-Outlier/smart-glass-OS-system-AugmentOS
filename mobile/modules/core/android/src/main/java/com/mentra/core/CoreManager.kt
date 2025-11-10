@@ -457,27 +457,20 @@ class CoreManager {
                     break
                 }
                 // if the phone mic is not recording, start recording:
-                // val success = phoneMic?.startRecording()
-                // if (success == true) {
-                //     micUsed = mic
-                //     break
-                // }
+                val success = phoneMic?.startRecording()
+                if (success == true) {
+                    micUsed = mic
+                    break
+                }
             }
 
-            // if (mic == MicTypes.GLASSES_CUSTOM) {
-            //     if (sgc?.hasMic?.get() == true) {
-            //         micUsed = mic
-            //         break
-            //     }
-            // }
-
-            // if (mic == MicTypes.GLASSES_CUSTOM) {
-            //     if (sgc?.hasMic?.get() == true) {
-            //         sgc?.setMicEnabled(true)
-            //         micUsed = mic
-            //         break
-            //     }
-            // }
+            if (mic == MicTypes.GLASSES_CUSTOM) {
+                if (sgc?.hasMic == true && sgc?.micEnabled == false) {
+                    sgc?.setMicEnabled(true)
+                    micUsed = mic
+                    break
+                }
+            }
         }
 
 
