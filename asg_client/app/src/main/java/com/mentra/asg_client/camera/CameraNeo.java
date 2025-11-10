@@ -1217,7 +1217,7 @@ public class CameraNeo extends LifecycleService {
                     Log.d(TAG, "  " + size.getWidth() + "x" + size.getHeight());
                 }
 
-                // Use pending video settings if available, otherwise default to 720p
+                // Use pending video settings if available, otherwise default to 1080p
                 int targetVideoWidth;
                 int targetVideoHeight;
                 if (pendingVideoSettings != null && pendingVideoSettings.isValid()) {
@@ -1225,9 +1225,9 @@ public class CameraNeo extends LifecycleService {
                     targetVideoHeight = pendingVideoSettings.height;
                     Log.d(TAG, "Using requested video settings: " + pendingVideoSettings);
                 } else {
-                    targetVideoWidth = 1280;
-                    targetVideoHeight = 720;
-                    Log.d(TAG, "Using default video settings: 1280x720@30fps");
+                    targetVideoWidth = 1920;
+                    targetVideoHeight = 1080;
+                    Log.d(TAG, "Using default video settings: 1920x1080@30fps");
                 }
                 videoSize = chooseOptimalSize(videoSizes, targetVideoWidth, targetVideoHeight);
                 Log.d(TAG, "Selected video size: " + videoSize.getWidth() + "x" + videoSize.getHeight());

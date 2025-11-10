@@ -10,6 +10,7 @@ import com.mentra.asg_client.service.legacy.managers.AsgClientServiceManager;
 import com.mentra.asg_client.service.system.interfaces.IStateManager;
 
 import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -20,14 +21,14 @@ import java.util.Set;
  */
 public class WifiCommandHandler implements ICommandHandler {
     private static final String TAG = "WifiCommandHandler";
-    
+
     private final AsgClientServiceManager serviceManager;
     private final ICommunicationManager communicationManager;
     private final IStateManager stateManager;
 
-    public WifiCommandHandler(AsgClientServiceManager serviceManager, 
-                            ICommunicationManager communicationManager,
-                            IStateManager stateManager) {
+    public WifiCommandHandler(AsgClientServiceManager serviceManager,
+                              ICommunicationManager communicationManager,
+                              IStateManager stateManager) {
         this.serviceManager = serviceManager;
         this.communicationManager = communicationManager;
         this.stateManager = stateManager;
@@ -72,8 +73,14 @@ public class WifiCommandHandler implements ICommandHandler {
             if (!ssid.isEmpty()) {
                 INetworkManager networkManager = serviceManager.getNetworkManager();
                 if (networkManager != null) {
+                    Log.d(TAG, "📶 Initiating WiFi connection to: " + ssid);
                     networkManager.connectToWifi(ssid, password);
                     serviceManager.initializeCameraWebServer();
+
+                    // Schedule WiFi status check after connection attempt
+                    // This ensures we send status even if broadcast receiver doesn't fire
+                    scheduleWifiStatusCheck(ssid);
+
                     return true;
                 } else {
                     Log.e(TAG, "Network manager not available");
@@ -87,6 +94,48 @@ public class WifiCommandHandler implements ICommandHandler {
             Log.e(TAG, "Error handling WiFi credentials command", e);
             return false;
         }
+    }
+
+    /**
+     * Schedule a delayed WiFi status check to ensure mobile app receives status update
+     * even if NETWORK_STATE_CHANGED broadcast doesn't fire reliably
+     */
+    private void scheduleWifiStatusCheck(String targetSsid) {
+        new Thread(() -> {
+            try {
+                // Wait for WiFi connection to establish (3 seconds initial, then poll)
+                Log.d(TAG, "📶 ⏱️ Waiting 3s for WiFi connection to establish...");
+                Thread.sleep(3000);
+
+                // Poll WiFi status multiple times over 12 seconds (total 15s)
+                for (int i = 0; i < 4; i++) {
+                    boolean isConnected = stateManager.isConnectedToWifi();
+                    String currentSsid = serviceManager.getNetworkManager() != null ?
+                            serviceManager.getNetworkManager().getCurrentWifiSsid() : "";
+
+                    Log.d(TAG, "📶 🔍 WiFi status check #" + (i + 1) +
+                            ": connected=" + isConnected +
+                            ", current_ssid=" + currentSsid +
+                            ", target_ssid=" + targetSsid);
+
+                    // Send status if connected to target network, or if we've reached final attempt
+                    if ((isConnected && currentSsid.equals(targetSsid)) || i == 3) {
+                        Log.d(TAG, "📶 ✅ Sending WiFi status update: " +
+                                (isConnected ? "CONNECTED to " + currentSsid : "DISCONNECTED"));
+                        communicationManager.sendWifiStatusOverBle(isConnected);
+                        break;
+                    }
+
+                    // Wait 3 more seconds before next check
+                    Thread.sleep(3000);
+                }
+            } catch (InterruptedException e) {
+                Log.w(TAG, "📶 ⚠️ WiFi status check interrupted", e);
+                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                Log.e(TAG, "📶 💥 Error during WiFi status check", e);
+            }
+        }).start();
     }
 
     /**
@@ -123,13 +172,13 @@ public class WifiCommandHandler implements ICommandHandler {
                                 // Send each batch of networks immediately as they're found
                                 communicationManager.sendWifiScanResultsOverBleEnhanced(networks);
                             }
-                            
+
                             @Override
                             public void onScanComplete(int totalNetworksFound) {
                                 Log.d(TAG, "📡 WiFi scan completed, total networks found: " + totalNetworksFound);
                                 // Could optionally send a completion signal here if needed
                             }
-                            
+
                             @Override
                             public void onScanError(String error) {
                                 Log.e(TAG, "📡 WiFi scan error: " + error);
@@ -160,20 +209,20 @@ public class WifiCommandHandler implements ICommandHandler {
         try {
             boolean requestedState = data.optBoolean("enabled", false);
             INetworkManager networkManager = serviceManager.getNetworkManager();
-            
+
             if (networkManager == null) {
                 Log.e(TAG, "Network manager not available for hotspot command");
                 return false;
             }
-            
+
             boolean currentState = networkManager.isHotspotEnabled();
-            
+
             // Check if already in requested state
             if (currentState == requestedState) {
-                Log.d(TAG, "🔥 Hotspot already in requested state (" + 
-                        (requestedState ? "ENABLED" : "DISABLED") + 
+                Log.d(TAG, "🔥 Hotspot already in requested state (" +
+                        (requestedState ? "ENABLED" : "DISABLED") +
                         "), sending current status");
-                
+
                 // Send current status immediately since there won't be a state change broadcast
                 sendHotspotStatusToPhone(networkManager);
             } else {
@@ -187,14 +236,14 @@ public class WifiCommandHandler implements ICommandHandler {
                 }
                 // Broadcast receiver will handle sending the status when state actually changes
             }
-            
+
             return true;
         } catch (Exception e) {
             Log.e(TAG, "Error handling hotspot state command", e);
             return false;
         }
     }
-    
+
     /**
      * Handle disconnect WiFi command
      */
@@ -223,18 +272,18 @@ public class WifiCommandHandler implements ICommandHandler {
             JSONObject hotspotStatus = new JSONObject();
             hotspotStatus.put("type", "hotspot_status_update");
             hotspotStatus.put("hotspot_enabled", networkManager.isHotspotEnabled());
-            
+
             if (networkManager.isHotspotEnabled()) {
                 hotspotStatus.put("hotspot_ssid", networkManager.getHotspotSsid());
                 hotspotStatus.put("hotspot_password", networkManager.getHotspotPassword());
                 hotspotStatus.put("hotspot_gateway_ip", networkManager.getHotspotGatewayIp());
             }
-            
+
             boolean sent = communicationManager.sendBluetoothResponse(hotspotStatus);
             Log.d(TAG, "🔥 " + (sent ? "✅ Hotspot status sent successfully" : "❌ Failed to send hotspot status") + ", enabled=" + networkManager.isHotspotEnabled());
         } catch (Exception e) {
             Log.e(TAG, "Error sending hotspot status to phone", e);
         }
     }
-    
+
 } 

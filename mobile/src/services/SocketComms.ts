@@ -10,6 +10,7 @@ import {useGlassesStore} from "@/stores/glasses"
 import {showAlert} from "@/utils/AlertUtils"
 import {router} from "expo-router"
 import Constants from "expo-constants"
+import {shallow} from "zustand/shallow"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -28,34 +29,13 @@ class SocketComms {
     })
 
     try {
-      // Subscribe to changes in default_wearable and call sendGlassesConnectionState() when it updates:
-      useSettingsStore.subscribe(
-        state => state.settings[SETTINGS_KEYS.default_wearable],
-        (modelName: string) => {
-          // TODO: get the connection state from mantlemanager or something
-          if (modelName != "") {
-            this.sendGlassesConnectionState(true)
-          }
-        },
-      )
-
-      // Subscribe to WiFi status changes and send updates to cloud
+      // Subscribe to wifi info
       useGlassesStore.subscribe(
-        state => ({
-          wifi_connected: state.glasses_wifi_connected,
-          wifi_ssid: state.glasses_wifi_ssid,
-          connected: state.connected,
-        }),
-        (wifiInfo, prevWifiInfo) => {
-          // Only send update if WiFi status actually changed and glasses are connected
-          if (
-            wifiInfo.connected &&
-            (wifiInfo.wifi_connected !== prevWifiInfo.wifi_connected || wifiInfo.wifi_ssid !== prevWifiInfo.wifi_ssid)
-          ) {
-            console.log("SOCKET: WiFi status changed, sending update to cloud")
-            this.sendGlassesConnectionState(true)
-          }
+        state => ({glassesConnected: state.connected, wifiConnected: state.wifiConnected, wifiSsid: state.wifiSsid}),
+        _state => {
+          this.sendGlassesConnectionState()
         },
+        {equalityFn: shallow},
       )
     } catch (error) {
       console.error("SOCKET: Error subscribing to store changes:", error)
@@ -159,15 +139,17 @@ class SocketComms {
     }
   }
 
-  sendGlassesConnectionState(connected: boolean): void {
+  sendGlassesConnectionState(): void {
     let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
     const glassesInfo = useGlassesStore.getState()
 
     // Always include WiFi info - null means "unknown", false means "explicitly disconnected"
     const wifiInfo = {
-      connected: glassesInfo.glasses_wifi_connected ?? null,
-      ssid: glassesInfo.glasses_wifi_ssid ?? null,
+      connected: glassesInfo.wifiConnected ?? null,
+      ssid: glassesInfo.wifiSsid ?? null,
     }
+
+    const connected = glassesInfo.connected
 
     this.ws.sendText(
       JSON.stringify({

@@ -44,9 +44,34 @@ export const CoreStatusProvider = ({children}: {children: ReactNode}) => {
       refreshStatus(data)
     }
 
+    const handleWifiStatusChange = (data: {connected: boolean; ssid?: string; local_ip?: string}) => {
+      console.log("CoreStatus: WiFi status changed, updating UI:", data)
+      setStatus(prevStatus => {
+        // Only update if we have connected glasses
+        if (!prevStatus.glasses_info) {
+          console.log("CoreStatus: No glasses connected, skipping WiFi update")
+          return prevStatus
+        }
+
+        // Update the WiFi info in glasses_info
+        return {
+          ...prevStatus,
+          glasses_info: {
+            ...prevStatus.glasses_info,
+            glasses_wifi_connected: data.connected,
+            glasses_wifi_ssid: data.ssid || "",
+            glasses_wifi_local_ip: data.local_ip || "",
+          },
+        }
+      })
+    }
+
     GlobalEventEmitter.on("CORE_STATUS_UPDATE", handleCoreStatusUpdate)
+    GlobalEventEmitter.on("GLASSES_WIFI_STATUS_CHANGE", handleWifiStatusChange)
+
     return () => {
       GlobalEventEmitter.removeListener("CORE_STATUS_UPDATE", handleCoreStatusUpdate)
+      GlobalEventEmitter.removeListener("GLASSES_WIFI_STATUS_CHANGE", handleWifiStatusChange)
     }
   }, [])
 
