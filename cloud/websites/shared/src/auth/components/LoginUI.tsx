@@ -3,9 +3,11 @@ import {Button} from "../components/ui/button"
 import EmailAuthModal from "./EmailAuthModal"
 import {FcGoogle} from "react-icons/fc"
 import {FaApple} from "react-icons/fa"
+import {FiAlertCircle} from "react-icons/fi"
 import {mentraAuthProvider} from "../utils/auth/authProvider"
 // Removed toast import as we're not using it anymore
 
+const IS_CHINA = (import.meta.env.VITE_DEPLOYMENT_REGION || "global") === "china"
 interface LoginUIProps {
   /** Logo image URL */
   logoUrl?: string
@@ -122,14 +124,7 @@ export const LoginUI: React.FC<LoginUIProps> = ({
                   }`}
                   role="alert">
                   <div className="flex items-center">
-                    <svg
-                      className="flex-shrink-0 w-4 h-4 mr-2"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="currentColor"
-                      viewBox="0 0 20 20">
-                      <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
-                    </svg>
+                    <FiAlertCircle className="flex-shrink-0 w-4 h-4 mr-2" />
                     <span className="sr-only">Error</span>
                     <div className="flex-1">{error}</div>
                     <button
@@ -152,34 +147,41 @@ export const LoginUI: React.FC<LoginUIProps> = ({
                 </div>
               )}
 
-              {/* Social Provider Sign In */}
-              <div className="w-full space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition-all duration-200 hover:bg-gray-50 hover:shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] active:shadow-inner"
-                  onClick={handleGoogleSignIn}
-                  disabled={isLoading.google}>
-                  <FcGoogle className="w-5 h-5" />
-                  {isLoading.google ? "Signing in..." : "Continue with Google"}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition-all duration-200 hover:bg-gray-50 hover:shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] active:shadow-inner"
-                  onClick={handleAppleSignIn}
-                  disabled={isLoading.apple}>
-                  <FaApple className="w-5 h-5" />
-                  {isLoading.apple ? "Signing in..." : "Continue with Apple"}
-                </Button>
-              </div>
+              {/* Social Provider Sign In - Hidden in China region */}
+              {!IS_CHINA && (
+                <>
+                  <div className="w-full space-y-3">
+                    <Button
+                      variant="outline"
+                      className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition-all duration-200 hover:bg-gray-50 hover:shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] active:shadow-inner"
+                      onClick={handleGoogleSignIn}
+                      disabled={isLoading.google}>
+                      <FcGoogle className="w-5 h-5" />
+                      {isLoading.google ? "Signing in..." : "Continue with Google"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition-all duration-200 hover:bg-gray-50 hover:shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] active:shadow-inner"
+                      onClick={handleAppleSignIn}
+                      disabled={isLoading.apple}>
+                      <FaApple className="w-5 h-5" />
+                      {isLoading.apple ? "Signing in..." : "Continue with Apple"}
+                    </Button>
+                  </div>
 
-              {/* Email Sign In Divider and Button */}
-              <div className="w-full flex flex-col items-center space-y-4 mt-4">
-                <div className="relative flex items-center w-full">
-                  <div className="flex-1 border-t border-gray-300"></div>
-                  <span className="px-4 text-sm text-gray-500">or</span>
-                  <div className="flex-1 border-t border-gray-300"></div>
-                </div>
+                  {/* Email Sign In Divider */}
+                  <div className="w-full flex flex-col items-center space-y-4 mt-4">
+                    <div className="relative flex items-center w-full">
+                      <div className="flex-1 border-t border-gray-300"></div>
+                      <span className="px-4 text-sm text-gray-500">or</span>
+                      <div className="flex-1 border-t border-gray-300"></div>
+                    </div>
+                  </div>
+                </>
+              )}
 
+              {/* Email Sign In Button */}
+              <div className="w-full flex flex-col items-center">
                 <Button
                   className="w-full py-2 transition-all duration-200 hover:shadow-sm disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] active:shadow-inner"
                   onClick={handleEmailSignIn}
