@@ -129,6 +129,7 @@ public class RtmpStreamingService extends Service {
 
     // Battery monitoring for RTMP streaming
     private IStateManager mStateManager;
+    private static IStateManager sPendingStateManager = null; // Pending StateManager to apply on service start
     private Handler mBatteryMonitorHandler = null;
     private Runnable mBatteryCheckRunnable = null;
 
@@ -144,6 +145,13 @@ public class RtmpStreamingService extends Service {
 
         // Store static instance reference
         sInstance = this;
+
+        // Apply pending StateManager if it was set before service started
+        if (sPendingStateManager != null) {
+            mStateManager = sPendingStateManager;
+            sPendingStateManager = null; // Clear pending after applying
+            Log.d(TAG, "✅ Applied pending StateManager during onCreate");
+        }
 
         // Create notification channel
         createNotificationChannel();
@@ -1225,15 +1233,19 @@ public class RtmpStreamingService extends Service {
     }
 
     /**
-     * Set the StateManager for battery monitoring
+     * Set the StateManager for battery monitoring.
+     * If service is not yet started, stores in pending field to apply during onCreate().
      * @param stateManager StateManager instance
      */
     public static void setStateManager(IStateManager stateManager) {
         if (sInstance != null) {
+            // Service is running, apply immediately
             sInstance.mStateManager = stateManager;
             Log.d(TAG, "✅ StateManager set for battery monitoring");
         } else {
-            Log.w(TAG, "⚠️ Cannot set StateManager - service instance not available");
+            // Service not yet started, store in pending field to apply during onCreate()
+            sPendingStateManager = stateManager;
+            Log.d(TAG, "✅ StateManager stored as pending - will be applied when service starts");
         }
     }
 

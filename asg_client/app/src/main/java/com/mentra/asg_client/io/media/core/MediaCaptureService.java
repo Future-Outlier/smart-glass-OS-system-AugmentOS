@@ -671,8 +671,8 @@ public class MediaCaptureService {
                     isRecordingVideo = true;
                     recordingStartTime = System.currentTimeMillis();
 
-                    // Start battery monitoring
-                    startBatteryMonitoring();
+                    // Start battery monitoring on main thread (callback runs on background thread)
+                    new Handler(Looper.getMainLooper()).post(() -> startBatteryMonitoring());
 
                     // Turn on recording LED if enabled
                     if (enableLed && hardwareManager.supportsRecordingLed()) {
