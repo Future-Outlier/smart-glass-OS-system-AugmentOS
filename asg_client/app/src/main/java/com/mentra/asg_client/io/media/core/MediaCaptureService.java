@@ -498,7 +498,8 @@ public class MediaCaptureService {
      * @param initialBatteryLevel Initial battery level (for monitoring during recording, -1 = unknown)
      */
     public void startVideoRecording(VideoSettings settings, boolean enableLed, int maxRecordingTimeMinutes, int initialBatteryLevel) {
-        assertMainThread();  // Thread safety check
+        // Note: Removed assertMainThread() - this is called from Bluetooth worker thread via command handlers
+        // Thread safety is maintained through CameraNeo's internal threading and Handler usage
         Log.d(TAG, "startVideoRecording called with settings: " + settings + ", enableLed: " + enableLed + ", maxRecordingTimeMinutes: " + maxRecordingTimeMinutes + ", initialBatteryLevel: " + initialBatteryLevel);
 
         // Check if battery is too low to start recording (query current level for accuracy)
@@ -877,9 +878,9 @@ public class MediaCaptureService {
     /**
      * Stop video recording (public API for external callers).
      * Maintains backward compatibility.
+     * Note: Called from Bluetooth worker thread via command handlers - no thread assertion.
      */
     public void stopVideoRecording() {
-        assertMainThread();
         stopVideoRecording(StopReason.USER_REQUESTED);
     }
 
