@@ -17,6 +17,7 @@ import cliKeysApi from "./console/cli-keys.api";
 import livekitApi from "./client/livekit.api";
 import calendarApi from "./client/calendar.api";
 import locationApi from "./client/location.api";
+import notificationsApi from "./client/notifications.api";
 
 // Middleware
 import { authenticateCLI } from "./middleware/cli.middleware";
@@ -58,6 +59,7 @@ export function registerApi(app: Application) {
   app.use("/api/client/livekit", livekitApi);
   app.use("/api/client/calendar", calendarApi);
   app.use("/api/client/location", locationApi);
+  app.use("/api/client/notifications", notificationsApi);
 
   app.use("/api/sdk", sdkVersionApi);
   app.use("/api/sdk/version", sdkVersionApi);

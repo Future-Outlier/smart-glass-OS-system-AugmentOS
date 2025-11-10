@@ -20,10 +20,10 @@ public class VideoSettings {
     }
     
     /**
-     * Create default settings (720p at 30fps)
+     * Create default settings (1080p at 30fps)
      */
     public static VideoSettings getDefault() {
-        return new VideoSettings(1280, 720, 30);
+        return new VideoSettings(1920, 1080, 30);
     }
     
     /**

@@ -62,6 +62,12 @@ class MantleManager {
     }
     await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
 
+    // Sync notification settings to native layer
+    const notificationsEnabled = useSettingsStore.getState().getSetting(SETTINGS_KEYS.notifications_enabled)
+    const notificationsBlocklist = useSettingsStore.getState().getSetting(SETTINGS_KEYS.notifications_blocklist)
+    CoreModule.setNotificationsEnabled(notificationsEnabled ?? true)
+    CoreModule.setNotificationsBlocklist(notificationsBlocklist ?? [])
+
     setTimeout(async () => {
       await CoreModule.connectDefault()
     }, 3000)
