@@ -11,6 +11,7 @@ import com.mentra.asg_client.settings.VideoSettings;
 import com.mentra.asg_client.service.legacy.managers.AsgClientServiceManager;
 import com.mentra.asg_client.service.communication.interfaces.ICommunicationManager;
 import com.mentra.asg_client.service.system.interfaces.IStateManager;
+import com.mentra.asg_client.service.core.constants.BatteryConstants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -384,8 +385,13 @@ public class K900CommandHandler {
         // Get LED setting
         boolean ledEnabled = serviceManager.getAsgSettings().getButtonCameraLedEnabled();
 
-        // Get current battery level
-        int batteryLevel = stateManager.getBatteryLevel();
+        // Get current battery level (with null check)
+        int batteryLevel = -1;
+        if (stateManager != null) {
+            batteryLevel = stateManager.getBatteryLevel();
+        } else {
+            Log.w(TAG, "⚠️ StateManager not available - cannot check battery level");
+        }
 
         if (isLongPress) {
             // Long press behavior:
@@ -398,8 +404,12 @@ public class K900CommandHandler {
                 Log.d(TAG, "📹 Starting video recording (long press) with LED: " + ledEnabled + ", battery: " + batteryLevel + "%");
 
                 // Check if battery is too low to start recording
-                if (batteryLevel >= 0 && batteryLevel < 10) {
-                    Log.w(TAG, "⚠️ Battery too low to start recording: " + batteryLevel + "% (minimum 10% required)");
+                if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                    Log.w(TAG, "🚫 Battery too low to start recording: " + batteryLevel + "% (minimum " + BatteryConstants.MIN_BATTERY_LEVEL + "% required)");
+
+                    // Play audio feedback
+                    captureService.playBatteryLowSound();
+
                     return;
                 }
 

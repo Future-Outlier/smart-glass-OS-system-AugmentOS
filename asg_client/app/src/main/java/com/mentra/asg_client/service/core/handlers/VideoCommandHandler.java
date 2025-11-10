@@ -8,6 +8,8 @@ import com.mentra.asg_client.io.media.core.MediaCaptureService;
 import com.mentra.asg_client.io.file.core.FileManager;
 import com.mentra.asg_client.service.legacy.managers.AsgClientServiceManager;
 import com.mentra.asg_client.service.media.interfaces.IMediaManager;
+import com.mentra.asg_client.service.system.interfaces.IStateManager;
+import com.mentra.asg_client.service.core.constants.BatteryConstants;
 import com.mentra.asg_client.settings.VideoSettings;
 
 import org.json.JSONException;
@@ -26,11 +28,13 @@ public class VideoCommandHandler extends BaseMediaCommandHandler {
 
     private final AsgClientServiceManager serviceManager;
     private final IMediaManager streamingManager;
+    private final IStateManager stateManager;
 
-    public VideoCommandHandler(Context context, AsgClientServiceManager serviceManager, IMediaManager streamingManager, FileManager fileManager) {
+    public VideoCommandHandler(Context context, AsgClientServiceManager serviceManager, IMediaManager streamingManager, FileManager fileManager, IStateManager stateManager) {
         super(context, fileManager);
         this.serviceManager = serviceManager;
         this.streamingManager = streamingManager;
+        this.stateManager = stateManager;
     }
 
     @Override
@@ -85,6 +89,27 @@ public class VideoCommandHandler extends BaseMediaCommandHandler {
                 logCommandResult("start_video_recording", false, "Media capture service is not initialized");
                 streamingManager.sendVideoRecordingStatusResponse(false, "service_unavailable", null);
                 return false;
+            }
+
+            // BATTERY CHECK: Reject if battery too low
+            if (stateManager != null) {
+                int batteryLevel = stateManager.getBatteryLevel();
+                if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                    Log.w(TAG, "🚫 Video recording rejected - battery too low (" + batteryLevel + "%)");
+                    logCommandResult("start_video_recording", false, "Battery too low: " + batteryLevel + "%");
+
+                    // Play audio feedback
+                    captureService.playBatteryLowSound();
+
+                    // Send error response to phone
+                    streamingManager.sendVideoRecordingStatusResponse(false, "battery_low",
+                        "Battery level too low (" + batteryLevel + "%) - minimum " +
+                        BatteryConstants.MIN_BATTERY_LEVEL + "% required");
+
+                    return false;
+                }
+            } else {
+                Log.w(TAG, "⚠️ StateManager not available - skipping battery check");
             }
 
             if (captureService.isRecordingVideo()) {

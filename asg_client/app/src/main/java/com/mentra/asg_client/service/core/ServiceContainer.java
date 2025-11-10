@@ -61,6 +61,10 @@ public class ServiceContainer {
         ((CommunicationManager) this.communicationManager).setServiceManager(serviceManager);
         this.configurationManager = new ConfigurationManager(context);
         this.stateManager = new StateManager(serviceManager);
+
+        // Set StateManager in service manager for battery monitoring
+        serviceManager.setStateManager(this.stateManager);
+
         this.streamingManager = new MediaManager(context, serviceManager);
 
 

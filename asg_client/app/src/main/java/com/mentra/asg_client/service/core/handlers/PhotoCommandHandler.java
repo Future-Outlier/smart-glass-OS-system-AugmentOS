@@ -6,6 +6,8 @@ import android.util.Log;
 import com.mentra.asg_client.io.file.core.FileManager;
 import com.mentra.asg_client.io.media.core.MediaCaptureService;
 import com.mentra.asg_client.service.legacy.managers.AsgClientServiceManager;
+import com.mentra.asg_client.service.system.interfaces.IStateManager;
+import com.mentra.asg_client.service.core.constants.BatteryConstants;
 
 import org.json.JSONObject;
 
@@ -20,10 +22,12 @@ public class PhotoCommandHandler extends BaseMediaCommandHandler {
     private static final String TAG = "PhotoCommandHandler";
 
     private final AsgClientServiceManager serviceManager;
+    private final IStateManager stateManager;
 
-    public PhotoCommandHandler(Context context, AsgClientServiceManager serviceManager, FileManager fileManager) {
+    public PhotoCommandHandler(Context context, AsgClientServiceManager serviceManager, FileManager fileManager, IStateManager stateManager) {
         super(context, fileManager);
         this.serviceManager = serviceManager;
+        this.stateManager = stateManager;
     }
 
     @Override
@@ -84,6 +88,27 @@ public class PhotoCommandHandler extends BaseMediaCommandHandler {
             if (captureService == null) {
                 logCommandResult("take_photo", false, "Media capture service not available");
                 return false;
+            }
+
+            // BATTERY CHECK: Reject if battery too low
+            if (stateManager != null) {
+                int batteryLevel = stateManager.getBatteryLevel();
+                if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                    Log.w(TAG, "🚫 Photo rejected - battery too low (" + batteryLevel + "%)");
+                    logCommandResult("take_photo", false, "Battery too low: " + batteryLevel + "%");
+
+                    // Play audio feedback
+                    captureService.playBatteryLowSound();
+
+                    // Send error response to phone
+                    captureService.sendPhotoErrorResponse(requestId, "BATTERY_LOW",
+                        "Battery level too low (" + batteryLevel + "%) - minimum " +
+                        BatteryConstants.MIN_BATTERY_LEVEL + "% required");
+
+                    return false;
+                }
+            } else {
+                Log.w(TAG, "⚠️ StateManager not available - skipping battery check");
             }
 
             // VIDEO RECORDING CHECK: Reject photo requests if video is currently recording
