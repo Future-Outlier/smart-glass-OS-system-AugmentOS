@@ -55,6 +55,7 @@ struct ViewState {
     private var isSearching: Bool = false
     private var onboardMicUnavailable: Bool = false
     private var currentRequiredData: [SpeechRequiredDataType] = []
+    var micRanking: [String] = [MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.BT_CLASSIC]
 
     // glasses settings
     var contextualDashboard = true

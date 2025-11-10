@@ -29,3 +29,20 @@ struct ConnTypes {
     // Private init to prevent instantiation
     private init() {}
 }
+
+struct MicTypes {
+    static let PHONE_INTERNAL = "phone"
+    static let GLASSES_CUSTOM = "glasses"
+    static let BT_CLASSIC = "btclassic"
+    static let BT = "bt"
+
+    static let ALL = [
+        PHONE_INTERNAL,
+        GLASSES_CUSTOM,
+        BT_CLASSIC,
+        BT,
+    ]
+
+    // Private init to prevent instantiation
+    private init() {}
+}

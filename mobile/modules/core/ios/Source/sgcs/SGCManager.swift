@@ -41,6 +41,7 @@ protocol SGCManager {
     // MARK: - Audio Control
 
     func setMicEnabled(_ enabled: Bool)
+    func sortMicRanking(list: [String]) -> [String]
 
     // MARK: - Messaging
 

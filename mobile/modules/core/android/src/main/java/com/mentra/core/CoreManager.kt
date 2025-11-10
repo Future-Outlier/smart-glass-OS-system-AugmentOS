@@ -17,6 +17,7 @@ import com.mentra.core.sgcs.SGCManager
 import com.mentra.core.sgcs.Simulated
 import com.mentra.core.sgcs.Mach1
 import com.mentra.core.utils.DeviceTypes
+import com.mentra.core.utils.MicTypes
 import com.mentra.mentra.stt.SherpaOnnxTranscriber
 import java.text.SimpleDateFormat
 import java.util.*
@@ -72,6 +73,7 @@ class CoreManager {
     private var isSearching = false
     private var systemMicUnavailable = false
     public val currentRequiredData = mutableListOf<SpeechRequiredDataType>()
+    public var micRanking = mutableListOf<String>(MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT_CLASSIC)
 
     // glasses settings
     private var contextualDashboard = true

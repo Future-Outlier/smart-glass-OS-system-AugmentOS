@@ -896,6 +896,10 @@ class MentraLive: NSObject, SGCManager {
         }
     }
 
+    func sortMicRanking(list: [String]) -> [String] {
+        return list
+    }
+
     // BLE UUIDs
     private let SERVICE_UUID = CBUUID(string: "00004860-0000-1000-8000-00805f9b34fb")
     private let RX_CHAR_UUID = CBUUID(string: "000070FF-0000-1000-8000-00805f9b34fb") // Central receives on peripheral's TX

@@ -121,6 +121,10 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         // N/A
     }
 
+    func sortMicRanking(list: [String]) -> [String] {
+        return list
+    }
+
     var CONNECTING_DEVICE = ""
     var onConnectionStateChanged: (() -> Void)?
     @Published var batteryLevel: Int = -1

@@ -1370,9 +1370,15 @@ public class MentraLive extends SGCManager {
 
     }
 
+    @Override
     public void setMicEnabled(boolean enabled) {
         Bridge.log("LIVE: setMicEnabled(" + enabled + ")");
         changeSmartGlassesMicrophoneState(enabled);
+    }
+
+    @Override
+    public List<String> sortMicRanking(List<String> list) {
+        return list;
     }
 
     /**

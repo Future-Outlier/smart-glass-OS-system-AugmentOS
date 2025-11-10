@@ -1743,6 +1743,10 @@ extension G1 {
         //    }
     }
 
+    func sortMicRanking(list: [String]) -> [String] {
+        return list
+    }
+
     // MARK: - Enhanced BMP Display Methods
 
     func displayBitmap(base64ImageData: String) async -> Bool {

@@ -3814,6 +3814,10 @@ public class G1 extends SGCManager {
         }
     }
 
+    public List<String> sortMicRanking(List<String> list) {
+        return list;
+    }
+
     /**
      * Returns whether the microphone is currently enabled
      *

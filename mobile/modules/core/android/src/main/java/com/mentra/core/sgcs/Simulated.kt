@@ -19,6 +19,10 @@ class Simulated : SGCManager() {
         Bridge.log("setMicEnabled")
     }
 
+    override fun sortMicRanking(list: List<String>): List<String> {
+        return list
+    }
+
     // Camera & Media
     override fun requestPhoto(
             requestId: String,
