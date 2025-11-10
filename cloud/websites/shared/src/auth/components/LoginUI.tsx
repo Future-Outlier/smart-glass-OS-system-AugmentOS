@@ -1,9 +1,9 @@
 import {useState} from "react"
-import {supabase} from "../utils/supabase"
 import {Button} from "../components/ui/button"
 import EmailAuthModal from "./EmailAuthModal"
 import {FcGoogle} from "react-icons/fc"
 import {FaApple} from "react-icons/fa"
+import {mentraAuthProvider} from "../utils/auth/authProvider"
 
 interface LoginUIProps {
   /** Logo image URL */
@@ -58,16 +58,7 @@ export const LoginUI: React.FC<LoginUIProps> = ({
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   onClick={async () => {
-                    const {error} = await supabase.auth.signInWithOAuth({
-                      provider: "google",
-                      options: {
-                        redirectTo: redirectTo,
-                        queryParams: {
-                          access_type: "offline",
-                          prompt: "consent",
-                        },
-                      },
-                    })
+                    const {error} = await mentraAuthProvider.googleSignIn(redirectTo)
                     if (error) console.error("Google sign in error:", error)
                   }}>
                   <FcGoogle className="w-5 h-5" />
@@ -77,12 +68,7 @@ export const LoginUI: React.FC<LoginUIProps> = ({
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   onClick={async () => {
-                    const {error} = await supabase.auth.signInWithOAuth({
-                      provider: "apple",
-                      options: {
-                        redirectTo: redirectTo,
-                      },
-                    })
+                    const {error} = await mentraAuthProvider.appleSignIn(redirectTo)
                     if (error) console.error("Apple sign in error:", error)
                   }}>
                   <FaApple className="w-5 h-5" />

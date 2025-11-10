@@ -3,6 +3,7 @@ import {supabase as supabaseClient} from "../../supabase.ts"
 import {
   MentraAuthSessionResponse,
   MentraAuthStateChangeSubscriptionResponse,
+  MentraOauthProviderResponse,
   MentraPasswordResetResponse,
   MentraSigninResponse,
   MentraSignOutResponse,
@@ -227,6 +228,68 @@ export class SupabaseWrapperClient {
         data: null,
         error: {
           message: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+        },
+      }
+    }
+  }
+
+  async appleSignIn(redirectTo?: string): Promise<MentraOauthProviderResponse> {
+    try {
+      const {data, error} = await this.supabase.auth.signInWithOAuth({
+        provider: "apple",
+        options: {
+          // Must match the deep link scheme/host/path in your AndroidManifest.xml
+          redirectTo: redirectTo,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      })
+      return {
+        data: data.url ? {url: data.url} : null,
+        error: error
+          ? {
+              message: error.message,
+            }
+          : null,
+      }
+    } catch (error) {
+      console.error(error)
+      return {
+        data: null,
+        error: {
+          message: "Something went wrong. Please try again.",
+        },
+      }
+    }
+  }
+
+  async googleSignIn(redirectTo?: string): Promise<MentraOauthProviderResponse> {
+    try {
+      const {data, error} = await this.supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          // Must match the deep link scheme/host/path in your AndroidManifest.xml
+          redirectTo: redirectTo,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      })
+      return {
+        data: data.url ? {url: data.url} : null,
+        error: error
+          ? {
+              message: error.message,
+            }
+          : null,
+      }
+    } catch (error) {
+      console.error(error)
+      return {
+        data: null,
+        error: {
+          message: "Something went wrong. Please try again.",
         },
       }
     }

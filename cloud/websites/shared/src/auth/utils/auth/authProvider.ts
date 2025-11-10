@@ -3,6 +3,7 @@ import {SupabaseWrapperClient} from "./provider/supabaseClient"
 import {
   MentraAuthSessionResponse,
   MentraAuthStateChangeSubscriptionResponse,
+  MentraOauthProviderResponse,
   MentraPasswordResetResponse,
   MentraSigninResponse,
   MentraSignOutResponse,
@@ -73,6 +74,22 @@ class MentraAuthProvider {
       throw new Error("Method not implemented.")
     } else {
       return this.supabaseClient.refreshUser()
+    }
+  }
+
+  async appleSignIn(redirectTo?: string): Promise<MentraOauthProviderResponse> {
+    if (IS_CHINA) {
+      throw new Error("Apple sign in not supported in China")
+    } else {
+      return this.supabaseClient.appleSignIn(redirectTo)
+    }
+  }
+
+  async googleSignIn(redirectTo?: string): Promise<MentraOauthProviderResponse> {
+    if (IS_CHINA) {
+      throw new Error("Google sign in not supported in China")
+    } else {
+      return this.supabaseClient.googleSignIn(redirectTo)
     }
   }
 }
