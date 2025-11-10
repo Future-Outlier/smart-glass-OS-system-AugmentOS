@@ -17,6 +17,8 @@ import com.mentra.asg_client.io.hardware.interfaces.IHardwareManager;
 import com.mentra.asg_client.io.hardware.core.HardwareManagerFactory;
 import com.mentra.asg_client.io.streaming.services.RtmpStreamingService;
 import com.mentra.asg_client.audio.AudioAssets;
+import com.mentra.asg_client.service.system.interfaces.IStateManager;
+import com.mentra.asg_client.service.core.constants.BatteryConstants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -179,6 +181,12 @@ class PhotoCaptureTestFramework {
 /**
  * Service that handles media capturing (photo and video) and uploading functionality.
  * Replaces PhotoCaptureService to support both photos and videos.
+ *
+ * <p><b>Thread Safety:</b> All public methods MUST be called from the main thread.
+ * Methods will throw {@link IllegalStateException} if called from other threads.
+ *
+ * <p><b>Lifecycle:</b> Call {@link #cleanup()} before destroying the service
+ * to prevent memory leaks.
  */
 public class MediaCaptureService {
     private static final String TAG = "MediaCaptureService";
@@ -200,6 +208,22 @@ public class MediaCaptureService {
     // Max recording time check
     private final Handler recordingTimeHandler = new Handler(Looper.getMainLooper());
     private Runnable recordingTimeCheckRunnable;
+
+    // Battery monitoring for video recording
+    private Handler mBatteryMonitorHandler = null;
+    private Runnable mBatteryCheckRunnable = null;
+
+    // StateManager for battery level checks (not final - can be set after construction)
+    private IStateManager mStateManager;
+
+    // Stop reason tracking to prevent duplicate feedback
+    private enum StopReason {
+        USER_REQUESTED,      // User/TPA explicitly stopped
+        LOW_BATTERY,         // Battery dropped below threshold
+        MAX_DURATION,        // Hit max recording time
+        ERROR                // Error occurred
+    }
+    private StopReason mCurrentStopReason = null;
 
     // Default BLE params (used if size unspecified)
     public static final int bleImageTargetWidth = 480;
@@ -281,11 +305,14 @@ public class MediaCaptureService {
      *
      * @param context           Application context
      * @param mediaQueueManager MediaUploadQueueManager instance
+     * @param fileManager       FileManager instance
+     * @param stateManager      StateManager for battery level checks
      */
-    public MediaCaptureService(@NonNull Context context, @NonNull MediaUploadQueueManager mediaQueueManager, FileManager fileManager) {
+    public MediaCaptureService(@NonNull Context context, @NonNull MediaUploadQueueManager mediaQueueManager, FileManager fileManager, @NonNull IStateManager stateManager) {
         mContext = context.getApplicationContext();
         mMediaQueueManager = mediaQueueManager;
         this.fileManager = fileManager;
+        this.mStateManager = stateManager;
         
         // Initialize hardware manager
         hardwareManager = HardwareManagerFactory.getInstance(context);
@@ -347,6 +374,52 @@ public class MediaCaptureService {
      */
     public void setServiceCallback(ServiceCallbackInterface callback) {
         this.mServiceCallback = callback;
+    }
+
+    /**
+     * Verify we're on the main thread.
+     * All public methods must run on main thread for thread safety.
+     */
+    private void assertMainThread() {
+        if (Looper.getMainLooper() != Looper.myLooper()) {
+            throw new IllegalStateException(
+                "MediaCaptureService methods must be called from main thread. " +
+                "Current: " + Thread.currentThread().getName()
+            );
+        }
+    }
+
+    /**
+     * Play battery low sound to alert user.
+     */
+    public void playBatteryLowSound() {
+        if (hardwareManager != null && hardwareManager.supportsAudioPlayback()) {
+            hardwareManager.playAudioAsset(AudioAssets.BATTERY_LOW);
+            Log.d(TAG, "🔋 Playing battery low sound");
+        } else {
+            Log.w(TAG, "⚠️ Cannot play battery low sound - hardware manager not available");
+        }
+    }
+
+    /**
+     * Static helper for contexts without MediaCaptureService instance.
+     * Used by RtmpCommandHandler and other handlers.
+     */
+    public static void playBatteryLowSound(Context context) {
+        IHardwareManager hwManager = HardwareManagerFactory.getInstance(context);
+        if (hwManager != null && hwManager.supportsAudioPlayback()) {
+            hwManager.playAudioAsset(AudioAssets.BATTERY_LOW);
+            Log.d("MediaCaptureService", "🔋 Playing battery low sound (static)");
+        }
+    }
+
+    /**
+     * Set or update the StateManager reference.
+     * Used when StateManager is initialized after MediaCaptureService creation.
+     */
+    public void setStateManager(IStateManager stateManager) {
+        this.mStateManager = stateManager;
+        Log.d(TAG, "✅ StateManager updated for battery monitoring");
     }
 
     private void playShutterSound() {
@@ -425,12 +498,20 @@ public class MediaCaptureService {
      * @param initialBatteryLevel Initial battery level (for monitoring during recording, -1 = unknown)
      */
     public void startVideoRecording(VideoSettings settings, boolean enableLed, int maxRecordingTimeMinutes, int initialBatteryLevel) {
+        // Note: Removed assertMainThread() - this is called from Bluetooth worker thread via command handlers
+        // Thread safety is maintained through CameraNeo's internal threading and Handler usage
         Log.d(TAG, "startVideoRecording called with settings: " + settings + ", enableLed: " + enableLed + ", maxRecordingTimeMinutes: " + maxRecordingTimeMinutes + ", initialBatteryLevel: " + initialBatteryLevel);
-        
-        // Check if battery is too low to start recording
-        if (initialBatteryLevel >= 0 && initialBatteryLevel < 10) {
-            Log.w(TAG, "⚠️ Battery too low to start recording: " + initialBatteryLevel + "% (minimum 10% required)");
-            return;
+
+        // Check if battery is too low to start recording (query current level for accuracy)
+        if (mStateManager != null) {
+            int currentBatteryLevel = mStateManager.getBatteryLevel();
+            if (currentBatteryLevel >= 0 && currentBatteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                Log.w(TAG, "🚫 Battery too low to start recording: " + currentBatteryLevel + "% (minimum " + BatteryConstants.MIN_BATTERY_LEVEL + "% required)");
+                playBatteryLowSound();
+                return;
+            }
+        } else {
+            Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for video recording");
         }
 
         if (isRecordingVideo) {
@@ -591,6 +672,9 @@ public class MediaCaptureService {
                     isRecordingVideo = true;
                     recordingStartTime = System.currentTimeMillis();
 
+                    // Start battery monitoring on main thread (callback runs on background thread)
+                    new Handler(Looper.getMainLooper()).post(() -> startBatteryMonitoring());
+
                     // Turn on recording LED if enabled
                     if (enableLed && hardwareManager.supportsRecordingLed()) {
                         hardwareManager.setRecordingLedOn();
@@ -615,7 +699,7 @@ public class MediaCaptureService {
                                     long elapsedTime = System.currentTimeMillis() - recordingStartTime;
                                     if (elapsedTime >= maxRecordingTimeMs) {
                                         Log.d(TAG, "⏱️ Max recording time reached (" + maxRecordingTimeMinutes + " minutes), stopping recording");
-                                        stopVideoRecording();
+                                        stopVideoRecording(StopReason.MAX_DURATION);  // ← USE REASON
                                     } else {
                                         // Check again in 1 second
                                         recordingTimeHandler.postDelayed(this, 1000);
@@ -715,23 +799,61 @@ public class MediaCaptureService {
     /**
      * Stop the current video recording
      */
-    public void stopVideoRecording() {
-        if (!isRecordingVideo || currentVideoId == null) {
-            Log.d(TAG, "No active video recording to stop");
+    /**
+     * Stop video recording with specific reason.
+     * @param reason Why recording is stopping
+     */
+    private void stopVideoRecording(StopReason reason) {
+        // Prevent recursive calls
+        if (mCurrentStopReason != null) {
+            Log.w(TAG, "⚠️ stopVideoRecording already in progress (reason: " +
+                mCurrentStopReason + "), ignoring recursive call with reason: " + reason);
             return;
         }
 
+        mCurrentStopReason = reason;
+        Log.d(TAG, "🛑 Stopping video recording - Reason: " + reason);
+
         try {
-            // Play video stop sound
-            playVideoStopSound();
+            // Stop battery monitoring first
+            stopBatteryMonitoring();
+
+            if (!isRecordingVideo || currentVideoId == null) {
+                Log.w(TAG, "⚠️ Not currently recording, nothing to stop");
+                return;
+            }
+
+            // Handle based on reason
+            switch (reason) {
+                case LOW_BATTERY:
+                    Log.i(TAG, "🔋 Video stopped due to low battery");
+                    playBatteryLowSound();
+                    // Don't play stop sound - already playing battery sound
+                    break;
+
+                case MAX_DURATION:
+                    Log.i(TAG, "⏱️ Video stopped - max duration reached");
+                    playVideoStopSound();
+                    break;
+
+                case USER_REQUESTED:
+                    Log.i(TAG, "👤 Video stopped by user request");
+                    playVideoStopSound();
+                    break;
+
+                case ERROR:
+                    Log.e(TAG, "❌ Video stopped due to error");
+                    // Error sound/handling already done
+                    break;
+            }
+
             stopVideoRecordingLed(); // Stop white LED when video recording stops
 
             // Stop the recording via CameraNeo
             CameraNeo.stopVideoRecording(mContext, currentVideoId);
+
         } catch (Exception e) {
             Log.e(TAG, "Error stopping video recording", e);
-
-            // Note: RGB white LED already turned off above (line 768), no need to call again
 
             if (mMediaCaptureListener != null) {
                 mMediaCaptureListener.onMediaError(currentVideoId, "Error stopping video: " + e.getMessage(),
@@ -742,13 +864,24 @@ public class MediaCaptureService {
             isRecordingVideo = false;
             currentVideoId = null;
             currentVideoPath = null;
-            
+
             // Ensure LED is turned off even if stop fails (if it was enabled)
             if (currentVideoLedEnabled && hardwareManager.supportsRecordingLed()) {
                 hardwareManager.setRecordingLedOff();
                 Log.d(TAG, "Recording LED turned OFF (stop error recovery)");
             }
+        } finally {
+            mCurrentStopReason = null;  // Reset for next recording
         }
+    }
+
+    /**
+     * Stop video recording (public API for external callers).
+     * Maintains backward compatibility.
+     * Note: Called from Bluetooth worker thread via command handlers - no thread assertion.
+     */
+    public void stopVideoRecording() {
+        stopVideoRecording(StopReason.USER_REQUESTED);
     }
 
     /**
@@ -774,6 +907,21 @@ public class MediaCaptureService {
      * Start buffer recording - continuously records last 30 seconds
      */
     public void startBufferRecording() {
+        // Check battery level before proceeding
+        if (mStateManager != null) {
+            int batteryLevel = mStateManager.getBatteryLevel();
+            if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                Log.w(TAG, "🚫 Buffer recording rejected - battery too low (" + batteryLevel + "%)");
+                playBatteryLowSound();
+                if (mMediaCaptureListener != null) {
+                    mMediaCaptureListener.onMediaError("buffer", "Battery too low to start buffer recording (" + batteryLevel + "%)", MediaUploadQueueManager.MEDIA_TYPE_VIDEO);
+                }
+                return;
+            }
+        } else {
+            Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for buffer recording");
+        }
+
         // Check if camera is already in use
         if (CameraNeo.isCameraInUse()) {
             Log.w(TAG, "Cannot start buffer recording - camera is in use");
@@ -782,7 +930,7 @@ public class MediaCaptureService {
             }
             return;
         }
-        
+
         // Close kept-alive camera if it exists to free resources for buffer recording
         CameraNeo.closeKeptAliveCamera();
 
@@ -897,15 +1045,33 @@ public class MediaCaptureService {
         if (isRecordingVideo) {
             Log.e(TAG, "Cannot take photo - video recording in progress");
             if (mMediaCaptureListener != null) {
-                mMediaCaptureListener.onMediaError("local", "Camera busy with video recording", 
+                mMediaCaptureListener.onMediaError("local", "Camera busy with video recording",
                     MediaUploadQueueManager.MEDIA_TYPE_PHOTO);
             }
             return;
         }
-        
+
+        // BATTERY CHECK: Reject if battery too low
+        if (mStateManager != null) {
+            int batteryLevel = mStateManager.getBatteryLevel();
+            if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                Log.w(TAG, "🚫 Photo rejected - battery too low (" + batteryLevel + "%)");
+                playBatteryLowSound();
+                if (mMediaCaptureListener != null) {
+                    mMediaCaptureListener.onMediaError("local",
+                        "Battery level too low (" + batteryLevel + "%) - minimum " +
+                        BatteryConstants.MIN_BATTERY_LEVEL + "% required",
+                        MediaUploadQueueManager.MEDIA_TYPE_PHOTO);
+                }
+                return;
+            }
+        } else {
+            Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for local photo");
+        }
+
         // Note: No need to check CameraNeo.isCameraInUse() for photos
         // The camera's keep-alive system handles rapid photo taking gracefully
-        
+
         // Check storage availability before taking photo
         if (!isExternalStorageAvailable()) {
             Log.e(TAG, "External storage is not available for photo capture");
@@ -1013,6 +1179,19 @@ public class MediaCaptureService {
             Log.e(TAG, "Cannot take photo - RTMP streaming active");
             sendPhotoErrorResponse(requestId, "CAMERA_BUSY", "Camera busy with RTMP streaming");
             return;
+        }
+
+        // Check battery level before proceeding
+        if (mStateManager != null) {
+            int batteryLevel = mStateManager.getBatteryLevel();
+            if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                Log.w(TAG, "🚫 Photo rejected - battery too low (" + batteryLevel + "%)");
+                playBatteryLowSound();
+                sendPhotoErrorResponse(requestId, "BATTERY_LOW", "Battery too low to take photo (" + batteryLevel + "%)");
+                return;
+            }
+        } else {
+            Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for photo upload");
         }
 
         // Check if already uploading - skip request if busy
@@ -1792,6 +1971,19 @@ public class MediaCaptureService {
      * @param compress Compression level (none, medium, heavy)
      */
     public void takePhotoAutoTransfer(String photoFilePath, String requestId, String webhookUrl, String authToken, String bleImgId, boolean save, String size, boolean enableLed, String compress) {
+        // Check battery level before proceeding (defense-in-depth)
+        if (mStateManager != null) {
+            int batteryLevel = mStateManager.getBatteryLevel();
+            if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                Log.w(TAG, "🚫 Photo rejected - battery too low (" + batteryLevel + "%)");
+                playBatteryLowSound();
+                sendPhotoErrorResponse(requestId, "BATTERY_LOW", "Battery too low to take photo (" + batteryLevel + "%)");
+                return;
+            }
+        } else {
+            Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for auto transfer");
+        }
+
         // Store the save flag and BLE ID for this request
         photoSaveFlags.put(requestId, save);
         photoBleIds.put(requestId, bleImgId);
@@ -1819,6 +2011,19 @@ public class MediaCaptureService {
             Log.e(TAG, "Cannot take photo - RTMP streaming active");
             sendPhotoErrorResponse(requestId, "CAMERA_BUSY", "Camera busy with RTMP streaming");
             return;
+        }
+
+        // Check battery level before proceeding
+        if (mStateManager != null) {
+            int batteryLevel = mStateManager.getBatteryLevel();
+            if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                Log.w(TAG, "🚫 Photo rejected - battery too low (" + batteryLevel + "%)");
+                playBatteryLowSound();
+                sendPhotoErrorResponse(requestId, "BATTERY_LOW", "Battery too low to take photo (" + batteryLevel + "%)");
+                return;
+            }
+        } else {
+            Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for BLE transfer");
         }
 
         // Store the save flag for this request
@@ -2200,6 +2405,126 @@ public class MediaCaptureService {
             }
         }
         return ble;
+    }
+
+    /**
+     * Start monitoring battery during video recording.
+     * Stops recording if battery drops below minimum threshold.
+     */
+    private void startBatteryMonitoring() {
+        assertMainThread();
+
+        // Early return if StateManager not available (will be retried by runnable)
+        if (mStateManager == null) {
+            Log.w(TAG, "⚠️ StateManager not set - cannot start battery monitoring (will retry if StateManager becomes available)");
+            // Note: We don't return here because the runnable will check again later
+            // This allows monitoring to start even if StateManager is set after recording begins
+        }
+
+        stopBatteryMonitoring(); // Clean up any existing monitor
+
+        if (mBatteryMonitorHandler == null) {
+            mBatteryMonitorHandler = new Handler(Looper.getMainLooper());
+        }
+
+        mBatteryCheckRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isRecordingVideo) {
+                    // Null check for StateManager (might not be initialized yet or cleared)
+                    if (mStateManager == null) {
+                        Log.w(TAG, "⚠️ StateManager not available during battery monitoring - skipping check");
+                        // Reschedule to try again later in case StateManager gets initialized
+                        if (isRecordingVideo && mBatteryMonitorHandler != null) {
+                            mBatteryMonitorHandler.postDelayed(this,
+                                BatteryConstants.BATTERY_CHECK_INTERVAL_MS);
+                        }
+                        return;
+                    }
+
+                    int batteryLevel = mStateManager.getBatteryLevel();
+
+                    if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                        Log.w(TAG, "🔋⚠️ Battery dropped to " + batteryLevel +
+                            "% during recording - stopping");
+
+                        // Stop with specific reason - prevents duplicate feedback
+                        stopVideoRecording(StopReason.LOW_BATTERY);
+
+                    } else {
+                        // Check again after interval
+                        mBatteryMonitorHandler.postDelayed(this,
+                            BatteryConstants.BATTERY_CHECK_INTERVAL_MS);
+                    }
+                }
+            }
+        };
+
+        // Start monitoring after first interval
+        mBatteryMonitorHandler.postDelayed(mBatteryCheckRunnable,
+            BatteryConstants.BATTERY_CHECK_INTERVAL_MS);
+
+        Log.d(TAG, "🔋 Started battery monitoring for video recording");
+    }
+
+    /**
+     * Stop battery monitoring.
+     * Safe to call multiple times.
+     */
+    private void stopBatteryMonitoring() {
+        if (mBatteryMonitorHandler != null) {
+            if (mBatteryCheckRunnable != null) {
+                mBatteryMonitorHandler.removeCallbacks(mBatteryCheckRunnable);
+                mBatteryCheckRunnable = null;
+            }
+
+            // Safety net: remove ALL callbacks/messages to ensure nothing lingers
+            mBatteryMonitorHandler.removeCallbacksAndMessages(null);
+
+            Log.d(TAG, "🔋 Stopped battery monitoring");
+        }
+    }
+
+    /**
+     * Cleanup resources and stop all monitoring.
+     * MUST be called before service is destroyed to prevent leaks.
+     */
+    public void cleanup() {
+        assertMainThread();
+        Log.d(TAG, "🧹 MediaCaptureService cleanup() called");
+
+        try {
+            // Stop battery monitoring
+            stopBatteryMonitoring();
+
+            // Stop any active recording
+            if (isRecordingVideo) {
+                Log.w(TAG, "⚠️ Video still recording during cleanup - force stopping");
+                stopVideoRecording(StopReason.ERROR);
+            }
+
+            // Release video buffer
+            if (mVideoBuffer != null) {
+                try {
+                    mVideoBuffer.release();
+                } catch (Exception e) {
+                    Log.e(TAG, "Error releasing video buffer", e);
+                }
+                mVideoBuffer = null;
+            }
+
+            // Nuclear cleanup of handlers
+            if (mBatteryMonitorHandler != null) {
+                mBatteryMonitorHandler.removeCallbacksAndMessages(null);
+                mBatteryMonitorHandler = null;
+            }
+
+            Log.d(TAG, "✅ MediaCaptureService cleanup complete");
+
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error during MediaCaptureService cleanup", e);
+            // Don't rethrow - cleanup should be best-effort
+        }
     }
 
     /**
