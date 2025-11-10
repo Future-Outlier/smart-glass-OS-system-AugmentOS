@@ -450,26 +450,40 @@ class CoreManager {
         // allow the sgc to make changes to the micRanking:
         micRanking = sgc?.sortMicRanking(micRanking) ?: micRanking
 
-        for (mic in micRanking) {
-            if (mic == MicTypes.PHONE_INTERNAL) {
-                if (phoneMic?.isRecording?.get() == true) {
-                    micUsed = mic
+        for (micMode in micRanking) {
+            if (micMode == MicTypes.PHONE_INTERNAL || micMode == MicTypes.BT_CLASSIC || micMode == MicTypes.BT) {
+                if (phoneMic?.isRecordingWithMode(micMode) == true) {
+                    micUsed = micMode
                     break
                 }
                 // if the phone mic is not recording, start recording:
-                val success = phoneMic?.startRecording()
-                if (success == true) {
-                    micUsed = mic
+                val success = phoneMic?.startMode(micMode) ?: false
+                if (success) {
+                    micUsed = micMode
                     break
                 }
             }
 
-            if (mic == MicTypes.GLASSES_CUSTOM) {
+            if (micMode == MicTypes.GLASSES_CUSTOM) {
                 if (sgc?.hasMic == true && sgc?.micEnabled == false) {
                     sgc?.setMicEnabled(true)
-                    micUsed = mic
+                    micUsed = micMode
                     break
                 }
+            }
+        }
+
+        // go through and disable all mics after the first used one:
+        for (micMode in micRanking) {
+            if (micMode == micUsed) {
+                continue
+            }
+            if (micMode == MicTypes.PHONE_INTERNAL || micMode == MicTypes.BT_CLASSIC || micMode == MicTypes.BT) {
+                phoneMic?.stopMode(micMode)
+            }
+
+            if (micMode == MicTypes.GLASSES_CUSTOM && sgc?.hasMic == true && sgc?.micEnabled == true) {
+                sgc?.setMicEnabled(false)
             }
         }
 

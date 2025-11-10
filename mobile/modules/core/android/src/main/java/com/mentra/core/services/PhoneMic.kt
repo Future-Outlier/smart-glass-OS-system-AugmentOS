@@ -19,11 +19,12 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.mentra.core.Bridge
 import com.mentra.core.CoreManager
+import com.mentra.core.utils.MicTypes
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.*
-import com.mentra.core.utils.MicTypes
+
 class PhoneMic private constructor(private val context: Context) {
 
     companion object {
@@ -183,33 +184,35 @@ class PhoneMic private constructor(private val context: Context) {
         Bridge.log("MIC: Recording stopped")
     }
 
+    fun isRecordingWithMode(mode: String): Boolean {
+        return isRecording.get() && currentMicMode == mode
+    }
+
     /**
      * Start recording from a specific microphone type
      * @param mode One of MicTypes constants (PHONE_INTERNAL, BT_CLASSIC, BT)
      * @return true if successfully started recording, false otherwise
      */
-    fun startSpecific(mode: String): Boolean {
+    fun startMode(mode: String): Boolean {
         // Ensure we're on main thread for consistency
         if (Looper.myLooper() != Looper.getMainLooper()) {
             var result = false
-            runBlocking { withContext(Dispatchers.Main) { result = startSpecific(mode) } }
+            runBlocking { withContext(Dispatchers.Main) { result = startMode(mode) } }
             return result
         }
 
-        // Check if already recording
+        if (isRecordingWithMode(mode)) {
+            return true
+        }
+
+        // recording with a different mode, so stop recording and start recording with the new mode:
         if (isRecording.get()) {
-            if (currentMicMode == mode) {
-                Bridge.log("MIC: Already recording with mode: $mode")
-                return true
-            } else {
-                Bridge.log(
-                        "MIC: Already recording with different mode ($currentMicMode), stopping first"
-                )
-                stopRecording()
-                // Brief delay to ensure clean stop
-                Thread.sleep(50)
-                return false
-            }
+            Bridge.log(
+                    "MIC: Already recording with different mode ($currentMicMode), stopping first"
+            )
+            stopRecording()
+            // Brief delay to ensure clean stop
+            Thread.sleep(50)
         }
 
         // Check permissions
@@ -275,6 +278,15 @@ class PhoneMic private constructor(private val context: Context) {
                 return false
             }
         }
+    }
+
+    
+    fun stopMode(mode: String): Boolean {
+        if (isRecordingWithMode(mode)) {
+            stopRecording()
+            return true
+        }
+        return false
     }
 
     private fun startRecordingPhoneInternal(): Boolean {
