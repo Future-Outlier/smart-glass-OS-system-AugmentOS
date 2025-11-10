@@ -5,7 +5,7 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import * as CLIKeysService from "../console.cli-keys.service";
+import * as CLIKeysService from "../cli-keys.service";
 import jwt from "jsonwebtoken";
 
 // Mock data
