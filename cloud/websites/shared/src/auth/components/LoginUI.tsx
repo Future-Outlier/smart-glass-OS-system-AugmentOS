@@ -1,9 +1,10 @@
-import {useState} from "react"
+import {useState, useEffect} from "react"
 import {Button} from "../components/ui/button"
 import EmailAuthModal from "./EmailAuthModal"
 import {FcGoogle} from "react-icons/fc"
 import {FaApple} from "react-icons/fa"
 import {mentraAuthProvider} from "../utils/auth/authProvider"
+// Removed toast import as we're not using it anymore
 
 interface LoginUIProps {
   /** Logo image URL */
@@ -32,6 +33,67 @@ export const LoginUI: React.FC<LoginUIProps> = ({
   setIsEmailModalOpen,
 }) => {
   const [isSignUp, setIsSignUp] = useState(false)
+  const [isLoading, setIsLoading] = useState({
+    google: false,
+    apple: false,
+    email: false,
+  })
+  const [error, setError] = useState<string | null>(null)
+  const [isErrorVisible, setIsErrorVisible] = useState(false)
+
+  // Handle error state with animation
+  useEffect(() => {
+    if (error) {
+      setIsErrorVisible(true)
+    } else {
+      setIsErrorVisible(false)
+    }
+  }, [error])
+
+  const handleCloseError = () => {
+    setError(null)
+  }
+
+  const handleGoogleSignIn = async () => {
+    setError(null)
+    try {
+      setIsLoading((prev) => ({...prev, google: true}))
+      const {error} = await mentraAuthProvider.googleSignIn(redirectTo)
+      if (error) {
+        setError(error.message || "Failed to sign in with Google")
+        console.error("Google sign in error:", error)
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred"
+      setError(`Google sign in failed: ${errorMessage}`)
+      console.error("Google sign in error:", error)
+    } finally {
+      setIsLoading((prev) => ({...prev, google: false}))
+    }
+  }
+
+  const handleAppleSignIn = async () => {
+    setError(null)
+    try {
+      setIsLoading((prev) => ({...prev, apple: true}))
+      const {error} = await mentraAuthProvider.appleSignIn(redirectTo)
+      if (error) {
+        setError(error.message || "Failed to sign in with Apple")
+        console.error("Apple sign in error:", error)
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred"
+      setError(`Apple sign in failed: ${errorMessage}`)
+      console.error("Apple sign in error:", error)
+    } finally {
+      setIsLoading((prev) => ({...prev, apple: false}))
+    }
+  }
+
+  const handleEmailSignIn = () => {
+    setIsSignUp(false)
+    setIsEmailModalOpen(true)
+  }
 
   const handleForgotPassword = () => {
     setIsEmailModalOpen(false)
@@ -52,27 +114,61 @@ export const LoginUI: React.FC<LoginUIProps> = ({
           {/* --- Login Card --- */}
           <div className="w-full bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
             <div className="w-full space-y-4">
+              {/* Error Message */}
+              {error && (
+                <div
+                  className={`w-full p-4 mb-4 text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg transition-all duration-300 transform ${
+                    isErrorVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+                  }`}
+                  role="alert">
+                  <div className="flex items-center">
+                    <svg
+                      className="flex-shrink-0 w-4 h-4 mr-2"
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                      viewBox="0 0 20 20">
+                      <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
+                    </svg>
+                    <span className="sr-only">Error</span>
+                    <div className="flex-1">{error}</div>
+                    <button
+                      type="button"
+                      className="ml-3 text-red-600 hover:text-red-800"
+                      onClick={handleCloseError}
+                      aria-label="Close error message">
+                      <span className="sr-only">Close</span>
+                      <svg
+                        className="w-4 h-4"
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Social Provider Sign In */}
               <div className="w-full space-y-3">
                 <Button
                   variant="outline"
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  onClick={async () => {
-                    const {error} = await mentraAuthProvider.googleSignIn(redirectTo)
-                    if (error) console.error("Google sign in error:", error)
-                  }}>
+                  className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition-all duration-200 hover:bg-gray-50 hover:shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] active:shadow-inner"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading.google}>
                   <FcGoogle className="w-5 h-5" />
-                  Continue with Google
+                  {isLoading.google ? "Signing in..." : "Continue with Google"}
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  onClick={async () => {
-                    const {error} = await mentraAuthProvider.appleSignIn(redirectTo)
-                    if (error) console.error("Apple sign in error:", error)
-                  }}>
+                  className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition-all duration-200 hover:bg-gray-50 hover:shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] active:shadow-inner"
+                  onClick={handleAppleSignIn}
+                  disabled={isLoading.apple}>
                   <FaApple className="w-5 h-5" />
-                  Continue with Apple
+                  {isLoading.apple ? "Signing in..." : "Continue with Apple"}
                 </Button>
               </div>
 
@@ -85,13 +181,11 @@ export const LoginUI: React.FC<LoginUIProps> = ({
                 </div>
 
                 <Button
-                  className="w-full py-2"
-                  onClick={() => {
-                    setIsSignUp(false)
-                    setIsEmailModalOpen(true)
-                  }}
-                  variant="outline">
-                  Sign in with Email
+                  className="w-full py-2 transition-all duration-200 hover:shadow-sm disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] active:shadow-inner"
+                  onClick={handleEmailSignIn}
+                  variant="outline"
+                  disabled={isLoading.email}>
+                  {isLoading.email ? "Processing..." : "Sign in with Email"}
                 </Button>
               </div>
             </div>
@@ -126,13 +220,10 @@ export const LoginUI: React.FC<LoginUIProps> = ({
       <EmailAuthModal
         open={isEmailModalOpen}
         onOpenChange={setIsEmailModalOpen}
-        redirectPath={emailRedirectPath}
         isSignUp={isSignUp}
         setIsSignUp={setIsSignUp}
-        onForgotPassword={() => {
-          setIsEmailModalOpen(false)
-          window.location.href = "/forgot-password"
-        }}
+        redirectPath={emailRedirectPath}
+        onForgotPassword={handleForgotPassword}
       />
     </div>
   )
