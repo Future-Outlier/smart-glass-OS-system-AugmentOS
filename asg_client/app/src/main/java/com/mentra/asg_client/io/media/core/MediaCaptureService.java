@@ -906,6 +906,21 @@ public class MediaCaptureService {
      * Start buffer recording - continuously records last 30 seconds
      */
     public void startBufferRecording() {
+        // Check battery level before proceeding
+        if (mStateManager != null) {
+            int batteryLevel = mStateManager.getBatteryLevel();
+            if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                Log.w(TAG, "🚫 Buffer recording rejected - battery too low (" + batteryLevel + "%)");
+                playBatteryLowSound();
+                if (mMediaCaptureListener != null) {
+                    mMediaCaptureListener.onMediaError("buffer", "Battery too low to start buffer recording (" + batteryLevel + "%)", MediaUploadQueueManager.MEDIA_TYPE_VIDEO);
+                }
+                return;
+            }
+        } else {
+            Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for buffer recording");
+        }
+
         // Check if camera is already in use
         if (CameraNeo.isCameraInUse()) {
             Log.w(TAG, "Cannot start buffer recording - camera is in use");
@@ -914,7 +929,7 @@ public class MediaCaptureService {
             }
             return;
         }
-        
+
         // Close kept-alive camera if it exists to free resources for buffer recording
         CameraNeo.closeKeptAliveCamera();
 
@@ -1163,6 +1178,19 @@ public class MediaCaptureService {
             Log.e(TAG, "Cannot take photo - RTMP streaming active");
             sendPhotoErrorResponse(requestId, "CAMERA_BUSY", "Camera busy with RTMP streaming");
             return;
+        }
+
+        // Check battery level before proceeding
+        if (mStateManager != null) {
+            int batteryLevel = mStateManager.getBatteryLevel();
+            if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                Log.w(TAG, "🚫 Photo rejected - battery too low (" + batteryLevel + "%)");
+                playBatteryLowSound();
+                sendPhotoErrorResponse(requestId, "BATTERY_LOW", "Battery too low to take photo (" + batteryLevel + "%)");
+                return;
+            }
+        } else {
+            Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for photo upload");
         }
 
         // Check if already uploading - skip request if busy
@@ -1942,6 +1970,19 @@ public class MediaCaptureService {
      * @param compress Compression level (none, medium, heavy)
      */
     public void takePhotoAutoTransfer(String photoFilePath, String requestId, String webhookUrl, String authToken, String bleImgId, boolean save, String size, boolean enableLed, String compress) {
+        // Check battery level before proceeding (defense-in-depth)
+        if (mStateManager != null) {
+            int batteryLevel = mStateManager.getBatteryLevel();
+            if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                Log.w(TAG, "🚫 Photo rejected - battery too low (" + batteryLevel + "%)");
+                playBatteryLowSound();
+                sendPhotoErrorResponse(requestId, "BATTERY_LOW", "Battery too low to take photo (" + batteryLevel + "%)");
+                return;
+            }
+        } else {
+            Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for auto transfer");
+        }
+
         // Store the save flag and BLE ID for this request
         photoSaveFlags.put(requestId, save);
         photoBleIds.put(requestId, bleImgId);
@@ -1969,6 +2010,19 @@ public class MediaCaptureService {
             Log.e(TAG, "Cannot take photo - RTMP streaming active");
             sendPhotoErrorResponse(requestId, "CAMERA_BUSY", "Camera busy with RTMP streaming");
             return;
+        }
+
+        // Check battery level before proceeding
+        if (mStateManager != null) {
+            int batteryLevel = mStateManager.getBatteryLevel();
+            if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                Log.w(TAG, "🚫 Photo rejected - battery too low (" + batteryLevel + "%)");
+                playBatteryLowSound();
+                sendPhotoErrorResponse(requestId, "BATTERY_LOW", "Battery too low to take photo (" + batteryLevel + "%)");
+                return;
+            }
+        } else {
+            Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for BLE transfer");
         }
 
         // Store the save flag for this request
