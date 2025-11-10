@@ -49,4 +49,8 @@ export default tseslint.config({
 })
 ```
 
-Note: Update cloudflare to use bun for installing and building the application.
+Cloudflare CI/CD Note:
+
+- Update cloudflare to use bun for installing and building the application.
+- Update cloudflare .env to set SKIP_DEPENDENCY_INSTALL=true
+  https://www.answeroverflow.com/m/1333203439261454356
