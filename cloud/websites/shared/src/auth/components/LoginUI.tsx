@@ -180,15 +180,54 @@ export const LoginUI: React.FC<LoginUIProps> = ({
                 </>
               )}
 
-              {/* Email Sign In Button */}
-              <div className="w-full flex flex-col items-center">
-                <Button
-                  className="w-full py-2 transition-all duration-200 hover:shadow-sm disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] active:shadow-inner"
-                  onClick={handleEmailSignIn}
-                  variant="outline"
-                  disabled={isLoading.email}>
-                  {isLoading.email ? "Processing..." : "Sign in with Email"}
-                </Button>
+              {/* Email Sign In Button - Enhanced for China region */}
+              <div className={`w-full flex flex-col items-center ${IS_CHINA ? "mt-12" : ""}`}>
+                <div className={`w-full ${IS_CHINA ? "max-w-xs mx-auto" : ""} space-y-4`}>
+                  <Button
+                    className="w-full py-3 transition-all duration-200 hover:shadow-sm disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] active:shadow-inner border-2 border-gray-300 hover:border-gray-400 bg-white text-gray-800 hover:bg-gray-50"
+                    onClick={handleEmailSignIn}
+                    variant="outline"
+                    disabled={isLoading.email}>
+                    {isLoading.email ? (
+                      <span className="flex items-center justify-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center text-gray-700">
+                        <svg
+                          className="w-5 h-5 mr-2 text-gray-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        {IS_CHINA ? "Continue with Email" : "Sign in with Email"}
+                      </span>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
 
