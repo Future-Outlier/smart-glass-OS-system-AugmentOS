@@ -68,7 +68,7 @@ export function AuthProvider({
   const [coreToken, setCoreToken] = useState<string | null>(null)
   const [tokenReady, setTokenReady] = useState(false)
   const [isWebViewAuth, setIsWebViewAuth] = useState(false) // Will remain false if webView is disabled
-  const DEPLOYMENT_REGION = process.env.DEPLOYMENT_REGION || "global"
+  const DEPLOYMENT_REGION = import.meta.env.VITE_DEPLOYMENT_REGION || "global"
   const isChina = DEPLOYMENT_REGION === "china"
 
   const prevUserIdRef = useRef<string | undefined>(undefined)
