@@ -443,62 +443,103 @@ class CoreManager {
         }
     }
 
-    private fun updateMicrophoneState() {
-        val actuallyEnabled = micEnabled && sensingEnabled
-        val glassesHasMic = sgc?.hasMic ?: false
+    private fun updateMicState() {
+        // go through the micRanking and find the first mic that is available:
+        var micUsed: String = ""
 
-        Bridge.log("MAN: updateMicrophoneState() - micEnabled=$micEnabled, sensingEnabled=$sensingEnabled, actuallyEnabled=$actuallyEnabled")
-        Bridge.log("MAN: updateMicrophoneState() - preferredMic=$preferredMic, glassesHasMic=$glassesHasMic, systemMicUnavailable=$systemMicUnavailable")
+        // allow the sgc to make changes to the micRanking:
+        micRanking = sgc?.sortMicRanking(list: micRanking) ?? micRanking
 
-        var useGlassesMic = preferredMic == "glasses"
-        var useOnboardMic = preferredMic == "phone"
-
-        if (systemMicUnavailable) {
-            useOnboardMic = false
-        }
-
-        if (!glassesHasMic) {
-            useGlassesMic = false
-        }
-
-        if (!useGlassesMic && !useOnboardMic) {
-            Bridge.log("MAN: Preferred mic unavailable - attempting automatic fallback")
-            if (glassesHasMic) {
-                Bridge.log("MAN: AUTO-FALLBACK: Switching to glasses mic (preferred mic unavailable)")
-                useGlassesMic = true
-            } else if (!systemMicUnavailable) {
-                Bridge.log("MAN: AUTO-FALLBACK: Switching to phone mic (glasses mic not available)")
-                useOnboardMic = true
+        for (mic in micRanking) {
+            if (mic == MicTypes.PHONE_INTERNAL) {
+                if (phoneMic?.isRecording?.get() == true) {
+                    micUsed = mic
+                    break
+                }
+                // if the phone mic is not recording, start recording:
+                val success = phoneMic?.startRecording()
+                if (success) {
+                    micUsed = mic
+                    break
+                }
             }
 
-            if (!useGlassesMic && !useOnboardMic) {
-                Bridge.log("MAN: no mic to use! falling back to glasses mic!")
-                useGlassesMic = true
-            }
-        }
+            // if (mic == MicTypes.GLASSES_CUSTOM) {
+            //     if (sgc?.hasMic?.get() == true) {
+            //         micUsed = mic
+            //         break
+            //     }
+            // }
 
-        Bridge.log("MAN: updateMicrophoneState() - BEFORE actuallyEnabled: useGlassesMic=$useGlassesMic, useOnboardMic=$useOnboardMic")
-
-        useGlassesMic = actuallyEnabled && useGlassesMic
-        useOnboardMic = actuallyEnabled && useOnboardMic
-
-        Bridge.log("MAN: updateMicrophoneState() - FINAL: useGlassesMic=$useGlassesMic, useOnboardMic=$useOnboardMic")
-
-        // Check if state has actually changed to avoid redundant processing
-        val newState = Triple(useGlassesMic, useOnboardMic, preferredMic)
-        if (lastMicState == newState) {
-            Bridge.log("MAN: Mic state unchanged - skipping redundant update")
-            return
-        }
-        lastMicState = newState
-
-        sgc?.let { sgc ->
-            if (sgc.type == DeviceTypes.G1 && sgc.ready) {
-                sgc.setMicEnabled(useGlassesMic)
+            if (mic == MicTypes.GLASSES_CUSTOM) {
+                if (sgc?.hasMic?.get() == true) {
+                    sgc?.setMicEnabled(true)
+                    micUsed = mic
+                    break
+                }
             }
         }
 
-        setOnboardMicEnabled(useOnboardMic)
+
+
+
+
+
+        // val actuallyEnabled = micEnabled && sensingEnabled
+        // val glassesHasMic = sgc?.hasMic ?: false
+
+        // Bridge.log("MAN: updateMicrophoneState() - micEnabled=$micEnabled, sensingEnabled=$sensingEnabled, actuallyEnabled=$actuallyEnabled")
+        // Bridge.log("MAN: updateMicrophoneState() - preferredMic=$preferredMic, glassesHasMic=$glassesHasMic, systemMicUnavailable=$systemMicUnavailable")
+
+        // var useGlassesMic = preferredMic == "glasses"
+        // var useOnboardMic = preferredMic == "phone"
+
+        // if (systemMicUnavailable) {
+        //     useOnboardMic = false
+        // }
+
+        // if (!glassesHasMic) {
+        //     useGlassesMic = false
+        // }
+
+        // if (!useGlassesMic && !useOnboardMic) {
+        //     Bridge.log("MAN: Preferred mic unavailable - attempting automatic fallback")
+        //     if (glassesHasMic) {
+        //         Bridge.log("MAN: AUTO-FALLBACK: Switching to glasses mic (preferred mic unavailable)")
+        //         useGlassesMic = true
+        //     } else if (!systemMicUnavailable) {
+        //         Bridge.log("MAN: AUTO-FALLBACK: Switching to phone mic (glasses mic not available)")
+        //         useOnboardMic = true
+        //     }
+
+        //     if (!useGlassesMic && !useOnboardMic) {
+        //         Bridge.log("MAN: no mic to use! falling back to glasses mic!")
+        //         useGlassesMic = true
+        //     }
+        // }
+
+        // Bridge.log("MAN: updateMicrophoneState() - BEFORE actuallyEnabled: useGlassesMic=$useGlassesMic, useOnboardMic=$useOnboardMic")
+
+        // useGlassesMic = actuallyEnabled && useGlassesMic
+        // useOnboardMic = actuallyEnabled && useOnboardMic
+
+        // Bridge.log("MAN: updateMicrophoneState() - FINAL: useGlassesMic=$useGlassesMic, useOnboardMic=$useOnboardMic")
+
+        // // Check if state has actually changed to avoid redundant processing
+        // val newState = Triple(useGlassesMic, useOnboardMic, preferredMic)
+        // if (lastMicState == newState) {
+        //     Bridge.log("MAN: Mic state unchanged - skipping redundant update")
+        //     return
+        // }
+        // lastMicState = newState
+
+        // sgc?.let { sgc ->
+        //     if (sgc.type == DeviceTypes.G1 && sgc.ready) {
+        //         sgc.setMicEnabled(useGlassesMic)
+        //     }
+        // }
+
+        // setOnboardMicEnabled(useOnboardMic)
     }
 
     private fun setOnboardMicEnabled(enabled: Boolean) {
@@ -923,7 +964,7 @@ class CoreManager {
         // Re-apply microphone settings after reconnection
         // Cache was cleared on disconnect, so this will definitely send commands
         Bridge.log("MAN: Re-applying microphone settings after reconnection")
-        updateMicrophoneState()
+        updateMicState()
 
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
@@ -1140,7 +1181,7 @@ class CoreManager {
 
         Bridge.log("MAN: MIC: Result - shouldSendPcmData=$shouldSendPcmData, shouldSendTranscript=$shouldSendTranscript, micEnabled=$micEnabled")
 
-        updateMicrophoneState()
+        updateMicState()
     }
 
     fun handle_photo_request(

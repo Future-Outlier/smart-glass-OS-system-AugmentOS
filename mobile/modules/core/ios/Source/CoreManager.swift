@@ -325,6 +325,59 @@ struct ViewState {
         }
     }
 
+    func updateMicState() {
+        // go through the micRanking and find the first mic that is available:
+        var micUsed = ""
+
+        // allow the sgc to make changes to the micRanking:
+        micRanking = sgc?.sortMicRanking(list: micRanking) ?? micRanking
+
+        for mic in micRanking {
+            if mic == MicTypes.PHONE_INTERNAL {
+                if PhoneMic.shared.isRecording {
+                    micUsed = mic
+                    break
+                }
+                // if the phone mic is not recording, start recording:
+                let success = PhoneMic.shared.startRecording()
+                if success {
+                    micUsed = mic
+                    break
+                }
+            }
+
+            if mic == MicTypes.GLASSES_CUSTOM {
+                if sgc?.hasMic ?? false {
+                    await sgc?.setMicEnabled(true)
+                    micUsed = mic
+                    break
+                }
+            }
+        }
+        // log if no mic was found:
+        if micUsed == "" {
+            Bridge.log("MAN: No available mic found!")
+            return
+        }
+
+        // go through and disable all mics after the first used one:
+        // var micsToDisable: [String] = []
+
+        for mic in micRanking {
+            if mic == micUsed {
+                continue
+            }
+
+            if mic == MicTypes.PHONE_INTERNAL {
+                PhoneMic.shared.stopRecording()
+            }
+
+            if mic == MicTypes.GLASSES_CUSTOM {
+                await sgc?.setMicEnabled(false)
+            }
+        }
+    }
+
     func setOnboardMicEnabled(_ isEnabled: Bool) {
         Task {
             if isEnabled {
@@ -1032,82 +1085,81 @@ struct ViewState {
 
         // Core.log("MAN: MIC: shouldSendPcmData=\(shouldSendPcmData), shouldSendTranscript=\(shouldSendTranscript)")
 
-        // in any case, clear the vadBuffer:
-        vadBuffer.removeAll()
-        micEnabled = !requiredData.isEmpty
+        micEnabled = !requiredData.isEmpty && sensingEnabled
+        updateMicState()
 
-        // Handle microphone state change if needed
-        Task {
-            // Only enable microphone if sensing is also enabled
-            var actuallyEnabled = micEnabled && self.sensingEnabled
+        // // Handle microphone state change if needed
+        // Task {
+        //     // Only enable microphone if sensing is also enabled
+        //     var actuallyEnabled = micEnabled && self.sensingEnabled
 
-            let glassesHasMic = sgc?.hasMic ?? false
+        //     let glassesHasMic = sgc?.hasMic ?? false
 
-            var useGlassesMic = false
-            var useOnboardMic = false
+        //     var useGlassesMic = false
+        //     var useOnboardMic = false
 
-            useOnboardMic = self.preferredMic == "phone"
-            useGlassesMic = self.preferredMic == "glasses"
+        //     useOnboardMic = self.preferredMic == "phone"
+        //     useGlassesMic = self.preferredMic == "glasses"
 
-            if self.onboardMicUnavailable {
-                useOnboardMic = false
-            }
+        //     if self.onboardMicUnavailable {
+        //         useOnboardMic = false
+        //     }
 
-            if !glassesHasMic {
-                useGlassesMic = false
-            }
+        //     if !glassesHasMic {
+        //         useGlassesMic = false
+        //     }
 
-            if !useGlassesMic, !useOnboardMic {
-                // if we have a non-preferred mic, use it:
-                if glassesHasMic {
-                    useGlassesMic = true
-                } else if !self.onboardMicUnavailable {
-                    useOnboardMic = true
-                }
+        //     if !useGlassesMic, !useOnboardMic {
+        //         // if we have a non-preferred mic, use it:
+        //         if glassesHasMic {
+        //             useGlassesMic = true
+        //         } else if !self.onboardMicUnavailable {
+        //             useOnboardMic = true
+        //         }
 
-                if !useGlassesMic, !useOnboardMic {
-                    Bridge.log(
-                        "MAN: no mic to use! falling back to glasses mic!!!!! (this should not happen)"
-                    )
-                    useGlassesMic = true
-                }
-            }
+        //         if !useGlassesMic, !useOnboardMic {
+        //             Bridge.log(
+        //                 "MAN: no mic to use! falling back to glasses mic!!!!! (this should not happen)"
+        //             )
+        //             useGlassesMic = true
+        //         }
+        //     }
 
-            let appState = UIApplication.shared.applicationState
-            if appState == .background {
-                Bridge.log("App is in background - onboard mic unavailable to start!")
-                if useOnboardMic {
-                    // if we're using the onboard mic and already recording, simply return as we shouldn't interrupt
-                    // the audio session
-                    if PhoneMic.shared.isRecording {
-                        return
-                    }
+        //     let appState = UIApplication.shared.applicationState
+        //     if appState == .background {
+        //         Bridge.log("App is in background - onboard mic unavailable to start!")
+        //         if useOnboardMic {
+        //             // if we're using the onboard mic and already recording, simply return as we shouldn't interrupt
+        //             // the audio session
+        //             if PhoneMic.shared.isRecording {
+        //                 return
+        //             }
 
-                    // if we want to use the onboard mic but aren't currently recording, switch to using the glasses mic
-                    // instead since we won't be able to start the mic from the background
-                    useGlassesMic = true
-                    useOnboardMic = false
-                }
-            }
+        //             // if we want to use the onboard mic but aren't currently recording, switch to using the glasses mic
+        //             // instead since we won't be able to start the mic from the background
+        //             useGlassesMic = true
+        //             useOnboardMic = false
+        //         }
+        //     }
 
-            // preferred state:
-            useGlassesMic = actuallyEnabled && useGlassesMic
-            useOnboardMic = actuallyEnabled && useOnboardMic
+        //     // preferred state:
+        //     useGlassesMic = actuallyEnabled && useGlassesMic
+        //     useOnboardMic = actuallyEnabled && useOnboardMic
 
-            // Core.log(
-            //     "MAN: MIC: isEnabled: \(isEnabled) sensingEnabled: \(self.sensingEnabled) useOnboardMic: \(useOnboardMic) " +
-            //         "useGlassesMic: \(useGlassesMic) glassesHasMic: \(glassesHasMic) preferredMic: \(self.preferredMic) " +
-            //         "somethingConnected: \(isSomethingConnected()) onboardMicUnavailable: \(self.onboardMicUnavailable)" +
-            //         "actuallyEnabled: \(actuallyEnabled)"
-            // )
+        //     // Core.log(
+        //     //     "MAN: MIC: isEnabled: \(isEnabled) sensingEnabled: \(self.sensingEnabled) useOnboardMic: \(useOnboardMic) " +
+        //     //         "useGlassesMic: \(useGlassesMic) glassesHasMic: \(glassesHasMic) preferredMic: \(self.preferredMic) " +
+        //     //         "somethingConnected: \(isSomethingConnected()) onboardMicUnavailable: \(self.onboardMicUnavailable)" +
+        //     //         "actuallyEnabled: \(actuallyEnabled)"
+        //     // )
 
-            // if a g1 is connected, set the mic enabled:
-            if sgc?.type == DeviceTypes.G1, sgc!.ready {
-                await sgc!.setMicEnabled(useGlassesMic)
-            }
+        //     // if a g1 is connected, set the mic enabled:
+        //     if sgc?.type == DeviceTypes.G1, sgc!.ready {
+        //         await sgc!.setMicEnabled(useGlassesMic)
+        //     }
 
-            setOnboardMicEnabled(useOnboardMic)
-        }
+        //     setOnboardMicEnabled(useOnboardMic)
+        // }
     }
 
     func handle_rgb_led_control(requestId: String,

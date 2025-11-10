@@ -12,6 +12,7 @@ class Simulated : SGCManager() {
         type = DeviceTypes.SIMULATED
         connectionState = ConnTypes.DISCONNECTED
         batteryLevel = 100
+        micEnabled = false
     }
 
     // Audio Control

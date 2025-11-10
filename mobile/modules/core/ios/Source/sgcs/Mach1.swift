@@ -113,6 +113,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     let type = DeviceTypes.MACH1
     let hasMic: Bool = false
+    var micEnabled: Bool = false
     var caseOpen = false
     var caseRemoved = true
     var caseCharging = false

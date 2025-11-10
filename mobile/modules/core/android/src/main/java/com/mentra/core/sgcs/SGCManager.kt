@@ -21,6 +21,7 @@ abstract class SGCManager {
 
     // Hardware Status
     @JvmField var hasMic: Boolean = false
+    @JvmField var micEnabled: Boolean = false
     @JvmField var batteryLevel: Int = -1
     @JvmField var isHeadUp: Boolean = false
 

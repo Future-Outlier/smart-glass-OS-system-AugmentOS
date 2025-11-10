@@ -144,6 +144,8 @@ class G1: NSObject, SGCManager {
 
     var isHotspotEnabled: Bool = false
 
+    var micEnabled: Bool = false
+
     var hotspotSsid: String = ""
 
     var hotspotPassword: String = ""
@@ -1726,6 +1728,7 @@ extension G1 {
 
     func setMicEnabled(_ enabled: Bool) {
         Bridge.log("G1: setMicEnabled() \(enabled)")
+        micEnabled = enabled
         var micOnData = Data()
         micOnData.append(Commands.BLE_REQ_MIC_ON.rawValue)
         if enabled {

@@ -142,7 +142,6 @@ public class G1 extends SGCManager {
 
     // mic enable Handler
     private Handler micEnableHandler = new Handler();
-    private boolean micEnabledAlready = false;
     private boolean isMicrophoneEnabled = false; // Track current microphone state
 
     // notification period sender
@@ -212,6 +211,7 @@ public class G1 extends SGCManager {
         super();
         this.type = DeviceTypes.G1;
         this.hasMic = true;  // G1 has a built-in microphone
+        this.micEnabled = false;
         Bridge.log("G1: G1 constructor");
         this.context = Bridge.getContext();
         loadPairedDeviceNames();
@@ -2618,6 +2618,7 @@ public class G1 extends SGCManager {
         Bridge.log("G1: Running set mic enabled: " + enable);
 
         isMicrophoneEnabled = enable; // Update the state tracker
+        micEnabled = enable;
         micEnableHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -3824,7 +3825,7 @@ public class G1 extends SGCManager {
      * @return true if microphone is enabled, false otherwise
      */
     public boolean isMicrophoneEnabled() {
-        return isMicrophoneEnabled;
+        return micEnabled;
     }
 
     /**

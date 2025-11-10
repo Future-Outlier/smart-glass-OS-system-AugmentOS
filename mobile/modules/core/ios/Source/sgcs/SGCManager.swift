@@ -18,6 +18,7 @@ protocol SGCManager {
     // MARK: - Hardware Status
 
     var hasMic: Bool { get }
+    var micEnabled: Bool { get }
     var batteryLevel: Int { get }
     var isHeadUp: Bool { get }
 
