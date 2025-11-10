@@ -20,7 +20,7 @@ class Simulated : SGCManager() {
         Bridge.log("setMicEnabled")
     }
 
-    override fun sortMicRanking(list: List<String>): List<String> {
+    override fun sortMicRanking(list: MutableList<String>): MutableList<String> {
         return list
     }
 

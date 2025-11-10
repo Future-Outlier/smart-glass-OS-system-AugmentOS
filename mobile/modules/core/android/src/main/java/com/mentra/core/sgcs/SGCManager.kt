@@ -42,7 +42,7 @@ abstract class SGCManager {
 
     // Audio Control
     abstract fun setMicEnabled(enabled: Boolean)
-    abstract fun sortMicRanking(list: List<String>): List<String>
+    abstract fun sortMicRanking(list: MutableList<String>): MutableList<String>
 
     // Camera & Media
     abstract fun requestPhoto(

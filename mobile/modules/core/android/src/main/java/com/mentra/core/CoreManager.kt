@@ -448,7 +448,7 @@ class CoreManager {
         var micUsed: String = ""
 
         // allow the sgc to make changes to the micRanking:
-        micRanking = sgc?.sortMicRanking(list: micRanking) ?? micRanking
+        micRanking = sgc?.sortMicRanking(micRanking) ?: micRanking
 
         for (mic in micRanking) {
             if (mic == MicTypes.PHONE_INTERNAL) {
@@ -457,11 +457,11 @@ class CoreManager {
                     break
                 }
                 // if the phone mic is not recording, start recording:
-                val success = phoneMic?.startRecording()
-                if (success) {
-                    micUsed = mic
-                    break
-                }
+                // val success = phoneMic?.startRecording()
+                // if (success == true) {
+                //     micUsed = mic
+                //     break
+                // }
             }
 
             // if (mic == MicTypes.GLASSES_CUSTOM) {
@@ -471,13 +471,13 @@ class CoreManager {
             //     }
             // }
 
-            if (mic == MicTypes.GLASSES_CUSTOM) {
-                if (sgc?.hasMic?.get() == true) {
-                    sgc?.setMicEnabled(true)
-                    micUsed = mic
-                    break
-                }
-            }
+            // if (mic == MicTypes.GLASSES_CUSTOM) {
+            //     if (sgc?.hasMic?.get() == true) {
+            //         sgc?.setMicEnabled(true)
+            //         micUsed = mic
+            //         break
+            //     }
+            // }
         }
 
 
@@ -645,51 +645,35 @@ class CoreManager {
                 // Another app is using the microphone
                 Bridge.log("MAN: External app took microphone - marking onboard mic as unavailable")
                 systemMicUnavailable = true
-                // Only trigger mic state change if we're in automatic/phone mode
-                if (preferredMic == "phone") {
-                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-                }
             }
             "external_app_stopped", "audio_focus_available" -> {
                 // External app released the microphone
                 Bridge.log("MAN: External app released microphone - marking onboard mic as available")
                 systemMicUnavailable = false
-                // Only trigger recovery if we're in automatic/phone mode
-                if (preferredMic == "phone") {
-                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-                }
+                // // Only trigger recovery if we're in automatic/phone mode
+                // if (preferredMic == "phone") {
+                //     handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+                // }
             }
             "phone_call_interruption" -> {
                 // Phone call started - mark mic as unavailable
                 Bridge.log("MAN: Phone call interruption - marking onboard mic as unavailable")
                 systemMicUnavailable = true
-                if (preferredMic == "phone") {
-                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-                }
             }
             "phone_call_ended" -> {
                 // Phone call ended - mark mic as available again
                 Bridge.log("MAN: Phone call ended - marking onboard mic as available")
                 systemMicUnavailable = false
-                if (preferredMic == "phone") {
-                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-                }
             }
             "phone_call_active" -> {
                 // Tried to start recording while phone call already active
                 Bridge.log("MAN: Phone call already active - marking onboard mic as unavailable")
                 systemMicUnavailable = true
-                if (phoneMic?.isRecording?.get() == true) {
-                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-                }
             }
             "audio_focus_denied" -> {
                 // Another app has audio focus
                 Bridge.log("MAN: Audio focus denied - marking onboard mic as unavailable")
                 systemMicUnavailable = true
-                if (phoneMic?.isRecording?.get() == true) {
-                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-                }
             }
             "permission_denied" -> {
                 // Microphone permission not granted
@@ -703,6 +687,8 @@ class CoreManager {
                 Bridge.log("MAN: Audio route changed: $reason")
             }
         }
+
+        // updateMicState()
     }
 
     fun onInterruption(began: Boolean) {

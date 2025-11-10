@@ -2472,6 +2472,7 @@ public class G1 extends SGCManager {
     }
 
     private void stopHeartbeat() {
+        Bridge.log("G1: stopHeartbeat()");
         if (heartbeatHandler != null) {
             heartbeatHandler.removeCallbacksAndMessages(null);
             heartbeatHandler.removeCallbacksAndMessages(heartbeatRunnable);
@@ -2480,6 +2481,7 @@ public class G1 extends SGCManager {
     }
 
     private void stopMicBeat() {
+        Bridge.log("G1: stopMicBeat()");
         sendSetMicEnabled(false, 10);
         if (micBeatHandler != null) {
             micBeatHandler.removeCallbacksAndMessages(null);
@@ -2615,7 +2617,7 @@ public class G1 extends SGCManager {
 
     // microphone stuff
     public void sendSetMicEnabled(boolean enable, int delay) {
-        Bridge.log("G1: Running set mic enabled: " + enable);
+        Bridge.log("G1: sendSetMicEnabled(): " + enable);
 
         isMicrophoneEnabled = enable; // Update the state tracker
         micEnabled = enable;
@@ -3798,7 +3800,7 @@ public class G1 extends SGCManager {
     }
 
     public void setMicEnabled(boolean isMicrophoneEnabled) {
-        Bridge.log("G1: Microphone state changed: " + isMicrophoneEnabled);
+        Bridge.log("G1: setMicEnabled(): " + isMicrophoneEnabled);
 
         // Update the shouldUseGlassesMic flag to reflect the current state
         this.shouldUseGlassesMic = isMicrophoneEnabled;
