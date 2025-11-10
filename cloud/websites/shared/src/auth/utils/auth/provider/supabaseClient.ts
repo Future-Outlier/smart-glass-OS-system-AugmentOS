@@ -1,5 +1,5 @@
 import type {AuthChangeEvent, Session, SupabaseClient} from "@supabase/supabase-js"
-import {supabase as supabaseClient} from "../../supabase.ts"
+import {supabase as supabaseClient} from "../../supabase"
 import {
   MentraAuthSessionResponse,
   MentraAuthStateChangeSubscriptionResponse,
@@ -7,7 +7,7 @@ import {
   MentraPasswordResetResponse,
   MentraSigninResponse,
   MentraSignOutResponse,
-} from "../authingProvider.types.ts"
+} from "../authingProvider.types"
 
 export class SupabaseWrapperClient {
   private supabase: SupabaseClient
