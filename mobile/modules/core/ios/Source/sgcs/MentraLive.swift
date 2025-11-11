@@ -866,7 +866,14 @@ class MentraLive: NSObject, SGCManager {
     func sendTextWall(_: String) {}
     func forget() {
         Bridge.log("LIVE: Forgetting Mentra Live glasses")
-        disconnect()
+
+        // Stop scanning first
+        if isScanning {
+            stopScan()
+        }
+
+        // Then do full cleanup (disconnect + clear all references)
+        destroy()
     }
 
     var type = "Mentra Live"

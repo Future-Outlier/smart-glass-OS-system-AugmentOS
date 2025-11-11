@@ -124,10 +124,6 @@ public class G1 extends SGCManager {
     private static final long BASE_RECONNECT_DELAY_MS = 3000; // Start with 3 seconds
     private static final long MAX_RECONNECT_DELAY_MS = 60000;
 
-    // Right device connection retry limits
-    private static final int MAX_RIGHT_CONNECT_RETRIES = 30; // 30 retries at 1 second each = 30 seconds
-    private int rightConnectAttempts = 0;
-
     // heartbeat sender
     private Handler heartbeatHandler = new Handler();
     private Handler findCompatibleDevicesHandler;
@@ -1334,10 +1330,6 @@ public class G1 extends SGCManager {
             return;
         }
 
-        // Clear seen devices to allow discovery of devices from previous scan attempts
-        seenDevices.clear();
-        Bridge.log("G1: Cleared seenDevices set before starting new scan");
-
         // Optionally, define filters if needed
         List<ScanFilter> filters = new ArrayList<>();
         // For example, to filter by device name:
@@ -1444,9 +1436,6 @@ public class G1 extends SGCManager {
                 isRightConnected = false;
                 Bridge.log("G1: Right GATT connection initiated. isRightConnected set to false.");
 
-                // Reset retry counter since we're successfully connecting
-                rightConnectAttempts = 0;
-
                 // Cancel any pending retry attempts since we're now connecting
                 if (rightConnectionRetryRunnable != null) {
                     connectHandler.removeCallbacks(rightConnectionRetryRunnable);
@@ -1456,38 +1445,8 @@ public class G1 extends SGCManager {
                 Bridge.log("G1: Right Glass GATT already exists");
             }
         } else {
-            // Check for timeout
-            if (rightConnectAttempts >= MAX_RIGHT_CONNECT_RETRIES) {
-                Bridge.log("G1: Right device connection timeout after " + rightConnectAttempts + " attempts - resetting right device only");
-                rightConnectAttempts = 0;
-
-                // Reset right device state only (keep left device connected)
-                isRightBonded = false;
-                isRightConnected = false;
-                isRightPairing = false;
-                pendingSavedG1RightName = null;
-
-                if (rightGlassGatt != null) {
-                    rightGlassGatt.disconnect();
-                    rightGlassGatt.close();
-                    rightGlassGatt = null;
-                }
-
-                // Cancel pending retries
-                if (rightConnectionRetryRunnable != null) {
-                    connectHandler.removeCallbacks(rightConnectionRetryRunnable);
-                    rightConnectionRetryRunnable = null;
-                }
-
-                // Restart scan to find right device again
-                Bridge.log("G1: Restarting scan to find right device after timeout");
-                startScan();
-                return;
-            }
-
-            rightConnectAttempts++;
             Bridge.log("G1: Waiting for left glass before connecting right. Scheduling retry in "
-                    + RIGHT_CONNECTION_RETRY_DELAY + "ms (attempt " + rightConnectAttempts + "/" + MAX_RIGHT_CONNECT_RETRIES + ")");
+                    + RIGHT_CONNECTION_RETRY_DELAY + "ms");
 
             // Cancel any existing retry attempts to avoid duplicate retries
             if (rightConnectionRetryRunnable != null) {
