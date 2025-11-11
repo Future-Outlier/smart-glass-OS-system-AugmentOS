@@ -17,13 +17,10 @@ jobs:
 
     env:
       NODE_ENV: production
-      CLOUD_PUBLIC_HOST_NAME: api.mentraglass.cn
-      ACR_REGION_ID: cn-shenzhen
-      OSS_BUCKET: store
+      OSS_BUCKET: mentra-dev-static-store
+      OSS_CNAME: store.mentraglass.cn
       OSS_PATH: cloud/websites/store/dist
       CDN_PATH: "/*"
-      # ossutil configuration
-      OSS_ENDPOINT: mentraglass.cn # Your custom domain/CNAME
 
     steps:
       # 1️⃣ Checkout source code
@@ -45,7 +42,7 @@ jobs:
         working-directory: cloud/websites/store
         run: bun run build
 
-      # 5️⃣ Install and Configure ossutil
+      # 5️⃣ Install ossutil
       - name: Install ossutil
         run: |
           wget -O ossutil64 http://gosspublic.alicdn.com/ossutil/1.7.16/ossutil64
@@ -55,20 +52,23 @@ jobs:
       # 6️⃣ Configure ossutil with CNAME support
       - name: Configure ossutil
         run: |
-          ossutil config \
-            -e $OSS_ENDPOINT \
-            -i ${{ secrets.ALIBABA_ACCESS_KEY_ID }} \
-            -k ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }} \
-            -c /tmp/ossutilconfig
+          cat > /tmp/ossutilconfig <<EOF
+          [Credentials]
+          language=EN
+          endpoint=oss-cn-shenzhen.aliyuncs.com
+          accessKeyID=${{ secrets.ALIBABA_ACCESS_KEY_ID }}
+          accessKeySecret=${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
 
-      # 7️⃣ Upload static files to OSS using sync
+          [Bucket-Cname]
+          ${OSS_BUCKET}=${OSS_CNAME}
+          EOF
+          echo "✅ Created ossutil config with CNAME mapping"
+
+      # 7️⃣ Upload static files to OSS using the CNAME domain
       - name: Upload static files to OSS
         run: |
-          echo "Uploading $OSS_PATH to oss://$OSS_BUCKET/ using CNAME endpoint: $OSS_ENDPOINT"
-          ossutil -c /tmp/ossutilconfig sync $OSS_PATH/ oss://$OSS_BUCKET/ \
+          echo "🚀 Uploading ${OSS_PATH}/ to oss://${OSS_BUCKET}/ via CNAME: ${OSS_CNAME}"
+          ossutil -c /tmp/ossutilconfig sync ${OSS_PATH}/ oss://${OSS_BUCKET}/ \
             --delete \
             --force \
             --update
-        env:
-          OSS_ACCESS_KEY_ID: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
-          OSS_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
