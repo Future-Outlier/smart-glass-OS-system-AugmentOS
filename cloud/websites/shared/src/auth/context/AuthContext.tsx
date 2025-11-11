@@ -3,8 +3,17 @@ import {Session, User, AuthError} from "@supabase/supabase-js"
 import {supabase} from "../utils/supabase" // Adjust this path as needed
 import axios from "axios"
 
-const CORE_API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_CLOUD_API_URL || "http://localhost:8002/api"
+let CORE_API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_CLOUD_API_URL || "http://localhost:8002/api"
 const STORE_PACKAGE_NAME = "org.augmentos.store"
+
+// if api doesnt end with /api then add it. if it ends with / then remove it.
+// TODO: Later just pass url and deal with all api here.
+if (CORE_API_URL.endsWith("/")) {
+  CORE_API_URL = CORE_API_URL.slice(0, -1)
+}
+if (!CORE_API_URL.endsWith("/api")) {
+  CORE_API_URL += "/api"
+}
 
 declare global {
   interface Window {
