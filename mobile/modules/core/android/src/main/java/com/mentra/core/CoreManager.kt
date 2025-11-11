@@ -654,7 +654,7 @@ class CoreManager {
             }
         }
 
-        // updateMicState()
+        updateMicState()
     }
 
     fun onInterruption(began: Boolean) {
