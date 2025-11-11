@@ -221,16 +221,16 @@ server.start();
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="AppSession" icon="plug" href="/app-devs/core-concepts/app-session/app-session">
+  <Card title="AppSession" icon="plug" href="/app-devs/core-concepts/app-session/what-is-app-session">
     Work with user sessions
   </Card>
   <Card title="App Lifecycle" icon="arrows-rotate" href="/app-devs/core-concepts/app-lifecycle-overview">
     Understand the full lifecycle
   </Card>
-  <Card title="API Reference" icon="book" href="/app-devs/reference/app-server">
+  <Card title="API Reference" icon="book" href="/reference/app-server">
     Complete AppServer documentation
   </Card>
-  <Card title="Quick Start" icon="rocket" href="/app-devs/getting-started/quickstart">
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
     Build your first app
   </Card>
 </CardGroup>

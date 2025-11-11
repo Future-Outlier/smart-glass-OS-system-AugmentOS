@@ -346,13 +346,13 @@ if (result.success) {
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Playing Audio Files" icon="file-audio" href="/app-devs/core-concepts/speakers/playing-audio-files">
+  <Card title="Playing Audio Files" icon="file-audio" href="/app-devs/core-concepts/audio/playing-audio-files">
     Play pre-recorded audio from URLs
   </Card>
-  <Card title="Speech-to-Text" icon="microphone" href="/app-devs/core-concepts/microphone/speech-to-text">
+  <Card title="Speech-to-Text" icon="microphone" href="/app-devs/core-concepts/audio/speech-to-text">
     Listen to user voice input
   </Card>
-  <Card title="Audio Manager" icon="book" href="/app-devs/reference/managers/audio-manager">
+  <Card title="Audio Manager" icon="book" href="/reference/managers/audio-manager">
     Complete audio API reference
   </Card>
   <Card title="Device Control" icon="microchip" href="/app-devs/core-concepts/app-session/device-control">

@@ -561,16 +561,16 @@ Set permissions in the [Developer Console](https://console.mentra.glass/apps). U
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Capabilities" icon="microchip" href="/app-devs/core-concepts/hardware-capabilities/device-capabilities">
+  <Card title="Capabilities" icon="microchip" href="/app-devs/core-concepts/capabilities">
     Learn about device capabilities
   </Card>
   <Card title="Permissions" icon="lock" href="/app-devs/core-concepts/permissions">
     Understand permission system
   </Card>
-  <Card title="Audio Manager" icon="book" href="/app-devs/reference/managers/audio-manager">
+  <Card title="Audio Manager" icon="book" href="/reference/managers/audio-manager">
     Complete audio API reference
   </Card>
-  <Card title="Camera Manager" icon="book" href="/app-devs/reference/managers/camera">
+  <Card title="Camera Manager" icon="book" href="/reference/managers/camera">
     Complete camera API reference
   </Card>
 </CardGroup>

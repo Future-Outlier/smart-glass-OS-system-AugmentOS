@@ -194,7 +194,7 @@ Dashboard updates are automatically throttled to 1 per 300ms by MentraOS Cloud t
   <Card title="Dashboard API" icon="book" href="/app-devs/reference/dashboard-api">
     Complete API reference
   </Card>
-  <Card title="AppSession" icon="plug" href="/app-devs/core-concepts/app-session/app-session">
+  <Card title="AppSession" icon="plug" href="/app-devs/core-concepts/app-session">
     Learn about AppSession
   </Card>
 </CardGroup>

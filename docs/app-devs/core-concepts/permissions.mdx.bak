@@ -172,7 +172,7 @@ Solution: Add permission in Developer Console
   <Card title="Developer Console" icon="browser" href="https://console.mentra.glass/apps">
     Manage your app permissions
   </Card>
-  <Card title="Event Types" icon="book" href="/app-devs/reference/interfaces/event-types">
+  <Card title="Event Types" icon="book" href="/reference/interfaces/event-types">
     See all event types
   </Card>
 </CardGroup>

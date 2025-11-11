@@ -306,7 +306,7 @@ protected async onSession(session: AppSession, sessionId: string, userId: string
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Display & UI" icon="display" href="/app-devs/core-concepts/display/layouts">
+  <Card title="Display & UI" icon="display" href="/app-devs/core-concepts/app-session/display-and-ui">
     Control what shows on glasses
   </Card>
   <Card title="Events & Data" icon="bolt" href="/app-devs/core-concepts/app-session/events-and-data">
@@ -315,7 +315,7 @@ protected async onSession(session: AppSession, sessionId: string, userId: string
   <Card title="Device Control" icon="microchip" href="/app-devs/core-concepts/app-session/device-control">
     Use audio, camera, LED, location
   </Card>
-  <Card title="API Reference" icon="book" href="/app-devs/reference/app-session">
+  <Card title="API Reference" icon="book" href="/reference/app-session">
     Complete AppSession documentation
   </Card>
 </CardGroup>

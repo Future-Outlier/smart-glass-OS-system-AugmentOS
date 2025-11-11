@@ -410,13 +410,13 @@ session.events.onButtonPress(async (data) => {
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Text-to-Speech" icon="comment" href="/app-devs/core-concepts/speakers/text-to-speech">
+  <Card title="Text-to-Speech" icon="comment" href="/app-devs/core-concepts/audio/text-to-speech">
     Generate speech from text
   </Card>
-  <Card title="Speech-to-Text" icon="microphone" href="/app-devs/core-concepts/microphone/speech-to-text">
+  <Card title="Speech-to-Text" icon="microphone" href="/app-devs/core-concepts/audio/speech-to-text">
     Capture user voice input
   </Card>
-  <Card title="Audio Manager" icon="book" href="/app-devs/reference/managers/audio-manager">
+  <Card title="Audio Manager" icon="book" href="/reference/managers/audio-manager">
     Complete audio API reference
   </Card>
   <Card title="Device Control" icon="microchip" href="/app-devs/core-concepts/app-session/device-control">

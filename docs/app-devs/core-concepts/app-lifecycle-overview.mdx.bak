@@ -116,13 +116,13 @@ Sessions are isolated per user. Each user who starts your app gets their own `Ap
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Learn About AppServer" icon="server" href="/app-devs/core-concepts/app-server">
+  <Card title="Learn About AppServer" icon="server" href="/app-devs/core-concepts/app-server/what-is-app-server">
     Understand the server class that powers your app
   </Card>
-  <Card title="Learn About AppSession" icon="plug" href="/app-devs/core-concepts/app-session/app-session">
+  <Card title="Learn About AppSession" icon="plug" href="/app-devs/core-concepts/app-session/what-is-app-session">
     Work with individual user sessions
   </Card>
-  <Card title="Handle Events" icon="bolt" href="/app-devs/core-concepts/app-session/events-and-data">
+  <Card title="Handle Events" icon="bolt" href="/app-devs/core-concepts/basic-events">
     Subscribe to real-time data from glasses
   </Card>
   <Card title="Set Permissions" icon="lock" href="/app-devs/core-concepts/permissions">

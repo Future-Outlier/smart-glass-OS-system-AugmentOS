@@ -380,13 +380,13 @@ session.events.onAudioChunk((audioChunk: AudioChunk) => {
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Speech-to-Text" icon="microphone" href="/app-devs/core-concepts/microphone/speech-to-text">
+  <Card title="Speech-to-Text" icon="microphone" href="/app-devs/core-concepts/audio/speech-to-text">
     Use built-in transcription
   </Card>
-  <Card title="Text-to-Speech" icon="comment" href="/app-devs/core-concepts/speakers/text-to-speech">
+  <Card title="Text-to-Speech" icon="comment" href="/app-devs/core-concepts/audio/text-to-speech">
     Generate voice output
   </Card>
-  <Card title="Event Manager" icon="book" href="/app-devs/reference/managers/event-manager">
+  <Card title="Event Manager" icon="book" href="/reference/managers/event-manager">
     Complete event API reference
   </Card>
   <Card title="Permissions" icon="lock" href="/app-devs/core-concepts/permissions">

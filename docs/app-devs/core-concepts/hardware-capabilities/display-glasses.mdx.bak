@@ -221,10 +221,10 @@ class DisplayGlassesApp extends AppServer {
   <Card title="Camera Glasses" icon="camera" href="/app-devs/core-concepts/hardware-capabilities/camera-glasses">
     Mentra Live - camera features
   </Card>
-  <Card title="Display & UI" icon="display" href="/app-devs/core-concepts/display/layouts">
+  <Card title="Display & UI" icon="display" href="/app-devs/core-concepts/app-session/display-and-ui">
     Using layouts and dashboard
   </Card>
-  <Card title="Audio" icon="volume" href="/app-devs/core-concepts/speakers/text-to-speech">
+  <Card title="Audio" icon="volume" href="/app-devs/core-concepts/audio/text-to-speech">
     Audio features
   </Card>
   <Card title="Overview" icon="microchip" href="/app-devs/core-concepts/hardware-capabilities/overview">

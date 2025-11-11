@@ -270,7 +270,7 @@ class CameraGlassesApp extends AppServer {
   <Card title="Camera Control" icon="camera" href="/app-devs/core-concepts/app-session/device-control">
     Photo and streaming APIs
   </Card>
-  <Card title="Audio" icon="volume" href="/app-devs/core-concepts/speakers/text-to-speech">
+  <Card title="Audio" icon="volume" href="/app-devs/core-concepts/audio/text-to-speech">
     Audio features
   </Card>
   <Card title="Overview" icon="microchip" href="/app-devs/core-concepts/hardware-capabilities/overview">

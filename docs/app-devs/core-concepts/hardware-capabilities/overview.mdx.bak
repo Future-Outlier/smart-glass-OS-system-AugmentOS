@@ -202,7 +202,7 @@ if (!caps) {
   <Card title="Camera Glasses" icon="camera" href="/app-devs/core-concepts/hardware-capabilities/camera-glasses">
     Mentra Live - camera-specific features
   </Card>
-  <Card title="Capabilities Reference" icon="book" href="/app-devs/reference/interfaces/capabilities">
+  <Card title="Capabilities Reference" icon="book" href="/reference/interfaces/capabilities">
     Complete capabilities types
   </Card>
   <Card title="Device Control" icon="microchip" href="/app-devs/core-concepts/app-session/device-control">
