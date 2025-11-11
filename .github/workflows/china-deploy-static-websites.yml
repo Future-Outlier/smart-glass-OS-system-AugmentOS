@@ -1,0 +1,88 @@
+# 🚀 Build, push the dist to Alibaba OSS, and refresh Alibaba CDN cache
+name: China Cloud Deploy Static Websites
+
+on:
+  push:
+    branches:
+      - ya/replace-auth-provider-websites
+    paths:
+      - "cloud/**"
+      - ".github/workflows/china-deploy-static-websites.yml"
+
+jobs:
+  china-cloud-deploy-static-websites:
+    name: Build & Deploy to Alibaba Cloud
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      NODE_ENV: production
+      CLOUD_PUBLIC_HOST_NAME: api.mentraglass.cn
+      ACR_REGION_ID: cn-shenzhen
+      OSS_BUCKET: mentra-dev-static-store
+      OSS_PATH: cloud/websites/store/dist
+      CDN_PATH: "/*"
+
+    steps:
+      # 1️⃣ Checkout source code
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Setup Node.js + Bun
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "bun"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        working-directory: cloud
+        run: bun install --frozen-lockfile
+
+      # 4️⃣ Build project
+      - name: Build project
+        working-directory: cloud/websites/store
+        run: bun run build
+
+      # 5️⃣ Install Alibaba Cloud CLI
+      - name: Install Alibaba Cloud CLI
+        run: |
+          curl -sSL https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz | tar -xz
+          sudo mv aliyun /usr/local/bin/
+          aliyun --version
+
+      # 6️⃣ Configure Alibaba Cloud CLI
+      - name: Configure Alibaba Cloud CLI
+        run: |
+          aliyun configure set \
+            --profile default \
+            --mode AK \
+            --region $ACR_REGION_ID \
+            --access-key-id ${{ secrets.ALIBABA_ACCESS_KEY_ID }} \
+            --access-key-secret ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
+
+      # 7️⃣ Sync dist folder to OSS bucket
+      - name: Upload static files to Alibaba OSS
+        run: |
+          echo "Uploading to oss://${OSS_BUCKET}..."
+          aliyun oss sync ${OSS_PATH} oss://${OSS_BUCKET}/ \
+            --delete \
+            --force \
+            --region $ACR_REGION_ID
+        shell: bash
+
+      # # 8️⃣ Refresh CDN cache
+      # - name: Refresh Alibaba CDN cache
+      #   run: |
+      #     echo "Refreshing CDN cache for ${CLOUD_PUBLIC_HOST_NAME}..."
+      #     aliyun cdn refreshObjectCaches \
+      #       --domain-name ${CLOUD_PUBLIC_HOST_NAME} \
+      #       --object-path ${CDN_PATH} \
+      #       --object-type Directory
+      #   shell: bash
