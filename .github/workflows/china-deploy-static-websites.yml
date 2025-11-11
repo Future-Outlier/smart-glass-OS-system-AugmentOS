@@ -3,9 +3,9 @@ name: China Cloud Deploy Static Websites
 on:
   push:
     branches:
-      - ya/replace-auth-provider-websites
+      - dev
     paths:
-      - "cloud/**"
+      - "cloud/websites/**"
       - ".github/workflows/china-deploy-static-websites.yml"
 
 jobs:
