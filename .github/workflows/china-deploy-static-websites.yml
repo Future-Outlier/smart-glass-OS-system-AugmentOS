@@ -74,9 +74,7 @@ jobs:
           aliyun oss sync ${OSS_PATH} oss://${OSS_BUCKET}/ \
             --delete \
             --force \
-            --region $ACR_REGION_ID \
-            --endpoint store.mentraglass.cn \
-            --endpoint-type cname
+            --region $ACR_REGION_ID
         shell: bash
 
       # # 8️⃣ Refresh CDN cache
