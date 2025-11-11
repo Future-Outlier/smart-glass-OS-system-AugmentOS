@@ -934,11 +934,14 @@ class CoreManager {
     }
 
     private fun handleG1Ready() {
+        // Request battery status after connection
+        Thread.sleep(500)
+        sgc?.getBatteryStatus()
+
         // load settings and send the animation:
         // give the glasses some extra time to finish booting:
         // Thread.sleep(1000)
         // await sgc?.setSilentMode(false) // turn off silent mode
-        // await sgc?.getBatteryStatus()
 
         // if shouldSendBootingMessage {
         //     sgc?.sendTextWall("// BOOTING MENTRAOS")
