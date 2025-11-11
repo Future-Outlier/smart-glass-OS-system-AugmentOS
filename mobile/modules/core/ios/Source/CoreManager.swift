@@ -655,7 +655,8 @@ struct ViewState {
         } else if wearable.contains(DeviceTypes.MACH1) {
             sgc = Mach1()
         } else if wearable.contains(DeviceTypes.Z100) {
-            sgc = Z100() // Z100 uses same hardware/SDK as Mach1
+            sgc = Mach1() // Z100 uses same hardware/SDK as Mach1
+            sgc?.type = DeviceTypes.Z100 // Override type to Z100
         } else if wearable.contains(DeviceTypes.FRAME) {
             // sgc = FrameManager()
         }

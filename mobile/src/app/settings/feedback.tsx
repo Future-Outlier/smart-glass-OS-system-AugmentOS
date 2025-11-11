@@ -28,7 +28,7 @@ export default function FeedbackPage() {
     const isBetaBuild = !!customBackendUrl
     const deviceName = Constants.deviceName || "Unknown"
     const osVersion = `${Platform.OS} ${Platform.Version}`
-    const appVersion = Constants.expoConfig?.version || "Unknown"
+    const appVersion = process.env.EXPO_PUBLIC_MENTRAOS_VERSION || "Unknown"
 
     // Glasses info
     const connectedGlassesModel = status.glasses_info?.model_name || "Not connected"

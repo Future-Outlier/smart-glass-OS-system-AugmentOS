@@ -10,9 +10,10 @@ import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useRef} from "react"
-import {Platform, View, ViewStyle} from "react-native"
+import {Platform, TextStyle, View, ViewStyle} from "react-native"
 import {ScrollView} from "react-native-gesture-handler"
 import Toast from "react-native-toast-message"
+import Constants from "expo-constants"
 
 export default function AccountPage() {
   const {theme, themed} = useAppTheme()
@@ -23,6 +24,8 @@ export default function AccountPage() {
   const pressCount = useRef(0)
   const lastPressTime = useRef(0)
   const pressTimeout = useRef<number | null>(null)
+
+  console.log("extra", Constants.expoConfig?.extra)
 
   const handleQuickPress = () => {
     const currentTime = Date.now()
@@ -138,10 +141,18 @@ export default function AccountPage() {
         </View>
 
         <View style={themed($versionContainer)}>
-          <Text
-            text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
-            style={{color: theme.colors.textDim}}
-          />
+          <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
+            <Text
+              style={themed($buildInfo)}
+              text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
+            />
+            <Text style={themed($buildInfo)} text={`branch: ${Constants.expoConfig?.extra?.BUILD_BRANCH}`} />
+          </View>
+          {/* build time, commit hash (copy to clipboard), branch name, build number */}
+          <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
+            <Text style={themed($buildInfo)} text={`time: ${Constants.expoConfig?.extra?.BUILD_TIME}`} />
+            <Text style={themed($buildInfo)} text={`commit: ${Constants.expoConfig?.extra?.BUILD_COMMIT}`} />
+          </View>
         </View>
         <Spacer height={theme.spacing.s12} />
         <Spacer height={theme.spacing.s12} />
@@ -157,4 +168,9 @@ const $versionContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingVertical: spacing.s2,
   borderRadius: spacing.s4,
   marginTop: spacing.s16,
+})
+
+const $buildInfo: ThemedStyle<TextStyle> = ({colors}) => ({
+  color: colors.textDim,
+  fontSize: 13,
 })
