@@ -450,6 +450,7 @@ class CoreManager {
         }
     }
 
+    // turns a single mic on and turns off all other mics:
     private fun updateMicState() {
         // go through the micRanking and find the first mic that is available:
         var micUsed: String = ""
@@ -464,12 +465,17 @@ class CoreManager {
                                 micMode == MicTypes.BT_CLASSIC ||
                                 micMode == MicTypes.BT
                 ) {
+                    if (systemMicUnavailable) {
+                        continue
+                    }
+                    
                     if (phoneMic?.isRecordingWithMode(micMode) == true) {
                         micUsed = micMode
                         break
                     }
                     // if the phone mic is not recording, start recording:
                     val success = phoneMic?.startMode(micMode) ?: false
+                    Bridge.log("MAN: starting mic mode: $micMode -> $success")
                     if (success) {
                         micUsed = micMode
                         break
@@ -1092,9 +1098,9 @@ class CoreManager {
             requiredData: List<SpeechRequiredDataType>,
             bypassVad: Boolean
     ) {
-        Bridge.log(
-                "MAN: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad offlineMode=$offlineMode"
-        )
+        // Bridge.log(
+        //         "MAN: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad offlineMode=$offlineMode"
+        // )
 
         bypassVadForPCM = bypassVad
 
@@ -1144,9 +1150,9 @@ class CoreManager {
         vadBuffer.clear()
         micEnabled = mutableRequiredData.isNotEmpty()
 
-        Bridge.log(
-                "MAN: MIC: Result - shouldSendPcmData=$shouldSendPcmData, shouldSendTranscript=$shouldSendTranscript, micEnabled=$micEnabled"
-        )
+        // Bridge.log(
+        //         "MAN: MIC: Result - shouldSendPcmData=$shouldSendPcmData, shouldSendTranscript=$shouldSendTranscript, micEnabled=$micEnabled"
+        // )
 
         updateMicState()
     }
