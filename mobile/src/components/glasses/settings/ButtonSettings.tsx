@@ -1,17 +1,17 @@
 import {Text} from "@/components/ignite"
 import {AppPicker} from "@/components/misc/AppPicker"
 import ToggleSetting from "@/components/settings/ToggleSetting"
+import {translate} from "@/i18n"
+import {ClientAppletInterface} from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {MaterialCommunityIcons} from "@expo/vector-icons"
 import {useState} from "react"
-import {View, TouchableOpacity, ViewStyle} from "react-native"
-import type {Applet} from "@/stores/applets"
-
+import {TouchableOpacity, View, ViewStyle} from "react-native"
 interface ButtonSettingsProps {
   enabled: boolean
   selectedApp: string
-  applets: Applet[]
+  applets: ClientAppletInterface[]
   onEnabledChange: (value: boolean) => void
   onAppChange: (packageName: string) => void
 }
@@ -27,10 +27,10 @@ export function ButtonSettings({enabled, selectedApp, applets, onEnabledChange, 
           label="Default Button Action"
           value={enabled}
           onValueChange={onEnabledChange}
-          containerStyle={{
+          style={{
             paddingHorizontal: 0,
             paddingTop: 0,
-            paddingBottom: enabled ? theme.spacing.sm : 0,
+            paddingBottom: enabled ? theme.spacing.s3 : 0,
             borderWidth: 0,
           }}
         />
@@ -41,7 +41,7 @@ export function ButtonSettings({enabled, selectedApp, applets, onEnabledChange, 
               style={{
                 height: 1,
                 backgroundColor: theme.colors.separator,
-                marginBottom: theme.spacing.sm,
+                marginBottom: theme.spacing.s3,
               }}
             />
             <TouchableOpacity
@@ -73,7 +73,7 @@ export function ButtonSettings({enabled, selectedApp, applets, onEnabledChange, 
         }}
         apps={applets}
         selectedPackageName={selectedApp}
-        title="Select Default App"
+        title={translate("deviceSettings:selectDefaultApp")}
         filterPredicate={app => app.type === "standard" && app.compatibility?.isCompatible !== false} // Only show compatible foreground apps
         showCompatibilityWarnings={true}
       />
@@ -82,10 +82,8 @@ export function ButtonSettings({enabled, selectedApp, applets, onEnabledChange, 
 }
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   paddingVertical: 12,
   paddingHorizontal: 16,
-  borderRadius: spacing.md,
-  borderWidth: 2,
-  borderColor: colors.border,
+  borderRadius: spacing.s4,
 })

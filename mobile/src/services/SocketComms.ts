@@ -9,7 +9,6 @@ import {useAppletStatusStore} from "@/stores/applets"
 import {useGlassesStore} from "@/stores/glasses"
 import {showAlert} from "@/utils/AlertUtils"
 import {router} from "expo-router"
-import Constants from "expo-constants"
 import {shallow} from "zustand/shallow"
 
 class SocketComms {
@@ -20,7 +19,6 @@ class SocketComms {
 
   private reconnecting = false
   private reconnectionAttempts = 0
-  private IS_CHINA_DEPLOYMENT: boolean = Constants.expoConfig?.extra?.DEPLOYMENT_REGION === "china"
 
   private constructor() {
     // Subscribe to WebSocket messages
@@ -377,10 +375,11 @@ class SocketComms {
   }
 
   // message handlers, these should only ever be called from handle_message / the server:
-  private handle_connection_ack(msg: any) {
+  private async handle_connection_ack(msg: any) {
     console.log("SOCKET: connection ack, connecting to livekit")
-    if (!this.IS_CHINA_DEPLOYMENT) {
-      livekit.connect()
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    if (!isChina) {
+      await livekit.connect()
     }
     GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
   }

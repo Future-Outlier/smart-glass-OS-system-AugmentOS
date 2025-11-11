@@ -1,11 +1,10 @@
 import {View, ScrollView, TouchableOpacity, Platform} from "react-native"
-import {Text} from "@/components/ignite"
+import {Icon, Text} from "@/components/ignite"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import bridge from "@/bridge/MantleBridge"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import {spacing, ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle} from "react-native"
-import {MaterialCommunityIcons} from "@expo/vector-icons"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import ToggleSetting from "@/components/settings/ToggleSetting"
@@ -124,8 +123,8 @@ export default function CameraSettingsScreen() {
 
   if (!supportsCameraButton) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}}>
-        <Header leftIcon="caretLeft" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
+      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
+        <Header leftIcon="chevron-left" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
         <View style={themed($emptyStateContainer)}>
           <Text style={themed($emptyStateText)}>Camera settings are not available for this device</Text>
         </View>
@@ -134,43 +133,67 @@ export default function CameraSettingsScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}}>
-      <Header leftIcon="caretLeft" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
+      <Header leftIcon="chevron-left" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
       <ScrollView
-        style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}
+        style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}
         contentInsetAdjustmentBehavior="automatic">
         <View style={themed($settingsGroup)}>
-          <Text style={themed($settingLabel)}>Button Photo Settings</Text>
-          <Text style={themed($settingSubtitle)}>Choose the resolution for photos taken with the camera button</Text>
+          <Text style={themed($settingLabel)}>Action Button Photo Settings</Text>
+          <Text style={themed($settingSubtitle)}>Choose the resolution for photos taken with the action button</Text>
 
-          {Object.entries(PHOTO_SIZE_LABELS).map(([value, label], index) => (
-            <View key={value}>
-              {index > 0 && <View style={themed($divider)} />}
-              <TouchableOpacity style={themed($optionItem)} onPress={() => handlePhotoSizeChange(value as PhotoSize)}>
+          {Object.entries(PHOTO_SIZE_LABELS).map(([value, label], index, arr) => {
+            const isFirst = index === 0
+            const isLast = index === arr.length - 1
+            return (
+              <TouchableOpacity
+                key={value}
+                style={[
+                  themed($optionItem),
+                  {
+                    borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                    borderWidth: photoSize === value ? 1 : undefined,
+                    borderColor: photoSize === value ? theme.colors.primary : undefined,
+                  },
+                ]}
+                onPress={() => handlePhotoSizeChange(value as PhotoSize)}>
                 <Text style={themed($optionText)}>{label}</Text>
-                {photoSize === value && <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />}
+                {photoSize === value && <Icon name="check" size={24} color={theme.colors.primary} />}
               </TouchableOpacity>
-            </View>
-          ))}
+            )
+          })}
         </View>
 
         <View style={themed($settingsGroup)}>
-          <Text style={themed($settingLabel)}>Button Video Settings</Text>
+          <Text style={themed($settingLabel)}>Action Button Video Settings</Text>
           <Text style={themed($settingSubtitle)}>Choose the resolution for videos recorded with the camera button</Text>
 
-          {Object.entries(VIDEO_RESOLUTION_LABELS).map(([value, label], index) => (
-            <View key={value}>
-              {index > 0 && <View style={themed($divider)} />}
+          {Object.entries(VIDEO_RESOLUTION_LABELS).map(([value, label], index, arr) => {
+            const isFirst = index === 0
+            const isLast = index === arr.length - 1
+            return (
               <TouchableOpacity
-                style={themed($optionItem)}
+                key={value}
+                style={[
+                  themed($optionItem),
+                  {
+                    borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                    borderWidth: videoResolution === value ? 1 : undefined,
+                    borderColor: videoResolution === value ? theme.colors.primary : undefined,
+                  },
+                ]}
                 onPress={() => handleVideoResolutionChange(value as VideoResolution)}>
                 <Text style={themed($optionText)}>{label}</Text>
-                {videoResolution === value && (
-                  <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
-                )}
+                {videoResolution === value && <Icon name="check" size={24} color={theme.colors.primary} />}
               </TouchableOpacity>
-            </View>
-          ))}
+            )
+          })}
         </View>
 
         {Platform.OS === "ios" && (
@@ -178,24 +201,37 @@ export default function CameraSettingsScreen() {
             <Text style={themed($settingLabel)}>Maximum Recording Time</Text>
             <Text style={themed($settingSubtitle)}>Maximum duration for button-triggered video recording</Text>
 
-            {Object.entries(MAX_RECORDING_TIME_LABELS).map(([value, label], index) => (
-              <View key={value}>
-                {index > 0 && <View style={themed($divider)} />}
+            {Object.entries(MAX_RECORDING_TIME_LABELS).map(([value, label], index, arr) => {
+              const isFirst = index === 0
+              const isLast = index === arr.length - 1
+              return (
                 <TouchableOpacity
-                  style={themed($optionItem)}
+                  key={value}
+                  style={[
+                    themed($optionItem),
+                    {
+                      borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                      borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                      borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                      borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                      borderWidth: maxRecordingTime === parseInt(value.replace("m", "")) ? 1 : undefined,
+                      borderColor:
+                        maxRecordingTime === parseInt(value.replace("m", "")) ? theme.colors.primary : undefined,
+                    },
+                  ]}
                   onPress={() => handleMaxRecordingTimeChange(value as MaxRecordingTime)}>
                   <Text style={themed($optionText)}>{label}</Text>
                   {maxRecordingTime === parseInt(value.replace("m", "")) && (
-                    <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                    <Icon name="check" size={24} color={theme.colors.primary} />
                   )}
                 </TouchableOpacity>
-              </View>
-            ))}
+              )
+            })}
           </View>
         )}
 
         {devMode && (
-          <View style={{marginVertical: theme.spacing.sm}}>
+          <View style={{marginVertical: theme.spacing.s3}}>
             <ToggleSetting
               label="Recording LED"
               subtitle="Shows when camera is active"
@@ -211,39 +247,32 @@ export default function CameraSettingsScreen() {
 
 const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
-  paddingVertical: 12,
+  paddingVertical: 14,
   paddingHorizontal: 16,
-  borderRadius: spacing.md,
-  borderWidth: 2,
-  borderColor: colors.border,
-  marginVertical: spacing.sm,
+  borderRadius: spacing.s4,
+  marginVertical: spacing.s3,
 })
 
 const $settingLabel: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.text,
-  fontSize: 16,
+  fontSize: 14,
   fontWeight: "600",
-  marginBottom: 8,
+  marginBottom: spacing.s1,
 })
 
 const $settingSubtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
   fontSize: 12,
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
-const $optionItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $optionItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  paddingVertical: spacing.xs,
-  paddingTop: spacing.xs,
-})
-
-const $divider: ThemedStyle<ViewStyle> = ({colors}) => ({
-  height: 1,
-  backgroundColor: colors.separator,
-  marginVertical: 4,
+  padding: spacing.s4,
+  backgroundColor: colors.background,
+  marginBottom: spacing.s2,
 })
 
 const $optionText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -255,7 +284,7 @@ const $emptyStateContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingVertical: spacing.xxl,
+  paddingVertical: spacing.s12,
   minHeight: 300,
 })
 

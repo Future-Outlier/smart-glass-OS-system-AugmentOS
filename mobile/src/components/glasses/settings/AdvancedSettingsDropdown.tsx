@@ -45,9 +45,9 @@ const $button: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
   paddingVertical: 14,
   paddingHorizontal: 16,
-  borderRadius: spacing.md,
-  borderWidth: 2,
-  borderColor: colors.border,
+  borderRadius: spacing.s4,
+  // borderWidth: 2,
+  // borderColor: colors.border,
 })
 
 const $content: ThemedStyle<ViewStyle> = () => ({

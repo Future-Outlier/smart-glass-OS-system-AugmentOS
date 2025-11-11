@@ -2,6 +2,7 @@
  * Console API (Skeleton)
  *
  * Base: /api/console/account
+ * Mount: app.use("/api/console/account", authenticateConsole, consoleAccountApi)
  *
  * Sub-resources and endpoints (to be moved into dedicated files):
  *
@@ -10,17 +11,16 @@
  */
 
 import { Router, Request, Response } from "express";
-import { authenticateConsole } from "../middleware/console.middleware";
 import ConsoleAccountService from "../../services/console/console.account.service";
 const router = Router();
 
 /**
  * Routes — declared first, handlers below (function declarations are hoisted)
- * Per-route middleware: authenticateConsole
+ * NOTE: No per-route middleware - authenticateConsole applied at mount point
  */
 
 // Account
-router.get("/", authenticateConsole, getConsoleAccount);
+router.get("/", getConsoleAccount);
 
 // Auth
 async function getConsoleAccount(req: Request, res: Response) {

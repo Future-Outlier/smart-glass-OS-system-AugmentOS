@@ -72,7 +72,7 @@ function CheckboxInput(props: CheckboxInputProps) {
   ].filter(Boolean)[0]
 
   const onBackgroundColor = [
-    disabled && colors.transparent,
+    disabled && colors.palette.transparent,
     status === "error" && colors.errorBackground,
     colors.tint,
   ].filter(Boolean)[0]

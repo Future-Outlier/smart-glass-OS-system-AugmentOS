@@ -30,7 +30,7 @@ const $row: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  paddingVertical: spacing.sm,
+  paddingVertical: spacing.s3,
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -51,5 +51,5 @@ const $value: ThemedStyle<TextStyle> = ({colors}) => ({
 const $divider: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   height: 1,
   backgroundColor: colors.separator,
-  marginVertical: spacing.xxs,
+  marginVertical: spacing.s1,
 })

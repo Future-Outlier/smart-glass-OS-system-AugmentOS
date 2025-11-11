@@ -165,26 +165,26 @@ export function EmptyState(props: EmptyStateProps) {
   const $containerStyles = [$containerStyleOverride]
   const $imageStyles = [
     $image,
-    (isHeadingPresent || isContentPresent || isButtonPresent) && {marginBottom: spacing.xxxs},
+    (isHeadingPresent || isContentPresent || isButtonPresent) && {marginBottom: spacing.s0_5},
     $imageStyleOverride,
     ImageProps?.style,
   ]
   const $headingStyles = [
     themed($heading),
-    isImagePresent && {marginTop: spacing.xxxs},
-    (isContentPresent || isButtonPresent) && {marginBottom: spacing.xxxs},
+    isImagePresent && {marginTop: spacing.s0_5},
+    (isContentPresent || isButtonPresent) && {marginBottom: spacing.s0_5},
     $headingStyleOverride,
     HeadingTextProps?.style,
   ]
   const $contentStyles = [
     themed($content),
-    (isImagePresent || isHeadingPresent) && {marginTop: spacing.xxxs},
-    isButtonPresent && {marginBottom: spacing.xxxs},
+    (isImagePresent || isHeadingPresent) && {marginTop: spacing.s0_5},
+    isButtonPresent && {marginBottom: spacing.s0_5},
     $contentStyleOverride,
     ContentTextProps?.style,
   ]
   const $buttonStyles = [
-    (isImagePresent || isHeadingPresent || isContentPresent) && {marginTop: spacing.xl},
+    (isImagePresent || isHeadingPresent || isContentPresent) && {marginTop: spacing.s8},
     $buttonStyleOverride,
     ButtonProps?.style,
   ]
@@ -233,9 +233,9 @@ export function EmptyState(props: EmptyStateProps) {
 const $image: ImageStyle = {alignSelf: "center"}
 const $heading: ThemedStyle<TextStyle> = ({spacing}) => ({
   textAlign: "center",
-  paddingHorizontal: spacing.lg,
+  paddingHorizontal: spacing.s6,
 })
 const $content: ThemedStyle<TextStyle> = ({spacing}) => ({
   textAlign: "center",
-  paddingHorizontal: spacing.lg,
+  paddingHorizontal: spacing.s6,
 })

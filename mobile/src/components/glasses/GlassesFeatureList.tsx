@@ -1,6 +1,5 @@
 import {View, StyleSheet} from "react-native"
-import {Text} from "@/components/ignite"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
+import {Icon, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
@@ -48,7 +47,7 @@ export function GlassesFeatureList({glassesModel}: GlassesFeatureListProps) {
       <View style={styles.featureRow}>
         {featureOrder.slice(0, 2).map(feature => (
           <View key={feature} style={styles.featureItem}>
-            <MaterialCommunityIcons
+            <Icon
               name={getFeatureValue(feature) ? "check" : "close"}
               size={24}
               color={theme.colors.text}
@@ -61,7 +60,7 @@ export function GlassesFeatureList({glassesModel}: GlassesFeatureListProps) {
       <View style={styles.featureRow}>
         {featureOrder.slice(2, 4).map(feature => (
           <View key={feature} style={styles.featureItem}>
-            <MaterialCommunityIcons
+            <Icon
               name={getFeatureValue(feature) ? "check" : "close"}
               size={24}
               color={theme.colors.text}

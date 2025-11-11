@@ -50,6 +50,7 @@
     "expo-calendar": "~15.0.7",
     "expo-camera": "~17.0.8",
     "expo-clipboard": "^8.0.7",
+    "expo-device": "^8.0.9",
     "expo-font": "~14.0.9",
     "expo-image": "~3.0.10",
     "expo-linear-gradient": "~15.0.7",
@@ -68,6 +69,7 @@
     "i18next": "^23.16.8",
     "intl-pluralrules": "^2.0.1",
     "livekit-client": "^2.15.8",
+    "lucide-react-native": "^0.553.0",
     "posthog-react-native": "^4.8.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -123,6 +125,7 @@
     "reactotron-react-native": "^5.1.17",
     "reactotron-react-native-mmkv": "^0.2.9",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   },
   "engines": {

@@ -15,14 +15,14 @@ export function MicrophoneSelector({preferredMic, onMicChange}: MicrophoneSelect
 
   return (
     <View style={themed($container)}>
-      <Text tx="deviceSettings:microphoneSelection" style={[themed($label), {marginBottom: theme.spacing.sm}]} />
+      <Text tx="deviceSettings:microphoneSelection" style={[themed($label), {marginBottom: theme.spacing.s3}]} />
 
       <TouchableOpacity
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
-          paddingBottom: theme.spacing.xs,
-          paddingTop: theme.spacing.xs,
+          paddingBottom: theme.spacing.s2,
+          paddingTop: theme.spacing.s2,
         }}
         onPress={() => onMicChange("phone")}>
         <View style={{flexDirection: "row", alignItems: "center", gap: 8}}>
@@ -55,7 +55,7 @@ export function MicrophoneSelector({preferredMic, onMicChange}: MicrophoneSelect
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
-          paddingTop: theme.spacing.xs,
+          paddingTop: theme.spacing.s2,
         }}
         onPress={() => onMicChange("glasses")}>
         <View style={{flexDirection: "column", gap: 4}}>
@@ -71,7 +71,7 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
   paddingVertical: 12,
   paddingHorizontal: 16,
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
   borderWidth: 2,
   borderColor: colors.border,
 })

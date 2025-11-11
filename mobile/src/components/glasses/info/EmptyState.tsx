@@ -27,8 +27,8 @@ const $emptyStateContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "flex-start",
   alignItems: "center",
-  paddingTop: spacing.xl,
-  paddingBottom: spacing.xxl,
+  paddingTop: spacing.s8,
+  paddingBottom: spacing.s12,
   minHeight: 200,
 })
 

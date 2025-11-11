@@ -37,6 +37,9 @@ import com.mentra.asg_client.io.hardware.core.HardwareManagerFactory;
 import com.mentra.asg_client.io.streaming.events.StreamingCommand;
 import com.mentra.asg_client.io.streaming.events.StreamingEvent;
 import com.mentra.asg_client.io.streaming.interfaces.StreamingStatusCallback;
+import com.mentra.asg_client.service.system.interfaces.IStateManager;
+import com.mentra.asg_client.service.core.constants.BatteryConstants;
+import com.mentra.asg_client.audio.AudioAssets;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -124,6 +127,12 @@ public class RtmpStreamingService extends Service {
     private IHardwareManager mHardwareManager;
     private boolean mLedEnabled = false;
 
+    // Battery monitoring for RTMP streaming
+    private IStateManager mStateManager;
+    private static IStateManager sPendingStateManager = null; // Pending StateManager to apply on service start
+    private Handler mBatteryMonitorHandler = null;
+    private Runnable mBatteryCheckRunnable = null;
+
     public class LocalBinder extends Binder {
         public RtmpStreamingService getService() {
             return RtmpStreamingService.this;
@@ -136,6 +145,13 @@ public class RtmpStreamingService extends Service {
 
         // Store static instance reference
         sInstance = this;
+
+        // Apply pending StateManager if it was set before service started
+        if (sPendingStateManager != null) {
+            mStateManager = sPendingStateManager;
+            sPendingStateManager = null; // Clear pending after applying
+            Log.d(TAG, "✅ Applied pending StateManager during onCreate");
+        }
 
         // Create notification channel
         createNotificationChannel();
@@ -434,13 +450,16 @@ public class RtmpStreamingService extends Service {
                                 }
 
                                 updateNotificationIfImportant();
-                                
+
                                 // Turn on LED if enabled for livestream
                                 if (mLedEnabled && mHardwareManager != null && mHardwareManager.supportsRecordingLed()) {
                                     mHardwareManager.setRecordingLedOn();
                                     Log.d(TAG, "📹 Recording LED turned ON for livestream");
                                 }
-                                
+
+                                // Start battery monitoring
+                                startBatteryMonitoring();
+
                                 EventBus.getDefault().post(new StreamingEvent.Connected());
                                 EventBus.getDefault().post(new StreamingEvent.Started());
                             }
@@ -895,6 +914,8 @@ public class RtmpStreamingService extends Service {
         }
 
         Log.i(TAG, "Stopping streaming");
+
+        // Battery monitoring will be stopped in forceStopStreamingInternal
         forceStopStreamingInternal(false);
     }
 
@@ -904,6 +925,11 @@ public class RtmpStreamingService extends Service {
      */
     private void forceStopStreamingInternal(boolean preserveSession) {
         Log.d(TAG, "Force stopping stream and cleaning up resources (preserveSession=" + preserveSession + ")");
+
+        // Stop battery monitoring if not preserving session
+        if (!preserveSession) {
+            stopBatteryMonitoring();
+        }
 
         // Increment reconnection sequence to invalidate any pending handlers
         mReconnectionSequence++;
@@ -1204,6 +1230,113 @@ public class RtmpStreamingService extends Service {
         }
         mIsStreamingActive = false;
         mCurrentStreamId = null;
+    }
+
+    /**
+     * Set the StateManager for battery monitoring.
+     * If service is not yet started, stores in pending field to apply during onCreate().
+     * @param stateManager StateManager instance
+     */
+    public static void setStateManager(IStateManager stateManager) {
+        if (sInstance != null) {
+            // Service is running, apply immediately
+            sInstance.mStateManager = stateManager;
+            Log.d(TAG, "✅ StateManager set for battery monitoring");
+        } else {
+            // Service not yet started, store in pending field to apply during onCreate()
+            sPendingStateManager = stateManager;
+            Log.d(TAG, "✅ StateManager stored as pending - will be applied when service starts");
+        }
+    }
+
+    /**
+     * Start battery monitoring for RTMP streaming
+     */
+    private void startBatteryMonitoring() {
+        if (mStateManager == null) {
+            Log.w(TAG, "⚠️ StateManager not set - cannot monitor battery");
+            return;
+        }
+
+        stopBatteryMonitoring(); // Clean up any existing monitor
+
+        if (mBatteryMonitorHandler == null) {
+            mBatteryMonitorHandler = new Handler(Looper.getMainLooper());
+        }
+
+        mBatteryCheckRunnable = new Runnable() {
+            @Override
+            public void run() {
+                boolean shouldStop = false;
+                boolean shouldReschedule = false;
+
+                // Check battery level inside lock, but don't call stopStreaming inside lock
+                synchronized (mStateLock) {
+                    // Continue monitoring if stream is marked as active (even if temporarily not in STREAMING state)
+                    if (mIsStreaming) {
+                        // Null check for StateManager (might not be initialized yet or cleared)
+                        if (mStateManager == null) {
+                            Log.w(TAG, "⚠️ StateManager not available during battery monitoring - will retry");
+                            shouldReschedule = true;
+                        } else if (mStreamState == StreamState.STREAMING) {
+                            // Only check battery when actually streaming
+                            int batteryLevel = mStateManager.getBatteryLevel();
+
+                            if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                                Log.w(TAG, "🔋⚠️ Battery dropped to " + batteryLevel +
+                                    "% during streaming - stopping");
+                                shouldStop = true;
+
+                                // Play battery low sound inside lock (quick operation)
+                                if (mHardwareManager != null && mHardwareManager.supportsAudioPlayback()) {
+                                    mHardwareManager.playAudioAsset(AudioAssets.BATTERY_LOW);
+                                    Log.d(TAG, "🔋 Playing battery low sound");
+                                }
+                            } else {
+                                shouldReschedule = true;
+                            }
+                        } else {
+                            // Stream is active but not in STREAMING state (reconnecting?)
+                            // Keep monitoring in case we reconnect
+                            shouldReschedule = true;
+                            Log.d(TAG, "Stream not in STREAMING state (" + mStreamState + "), but still active - continuing monitoring");
+                        }
+                    }
+                    // If !mIsStreaming, monitoring should stop (don't reschedule)
+                }
+
+                // Reschedule outside lock
+                if (shouldReschedule && mBatteryMonitorHandler != null) {
+                    mBatteryMonitorHandler.postDelayed(this,
+                        BatteryConstants.BATTERY_CHECK_INTERVAL_MS);
+                }
+
+                // Stop streaming OUTSIDE the lock to avoid holding lock during complex operation
+                if (shouldStop) {
+                    stopStreaming();
+                }
+            }
+        };
+
+        mBatteryMonitorHandler.postDelayed(mBatteryCheckRunnable,
+            BatteryConstants.BATTERY_CHECK_INTERVAL_MS);
+
+        Log.d(TAG, "🔋 Started battery monitoring for RTMP streaming");
+    }
+
+    /**
+     * Stop battery monitoring
+     */
+    private void stopBatteryMonitoring() {
+        if (mBatteryMonitorHandler != null) {
+            if (mBatteryCheckRunnable != null) {
+                mBatteryMonitorHandler.removeCallbacks(mBatteryCheckRunnable);
+                mBatteryCheckRunnable = null;
+            }
+            // Safety net: remove ALL callbacks/messages to ensure nothing lingers
+            mBatteryMonitorHandler.removeCallbacksAndMessages(null);
+            Log.d(TAG, "🔋 Stopped battery monitoring");
+        }
     }
 
 

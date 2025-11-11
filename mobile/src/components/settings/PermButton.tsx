@@ -26,23 +26,21 @@ const PermissionButton: React.FC<ToggleSettingProps> = ({label, subtitle, value:
 }
 
 const $button: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  fontSize: spacing.xs,
+  fontSize: spacing.s2,
   width: 90,
-  padding: spacing.xs,
+  padding: spacing.s2,
   margin: 0,
 })
 
-const $container: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => ({
+const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
   width: "100%",
   backgroundColor: colors.backgroundAlt,
-  paddingVertical: spacing.md,
-  paddingHorizontal: spacing.md,
-  borderRadius: borderRadius.md,
-  borderWidth: spacing.xxxs,
-  borderColor: colors.border,
+  paddingVertical: spacing.s4,
+  paddingHorizontal: spacing.s4,
+  borderRadius: spacing.s4,
 })
 
 const $textContainer: ThemedStyle<ViewStyle> = () => ({

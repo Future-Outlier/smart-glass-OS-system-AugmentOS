@@ -14,9 +14,9 @@ export function NotConnectedInfo() {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.sm,
-  marginBottom: spacing.sm,
-  marginTop: spacing.sm,
+  padding: spacing.s3,
+  marginBottom: spacing.s3,
+  marginTop: spacing.s3,
 })
 
 const $text: ThemedStyle<TextStyle> = ({colors}) => ({

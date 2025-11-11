@@ -131,7 +131,7 @@ const $doneButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $scrollContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexGrow: 1,
-  padding: spacing.md,
+  padding: spacing.s4,
 })
 
 const $textInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -140,7 +140,7 @@ const $textInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   borderWidth: Platform.OS === "ios" ? 0.5 : 1,
   borderColor: colors.border,
   borderRadius: Platform.OS === "ios" ? 10 : 4,
-  padding: spacing.md,
+  padding: spacing.s4,
   textAlignVertical: "top",
   backgroundColor: colors.background,
   color: colors.text,

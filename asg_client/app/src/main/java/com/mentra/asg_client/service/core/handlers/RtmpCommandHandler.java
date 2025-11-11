@@ -7,6 +7,7 @@ import com.mentra.asg_client.io.streaming.services.RtmpStreamingService;
 import com.mentra.asg_client.service.legacy.interfaces.ICommandHandler;
 import com.mentra.asg_client.service.media.interfaces.IMediaManager;
 import com.mentra.asg_client.service.system.interfaces.IStateManager;
+import com.mentra.asg_client.service.core.constants.BatteryConstants;
 import com.mentra.asg_client.service.utils.ServiceConstants;
 
 import org.json.JSONException;
@@ -70,7 +71,27 @@ public class RtmpCommandHandler implements ICommandHandler {
                 return false;
             }
 
-            if (!stateManager.isConnectedToWifi()) {
+            // BATTERY CHECK: Reject if battery too low
+            if (stateManager != null) {
+                int batteryLevel = stateManager.getBatteryLevel();
+                if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
+                    Log.w(TAG, "🚫 RTMP stream rejected - battery too low (" + batteryLevel + "%)");
+
+                    // Play audio feedback
+                    com.mentra.asg_client.io.media.core.MediaCaptureService.playBatteryLowSound(context);
+
+                    // Send error response to phone
+                    streamingManager.sendRtmpStatusResponse(false, ServiceConstants.STATUS_ERROR,
+                        "Battery level too low (" + batteryLevel + "%) - minimum " +
+                        BatteryConstants.MIN_BATTERY_LEVEL + "% required");
+
+                    return false;
+                }
+            } else {
+                Log.w(TAG, "⚠️ StateManager not available - skipping battery check");
+            }
+
+            if (stateManager != null && !stateManager.isConnectedToWifi()) {
                 Log.e(TAG, "Cannot start RTMP stream - no WiFi connection");
                 streamingManager.sendRtmpStatusResponse(false, ServiceConstants.STATUS_ERROR, ServiceConstants.ERROR_NO_WIFI_CONNECTION);
                 return false;
@@ -89,6 +110,10 @@ public class RtmpCommandHandler implements ICommandHandler {
             String streamId = data.optString("streamId", "");
             boolean enableLed = data.optBoolean("enable_led", true); // Default true for livestreams
             RtmpStreamingService.startStreaming(context, rtmpUrl, streamId, enableLed);
+
+            // Set StateManager for battery monitoring
+            RtmpStreamingService.setStateManager(stateManager);
+
             return true;
         } catch (Exception e) {
             Log.e(TAG, "Error handling RTMP start command", e);

@@ -159,16 +159,16 @@ const $animatedContainer: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $outerContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
 })
 
 const $innerContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
   elevation: 1,
-  paddingHorizontal: spacing.md,
-  paddingVertical: spacing.xs,
-  margin: spacing.xxs,
+  paddingHorizontal: spacing.s4,
+  paddingVertical: spacing.s2,
+  margin: spacing.s1,
 })
 
 const $row: ThemedStyle<ViewStyle> = () => ({
@@ -178,7 +178,7 @@ const $row: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $icon: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.xs,
+  marginRight: spacing.s2,
 })
 
 const $text: ThemedStyle<TextStyle> = ({colors, typography}) => ({

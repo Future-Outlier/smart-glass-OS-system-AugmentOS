@@ -8,8 +8,9 @@ type ToggleSettingProps = {
   subtitle?: string
   value: boolean
   onValueChange: (newValue: boolean) => void
-  containerStyle?: ViewStyle
   disabled?: boolean
+  style?: ViewStyle
+  icon?: React.ReactNode
 }
 
 const ToggleSetting: React.FC<ToggleSettingProps> = ({
@@ -17,15 +18,19 @@ const ToggleSetting: React.FC<ToggleSettingProps> = ({
   subtitle,
   value,
   onValueChange,
-  containerStyle,
   disabled = false,
+  style,
+  icon,
 }) => {
-  const {themed} = useAppTheme()
+  const {theme, themed} = useAppTheme()
 
   return (
-    <View style={[themed($container), containerStyle, disabled && {opacity: 0.5}]}>
+    <View style={[themed($container), style, disabled && {opacity: 0.5}]}>
       <View style={themed($textContainer)}>
-        <Text text={label} style={themed($label)} />
+        <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s4, justifyContent: "center"}}>
+          {icon && icon}
+          <Text text={label} style={themed($label)} />
+        </View>
         {subtitle && <Text text={subtitle} style={themed($subtitle)} />}
       </View>
       <Switch value={value} onValueChange={onValueChange} disabled={disabled} />
@@ -33,17 +38,17 @@ const ToggleSetting: React.FC<ToggleSettingProps> = ({
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => ({
+const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
   width: "100%",
-  backgroundColor: colors.backgroundAlt,
-  paddingVertical: spacing.md,
-  paddingHorizontal: spacing.md,
-  borderRadius: borderRadius.md,
-  borderWidth: spacing.xxxs,
-  borderColor: colors.border,
+  backgroundColor: colors.primary_foreground,
+  paddingVertical: spacing.s4,
+  paddingHorizontal: spacing.s4,
+  borderRadius: spacing.s4,
+  // borderWidth: spacing.s0_5,
+  // borderColor: colors.border,
 })
 
 const $textContainer: ThemedStyle<ViewStyle> = () => ({
@@ -56,7 +61,8 @@ const $textContainer: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 15,
+  fontSize: 14,
+  fontWeight: 600,
   color: colors.text,
 })
 

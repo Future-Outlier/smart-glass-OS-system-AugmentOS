@@ -1,43 +1,25 @@
+import GlassesDisplayMirror from "@/components/mirror/GlassesDisplayMirror"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useCameraPermissions} from "expo-camera"
-import {useEffect, useRef} from "react"
-import {Animated, Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import GlassesDisplayMirror from "@/components/mirror/GlassesDisplayMirror"
+import {Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {Button, Icon, Text} from "@/components/ignite"
 
-export default function ConnectedSimulatedGlassesInfo() {
-  const fadeAnim = useRef(new Animated.Value(0)).current
-  const scaleAnim = useRef(new Animated.Value(0.8)).current
+export default function ConnectedSimulatedGlassesInfo({
+  style,
+  mirrorStyle,
+  showHeader = true,
+}: {
+  style?: ViewStyle
+  mirrorStyle?: ViewStyle
+  showHeader?: boolean
+}) {
   const {themed, theme} = useAppTheme()
   const [permission, requestPermission] = useCameraPermissions()
   const {push} = useNavigationHistory()
-
-  useEffect(() => {
-    // Start animations
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1200,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 8,
-        tension: 60,
-        useNativeDriver: true,
-      }),
-    ]).start()
-
-    // Cleanup function
-    return () => {
-      fadeAnim.stopAnimation()
-      scaleAnim.stopAnimation()
-    }
-  }, [])
 
   // Function to navigate to fullscreen mode
   const navigateToFullScreen = async () => {
@@ -87,69 +69,39 @@ export default function ConnectedSimulatedGlassesInfo() {
   }
 
   return (
-    <View style={themed($connectedContent)}>
-      <Animated.View
-        style={[
-          themed($mirrorWrapper),
-          {
-            opacity: fadeAnim,
-            transform: [{scale: scaleAnim}],
-          },
-        ]}>
-        <GlassesDisplayMirror fallbackMessage="Glasses Mirror" />
+    <View style={[themed($connectedContent), style]}>
+      {showHeader && (
+        <View style={themed($header)}>
+          <Text style={themed($title)} tx="home:simulatedGlasses" />
+          <Button flex={false} flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
+            <Icon name="settings" size={18} color={theme.colors.secondary_foreground} />
+          </Button>
+        </View>
+      )}
+      <View>
+        <GlassesDisplayMirror fallbackMessage="Glasses Mirror" style={mirrorStyle} />
         <TouchableOpacity style={{position: "absolute", bottom: 10, right: 10}} onPress={navigateToFullScreen}>
           <Icon name="fullscreen" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-      </Animated.View>
+      </View>
     </View>
   )
 }
 
-export const $bottomBar: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  alignItems: "center",
-  backgroundColor: "#6750A414",
-  borderBottomLeftRadius: spacing.xs,
-  borderBottomRightRadius: spacing.xs,
+const $connectedContent: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  backgroundColor: colors.primary_foreground,
+  padding: spacing.s6,
+  // paddingVertical: spacing.s6,
+  // paddingHorizontal: spacing.s6,
+})
+
+const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
-  padding: spacing.xs,
-  width: "100%",
-})
-
-export const $connectedContent: ThemedStyle<ViewStyle> = () => ({
   alignItems: "center",
-  justifyContent: "center",
-  // marginBottom: spacing.md,
+  marginBottom: spacing.s4,
 })
 
-export const $deviceInfoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.sm,
-  display: "flex",
-  flexDirection: "column",
-  height: 230,
-  justifyContent: "space-between",
-  marginTop: spacing.md,
-  paddingBottom: 0,
-  paddingHorizontal: spacing.sm,
-  paddingTop: spacing.sm,
-  width: "100%", // Increased space above component to match ConnectedDeviceInfo
-})
-
-export const $mirrorContainer: ThemedStyle<ViewStyle> = () => ({
-  height: "100%",
-  padding: 0,
-  width: "100%",
-})
-
-export const $mirrorWrapper: ThemedStyle<ViewStyle> = () => ({
-  alignItems: "center",
-  justifyContent: "center",
-  marginBottom: 0,
-  width: "100%",
-})
-
-export const $simulatedGlassesText: ThemedStyle<TextStyle> = () => ({
-  fontFamily: "Montserrat-Bold",
-  fontSize: 16,
-  fontWeight: "bold",
+const $title: ThemedStyle<TextStyle> = ({colors}) => ({
+  color: colors.secondary_foreground,
 })

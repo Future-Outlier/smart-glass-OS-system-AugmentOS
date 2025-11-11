@@ -1,16 +1,13 @@
 import {translate} from "@/i18n"
 import {Theme} from "@/theme"
-import {AppletPermission} from "@/types/AppletTypes"
-import {AppletInterface} from "@/../../cloud/packages/types/src"
-import {
-  checkAndRequestNotificationAccessSpecialPermission,
-  checkNotificationAccessSpecialPermission,
-} from "@/utils/NotificationServiceUtils"
+import {AppletInterface, AppletPermission} from "@/../../cloud/packages/types/src"
+import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {Alert, Linking, PermissionsAndroid, Platform} from "react-native"
 import BleManager from "react-native-ble-manager"
 import {check, PERMISSIONS, request, RESULTS} from "react-native-permissions"
 import showAlert, {showBluetoothAlert, showLocationAlert, showLocationServicesAlert} from "@/utils/AlertUtils"
+import CoreModule from "core"
 
 // Define permission features with their required permissions
 export const PermissionFeatures: Record<string, string> = {
@@ -493,7 +490,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
 
   // For special case of Android notification access
   if (featureKey === PermissionFeatures.READ_NOTIFICATIONS && Platform.OS === "android") {
-    const notificationAccess = await checkNotificationAccessSpecialPermission()
+    const notificationAccess = await CoreModule.hasNotificationListenerPermission()
     if (!notificationAccess) {
       allGranted = false
     }
@@ -636,7 +633,7 @@ export const checkFeaturePermissions = async (featureKey: string): Promise<boole
 
   // Special case for notifications on Android
   if (featureKey === PermissionFeatures.READ_NOTIFICATIONS && Platform.OS === "android") {
-    return await checkNotificationAccessSpecialPermission()
+    return await CoreModule.hasNotificationListenerPermission()
   }
 
   return false
@@ -759,7 +756,7 @@ export const checkPermissionsUI = async (app: AppletInterface) => {
         if (Platform.OS == "ios") {
           break
         }
-        const hasNotificationAccess = await checkNotificationAccessSpecialPermission()
+        const hasNotificationAccess = await CoreModule.hasNotificationListenerPermission()
         if (!hasNotificationAccess) {
           neededPermissions.push(PermissionFeatures.READ_NOTIFICATIONS)
         }

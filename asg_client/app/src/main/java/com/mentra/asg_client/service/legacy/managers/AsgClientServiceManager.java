@@ -19,6 +19,7 @@ import com.mentra.asg_client.logging.Logger;
 import com.mentra.asg_client.service.communication.interfaces.ICommunicationManager;
 import com.mentra.asg_client.service.core.AsgClientService;
 import com.mentra.asg_client.service.core.handlers.RgbLedCommandHandler;
+import com.mentra.asg_client.service.system.interfaces.IStateManager;
 import com.mentra.asg_client.settings.AsgSettings;
 
 /**
@@ -52,6 +53,9 @@ public class AsgClientServiceManager {
     private RgbLedCommandHandler rgbLedCommandHandler;
 
     private final FileManager fileManager;
+
+    // StateManager for battery monitoring (set after construction)
+    private IStateManager stateManager;
 
     public AsgClientServiceManager(Context context, AsgClientService service, ICommunicationManager communicationManager, FileManager fileManager) {
         Log.d(TAG, "🔧 AsgClientServiceManager constructor called");
@@ -171,10 +175,22 @@ public class AsgClientServiceManager {
             Log.d(TAG, "⏭️ Bluetooth manager already null - skipping");
         }
 
-        // Media components are stateless, no cleanup needed
-        Log.d(TAG, "📁 Media components are stateless - nullifying references");
+        // Clean up media capture service
+        if (mediaCaptureService != null) {
+            Log.d(TAG, "🧹 Cleaning up media capture service");
+            try {
+                mediaCaptureService.cleanup();
+            } catch (Exception e) {
+                Log.e(TAG, "Error during media capture service cleanup", e);
+            }
+            mediaCaptureService = null;
+            Log.d(TAG, "✅ Media capture service cleaned up and nullified");
+        } else {
+            Log.d(TAG, "⏭️ Media capture service already null - skipping");
+        }
+
+        // Media queue manager is stateless
         mediaQueueManager = null;
-        mediaCaptureService = null;
 
         isInitialized = false;
         Log.i(TAG, "✅ Service components cleaned up successfully");
@@ -331,7 +347,7 @@ public class AsgClientServiceManager {
             }
 
             try {
-                mediaCaptureService = new MediaCaptureService(context, mediaQueueManager, fileManager) {
+                mediaCaptureService = new MediaCaptureService(context, mediaQueueManager, fileManager, stateManager) {
                     @Override
                     protected void sendMediaSuccessResponse(String requestId, String mediaUrl, int mediaType) {
                         Log.d(TAG, "📤 Sending media success response - ID: " + requestId +
@@ -491,6 +507,28 @@ public class AsgClientServiceManager {
     public RgbLedCommandHandler getRgbLedCommandHandler() {
         Log.d(TAG, "getRgbLedCommandHandler() called - returning: " + (rgbLedCommandHandler != null ? "valid" : "null"));
         return rgbLedCommandHandler;
+    }
+
+    /**
+     * Set the StateManager reference (called after ServiceContainer initialization)
+     */
+    public void setStateManager(IStateManager stateManager) {
+        this.stateManager = stateManager;
+        Log.d(TAG, "✅ StateManager set for battery monitoring");
+
+        // Pass StateManager to existing MediaCaptureService if it already exists
+        // Don't re-initialize - that would create a new instance and lose active recordings!
+        if (mediaCaptureService != null) {
+            Log.d(TAG, "📸 Updating StateManager on existing MediaCaptureService");
+            mediaCaptureService.setStateManager(stateManager);
+        }
+    }
+
+    /**
+     * Get the StateManager reference.
+     */
+    public IStateManager getStateManager() {
+        return stateManager;
     }
 
     public boolean isInitialized() {

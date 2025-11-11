@@ -14,9 +14,9 @@ const GroupTitle: React.FC<GroupTitleProps> = ({title}) => {
       style={[
         styles.container,
         {
-          marginTop: theme.spacing.md,
-          marginBottom: theme.spacing.xs,
-          paddingHorizontal: theme.spacing.md,
+          marginTop: theme.spacing.s4,
+          marginBottom: theme.spacing.s2,
+          paddingHorizontal: theme.spacing.s4,
         },
       ]}>
       <Text text={title} style={[styles.title, {color: theme.colors.textDim}]} />

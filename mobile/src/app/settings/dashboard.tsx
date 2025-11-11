@@ -5,17 +5,18 @@ import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {Header, Screen} from "@/components/ignite"
 import HeadUpAngleComponent from "@/components/misc/HeadUpAngleComponent"
 import ToggleSetting from "@/components/settings/ToggleSetting"
-import RouteButton from "@/components/ui/RouteButton"
+import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {useAppTheme} from "@/utils/useAppTheme"
+import {$styles} from "@/theme"
 
 export default function DashboardSettingsScreen() {
   const {status} = useCoreStatus()
-  const {theme} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
   const [headUpAngleComponentVisible, setHeadUpAngleComponentVisible] = useState(false)
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
@@ -57,8 +58,8 @@ export default function DashboardSettingsScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header titleTx="settings:dashboardSettings" leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header titleTx="settings:dashboardSettings" leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView>
         <ToggleSetting
           label={translate("settings:contextualDashboardLabel")}
@@ -67,7 +68,7 @@ export default function DashboardSettingsScreen() {
           onValueChange={toggleContextualDashboard}
         />
 
-        <Spacer height={theme.spacing.md} />
+        <Spacer height={theme.spacing.s4} />
 
         <ToggleSetting
           label={translate("settings:metricSystemLabel")}
@@ -76,7 +77,7 @@ export default function DashboardSettingsScreen() {
           onValueChange={toggleMetricSystem}
         />
 
-        <Spacer height={theme.spacing.md} />
+        <Spacer height={theme.spacing.s4} />
 
         {defaultWearable && features?.hasIMU && (
           <RouteButton

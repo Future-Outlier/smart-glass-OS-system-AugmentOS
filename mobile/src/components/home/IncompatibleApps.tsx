@@ -103,12 +103,12 @@ export const IncompatibleApps: React.FC = () => {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
 })
 
 const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
-  paddingHorizontal: spacing.xs,
+  marginBottom: spacing.s3,
+  paddingHorizontal: spacing.s2,
 })
 
 const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -119,27 +119,27 @@ const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $gridContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingBottom: spacing.sm,
+  paddingBottom: spacing.s3,
 })
 
 const $gridItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   alignItems: "center",
-  marginVertical: spacing.sm,
-  paddingHorizontal: spacing.xs,
+  marginVertical: spacing.s3,
+  paddingHorizontal: spacing.s2,
 })
 
 const $appContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   position: "relative",
   width: 64,
   height: 64,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $appIcon: ThemedStyle<ImageStyle> = ({spacing}) => ({
   width: 64,
   height: 64,
-  borderRadius: spacing.sm,
+  borderRadius: spacing.s3,
   opacity: 0.4,
 })
 
@@ -147,7 +147,7 @@ const $appNameIncompatible: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 12,
   color: colors.textDim,
   textAlign: "center",
-  marginTop: spacing.xxs,
+  marginTop: spacing.s1,
   lineHeight: 14,
   opacity: 0.6,
 })
