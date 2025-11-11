@@ -12,8 +12,14 @@ const en = {
     notConnectedInfo: "Changes to glasses settings will take effect when glasses are connected.",
     advancedSettings: "Advanced Settings",
     recommended: "Recommended",
-    autoBrightness: "Auto Brightness",
+    autoBrightness: "Auto brightness",
     brightness: "Brightness",
+    display: "Display",
+    unpairGlasses: "Unpair glasses",
+    disconnectGlasses: "Disconnect glasses",
+    general: "General",
+    charging: "Charging",
+    selectDefaultApp: "Select default app",
   },
   screenSettings: {
     title: "Display Position Settings",
@@ -66,17 +72,37 @@ const en = {
     preorderNow: "PREORDER NOW",
     preorderNowShipMessage: "Ships December 2025",
     goHome: "Go Home",
+    getSupport: "Get support",
     tryAgain: "Try Again",
     pairingFailed: "Pairing Failed",
+    instructions: "Instructions",
+    g1Ready: "Solid orange LED turned on",
+    g1NotReady: "Orange LED is blinking",
+  },
+  pairingGuide: {
+    mentraLivePreorder: "Get Mentra Live and experience computer vision on your smart glasses.",
   },
   pairingGuides: {
-    // TODO: add pairing guides for each glasses model
-    // evenRealitiesG1: {
-    //   title: "Even Realities G1",
-    //   step1: "Disconnect your G1 from within the Even Realities app, or uninstall the Even Realities app",
-    //   step2: "Place your G1 in the charging case with the lid open.",
-    //   step3: "Connect your G1 to your device.",
-    // },
+    G1: {
+      step1: "Disconnect your G1 from within the Even Realities app, or uninstall the Even Realities app",
+      step2: "Place your G1 in the charging case with the lid open.",
+    },
+    LIVE: {
+      step1: "Make sure your Mentra Live is fully charged and turned on.",
+      step2: "Check that your Mentra Live is in pairing mode.",
+      step3: "Ensure no other app is currently connected to your glasses.",
+      step4: "Try restarting your glasses.",
+      step5: "Check that your phone's Bluetooth is enabled.",
+    },
+    MACH1: {
+      step1: "Make sure your Mach1 is fully charged and turned on.",
+      step2: "Check that your device is running the latest firmware by using the Vuzix Connect app.",
+      step3:
+        "Put your Mentra Mach1 in pairing mode: hold the power button until you see the Bluetooth icon, then release.",
+    },
+    Z100: {
+      step1: "Make sure your Z100 is fully charged and turned on.",
+    },
   },
   connectivity: {
     bluetoothRequiredTitle: "Bluetooth Required",
@@ -108,9 +134,11 @@ const en = {
   },
   home: {
     title: "MentraOS",
-    pairGlasses: "Pair Glasses",
-    connectGlasses: "Connect Glasses",
-    connectingGlasses: "Connecting Glasses...",
+    pairGlasses: "Pair glasses",
+    setupWithoutGlasses: "Setup without glasses",
+    connectGlasses: "Connect glasses",
+    getSupport: "Get support",
+    connectingGlasses: "Connecting glasses...",
     emptyActiveAppListInfo: "Your active apps will appear here.",
     emptyInactiveAppListInfo: "Your inactive apps will appear here.",
     noActiveApps: "No Active Apps",
@@ -155,6 +183,8 @@ const en = {
     activeBackgroundApps: "Active Background Apps",
     inactiveBackgroundApps: "Inactive Background Apps",
     appletPlaceholder: "Tap an app below to activate it",
+    simulatedGlasses: "Simulated glasses",
+    glassesMirror: "Glasses mirror",
   },
   glasses: {
     title: "Glasses",
@@ -212,7 +242,7 @@ const en = {
     calendarSubtitle: "Display calendar events on your smart glasses.",
     locationLabel: "Location Access",
     locationSubtitle: "Display navigation and weather information on your smart glasses.",
-    autoBrightnessLabel: "Auto Brightness",
+    autoBrightnessLabel: "Auto brightness",
     autoBrightnessSubtitle: "Automatically adjust the brightness of your smart glasses based on the ambient light.",
     notificationsLabel: "Notifications Access",
     notificationsSubtitle: "Allow Mentra to forward your phone notifications to your smart glasses.",
@@ -220,12 +250,12 @@ const en = {
     simulatedGlassesNote: "This setting has no effect when using Simulated Glasses",
     profileSettings: "Profile Settings",
     privacySettings: "Permissions and Privacy",
-    transcriptionSettings: "Transcription Settings",
-    dashboardSettings: "Dashboard Settings",
+    transcriptionSettings: "Transcription",
+    dashboardSettings: "Dashboard settings",
     dashboardDescription: "Configure the contextual dashboard and HeadUp settings",
     cameraSettings: "Camera Settings",
     cameraSettingsDescription: "Configure photo and video resolution for button capture",
-    screenSettings: "Display Position Settings",
+    screenSettings: "Display position settings",
     screenDescription: "Adjust depth and height of the display content.",
     glassesWifiSettings: "Glasses WiFi Settings",
     glassesWifiDescription: "Configure WiFi settings for your smart glasses.",
@@ -259,6 +289,7 @@ const en = {
     feedback: "Give Feedback",
     offlineSTT: "Offline Transcriptions",
     offlineSTTSubtitle: "Transcribe audio and display on connected glasses completely offline.",
+    appAppearance: "App appearance",
   },
   devSettings: {
     debugConsole: "Debug Console",
@@ -351,11 +382,16 @@ const en = {
   },
   warning: {
     nonProdBackend: "You are using a non-production backend.",
+    testFlightBuild:
+      "You are using a TestFlight build. Some features may have issues or work differently than the production version.",
+    betaBuild:
+      "You are using a beta version of MentraOS. Some features may have issues or work differently than in the production version.",
     sensingDisabled: "Sensors are disabled. Camera, microphone, and other sensors won't work in apps.",
     microphoneActive: "Microphone Active",
     microphoneActiveMessage: "One or more apps are currently using your glasses microphone.",
     warning: "Warning",
     developerSettingsWarning: "These settings may break the app. Use at your own risk.",
+    optOutOfBeta: "Opt Out of Beta",
   },
   errors: {
     appNotOnlineTitle: "App Not Online",
@@ -383,6 +419,7 @@ const en = {
     openWebView: "Open Web View",
     version: "MentraOS v{{number}}",
     reset: "Reset",
+    learnMore: "Learn more",
   },
   developer: {
     dev: "Dev",
@@ -437,6 +474,11 @@ const en = {
     goOnlineMessage: "Switching to online mode will close all offline-only apps and allow you to use all online apps.",
     goOfflineMessage:
       "Enabling offline mode will close all running online apps. You'll only be able to use apps that work without an internet connection, and all other apps will be shut down.",
+  },
+  account: {
+    accountSettings: "Account settings",
+    deviceSettings: "Device settings",
+    appSettings: "MentraOS settings",
   },
 }
 

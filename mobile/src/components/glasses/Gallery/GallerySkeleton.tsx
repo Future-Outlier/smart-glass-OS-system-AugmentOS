@@ -20,7 +20,7 @@ interface GallerySkeletonProps {
 
 export function GallerySkeleton({itemCount = 8, numColumns = 2, itemWidth = 150}: GallerySkeletonProps) {
   const {themed} = useAppTheme()
-  const ITEM_SPACING = spacing.xs
+  const ITEM_SPACING = spacing.s2
   const itemHeight = itemWidth * 0.8 // Match aspect ratio
 
   return (
@@ -59,6 +59,6 @@ const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
 })
 
 const $skeletonItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.xs,
+  borderRadius: spacing.s2,
   overflow: "hidden",
 })

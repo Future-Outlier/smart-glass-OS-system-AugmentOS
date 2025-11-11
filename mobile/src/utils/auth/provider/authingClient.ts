@@ -10,7 +10,6 @@ import {
   MentraSigninResponse,
   MentraSignOutResponse,
 } from "../authProvider.types"
-import Constants from "expo-constants"
 
 interface Session {
   access_token?: string
@@ -39,8 +38,8 @@ export class AuthingWrapperClient {
 
   private constructor() {
     const authingOptions: AuthenticationClientOptions = {
-      appId: Constants.expoConfig?.extra?.AUTHING_APP_ID || "",
-      appHost: Constants.expoConfig?.extra?.AUTHING_APP_HOST || "",
+      appId: process.env.EXPO_PUBLIC_AUTHING_APP_ID || "",
+      appHost: process.env.EXPO_PUBLIC_AUTHING_APP_HOST || "",
       lang: "en-US",
     }
     this.authing = new AuthenticationClient(authingOptions)

@@ -47,7 +47,7 @@ The Mentra Store already has a ton of useful apps that real users are running ev
       <td align="center" style="border: 0 !important; padding: 15px; background: transparent;">
         <a href="https://apps.mentra.glass/package/com.augmentos.livecaptions" style="text-decoration: none; color: inherit;">
           <img src="https://appstore.augmentos.org/app-icons/captions.png" alt="Live Captions" width="80" style="border-radius: 18px;" />
-          <br /><b>Live Captions</b>
+          <br /><b>Captions</b>
         </a>
       </td>
       <td align="center" style="border: 0 !important; padding: 15px; background: transparent;">
@@ -72,7 +72,7 @@ The Mentra Store already has a ton of useful apps that real users are running ev
     <tr style="border: 0 !important; background: transparent;">
       <td align="center" style="border: 0 !important; padding: 15px; background: transparent;">
         <a href="https://apps.mentra.glass/package/com.mentra.calendarreminder" style="text-decoration: none; color: inherit;">
-          <img src="https://imagedelivery.net/nrc8B2Lk8UIoyW7fY8uHVg/472942d8-7581-404a-0f2d-e9c9f13d3e00/public" alt="Calendar Reminder" width="80" style="border-radius: 18px;" />
+          <img src="https://imagedelivery.net/nrc8B2Lk8UIoyW7fY8uHVg/dd3e7ad0-89c3-4820-89d0-f6d68ec99b00/square" alt="Calendar Reminder" width="80" style="border-radius: 18px;" />
           <br /><b>Calendar</b>
         </a>
       </td>
@@ -91,7 +91,7 @@ The Mentra Store already has a ton of useful apps that real users are running ev
       <td align="center" style="border: 0 !important; padding: 15px; background: transparent;">
         <a href="https://apps.mentra.glass" style="text-decoration: none; color: inherit;">
           <img src="./images/MentraLogoSquareRound.png" alt="Mentra Store" width="80" style="border-radius: 18px;" />
-          <br /><b>→ Browse All Apps</b>
+          <br /><b>See All</b>
         </a>
       </td>
     </tr>
@@ -127,6 +127,8 @@ Have questions or ideas? We'd love to hear from you!
 ## Contributing
 
 MentraOS is made by a community and we welcome PRs. Here's the Contributors Guide: [docs.mentra.glass/contributing](https://docs.mentra.glass/contributing)
+
+Looking for ways to contribute? We mark issues we'd love the community to help with using the **"Help Wanted"** tag. Check them out here: [Help Wanted Issues](https://github.com/Mentra-Community/MentraOS/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22)
 
 ## License
 

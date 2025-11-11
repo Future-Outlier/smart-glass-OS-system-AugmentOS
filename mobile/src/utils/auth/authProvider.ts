@@ -12,11 +12,7 @@ import {
 } from "./authProvider.types"
 import {AuthingWrapperClient} from "./provider/authingClient"
 import {SupabaseWrapperClient} from "./provider/supabaseClient"
-import Constants from "expo-constants"
-
-const DEPLOYMENT_REGION = Constants.expoConfig?.extra?.DEPLOYMENT_REGION || "global"
-const IS_CHINA = DEPLOYMENT_REGION === "china"
-
+import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 class MentraAuthProvider {
   private isSettingUpClients = false
   private authing?: AuthingWrapperClient
@@ -37,7 +33,8 @@ class MentraAuthProvider {
     callback: (event: string, session: MentraAuthSession) => void,
   ): Promise<MentraAuthStateChangeSubscriptionResponse> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    if (isChina) {
       return this.authing!.onAuthStateChange(callback)
     } else {
       return this.supabase!.onAuthStateChange(callback)
@@ -46,7 +43,8 @@ class MentraAuthProvider {
 
   async getUser(): Promise<MentraAuthUserResponse> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    if (isChina) {
       return this.authing!.getUser()
     } else {
       return this.supabase!.getUser()
@@ -55,39 +53,28 @@ class MentraAuthProvider {
 
   async signup(email: string, password: string): Promise<MentraSigninResponse> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
-      return this.authing!.signUp({
-        email,
-        password,
-      })
-    } else {
-      return this.supabase!.signUp({
-        email,
-        password,
-      })
-    }
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    let auth = isChina ? this.authing! : this.supabase!
+    return auth.signUp({
+      email,
+      password,
+    })
   }
 
   async signIn(email: string, password: string): Promise<MentraSigninResponse> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
-      console.log("Signing in with password in China")
-      return this.authing!.signInWithPassword({
-        email,
-        password,
-      })
-    } else {
-      console.log("Signing in with password in Global")
-      return this.supabase!.signInWithPassword({
-        email,
-        password,
-      })
-    }
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    let auth = isChina ? this.authing! : this.supabase!
+    return auth.signInWithPassword({
+      email,
+      password,
+    })
   }
 
   async resetPasswordForEmail(email: string): Promise<MentraPasswordResetResponse> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    if (isChina) {
       // return this.authing!.resetPasswordForEmail(email)
       throw new Error("Reset password for email not supported in China")
     } else {
@@ -97,7 +84,8 @@ class MentraAuthProvider {
 
   async updateUserPassword(password: string): Promise<MentraUpdateUserPasswordResponse> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    if (isChina) {
       throw new Error("Update user password not supported in China")
     } else {
       return this.supabase!.updateUserPassword(password)
@@ -106,16 +94,15 @@ class MentraAuthProvider {
 
   async getSession(): Promise<MentraAuthSessionResponse> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
-      return this.authing!.getSession()
-    } else {
-      return this.supabase!.getSession()
-    }
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    let auth = isChina ? this.authing! : this.supabase!
+    return auth.getSession()
   }
 
   async updateSessionWithTokens(tokens: {access_token: string; refresh_token: string}) {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    if (isChina) {
       throw new Error("Update session with tokens not supported in China")
     } else {
       return this.supabase!.updateSessionWithTokens(tokens)
@@ -124,34 +111,29 @@ class MentraAuthProvider {
 
   async startAutoRefresh(): Promise<void> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
-      return this.authing!.startAutoRefresh()
-    } else {
-      return this.supabase!.startAutoRefresh()
-    }
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    let auth = isChina ? this.authing! : this.supabase!
+    return auth.startAutoRefresh()
   }
 
   async stopAutoRefresh(): Promise<void> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
-      return this.authing!.stopAutoRefresh()
-    } else {
-      return this.supabase!.stopAutoRefresh()
-    }
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    let auth = isChina ? this.authing! : this.supabase!
+    return auth.stopAutoRefresh()
   }
 
   async signOut(): Promise<MentraSignOutResponse> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
-      return this.authing!.signOut()
-    } else {
-      return this.supabase!.signOut()
-    }
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    let auth = isChina ? this.authing! : this.supabase!
+    return auth.signOut()
   }
 
   async appleSignIn(): Promise<MentraOauthProviderResponse> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    if (isChina) {
       throw new Error("Apple sign in not supported in China")
     } else {
       return this.supabase!.appleSignIn()
@@ -160,7 +142,8 @@ class MentraAuthProvider {
 
   async googleSignIn(): Promise<MentraOauthProviderResponse> {
     await this.checkOrSetupClients()
-    if (IS_CHINA) {
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    if (isChina) {
       throw new Error("Google sign in not supported in China")
     } else {
       return this.supabase!.googleSignIn()

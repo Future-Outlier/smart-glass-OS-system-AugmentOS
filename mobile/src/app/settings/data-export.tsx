@@ -101,7 +101,7 @@ export default function DataExportPage() {
     <Screen preset="fixed" style={themed($container)}>
       <Header
         title="Data Export"
-        leftIcon="caretLeft"
+        leftIcon="chevron-left"
         onLeftPress={goBack}
         rightIcon={!loading ? "more" : undefined}
         rightIconColor={theme.colors.text}
@@ -121,7 +121,7 @@ export default function DataExportPage() {
       {loading ? (
         <View style={themed($loadingContainer)}>
           <ActivityIndicator size="large" color={theme.colors.palette.primary500} />
-          <Spacer height={theme.spacing.md} />
+          <Spacer height={theme.spacing.s4} />
           <Text text="Collecting your data..." style={themed($loadingText)} />
         </View>
       ) : (
@@ -142,7 +142,7 @@ export default function DataExportPage() {
             )}
           </View>
 
-          <Spacer height={theme.spacing.md} />
+          <Spacer height={theme.spacing.s4} />
 
           {/* Action Buttons */}
           <View style={themed($buttonContainer)}>
@@ -164,7 +164,7 @@ export default function DataExportPage() {
             </View>
           </View>
 
-          <Spacer height={theme.spacing.md} />
+          <Spacer height={theme.spacing.s4} />
 
           {/* JSON Preview */}
           <View style={themed($jsonContainer)}>
@@ -182,7 +182,7 @@ export default function DataExportPage() {
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
   flex: 1,
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
 })
 
 const $contentContainer: ThemedStyle<ViewStyle> = () => ({
@@ -200,11 +200,11 @@ const $loadingText: ThemedStyle<TextStyle> = ({colors}) => ({
   textAlign: "center",
 })
 
-const $summaryContainer: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => ({
+const $summaryContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
-  borderRadius: borderRadius.md,
-  padding: spacing.md,
-  borderWidth: spacing.xxxs,
+  borderRadius: spacing.s4,
+  padding: spacing.s4,
+  borderWidth: spacing.s0_5,
   borderColor: colors.border,
 })
 
@@ -223,18 +223,18 @@ const $summaryText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  gap: spacing.sm,
+  gap: spacing.s3,
 })
 
 const $button: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
 })
 
-const $jsonContainer: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => ({
+const $jsonContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flex: 1,
   backgroundColor: colors.backgroundAlt,
-  borderRadius: borderRadius.md,
-  borderWidth: spacing.xxxs,
+  borderRadius: spacing.s4,
+  borderWidth: spacing.s0_5,
   borderColor: colors.border,
   overflow: "hidden",
 })
@@ -243,7 +243,7 @@ const $jsonTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   fontWeight: "600",
   color: colors.text,
-  padding: spacing.md,
+  padding: spacing.s4,
   borderBottomWidth: 1,
   borderBottomColor: colors.border,
 })
@@ -256,6 +256,6 @@ const $jsonText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   fontSize: 12,
   color: colors.text,
-  padding: spacing.md,
+  padding: spacing.s4,
   lineHeight: 16,
 })

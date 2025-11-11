@@ -1,12 +1,13 @@
-import {Link, useNavigate, useLocation} from "react-router-dom"
-import {useAuth} from "../hooks/useAuth"
-import {usePlatform} from "../hooks/usePlatform"
-import {useTheme} from "../hooks/useTheme"
-import {useIsDesktop, useIsMobile} from "../hooks/useMediaQuery"
-import {useSearch} from "../contexts/SearchContext"
-import {Button} from "./ui/button"
-import GetMentraOSButton from "./GetMentraOSButton"
-import SearchBar from "./SearchBar"
+import React from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@mentra/shared';
+import { usePlatform } from '../hooks/usePlatform';
+import { useTheme } from '../hooks/useTheme';
+import { useIsDesktop, useIsMobile } from '../hooks/useMediaQuery';
+import { useSearch } from '../contexts/SearchContext';
+import { Button } from './ui/button';
+import GetMentraOSButton from './GetMentraOSButton';
+import SearchBar from './SearchBar';
 
 interface HeaderProps {
   onSearch?: (e: React.FormEvent) => void

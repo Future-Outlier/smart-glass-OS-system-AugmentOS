@@ -75,6 +75,16 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   // Android-specific commands
   getInstalledApps(): Promise<any>
   hasNotificationListenerPermission(): Promise<boolean>
+
+  // Notification management
+  getInstalledAppsForNotifications(): Promise<
+    Array<{
+      packageName: string
+      appName: string
+      isBlocked: boolean
+      icon: string | null
+    }>
+  >
 }
 
 // This call loads the native module object from the JSI.

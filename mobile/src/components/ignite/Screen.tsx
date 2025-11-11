@@ -255,18 +255,18 @@ export function Screen(props: ScreenProps) {
 
   return (
     <View style={[$containerStyle, {backgroundColor: backgroundColor || colors.background} /*, $containerInsets*/]}>
-      <BackgroundGradient colors={props.gradientColors}>
-        <View style={[$containerInsets, {flex: 1}]}>
-          <StatusBar style={statusBarStyle || (themeContext === "dark" ? "light" : "dark")} {...StatusBarProps} />
-          <KeyboardAvoidingView
-            behavior={isIos ? "padding" : "height"}
-            keyboardVerticalOffset={keyboardOffset}
-            {...KeyboardAvoidingViewProps}
-            style={[$styles.flex1, KeyboardAvoidingViewProps?.style]}>
-            {isNonScrolling(props.preset) ? <ScreenWithoutScrolling {...props} /> : <ScreenWithScrolling {...props} />}
-          </KeyboardAvoidingView>
-        </View>
-      </BackgroundGradient>
+      {/*<BackgroundGradient colors={props.gradientColors}>*/}
+      <View style={[$containerInsets, {flex: 1}]}>
+        <StatusBar style={statusBarStyle || (themeContext === "dark" ? "light" : "dark")} {...StatusBarProps} />
+        <KeyboardAvoidingView
+          behavior={isIos ? "padding" : "height"}
+          keyboardVerticalOffset={keyboardOffset}
+          {...KeyboardAvoidingViewProps}
+          style={[$styles.flex1, KeyboardAvoidingViewProps?.style]}>
+          {isNonScrolling(props.preset) ? <ScreenWithoutScrolling {...props} /> : <ScreenWithScrolling {...props} />}
+        </KeyboardAvoidingView>
+      </View>
+      {/*</BackgroundGradient>*/}
     </View>
   )
 }

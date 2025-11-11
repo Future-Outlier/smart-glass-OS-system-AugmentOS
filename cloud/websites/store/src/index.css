@@ -3,13 +3,135 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 
+@source "../../shared/src";
 /* Custom Font - Red Hat Display */
+/* Light 300 */
 @font-face {
   font-family: "Red Hat Display";
-  src: url("/fonts/RedHatDisplay_Reg.ttf") format("truetype");
+  src: url("/fonts/RedHatDisplay-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-LightItalic.ttf") format("truetype");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Regular 400 */
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
+}
+
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Medium 500 */
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-MediumItalic.ttf") format("truetype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* SemiBold 600 */
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-SemiBoldItalic.ttf") format("truetype");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Bold 700 */
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ExtraBold 800 */
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-ExtraBoldItalic.ttf") format("truetype");
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Black 900 */
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-BlackItalic.ttf") format("truetype");
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Apply 0 letter spacing to Red Hat Display font */
+* {
+  letter-spacing: 0 !important;
+}
+
+.font-redhat,
+[style*="Red Hat Display"] {
+  letter-spacing: 0 !important;
 }
 
 /*
@@ -253,12 +375,23 @@ button:focus-visible {
   --button-bg: #000000;
   --button-text: #ffffff;
   --button-hover: #333333;
+
+  /* new from figma... */
+
+  --primary-foreground: #fafafa;
+  --input: #e5e5e5;
+  --background: #ffffff;
+  --primaary-foreground: #f5f5f5;
+  --secondary-foreground: #0a0a0a;
+  --muted-foreground: #737373;
+  --border: #e5e5e5;
+  --error-bg: #fef2f2;
+  --warning-text: #DC2626;
 }
 
 :root[data-theme="dark"],
 :root {
   --bg-primary: #171717;
-
   --bg-secondary: #1f1f1f;
   --bg-tertiary: #292929;
   --text-primary: #e4e4e7;
@@ -272,6 +405,15 @@ button:focus-visible {
   --button-bg: #ffffff;
   --button-text: #000000;
   --button-hover: #e5e5e5;
+  --primary-foreground: #262626;
+  --input: #262626;
+  --background: #0a0a0a;
+  --primaary-foreground: #1f1f1f;
+  --secondary-foreground: #fafafa;
+  --muted-foreground: #a3a3a3;
+  --border: #27272a;
+  --error-bg: #1f1515;
+  --warning-text: #FCA5A5;
 }
 
 /* Theme-aware search input */

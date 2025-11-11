@@ -1,6 +1,6 @@
-import {useState, useEffect} from "react"
-import {View, TextInput, TouchableOpacity} from "react-native"
-import {useLocalSearchParams} from "expo-router"
+import {useState, useEffect, useCallback} from "react"
+import {View, TextInput, TouchableOpacity, BackHandler} from "react-native"
+import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
 import {Screen, Icon, Header, Checkbox, Button, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
@@ -14,6 +14,7 @@ export default function WifiPasswordScreen() {
   const params = useLocalSearchParams()
   const deviceModel = (params.deviceModel as string) || "Glasses"
   const initialSsid = (params.ssid as string) || ""
+  const returnTo = params.returnTo as string | undefined
 
   const {theme, themed} = useAppTheme()
   const {push, goBack} = useNavigationHistory()
@@ -22,6 +23,23 @@ export default function WifiPasswordScreen() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberPassword, setRememberPassword] = useState(true)
   const [hasSavedPassword, setHasSavedPassword] = useState(false)
+
+  const handleGoBack = useCallback(() => {
+    if (returnTo && typeof returnTo === "string") {
+      router.replace(decodeURIComponent(returnTo))
+    } else {
+      goBack()
+    }
+    return true // Prevent default back behavior
+  }, [returnTo])
+
+  // Handle Android back button
+  useFocusEffect(
+    useCallback(() => {
+      const backHandler = BackHandler.addEventListener("hardwareBackPress", handleGoBack)
+      return () => backHandler.remove()
+    }, [handleGoBack]),
+  )
 
   // Load saved password when component mounts
   useEffect(() => {
@@ -68,14 +86,15 @@ export default function WifiPasswordScreen() {
       ssid,
       password,
       rememberPassword: rememberPassword.toString(),
+      returnTo,
     })
   }
 
   return (
     <Screen preset="fixed" contentContainerStyle={themed($container)}>
-      <Header title="Enter Glasses WiFi Details" leftIcon="caretLeft" onLeftPress={() => goBack()} />
+      <Header title="Enter Glasses WiFi Details" leftIcon="chevron-left" onLeftPress={handleGoBack} />
       <ScrollView
-        style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}>
+        style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}>
         <View style={themed($content)}>
           <View style={themed($inputContainer)}>
             <Text style={themed($label)}>Network Name (SSID)</Text>
@@ -134,7 +153,7 @@ export default function WifiPasswordScreen() {
               text="Cancel"
               style={themed($secondaryButton)}
               pressedStyle={themed($pressedSecondaryButton)}
-              onPress={() => goBack()}
+              onPress={handleGoBack}
               preset="reversed"
             />
           </View>
@@ -150,26 +169,26 @@ const $container: ThemedStyle<ViewStyle> = () => ({
 
 const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  paddingHorizontal: spacing.lg,
+  paddingHorizontal: spacing.s6,
 })
 
 const $inputContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   fontWeight: "500",
   color: colors.text,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $input: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   height: 50,
   borderWidth: 1,
   borderColor: colors.border,
-  borderRadius: spacing.xs,
-  padding: spacing.sm,
+  borderRadius: spacing.s2,
+  padding: spacing.s3,
   fontSize: 16,
   color: colors.text,
   backgroundColor: colors.background,
@@ -186,8 +205,8 @@ const $passwordInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   height: 50,
   borderWidth: 1,
   borderColor: colors.border,
-  borderRadius: spacing.xs,
-  padding: spacing.sm,
+  borderRadius: spacing.s2,
+  padding: spacing.s3,
   paddingRight: 50,
   fontSize: 16,
   color: colors.text,
@@ -196,7 +215,7 @@ const $passwordInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 
 const $eyeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   position: "absolute",
-  right: spacing.sm,
+  right: spacing.s3,
   height: 50,
   width: 40,
   justifyContent: "center",
@@ -206,27 +225,27 @@ const $eyeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $savedPasswordText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 12,
   color: colors.tint,
-  marginTop: spacing.xs,
+  marginTop: spacing.s2,
   fontStyle: "italic",
 })
 
 const $checkboxContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "flex-start",
-  marginBottom: spacing.lg,
-  paddingVertical: spacing.sm,
+  marginBottom: spacing.s6,
+  paddingVertical: spacing.s3,
 })
 
 const $checkboxContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  marginLeft: spacing.sm,
+  marginLeft: spacing.s3,
 })
 
 const $checkboxLabel: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   fontWeight: "500",
   color: colors.text,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $checkboxDescription: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -235,8 +254,8 @@ const $checkboxDescription: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginTop: spacing.xl,
-  gap: spacing.sm,
+  marginTop: spacing.s8,
+  gap: spacing.s3,
 })
 
 const $primaryButton: ThemedStyle<ViewStyle> = () => ({})

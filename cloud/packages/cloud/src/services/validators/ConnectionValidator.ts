@@ -18,13 +18,14 @@ export enum ConnectionErrorCode {
   GLASSES_DISCONNECTED = "GLASSES_DISCONNECTED",
   STALE_CONNECTION = "STALE_CONNECTION",
   WEBSOCKET_CLOSED = "WEBSOCKET_CLOSED",
+  WIFI_NOT_CONNECTED = "WIFI_NOT_CONNECTED",
 }
 
 export class ConnectionValidator {
   private static readonly STALE_CONNECTION_THRESHOLD_MS = 60000; // 1 minute
 
   // SAFETY FLAG: Set to true to enable validation, false to bypass all checks
-  private static readonly VALIDATION_ENABLED = false; // Enabled to enforce connection guards in production
+  private static readonly VALIDATION_ENABLED = true; // Enabled to enforce connection guards in production
 
   /**
    * Validate connections for hardware requests (photo, display, audio)
@@ -188,6 +189,65 @@ export class ConnectionValidator {
         errorCode: ConnectionErrorCode.PHONE_DISCONNECTED,
       };
     }
+
+    return { valid: true };
+  }
+
+  /**
+   * Validate that glasses have WiFi connectivity for operations that require it
+   * Uses device capabilities to determine if WiFi is required
+   */
+  static validateWifiForOperation(userSession: UserSession): ValidationResult {
+    // SAFETY BYPASS: Return success immediately if validation is disabled
+    if (!ConnectionValidator.VALIDATION_ENABLED) {
+      logger.debug(
+        {
+          userId: userSession.userId,
+          bypassReason: "VALIDATION_ENABLED=false",
+        },
+        "WiFi validation bypassed - returning success",
+      );
+      return { valid: true };
+    }
+
+    // Check if glasses have WiFi capability using DeviceManager
+    const capabilities = userSession.deviceManager.getCapabilities();
+    const requiresWifi = capabilities?.hasWifi === true;
+
+    if (!requiresWifi) {
+      // Glasses don't support WiFi, validation passes
+      return { valid: true };
+    }
+
+    // Check if glasses are connected to WiFi
+    const glassesState = userSession.lastGlassesConnectionState;
+
+    if (!glassesState?.wifi?.connected) {
+      logger.error(
+        {
+          userId: userSession.userId,
+          glassesModel: userSession.glassesModel,
+          wifiConnected: glassesState?.wifi?.connected,
+          error: "Glasses not connected to WiFi",
+        },
+        "WiFi validation failed - glasses not connected to WiFi",
+      );
+
+      return {
+        valid: false,
+        error: `Cannot process request - smart glasses must be connected to WiFi for this operation`,
+        errorCode: ConnectionErrorCode.WIFI_NOT_CONNECTED,
+      };
+    }
+
+    logger.debug(
+      {
+        userId: userSession.userId,
+        glassesModel: userSession.glassesModel,
+        wifiSsid: glassesState.wifi.ssid,
+      },
+      "WiFi validation successful",
+    );
 
     return { valid: true };
   }

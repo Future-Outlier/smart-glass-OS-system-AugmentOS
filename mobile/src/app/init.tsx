@@ -1,9 +1,7 @@
 import {useState, useEffect} from "react"
 import {View, ActivityIndicator, Platform, Linking} from "react-native"
-import Constants from "expo-constants"
 import semver from "semver"
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import {Button, Screen} from "@/components/ignite"
+import {Button, Icon, Screen} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useDeeplink} from "@/contexts/DeeplinkContext"
 import {useAuth} from "@/contexts/AuthContext"
@@ -51,13 +49,13 @@ export default function InitScreen() {
   const [loadingStatus, setLoadingStatus] = useState<string>(translate("versionCheck:checkingForUpdates"))
   const [isRetrying, setIsRetrying] = useState(false)
   // Zustand store hooks
-  const [customBackendUrl, setCustomBackendUrl] = useSetting(SETTINGS_KEYS.custom_backend_url)
+  const [backendUrl, setBackendUrl] = useSetting(SETTINGS_KEYS.backend_url)
   const [onboardingCompleted, _setOnboardingCompleted] = useSetting(SETTINGS_KEYS.onboarding_completed)
 
   // Helper Functions
   const getLocalVersion = (): string | null => {
     try {
-      return Constants.expoConfig?.extra?.MENTRAOS_VERSION || null
+      return process.env.EXPO_PUBLIC_MENTRAOS_VERSION || null
     } catch (error) {
       console.error("Error getting local version:", error)
       return null
@@ -65,14 +63,14 @@ export default function InitScreen() {
   }
 
   const checkCustomUrl = async (): Promise<boolean> => {
-    const defaultUrl = useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.custom_backend_url)
-    const isCustom = customBackendUrl !== defaultUrl
+    const defaultUrl = useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.backend_url)
+    const isCustom = backendUrl !== defaultUrl
     setIsUsingCustomUrl(isCustom)
     return isCustom
   }
 
   const navigateToDestination = async () => {
-    if (!user) {
+    if (!user?.email) {
       replace("/auth/login")
       return
     }
@@ -112,7 +110,6 @@ export default function InitScreen() {
     try {
       const token = session?.token
       console.log("EXCHANGING TOKEN: ")
-      console.log(token)
       if (!token) {
         setErrorType("auth")
         setState("error")
@@ -127,7 +124,7 @@ export default function InitScreen() {
 
       await navigateToDestination()
     } catch (error) {
-      console.error("Token exchange failed:", error)
+      console.log("Token exchange failed:", error)
       await checkCustomUrl()
       setErrorType("connection")
       setState("error")
@@ -197,8 +194,8 @@ export default function InitScreen() {
 
   const handleResetUrl = async (): Promise<void> => {
     try {
-      const defaultUrl = (await useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.custom_backend_url)) as string
-      await setCustomBackendUrl(defaultUrl)
+      const defaultUrl = (await useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.backend_url)) as string
+      await setBackendUrl(defaultUrl)
       setIsUsingCustomUrl(false)
       await checkCloudVersion(true) // Pass true for retry to avoid flash
     } catch (error) {
@@ -219,7 +216,7 @@ export default function InitScreen() {
         }
         return {
           icon: "wifi-off",
-          iconColor: theme.colors.error,
+          iconColor: theme.colors.destructive,
           title: "Connection Error",
           description: isUsingCustomUrl
             ? "Could not connect to the custom server. Please try using the default server or check your connection."
@@ -317,8 +314,8 @@ export default function InitScreen() {
 
             {(state === "error" || (state === "outdated" && canSkipUpdate)) && (
               <Button
+                flex
                 preset="warning"
-                style={themed($secondaryButton)}
                 RightAccessory={() => <Icon name="arrow-right" size={24} color={theme.colors.text} />}
                 onPress={navigateToDestination}
                 tx="versionCheck:continueAnyway"
@@ -339,56 +336,56 @@ const $centerContainer: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $loadingText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
   fontSize: 16,
   color: colors.text,
 })
 
 const $mainContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.lg,
+  padding: spacing.s6,
 })
 
 const $infoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingTop: spacing.xl,
+  paddingTop: spacing.s8,
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.xl,
+  marginBottom: spacing.s8,
 })
 
 const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 28,
   fontWeight: "bold",
   textAlign: "center",
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
   color: colors.text,
 })
 
 const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   textAlign: "center",
-  marginBottom: spacing.xl,
+  marginBottom: spacing.s8,
   lineHeight: 24,
-  paddingHorizontal: spacing.lg,
+  paddingHorizontal: spacing.s6,
   color: colors.textDim,
 })
 
 const $versionText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 14,
   textAlign: "center",
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
   color: colors.textDim,
 })
 
 const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: "100%",
   alignItems: "center",
-  paddingBottom: spacing.xl,
-  gap: spacing.xl,
+  paddingBottom: spacing.s8,
+  gap: spacing.s8,
 })
 
 const $primaryButton: ThemedStyle<ViewStyle> = () => ({

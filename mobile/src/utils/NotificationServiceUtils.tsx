@@ -2,14 +2,6 @@ import CoreModule from "modules/core/src/CoreModule"
 import {Linking, Platform} from "react-native"
 import showAlert from "@/utils/AlertUtils"
 
-export async function checkNotificationAccessSpecialPermission() {
-  if (Platform.OS !== "android") {
-    return false
-  }
-
-  return await CoreModule.hasNotificationListenerPermission()
-}
-
 export async function checkAndRequestNotificationAccessSpecialPermission(): Promise<boolean> {
   if (Platform.OS !== "android") {
     return false

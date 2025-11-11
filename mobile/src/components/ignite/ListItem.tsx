@@ -197,7 +197,7 @@ const $separatorBottom: ThemedStyle<ViewStyle> = ({colors}) => ({
 })
 
 const $textStyle: ThemedStyle<TextStyle> = ({spacing}) => ({
-  paddingVertical: spacing.xs,
+  paddingVertical: spacing.s2,
   alignSelf: "center",
   flexGrow: 1,
   flexShrink: 1,
@@ -213,9 +213,9 @@ const $iconContainer: ViewStyle = {
   flexGrow: 0,
 }
 const $iconContainerLeft: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginEnd: spacing.md,
+  marginEnd: spacing.s4,
 })
 
 const $iconContainerRight: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginStart: spacing.md,
+  marginStart: spacing.s4,
 })

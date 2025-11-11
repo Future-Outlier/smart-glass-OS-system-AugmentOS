@@ -6,7 +6,10 @@ import mantle from "@/services/MantleManager"
 import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
 import {useAppletStatusStore} from "@/stores/applets"
-import Constants from "expo-constants"
+import {useGlassesStore} from "@/stores/glasses"
+import {showAlert} from "@/utils/AlertUtils"
+import {router} from "expo-router"
+import {shallow} from "zustand/shallow"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -16,7 +19,6 @@ class SocketComms {
 
   private reconnecting = false
   private reconnectionAttempts = 0
-  private IS_CHINA_DEPLOYMENT: boolean = Constants.expoConfig?.extra?.DEPLOYMENT_REGION === "china"
 
   private constructor() {
     // Subscribe to WebSocket messages
@@ -25,18 +27,16 @@ class SocketComms {
     })
 
     try {
-      // Subscribe to changes in default_wearable and call sendGlassesConnectionState() when it updates:
-      useSettingsStore.subscribe(
-        state => state.settings[SETTINGS_KEYS.default_wearable],
-        (modelName: string) => {
-          // TODO: get the connection state from mantlemanager or something
-          if (modelName != "") {
-            this.sendGlassesConnectionState(true)
-          }
+      // Subscribe to wifi info
+      useGlassesStore.subscribe(
+        state => ({glassesConnected: state.connected, wifiConnected: state.wifiConnected, wifiSsid: state.wifiSsid}),
+        _state => {
+          this.sendGlassesConnectionState()
         },
+        {equalityFn: shallow},
       )
     } catch (error) {
-      console.error("SOCKET: Error subscribing to default_wearable:", error)
+      console.error("SOCKET: Error subscribing to store changes:", error)
     }
   }
 
@@ -137,9 +137,17 @@ class SocketComms {
     }
   }
 
-  sendGlassesConnectionState(connected: boolean): void {
+  sendGlassesConnectionState(): void {
     let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-    // let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+    const glassesInfo = useGlassesStore.getState()
+
+    // Always include WiFi info - null means "unknown", false means "explicitly disconnected"
+    const wifiInfo = {
+      connected: glassesInfo.wifiConnected ?? null,
+      ssid: glassesInfo.wifiSsid ?? null,
+    }
+
+    const connected = glassesInfo.connected
 
     this.ws.sendText(
       JSON.stringify({
@@ -147,6 +155,7 @@ class SocketComms {
         modelName: modelName,
         status: connected ? "CONNECTED" : "DISCONNECTED",
         timestamp: new Date(),
+        wifi: wifiInfo,
       }),
     )
   }
@@ -366,10 +375,11 @@ class SocketComms {
   }
 
   // message handlers, these should only ever be called from handle_message / the server:
-  private handle_connection_ack(msg: any) {
+  private async handle_connection_ack(msg: any) {
     console.log("SOCKET: connection ack, connecting to livekit")
-    if (!this.IS_CHINA_DEPLOYMENT) {
-      livekit.connect()
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    if (!isChina) {
+      await livekit.connect()
     }
     GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
   }
@@ -529,6 +539,30 @@ class SocketComms {
     )
   }
 
+  private handle_show_wifi_setup(msg: any) {
+    const reason = msg.reason || "This operation requires your glasses to be connected to WiFi."
+    const currentRoute = router.pathname || "/"
+
+    showAlert(
+      "WiFi Setup Required",
+      reason,
+      [
+        {text: "Cancel", style: "cancel"},
+        {
+          text: "Setup WiFi",
+          onPress: () => {
+            const returnTo = encodeURIComponent(currentRoute)
+            router.push(`/pairing/glasseswifisetup?returnTo=${returnTo}`)
+          },
+        },
+      ],
+      {
+        iconName: "wifi-off",
+        iconColor: "#FF9500",
+      },
+    )
+  }
+
   // Message Handling
   private handle_message(msg: any) {
     const type = msg.type
@@ -614,6 +648,10 @@ class SocketComms {
 
       case "rgb_led_control":
         this.handle_rgb_led_control(msg)
+        break
+
+      case "show_wifi_setup":
+        this.handle_show_wifi_setup(msg)
         break
 
       default:

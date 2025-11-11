@@ -8,6 +8,7 @@ import {translate} from "@/i18n"
 import STTModelManager from "@/services/STTModelManager"
 import {useStopAllApplets} from "@/stores/applets"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {$styles} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useFocusEffect} from "@react-navigation/native"
@@ -16,7 +17,7 @@ import {useCallback, useEffect, useState} from "react"
 import {ActivityIndicator, BackHandler, Platform, ScrollView, View} from "react-native"
 
 export default function TranscriptionSettingsScreen() {
-  const {theme} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
 
   const [selectedModelId, setSelectedModelId] = useState(STTModelManager.getCurrentModelId())
@@ -282,10 +283,10 @@ export default function TranscriptionSettingsScreen() {
   }, [])
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header title={translate("settings:transcriptionSettings")} leftIcon="caretLeft" onLeftPress={handleGoBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title={translate("settings:transcriptionSettings")} leftIcon="chevron-left" onLeftPress={handleGoBack} />
 
-      <Spacer height={theme.spacing.md} />
+      <Spacer height={theme.spacing.s4} />
 
       <ScrollView>
         <ToggleSetting
@@ -295,7 +296,7 @@ export default function TranscriptionSettingsScreen() {
           onValueChange={toggleBypassVadForDebugging}
         />
 
-        <Spacer height={theme.spacing.md} />
+        <Spacer height={theme.spacing.s4} />
 
         <ToggleSetting
           label={"Offline Mode"}
@@ -306,12 +307,12 @@ export default function TranscriptionSettingsScreen() {
 
         {
           <>
-            <Spacer height={theme.spacing.md} />
+            <Spacer height={theme.spacing.s4} />
 
             {isCheckingModel ? (
-              <View style={{alignItems: "center", padding: theme.spacing.lg}}>
+              <View style={{alignItems: "center", padding: theme.spacing.s6}}>
                 <ActivityIndicator size="large" color={theme.colors.text} />
-                <Spacer height={theme.spacing.sm} />
+                <Spacer height={theme.spacing.s3} />
                 <Text>Checking model status...</Text>
               </View>
             ) : (
@@ -329,7 +330,7 @@ export default function TranscriptionSettingsScreen() {
                   currentModelInfo={modelInfo}
                 />
 
-                <Spacer height={theme.spacing.md} />
+                <Spacer height={theme.spacing.s4} />
               </>
             )}
           </>

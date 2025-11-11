@@ -138,7 +138,7 @@ export class LogoutUtils {
       // Clear specific settings that should be reset on logout
       const settingsToKeep = [
         SETTINGS_KEYS.theme_preference, // Keep theme preference
-        SETTINGS_KEYS.custom_backend_url, // Keep custom backend URL if set
+        SETTINGS_KEYS.backend_url, // Keep custom backend URL if set
       ]
 
       const settingsToClear = Object.values(SETTINGS_KEYS).filter(key => !settingsToKeep.includes(key))

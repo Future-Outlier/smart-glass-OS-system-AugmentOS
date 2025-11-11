@@ -18,17 +18,17 @@ const Button = ({title, onPress, icon}: ButtonProps) => {
   const {themed} = useAppTheme()
   return (
     <TouchableOpacity onPress={onPress} style={themed($padding)}>
-      <LinearGradient {...linearGradientProps}>
-        <View style={[themed($insideSpacing), themed($insideFlexBox)]}>
-          <View style={[themed($inside), themed($insideFlexBox)]}>
-            {icon}
-            <View style={[themed($miraWrapper), themed($insideFlexBox)]}>
-              <Text text={title} style={themed($mira)} numberOfLines={1} />
-            </View>
+      {/*<LinearGradient {...linearGradientProps}>*/}
+      <View style={[themed($insideSpacing), themed($insideFlexBox)]}>
+        <View style={[themed($inside), themed($insideFlexBox)]}>
+          {icon}
+          <View style={[themed($miraWrapper), themed($insideFlexBox)]}>
+            <Text text={title} style={themed($mira)} numberOfLines={1} />
           </View>
-          <ChevronRight />
         </View>
-      </LinearGradient>
+        <ChevronRight />
+      </View>
+      {/*</LinearGradient>*/}
     </TouchableOpacity>
   )
 }

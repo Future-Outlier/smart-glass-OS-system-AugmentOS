@@ -9,9 +9,11 @@ import {useLocalSearchParams, useFocusEffect} from "expo-router"
 import {Header, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/services/RestComms"
+import {useSettingsStore} from "@/stores/settings"
+import {$styles} from "@/theme"
 
 export default function AppWebView() {
-  const {theme} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   const {webviewURL, appName, packageName} = useLocalSearchParams()
   const [hasError, setHasError] = useState(false)
   const webViewRef = useRef<WebView>(null)
@@ -69,20 +71,6 @@ export default function AppWebView() {
   //     }
   //   }, [fromSettings, packageName, appName]);
 
-  function determineCloudUrl(): string | undefined {
-    const cloudHostName = process.env.CLOUD_PUBLIC_HOST_NAME || process.env.CLOUD_HOST_NAME || process.env.MENTRAOS_HOST
-    if (
-      cloudHostName &&
-      cloudHostName.trim() !== "prod.augmentos.cloud" &&
-      cloudHostName.trim() !== "cloud" &&
-      cloudHostName.includes(".")
-    ) {
-      console.log(`For App webview token verification, using cloud host name: ${cloudHostName}`)
-      return `https://${cloudHostName}`
-    }
-    return undefined
-  }
-
   // Theme colors
   const theme2 = {
     backgroundColor: theme.isDark ? "#1c1c1c" : "#f9f9f9",
@@ -122,7 +110,7 @@ export default function AppWebView() {
           console.warn("Failed to generate signed user token:", error)
           signedUserToken = undefined
         }
-        const cloudApiUrl = determineCloudUrl()
+        const cloudApiUrl = useSettingsStore.getState().getRestUrl()
 
         // Construct final URL
         const url = new URL(webviewURL)
@@ -236,11 +224,11 @@ export default function AppWebView() {
 
   // Render WebView only when finalUrl is ready
   return (
-    <Screen preset="fixed" safeAreaEdges={[]}>
+    <Screen preset="fixed" safeAreaEdges={[]} style={themed($styles.screen)}>
       <Header
         title={appName}
         titleMode="center"
-        leftIcon="caretLeft"
+        leftIcon="chevron-left"
         onLeftPress={() => goBack()}
         rightIcon="settings"
         rightIconColor={theme.colors.icon}
@@ -251,10 +239,10 @@ export default function AppWebView() {
             fromWebView: "true",
           })
         }}
-        style={{height: 44}}
-        containerStyle={{paddingTop: 0}}
+        // style={{height: 44}}
+        // containerStyle={{paddingTop: 0}}
       />
-      <View style={{flex: 1}}>
+      <View style={{flex: 1, marginHorizontal: -theme.spacing.s6}}>
         {finalUrl ? (
           <WebView
             ref={webViewRef}

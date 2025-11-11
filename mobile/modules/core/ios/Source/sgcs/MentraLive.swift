@@ -537,10 +537,10 @@ extension MentraLive: CBCentralManagerDelegate {
             Bridge.log("Saved device name for future reconnection: \(name)")
         }
 
-        // CTKD Implementation: Step 3 - Establish both BLE and BT Classic via CTKD
+        // Audio Pairing: Setup Bluetooth audio after BLE connection
         if let deviceName = peripheral.name {
-            Bridge.log("CTKD: BLE connection established, initiating CTKD bonding...")
-            initiateCtkdBonding(deviceName: deviceName)
+            Bridge.log("BLE connection established, setting up audio...")
+            setupAudioPairing(deviceName: deviceName)
         }
 
         // Discover services
@@ -557,11 +557,13 @@ extension MentraLive: CBCentralManagerDelegate {
 
         isConnecting = false
 
-        // CTKD Implementation: Clean up BT Classic connection per documentation
-        if isBtClassicConnected {
-            Bridge.log("CTKD: Cleaning up BT Classic connection on disconnect")
-            cleanupCtkdConnection()
-        }
+        // Audio Pairing: Stop monitoring when disconnecting
+        let monitor = AudioSessionMonitor.getInstance()
+        monitor.stopMonitoring()
+
+        // Reset audio pairing flags
+        glassesReadyReceived = false
+        audioConnected = false
 
         connectedPeripheral = nil
         ready = false
@@ -925,11 +927,6 @@ class MentraLive: NSObject, SGCManager {
     private var micBeatCount = 0
     private var shouldUseGlassesMic = false
 
-    // CTKD (Cross-Transport Key Derivation) support for BES devices
-    private var isBtClassicConnected = false
-    private var ctkdSupported = false
-    private var ctkdBondingInProgress = false
-
     // Timing Constants
     private let BASE_RECONNECT_DELAY_MS: UInt64 = 1_000_000_000 // 1 second in nanoseconds
     private let MAX_RECONNECT_DELAY_MS: UInt64 = 30_000_000_000 // 30 seconds
@@ -986,6 +983,10 @@ class MentraLive: NSObject, SGCManager {
             }
         }
     }
+
+    // Audio Pairing: Track readiness separately for BLE and audio
+    private var glassesReadyReceived = false
+    private var audioConnected = false
 
     // Data Properties
     @Published var batteryLevel: Int = -1
@@ -1369,6 +1370,8 @@ class MentraLive: NSObject, SGCManager {
         Bridge.log("Starting BLE scan for Mentra Live glasses")
         isScanning = true
 
+        startReadinessCheckLoop()
+
         let scanOptions: [String: Any] = [
             CBCentralManagerScanOptionAllowDuplicatesKey: false,
         ]
@@ -1711,11 +1714,25 @@ class MentraLive: NSObject, SGCManager {
             if let bodyObj = json["B"] as? [String: Any] {
                 let readyResponse = bodyObj["ready"] as? Int ?? 0
 
+                // Extract battery info from heartbeat
                 let percentage = bodyObj["pt"] as? Int ?? 0
+                let voltage = bodyObj["vt"] as? Int ?? 0
+                let charging = (bodyObj["charg"] as? Int ?? 0) == 1
+
+                // Check for low battery during pairing
                 if percentage > 0, percentage <= 20 {
                     if !ready {
                         Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow")
                         return
+                    }
+                }
+
+                // Update battery status if we have valid data
+                if percentage > 0 {
+                    updateBatteryStatus(level: percentage, charging: charging)
+                    if voltage > 0 {
+                        let voltageVolts = Double(voltage) / 1000.0
+                        Bridge.log("🔋 Battery from heartbeat - \(percentage)%, \(voltageVolts)V, charging: \(charging)")
                     }
                 }
 
@@ -1829,7 +1846,7 @@ class MentraLive: NSObject, SGCManager {
     private func handleGlassesReady() {
         Bridge.log("🎉 Received glasses_ready message - SOC is booted and ready!")
 
-        ready = true
+        glassesReadyReceived = true
         stopReadinessCheckLoop()
 
         // Perform SOC-dependent initialization
@@ -1849,8 +1866,15 @@ class MentraLive: NSObject, SGCManager {
         // Start heartbeat
         startHeartbeat()
 
-        // Update connection state
-        connectionState = ConnTypes.CONNECTED
+        // Audio Pairing: Only mark as fully ready if audio is also connected
+        // This prevents the app from thinking pairing is complete before audio is ready
+        if audioConnected {
+            Bridge.log("Audio: Both glasses_ready and audio connected - marking as fully ready")
+            ready = true
+            connectionState = ConnTypes.CONNECTED
+        } else {
+            Bridge.log("Audio: Waiting for audio connection before marking as fully ready")
+        }
     }
 
     private func handleWifiScanResult(_ json: [String: Any]) {
@@ -2910,11 +2934,9 @@ class MentraLive: NSObject, SGCManager {
         // Stop all timers
         stopAllTimers()
 
-        // CTKD Implementation: Clean up BT Classic connection per documentation
-        if isBtClassicConnected {
-            Bridge.log("CTKD: Destroy - cleaning up BT Classic connection")
-            cleanupCtkdConnection()
-        }
+        // Audio Pairing: Stop monitoring when destroying
+        let monitor = AudioSessionMonitor.getInstance()
+        monitor.stopMonitoring()
 
         // Disconnect BLE
         if let peripheral = connectedPeripheral {
@@ -2928,162 +2950,93 @@ class MentraLive: NSObject, SGCManager {
         connectionState = ConnTypes.DISCONNECTED
     }
 
-    // MARK: - CTKD (Cross-Transport Key Derivation) Implementation for iOS
+    // MARK: - Audio Pairing Implementation for iOS
 
     /**
-     * Initiate CTKD bonding after BLE connection is established
-     * This follows the same flow as Android: BLE connection → createBond() → both BLE and BT Classic established
-     * iOS limitation: Core Bluetooth only supports BLE, so we simulate the BT Classic bonding
+     * Setup Bluetooth audio pairing after BLE connection is established
+     * Attempts to automatically activate Mentra Live as the system audio device
+     * If not paired yet, prompts user to pair in Settings
      */
-    private func initiateCtkdBonding(deviceName: String) {
-        // Check if this is a BES device that supports CTKD
-        let besDevicePatterns = [
-            "MENTRA_LIVE_BLE",
-            "MENTRA_LIVE_BT",
-            "XyBLE_",
-            "Xy_A",
-        ]
+    private func setupAudioPairing(deviceName: String) {
+        let monitor = AudioSessionMonitor.getInstance()
 
-        let isBesDevice = besDevicePatterns.contains { pattern in
-            deviceName.hasPrefix(pattern)
+        // Don't configure audio session - PhoneMic.swift handles that
+        // Just check if audio session supports Bluetooth (informational only)
+        if !monitor.isAudioSessionConfigured() {
+            Bridge.log("Audio: Audio session not configured for Bluetooth yet - mic system will configure it when recording")
         }
 
-        if isBesDevice {
-            Bridge.log("CTKD: Detected BES device '\(deviceName)' - initiating CTKD bonding")
-            ctkdSupported = true
-
-            // iOS limitation: Cannot directly create BT Classic bond
-            // Instead, notify the system that CTKD should be handled by Android backend
-            notifyCtkdCapability()
-
-            // Simulate CTKD bonding process for iOS (equivalent to createBond() on Android)
-            simulateCtkdBonding()
+        // Extract device ID pattern to match the specific device
+        // BLE name: "MENTRA_LIVE_BLE_ABC123"
+        // BT Classic could be: "MENTRA_LIVE_BLE_ABC123" or "MENTRA_LIVE_BT_ABC123"
+        // We need to match on the unique device ID part (e.g., "ABC123")
+        let audioDevicePattern: String
+        if let idRange = deviceName.range(of: "_BLE_", options: .caseInsensitive) {
+            // Extract the ID after "_BLE_" (e.g., "ABC123")
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
+        } else if let idRange = deviceName.range(of: "_BT_", options: .caseInsensitive) {
+            // Extract the ID after "_BT_"
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
         } else {
-            Bridge.log("CTKD: Device '\(deviceName)' does not support CTKD")
-            ctkdSupported = false
-        }
-    }
-
-    /**
-     * Notify the system about CTKD capability
-     * This allows the Android backend to handle the actual BT Classic bonding
-     */
-    private func notifyCtkdCapability() {
-        let eventBody: [String: Any] = [
-            "ctkd_capability_detected": [
-                "device_name": connectedPeripheral?.name ?? "Unknown",
-                "device_address": connectedPeripheral?.identifier.uuidString ?? "",
-                "ctkd_supported": true,
-                "platform": "ios",
-            ],
-        ]
-        Bridge.sendTypedMessage("ctkd_capability_detected", body: eventBody)
-    }
-
-    /**
-     * Simulate CTKD bonding process for iOS
-     * This simulates the createBond() call from Android
-     * Since iOS Core Bluetooth cannot handle BT Classic, we simulate the process
-     */
-    private func simulateCtkdBonding() {
-        Bridge.log("CTKD: Simulating createBond() for iOS - establishing BT Classic connection")
-        ctkdBondingInProgress = true
-
-        // Simulate bonding delay (actual bonding would happen on Android backend)
-        // This mimics the time it takes for createBond() to complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-            self?.completeCtkdBonding()
-        }
-    }
-
-    /**
-     * Complete CTKD bonding simulation
-     * This simulates the successful completion of createBond() from Android
-     */
-    private func completeCtkdBonding() {
-        Bridge.log("CTKD: ✅ Bonding simulation complete - both BLE and BT Classic established")
-        ctkdBondingInProgress = false
-        isBtClassicConnected = true
-
-        // Notify system that CTKD bonding is complete (equivalent to Android's bond state change)
-        let eventBody: [String: Any] = [
-            "ctkd_bonding_complete": [
-                "device_name": connectedPeripheral?.name ?? "Unknown",
-                "device_address": connectedPeripheral?.identifier.uuidString ?? "",
-                "bt_classic_connected": true,
-                "platform": "ios",
-                "bond_state": "BONDED", // Equivalent to Android's BOND_BONDED
-            ],
-        ]
-        Bridge.sendTypedMessage("ctkd_bonding_complete", body: eventBody)
-    }
-
-    /**
-     * Clean up CTKD connection (equivalent to Android's removeBond())
-     * iOS limitation: Cannot directly remove BT Classic bond
-     * This method simulates the removeBond() process from Android
-     */
-    private func cleanupCtkdConnection() {
-        Bridge.log("CTKD: Simulating removeBond() for iOS - disconnecting BT Classic")
-
-        if ctkdBondingInProgress {
-            Bridge.log("CTKD: Cancelling bonding in progress")
-            ctkdBondingInProgress = false
+            // Fallback: use the full device name
+            audioDevicePattern = deviceName
+            Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
         }
 
-        if isBtClassicConnected {
-            Bridge.log("CTKD: Disconnecting BT Classic (simulated removeBond)")
-            isBtClassicConnected = false
+        // Check if device is paired (don't activate to preserve A2DP music playback)
+        let isPaired = monitor.isDevicePaired(devicePattern: audioDevicePattern)
 
-            // Notify system that BT Classic is disconnected (equivalent to Android's bond state change)
-            let eventBody: [String: Any] = [
-                "ctkd_disconnect_complete": [
-                    "device_name": connectedPeripheral?.name ?? "Unknown",
-                    "device_address": connectedPeripheral?.identifier.uuidString ?? "",
-                    "bt_classic_connected": false,
-                    "platform": "ios",
-                    "bond_state": "NONE", // Equivalent to Android's BOND_NONE
-                ],
-            ]
-            Bridge.sendTypedMessage("ctkd_disconnect_complete", body: eventBody)
+        if isPaired {
+            // Device is paired! Don't activate it - let PhoneMic.swift activate when recording starts
+            Bridge.log("Audio: ✅ Mentra Live is paired (preserving A2DP for music)")
+            audioConnected = true
+
+            // If glasses_ready was already received, now we're fully ready
+            if glassesReadyReceived {
+                Bridge.log("Audio: Both audio and glasses_ready confirmed - marking as fully ready")
+                ready = true
+                connectionState = ConnTypes.CONNECTED
+            }
+
+            Bridge.sendTypedMessage("audio_connected", body: [
+                "device_name": deviceName,
+            ])
+        } else {
+            // Not found in availableInputs - not paired yet
+            Bridge.log("Audio: Device not paired, prompting user to pair")
+            Bridge.sendTypedMessage("audio_pairing_needed", body: [
+                "device_name": deviceName,
+            ])
+
+            // Start monitoring for when user pairs manually
+            monitor.startMonitoring(devicePattern: audioDevicePattern) { [weak self] (connected: Bool, deviceName: String?) in
+                guard let self = self else { return }
+
+                if connected {
+                    Bridge.log("Audio: ✅ Device paired and connected")
+                    // Don't activate - let PhoneMic.swift handle that when recording starts
+
+                    self.audioConnected = true
+
+                    // If glasses_ready was already received, now we're fully ready
+                    if self.glassesReadyReceived {
+                        Bridge.log("Audio: Both audio and glasses_ready confirmed - marking as fully ready")
+                        self.ready = true
+                        self.connectionState = ConnTypes.CONNECTED
+                    }
+
+                    Bridge.sendTypedMessage("audio_connected", body: [
+                        "device_name": deviceName ?? "Mentra Live",
+                    ])
+                } else {
+                    Bridge.log("Audio: Device disconnected")
+                    self.audioConnected = false
+                    Bridge.sendTypedMessage("audio_disconnected", body: [:])
+                }
+            }
         }
-    }
-
-    /**
-     * Check if BT Classic is connected via CTKD
-     */
-    func isBtClassicConnectedViaCtkd() -> Bool {
-        return isBtClassicConnected
-    }
-
-    /**
-     * Check if device supports CTKD
-     */
-    func isCtkdSupported() -> Bool {
-        return ctkdSupported
-    }
-
-    /**
-     * Manually trigger CTKD bonding (equivalent to Android's createBond())
-     * This can be called externally to initiate BT Classic connection
-     */
-    func triggerCtkdBonding() {
-        guard let deviceName = connectedPeripheral?.name else {
-            Bridge.log("CTKD: Cannot trigger bonding - no connected device")
-            return
-        }
-
-        Bridge.log("CTKD: Manually triggering createBond() equivalent for device: \(deviceName)")
-        initiateCtkdBonding(deviceName: deviceName)
-    }
-
-    /**
-     * Manually disconnect BT Classic (equivalent to Android's removeBond())
-     * This can be called externally to disconnect BT Classic while keeping BLE
-     */
-    func disconnectBtClassic() {
-        Bridge.log("CTKD: Manually triggering removeBond() equivalent")
-        cleanupCtkdConnection()
     }
 }
 

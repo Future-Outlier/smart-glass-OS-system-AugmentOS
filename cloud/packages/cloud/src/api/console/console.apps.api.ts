@@ -13,44 +13,45 @@
  * - POST   /:packageName/api-key      -> regenerate API key
  * - POST   /:packageName/move         -> move app (body: { targetOrgId })
  *
- * Conventions:
- * - One resource per file, default export a single router.
- * - Use per-route middleware (authenticateConsole).
- * - Routes declared at the top; handler implementations below as function declarations (hoisted).
- */
+ /**
+  * Conventions:
+  * - One resource per file, default export a single router.
+  * - Middleware applied at mount point (not per-route).
+  * - Routes declared at the top; handler implementations below as function declarations (hoisted).
+  */
 
 import { Router, Request, Response } from "express";
-import { authenticateConsole } from "../middleware/console.middleware";
 
 const router = Router();
 
 /**
  * Routes — declared first, handlers below (function declarations are hoisted)
+ * NOTE: No per-route middleware - authenticateConsole applied at mount point
  */
 
 // List apps (optional org filter via ?orgId=)
-router.get("/", authenticateConsole, listApps);
+router.get("/", listApps);
 
 // Create app (body may include orgId)
-router.post("/", authenticateConsole, createApp);
+router.post("/", createApp);
 
 // App detail
-router.get("/:packageName", authenticateConsole, getApp);
+router.get("/:packageName", getApp);
 
 // Update app
-router.put("/:packageName", authenticateConsole, updateApp);
+router.put("/:packageName", updateApp);
 
 // Delete app
-router.delete("/:packageName", authenticateConsole, deleteApp);
+router.delete("/:packageName", deleteApp);
 
 // Publish app
-router.post("/:packageName/publish", authenticateConsole, publishApp);
+router.post("/:packageName/publish", publishApp);
 
 // Regenerate API key
-router.post("/:packageName/api-key", authenticateConsole, regenerateApiKey);
+router.post("/:packageName/api-key", regenerateApiKey);
 
 // Move app between orgs (body: { targetOrgId })
-router.post("/:packageName/move", authenticateConsole, moveApp);
+router.post("/:packageName/move", moveApp);
 
 /**
  * Handlers — skeletons returning 501 (Not Implemented)

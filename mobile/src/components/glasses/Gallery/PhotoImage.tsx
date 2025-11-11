@@ -147,16 +147,16 @@ const $placeholderContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.palette.neutral200,
   justifyContent: "center",
   alignItems: "center",
-  padding: spacing.sm,
+  padding: spacing.s3,
   position: "relative",
 })
 
 const $avifBadge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
-  top: spacing.xs,
-  right: spacing.xs,
+  top: spacing.s2,
+  right: spacing.s2,
   backgroundColor: colors.palette.primary500,
-  paddingHorizontal: spacing.xs,
+  paddingHorizontal: spacing.s2,
   paddingVertical: 2,
   borderRadius: 4,
 })
@@ -175,7 +175,7 @@ const $placeholderText: ThemedStyle<TextStyle> = ({colors}) => ({
 const $placeholderSubtext: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 11,
   color: colors.textDim,
-  marginTop: spacing.xs,
+  marginTop: spacing.s2,
   textAlign: "center",
 })
 

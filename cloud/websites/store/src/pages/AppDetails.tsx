@@ -16,19 +16,19 @@ import {
   RotateCw,
   CircleDot,
   Lightbulb,
-} from "lucide-react"
-import {useAuth} from "../hooks/useAuth"
-import {useTheme} from "../hooks/useTheme"
-import {useIsDesktop} from "../hooks/useMediaQuery"
-import {usePlatform} from "../hooks/usePlatform"
-import api from "../api"
-import {AppI, HardwareType, HardwareRequirementLevel} from "../types"
-import {toast} from "sonner"
-import {formatCompatibilityError} from "../utils/errorHandling"
-import {Button} from "@/components/ui/button"
-import Header from "../components/Header"
+} from "lucide-react";
+import { useAuth } from "@mentra/shared";
+import { useTheme } from "../hooks/useTheme";
+import { useIsDesktop } from "../hooks/useMediaQuery";
+import { usePlatform } from "../hooks/usePlatform";
+import api from "../api";
+import { AppI, HardwareType, HardwareRequirementLevel } from "../types";
+import { toast } from "sonner";
+import { formatCompatibilityError } from "../utils/errorHandling";
+import { Button } from "@/components/ui/button";
+import Header from "../components/Header";
 import AppPermissions from "../components/AppPermissions"
-import GetMentraOSButton from "../components/GetMentraOSButton"
+import GetMentraOSButton from "../components/GetMentraOSButton";
 
 // Hardware icon mapping
 const hardwareIcons: Record<HardwareType, React.ReactNode> = {
@@ -231,7 +231,8 @@ const AppDetails: React.FC = () => {
         })
       } else {
         // Fallback to generic error message
-        const errorMessage = (err as any)?.response?.data?.message || "Failed to install app"
+        const errorMessage =
+          (err as {response?: {data?: {message?: string}}})?.response?.data?.message || "Failed to install app"
         toast.error(errorMessage)
       }
     } finally {
@@ -635,7 +636,8 @@ const AppDetails: React.FC = () => {
                               style={{
                                 color: theme === "light" ? "#000000" : "#E4E4E7",
                               }}>
-                              {permission.type || "Microphone"}
+                              {(permission.type || "Microphone").charAt(0).toUpperCase() +
+                                (permission.type || "Microphone").slice(1).toLowerCase()}
                             </div>
                             <div
                               className="text-[13px] leading-[1.4]"
@@ -721,7 +723,7 @@ const AppDetails: React.FC = () => {
                                       style={{
                                         color: theme === "light" ? "#000000" : "#E4E4E7",
                                       }}>
-                                      {req.type.charAt(0) + req.type.slice(1).toLowerCase()}
+                                      {req.type.charAt(0).toUpperCase() + req.type.slice(1).toLowerCase()}
                                     </div>
                                     {req.description && (
                                       <div
@@ -772,7 +774,7 @@ const AppDetails: React.FC = () => {
                                       style={{
                                         color: theme === "light" ? "#000000" : "#E4E4E7",
                                       }}>
-                                      {req.type.charAt(0) + req.type.slice(1).toLowerCase()}
+                                      {req.type.charAt(0).toUpperCase() + req.type.slice(1).toLowerCase()}
                                     </div>
                                     {req.description && (
                                       <div

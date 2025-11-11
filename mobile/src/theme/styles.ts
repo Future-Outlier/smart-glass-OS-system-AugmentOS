@@ -19,4 +19,7 @@ export const $styles = {
     justifyContent: "center",
     overflow: "hidden",
   } as ViewStyle,
+  screen: {
+    paddingHorizontal: spacing.s6,
+  },
 }

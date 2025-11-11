@@ -198,5 +198,13 @@ class CoreModule : Module() {
                                     ?: throw IllegalStateException("No context available")
             NotificationListener.getInstance(context).hasNotificationListenerPermission()
         }
+
+        AsyncFunction("getInstalledAppsForNotifications") {
+            val context =
+                    appContext.reactContext
+                            ?: appContext.currentActivity
+                                    ?: throw IllegalStateException("No context available")
+            NotificationListener.getInstance(context).getInstalledApps()
+        }
     }
 }

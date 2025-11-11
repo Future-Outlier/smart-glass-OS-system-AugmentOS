@@ -33,8 +33,8 @@ interface Subscription {
 }
 
 const authingOptions: AuthenticationClientOptions = {
-  appId: process.env.AUTHING_APP_ID!,
-  appHost: process.env.AUTHING_APP_HOST!,
+  appId: process.env.EXPO_PUBLIC_AUTHING_APP_ID!,
+  appHost: process.env.EXPO_PUBLIC_AUTHING_APP_HOST!,
   lang: "en-US",
 }
 

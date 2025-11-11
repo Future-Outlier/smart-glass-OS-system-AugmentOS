@@ -1,24 +1,28 @@
 import {useCallback} from "react"
 import {View, BackHandler} from "react-native"
-import {useLocalSearchParams, useFocusEffect} from "expo-router"
+import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
 import {Screen, Header, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle, ScrollView} from "react-native"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import RouteButton from "@/components/ui/RouteButton"
+import {RouteButton} from "@/components/ui/RouteButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 export default function GlassesWifiSetupScreen() {
-  const {deviceModel = "Glasses"} = useLocalSearchParams()
+  const {deviceModel = "Glasses", returnTo} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
   const {push, goBack} = useNavigationHistory()
 
   const handleGoBack = useCallback(() => {
-    goBack()
+    if (returnTo && typeof returnTo === "string") {
+      router.replace(decodeURIComponent(returnTo))
+    } else {
+      goBack()
+    }
     return true // Prevent default back behavior
-  }, [])
+  }, [returnTo])
 
   // Handle Android back button
   useFocusEffect(
@@ -33,11 +37,11 @@ export default function GlassesWifiSetupScreen() {
   const isWifiConnected = Boolean(currentWifi)
 
   const handleScanForNetworks = () => {
-    push("/pairing/glasseswifisetup/scan", {deviceModel})
+    push("/pairing/glasseswifisetup/scan", {deviceModel, returnTo})
   }
 
   const handleManualEntry = () => {
-    push("/pairing/glasseswifisetup/password", {deviceModel, ssid: ""})
+    push("/pairing/glasseswifisetup/password", {deviceModel, ssid: "", returnTo})
   }
 
   // const handleDisconnectWifi = async () => {
@@ -51,11 +55,10 @@ export default function GlassesWifiSetupScreen() {
   // }
 
   return (
-    <Screen preset="fixed" contentContainerStyle={themed($container)} safeAreaEdges={[]}>
-      <Header title="Glasses WiFi Setup" leftIcon="caretLeft" onLeftPress={handleGoBack} />
+    <Screen preset="fixed" contentContainerStyle={themed($styles.screen)} safeAreaEdges={[]}>
+      <Header title="Glasses WiFi Setup" leftIcon="chevron-left" onLeftPress={handleGoBack} />
 
-      <ScrollView
-        style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}>
+      <ScrollView style={{marginRight: -theme.spacing.s6, paddingRight: theme.spacing.s6}}>
         <View style={themed($content)}>
           <Text style={themed($subtitle)}>Your {deviceModel} glasses needs WiFi to connect to the internet.</Text>
 
@@ -103,27 +106,23 @@ export default function GlassesWifiSetupScreen() {
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-})
-
 const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.lg,
   alignItems: "center",
+  marginTop: spacing.s10,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   color: colors.textDim,
-  marginBottom: spacing.xl,
+  marginBottom: spacing.s8,
   textAlign: "center",
 })
 
 const $statusContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.md,
-  borderRadius: spacing.xs,
-  marginBottom: spacing.xl,
+  padding: spacing.s4,
+  borderRadius: spacing.s2,
+  marginBottom: spacing.s8,
   width: "100%",
 })
 
@@ -135,6 +134,6 @@ const $statusText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: "100%",
-  gap: spacing.md,
-  marginTop: spacing.md,
+  gap: spacing.s4,
+  marginTop: spacing.s4,
 })

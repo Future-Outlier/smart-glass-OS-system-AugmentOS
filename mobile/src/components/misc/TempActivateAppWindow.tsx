@@ -22,7 +22,7 @@ const TempActivateAppWindow = () => {
         <Switch value={false} onValueChange={() => {}} disabled={true} />
       </View>
       <TouchableOpacity onPress={() => setVisible(false)} style={[themed($xIcon), {display: "none"}]}>
-        <Icon icon={"x"} size={theme.spacing.md} />
+        <Icon icon={"x"} size={theme.spacing.s4} />
       </TouchableOpacity>
     </View>
   )
@@ -68,8 +68,8 @@ const $xIcon: ThemedStyle<ViewStyle> = () => ({
   zIndex: 2,
 })
 
-const $tempWindow: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) => ({
-  borderRadius: borderRadius.md,
+const $tempWindow: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  borderRadius: spacing.s4,
   // backgroundColor: colors.background + "E6",
   backgroundColor: colors.backgroundAlt,
   // flex: 1,
@@ -79,7 +79,7 @@ const $tempWindow: ThemedStyle<ViewStyle> = ({colors, spacing, borderRadius}) =>
   paddingHorizontal: 30,
   paddingVertical: 16,
   gap: 41,
-  borderWidth: spacing.xxxs,
+  borderWidth: spacing.s0_5,
   borderColor: colors.border,
 })
 

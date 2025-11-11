@@ -1,7 +1,6 @@
 import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import OtaProgressSection from "@/components/glasses/OtaProgressSection"
-import ActionButton from "@/components/ui/ActionButton"
-import RouteButton from "@/components/ui/RouteButton"
+import {RouteButton} from "@/components/ui/RouteButton"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
@@ -17,14 +16,16 @@ import {Spacer} from "@/components/ui/Spacer"
 import {BatteryStatus} from "./info/BatteryStatus"
 import {DeviceInformation} from "./info/DeviceInformation"
 import {EmptyState} from "./info/EmptyState"
-import {NotConnectedInfo} from "./info/NotConnectedInfo"
 import {AdvancedSettingsDropdown} from "./settings/AdvancedSettingsDropdown"
-import {BrightnessSettings} from "./settings/BrightnessSettings"
 import {ButtonSettings} from "./settings/ButtonSettings"
 import {MicrophoneSelector} from "./settings/MicrophoneSelector"
+import {Group} from "@/components/ui/Group"
+import SliderSetting from "@/components/settings/SliderSetting"
+import ToggleSetting from "@/components/settings/ToggleSetting"
+import {Icon} from "@/components/ignite"
 
 export default function DeviceSettings() {
-  const {themed} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
   const isGlassesConnected = Boolean(status.glasses_info?.model_name)
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
@@ -36,9 +37,8 @@ export default function DeviceSettings() {
     SETTINGS_KEYS.default_button_action_enabled,
   )
   const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS_KEYS.default_button_action_app)
-  const [devMode] = useSetting(SETTINGS_KEYS.dev_mode)
 
-  const {push} = useNavigationHistory()
+  const {push, goBack} = useNavigationHistory()
   const applets = useApplets()
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
@@ -91,6 +91,7 @@ export default function DeviceSettings() {
           text: translate("common:yes"),
           onPress: () => {
             CoreModule.forget()
+            goBack()
           },
         },
       ],
@@ -107,32 +108,58 @@ export default function DeviceSettings() {
 
   return (
     <View style={themed($container)}>
-      {/* Show helper text if glasses are paired but not connected */}
-      {!status.glasses_info?.model_name && defaultWearable && <NotConnectedInfo />}
+      {/* Screen settings for binocular glasses */}
+      <Group
+        title={translate("deviceSettings:display")}
+        // subtitle={translate("settings:screenDescription")}
+      >
+        {defaultWearable && (features?.display?.count ?? 0 > 1) && (
+          <RouteButton
+            icon={<Icon name="locate" size={24} color={theme.colors.secondary_foreground} />}
+            label={translate("settings:screenSettings")}
+            // subtitle={translate("settings:screenDescription")}
+            onPress={() => push("/settings/screen")}
+          />
+        )}
+        {/* Only show dashboard settings if glasses have display capability */}
+        {defaultWearable && features?.hasDisplay && (
+          <RouteButton
+            icon={<Icon name="layout-dashboard" size={24} color={theme.colors.secondary_foreground} />}
+            label={translate("settings:dashboardSettings")}
+            // subtitle={translate("settings:dashboardDescription")}
+            onPress={() => push("/settings/dashboard")}
+          />
+        )}
+        {/* Brightness Settings */}
+        {features?.display?.adjustBrightness && isGlassesConnected && (
+          <ToggleSetting
+            icon={<Icon name="brightness-half" size={24} color={theme.colors.secondary_foreground} />}
+            label={translate("deviceSettings:autoBrightness")}
+            value={autoBrightness}
+            onValueChange={setAutoBrightness}
+          />
+        )}
+        {features?.display?.adjustBrightness && isGlassesConnected && !autoBrightness && (
+          <SliderSetting
+            label={translate("deviceSettings:brightness")}
+            value={brightness}
+            min={0}
+            max={100}
+            onValueChange={() => {}}
+            onValueSet={setBrightness}
+            // containerStyle={{paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0}}
+            disableBorder
+          />
+        )}
+      </Group>
 
       {/* Battery Status Section */}
-      {isGlassesConnected && (
-        <BatteryStatus
-          glassesBatteryLevel={status.glasses_info?.battery_level}
-          caseBatteryLevel={status.glasses_info?.case_battery_level}
-          caseCharging={status.glasses_info?.case_charging}
-          caseRemoved={status.glasses_info?.case_removed}
-        />
-      )}
-
-      {/* Brightness Settings */}
-      {features?.display?.adjustBrightness && isGlassesConnected && (
-        <BrightnessSettings
-          autoBrightness={autoBrightness}
-          brightness={brightness}
-          onAutoBrightnessChange={setAutoBrightness}
-          onBrightnessChange={setBrightness}
-        />
-      )}
+      {isGlassesConnected && <BatteryStatus />}
 
       {/* Nex Developer Settings - Only show when connected to Mentra Nex */}
       {defaultWearable && defaultWearable.includes(DeviceTypes.NEX) && (
         <RouteButton
+          // icon={}
           label="Nex Developer Settings"
           subtitle="Advanced developer tools and debugging features"
           onPress={() => push("/glasses/nex-developer-settings")}
@@ -156,6 +183,7 @@ export default function DeviceSettings() {
       {/* Only show WiFi settings if connected glasses support WiFi */}
       {defaultWearable && features?.hasWifi && (
         <RouteButton
+          icon={<Icon name="wifi" size={24} color={theme.colors.secondary_foreground} />}
           label={translate("settings:glassesWifiSettings")}
           subtitle={translate("settings:glassesWifiDescription")}
           onPress={() => {
@@ -171,41 +199,25 @@ export default function DeviceSettings() {
         <OtaProgressSection otaProgress={status.ota_progress} />
       )}
 
-      {/* Only show dashboard settings if glasses have display capability */}
-      {defaultWearable && features?.hasDisplay && (
-        <RouteButton
-          label={translate("settings:dashboardSettings")}
-          subtitle={translate("settings:dashboardDescription")}
-          onPress={() => push("/settings/dashboard")}
-        />
-      )}
+      <Group title={translate("deviceSettings:general")}>
+        {isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && (
+          <RouteButton
+            icon={<Icon name="unlink" size={24} color={theme.colors.secondary_foreground} />}
+            label={translate("deviceSettings:disconnectGlasses")}
+            onPress={() => {
+              CoreModule.disconnect()
+            }}
+          />
+        )}
 
-      {/* Screen settings for binocular glasses */}
-      {defaultWearable && (features?.display?.count ?? 0 > 1) && (
-        <RouteButton
-          label={translate("settings:screenSettings")}
-          subtitle={translate("settings:screenDescription")}
-          onPress={() => push("/settings/screen")}
-        />
-      )}
-
-      {isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && devMode && (
-        <ActionButton
-          label={translate("settings:disconnectGlasses")}
-          variant="destructive"
-          onPress={() => {
-            CoreModule.disconnect()
-          }}
-        />
-      )}
-
-      {defaultWearable && (
-        <ActionButton
-          label={translate("settings:forgetGlasses")}
-          variant="destructive"
-          onPress={confirmForgetGlasses}
-        />
-      )}
+        {defaultWearable && (
+          <RouteButton
+            icon={<Icon name="unplug" size={24} color={theme.colors.secondary_foreground} />}
+            label={translate("deviceSettings:unpairGlasses")}
+            onPress={confirmForgetGlasses}
+          />
+        )}
+      </Group>
 
       {/* Advanced Settings Dropdown - Only show if there's content */}
       {defaultWearable && hasAdvancedSettingsContent && (
@@ -230,10 +242,5 @@ export default function DeviceSettings() {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: 12,
-  width: "100%",
-  minHeight: 240,
-  justifyContent: "center",
-  backgroundColor: "transparent",
-  gap: spacing.md,
+  gap: spacing.s6,
 })

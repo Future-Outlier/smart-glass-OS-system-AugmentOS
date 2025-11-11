@@ -31,7 +31,7 @@
 
   <!-- Custom services -->
   <application>
-    <service android:name="com.mentra.mentra.NotificationService" android:label="@string/app_name" android:exported="false" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+    <service android:name="com.mentra.core.services.NotificationListenerServiceImpl" android:label="@string/app_name" android:exported="false" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
         <intent-filter>
         <action android:name="android.service.notification.NotificationListenerService"/>
         </intent-filter>

@@ -6,8 +6,6 @@ import { Types } from "mongoose";
 import { OrganizationService } from "../services/core/organization.service";
 import { logger as rootLogger } from "../services/logging/pino-logger";
 import multer from "multer";
-import FormData from "form-data";
-import axios from "axios";
 
 const logger = rootLogger.child({ service: "developer.routes" });
 // TODO(isaiah): refactor this code to use this logger instead of console.log, console.error, etc.
@@ -54,6 +52,7 @@ const router = Router();
  */
 import jwt from "jsonwebtoken";
 import UserSession from "../services/session/UserSession";
+import { StorageService } from "../services/storage/storage.service";
 const AUGMENTOS_AUTH_JWT_SECRET = process.env.AUGMENTOS_AUTH_JWT_SECRET || "";
 
 // TODO(isaiah): This is called validateSupabaseToken, but i'm pretty sure this is using an AugmentOS JWT(coreToken), not a Supabase token.
@@ -987,21 +986,20 @@ const uploadImage = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // Get Cloudflare credentials from environment
-    const cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-    const cloudflareApiToken = process.env.CLOUDFLARE_API_TOKEN;
-
-    if (!cloudflareAccountId || !cloudflareApiToken) {
+    let storageService: StorageService | null = null;
+    try {
+      storageService = new StorageService(userLogger);
+    } catch (error) {
       userLogger.error(
         {
-          hasAccountId: !!cloudflareAccountId,
-          hasApiToken: !!cloudflareApiToken,
+          error: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
         },
-        "Cloudflare credentials not configured",
+        "Failed to initialize storage service",
       );
       return res
         .status(500)
-        .json({ error: "Image upload service not configured" });
+        .json({ error: "Failed to initialize storage service" });
     }
 
     // Parse metadata if provided
@@ -1030,191 +1028,31 @@ const uploadImage = async (req: Request, res: Response) => {
       );
     }
 
-    // Create form data for Cloudflare API
-    const formData = new FormData();
-    formData.append("file", req.file.buffer, {
+    const response = await storageService.uploadImageAndReplace({
+      image: req.file.buffer,
       filename: req.file.originalname,
-      contentType: req.file.mimetype,
+      appPackageName: metadata.appPackageName,
+      mimetype: req.file.mimetype,
+      email,
+      orgId,
+      replaceImageId,
     });
 
-    // Add metadata to help identify the image
-    const cfMetadata = {
-      uploadedBy: email,
-      uploadedAt: new Date().toISOString(),
-      organizationId: orgId?.toString(), // Add org context for tracking
-      ...(metadata.appPackageName && {
-        appPackageName: metadata.appPackageName,
-      }),
-      ...(replaceImageId && { replacedImageId: replaceImageId }),
+    if (!response.url) {
+      userLogger.error("No delivery URL found");
+      return res
+        .status(500)
+        .json({ error: "Failed to upload image to Cloudflare" });
+    }
+
+    // Return the image URL and ID
+    const responseData = {
+      url: response.url,
+      imageId: response.imageId,
     };
 
-    formData.append("metadata", JSON.stringify(cfMetadata));
-
-    userLogger.debug(
-      {
-        cloudflareMetadata: cfMetadata,
-        formDataKeys: ["file", "metadata"],
-      },
-      "Prepared Cloudflare upload payload",
-    );
-
-    // Make request to Cloudflare Images API
-    const cloudflareUrl = `https://api.cloudflare.com/client/v4/accounts/${cloudflareAccountId}/images/v1`;
-
-    userLogger.info(
-      {
-        cloudflareUrl: cloudflareUrl.replace(
-          cloudflareAccountId,
-          "[ACCOUNT_ID]",
-        ),
-        fileSize: req.file.size,
-        fileName: req.file.originalname,
-      },
-      "Sending request to Cloudflare Images API",
-    );
-
-    try {
-      const response = await axios.post(cloudflareUrl, formData, {
-        headers: {
-          Authorization: `Bearer ${cloudflareApiToken}`,
-          ...formData.getHeaders(),
-        },
-      });
-
-      userLogger.debug(
-        {
-          success: response.data.success,
-          hasResult: !!response.data.result,
-          hasErrors: !!(
-            response.data.errors && response.data.errors.length > 0
-          ),
-        },
-        "Received response from Cloudflare API",
-      );
-
-      if (!response.data.success) {
-        userLogger.error(
-          {
-            cloudflareErrors: response.data.errors,
-            responseStatus: response.status,
-          },
-          "Cloudflare API returned error response",
-        );
-        return res
-          .status(500)
-          .json({ error: "Failed to upload image to Cloudflare" });
-      }
-
-      const imageData = response.data.result;
-
-      // Get the delivery URL with correct account hash from Cloudflare response
-      // Try to find 'square' variant in the response variants
-      let deliveryUrl: string | undefined;
-
-      if (imageData.variants && Array.isArray(imageData.variants)) {
-        // Look for a square variant in the response
-        const squareVariant = imageData.variants.find((url: string) =>
-          url.includes("/square"),
-        );
-        if (squareVariant) {
-          deliveryUrl = squareVariant;
-        } else {
-          // Replace the last variant part with 'square'
-          const firstVariant = imageData.variants[0];
-          if (firstVariant && typeof firstVariant === "string") {
-            // eslint-disable-next-line no-useless-escape
-            deliveryUrl = firstVariant.replace(/\/[^\/]+$/, "/square");
-            userLogger.debug(
-              { originalVariant: firstVariant, squareUrl: deliveryUrl },
-              "Replaced variant with square",
-            );
-          } else {
-            userLogger.error("No cloudflare variants found");
-          }
-        }
-      } else {
-        userLogger.error(
-          {
-            hasVariants: !!imageData.variants,
-            variantsType: typeof imageData.variants,
-            variantsValue: imageData.variants,
-          },
-          "No variants array found",
-        );
-      }
-
-      if (!deliveryUrl) {
-        userLogger.error("No delivery URL found");
-        return res
-          .status(500)
-          .json({ error: "Failed to upload image to Cloudflare" });
-      }
-
-      userLogger.info(
-        {
-          imageId: imageData.id,
-          deliveryUrl,
-          variants: imageData.variants,
-          uploaded: imageData.uploaded,
-        },
-        "Image uploaded successfully to Cloudflare",
-      );
-
-      // If we were replacing an image, delete the old one
-      if (replaceImageId) {
-        try {
-          await axios.delete(
-            `https://api.cloudflare.com/client/v4/accounts/${cloudflareAccountId}/images/v1/${replaceImageId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${cloudflareApiToken}`,
-              },
-            },
-          );
-          userLogger.info(
-            { deletedImageId: replaceImageId },
-            "Successfully deleted old image",
-          );
-        } catch (deleteError) {
-          // Log but don't fail the request if delete fails
-          userLogger.warn(
-            {
-              replaceImageId,
-              deleteError:
-                deleteError instanceof Error
-                  ? deleteError.message
-                  : String(deleteError),
-              deleteStatus: (deleteError as any)?.response?.status,
-            },
-            "Failed to delete old image - continuing anyway",
-          );
-        }
-      }
-
-      // Return the image URL and ID
-      const responseData = {
-        url: deliveryUrl,
-        imageId: imageData.id,
-      };
-
-      userLogger.info(responseData, "Image upload completed successfully");
-      res.json(responseData);
-    } catch (cfError: any) {
-      userLogger.error(
-        {
-          cloudflareError: cfError.response?.data || cfError.message,
-          status: cfError.response?.status,
-          statusText: cfError.response?.statusText,
-          errorType: cfError.constructor.name,
-        },
-        "Cloudflare API request failed",
-      );
-      return res.status(500).json({
-        error: "Failed to upload image",
-        details:
-          cfError.response?.data?.errors?.[0]?.message || "Unknown error",
-      });
-    }
+    userLogger.info(responseData, "Image upload completed successfully");
+    res.json(responseData);
   } catch (error) {
     userLogger.error(
       {
@@ -1235,55 +1073,32 @@ const uploadImage = async (req: Request, res: Response) => {
  * Delete an image from Cloudflare Images
  */
 const deleteImage = async (req: Request, res: Response) => {
-  try {
-    const email = (req as DevPortalRequest).developerEmail;
-    const { imageId } = req.params;
+  const email = (req as DevPortalRequest).developerEmail;
+  const orgId = (req as DevPortalRequest).currentOrgId;
+  const userLogger = logger.child({
+    userId: email,
+    organizationId: orgId?.toString(),
+    service: "developer.routes",
+    function: "deleteImage",
+    endpoint: req.originalUrl,
+  });
 
+  try {
+    const { imageId } = req.params;
     if (!imageId) {
       return res.status(400).json({ error: "Image ID is required" });
     }
 
-    // Get Cloudflare credentials from environment
-    const cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-    const cloudflareApiToken = process.env.CLOUDFLARE_API_TOKEN;
+    const storageService = new StorageService(userLogger);
+    await storageService.deleteImage(imageId);
 
-    if (!cloudflareAccountId || !cloudflareApiToken) {
-      logger.error("Cloudflare credentials not configured");
-      return res
-        .status(500)
-        .json({ error: "Image delete service not configured" });
-    }
-
-    // Delete from Cloudflare
-    try {
-      await axios.delete(
-        `https://api.cloudflare.com/client/v4/accounts/${cloudflareAccountId}/images/v1/${imageId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${cloudflareApiToken}`,
-          },
-        },
-      );
-
-      logger.info(`Image ${imageId} deleted by ${email}`);
-      res.json({ success: true, message: "Image deleted successfully" });
-    } catch (cfError: any) {
-      if (cfError.response?.status === 404) {
-        return res.status(404).json({ error: "Image not found" });
-      }
-
-      logger.error(
-        "Cloudflare API delete request failed:",
-        cfError.response?.data || cfError.message,
-      );
-      return res.status(500).json({
-        error: "Failed to delete image",
-        details:
-          cfError.response?.data?.errors?.[0]?.message || "Unknown error",
-      });
-    }
+    userLogger.info(`Image ${imageId} deleted by ${email}`);
+    res.json({ success: true, message: "Image deleted successfully" });
   } catch (error) {
-    logger.error(error as Error, "Error in image delete handler:");
+    userLogger.error(error as Error, "Error in image delete handler:");
+    if (error instanceof Error && error.message.includes("Image not found")) {
+      return res.status(404).json({ error: "Image not found" });
+    }
     return res
       .status(500)
       .json({ error: "Internal server error during image deletion" });
