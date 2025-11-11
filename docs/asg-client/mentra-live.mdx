@@ -185,10 +185,10 @@ adb shell ps | grep augmentos
 adb logcat -s AsgClientService
 
 # Force stop the app
-adb shell am force-stop com.augmentos.asg_client
+adb shell am force-stop com.mentra.asg_client
 
 # Start service manually
-adb shell am startservice com.augmentos.asg_client/.AsgClientService
+adb shell am startservice com.mentra.asg_client/.AsgClientService
 
 # Take screenshot
 adb shell screencap -p /sdcard/screen.png
@@ -206,7 +206,7 @@ adb pull /sdcard/screen.png
 
 ### Memory Usage
 
-- Monitor with: `adb shell dumpsys meminfo com.augmentos.asg_client`
+- Monitor with: `adb shell dumpsys meminfo com.mentra.asg_client`
 - Release resources promptly
 - Use appropriate image sizes
 - Clear caches periodically

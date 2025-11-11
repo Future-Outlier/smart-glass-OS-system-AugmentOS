@@ -136,7 +136,7 @@ CameraWebServer server = new CameraWebServer(context, 9090);
 The server automatically detects the photo directory from CameraNeo or uses the default:
 
 ```
-/storage/emulated/0/Android/data/com.augmentos.asg_client/files/Photos/
+/storage/emulated/0/Android/data/com.mentra.asg_client/files/Photos/
 ```
 
 ## 📱 Mobile App Integration
@@ -145,7 +145,7 @@ The server automatically detects the photo directory from CameraNeo or uses the 
 
 ```javascript
 // Connect to the camera web server
-const connectToGlasses = async glassesIP => {
+const connectToGlasses = async (glassesIP) => {
   const serverUrl = `http://${glassesIP}:8089`
 
   try {

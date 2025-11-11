@@ -319,7 +319,7 @@ String cmdOff = AsgConstants.CMD_RGB_LED_CONTROL_OFF;  // "rgb_led_control_off"
 
 ```bash
 # Send RGB LED ON command
-adb shell "am broadcast -a com.augmentos.asg_client.TEST_RGB_LED \
+adb shell "am broadcast -a com.mentra.asg_client.TEST_RGB_LED \
   --es type 'rgb_led_control_on' \
   --ei led 0 \
   --ei ontime 2000 \
@@ -327,7 +327,7 @@ adb shell "am broadcast -a com.augmentos.asg_client.TEST_RGB_LED \
   --ei count 5"
 
 # Send RGB LED OFF command
-adb shell "am broadcast -a com.augmentos.asg_client.TEST_RGB_LED \
+adb shell "am broadcast -a com.mentra.asg_client.TEST_RGB_LED \
   --es type 'rgb_led_control_off' \
   --ei led 0"
 ```
