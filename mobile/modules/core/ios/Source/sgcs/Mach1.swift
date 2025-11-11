@@ -111,9 +111,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func cleanup() {}
 
-    var type: String {
-        return DeviceTypes.MACH1
-    }
+    var type: String = DeviceTypes.MACH1
 
     let hasMic: Bool = false
     var caseOpen = false
