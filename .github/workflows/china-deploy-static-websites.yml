@@ -76,9 +76,6 @@ jobs:
           accessKeyID = ${OSS_ACCESS_KEY_ID}
           accessKeySecret = ${OSS_ACCESS_KEY_SECRET}
 
-          [Bucket-Endpoint]
-          ${OSS_BUCKET} = ${OSS_REGION_ENDPOINT}
-
           [Bucket-Cname]
           ${OSS_BUCKET} = store.mentraglass.cn
           EOF
@@ -89,7 +86,7 @@ jobs:
           aliyun oss sync ${OSS_PATH} oss://${OSS_BUCKET}/ \
             --delete \
             --force \
-            --config-file ./ossutilconfig
+            --config-file ~/.ossutilconfig
 
       # # 8️⃣ Refresh CDN cache
       # - name: Refresh Alibaba CDN cache
