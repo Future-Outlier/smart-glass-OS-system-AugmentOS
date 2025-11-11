@@ -778,7 +778,16 @@ public class MentraLive extends SGCManager {
                     // CTKD Implementation: Register bonding receiver and create bond for BT Classic
                     registerBondingReceiver();
                     Bridge.log("LIVE: CTKD: BLE connection established, initiating CTKD bonding for BT Classic");
-                    createBond(connectedDevice);
+
+                    // Check if device is already bonded before attempting to create bond
+                    if (connectedDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
+                        Bridge.log("LIVE: CTKD: Device is already bonded - marking audio as connected immediately");
+                        isBtClassicConnected = true;
+                        audioConnected = true;
+                        // Note: We'll mark as CONNECTED after glasses_ready is received
+                    } else {
+                        createBond(connectedDevice);
+                    }
 
                     // Discover services
                     gatt.discoverServices();

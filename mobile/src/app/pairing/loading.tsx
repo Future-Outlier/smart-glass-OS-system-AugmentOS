@@ -18,7 +18,7 @@ import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import CoreModule from "core"
 
 export default function GlassesPairingGuideScreen() {
-  const {replace, clearHistory} = useNavigationHistory()
+  const {replace, clearHistory, clearHistoryAndGoHome} = useNavigationHistory()
   const {status} = useCoreStatus()
   const route = useRoute()
   const {themed} = useAppTheme()
@@ -88,7 +88,7 @@ export default function GlassesPairingGuideScreen() {
       console.log("Audio connected:", data.deviceName)
       setAudioPairingNeeded(false)
       // Continue to home after audio is connected
-      replace("/(tabs)/home")
+      clearHistoryAndGoHome()
     }
 
     GlobalEventEmitter.on("AUDIO_PAIRING_NEEDED", handleAudioPairingNeeded)
@@ -124,8 +124,8 @@ export default function GlassesPairingGuideScreen() {
 
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
-    replace("/(tabs)/home")
-  }, [status, replace, audioPairingNeeded])
+    clearHistoryAndGoHome()
+  }, [status, clearHistoryAndGoHome, audioPairingNeeded])
 
   if (pairingInProgress) {
     return (
@@ -175,7 +175,7 @@ export default function GlassesPairingGuideScreen() {
               deviceName={audioDeviceName}
               onSkip={() => {
                 setAudioPairingNeeded(false)
-                replace("/(tabs)/home")
+                clearHistoryAndGoHome()
               }}
             />
           </View>

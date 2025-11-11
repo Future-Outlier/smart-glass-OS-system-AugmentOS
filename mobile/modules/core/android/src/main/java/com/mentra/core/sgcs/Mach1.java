@@ -513,7 +513,7 @@ public class Mach1 extends SGCManager {
 
     public void findCompatibleDeviceNames() {
         // EventBus.getDefault().post(new GlassesBluetoothSearchDiscoverEvent(smartGlassesDevice.deviceModelName, "NOTREQUIREDSKIP"));
-        Bridge.sendDiscoveredDevice(DeviceTypes.MACH1, "NOTREQUIREDSKIP");
+        Bridge.sendDiscoveredDevice(this.type, "NOTREQUIREDSKIP");  // Use this.type to support both Mach1 and Z100
         //this.destroy();
     }
 
