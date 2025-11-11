@@ -84,7 +84,9 @@ const InstallDialog: React.FC<InstallDialogProps> = ({app, open, onOpenChange, i
           <DialogDescription>
             {app && isInstalled
               ? `Are you sure you want to uninstall ${app.name}?`
-              : `Do you want to install ${app.name}?`}
+              : app
+                ? `Do you want to install ${app.name}?`
+                : "Do you want to install this app?"}
           </DialogDescription>
         </DialogHeader>
 

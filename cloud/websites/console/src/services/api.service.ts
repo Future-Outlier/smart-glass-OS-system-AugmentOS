@@ -37,7 +37,6 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 3, initialDel
 
 // Extended App interface for API responses
 export interface AppResponse extends AppI {
-  [x: string]: Key | null | undefined
   id: string // Add id property to match App interface
   createdAt: string
   updatedAt: string
