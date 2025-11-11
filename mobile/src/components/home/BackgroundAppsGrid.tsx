@@ -12,6 +12,7 @@ import {
 } from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 const GRID_COLUMNS = 4
 
@@ -19,6 +20,7 @@ export const BackgroundAppsGrid = () => {
   const {themed, theme} = useAppTheme()
   const {inactive} = useBackgroundApps()
   const startApplet = useStartApplet()
+  const {push} = useNavigationHistory()
 
   const gridData = useMemo(() => {
     // Filter out incompatible apps and running apps
@@ -48,6 +50,15 @@ export const BackgroundAppsGrid = () => {
     return inactiveApps
   }, [inactive])
 
+  const handlePress = (packageName: string) => {
+    const getMoreApplet = getMoreAppsApplet()
+    if (packageName === getMoreApplet.packageName) {
+      push(getMoreApplet.offlineRoute)
+      return
+    }
+    startApplet(packageName)
+  }
+
   const renderItem = useCallback(
     ({item}: {item: ClientAppletInterface}) => {
       // Don't render empty placeholders
@@ -63,7 +74,7 @@ export const BackgroundAppsGrid = () => {
       }
 
       return (
-        <TouchableOpacity style={themed($gridItem)} onPress={() => startApplet(item.packageName)} activeOpacity={0.7}>
+        <TouchableOpacity style={themed($gridItem)} onPress={() => handlePress(item.packageName)} activeOpacity={0.7}>
           <AppIcon app={item} style={themed($appIcon)} />
           <Text
             text={item.name}

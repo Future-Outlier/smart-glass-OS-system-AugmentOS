@@ -194,7 +194,8 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   },
 
   startApplet: async (packageName: string) => {
-    const applet = get().apps.find(a => a.packageName === packageName)
+    let allApps = [...get().apps, getMoreAppsApplet()]
+    const applet = allApps.find(a => a.packageName === packageName)
 
     if (!applet) {
       console.error(`Applet not found for package name: ${packageName}`)
