@@ -1,4 +1,3 @@
-# 🚀 Build, push the dist to Alibaba OSS, and refresh Alibaba CDN cache
 name: China Cloud Deploy Static Websites
 
 on:
@@ -20,21 +19,17 @@ jobs:
       NODE_ENV: production
       CLOUD_PUBLIC_HOST_NAME: api.mentraglass.cn
       ACR_REGION_ID: cn-shenzhen
-      OSS_BUCKET: store
+      OSS_BUCKET: mentra-dev-static-store
       OSS_PATH: cloud/websites/store/dist
       CDN_PATH: "/*"
+      # ossutil configuration
+      OSS_ENDPOINT: store.mentraglass.cn # Your custom domain/CNAME
 
     steps:
       # 1️⃣ Checkout source code
       - uses: actions/checkout@v4
 
-      # # 2️⃣ Setup Node.js + Bun
-      # - name: Setup Node.js
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: "22"
-      #     cache: "bun"
-
+      # 2️⃣ Setup Bun
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -50,37 +45,30 @@ jobs:
         working-directory: cloud/websites/store
         run: bun run build
 
-      # 5️⃣ Install Alibaba Cloud CLI
-      - name: Install Alibaba Cloud CLI
+      # 5️⃣ Install and Configure ossutil
+      - name: Install ossutil
         run: |
-          curl -sSL https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz | tar -xz
-          sudo mv aliyun /usr/local/bin/
-          aliyun --version
+          wget -O ossutil64 http://gosspublic.alicdn.com/ossutil/1.7.16/ossutil64
+          chmod +x ossutil64
+          sudo mv ossutil64 /usr/local/bin/ossutil
 
-      # 6️⃣ Configure Alibaba Cloud CLI
-      - name: Configure Alibaba Cloud CLI
+      # 6️⃣ Configure ossutil with CNAME support
+      - name: Configure ossutil
         run: |
-          aliyun configure set \
-            --profile default \
-            --mode AK \
-            --region $ACR_REGION_ID \
-            --access-key-id ${{ secrets.ALIBABA_ACCESS_KEY_ID }} \
-            --access-key-secret ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
+          ossutil config \
+            -e $OSS_ENDPOINT \
+            -i ${{ secrets.ALIBABA_ACCESS_KEY_ID }} \
+            -k ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }} \
+            -c /tmp/ossutilconfig
 
+      # 7️⃣ Upload static files to OSS using sync
       - name: Upload static files to OSS
         run: |
-          echo "Uploading to oss://${OSS_BUCKET}/ ..."
-          aliyun oss sync ${OSS_PATH} oss://${OSS_BUCKET}/ \
+          echo "Uploading $OSS_PATH to oss://$OSS_BUCKET/ using CNAME endpoint: $OSS_ENDPOINT"
+          ossutil -c /tmp/ossutilconfig sync $OSS_PATH/ oss://$OSS_BUCKET/ \
             --delete \
             --force \
-            --endpoint https://mentraglass.cn
-
-      # # 8️⃣ Refresh CDN cache
-      # - name: Refresh Alibaba CDN cache
-      #   run: |
-      #     echo "Refreshing CDN cache for ${CLOUD_PUBLIC_HOST_NAME}..."
-      #     aliyun cdn refreshObjectCaches \
-      #       --domain-name ${CLOUD_PUBLIC_HOST_NAME} \
-      #       --object-path ${CDN_PATH} \
-      #       --object-type Directory
-      #   shell: bash
+            --update
+        env:
+          OSS_ACCESS_KEY_ID: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
+          OSS_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
