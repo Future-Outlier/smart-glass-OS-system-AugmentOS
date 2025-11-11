@@ -88,7 +88,8 @@ jobs:
           echo "Uploading to oss://${OSS_BUCKET}/ ..."
           aliyun oss sync ${OSS_PATH} oss://${OSS_BUCKET}/ \
             --delete \
-            --force
+            --force \
+            --config-file ./ossutilconfig
 
       # # 8️⃣ Refresh CDN cache
       # - name: Refresh Alibaba CDN cache
