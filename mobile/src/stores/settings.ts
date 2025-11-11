@@ -88,8 +88,8 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.enable_phone_notifications]: false,
   [SETTINGS_KEYS.settings_access_count]: 0,
   [SETTINGS_KEYS.backend_url]: "https://api.mentra.glass:443",
-  [SETTINGS_KEYS.store_url]: "https://apps.mentra.glass",
-  // [SETTINGS_KEYS.store_url]: "https://appsdev.mentraglass.com",
+  // [SETTINGS_KEYS.store_url]: "https://apps.mentra.glass",
+  [SETTINGS_KEYS.store_url]: "https://appsdev.mentraglass.com",
   [SETTINGS_KEYS.reconnect_on_app_foreground]: false,
   [SETTINGS_KEYS.theme_preference]: "system",
   // core settings:
