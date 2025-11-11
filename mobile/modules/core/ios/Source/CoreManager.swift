@@ -351,7 +351,7 @@ struct ViewState {
 
                 if mic == MicTypes.GLASSES_CUSTOM {
                     if sgc?.hasMic ?? false {
-                        await sgc?.setMicEnabled(true)
+                        sgc?.setMicEnabled(true)
                         micUsed = mic
                         break
                     }
@@ -378,7 +378,7 @@ struct ViewState {
             }
 
             if mic == MicTypes.GLASSES_CUSTOM {
-                await sgc?.setMicEnabled(false)
+                sgc?.setMicEnabled(false)
             }
         }
     }
