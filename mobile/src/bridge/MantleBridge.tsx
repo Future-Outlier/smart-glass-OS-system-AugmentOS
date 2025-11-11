@@ -4,11 +4,10 @@ import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
-import {useSettingsStore} from "@/stores/settings"
+import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {useGlassesStore} from "@/stores/glasses"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import Constants from "expo-constants"
 
 import CoreModule from "core"
 import Toast from "react-native-toast-message"
@@ -17,7 +16,6 @@ export class MantleBridge {
   private static instance: MantleBridge | null = null
   private messageEventSubscription: any = null
   private lastMessage: string = ""
-  private IS_CHINA_DEPLOYMENT: boolean = Constants.expoConfig?.extra?.DEPLOYMENT_REGION === "china"
 
   // Private constructor to enforce singleton pattern
   private constructor() {
@@ -79,7 +77,7 @@ export class MantleBridge {
       if ("core_status" in data) {
         if (this.lastMessage === jsonString) {
           console.log("BRIDGE: DUPLICATE CORE STATUS MESSAGE")
-          return
+          // return
         }
         this.lastMessage = jsonString
       }
@@ -276,7 +274,8 @@ export class MantleBridge {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          if (!this.IS_CHINA_DEPLOYMENT && livekit.isRoomConnected()) {
+          const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+          if (!isChinaDeployment && livekit.isRoomConnected()) {
             livekit.addPcm(bytes)
           } else {
             socketComms.sendBinary(bytes)

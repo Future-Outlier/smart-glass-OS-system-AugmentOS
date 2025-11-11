@@ -1,7 +1,7 @@
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {translate} from "@/i18n"
-import {ThemedStyle, spacing} from "@/theme"
+import {$styles, ThemedStyle, spacing} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {FontAwesome} from "@expo/vector-icons"
@@ -10,6 +10,7 @@ import {useEffect, useState} from "react"
 import {ActivityIndicator, ScrollView, TextInput, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import Toast from "react-native-toast-message"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 export default function ResetPasswordScreen() {
   const [email, setEmail] = useState("")
@@ -21,6 +22,7 @@ export default function ResetPasswordScreen() {
   const [isValidToken, setIsValidToken] = useState(false)
 
   const {theme, themed} = useAppTheme()
+  const {goBack} = useNavigationHistory()
 
   const passwordsMatch = newPassword === confirmPassword && newPassword.length > 0
   const isFormValid = passwordsMatch && newPassword.length >= 6
@@ -123,10 +125,10 @@ export default function ResetPasswordScreen() {
 
   if (!isValidToken) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+      <Screen preset="fixed" style={themed($styles.screen)}>
         <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
           <ActivityIndicator size="large" color={theme.colors.tint} />
-          <Spacer height={spacing.md} />
+          <Spacer height={spacing.s4} />
           <Text tx="login:verifyingResetLink" />
         </View>
       </Screen>
@@ -134,12 +136,8 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header
-        title={translate("login:resetPasswordTitle")}
-        leftIcon="caretLeft"
-        onLeftPress={() => router.replace("/auth/login")}
-      />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title={translate("login:resetPasswordTitle")} leftIcon="chevron-left" onLeftPress={() => goBack()} />
       <ScrollView
         contentContainerStyle={themed($scrollContent)}
         showsVerticalScrollIndicator={false}
@@ -154,7 +152,7 @@ export default function ResetPasswordScreen() {
                 <Text tx="login:email" style={themed($inputLabel)} />
                 <View style={[themed($enhancedInputContainer), themed($disabledInput)]}>
                   <FontAwesome name="envelope" size={16} color={theme.colors.textDim} />
-                  <Spacer width={spacing.xxs} />
+                  <Spacer width={spacing.s1} />
                   <TextInput
                     style={themed($enhancedInput)}
                     value={email}
@@ -170,7 +168,7 @@ export default function ResetPasswordScreen() {
               <Text tx="profileSettings:newPassword" style={themed($inputLabel)} />
               <View style={themed($enhancedInputContainer)}>
                 <FontAwesome name="lock" size={16} color={theme.colors.text} />
-                <Spacer width={spacing.xxs} />
+                <Spacer width={spacing.s1} />
                 <TextInput
                   hitSlop={{top: 16, bottom: 16}}
                   style={themed($enhancedInput)}
@@ -194,7 +192,7 @@ export default function ResetPasswordScreen() {
               <Text tx="profileSettings:confirmPassword" style={themed($inputLabel)} />
               <View style={themed($enhancedInputContainer)}>
                 <FontAwesome name="lock" size={16} color={theme.colors.text} />
-                <Spacer width={spacing.xxs} />
+                <Spacer width={spacing.s1} />
                 <TextInput
                   hitSlop={{top: 16, bottom: 16}}
                   style={themed($enhancedInput)}
@@ -217,7 +215,7 @@ export default function ResetPasswordScreen() {
               <Text tx="profileSettings:passwordsDoNotMatch" style={themed($errorText)} />
             )}
 
-            <Spacer height={spacing.lg} />
+            <Spacer height={spacing.s6} />
 
             <Button
               tx="login:resetPassword"
@@ -244,14 +242,14 @@ const $scrollContent: ThemedStyle<ViewStyle> = () => ({
 
 const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.lg,
+  padding: spacing.s6,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
   fontSize: 16,
   color: colors.text,
   textAlign: "left",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $form: ThemedStyle<ViewStyle> = () => ({
@@ -259,7 +257,7 @@ const $form: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $inputGroup: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $inputLabel: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -276,7 +274,7 @@ const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDar
   borderWidth: 1,
   borderColor: colors.border,
   borderRadius: 8,
-  paddingHorizontal: spacing.sm,
+  paddingHorizontal: spacing.s3,
   backgroundColor: isDark ? colors.transparent : colors.background,
   ...(isDark
     ? {
@@ -300,7 +298,7 @@ const $enhancedInput: ThemedStyle<TextStyle> = ({colors}) => ({
 const $errorText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 14,
   color: colors.error,
-  marginTop: spacing.xs,
+  marginTop: spacing.s2,
 })
 
 const $primaryButton: ThemedStyle<ViewStyle> = () => ({})

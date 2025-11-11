@@ -80,14 +80,14 @@ class WebSocketManager extends EventEmitter {
     }
 
     this.webSocket.onerror = error => {
-      console.error("WSM: WebSocket error:", error)
+      console.log("WSM: WebSocket error:", error)
       this.updateStatus(WebSocketStatus.ERROR)
       store.setError(error?.toString() || "WebSocket error")
       this.startReconnectInterval()
     }
 
     this.webSocket.onclose = event => {
-      console.error("WSM: Connection closed with code:", event.code)
+      console.log("WSM: Connection closed with code:", event.code)
       this.updateStatus(WebSocketStatus.DISCONNECTED)
       store.setDisconnected()
       this.startReconnectInterval()
@@ -153,7 +153,7 @@ class WebSocketManager extends EventEmitter {
     try {
       this.webSocket?.send(text)
     } catch (error) {
-      console.error("WSM: Error sending text message:", error)
+      console.log("WSM: Error sending text message:", error)
     }
   }
 
@@ -167,7 +167,7 @@ class WebSocketManager extends EventEmitter {
     try {
       this.webSocket?.send(data)
     } catch (error) {
-      console.error("WSM: Error sending binary data:", error)
+      console.log("WSM: Error sending binary data:", error)
     }
   }
 
@@ -187,7 +187,7 @@ class WebSocketManager extends EventEmitter {
       // Forward message to listeners
       this.emit("message", message)
     } catch (error) {
-      console.error("WSM: Failed to parse WebSocket message:", error)
+      console.log("WSM: Failed to parse WebSocket message:", error)
     }
   }
 

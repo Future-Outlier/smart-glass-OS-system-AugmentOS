@@ -87,7 +87,7 @@ export default function IncompatibleAppsList() {
 
   return (
     <View style={themed($container)}>
-      <Spacer height={theme.spacing.md} />
+      <Spacer height={theme.spacing.s4} />
 
       {/* Header */}
       <Text style={themed($headerText)}>{`Incompatible with ${glassesName}`}</Text>
@@ -107,7 +107,7 @@ export default function IncompatibleAppsList() {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.sm, // Match AppsGridView padding
+  paddingHorizontal: spacing.s3, // Match AppsGridView padding
 })
 
 const $headerText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -115,7 +115,7 @@ const $headerText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontWeight: "600",
   color: colors.textDim,
   textAlign: "left", // Align left like section headers
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $gridContainer: ThemedStyle<ViewStyle> = () => ({
@@ -128,9 +128,9 @@ const $row: ThemedStyle<ViewStyle> = () => ({
 
 const $gridItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
   // Match exact width calculation from AppsGridView
-  width: (SCREEN_WIDTH - spacing.lg * 2 - spacing.sm * 2 - spacing.xs * 4) / GRID_COLUMNS,
+  width: (SCREEN_WIDTH - spacing.s6 * 2 - spacing.s3 * 2 - spacing.s2 * 4) / GRID_COLUMNS,
   alignItems: "center",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
   opacity: 0.6, // Make incompatible apps look disabled
 })
 
@@ -142,7 +142,7 @@ const $appIcon: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: 60, // Match AppsGridView exactly
   height: 60,
   borderRadius: 30,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
   overflow: "hidden",
 })
 

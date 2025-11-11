@@ -396,6 +396,7 @@ public class MentraLive extends SGCManager {
     public MentraLive() {
         super();
         this.type = DeviceTypes.LIVE;
+        this.hasMic = true;
         this.context = Bridge.getContext();
 
         // Initialize bluetooth adapter
@@ -1370,6 +1371,8 @@ public class MentraLive extends SGCManager {
     }
 
     public void setMicEnabled(boolean enabled) {
+        Bridge.log("LIVE: setMicEnabled(" + enabled + ")");
+        changeSmartGlassesMicrophoneState(enabled);
     }
 
     /**
@@ -4134,7 +4137,10 @@ public class MentraLive extends SGCManager {
             bleImgId = bleImgId.substring(0, dotIndex);
         }
 
+        Bridge.log("LIVE: 📦 BLE photo transfer packet for requestId: " + bleImgId);
+
         BlePhotoTransfer photoTransfer = blePhotoTransfers.get(bleImgId);
+        Bridge.log("LIVE: 📦 BLE photo transfer for requestId: " + bleImgId + " found: " + (photoTransfer != null));
         if (photoTransfer != null) {
             // This is a BLE photo transfer
             Bridge.log("LIVE: 📦 BLE photo transfer packet for requestId: " + photoTransfer.requestId);

@@ -9,18 +9,16 @@ import {Text} from "@/components/ignite"
 
 interface GlassesDisplayMirrorProps {
   fallbackMessage?: string
-  containerStyle?: any
+  style?: ViewStyle
   fullscreen?: boolean
-  demo?: boolean
   demoText?: string
 }
 
 const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
   fallbackMessage = "",
-  containerStyle,
+  style,
   fullscreen = false,
-  demo = false,
-  demoText = "Simulated Glasses Display",
+  demoText = "",
 }) => {
   const {themed} = useAppTheme()
   const canvasRef = useRef<Canvas>(null)
@@ -30,7 +28,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
   const {currentEvent} = useDisplayStore()
 
   // Use demo layout if in demo mode, otherwise use real layout
-  const layout = demo ? {layoutType: "text_wall", text: demoText} : currentEvent.layout
+  const layout = demoText !== "" ? {layoutType: "text_wall", text: demoText} : currentEvent.layout
 
   const processBitmap = async () => {
     if (layout?.layoutType !== "bitmap_view" || !layout.data) {
@@ -207,7 +205,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
       return null
     }
     return (
-      <View style={[themed($glassesScreen), containerStyle]}>
+      <View style={[themed($glassesScreen), style]}>
         <View style={themed($emptyContainer)}>
           <Text style={themed($emptyText)}>{fallbackMessage}</Text>
         </View>
@@ -223,18 +221,16 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
     return <View style={themed($glassesScreenFullscreen)}>{content}</View>
   }
 
-  return <View style={[themed($glassesScreen), containerStyle]}>{content}</View>
+  return <View style={[themed($glassesScreen), style]}>{content}</View>
 }
 
 const $glassesScreen: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   width: "100%",
   minHeight: 140,
-  backgroundColor: colors.backgroundAlt,
-  borderRadius: spacing.md,
-  paddingHorizontal: spacing.md,
-  paddingVertical: spacing.sm,
-  borderWidth: 2,
-  borderColor: colors.border,
+  backgroundColor: colors.primary_foreground,
+  borderRadius: spacing.s4,
+  paddingHorizontal: spacing.s4,
+  paddingVertical: spacing.s3,
 })
 
 const $glassesScreenFullscreen: ThemedStyle<ViewStyle> = () => ({

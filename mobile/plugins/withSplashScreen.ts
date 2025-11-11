@@ -9,10 +9,12 @@ import {ConfigPlugin, withStringsXml, AndroidConfig, withAndroidStyles} from "ex
  *   1) Replace the default splash screen with a transparent screen
  *   2) Set the splash screen status bar to translucent
  */
-export const withSplashScreen: ConfigPlugin = config => {
+const withSplashScreen: ConfigPlugin = config => {
   config = withAndroidSplashScreen(config)
   return config
 }
+
+export default withSplashScreen
 
 /**
  * Android implementation of the config plugin - the only platform needed for this plugin.

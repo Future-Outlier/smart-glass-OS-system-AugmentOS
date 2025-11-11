@@ -6,6 +6,7 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import showAlert from "@/utils/AlertUtils"
 import {translate} from "@/i18n"
+import { SETTINGS_KEYS, useSetting } from "@/stores/settings"
 interface MicIconProps {
   color?: string
   height?: number
@@ -16,6 +17,8 @@ interface MicIconProps {
 const MicIcon = ({color, width = 17, height = 16, withBackground = false}: MicIconProps) => {
   const {themed, theme} = useAppTheme()
   const {status} = useCoreStatus()
+  const [preferredMic] = useSetting(SETTINGS_KEYS.preferred_mic)
+  const isGlassesConnected = Boolean(status.glasses_info?.model_name)
 
   const iconColor = color || theme.colors.icon
 
@@ -38,7 +41,7 @@ const MicIcon = ({color, width = 17, height = 16, withBackground = false}: MicIc
     return null
   }
 
-  if (status.core_info.preferred_mic === "glasses" && !status.glasses_info) {
+  if (preferredMic === "glasses" && !isGlassesConnected) {
     return null
   }
 

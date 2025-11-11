@@ -506,7 +506,7 @@ useEffect(() => {
 if (needsAudioPairing && Platform.OS === 'ios') {
   return (
     <Screen preset="fixed">
-      <Header leftIcon="caretLeft" onLeftPress={handleForgetGlasses} />
+      <Header leftIcon="arrow-left" onLeftPress={handleForgetGlasses} />
       <AudioPairingPrompt
         glassesModelName={glassesModelName}
         onPairNow={() => {

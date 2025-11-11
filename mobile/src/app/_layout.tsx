@@ -7,15 +7,22 @@ import {loadDateFnsLocale} from "@/utils/formatDate"
 import {AllProviders} from "@/utils/structure/AllProviders"
 import {AllEffects} from "@/utils/structure/AllEffects"
 import * as Sentry from "@sentry/react-native"
-import Constants from "expo-constants"
 import {registerGlobals} from "@livekit/react-native-webrtc"
-import {initializeSettings} from "@/stores/settings"
+import {initializeSettings, SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {ConsoleLogger} from "@/utils/debug/console"
+import {LogBox} from "react-native"
+
+// prevent the annoying warning box at the bottom of the screen from getting in the way:
+LogBox.ignoreLogs([
+  "Failed to open debugger. Please check that the dev server is running and reload the app.",
+  "Require cycle:",
+  "is missing the required default export.",
+  "Attempted to import the module",
+])
 
 // Only initialize Sentry if DSN is provided
-const sentryDsn = Constants.expoConfig?.extra?.SENTRY_DSN
-const deploymentRegion = Constants.expoConfig?.extra?.DEPLOYMENT_REGION
-const isChina = deploymentRegion === "china"
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN
+const isChina = useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
 if (!isChina && sentryDsn && sentryDsn !== "secret" && sentryDsn.trim() !== "") {
   Sentry.init({
     dsn: sentryDsn,
@@ -93,9 +100,7 @@ function Root() {
           headerShown: false,
           gestureEnabled: true,
           gestureDirection: "horizontal",
-          // gestureResponseDistance: 100,
-          // fullScreenGestureEnabled: true,
-          animation: "none",
+          animation: "simple_push",
         }}
       />
       <ConsoleLogger />

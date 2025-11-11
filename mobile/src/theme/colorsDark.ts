@@ -1,3 +1,5 @@
+import {getAllColors} from "./colorTools"
+
 const palette = {
   // Neutrals
   neutral900: "#FFFFFF",
@@ -7,15 +9,15 @@ const palette = {
   neutral500: "#978F8A",
   neutral400: "#564E4A",
   neutral300: "#3C3836",
-  neutral200: "#191015",
-  neutral100: "#000000",
+  neutral200: "#222222",
+  neutral100: "#171717",
 
   // Primary
   primary900: "#D8C0E7",
   primary800: "#C4B0EE",
   primary700: "#B0B9FF",
   primary600: "#A090E6",
-  primary500: "#8070DE",
+  primary500: "#36DD88",
   primary400: "#6054D6",
   primary300: "#4040CE",
   primary200: "#202761",
@@ -100,21 +102,26 @@ const unique = {
   sliderTrackInactive: palette.purpleGray1,
 } as const
 
+const design = {
+  ...getAllColors("dark mode"),
+}
+
 export const colors = {
   palette,
 
   // Text colors
-  text: palette.neutral800,
+  text: design.secondary_foreground,
   textDim: palette.neutral600,
   textAlt: palette.neutral200,
 
   // Backgrounds
-  background: palette.primary100,
-  backgroundAlt: "#1A2050", // Subtle step lighter than primary100
+  // background: palette.neutral100,
+  backgroundAlt: palette.neutral200,
+  backgroundNeo: palette.neutral100,
   modalOverlay: "rgba(0, 0, 0, 0.7)",
 
   // Borders
-  border: palette.primary200,
+  // border: palette.primary200,
   separator: palette.neutral300,
 
   // Primary colors
@@ -129,9 +136,9 @@ export const colors = {
   warning: palette.accent300,
 
   // Common:
-  primary: palette.primary700,
-  secondary: palette.secondary300,
-  accent: palette.accent300,
+  // primary: palette.primary500,
+  // secondary: palette.secondary300,
+  // accent: palette.accent300,
 
   // Iconography
   icon: palette.neutral900,
@@ -142,4 +149,55 @@ export const colors = {
   statusText: palette.neutral900,
 
   ...unique,
+
+  ...design,
+
+  // defined here so auto-complete works:
+  primary: design.primary,
+  primary_foreground: design.primary_foreground,
+
+  ring: design.ring,
+
+  input: design.input,
+  border: design.border,
+
+  secondary: design.secondary,
+  secondary_foreground: design.secondary_foreground,
+
+  muted: design.muted,
+  muted_foreground: design.muted_foreground,
+
+  accent: design.accent,
+  accent_foreground: design.accent_foreground,
+
+  destructive: design.destructive,
+  destructive_foreground: design.destructive_foreground,
+
+  background: design.background,
+  foreground: design.foreground,
+
+  card: design.card,
+  card_foreground: design.card_foreground,
+
+  popover: design.popover,
+  popover_foreground: design.popover_foreground,
+
+  chart_1: design.chart_1,
+  chart_2: design.chart_2,
+  chart_3: design.chart_3,
+  chart_4: design.chart_4,
+  chart_5: design.chart_5,
+
+  sidebar: design.sidebar,
+  sidebar_foreground: design.sidebar_foreground,
+
+  sidebar_primary: design.sidebar_primary,
+  sidebar_primary_foreground: design.sidebar_primary_foreground,
+
+  sidebar_accent: design.sidebar_accent,
+  sidebar_accent_foreground: design.sidebar_accent_foreground,
+
+  sidebar_border: design.sidebar_border,
+  sidebar_ring: design.sidebar_ring,
+  background_color: design.background_color,
 } as const
