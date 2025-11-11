@@ -413,7 +413,7 @@ export function SimulatedPairingGuide() {
       </View> */}
 
       <View style={themed($noteSection)}>
-        <View style={{flex: 1, flexDirection: "row", gap: theme.spacing.s4}}>
+        <View style={{flex: 1, flexDirection: "row", gap: theme.spacing.s4, marginBottom: theme.spacing.s4}}>
           <Image
             source={require("../../../assets/glasses/mentra_live/mentra_live.png")}
             style={[themed($guideImage), {width: 80, height: 80}]}
@@ -425,7 +425,21 @@ export function SimulatedPairingGuide() {
           </View>
         </View>
 
-        <Button tx="common:learnMore" />
+        <Button
+          tx="common:learnMore"
+          onPress={() => {
+            showAlert("Open External Website", "This will open mentraglass.com in your web browser. Continue?", [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Continue",
+                onPress: () => Linking.openURL("https://mentraglass.com/"),
+              },
+            ])
+          }}
+        />
       </View>
     </View>
   )

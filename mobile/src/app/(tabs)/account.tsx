@@ -9,8 +9,6 @@ import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
-import UserIcon from "assets/icons/navbar/UserIcon"
 import {useRef} from "react"
 import {Platform, View, ViewStyle} from "react-native"
 import {ScrollView} from "react-native-gesture-handler"
@@ -87,9 +85,7 @@ export default function AccountPage() {
               onPress={() => push("/settings/profile")}
             />
             <RouteButton
-              icon={
-                <Icon name="message-2-star" size={24} color={theme.colors.secondary_foreground} />
-              }
+              icon={<Icon name="message-2-star" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:feedback")}
               onPress={() => push("/settings/feedback")}
             />
@@ -119,20 +115,12 @@ export default function AccountPage() {
               />
             )}
             <RouteButton
-              icon={
-                <Icon name="file-type-2" size={24} color={theme.colors.secondary_foreground} />
-              }
+              icon={<Icon name="file-type-2" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:transcriptionSettings")}
               onPress={() => push("/settings/transcription")}
             />
             <RouteButton
-              icon={
-                <Icon
-                  name="shield-lock"
-                  size={24}
-                  color={theme.colors.secondary_foreground}
-                />
-              }
+              icon={<Icon name="shield-lock" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:privacySettings")}
               onPress={() => push("/settings/privacy")}
             />

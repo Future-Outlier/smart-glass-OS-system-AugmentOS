@@ -79,6 +79,9 @@ const en = {
     g1Ready: "Solid orange LED turned on",
     g1NotReady: "Orange LED is blinking",
   },
+  pairingGuide: {
+    mentraLivePreorder: "Get Mentra Live and experience computer vision on your smart glasses.",
+  },
   pairingGuides: {
     G1: {
       step1: "Disconnect your G1 from within the Even Realities app, or uninstall the Even Realities app",

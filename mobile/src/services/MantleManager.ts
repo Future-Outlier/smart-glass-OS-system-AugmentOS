@@ -53,13 +53,14 @@ class MantleManager {
   // sets up the bridge and initializes app state
   public async init() {
     await bridge.dummy()
-    try {
-      const loadedSettings = await restComms.loadUserSettings() // get settings from server
+    const loadedSettings = await restComms.loadUserSettings() // get settings from server
+    if (loadedSettings) {
       await useSettingsStore.getState().setManyLocally(loadedSettings) // write settings to local storage
-      await useSettingsStore.getState().initUserSettings() // initialize user settings
-    } catch (e) {
-      console.error(`Failed to get settings from server: ${e}`)
+    } else {
+      console.error("Mantle: No settings received from server")
     }
+
+    await useSettingsStore.getState().initUserSettings() // initialize user settings
     await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
 
     setTimeout(async () => {

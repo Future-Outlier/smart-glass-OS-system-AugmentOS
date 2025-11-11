@@ -40,7 +40,9 @@ export const AllProviders = withWrappers(
   ButtonActionProvider,
   NavigationHistoryProvider,
   DeeplinkProvider,
-  GestureHandlerRootView,
+  props => {
+    return <GestureHandlerRootView style={{flex: 1}}>{props.children}</GestureHandlerRootView>
+  },
   ModalProvider,
   props => {
     const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY

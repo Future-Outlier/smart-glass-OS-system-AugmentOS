@@ -325,19 +325,6 @@ class RestComms {
     return {url, token}
   }
 
-  // Data Export
-  public async requestDataExport(): Promise<any> {
-    return this.authenticatedRequest("POST", "/api/account/request-export", {format: "json"})
-  }
-
-  public async getExportStatus(exportId: string): Promise<any> {
-    return this.authenticatedRequest("GET", "/api/account/export-status", null, {id: exportId})
-  }
-
-  public async downloadExport(exportId: string): Promise<any> {
-    return this.authenticatedRequest("GET", `/api/account/download-export/${exportId}`)
-  }
-
   // User Feedback & Settings
   public async sendFeedback(feedbackBody: string): Promise<void> {
     await this.authenticatedRequest("POST", "/api/client/feedback", {feedback: feedbackBody})
@@ -348,7 +335,8 @@ class RestComms {
   }
 
   public async loadUserSettings(): Promise<any> {
-    return await this.authenticatedRequest("GET", "/api/client/user/settings")
+    let response = await this.authenticatedRequest("GET", "/api/client/user/settings")
+    return response.data
   }
 
   // Error Reporting

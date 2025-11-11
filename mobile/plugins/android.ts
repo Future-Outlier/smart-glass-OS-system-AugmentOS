@@ -231,7 +231,7 @@ function withAndroidManifestModifications(config: any) {
         app.$["android:networkSecurityConfig"] = "@xml/network_security_config"
       }
       if (!app.$["android:enableOnBackInvokedCallback"]) {
-        app.$["android:enableOnBackInvokedCallback"] = "false"
+        app.$["android:enableOnBackInvokedCallback"] = "true"
       }
     }
 
