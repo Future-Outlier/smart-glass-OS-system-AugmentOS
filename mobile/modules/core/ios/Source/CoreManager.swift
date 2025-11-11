@@ -55,7 +55,9 @@ struct ViewState {
     private var isSearching: Bool = false
     private var onboardMicUnavailable: Bool = false
     private var currentRequiredData: [SpeechRequiredDataType] = []
-    var micRanking: [String] = [MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.BT_CLASSIC]
+    var micRanking: [String] = [
+        MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.BT_CLASSIC,
+    ]
 
     // glasses settings
     var contextualDashboard = true
@@ -332,30 +334,33 @@ struct ViewState {
         // allow the sgc to make changes to the micRanking:
         micRanking = sgc?.sortMicRanking(list: micRanking) ?? micRanking
 
-        for mic in micRanking {
-            if mic == MicTypes.PHONE_INTERNAL {
-                if PhoneMic.shared.isRecording {
-                    micUsed = mic
-                    break
+        if micEnabled {
+            for mic in micRanking {
+                if mic == MicTypes.PHONE_INTERNAL {
+                    if PhoneMic.shared.isRecording {
+                        micUsed = mic
+                        break
+                    }
+                    // if the phone mic is not recording, start recording:
+                    let success = PhoneMic.shared.startRecording()
+                    if success {
+                        micUsed = mic
+                        break
+                    }
                 }
-                // if the phone mic is not recording, start recording:
-                let success = PhoneMic.shared.startRecording()
-                if success {
-                    micUsed = mic
-                    break
-                }
-            }
 
-            if mic == MicTypes.GLASSES_CUSTOM {
-                if sgc?.hasMic ?? false {
-                    await sgc?.setMicEnabled(true)
-                    micUsed = mic
-                    break
+                if mic == MicTypes.GLASSES_CUSTOM {
+                    if sgc?.hasMic ?? false {
+                        await sgc?.setMicEnabled(true)
+                        micUsed = mic
+                        break
+                    }
                 }
             }
         }
+
         // log if no mic was found:
-        if micUsed == "" {
+        if micUsed == "" && micEnabled {
             Bridge.log("MAN: No available mic found!")
             return
         }
@@ -471,7 +476,8 @@ struct ViewState {
         Task {
             sgc?.setBrightness(value, autoMode: autoBrightness)
             if autoBrightnessChanged {
-                sgc?.sendTextWall(autoBrightness ? "Enabled auto brightness" : "Disabled auto brightness")
+                sgc?.sendTextWall(
+                    autoBrightness ? "Enabled auto brightness" : "Disabled auto brightness")
             } else {
                 sgc?.sendTextWall("Set brightness to \(value)%")
             }
@@ -1162,14 +1168,15 @@ struct ViewState {
         // }
     }
 
-    func handle_rgb_led_control(requestId: String,
-                                packageName: String?,
-                                action: String,
-                                color: String?,
-                                ontime: Int,
-                                offtime: Int,
-                                count: Int)
-    {
+    func handle_rgb_led_control(
+        requestId: String,
+        packageName: String?,
+        action: String,
+        color: String?,
+        ontime: Int,
+        offtime: Int,
+        count: Int
+    ) {
         sgc?.sendRgbLedControl(
             requestId: requestId,
             packageName: packageName,
@@ -1189,8 +1196,13 @@ struct ViewState {
         _ authToken: String?,
         _ compress: String?
     ) {
-        Bridge.log("MAN: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size), compress=\(compress ?? "none")")
-        sgc?.requestPhoto(requestId, appId: appId, size: size, webhookUrl: webhookUrl, authToken: authToken, compress: compress)
+        Bridge.log(
+            "MAN: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size), compress=\(compress ?? "none")"
+        )
+        sgc?.requestPhoto(
+            requestId, appId: appId, size: size, webhookUrl: webhookUrl, authToken: authToken,
+            compress: compress
+        )
     }
 
     func handle_connect_default() {
@@ -1359,7 +1371,8 @@ struct ViewState {
             "is_searching": isSearching,
             // only on if recording from glasses:
             // TODO: this isn't robust:
-            "is_mic_enabled_for_frontend": micEnabled && (preferredMic == "glasses") && (sgc?.ready ?? false),
+            "is_mic_enabled_for_frontend": micEnabled && (preferredMic == "glasses")
+                && (sgc?.ready ?? false),
             "core_token": coreToken,
             "puck_connected": true,
         ]
@@ -1503,11 +1516,15 @@ struct ViewState {
             updateButtonPhotoSize(newPhotoSize)
         }
 
-        if let newButtonMaxRecordingTime = settings["button_max_recording_time"] as? Int, newButtonMaxRecordingTime != buttonMaxRecordingTime {
+        if let newButtonMaxRecordingTime = settings["button_max_recording_time"] as? Int,
+           newButtonMaxRecordingTime != buttonMaxRecordingTime
+        {
             updateButtonMaxRecordingTime(newButtonMaxRecordingTime)
         }
 
-        if let newButtonCameraLed = settings["button_camera_led"] as? Bool, newButtonCameraLed != buttonCameraLed {
+        if let newButtonCameraLed = settings["button_camera_led"] as? Bool,
+           newButtonCameraLed != buttonCameraLed
+        {
             updateButtonCameraLed(newButtonCameraLed)
         }
 
