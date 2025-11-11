@@ -19,11 +19,11 @@ jobs:
       NODE_ENV: production
       CLOUD_PUBLIC_HOST_NAME: api.mentraglass.cn
       ACR_REGION_ID: cn-shenzhen
-      OSS_BUCKET: mentra-dev-static-store
+      OSS_BUCKET: store
       OSS_PATH: cloud/websites/store/dist
       CDN_PATH: "/*"
       # ossutil configuration
-      OSS_ENDPOINT: store.mentraglass.cn # Your custom domain/CNAME
+      OSS_ENDPOINT: mentraglass.cn # Your custom domain/CNAME
 
     steps:
       # 1️⃣ Checkout source code
