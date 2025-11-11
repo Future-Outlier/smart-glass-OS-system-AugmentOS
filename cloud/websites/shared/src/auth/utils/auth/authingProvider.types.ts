@@ -2,6 +2,7 @@ export type MentraAuthUser = {
   id: string
   email?: string
   name: string
+  phoneNumber?: string
   avatarUrl?: string
   createdAt?: string
   provider?: string
