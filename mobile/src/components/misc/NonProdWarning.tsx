@@ -1,6 +1,6 @@
 // SensingDisabledWarning.tsx
 import {useEffect, useState} from "react"
-import {TouchableOpacity, ViewStyle} from "react-native"
+import {TouchableOpacity, ViewStyle, Platform, Linking} from "react-native"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {MaterialCommunityIcons} from "@expo/vector-icons"
@@ -8,6 +8,7 @@ import showAlert from "@/utils/AlertUtils"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import Constants from "expo-constants"
 
 export default function NonProdWarning() {
   const {theme, themed} = useAppTheme()
@@ -57,15 +58,59 @@ export default function NonProdWarning() {
   // )
 
   const nonProdWarning = () => {
-    showAlert(translate("warning:nonProdBackend"), "", [
-      {text: translate("common:ok"), onPress: () => {}},
-      {
-        text: translate("settings:developerSettings"),
-        onPress: () => {
-          push("/settings/developer")
+    const isBetaBuild = !!Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE
+
+    if (isBetaBuild) {
+      // Beta build warning
+      if (Platform.OS === "ios") {
+        // iOS TestFlight build
+        showAlert(translate("warning:testFlightBuild"), "", [
+          {text: translate("common:ok"), onPress: () => {}},
+          {
+            text: translate("settings:feedback"),
+            onPress: () => {
+              push("/settings/feedback")
+            },
+          },
+        ])
+      } else {
+        // Android Beta build - show opt-out first, then feedback
+        showAlert(translate("warning:betaBuild"), "", [
+          {
+            text: translate("warning:optOutOfBeta"),
+            onPress: () => {
+              Linking.openURL("https://play.google.com/apps/testing/com.mentra.mentra")
+            },
+          },
+          {
+            text: translate("common:ok"),
+            onPress: () => {
+              // After dismissing, offer feedback option
+              showAlert(translate("warning:betaBuild"), "", [
+                {text: translate("common:ok"), onPress: () => {}},
+                {
+                  text: translate("settings:feedback"),
+                  onPress: () => {
+                    push("/settings/feedback")
+                  },
+                },
+              ])
+            },
+          },
+        ])
+      }
+    } else {
+      // Developer/non-production backend warning
+      showAlert(translate("warning:nonProdBackend"), "", [
+        {text: translate("common:ok"), onPress: () => {}},
+        {
+          text: translate("settings:developerSettings"),
+          onPress: () => {
+            push("/settings/developer")
+          },
         },
-      },
-    ])
+      ])
+    }
   }
 
   return (
