@@ -1,4 +1,4 @@
-import {PillButton, Text} from "@/components/ignite"
+import {Button, Text} from "@/components/ignite"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
@@ -151,61 +151,72 @@ export default function BackendUrl() {
           editable={!isSavingUrl}
         />
         <View style={themed($buttonRow)}>
-          <PillButton
+          <Button
+            // compact
             text={isSavingUrl ? "Testing..." : "Save & Test URL"}
-            variant="primary"
             onPress={handleSaveUrl}
             disabled={isSavingUrl}
-            buttonStyle={themed($saveButton)}
+            preset="alternate"
+            flexContainer={false}
           />
-          <PillButton
+          <Button
+            // compact
             tx="common:reset"
-            variant="icon"
             onPress={handleResetUrl}
             disabled={isSavingUrl}
-            buttonStyle={themed($resetButton)}
+            preset="alternate"
+            flexContainer={false}
           />
         </View>
         <View style={themed($buttonColumn)}>
-          <PillButton
+          <Button
             tx="developer:global"
-            variant="icon"
             onPress={() => setCustomUrlInput("https://api.mentra.glass:443")}
-            buttonStyle={themed($button)}
+            compact
+            flex
+            flexContainer={false}
           />
-          <PillButton
+          <Button
             tx="developer:dev"
-            variant="icon"
             onPress={() => setCustomUrlInput("https://devapi.mentra.glass:443")}
-            buttonStyle={themed($button)}
+            compact
+            flexContainer={false}
+            flex
           />
         </View>
         <View style={themed($buttonColumn)}>
-          <PillButton
+          <Button
+            compact
             tx="developer:debug"
-            variant="icon"
             onPress={() => setCustomUrlInput("https://debug.augmentos.cloud:443")}
-            buttonStyle={themed($button)}
+            flexContainer={false}
+            flex
           />
-          <PillButton
+          <Button
+            compact
             tx="developer:usCentral"
-            variant="icon"
             onPress={() => setCustomUrlInput("https://uscentralapi.mentra.glass:443")}
-            buttonStyle={themed($button)}
+            flexContainer={false}
+            flex
           />
         </View>
         <View style={themed($buttonColumn)}>
-          <PillButton
+          <Button
+            compact
             tx="developer:france"
-            variant="icon"
             onPress={() => setCustomUrlInput("https://franceapi.mentra.glass:443")}
-            buttonStyle={themed($button)}
+            flexContainer={false}
+            flex
           />
-          <PillButton
-            tx="developer:asiaEast"
-            variant="icon"
-            onPress={handleAsiaButtonPress}
-            buttonStyle={themed($button)}
+          <Button compact tx="developer:asiaEast" onPress={handleAsiaButtonPress} flexContainer={false} flex />
+        </View>
+        <View style={themed($buttonColumn)}>
+          <Button
+            compact
+            tx="developer:staging"
+            onPress={() => setCustomUrlInput("https://stagingapi.mentraglass.com:443")}
+            flexContainer={false}
+            flex
           />
         </View>
       </View>
@@ -253,19 +264,6 @@ const $buttonRow: ThemedStyle<ViewStyle> = () => ({
   flexDirection: "row",
   justifyContent: "space-between",
   marginTop: 10,
-})
-
-const $saveButton: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-  marginRight: 10,
-})
-
-const $resetButton: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-})
-
-const $button: ThemedStyle<ViewStyle> = () => ({
-  flexShrink: 1,
 })
 
 const $buttonColumn: ThemedStyle<ViewStyle> = () => ({
