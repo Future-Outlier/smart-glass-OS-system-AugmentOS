@@ -100,9 +100,7 @@ function Root() {
           headerShown: false,
           gestureEnabled: true,
           gestureDirection: "horizontal",
-          // gestureResponseDistance: 100,
-          // fullScreenGestureEnabled: true,
-          animation: "none",
+          animation: "simple_push",
         }}
       />
       <ConsoleLogger />
