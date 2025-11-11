@@ -86,7 +86,7 @@ jobs:
           aliyun oss sync ${OSS_PATH} oss://${OSS_BUCKET}/ \
             --delete \
             --force \
-            --config-file ~/.ossutilconfig
+            --endpoint https://store.mentraglass.cn
 
       # # 8️⃣ Refresh CDN cache
       # - name: Refresh Alibaba CDN cache
