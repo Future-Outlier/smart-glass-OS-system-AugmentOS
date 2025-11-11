@@ -9,12 +9,11 @@ import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
-import UserIcon from "assets/icons/navbar/UserIcon"
 import {useRef} from "react"
-import {Platform, View, ViewStyle} from "react-native"
+import {Platform, TextStyle, View, ViewStyle} from "react-native"
 import {ScrollView} from "react-native-gesture-handler"
 import Toast from "react-native-toast-message"
+import Constants from "expo-constants"
 
 export default function AccountPage() {
   const {theme, themed} = useAppTheme()
@@ -25,6 +24,8 @@ export default function AccountPage() {
   const pressCount = useRef(0)
   const lastPressTime = useRef(0)
   const pressTimeout = useRef<number | null>(null)
+
+  console.log("extra", Constants.expoConfig?.extra)
 
   const handleQuickPress = () => {
     const currentTime = Date.now()
@@ -87,9 +88,7 @@ export default function AccountPage() {
               onPress={() => push("/settings/profile")}
             />
             <RouteButton
-              icon={
-                <Icon name="message-2-star" size={24} color={theme.colors.secondary_foreground} />
-              }
+              icon={<Icon name="message-2-star" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:feedback")}
               onPress={() => push("/settings/feedback")}
             />
@@ -119,20 +118,12 @@ export default function AccountPage() {
               />
             )}
             <RouteButton
-              icon={
-                <Icon name="file-type-2" size={24} color={theme.colors.secondary_foreground} />
-              }
+              icon={<Icon name="file-type-2" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:transcriptionSettings")}
               onPress={() => push("/settings/transcription")}
             />
             <RouteButton
-              icon={
-                <Icon
-                  name="shield-lock"
-                  size={24}
-                  color={theme.colors.secondary_foreground}
-                />
-              }
+              icon={<Icon name="shield-lock" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:privacySettings")}
               onPress={() => push("/settings/privacy")}
             />
@@ -150,10 +141,18 @@ export default function AccountPage() {
         </View>
 
         <View style={themed($versionContainer)}>
-          <Text
-            text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
-            style={{color: theme.colors.textDim}}
-          />
+          <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
+            <Text
+              style={themed($buildInfo)}
+              text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
+            />
+            <Text style={themed($buildInfo)} text={`branch: ${Constants.expoConfig?.extra?.BUILD_BRANCH}`} />
+          </View>
+          {/* build time, commit hash (copy to clipboard), branch name, build number */}
+          <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
+            <Text style={themed($buildInfo)} text={`time: ${Constants.expoConfig?.extra?.BUILD_TIME}`} />
+            <Text style={themed($buildInfo)} text={`commit: ${Constants.expoConfig?.extra?.BUILD_COMMIT}`} />
+          </View>
         </View>
         <Spacer height={theme.spacing.s12} />
         <Spacer height={theme.spacing.s12} />
@@ -169,4 +168,9 @@ const $versionContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingVertical: spacing.s2,
   borderRadius: spacing.s4,
   marginTop: spacing.s16,
+})
+
+const $buildInfo: ThemedStyle<TextStyle> = ({colors}) => ({
+  color: colors.textDim,
+  fontSize: 13,
 })
