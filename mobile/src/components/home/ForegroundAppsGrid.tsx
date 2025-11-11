@@ -3,11 +3,10 @@ import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-nati
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {
   ClientAppletInterface,
   DUMMY_APPLET,
-  useActiveForegroundApp,
+  getMoreAppsApplet,
   useInactiveForegroundApps,
   useStartApplet,
 } from "@/stores/applets"
@@ -16,16 +15,9 @@ import {useAppTheme} from "@/utils/useAppTheme"
 
 const GRID_COLUMNS = 4
 
-// Special type for the Get More Apps item
-interface GridItem extends ClientAppletInterface {
-  isGetMoreApps?: boolean
-}
-
 export const ForegroundAppsGrid: React.FC = () => {
   const {themed, theme} = useAppTheme()
-  const {push} = useNavigationHistory()
   const foregroundApps = useInactiveForegroundApps()
-  const activeForegroundApp = useActiveForegroundApp()
   const startApplet = useStartApplet()
 
   const gridData = useMemo(() => {
@@ -47,6 +39,9 @@ export const ForegroundAppsGrid: React.FC = () => {
       return a.name.localeCompare(b.name)
     })
 
+    // add in the get more apps app
+    inactiveApps.push(getMoreAppsApplet())
+
     // Calculate how many empty placeholders we need to fill the last row
     const totalItems = inactiveApps.length
     const remainder = totalItems % GRID_COLUMNS
@@ -60,23 +55,8 @@ export const ForegroundAppsGrid: React.FC = () => {
     return inactiveApps
   }, [foregroundApps])
 
-  const handleAppPress = useCallback(
-    async (app: GridItem) => {
-      console.log("App pressed:", app.packageName, "isGetMoreApps:", app.isGetMoreApps)
-
-      // Handle "Get More Apps" specially
-      if (app.isGetMoreApps) {
-        push("/store")
-        return
-      }
-
-      await startApplet(app.packageName)
-    },
-    [activeForegroundApp, push],
-  )
-
   const renderItem = useCallback(
-    ({item}: {item: GridItem}) => {
+    ({item}: {item: ClientAppletInterface}) => {
       // Don't render empty placeholders
       if (!item.name) {
         return <View style={themed($gridItem)} />
@@ -90,7 +70,7 @@ export const ForegroundAppsGrid: React.FC = () => {
       }
 
       return (
-        <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
+        <TouchableOpacity style={themed($gridItem)} onPress={() => startApplet(item.packageName)} activeOpacity={0.7}>
           <AppIcon app={item} style={themed($appIcon)} />
           <Text
             text={item.name}
@@ -101,21 +81,8 @@ export const ForegroundAppsGrid: React.FC = () => {
         </TouchableOpacity>
       )
     },
-    [themed, theme, handleAppPress],
+    [themed, theme, startApplet],
   )
-
-  // if (foregroundApps.length === 0) {
-  //   // Still show "Get More Apps" even when no apps
-  //   return (
-  //     <View style={themed($container)}>
-  //       <Text style={themed($emptyText)}>No foreground apps available</Text>
-  //       <TouchableOpacity style={themed($getMoreAppsButton)} onPress={() => push("/store")} activeOpacity={0.7}>
-  //         <GetMoreAppsIcon size="large" style={{marginBottom: theme.spacing.s2}} />
-  //         <Text text="Get More Apps" style={themed($appName)} />
-  //       </TouchableOpacity>
-  //     </View>
-  //   )
-  // }
 
   return (
     <View style={themed($container)}>
@@ -166,7 +133,6 @@ const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
 const $appIcon: ThemedStyle<ViewStyle> = () => ({
   width: 64,
   height: 64,
-  // borderRadius is handled by AppIcon component based on squircle settings
 })
 
 const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({

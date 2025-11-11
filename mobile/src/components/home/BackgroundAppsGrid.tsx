@@ -3,8 +3,6 @@ import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-nati
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import {GetMoreAppsIcon} from "@/components/home/GetMoreAppsIcon"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {
   ClientAppletInterface,
   DUMMY_APPLET,
@@ -17,29 +15,25 @@ import {useAppTheme} from "@/utils/useAppTheme"
 
 const GRID_COLUMNS = 4
 
-// Special type for the Get More Apps item
-interface GridItem extends ClientAppletInterface {
-  isGetMoreApps?: boolean
-}
-
 export const BackgroundAppsGrid = () => {
   const {themed, theme} = useAppTheme()
-  const {push} = useNavigationHistory()
   const {inactive} = useBackgroundApps()
   const startApplet = useStartApplet()
 
   const gridData = useMemo(() => {
     // Filter out incompatible apps and running apps
     let inactiveApps = inactive.filter(app => {
-      if (!app.compatibility?.isCompatible) return false
+      if (!app.compatibility?.isCompatible) {
+        return false
+      }
       return true
     })
 
-    // Sort to put Camera app first, then alphabetical
+    // sort alphabetically
     inactiveApps.sort((a, b) => {
-      // Otherwise sort alphabetically
       return a.name.localeCompare(b.name)
     })
+    inactiveApps.push(getMoreAppsApplet())
 
     // Calculate how many empty placeholders we need to fill the last row
     const totalItems = inactiveApps.length
@@ -54,23 +48,8 @@ export const BackgroundAppsGrid = () => {
     return inactiveApps
   }, [inactive])
 
-  const handleAppPress = useCallback(
-    async (app: GridItem) => {
-      console.log("App pressed:", app.packageName, "isGetMoreApps:", app.isGetMoreApps)
-
-      // Handle "Get More Apps" specially
-      if (app.isGetMoreApps) {
-        push("/store")
-        return
-      }
-      
-      await startApplet(app.packageName)
-    },
-    [push],
-  )
-
   const renderItem = useCallback(
-    ({item}: {item: GridItem}) => {
+    ({item}: {item: ClientAppletInterface}) => {
       // Don't render empty placeholders
       if (!item.name) {
         return <View style={themed($gridItem)} />
@@ -84,7 +63,7 @@ export const BackgroundAppsGrid = () => {
       }
 
       return (
-        <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
+        <TouchableOpacity style={themed($gridItem)} onPress={() => startApplet(item.packageName)} activeOpacity={0.7}>
           <AppIcon app={item} style={themed($appIcon)} />
           <Text
             text={item.name}
@@ -95,21 +74,8 @@ export const BackgroundAppsGrid = () => {
         </TouchableOpacity>
       )
     },
-    [themed, theme, handleAppPress],
+    [themed, theme, startApplet],
   )
-
-  // if (inactive.length === 0) {
-  //   // Still show "Get More Apps" even when no apps
-  //   return (
-  //     <View style={themed($container)}>
-  //       <Text style={themed($emptyText)}>No foreground apps available</Text>
-  //       <TouchableOpacity style={themed($getMoreAppsButton)} onPress={() => push("/store")} activeOpacity={0.7}>
-  //         <GetMoreAppsIcon size="large" style={{marginBottom: theme.spacing.s2}} />
-  //         <Text text="Get More Apps" style={themed($appName)} />
-  //       </TouchableOpacity>
-  //     </View>
-  //   )
-  // }
 
   return (
     <View style={themed($container)}>
@@ -180,16 +146,4 @@ const $appNameOffline: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   marginTop: spacing.s1,
   textDecorationLine: "line-through",
   lineHeight: 14,
-})
-
-const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 15,
-  color: colors.textDim,
-  textAlign: "center",
-  marginBottom: spacing.s6,
-})
-
-const $getMoreAppsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  alignItems: "center",
-  marginTop: spacing.s4,
 })
