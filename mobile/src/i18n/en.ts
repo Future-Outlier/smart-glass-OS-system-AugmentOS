@@ -385,7 +385,7 @@ const en = {
     testFlightBuild:
       "You are using a TestFlight build. Some features may have issues or work differently than the production version.",
     betaBuild:
-      "You are on a Beta build. Some features may have issues or work differently than the production version.",
+      "You are using a beta version of MentraOS. Some features may have issues or work differently than in the production version.",
     sensingDisabled: "Sensors are disabled. Camera, microphone, and other sensors won't work in apps.",
     microphoneActive: "Microphone Active",
     microphoneActiveMessage: "One or more apps are currently using your glasses microphone.",

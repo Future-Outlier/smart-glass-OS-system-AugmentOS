@@ -24,7 +24,7 @@ export default function FeedbackPage() {
     console.log("Feedback submitted:", feedbackBody)
 
     // Collect diagnostic information
-    const customBackendUrl = Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE
+    const customBackendUrl = process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE
     const isBetaBuild = !!customBackendUrl
     const deviceName = Constants.deviceName || "Unknown"
     const osVersion = `${Platform.OS} ${Platform.Version}`

@@ -8,7 +8,6 @@ import showAlert from "@/utils/AlertUtils"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import Constants from "expo-constants"
 
 export default function NonProdWarning() {
   const {theme, themed} = useAppTheme()
@@ -58,7 +57,7 @@ export default function NonProdWarning() {
   // )
 
   const nonProdWarning = () => {
-    const isBetaBuild = !!Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE
+    const isBetaBuild = !!process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE
 
     if (isBetaBuild) {
       // Beta build warning
