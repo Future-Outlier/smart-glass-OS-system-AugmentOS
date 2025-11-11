@@ -75,8 +75,7 @@ jobs:
             --delete \
             --force \
             --region $ACR_REGION_ID \
-            --endpoint https://store.mentraglass.cn \
-            --cname
+            --endpoint https://store.mentraglass.cn
         shell: bash
 
       # # 8️⃣ Refresh CDN cache
