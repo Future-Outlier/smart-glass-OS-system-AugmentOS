@@ -71,7 +71,7 @@ jobs:
       - name: Upload static files to Alibaba OSS
         run: |
           echo "Uploading to oss://${OSS_BUCKET}..."
-          aliyun oss sync ${OSS_PATH} oss://${OSS_BUCKET}/ \
+          aliyun oss sync ${OSS_PATH} \
             --delete \
             --force \
             --region $ACR_REGION_ID \
