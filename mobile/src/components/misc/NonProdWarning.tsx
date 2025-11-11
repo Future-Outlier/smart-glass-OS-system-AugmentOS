@@ -20,7 +20,8 @@ export default function NonProdWarning() {
     if (
       backendUrl.includes("prod.augmentos.cloud") ||
       backendUrl.includes("global.augmentos.cloud") ||
-      backendUrl.includes("api.mentra.glass")
+      backendUrl.includes("api.mentra.glass") ||
+      backendUrl.includes("api.mentraglass.cn")
     ) {
       isProd = true
     }
