@@ -67,15 +67,28 @@ jobs:
             --access-key-id ${{ secrets.ALIBABA_ACCESS_KEY_ID }} \
             --access-key-secret ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
 
-      # 7️⃣ Sync dist folder to OSS bucket
-      - name: Upload static files to Alibaba OSS
+      - name: Configure ossutil
         run: |
-          echo "Uploading to oss://${OSS_BUCKET}..."
+          mkdir -p ~/.config
+          cat > ~/.ossutilconfig <<EOF
+          [Credentials]
+          endpoint = ${OSS_REGION_ENDPOINT}
+          accessKeyID = ${OSS_ACCESS_KEY_ID}
+          accessKeySecret = ${OSS_ACCESS_KEY_SECRET}
+
+          [Bucket-Endpoint]
+          ${OSS_BUCKET} = ${OSS_REGION_ENDPOINT}
+
+          [Bucket-Cname]
+          ${OSS_BUCKET} = store.mentraglass.cn
+          EOF
+
+      - name: Upload static files to OSS
+        run: |
+          echo "Uploading to oss://${OSS_BUCKET}/ ..."
           aliyun oss sync ${OSS_PATH} oss://${OSS_BUCKET}/ \
             --delete \
-            --force \
-            --region $ACR_REGION_ID
-        shell: bash
+            --force
 
       # # 8️⃣ Refresh CDN cache
       # - name: Refresh Alibaba CDN cache
