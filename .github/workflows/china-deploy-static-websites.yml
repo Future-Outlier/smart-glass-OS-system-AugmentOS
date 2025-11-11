@@ -71,10 +71,12 @@ jobs:
       - name: Upload static files to Alibaba OSS
         run: |
           echo "Uploading to oss://${OSS_BUCKET}..."
-          aliyun oss sync ${OSS_PATH} oss://store.mentraglass.cn \
+          aliyun oss sync ${OSS_PATH} oss://${OSS_BUCKET}/ \
             --delete \
             --force \
-            --region $ACR_REGION_ID
+            --region $ACR_REGION_ID \
+            --endpoint store.mentraglass.cn \
+            --endpoint-type cname
         shell: bash
 
       # # 8️⃣ Refresh CDN cache
