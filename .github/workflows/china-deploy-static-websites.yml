@@ -20,7 +20,7 @@ jobs:
       NODE_ENV: production
       CLOUD_PUBLIC_HOST_NAME: api.mentraglass.cn
       ACR_REGION_ID: cn-shenzhen
-      OSS_BUCKET: mentra-dev-static-store
+      OSS_BUCKET: store
       OSS_PATH: cloud/websites/store/dist
       CDN_PATH: "/*"
 
@@ -67,26 +67,13 @@ jobs:
             --access-key-id ${{ secrets.ALIBABA_ACCESS_KEY_ID }} \
             --access-key-secret ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
 
-      - name: Configure ossutil
-        run: |
-          mkdir -p ~/.config
-          cat > ~/.ossutilconfig <<EOF
-          [Credentials]
-          endpoint = ${OSS_REGION_ENDPOINT}
-          accessKeyID = ${OSS_ACCESS_KEY_ID}
-          accessKeySecret = ${OSS_ACCESS_KEY_SECRET}
-
-          [Bucket-Cname]
-          ${OSS_BUCKET} = store.mentraglass.cn
-          EOF
-
       - name: Upload static files to OSS
         run: |
           echo "Uploading to oss://${OSS_BUCKET}/ ..."
           aliyun oss sync ${OSS_PATH} oss://${OSS_BUCKET}/ \
             --delete \
             --force \
-            --endpoint https://store.mentraglass.cn
+            --endpoint https://mentraglass.cn
 
       # # 8️⃣ Refresh CDN cache
       # - name: Refresh Alibaba CDN cache
