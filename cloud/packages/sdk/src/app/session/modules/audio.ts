@@ -18,6 +18,14 @@ export interface AudioPlayOptions {
   volume?: number
   /** Whether to stop other audio playback, defaults to true */
   stopOtherAudio?: boolean
+  /**
+   * Track ID for audio playback (defaults to 0)
+   * - 0: speaker (default audio playback)
+   * - 1: app_audio (app-specific audio)
+   * - 2: tts (text-to-speech audio)
+   * Use different track IDs to play multiple audio streams simultaneously (mixing)
+   */
+  trackId?: number
 }
 
 /**
@@ -40,6 +48,14 @@ export interface SpeakOptions {
   volume?: number
   /** Whether to stop other audio playback, defaults to true */
   stopOtherAudio?: boolean
+  /**
+   * Track ID for audio playback (defaults to 2 for TTS)
+   * - 0: speaker (default audio playback)
+   * - 1: app_audio (app-specific audio)
+   * - 2: tts (text-to-speech audio)
+   * Use different track IDs to play multiple audio streams simultaneously (mixing)
+   */
+  trackId?: number
 }
 
 /**
@@ -139,7 +155,40 @@ export class AudioManager {
         // Generate unique request ID
         const requestId = `audio_req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 
-        // Store promise resolvers for when we get the response
+        const stopOtherAudio = options.stopOtherAudio ?? true
+
+        // CRITICAL: When stopOtherAudio=false (concurrent/mixing mode),
+        // resolve immediately after sending the request (fire-and-forget)
+        // This allows multiple audio streams to play simultaneously
+        if (!stopOtherAudio) {
+          // Create audio play request message
+          const message: AudioPlayRequest = {
+            type: AppToCloudMessageType.AUDIO_PLAY_REQUEST,
+            packageName: this.packageName,
+            sessionId: this.sessionId,
+            requestId,
+            timestamp: new Date(),
+            audioUrl: options.audioUrl,
+            volume: options.volume ?? 1.0,
+            stopOtherAudio: false,
+            trackId: options.trackId ?? 0, // Default to track 0 (speaker)
+          }
+
+          // Send request to cloud
+          this.send(message)
+
+          // Resolve immediately for concurrent playback (fire-and-forget)
+          // The audio will play in the background without blocking
+          this.logger.debug({requestId}, `🔊 Audio playback started in non-blocking mode (concurrent)`)
+          resolve({
+            success: true,
+            duration: undefined, // Duration unknown in fire-and-forget mode
+          })
+          return
+        }
+
+        // For stopOtherAudio=true (blocking/interrupt mode),
+        // wait for the COMPLETED/FAILED event before resolving
         this.pendingAudioRequests.set(requestId, {resolve, reject})
 
         // Create audio play request message
@@ -151,13 +200,14 @@ export class AudioManager {
           timestamp: new Date(),
           audioUrl: options.audioUrl,
           volume: options.volume ?? 1.0,
-          stopOtherAudio: options.stopOtherAudio ?? true,
+          stopOtherAudio: true,
+          trackId: options.trackId ?? 0, // Default to track 0 (speaker)
         }
 
         // Send request to cloud
         this.send(message)
 
-        // Set timeout to avoid hanging promises
+        // Set timeout to avoid hanging promises (only for blocking mode)
         const timeoutMs = 60000 // 60 seconds
         if (this.session && this.session.resources) {
           // Use session's resource tracker for automatic cleeanup
@@ -293,6 +343,7 @@ export class AudioManager {
       audioUrl: ttsUrl,
       volume: options.volume,
       stopOtherAudio: options.stopOtherAudio ?? true, // This flag tells backend to stop current playback
+      trackId: options.trackId ?? 2, // Default to track 2 (tts)
     })
   }
 
