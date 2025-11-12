@@ -112,6 +112,12 @@ export class MantleBridge {
           break
         case "hotspot_status_change":
           useGlassesStore.getState().setHotspotInfo(data.enabled, data.ssid, data.password, data.local_ip)
+          GlobalEventEmitter.emit("HOTSPOT_STATUS_CHANGE", {
+            enabled: data.enabled,
+            ssid: data.ssid,
+            password: data.password,
+            local_ip: data.local_ip,
+          })
           break
         case "gallery_status":
           GlobalEventEmitter.emit("GALLERY_STATUS", {

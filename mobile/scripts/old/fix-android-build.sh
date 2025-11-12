@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Check if we're in a "scripts" directory
 current_dir=$(basename "$PWD")
 if [ "$current_dir" = "scripts" ]; then

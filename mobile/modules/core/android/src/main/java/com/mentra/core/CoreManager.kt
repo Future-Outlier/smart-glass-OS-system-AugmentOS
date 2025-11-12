@@ -874,6 +874,9 @@ class CoreManager {
             sgc = MentraLive()
         } else if (wearable.contains(DeviceTypes.MACH1)) {
             sgc = Mach1()
+        } else if (wearable.contains(DeviceTypes.Z100)) {
+            sgc = Mach1()  // Z100 uses same hardware/SDK as Mach1
+            sgc?.type = DeviceTypes.Z100  // Override type to Z100
         } else if (wearable.contains(DeviceTypes.FRAME)) {
             // sgc = FrameManager()
         }
@@ -916,12 +919,18 @@ class CoreManager {
             handleG1Ready()
         } else if (defaultWearable.contains(DeviceTypes.MACH1)) {
             handleMach1Ready()
+        } else if (defaultWearable.contains(DeviceTypes.Z100)) {
+            handleMach1Ready()  // Z100 uses same initialization as Mach1
         }
 
         // Re-apply microphone settings after reconnection
         // Cache was cleared on disconnect, so this will definitely send commands
         Bridge.log("MAN: Re-applying microphone settings after reconnection")
         updateMicrophoneState()
+
+        // send to the server our battery status:
+        Bridge.sendBatteryStatus(sgc?.batteryLevel ?: -1, false)
+        Bridge.sendGlassesConnectionState(defaultWearable, "CONNECTED")
 
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)

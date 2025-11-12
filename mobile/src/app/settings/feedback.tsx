@@ -26,9 +26,13 @@ export default function FeedbackPage() {
     // Collect diagnostic information
     const customBackendUrl = process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE
     const isBetaBuild = !!customBackendUrl
-    const deviceName = Constants.deviceName || "Unknown"
     const osVersion = `${Platform.OS} ${Platform.Version}`
-    const appVersion = Constants.expoConfig?.version || "Unknown"
+    const deviceName = Constants.deviceName || "deviceName"
+    const appVersion = process.env.EXPO_PUBLIC_MENTRAOS_VERSION || "version"
+    const buildCommit = Constants.expoConfig?.extra?.BUILD_COMMIT || "commit"
+    const buildBranch = Constants.expoConfig?.extra?.BUILD_BRANCH || "branch"
+    const buildTime = Constants.expoConfig?.extra?.BUILD_TIME || "time"
+    const buildUser = Constants.expoConfig?.extra?.BUILD_USER || "user"
 
     // Glasses info
     const connectedGlassesModel = status.glasses_info?.model_name || "Not connected"
@@ -49,6 +53,10 @@ export default function FeedbackPage() {
       `Connected Glasses: ${connectedGlassesModel}`,
       `Default Wearable: ${defaultWearable}`,
       `Running Apps: ${runningAppsText}`,
+      `Build Commit: ${buildCommit}`,
+      `Build Branch: ${buildBranch}`,
+      `Build Time: ${buildTime}`,
+      `Build User: ${buildUser}`,
     ]
       .filter(Boolean)
       .join("\n")

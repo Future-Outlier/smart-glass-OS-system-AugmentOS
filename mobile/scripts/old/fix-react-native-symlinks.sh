@@ -1,11 +1,4 @@
 #!/bin/bash
-# Fix React Native library symlinks for nvm users
-# This script creates symlinks to avoid node command execution during Android builds
-# Automatically runs after npm install via postinstall script
-
-# Exit on any error
-set -e
-
 # Check if we're in a "scripts" directory
 current_dir=$(basename "$PWD")
 if [ "$current_dir" = "scripts" ]; then
@@ -15,6 +8,13 @@ if [ "$current_dir" = "scripts" ]; then
 else
     echo "Not in a scripts directory. Current directory: $current_dir"
 fi
+
+# Fix React Native library symlinks for nvm users
+# This script creates symlinks to avoid node command execution during Android builds
+# Automatically runs after npm install via postinstall script
+
+# Exit on any error
+set -e
 
 # Only run on Unix-like systems
 if [[ "$OSTYPE" != "linux-gnu"* && "$OSTYPE" != "darwin"* ]]; then
