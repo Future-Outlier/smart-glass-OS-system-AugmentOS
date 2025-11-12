@@ -6,6 +6,7 @@ import pluginReactNative from "eslint-plugin-react-native"
 import pluginReactotron from "eslint-plugin-reactotron"
 import pluginPrettier from "eslint-plugin-prettier"
 import prettierConfig from "eslint-config-prettier"
+import pluginImport from "eslint-plugin-import"
 
 export default [
   // Base config for all JS/TS files
@@ -18,6 +19,7 @@ export default [
       "react-native": pluginReactNative,
       "reactotron": pluginReactotron,
       "prettier": pluginPrettier,
+      "import": pluginImport,
     },
     languageOptions: {
       globals: {
@@ -107,6 +109,33 @@ export default [
               message: "Do not import Text from 'react-native'. Use the Ignite component with the tx prop instead.",
             },
           ],
+        },
+        "warn",
+        {
+          patterns: [
+            {
+              group: ["../*"],
+              message: "Use @/ path aliases instead of relative imports",
+            },
+          ],
+        },
+      ],
+      "import/order": [
+        "error",
+        {
+          "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
+          "pathGroups": [
+            {
+              pattern: "@/**",
+              group: "internal",
+              position: "before",
+            },
+          ],
+          "pathGroupsExcludedImportTypes": ["builtin"],
+          "newlines-between": "always",
+          "alphabetize": {
+            order: "asc",
+          },
         },
       ],
     },
