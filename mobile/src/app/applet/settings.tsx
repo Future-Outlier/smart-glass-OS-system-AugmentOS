@@ -1,6 +1,13 @@
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import {useFocusEffect, useLocalSearchParams} from "expo-router"
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react"
+import {Animated, BackHandler, TextStyle, View, ViewStyle} from "react-native"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
+import Toast from "react-native-toast-message"
+import FontAwesome from "react-native-vector-icons/FontAwesome"
+
 import {Header, PillButton, Screen, Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import Divider from "@/components/ui/Divider"
 import LoadingOverlay from "@/components/misc/LoadingOverlay"
 import SettingsSkeleton from "@/components/misc/SettingsSkeleton"
 import GroupTitle from "@/components/settings/GroupTitle"
@@ -16,6 +23,7 @@ import TimeSetting from "@/components/settings/TimeSetting"
 import TitleValueSetting from "@/components/settings/TitleValueSetting"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import ActionButton from "@/components/ui/ActionButton"
+import Divider from "@/components/ui/Divider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
@@ -25,13 +33,6 @@ import {$styles, ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import {useFocusEffect, useLocalSearchParams} from "expo-router"
-import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react"
-import {Animated, BackHandler, TextStyle, View, ViewStyle} from "react-native"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
-import Toast from "react-native-toast-message"
-import FontAwesome from "react-native-vector-icons/FontAwesome"
 
 export default function AppSettings() {
   const {packageName, appName: appNameParam} = useLocalSearchParams()
@@ -123,7 +124,8 @@ export default function AppSettings() {
         if (!proceed) return
       }
 
-      if (!(await restComms.checkAppHealthStatus(appInfo.packageName))) {
+      const health = await restComms.checkAppHealthStatus(appInfo.packageName)
+      if (health.isErr() || !health.value) {
         showAlert(translate("errors:appNotOnlineTitle"), translate("errors:appNotOnlineMessage"), [
           {text: translate("common:ok")},
         ])

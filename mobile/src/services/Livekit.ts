@@ -1,4 +1,5 @@
 import {Room, RoomEvent, ConnectionState} from "livekit-client"
+
 import restComms from "@/services/RestComms"
 
 class Livekit {
@@ -32,20 +33,21 @@ class Livekit {
       this.room = null
     }
 
-    try {
-      const {url, token} = await restComms.getLivekitUrlAndToken()
-      console.log(`LivekitManager: Connecting to room: ${url}, ${token}`)
-      this.room = new Room()
-      await this.room.connect(url, token)
-      this.room.on(RoomEvent.Connected, () => {
-        console.log("LivekitManager: Connected to room")
-      })
-      this.room.on(RoomEvent.Disconnected, () => {
-        console.log("LivekitManager: Disconnected from room")
-      })
-    } catch (error) {
-      console.error("LivekitManager: Error connecting to room", error)
+    const result = await restComms.getLivekitUrlAndToken()
+    if (result.isErr()) {
+      console.error("LivekitManager: Error connecting to room", result.error)
+      return
     }
+    const {url, token} = result.value
+    console.log(`LivekitManager: Connecting to room: ${url}, ${token}`)
+    this.room = new Room()
+    await this.room.connect(url, token)
+    this.room.on(RoomEvent.Connected, () => {
+      console.log("LivekitManager: Connected to room")
+    })
+    this.room.on(RoomEvent.Disconnected, () => {
+      console.log("LivekitManager: Disconnected from room")
+    })
   }
 
   public async addPcm(data: Uint8Array) {

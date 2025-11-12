@@ -1,15 +1,16 @@
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import wsManager from "@/services/WebSocketManager"
-import {useDisplayStore} from "@/stores/display"
+import CoreModule from "core"
+import {router} from "expo-router"
+
+import {push} from "@/contexts/NavigationRef"
 import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
-import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
-import CoreModule from "core"
+import wsManager from "@/services/WebSocketManager"
 import {useAppletStatusStore} from "@/stores/applets"
+import {useDisplayStore} from "@/stores/display"
 import {useGlassesStore} from "@/stores/glasses"
+import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
-import {router} from "expo-router"
-import {push} from "@/contexts/NavigationRef"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -86,7 +87,7 @@ class SocketComms {
   }
 
   public setAuthCreds(coreToken: string, userid: string) {
-    console.log(`SOCKET: setAuthCreds(): ${coreToken}, ${userid}`)
+    console.log(`SOCKET: setAuthCreds(): ${coreToken.substring(0, 10)}..., ${userid}`)
     this.coreToken = coreToken
     this.userid = userid
     useSettingsStore.getState().setSetting(SETTINGS_KEYS.core_token, coreToken)

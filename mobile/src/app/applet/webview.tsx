@@ -1,16 +1,17 @@
+import {useLocalSearchParams, useFocusEffect} from "expo-router"
 import {useRef, useState, useEffect, useCallback} from "react"
 import {View, BackHandler} from "react-native"
 import {WebView} from "react-native-webview"
-import LoadingOverlay from "@/components/misc/LoadingOverlay"
-import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
-import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {useLocalSearchParams, useFocusEffect} from "expo-router"
+
 import {Header, Screen, Text} from "@/components/ignite"
+import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
+import LoadingOverlay from "@/components/misc/LoadingOverlay"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/services/RestComms"
 import {useSettingsStore} from "@/stores/settings"
 import {$styles} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function AppWebView() {
   const {theme, themed} = useAppTheme()
@@ -101,40 +102,49 @@ export default function AppWebView() {
         return
       }
 
-      try {
-        const tempToken = await restComms.generateWebviewToken(packageName)
-        let signedUserToken: string | undefined
-        try {
-          signedUserToken = await restComms.generateWebviewToken(packageName, "generate-webview-signed-user-token")
-        } catch (error) {
-          console.warn("Failed to generate signed user token:", error)
-          signedUserToken = undefined
-        }
-        const cloudApiUrl = useSettingsStore.getState().getRestUrl()
-
-        // Construct final URL
-        const url = new URL(webviewURL)
-        url.searchParams.set("aos_temp_token", tempToken)
-        if (signedUserToken) {
-          url.searchParams.set("aos_signed_user_token", signedUserToken)
-        }
-        if (cloudApiUrl) {
-          const checksum = await restComms.hashWithApiKey(cloudApiUrl, packageName)
-          url.searchParams.set("cloudApiUrl", cloudApiUrl)
-          url.searchParams.set("cloudApiUrlChecksum", checksum)
-        }
-
-        setFinalUrl(url.toString())
-        console.log(`Constructed final webview URL: ${url.toString()}`)
-      } catch (error: any) {
-        console.error("Error generating webview token:", error)
-        setTokenError(`Failed to prepare secure access: ${error.message}`)
+      let result = await restComms.generateWebviewToken(packageName)
+      if (result.isErr()) {
+        console.error("Error generating webview token:", result.error)
+        setTokenError(`Failed to prepare secure access: ${result.error.message}`)
         showAlert("Authentication Error", `Could not securely connect to ${appName}. Please try again later.`, [
           {text: "OK", onPress: () => goBack()},
         ])
-      } finally {
         setIsLoadingToken(false)
+        return
       }
+
+      let tempToken = result.value
+
+      result = await restComms.generateWebviewToken(packageName, "generate-webview-signed-user-token")
+      if (result.isErr()) {
+        console.warn("Failed to generate signed user token:", result.error)
+      }
+      let signedUserToken: string | undefined = result.unwrapOr(undefined)
+
+      const cloudApiUrl = useSettingsStore.getState().getRestUrl()
+
+      // Construct final URL
+      const url = new URL(webviewURL)
+      url.searchParams.set("aos_temp_token", tempToken)
+      if (signedUserToken) {
+        url.searchParams.set("aos_signed_user_token", signedUserToken)
+      }
+      if (cloudApiUrl) {
+        result = await restComms.hashWithApiKey(cloudApiUrl, packageName)
+        if (result.isErr()) {
+          console.error("Error hashing cloud API URL:", result.error)
+          setIsLoadingToken(false)
+          return
+        }
+        const checksum = result.value
+        url.searchParams.set("cloudApiUrl", cloudApiUrl)
+        url.searchParams.set("cloudApiUrlChecksum", checksum)
+      }
+
+      setFinalUrl(url.toString())
+      console.log(`Constructed final webview URL: ${url.toString()}`)
+
+      setIsLoadingToken(false)
     }
 
     generateTokenAndSetUrl()

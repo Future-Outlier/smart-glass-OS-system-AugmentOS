@@ -16,7 +16,6 @@ export interface GlassesInfo {
   style: string
   color: string
   // wifi info
-  usesWifi: boolean
   wifiConnected: boolean
   wifiSsid: string
   wifiLocalIp: string
@@ -58,7 +57,6 @@ const initialState: GlassesInfo = {
   style: "",
   color: "",
   // wifi info
-  usesWifi: false,
   wifiConnected: false,
   wifiSsid: "",
   wifiLocalIp: "",
