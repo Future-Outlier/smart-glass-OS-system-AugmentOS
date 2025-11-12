@@ -842,7 +842,6 @@ struct ViewState {
 
         // send to the server our battery status:
         Bridge.sendBatteryStatus(level: sgc.batteryLevel ?? -1, charging: false)
-        Bridge.sendGlassesConnectionState(modelName: defaultWearable, status: "CONNECTED")
 
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
@@ -897,7 +896,6 @@ struct ViewState {
     private func handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         handle_microphone_state_change([], false)
-        Bridge.sendGlassesConnectionState(modelName: defaultWearable, status: "DISCONNECTED")
         handle_request_status()
     }
 

@@ -933,7 +933,6 @@ class CoreManager {
 
         // send to the server our battery status:
         Bridge.sendBatteryStatus(sgc?.batteryLevel ?: -1, false)
-        Bridge.sendGlassesConnectionState(defaultWearable, "CONNECTED")
 
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
@@ -1281,7 +1280,7 @@ class CoreManager {
         val glassesInfo = mutableMapOf<String, Any>()
 
         glassesInfo["connected"] = isGlassesConnected
-        
+
         sgc?.let { sgc ->
             glassesInfo["modelName"] = defaultWearable
             glassesInfo["batteryLevel"] = sgc.batteryLevel

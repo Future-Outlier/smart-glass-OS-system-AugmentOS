@@ -27,18 +27,33 @@ class SocketComms {
       this.handle_message(message)
     })
 
-    try {
-      // Subscribe to wifi info
-      useGlassesStore.subscribe(
-        state => ({glassesConnected: state.connected, wifiConnected: state.wifiConnected, wifiSsid: state.wifiSsid}),
-        _state => {
-          this.sendGlassesConnectionState()
-        },
-        {equalityFn: shallow},
-      )
-    } catch (error) {
-      console.error("SOCKET: Error subscribing to store changes:", error)
-    }
+    // Subscribe to connection info
+    useGlassesStore.subscribe(
+      state => ({
+        glassesConnected: state.connected,
+        wifiConnected: state.wifiConnected,
+        wifiSsid: state.wifiSsid,
+        modelName: state.modelName,
+      }),
+      _state => {
+        this.sendGlassesConnectionState()
+      },
+      {equalityFn: shallow},
+    )
+
+    // Subscribe to battery info
+    useGlassesStore.subscribe(
+      state => ({
+        batteryLevel: state.batteryLevel,
+        charging: state.charging,
+        caseBatteryLevel: state.caseBatteryLevel,
+        caseCharging: state.caseCharging,
+      }),
+      _state => {
+        this.sendBatteryStatus()
+      },
+      {equalityFn: shallow},
+    )
   }
 
   public static getInstance(): SocketComms {
@@ -159,6 +174,19 @@ class SocketComms {
         wifi: wifiInfo,
       }),
     )
+  }
+
+  sendBatteryStatus(): void {
+    const batteryLevel = useGlassesStore.getState().batteryLevel
+    const charging = useGlassesStore.getState().charging
+    this.send_battery_status(batteryLevel, charging)
+    const msg = {
+      type: "glasses_battery_update",
+      level: batteryLevel,
+      charging: charging,
+      timestamp: Date.now(),
+    }
+    this.ws.sendText(JSON.stringify(msg))
   }
 
   sendText(text: string) {
