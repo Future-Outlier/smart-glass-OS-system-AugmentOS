@@ -383,6 +383,7 @@
 import axios, {AxiosInstance, AxiosRequestConfig, AxiosError} from "axios"
 import {ResultAsync, errAsync, okAsync} from "neverthrow"
 
+import {GlassesInfo} from "@/stores/glasses"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
@@ -598,6 +599,19 @@ class RestComms {
     }
     const result = this.authenticatedRequest<Response>(config)
     return result.map(response => response.data)
+  }
+
+  public updateGlassesState(state: Partial<GlassesInfo>): ResultAsync<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/client/device/state",
+      data: state,
+    }
+    interface Response {
+      success: boolean
+    }
+    const result = this.authenticatedRequest<Response>(config)
+    return result.map(() => undefined)
   }
 
   public exchangeToken(token: string): ResultAsync<string, Error> {

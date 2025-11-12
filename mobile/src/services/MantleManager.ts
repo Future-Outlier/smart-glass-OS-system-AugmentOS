@@ -128,10 +128,7 @@ class MantleManager {
             statusObj[k] = state[k] as any
           }
         }
-
-        // restComms.sendGlassesStatus(statusObj)
-
-        // this.sendStatusUpdate(statusObj)
+        restComms.updateGlassesState(statusObj)
       },
       {equalityFn: shallow},
     )
