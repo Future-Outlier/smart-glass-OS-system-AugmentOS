@@ -33,6 +33,7 @@
                 "group": "Deployment",
                 "pages": [
                   "app-devs/getting-started/deployment/overview",
+                  "app-devs/getting-started/deployment/local-development",
                   "app-devs/getting-started/deployment/railway-deployment",
                   "app-devs/getting-started/deployment/ubuntu-deployment"
                 ]
@@ -87,6 +88,7 @@
               "app-devs/core-concepts/permissions",
               "app-devs/core-concepts/simple-storage",
               "app-devs/core-concepts/led/overview",
+              "app-devs/core-concepts/location",
               {
                 "group": "Hardware & Capabilities",
                 "icon": "microchip",
@@ -182,7 +184,7 @@
         "groups": [
           {
             "group": "Recipes",
-            "pages": ["cookbook/mira-tool-calls-advanced"]
+            "pages": ["cookbook/dashboard-note-app"]
           }
         ]
       }

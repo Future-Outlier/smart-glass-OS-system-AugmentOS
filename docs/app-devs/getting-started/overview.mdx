@@ -27,34 +27,34 @@ MentraOS provides:
 Here's a MentraOS app that shows "Hello World" on a smart glasses display:
 
 ```typescript
-import { AppServer } from '@mentra/mentraos-sdk';
+import { AppServer } from '@mentra/sdk';
 
-const app = new AppServer({
-  appId: 'your-app-id',
-  appSecret: 'your-app-secret',
-  webhookUrl: 'https://your-app.com/webhook'
+class MyApp extends AppServer {
+  protected async onSession(session, sessionId, userId) {
+    // Display "Hello World" on the glasses
+    session.layouts.showTextWall("Hello World from MentraOS!");
+    
+    // Log when user speaks
+    session.events.onTranscription((data) => {
+      console.log(`User said: ${data.text}`);
+    });
+  }
+}
+
+const app = new MyApp({
+  packageName: 'com.example.myapp',
+  apiKey: process.env.MENTRA_API_KEY,
+  port: 3000
 });
 
-app.onSession(async (session, sessionId, userId) => {
-  // Display "Hello World" on the glasses
-  session.layouts.showTextWall({
-    text: "Hello World from MentraOS!"
-  });
-  
-  // Log when user speaks
-  session.events.onTranscription((data) => {
-    console.log(`User said: ${data.text}`);
-  });
-});
-
-app.start(3000);
+app.start();
 ```
 
 That's it! This app will:
 
-1. Connect to a user's smart glasses when they launch your app.
-2. Display "Hello World from MentraOS!" on their glasses display.
-3. Prints everything the user says to your server console.
+1. Connect to a user's smart glasses when they launch your app
+2. Display "Hello World from MentraOS!" on their glasses display
+3. Log everything the user says to your server console
 
 ## What You Could Build
 
@@ -67,4 +67,4 @@ With MentraOS, developers have built:
 
 ## Next Steps
 
-🚀 Ready to build your first app? Checkout the [Quickstart](/quickstart).
+🚀 Ready to build your first app? Check out the [Quickstart](/app-devs/getting-started/quickstart).
