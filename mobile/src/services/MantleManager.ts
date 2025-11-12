@@ -1,15 +1,17 @@
-import socketComms from "@/services/SocketComms"
-import * as Calendar from "expo-calendar"
-import restComms from "@/services/RestComms"
-import * as TaskManager from "expo-task-manager"
-import * as Location from "expo-location"
-import TranscriptProcessor from "@/utils/TranscriptProcessor"
-import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
+import * as Calendar from "expo-calendar"
+import * as Location from "expo-location"
+import * as TaskManager from "expo-task-manager"
+import {shallow} from "zustand/shallow"
+
 import bridge from "@/bridge/MantleBridge"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import restComms from "@/services/RestComms"
+import socketComms from "@/services/SocketComms"
 import {useDisplayStore} from "@/stores/display"
 import {GlassesInfo, useGlassesStore} from "@/stores/glasses"
+import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import TranscriptProcessor from "@/utils/TranscriptProcessor"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -126,6 +128,8 @@ class MantleManager {
             statusObj[k] = state[k] as any
           }
         }
+
+        // restComms.sendGlassesStatus(statusObj)
 
         // this.sendStatusUpdate(statusObj)
       },

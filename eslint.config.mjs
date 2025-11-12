@@ -49,6 +49,14 @@ export default [
 
   // All rule overrides in one place
   {
+    plugins: {
+      "@typescript-eslint": tseslint.plugin,
+      "react": pluginReact,
+      "react-native": pluginReactNative,
+      "reactotron": pluginReactotron,
+      "prettier": pluginPrettier,
+      "import": pluginImport,
+    },
     rules: {
       // Prettier
       "prettier/prettier": "error",
@@ -109,9 +117,6 @@ export default [
               message: "Do not import Text from 'react-native'. Use the Ignite component with the tx prop instead.",
             },
           ],
-        },
-        "warn",
-        {
           patterns: [
             {
               group: ["../*"],
