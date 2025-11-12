@@ -1,7 +1,7 @@
 import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
 
-interface GlassesInfo {
+export interface GlassesInfo {
   // state:
   connected: boolean
   // device info

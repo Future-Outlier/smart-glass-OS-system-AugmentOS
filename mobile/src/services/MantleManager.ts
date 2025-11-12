@@ -9,6 +9,7 @@ import CoreModule from "core"
 import bridge from "@/bridge/MantleBridge"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useDisplayStore} from "@/stores/display"
+import {GlassesInfo, useGlassesStore} from "@/stores/glasses"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -71,6 +72,7 @@ class MantleManager {
     await CoreModule.requestStatus()
 
     this.setupPeriodicTasks()
+    this.setupSubscriptions()
   }
 
   public cleanup() {
@@ -101,6 +103,34 @@ class MantleManager {
     } catch (error) {
       console.error("Mantle: Error starting location updates", error)
     }
+  }
+
+  private setupSubscriptions() {
+    useGlassesStore.subscribe(
+      state => ({
+        batteryLevel: state.batteryLevel,
+        charging: state.charging,
+        caseBatteryLevel: state.caseBatteryLevel,
+        caseCharging: state.caseCharging,
+        connected: state.connected,
+        wifiConnected: state.wifiConnected,
+        wifiSsid: state.wifiSsid,
+        modelName: state.modelName,
+      }),
+      (state: Partial<GlassesInfo>, previousState: Partial<GlassesInfo>) => {
+        const statusObj: Partial<GlassesInfo> = {}
+
+        for (const key in state) {
+          const k = key as keyof GlassesInfo
+          if (state[k] !== previousState[k]) {
+            statusObj[k] = state[k] as any
+          }
+        }
+
+        // this.sendStatusUpdate(statusObj)
+      },
+      {equalityFn: shallow},
+    )
   }
 
   private async sendCalendarEvents() {

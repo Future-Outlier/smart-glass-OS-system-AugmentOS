@@ -9,7 +9,6 @@ import {useAppletStatusStore} from "@/stores/applets"
 import {useGlassesStore} from "@/stores/glasses"
 import {showAlert} from "@/utils/AlertUtils"
 import {router} from "expo-router"
-import {shallow} from "zustand/shallow"
 import {push} from "@/contexts/NavigationRef"
 
 class SocketComms {
@@ -26,34 +25,6 @@ class SocketComms {
     this.ws.on("message", message => {
       this.handle_message(message)
     })
-
-    // Subscribe to connection info
-    useGlassesStore.subscribe(
-      state => ({
-        glassesConnected: state.connected,
-        wifiConnected: state.wifiConnected,
-        wifiSsid: state.wifiSsid,
-        modelName: state.modelName,
-      }),
-      _state => {
-        this.sendGlassesConnectionState()
-      },
-      {equalityFn: shallow},
-    )
-
-    // Subscribe to battery info
-    useGlassesStore.subscribe(
-      state => ({
-        batteryLevel: state.batteryLevel,
-        charging: state.charging,
-        caseBatteryLevel: state.caseBatteryLevel,
-        caseCharging: state.caseCharging,
-      }),
-      _state => {
-        this.sendBatteryStatus()
-      },
-      {equalityFn: shallow},
-    )
   }
 
   public static getInstance(): SocketComms {
