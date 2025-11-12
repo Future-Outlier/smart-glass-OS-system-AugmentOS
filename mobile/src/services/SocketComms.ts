@@ -10,6 +10,7 @@ import {useGlassesStore} from "@/stores/glasses"
 import {showAlert} from "@/utils/AlertUtils"
 import {router} from "expo-router"
 import {shallow} from "zustand/shallow"
+import {push} from "@/contexts/NavigationRef"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -552,7 +553,7 @@ class SocketComms {
           text: "Setup WiFi",
           onPress: () => {
             const returnTo = encodeURIComponent(currentRoute)
-            router.push(`/pairing/glasseswifisetup?returnTo=${returnTo}`)
+            push(`/pairing/glasseswifisetup?returnTo=${returnTo}`)
           },
         },
       ],

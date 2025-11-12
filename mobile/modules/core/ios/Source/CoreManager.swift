@@ -1306,48 +1306,43 @@ struct ViewState {
 
         // also referenced as glasses_info:
         var glassesSettings: [String: Any] = [:]
-        var connectedGlasses: [String: Any] = [:]
+        var glassesInfo: [String: Any] = [:]
 
-        if isGlassesConnected {
-            connectedGlasses = [
-                "model_name": defaultWearable,
-                "battery_level": sgc?.batteryLevel ?? -1,
-                "glasses_app_version": sgc?.glassesAppVersion ?? "",
-                "glasses_build_number": sgc?.glassesBuildNumber ?? "",
-                "glasses_device_model": sgc?.glassesDeviceModel ?? "",
-                "glasses_android_version": sgc?.glassesAndroidVersion ?? "",
-                "glasses_ota_version_url": sgc?.glassesOtaVersionUrl ?? "",
-            ]
-        }
-
-        if simulatedConnected {
-            connectedGlasses["model_name"] = defaultWearable
-        }
+        glassesInfo = [
+            "connected": isGlassesConnected,
+            "modelName": defaultWearable,
+            "batteryLevel": sgc?.batteryLevel ?? -1,
+            "appVersion": sgc?.glassesAppVersion ?? "",
+            "buildNumber": sgc?.glassesBuildNumber ?? "",
+            "deviceModel": sgc?.glassesDeviceModel ?? "",
+            "androidVersion": sgc?.glassesAndroidVersion ?? "",
+            "otaVersionUrl": sgc?.glassesOtaVersionUrl ?? "",
+        ]
 
         if sgc is G1 {
-            connectedGlasses["case_removed"] = sgc?.caseRemoved ?? true
-            connectedGlasses["case_open"] = sgc?.caseOpen ?? true
-            connectedGlasses["case_charging"] = sgc?.caseCharging ?? false
-            connectedGlasses["case_battery_level"] = sgc?.caseBatteryLevel ?? -1
+            glassesInfo["caseRemoved"] = sgc?.caseRemoved ?? true
+            glassesInfo["caseOpen"] = sgc?.caseOpen ?? true
+            glassesInfo["caseCharging"] = sgc?.caseCharging ?? false
+            glassesInfo["caseBatteryLevel"] = sgc?.caseBatteryLevel ?? -1
 
-            connectedGlasses["glasses_serial_number"] = sgc?.glassesSerialNumber ?? ""
-            connectedGlasses["glasses_style"] = sgc?.glassesStyle ?? ""
-            connectedGlasses["glasses_color"] = sgc?.glassesColor ?? ""
+            glassesInfo["serialNumber"] = sgc?.glassesSerialNumber ?? ""
+            glassesInfo["style"] = sgc?.glassesStyle ?? ""
+            glassesInfo["color"] = sgc?.glassesColor ?? ""
         }
 
         if sgc is MentraLive {
-            connectedGlasses["glasses_wifi_ssid"] = sgc?.wifiSsid ?? ""
-            connectedGlasses["glasses_wifi_connected"] = sgc?.wifiConnected ?? false
-            connectedGlasses["glasses_wifi_local_ip"] = sgc?.wifiLocalIp ?? ""
-            connectedGlasses["glasses_hotspot_enabled"] = sgc?.isHotspotEnabled ?? false
-            connectedGlasses["glasses_hotspot_ssid"] = sgc?.hotspotSsid ?? ""
-            connectedGlasses["glasses_hotspot_password"] = sgc?.hotspotPassword ?? ""
-            connectedGlasses["glasses_hotspot_gateway_ip"] = sgc?.hotspotGatewayIp ?? ""
+            glassesInfo["wifiSsid"] = sgc?.wifiSsid ?? ""
+            glassesInfo["wifiConnected"] = sgc?.wifiConnected ?? false
+            glassesInfo["wifiLocalIp"] = sgc?.wifiLocalIp ?? ""
+            glassesInfo["hotspotEnabled"] = sgc?.isHotspotEnabled ?? false
+            glassesInfo["hotspotSsid"] = sgc?.hotspotSsid ?? ""
+            glassesInfo["hotspotPassword"] = sgc?.hotspotPassword ?? ""
+            glassesInfo["hotspotGatewayIp"] = sgc?.hotspotGatewayIp ?? ""
         }
 
         // Add Bluetooth device name if available
         if let bluetoothName = sgc?.getConnectedBluetoothName() {
-            connectedGlasses["bluetooth_name"] = bluetoothName
+            glassesInfo["bluetoothName"] = bluetoothName
         }
 
         glassesSettings = [
@@ -1379,7 +1374,6 @@ struct ViewState {
             "is_mic_enabled_for_frontend": micEnabled && (preferredMic == "glasses")
                 && (sgc?.ready ?? false),
             "core_token": coreToken,
-            "puck_connected": true,
         ]
 
         // hardcoded list of apps:
@@ -1391,7 +1385,7 @@ struct ViewState {
         ]
 
         let statusObj: [String: Any] = [
-            "connected_glasses": connectedGlasses,
+            "glasses_info": glassesInfo,
             "glasses_settings": glassesSettings,
             "apps": apps,
             "core_info": coreInfo,

@@ -5,38 +5,33 @@ import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
 import {useApplets} from "@/stores/applets"
-import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import showAlert, {showDestructiveAlert} from "@/utils/AlertUtils"
-import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
+import {showDestructiveAlert} from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import CoreModule from "core"
 import {Platform, View, ViewStyle} from "react-native"
 import {Spacer} from "@/components/ui/Spacer"
 import {BatteryStatus} from "./info/BatteryStatus"
-import {DeviceInformation} from "./info/DeviceInformation"
 import {EmptyState} from "./info/EmptyState"
-import {AdvancedSettingsDropdown} from "./settings/AdvancedSettingsDropdown"
 import {ButtonSettings} from "./settings/ButtonSettings"
-import {MicrophoneSelector} from "./settings/MicrophoneSelector"
 import {Group} from "@/components/ui/Group"
 import SliderSetting from "@/components/settings/SliderSetting"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Icon} from "@/components/ignite"
+import {useGlassesStore} from "@/stores/glasses"
 
 export default function DeviceSettings() {
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
-  const isGlassesConnected = Boolean(status.glasses_info?.model_name)
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const [preferredMic, setPreferredMic] = useSetting(SETTINGS_KEYS.preferred_mic)
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS_KEYS.auto_brightness)
   const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
-  const [showAdvancedSettings, setShowAdvancedSettings] = useSetting(SETTINGS_KEYS.show_advanced_settings)
   const [defaultButtonActionEnabled, setDefaultButtonActionEnabled] = useSetting(
     SETTINGS_KEYS.default_button_action_enabled,
   )
   const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS_KEYS.default_button_action_app)
+  const isGlassesConnected = useGlassesStore(state => state.connected)
 
   const {push, goBack} = useNavigationHistory()
   const applets = useApplets()
@@ -50,36 +45,11 @@ export default function DeviceSettings() {
     (defaultWearable !== "Mentra Live" ||
       (Platform.OS === "android" && status.glasses_info?.glasses_device_model !== "K900"))
 
-  const hasDeviceInfo =
-    status.glasses_info?.bluetooth_name ||
-    status.glasses_info?.glasses_build_number ||
-    status.glasses_info?.glasses_wifi_local_ip
+  const wifiLocalIp = useGlassesStore(state => state.wifiSsid)
+  const bluetoothName = useGlassesStore(state => state.bluetoothName)
+  const buildNumber = useGlassesStore(state => state.buildNumber)
 
-  const hasAdvancedSettingsContent = hasMicrophoneSelector || hasDeviceInfo
-
-  const setMic = async (val: string) => {
-    if (val === "phone") {
-      // We're potentially about to enable the mic, so request permission
-      const hasMicPermission = await requestFeaturePermissions(PermissionFeatures.MICROPHONE)
-      if (!hasMicPermission) {
-        // Permission denied, don't toggle the setting
-        console.log("Microphone permission denied, cannot enable phone microphone")
-        showAlert(
-          "Microphone Permission Required",
-          "Microphone permission is required to use the phone microphone feature. Please grant microphone permission in settings.",
-          [{text: "OK"}],
-          {
-            iconName: "microphone",
-            iconColor: "#2196F3",
-          },
-        )
-        return
-      }
-    }
-
-    setPreferredMic(val)
-    await useSettingsStore.getState().setSetting(SETTINGS_KEYS.preferred_mic, val)
-  }
+  const hasDeviceInfo = bluetoothName || buildNumber || wifiLocalIp
 
   const confirmForgetGlasses = () => {
     showDestructiveAlert(
@@ -220,20 +190,31 @@ export default function DeviceSettings() {
       </Group>
 
       {/* Advanced Settings Dropdown - Only show if there's content */}
-      {defaultWearable && hasAdvancedSettingsContent && (
+      {/* {defaultWearable && hasAdvancedSettingsContent && (
         <AdvancedSettingsDropdown
           isOpen={showAdvancedSettings}
           onToggle={() => setShowAdvancedSettings(!showAdvancedSettings)}>
-          {/* Microphone Selector */}
           {hasMicrophoneSelector && <MicrophoneSelector preferredMic={preferredMic} onMicChange={setMic} />}
-
-          {/* Spacer between sections */}
-          <Spacer height={16} />
-
-          {/* Device Information */}
           {isGlassesConnected && <DeviceInformation />}
         </AdvancedSettingsDropdown>
-      )}
+      )} */}
+
+      <Group title={translate("deviceSettings:advancedSettings")}>
+        {hasMicrophoneSelector && (
+          <RouteButton
+            icon={<Icon name="microphone" size={24} color={theme.colors.secondary_foreground} />}
+            label={translate("deviceSettings:microphone")}
+            onPress={() => push("/settings/microphone")}
+          />
+        )}
+        {hasDeviceInfo && (
+          <RouteButton
+            icon={<Icon name="device-ipad" size={24} color={theme.colors.secondary_foreground} />}
+            label={translate("deviceSettings:deviceInformation")}
+            onPress={() => push("/settings/device-info")}
+          />
+        )}
+      </Group>
 
       {/* this just gives the user a bit more space to scroll */}
       <Spacer height={160} />

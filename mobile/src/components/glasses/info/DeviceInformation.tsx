@@ -1,7 +1,8 @@
 import InfoSection from "@/components/ui/InfoSection"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {ViewStyle} from "react-native"
 
-export function DeviceInformation() {
+export function DeviceInformation({style}: {style?: ViewStyle}) {
   const {status} = useCoreStatus()
   const bluetoothName = status.glasses_info?.bluetooth_name
   const buildNumber = status.glasses_info?.glasses_build_number
@@ -9,6 +10,7 @@ export function DeviceInformation() {
 
   return (
     <InfoSection
+      style={style}
       title="Device Information"
       items={[
         {label: "Bluetooth Name", value: bluetoothName?.split("_")[3]},

@@ -12,7 +12,7 @@ import showAlert from "@/utils/AlertUtils"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
 import {useMemo} from "react"
 import {create} from "zustand"
-import {router} from "expo-router"
+import {push} from "@/contexts/NavigationRef"
 
 export interface ClientAppletInterface extends AppletInterface {
   offline: boolean
@@ -221,7 +221,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
             {
               text: translate("transcription:goToSettings"),
               onPress: () => {
-                router.push("/settings/transcription")
+                push("/settings/transcription")
               },
             },
           ],

@@ -468,7 +468,7 @@ class CoreManager {
                     if (systemMicUnavailable) {
                         continue
                     }
-                    
+
                     if (phoneMic?.isRecordingWithMode(micMode) == true) {
                         micUsed = micMode
                         break
@@ -878,8 +878,8 @@ class CoreManager {
         } else if (wearable.contains(DeviceTypes.MACH1)) {
             sgc = Mach1()
         } else if (wearable.contains(DeviceTypes.Z100)) {
-            sgc = Mach1()  // Z100 uses same hardware/SDK as Mach1
-            sgc?.type = DeviceTypes.Z100  // Override type to Z100
+            sgc = Mach1() // Z100 uses same hardware/SDK as Mach1
+            sgc?.type = DeviceTypes.Z100 // Override type to Z100
         } else if (wearable.contains(DeviceTypes.FRAME)) {
             // sgc = FrameManager()
         }
@@ -923,7 +923,7 @@ class CoreManager {
         } else if (defaultWearable.contains(DeviceTypes.MACH1)) {
             handleMach1Ready()
         } else if (defaultWearable.contains(DeviceTypes.Z100)) {
-            handleMach1Ready()  // Z100 uses same initialization as Mach1
+            handleMach1Ready() // Z100 uses same initialization as Mach1
         }
 
         // Re-apply microphone settings after reconnection
@@ -1099,7 +1099,8 @@ class CoreManager {
             bypassVad: Boolean
     ) {
         // Bridge.log(
-        //         "MAN: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad offlineMode=$offlineMode"
+        //         "MAN: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad
+        // offlineMode=$offlineMode"
         // )
 
         bypassVadForPCM = bypassVad
@@ -1151,7 +1152,8 @@ class CoreManager {
         micEnabled = mutableRequiredData.isNotEmpty()
 
         // Bridge.log(
-        //         "MAN: MIC: Result - shouldSendPcmData=$shouldSendPcmData, shouldSendTranscript=$shouldSendTranscript, micEnabled=$micEnabled"
+        //         "MAN: MIC: Result - shouldSendPcmData=$shouldSendPcmData,
+        // shouldSendTranscript=$shouldSendTranscript, micEnabled=$micEnabled"
         // )
 
         updateMicState()
@@ -1276,64 +1278,44 @@ class CoreManager {
         }
 
         val glassesSettings = mutableMapOf<String, Any>()
-        val connectedGlasses = mutableMapOf<String, Any>()
+        val glassesInfo = mutableMapOf<String, Any>()
 
-        if (isGlassesConnected) {
-            sgc?.let { sgc ->
-                connectedGlasses["model_name"] = defaultWearable
-                connectedGlasses["battery_level"] = sgc.batteryLevel
-                connectedGlasses["glasses_app_version"] = sgc.glassesAppVersion
-                connectedGlasses["glasses_build_number"] = sgc.glassesBuildNumber
-                connectedGlasses["glasses_device_model"] = sgc.glassesDeviceModel
-                connectedGlasses["glasses_android_version"] = sgc.glassesAndroidVersion
-                connectedGlasses["glasses_ota_version_url"] = sgc.glassesOtaVersionUrl
-            }
-        }
-
-        if (simulatedConnected) {
-            connectedGlasses["model_name"] = defaultWearable
+        glassesInfo["connected"] = isGlassesConnected
+        
+        sgc?.let { sgc ->
+            glassesInfo["modelName"] = defaultWearable
+            glassesInfo["batteryLevel"] = sgc.batteryLevel
+            glassesInfo["appVersion"] = sgc.glassesAppVersion
+            glassesInfo["buildNumber"] = sgc.glassesBuildNumber
+            glassesInfo["deviceModel"] = sgc.glassesDeviceModel
+            glassesInfo["androidVersion"] = sgc.glassesAndroidVersion
+            glassesInfo["otaVersionUrl"] = sgc.glassesOtaVersionUrl
         }
 
         if (sgc is G1) {
-            connectedGlasses["case_removed"] = sgc!!.caseRemoved
-            connectedGlasses["case_open"] = sgc!!.caseOpen
-            connectedGlasses["case_charging"] = sgc!!.caseCharging
-            connectedGlasses["case_battery_level"] = sgc!!.caseBatteryLevel
+            glassesInfo["caseRemoved"] = sgc!!.caseRemoved
+            glassesInfo["caseOpen"] = sgc!!.caseOpen
+            glassesInfo["caseCharging"] = sgc!!.caseCharging
+            glassesInfo["caseBatteryLevel"] = sgc!!.caseBatteryLevel
 
-            connectedGlasses["glasses_serial_number"] = sgc!!.glassesSerialNumber
-            connectedGlasses["glasses_style"] = sgc!!.glassesStyle
-            connectedGlasses["glasses_color"] = sgc!!.glassesColor
+            glassesInfo["serialNumber"] = sgc!!.glassesSerialNumber
+            glassesInfo["style"] = sgc!!.glassesStyle
+            glassesInfo["color"] = sgc!!.glassesColor
         }
 
         if (sgc is MentraLive) {
-            connectedGlasses["glasses_wifi_ssid"] = sgc!!.wifiSsid
-            connectedGlasses["glasses_wifi_connected"] = sgc!!.wifiConnected
-            connectedGlasses["glasses_wifi_local_ip"] = sgc!!.wifiLocalIp
-            connectedGlasses["glasses_hotspot_enabled"] = sgc!!.isHotspotEnabled
-            connectedGlasses["glasses_hotspot_ssid"] = sgc!!.hotspotSsid
-            connectedGlasses["glasses_hotspot_password"] = sgc!!.hotspotPassword
-            connectedGlasses["glasses_hotspot_gateway_ip"] = sgc!!.hotspotGatewayIp
+            glassesInfo["wifiSsid"] = sgc!!.wifiSsid
+            glassesInfo["wifiConnected"] = sgc!!.wifiConnected
+            glassesInfo["wifiLocalIp"] = sgc!!.wifiLocalIp
+            glassesInfo["hotspotEnabled"] = sgc!!.isHotspotEnabled
+            glassesInfo["hotspotSsid"] = sgc!!.hotspotSsid
+            glassesInfo["hotspotPassword"] = sgc!!.hotspotPassword
+            glassesInfo["hotspotGatewayIp"] = sgc!!.hotspotGatewayIp
         }
-
-        // G1 specific info
-        // (sgc as? G1)?.let { g1 ->
-        //     connectedGlasses["case_removed"] = g1.caseRemoved
-        //     connectedGlasses["case_open"] = g1.caseOpen
-        //     connectedGlasses["case_charging"] = g1.caseCharging
-        //     // g1.caseBatteryLevel?.let {
-        //     //     connectedGlasses["case_battery_level"] = it
-        //     // }
-
-        //     // if (!g1.glassesSerialNumber.isNullOrEmpty()) {
-        //     //     connectedGlasses["glasses_serial_number"] = g1.glassesSerialNumber!!
-        //     //     connectedGlasses["glasses_style"] = g1.glassesStyle ?: ""
-        //     //     connectedGlasses["glasses_color"] = g1.glassesColor ?: ""
-        //     // }
-        // }
 
         // Bluetooth device name
         sgc?.getConnectedBluetoothName()?.let { bluetoothName ->
-            connectedGlasses["bluetooth_name"] = bluetoothName
+            connectedGlasses["bluetoothName"] = bluetoothName
         }
 
         glassesSettings["brightness"] = brightness
@@ -1370,7 +1352,7 @@ class CoreManager {
 
         val statusObj =
                 mapOf(
-                        "connected_glasses" to connectedGlasses,
+                        "glasses_info" to glassesInfo,
                         "glasses_settings" to glassesSettings,
                         "apps" to apps,
                         "core_info" to coreInfo,

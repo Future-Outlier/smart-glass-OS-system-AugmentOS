@@ -68,12 +68,10 @@ export function MicrophoneSelector({preferredMic, onMicChange}: MicrophoneSelect
 }
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   paddingVertical: 12,
   paddingHorizontal: 16,
   borderRadius: spacing.s4,
-  borderWidth: 2,
-  borderColor: colors.border,
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors}) => ({

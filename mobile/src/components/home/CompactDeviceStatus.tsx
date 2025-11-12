@@ -245,6 +245,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           {/* Brightness Settings */}
           {features?.display?.adjustBrightness && isGlassesConnected && (
             <ToggleSetting
+              compact
               style={{backgroundColor: theme.colors.background}}
               label={translate("deviceSettings:autoBrightness")}
               value={autoBrightness}
