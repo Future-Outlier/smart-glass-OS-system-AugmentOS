@@ -10,17 +10,17 @@ When developing your MentraOS app, you'll want to test it locally before deployi
 Understanding the architecture helps explain why we need tunneling for local development:
 
 ```
-User's Glasses ←→ MentraOS Cloud ←→ Your App Server
+User's Glasses ←→ MentraOS Relay Server←→ Your App Server
 ```
 
 **The flow:**
 1. User interacts with glasses (voice, buttons, camera)
-2. MentraOS Cloud processes the interaction
-3. Cloud sends events to **your app server** via webhook
+2. MentraOS Relay Server processes the interaction
+3. Relay Server sends events to **your app server** via webhook
 4. Your app responds (display text, play audio, etc.)
-5. Response flows back through Cloud to glasses
+5. Response flows back through the Relay Server to the user's phone, and then to the user's glasses
 
-**The key requirement:** MentraOS Cloud must be able to reach your app server over the internet.
+**The key requirement:** MentraOS Relay Server must be able to reach your app server over the internet.
 
 ## The Local Development Problem
 
@@ -28,13 +28,13 @@ When you run your app locally, it's only accessible on your machine:
 
 ```
 Your App: http://localhost:3000 ✅ (you can access it)
-         http://localhost:3000 ❌ (MentraOS Cloud cannot access it)
+         http://localhost:3000 ❌ (MentraOS Relay Server cannot access it)
 ```
 
 **Why this doesn't work:**
 - `localhost` is not a public address
-- MentraOS Cloud runs on the internet
-- Cloud can't reach your local machine directly
+- MentraOS Relay Server runs on the internet
+- Relay Server can't reach your local machine directly
 - Firewalls and routers block incoming connections
 
 ## The Solution: Tunneling with ngrok
@@ -42,11 +42,11 @@ Your App: http://localhost:3000 ✅ (you can access it)
 **ngrok** creates a secure tunnel from a public URL to your local server:
 
 ```
-MentraOS Cloud → https://abc123.ngrok.io → localhost:3000 → Your App
-                 (public internet)         (your machine)
+MentraOS Relay Server → https://abc123.ngrok.io → localhost:3000 → Your App
+                        (public internet)         (your machine)
 ```
 
-Now MentraOS Cloud can send events to `https://abc123.ngrok.io`, and they'll be forwarded to your local app.
+Now MentraOS Relay Server can send events to `https://abc123.ngrok.io`, and they'll be forwarded to your local app.
 
 ---
 

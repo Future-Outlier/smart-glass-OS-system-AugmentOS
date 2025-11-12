@@ -138,6 +138,7 @@
                 ]
               },
               "app-devs/reference/dashboard-api",
+              "app-devs/reference/token-utils",
               "app-devs/reference/utilities"
             ]
           }
@@ -155,7 +156,7 @@
               "os-devs/contributing/mentraos-asg-client-guidelines",
               "os-devs/contributing/add-new-glasses-support",
               {
-                "group": "ASG Client",
+                "group": "Android Smart Glasses (ASG) Client",
                 "icon": "microchip",
                 "pages": [
                   "os-devs/asg-client/README",
@@ -180,7 +181,7 @@
         ]
       },
       {
-        "tab": "Cook Book",
+        "tab": "Cookbook",
         "groups": [
           {
             "group": "Recipes",
