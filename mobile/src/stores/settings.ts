@@ -392,7 +392,9 @@ export const useSettingsStore = create<SettingsState>()(
       CORE_SETTINGS_KEYS.forEach(key => {
         coreSettings[key] = state.getSetting(key)
       })
-      console.log(coreSettings)
+
+      console.log("CORE_SETTINGS_KEYS", CORE_SETTINGS_KEYS)
+      console.log("coreSettings", coreSettings)
       return coreSettings
     },
   })),
