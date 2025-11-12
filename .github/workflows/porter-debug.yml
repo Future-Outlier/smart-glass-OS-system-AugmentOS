@@ -1,7 +1,7 @@
 "on":
   push:
     branches:
-      - cloud/fix-tsconfig-types
+      - cloud/device-state
     paths:
       - "cloud/**"
       - ".github/workflows/porter-debug.yml"

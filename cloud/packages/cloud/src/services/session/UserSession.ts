@@ -10,7 +10,6 @@ import {
   CloudToAppMessageType,
   CloudToGlassesMessageType,
   ConnectionError,
-  GlassesConnectionState,
 } from "@mentra/sdk";
 import { logger as rootLogger } from "../logging/pino-logger";
 import { Capabilities } from "@mentra/sdk";
@@ -71,11 +70,8 @@ export class UserSession {
   public lastAudioTimestamp?: number;
 
   // Audio
-  public bufferedAudio: ArrayBufferLike[] = [];
-  public recentAudioBuffer: { data: ArrayBufferLike; timestamp: number }[] = [];
-
-  // Glasses connection state (for validation)
-  public lastGlassesConnectionState: GlassesConnectionState | null = null;
+  public bufferedAudio: Buffer[] = [];
+  public recentAudioBuffer: Buffer[] = [];
 
   // Cleanup state
   // When disconnected, this will be set to a timer that will clean up the session after the grace period, if user does not reconnect.
@@ -116,9 +112,6 @@ export class UserSession {
 
   // Connection state tracking
   public phoneConnected: boolean = false;
-  public glassesConnected: boolean = false;
-  public glassesModel?: string;
-  public lastGlassesStatusUpdate?: Date;
 
   // Audio play request tracking - maps requestId to packageName
   public audioPlayRequestMapping: Map<string, string> = new Map();
@@ -183,39 +176,6 @@ export class UserSession {
   }
 
   /**
-   * Update tracked glasses connection state and optionally log source of the update.
-   */
-  public setGlassesConnectionState(
-    isConnected: boolean,
-    modelName?: string | null,
-    options: { source?: string } = {},
-  ): void {
-    const normalizedModel =
-      isConnected && modelName
-        ? String(modelName).trim() || undefined
-        : undefined;
-    const previousState = this.glassesConnected;
-    const previousModel = this.glassesModel;
-
-    this.glassesConnected = isConnected;
-    this.glassesModel = normalizedModel;
-    this.lastGlassesStatusUpdate = new Date();
-
-    if (previousState !== isConnected || previousModel !== normalizedModel) {
-      this.logger.info(
-        {
-          source: options.source || "unknown",
-          previousState,
-          newState: isConnected,
-          previousModel,
-          newModel: normalizedModel,
-        },
-        "[UserSession:setGlassesConnectionState] Updated glasses connection state",
-      );
-    }
-  }
-
-  /**
    * Handle phone WebSocket closure by resetting connection state trackers.
    */
   public handlePhoneConnectionClosed(reason?: string): void {
@@ -228,10 +188,8 @@ export class UserSession {
       this.logger.info(logContext, logMessage);
     }
     this.phoneConnected = false;
-    this.setGlassesConnectionState(false, null, {
-      source: reason ? `websocket_close:${reason}` : "websocket_close",
-    });
-    this.clearGlassesHeartbeat();
+    // Device state is now managed by DeviceManager
+    this.deviceManager.updateDeviceState({ connected: false, modelName: null });
   }
 
   /**

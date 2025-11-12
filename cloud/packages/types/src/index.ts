@@ -46,6 +46,12 @@ export type {AppletType, AppPermissionType, AppletPermission, AppletInterface} f
 // CLI types (compile-time only)
 // ============================================================================
 
+export type {GlassesInfo} from "./device"
+
+// ============================================================================
+// CLI types (compile-time only)
+// ============================================================================
+
 export type {
   CLIApiKey,
   CLIApiKeyListItem,
