@@ -1,17 +1,17 @@
+import Constants from "expo-constants"
 import {useState} from "react"
 import {View, TextInput, ScrollView, TextStyle, ViewStyle, KeyboardAvoidingView, Platform} from "react-native"
-import {Header, Screen} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {$styles, ThemedStyle} from "@/theme"
-import {translate} from "@/i18n"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import ActionButton from "@/components/ui/ActionButton"
-import showAlert from "@/utils/AlertUtils"
-import restComms from "@/services/RestComms"
-import Constants from "expo-constants"
+
+import {Button, Header, Screen} from "@/components/ignite"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import restComms from "@/services/RestComms"
 import {useAppletStatusStore} from "@/stores/applets"
+import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {$styles, ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function FeedbackPage() {
   const [feedbackText, setFeedbackText] = useState("")
@@ -64,20 +64,9 @@ export default function FeedbackPage() {
     // Combine feedback with diagnostic info
     const fullFeedback = `FEEDBACK:\n${feedbackBody}\n\nADDITIONAL INFO:\n${additionalInfo}`
     console.log("Full Feedback submitted:", fullFeedback)
-    try {
-      await restComms.sendFeedback(fullFeedback)
-
-      showAlert(translate("feedback:thankYou"), translate("feedback:feedbackReceived"), [
-        {
-          text: translate("common:ok"),
-          onPress: () => {
-            setFeedbackText("")
-            goBack()
-          },
-        },
-      ])
-    } catch (error) {
-      console.error("Error sending feedback:", error)
+    const result = await restComms.sendFeedback(fullFeedback)
+    if (result.isErr()) {
+      console.error("Error sending feedback:", result.error)
       showAlert(translate("common:error"), translate("feedback:errorSendingFeedback"), [
         {
           text: translate("common:ok"),
@@ -86,7 +75,19 @@ export default function FeedbackPage() {
           },
         },
       ])
+      return
     }
+    await restComms.sendFeedback(fullFeedback)
+
+    showAlert(translate("feedback:thankYou"), translate("feedback:feedbackReceived"), [
+      {
+        text: translate("common:ok"),
+        onPress: () => {
+          setFeedbackText("")
+          goBack()
+        },
+      },
+    ])
   }
 
   return (
@@ -106,11 +107,11 @@ export default function FeedbackPage() {
               textAlignVertical="top"
             />
 
-            <ActionButton
-              label={translate("feedback:submitFeedback")}
-              variant="default"
+            <Button
+              tx="feedback:submitFeedback"
               onPress={() => handleSubmitFeedback(feedbackText)}
               disabled={!feedbackText.trim()}
+              preset="primary"
             />
           </View>
         </ScrollView>
