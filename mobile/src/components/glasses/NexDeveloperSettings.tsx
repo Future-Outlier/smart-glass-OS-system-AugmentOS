@@ -4,7 +4,7 @@ import {Text} from "@/components/ignite"
 
 import bridge from "@/bridge/MantleBridge"
 import {PillButton} from "@/components/ignite"
-import RouteButton from "@/components/ui/RouteButton"
+import {RouteButton} from "@/components/ui/RouteButton"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
@@ -726,15 +726,15 @@ const $container: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.md,
-  gap: spacing.md,
+  padding: spacing.s4,
+  gap: spacing.s4,
 })
 
 const $headerSection: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
-  paddingVertical: spacing.lg,
-  paddingHorizontal: spacing.md,
-  borderRadius: spacing.md,
+  paddingVertical: spacing.s6,
+  paddingHorizontal: spacing.s4,
+  borderRadius: spacing.s4,
   borderWidth: 2,
   borderColor: colors.border,
   alignItems: "center",
@@ -757,9 +757,9 @@ const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
-  paddingVertical: spacing.md,
-  paddingHorizontal: spacing.md,
-  borderRadius: spacing.md,
+  paddingVertical: spacing.s4,
+  paddingHorizontal: spacing.s4,
+  borderRadius: spacing.s4,
   borderWidth: 2,
   borderColor: colors.border,
 })
@@ -774,7 +774,7 @@ const $sectionTitle: ThemedStyle<TextStyle> = ({colors}) => ({
 const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
   fontSize: 14,
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
   lineHeight: 20,
 })
 
@@ -903,9 +903,9 @@ const $spacer: ViewStyle = {
 }
 
 const $versionContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
   alignItems: "center",
-  gap: spacing.xs,
+  gap: spacing.s2,
 })
 
 const $versionBadge: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -913,9 +913,9 @@ const $versionBadge: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.palette.primary600,
   fontSize: 12,
   fontWeight: "600",
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  borderRadius: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
+  borderRadius: spacing.s2,
   borderWidth: 1,
   borderColor: colors.palette.primary300,
   overflow: "hidden",
@@ -926,9 +926,9 @@ const $protobufVersionBadge: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.palette.neutral600,
   fontSize: 12,
   fontWeight: "600",
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  borderRadius: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
+  borderRadius: spacing.s2,
   borderWidth: 1,
   borderColor: colors.palette.neutral300,
   overflow: "hidden",
@@ -940,9 +940,9 @@ const $glassesProtobufVersionBadge: ThemedStyle<TextStyle> = ({colors, spacing})
   color: colors.palette.accent500,
   fontSize: 12,
   fontWeight: "600",
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  borderRadius: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
+  borderRadius: spacing.s2,
   borderWidth: 1,
   borderColor: colors.palette.accent300,
   overflow: "hidden",

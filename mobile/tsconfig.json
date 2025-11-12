@@ -18,8 +18,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "assets/*": ["./assets/*"],
-      "@/cloud": ["../cloud/packages/*"]
+      "@cloud/*": ["../cloud/packages/types/*"],
+      "@assets/*": ["../assets/*"],
+      "@plugins/*": ["./plugins/*"],
     },
     "types": ["node", "react", "react-native", "jest"],
     "typeRoots": ["./node_modules/@types", "./src/types"]

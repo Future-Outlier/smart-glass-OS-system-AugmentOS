@@ -8,7 +8,6 @@ import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
 import STTModelManager from "@/services/STTModelManager"
-import {getThemeIsDark} from "@/theme/getTheme"
 import showAlert from "@/utils/AlertUtils"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
 import {useMemo} from "react"
@@ -46,15 +45,6 @@ export const DUMMY_APPLET: ClientAppletInterface = {
 }
 
 /**
- * Get theme-appropriate camera icon
- */
-const getCameraIcon = (isDark: boolean) => {
-  return isDark
-    ? require("../../assets/icons/camera_dark_mode.png")
-    : require("../../assets/icons/camera_light_mode.png")
-}
-
-/**
  * Offline Apps Configuration
  *
  * These are local React Native apps that don't require webviews or server communication.
@@ -66,8 +56,6 @@ export const captionsPackageName = "com.augmentos.livecaptions"
 
 // get offline applets:
 export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
-  const isDark = await getThemeIsDark()
-
   const offlineCameraRunning = await useSettingsStore.getState().getSetting(cameraPackageName)
   const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(captionsPackageName)
   return [
@@ -76,7 +64,7 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       name: "Camera",
       type: "standard", // Foreground app (only one at a time)
       offline: true, // Works without internet connection
-      logoUrl: getCameraIcon(isDark),
+      logoUrl: require("@assets/applet-icons/camera.png"),
       // description: "Capture photos and videos with your Mentra glasses.",
       webviewUrl: "",
       // version: "0.0.1",
@@ -93,7 +81,7 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       type: "standard", // Foreground app (only one at a time)
       offline: true, // Works without internet connection
       // logoUrl: getCaptionsIcon(isDark),
-      logoUrl: "https://appstore.augmentos.org/app-icons/captions.png",
+      logoUrl: require("@assets/applet-icons/captions.png"),
       // description: "Live captions for your mentra glasses.",
       webviewUrl: "",
       // version: "0.0.1",
@@ -105,6 +93,23 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       hardwareRequirements: [{type: HardwareType.DISPLAY, level: HardwareRequirementLevel.REQUIRED}],
     },
   ]
+}
+
+export const getMoreAppsApplet = (): ClientAppletInterface => {
+  return {
+    packageName: "com.mentra.store",
+    name: "Get more apps",
+    offlineRoute: "/store",
+    webviewUrl: "",
+    healthy: true,
+    permissions: [],
+    offline: true,
+    running: false,
+    loading: false,
+    hardwareRequirements: [],
+    type: "standard",
+    logoUrl: require("@assets/applet-icons/store.png"),
+  }
 }
 
 // export const isAppCompatible = (app: ClientAppletInterface): boolean => {
@@ -189,10 +194,17 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   },
 
   startApplet: async (packageName: string) => {
-    const applet = get().apps.find(a => a.packageName === packageName)
+    let allApps = [...get().apps, getMoreAppsApplet()]
+    const applet = allApps.find(a => a.packageName === packageName)
 
     if (!applet) {
       console.error(`Applet not found for package name: ${packageName}`)
+      return
+    }
+
+    // do nothing if any applet is currently loading:
+    if (get().apps.some(a => a.loading)) {
+      console.log(`APPLET: Skipping start applet ${packageName} because another applet is currently loading`)
       return
     }
 

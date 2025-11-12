@@ -183,17 +183,17 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
   borderWidth: 2,
   borderColor: colors.border,
-  borderRadius: spacing.lg,
+  borderRadius: spacing.s6,
 })
 
 const $header: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  paddingHorizontal: spacing.lg,
-  paddingVertical: spacing.xs,
+  paddingHorizontal: spacing.s6,
+  paddingVertical: spacing.s2,
   backgroundColor: colors.background,
-  borderRadius: spacing.lg,
+  borderRadius: spacing.s6,
   borderBottomLeftRadius: 0,
   borderBottomRightRadius: 0,
   borderBottomWidth: 2,
@@ -203,27 +203,27 @@ const $header: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 
 const $headerText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.text,
-  fontSize: spacing.sm,
+  fontSize: spacing.s3,
   fontWeight: "bold",
 })
 
 const $headerButtons: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  gap: spacing.lg,
+  gap: spacing.s6,
 })
 
 const $clearButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.palette.neutral400,
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xxs,
-  borderRadius: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s1,
+  borderRadius: spacing.s2,
 })
 
 const $hideButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.palette.neutral400,
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xxs,
-  borderRadius: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s1,
+  borderRadius: spacing.s2,
 })
 
 const $buttonText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -233,13 +233,13 @@ const $buttonText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $logContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  paddingHorizontal: spacing.xs,
-  // marginbottom: spacing.lg,
-  // paddingBottom: spacing.lg,
+  paddingHorizontal: spacing.s2,
+  // marginbottom: spacing.s6,
+  // paddingBottom: spacing.s6,
 })
 
 const $logEntry: ThemedStyle<ViewStyle> = () => ({
-  // marginBottom: spacing.xxs,
+  // marginBottom: spacing.s1,
 })
 
 const $logText: ThemedStyle<TextStyle> = ({colors}) => ({

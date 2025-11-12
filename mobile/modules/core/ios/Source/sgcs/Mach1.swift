@@ -111,7 +111,8 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func cleanup() {}
 
-    let type = DeviceTypes.MACH1
+    var type: String = DeviceTypes.MACH1
+
     let hasMic: Bool = false
     var caseOpen = false
     var caseRemoved = true
@@ -370,7 +371,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
         // Store the peripheral by its identifier
         discoveredPeripherals[id] = device
-        Bridge.sendDiscoveredDevice(DeviceTypes.MACH1, name)
+        Bridge.sendDiscoveredDevice(type, name) // Use self.type to support both Mach1 and Z100
     }
 
     func foundDevice2(_ device: CBPeripheral) {

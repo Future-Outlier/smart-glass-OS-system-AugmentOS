@@ -2,7 +2,7 @@ import {useState, useEffect, useCallback, useMemo, useRef} from "react"
 import {useNavigate, useSearchParams} from "react-router-dom"
 import {X, Building, ChevronLeft, ChevronRight} from "lucide-react"
 import {motion} from "framer-motion"
-import {useAuth} from "../hooks/useAuth"
+import {useAuth} from "@mentra/shared"
 import {useTheme} from "../hooks/useTheme"
 import {useSearch} from "../contexts/SearchContext"
 import api, {AppFilterOptions} from "../api"
@@ -331,6 +331,55 @@ const AppStoreDesktop: React.FC = () => {
     navigate("/login")
   }, [navigate])
 
+  const handleSearchChange = useCallback(
+    async (value: string) => {
+      setSearchQuery(value)
+
+      if (apps !== originalApps) {
+        setApps(originalApps)
+      }
+
+      if (value.trim() === "") {
+        return
+      }
+
+      const query = value.toLowerCase()
+      const filtered = originalApps.filter(
+        (app) =>
+          app.name.toLowerCase().includes(query) || (app.description && app.description.toLowerCase().includes(query)),
+      )
+
+      if (filtered.length === 0) {
+        setIsLoading(true)
+        try {
+          const pkgApp = await api.app.getAppByPackageName(value)
+
+          if (pkgApp) {
+            if (isAuthenticated && isAuthTokenReady()) {
+              try {
+                const installedApps = await api.app.getInstalledApps()
+                pkgApp.isInstalled = installedApps.some((app) => app.packageName === pkgApp.packageName)
+                console.log(`App install status: ${pkgApp.isInstalled ? "INSTALLED" : "NOT INSTALLED"}`)
+              } catch (error) {
+                console.error("Error checking install status:", error)
+                pkgApp.isInstalled = false
+              }
+            } else {
+              pkgApp.isInstalled = false
+            }
+
+            setApps([pkgApp])
+          }
+        } catch {
+          // Silent fail
+        } finally {
+          setIsLoading(false)
+        }
+      }
+    },
+    [apps, originalApps, isAuthenticated, isAuthTokenReady],
+  )
+
   return (
     <div
       className="min-h-screen text-white"
@@ -341,6 +390,7 @@ const AppStoreDesktop: React.FC = () => {
       {/* Header */}
       <Header
         onSearch={handleSearch}
+        onSearchChange={handleSearchChange}
         onSearchClear={() => {
           setSearchQuery("")
           fetchApps()

@@ -102,17 +102,22 @@ const $button: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $primaryButton: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.primary,
+  backgroundColor: colors.secondary_foreground,
 })
 
 const $secondaryButton: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.palette.transparent,
+  backgroundColor: colors.primary_foreground,
   borderWidth: 1,
-  borderColor: colors.tint,
+  borderColor: colors.border,
 })
 
 const $iconButton: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.buttonIconBackground,
+  backgroundColor: colors.primary_foreground,
+  // shadow:
+  shadowColor: colors.secondary_foreground,
+  shadowOffset: {width: 0, height: 1},
+  shadowOpacity: 0.2,
+  shadowRadius: 2,
 })
 
 const $text: ThemedStyle<TextStyle> = () => ({

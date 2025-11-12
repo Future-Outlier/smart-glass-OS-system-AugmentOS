@@ -2,23 +2,70 @@ import {useState} from "react"
 import {View, TextInput, ScrollView, TextStyle, ViewStyle, KeyboardAvoidingView, Platform} from "react-native"
 import {Header, Screen} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import ActionButton from "@/components/ui/ActionButton"
 import showAlert from "@/utils/AlertUtils"
 import restComms from "@/services/RestComms"
+import Constants from "expo-constants"
+import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {useAppletStatusStore} from "@/stores/applets"
 
 export default function FeedbackPage() {
   const [feedbackText, setFeedbackText] = useState("")
   const {goBack} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
+  const {status} = useCoreStatus()
+  const apps = useAppletStatusStore(state => state.apps)
 
   const handleSubmitFeedback = async (feedbackBody: string) => {
     console.log("Feedback submitted:", feedbackBody)
 
+    // Collect diagnostic information
+    const customBackendUrl = process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE
+    const isBetaBuild = !!customBackendUrl
+    const osVersion = `${Platform.OS} ${Platform.Version}`
+    const deviceName = Constants.deviceName || "deviceName"
+    const appVersion = process.env.EXPO_PUBLIC_MENTRAOS_VERSION || "version"
+    const buildCommit = Constants.expoConfig?.extra?.BUILD_COMMIT || "commit"
+    const buildBranch = Constants.expoConfig?.extra?.BUILD_BRANCH || "branch"
+    const buildTime = Constants.expoConfig?.extra?.BUILD_TIME || "time"
+    const buildUser = Constants.expoConfig?.extra?.BUILD_USER || "user"
+
+    // Glasses info
+    const connectedGlassesModel = status.glasses_info?.model_name || "Not connected"
+    const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable) || "Not set"
+
+    // Running apps
+    const runningApps = apps.filter(app => app.running).map(app => app.packageName)
+    const runningAppsText = runningApps.length > 0 ? runningApps.join(", ") : "None"
+
+    // Build additional info section
+    const additionalInfo = [
+      `Beta Build: ${isBetaBuild ? "Yes" : "No"}`,
+      isBetaBuild ? `Backend URL: ${customBackendUrl}` : null,
+      `App Version: ${appVersion}`,
+      `Device: ${deviceName}`,
+      `OS: ${osVersion}`,
+      `Platform: ${Platform.OS}`,
+      `Connected Glasses: ${connectedGlassesModel}`,
+      `Default Wearable: ${defaultWearable}`,
+      `Running Apps: ${runningAppsText}`,
+      `Build Commit: ${buildCommit}`,
+      `Build Branch: ${buildBranch}`,
+      `Build Time: ${buildTime}`,
+      `Build User: ${buildUser}`,
+    ]
+      .filter(Boolean)
+      .join("\n")
+
+    // Combine feedback with diagnostic info
+    const fullFeedback = `FEEDBACK:\n${feedbackBody}\n\nADDITIONAL INFO:\n${additionalInfo}`
+    console.log("Full Feedback submitted:", fullFeedback)
     try {
-      await restComms.sendFeedback(feedbackBody)
+      await restComms.sendFeedback(fullFeedback)
 
       showAlert(translate("feedback:thankYou"), translate("feedback:feedbackReceived"), [
         {
@@ -43,8 +90,8 @@ export default function FeedbackPage() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header title={translate("feedback:giveFeedback")} leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title={translate("feedback:giveFeedback")} leftIcon="chevron-left" onLeftPress={goBack} />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
         <ScrollView contentContainerStyle={themed($scrollContainer)} keyboardShouldPersistTaps="handled">
           <View style={themed($container)}>
@@ -74,20 +121,20 @@ export default function FeedbackPage() {
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  gap: spacing.lg,
+  gap: spacing.s6,
 })
 
 const $scrollContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexGrow: 1,
-  paddingVertical: spacing.md,
+  paddingVertical: spacing.s4,
 })
 
 const $textInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
   borderWidth: 1,
   borderColor: colors.border,
-  borderRadius: spacing.sm,
-  padding: spacing.md,
+  borderRadius: spacing.s3,
+  padding: spacing.s4,
   fontSize: 16,
   color: colors.text,
   minHeight: 200,

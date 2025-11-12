@@ -170,9 +170,9 @@ const $glassesImage: ThemedStyle<any> = () => ({
 })
 
 const $textContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginTop: spacing.xl,
+  marginTop: spacing.s8,
   alignItems: "center",
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
 })
 
 const $statusText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -194,7 +194,7 @@ const $tipText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $progressBarWrapper: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
   marginBottom: 80, // Push up from bottom to match button positioning
 })
 

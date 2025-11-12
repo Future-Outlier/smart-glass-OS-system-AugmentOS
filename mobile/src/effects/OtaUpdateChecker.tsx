@@ -54,8 +54,8 @@ export function isUpdateAvailable(currentBuildNumber: string | undefined, versio
   let serverVersion: number | undefined
 
   // Check new format first
-  if (versionJson.apps?.["com.augmentos.asg_client"]) {
-    serverVersion = versionJson.apps["com.augmentos.asg_client"].versionCode
+  if (versionJson.apps?.["com.mentra.asg_client"]) {
+    serverVersion = versionJson.apps["com.mentra.asg_client"].versionCode
   } else if (versionJson.versionCode) {
     // Legacy format
     serverVersion = versionJson.versionCode
@@ -74,8 +74,8 @@ export function getLatestVersionInfo(versionJson: VersionJson | null): VersionIn
   }
 
   // Check new format first
-  if (versionJson.apps?.["com.augmentos.asg_client"]) {
-    return versionJson.apps["com.augmentos.asg_client"]
+  if (versionJson.apps?.["com.mentra.asg_client"]) {
+    return versionJson.apps["com.mentra.asg_client"]
   }
 
   // Legacy format

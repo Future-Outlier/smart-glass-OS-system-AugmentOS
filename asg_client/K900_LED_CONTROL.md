@@ -80,13 +80,13 @@ led.flash(1000); // Flash for 1 second
 
 ```bash
 # Turn LED on
-adb shell am broadcast -a com.augmentos.asg_client.TEST_LED --es command "on"
+adb shell am broadcast -a com.mentra.asg_client.TEST_LED --es command "on"
 
 # Turn LED off
-adb shell am broadcast -a com.augmentos.asg_client.TEST_LED --es command "off"
+adb shell am broadcast -a com.mentra.asg_client.TEST_LED --es command "off"
 
 # Start blinking
-adb shell am broadcast -a com.augmentos.asg_client.TEST_LED --es command "blink"
+adb shell am broadcast -a com.mentra.asg_client.TEST_LED --es command "blink"
 ```
 
 ### Via Recording Commands

@@ -1,38 +1,39 @@
 // App.tsx
-import { useEffect } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import {useEffect} from "react"
+import {BrowserRouter, Navigate, Route, Routes} from "react-router-dom"
 
 // Components
-import { Toaster } from "./components/ui/sonner";
-import { TooltipProvider } from "./components/ui/tooltip";
+import {Toaster} from "./components/ui/sonner"
+import {TooltipProvider} from "./components/ui/tooltip"
 
 // Pages
-import LandingPage from "./pages/LandingPage";
-import DashboardHome from "./pages/DashboardHome";
+import LandingPage from "./pages/LandingPage"
+import DashboardHome from "./pages/DashboardHome"
 
-import LoginOrSignup from "./pages/AuthPage";
-import AppList from "./pages/AppList";
-import CreateApp from "./pages/CreateApp";
-import EditApp from "./pages/EditApp";
-import OrganizationSettings from "./pages/OrganizationSettings";
-import Members from "./pages/Members";
-import AdminPanel from "./pages/AdminPanel";
-import NotFound from "./pages/NotFound";
-import { AuthProvider, useAuth } from "./hooks/useAuth";
-import { OrganizationProvider } from "./context/OrganizationContext";
-import { useAccountStore } from "./stores/account.store";
-import { useOrgStore } from "./stores/orgs.store";
-import { useAppStore } from "./stores/apps.store";
+import LoginOrSignup from "./pages/AuthPage"
+import AppList from "./pages/AppList"
+import CreateApp from "./pages/CreateApp"
+import EditApp from "./pages/EditApp"
+import OrganizationSettings from "./pages/OrganizationSettings"
+import Members from "./pages/Members"
+import AdminPanel from "./pages/AdminPanel"
+import NotFound from "./pages/NotFound"
+import CLIKeys from "./pages/CLIKeys"
+import {AuthProvider, useAuth, ForgotPasswordPage, ResetPasswordPage} from "@mentra/shared"
+import {OrganizationProvider} from "./context/OrganizationContext"
+import {useAccountStore} from "./stores/account.store"
+import {useOrgStore} from "./stores/orgs.store"
+import {useAppStore} from "./stores/apps.store"
 
 // Protected route component
 function ProtectedRoute({
   children,
   // requireAdmin = false,
 }: {
-  children: React.ReactNode;
-  requireAdmin?: boolean;
+  children: React.ReactNode
+  requireAdmin?: boolean
 }) {
-  const { isAuthenticated, isLoading, user, session } = useAuth();
+  const {isAuthenticated, isLoading, user, session} = useAuth()
   // const [isAdmin, setIsAdmin] = React.useState<boolean | null>(null);
   // const [isCheckingAdmin, setIsCheckingAdmin] = React.useState(false);
 
@@ -57,17 +58,13 @@ function ProtectedRoute({
   // }, [requireAdmin, isAuthenticated, isLoading]);
 
   // Only log authentication issues in development mode
-  if (
-    process.env.NODE_ENV === "development" &&
-    !isAuthenticated &&
-    !isLoading
-  ) {
+  if (process.env.NODE_ENV === "development" && !isAuthenticated && !isLoading) {
     console.log("Auth issue:", {
       isAuthenticated,
       isLoading,
       hasUser: !!user,
       hasSession: !!session,
-    });
+    })
   }
 
   // if (isLoading || (requireAdmin && isCheckingAdmin)) {
@@ -76,12 +73,12 @@ function ProtectedRoute({
       <div className="h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
-    );
+    )
   }
 
   if (!isAuthenticated) {
-    console.log("Not authenticated, redirecting to signin page");
-    return <Navigate to="/signin" replace />;
+    console.log("Not authenticated, redirecting to signin page")
+    return <Navigate to="/signin" replace />
   }
 
   // if (requireAdmin && isAdmin === false) {
@@ -90,20 +87,20 @@ function ProtectedRoute({
   // }
 
   // Authentication (and admin check if required) successful
-  return <>{children}</>;
+  return <>{children}</>
 }
 
 const AppShell: React.FC = () => {
   // Initialize Console stores after auth is ready (inside AuthProvider)
-  const { isAuthenticated, coreToken, tokenReady, supabaseToken } = useAuth();
+  const {isAuthenticated, coreToken, tokenReady, supabaseToken} = useAuth()
 
-  const setToken = useAccountStore((s) => s.setToken);
-  const fetchAccount = useAccountStore((s) => s.fetchAccount);
+  const setToken = useAccountStore((s) => s.setToken)
+  const fetchAccount = useAccountStore((s) => s.fetchAccount)
 
-  const bootstrapOrgs = useOrgStore((s) => s.bootstrap);
-  const selectedOrgId = useOrgStore((s) => s.selectedOrgId);
+  const bootstrapOrgs = useOrgStore((s) => s.bootstrap)
+  const selectedOrgId = useOrgStore((s) => s.selectedOrgId)
 
-  const fetchApps = useAppStore((s) => s.fetchApps);
+  const fetchApps = useAppStore((s) => s.fetchApps)
 
   // Effect A: run once when auth is ready to bootstrap account and orgs
   useEffect(() => {
@@ -112,25 +109,16 @@ const AppShell: React.FC = () => {
       console.log("[AppShell] authReady: bootstrap", {
         tokenReady,
         isAuthenticated,
-      });
+      })
 
-      const token = coreToken || supabaseToken || null;
-      setToken(token);
-
-      (async () => {
-        await fetchAccount();
-        await bootstrapOrgs();
-      })();
+      const token = coreToken || supabaseToken || null
+      setToken(token)
+      ;(async () => {
+        await fetchAccount()
+        await bootstrapOrgs()
+      })()
     }
-  }, [
-    isAuthenticated,
-    tokenReady,
-    coreToken,
-    supabaseToken,
-    setToken,
-    fetchAccount,
-    bootstrapOrgs,
-  ]);
+  }, [isAuthenticated, tokenReady, coreToken, supabaseToken, setToken, fetchAccount, bootstrapOrgs])
 
   // Effect B: when org changes, fetch apps for that org (do not re-bootstrap)
   useEffect(() => {
@@ -139,11 +127,11 @@ const AppShell: React.FC = () => {
     console.log("[AppShell] orgChanged: fetchApps", {
       selectedOrgId,
       isAuthenticated,
-    });
+    })
     if (isAuthenticated && selectedOrgId) {
-      fetchApps({ orgId: selectedOrgId });
+      fetchApps({orgId: selectedOrgId})
     }
-  }, [isAuthenticated, selectedOrgId, fetchApps]);
+  }, [isAuthenticated, selectedOrgId, fetchApps])
 
   return (
     <BrowserRouter>
@@ -158,6 +146,10 @@ const AppShell: React.FC = () => {
 
         {/* Organization Invite */}
         <Route path="/invite/accept" element={<LoginOrSignup />} />
+
+        {/* Forgot Password Routes */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage redirectUrl="/dashboard" />} />
 
         {/* Dashboard Routes - No auth for now */}
         <Route
@@ -212,6 +204,15 @@ const AppShell: React.FC = () => {
         />
 
         <Route
+          path="/cli-keys"
+          element={
+            <ProtectedRoute>
+              <CLIKeys />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/admin"
           element={
             <ProtectedRoute requireAdmin={true}>
@@ -225,8 +226,8 @@ const AppShell: React.FC = () => {
         <Route path="*" element={<LandingPage />} />
       </Routes>
     </BrowserRouter>
-  );
-};
+  )
+}
 
 const App: React.FC = () => {
   return (
@@ -238,7 +239,7 @@ const App: React.FC = () => {
         </TooltipProvider>
       </OrganizationProvider>
     </AuthProvider>
-  );
-};
+  )
+}
 
-export default App;
+export default App

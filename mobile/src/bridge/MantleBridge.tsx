@@ -2,11 +2,12 @@ import {INTENSE_LOGGING} from "@/utils/Constants"
 import {translate} from "@/i18n"
 import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
+import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
-import {useSettingsStore} from "@/stores/settings"
+import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import Constants from "expo-constants"
 
 import CoreModule from "core"
 import Toast from "react-native-toast-message"
@@ -15,7 +16,6 @@ export class MantleBridge {
   private static instance: MantleBridge | null = null
   private messageEventSubscription: any = null
   private lastMessage: string = ""
-  private IS_CHINA_DEPLOYMENT: boolean = Constants.expoConfig?.extra?.DEPLOYMENT_REGION === "china"
 
   // Private constructor to enforce singleton pattern
   private constructor() {
@@ -77,7 +77,7 @@ export class MantleBridge {
       if ("core_status" in data) {
         if (this.lastMessage === jsonString) {
           console.log("BRIDGE: DUPLICATE CORE STATUS MESSAGE")
-          return
+          // return
         }
         this.lastMessage = jsonString
       }
@@ -108,13 +108,10 @@ export class MantleBridge {
           GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
           return
         case "wifi_status_change":
-          GlobalEventEmitter.emit("WIFI_STATUS_CHANGE", {
-            connected: data.connected,
-            ssid: data.ssid,
-            local_ip: data.local_ip,
-          })
+          useGlassesStore.getState().setWifiInfo(data.connected, data.ssid)
           break
         case "hotspot_status_change":
+          useGlassesStore.getState().setHotspotInfo(data.enabled, data.ssid, data.password, data.local_ip)
           GlobalEventEmitter.emit("HOTSPOT_STATUS_CHANGE", {
             enabled: data.enabled,
             ssid: data.ssid,
@@ -214,6 +211,19 @@ export class MantleBridge {
         case "pair_failure":
           GlobalEventEmitter.emit("PAIR_FAILURE", data.error)
           break
+        case "audio_pairing_needed":
+          GlobalEventEmitter.emit("AUDIO_PAIRING_NEEDED", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_connected":
+          GlobalEventEmitter.emit("AUDIO_CONNECTED", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_disconnected":
+          GlobalEventEmitter.emit("AUDIO_DISCONNECTED", {})
+          break
         case "save_setting":
           await useSettingsStore.getState().setSetting(data.key, data.value, false)
           break
@@ -222,6 +232,35 @@ export class MantleBridge {
           break
         case "local_transcription":
           mantle.handle_local_transcription(data)
+          break
+        case "phone_notification":
+          // Send phone notification via REST instead of WebSocket
+          restComms
+            .sendPhoneNotification({
+              notificationId: data.notificationId,
+              app: data.app,
+              title: data.title,
+              content: data.content,
+              priority: data.priority,
+              timestamp: data.timestamp,
+              packageName: data.packageName,
+            })
+            .catch(error => {
+              console.error("Failed to send phone notification:", error)
+              // TODO: Consider retry logic or queuing failed notifications
+            })
+          break
+        case "phone_notification_dismissed":
+          // Send phone notification dismissal via REST
+          restComms
+            .sendPhoneNotificationDismissed({
+              notificationKey: data.notificationKey,
+              packageName: data.packageName,
+              notificationId: data.notificationId,
+            })
+            .catch(error => {
+              console.error("Failed to send phone notification dismissal:", error)
+            })
           break
         // TODO: this is a bit of a hack, we should have dedicated functions for ws endpoints in the core:
         case "ws_text":
@@ -241,7 +280,8 @@ export class MantleBridge {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          if (!this.IS_CHINA_DEPLOYMENT && livekit.isRoomConnected()) {
+          const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+          if (!isChinaDeployment && livekit.isRoomConnected()) {
             livekit.addPcm(bytes)
           } else {
             socketComms.sendBinary(bytes)

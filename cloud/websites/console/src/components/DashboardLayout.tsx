@@ -1,12 +1,12 @@
 // components/DashboardLayout.tsx
-import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "../hooks/useAuth";
-import api from "@/services/api.service";
-import OrgSwitcher from "./OrgSwitcher";
-import ContactEmailBanner from "./ui/ContactEmailBanner";
-import { useAccountStore } from "@/stores/account.store";
+import {useState, useEffect} from "react"
+import {Link, useLocation, useNavigate} from "react-router-dom"
+import {Button} from "@/components/ui/button"
+import {useAuth} from "@mentra/shared"
+import api from "@/services/api.service"
+import OrgSwitcher from "./OrgSwitcher"
+import ContactEmailBanner from "./ui/ContactEmailBanner"
+import {useAccountStore} from "@/stores/account.store"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,65 +14,65 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 
 interface DashboardLayoutProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const currentPath = location.pathname;
-  const [isAdmin, setIsAdmin] = useState(false);
-  const email = useAccountStore((s) => s.email);
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({children}) => {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const {signOut} = useAuth()
+  const currentPath = location.pathname
+  const [isAdmin, setIsAdmin] = useState(false)
+  const email = useAccountStore((s) => s.email)
 
   // Check if the user is an admin
   useEffect(() => {
     // Start with admin set to false - don't show admin panel by default
-    setIsAdmin(false);
+    setIsAdmin(false)
 
     const checkAdminStatus = async () => {
       try {
         // First, check if we have a token
-        const authToken = localStorage.getItem("core_token");
+        const authToken = localStorage.getItem("core_token")
         if (!authToken) {
-          return;
+          return
         }
 
         // Try to use API service
         try {
-          const result = await api.admin.checkAdmin();
+          const result = await api.admin.checkAdmin()
           // Only set admin to true if the API explicitly confirms admin status
           if (result && result.isAdmin === true) {
-            setIsAdmin(true);
+            setIsAdmin(true)
           }
         } finally {
-          console.log("");
+          console.log("")
         }
       } catch (error) {
-        console.error("Error checking admin status:", error);
+        console.error("Error checking admin status:", error)
       }
-    };
+    }
 
-    checkAdminStatus();
-  }, []);
+    checkAdminStatus()
+  }, [])
 
   // Handle sign out with navigation
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/signin");
-  };
+    await signOut()
+    navigate("/signin")
+  }
 
   // Helper to check if a path is active (for styling)
   const isActivePath = (path: string): boolean => {
     if (path === "/dashboard") {
-      return currentPath === "/dashboard";
+      return currentPath === "/dashboard"
     }
     // For /apps, we want to highlight for all routes under /apps
-    return currentPath.startsWith(path);
-  };
+    return currentPath.startsWith(path)
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -116,15 +116,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 isActivePath("/dashboard")
                   ? "bg-gray-200 text-gray-900"
                   : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
-              }`}
-            >
+              }`}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="mr-3 h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+                stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -140,15 +138,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 isActivePath("/apps")
                   ? "bg-gray-200 text-gray-900"
                   : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
-              }`}
-            >
+              }`}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="mr-3 h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+                stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -164,15 +160,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 isActivePath("/org-settings")
                   ? "bg-gray-200 text-gray-900"
                   : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
-              }`}
-            >
+              }`}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="mr-3 h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+                stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -188,15 +182,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 isActivePath("/members")
                   ? "bg-gray-200 text-gray-900"
                   : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
-              }`}
-            >
+              }`}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="mr-3 h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+                stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -208,20 +200,41 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </Link>
 
             <Link
-              to="https://docs.mentra.glass"
+              to="/cli-keys"
               className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                isActivePath("/docs")
+                isActivePath("/cli-keys")
                   ? "bg-gray-200 text-gray-900"
                   : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
-              }`}
-            >
+              }`}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="mr-3 h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+                stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              CLI Keys
+            </Link>
+
+            <Link
+              to="https://docs.mentra.glass"
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                isActivePath("/docs")
+                  ? "bg-gray-200 text-gray-900"
+                  : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+              }`}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="mr-3 h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -239,15 +252,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   isActivePath("/admin")
                     ? "bg-gray-200 text-gray-900"
                     : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
-                }`}
-              >
+                }`}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="mr-3 h-5 w-5"
                   fill="none"
                   viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                  stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -264,17 +275,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <div className="mt-auto p-2 border-t">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-gray-700 hover:bg-gray-100"
-                >
+                <Button variant="ghost" className="w-full justify-start text-gray-700 hover:bg-gray-100">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="mr-3 h-5 w-5 text-gray-600"
                     fill="none"
                     viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
+                    stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -287,15 +294,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" side="top" className="w-64">
                 <DropdownMenuLabel>Signed in</DropdownMenuLabel>
-                <div className="px-2 py-1.5 text-sm text-muted-foreground truncate">
-                  {email ?? "unknown@user"}
-                </div>
+                <div className="px-2 py-1.5 text-sm text-muted-foreground truncate">{email ?? "unknown@user"}</div>
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem
-                  className="text-red-600 focus:text-red-600"
-                  onClick={() => signOut()}
-                >
+                <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => signOut()}>
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -310,7 +312,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </main>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default DashboardLayout;
+export default DashboardLayout

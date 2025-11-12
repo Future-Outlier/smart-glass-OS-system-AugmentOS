@@ -8,8 +8,9 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {useLocalSearchParams} from "expo-router"
 import {Text, Screen, Header} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {useRefreshApplets} from "@/stores/applets"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 export default function AppStoreWeb() {
   const [_webviewLoading, setWebviewLoading] = useState(true)
@@ -21,6 +22,7 @@ export default function AppStoreWeb() {
   const {appStoreUrl, webViewRef: prefetchedWebviewRef} = useAppStoreWebviewPrefetch()
   const refreshApplets = useRefreshApplets()
   const {theme, themed} = useAppTheme()
+  const {bottom} = useSafeAreaInsets()
 
   // Construct the final URL with packageName if provided
   const finalUrl = useMemo(() => {
@@ -120,9 +122,9 @@ export default function AppStoreWeb() {
   // Show loading state while getting the URL
   if (!finalUrl) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+      <Screen preset="fixed" style={themed($styles.screen)}>
         <Header leftTx="store:title" />
-        <View style={[themed($loadingContainer), {marginHorizontal: -theme.spacing.md}]}>
+        <View style={[themed($loadingContainer), {marginHorizontal: -theme.spacing.s4}]}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text text="Preparing App Store..." style={themed($loadingText)} />
         </View>
@@ -132,7 +134,7 @@ export default function AppStoreWeb() {
 
   if (hasError) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+      <Screen preset="fixed" style={themed($styles.screen)}>
         <Header leftTx="store:title" />
         <InternetConnectionFallbackComponent
           retry={handleRetry}
@@ -144,9 +146,9 @@ export default function AppStoreWeb() {
 
   // If the prefetched WebView is ready, show it in the correct style
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={themed($styles.screen)}>
       <Header leftTx="store:title" />
-      <View style={[themed($webViewContainer), {marginHorizontal: -theme.spacing.md}]}>
+      <View style={[themed($webViewContainer), {marginHorizontal: -theme.spacing.s6}]}>
         {/* Show the prefetched WebView, but now visible and full size */}
         <WebView
           ref={prefetchedWebviewRef}
@@ -169,6 +171,13 @@ export default function AppStoreWeb() {
               meta.setAttribute('name', 'viewport');
               document.getElementsByTagName('head')[0].appendChild(meta);
               true;
+              // append a div with height 200px to the end:
+              const div = document.createElement('div');
+              div.style.height = '${bottom + theme.spacing.s6}px';
+              div.style.width = '100%';
+              div.style.backgroundColor = '${theme.colors.background}';
+              document.body.appendChild(div);
+              // document.body.style.height = 'calc(100vh + 200px)';
             `}
           renderLoading={() => (
             <View style={themed($loadingOverlay)}>
@@ -202,7 +211,7 @@ const $loadingOverlay: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $loadingText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.md,
+  fontSize: spacing.s4,
   marginTop: 10,
   color: colors.text,
 })

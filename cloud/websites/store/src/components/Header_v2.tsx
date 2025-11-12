@@ -1,7 +1,7 @@
 import {useState, useRef, useEffect} from "react"
 import {Link, useNavigate, useLocation} from "react-router-dom"
 import {motion, AnimatePresence} from "framer-motion"
-import {useAuth} from "../hooks/useAuth"
+import {useAuth} from "@mentra/shared"
 import {usePlatform} from "../hooks/usePlatform"
 import {useTheme} from "../hooks/useTheme"
 import {useSearch} from "../contexts/SearchContext"
@@ -13,9 +13,10 @@ import {DropDown} from "./ui/dropdown"
 interface HeaderProps {
   onSearch?: (e: React.FormEvent) => void
   onSearchClear?: () => void
+  onSearchChange?: (value: string) => void
 }
 
-const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
+const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}) => {
   const {isAuthenticated, signOut, user} = useAuth()
   const {isWebView} = usePlatform()
   const {theme} = useTheme()
@@ -29,16 +30,45 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
   // Check URL params for search trigger
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search)
-    if (searchParams.get("search") === "true") {
+    console.log("Checking URL for search param:", searchParams.get("search"))
+
+    if (searchParams.get("search") === "true" && !searchMode) {
+      console.log("Found search=true in URL, activating search mode")
       setsearchMode(true)
-      // Clean up URL
-      searchParams.delete("search")
-      const newSearch = searchParams.toString()
-      navigate(location.pathname + (newSearch ? `?${newSearch}` : ""), {
-        replace: true,
-      })
+
+      // Clean up URL after a delay to allow focus to happen first
+      setTimeout(() => {
+        searchParams.delete("search")
+        const newSearch = searchParams.toString()
+        navigate(location.pathname + (newSearch ? `?${newSearch}` : ""), {
+          replace: true,
+        })
+      }, 500)
     }
-  }, [location.search, location.pathname, navigate])
+  }, [location.search, location.pathname, navigate, searchMode])
+
+  // Focus search input when search mode is activated
+  useEffect(() => {
+    if (searchMode) {
+      console.log("Search mode activated, attempting to focus input")
+
+      // Try to focus after a short delay to ensure the input is rendered
+      const timer = setTimeout(() => {
+        const searchInput = searchRef.current?.querySelector("input")
+        console.log("Search input element:", searchInput)
+
+        if (searchInput instanceof HTMLInputElement) {
+          searchInput.focus()
+          console.log("Focus called. Active element:", document.activeElement)
+          console.log("Is input focused?", document.activeElement === searchInput)
+        } else {
+          console.log("Search input not found or not an input element")
+        }
+      }, 350)
+
+      return () => clearTimeout(timer)
+    }
+  }, [searchMode])
   const [selectedTab, setSelectedTab] = useState<"apps" | "glasses" | "support">("apps")
   const [isScrolled, setIsScrolled] = useState(false)
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920)
@@ -242,7 +272,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                     <SearchBar
                       ref={searchRef}
                       searchQuery={searchQuery}
-                      onSearchChange={setSearchQuery}
+                      onSearchChange={onSearchChange || setSearchQuery}
                       onSearchSubmit={onSearch || ((e) => e.preventDefault())}
                       onClear={onSearchClear || (() => setSearchQuery(""))}
                       autoFocus={true}

@@ -67,11 +67,11 @@ const SelectWithSearchSetting: React.FC<SelectWithSearchSettingProps> = ({
           styles.selectRow,
           {
             backgroundColor: theme.colors.backgroundAlt,
-            borderRadius: theme.borderRadius.md,
-            borderWidth: theme.spacing.xxxs,
+            borderRadius: theme.spacing.s4,
+            borderWidth: theme.spacing.s0_5,
             borderColor: theme.colors.border,
-            paddingVertical: theme.spacing.md,
-            paddingHorizontal: theme.spacing.lg - theme.spacing.xxs, // 20px
+            paddingVertical: theme.spacing.s4,
+            paddingHorizontal: theme.spacing.s6 - theme.spacing.s1, // 20px
           },
         ]}
         onPress={() => setModalVisible(true)}
@@ -98,13 +98,13 @@ const SelectWithSearchSetting: React.FC<SelectWithSearchSettingProps> = ({
                     {
                       backgroundColor: theme.colors.backgroundAlt,
                       borderColor: theme.colors.border,
-                      borderWidth: theme.spacing.xxxs,
-                      padding: theme.spacing.md,
-                      borderRadius: theme.borderRadius.md,
-                      shadowRadius: theme.spacing.xs,
+                      borderWidth: theme.spacing.s0_5,
+                      padding: theme.spacing.s4,
+                      borderRadius: theme.spacing.s4,
+                      shadowRadius: theme.spacing.s2,
                     },
                   ]}>
-                  <View style={[styles.modalHeader, {marginBottom: theme.spacing.sm}]}>
+                  <View style={[styles.modalHeader, {marginBottom: theme.spacing.s3}]}>
                     <Text style={[styles.modalLabel, {color: theme.colors.textDim}]}>{label}</Text>
                   </View>
                   <View
@@ -114,9 +114,9 @@ const SelectWithSearchSetting: React.FC<SelectWithSearchSettingProps> = ({
                         borderColor: theme.colors.inputBorderHighlight,
                         backgroundColor: theme.colors.backgroundAlt,
                         borderRadius: 100, // Pill shape
-                        marginBottom: theme.spacing.sm,
-                        paddingHorizontal: theme.spacing.sm,
-                        paddingVertical: theme.spacing.xs,
+                        marginBottom: theme.spacing.s3,
+                        paddingHorizontal: theme.spacing.s3,
+                        paddingVertical: theme.spacing.s2,
                       },
                     ]}>
                     <SearchIcon size={20} color={theme.colors.textDim} />
@@ -126,7 +126,7 @@ const SelectWithSearchSetting: React.FC<SelectWithSearchSettingProps> = ({
                         {
                           color: theme.colors.text,
                           flex: 1,
-                          marginHorizontal: theme.spacing.xs,
+                          marginHorizontal: theme.spacing.s2,
                         },
                       ]}
                       placeholder="Search"
@@ -153,8 +153,8 @@ const SelectWithSearchSetting: React.FC<SelectWithSearchSettingProps> = ({
                         style={[
                           styles.optionItem,
                           {
-                            paddingVertical: theme.spacing.sm,
-                            paddingRight: theme.spacing.md,
+                            paddingVertical: theme.spacing.s3,
+                            paddingRight: theme.spacing.s4,
                           },
                         ]}
                         onPress={() => {
@@ -170,7 +170,7 @@ const SelectWithSearchSetting: React.FC<SelectWithSearchSettingProps> = ({
                         <Text
                           style={[
                             styles.optionText,
-                            {color: theme.colors.text, flex: 1, marginLeft: theme.spacing.xs},
+                            {color: theme.colors.text, flex: 1, marginLeft: theme.spacing.s2},
                           ]}>
                           {item.label}
                         </Text>

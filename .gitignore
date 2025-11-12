@@ -5,6 +5,7 @@ RtmpStreamExampleBasic/*
 server/config.json
 K900_server_sdk/*
 K900Server_open/*
+K900_server/*
 .claude/*
 aar_extract/*
 aar-extract/*
@@ -38,6 +39,8 @@ augmentos_npm/
 .docusaurus
 **/.docusaurus
 **/expo-env.d.ts
+*.tsbuildinfo
+.tsbuildinfo
 
 ### PYTHON
 #
