@@ -14,7 +14,7 @@ import showAlert from "@/utils/AlertUtils"
 import {MOCK_CONNECTION} from "@/utils/Constants"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
-import ToggleSetting from "../settings/ToggleSetting"
+import ToggleSetting from "@/components/settings/ToggleSetting"
 import CoreModule from "core"
 
 // Nex Interface Version - Single source of truth
@@ -113,7 +113,6 @@ const PatternPreview = ({imageType, imageSize, isDark = false, showDualLayout = 
           borderRadius: 12,
           marginVertical: 8,
         }}>
-        {/* Header */}
         <Text
           style={{
             fontSize: 16,
@@ -126,7 +125,6 @@ const PatternPreview = ({imageType, imageSize, isDark = false, showDualLayout = 
           /// MentraOS Connected \\\
         </Text>
 
-        {/* Status Line */}
         <Text
           style={{
             fontSize: 14,

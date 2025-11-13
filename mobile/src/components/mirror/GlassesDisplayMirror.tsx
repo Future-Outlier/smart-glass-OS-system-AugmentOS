@@ -1,4 +1,3 @@
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useDisplayStore} from "@/stores/display"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -24,7 +23,6 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
   const canvasRef = useRef<Canvas>(null)
   const containerRef = useRef<View | null>(null)
   const [containerWidth, setContainerWidth] = useState<number | null>(null)
-  const {status} = useCoreStatus()
   const {currentEvent} = useDisplayStore()
 
   // Use demo layout if in demo mode, otherwise use real layout
