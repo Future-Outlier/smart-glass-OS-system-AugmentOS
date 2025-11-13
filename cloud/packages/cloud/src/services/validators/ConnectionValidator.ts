@@ -42,6 +42,7 @@ export class ConnectionValidator {
           userId: userSession.userId,
           requestType,
           bypassReason: "VALIDATION_ENABLED=false",
+          feature: "device-state",
         },
         "Connection validation bypassed - returning success",
       );
@@ -55,6 +56,7 @@ export class ConnectionValidator {
           userId: userSession.userId,
           requestType,
           error: "No WebSocket connection exists",
+          feature: "device-state",
         },
         "Hardware request validation failed - no WebSocket",
       );
@@ -73,6 +75,7 @@ export class ConnectionValidator {
           requestType,
           readyState: userSession.websocket.readyState,
           error: "WebSocket not open",
+          feature: "device-state",
         },
         "Hardware request validation failed - WebSocket not open",
       );
@@ -84,26 +87,8 @@ export class ConnectionValidator {
       };
     }
 
-    // Check if phone connection is alive (based on ping/pong)
-    if (!userSession.phoneConnected) {
-      logger.error(
-        {
-          userId: userSession.userId,
-          requestType,
-          error: "Phone not responding to pings",
-        },
-        "Hardware request validation failed - phone not connected",
-      );
-
-      return {
-        valid: false,
-        error: `Cannot process ${requestType} request - phone is not responding (ping/pong timeout)`,
-        errorCode: ConnectionErrorCode.PHONE_DISCONNECTED,
-      };
-    }
-
     // Check glasses connection state via DeviceManager
-    const isConnected = userSession.deviceManager.isConnected();
+    const isGlassesConnected = userSession.deviceManager.isGlassesConnected;
     const model = userSession.deviceManager.getModel();
 
     // HOTFIX: Simulated Glasses don't send connection state via WebSocket
@@ -111,13 +96,14 @@ export class ConnectionValidator {
     // Remove this once mobile client properly sends device state updates
     const isSimulatedGlasses = model === "Simulated Glasses";
 
-    if (!isConnected && !isSimulatedGlasses) {
+    if (!isGlassesConnected && !isSimulatedGlasses) {
       logger.error(
         {
           userId: userSession.userId,
           requestType,
           glassesModel: model,
           error: "Glasses not connected",
+          feature: "device-state",
         },
         "Hardware request validation failed - glasses not connected",
       );
@@ -140,6 +126,7 @@ export class ConnectionValidator {
             requestType,
             ageMs,
             lastUpdate: deviceState.timestamp,
+            feature: "device-state",
           },
           "Glasses connection state may be stale",
         );
@@ -155,6 +142,7 @@ export class ConnectionValidator {
         userId: userSession.userId,
         requestType,
         glassesModel: userSession.deviceManager.getModel(),
+        feature: "device-state",
       },
       "Hardware request validation successful",
     );
@@ -173,6 +161,7 @@ export class ConnectionValidator {
         {
           userId: userSession.userId,
           bypassReason: "VALIDATION_ENABLED=false",
+          feature: "device-state",
         },
         "Phone connection validation bypassed - returning success",
       );
@@ -186,14 +175,6 @@ export class ConnectionValidator {
       return {
         valid: false,
         error: "Phone is not connected",
-        errorCode: ConnectionErrorCode.PHONE_DISCONNECTED,
-      };
-    }
-
-    if (!userSession.phoneConnected) {
-      return {
-        valid: false,
-        error: "Phone is not responding (ping/pong timeout)",
         errorCode: ConnectionErrorCode.PHONE_DISCONNECTED,
       };
     }
@@ -212,6 +193,7 @@ export class ConnectionValidator {
         {
           userId: userSession.userId,
           bypassReason: "VALIDATION_ENABLED=false",
+          feature: "device-state",
         },
         "WiFi validation bypassed - returning success",
       );
@@ -237,6 +219,7 @@ export class ConnectionValidator {
           glassesModel: userSession.deviceManager.getModel(),
           wifiConnected: deviceState.wifiConnected,
           error: "Glasses not connected to WiFi",
+          feature: "device-state",
         },
         "WiFi validation failed - glasses not connected to WiFi",
       );
@@ -253,6 +236,7 @@ export class ConnectionValidator {
         userId: userSession.userId,
         glassesModel: userSession.deviceManager.getModel(),
         wifiSsid: deviceState.wifiSsid,
+        feature: "device-state",
       },
       "WiFi validation successful",
     );
@@ -274,11 +258,10 @@ export class ConnectionValidator {
       parts.push("WebSocket: OPEN");
     }
 
+    const isPhoneConnected = userSession.deviceManager.isPhoneConnected;
+    parts.push(`Phone: ${isPhoneConnected ? "Connected" : "Disconnected"}`);
     parts.push(
-      `Phone: ${userSession.phoneConnected ? "Connected" : "Disconnected"}`,
-    );
-    parts.push(
-      `Glasses: ${userSession.deviceManager.isConnected() ? "Connected" : "Disconnected"}`,
+      `Glasses: ${userSession.deviceManager.isGlassesConnected ? "Connected" : "Disconnected"}`,
     );
 
     const model = userSession.deviceManager.getModel();

@@ -110,9 +110,6 @@ export class UserSession {
   // SAFETY FLAG: Set to false to disable pong timeout behavior entirely
   private static readonly PONG_TIMEOUT_ENABLED = true; // Enabled to track phone connection reliability in production
 
-  // Connection state tracking
-  public phoneConnected: boolean = false;
-
   // Audio play request tracking - maps requestId to packageName
   public audioPlayRequestMapping: Map<string, string> = new Map();
 
@@ -176,23 +173,6 @@ export class UserSession {
   }
 
   /**
-   * Handle phone WebSocket closure by resetting connection state trackers.
-   */
-  public handlePhoneConnectionClosed(reason?: string): void {
-    const logContext = { reason };
-    const logMessage =
-      "[UserSession] Phone WebSocket closed, marking connections as disconnected";
-    if (reason && reason.includes("ping_timeout")) {
-      this.logger.warn(logContext, logMessage);
-    } else {
-      this.logger.info(logContext, logMessage);
-    }
-    this.phoneConnected = false;
-    // Device state is now managed by DeviceManager
-    this.deviceManager.updateDeviceState({ connected: false, modelName: null });
-  }
-
-  /**
    * Set up heartbeat for glasses WebSocket connection
    */
   private setupGlassesHeartbeat(): void {
@@ -220,7 +200,6 @@ export class UserSession {
     // Set up pong handler with timeout detection
     this.websocket.on("pong", () => {
       this.lastPongTime = Date.now();
-      this.phoneConnected = true; // Phone is alive if we got pong
 
       if (LOG_PING_PONG) {
         this.logger.debug(
@@ -237,7 +216,6 @@ export class UserSession {
 
     // Initialize pong tracking
     this.lastPongTime = Date.now();
-    this.phoneConnected = true;
 
     // Only start timeout tracking if enabled
     if (UserSession.PONG_TIMEOUT_ENABLED) {
@@ -295,9 +273,6 @@ export class UserSession {
         `[UserSession:pongTimeout] Phone connection timeout - no pong for ${timeSinceLastPong}ms from user ${this.userId}`,
       );
 
-      // Mark connections as dead
-      this.handlePhoneConnectionClosed("ping_timeout");
-
       // Close the zombie WebSocket connection
       if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
         this.logger.info(
@@ -329,14 +304,6 @@ export class UserSession {
     this.logger.debug(
       `[UserSession:updateWebSocket] WebSocket and heartbeat updated for user ${this.userId}`,
     );
-  }
-
-  /**
-   * Update the current glasses model and refresh capabilities
-   * Delegate to DeviceManager to centralize model/capability handling.
-   */
-  async updateGlassesModel(modelName: string): Promise<void> {
-    await this.deviceManager.setCurrentModel(modelName);
   }
 
   /**

@@ -379,7 +379,10 @@ export class GlassesWebSocketService {
 
             // Update glasses model if available in status
             if (connectedGlasses.model_name) {
-              await userSession.updateGlassesModel(connectedGlasses.model_name);
+              await userSession.deviceManager.updateDeviceState({
+                connected: true,
+                modelName: connectedGlasses.model_name,
+              });
             }
 
             // Map core status fields to augmentos settings
@@ -1106,8 +1109,10 @@ export class GlassesWebSocketService {
       `[WebsocketGlassesService:handleGlassesConnectionClose]: (${userSession.userId}, ${code}, ${reason}) - Glasses connection closed`,
     );
 
-    userSession.handlePhoneConnectionClosed(
-      reason ? `${code}:${reason}` : `${code}`,
+    // WebSocket is closing - connection state will be handled by WebSocket close event
+    userSession.logger.info(
+      { service: SERVICE_NAME, code, reason },
+      "Phone WebSocket connection closing",
     );
 
     // Mark session as disconnected

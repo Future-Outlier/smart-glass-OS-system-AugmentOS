@@ -1,5 +1,4 @@
 // MentraOS/cloud/packages/cloud/src/services/session/DeviceManager.ts
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * DeviceManager
  *
@@ -44,7 +43,7 @@ const FALLBACK_MODEL = "Even Realities G1";
 export class DeviceManager {
   private readonly userSession: UserSession;
   private readonly logger: Logger;
-  private capabilities: Capabilities | null = null;
+  // private capabilities: Capabilities | null = null;
   private deviceState: Partial<GlassesInfo> = {};
 
   constructor(userSession: UserSession) {
@@ -66,26 +65,37 @@ export class DeviceManager {
   }
 
   /**
-   * Check if glasses are currently connected
+   * Check if phone is connected to cloud (WebSocket state)
    */
-  isConnected(): boolean {
-    return this.deviceState.connected ?? false;
+  get isPhoneConnected(): boolean {
+    return this.userSession.websocket?.readyState === 1; // WebSocket.OPEN
   }
 
   /**
-   * Get current glasses model name
+   * Check if glasses are connected to phone
+   */
+  get isGlassesConnected(): boolean {
+    return this.deviceState.connected === true;
+  }
+
+  /**
+   * Get the current glasses model name
    */
   getModel(): string | null {
-    return this.deviceState.modelName ?? null;
+    return this.deviceState.modelName || null;
   }
 
   /**
    * Get effective capabilities (derived from current model)
    */
   getCapabilities(): Capabilities | null {
-    if (this.capabilities) return this.capabilities;
-    const fallback = getCapabilitiesForModel("Even Realities G1");
-    return fallback || null;
+    if (!this.deviceState.modelName) return null;
+
+    return getCapabilitiesForModel(this.deviceState.modelName);
+
+    // if (this.capabilities) return this.capabilities;
+    // const fallback = getCapabilitiesForModel("Even Realities G1");
+    // return fallback || null;
   }
 
   /**
@@ -107,9 +117,37 @@ export class DeviceManager {
    */
   async updateDeviceState(payload: Partial<GlassesInfo>): Promise<void> {
     this.logger.info(
-      { userId: this.userSession.userId, payload },
+      { userId: this.userSession.userId, payload, feature: "device-state" },
       "Updating device state",
     );
+
+    // Infer connection state from modelName if not explicitly provided
+    // If modelName is provided and not empty, glasses are connected
+    // If modelName is null/empty, glasses are disconnected
+    if (payload.modelName && payload.connected === undefined) {
+      payload.connected = true;
+      this.logger.debug(
+        {
+          userId: this.userSession.userId,
+          modelName: payload.modelName,
+          feature: "device-state",
+        },
+        "Inferred connected=true from modelName",
+      );
+    } else if (
+      (payload.modelName === null || payload.modelName === "") &&
+      payload.connected === undefined
+    ) {
+      payload.connected = false;
+      this.logger.debug(
+        { userId: this.userSession.userId, feature: "device-state" },
+        "Inferred connected=false from empty/null modelName",
+      );
+    }
+
+    // Check if model is changing BEFORE merging
+    const modelChanged =
+      payload.modelName && payload.modelName !== this.deviceState.modelName;
 
     // Merge partial updates into device state
     this.deviceState = {
@@ -117,7 +155,7 @@ export class DeviceManager {
       ...payload,
     };
 
-    // Update capabilities & analytics (only if connection state changed)
+    // Handle connection state changes (includes model update + analytics)
     if (payload.connected !== undefined) {
       if (payload.connected && payload.modelName) {
         await this.handleGlassesConnectionState(payload.modelName, "CONNECTED");
@@ -131,8 +169,14 @@ export class DeviceManager {
           payload.connected ? "CONNECTED" : "DISCONNECTED",
         );
       } catch (error) {
-        this.logger.warn({ error }, "MicrophoneManager handler error");
+        this.logger.warn(
+          { error, feature: "device-state" },
+          "MicrophoneManager handler error",
+        );
       }
+    } else if (modelChanged && payload.modelName) {
+      // Model changed without connection state change - just update capabilities
+      await this.updateModelAndCapabilities(payload.modelName);
     }
 
     this.logger.info(
@@ -141,6 +185,7 @@ export class DeviceManager {
         connected: this.deviceState.connected,
         modelName: this.deviceState.modelName,
         capabilities: this.getCapabilities(),
+        feature: "device-state",
       },
       "Device state updated successfully",
     );
@@ -222,7 +267,12 @@ export class DeviceManager {
     const model = modelName ? String(modelName).trim() : null;
 
     this.logger.info(
-      { userId: this.userSession.userId, status, model },
+      {
+        userId: this.userSession.userId,
+        status,
+        model,
+        feature: "device-state",
+      },
       "Handling GLASSES_CONNECTION_STATE",
     );
 
@@ -231,7 +281,7 @@ export class DeviceManager {
       this.userSession.microphoneManager?.handleConnectionStateChange(status);
     } catch (error) {
       this.logger.warn(
-        { error, status },
+        { error, status, feature: "device-state" },
         "MicrophoneManager connection state handler error (continuing)",
       );
     }
@@ -274,7 +324,7 @@ export class DeviceManager {
         }
       } catch (error) {
         this.logger.error(
-          error,
+          { error, feature: "device-state" },
           "Error updating user model history or PostHog for GLASSES_CONNECTION_STATE CONNECTED",
         );
       }
@@ -286,7 +336,7 @@ export class DeviceManager {
         });
       } catch (error) {
         this.logger.error(
-          error,
+          { error, feature: "device-state" },
           "Error updating PostHog on GLASSES_CONNECTION_STATE DISCONNECTED",
         );
       }
@@ -308,7 +358,7 @@ export class DeviceManager {
       );
     } catch (error) {
       this.logger.error(
-        error,
+        { error, feature: "device-state" },
         "Error tracking GLASSES_CONNECTION_STATE event in PostHog",
       );
     }
@@ -333,7 +383,7 @@ export class DeviceManager {
 
     if (this.deviceState.modelName === model) {
       this.logger.debug(
-        { model },
+        { model, feature: "device-state" },
         "Model unchanged; skipping capability refresh",
       );
       return;
@@ -344,6 +394,7 @@ export class DeviceManager {
         previousModel: this.deviceState.modelName,
         newModel: model,
         userId: this.userSession.userId,
+        feature: "device-state",
       },
       "Updating device model",
     );
@@ -355,7 +406,7 @@ export class DeviceManager {
     let caps: Capabilities | null = getCapabilitiesForModel(model);
     if (!caps) {
       this.logger.warn(
-        { model },
+        { model, feature: "device-state" },
         "No capabilities found for model; applying fallback",
       );
       const fallback = isModelSupported(FALLBACK_MODEL)
@@ -370,7 +421,8 @@ export class DeviceManager {
       }
     }
 
-    this.capabilities = caps || null;
+    // Capabilities are derived on-demand via getCapabilities()
+    // No need to store them since they're always based on deviceState.modelName
   }
 
   /**
