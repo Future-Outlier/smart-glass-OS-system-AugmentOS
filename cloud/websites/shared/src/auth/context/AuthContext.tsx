@@ -8,7 +8,7 @@ import {
   MentraSignOutResponse,
 } from "../utils/auth/authingProvider.types"
 
-const CORE_API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_CLOUD_API_URL || "http://localhost:8002/api"
+const CORE_API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_CLOUD_API_URL || "http://localhost:8002"
 const STORE_PACKAGE_NAME = "org.augmentos.store"
 
 declare global {
@@ -88,7 +88,7 @@ export function AuthProvider({
       console.log("Exchanging Supabase token for Core token...")
 
       const response = await axios.post(
-        `${CORE_API_URL}/auth/exchange-token`,
+        `${CORE_API_URL}/api/auth/exchange-token`,
         {
           supabaseToken: isChina ? undefined : providerToken,
           authingToken: isChina ? providerToken : undefined,
@@ -132,7 +132,7 @@ export function AuthProvider({
     try {
       console.log("Exchanging temporary token...")
       const response = await axios.post(
-        `${CORE_API_URL}/auth/exchange-store-token`,
+        `${CORE_API_URL}/api/auth/exchange-store-token`,
         {aos_temp_token: tempToken, packageName: STORE_PACKAGE_NAME},
         {headers: {"Content-Type": "application/json"}},
       )
