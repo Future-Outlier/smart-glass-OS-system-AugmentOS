@@ -23,3 +23,13 @@ object MicTypes {
     const val BT = "bt"
     val ALL = arrayOf(PHONE_INTERNAL, GLASSES_CUSTOM, BT_CLASSIC, BT)
 }
+
+// convert to kotlin:
+object MicMap {
+    val map: Map<String, List<String>> = mapOf(
+        "auto" to listOf(MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.BT_CLASSIC),
+        "glasses" to listOf(MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.PHONE_INTERNAL),
+        "phone" to listOf(MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.BT_CLASSIC),
+        "bluetooth" to listOf(MicTypes.BT, MicTypes.BT_CLASSIC, MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM),
+    )
+}

@@ -18,6 +18,7 @@ import com.mentra.core.sgcs.SGCManager
 import com.mentra.core.sgcs.Simulated
 import com.mentra.core.utils.DeviceTypes
 import com.mentra.core.utils.MicTypes
+import com.mentra.core.utils.MicMap
 import com.mentra.mentra.stt.SherpaOnnxTranscriber
 import java.text.SimpleDateFormat
 import java.util.*
@@ -72,12 +73,7 @@ class CoreManager {
     private var isSearching = false
     private var systemMicUnavailable = false
     public val currentRequiredData = mutableListOf<SpeechRequiredDataType>()
-    public var micRanking =
-            mutableListOf<String>(
-                    MicTypes.PHONE_INTERNAL,
-                    MicTypes.GLASSES_CUSTOM,
-                    MicTypes.BT_CLASSIC
-            )
+    public var micRanking = mutableListOf<String>(MicMap.map["auto"])
 
     // glasses settings
     private var contextualDashboard = true
@@ -683,7 +679,7 @@ class CoreManager {
     }
 
     fun updatePreferredMic(mic: String) {
-        preferredMic = mic
+        micRanking = MicMap.map[mic] ?? MicMap.map["auto"]
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
         handle_request_status()
     }

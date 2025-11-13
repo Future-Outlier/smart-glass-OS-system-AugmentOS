@@ -55,9 +55,7 @@ struct ViewState {
     private var isSearching: Bool = false
     private var onboardMicUnavailable: Bool = false
     private var currentRequiredData: [SpeechRequiredDataType] = []
-    var micRanking: [String] = [
-        MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.BT_CLASSIC,
-    ]
+    var micRanking: [String] = MicMap.map["auto"]
 
     // glasses settings
     var contextualDashboard = true
@@ -420,7 +418,7 @@ struct ViewState {
     }
 
     func updatePreferredMic(_ mic: String) {
-        preferredMic = mic
+        micRanking = MicMap.map[mic] ?? MicMap.map["auto"]
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
         handle_request_status() // to update the UI
     }

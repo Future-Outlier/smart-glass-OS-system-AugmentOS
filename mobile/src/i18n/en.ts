@@ -28,6 +28,10 @@ const en = {
   },
   microphoneSettings: {
     title: "Microphone",
+    auto: "Automatic",
+    glasses: "Glasses",
+    phone: "Phone",
+    bluetooth: "Bluetooth",
   },
   screenSettings: {
     title: "Display Position Settings",

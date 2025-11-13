@@ -2,40 +2,52 @@
  * Main gallery screen component
  */
 
-import {useCallback, useState, useEffect, useMemo, useRef} from "react"
-import {View, BackHandler, TouchableOpacity, ActivityIndicator, Dimensions, FlatList, ViewToken} from "react-native"
+import CoreModule from "core"
+import LinearGradient from "expo-linear-gradient"
+import * as Linking from "expo-linking"
 import {useFocusEffect} from "expo-router"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {spacing, ThemedStyle} from "@/theme"
-import {ViewStyle, TextStyle, ImageStyle} from "react-native"
+import {useCallback, useEffect, useMemo, useRef, useState} from "react"
+import {
+  ActivityIndicator,
+  BackHandler,
+  Dimensions,
+  FlatList,
+  ImageStyle,
+  TextStyle,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+  ViewToken,
+} from "react-native"
+import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
+import WifiManager from "react-native-wifi-reborn"
+
+import bridge from "@/bridge/MantleBridge"
+import {MediaViewer} from "@/components/glasses/Gallery/MediaViewer"
+import {PhotoImage} from "@/components/glasses/Gallery/PhotoImage"
+import {ProgressRing} from "@/components/glasses/Gallery/ProgressRing"
+import {Header, Icon, Text} from "@/components/ignite"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {PhotoInfo} from "@/types/asg"
+import {translate} from "@/i18n"
 import {asgCameraApi} from "@/services/asg/asgCameraApi"
+import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
 import {localStorageService} from "@/services/asg/localStorageService"
-import {PhotoImage} from "@/components/glasses/Gallery/PhotoImage"
-import {MediaViewer} from "@/components/glasses/Gallery/MediaViewer"
-import {ProgressRing} from "@/components/glasses/Gallery/ProgressRing"
-import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
-import LinearGradient from "expo-linear-gradient"
+import {networkConnectivityService, NetworkStatus} from "@/services/asg/networkConnectivityService"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {spacing, ThemedStyle} from "@/theme"
+import {PhotoInfo} from "@/types/asg"
+import showAlert from "@/utils/AlertUtils"
+import {shareFile} from "@/utils/FileUtils"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {MediaLibraryPermissions} from "@/utils/MediaLibraryPermissions"
+import {useAppTheme} from "@/utils/useAppTheme"
+
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 // @ts-ignore
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient)
-import showAlert from "@/utils/AlertUtils"
-import {translate} from "@/i18n"
-import {shareFile} from "@/utils/FileUtils"
-import bridge from "@/bridge/MantleBridge"
-import WifiManager from "react-native-wifi-reborn"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {networkConnectivityService, NetworkStatus} from "@/services/asg/networkConnectivityService"
-import {Header, Icon, Text} from "@/components/ignite"
-import * as Linking from "expo-linking"
-import {MediaLibraryPermissions} from "@/utils/MediaLibraryPermissions"
-import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
-import {getModelCapabilities} from "@/../../cloud/packages/types/src"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import CoreModule from "core"
-import {useGlassesStore} from "@/stores/glasses"
 
 // Gallery timing constants
 const TIMING = {
@@ -88,6 +100,7 @@ export function GalleryScreen() {
   const hotspotPassword = useGlassesStore(state => state.hotspotPassword)
   const hotspotGatewayIp = useGlassesStore(state => state.hotspotGatewayIp)
   const hotspotEnabled = useGlassesStore(state => state.hotspotEnabled)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   const [networkStatus] = useState<NetworkStatus>(networkConnectivityService.getStatus())
 
@@ -400,15 +413,13 @@ export function GalleryScreen() {
         },
       )
 
-      const glassesModel = status.glasses_info?.model_name
-
       // Save downloaded files but keep progress states visible
       for (const photoInfo of downloadResult.downloaded) {
         const downloadedFile = localStorageService.convertToDownloadedFile(
           photoInfo,
           photoInfo.filePath || "",
           photoInfo.thumbnailPath,
-          glassesModel,
+          defaultWearable,
         )
         await localStorageService.saveDownloadedFile(downloadedFile)
       }
@@ -995,7 +1006,7 @@ export function GalleryScreen() {
       loadDownloadedPhotos()
 
       // Only query glasses if we have glasses info (meaning glasses are connected) AND glasses have gallery capability
-      if (status.glasses_info?.model_name && features?.hasCamera) {
+      if (glassesConnected && features?.hasCamera) {
         console.log(
           "[GalleryScreen] Glasses connected with gallery capability - querying gallery status",
           status.glasses_info,

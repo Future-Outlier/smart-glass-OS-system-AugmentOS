@@ -2,6 +2,9 @@ import CoreModule from "core"
 import {Platform, View, ViewStyle} from "react-native"
 
 import OtaProgressSection from "@/components/glasses/OtaProgressSection"
+import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
+import {EmptyState} from "@/components/glasses/info/EmptyState"
+import {ButtonSettings} from "@/components/glasses/settings/ButtonSettings"
 import {Icon} from "@/components/ignite"
 import SliderSetting from "@/components/settings/SliderSetting"
 import ToggleSetting from "@/components/settings/ToggleSetting"
@@ -17,10 +20,6 @@ import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {showDestructiveAlert} from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-
-import {BatteryStatus} from "./info/BatteryStatus"
-import {EmptyState} from "./info/EmptyState"
-import {ButtonSettings} from "./settings/ButtonSettings"
 
 import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
@@ -52,7 +51,7 @@ export default function DeviceSettings() {
   const bluetoothName = useGlassesStore(state => state.bluetoothName)
   const buildNumber = useGlassesStore(state => state.buildNumber)
 
-  const hasDeviceInfo = bluetoothName || buildNumber || wifiLocalIp
+  const hasDeviceInfo = Boolean(bluetoothName || buildNumber || wifiLocalIp)
 
   const confirmForgetGlasses = () => {
     showDestructiveAlert(
@@ -160,7 +159,7 @@ export default function DeviceSettings() {
           label={translate("settings:glassesWifiSettings")}
           subtitle={translate("settings:glassesWifiDescription")}
           onPress={() => {
-            push("/pairing/glasseswifisetup", {deviceModel: status.glasses_info?.model_name || "Glasses"})
+            push("/pairing/glasseswifisetup", {deviceModel: defaultWearable || "Glasses"})
           }}
         />
       )}
