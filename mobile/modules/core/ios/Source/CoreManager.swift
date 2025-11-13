@@ -53,7 +53,7 @@ struct ViewState {
     var deviceAddress: String = ""
     private var screenDisabled: Bool = false
     private var isSearching: Bool = false
-    private var onboardMicUnavailable: Bool = false
+    private var systemMicUnavailable: Bool = false
     private var currentRequiredData: [SpeechRequiredDataType] = []
     var micRanking: [String] = MicMap.map["auto"]!
 
@@ -332,25 +332,41 @@ struct ViewState {
         // allow the sgc to make changes to the micRanking:
         micRanking = sgc?.sortMicRanking(list: micRanking) ?? micRanking
 
+        var phoneMicUnavailable = systemMicUnavailable
+
+        let appState = UIApplication.shared.applicationState
+        if appState == .background {
+            // Bridge.log("App is in background - onboard mic unavailable to start!")
+            phoneMicUnavailable = true
+        }
+
         if micEnabled {
-            for mic in micRanking {
-                if mic == MicTypes.PHONE_INTERNAL {
-                    if PhoneMic.shared.isRecording {
-                        micUsed = mic
+            for micMode in micRanking {
+                if micMode == MicTypes.PHONE_INTERNAL || micMode == MicTypes.BT_CLASSIC
+                    || micMode == MicTypes.BT
+                {
+                    if PhoneMic.shared.isRecordingWithMode(micMode) {
+                        micUsed = micMode
                         break
                     }
+
+                    if phoneMicUnavailable {
+                        continue
+                    }
+
                     // if the phone mic is not recording, start recording:
-                    let success = PhoneMic.shared.startRecording()
+                    let success = PhoneMic.shared.startMode(micMode)
+                    Bridge.log("MAN: starting mic mode: \(micMode) -> \(success)")
                     if success {
-                        micUsed = mic
+                        micUsed = micMode
                         break
                     }
                 }
 
-                if mic == MicTypes.GLASSES_CUSTOM {
-                    if sgc?.hasMic ?? false {
+                if micMode == MicTypes.GLASSES_CUSTOM {
+                    if sgc?.hasMic ?? false && sgc?.micEnabled == false {
                         sgc?.setMicEnabled(true)
-                        micUsed = mic
+                        micUsed = micMode
                         break
                     }
                 }
@@ -366,16 +382,18 @@ struct ViewState {
         // go through and disable all mics after the first used one:
         // var micsToDisable: [String] = []
 
-        for mic in micRanking {
-            if mic == micUsed {
+        for micMode in micRanking {
+            if micMode == micUsed {
                 continue
             }
 
-            if mic == MicTypes.PHONE_INTERNAL {
-                PhoneMic.shared.stopRecording()
+            if micMode == MicTypes.PHONE_INTERNAL || micMode == MicTypes.BT_CLASSIC
+                || micMode == MicTypes.BT
+            {
+                PhoneMic.shared.stopMode(micMode)
             }
 
-            if mic == MicTypes.GLASSES_CUSTOM {
+            if micMode == MicTypes.GLASSES_CUSTOM && sgc?.hasMic == true && sgc?.micEnabled == true {
                 sgc?.setMicEnabled(false)
             }
         }
@@ -764,6 +782,7 @@ struct ViewState {
     ) {
         Bridge.log("MAN: onRouteChange: reason: \(reason)")
         Bridge.log("MAN: onRouteChange: inputs: \(availableInputs)")
+        updateMicState()
 
         // Core.log the available inputs and see if any are an onboard mic:
         // for input in availableInputs {
@@ -771,12 +790,12 @@ struct ViewState {
         // }
 
         // if availableInputs.isEmpty {
-        //   self.onboardMicUnavailable = true
+        //   self.systemMicUnavailable = true
         //   self.setOnboardMicEnabled(false)
         //   handle_microphone_state_change([], false)
         //   return
         // } else {
-        //   self.onboardMicUnavailable = false
+        //   self.systemMicUnavailable = false
         // }
 
         //        switch reason {
@@ -795,9 +814,8 @@ struct ViewState {
 
     func onInterruption(began: Bool) {
         Bridge.log("MAN: Interruption: \(began)")
-
-        onboardMicUnavailable = began
-        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+        systemMicUnavailable = began
+        updateMicState()
     }
 
     func restartTranscriber() {
@@ -1108,7 +1126,7 @@ struct ViewState {
         //     useOnboardMic = self.preferredMic == "phone"
         //     useGlassesMic = self.preferredMic == "glasses"
 
-        //     if self.onboardMicUnavailable {
+        //     if self.systemMicUnavailable {
         //         useOnboardMic = false
         //     }
 
@@ -1120,7 +1138,7 @@ struct ViewState {
         //         // if we have a non-preferred mic, use it:
         //         if glassesHasMic {
         //             useGlassesMic = true
-        //         } else if !self.onboardMicUnavailable {
+        //         } else if !self.systemMicUnavailable {
         //             useOnboardMic = true
         //         }
 
@@ -1156,7 +1174,7 @@ struct ViewState {
         //     // Core.log(
         //     //     "MAN: MIC: isEnabled: \(isEnabled) sensingEnabled: \(self.sensingEnabled) useOnboardMic: \(useOnboardMic) " +
         //     //         "useGlassesMic: \(useGlassesMic) glassesHasMic: \(glassesHasMic) preferredMic: \(self.preferredMic) " +
-        //     //         "somethingConnected: \(isSomethingConnected()) onboardMicUnavailable: \(self.onboardMicUnavailable)" +
+        //     //         "somethingConnected: \(isSomethingConnected()) systemMicUnavailable: \(self.systemMicUnavailable)" +
         //     //         "actuallyEnabled: \(actuallyEnabled)"
         //     // )
 

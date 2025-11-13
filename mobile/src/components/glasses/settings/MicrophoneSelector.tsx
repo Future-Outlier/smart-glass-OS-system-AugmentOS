@@ -1,4 +1,5 @@
 import {MaterialCommunityIcons} from "@expo/vector-icons"
+import {Fragment} from "react"
 import {View, TouchableOpacity, TextStyle, ViewStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
@@ -45,7 +46,7 @@ export function MicrophoneSelector({preferredMic, onMicChange}: MicrophoneSelect
       </TouchableOpacity>
 
       {MIC_OPTIONS.map((option: {label: string; value: string}) => (
-        <>
+        <Fragment key={option.value}>
           <View style={themed($separator)} />
           <TouchableOpacity key={option.value} style={themed($itemContainer)} onPress={() => onMicChange(option.value)}>
             <Text text={option.label} style={themed($itemText)} />
@@ -53,7 +54,7 @@ export function MicrophoneSelector({preferredMic, onMicChange}: MicrophoneSelect
               <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
             )}
           </TouchableOpacity>
-        </>
+        </Fragment>
       ))}
       {/* 
       <View style={themed($separator)} />

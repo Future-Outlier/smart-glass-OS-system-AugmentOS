@@ -22,6 +22,7 @@ class PhoneMic {
         return audioEngine.isRunning
     }
 
+    private var currentMicMode: String = ""
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Initialization
@@ -106,6 +107,203 @@ class PhoneMic {
         } catch {
             Bridge.log("Failed to set preferred input: \(error)")
             return false
+        }
+    }
+
+    /// Check if currently recording with a specific mode
+    func isRecordingWithMode(_ mode: String) -> Bool {
+        return isRecording && currentMicMode == mode
+    }
+
+    /// Start recording with a specific microphone mode
+    /// - Parameter mode: One of MicTypes constants (PHONE_INTERNAL, BT_CLASSIC, BT)
+    /// - Returns: true if successfully started recording, false otherwise
+    func startMode(_ mode: String) -> Bool {
+        // Check if already recording with this mode
+        if isRecordingWithMode(mode) {
+            return true
+        }
+
+        // If recording with a different mode, stop first
+        if isRecording {
+            Bridge.log("MIC: Already recording with different mode (\(currentMicMode)), stopping first")
+            stopRecording()
+            // Brief delay to ensure clean stop
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+
+        // Check permissions
+        guard checkPermissions() else {
+            Bridge.log("MIC: Microphone permissions not granted")
+            return false
+        }
+
+        // Start recording based on mode
+        switch mode {
+        case MicTypes.PHONE_INTERNAL:
+            Bridge.log("MIC: Starting phone internal mic")
+            return startRecordingPhoneInternal()
+
+        case MicTypes.BT_CLASSIC:
+            Bridge.log("MIC: Starting Bluetooth Classic (SCO)")
+            guard isBluetoothScoAvailable() else {
+                Bridge.log("MIC: Bluetooth SCO not available")
+                return false
+            }
+            return startRecordingBtClassic()
+
+        case MicTypes.BT:
+            Bridge.log("MIC: Starting high-quality Bluetooth mic")
+            guard isHighQualityBluetoothAvailable() else {
+                Bridge.log("MIC: High-quality Bluetooth not available")
+                return false
+            }
+            return startRecordingBtHighQuality()
+
+        default:
+            Bridge.log("MIC: Unknown mic type: \(mode)")
+            return false
+        }
+    }
+
+    /// Stop recording if currently recording with specified mode
+    func stopMode(_ mode: String) -> Bool {
+        if isRecordingWithMode(mode) {
+            stopRecording()
+            return true
+        }
+        return false
+    }
+
+    // MARK: - Private Mode-Specific Recording Methods
+
+    private func startRecordingPhoneInternal() -> Bool {
+        do {
+            let session = AVAudioSession.sharedInstance()
+
+            // Configure for built-in mic only
+            try session.setCategory(
+                .playAndRecord,
+                mode: .default,
+                options: [.defaultToSpeaker, .mixWithOthers]
+            )
+
+            // Try to set built-in mic as preferred input
+            if let availableInputs = session.availableInputs {
+                let builtInMic = availableInputs.first { input in
+                    input.portType == .builtInMic
+                }
+
+                if let builtInMic = builtInMic {
+                    try session.setPreferredInput(builtInMic)
+                }
+            }
+
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+
+            let success = startRecordingInternal()
+            if success {
+                currentMicMode = MicTypes.PHONE_INTERNAL
+            }
+            return success
+
+        } catch {
+            Bridge.log("MIC: Phone internal recording failed: \(error)")
+            return false
+        }
+    }
+
+    private func startRecordingBtClassic() -> Bool {
+        do {
+            let session = AVAudioSession.sharedInstance()
+
+            // Configure for Bluetooth SCO
+            try session.setCategory(
+                .playAndRecord,
+                mode: .voiceChat,
+                options: [.allowBluetooth]
+            )
+
+            // Try to set Bluetooth HFP as preferred input
+            if let availableInputs = session.availableInputs {
+                let bluetoothHFP = availableInputs.first { input in
+                    input.portType == .bluetoothHFP
+                }
+
+                if let bluetoothHFP = bluetoothHFP {
+                    try session.setPreferredInput(bluetoothHFP)
+                }
+            }
+
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+
+            let success = startRecordingInternal()
+            if success {
+                currentMicMode = MicTypes.BT_CLASSIC
+            }
+            return success
+
+        } catch {
+            Bridge.log("MIC: BT Classic recording failed: \(error)")
+            return false
+        }
+    }
+
+    private func startRecordingBtHighQuality() -> Bool {
+        do {
+            let session = AVAudioSession.sharedInstance()
+
+            // Configure for high-quality Bluetooth audio (A2DP-like)
+            try session.setCategory(
+                .playAndRecord,
+                mode: .default,
+                options: [.allowBluetooth, .allowBluetoothA2DP, .mixWithOthers]
+            )
+
+            // Try to set Bluetooth A2DP as preferred input
+            if let availableInputs = session.availableInputs {
+                let bluetoothA2DP = availableInputs.first { input in
+                    input.portType == .bluetoothA2DP || input.portType == .bluetoothLE
+                }
+
+                if let bluetoothA2DP = bluetoothA2DP {
+                    try session.setPreferredInput(bluetoothA2DP)
+                }
+            }
+
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+
+            let success = startRecordingInternal()
+            if success {
+                currentMicMode = MicTypes.BT
+            }
+            return success
+
+        } catch {
+            Bridge.log("MIC: BT high-quality recording failed: \(error)")
+            return false
+        }
+    }
+
+    // MARK: - Bluetooth Availability Checks
+
+    private func isBluetoothScoAvailable() -> Bool {
+        guard let availableInputs = AVAudioSession.sharedInstance().availableInputs else {
+            return false
+        }
+
+        return availableInputs.contains { input in
+            input.portType == .bluetoothHFP
+        }
+    }
+
+    private func isHighQualityBluetoothAvailable() -> Bool {
+        guard let availableInputs = AVAudioSession.sharedInstance().availableInputs else {
+            return false
+        }
+
+        return availableInputs.contains { input in
+            input.portType == .bluetoothA2DP || input.portType == .bluetoothLE
         }
     }
 
@@ -270,6 +468,11 @@ class PhoneMic {
             return false
         }
 
+        return startRecordingInternal()
+    }
+
+    /// Internal recording logic shared by all recording modes
+    private func startRecordingInternal() -> Bool {
         // NOW create the audio engine
         audioEngine = AVAudioEngine()
 
@@ -384,6 +587,7 @@ class PhoneMic {
         try? audioSession?.setActive(false)
         audioEngine = nil
         audioSession = nil
+        currentMicMode = ""
 
         Bridge.log("MIC: Stopped recording")
     }

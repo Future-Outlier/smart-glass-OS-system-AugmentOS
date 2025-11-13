@@ -461,14 +461,17 @@ class CoreManager {
                                 micMode == MicTypes.BT_CLASSIC ||
                                 micMode == MicTypes.BT
                 ) {
-                    if (systemMicUnavailable) {
-                        continue
-                    }
+
 
                     if (phoneMic?.isRecordingWithMode(micMode) == true) {
                         micUsed = micMode
                         break
                     }
+
+                    if (systemMicUnavailable) {
+                        continue
+                    }
+
                     // if the phone mic is not recording, start recording:
                     val success = phoneMic?.startMode(micMode) ?: false
                     Bridge.log("MAN: starting mic mode: $micMode -> $success")
@@ -498,6 +501,7 @@ class CoreManager {
             if (micMode == micUsed) {
                 continue
             }
+            
             if (micMode == MicTypes.PHONE_INTERNAL ||
                             micMode == MicTypes.BT_CLASSIC ||
                             micMode == MicTypes.BT
