@@ -1,14 +1,14 @@
 import Constants from "expo-constants"
 import {useState} from "react"
-import {View, TextInput, ScrollView, TextStyle, ViewStyle, KeyboardAvoidingView, Platform} from "react-native"
+import {KeyboardAvoidingView, Platform, ScrollView, TextInput, TextStyle, View, ViewStyle} from "react-native"
 
 import {Button, Header, Screen} from "@/components/ignite"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {useAppletStatusStore} from "@/stores/applets"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -17,8 +17,10 @@ export default function FeedbackPage() {
   const [feedbackText, setFeedbackText] = useState("")
   const {goBack} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
-  const {status} = useCoreStatus()
   const apps = useAppletStatusStore(state => state.apps)
+  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesModelName = useGlassesStore(state => state.modelName)
 
   const handleSubmitFeedback = async (feedbackBody: string) => {
     console.log("Feedback submitted:", feedbackBody)
@@ -35,8 +37,7 @@ export default function FeedbackPage() {
     const buildUser = Constants.expoConfig?.extra?.BUILD_USER || "user"
 
     // Glasses info
-    const connectedGlassesModel = status.glasses_info?.model_name || "Not connected"
-    const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable) || "Not set"
+    const connectedGlassesModel = glassesConnected ? glassesModelName : "Not connected"
 
     // Running apps
     const runningApps = apps.filter(app => app.running).map(app => app.packageName)

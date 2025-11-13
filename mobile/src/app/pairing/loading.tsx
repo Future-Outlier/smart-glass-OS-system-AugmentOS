@@ -1,25 +1,24 @@
-import {useState, useEffect, useRef, useCallback} from "react"
-import {View, TouchableOpacity, ScrollView, ViewStyle, TextStyle, BackHandler, Platform} from "react-native"
 import {Text} from "@/components/ignite"
-import {useRoute} from "@react-navigation/native"
-import Icon from "react-native-vector-icons/FontAwesome"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
-import GlassesPairingLoader from "@/components/misc/GlassesPairingLoader"
-import {AudioPairingPrompt} from "@/components/pairing/AudioPairingPrompt"
-import {router} from "expo-router"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {Screen} from "@/components/ignite/Screen"
-import {$styles, ThemedStyle} from "@/theme"
 import {Header} from "@/components/ignite/Header"
 import {PillButton} from "@/components/ignite/PillButton"
+import {Screen} from "@/components/ignite/Screen"
+import GlassesPairingLoader from "@/components/misc/GlassesPairingLoader"
+import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
+import {AudioPairingPrompt} from "@/components/pairing/AudioPairingPrompt"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useGlassesStore} from "@/stores/glasses"
+import {$styles, ThemedStyle} from "@/theme"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {useRoute} from "@react-navigation/native"
 import CoreModule from "core"
+import {router} from "expo-router"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {BackHandler, Platform, ScrollView, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import Icon from "react-native-vector-icons/FontAwesome"
 
 export default function GlassesPairingGuideScreen() {
   const {replace, clearHistory, clearHistoryAndGoHome} = useNavigationHistory()
-  const {status} = useCoreStatus()
   const route = useRoute()
   const {themed} = useAppTheme()
   const {glassesModelName} = route.params as {glassesModelName: string}
@@ -31,6 +30,7 @@ export default function GlassesPairingGuideScreen() {
   const failureErrorRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasAlertShownRef = useRef(false)
   const backHandlerRef = useRef<any>(null)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   const handleForgetGlasses = useCallback(async () => {
     setPairingInProgress(false)
@@ -105,7 +105,7 @@ export default function GlassesPairingGuideScreen() {
     setPairingInProgress(true)
 
     timerRef.current = setTimeout(() => {
-      if (!status.glasses_info?.model_name && !hasAlertShownRef.current) {
+      if (!glassesConnected && !hasAlertShownRef.current) {
         hasAlertShownRef.current = true
       }
     }, 30000)
@@ -117,7 +117,7 @@ export default function GlassesPairingGuideScreen() {
   }, [])
 
   useEffect(() => {
-    if (!status.glasses_info?.model_name) return
+    if (!glassesConnected) return
 
     // Don't navigate to home if we're waiting for audio pairing
     if (audioPairingNeeded) return
@@ -125,7 +125,7 @@ export default function GlassesPairingGuideScreen() {
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
     clearHistoryAndGoHome()
-  }, [status, clearHistoryAndGoHome, audioPairingNeeded])
+  }, [glassesConnected, clearHistoryAndGoHome, audioPairingNeeded])
 
   if (pairingInProgress) {
     return (

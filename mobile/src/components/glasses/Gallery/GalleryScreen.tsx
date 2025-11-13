@@ -27,7 +27,6 @@ import {MediaViewer} from "@/components/glasses/Gallery/MediaViewer"
 import {PhotoImage} from "@/components/glasses/Gallery/PhotoImage"
 import {ProgressRing} from "@/components/glasses/Gallery/ProgressRing"
 import {Header, Icon, Text} from "@/components/ignite"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {asgCameraApi} from "@/services/asg/asgCameraApi"
@@ -85,7 +84,6 @@ interface GalleryItem {
 }
 
 export function GalleryScreen() {
-  const {status} = useCoreStatus()
   const {goBack, push} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
 
@@ -1007,10 +1005,7 @@ export function GalleryScreen() {
 
       // Only query glasses if we have glasses info (meaning glasses are connected) AND glasses have gallery capability
       if (glassesConnected && features?.hasCamera) {
-        console.log(
-          "[GalleryScreen] Glasses connected with gallery capability - querying gallery status",
-          status.glasses_info,
-        )
+        console.log("[GalleryScreen] Glasses connected with gallery capability - querying gallery status")
         transitionToState(GalleryState.QUERYING_GLASSES)
         queryGlassesGalleryStatus()
       } else {

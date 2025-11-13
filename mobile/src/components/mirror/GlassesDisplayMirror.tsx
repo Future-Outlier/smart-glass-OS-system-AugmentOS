@@ -5,6 +5,7 @@ import {useState, useEffect, useRef} from "react"
 import {View, ViewStyle, TextStyle} from "react-native"
 import Canvas, {Image as CanvasImage} from "react-native-canvas"
 import {Text} from "@/components/ignite"
+import { useGlassesStore } from "@/stores/glasses"
 
 interface GlassesDisplayMirrorProps {
   fallbackMessage?: string
@@ -24,6 +25,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
   const containerRef = useRef<View | null>(null)
   const [containerWidth, setContainerWidth] = useState<number | null>(null)
   const {currentEvent} = useDisplayStore()
+  const batteryLevel = useGlassesStore(state => state.batteryLevel)
 
   // Use demo layout if in demo mode, otherwise use real layout
   const layout = demoText !== "" ? {layoutType: "text_wall", text: demoText} : currentEvent.layout
@@ -110,7 +112,6 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
     const time24Str = `${hours24}:${minutes}`
 
     // Replace battery level placeholder
-    const batteryLevel = status.glasses_info?.battery_level
     const batteryStr = typeof batteryLevel === "number" && batteryLevel >= 0 ? `${batteryLevel}%` : ""
 
     // Replace all placeholders

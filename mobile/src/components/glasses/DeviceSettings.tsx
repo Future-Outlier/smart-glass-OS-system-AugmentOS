@@ -34,6 +34,7 @@ export default function DeviceSettings() {
   )
   const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS_KEYS.default_button_action_app)
   const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesModelName = useGlassesStore(state => state.modelName)
 
   const {push, goBack} = useNavigationHistory()
   const applets = useApplets()
@@ -45,7 +46,7 @@ export default function DeviceSettings() {
     defaultWearable &&
     features?.hasMicrophone &&
     (defaultWearable !== "Mentra Live" ||
-      (Platform.OS === "android" && status.glasses_info?.glasses_device_model !== "K900"))
+      (Platform.OS === "android" && glassesModelName !== "K900"))
 
   const wifiLocalIp = useGlassesStore(state => state.wifiSsid)
   const bluetoothName = useGlassesStore(state => state.bluetoothName)

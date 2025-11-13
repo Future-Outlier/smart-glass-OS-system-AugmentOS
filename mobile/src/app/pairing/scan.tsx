@@ -1,42 +1,41 @@
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {PillButton} from "@/components/ignite/PillButton"
 import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
-import {MOCK_CONNECTION} from "@/utils/Constants"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import Divider from "@/components/ui/Divider"
+import {Group} from "@/components/ui/Group"
+import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SearchResultDevice, useSearchResults} from "@/contexts/SearchResultsContext"
+import {translate} from "@/i18n"
+import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
+import {MOCK_CONNECTION} from "@/utils/Constants"
+import {getGlassesOpenImage} from "@/utils/getGlassesImage"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useFocusEffect} from "@react-navigation/native"
+import CoreModule from "core"
 import {router, useLocalSearchParams} from "expo-router"
 import {useCallback, useEffect, useRef, useState} from "react"
 import {
+  ActivityIndicator,
   BackHandler,
+  Image,
   ImageStyle,
   Platform,
   ScrollView,
   TextStyle,
   TouchableOpacity,
-  Image,
   View,
   ViewStyle,
-  ActivityIndicator,
 } from "react-native"
 import {useSharedValue, withDelay, withTiming} from "react-native-reanimated"
 import Icon from "react-native-vector-icons/FontAwesome"
-import CoreModule from "core"
-import {Group} from "@/components/ui/Group"
-import {getGlassesOpenImage} from "@/utils/getGlassesImage"
-import {translate} from "@/i18n"
-import Divider from "@/components/ui/Divider"
-import {Spacer} from "@/components/ui/Spacer"
 
 export default function SelectGlassesBluetoothScreen() {
-  const {status} = useCoreStatus()
   const {searchResults, setSearchResults} = useSearchResults()
   const {glassesModelName}: {glassesModelName: string} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
@@ -44,6 +43,7 @@ export default function SelectGlassesBluetoothScreen() {
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   // Create a ref to track the current state of searchResults
   const searchResultsRef = useRef<SearchResultDevice[]>(searchResults)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   const scrollViewOpacity = useSharedValue(0)
   useEffect(() => {
@@ -199,10 +199,10 @@ export default function SelectGlassesBluetoothScreen() {
 
   useEffect(() => {
     // If pairing successful, return to home
-    if (status.glasses_info?.model_name) {
+    if (glassesConnected) {
       clearHistoryAndGoHome()
     }
-  }, [status])
+  }, [glassesConnected])
 
   const triggerGlassesPairingGuide = async (glassesModelName: string, deviceName: string) => {
     // On Android, we need to check both microphone and location permissions
