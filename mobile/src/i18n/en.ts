@@ -428,6 +428,7 @@ const en = {
     asiaEast: "Asia East",
     global: "Global",
     debug: "Debug",
+    staging: "Staging",
   },
   welcomeScreen: {
     postscript:

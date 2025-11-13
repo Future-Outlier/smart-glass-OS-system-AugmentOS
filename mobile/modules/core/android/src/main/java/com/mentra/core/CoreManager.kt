@@ -928,6 +928,10 @@ class CoreManager {
         Bridge.log("MAN: Re-applying microphone settings after reconnection")
         updateMicrophoneState()
 
+        // send to the server our battery status:
+        Bridge.sendBatteryStatus(sgc?.batteryLevel ?: -1, false)
+        Bridge.sendGlassesConnectionState(defaultWearable, "CONNECTED")
+
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
         Bridge.saveSetting("device_name", deviceName)

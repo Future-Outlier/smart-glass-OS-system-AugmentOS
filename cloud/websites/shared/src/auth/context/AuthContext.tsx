@@ -1,7 +1,12 @@
 import {createContext, useEffect, useState, useRef, useMemo} from "react"
-import {Session, User, AuthError} from "@supabase/supabase-js"
-import {supabase} from "../utils/supabase" // Adjust this path as needed
+import {mentraAuthProvider} from "../utils/auth/authProvider"
 import axios from "axios"
+import {
+  MentraAuthSession,
+  MentraAuthUser,
+  MentraSigninResponse,
+  MentraSignOutResponse,
+} from "../utils/auth/authingProvider.types"
 
 const CORE_API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_CLOUD_API_URL || "http://localhost:8002/api"
 const STORE_PACKAGE_NAME = "org.augmentos.store"
@@ -15,24 +20,18 @@ declare global {
 }
 
 export interface AuthContextType {
-  session: Session | null
-  user: User | null
+  session: MentraAuthSession | null
+  user: MentraAuthUser | null
   isLoading: boolean
   isAuthenticated: boolean
   supabaseToken: string | null
   coreToken: string | null
   tokenReady: boolean
   isWebViewAuth: boolean
-  signIn: (
-    email: string,
-    password: string,
-  ) => Promise<{
-    data: {session: Session | null; user: User | null} | null
-    error: AuthError | unknown | null
-  }>
+  signIn: (email: string, password: string) => Promise<MentraSigninResponse>
 
-  signUp: (email: string, password: string, redirectPath: string) => Promise<{error: AuthError | unknown | null}>
-  signOut: () => Promise<void>
+  signUp: (email: string, password: string, redirectPath: string) => Promise<MentraSigninResponse>
+  signOut: () => Promise<MentraSignOutResponse>
   refreshUser: () => Promise<void>
 }
 
@@ -62,13 +61,15 @@ export function AuthProvider({
   enableWebViewAuth = false, // Default to false
 }: AuthProviderProps) {
   // --- State Variables ---
-  const [session, setSession] = useState<Session | null>(null)
-  const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<MentraAuthSession | null>(null)
+  const [user, setUser] = useState<MentraAuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [supabaseToken, setSupabaseToken] = useState<string | null>(null)
+  const [providerToken, setProviderToken] = useState<string | null>(null)
   const [coreToken, setCoreToken] = useState<string | null>(null)
   const [tokenReady, setTokenReady] = useState(false)
   const [isWebViewAuth, setIsWebViewAuth] = useState(false) // Will remain false if webView is disabled
+  const DEPLOYMENT_REGION = import.meta.env.VITE_DEPLOYMENT_REGION || "global"
+  const isChina = DEPLOYMENT_REGION === "china"
 
   const prevUserIdRef = useRef<string | undefined>(undefined)
   const prevTokenRef = useRef<string | null>(null)
@@ -81,14 +82,17 @@ export function AuthProvider({
     }
   }
 
-  const exchangeForCoreToken = async (supabaseToken: string) => {
+  const exchangeForCoreToken = async (providerToken: string) => {
     try {
       setTokenReady(false)
       console.log("Exchanging Supabase token for Core token...")
 
       const response = await axios.post(
         `${CORE_API_URL}/auth/exchange-token`,
-        {supabaseToken},
+        {
+          supabaseToken: isChina ? undefined : providerToken,
+          authingToken: isChina ? providerToken : undefined,
+        },
         {headers: {"Content-Type": "application/json"}},
       )
 
@@ -104,7 +108,7 @@ export function AuthProvider({
       }
     } catch (error) {
       console.error("Failed to exchange token, falling back to Supabase token:", error)
-      setupAxiosAuth(supabaseToken)
+      setupAxiosAuth(providerToken)
       return null
     } finally {
       await new Promise((resolve) => setTimeout(resolve, 300))
@@ -144,14 +148,14 @@ export function AuthProvider({
           localStorage.setItem("core_token", result.tokens.coreToken)
         }
         if (result.tokens.supabaseToken) {
-          setSupabaseToken(result.tokens.supabaseToken)
+          setProviderToken(result.tokens.supabaseToken)
           localStorage.setItem("supabase_token", result.tokens.supabaseToken)
         }
 
         setSession({
-          access_token: result.tokens.supabaseToken || "temp-token-session",
-        } as Session)
-        setUser({id: result.userId || "webview-user"} as User)
+          token: result.tokens.supabaseToken || "temp-token-session",
+        } as MentraAuthSession)
+        setUser({id: result.userId || "webview-user"} as MentraAuthUser)
         setIsWebViewAuth(true)
         localStorage.setItem("is_webview", "true")
         setTokenReady(true)
@@ -169,63 +173,55 @@ export function AuthProvider({
   const refreshUser = async (): Promise<void> => {
     try {
       console.log("Refreshing user session...")
-      const {data} = await supabase.auth.getSession()
-      setSession(data.session)
-      setUser(data.session?.user || null)
+      const {data} = await mentraAuthProvider.getSession()
+      setSession(data!.session)
+      setUser(data!.session?.user || null)
     } catch (error) {
       console.error("Error refreshing user:", error)
     }
   }
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<MentraSigninResponse> => {
     try {
       console.log("Signing in with email/password")
-      const {data, error} = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      const {data, error} = await mentraAuthProvider.signInWithEmail(email, password)
 
-      if (data.session?.access_token && !error) {
+      if (data && data.session?.token && !error) {
         console.log("Sign in successful, setting up tokens")
-        setSupabaseToken(data.session.access_token)
+        setProviderToken(data.session.token)
         setSession(data.session)
-        setUser(data.session.user)
+        setUser(data.user)
 
-        if (data.session.user?.email) {
-          localStorage.setItem("userEmail", data.session.user.email)
+        if (data.user?.email) {
+          localStorage.setItem("userEmail", data.user.email)
         }
 
-        await exchangeForCoreToken(data.session.access_token)
+        await exchangeForCoreToken(data.session.token)
       }
       return {data, error}
     } catch (error) {
       console.error("Error during sign in:", error)
-      return {data: null, error}
+      return {data: null, error: {message: "Failed to sign in"}}
     }
   }
 
-  const signUp = async (email: string, password: string, redirectPath: string) => {
+  const signUp = async (email: string, password: string, redirectPath: string): Promise<MentraSigninResponse> => {
     try {
       console.log("Signing up with email/password")
-      const {data, error} = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}${redirectPath}`,
-        },
-      })
+      const emailRedirectTo = `${window.location.origin}${redirectPath}`
+      const {data, error} = await mentraAuthProvider.signUpWithEmail(email, password, emailRedirectTo)
 
-      if (data.session?.access_token && !error) {
+      if (data && data.session?.token && !error) {
         console.log("Sign up successful, setting up tokens")
-        setSupabaseToken(data.session.access_token)
+        setProviderToken(data.session.token)
         setSession(data.session)
-        setUser(data.session.user)
+        setUser(data.user)
 
-        if (data.session.user?.email) {
-          localStorage.setItem("userEmail", data.session.user.email)
+        if (data.user?.email) {
+          localStorage.setItem("userEmail", data.user.email)
         }
 
-        await exchangeForCoreToken(data.session.access_token)
+        await exchangeForCoreToken(data.session.token)
         if (redirectPath) {
           setTimeout(() => {
             console.log(`Redirecting to ${redirectPath} after successful sign up`)
@@ -236,19 +232,19 @@ export function AuthProvider({
         console.log("Sign up successful, email confirmation may be required.")
       }
 
-      return {error}
+      return {data, error}
     } catch (error) {
       console.error("Error during sign up:", error)
-      return {error}
+      return {data: null, error: {message: "Failed to sign up"}}
     }
   }
 
-  const signOut = async () => {
+  const signOut = async (): Promise<MentraSignOutResponse> => {
     console.log("Signing out user...")
     try {
-      await supabase.auth.signOut()
+      const {error} = await mentraAuthProvider.signOut()
       setupAxiosAuth(null)
-      setSupabaseToken(null)
+      setProviderToken(null)
       setCoreToken(null)
       setUser(null)
       setSession(null)
@@ -265,8 +261,10 @@ export function AuthProvider({
         localStorage.removeItem("is_webview")
       }
       console.log("Sign out completed successfully.")
+      return {error}
     } catch (error) {
       console.error("Error during sign out:", error)
+      return {error: {message: "Failed to sign out"}}
     }
   }
 
@@ -303,9 +301,9 @@ export function AuthProvider({
             console.log("Restoring saved WebView session.")
             setupAxiosAuth(savedCoreToken)
             setCoreToken(savedCoreToken)
-            setSupabaseToken(savedSupabaseToken)
-            setSession({access_token: savedSupabaseToken} as Session)
-            setUser({id: "webview-user"} as User)
+            setProviderToken(savedSupabaseToken)
+            setSession({token: savedSupabaseToken} as MentraAuthSession)
+            setUser({id: "webview-user"} as MentraAuthUser)
             setIsWebViewAuth(true)
             setTokenReady(true)
             return // Auth is complete
@@ -325,15 +323,15 @@ export function AuthProvider({
 
         // 4. Check for standard Supabase session
         console.log("Checking for standard Supabase session...")
-        const {data} = await supabase.auth.getSession()
-        setSession(data.session)
-        setUser(data.session?.user || null)
+        const {data} = await mentraAuthProvider.getSession()
+        setSession(data?.session || null)
+        setUser(data?.session?.user || null)
 
-        if (data.session?.access_token) {
+        if (data?.session?.token) {
           console.log("Found active Supabase session.")
-          setSupabaseToken(data.session.access_token)
+          setProviderToken(data.session.token)
           if (!savedCoreToken) {
-            await exchangeForCoreToken(data.session.access_token)
+            await exchangeForCoreToken(data.session.token)
           }
         } else {
           setTokenReady(true) // No session, but ready
@@ -353,12 +351,12 @@ export function AuthProvider({
       console.log("WebView auth enabled. Attaching global token handlers.")
       window.setSupabaseToken = (token: string) => {
         console.log("Supabase token received from WebView")
-        setSupabaseToken(token)
+        setProviderToken(token)
         localStorage.setItem("supabase_token", token)
 
         exchangeForCoreToken(token).then(() => {
-          setSession({access_token: token} as Session)
-          setUser({id: "webview-user"} as User)
+          setSession({token: token} as MentraAuthSession)
+          setUser({id: "webview-user"} as MentraAuthUser)
           setIsWebViewAuth(true)
           localStorage.setItem("is_webview", "true")
         })
@@ -372,9 +370,9 @@ export function AuthProvider({
 
         const supabaseToken = localStorage.getItem("supabase_token")
         setSession({
-          access_token: supabaseToken || "core-only-session",
-        } as Session)
-        setUser({id: "webview-user"} as User)
+          token: supabaseToken || "core-only-session",
+        } as MentraAuthSession)
+        setUser({id: "webview-user"} as MentraAuthUser)
         setIsWebViewAuth(true)
         localStorage.setItem("is_webview", "true")
         setTokenReady(true)
@@ -382,12 +380,10 @@ export function AuthProvider({
     }
 
     // --- Auth State Change Listener ---
-    const {
-      data: {subscription},
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {data} = mentraAuthProvider.onAuthStateChange(async (event, session) => {
       // Optimization: Skip if user and token are the same
       const newUserId = session?.user?.id
-      const newToken = session?.access_token
+      const newToken = session?.token
       const isUserChanged = prevUserIdRef.current !== newUserId
       const isTokenChanged = prevTokenRef.current !== newToken
       const isSignOut = event === "SIGNED_OUT"
@@ -408,10 +404,10 @@ export function AuthProvider({
         localStorage.setItem("userEmail", session.user.email)
       }
 
-      if (isSignIn && session?.access_token) {
+      if (isSignIn && session?.token) {
         setTokenReady(false)
-        setSupabaseToken(session.access_token)
-        await exchangeForCoreToken(session.access_token)
+        setProviderToken(session.token)
+        await exchangeForCoreToken(session.token)
 
         const isLoginPage = window.location.pathname.includes("/login") || window.location.pathname.includes("/signin")
         if (isLoginPage) {
@@ -423,7 +419,7 @@ export function AuthProvider({
         // Full sign-out logic is in the signOut() function,
         // but we clear tokens here too as a safeguard.
         setupAxiosAuth(null)
-        setSupabaseToken(null)
+        setProviderToken(null)
         setCoreToken(null)
         setIsWebViewAuth(false)
         setTokenReady(false)
@@ -433,11 +429,11 @@ export function AuthProvider({
           localStorage.removeItem("supabase_token")
           localStorage.removeItem("is_webview")
         }
-      } else if (event === "USER_UPDATED" && session?.access_token && isTokenChanged) {
+      } else if (event === "USER_UPDATED" && session?.token && isTokenChanged) {
         console.log("Token refreshed, exchanging for new Core token...")
         setTokenReady(false)
-        setSupabaseToken(session.access_token)
-        await exchangeForCoreToken(session.access_token)
+        setProviderToken(session.token)
+        await exchangeForCoreToken(session.token)
       } else {
         setTokenReady(true)
       }
@@ -445,7 +441,7 @@ export function AuthProvider({
 
     // Clean up subscription on unmount
     return () => {
-      subscription.unsubscribe()
+      data?.subscription.unsubscribe()
       // Conditionally clean up global functions
       if (enableWebViewAuth) {
         ;(window as any).setSupabaseToken = undefined
@@ -464,7 +460,7 @@ export function AuthProvider({
       user,
       isLoading,
       isAuthenticated,
-      supabaseToken,
+      supabaseToken: providerToken,
       coreToken,
       tokenReady,
       isWebViewAuth,
@@ -473,7 +469,7 @@ export function AuthProvider({
       signOut,
       refreshUser,
     }),
-    [session, user, isLoading, isAuthenticated, supabaseToken, coreToken, tokenReady, isWebViewAuth],
+    [session, user, isLoading, isAuthenticated, providerToken, coreToken, tokenReady, isWebViewAuth],
   )
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
