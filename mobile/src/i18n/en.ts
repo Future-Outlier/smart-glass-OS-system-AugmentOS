@@ -32,6 +32,7 @@ const en = {
     glasses: "Glasses",
     phone: "Phone",
     bluetooth: "Bluetooth",
+    preferredMic: "Preferred microphone",
   },
   screenSettings: {
     title: "Display Position Settings",

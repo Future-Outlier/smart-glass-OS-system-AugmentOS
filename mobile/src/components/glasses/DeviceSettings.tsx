@@ -45,8 +45,7 @@ export default function DeviceSettings() {
     glassesConnected &&
     defaultWearable &&
     features?.hasMicrophone &&
-    (defaultWearable !== "Mentra Live" ||
-      (Platform.OS === "android" && glassesModelName !== "K900"))
+    (defaultWearable !== "Mentra Live" || (Platform.OS === "android" && glassesModelName !== "K900"))
 
   const wifiLocalIp = useGlassesStore(state => state.wifiSsid)
   const bluetoothName = useGlassesStore(state => state.bluetoothName)
@@ -220,7 +219,7 @@ export default function DeviceSettings() {
       </Group>
 
       {/* this just gives the user a bit more space to scroll */}
-      <Spacer height={160} />
+      <Spacer height={theme.spacing.s2} />
     </View>
   )
 }

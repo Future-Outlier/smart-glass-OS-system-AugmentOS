@@ -33,7 +33,7 @@ export function MicrophoneSelector({preferredMic, onMicChange}: MicrophoneSelect
 
   return (
     <View style={themed($container)}>
-      <Text tx="deviceSettings:microphoneSelection" style={[themed($label), {marginBottom: theme.spacing.s3}]} />
+      <Text tx="microphoneSettings:preferredMic" style={[themed($label), {marginBottom: theme.spacing.s3}]} />
 
       <TouchableOpacity style={themed($itemContainer)} onPress={() => onMicChange("auto")}>
         <View style={themed($recommendedWrapper)}>

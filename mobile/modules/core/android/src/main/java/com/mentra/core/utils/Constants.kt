@@ -28,8 +28,8 @@ object MicTypes {
 object MicMap {
     val map: Map<String, List<String>> = mapOf(
         "auto" to listOf(MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.BT_CLASSIC),
-        "glasses" to listOf(MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.PHONE_INTERNAL),
-        "phone" to listOf(MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.BT_CLASSIC),
+        "glasses" to listOf(MicTypes.GLASSES_CUSTOM),
+        "phone" to listOf(MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM),
         "bluetooth" to listOf(MicTypes.BT, MicTypes.BT_CLASSIC, MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM),
     )
 }
