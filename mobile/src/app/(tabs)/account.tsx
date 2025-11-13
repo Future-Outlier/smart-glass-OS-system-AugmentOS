@@ -81,12 +81,11 @@ export default function AccountPage() {
               style={themed($buildInfo)}
               text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
             />
-            <Text style={themed($buildInfo)} text={`branch: ${Constants.expoConfig?.extra?.BUILD_BRANCH}`} />
+            <Text style={themed($buildInfo)} text={`${Constants.expoConfig?.extra?.BUILD_BRANCH}`} />
           </View>
-          {/* build time, commit hash (copy to clipboard), branch name, build number */}
           <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
-            <Text style={themed($buildInfo)} text={`time: ${Constants.expoConfig?.extra?.BUILD_TIME}`} />
-            <Text style={themed($buildInfo)} text={`commit: ${Constants.expoConfig?.extra?.BUILD_COMMIT}`} />
+            <Text style={themed($buildInfo)} text={`${Constants.expoConfig?.extra?.BUILD_TIME}`} />
+            <Text style={themed($buildInfo)} text={`${Constants.expoConfig?.extra?.BUILD_COMMIT}`} />
           </View>
         </View>
       )
