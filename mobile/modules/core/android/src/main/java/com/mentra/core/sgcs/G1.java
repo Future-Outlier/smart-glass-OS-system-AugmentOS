@@ -1633,7 +1633,8 @@ public class G1 extends SGCManager {
 
     @Override
     public void getBatteryStatus() {
-
+        Bridge.log("G1: Requesting battery status");
+        queryBatteryStatus();
     }
 
     @Override
@@ -2089,6 +2090,11 @@ public class G1 extends SGCManager {
         showHomeScreen();
         isKilled = true;
         ready = false;
+
+        // Reset battery levels
+        batteryLeft = -1;
+        batteryRight = -1;
+        batteryLevel = -1;
 
         // stop BLE scanning
         stopScan();
