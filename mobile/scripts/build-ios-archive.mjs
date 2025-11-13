@@ -14,7 +14,7 @@ const archivePath = `${os.homedir()}/Library/Developer/Xcode/Archives/${archiveD
 
 console.log(chalk.blue(`Building archive: ${archiveName}`))
 
-await $`xcodebuild archive \
+await $({ stdio: 'inherit' })`xcodebuild archive \
   -workspace ios/MentraOS.xcworkspace \
   -scheme MentraOS \
   -configuration Release \
