@@ -73,7 +73,7 @@ class CoreManager {
     private var isSearching = false
     private var systemMicUnavailable = false
     public val currentRequiredData = mutableListOf<SpeechRequiredDataType>()
-    public var micRanking = mutableListOf<String>(MicMap.map["auto"])
+    public var micRanking = MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
 
     // glasses settings
     private var contextualDashboard = true
@@ -679,7 +679,7 @@ class CoreManager {
     }
 
     fun updatePreferredMic(mic: String) {
-        micRanking = MicMap.map[mic] ?? MicMap.map["auto"]
+        micRanking = MicMap.map[mic]?.toMutableList() ?: MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
         handle_request_status()
     }
@@ -1310,7 +1310,7 @@ class CoreManager {
 
         // Bluetooth device name
         sgc?.getConnectedBluetoothName()?.let { bluetoothName ->
-            connectedGlasses["bluetoothName"] = bluetoothName
+            glassesInfo["bluetoothName"] = bluetoothName
         }
 
         glassesSettings["brightness"] = brightness
