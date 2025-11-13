@@ -1,59 +1,96 @@
 # Device State REST API - Architecture
 
-## Current Flow (Broken)
+## Current System (Before)
 
 ```
-Android Core → React Native
-  → CoreStatusProvider updates status.glasses_info ✅
-  → useGlassesStore.connected NEVER UPDATED ❌
-  → SocketComms reads stale store
-  → Sends "DISCONNECTED" via WebSocket
-  → Cloud sets userSession.glassesConnected = false
-  → Display requests fail with GLASSES_DISCONNECTED
+Android Core → CoreStatusProvider
+  ├─> status.glasses_info.model_name ✅ (updated)
+  └─> useGlassesStore.connected ❌ (stale, never synced)
+       └─> SocketComms reads stale store
+            └─> WebSocket: GLASSES_CONNECTION_STATE = "DISCONNECTED"
+                 └─> Cloud: glassesConnected = false
+                      └─> Display requests fail ❌
 ```
 
-**Problem:** Two sources of truth never synced.
+**Problem:** Two sources of truth never synchronized.
 
-## New Flow (Fixed)
+**Result:** 30% of display requests fail with `GLASSES_DISCONNECTED` even when glasses are connected and audio is flowing.
+
+## New System (After)
 
 ```
-Android Core → React Native
-  → CoreStatusProvider updates status.glasses_info ✅
-  → CoreStatusProvider calls restComms.updateDeviceState() ✅
-  → HTTP POST /api/client/device/state
-  → Cloud updates userSession.glassesConnected = true
-  → Display requests succeed ✅
+Android Core → CoreStatusProvider
+  └─> Watches status.glasses_info.model_name
+       └─> REST: POST /api/client/device/state
+            └─> Cloud: DeviceManager.updateDeviceState()
+                 ├─> Infers connected from modelName
+                 ├─> Updates capabilities
+                 ├─> Notifies MicrophoneManager
+                 └─> Display requests succeed ✅
 ```
 
-**Fix:** Single explicit state update via REST.
+**Fix:** Single explicit state update via REST. Connection inferred from model name presence.
 
-## Code Changes
+## Key Implementation Details
 
-### Cloud: New Endpoint
+### 1. Connection Inference (DeviceManager)
+
+**File:** `cloud/packages/cloud/src/services/session/DeviceManager.ts`
+
+```typescript
+async updateDeviceState(payload: Partial<GlassesInfo>): Promise<void> {
+  // Infer connection from modelName if not explicit
+  if (payload.modelName && payload.connected === undefined) {
+    payload.connected = true
+    this.logger.debug("Inferred connected=true from modelName")
+  } else if (
+    (payload.modelName === null || payload.modelName === "") &&
+    payload.connected === undefined
+  ) {
+    payload.connected = false
+    this.logger.debug("Inferred connected=false from empty modelName")
+  }
+
+  // Check if model changing before merge
+  const modelChanged =
+    payload.modelName && payload.modelName !== this.deviceState.modelName
+
+  // Merge partial update
+  this.deviceState = {
+    ...this.deviceState,
+    ...payload,
+  }
+
+  // Handle connection state changes
+  if (payload.connected !== undefined) {
+    if (payload.connected && payload.modelName) {
+      await this.handleGlassesConnectionState(payload.modelName, "CONNECTED")
+    } else {
+      await this.handleGlassesConnectionState(null, "DISCONNECTED")
+    }
+    this.userSession.microphoneManager?.handleConnectionStateChange(
+      payload.connected ? "CONNECTED" : "DISCONNECTED"
+    )
+  } else if (modelChanged && payload.modelName) {
+    // Model changed without connection change
+    await this.updateModelAndCapabilities(payload.modelName)
+  }
+}
+```
+
+**Key insight:** If mobile sends model name, glasses must be connected. No need for redundant `connected` field.
+
+### 2. REST Endpoint
 
 **File:** `cloud/packages/cloud/src/api/client/device-state.api.ts`
 
 ```typescript
-import {Router, Request, Response} from "express"
-import {GlassesInfo} from "@mentra/types"
-import {clientAuthWithUserSession, RequestWithUserSession} from "../middleware/client.middleware"
-
-const router = Router()
-
-router.post("/", clientAuthWithUserSession, updateDeviceState)
-
 async function updateDeviceState(req: Request, res: Response) {
   const _req = req as RequestWithUserSession
   const {userSession} = _req
   const payload = req.body as Partial<GlassesInfo>
 
-  // Validate: if connected is being set to true, modelName must be provided
-  if (payload.connected === true && !payload.modelName) {
-    return res.status(400).json({
-      success: false,
-      message: "modelName required when connected=true",
-    })
-  }
+  // No validation needed - DeviceManager infers connected from modelName
 
   try {
     await userSession.deviceManager.updateDeviceState(payload)
@@ -61,168 +98,68 @@ async function updateDeviceState(req: Request, res: Response) {
     return res.json({
       success: true,
       appliedState: {
-        connected: payload.connected,
-        modelName: payload.modelName,
+        isGlassesConnected: userSession.deviceManager.isGlassesConnected,
+        isPhoneConnected: userSession.deviceManager.isPhoneConnected,
+        modelName: userSession.deviceManager.getModel(),
         capabilities: userSession.deviceManager.getCapabilities(),
       },
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    _req.logger.error(error, "Failed to update device state")
+    _req.logger.error({error, feature: "device-state"}, "Failed to update device state")
     return res.status(500).json({
       success: false,
       message: "Failed to update device state",
     })
   }
 }
-
-export default router
 ```
 
-**Register route:**
+**Registered:** `app.use("/api/client/device/state", deviceStateApi)`
 
-`cloud/packages/cloud/src/api/index.ts`
+### 3. Connection Getters (DeviceManager)
 
 ```typescript
-import deviceStateApi from "./client/device-state.api"
+get isPhoneConnected(): boolean {
+  return this.userSession.websocket?.readyState === 1 // WebSocket.OPEN
+}
 
-export function registerApi(app: Application) {
-  // ... existing
-  app.use("/api/client/device/state", deviceStateApi)
+get isGlassesConnected(): boolean {
+  return this.deviceState.connected === true
 }
 ```
 
-### Cloud: DeviceManager Method
+**Replaced ambiguous `isConnected()` method** with clear getters specifying what connection we're checking.
 
-**File:** `cloud/packages/cloud/src/services/session/DeviceManager.ts`
+### 4. ConnectionValidator Uses New Getters
 
-Add new method:
+**File:** `cloud/packages/cloud/src/services/validators/ConnectionValidator.ts`
 
 ```typescript
-import { GlassesInfo } from "@mentra/types";
-
-/**
- * Update device state with partial data
- * Merges provided properties into existing state
- * Triggers capability updates, analytics, app notifications as needed
- */
-async updateDeviceState(payload: Partial<GlassesInfo>): Promise<void> {
-  this.logger.info(
-    { userId: this.userSession.userId, payload },
-    "Updating device state"
-  );
-
-  // Merge partial updates into UserSession
-  if (payload.connected !== undefined) {
-    this.userSession.glassesConnected = payload.connected;
-  }
-  if (payload.modelName !== undefined) {
-    this.userSession.glassesModel = payload.modelName || undefined;
-  }
-  if (payload.timestamp) {
-    this.userSession.lastGlassesStatusUpdate = new Date(payload.timestamp);
+static validateForHardwareRequest(userSession, requestType) {
+  // Check phone WebSocket
+  if (!userSession.websocket ||
+      userSession.websocket.readyState !== WebSocket.OPEN) {
+    return { valid: false, error: "Phone WebSocket not open" }
   }
 
-  // Merge into stored state
-  this.userSession.lastGlassesConnectionState = {
-    ...this.userSession.lastGlassesConnectionState,
-    ...payload,
-  } as any;
+  // Check glasses connection via DeviceManager
+  const isGlassesConnected = userSession.deviceManager.isGlassesConnected
+  const model = userSession.deviceManager.getModel()
 
-  // Update capabilities & analytics (only if connection state changed)
-  if (payload.connected !== undefined) {
-    if (payload.connected && payload.modelName) {
-      await this.handleGlassesConnectionState(payload.modelName, "CONNECTED");
-    } else {
-      await this.handleGlassesConnectionState(null, "DISCONNECTED");
-    }
+  // HOTFIX: Simulated Glasses treated as connected (no BLE)
+  const isSimulated = model === "Simulated Glasses"
 
-    // Notify microphone manager
-    try {
-      this.userSession.microphoneManager?.handleConnectionStateChange(
-        payload.connected ? "CONNECTED" : "DISCONNECTED"
-      );
-    } catch (error) {
-      this.logger.warn({ error }, "MicrophoneManager handler error");
+  if (!isGlassesConnected && !isSimulated) {
+    return {
+      valid: false,
+      error: "Glasses not connected",
+      errorCode: "GLASSES_DISCONNECTED"
     }
   }
+
+  return { valid: true }
 }
-```
-
-**Migration from old methods:**
-
-- `handleGlassesConnectionState(modelName, status)` → `updateDeviceState({ connected, modelName })`
-- `setCurrentModel(modelName)` → `updateDeviceState({ modelName })`
-
-### Mobile: RestComms Method
-
-**File:** `mobile/src/services/RestComms.ts`
-
-```typescript
-import type { GlassesInfo } from "@mentra/types";
-
-public async updateDeviceState(payload: Partial<GlassesInfo>): Promise<void> {
-  this.validateToken();
-
-  console.log(
-    `${this.TAG}: Updating device state - connected: ${payload.connected}, model: ${payload.modelName}`
-  );
-
-  try {
-    const response = await this.makeRequest({
-      method: "POST",
-      url: `${this.getBaseUrl()}/api/client/device/state`,
-      headers: this.createAuthHeaders(),
-      data: payload,
-    });
-
-    console.log(`${this.TAG}: Device state updated successfully`);
-    return response;
-  } catch (error) {
-    console.error(`${this.TAG}: Failed to update device state:`, error);
-    throw error;
-  }
-}
-```
-
-### Mobile: CoreStatusProvider
-
-**File:** `mobile/src/contexts/CoreStatusProvider.tsx`
-
-```typescript
-import restComms from "@/services/RestComms"
-import type {GlassesInfo} from "@mentra/types"
-
-const refreshStatus = useCallback((data: any) => {
-  if (!(data && "core_status" in data)) return
-
-  const parsedStatus = CoreStatusParser.parseStatus(data)
-
-  setStatus((prevStatus) => {
-    const diff = deepCompare(prevStatus, parsedStatus)
-    if (diff.length === 0) return prevStatus
-
-    // Build partial update with only changed properties
-    const payload: Partial<GlassesInfo> = {
-      connected: Boolean(parsedStatus.glasses_info?.model_name),
-      modelName: parsedStatus.glasses_info?.model_name || null,
-      timestamp: new Date().toISOString(),
-    }
-
-    // Add WiFi info if available
-    if (parsedStatus.glasses_info?.glasses_use_wifi) {
-      payload.wifiConnected = parsedStatus.glasses_info.glasses_wifi_connected || false
-      payload.wifiSsid = parsedStatus.glasses_info.glasses_wifi_ssid || null
-    }
-
-    // Send partial update to cloud
-    restComms.updateDeviceState(payload).catch((error) => {
-      console.error("Failed to sync device state:", error)
-    })
-
-    return parsedStatus
-  })
-}, [])
 ```
 
 ## Data Flow Examples
@@ -230,31 +167,22 @@ const refreshStatus = useCallback((data: any) => {
 ### Glasses Connect
 
 ```
-1. User pairs glasses
-2. Core: connected_glasses.model_name = "Even Realities G1"
-3. Mobile: POST /api/client/device/state
-   Partial<GlassesInfo> {
-     connected: true,
-     modelName: "Even Realities G1",
-     timestamp: "2025-01-11T20:34:07Z"
-   }
-4. Cloud: Merges into userSession.glassesConnected = true
-5. Cloud: Detects capabilities { hasDisplay: true, hasCamera: true }
-6. Display requests now succeed ✅
+1. Bluetooth pairs
+2. Core reports: connected_glasses.model_name = "Mentra Live"
+3. Mobile sends: { modelName: "Mentra Live" }
+4. Cloud infers: { connected: true, modelName: "Mentra Live" }
+5. Cloud updates capabilities: { hasCamera: true, hasDisplay: true, hasWifi: true }
+6. Cloud stops incompatible apps
+7. Display requests now succeed ✅
 ```
 
-### WiFi Connect (Mentra Live)
+### WiFi Status Change
 
 ```
-1. Glasses connect to WiFi "Home-Network"
-2. Core: glasses_wifi_connected = true
-3. Mobile: POST /api/client/device/state
-   Partial<GlassesInfo> {
-     wifiConnected: true,
-     wifiSsid: "Home-Network",
-     timestamp: "2025-01-11T20:35:12Z"
-   }
-4. Cloud: Merges WiFi state into userSession.lastGlassesConnectionState
+1. Glasses connect to WiFi
+2. Core reports: glasses_wifi_connected = true
+3. Mobile sends: { wifiConnected: true, wifiSsid: "Home" }
+4. Cloud merges WiFi state (connection state unchanged)
 5. Streaming operations allowed ✅
 ```
 
@@ -262,84 +190,194 @@ const refreshStatus = useCallback((data: any) => {
 
 ```
 1. Bluetooth disconnects
-2. Core: connected_glasses = null
-3. Mobile: POST /api/client/device/state
-   Partial<GlassesInfo> {
-     connected: false,
-     modelName: null,
-     timestamp: "2025-01-11T20:40:00Z"
-   }
-4. Cloud: Merges into userSession.glassesConnected = false
-5. Display requests rejected with GLASSES_DISCONNECTED ✅
+2. Core reports: connected_glasses = null
+3. Mobile sends: { modelName: null }
+4. Cloud infers: { connected: false, modelName: null }
+5. Cloud analytics: glasses_current_connected = false
+6. Display requests rejected with GLASSES_DISCONNECTED ✅
 ```
+
+## State Management Simplification
+
+### Removed (Cleanup)
+
+**UserSession:**
+
+- ❌ `phoneConnected` boolean (redundant with `websocket.readyState`)
+- ❌ `handlePhoneConnectionClosed()` method (just sets flag)
+- ❌ `updateGlassesModel()` wrapper (one-line passthrough)
+
+**DeviceManager:**
+
+- ❌ `isConnected()` ambiguous method
+- ❌ `capabilities` cached property (always derive from model)
+
+### Added (Clarity)
+
+**DeviceManager:**
+
+- ✅ `isPhoneConnected` getter (checks WebSocket)
+- ✅ `isGlassesConnected` getter (checks device state)
+- ✅ `updateDeviceState()` unified method (replaces multiple paths)
+
+### Connection State Now Single Source of Truth
+
+**Before:** Multiple scattered state flags
+
+- `userSession.phoneConnected`
+- `userSession.glassesConnected`
+- `userSession.glassesModel`
+- `deviceManager.capabilities`
+
+**After:** DeviceManager owns everything
+
+- `deviceManager.isPhoneConnected` (derived from WebSocket)
+- `deviceManager.isGlassesConnected` (from device state)
+- `deviceManager.getModel()` (from device state)
+- `deviceManager.getCapabilities()` (derived from model)
 
 ## Backward Compatibility
 
-### Deployment 1: Add REST (Keep WebSocket)
+### Phase 1: Deployed (Current)
 
-Cloud keeps WebSocket handler:
+Cloud keeps both paths:
 
-```typescript
-// websocket-glasses.service.ts - KEEP THIS FOR NOW
-case GlassesToCloudMessageType.GLASSES_CONNECTION_STATE:
-  await this.handleGlassesConnectionState(userSession, message);
-  break;
+- REST: `/api/client/device/state` ✅ New
+- WebSocket: `GLASSES_CONNECTION_STATE` ✅ Legacy
+
+Old mobile: WebSocket (works)
+New mobile: REST (works)
+
+### Phase 2: Mobile Deploys REST
+
+Mobile adds REST call, still has WebSocket code:
+
+- Old mobile: WebSocket (works)
+- New mobile: REST (works)
+
+### Phase 3: Remove WebSocket Handler
+
+Cloud removes WebSocket handler:
+
+- Old mobile: Breaks (acceptable)
+- New mobile: REST (works)
+
+Clean separation: REST for state, WebSocket only for real-time streams.
+
+## Why REST Over WebSocket
+
+| Aspect       | WebSocket          | REST            |
+| ------------ | ------------------ | --------------- |
+| Confirmation | Fire-and-forget ❌ | HTTP 200 ✅     |
+| Retry        | Manual ❌          | Automatic ✅    |
+| Semantics    | Event stream       | Explicit update |
+| Debugging    | Hard ❌            | HTTP logs ✅    |
+| Timing       | Race conditions ❌ | Always works ✅ |
+| Backpressure | None ❌            | Built-in ✅     |
+
+**WebSocket:** Good for real-time streams (audio, transcription, button events)
+**REST:** Good for state updates (connection, settings, configuration)
+
+Use the right tool for the job.
+
+## Logging & Debugging
+
+### Feature Tag
+
+All logs include `feature: "device-state"` for filtering:
+
+```
+feature:"device-state" AND userId:"user@example.com"
 ```
 
-Old clients: Use WebSocket (works)
-New clients: Use REST (works)
+### Key Log Points
 
-### Deployment 2: Remove WebSocket
+**1. API request received:**
 
-Remove WebSocket handler:
-
-```typescript
-// websocket-glasses.service.ts - DELETE THIS
-case GlassesToCloudMessageType.GLASSES_CONNECTION_STATE:
-  // DELETED
-```
-
-Old clients: Break (acceptable)
-New clients: Continue with REST
-
-### Mobile: Remove After Deployment 2
-
-Remove `SocketComms.sendGlassesConnectionState()`:
-
-```typescript
-// mobile/src/services/SocketComms.ts - DELETE THIS
-private constructor() {
-  // DELETE: Zustand subscription
-  // DELETE: sendGlassesConnectionState() method
+```json
+{
+  "level": "debug",
+  "feature": "device-state",
+  "message": "updateDeviceState",
+  "deviceStateUpdate": {"modelName": "Mentra Live"}
 }
 ```
 
-Clean codebase: REST for state, WebSocket only for streams.
+**2. Connection inferred:**
+
+```json
+{
+  "level": "debug",
+  "feature": "device-state",
+  "message": "Inferred connected=true from modelName",
+  "modelName": "Mentra Live"
+}
+```
+
+**3. State updated:**
+
+```json
+{
+  "level": "info",
+  "feature": "device-state",
+  "message": "Device state updated successfully",
+  "connected": true,
+  "modelName": "Mentra Live",
+  "capabilities": {"hasCamera": true}
+}
+```
+
+**4. Validation check:**
+
+```json
+{
+  "level": "debug",
+  "feature": "device-state",
+  "message": "Hardware request validation successful",
+  "requestType": "display",
+  "glassesModel": "Mentra Live"
+}
+```
+
+**5. Validation failure:**
+
+```json
+{
+  "level": "error",
+  "feature": "device-state",
+  "message": "Hardware request validation failed - glasses not connected",
+  "connectionStatus": "WebSocket: OPEN, Phone: Connected, Glasses: Disconnected"
+}
+```
 
 ## Testing
 
-### Manual Testing
+### Manual Test Flow
 
-1. Connect glasses → verify display requests succeed
-2. Disconnect glasses → verify display requests fail
-3. WiFi connect (Mentra Live) → verify streaming allowed
-4. Rapid connect/disconnect → verify state tracks correctly
+1. Start cloud with device-state changes
+2. Connect glasses via mobile app
+3. Check Better Stack: `feature:"device-state" AND message:"Inferred connected"`
+4. Verify display requests succeed
+5. Disconnect glasses
+6. Check Better Stack: `message:"Inferred connected=false"`
+7. Verify display requests fail with GLASSES_DISCONNECTED
 
-### Monitor
+## Migration Checklist
 
-- `/api/client/device/state` latency (target: <50ms p95)
-- Success rate (target: >99.9%)
-- Display request success rate (target: 100% when connected)
-- `GLASSES_DISCONNECTED` errors (target: 0 for actually-connected glasses)
+### Cloud (Done)
 
-## Why REST Not WebSocket
+- [x] Create `/api/client/device/state` endpoint
+- [x] Implement connection inference in DeviceManager
+- [x] Add `isPhoneConnected` / `isGlassesConnected` getters
+- [x] Remove `phoneConnected` state flag
+- [x] Remove redundant wrapper methods
+- [x] Update ConnectionValidator to use new getters
+- [x] Add feature tag to all logs
+- [x] Deploy to production
 
-| WebSocket        | REST                  |
-| ---------------- | --------------------- |
-| Fire-and-forget  | Confirmed (HTTP 200)  |
-| No retry         | Can retry             |
-| Event stream     | Explicit state update |
-| Hard to debug    | HTTP logs             |
-| Timing-dependent | Always works          |
+### Cloud Cleanup (After Mobile Deployed)
 
-REST is right tool for state updates. WebSocket is for real-time streams (audio, transcription, button events).
+- [ ] Remove WebSocket `GLASSES_CONNECTION_STATE` handler
+- [ ] Remove `handleGlassesConnectionState()` method (if unused)
+- [ ] Remove Simulated Glasses hotfix
+- [ ] Archive legacy code documentation

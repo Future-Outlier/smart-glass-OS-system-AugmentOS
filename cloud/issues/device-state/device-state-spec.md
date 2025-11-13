@@ -1,276 +1,285 @@
 # Device State REST API - Spec
 
-## Type Definition
+## Overview
 
-Uses shared type from `@mentra/types`:
+REST endpoint for mobile client to report glasses connection state. Cloud automatically infers `connected` from `modelName` presence, simplifying mobile implementation.
+
+## Problem
+
+Mobile maintains two sources of truth that never sync:
+
+- `CoreStatusProvider.status.glasses_info.model_name` (from Android Core) ✅
+- `useGlassesStore.connected` (Zustand) ❌ Stale
+
+Result: Cloud thinks glasses disconnected when they're actually connected → display requests fail.
+
+Production error rate: ~30% of display requests fail with `GLASSES_DISCONNECTED`
+
+## Solution
+
+Single REST endpoint for explicit state updates. Cloud infers connection from model name:
+
+- `modelName` present → `connected: true`
+- `modelName` null/empty → `connected: false`
+
+Mobile only needs to send model name, not both fields.
+
+## API Contract
+
+### Endpoint
+
+```
+POST /api/client/device/state
+Authorization: Bearer {coreToken}
+Content-Type: application/json
+```
+
+### Request Body
+
+Type: `Partial<GlassesInfo>` - send only changed properties
+
+**Glasses connected:**
+
+```json
+{
+  "modelName": "Mentra Live"
+}
+```
+
+Cloud infers `connected: true` automatically.
+
+**Glasses disconnected:**
+
+```json
+{
+  "modelName": null
+}
+```
+
+Cloud infers `connected: false` automatically.
+
+**WiFi status change:**
+
+```json
+{
+  "wifiConnected": true,
+  "wifiSsid": "Home-Network"
+}
+```
+
+**Explicit connection (optional):**
+
+```json
+{
+  "connected": true,
+  "modelName": "Mentra Live"
+}
+```
+
+Explicit values override inference.
+
+### Response (200 OK)
+
+```json
+{
+  "success": true,
+  "appliedState": {
+    "isGlassesConnected": true,
+    "isPhoneConnected": true,
+    "modelName": "Mentra Live",
+    "capabilities": {
+      "modelName": "Mentra Live",
+      "hasCamera": true,
+      "hasDisplay": true,
+      "hasMicrophone": true,
+      "hasWifi": true
+    }
+  },
+  "timestamp": "2025-11-13T22:19:16.272Z"
+}
+```
+
+### Response (500 Error)
+
+```json
+{
+  "success": false,
+  "message": "Failed to update device state",
+  "timestamp": "2025-11-13T22:19:16.272Z"
+}
+```
+
+## GlassesInfo Type
+
+From `@mentra/types`:
 
 ```typescript
-// cloud/packages/types/src/device.ts
 export interface GlassesInfo {
   // Connection state
-  connected: boolean
+  connected?: boolean // Optional - inferred from modelName
+  modelName?: string | null // Primary field - triggers inference
 
   // Device identification
-  modelName: string
   androidVersion?: string
   fwVersion?: string
   buildNumber?: string
-  otaVersionUrl?: string
-  appVersion?: string
   bluetoothName?: string
   serialNumber?: string
-  style?: string
-  color?: string
 
-  // WiFi info (only for WiFi-capable devices)
+  // WiFi info (WiFi-capable devices only)
   wifiConnected?: boolean
-  wifiSsid?: string
+  wifiSsid?: string | null
   wifiLocalIp?: string
 
   // Battery info
   batteryLevel?: number
   charging?: boolean
   caseBatteryLevel?: number
-  caseCharging?: boolean
-  caseOpen?: boolean
-  caseRemoved?: boolean
 
   // Hotspot info
   hotspotEnabled?: boolean
   hotspotSsid?: string
   hotspotPassword?: string
-  hotspotGatewayIp?: string
 
   // Metadata
   timestamp?: string
 }
 ```
 
-Client sends `Partial<GlassesInfo>` - only properties that changed.
-Cloud updates specified properties, leaves others unchanged.
-
-## What Cloud Uses
-
-Traced through `ConnectionValidator`, `DeviceManager`, and validation code.
-
-**Primary (always used):**
-
-- `connected: boolean` - For `ConnectionValidator.validateForHardwareRequest()`
-- `modelName: string` - For capability detection (`hasDisplay`, `hasCamera`, etc.)
-
-**Secondary (conditional):**
-
-- `wifiConnected?: boolean` - For `ConnectionValidator.validateWifiForOperation()`
-- `wifiSsid?: string` - For logging/debugging
-- `timestamp?: string` - For staleness detection (warns if >60s old)
-
-**Future (not yet used, but available):**
-
-- Device metadata (androidVersion, fwVersion, etc.) - For analytics/debugging
-- Battery info - Already sent via `GLASSES_BATTERY_UPDATE` stream (could consolidate)
-- Hotspot info - Currently mobile UI only (could be used for connectivity troubleshooting)
-
-## Current Problem
-
-Mobile maintains two separate states:
-
-- `CoreStatusProvider.status.glasses_info.model_name` (from Android Core) ✅
-- `useGlassesStore.connected` (Zustand) ❌ Never synced
-
-`SocketComms.sendGlassesConnectionState()` reads stale Zustand store → sends "DISCONNECTED" even when glasses ARE connected → cloud validation fails.
-
-Production error:
-
-```json
-{
-  "error": "Cannot process display request - smart glasses are not connected",
-  "errorCode": "GLASSES_DISCONNECTED",
-  "connectionStatus": "WebSocket: OPEN, Phone: Connected, Glasses: Disconnected"
-}
-```
-
-## API Contract
-
-### Request
-
-```
-POST /api/client/device/state
-Authorization: Bearer {coreToken}
-Content-Type: application/json
-
-Body: Partial<GlassesInfo>
-```
-
-Only send properties that changed. Cloud updates specified fields.
-
-**Examples:**
-
-Glasses connected (BLE only):
-
-```typescript
-{
-  connected: true,
-  modelName: "Even Realities G1",
-  timestamp: "2025-01-11T20:34:07.253Z"
-}
-```
-
-Glasses connected (WiFi capable):
-
-```typescript
-{
-  connected: true,
-  modelName: "Mentra Live",
-  wifiConnected: true,
-  wifiSsid: "Home-Network",
-  timestamp: "2025-01-11T20:34:07.253Z"
-}
-```
-
-WiFi status change only:
-
-```typescript
-{
-  wifiConnected: false,
-  wifiSsid: null,
-  timestamp: "2025-01-11T20:35:12.253Z"
-}
-```
-
-Glasses disconnected:
-
-```typescript
-{
-  connected: false,
-  modelName: null,
-  timestamp: "2025-01-11T20:40:00.253Z"
-}
-```
-
-### Response (200 OK)
-
-```typescript
-{
-  success: true,
-  appliedState: {
-    connected: boolean,
-    modelName: string | null,
-    capabilities: {
-      hasDisplay: boolean,
-      hasCamera: boolean,
-      hasMicrophone: boolean,
-      hasWifi: boolean
-    }
-  },
-  timestamp: string
-}
-```
-
-### Response (400 Bad Request)
-
-```typescript
-{
-  success: false,
-  error: "Invalid payload",
-  message: "connected field required (boolean)",
-  timestamp: string
-}
-```
-
-### Response (401 Unauthorized)
-
-```typescript
-{
-  success: false,
-  error: "No active session",
-  message: "WebSocket session required for device state updates",
-  timestamp: string
-}
-```
-
 ## Cloud Processing
 
 ```typescript
-// Handler calls DeviceManager with partial update
+// 1. Infer connection state
+if (payload.modelName && payload.connected === undefined) {
+  payload.connected = true // Model present = connected
+}
+if (!payload.modelName && payload.connected === undefined) {
+  payload.connected = false // No model = disconnected
+}
+
+// 2. Update device state
 await userSession.deviceManager.updateDeviceState(payload)
 
-// DeviceManager.updateDeviceState() handles:
-// 1. Merge into UserSession (for validation)
-//    - userSession.glassesConnected
-//    - userSession.glassesModel
-//    - userSession.lastGlassesConnectionState
-//
-// 2. Update capabilities (if model changed)
-//    - Detect capabilities from model
-//    - Stop incompatible apps
-//    - Update DB + PostHog analytics
-//
-// 3. Notify MicrophoneManager (if connection changed)
-//    - handleConnectionStateChange("CONNECTED" | "DISCONNECTED")
+// 3. Update capabilities (if model changed)
+// 4. Stop incompatible apps
+// 5. Notify MicrophoneManager
+// 6. Update PostHog analytics
 ```
 
 ## Mobile Integration
 
-````typescript
-// CoreStatusProvider.tsx - when Core reports connection change
-const payload: Partial<GlassesInfo> = {
-  connected: Boolean(parsedStatus.glasses_info?.model_name),
-  modelName: parsedStatus.glasses_info?.model_name || null,
-  timestamp: new Date().toISOString()
-}
+CoreStatusProvider watches Core status and sends updates:
 
-// Add WiFi info if available
-if (parsedStatus.glasses_info?.glasses_use_wifi) {
-  payload.wifiConnected = parsedStatus.glasses_info.glasses_wifi_connected || false
-  payload.wifiSsid = parsedStatus.glasses_info.glasses_wifi_ssid || null
-}
-
-// Send only changed properties
-restComms.updateDeviceState(payload)
-```</text>
-
-
-## Deployment Strategy
-
-1. **Deploy cloud endpoint** - New REST endpoint, keep WebSocket handler (backward compat)
-2. **Deploy mobile** - Add REST call, old clients continue using WebSocket
-3. **Next deployment** - Remove WebSocket `GLASSES_CONNECTION_STATE` handler (breaks old clients)
-
-No feature flag. Old clients work until step 3 (acceptable breakage).
-
-Goal: Move state updates to REST, keep WebSocket only for real-time streams (audio, transcription, button events).
-
-## Validation
-
-**Middleware:** `clientAuthWithUserSession` (requires active WebSocket session)
-
-**Payload validation:**
-- If `connected=true` is sent, `modelName` must also be provided
-- All properties are optional (partial update)
-- Types validated against `GlassesInfo` interface
-
-## DeviceManager Refactor
-
-**New method:**
 ```typescript
-deviceManager.updateDeviceState(payload: Partial<GlassesInfo>): Promise<void>
-````
+// CoreStatusProvider.tsx
+const payload = {
+  modelName: parsedStatus.glasses_info?.model_name || null,
+}
 
-**Replaces:**
+// Add WiFi if available
+if (parsedStatus.glasses_info?.glasses_use_wifi) {
+  payload.wifiConnected = parsedStatus.glasses_info.glasses_wifi_connected
+  payload.wifiSsid = parsedStatus.glasses_info.glasses_wifi_ssid
+}
 
-- `handleGlassesConnectionState(modelName, status)` - Old WebSocket handler
-- `setCurrentModel(modelName)` - Old settings API handler
+restComms.updateDeviceState(payload)
+```
 
-**Benefits:**
+## What Cloud Uses
 
-- Single entry point for all device state updates
-- Works for both REST and WebSocket
-- Handles partial updates naturally
-- Clear naming: "update" + "device state"
+**Primary (always):**
 
-## Success Criteria
+- `connected` - For hardware request validation
+- `modelName` - For capability detection
 
-- Display requests succeed 100% when glasses connected
-- Zero `GLASSES_DISCONNECTED` errors for actually-connected glasses
-- API p95 latency <50ms
-- WebSocket handler removed by next deployment
+**Secondary (conditional):**
+
+- `wifiConnected` - For WiFi-requiring operations
+- `wifiSsid` - For logging/debugging
+- `timestamp` - For staleness detection (warns if >60s old)
+
+**Future (available but unused):**
+
+- Device metadata - For analytics
+- Battery info - Already sent via separate stream
+- Hotspot info - Mobile UI only
+
+## Connection State Inference
+
+**Rules:**
+
+1. If `modelName` provided and not empty → `connected: true`
+2. If `modelName` is null or empty string → `connected: false`
+3. If `connected` explicitly provided → use explicit value (no inference)
+
+**Examples:**
+
+```typescript
+// Mobile sends
+{ modelName: "Mentra Live" }
+// Cloud sees
+{ connected: true, modelName: "Mentra Live" }
+
+// Mobile sends
+{ modelName: null }
+// Cloud sees
+{ connected: false, modelName: null }
+
+// Mobile sends
+{ connected: false, modelName: "Mentra Live" }
+// Cloud sees - explicit wins (creates inconsistent state, avoid this)
+{ connected: false, modelName: "Mentra Live" }
+```
+
+## Deployment
+
+**Phase 1 (Done):**
+
+- ✅ Cloud REST endpoint deployed
+- ✅ Connection inference implemented
+- ✅ DeviceManager refactored
+- ✅ Backward compatible with WebSocket
+
+**Phase 2 (Mobile team):**
+
+- [ ] Mobile calls REST endpoint from CoreStatusProvider
+- [ ] Remove Zustand glasses store
+- [ ] Remove SocketComms.sendGlassesConnectionState()
+
+**Phase 3 (After mobile deployed):**
+
+- [ ] Remove WebSocket GLASSES_CONNECTION_STATE handler
+- [ ] Remove legacy code paths
+
+## Success Metrics
+
+| Metric                      | Before     | Target | Current |
+| --------------------------- | ---------- | ------ | ------- |
+| Display request success     | 70%        | 100%   | TBD     |
+| GLASSES_DISCONNECTED errors | 30%        | 0%     | TBD     |
+| API latency p95             | N/A        | <50ms  | TBD     |
+| State sync reliability      | Unreliable | 100%   | TBD     |
+
+## Non-Goals
+
+- ❌ Migrating battery updates to REST (already works via stream)
+- ❌ Real-time connection monitoring (use WebSocket streams)
+- ❌ Historical state tracking (not needed)
+- ❌ Multiple device support (one glasses per user)
+
+## Open Questions
+
+1. **Should we deprecate explicit `connected` field entirely?**
+   - Pro: Simpler API, impossible to have mismatched state
+   - Con: Less flexible for edge cases
+   - **Decision**: Keep both for now, revisit after mobile migration
+
+2. **Should we validate WiFi fields only for WiFi-capable models?**
+   - Currently: Accept any WiFi fields regardless of model
+   - Alternative: Reject WiFi fields for BLE-only glasses
+   - **Decision**: Accept all fields, ignore if not applicable (simpler)
+
+3. **Timeout for stale state?**
+   - Currently: Warn if >60s old, but still accept
+   - Alternative: Reject if >5min old
+   - **Decision**: Keep warning only, don't reject (network issues happen)

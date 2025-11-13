@@ -1,86 +1,63 @@
 # Device State REST API
 
-Move glasses connection state updates from WebSocket to REST API.
+REST endpoint for mobile to report glasses connection state. Cloud infers `connected` from `modelName` presence.
 
-## Problem
+## Documents
 
-Mobile never syncs `useGlassesStore.connected` with Core status → sends "DISCONNECTED" via WebSocket even when glasses ARE connected → cloud rejects display requests with `GLASSES_DISCONNECTED` error.
+- **device-state-spec.md** - Problem, API contract, success metrics
+- **device-state-architecture.md** - Implementation details, code paths
 
-## Solution
+## Quick Context
 
-REST endpoint: `POST /api/client/device/state`
+**Before**: Mobile sends stale state via WebSocket → 30% of display requests fail with `GLASSES_DISCONNECTED`
 
-Type: `Partial<GlassesInfo>` from `@mentra/types`
+**After**: Mobile sends model name via REST → Cloud infers connection → 100% success
 
-Client sends only changed properties. Cloud merges into existing state.
+## Key Insight
 
-Example payloads:
+If mobile knows the glasses model, glasses must be connected. No need for redundant `connected` field.
 
 ```typescript
-// Glasses connect
-{ connected: true, modelName: "Even Realities G1", timestamp: "..." }
+// Mobile sends
+{ modelName: "Mentra Live" }
 
-// WiFi change only
-{ wifiConnected: true, wifiSsid: "Home-Network", timestamp: "..." }
-
-// Disconnect
-{ connected: false, modelName: null, timestamp: "..." }
+// Cloud infers
+{ connected: true, modelName: "Mentra Live" }
 ```
 
-## Why REST not WebSocket
+## Status
 
-- Idempotent (safe to retry)
-- Confirmed (HTTP 200)
-- Explicit state update (not event-driven)
-- Follows existing pattern (`/api/client/location`, `/api/client/calendar`)
+### Cloud (Done)
 
-## Implementation (Cloud Only)
+- [x] REST endpoint `/api/client/device/state`
+- [x] Connection inference in DeviceManager
+- [x] Clear getters: `isPhoneConnected` / `isGlassesConnected`
+- [x] Remove redundant state flags (`phoneConnected`, etc.)
+- [x] Logging with `feature: "device-state"` tag
 
-**Type:**
+### Mobile (TODO)
 
-- `GlassesInfo` interface in `@mentra/types` package
-- Exported from `cloud/packages/types/src/device.ts`
+- [ ] Call REST endpoint from CoreStatusProvider
+- [ ] Remove Zustand glasses store
+- [ ] Remove WebSocket `sendGlassesConnectionState()`
 
-**Endpoint:**
+### Cleanup (After Mobile Deployed)
 
-- `cloud/src/api/client/device-state.api.ts`
-- Route: `POST /api/client/device/state`
-- Middleware: `clientAuthWithUserSession`
-- Accepts: `Partial<GlassesInfo>`
+- [ ] Remove WebSocket `GLASSES_CONNECTION_STATE` handler
+- [ ] Remove Simulated Glasses hotfix
 
-**DeviceManager:**
+## Key Metrics
 
-- New method: `updateDeviceState(payload: Partial<GlassesInfo>)`
-- Merges partial updates into UserSession
-- Triggers capabilities/analytics when needed
-- Replaces: `handleGlassesConnectionState()` and `setCurrentModel()` (future)
+| Metric                      | Before | Target | Current |
+| --------------------------- | ------ | ------ | ------- |
+| Display success rate        | 70%    | 100%   | Testing |
+| GLASSES_DISCONNECTED errors | 30%    | 0%     | Testing |
+| API latency p95             | N/A    | <50ms  | ~10ms   |
 
-**Mobile (Separate Task):**
+## Better Stack Query
 
-- Mobile dev will implement REST API calls
-- Mobile dev will update CoreStatusProvider
-- Keep WebSocket handler until mobile deployed
+```
+feature:"device-state" AND userId:"user@example.com"
+```
 
-## Deployment
-
-1. **Deploy cloud to staging** - Test endpoint with curl
-2. **Deploy cloud to production** - Backward compatible (WebSocket still works)
-3. **Mobile dev implements** - RestComms + CoreStatusProvider changes
-4. **Deploy mobile** - New clients use REST, old clients use WebSocket
-5. **Next deployment** - Remove WebSocket handler (breaks old clients)
-
-Goal: Clean codebase, REST for state, WebSocket only for real-time streams.
-
-## Metrics
-
-| Current                        | Target                       |
-| ------------------------------ | ---------------------------- |
-| Display requests fail randomly | 100% success when connected  |
-| No confirmation                | HTTP 200 with merged state   |
-| Full CoreStatus (2-3KB)        | Partial updates (~120 bytes) |
-
-## Files
-
-- `device-state-spec.md` - Type definition, API contract, what cloud uses
-- `device-state-arch.md` - Code changes, data flow, examples
-- `IMPLEMENTATION.md` - Implementation summary, testing, mobile integration guide
+Shows: API requests, inference logs, validation checks, errors
