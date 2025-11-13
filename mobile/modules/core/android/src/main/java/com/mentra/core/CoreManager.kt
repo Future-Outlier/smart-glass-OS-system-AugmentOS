@@ -1270,16 +1270,16 @@ class CoreManager {
 
     fun handle_request_status() {
         val simulatedConnected = defaultWearable == DeviceTypes.SIMULATED
-        val isGlassesConnected = sgc?.ready ?: false
+        val glassesConnected = sgc?.ready ?: false
 
-        if (isGlassesConnected) {
+        if (glassesConnected) {
             isSearching = false
         }
 
         val glassesSettings = mutableMapOf<String, Any>()
         val glassesInfo = mutableMapOf<String, Any>()
 
-        glassesInfo["connected"] = isGlassesConnected
+        glassesInfo["connected"] = glassesConnected
 
         sgc?.let { sgc ->
             glassesInfo["modelName"] = defaultWearable

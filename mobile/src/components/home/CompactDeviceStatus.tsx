@@ -1,33 +1,34 @@
-import {Icon, Text} from "@/components/ignite"
+import ChevronRight from "assets/icons/component/ChevronRight"
+import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
+import CoreModule from "core"
 import {useState} from "react"
 import {ActivityIndicator, Image, ImageStyle, TextStyle, View, ViewStyle} from "react-native"
 
-import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
-import {Button} from "@/components/ignite"
+import {Button, Icon, Text} from "@/components/ignite"
+import ConnectedSimulatedGlassesInfo from "@/components/mirror/ConnectedSimulatedGlassesInfo"
+import SliderSetting from "@/components/settings/SliderSetting"
+import ToggleSetting from "@/components/settings/ToggleSetting"
+import {Divider} from "@/components/ui/Divider"
 import {Group} from "@/components/ui/Group"
+import {Spacer} from "@/components/ui/Spacer"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
+import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
+import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {
   getEvenRealitiesG1Image,
   getGlassesClosedImage,
   getGlassesImage,
   getGlassesOpenImage,
 } from "@/utils/getGlassesImage"
-import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import ChevronRight from "assets/icons/component/ChevronRight"
-import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
-import CoreModule from "core"
-import SliderSetting from "@/components/settings/SliderSetting"
-import ToggleSetting from "@/components/settings/ToggleSetting"
-import ConnectedSimulatedGlassesInfo from "@/components/mirror/ConnectedSimulatedGlassesInfo"
-import {Spacer} from "@/components/ui/Spacer"
-import {Divider} from "@/components/ui/Divider"
+
+import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const {status} = useCoreStatus()
@@ -35,10 +36,10 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
   const [isCheckingConnectivity, setIsCheckingConnectivity] = useState(false)
-  const isGlassesConnected = Boolean(status.glasses_info?.model_name)
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS_KEYS.auto_brightness)
   const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   // If no glasses paired, show Pair Glasses button
   if (!defaultWearable || defaultWearable === "null") {
@@ -243,7 +244,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
         )} */}
         <Group>
           {/* Brightness Settings */}
-          {features?.display?.adjustBrightness && isGlassesConnected && (
+          {features?.display?.adjustBrightness && glassesConnected && (
             <ToggleSetting
               compact
               style={{backgroundColor: theme.colors.background}}
@@ -252,7 +253,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
               onValueChange={setAutoBrightness}
             />
           )}
-          {features?.display?.adjustBrightness && isGlassesConnected && !autoBrightness && (
+          {features?.display?.adjustBrightness && glassesConnected && !autoBrightness && (
             <SliderSetting
               label={translate("deviceSettings:brightness")}
               value={brightness}

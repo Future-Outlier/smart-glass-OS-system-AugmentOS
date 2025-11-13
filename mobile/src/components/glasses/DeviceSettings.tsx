@@ -1,25 +1,28 @@
-import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
+import CoreModule from "core"
+import {Platform, View, ViewStyle} from "react-native"
+
 import OtaProgressSection from "@/components/glasses/OtaProgressSection"
+import {Icon} from "@/components/ignite"
+import SliderSetting from "@/components/settings/SliderSetting"
+import ToggleSetting from "@/components/settings/ToggleSetting"
+import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
+import {Spacer} from "@/components/ui/Spacer"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
 import {useApplets} from "@/stores/applets"
+import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {showDestructiveAlert} from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import CoreModule from "core"
-import {Platform, View, ViewStyle} from "react-native"
-import {Spacer} from "@/components/ui/Spacer"
+
 import {BatteryStatus} from "./info/BatteryStatus"
 import {EmptyState} from "./info/EmptyState"
 import {ButtonSettings} from "./settings/ButtonSettings"
-import {Group} from "@/components/ui/Group"
-import SliderSetting from "@/components/settings/SliderSetting"
-import ToggleSetting from "@/components/settings/ToggleSetting"
-import {Icon} from "@/components/ignite"
-import {useGlassesStore} from "@/stores/glasses"
+
+import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export default function DeviceSettings() {
   const {theme, themed} = useAppTheme()
@@ -31,7 +34,7 @@ export default function DeviceSettings() {
     SETTINGS_KEYS.default_button_action_enabled,
   )
   const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS_KEYS.default_button_action_app)
-  const isGlassesConnected = useGlassesStore(state => state.connected)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   const {push, goBack} = useNavigationHistory()
   const applets = useApplets()
@@ -39,7 +42,7 @@ export default function DeviceSettings() {
 
   // Check if we have any advanced settings to show
   const hasMicrophoneSelector =
-    isGlassesConnected &&
+    glassesConnected &&
     defaultWearable &&
     features?.hasMicrophone &&
     (defaultWearable !== "Mentra Live" ||
@@ -101,7 +104,7 @@ export default function DeviceSettings() {
           />
         )}
         {/* Brightness Settings */}
-        {features?.display?.adjustBrightness && isGlassesConnected && (
+        {features?.display?.adjustBrightness && glassesConnected && (
           <ToggleSetting
             icon={<Icon name="brightness-half" size={24} color={theme.colors.secondary_foreground} />}
             label={translate("deviceSettings:autoBrightness")}
@@ -109,7 +112,7 @@ export default function DeviceSettings() {
             onValueChange={setAutoBrightness}
           />
         )}
-        {features?.display?.adjustBrightness && isGlassesConnected && !autoBrightness && (
+        {features?.display?.adjustBrightness && glassesConnected && !autoBrightness && (
           <SliderSetting
             label={translate("deviceSettings:brightness")}
             value={brightness}
@@ -124,7 +127,7 @@ export default function DeviceSettings() {
       </Group>
 
       {/* Battery Status Section */}
-      {isGlassesConnected && <BatteryStatus />}
+      {glassesConnected && <BatteryStatus />}
 
       {/* Nex Developer Settings - Only show when connected to Mentra Nex */}
       {defaultWearable && defaultWearable.includes(DeviceTypes.NEX) && (
@@ -165,12 +168,12 @@ export default function DeviceSettings() {
       {/* Device info is rendered within the Advanced Settings section below */}
 
       {/* OTA Progress Section - Only show for Mentra Live glasses */}
-      {defaultWearable && isGlassesConnected && defaultWearable.includes(DeviceTypes.LIVE) && (
+      {defaultWearable && glassesConnected && defaultWearable.includes(DeviceTypes.LIVE) && (
         <OtaProgressSection otaProgress={status.ota_progress} />
       )}
 
       <Group title={translate("deviceSettings:general")}>
-        {isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && (
+        {glassesConnected && defaultWearable !== DeviceTypes.SIMULATED && (
           <RouteButton
             icon={<Icon name="unlink" size={24} color={theme.colors.secondary_foreground} />}
             label={translate("deviceSettings:disconnectGlasses")}
@@ -195,7 +198,7 @@ export default function DeviceSettings() {
           isOpen={showAdvancedSettings}
           onToggle={() => setShowAdvancedSettings(!showAdvancedSettings)}>
           {hasMicrophoneSelector && <MicrophoneSelector preferredMic={preferredMic} onMicChange={setMic} />}
-          {isGlassesConnected && <DeviceInformation />}
+          {glassesConnected && <DeviceInformation />}
         </AdvancedSettingsDropdown>
       )} */}
 

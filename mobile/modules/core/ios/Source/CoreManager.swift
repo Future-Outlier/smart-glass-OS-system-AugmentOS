@@ -1297,8 +1297,8 @@ struct ViewState {
     func handle_request_status() {
         // construct the status object:
         let simulatedConnected = defaultWearable == DeviceTypes.SIMULATED
-        let isGlassesConnected = sgc?.ready ?? false
-        if isGlassesConnected {
+        let glassesConnected = sgc?.ready ?? false
+        if glassesConnected {
             isSearching = false
         }
 
@@ -1307,7 +1307,7 @@ struct ViewState {
         var glassesInfo: [String: Any] = [:]
 
         glassesInfo = [
-            "connected": isGlassesConnected,
+            "connected": glassesConnected,
             "modelName": defaultWearable,
             "batteryLevel": sgc?.batteryLevel ?? -1,
             "appVersion": sgc?.glassesAppVersion ?? "",
