@@ -1,12 +1,12 @@
-import InfoSection from "@/components/ui/InfoSection"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {ViewStyle} from "react-native"
 
+import InfoSection from "@/components/ui/InfoSection"
+import {useGlassesStore} from "@/stores/glasses"
+
 export function DeviceInformation({style}: {style?: ViewStyle}) {
-  const {status} = useCoreStatus()
-  const bluetoothName = status.glasses_info?.bluetooth_name
-  const buildNumber = status.glasses_info?.glasses_build_number
-  const localIpAddress = status.glasses_info?.glasses_wifi_local_ip
+  const bluetoothName = useGlassesStore(state => state.bluetoothName)
+  const buildNumber = useGlassesStore(state => state.buildNumber)
+  const localIpAddress = useGlassesStore(state => state.wifiLocalIp)
 
   return (
     <InfoSection

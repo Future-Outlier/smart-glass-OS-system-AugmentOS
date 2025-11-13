@@ -40,6 +40,11 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
   const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesStyle = useGlassesStore(state => state.style)
+  const glassesColor = useGlassesStore(state => state.color)
+  const caseRemoved = useGlassesStore(state => state.caseRemoved)
+  const caseBatteryLevel = useGlassesStore(state => state.caseBatteryLevel)
+  const caseOpen = useGlassesStore(state => state.caseOpen)
 
   // If no glasses paired, show Pair Glasses button
   if (!defaultWearable || defaultWearable === "null") {
@@ -102,28 +107,23 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
     let image = getGlassesImage(defaultWearable)
 
     if (defaultWearable === DeviceTypes.G1) {
-      const style = status.glasses_info?.glasses_style
-      const color = status.glasses_info?.glasses_color
       let state = "folded"
-      if (!status.glasses_info?.case_removed) {
-        state = status.glasses_info?.case_open ? "case_open" : "case_close"
+      if (!caseRemoved) {
+        state = caseOpen ? "case_open" : "case_close"
       }
-      return getEvenRealitiesG1Image(style, color, state, "l", theme.isDark, status.glasses_info?.case_battery_level)
+      return getEvenRealitiesG1Image(glassesStyle, glassesColor, state, "l", theme.isDark, caseBatteryLevel)
     }
 
-    if (!status.glasses_info?.case_removed) {
-      image = status.glasses_info?.case_open
-        ? getGlassesOpenImage(defaultWearable)
-        : getGlassesClosedImage(defaultWearable)
+    if (!caseRemoved) {
+      image = caseOpen ? getGlassesOpenImage(defaultWearable) : getGlassesClosedImage(defaultWearable)
     }
 
     return image
   }
 
-  let isConnected = status.glasses_info?.model_name
   let isSearching = status.core_info.is_searching || isCheckingConnectivity
 
-  if (!isConnected || isSearching) {
+  if (!glassesConnected || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
         <View style={themed($header)}>
