@@ -79,12 +79,14 @@ export class MockUserSession implements Partial<UserSession> {
   bufferedAudio: ArrayBufferLike[] = [];
   whatToStream: any[] = [];
 
-  // Connection state properties needed for ConnectionValidator
-  phoneConnected: boolean = true; // Simulate connected phone
-
   // Mock DeviceManager for tests
   deviceManager: any = {
-    isConnected: () => true,
+    get isPhoneConnected() {
+      return true;
+    },
+    get isGlassesConnected() {
+      return true;
+    },
     getModel: () => "Even Realities G1",
     getDeviceState: () => ({
       connected: true,
