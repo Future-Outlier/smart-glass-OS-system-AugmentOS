@@ -12,6 +12,6 @@ await $({ stdio: 'inherit' })`bun expo prebuild --platform android`;
 await $({ stdio: 'inherit', cwd: 'android' })`./gradlew bundleRelease`;
 
 // Install APK on device
-await $({ stdio: 'inherit' })`adb install -r app/build/outputs/apk/release/app-release.apk`;
+await $({ stdio: 'inherit' })`adb install -r android/app/build/outputs/apk/release/app-release.apk`;
 
 console.log('✅ Android release built and installed successfully!');
