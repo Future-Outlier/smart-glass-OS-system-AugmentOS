@@ -1,11 +1,14 @@
-import {Text} from "@/components/ignite"
+import {Icon, Text} from "@/components/ignite"
 import {useState} from "react"
-import {ActivityIndicator, Image, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
+import {ActivityIndicator, Image, ImageStyle, TextStyle, View, ViewStyle} from "react-native"
 
-import {Button, Icon} from "@/components/ignite"
+import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
+import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
+import {Button} from "@/components/ignite"
+import {Group} from "@/components/ui/Group"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
@@ -19,22 +22,30 @@ import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import ChevronRight from "assets/icons/component/ChevronRight"
 import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
-import SunIcon from "assets/icons/component/SunIcon"
-import {DeviceTypes, getModelCapabilities} from "../../../../cloud/packages/types/src"
 import CoreModule from "core"
+import SliderSetting from "@/components/settings/SliderSetting"
+import ToggleSetting from "@/components/settings/ToggleSetting"
+import ConnectedSimulatedGlassesInfo from "@/components/mirror/ConnectedSimulatedGlassesInfo"
+import {Spacer} from "@/components/ui/Spacer"
+import {Divider} from "@/components/ui/Divider"
 
-export const CompactDeviceStatus: React.FC = () => {
+export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const {status} = useCoreStatus()
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
   const [isCheckingConnectivity, setIsCheckingConnectivity] = useState(false)
+  const isGlassesConnected = Boolean(status.glasses_info?.model_name)
+  const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS_KEYS.auto_brightness)
+  const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
+  const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
+
   // If no glasses paired, show Pair Glasses button
   if (!defaultWearable || defaultWearable === "null") {
     return (
       <View style={themed($disconnectedContainer)}>
         <Button
-          textStyle={[{marginLeft: theme.spacing.xxl}]}
+          textStyle={[{marginLeft: theme.spacing.s12}]}
           textAlignment="left"
           LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
           RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
@@ -43,6 +54,10 @@ export const CompactDeviceStatus: React.FC = () => {
         />
       </View>
     )
+  }
+
+  if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
+    return <ConnectedSimulatedGlassesInfo style={style} mirrorStyle={{backgroundColor: theme.colors.background}} />
   }
 
   // Show simulated glasses view for simulated glasses
@@ -56,7 +71,7 @@ export const CompactDeviceStatus: React.FC = () => {
       return
     }
 
-    setIsCheckingConnectivity(true)
+    // setIsCheckingConnectivity(true)
 
     try {
       const requirementsCheck = await checkConnectivityRequirementsUI()
@@ -68,7 +83,7 @@ export const CompactDeviceStatus: React.FC = () => {
       console.error("connect to glasses error:", error)
       showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
     } finally {
-      setIsCheckingConnectivity(false)
+      // setIsCheckingConnectivity(false)
     }
     await CoreModule.connectDefault()
   }
@@ -76,6 +91,7 @@ export const CompactDeviceStatus: React.FC = () => {
   const handleConnectOrDisconnect = async () => {
     if (status.core_info.is_searching) {
       await CoreModule.disconnect()
+      setIsCheckingConnectivity(false)
     } else {
       await connectGlasses()
     }
@@ -103,184 +119,213 @@ export const CompactDeviceStatus: React.FC = () => {
     return image
   }
 
-  const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text
-    return text.substring(0, maxLength - 3) + "..."
-  }
+  let isConnected = status.glasses_info?.model_name
+  let isSearching = status.core_info.is_searching || isCheckingConnectivity
 
-  if (status.core_info.is_searching || isCheckingConnectivity) {
+  if (!isConnected || isSearching) {
     return (
-      <View style={themed($disconnectedContainer)}>
-        <View style={[themed($disconnectedImageContainer)]}>
-          <Image source={getCurrentGlassesImage()} style={themed($disconnectedGlassesImage)} />
+      <View style={[themed($disconnectedContainer), style]}>
+        <View style={themed($header)}>
+          <Text style={themed($headerText)} text={defaultWearable} />
+          <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
         </View>
-        <Button
-          textStyle={[{marginLeft: theme.spacing.xxl}]}
-          textAlignment="left"
-          LeftAccessory={() => <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginLeft: 5}} />}
-          tx="home:connectingGlasses"
-          // disabled={true}
-          onPress={handleConnectOrDisconnect}
-        />
-      </View>
-    )
-  }
 
-  if (!status.glasses_info?.model_name) {
-    return (
-      <View style={themed($disconnectedContainer)}>
-        <View style={[themed($disconnectedImageContainer)]}>
-          <Image source={getCurrentGlassesImage()} style={themed($disconnectedGlassesImage)} />
+        <View style={[themed($sideBySideContainer)]}>
+          <Image source={getCurrentGlassesImage()} style={[themed($glassesImage)]} />
+          <Button
+            style={{width: 48, height: 48}}
+            flexContainer={false}
+            preset="alternate"
+            onPress={() => push("/settings/glasses")}>
+            <Icon name="settings" size={20} color={theme.colors.foreground} />
+          </Button>
         </View>
-        <Button
-          textStyle={[{marginLeft: theme.spacing.xxl}]}
+
+        <Divider />
+        <Spacer height={theme.spacing.s6} />
+
+        <View
+          style={{
+            flexDirection: "row",
+            gap: theme.spacing.s2,
+          }}>
+          {!isSearching ? (
+            <>
+              <Button compact flex tx="home:getSupport" preset="primary" />
+              <Button compact flex tx="home:connectGlasses" preset="alternate" onPress={connectGlasses} />
+            </>
+          ) : (
+            <>
+              <Button compactIcon flexContainer={false} preset="alternate" onPress={handleConnectOrDisconnect}>
+                <Icon name="x" size={20} color={theme.colors.foreground} />
+              </Button>
+              <Button
+                flex
+                compact
+                LeftAccessory={() => (
+                  <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginLeft: 5}} />
+                )}
+                tx="home:connectingGlasses"
+              />
+            </>
+          )}
+        </View>
+        {/* <View style={[themed($disconnectedImageContainer)]}> */}
+        {/* </View> */}
+        {/* <Button
+          textStyle={[{marginLeft: theme.spacing.s12}]}
           textAlignment="left"
           LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
           RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
           onPress={handleConnectOrDisconnect}
           tx="home:connectGlasses"
           disabled={isCheckingConnectivity}
-        />
+        /> */}
       </View>
     )
   }
 
-  // Don't show glasses image and stats for simulated glasses
-  if (defaultWearable === DeviceTypes.SIMULATED) {
-    return null
+  const features = getModelCapabilities(defaultWearable)
+
+  if (showSimulatedGlasses) {
+    return (
+      <View style={[themed($container), style]}>
+        <View style={themed($header)}>
+          <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s2}}>
+            <Image source={getCurrentGlassesImage()} style={[themed($glassesImage), {width: 54, maxHeight: 24}]} />
+            <Text style={themed($headerText)}>{defaultWearable}</Text>
+          </View>
+          {/* <Icon icon="bluetooth-connected" size={18} color={theme.colors.textDim} /> */}
+        </View>
+        <View style={{marginHorizontal: -theme.spacing.s6}}>
+          <ConnectedSimulatedGlassesInfo showHeader={false} mirrorStyle={{backgroundColor: theme.colors.background}} />
+        </View>
+        <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2}}>
+          <Button
+            flexContainer={false}
+            preset="alternate"
+            onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}>
+            <Icon name="arrow-left" size={18} color={theme.colors.foreground} />
+          </Button>
+          <Button flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
+            <Icon name="settings" size={18} color={theme.colors.foreground} />
+          </Button>
+        </View>
+      </View>
+    )
   }
 
-  const features = getModelCapabilities(defaultWearable)
-  const hasDisplay = features?.hasDisplay ?? true
-  const hasWifi = features?.hasWifi ?? false
-  const wifiSsid = status.glasses_info?.glasses_wifi_ssid
-  const wifiConnected = Boolean(wifiSsid)
-  const autoBrightness = status.glasses_settings?.auto_brightness
-  const batteryLevel = status.glasses_info?.battery_level ?? 100
-
   return (
-    <View style={themed($container)}>
-      <View style={[themed($imageContainer)]}>
+    <View style={[themed($container), style]}>
+      <View style={themed($header)}>
+        <Text style={themed($headerText)}>{defaultWearable}</Text>
+        <Icon name="bluetooth-connected" size={18} color={theme.colors.foreground} />
+      </View>
+      <View style={[themed($imageContainer), {paddingVertical: theme.spacing.s6}]}>
         <Image source={getCurrentGlassesImage()} style={themed($glassesImage)} />
       </View>
 
       <View style={themed($statusContainer)}>
-        <View style={themed($statusRow)}>
-          <Icon icon="battery" size={16} color={theme.colors.textDim} />
-          <Text style={[themed($statusText), {height: 22}]} numberOfLines={1}>
-            {batteryLevel !== -1 ? `${batteryLevel}%` : <ActivityIndicator size="small" color={theme.colors.text} />}
-          </Text>
-        </View>
+        {/* <View style={themed($statusRow)}> */}
+        {/* <Icon icon="battery" size={16} color={theme.colors.textDim} /> */}
+        {/* <Text style={[themed($statusText), {height: 22}]} numberOfLines={1}> */}
+        {/* {batteryLevel !== -1 ? `${batteryLevel}%` : <ActivityIndicator size="small" color={theme.colors.text} />} */}
+        {/* </Text> */}
+        {/* </View> */}
 
-        {hasDisplay && (
+        {/* {hasDisplay && (
           <View style={themed($statusRow)}>
             <SunIcon size={16} color={theme.colors.textDim} />
             <Text style={themed($statusText)} numberOfLines={1}>
               {autoBrightness ? "Auto" : `${status.glasses_settings?.brightness}%`}
             </Text>
           </View>
-        )}
-
-        <View style={themed($statusRow)}>
-          {hasWifi ? (
-            <TouchableOpacity
-              style={themed($statusRow)}
-              onPress={() => {
-                push("/pairing/glasseswifisetup", {
-                  deviceModel: status.glasses_info?.model_name || "Glasses",
-                })
-              }}>
-              <MaterialCommunityIcons
-                name={wifiConnected ? "wifi" : "wifi-off"}
-                size={16}
-                color={theme.colors.textDim}
-              />
-              <Text style={themed($statusText)} numberOfLines={1}>
-                {truncateText(wifiSsid || "No WiFi", 12)}
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <>
-              <MaterialCommunityIcons name="bluetooth" size={16} color={theme.colors.textDim} />
-              <Text style={themed($statusText)} numberOfLines={1} tx="glasses:connected" />
-            </>
+        )} */}
+        <Group>
+          {/* Brightness Settings */}
+          {features?.display?.adjustBrightness && isGlassesConnected && (
+            <ToggleSetting
+              style={{backgroundColor: theme.colors.background}}
+              label={translate("deviceSettings:autoBrightness")}
+              value={autoBrightness}
+              onValueChange={setAutoBrightness}
+            />
           )}
+          {features?.display?.adjustBrightness && isGlassesConnected && !autoBrightness && (
+            <SliderSetting
+              label={translate("deviceSettings:brightness")}
+              value={brightness}
+              min={0}
+              max={100}
+              onValueChange={() => {}}
+              onValueSet={setBrightness}
+              disableBorder
+            />
+          )}
+        </Group>
+
+        <BatteryStatus compact={true} />
+
+        <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2}}>
+          <Button
+            flex
+            tx="home:glassesMirror"
+            preset="alternate"
+            onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}
+          />
+          <Button flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
+            <Icon name="settings" size={18} color={theme.colors.foreground} />
+          </Button>
         </View>
       </View>
     </View>
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  paddingVertical: spacing.md,
-  gap: spacing.sm,
+const $container: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
+  backgroundColor: colors.primary_foreground,
+  padding: spacing.s6,
 })
 
-const $imageContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
+const $imageContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 2,
   alignItems: "center",
   justifyContent: "center",
-  borderWidth: spacing.xxxs,
-  borderColor: colors.border,
-  borderRadius: spacing.lg,
-  backgroundColor: colors.backgroundAlt,
   alignSelf: "stretch",
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
 })
 
 const $glassesImage: ThemedStyle<ImageStyle> = () => ({
-  width: "100%",
-  height: 100,
+  maxWidth: 140,
+  height: 72,
   resizeMode: "contain",
 })
 
-const $statusContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  flex: 1,
-  minWidth: 100,
-  justifyContent: "center",
-  gap: spacing.xs,
-  borderColor: colors.border,
-  borderWidth: spacing.xxxs,
-  padding: spacing.md,
-  backgroundColor: colors.backgroundAlt,
-  borderRadius: spacing.lg,
-})
-
-const $statusRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $header: ThemedStyle<ViewStyle> = () => ({
   flexDirection: "row",
-  alignItems: "center",
-  gap: spacing.xxs,
   justifyContent: "space-between",
-  // width: "400,
+  alignItems: "center",
 })
 
-const $statusText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.textDim,
-  fontSize: 14,
-  fontFamily: "Inter-Regular",
+const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
+  color: colors.secondary_foreground,
+  fontSize: 20,
+  fontWeight: 600,
+})
+
+const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  paddingVertical: spacing.s6,
+  alignItems: "center",
+})
+
+const $statusContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
+  gap: spacing.s3,
 })
 
-const $disconnectedContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  alignItems: "center",
-  paddingBottom: spacing.sm,
-  gap: spacing.xs,
-})
-
-const $disconnectedImageContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  width: "100%",
-  alignItems: "center",
-  borderColor: colors.border,
-  borderWidth: spacing.xxxs,
-  padding: spacing.sm,
-  backgroundColor: colors.backgroundAlt,
-  borderRadius: spacing.lg,
-  marginBottom: spacing.sm,
-})
-
-const $disconnectedGlassesImage: ThemedStyle<ImageStyle> = () => ({
-  // width: "80%",
-  height: 100,
-  resizeMode: "contain",
+const $disconnectedContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
+  backgroundColor: colors.primary_foreground,
+  padding: spacing.s6,
 })

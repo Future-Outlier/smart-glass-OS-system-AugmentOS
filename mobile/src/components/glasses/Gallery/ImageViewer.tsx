@@ -255,15 +255,15 @@ const $header = {
   flexDirection: "row" as const,
   alignItems: "center" as const,
   justifyContent: "space-between" as const,
-  paddingHorizontal: spacing.md,
-  paddingBottom: spacing.sm,
+  paddingHorizontal: spacing.s4,
+  paddingBottom: spacing.s3,
   backgroundColor: "rgba(0,0,0,0.7)",
 }
 
 const $closeButton = {
-  padding: spacing.sm,
+  padding: spacing.s3,
 }
 
 const $actionButton = {
-  padding: spacing.sm,
+  padding: spacing.s3,
 }

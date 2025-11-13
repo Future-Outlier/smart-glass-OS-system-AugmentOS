@@ -1370,6 +1370,8 @@ class MentraLive: NSObject, SGCManager {
         Bridge.log("Starting BLE scan for Mentra Live glasses")
         isScanning = true
 
+        startReadinessCheckLoop()
+
         let scanOptions: [String: Any] = [
             CBCentralManagerScanOptionAllowDuplicatesKey: false,
         ]

@@ -122,23 +122,6 @@ class Bridge {
         }
     }
 
-    func sendCoreStatus(status: [String: Any]) {
-        do {
-            let event: [String: Any] = [
-                "type": "core_status_update",
-                "status": ["status": status],
-                "timestamp": Int(Date().timeIntervalSince1970 * 1000),
-            ]
-
-            let jsonData = try JSONSerialization.data(withJSONObject: event)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendWSText(jsonString)
-            }
-        } catch {
-            Bridge.log("ServerComms: Error building core_status_update JSON: \(error)")
-        }
-    }
-
     // MARK: - Hardware Events
 
     static func sendButtonPress(buttonId: String, pressType: String) {

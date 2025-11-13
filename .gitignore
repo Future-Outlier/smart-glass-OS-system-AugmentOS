@@ -39,6 +39,8 @@ augmentos_npm/
 .docusaurus
 **/.docusaurus
 **/expo-env.d.ts
+*.tsbuildinfo
+.tsbuildinfo
 
 ### PYTHON
 #

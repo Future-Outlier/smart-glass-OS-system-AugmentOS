@@ -1,18 +1,20 @@
 import {useState, useEffect} from "react"
-import {View, Image, ActivityIndicator, ScrollView, ImageStyle, TextStyle, ViewStyle, Modal} from "react-native"
+import {View, Image, ActivityIndicator, ScrollView, ImageStyle, ViewStyle, Modal} from "react-native"
 import {Header, Screen, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {router} from "expo-router"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import ActionButton from "@/components/ui/ActionButton"
 import showAlert from "@/utils/AlertUtils"
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import restComms from "@/services/RestComms"
 import {useAuth} from "@/contexts/AuthContext"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import Svg, {Path} from "react-native-svg"
+import {Group} from "@/components/ui/Group"
+import {RouteButton} from "@/components/ui/RouteButton"
+import {Spacer} from "@/components/ui/Spacer"
 
 // Default user icon component for profile pictures
 const DefaultUserIcon = ({size = 100, color = "#999"}: {size?: number; color?: string}) => {
@@ -240,8 +242,8 @@ export default function ProfileSettingsPage() {
   const {theme, themed} = useAppTheme()
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header title={translate("profileSettings:title")} leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title={translate("profileSettings:title")} leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView>
         {loading ? (
           <ActivityIndicator size="large" color={theme.colors.palette.primary500} />
@@ -255,55 +257,32 @@ export default function ProfileSettingsPage() {
               </View>
             )}
 
-            <View style={themed($infoContainer)}>
-              <Text tx="profileSettings:name" style={themed($label)} />
-              <Text text={userData.fullName || "N/A"} style={themed($infoText)} />
-            </View>
-
-            <View style={themed($infoContainer)}>
-              <Text tx="profileSettings:email" style={themed($label)} />
-              <Text text={userData.email || "N/A"} style={themed($infoText)} />
-            </View>
-
-            <View style={themed($infoContainer)}>
-              <Text tx="profileSettings:createdAt" style={themed($label)} />
-              <Text
+            <Group>
+              <RouteButton label={translate("profileSettings:name")} text={userData.fullName || "N/A"} />
+              <RouteButton label={translate("profileSettings:email")} text={userData.email || "N/A"} />
+              <RouteButton
+                label={translate("profileSettings:createdAt")}
                 text={userData.createdAt ? new Date(userData.createdAt).toLocaleString() : "N/A"}
-                style={themed($infoText)}
               />
-            </View>
+            </Group>
 
-            <View style={{gap: theme.spacing.md, marginTop: theme.spacing.lg}}>
+            <Spacer height={theme.spacing.s6} />
+
+            <Group title={translate("account:appSettings")}>
               {userData.provider == "email" && (
-                <ActionButton
-                  label={translate("profileSettings:changePassword")}
-                  variant="default"
-                  onPress={handleChangePassword}
-                />
+                <RouteButton label={translate("profileSettings:changePassword")} onPress={handleChangePassword} />
               )}
-
-              <ActionButton
-                label={translate("profileSettings:requestDataExport")}
-                variant="default"
-                onPress={handleRequestDataExport}
-              />
-
-              <ActionButton
-                label={translate("profileSettings:deleteAccount")}
-                variant="destructive"
-                onPress={handleDeleteAccount}
-              />
-            </View>
+              <RouteButton label={translate("profileSettings:requestDataExport")} onPress={handleRequestDataExport} />
+              <RouteButton label={translate("profileSettings:deleteAccount")} onPress={handleDeleteAccount} />
+              <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} />
+            </Group>
           </>
         ) : (
-          <Text tx="profileSettings:errorGettingUserInfo" />
-        )}
-
-        {/* Sign out button - always available, even if user data fails to load */}
-        {!loading && (
-          <View style={{gap: theme.spacing.md, marginTop: theme.spacing.lg}}>
-            <ActionButton label={translate("settings:signOut")} variant="destructive" onPress={confirmSignOut} />
-          </View>
+          <>
+            {/* Sign out button - always available, even if user data fails to load */}
+            <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} />
+            <Text tx="profileSettings:errorGettingUserInfo" />
+          </>
         )}
       </ScrollView>
 
@@ -319,12 +298,12 @@ export default function ProfileSettingsPage() {
           <View
             style={{
               backgroundColor: theme.colors.background,
-              padding: theme.spacing.xl,
-              borderRadius: theme.spacing.md,
+              padding: theme.spacing.s8,
+              borderRadius: theme.spacing.s4,
               alignItems: "center",
               minWidth: 200,
             }}>
-            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.md}} />
+            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.s4}} />
             <Text preset="bold" style={{color: theme.colors.text}}>
               {translate("settings:loggingOutMessage")}
             </Text>
@@ -334,12 +313,6 @@ export default function ProfileSettingsPage() {
     </Screen>
   )
 }
-
-const $label: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontWeight: "bold",
-  fontSize: 16,
-  color: colors.text,
-})
 
 const $profileImage: ThemedStyle<ImageStyle> = () => ({
   width: 100,
@@ -358,14 +331,4 @@ const $profilePlaceholder: ThemedStyle<ViewStyle> = ({colors}) => ({
   alignSelf: "center",
   marginBottom: 20,
   backgroundColor: colors.border,
-})
-
-const $infoContainer: ThemedStyle<ViewStyle> = () => ({
-  marginBottom: 15,
-})
-
-const $infoText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 16,
-  marginTop: 4,
-  color: colors.text,
 })

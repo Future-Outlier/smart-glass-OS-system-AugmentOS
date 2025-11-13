@@ -1,10 +1,9 @@
 import {useAppTheme} from "@/utils/useAppTheme"
 import {View, ViewStyle, TextStyle, Platform} from "react-native"
-import {Text} from "@/components/ignite"
+import {Icon, Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {PillButton} from "@/components/ignite/PillButton"
 import {BluetoothSettingsHelper} from "@/utils/BluetoothSettingsHelper"
-import {MaterialCommunityIcons} from "@expo/vector-icons"
 
 interface AudioPairingPromptProps {
   deviceName: string
@@ -33,7 +32,7 @@ export function AudioPairingPrompt({deviceName, onSkip}: AudioPairingPromptProps
   return (
     <View style={themed($container)}>
       <View style={themed($iconContainer)}>
-        <MaterialCommunityIcons name="headphones-bluetooth" size={48} color={theme.colors.tint} />
+        <Icon name="device-airpods-case" size={48} color={theme.colors.tint} />
       </View>
 
       <Text style={themed($title)} preset="heading">
@@ -83,43 +82,43 @@ export function AudioPairingPrompt({deviceName, onSkip}: AudioPairingPromptProps
 }
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.lg,
+  padding: spacing.s6,
   alignItems: "center",
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
 })
 
 const $title: ThemedStyle<TextStyle> = ({spacing}) => ({
   fontSize: 24,
   fontWeight: "bold",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
   textAlign: "center",
 })
 
 const $description: ThemedStyle<TextStyle> = ({spacing}) => ({
   fontSize: 16,
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
   textAlign: "center",
   opacity: 0.8,
 })
 
 const $instructionsContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: "100%",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $instructionRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
   alignItems: "flex-start",
 })
 
 const $stepNumber: ThemedStyle<TextStyle> = ({spacing}) => ({
   fontSize: 16,
   fontWeight: "bold",
-  marginRight: spacing.xs,
+  marginRight: spacing.s2,
   minWidth: 24,
 })
 
@@ -130,7 +129,7 @@ const $instructionText: ThemedStyle<TextStyle> = () => ({
 
 const $pairButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: "100%",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $pairButtonText: ThemedStyle<TextStyle> = () => ({

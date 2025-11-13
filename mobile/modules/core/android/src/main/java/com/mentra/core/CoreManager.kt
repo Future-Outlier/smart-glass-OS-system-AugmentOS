@@ -42,6 +42,7 @@ class CoreManager {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private var sendStateWorkItem: Runnable? = null
+    private var phoneMic: PhoneMic? = null
 
     // Track last known permissions
     private var lastHadBluetoothPermission = false
@@ -69,7 +70,7 @@ class CoreManager {
     public var deviceAddress = ""
     private var screenDisabled = false
     private var isSearching = false
-    private var onboardMicUnavailable = false
+    private var systemMicUnavailable = false
     public val currentRequiredData = mutableListOf<SpeechRequiredDataType>()
 
     // glasses settings
@@ -127,7 +128,7 @@ class CoreManager {
         initializeViewStates()
         startForegroundService()
         // setupPermissionMonitoring()
-
+        phoneMic = PhoneMic.getInstance()
         // Initialize local STT transcriber
         try {
             val context = Bridge.getContext()
@@ -447,12 +448,12 @@ class CoreManager {
         val glassesHasMic = sgc?.hasMic ?: false
 
         Bridge.log("MAN: updateMicrophoneState() - micEnabled=$micEnabled, sensingEnabled=$sensingEnabled, actuallyEnabled=$actuallyEnabled")
-        Bridge.log("MAN: updateMicrophoneState() - preferredMic=$preferredMic, glassesHasMic=$glassesHasMic, onboardMicUnavailable=$onboardMicUnavailable")
+        Bridge.log("MAN: updateMicrophoneState() - preferredMic=$preferredMic, glassesHasMic=$glassesHasMic, systemMicUnavailable=$systemMicUnavailable")
 
         var useGlassesMic = preferredMic == "glasses"
         var useOnboardMic = preferredMic == "phone"
 
-        if (onboardMicUnavailable) {
+        if (systemMicUnavailable) {
             useOnboardMic = false
         }
 
@@ -465,7 +466,7 @@ class CoreManager {
             if (glassesHasMic) {
                 Bridge.log("MAN: AUTO-FALLBACK: Switching to glasses mic (preferred mic unavailable)")
                 useGlassesMic = true
-            } else if (!onboardMicUnavailable) {
+            } else if (!systemMicUnavailable) {
                 Bridge.log("MAN: AUTO-FALLBACK: Switching to phone mic (glasses mic not available)")
                 useOnboardMic = true
             }
@@ -503,9 +504,9 @@ class CoreManager {
     private fun setOnboardMicEnabled(enabled: Boolean) {
         Bridge.log("MAN: setOnboardMicEnabled(): $enabled")
         if (enabled) {
-            PhoneMic.getInstance(Bridge.getContext()).startRecording()
+            phoneMic?.startRecording()
         } else {
-            PhoneMic.getInstance(Bridge.getContext()).stopRecording()
+            phoneMic?.stopRecording()
         }
     }
 
@@ -602,7 +603,7 @@ class CoreManager {
             "external_app_recording" -> {
                 // Another app is using the microphone
                 Bridge.log("MAN: External app took microphone - marking onboard mic as unavailable")
-                onboardMicUnavailable = true
+                systemMicUnavailable = true
                 // Only trigger mic state change if we're in automatic/phone mode
                 if (preferredMic == "phone") {
                     handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
@@ -611,7 +612,7 @@ class CoreManager {
             "external_app_stopped", "audio_focus_available" -> {
                 // External app released the microphone
                 Bridge.log("MAN: External app released microphone - marking onboard mic as available")
-                onboardMicUnavailable = false
+                systemMicUnavailable = false
                 // Only trigger recovery if we're in automatic/phone mode
                 if (preferredMic == "phone") {
                     handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
@@ -620,7 +621,7 @@ class CoreManager {
             "phone_call_interruption" -> {
                 // Phone call started - mark mic as unavailable
                 Bridge.log("MAN: Phone call interruption - marking onboard mic as unavailable")
-                onboardMicUnavailable = true
+                systemMicUnavailable = true
                 if (preferredMic == "phone") {
                     handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
                 }
@@ -628,10 +629,32 @@ class CoreManager {
             "phone_call_ended" -> {
                 // Phone call ended - mark mic as available again
                 Bridge.log("MAN: Phone call ended - marking onboard mic as available")
-                onboardMicUnavailable = false
+                systemMicUnavailable = false
                 if (preferredMic == "phone") {
                     handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
                 }
+            }
+            "phone_call_active" -> {
+                // Tried to start recording while phone call already active
+                Bridge.log("MAN: Phone call already active - marking onboard mic as unavailable")
+                systemMicUnavailable = true
+                if (phoneMic?.isRecording?.get() == true) {
+                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+                }
+            }
+            "audio_focus_denied" -> {
+                // Another app has audio focus
+                Bridge.log("MAN: Audio focus denied - marking onboard mic as unavailable")
+                systemMicUnavailable = true
+                if (phoneMic?.isRecording?.get() == true) {
+                    handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+                }
+            }
+            "permission_denied" -> {
+                // Microphone permission not granted
+                Bridge.log("MAN: Microphone permission denied - cannot use phone mic")
+                systemMicUnavailable = true
+                // Don't trigger fallback - need to request permission from user
             }
             else -> {
                 // Other route changes (headset plug/unplug, BT connect/disconnect, etc.)
@@ -643,7 +666,7 @@ class CoreManager {
 
     fun onInterruption(began: Boolean) {
         Bridge.log("MAN: Interruption: $began")
-        onboardMicUnavailable = began
+        systemMicUnavailable = began
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
     }
 
@@ -853,6 +876,9 @@ class CoreManager {
             sgc = MentraLive()
         } else if (wearable.contains(DeviceTypes.MACH1)) {
             sgc = Mach1()
+        } else if (wearable.contains(DeviceTypes.Z100)) {
+            sgc = Mach1()  // Z100 uses same hardware/SDK as Mach1
+            sgc?.type = DeviceTypes.Z100  // Override type to Z100
         } else if (wearable.contains(DeviceTypes.FRAME)) {
             // sgc = FrameManager()
         }
@@ -895,12 +921,18 @@ class CoreManager {
             handleG1Ready()
         } else if (defaultWearable.contains(DeviceTypes.MACH1)) {
             handleMach1Ready()
+        } else if (defaultWearable.contains(DeviceTypes.Z100)) {
+            handleMach1Ready()  // Z100 uses same initialization as Mach1
         }
 
         // Re-apply microphone settings after reconnection
         // Cache was cleared on disconnect, so this will definitely send commands
         Bridge.log("MAN: Re-applying microphone settings after reconnection")
         updateMicrophoneState()
+
+        // send to the server our battery status:
+        Bridge.sendBatteryStatus(sgc?.batteryLevel ?: -1, false)
+        Bridge.sendGlassesConnectionState(defaultWearable, "CONNECTED")
 
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
@@ -1350,6 +1382,12 @@ class CoreManager {
         (settings["preferred_mic"] as? String)?.let { newPreferredMic ->
             if (preferredMic != newPreferredMic) {
                 updatePreferredMic(newPreferredMic)
+            }
+        }
+
+        (settings["notifications_enabled"] as? Boolean)?.let { newNotificationsEnabled ->
+            if (notificationsEnabled != newNotificationsEnabled) {
+                updateNotificationsEnabled(newNotificationsEnabled)
             }
         }
 

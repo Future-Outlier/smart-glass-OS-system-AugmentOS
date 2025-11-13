@@ -1,7 +1,7 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import tailwindcss from "@tailwindcss/vite";
+import {defineConfig} from "vite"
+import react from "@vitejs/plugin-react-swc"
+import path from "path"
+import tailwindcss from "@tailwindcss/vite"
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -28,21 +28,10 @@ export default defineConfig({
             "@radix-ui/react-slot",
             "@radix-ui/react-tooltip",
           ],
-          auth: [
-            "@supabase/supabase-js",
-            "@supabase/auth-ui-react",
-            "@supabase/auth-ui-shared",
-          ],
-          utils: [
-            "axios",
-            "clsx",
-            "tailwind-merge",
-            "class-variance-authority",
-            "next-themes",
-            "sonner",
-          ],
+          auth: ["@supabase/supabase-js"],
+          utils: ["axios", "clsx", "tailwind-merge", "class-variance-authority", "next-themes", "sonner"],
         },
       },
     },
   },
-});
+})

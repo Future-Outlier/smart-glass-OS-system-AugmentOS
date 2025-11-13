@@ -5,7 +5,7 @@ import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
 import {Screen, Header, Button, Icon} from "@/components/ignite"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import {$styles, ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle} from "react-native"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useCallback} from "react"
@@ -92,20 +92,23 @@ export default function WifiScanScreen() {
 
       // Handle network results - replace on first result of new session, append on subsequent
       setNetworks(prevNetworks => {
+        console.log("🎯 Current scan session ID:", currentScanSessionRef.current)
         console.log(
-          "🎯 Previous networks:",
+          "🎯 Previous networks count:",
+          prevNetworks.length,
+          "SSIDs:",
           prevNetworks.map(n => n.ssid),
         )
-        console.log("🎯 Received results for current session:", receivedResultsForSessionRef.current)
+        console.log("🎯 Is first result of this scan session?", !receivedResultsForSessionRef.current)
 
         let baseNetworks: NetworkInfo[]
         if (receivedResultsForSessionRef.current) {
           // This is additional results from the same scan session - append
-          console.log("🎯 Appending to existing networks from current session")
+          console.log("🎯 APPENDING: Adding to existing networks from current scan session")
           baseNetworks = prevNetworks
         } else {
           // This is the first result of a new scan session - replace
-          console.log("🎯 Starting fresh with new scan session results")
+          console.log("🎯 REPLACING: Starting fresh with new scan session results")
           baseNetworks = []
         }
 
@@ -119,7 +122,9 @@ export default function WifiScanScreen() {
         })
         const newNetworks = Array.from(existingMap.values())
         console.log(
-          "🎯 Updated networks list:",
+          "🎯 Final networks count:",
+          newNetworks.length,
+          "SSIDs:",
           newNetworks.map(n => `${n.ssid} (${n.requiresPassword ? "secured" : "open"})`),
         )
         return newNetworks
@@ -128,6 +133,7 @@ export default function WifiScanScreen() {
       // Mark that we've received results for the current session
       receivedResultsForSessionRef.current = true
       setIsScanning(false)
+      console.log("🎯 Marked receivedResultsForSessionRef as true for this session")
       console.log("🎯 ========= END SCAN.TSX WIFI RESULTS =========")
     }
 
@@ -144,13 +150,21 @@ export default function WifiScanScreen() {
   }, [])
 
   const startScan = async () => {
+    console.log("🔄 ========= STARTING NEW WIFI SCAN =========")
+    console.log("🔄 Resetting scan session state...")
+
     setIsScanning(true)
     // Start a new scan session - results from this session will replace previous networks
     currentScanSessionRef.current = Date.now()
     receivedResultsForSessionRef.current = false
 
-    // Don't clear networks immediately - let the user see existing results while scanning
-    // Networks will be refreshed when new results arrive
+    console.log("🔄 New scan session ID:", currentScanSessionRef.current)
+    console.log("🔄 receivedResultsForSessionRef reset to:", receivedResultsForSessionRef.current)
+    console.log("🔄 ========= END START SCAN SETUP =========")
+
+    // Clear the networks list immediately when starting a new scan
+    // This ensures users see fresh results, not old ones
+    setNetworks([])
 
     // Clear any existing timeout
     if (scanTimeoutRef.current) {
@@ -174,6 +188,7 @@ export default function WifiScanScreen() {
 
     try {
       await CoreModule.requestWifiScan()
+      console.log("🔄 WiFi scan request sent successfully")
     } catch (error) {
       console.error("Error scanning for WiFi networks:", error)
       if (scanTimeoutRef.current) {
@@ -219,8 +234,8 @@ export default function WifiScanScreen() {
   }
 
   return (
-    <Screen preset="fixed" contentContainerStyle={themed($container)}>
-      <Header title="Select Glasses WiFi Network" leftIcon="caretLeft" onLeftPress={handleGoBack} />
+    <Screen preset="fixed" contentContainerStyle={themed($styles.screen)}>
+      <Header title="Select Glasses WiFi Network" leftIcon="chevron-left" onLeftPress={handleGoBack} />
       <View style={themed($content)}>
         {isScanning ? (
           <View style={themed($loadingContainer)}>
@@ -231,7 +246,7 @@ export default function WifiScanScreen() {
           <>
             <FlatList
               data={networks}
-              keyExtractor={(item, index) => `network-${index}`}
+              keyExtractor={item => `network-${item.ssid}`}
               renderItem={({item}) => {
                 const isConnected = isWifiConnected && currentWifi === item.ssid
                 const isSaved = savedNetworks.includes(item.ssid)
@@ -296,24 +311,19 @@ export default function WifiScanScreen() {
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = () => ({
+const $content: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
-})
-
-const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  padding: spacing.lg,
 })
 
 const $loadingContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingVertical: spacing.xxl,
+  paddingVertical: spacing.s12,
 })
 
 const $loadingText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
   fontSize: 16,
   color: colors.textDim,
 })
@@ -324,7 +334,7 @@ const $networksList: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $listContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingBottom: spacing.md,
+  paddingBottom: spacing.s4,
 })
 
 const $networkItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -332,9 +342,9 @@ const $networkItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   justifyContent: "space-between",
   alignItems: "center",
   backgroundColor: colors.background,
-  padding: spacing.md,
-  marginBottom: spacing.xs,
-  borderRadius: spacing.xs,
+  padding: spacing.s4,
+  marginBottom: spacing.s2,
+  borderRadius: spacing.s2,
   borderWidth: 1,
   borderColor: colors.border,
 })
@@ -344,9 +354,9 @@ const $connectedNetworkItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   justifyContent: "space-between",
   alignItems: "center",
   backgroundColor: colors.backgroundAlt,
-  padding: spacing.md,
-  marginBottom: spacing.xs,
-  borderRadius: spacing.xs,
+  padding: spacing.s4,
+  marginBottom: spacing.s2,
+  borderRadius: spacing.s2,
   borderWidth: 1,
   borderColor: colors.border,
   opacity: 0.7,
@@ -357,9 +367,9 @@ const $savedNetworkItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   justifyContent: "space-between",
   alignItems: "center",
   backgroundColor: colors.background,
-  padding: spacing.md,
-  marginBottom: spacing.xs,
-  borderRadius: spacing.xs,
+  padding: spacing.s4,
+  marginBottom: spacing.s2,
+  borderRadius: spacing.s2,
   borderWidth: 1,
   borderColor: colors.tint,
 })
@@ -397,18 +407,18 @@ const $badgeContainer: ThemedStyle<ViewStyle> = () => ({
 
 const $connectedBadge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.tint,
-  paddingHorizontal: spacing.xs,
+  paddingHorizontal: spacing.s2,
   paddingVertical: 2,
-  borderRadius: spacing.xs,
-  marginLeft: spacing.sm,
+  borderRadius: spacing.s2,
+  marginLeft: spacing.s3,
 })
 
 const $savedBadge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.textDim,
-  paddingHorizontal: spacing.xs,
+  paddingHorizontal: spacing.s2,
   paddingVertical: 2,
-  borderRadius: spacing.xs,
-  marginLeft: spacing.sm,
+  borderRadius: spacing.s2,
+  marginLeft: spacing.s3,
 })
 
 const $connectedBadgeText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -443,18 +453,18 @@ const $emptyContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingVertical: spacing.xxl,
+  paddingVertical: spacing.s12,
 })
 
 const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   color: colors.textDim,
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
   textAlign: "center",
 })
 
 const $scanButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
 })
 
 const $tryAgainButton: ThemedStyle<ViewStyle> = () => ({})
@@ -466,17 +476,17 @@ const $networkNameRow: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $securityIconContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginLeft: spacing.xs,
+  marginLeft: spacing.s2,
   justifyContent: "center",
   alignItems: "center",
 })
 
 const $openBadge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.palette.success100,
-  paddingHorizontal: spacing.xs,
+  paddingHorizontal: spacing.s2,
   paddingVertical: 2,
-  borderRadius: spacing.xs,
-  marginLeft: spacing.sm,
+  borderRadius: spacing.s2,
+  marginLeft: spacing.s3,
 })
 
 const $openBadgeText: ThemedStyle<TextStyle> = ({colors}) => ({

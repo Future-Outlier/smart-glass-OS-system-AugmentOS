@@ -202,16 +202,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.s4,
+    paddingBottom: spacing.s3,
     backgroundColor: "rgba(0,0,0,0.5)",
     zIndex: 100, // Higher z-index than tap area
   },
   closeButton: {
-    padding: spacing.sm,
+    padding: spacing.s3,
   },
   actionButton: {
-    padding: spacing.sm,
+    padding: spacing.s3,
   },
   videoContainer: {
     flex: 1,
@@ -257,10 +257,10 @@ const styles = StyleSheet.create({
   },
   bottomControls: {
     position: "absolute",
-    bottom: spacing.xl, // Same margin as sync button
+    bottom: spacing.s8, // Same margin as sync button
     left: 0,
     right: 0,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.s6,
     zIndex: 100,
   },
   seekContainer: {
@@ -268,13 +268,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.7)",
     borderRadius: 16,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.s3,
+    paddingHorizontal: spacing.s4,
   },
   seekBar: {
     flex: 1,
     height: 40,
-    marginHorizontal: spacing.sm,
+    marginHorizontal: spacing.s3,
   },
   timeText: {
     color: "white",

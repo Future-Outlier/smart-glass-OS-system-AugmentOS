@@ -1,7 +1,6 @@
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {AppletInterface} from "@/types/AppletTypes"
-import {useSettingsStore} from "@/stores/settings"
-import Constants from "expo-constants"
+import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {AppletInterface} from "@/../../cloud/packages/types/src"
 
 interface ApiResponse<T = any> {
   success?: boolean
@@ -263,8 +262,7 @@ class RestComms {
   }
 
   public async exchangeToken(token: string): Promise<string> {
-    const DEPLOYMENT_REGION = Constants.expoConfig?.extra?.DEPLOYMENT_REGION || "global"
-    const IS_CHINA = DEPLOYMENT_REGION === "china"
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
     const baseUrl = await useSettingsStore.getState().getRestUrl()
     const url = `${baseUrl}/auth/exchange-token`
 
@@ -273,8 +271,8 @@ class RestComms {
       url,
       headers: {"Content-Type": "application/json"},
       data: {
-        supabaseToken: !IS_CHINA ? token : undefined,
-        authingToken: IS_CHINA ? token : undefined,
+        supabaseToken: !isChina ? token : undefined,
+        authingToken: isChina ? token : undefined,
       },
     }
 

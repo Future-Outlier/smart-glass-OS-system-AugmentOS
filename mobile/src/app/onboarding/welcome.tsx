@@ -7,7 +7,43 @@ import {ThemedStyle} from "@/theme"
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {FontAwesome, MaterialCommunityIcons} from "@expo/vector-icons"
-import {TextStyle, View, ViewStyle} from "react-native"
+import {ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+
+const CardButton = ({onPress, tx}: any) => {
+  const {theme, themed} = useAppTheme()
+  return (
+    <TouchableOpacity onPress={onPress} style={themed($cardButton)}>
+      {/*<Image source={require('@/assets/images/card-icon.png')} style={themed($cardButtonIcon)} />*/}
+      <Text tx={tx} style={themed($cardButtonText)} />
+    </TouchableOpacity>
+  )
+}
+
+const $cardButton: ThemedStyle<ViewStyle> = (colors, spacing) => ({
+  backgroundColor: "white",
+  borderRadius: 8,
+  padding: 16,
+  shadowColor: "#000",
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+  elevation: 5,
+})
+
+const $cardButtonIcon: ThemedStyle<ImageStyle> = (colors, spacing) => ({
+  width: 24,
+  height: 24,
+  marginRight: spacing(2),
+})
+
+const $cardButtonText: ThemedStyle<TextStyle> = (colors, spacing) => ({
+  color: colors.text,
+  fontSize: 16,
+  // fontWeight: "bold",
+})
 
 export default function OnboardingWelcome() {
   const {theme, themed} = useAppTheme()
@@ -44,15 +80,13 @@ export default function OnboardingWelcome() {
 
         <View style={themed($infoContainer)}>
           <Text style={themed($title)} tx="onboarding:welcome" />
-
-          <Text style={themed($description)} tx="onboarding:getStarted" />
-
           <Spacer height={20} />
-
           <Text style={themed($question)} tx="onboarding:doYouHaveGlasses" />
         </View>
 
         <Button
+          flex={false}
+          // flexContainer={false}
           onPress={handleHasGlasses}
           tx="onboarding:haveGlasses"
           textAlignment="center"
@@ -61,6 +95,8 @@ export default function OnboardingWelcome() {
 
         <Spacer height={10} />
         <Button
+          flex={false}
+          // flexContainer={false}
           onPress={handleNoGlasses}
           tx="onboarding:dontHaveGlasses"
           preset="default"
@@ -79,22 +115,22 @@ const $mainContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   flexDirection: "column",
   justifyContent: "center",
-  padding: spacing.lg,
+  padding: spacing.s6,
 })
 
 const $infoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
   flex: 0,
   justifyContent: "center",
-  marginBottom: spacing.xxl,
+  marginBottom: spacing.s12,
   width: "100%",
 })
 
 const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.xl,
+  fontSize: spacing.s8,
   lineHeight: 32,
   fontWeight: "bold",
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
   textAlign: "center",
   color: colors.text,
 })
@@ -102,16 +138,16 @@ const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 18,
   lineHeight: 26,
-  marginBottom: spacing.xl,
-  paddingHorizontal: spacing.lg,
+  marginBottom: spacing.s8,
+  paddingHorizontal: spacing.s6,
   textAlign: "center",
   color: colors.textDim,
 })
 
 const $question: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.lg,
-  fontWeight: "600",
+  fontSize: spacing.s6,
+  // fontWeight: "600",
   textAlign: "center",
-  marginBottom: spacing.sm,
-  color: colors.text,
+  marginBottom: spacing.s3,
+  color: colors.textDim,
 })

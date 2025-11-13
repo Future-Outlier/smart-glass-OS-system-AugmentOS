@@ -82,21 +82,21 @@ export default function PairingFailureScreen() {
 }
 
 const $screen: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
 })
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   alignItems: "center",
   justifyContent: "center",
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  padding: spacing.lg,
+  padding: spacing.s6,
   borderRadius: 130,
   backgroundColor: colors.errorBackground || colors.palette.angry100,
-  marginBottom: spacing.xl,
+  marginBottom: spacing.s8,
   width: 130,
   height: 130,
   alignItems: "center",
@@ -106,7 +106,7 @@ const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 28,
   fontWeight: "bold",
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
   textAlign: "center",
   color: colors.text,
 })
@@ -114,16 +114,16 @@ const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   textAlign: "center",
-  marginBottom: spacing.xxl,
+  marginBottom: spacing.s12,
   lineHeight: 24,
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
   color: colors.textDim,
 })
 
 const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: "100%",
-  paddingHorizontal: spacing.md,
-  gap: spacing.sm,
+  paddingHorizontal: spacing.s4,
+  gap: spacing.s3,
 })
 
 const $button: ThemedStyle<ViewStyle> = () => ({

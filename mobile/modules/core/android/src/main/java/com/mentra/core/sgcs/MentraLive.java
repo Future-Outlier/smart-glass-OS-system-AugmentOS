@@ -400,6 +400,7 @@ public class MentraLive extends SGCManager {
     public MentraLive() {
         super();
         this.type = DeviceTypes.LIVE;
+        this.hasMic = true;
         this.context = Bridge.getContext();
 
         // Initialize bluetooth adapter
@@ -793,7 +794,16 @@ public class MentraLive extends SGCManager {
                     // CTKD Implementation: Register bonding receiver and create bond for BT Classic
                     registerBondingReceiver();
                     Bridge.log("LIVE: CTKD: BLE connection established, initiating CTKD bonding for BT Classic");
-                    createBond(connectedDevice);
+
+                    // Check if device is already bonded before attempting to create bond
+                    if (connectedDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
+                        Bridge.log("LIVE: CTKD: Device is already bonded - marking audio as connected immediately");
+                        isBtClassicConnected = true;
+                        audioConnected = true;
+                        // Note: We'll mark as CONNECTED after glasses_ready is received
+                    } else {
+                        createBond(connectedDevice);
+                    }
 
                     // Discover services
                     gatt.discoverServices();
@@ -1364,6 +1374,11 @@ public class MentraLive extends SGCManager {
 
     public void sendJson(Map<String, Object> jsonOriginal, boolean wakeUp) {
 
+    }
+
+    public void setMicEnabled(boolean enabled) {
+        Bridge.log("LIVE: setMicEnabled(" + enabled + ")");
+        changeSmartGlassesMicrophoneState(enabled);
     }
 
     /**
@@ -4152,7 +4167,10 @@ public class MentraLive extends SGCManager {
             bleImgId = bleImgId.substring(0, dotIndex);
         }
 
+        Bridge.log("LIVE: 📦 BLE photo transfer packet for requestId: " + bleImgId);
+
         BlePhotoTransfer photoTransfer = blePhotoTransfers.get(bleImgId);
+        Bridge.log("LIVE: 📦 BLE photo transfer for requestId: " + bleImgId + " found: " + (photoTransfer != null));
         if (photoTransfer != null) {
             // This is a BLE photo transfer
             Bridge.log("LIVE: 📦 BLE photo transfer packet for requestId: " + photoTransfer.requestId);

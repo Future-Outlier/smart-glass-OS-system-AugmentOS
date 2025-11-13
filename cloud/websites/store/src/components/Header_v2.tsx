@@ -13,9 +13,10 @@ import {DropDown} from "./ui/dropdown"
 interface HeaderProps {
   onSearch?: (e: React.FormEvent) => void
   onSearchClear?: () => void
+  onSearchChange?: (value: string) => void
 }
 
-const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
+const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}) => {
   const {isAuthenticated, signOut, user} = useAuth()
   const {isWebView} = usePlatform()
   const {theme} = useTheme()
@@ -29,16 +30,45 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
   // Check URL params for search trigger
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search)
-    if (searchParams.get("search") === "true") {
+    console.log("Checking URL for search param:", searchParams.get("search"))
+
+    if (searchParams.get("search") === "true" && !searchMode) {
+      console.log("Found search=true in URL, activating search mode")
       setsearchMode(true)
-      // Clean up URL
-      searchParams.delete("search")
-      const newSearch = searchParams.toString()
-      navigate(location.pathname + (newSearch ? `?${newSearch}` : ""), {
-        replace: true,
-      })
+
+      // Clean up URL after a delay to allow focus to happen first
+      setTimeout(() => {
+        searchParams.delete("search")
+        const newSearch = searchParams.toString()
+        navigate(location.pathname + (newSearch ? `?${newSearch}` : ""), {
+          replace: true,
+        })
+      }, 500)
     }
-  }, [location.search, location.pathname, navigate])
+  }, [location.search, location.pathname, navigate, searchMode])
+
+  // Focus search input when search mode is activated
+  useEffect(() => {
+    if (searchMode) {
+      console.log("Search mode activated, attempting to focus input")
+
+      // Try to focus after a short delay to ensure the input is rendered
+      const timer = setTimeout(() => {
+        const searchInput = searchRef.current?.querySelector("input")
+        console.log("Search input element:", searchInput)
+
+        if (searchInput instanceof HTMLInputElement) {
+          searchInput.focus()
+          console.log("Focus called. Active element:", document.activeElement)
+          console.log("Is input focused?", document.activeElement === searchInput)
+        } else {
+          console.log("Search input not found or not an input element")
+        }
+      }, 350)
+
+      return () => clearTimeout(timer)
+    }
+  }, [searchMode])
   const [selectedTab, setSelectedTab] = useState<"apps" | "glasses" | "support">("apps")
   const [isScrolled, setIsScrolled] = useState(false)
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920)
@@ -56,14 +86,13 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
   // Get user avatar - try multiple fields
   const getUserAvatar = () => {
     if (!user) return null
-    return user.user_metadata?.avatar_url || user.user_metadata?.picture || user.user_metadata?.avatar || null
+    return user.avatarUrl || null
   }
 
   // Debug: log user data
   useEffect(() => {
     if (user) {
       console.log("User data:", user)
-      console.log("User metadata:", user.user_metadata)
       console.log("Avatar URL:", getUserAvatar())
     }
   }, [user])
@@ -242,7 +271,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                     <SearchBar
                       ref={searchRef}
                       searchQuery={searchQuery}
-                      onSearchChange={setSearchQuery}
+                      onSearchChange={onSearchChange || setSearchQuery}
                       onSearchSubmit={onSearch || ((e) => e.preventDefault())}
                       onClear={onSearchClear || (() => setSearchQuery(""))}
                       autoFocus={true}
@@ -356,7 +385,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear}) => {
                                 style={{
                                   color: "var(--text-primary)",
                                 }}>
-                                {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
+                                {user?.name || user?.email?.split("@")[0] || "User"}
                               </p>
                               <p
                                 className="text-sm mt-1"

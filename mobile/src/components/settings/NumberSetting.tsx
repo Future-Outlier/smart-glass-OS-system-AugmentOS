@@ -152,21 +152,21 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderWidth: 1,
   borderColor: colors.border,
   borderRadius: 8,
-  paddingVertical: spacing.md,
-  paddingHorizontal: spacing.lg,
+  paddingVertical: spacing.s4,
+  paddingHorizontal: spacing.s6,
   width: "100%",
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   color: colors.text,
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $inputContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  gap: spacing.xs,
+  gap: spacing.s2,
 })
 
 const $input: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -177,8 +177,8 @@ const $input: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   borderWidth: 1,
   borderColor: colors.border,
   borderRadius: 6,
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
   textAlign: "center",
   minHeight: Platform.OS === "ios" ? 44 : 48,
 })
@@ -214,7 +214,7 @@ const $buttonText: ThemedStyle<TextStyle> = ({colors}) => ({
 const $constraintsText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 12,
   color: colors.textDim,
-  marginTop: spacing.xs,
+  marginTop: spacing.s2,
   textAlign: "center",
 })
 

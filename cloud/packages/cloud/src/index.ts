@@ -181,6 +181,14 @@ app.use(
       "https://dev.account.mentraglass.com",
       "https://dev.docs.mentraglass.com",
       "https://dev.store.mentraglass.com",
+
+      // China Endpoints
+      "https://www.mentraglass.cn",
+      "https://api.mentraglass.cn",
+
+      "https://console.mentraglass.cn",
+      "https://account.mentraglass.cn",
+      "https://store.mentraglass.cn",
     ],
   }),
 );

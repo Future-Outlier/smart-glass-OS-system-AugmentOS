@@ -1,23 +1,14 @@
-const palette = {
-  // Neutrals
-  // neutral100: "#FFFFFF",
-  // neutral200: "#F4F2F1",
-  // neutral300: "#D7CEC9",
-  // neutral400: "#B6ACA6",
-  // neutral500: "#978F8A",
-  // neutral600: "#564E4A",
-  // neutral700: "#3C3836",
-  // neutral800: "#191015",
-  // neutral900: "#000000",
+import {getAllColors} from "./colorTools"
 
+const palette = {
   neutral900: "#fffaf0",
   neutral800: "#F4F2F1",
   neutral700: "#D7CEC9",
-  neutral600: "#B6ACA6",
+  neutral600: "#F5F5F5",
   neutral500: "#978F8A",
   neutral400: "#564E4A",
   neutral300: "#3C3836",
-  neutral200: "#191015",
+  neutral200: "#222222",
   neutral100: "#000000",
 
   // Primary
@@ -25,7 +16,7 @@ const palette = {
   primary800: "#E6D0E0",
   primary700: "#D8C0E7",
   primary600: "#C4B0EE",
-  primary500: "#A090E6",
+  primary500: "#00B869",
   primary400: "#8070DE",
   primary300: "#6054D6",
   primary200: "#4040CE",
@@ -109,6 +100,10 @@ const unique = {
   sliderTrackInactive: palette.lightPurple1,
 } as const
 
+const design = {
+  ...getAllColors("light mode"),
+}
+
 export const colors = {
   palette,
 
@@ -118,12 +113,13 @@ export const colors = {
   textAlt: palette.neutral800,
 
   // Backgrounds
-  background: palette.neutral900,
-  backgroundAlt: palette.neutral800,
+  // background: palette.white,
+  backgroundAlt: palette.neutral600,
+  backgroundNeo: palette.neutral900,
   modalOverlay: "rgba(0, 0, 0, 0.7)",
 
   // Borders
-  border: palette.neutral700,
+  // border: palette.neutral700,
 
   // Primary colors
   tint: palette.primary500,
@@ -138,9 +134,9 @@ export const colors = {
   warning: palette.accent300,
 
   // Common:
-  primary: palette.purpleBlue4,
-  secondary: palette.secondary600,
-  accent: palette.accent500,
+  // primary: palette.primary500,
+  // secondary: palette.secondary600,
+  // accent: palette.accent500,
 
   // Iconography
   icon: palette.neutral100,
@@ -151,4 +147,55 @@ export const colors = {
   statusText: palette.neutral100,
 
   ...unique,
+
+  ...design,
+
+  // defined here so auto-complete works:
+  primary: design.primary,
+  primary_foreground: design.primary_foreground,
+
+  ring: design.ring,
+
+  input: design.input,
+  border: design.border,
+
+  secondary: design.secondary,
+  secondary_foreground: design.secondary_foreground,
+
+  muted: design.muted,
+  muted_foreground: design.muted_foreground,
+
+  accent: design.accent,
+  accent_foreground: design.accent_foreground,
+
+  destructive: design.destructive,
+  destructive_foreground: design.destructive_foreground,
+
+  background: design.background,
+  foreground: design.foreground,
+
+  card: design.card,
+  card_foreground: design.card_foreground,
+
+  popover: design.popover,
+  popover_foreground: design.popover_foreground,
+
+  chart_1: design.chart_1,
+  chart_2: design.chart_2,
+  chart_3: design.chart_3,
+  chart_4: design.chart_4,
+  chart_5: design.chart_5,
+
+  sidebar: design.sidebar,
+  sidebar_foreground: design.sidebar_foreground,
+
+  sidebar_primary: design.sidebar_primary,
+  sidebar_primary_foreground: design.sidebar_primary_foreground,
+
+  sidebar_accent: design.sidebar_accent,
+  sidebar_accent_foreground: design.sidebar_accent_foreground,
+
+  sidebar_border: design.sidebar_border,
+  sidebar_ring: design.sidebar_ring,
+  background_color: design.background_color,
 } as const
