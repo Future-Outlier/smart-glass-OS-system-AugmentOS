@@ -243,6 +243,8 @@ export class AppWebSocketService {
               service: SERVICE_NAME,
               message,
               packageName: message.packageName,
+              feature: "device-state",
+              requestType: "display",
             },
             `Received display request from App: ${message.packageName}`,
           );
