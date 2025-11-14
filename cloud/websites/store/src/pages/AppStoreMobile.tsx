@@ -399,7 +399,7 @@ const AppStoreMobile: React.FC = () => {
 
       {/* Search bar - sticky at top on mobile */}
       <div
-        className="sticky top-0 z-20 px-[24px] py-3"
+        className="sticky top-0 z-20 px-[24px] py-[24px]"
         style={{
           backgroundColor: "var(--bg-primary)",
         }}>
@@ -460,7 +460,7 @@ const AppStoreMobile: React.FC = () => {
               <SkeletonSlider />
             ) : (
               <div
-                className="w-full relative overflow-hidden touch-pan-y mt-3"
+                className="w-full relative overflow-hidden touch-pan-y "
                 onTouchStart={(e) => {
                   const touch = e.touches[0]
                   const target = e.currentTarget as HTMLDivElement & {

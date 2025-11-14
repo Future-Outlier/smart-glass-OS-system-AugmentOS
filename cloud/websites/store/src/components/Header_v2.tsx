@@ -26,6 +26,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
   const isStorePage = location.pathname === "/"
   const [searchMode, setsearchMode] = useState(false)
   const searchRef = useRef<HTMLFormElement>(null)
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth <= 639 : false)
 
   // Check URL params for search trigger
   useEffect(() => {
@@ -70,13 +71,14 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
     }
   }, [searchMode])
   const [selectedTab, setSelectedTab] = useState<"apps" | "glasses" | "support">("apps")
-  const [isScrolled, setIsScrolled] = useState(false)
+  // const [isScrolled, setIsScrolled] = useState(false)
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920)
 
   // Track window width for responsive behavior
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth)
+      setIsMobile(window.innerWidth <= 639)
     }
 
     window.addEventListener("resize", handleResize)
@@ -100,7 +102,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
   // Handle scroll detection
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 0)
+      // setIsScrolled(window.scrollY > 0)
     }
 
     window.addEventListener("scroll", handleScroll)
@@ -158,9 +160,8 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
       className="sticky top-0 z-10 transition-all duration-300"
       style={{
         background: theme === "light" ? "#ffffff" : "#171717",
-        borderBottom: isScrolled ? `1px solid var(--border-color)` : "1px solid transparent",
       }}>
-      <div className=" mx-auto px px-8 sm:px- md:px-16 lg:px-25  pt-[16px] pb-[16px]">
+      <div className={`mx-auto px-8 sm:px-12 md:px-16 lg:px-24  ${isMobile ? "pt-[32px]" : "pb-[16px] pt-[16px]"}`}>
         {/* Two-row layout for medium screens, single row for large+ */}
         <div className="flex relative flex-row lg:flex-row lg:items-center lg:justify-between items-center ">
           {/* Top row: Logo and Buttons */}
@@ -178,9 +179,13 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
                     <Link
                       to="/"
                       className="flex items-center gap-2 sm:gap-4 select-none hover:opacity-80 transition-opacity">
-                      <img src="/mentra_logo_gr.png" alt="Mentra Logo" className="h-6 sm:h-7 w-auto object-contain" />
+                      <img
+                        src="/mentra_logo_gr.png"
+                        alt="Mentra Logo"
+                        className="h-[16px] sm:h-7 w-auto object-contain"
+                      />
                       <span
-                        className="text-[20px] sm:text-[20px] font-light mb-[-0px]"
+                        className="text-[20px] sm:text-[20px] font-normal  mb-[-0px]"
                         style={{
                           fontFamily: "Red Hat Display, sans-serif",
                           letterSpacing: "0.06em",

@@ -437,7 +437,7 @@ const AppStoreDesktop: React.FC = () => {
 
         {/* Slideshow Section - Hidden when searching */}
         {!searchQuery && (
-          <div className="">
+          <div className="mt-[16px]">
             {!slidesLoaded ? (
               <SkeletonSlider />
             ) : (
