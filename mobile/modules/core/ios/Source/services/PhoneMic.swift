@@ -126,10 +126,12 @@ class PhoneMic {
 
         // If recording with a different mode, stop first
         if isRecording {
-            Bridge.log("MIC: Already recording with different mode (\(currentMicMode)), stopping first")
-            stopRecording()
+            Bridge.log(
+                "MIC: Already recording with different mode (\(currentMicMode)), stopping first")
+            // stopRecording()
             // Brief delay to ensure clean stop
-            Thread.sleep(forTimeInterval: 0.05)
+            // Thread.sleep(forTimeInterval: 0.05)
+            return false
         }
 
         // Check permissions
@@ -144,13 +146,13 @@ class PhoneMic {
             Bridge.log("MIC: Starting phone internal mic")
             return startRecordingPhoneInternal()
 
-        case MicTypes.BT_CLASSIC:
-            Bridge.log("MIC: Starting Bluetooth Classic (SCO)")
-            guard isBluetoothScoAvailable() else {
-                Bridge.log("MIC: Bluetooth SCO not available")
-                return false
-            }
-            return startRecordingBtClassic()
+        // case MicTypes.BT_CLASSIC:
+        // Bridge.log("MIC: Starting Bluetooth Classic (SCO)")
+        // guard isBluetoothScoAvailable() else {
+        //     Bridge.log("MIC: Bluetooth SCO not available")
+        //     return false
+        // }
+        // return startRecordingBtClassic()
 
         case MicTypes.BT:
             Bridge.log("MIC: Starting high-quality Bluetooth mic")
@@ -185,8 +187,11 @@ class PhoneMic {
             try session.setCategory(
                 .playAndRecord,
                 mode: .default,
-                options: [.defaultToSpeaker, .mixWithOthers]
+                options: [.allowBluetooth, .defaultToSpeaker, .mixWithOthers, .allowBluetoothA2DP]
             )
+
+            // Override the output to use Bluetooth (AirPods) for speaker
+            try session.overrideOutputAudioPort(.none)
 
             // Try to set built-in mic as preferred input
             if let availableInputs = session.availableInputs {
@@ -309,8 +314,8 @@ class PhoneMic {
 
     @objc private func handleInterruption(notification: Notification) {
         guard let userInfo = notification.userInfo,
-              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
-              let type = AVAudioSession.InterruptionType(rawValue: typeValue)
+            let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+            let type = AVAudioSession.InterruptionType(rawValue: typeValue)
         else {
             return
         }
@@ -338,14 +343,15 @@ class PhoneMic {
     /// Handle audio route changes (e.g. when connecting/disconnecting AirPods)
     @objc private func handleRouteChange(notification: Notification) {
         guard let userInfo = notification.userInfo,
-              let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
-              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue)
+            let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+            let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue)
         else {
             return
         }
 
         Bridge.log("MIC: handleRouteChange: \(reason)")
-        CoreManager.shared.onRouteChange(reason: reason, availableInputs: audioSession?.availableInputs ?? [])
+        CoreManager.shared.onRouteChange(
+            reason: reason, availableInputs: audioSession?.availableInputs ?? [])
 
         // // If we're recording and the audio route changed (e.g., AirPods connected/disconnected)
         // if isRecording {
@@ -411,8 +417,8 @@ class PhoneMic {
         let channels = UnsafeBufferPointer(start: int16Data, count: channelCount)
 
         // Extract each sample
-        for frame in 0 ..< frameCount {
-            for channel in 0 ..< channelCount {
+        for frame in 0..<frameCount {
+            for channel in 0..<channelCount {
                 var sample = channels[channel][frame]
                 data.append(&sample, length: 2)
             }
@@ -425,14 +431,14 @@ class PhoneMic {
     func startRecording() -> Bool {
         // Ensure we're not already recording
         if isRecording {
-//            Core.log("MIC: Microphone is already ON!")
+            //            Core.log("MIC: Microphone is already ON!")
             return true
         }
 
         // Clean up any existing engine
         if let existingEngine = audioEngine {
             existingEngine.stop()
-//      existingEngine.inputNode.removeTap(onBus: 0)
+            //      existingEngine.inputNode.removeTap(onBus: 0)
             audioEngine = nil
         }
 
@@ -520,7 +526,8 @@ class PhoneMic {
             return false
         }
 
-        inputNode.installTap(onBus: 0, bufferSize: 256, format: inputFormat) { [weak self] buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 256, format: inputFormat) {
+            [weak self] buffer, _ in
             guard let self = self else { return }
 
             let frameCount = Int(buffer.frameLength)
@@ -548,7 +555,9 @@ class PhoneMic {
             )
 
             guard status == .haveData && error == nil else {
-                Bridge.log("MIC: Error converting audio buffer: \(error?.localizedDescription ?? "unknown")")
+                Bridge.log(
+                    "MIC: Error converting audio buffer: \(error?.localizedDescription ?? "unknown")"
+                )
                 return
             }
 

@@ -52,6 +52,6 @@ enum MicMap {
         "auto": [MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.BT_CLASSIC],
         "glasses": [MicTypes.GLASSES_CUSTOM],
         "phone": [MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM],
-        "bluetooth": [MicTypes.BT, MicTypes.BT_CLASSIC, MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM],
+        "bluetooth": [MicTypes.BT, MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM],
     ]
 }
