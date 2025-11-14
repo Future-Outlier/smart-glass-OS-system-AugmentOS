@@ -71,7 +71,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
     }
   }, [searchMode])
   const [selectedTab, setSelectedTab] = useState<"apps" | "glasses" | "support">("apps")
-  // const [isScrolled, setIsScrolled] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920)
 
   // Track window width for responsive behavior
@@ -102,7 +102,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
   // Handle scroll detection
   useEffect(() => {
     const handleScroll = () => {
-      // setIsScrolled(window.scrollY > 0)
+      setIsScrolled(window.scrollY > 0)
     }
 
     window.addEventListener("scroll", handleScroll)
@@ -160,6 +160,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
       className="sticky top-0 z-10 transition-all duration-300"
       style={{
         background: theme === "light" ? "#ffffff" : "#171717",
+        borderBottom: !isMobile && isScrolled ? `1px solid var(--border-color)` : "1px solid transparent",
       }}>
       <div className={`mx-auto px-8 sm:px-12 md:px-16 lg:px-24  ${isMobile ? "pt-[32px]" : "pb-[16px] pt-[16px]"}`}>
         {/* Two-row layout for medium screens, single row for large+ */}
@@ -239,7 +240,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
                 <Button
                   onClick={handleSignOut}
                   variant={theme === "light" ? "default" : "outline"}
-                  className="rounded-full border-[1.5px]"
+                  className="rounded-full border-[1.5px] h-10 px-6"
                   style={{
                     backgroundColor: theme === "light" ? "#000000" : "transparent",
                     borderColor: theme === "light" ? "#000000" : "#3f3f46",
@@ -251,13 +252,8 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
                 <Button
                   onClick={() => navigate("/login")}
                   variant={theme === "light" ? "default" : "outline"}
-                  className="rounded-full border-[1.5px] flex items-center gap-2"
-                  style={{
-                    backgroundColor: theme === "light" ? "#000000" : "transparent",
-                    borderColor: theme === "light" ? "#000000" : "#3f3f46",
-                    color: theme === "light" ? "#ffffff" : "#e4e4e7",
-                  }}>
-                  <User className="w-4 h-4" />
+                  className="rounded-full border-[1.5px] flex items-center gap-[10px] py-2 px-4 bg-[var(--primary-foreground)]">
+                  <User className="w-4 h-4" color="grey" />
                   Login
                 </Button>
               )}
@@ -449,7 +445,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
                       <Button
                         onClick={() => navigate("/login")}
                         variant={theme === "light" ? "default" : "outline"}
-                        className="rounded-full border-[1.5px] flex items-center gap-2"
+                        className="rounded-full border-[1.5px] flex items-center gap-[10px] py-2 px-4"
                         style={{
                           backgroundColor: theme === "light" ? "#000000" : "transparent",
                           borderColor: theme === "light" ? "#000000" : "#3f3f46",
