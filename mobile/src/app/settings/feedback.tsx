@@ -65,9 +65,9 @@ export default function FeedbackPage() {
     // Combine feedback with diagnostic info
     const fullFeedback = `FEEDBACK:\n${feedbackBody}\n\nADDITIONAL INFO:\n${additionalInfo}`
     console.log("Full Feedback submitted:", fullFeedback)
-    const result = await restComms.sendFeedback(fullFeedback)
-    if (result.isErr()) {
-      console.error("Error sending feedback:", result.error)
+    const res = await restComms.sendFeedback(fullFeedback)
+    if (res.is_error()) {
+      console.error("Error sending feedback:", res.error)
       showAlert(translate("common:error"), translate("feedback:errorSendingFeedback"), [
         {
           text: translate("common:ok"),

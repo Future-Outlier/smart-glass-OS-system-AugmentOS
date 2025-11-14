@@ -33,12 +33,12 @@ class Livekit {
       this.room = null
     }
 
-    const result = await restComms.getLivekitUrlAndToken()
-    if (result.isErr()) {
-      console.error("LivekitManager: Error connecting to room", result.error)
+    const res = await restComms.getLivekitUrlAndToken()
+    if (res.is_error()) {
+      console.error("LivekitManager: Error connecting to room", res.error)
       return
     }
-    const {url, token} = result.value
+    const {url, token} = res.value
     console.log(`LivekitManager: Connecting to room: ${url}, ${token}`)
     this.room = new Room()
     await this.room.connect(url, token)

@@ -115,16 +115,16 @@ export default function InitScreen() {
       return
     }
 
-    let result = await restComms.exchangeToken(token)
-    if (result.isErr()) {
-      console.log("Token exchange failed:", result.error)
+    let res = await restComms.exchangeToken(token)
+    if (res.is_error()) {
+      console.log("Token exchange failed:", res.error)
       await checkCustomUrl()
       setErrorType("connection")
       setState("error")
       return
     }
 
-    const coreToken = result.value
+    const coreToken = res.value
     const uid = user?.email || user?.id || ""
 
     socketComms.setAuthCreds(coreToken, uid)
@@ -154,16 +154,16 @@ export default function InitScreen() {
       return
     }
 
-    const result = await restComms.getMinimumClientVersion()
-    if (result.isErr()) {
-      console.error("Failed to fetch cloud version:", result.error)
+    const res = await restComms.getMinimumClientVersion()
+    if (res.is_error()) {
+      console.error("Failed to fetch cloud version:", res.error)
       setErrorType("connection")
       setState("error")
       setIsRetrying(false)
       return
     }
 
-    const {required, recommended} = result.value
+    const {required, recommended} = res.value
     setCloudVersion(recommended)
     console.log(`Version check: local=${localVer}, required=${required}, recommended=${recommended}`)
     if (semver.lt(localVer, recommended)) {

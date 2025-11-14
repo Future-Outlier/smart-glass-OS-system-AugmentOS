@@ -23,9 +23,9 @@ import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
-  props => {
-    return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
-  },
+  // props => {
+  //   return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
+  // },
   props => {
     const {themeScheme, setThemeContextOverride, ThemeProvider} = useThemeProvider()
     return <ThemeProvider value={{themeScheme, setThemeContextOverride}}>{props.children}</ThemeProvider>

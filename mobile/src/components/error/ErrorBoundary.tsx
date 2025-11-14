@@ -62,10 +62,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
   // Render an error UI if there's an error; otherwise, render children
   render() {
-    return this.isEnabled() && this.state.error ? (
-      <ErrorDetails onReset={this.resetError} error={this.state.error} errorInfo={this.state.errorInfo} />
-    ) : (
-      this.props.children
-    )
+    console.log("ErrorBoundary render", this.state.error)
+    // return this.isEnabled() && this.state.error ? (
+    //   <ErrorDetails onReset={this.resetError} error={this.state.error} errorInfo={this.state.errorInfo} />
+    // ) : (
+      return this.props.children
+    // )
+    // return <ErrorDetails onReset={this.resetError} error={new Error("test")} errorInfo={this.state.errorInfo} />
   }
 }

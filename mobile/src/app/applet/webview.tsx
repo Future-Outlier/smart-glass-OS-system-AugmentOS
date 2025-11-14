@@ -102,10 +102,10 @@ export default function AppWebView() {
         return
       }
 
-      let result = await restComms.generateWebviewToken(packageName)
-      if (result.isErr()) {
-        console.error("Error generating webview token:", result.error)
-        setTokenError(`Failed to prepare secure access: ${result.error.message}`)
+      let res = await restComms.generateWebviewToken(packageName)
+      if (res.is_error()) {
+        console.error("Error generating webview token:", res.error)
+        setTokenError(`Failed to prepare secure access: ${res.error.message}`)
         showAlert("Authentication Error", `Could not securely connect to ${appName}. Please try again later.`, [
           {text: "OK", onPress: () => goBack()},
         ])
@@ -113,13 +113,13 @@ export default function AppWebView() {
         return
       }
 
-      let tempToken = result.value
+      let tempToken = res.value
 
-      result = await restComms.generateWebviewToken(packageName, "generate-webview-signed-user-token")
-      if (result.isErr()) {
-        console.warn("Failed to generate signed user token:", result.error)
+      res = await restComms.generateWebviewToken(packageName, "generate-webview-signed-user-token")
+      if (res.is_error()) {
+        console.warn("Failed to generate signed user token:", res.error)
       }
-      let signedUserToken: string | undefined = result.unwrapOr(undefined)
+      let signedUserToken: string = res.value_or("")
 
       const cloudApiUrl = useSettingsStore.getState().getRestUrl()
 
@@ -130,13 +130,13 @@ export default function AppWebView() {
         url.searchParams.set("aos_signed_user_token", signedUserToken)
       }
       if (cloudApiUrl) {
-        result = await restComms.hashWithApiKey(cloudApiUrl, packageName)
-        if (result.isErr()) {
-          console.error("Error hashing cloud API URL:", result.error)
+        res = await restComms.hashWithApiKey(cloudApiUrl, packageName)
+        if (res.is_error()) {
+          console.error("Error hashing cloud API URL:", res.error)
           setIsLoadingToken(false)
           return
         }
-        const checksum = result.value
+        const checksum = res.value
         url.searchParams.set("cloudApiUrl", cloudApiUrl)
         url.searchParams.set("cloudApiUrlChecksum", checksum)
       }

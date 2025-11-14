@@ -74,8 +74,8 @@ class MantleManager {
   public async init() {
     await bridge.dummy()
     const loadedSettings = await restComms.loadUserSettings() // get settings from server
-    if (loadedSettings) {
-      await useSettingsStore.getState().setManyLocally(loadedSettings) // write settings to local storage
+    if (loadedSettings.is_ok()) {
+      await useSettingsStore.getState().setManyLocally(loadedSettings.value) // write settings to local storage
     } else {
       console.error("Mantle: No settings received from server")
     }

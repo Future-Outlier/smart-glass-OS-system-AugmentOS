@@ -568,7 +568,7 @@ class SocketComms {
   private handle_message(msg: any) {
     const type = msg.type
 
-    console.log(`SOCKET: handle_incoming_message: ${type}`)
+    console.log(`SOCKET: msg: ${type}`)
 
     switch (type) {
       case "connection_ack":

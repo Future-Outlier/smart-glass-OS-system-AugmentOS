@@ -24,6 +24,8 @@ LogBox.ignoreLogs([
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN
 const isChina = useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
 if (!isChina && sentryDsn && sentryDsn !== "secret" && sentryDsn.trim() !== "") {
+  const release = `${process.env.EXPO_PUBLIC_MENTRAOS_VERSION}`
+  const dist = `${process.env.EXPO_PUBLIC_BUILD_TIME}-${process.env.EXPO_PUBLIC_BUILD_COMMIT}`
   Sentry.init({
     dsn: sentryDsn,
 
@@ -33,6 +35,19 @@ if (!isChina && sentryDsn && sentryDsn !== "secret" && sentryDsn.trim() !== "") 
 
     // send 1/10th of events in prod:
     tracesSampleRate: __DEV__ ? 1.0 : 0.1,
+
+    // attachScreenshot: true,
+    debug: true,
+    _experiments: {
+      enableUnhandledCPPExceptionsV2: true,
+    },
+    enableNativeCrashHandling: false,
+    enableNativeNagger: false,
+    enableNative: false,
+    enableLogs: false,
+    enabled: false,
+    release: release,
+    dist: dist,
 
     // Configure Session Replay
     // DISABLED: Mobile replay causes MediaCodec spam by recording screen every 5 seconds

@@ -1,5 +1,5 @@
-import axios, {AxiosInstance, AxiosRequestConfig, AxiosError} from "axios"
-import {ResultAsync, errAsync, okAsync} from "neverthrow"
+import axios, {AxiosInstance, AxiosRequestConfig} from "axios"
+import {AsyncResult, Result, result} from "typesafe-ts"
 
 import {GlassesInfo} from "@/stores/glasses"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
@@ -56,11 +56,11 @@ class RestComms {
   }
 
   // Helper Methods
-  private validateToken(): ResultAsync<void, Error> {
+  private validateToken(): Result<void, Error> {
     if (!this.coreToken) {
-      return errAsync(new Error("No core token available for authentication"))
+      return result.error(new Error("No core token available for authentication"))
     }
-    return okAsync(undefined)
+    return result.ok(undefined)
   }
 
   private createAuthHeaders(): Record<string, string> {
@@ -70,7 +70,7 @@ class RestComms {
     }
   }
 
-  private makeRequest<T>(config: RequestConfig): ResultAsync<T, Error> {
+  private makeRequest<T>(config: RequestConfig): AsyncResult<T, Error> {
     const {method, endpoint, data, params, requiresAuth = true} = config
 
     const baseUrl = useSettingsStore.getState().getRestUrl()
@@ -87,30 +87,30 @@ class RestComms {
       params,
     }
 
-    return ResultAsync.fromPromise(
-      this.axiosInstance.request<T>(axiosConfig).then(response => response.data),
-      (error: unknown) => {
-        if (axios.isAxiosError(error)) {
-          const axiosError = error as AxiosError<{error?: string}>
-          const errorMessage = axiosError.response?.data?.error || axiosError.message || "Request failed"
-          return new Error(errorMessage)
-        }
-        return error instanceof Error ? error : new Error(String(error))
-      },
-    )
+    return result.try_async(async () => {
+      const res = await this.axiosInstance.request<T>(axiosConfig)
+      return res.data
+    })
   }
 
-  private authenticatedRequest<T>(config: RequestConfig): ResultAsync<T, Error> {
-    return this.validateToken().andThen(() => this.makeRequest<T>({...config, requiresAuth: true}))
+  private authenticatedRequest<T>(config: RequestConfig): AsyncResult<T, Error> {
+    let res = this.validateToken()
+    if (res.is_error()) {
+      // return result.errorAsync(res.error)
+      // return result.error(res.error) as AsyncResult<T, Error>
+      // return result.try_async(async () => {Promise.reject(res.error)})
+      console.error(res.error)
+    }
+    return this.makeRequest<T>({...config})
   }
 
-  private unauthenticatedRequest<T>(config: RequestConfig): ResultAsync<T, Error> {
+  private unauthenticatedRequest<T>(config: RequestConfig): AsyncResult<T, Error> {
     return this.makeRequest<T>({...config, requiresAuth: false})
   }
 
   // Public API Methods
 
-  public getMinimumClientVersion(): ResultAsync<{required: string; recommended: string}, Error> {
+  public getMinimumClientVersion(): AsyncResult<{required: string; recommended: string}, Error> {
     interface Response {
       success: boolean
       data: {required: string; recommended: string}
@@ -119,11 +119,11 @@ class RestComms {
       method: "GET",
       endpoint: "/api/client/min-version",
     }
-    const result = this.unauthenticatedRequest<Response>(config)
-    return result.map(response => response.data)
+    const res = this.unauthenticatedRequest<Response>(config)
+    return res.map(response => response.data)
   }
 
-  public checkAppHealthStatus(packageName: string): ResultAsync<boolean, Error> {
+  public checkAppHealthStatus(packageName: string): AsyncResult<boolean, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: "/api/app-uptime/app-pkg-health-check",
@@ -134,11 +134,11 @@ class RestComms {
       success: boolean
     }
 
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(response => response.success)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.success)
   }
 
-  public getApplets(): ResultAsync<AppletInterface[], Error> {
+  public getApplets(): AsyncResult<AppletInterface[], Error> {
     interface Response {
       success: boolean
       data: AppletInterface[]
@@ -147,12 +147,12 @@ class RestComms {
       method: "GET",
       endpoint: "/api/client/apps",
     }
-    let result = this.authenticatedRequest<Response>(config)
-    let data = result.map(response => response.data)
+    let res = this.authenticatedRequest<Response>(config)
+    let data = res.map(response => response.data)
     return data
   }
 
-  public startApp(packageName: string): ResultAsync<any, Error> {
+  public startApp(packageName: string): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: `/apps/${packageName}/start`,
@@ -161,11 +161,11 @@ class RestComms {
       success: boolean
       data: any
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(response => response.data)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
-  public stopApp(packageName: string): ResultAsync<any, Error> {
+  public stopApp(packageName: string): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: `/apps/${packageName}/stop`,
@@ -174,11 +174,11 @@ class RestComms {
       success: boolean
       data: any
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(response => response.data)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
-  public uninstallApp(packageName: string): ResultAsync<any, Error> {
+  public uninstallApp(packageName: string): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: `/api/apps/uninstall/${packageName}`,
@@ -187,12 +187,12 @@ class RestComms {
       success: boolean
       data: any
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(response => response.data)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
   // App Settings
-  public getAppSettings(appName: string): ResultAsync<any, Error> {
+  public getAppSettings(appName: string): AsyncResult<any, Error> {
     const config: RequestConfig = {
       method: "GET",
       endpoint: `/appsettings/${appName}`,
@@ -201,11 +201,11 @@ class RestComms {
       success: boolean
       data: any
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(response => response.data)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.data)
   }
 
-  public updateAppSetting(appName: string, update: {key: string; value: any}): ResultAsync<any, Error> {
+  public updateAppSetting(appName: string, update: {key: string; value: any}): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: `/appsettings/${appName}`,
@@ -215,11 +215,11 @@ class RestComms {
       success: boolean
       data: any
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(response => response.data)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.data)
   }
 
-  public updateGlassesState(state: Partial<GlassesInfo>): ResultAsync<void, Error> {
+  public updateGlassesState(state: Partial<GlassesInfo>): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: "/api/client/device/state",
@@ -228,11 +228,11 @@ class RestComms {
     interface Response {
       success: boolean
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(() => undefined)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
-  public exchangeToken(token: string): ResultAsync<string, Error> {
+  public exchangeToken(token: string): AsyncResult<string, Error> {
     const isChina: string = useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
 
     const config: RequestConfig = {
@@ -246,21 +246,20 @@ class RestComms {
     interface Response {
       coreToken: string
     }
-    const result = this.makeRequest<Response>(config)
-    let res: ResultAsync<string, Error> = result.map(response => response.coreToken)
+    let res = this.makeRequest<Response>(config)
+    const coreTokenResult: AsyncResult<string, Error> = res.map(response => response.coreToken)
+
     // set the core token in the store:
-    res.then(result => {
-      if (result.isOk()) {
-        this.setCoreToken(result.value)
-      }
+    return coreTokenResult.and_then((coreToken: string) => {
+      this.setCoreToken(coreToken)
+      return result.ok(coreToken)
     })
-    return res
   }
 
   public generateWebviewToken(
     packageName: string,
     endpoint: string = "generate-webview-token",
-  ): ResultAsync<string, Error> {
+  ): AsyncResult<string, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: `/api/auth/${endpoint}`,
@@ -269,11 +268,11 @@ class RestComms {
     interface Response {
       token: string
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(response => response.token)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.token)
   }
 
-  public hashWithApiKey(stringToHash: string, packageName: string): ResultAsync<string, Error> {
+  public hashWithApiKey(stringToHash: string, packageName: string): AsyncResult<string, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: "/api/auth/hash-with-api-key",
@@ -282,12 +281,12 @@ class RestComms {
     interface Response {
       hash: string
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(response => response.hash)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.hash)
   }
 
   // Account Management
-  public requestAccountDeletion(): ResultAsync<any, Error> {
+  public requestAccountDeletion(): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: "/api/account/request-deletion",
@@ -295,11 +294,11 @@ class RestComms {
     interface Response {
       success: boolean
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
-  public confirmAccountDeletion(requestId: string, confirmationCode: string): ResultAsync<any, Error> {
+  public confirmAccountDeletion(requestId: string, confirmationCode: string): AsyncResult<any, Error> {
     const config: RequestConfig = {
       method: "DELETE",
       endpoint: "/api/account/confirm-deletion",
@@ -308,11 +307,11 @@ class RestComms {
     interface Response {
       success: boolean
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result
+    const res = this.authenticatedRequest<Response>(config)
+    return res
   }
 
-  public getLivekitUrlAndToken(): ResultAsync<{url: string; token: string}, Error> {
+  public getLivekitUrlAndToken(): AsyncResult<{url: string; token: string}, Error> {
     const config: RequestConfig = {
       method: "GET",
       endpoint: "/api/client/livekit/token",
@@ -323,18 +322,18 @@ class RestComms {
       success: boolean
       data: {url: string; token: string}
     }
-    const result = this.authenticatedRequest<Response>(config)
+    const res = this.authenticatedRequest<Response>(config)
 
-    ;(async () => {
-      console.log("result@@@@@", await result)
-      // const response = await result.value
-      // return {url: response.url, token: response.token}
-    })()
-    return result.map(response => response.data)
+    // ;(async () => {
+    //   console.log("result@@@@@", await result)
+    //   // const response = await result.value
+    //   // return {url: response.url, token: response.token}
+    // })()
+    return res.map(response => response.data)
   }
 
   // User Feedback & Settings
-  public sendFeedback(feedbackBody: string): ResultAsync<void, Error> {
+  public sendFeedback(feedbackBody: string): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: "/api/client/feedback",
@@ -347,7 +346,7 @@ class RestComms {
     return result.map(() => undefined)
   }
 
-  public writeUserSettings(settings: any): ResultAsync<void, Error> {
+  public writeUserSettings(settings: any): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: "/api/client/user/settings",
@@ -360,7 +359,7 @@ class RestComms {
     return result.map(() => undefined)
   }
 
-  public loadUserSettings(): ResultAsync<any, Error> {
+  public loadUserSettings(): AsyncResult<any, Error> {
     const config: RequestConfig = {
       method: "GET",
       endpoint: "/api/client/user/settings",
@@ -374,7 +373,7 @@ class RestComms {
   }
 
   // Error Reporting
-  public sendErrorReport(reportData: any): ResultAsync<void, Error> {
+  public sendErrorReport(reportData: any): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: "/app/error-report",
@@ -389,7 +388,7 @@ class RestComms {
   }
 
   // Calendar
-  public sendCalendarData(data: any): ResultAsync<void, Error> {
+  public sendCalendarData(data: any): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: "/api/client/calendar",
@@ -404,7 +403,7 @@ class RestComms {
   }
 
   // Location
-  public sendLocationData(data: any): ResultAsync<void, Error> {
+  public sendLocationData(data: any): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: "/api/client/location",
@@ -427,7 +426,7 @@ class RestComms {
     priority: string
     timestamp: number
     packageName: string
-  }): ResultAsync<any, Error> {
+  }): AsyncResult<any, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: "/api/client/notifications",
@@ -445,7 +444,7 @@ class RestComms {
     notificationId: string
     notificationKey: string
     packageName: string
-  }): ResultAsync<any, Error> {
+  }): AsyncResult<any, Error> {
     const config: RequestConfig = {
       method: "POST",
       endpoint: "/api/client/notifications/dismissed",

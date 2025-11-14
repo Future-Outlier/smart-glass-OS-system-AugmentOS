@@ -146,15 +146,15 @@ const toggleApplet = async (applet: ClientAppletInterface, status: boolean) => {
   }
 
   if (status) {
-    const result = await restComms.startApp(applet.packageName)
-    if (result.isErr()) {
-      console.error(`Failed to start applet ${applet.packageName}: ${result.error}`)
+    const res = await restComms.startApp(applet.packageName)
+    if (res.is_error()) {
+      console.error(`Failed to start applet ${applet.packageName}: ${res.error}`)
       return
     }
   } else {
-    const result = await restComms.stopApp(applet.packageName)
-    if (result.isErr()) {
-      console.error(`Failed to stop applet ${applet.packageName}: ${result.error}`)
+    const res = await restComms.stopApp(applet.packageName)
+    if (res.is_error()) {
+      console.error(`Failed to stop applet ${applet.packageName}: ${res.error}`)
       return
     }
   }
@@ -168,12 +168,12 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   apps: [],
 
   refreshApplets: async () => {
-    let result = await restComms.getApplets()
-    if (result.isErr()) {
-      console.error(`Failed to get applets: ${result.error}`)
+    let res = await restComms.getApplets()
+    if (res.is_error()) {
+      console.error(`Failed to get applets: ${res.error}`)
       return
     }
-    const appsData = result.value
+    const appsData = res.value
 
     const onlineApps: ClientAppletInterface[] = appsData.map(app => ({
       ...app,

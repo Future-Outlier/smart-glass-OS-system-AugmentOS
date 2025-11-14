@@ -13,12 +13,6 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
     name: "MentraOS",
     slug: "MentraOS",
     version: process.env.EXPO_PUBLIC_MENTRAOS_VERSION || "0.0.1",
-    // extra: {
-    //   BUILD_COMMIT: process.env.BUILD_COMMIT || "commit",
-    //   BUILD_BRANCH: process.env.BUILD_BRANCH || "branch",
-    //   BUILD_USER: process.env.BUILD_USER || "user",
-    //   BUILD_TIME: process.env.BUILD_TIME || "time",
-    // },
     scheme: "com.mentra",
     orientation: "portrait",
     userInterfaceStyle: "automatic",

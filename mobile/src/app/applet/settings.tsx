@@ -125,7 +125,7 @@ export default function AppSettings() {
       }
 
       const health = await restComms.checkAppHealthStatus(appInfo.packageName)
-      if (health.isErr() || !health.value) {
+      if (health.is_error() || !health.value) {
         showAlert(translate("errors:appNotOnlineTitle"), translate("errors:appNotOnlineMessage"), [
           {text: translate("common:ok")},
         ])
