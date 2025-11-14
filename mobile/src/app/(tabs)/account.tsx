@@ -1,4 +1,3 @@
-import Constants from "expo-constants"
 import {useRef} from "react"
 import {Platform, TextStyle, View, ViewStyle} from "react-native"
 import {ScrollView} from "react-native-gesture-handler"
@@ -25,8 +24,6 @@ export default function AccountPage() {
   const pressCount = useRef(0)
   const lastPressTime = useRef(0)
   const pressTimeout = useRef<number | null>(null)
-
-  console.log("extra", Constants.expoConfig?.extra)
 
   const handleQuickPress = () => {
     const currentTime = Date.now()
@@ -81,11 +78,11 @@ export default function AccountPage() {
               style={themed($buildInfo)}
               text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
             />
-            <Text style={themed($buildInfo)} text={`${Constants.expoConfig?.extra?.BUILD_BRANCH}`} />
+            <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_BRANCH}`} />
           </View>
           <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
-            <Text style={themed($buildInfo)} text={`${Constants.expoConfig?.extra?.BUILD_TIME}`} />
-            <Text style={themed($buildInfo)} text={`${Constants.expoConfig?.extra?.BUILD_COMMIT}`} />
+            <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_TIME}`} />
+            <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_COMMIT}`} />
           </View>
         </View>
       )

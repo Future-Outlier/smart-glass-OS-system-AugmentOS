@@ -8,6 +8,8 @@ console.log('Building Android release...');
 // Prebuild Android platform
 await $({ stdio: 'inherit' })`bun expo prebuild --platform android`;
 
+await $({stdio: "inherit"})`bun expo export --platform android`
+
 // Build release bundle
 await $({ stdio: 'inherit', cwd: 'android' })`./gradlew bundleRelease`;
 

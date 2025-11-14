@@ -314,8 +314,8 @@ class PhoneMic {
 
     @objc private func handleInterruption(notification: Notification) {
         guard let userInfo = notification.userInfo,
-            let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
-            let type = AVAudioSession.InterruptionType(rawValue: typeValue)
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue)
         else {
             return
         }
@@ -343,15 +343,16 @@ class PhoneMic {
     /// Handle audio route changes (e.g. when connecting/disconnecting AirPods)
     @objc private func handleRouteChange(notification: Notification) {
         guard let userInfo = notification.userInfo,
-            let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
-            let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue)
+              let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue)
         else {
             return
         }
 
         Bridge.log("MIC: handleRouteChange: \(reason)")
         CoreManager.shared.onRouteChange(
-            reason: reason, availableInputs: audioSession?.availableInputs ?? [])
+            reason: reason, availableInputs: audioSession?.availableInputs ?? []
+        )
 
         // // If we're recording and the audio route changed (e.g., AirPods connected/disconnected)
         // if isRecording {
@@ -417,8 +418,8 @@ class PhoneMic {
         let channels = UnsafeBufferPointer(start: int16Data, count: channelCount)
 
         // Extract each sample
-        for frame in 0..<frameCount {
-            for channel in 0..<channelCount {
+        for frame in 0 ..< frameCount {
+            for channel in 0 ..< channelCount {
                 var sample = channels[channel][frame]
                 data.append(&sample, length: 2)
             }

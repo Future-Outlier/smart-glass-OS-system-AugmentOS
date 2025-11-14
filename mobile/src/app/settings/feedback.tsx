@@ -31,10 +31,10 @@ export default function FeedbackPage() {
     const osVersion = `${Platform.OS} ${Platform.Version}`
     const deviceName = Constants.deviceName || "deviceName"
     const appVersion = process.env.EXPO_PUBLIC_MENTRAOS_VERSION || "version"
-    const buildCommit = Constants.expoConfig?.extra?.BUILD_COMMIT || "commit"
-    const buildBranch = Constants.expoConfig?.extra?.BUILD_BRANCH || "branch"
-    const buildTime = Constants.expoConfig?.extra?.BUILD_TIME || "time"
-    const buildUser = Constants.expoConfig?.extra?.BUILD_USER || "user"
+    const buildCommit = process.env.EXPO_PUBLIC_BUILD_COMMIT || "commit"
+    const buildBranch = process.env.EXPO_PUBLIC_BUILD_BRANCH || "branch"
+    const buildTime = process.env.EXPO_PUBLIC_BUILD_TIME || "time"
+    const buildUser = process.env.EXPO_PUBLIC_BUILD_USER || "user"
 
     // Glasses info
     const connectedGlassesModel = glassesConnected ? glassesModelName : "Not connected"
