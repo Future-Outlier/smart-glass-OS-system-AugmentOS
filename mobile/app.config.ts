@@ -164,7 +164,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
           recordAudioAndroid: true,
         },
       ],
-      "react-native-bottom-tabs",
+      // "react-native-bottom-tabs",
       [
         "expo-build-properties",
         {

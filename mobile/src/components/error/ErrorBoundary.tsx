@@ -1,6 +1,7 @@
+import * as Sentry from "@sentry/react-native"
 import {Component, ErrorInfo, ReactNode} from "react"
-import {ErrorDetails} from "./ErrorDetails"
 
+import {ErrorDetails} from "@/components/error/ErrorDetails"
 interface Props {
   children: ReactNode
   catchErrors: "always" | "dev" | "prod" | "never"
@@ -39,6 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
     // You can also log error messages to an error reporting service here
     // This is a great place to put BugSnag, Sentry, crashlytics, etc:
     // reportCrash(error)
+    Sentry.captureException(error)
   }
 
   // Reset the error back to null
@@ -62,12 +64,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   // Render an error UI if there's an error; otherwise, render children
   render() {
-    console.log("ErrorBoundary render", this.state.error)
-    // return this.isEnabled() && this.state.error ? (
-    //   <ErrorDetails onReset={this.resetError} error={this.state.error} errorInfo={this.state.errorInfo} />
-    // ) : (
-      return this.props.children
-    // )
-    // return <ErrorDetails onReset={this.resetError} error={new Error("test")} errorInfo={this.state.errorInfo} />
+    return this.isEnabled() && this.state.error ? (
+      <ErrorDetails onReset={this.resetError} error={this.state.error} errorInfo={this.state.errorInfo} />
+    ) : (
+      this.props.children
+    )
   }
 }

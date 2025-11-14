@@ -1,12 +1,12 @@
 import {useFonts} from "@expo-google-fonts/space-grotesk"
 import {registerGlobals} from "@livekit/react-native-webrtc"
 import * as Sentry from "@sentry/react-native"
-import {Stack, SplashScreen} from "expo-router"
+import {Stack, SplashScreen, useNavigationContainerRef} from "expo-router"
 import {useEffect, useState} from "react"
 import {LogBox} from "react-native"
 
 import {initI18n} from "@/i18n"
-import {initializeSettings} from "@/stores/settings"
+import {initializeSettings, SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {customFontsToLoad} from "@/theme"
 import {ConsoleLogger} from "@/utils/debug/console"
 import {loadDateFnsLocale} from "@/utils/formatDate"
@@ -20,6 +20,53 @@ LogBox.ignoreLogs([
   "is missing the required default export.",
   "Attempted to import the module",
 ])
+
+const navigationIntegration = Sentry.reactNavigationIntegration({
+  enableTimeToInitialDisplay: true,
+  routeChangeTimeoutMs: 1_000, // default: 1_000
+  ignoreEmptyBackNavigationTransactions: true, // default: true
+})
+
+const setupSentry = () => {
+  // Only initialize Sentry if DSN is provided
+  const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN
+  const isChina = useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+
+  if (!sentryDsn || sentryDsn === "secret" || sentryDsn.trim() === "") {
+    return
+  }
+  if (isChina) {
+    return
+  }
+
+  const release = `${process.env.EXPO_PUBLIC_MENTRAOS_VERSION}`
+  const dist = `${process.env.EXPO_PUBLIC_BUILD_TIME}-${process.env.EXPO_PUBLIC_BUILD_COMMIT}`
+  Sentry.init({
+    dsn: sentryDsn,
+
+    // Adds more context data to events (IP address, cookies, user, etc.)
+    // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+    sendDefaultPii: true,
+
+    // send 1/10th of events in prod:
+    tracesSampleRate: __DEV__ ? 1.0 : 0.1,
+
+    // debug: true,
+    _experiments: {
+      enableUnhandledCPPExceptionsV2: true,
+    },
+    //   enableNativeCrashHandling: false,
+    //   enableNativeNagger: false,
+    //   enableNative: false,
+    //   enableLogs: false,
+    //   enabled: false,
+    release: release,
+    dist: dist,
+    integrations: [Sentry.feedbackIntegration({})],
+  })
+}
+
+setupSentry()
 
 // initialize the settings store
 initializeSettings()
@@ -57,6 +104,13 @@ function Root() {
       SplashScreen.hideAsync()
     }
   }, [loaded])
+
+  const ref = useNavigationContainerRef()
+  useEffect(() => {
+    if (ref) {
+      navigationIntegration.registerNavigationContainer(ref)
+    }
+  }, [ref])
 
   if (!loaded) {
     return null
