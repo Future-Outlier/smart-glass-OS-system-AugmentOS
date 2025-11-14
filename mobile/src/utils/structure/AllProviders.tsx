@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react-native"
 import {PostHogProvider} from "posthog-react-native"
 import {Suspense} from "react"
 import {TextStyle, View, ViewStyle} from "react-native"
@@ -21,27 +22,27 @@ import {ThemedStyle} from "@/theme"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {withWrappers} from "@/utils/structure/with-wrappers"
 import {useAppTheme, useThemeProvider} from "@/utils/useAppTheme"
-// import * as Sentry from "@sentry/react-native"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
   props => {
     return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
   },
-  // props => {
-  //   // return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
-  //   return (
-  //     <Sentry.ErrorBoundary
-  //       showDialog={true}
-  //       fallback={
-  //         <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
-  //           <Text>Something went wrong</Text>
-  //         </View>
-  //       }>
-  //       {props.children}
-  //     </Sentry.ErrorBoundary>
-  //   )
-  // },
+  props => {
+    // return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
+    return (
+      <Sentry.ErrorBoundary
+        showDialog={true}
+        // fallback={
+        //   <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
+        //     <Text>Something went wrong</Text>
+        //   </View>
+        // }
+      >
+        {props.children}
+      </Sentry.ErrorBoundary>
+    )
+  },
   props => {
     const {themeScheme, setThemeContextOverride, ThemeProvider} = useThemeProvider()
     return <ThemeProvider value={{themeScheme, setThemeContextOverride}}>{props.children}</ThemeProvider>

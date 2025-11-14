@@ -1,11 +1,12 @@
-import {Text, Icon} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
 import {View, TextStyle, ViewStyle} from "react-native"
+
+import {Text, Icon} from "@/components/ignite"
 import {Group} from "@/components/ui/Group"
-import {translate} from "@/i18n"
 import {StatusCard} from "@/components/ui/RouteButton"
+import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface BatteryStatusProps {
   compact?: boolean
@@ -128,7 +129,8 @@ const $compactBatteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $batteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  width: spacing.s16,
+  gap: spacing.s1,
+  // width: spacing.s16,
   // marginRight: spacing.s1,
-  justifyContent: "space-between",
+  // justifyContent: "space-between",
 })
