@@ -4,6 +4,8 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
+    "preinstall": "zx ./scripts/preinstall.mjs",
+    "postinstall": "zx ./scripts/postinstall.mjs",
     "start": "zx ./scripts/start.mjs",
     "android": "zx ./scripts/android.mjs",
     "ios": "zx ./scripts/ios.mjs",
