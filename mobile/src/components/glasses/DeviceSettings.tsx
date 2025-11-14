@@ -22,7 +22,6 @@ import {showDestructiveAlert} from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
-import { useEffect } from "react"
 
 export default function DeviceSettings() {
   const {theme, themed} = useAppTheme()
@@ -53,14 +52,6 @@ export default function DeviceSettings() {
   const buildNumber = useGlassesStore(state => state.buildNumber)
 
   const hasDeviceInfo = Boolean(bluetoothName || buildNumber || wifiLocalIp)
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      throw new Error("Hello World Error after 3 seconds!")
-    }, 3000)
-
-    return () => clearTimeout(timer)
-  }, [])
 
   const confirmForgetGlasses = () => {
     showDestructiveAlert(

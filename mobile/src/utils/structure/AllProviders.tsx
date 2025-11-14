@@ -1,30 +1,46 @@
-import {withWrappers} from "@/utils/structure/with-wrappers"
-import {Suspense} from "react"
-import {KeyboardProvider} from "react-native-keyboard-controller"
-import {CoreStatusProvider} from "@/contexts/CoreStatusProvider"
-import {GestureHandlerRootView} from "react-native-gesture-handler"
-import {AuthProvider} from "@/contexts/AuthContext"
-import {SearchResultsProvider} from "@/contexts/SearchResultsContext"
-import {AppStoreWebviewPrefetchProvider} from "@/contexts/AppStoreWebviewPrefetchProvider"
-import {ButtonActionProvider} from "@/contexts/ButtonActionProvider"
-import {ModalProvider} from "@/utils/AlertUtils"
-import {NavigationHistoryProvider} from "@/contexts/NavigationHistoryContext"
-import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
 import {PostHogProvider} from "posthog-react-native"
-import {useAppTheme, useThemeProvider} from "@/utils/useAppTheme"
+import {Suspense} from "react"
 import {TextStyle, View, ViewStyle} from "react-native"
-import BackgroundGradient from "@/components/ui/BackgroundGradient"
-import {Text} from "@/components/ignite"
-import Toast from "react-native-toast-message"
-import {ThemedStyle} from "@/theme"
-import {ErrorBoundary} from "@/components/error"
+import {GestureHandlerRootView} from "react-native-gesture-handler"
+import {KeyboardProvider} from "react-native-keyboard-controller"
 import {SafeAreaProvider} from "react-native-safe-area-context"
+import Toast from "react-native-toast-message"
+
+import {ErrorBoundary} from "@/components/error"
+import {Text} from "@/components/ignite"
+import BackgroundGradient from "@/components/ui/BackgroundGradient"
+import {AppStoreWebviewPrefetchProvider} from "@/contexts/AppStoreWebviewPrefetchProvider"
+import {AuthProvider} from "@/contexts/AuthContext"
+import {ButtonActionProvider} from "@/contexts/ButtonActionProvider"
+import {CoreStatusProvider} from "@/contexts/CoreStatusProvider"
+import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
+import {NavigationHistoryProvider} from "@/contexts/NavigationHistoryContext"
+import {SearchResultsProvider} from "@/contexts/SearchResultsContext"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import {ModalProvider} from "@/utils/AlertUtils"
+import {withWrappers} from "@/utils/structure/with-wrappers"
+import {useAppTheme, useThemeProvider} from "@/utils/useAppTheme"
+// import * as Sentry from "@sentry/react-native"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
+  props => {
+    return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
+  },
   // props => {
-  //   return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
+  //   // return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
+  //   return (
+  //     <Sentry.ErrorBoundary
+  //       showDialog={true}
+  //       fallback={
+  //         <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
+  //           <Text>Something went wrong</Text>
+  //         </View>
+  //       }>
+  //       {props.children}
+  //     </Sentry.ErrorBoundary>
+  //   )
   // },
   props => {
     const {themeScheme, setThemeContextOverride, ThemeProvider} = useThemeProvider()

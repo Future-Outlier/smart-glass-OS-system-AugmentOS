@@ -40,7 +40,6 @@ export default function Glasses() {
         {!glassesConnected && <ConnectDeviceButton />}
         {/* Show helper text if glasses are paired but not connected */}
         {!glassesConnected && defaultWearable && <NotConnectedInfo />}
-
         <Spacer height={theme.spacing.s6} />
         <DeviceSettings />
       </ScrollView>
