@@ -96,10 +96,8 @@ class RestComms {
   private authenticatedRequest<T>(config: RequestConfig): AsyncResult<T, Error> {
     let res = this.validateToken()
     if (res.is_error()) {
-      // return result.errorAsync(res.error)
-      // return result.error(res.error) as AsyncResult<T, Error>
-      // return result.try_async(async () => {Promise.reject(res.error)})
-      console.error(res.error)
+      let err = Promise.resolve(result.error<T>(res.error))
+      return new AsyncResult<T, Error>(err)
     }
     return this.makeRequest<T>({...config})
   }
@@ -342,8 +340,8 @@ class RestComms {
     interface Response {
       success: boolean
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(() => undefined)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
   public writeUserSettings(settings: any): AsyncResult<void, Error> {
@@ -454,8 +452,8 @@ class RestComms {
       success: boolean
       data: any
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(() => undefined)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 }
 

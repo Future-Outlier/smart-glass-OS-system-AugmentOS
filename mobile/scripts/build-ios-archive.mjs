@@ -14,8 +14,11 @@ const archivePath = `${os.homedir()}/Library/Developer/Xcode/Archives/${archiveD
 
 console.log(chalk.blue(`Building archive: ${archiveName}`))
 
-// bundle js code:
 
+// prebuild ios:
+await $({stdio: "inherit"})`bun expo prebuild --platform ios`
+
+// bundle js code:
 await $({stdio: "inherit"})`bun expo export --platform ios`
 
 await $({stdio: "inherit"})`xcodebuild archive \

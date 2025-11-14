@@ -5,9 +5,10 @@ await setBuildEnv();
 
 console.log('Building Android release...');
 
-// Prebuild Android platform
+// Prebuild Android
 await $({ stdio: 'inherit' })`bun expo prebuild --platform android`;
 
+// bundle js code:
 await $({stdio: "inherit"})`bun expo export --platform android`
 
 // Build release bundle
