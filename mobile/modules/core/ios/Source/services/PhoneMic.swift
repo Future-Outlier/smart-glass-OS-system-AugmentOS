@@ -507,7 +507,8 @@ class PhoneMic {
         }
 
         // Get the native input format - typically 48kHz floating point samples
-        let inputFormat = inputNode.inputFormat(forBus: 0)
+        // let inputFormat = inputNode.inputFormat(forBus: 0)
+        let inputFormat = inputNode.outputFormat(forBus: 0)
         Bridge.log("MIC: Input format: \(inputFormat)")
 
         // Set up a converter node if you need 16-bit PCM

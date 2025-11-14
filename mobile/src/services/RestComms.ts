@@ -1,5 +1,5 @@
 import axios, {AxiosInstance, AxiosRequestConfig} from "axios"
-import {AsyncResult, Result, result} from "typesafe-ts"
+import {AsyncResult, Result, result as TSR} from "typesafe-ts"
 
 import {GlassesInfo} from "@/stores/glasses"
 import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
@@ -58,9 +58,9 @@ class RestComms {
   // Helper Methods
   private validateToken(): Result<void, Error> {
     if (!this.coreToken) {
-      return result.error(new Error("No core token available for authentication"))
+      return TSR.error(new Error("No core token available for authentication"))
     }
-    return result.ok(undefined)
+    return TSR.ok(undefined)
   }
 
   private createAuthHeaders(): Record<string, string> {
@@ -87,7 +87,7 @@ class RestComms {
       params,
     }
 
-    return result.try_async(async () => {
+    return TSR.try_async(async () => {
       const res = await this.axiosInstance.request<T>(axiosConfig)
       return res.data
     })
@@ -96,8 +96,9 @@ class RestComms {
   private authenticatedRequest<T>(config: RequestConfig): AsyncResult<T, Error> {
     let res = this.validateToken()
     if (res.is_error()) {
-      let err = Promise.resolve(result.error<T>(res.error))
-      return new AsyncResult<T, Error>(err)
+      // let err = Promise.resolve(TSR.error<T>(res.error))
+      // return new AsyncResult<T, Error>(err)
+      console.error(`${this.TAG}: Authentication failed: ${res.error}`)
     }
     return this.makeRequest<T>({...config})
   }
@@ -250,7 +251,7 @@ class RestComms {
     // set the core token in the store:
     return coreTokenResult.and_then((coreToken: string) => {
       this.setCoreToken(coreToken)
-      return result.ok(coreToken)
+      return TSR.ok(coreToken)
     })
   }
 
@@ -324,7 +325,7 @@ class RestComms {
 
     // ;(async () => {
     //   console.log("result@@@@@", await result)
-    //   // const response = await result.value
+    //   // const response = await TSR.value
     //   // return {url: response.url, token: response.token}
     // })()
     return res.map(response => response.data)
@@ -353,8 +354,8 @@ class RestComms {
     interface Response {
       success: boolean
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(() => undefined)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
   public loadUserSettings(): AsyncResult<any, Error> {
@@ -366,8 +367,8 @@ class RestComms {
       success: boolean
       data: any
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(response => response.data)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.data)
   }
 
   // Error Reporting
@@ -381,8 +382,8 @@ class RestComms {
       success: boolean
       data: any
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(() => undefined)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
   // Calendar
@@ -396,8 +397,8 @@ class RestComms {
       success: boolean
       data: any
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(() => undefined)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
   // Location
@@ -411,8 +412,8 @@ class RestComms {
       success: boolean
       data: any
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(() => undefined)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
   // Phone Notifications
@@ -434,8 +435,8 @@ class RestComms {
       success: boolean
       data: any
     }
-    const result = this.authenticatedRequest<Response>(config)
-    return result.map(() => undefined)
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
   public sendPhoneNotificationDismissed(data: {

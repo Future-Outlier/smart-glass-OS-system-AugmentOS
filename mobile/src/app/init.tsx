@@ -108,7 +108,6 @@ export default function InitScreen() {
     setLoadingStatus(translate("versionCheck:connectingToServer"))
 
     const token = session?.token
-    console.log("EXCHANGING TOKEN: ", token)
     if (!token) {
       setErrorType("auth")
       setState("error")
@@ -129,6 +128,7 @@ export default function InitScreen() {
 
     socketComms.setAuthCreds(coreToken, uid)
     await mantle.init()
+    console.log("INIT: Mantle initialized")
 
     await navigateToDestination()
   }
