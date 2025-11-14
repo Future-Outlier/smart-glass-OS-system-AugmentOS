@@ -29,31 +29,31 @@ Example: `cloud/issues/livekit-grpc/` (matches branch `cloud/livekit-grpc`)
 
 ## What to CUT
 
-❌ Corporate speak ("Dear stakeholders", "executive summary", "synergy")  
-❌ Emoji spam (one or two OK for visual scanning, not dozens)  
-❌ Obvious statements ("gRPC is a remote procedure call protocol")  
-❌ Tutorial content ("What is REST?")  
-❌ Fake status tracking that won't be updated  
-❌ Redundant summaries  
-❌ Box drawings and ASCII art decorations  
+❌ Corporate speak ("Dear stakeholders", "executive summary", "synergy")
+❌ Emoji spam (one or two OK for visual scanning, not dozens)
+❌ Obvious statements ("gRPC is a remote procedure call protocol")
+❌ Tutorial content ("What is REST?")
+❌ Fake status tracking that won't be updated
+❌ Redundant summaries
+❌ Box drawings and ASCII art decorations
 ❌ Motivational fluff
 
 ## What to KEEP
 
-✅ **Diagrams showing actual data flow** (concise ASCII art)  
-✅ **Real code snippets** from the codebase  
-✅ **Specific numbers** (buffer sizes, timeouts, memory targets)  
-✅ **Decision rationale** ("Why X over Y")  
-✅ **Edge cases and gotchas**  
-✅ **Links to actual code files**  
-✅ **Open questions** that need answers  
+✅ **Diagrams showing actual data flow** (concise ASCII art)
+✅ **Real code snippets** from the codebase
+✅ **Specific numbers** (buffer sizes, timeouts, memory targets)
+✅ **Decision rationale** ("Why X over Y")
+✅ **Edge cases and gotchas**
+✅ **Links to actual code files**
+✅ **Open questions** that need answers
 ✅ **Constraints** we're working with
 
 ## Document Templates
 
 ### README.md Format
 
-```markdown
+````markdown
 # Feature Name
 
 One-sentence description.
@@ -76,13 +76,6 @@ One paragraph explaining the critical constraint or insight.
 
 - [x] Done thing
 - [ ] TODO thing
-
-## Key Metrics
-
-| Metric | Current | Target |
-| ------ | ------- | ------ |
-| Thing  | Bad     | Good   |
-```
 
 ### Spec Format
 
@@ -107,19 +100,7 @@ Technical problems we're solving:
 
 ## Goals
 
-### Primary
-
-1. Measurable goal
-2. Another measurable goal
-
-### Secondary
-
-Nice-to-haves
-
-### Success Metrics
-
-| Metric | Current | Target |
-| ------ | ------- | ------ |
+Scoping out what we are trying to achieve:
 
 ## Non-Goals
 
@@ -130,6 +111,7 @@ What we're explicitly NOT doing.
 1. Thing we need to decide
 2. Another thing
 ```
+````
 
 ### Architecture Format
 
@@ -241,23 +223,6 @@ Always include specific numbers:
 - "100ms chunks (1600 bytes)" not "Small chunks"
 - "gRPC port 9090" not "a port"
 
-## Migration Strategy
-
-Our standard approach:
-
-1. **Develop** on feature branch
-2. **Test** in dev environment
-3. **Deploy to staging** with feature flag OFF
-4. **Test staging** thoroughly
-5. **Push to production** with feature flag OFF
-6. **Enable 100%** via feature flag
-7. **Monitor** for issues
-8. **Rollback** if problems (flip flag back)
-
-We do **100% rollout** after staging validation, not gradual percentages.
-
-Feature flag lets us instant-rollback without redeployment.
-
 ## Open Questions
 
 Always include "Open Questions" section for:
@@ -336,11 +301,11 @@ Good design doc folders:
 
 ## Anti-Patterns
 
-❌ **"Living document"** - Docs that get stale immediately  
-❌ **"RFC"** numbered system - We're not that formal  
-❌ **"ADR"** (Architecture Decision Records) - Too heavyweight  
-❌ **Confluence/Notion** - Keep it in git with code  
-❌ **Google Docs** - Not version controlled  
+❌ **"Living document"** - Docs that get stale immediately
+❌ **"RFC"** numbered system - We're not that formal
+❌ **"ADR"** (Architecture Decision Records) - Too heavyweight
+❌ **Confluence/Notion** - Keep it in git with code
+❌ **Google Docs** - Not version controlled
 ❌ **Miro boards** - Can't grep ASCII art
 
 ## Tools

@@ -315,37 +315,35 @@ export class AppSession {
     // Initialize dashboard API with this session instance
     // Import DashboardManager dynamically to avoid circular dependency
     const {DashboardManager} = require("./dashboard")
-    this.dashboard = new DashboardManager(this, this.send.bind(this))
+    this.dashboard = new DashboardManager(this)
 
     // Initialize camera module with session reference
     this.camera = new CameraModule(
+      this,
       this.config.packageName,
       this.sessionId || "unknown-session-id",
-      this.send.bind(this),
-      this, // Pass session reference
       this.logger.child({module: "camera"}),
     )
 
     // Initialize LED control module
     this.led = new LedModule(
+      this,
       this.config.packageName,
       this.sessionId || "unknown-session-id",
-      this.send.bind(this),
       this.logger.child({module: "led"}),
     )
 
     // Initialize audio module with session reference
     this.audio = new AudioManager(
+      this,
       this.config.packageName,
       this.sessionId || "unknown-session-id",
-      this.send.bind(this),
-      this, // Pass session reference
       this.logger.child({module: "audio"}),
     )
 
     this.simpleStorage = new SimpleStorage(this)
 
-    this.location = new LocationManager(this, this.send.bind(this))
+    this.location = new LocationManager(this)
   }
 
   /**
@@ -1683,6 +1681,14 @@ export class AppSession {
         })
       }
     }
+  }
+
+  /**
+   * 📤 Public API for modules to send messages
+   * Always uses current WebSocket connection
+   */
+  public sendMessage(message: AppToCloudMessage): void {
+    return this.send(message)
   }
 
   /**
