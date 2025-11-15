@@ -2,7 +2,7 @@ import {ChevronLeft, Info, Share2} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import {toast} from "sonner"
 import GetMentraOSButton from "../components/GetMentraOSButton"
-import {HardwareRequirementLevel} from "../types"
+import {HardwareRequirementLevel, HardwareType} from "../types"
 import {
   APP_TAGS,
   hardwareIcons,
@@ -320,7 +320,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                         style={{
                           color: "var(--text-secondary)",
                         }}>
-                        {hardwareIcons[req.type]}
+                        {hardwareIcons[req.type as HardwareType]}
                       </div>
                       <div
                         className="text-[14px] font-medium"

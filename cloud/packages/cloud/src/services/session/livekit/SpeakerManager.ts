@@ -57,6 +57,7 @@ export class SpeakerManager {
         url: msg.audioUrl,
         volume: msg.volume,
         stopOther: msg.stopOtherAudio,
+        trackId: msg.trackId ?? 0, // Default to track 0 (speaker)
       });
     } catch (e) {
       this.logger.error(e as Error, "SpeakerManager failed to start");
