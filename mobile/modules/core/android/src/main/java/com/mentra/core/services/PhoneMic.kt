@@ -238,19 +238,15 @@ class PhoneMic private constructor(private val context: Context) {
             return false
         }
 
-        // Request audio focus (except for phone internal mic to avoid media routing issues)
-        if (mode != MicTypes.PHONE_INTERNAL) {
-            if (!requestAudioFocus()) {
-                Bridge.log("MIC: Failed to get audio focus")
-                if (isSamsungDevice()) {
-                    testMicrophoneAvailabilityOnSamsung()
-                } else {
-                    notifyCoreManager("audio_focus_denied", emptyList())
-                }
-                return false
+        // Request audio focus for all modes (needed to detect Chrome STT)
+        if (!requestAudioFocus()) {
+            Bridge.log("MIC: Failed to get audio focus")
+            if (isSamsungDevice()) {
+                testMicrophoneAvailabilityOnSamsung()
+            } else {
+                notifyCoreManager("audio_focus_denied", emptyList())
             }
-        } else {
-            Bridge.log("MIC: Skipping audio focus for phone internal mic (allows media playback)")
+            return false
         }
 
         // Start recording based on mode
@@ -681,40 +677,46 @@ class PhoneMic private constructor(private val context: Context) {
                 AudioManager.OnAudioFocusChangeListener { focusChange ->
                     when (focusChange) {
                         AudioManager.AUDIOFOCUS_LOSS -> {
-                            Bridge.log("MIC: Permanent audio focus loss")
-                            hasAudioFocus = false
-                            // Don't stop recording for media playback
-                        }
-                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                            Bridge.log("MIC: Transient audio focus loss")
+                            Bridge.log("MIC: Permanent audio focus loss - mode: $currentMicMode")
                             hasAudioFocus = false
 
-                            if (isSamsungDevice() && isRecording.get()) {
-                                // Samsung needs special handling
-                                testMicrophoneAvailabilityOnSamsung()
+                            // For phone internal mic, ignore AUDIOFOCUS_LOSS to prevent routing changes
+                            // This allows media apps (YouTube, Spotify) to play normally
+                            if (currentMicMode == MicTypes.PHONE_INTERNAL) {
+                                Bridge.log("MIC: Ignoring AUDIOFOCUS_LOSS for phone internal mic (allows media playback)")
                             } else {
-                                // Wait to see if another app actually records
-                                mainHandler.postDelayed(
-                                        {
-                                            if (isExternalAudioActive && isRecording.get()) {
-                                                Bridge.log(
-                                                        "MIC: Another app is recording - stopping"
-                                                )
-                                                // Notify CoreManager BEFORE stopping - allows
-                                                // switch to glasses mic
-                                                notifyCoreManager(
-                                                        "external_app_recording",
-                                                        emptyList()
-                                                )
-                                                // Give CoreManager time to switch to glasses mic
-                                                mainHandler.postDelayed(
-                                                        { stopRecording() },
-                                                        MIC_SWITCH_DELAY_MS
-                                                )
-                                            }
-                                        },
-                                        500
-                                )
+                                // For other modes (BT, etc), respect audio focus loss
+                                if (isRecording.get()) {
+                                    notifyCoreManager("audio_focus_lost", emptyList())
+                                    stopRecording()
+                                }
+                            }
+                        }
+                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                            Bridge.log("MIC: Transient audio focus loss - mode: $currentMicMode")
+                            hasAudioFocus = false
+
+                            // Check phone internal mic FIRST (before device-specific logic)
+                            if (currentMicMode == MicTypes.PHONE_INTERNAL && isRecording.get()) {
+                                // Phone internal mic - assume AUDIOFOCUS_LOSS_TRANSIENT means recording app (Chrome)
+                                // Chrome uses WebRTC which doesn't always trigger AudioRecordingCallback
+                                Bridge.log("MIC: AUDIOFOCUS_LOSS_TRANSIENT for phone internal - stopping for recording app (Chrome)")
+                                notifyCoreManager("external_app_recording", emptyList())
+                                // Delay for Samsung to allow glasses mic switch, immediate for Pixel (AudioRecordingCallback handles it)
+                                if (isSamsungDevice()) {
+                                    mainHandler.postDelayed({ stopRecording() }, 200)
+                                } else {
+                                    // Pixel: let AudioRecordingCallback handle if it fires, otherwise stop after delay
+                                    mainHandler.postDelayed({
+                                        if (isRecording.get()) {
+                                            Bridge.log("MIC: Stopping for AUDIOFOCUS (Chrome didn't trigger AudioRecordingCallback)")
+                                            stopRecording()
+                                        }
+                                    }, 100)
+                                }
+                            } else if (isSamsungDevice() && isRecording.get()) {
+                                // Samsung non-phone modes need special handling
+                                testMicrophoneAvailabilityOnSamsung()
                             }
                         }
                         AudioManager.AUDIOFOCUS_GAIN -> {
@@ -757,17 +759,12 @@ class PhoneMic private constructor(private val context: Context) {
 
                             if (wasExternalActive != isExternalAudioActive) {
                                 if (isExternalAudioActive) {
-                                    Bridge.log("MIC: External app started recording")
+                                    Bridge.log("MIC: External app started recording - isRecording: ${isRecording.get()}")
                                     if (isRecording.get()) {
-                                        // Notify CoreManager BEFORE stopping - allows switch to
-                                        // glasses mic
+                                        // Notify CoreManager BEFORE stopping - allows switch to glasses mic
                                         notifyCoreManager("external_app_recording", emptyList())
-                                        // Give CoreManager time to switch to glasses mic before
-                                        // releasing phone mic
-                                        mainHandler.postDelayed(
-                                                { stopRecording() },
-                                                MIC_SWITCH_DELAY_MS
-                                        )
+                                        // Stop IMMEDIATELY to prevent audio corruption with Gboard
+                                        stopRecording()
                                     } else {
                                         // Not currently recording, but still notify about
                                         // unavailability

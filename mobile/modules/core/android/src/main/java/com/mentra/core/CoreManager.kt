@@ -448,6 +448,9 @@ class CoreManager {
 
     // turns a single mic on and turns off all other mics:
     private fun updateMicState() {
+        Bridge.log("MAN: updateMicState() - micEnabled=$micEnabled, systemMicUnavailable=$systemMicUnavailable")
+        Bridge.log("MAN: micRanking=$micRanking")
+
         // go through the micRanking and find the first mic that is available:
         var micUsed: String = ""
 
