@@ -13,8 +13,7 @@
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {},
-    "lib": ["ES2020"],
-    "types": ["node", "ws"]
+    "lib": ["ES2020"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

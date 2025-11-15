@@ -26,6 +26,7 @@ interface PlayAudioParams {
   url: string;
   volume?: number;
   stopOther?: boolean;
+  trackId?: number; // Track ID for audio routing (0=speaker, 1=app_audio, 2=tts)
 }
 
 interface PlayAudioEvent {
@@ -480,6 +481,7 @@ export class LiveKitGrpcClient {
       volume: params.volume ?? 1.0,
       stop_other: params.stopOther ?? false,
       user_id: this.userSession.userId,
+      track_id: params.trackId ?? 0, // Default to track 0 (speaker)
     };
 
     this.logger.info(
@@ -841,6 +843,7 @@ export class LiveKitGrpcClient {
     url: string;
     volume?: number;
     stopOther?: boolean;
+    trackId?: number; // Track ID for audio routing (0=speaker, 1=app_audio, 2=tts)
   }): void {
     this.playAudio(params);
   }

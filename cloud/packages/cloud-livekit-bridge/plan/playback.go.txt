@@ -27,14 +27,9 @@ func (s *LiveKitBridgeService) playAudioFile(
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
 
-	// Create done channel to signal when playback stops
-	done := make(chan struct{})
-	defer close(done) // Signal completion when function exits
-
-	// Store cancel function and done channel in session for StopAudio
+	// Store cancel function in session for StopAudio
 	session.mu.Lock()
 	session.playbackCancel = cancel
-	session.playbackDone = done
 	session.mu.Unlock()
 
 	// Fetch audio file
