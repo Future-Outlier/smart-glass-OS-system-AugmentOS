@@ -11,13 +11,13 @@ This is the Android code that runs on Android-based smart glasses (ex: Mentra Li
 
 ### Feature Documentation
 
-- [BES_OTA_README.md](./BES_OTA_README.md) - BES OTA update system
-- [CAMERA_WEBSERVER_README.md](./CAMERA_WEBSERVER_README.md) - Camera web server implementation
-- [CUSTOM_GATT_AUDIO.md](./CUSTOM_GATT_AUDIO.md) - Custom GATT audio protocol
-- [DELETE_FILES_ENDPOINT.md](./DELETE_FILES_ENDPOINT.md) - File deletion endpoint documentation
-- [K900_LED_CONTROL.md](./K900_LED_CONTROL.md) - K900-specific LED control
-- [RGB_LED_CONTROL_IMPLEMENTATION.md](./RGB_LED_CONTROL_IMPLEMENTATION.md) - RGB LED control details
-- [PHOTO_TESTING_GUIDE.md](./PHOTO_TESTING_GUIDE.md) - Photo capture testing guide
+- [BES_OTA_README.md](./agents/BES_OTA_README.md) - BES OTA update system
+- [CAMERA_WEBSERVER_README.md](./agents/CAMERA_WEBSERVER_README.md) - Camera web server implementation
+- [CUSTOM_GATT_AUDIO.md](./agents/CUSTOM_GATT_AUDIO.md) - Custom GATT audio protocol
+- [DELETE_FILES_ENDPOINT.md](./agents/DELETE_FILES_ENDPOINT.md) - File deletion endpoint documentation
+- [K900_LED_CONTROL.md](./agents/K900_LED_CONTROL.md) - K900-specific LED control
+- [RGB_LED_CONTROL_IMPLEMENTATION.md](./agents/RGB_LED_CONTROL_IMPLEMENTATION.md) - RGB LED control details
+- [PHOTO_TESTING_GUIDE.md](./agents/PHOTO_TESTING_GUIDE.md) - Photo capture testing guide
 
 ### Error Reporting & Analytics
 

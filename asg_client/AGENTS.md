@@ -111,9 +111,12 @@ asg_client/
 │   ├── utils/          # Utility classes
 │   ├── di/             # Dependency injection
 │   └── receiver/       # Broadcast receivers
+├── agents/             # Feature documentation
 ├── StreamPackLite/     # RTMP streaming library (external)
 ├── credentials/        # Debug keystore (not committed)
-└── *.md                # Documentation files
+├── AGENTS.md           # Development guide
+├── CLAUDE.md           # AI assistant reference
+└── README.md           # Project overview
 ```
 
 ## Code Style Guidelines
@@ -165,15 +168,15 @@ asg_client/
 ## Documentation Reference
 
 - **README.md** - Project overview and quick start
-- **BES_OTA_README.md** - BES OTA update system
-- **CAMERA_WEBSERVER_README.md** - Camera web server documentation
-- **CUSTOM_GATT_AUDIO.md** - Custom GATT audio implementation
-- **DELETE_FILES_ENDPOINT.md** - File deletion endpoint documentation
-- **K900_LED_CONTROL.md** - K900 LED control system
-- **PHOTO_TESTING_GUIDE.md** - Photo capture testing guide
-- **RGB_LED_CONTROL_IMPLEMENTATION.md** - RGB LED control details
-- **reporting/SENTRY_CONFIGURATION.md** - Sentry error reporting setup
-- **reporting/README.md** - Comprehensive reporting system guide
+- **agents/BES_OTA_README.md** - BES OTA update system
+- **agents/CAMERA_WEBSERVER_README.md** - Camera web server documentation
+- **agents/CUSTOM_GATT_AUDIO.md** - Custom GATT audio implementation
+- **agents/DELETE_FILES_ENDPOINT.md** - File deletion endpoint documentation
+- **agents/K900_LED_CONTROL.md** - K900 LED control system
+- **agents/PHOTO_TESTING_GUIDE.md** - Photo capture testing guide
+- **agents/RGB_LED_CONTROL_IMPLEMENTATION.md** - RGB LED control details
+- **app/src/main/java/com/mentra/asg_client/reporting/SENTRY_CONFIGURATION.md** - Sentry error reporting setup
+- **app/src/main/java/com/mentra/asg_client/reporting/README.md** - Comprehensive reporting system guide
 
 ## Common Tasks
 
@@ -206,7 +209,6 @@ asg_client/
 
 ## Known Issues & Notes
 
-- ASG_MEDIA_SYSTEM.md referenced in README but file doesn't exist
 - SmartGlassesManager dependency will be merged into this repo in the future
 - Some features are K900 hardware-specific (LED control)
 - For OGG/Orbis C++ builds, see "Building OGG/Orbis C++ for ASP" section in README.md
