@@ -93,10 +93,9 @@ export interface AudioPlayResult {
  * ```
  */
 export class AudioManager {
-  private send: (message: any) => void
+  private session: any // Reference to AppSession
   private packageName: string
   private sessionId: string
-  private session?: any // Reference to AppSession
   private logger: Logger
 
   /** Map to store pending audio play request promises */
@@ -117,11 +116,10 @@ export class AudioManager {
    * @param session - Reference to the parent AppSession (optional)
    * @param logger - Logger instance for debugging
    */
-  constructor(packageName: string, sessionId: string, send: (message: any) => void, session?: any, logger?: Logger) {
+  constructor(session: any, packageName: string, sessionId: string, logger?: Logger) {
+    this.session = session
     this.packageName = packageName
     this.sessionId = sessionId
-    this.send = send
-    this.session = session
     this.logger = logger || (console as any)
   }
 
@@ -175,7 +173,7 @@ export class AudioManager {
           }
 
           // Send request to cloud
-          this.send(message)
+          this.session.sendMessage(message)
 
           // Resolve immediately for concurrent playback (fire-and-forget)
           // The audio will play in the background without blocking
@@ -205,7 +203,7 @@ export class AudioManager {
         }
 
         // Send request to cloud
-        this.send(message)
+        this.session.sendMessage(message)
 
         // Set timeout to avoid hanging promises (only for blocking mode)
         const timeoutMs = 60000 // 60 seconds
@@ -263,7 +261,7 @@ export class AudioManager {
       }
 
       // Send request to cloud (one-way, no response expected)
-      this.send(message)
+      this.session.sendMessage(message)
 
       const trackInfo = trackId !== undefined ? ` (track ${trackId})` : " (all tracks)"
       this.logger.info(`🔇 Audio stop request sent${trackInfo}`)

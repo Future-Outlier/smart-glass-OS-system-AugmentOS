@@ -86,14 +86,13 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
   // Get user avatar - try multiple fields
   const getUserAvatar = () => {
     if (!user) return null
-    return user.user_metadata?.avatar_url || user.user_metadata?.picture || user.user_metadata?.avatar || null
+    return user.avatarUrl || null
   }
 
   // Debug: log user data
   useEffect(() => {
     if (user) {
       console.log("User data:", user)
-      console.log("User metadata:", user.user_metadata)
       console.log("Avatar URL:", getUserAvatar())
     }
   }, [user])
@@ -386,7 +385,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
                                 style={{
                                   color: "var(--text-primary)",
                                 }}>
-                                {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
+                                {user?.name || user?.email?.split("@")[0] || "User"}
                               </p>
                               <p
                                 className="text-sm mt-1"

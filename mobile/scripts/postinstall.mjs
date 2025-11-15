@@ -7,7 +7,7 @@ await $({ stdio: 'inherit' })`patch-package`;
 
 // Build and prepare core module
 console.log('Building core module...');
-await $({ stdio: 'inherit', cwd: 'node_modules/core' })`bun install`;
-await $({ stdio: 'inherit', cwd: 'node_modules/core' })`bun run prepare`;
+await $({ stdio: 'inherit', cwd: 'modules/core' })`bun install`;
+await $({ stdio: 'inherit', cwd: 'modules/core' })`bun prepare`;
 
 console.log('✅ Postinstall completed successfully!');

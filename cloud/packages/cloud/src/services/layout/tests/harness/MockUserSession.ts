@@ -79,20 +79,34 @@ export class MockUserSession implements Partial<UserSession> {
   bufferedAudio: ArrayBufferLike[] = [];
   whatToStream: any[] = [];
 
-  // Connection state properties needed for ConnectionValidator
-  phoneConnected: boolean = true; // Simulate connected phone
-  glassesConnected: boolean = true; // Simulate connected glasses
-  glassesModel: string = "Even Realities G1"; // Simulate connected glasses model
-  lastGlassesStatusUpdate: Date; // Recent status update
+  // Mock DeviceManager for tests
+  deviceManager: any = {
+    get isPhoneConnected() {
+      return true;
+    },
+    get isGlassesConnected() {
+      return true;
+    },
+    getModel: () => "Even Realities G1",
+    getDeviceState: () => ({
+      connected: true,
+      modelName: "Even Realities G1",
+      timestamp: new Date().toISOString(),
+    }),
+    getCapabilities: () => ({
+      hasDisplay: true,
+      hasCamera: true,
+      hasMicrophone: true,
+      hasWifi: false,
+    }),
+    updateDeviceState: async (_payload: any) => {},
+  };
 
   constructor(userId: string = "test-user", _timeMachine?: TimeMachine) {
     this.sessionId = uuidv4();
     this.userId = userId;
     this.startTime = new Date();
     this.websocket = new MockWebSocket();
-
-    // Initialize connection timestamps to simulate active connections
-    this.lastGlassesStatusUpdate = new Date();
   }
 
   addLoadingApp(packageName: string): void {
