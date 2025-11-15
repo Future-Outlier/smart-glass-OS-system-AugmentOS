@@ -63,6 +63,10 @@ public class OtaHelper {
     private static final String UPDATE_TYPE_MTK = "mtk";
     private static final String UPDATE_TYPE_BES = "bes";
     private static final String[] UPDATE_ORDER = {UPDATE_TYPE_APK, UPDATE_TYPE_MTK, UPDATE_TYPE_BES};
+    
+    // ⚠️ DEBUG FLAG: Set to true to skip all checks and install MTK firmware from local file
+    // This will bypass version checking, downloading, and directly install /storage/emulated/0/asg/mtk_firmware.zip
+    private static final boolean DEBUG_FORCE_MTK_INSTALL = false;
 
     public OtaHelper(Context context) {
         this.context = context.getApplicationContext(); // Use application context to avoid memory leaks
@@ -216,16 +220,16 @@ public class OtaHelper {
     public void startVersionCheck(Context context) {
         Log.d(TAG, "Check OTA update method init");
 
-        if (!isNetworkAvailable(context)) {
-            Log.e(TAG, "No WiFi connection available. Skipping OTA check.");
-            return;
-        }
+        // if (!isNetworkAvailable(context)) {
+        //     Log.e(TAG, "No WiFi connection available. Skipping OTA check.");
+        //     return;
+        // }
         
-        // Check battery status before proceeding with OTA update
-        if (!isBatterySufficientForUpdates()) {
-            Log.w(TAG, "🚨 Battery insufficient for OTA updates - skipping version check");
-            return;
-        }
+        // // Check battery status before proceeding with OTA update
+        // if (!isBatterySufficientForUpdates()) {
+        //     Log.w(TAG, "🚨 Battery insufficient for OTA updates - skipping version check");
+        //     return;
+        // }
 
         // Check if version check is already in progress
         if (isCheckingVersion) {
@@ -244,8 +248,30 @@ public class OtaHelper {
             }
 
             try {
-                // Fetch version info
-                String versionInfo = fetchVersionInfo(OtaConstants.VERSION_JSON_URL);
+                // ⚠️ DEBUG: Mock JSON to skip APK checks and trigger MTK install
+                String versionInfo;
+                if (DEBUG_FORCE_MTK_INSTALL) {
+                    Log.w(TAG, "DEBUG: Using mock version.json (APK versions set to 0 to skip updates)");
+                    versionInfo = "{"
+                        + "\"apps\": {"
+                        + "  \"com.mentra.asg_client\": {"
+                        + "    \"versionCode\": 0,"
+                        + "    \"versionName\": \"0.0.0\","
+                        + "    \"apkUrl\": \"https://mock.url/app.apk\","
+                        + "    \"sha256\": \"mock\""
+                        + "  },"
+                        + "  \"com.augmentos.otaupdater\": {"
+                        + "    \"versionCode\": 0,"
+                        + "    \"versionName\": \"0.0.0\","
+                        + "    \"apkUrl\": \"https://mock.url/updater.apk\","
+                        + "    \"sha256\": \"mock\""
+                        + "  }"
+                        + "}"
+                        + "}";
+                } else {
+                    // Fetch version info normally
+                    versionInfo = fetchVersionInfo(OtaConstants.VERSION_JSON_URL);
+                }
                 JSONObject json = new JSONObject(versionInfo);
                 
                 // Check if new format (multiple apps) or legacy format
@@ -322,7 +348,23 @@ public class OtaHelper {
         
         // PHASE 2: Update MTK firmware (only if no APK update)
         boolean mtkUpdateStarted = false;
-        if (!apkUpdateNeeded && rootJson.has("mtk_firmware")) {
+        
+        // ⚠️ DEBUG MODE: Force install MTK firmware from local file
+        if (DEBUG_FORCE_MTK_INSTALL && !apkUpdateNeeded) {
+            Log.w(TAG, "========================================");
+            Log.w(TAG, "⚠️⚠️⚠️ DEBUG MODE ACTIVE ⚠️⚠️⚠️");
+            Log.w(TAG, "Force installing MTK firmware from local file");
+            Log.w(TAG, "Skipping version check and download");
+            Log.w(TAG, "========================================");
+            mtkUpdateStarted = debugInstallMtkFirmware(context);
+            if (mtkUpdateStarted) {
+                Log.i(TAG, "DEBUG: MTK firmware install triggered");
+            } else {
+                Log.e(TAG, "DEBUG: MTK firmware install failed - check if file exists");
+            }
+        }
+        // Normal MTK update flow
+        else if (!apkUpdateNeeded && rootJson.has("mtk_firmware")) {
             Log.i(TAG, "No APK updates needed - checking MTK firmware");
             mtkUpdateStarted = checkAndUpdateMtkFirmware(rootJson.getJSONObject("mtk_firmware"), context);
             if (mtkUpdateStarted) {
@@ -1379,5 +1421,46 @@ public class OtaHelper {
      */
     public static boolean isMtkOtaInProgress() {
         return isMtkOtaInProgress;
+    }
+    
+    // ========== DEBUG METHODS ==========
+    
+    /**
+     * DEBUG: Force install MTK firmware from local zip file without any checks
+     * Skips version checking, downloading, and mutual exclusion
+     * Use for testing only!
+     * 
+     * @param context Application context
+     * @return true if install command was sent successfully
+     */
+    public static boolean debugInstallMtkFirmware(Context context) {
+        try {
+            File firmwareFile = new File(OtaConstants.MTK_FIRMWARE_PATH);
+            
+            if (!firmwareFile.exists()) {
+                Log.e(TAG, "DEBUG: MTK firmware file not found at: " + OtaConstants.MTK_FIRMWARE_PATH);
+                return false;
+            }
+            
+            Log.w(TAG, "⚠️ DEBUG: Force installing MTK firmware from: " + OtaConstants.MTK_FIRMWARE_PATH);
+            Log.w(TAG, "⚠️ DEBUG: Skipping all checks - version, mutual exclusion, SHA256");
+            
+            // Set flag
+            isMtkOtaInProgress = true;
+            
+            // Post started event
+            EventBus.getDefault().post(com.mentra.asg_client.io.ota.events.MtkOtaProgressEvent.createStarted());
+            
+            // Trigger MTK OTA installation via system broadcast
+            com.mentra.asg_client.SysControl.installOTA(context, OtaConstants.MTK_FIRMWARE_PATH);
+            
+            Log.i(TAG, "DEBUG: MTK firmware install command sent - monitor MtkOtaReceiver for progress");
+            return true;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "DEBUG: Failed to install MTK firmware", e);
+            isMtkOtaInProgress = false;
+            return false;
+        }
     }
 }
