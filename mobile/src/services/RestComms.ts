@@ -96,9 +96,8 @@ class RestComms {
   private authenticatedRequest<T>(config: RequestConfig): AsyncResult<T, Error> {
     let res = this.validateToken()
     if (res.is_error()) {
-      // let err = Promise.resolve(TSR.error<T>(res.error))
-      // return new AsyncResult<T, Error>(err)
-      console.error(`${this.TAG}: Authentication failed: ${res.error}`)
+      let err = Promise.resolve(TSR.error<T>(res.error))
+      return new AsyncResult<T, Error>(err)
     }
     return this.makeRequest<T>({...config})
   }

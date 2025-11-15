@@ -1,5 +1,4 @@
 import CoreModule from "core"
-import {useEffect} from "react"
 import {Platform, View, ViewStyle} from "react-native"
 
 import OtaProgressSection from "@/components/glasses/OtaProgressSection"
@@ -73,13 +72,6 @@ export default function DeviceSettings() {
       },
     )
   }
-
-  useEffect(() => {
-    setTimeout(() => {
-      throw new Error("Test error")
-    }, 1000)
-    // Sentry.captureException(new Error("Test error"))
-  }, [])
 
   // Check if no glasses are paired at all
   if (!defaultWearable) {
