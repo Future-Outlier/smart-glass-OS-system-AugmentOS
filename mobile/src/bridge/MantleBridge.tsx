@@ -295,6 +295,13 @@ export class MantleBridge {
           console.log("MantleBridge: Forwarding keep-alive ACK to server:", data)
           socketComms.sendKeepAliveAck(data)
           break
+        case "mtk_update_complete":
+          console.log("MantleBridge: MTK firmware update complete:", data.message)
+          GlobalEventEmitter.emit("MTK_UPDATE_COMPLETE", {
+            message: data.message,
+            timestamp: data.timestamp,
+          })
+          break
         default:
           console.log("Unknown event type:", data.type)
           break
