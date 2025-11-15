@@ -594,7 +594,7 @@ class G1: NSObject, SGCManager {
         RN_stopScan()
 
         // get battery status:
-        // getBatteryStatus()
+        getBatteryStatus()
         return true
     }
 
@@ -1447,6 +1447,13 @@ extension G1 {
 
         if ready {
             queueChunks([heartbeatArray])
+        }
+
+        // Periodically request battery status
+        if leftBatteryLevel == -1 || rightBatteryLevel == -1 || heartbeatCounter % 10 == 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.getBatteryStatus()
+            }
         }
         //    if let txChar = findCharacteristic(uuid: UART_TX_CHAR_UUID, peripheral: peripheral) {
         //      let hexString = heartbeatData.map { String(format: "%02X", $0) }.joined()
