@@ -1,6 +1,5 @@
 import {View, ScrollView, TouchableOpacity, Platform} from "react-native"
 import {Icon, Text} from "@/components/ignite"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import bridge from "@/bridge/MantleBridge"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {spacing, ThemedStyle} from "@/theme"
@@ -11,6 +10,7 @@ import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Screen, Header} from "@/components/ignite"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {getModelCapabilities} from "@/../../cloud/packages/types/src"
+import { useGlassesStore } from "@/stores/glasses"
 
 type PhotoSize = "small" | "medium" | "large"
 type VideoResolution = "720p" | "1080p" | "1440p" | "4K"
@@ -39,7 +39,6 @@ const MAX_RECORDING_TIME_LABELS: Record<MaxRecordingTime, string> = {
 
 export default function CameraSettingsScreen() {
   const {theme, themed} = useAppTheme()
-  const {status} = useCoreStatus()
   const {goBack} = useNavigationHistory()
   const [devMode, _setDevMode] = useSetting(SETTINGS_KEYS.dev_mode)
   const [photoSize, setPhotoSize] = useSetting(SETTINGS_KEYS.button_photo_size)
@@ -47,6 +46,7 @@ export default function CameraSettingsScreen() {
   const [videoSettings, setVideoSettings] = useSetting(SETTINGS_KEYS.button_video_settings)
   const [maxRecordingTime, setMaxRecordingTime] = useSetting(SETTINGS_KEYS.button_max_recording_time)
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   // Derive video resolution from settings
   const videoResolution: VideoResolution = (() => {
@@ -58,7 +58,7 @@ export default function CameraSettingsScreen() {
   })()
 
   const handlePhotoSizeChange = async (size: PhotoSize) => {
-    if (!status.glasses_info?.model_name) {
+    if (!glassesConnected) {
       console.log("Cannot change photo size - glasses not connected")
       return
     }
@@ -72,7 +72,7 @@ export default function CameraSettingsScreen() {
   }
 
   const handleVideoResolutionChange = async (resolution: VideoResolution) => {
-    if (!status.glasses_info?.model_name) {
+    if (!glassesConnected) {
       console.log("Cannot change video resolution - glasses not connected")
       return
     }
@@ -91,7 +91,7 @@ export default function CameraSettingsScreen() {
   }
 
   const handleLedToggle = async (enabled: boolean) => {
-    if (!status.glasses_info?.model_name) {
+    if (!glassesConnected) {
       console.log("Cannot toggle LED - glasses not connected")
       return
     }
@@ -104,7 +104,7 @@ export default function CameraSettingsScreen() {
   }
 
   const handleMaxRecordingTimeChange = async (time: MaxRecordingTime) => {
-    if (!status.glasses_info?.model_name) {
+    if (!glassesConnected) {
       console.log("Cannot change max recording time - glasses not connected")
       return
     }

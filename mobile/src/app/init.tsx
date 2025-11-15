@@ -1,19 +1,20 @@
 import {useState, useEffect} from "react"
 import {View, ActivityIndicator, Platform, Linking} from "react-native"
-import semver from "semver"
-import {Button, Icon, Screen} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useDeeplink} from "@/contexts/DeeplinkContext"
-import {useAuth} from "@/contexts/AuthContext"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {useSettingsStore, SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {translate} from "@/i18n"
 import {TextStyle, ViewStyle} from "react-native"
-import {ThemedStyle} from "@/theme"
+import semver from "semver"
+
+import {Button, Icon, Screen} from "@/components/ignite"
+import {Text} from "@/components/ignite"
+import {useAuth} from "@/contexts/AuthContext"
+import {useDeeplink} from "@/contexts/DeeplinkContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
-import mantle from "@/services/MantleManager"
-import {Text} from "@/components/ignite"
+import {useSettingsStore, SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 // Types
 type ScreenState = "loading" | "error" | "outdated" | "success"
@@ -103,32 +104,33 @@ export default function InitScreen() {
   }
 
   const handleTokenExchange = async (): Promise<void> => {
-    console.log("HANDLING TOKEN EXCHANGE.......")
     setState("loading")
     setLoadingStatus(translate("versionCheck:connectingToServer"))
 
-    try {
-      const token = session?.token
-      console.log("EXCHANGING TOKEN: ")
-      if (!token) {
-        setErrorType("auth")
-        setState("error")
-        return
-      }
+    const token = session?.token
+    if (!token) {
+      setErrorType("auth")
+      setState("error")
+      return
+    }
 
-      const coreToken = await restComms.exchangeToken(token)
-      const uid = user?.email || user?.id
-
-      socketComms.setAuthCreds(coreToken, uid)
-      await mantle.init()
-
-      await navigateToDestination()
-    } catch (error) {
-      console.log("Token exchange failed:", error)
+    let res = await restComms.exchangeToken(token)
+    if (res.is_error()) {
+      console.log("Token exchange failed:", res.error)
       await checkCustomUrl()
       setErrorType("connection")
       setState("error")
+      return
     }
+
+    const coreToken = res.value
+    const uid = user?.email || user?.id || ""
+
+    socketComms.setAuthCreds(coreToken, uid)
+    await mantle.init()
+    console.log("INIT: Mantle initialized")
+
+    await navigateToDestination()
   }
 
   const checkCloudVersion = async (isRetry = false): Promise<void> => {
@@ -141,43 +143,38 @@ export default function InitScreen() {
     }
     setErrorType(null)
 
-    try {
-      const localVer = getLocalVersion()
-      setLocalVersion(localVer)
+    const localVer = getLocalVersion()
+    setLocalVersion(localVer)
 
-      if (!localVer) {
-        console.error("Failed to get local version")
-        setErrorType("connection")
-        setState("error")
-        setIsRetrying(false)
-        return
-      }
-
-      try {
-        const {required, recommended} = await restComms.getMinimumClientVersion()
-        setCloudVersion(recommended)
-        console.log(`Version check: local=${localVer}, cloud=${required}`)
-        if (semver.lt(localVer, recommended)) {
-          setState("outdated")
-          setCanSkipUpdate(!semver.lt(localVer, required))
-          setIsRetrying(false)
-          return
-        }
-        setIsRetrying(false)
-        checkLoggedIn()
-      } catch (error) {
-        console.error("Failed to fetch cloud version:", error)
-        setErrorType("connection")
-        setState("error")
-        setIsRetrying(false)
-        return
-      }
-    } catch (error) {
-      console.error("Version check failed:", error)
+    if (!localVer) {
+      console.error("Failed to get local version")
       setErrorType("connection")
       setState("error")
       setIsRetrying(false)
+      return
     }
+
+    const res = await restComms.getMinimumClientVersion()
+    if (res.is_error()) {
+      console.error("Failed to fetch cloud version:", res.error)
+      setErrorType("connection")
+      setState("error")
+      setIsRetrying(false)
+      return
+    }
+
+    const {required, recommended} = res.value
+    setCloudVersion(recommended)
+    console.log(`Version check: local=${localVer}, required=${required}, recommended=${recommended}`)
+    if (semver.lt(localVer, recommended)) {
+      setState("outdated")
+      setCanSkipUpdate(!semver.lt(localVer, required))
+      setIsRetrying(false)
+      return
+    }
+
+    setIsRetrying(false)
+    checkLoggedIn()
   }
 
   const handleUpdate = async (): Promise<void> => {

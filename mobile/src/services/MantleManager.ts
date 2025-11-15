@@ -1,14 +1,17 @@
-import socketComms from "@/services/SocketComms"
-import * as Calendar from "expo-calendar"
-import restComms from "@/services/RestComms"
-import * as TaskManager from "expo-task-manager"
-import * as Location from "expo-location"
-import TranscriptProcessor from "@/utils/TranscriptProcessor"
-import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
+import * as Calendar from "expo-calendar"
+import * as Location from "expo-location"
+import * as TaskManager from "expo-task-manager"
+import {shallow} from "zustand/shallow"
+
 import bridge from "@/bridge/MantleBridge"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import restComms from "@/services/RestComms"
+import socketComms from "@/services/SocketComms"
 import {useDisplayStore} from "@/stores/display"
+import {GlassesInfo, useGlassesStore} from "@/stores/glasses"
+import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import TranscriptProcessor from "@/utils/TranscriptProcessor"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -70,13 +73,14 @@ class MantleManager {
   // sets up the bridge and initializes app state
   public async init() {
     await bridge.dummy()
-    try {
-      const loadedSettings = await restComms.loadUserSettings() // get settings from server
-      await useSettingsStore.getState().setManyLocally(loadedSettings) // write settings to local storage
-      await useSettingsStore.getState().initUserSettings() // initialize user settings
-    } catch (e) {
-      console.error(`Failed to get settings from server: ${e}`)
+    const loadedSettings = await restComms.loadUserSettings() // get settings from server
+    if (loadedSettings.is_ok()) {
+      await useSettingsStore.getState().setManyLocally(loadedSettings.value) // write settings to local storage
+    } else {
+      console.error("Mantle: No settings received from server")
     }
+
+    await useSettingsStore.getState().initUserSettings() // initialize user settings
     await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
 
     setTimeout(async () => {
@@ -87,6 +91,7 @@ class MantleManager {
     await CoreModule.requestStatus()
 
     this.setupPeriodicTasks()
+    this.setupSubscriptions()
   }
 
   public cleanup() {
@@ -117,6 +122,33 @@ class MantleManager {
     } catch (error) {
       console.error("Mantle: Error starting location updates", error)
     }
+  }
+
+  private setupSubscriptions() {
+    useGlassesStore.subscribe(
+      state => ({
+        batteryLevel: state.batteryLevel,
+        charging: state.charging,
+        caseBatteryLevel: state.caseBatteryLevel,
+        caseCharging: state.caseCharging,
+        connected: state.connected,
+        wifiConnected: state.wifiConnected,
+        wifiSsid: state.wifiSsid,
+        modelName: state.modelName,
+      }),
+      (state: Partial<GlassesInfo>, previousState: Partial<GlassesInfo>) => {
+        const statusObj: Partial<GlassesInfo> = {}
+
+        for (const key in state) {
+          const k = key as keyof GlassesInfo
+          if (state[k] !== previousState[k]) {
+            statusObj[k] = state[k] as any
+          }
+        }
+        restComms.updateGlassesState(statusObj)
+      },
+      {equalityFn: shallow},
+    )
   }
 
   private async sendCalendarEvents() {

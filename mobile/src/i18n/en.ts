@@ -1,5 +1,7 @@
 const en = {
   deviceSettings: {
+    microphone: "Microphone",
+    deviceInformation: "Device info",
     microphoneSelection: "Microphone Selection",
     glassesNeededForGlassesMic: "Connect glasses to enable",
     systemMic: "Automatic",
@@ -20,6 +22,17 @@ const en = {
     general: "General",
     charging: "Charging",
     selectDefaultApp: "Select default app",
+  },
+  deviceInfo: {
+    title: "Device info",
+  },
+  microphoneSettings: {
+    title: "Microphone",
+    auto: "Automatic",
+    glasses: "Glasses",
+    phone: "Phone",
+    bluetooth: "Bluetooth",
+    preferredMic: "Preferred microphone",
   },
   screenSettings: {
     title: "Display Position Settings",

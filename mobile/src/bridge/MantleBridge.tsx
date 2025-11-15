@@ -1,16 +1,16 @@
-import {INTENSE_LOGGING} from "@/utils/Constants"
+import CoreModule from "core"
+import Toast from "react-native-toast-message"
+
 import {translate} from "@/i18n"
 import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
 import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {INTENSE_LOGGING} from "@/utils/Constants"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-
-import CoreModule from "core"
-import Toast from "react-native-toast-message"
 
 export class MantleBridge {
   private static instance: MantleBridge | null = null
@@ -105,6 +105,7 @@ export class MantleBridge {
 
       switch (data.type) {
         case "core_status_update":
+          useGlassesStore.getState().setGlassesInfo(data.core_status.glasses_info)
           GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
           return
         case "wifi_status_change":

@@ -15,11 +15,11 @@
   </p>
 
   <p>
-    <img src="https://img.shields.io/github/contributors/TeamOpenSmartGlasses/Convoscope" alt="Contributors" />
-    <img src="https://img.shields.io/github/license/TeamOpenSmartGlasses/Convoscope" alt="License" />
-    <img src="https://img.shields.io/github/stars/TeamOpenSmartGlasses/Convoscope?style=social" alt="GitHub Stars" />
-    <img src="https://img.shields.io/github/v/release/TeamOpenSmartGlasses/Convoscope" alt="GitHub Release Version" />
-    <img src="https://img.shields.io/github/last-commit/TeamOpenSmartGlasses/Convoscope" alt="Last Updated" />
+    <img src="https://img.shields.io/github/contributors/TeamOpenSmartGlasses/DiscussPlusPlus" alt="Contributors" />
+    <img src="https://img.shields.io/github/license/TeamOpenSmartGlasses/DiscussPlusPlus" alt="License" />
+    <img src="https://img.shields.io/github/stars/TeamOpenSmartGlasses/DiscussPlusPlus?style=social" alt="GitHub Stars" />
+    <img src="https://img.shields.io/github/v/release/TeamOpenSmartGlasses/DiscussPlusPlus" alt="GitHub Release Version" />
+    <img src="https://img.shields.io/github/last-commit/TeamOpenSmartGlasses/DiscussPlusPlus" alt="Last Updated" />
   </p>
 </div>
 
@@ -109,6 +109,43 @@ The Mentra Store already has a ton of useful apps that real users are running ev
 - **Speed**: TypeScript SDK means you're making apps in minutes, not months
 - **Control**: Access smart glasses I/O - displays, microphones, cameras, speakers
 - **Distribution**: Get your app in front of everyone using smart glasses
+
+## Development Setup
+
+### Quick Start
+
+For detailed setup instructions, see [CLAUDE.md](./CLAUDE.md) in the repository root.
+
+### Recommended Development Environment (Mobile)
+
+- **Platform**: macOS or Linux (Windows has known issues with this project)
+- **Node.js**: Version 20.x (use nvm for version management)
+- **Package Manager**: bun (preferred) or npm
+- **Android**: Android Studio with Java SDK 17
+- **iOS**: Xcode (macOS only)
+- **Cloud**: Docker and Docker Compose
+
+### Key Commands
+
+**Mobile App** (`mobile/`):
+
+```bash
+bun install
+bun start              # Start dev server
+bun android            # Run on Android
+bun ios                # Run on iOS
+bun test               # Run tests
+```
+
+**Cloud Backend** (`cloud/`):
+
+```bash
+bun install
+bun run dev            # Start Docker dev environment
+bun run test           # Run tests
+```
+
+For complete build instructions, testing guidelines, and code style requirements, see [CLAUDE.md](./CLAUDE.md).
 
 ## MentraOS Community
 

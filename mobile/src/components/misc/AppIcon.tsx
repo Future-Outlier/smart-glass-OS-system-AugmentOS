@@ -5,7 +5,7 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {Image} from "expo-image"
 import {SquircleView} from "expo-squircle-view"
 import {memo} from "react"
-import {ActivityIndicator, ImageStyle, Platform, TouchableOpacity, View, ViewStyle} from "react-native"
+import {ActivityIndicator, ImageStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import {Icon} from "@/components/ignite"
 
 interface AppIconProps {
@@ -27,7 +27,7 @@ const AppIcon = ({app, onClick, style}: AppIconProps) => {
         style={[themed($container), style]}
         accessibilityLabel={onClick ? `Launch ${app.name}` : undefined}
         accessibilityRole={onClick ? "button" : undefined}>
-        {Platform.OS === "ios" && enableSquircles ? (
+        {enableSquircles ? (
           <SquircleView
             cornerSmoothing={100}
             preserveSmoothing={true}

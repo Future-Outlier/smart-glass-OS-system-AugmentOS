@@ -179,24 +179,6 @@ public class Bridge private constructor() {
             sendTypedMessage("compatible_glasses_search_result", eventBody as Map<String, Any>)
         }
 
-        /** Send glasses connection state */
-        @JvmStatic
-        fun sendGlassesConnectionState(modelName: String, status: String) {
-            try {
-                val event = HashMap<String, Any>()
-                event["type"] = "glasses_connection_state"
-                event["modelName"] = modelName
-                event["status"] = status
-                event["timestamp"] = System.currentTimeMillis().toInt()
-
-                val jsonData = JSONObject(event as Map<*, *>)
-                val jsonString = jsonData.toString()
-                sendWSText(jsonString)
-            } catch (e: Exception) {
-                log("ServerComms: Error building glasses_connection_state JSON: $e")
-            }
-        }
-
         /** Update ASR config */
         @JvmStatic
         fun updateAsrConfig(languages: List<Map<String, Any>>) {

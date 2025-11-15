@@ -1,9 +1,11 @@
 import {useEffect, useState} from "react"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import showAlert from "@/utils/AlertUtils"
+
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {Capabilities, getModelCapabilities} from "@/../../cloud/packages/types/src"
+import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import showAlert from "@/utils/AlertUtils"
+
+import {Capabilities, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 interface VersionInfo {
   versionCode: number
@@ -94,7 +96,6 @@ export function getLatestVersionInfo(versionJson: VersionJson | null): VersionIn
 }
 
 export function OtaUpdateChecker() {
-  const {status} = useCoreStatus()
   const [isChecking, setIsChecking] = useState(false)
   const [hasChecked, setHasChecked] = useState(false)
   const [_latestVersion, setLatestVersion] = useState<string | null>(null)
@@ -102,10 +103,10 @@ export function OtaUpdateChecker() {
   const {push} = useNavigationHistory()
 
   // Extract only the specific values we need to watch to avoid re-renders
-  const glassesModel = status.glasses_info?.model_name
-  const otaVersionUrl = status.glasses_info?.glasses_ota_version_url
-  const currentBuildNumber = status.glasses_info?.glasses_build_number
-  const glassesWifiConnected = status.glasses_info?.glasses_wifi_connected
+  const glassesModel = useGlassesStore(state => state.modelName)
+  const otaVersionUrl = useGlassesStore(state => state.otaVersionUrl)
+  const currentBuildNumber = useGlassesStore(state => state.buildNumber)
+  const glassesWifiConnected = useGlassesStore(state => state.wifiConnected)
 
   useEffect(() => {
     const checkForOtaUpdate = async () => {
@@ -115,7 +116,7 @@ export function OtaUpdateChecker() {
       }
 
       const features: Capabilities = getModelCapabilities(defaultWearable)
-      if (!features || !features.wifiSelfOtaUpdate) {
+      if (!features || !features.hasWifi) {
         // Remove console log to reduce spam
         return
       }

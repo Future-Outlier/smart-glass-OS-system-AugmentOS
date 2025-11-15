@@ -1,11 +1,12 @@
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import CoreModule from "core"
+import {Platform} from "react-native"
+import {getTimeZone} from "react-native-localize"
+import Toast from "react-native-toast-message"
 import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import {getTimeZone} from "react-native-localize"
+
 import restComms from "@/services/RestComms"
-import CoreModule from "core"
-import Toast from "react-native-toast-message"
-import {Platform} from "react-native"
 
 export const SETTINGS_KEYS = {
   // feature flags:
@@ -105,7 +106,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.bypass_audio_encoding_for_debugging]: false,
   [SETTINGS_KEYS.metric_system]: false,
   [SETTINGS_KEYS.enforce_local_transcription]: false,
-  [SETTINGS_KEYS.preferred_mic]: "phone",
+  [SETTINGS_KEYS.preferred_mic]: "auto",
   [SETTINGS_KEYS.screen_disabled]: false,
   // glasses settings:
   [SETTINGS_KEYS.contextual_dashboard]: true,

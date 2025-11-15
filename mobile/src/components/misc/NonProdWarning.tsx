@@ -1,13 +1,14 @@
 // SensingDisabledWarning.tsx
+import {MaterialCommunityIcons} from "@expo/vector-icons"
 import {useEffect, useState} from "react"
 import {TouchableOpacity, ViewStyle, Platform, Linking} from "react-native"
-import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {MaterialCommunityIcons} from "@expo/vector-icons"
-import showAlert from "@/utils/AlertUtils"
-import {translate} from "@/i18n"
+
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function NonProdWarning() {
   const {theme, themed} = useAppTheme()
@@ -65,13 +66,13 @@ export default function NonProdWarning() {
       if (Platform.OS === "ios") {
         // iOS TestFlight build
         showAlert(translate("warning:testFlightBuild"), "", [
-          {text: translate("common:ok"), onPress: () => {}},
           {
             text: translate("settings:feedback"),
             onPress: () => {
               push("/settings/feedback")
             },
           },
+          {text: translate("common:ok"), onPress: () => {}},
         ])
       } else {
         // Android Beta build - show opt-out first, then feedback
@@ -87,13 +88,13 @@ export default function NonProdWarning() {
             onPress: () => {
               // After dismissing, offer feedback option
               showAlert(translate("warning:betaBuild"), "", [
-                {text: translate("common:ok"), onPress: () => {}},
                 {
                   text: translate("settings:feedback"),
                   onPress: () => {
                     push("/settings/feedback")
                   },
                 },
+                {text: translate("common:ok"), onPress: () => {}},
               ])
             },
           },
@@ -102,13 +103,13 @@ export default function NonProdWarning() {
     } else {
       // Developer/non-production backend warning
       showAlert(translate("warning:nonProdBackend"), "", [
-        {text: translate("common:ok"), onPress: () => {}},
         {
           text: translate("settings:developerSettings"),
           onPress: () => {
             push("/settings/developer")
           },
         },
+        {text: translate("common:ok"), onPress: () => {}},
       ])
     }
   }

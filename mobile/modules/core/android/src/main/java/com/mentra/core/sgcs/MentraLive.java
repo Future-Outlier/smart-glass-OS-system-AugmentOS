@@ -1379,9 +1379,15 @@ public class MentraLive extends SGCManager {
 
     }
 
+    @Override
     public void setMicEnabled(boolean enabled) {
         Bridge.log("LIVE: setMicEnabled(" + enabled + ")");
         changeSmartGlassesMicrophoneState(enabled);
+    }
+
+    @Override
+    public List<String> sortMicRanking(List<String> list) {
+        return list;
     }
 
     /**
@@ -2850,6 +2856,8 @@ public class MentraLive extends SGCManager {
 
         // Update the microphone state tracker
         isMicrophoneEnabled = enable;
+        
+        micEnabled = enable;
 
         // Post event for frontend notification
         // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));

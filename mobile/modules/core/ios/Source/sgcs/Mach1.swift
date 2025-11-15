@@ -114,12 +114,17 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     var type: String = DeviceTypes.MACH1
 
     let hasMic: Bool = false
+    var micEnabled: Bool = false
     var caseOpen = false
     var caseRemoved = true
     var caseCharging = false
 
     func setMicEnabled(_: Bool) {
         // N/A
+    }
+
+    func sortMicRanking(list: [String]) -> [String] {
+        return list
     }
 
     var CONNECTING_DEVICE = ""

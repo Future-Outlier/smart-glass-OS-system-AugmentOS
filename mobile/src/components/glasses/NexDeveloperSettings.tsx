@@ -14,8 +14,10 @@ import showAlert from "@/utils/AlertUtils"
 import {MOCK_CONNECTION} from "@/utils/Constants"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
-import ToggleSetting from "../settings/ToggleSetting"
+import ToggleSetting from "@/components/settings/ToggleSetting"
 import CoreModule from "core"
+import {useGlassesStore} from "@/stores/glasses"
+import {Capabilities, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 // Nex Interface Version - Single source of truth
 export const NEX_INTERFACE_VERSION = "1.0.0"
@@ -113,7 +115,6 @@ const PatternPreview = ({imageType, imageSize, isDark = false, showDualLayout = 
           borderRadius: 12,
           marginVertical: 8,
         }}>
-        {/* Header */}
         <Text
           style={{
             fontSize: 16,
@@ -126,7 +127,6 @@ const PatternPreview = ({imageType, imageSize, isDark = false, showDualLayout = 
           /// MentraOS Connected \\\
         </Text>
 
-        {/* Status Line */}
         <Text
           style={{
             fontSize: 14,
@@ -259,6 +259,9 @@ export default function NexDeveloperSettings() {
   const {status} = useCoreStatus()
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesModelName = useGlassesStore(state => state.modelName)
+  const features: Capabilities = getModelCapabilities(defaultWearable)
 
   // Mentra Nex BLE test state variables
   const [text, setText] = useState("Hello World")
@@ -326,7 +329,7 @@ export default function NexDeveloperSettings() {
 
   // Mentra Nex BLE test handlers
   const onSendTextClick = async () => {
-    if (status.glasses_info?.model_name) {
+    if (glassesConnected) {
       if (text === "" || positionX === null || positionY === null || size === null) {
         showAlert("Please fill all the fields", "Please fill all the fields", [
           {
@@ -361,7 +364,7 @@ export default function NexDeveloperSettings() {
   }
 
   const onSendImageClick = async () => {
-    if (status.glasses_info?.model_name) {
+    if (glassesConnected) {
       await CoreModule.displayImage(selectedImageType, selectedImageSize)
     } else {
       showAlert("Please connect to the device", "Please connect to the device", [
@@ -375,7 +378,7 @@ export default function NexDeveloperSettings() {
   }
 
   const onClearDisplayClick = async () => {
-    if (status.glasses_info?.model_name) {
+    if (glassesConnected) {
       await CoreModule.clearDisplay()
     } else {
       showAlert("Please connect to the device", "Please connect to the device", [
@@ -390,7 +393,7 @@ export default function NexDeveloperSettings() {
 
   const onLc3AudioToggle = async (enabled: boolean) => {
     setLc3AudioEnabled(enabled)
-    if (status.glasses_info?.model_name) {
+    if (glassesConnected) {
       await bridge.setLc3AudioEnabled(enabled)
     }
   }
@@ -421,7 +424,7 @@ export default function NexDeveloperSettings() {
         </View>
 
         {/* Screen Settings for binocular glasses */}
-        {defaultWearable && glassesFeatures[defaultWearable]?.binocular && (
+        {defaultWearable && features?.display?.count && features?.display?.count > 1 && (
           <View style={themed($settingsGroup)}>
             <Text style={themed($sectionTitle)}>Display Settings</Text>
             <RouteButton
@@ -433,7 +436,7 @@ export default function NexDeveloperSettings() {
         )}
 
         {/* Mentra Nex BLE Test Section - Only show when connected to Mentra Nex */}
-        {status.glasses_info?.model_name === "Mentra Nex" && status.core_info.puck_connected ? (
+        {glassesModelName === "Mentra Nex" ? (
           <>
             {/* Custom Display Text Settings */}
             <View style={themed($settingsGroup)}>

@@ -144,6 +144,8 @@ class G1: NSObject, SGCManager {
 
     var isHotspotEnabled: Bool = false
 
+    var micEnabled: Bool = false
+
     var hotspotSsid: String = ""
 
     var hotspotPassword: String = ""
@@ -194,7 +196,7 @@ class G1: NSObject, SGCManager {
 
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
 
-    let type = DeviceTypes.G1
+    var type = DeviceTypes.G1
     let hasMic = true
 
     // TODO: we probably don't need this
@@ -1733,6 +1735,7 @@ extension G1 {
 
     func setMicEnabled(_ enabled: Bool) {
         Bridge.log("G1: setMicEnabled() \(enabled)")
+        micEnabled = enabled
         var micOnData = Data()
         micOnData.append(Commands.BLE_REQ_MIC_ON.rawValue)
         if enabled {
@@ -1748,6 +1751,10 @@ extension G1 {
         //    if let txChar = findCharacteristic(uuid: UART_TX_CHAR_UUID, peripheral: peripheral) {
         //      peripheral.writeValue(micOnData, for: txChar, type: .withResponse)
         //    }
+    }
+
+    func sortMicRanking(list: [String]) -> [String] {
+        return list
     }
 
     // MARK: - Enhanced BMP Display Methods
