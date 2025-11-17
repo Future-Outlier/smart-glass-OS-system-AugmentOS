@@ -13,8 +13,6 @@ export async function setBuildEnv() {
     EXPO_PUBLIC_BUILD_BRANCH: gitBranch,
     EXPO_PUBLIC_BUILD_USER: gitUsername,
     EXPO_PUBLIC_BUILD_TIME: buildTime,
-    EXPO_PUBLIC_MENTRAOS_VERSION: "2.2.17",
-    EXPO_PUBLIC_VERSION: "2.2.18",
   }
 
   console.log("Build environment set:")
@@ -37,8 +35,6 @@ export async function setBuildEnv() {
   await writeFile(".env", envContent)
 
   console.log("\n.env file updated successfully")
-
-  return updatedEnv
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
