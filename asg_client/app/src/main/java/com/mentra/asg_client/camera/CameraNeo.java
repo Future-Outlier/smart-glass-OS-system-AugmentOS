@@ -145,6 +145,9 @@ public class CameraNeo extends LifecycleService {
     // LED control - tied to camera lifecycle
     private static volatile boolean pendingLedEnabled = false;  // LED state for current/pending requests
     private IHardwareManager hardwareManager;
+    
+    // MediaTek vendor-specific camera settings (ZSL, MFNR)
+    private CameraSettings mCameraSettings;
 
     // Camera characteristics for dynamic auto-exposure and autofocus
     private int[] availableAeModes;
@@ -406,6 +409,8 @@ public class CameraNeo extends LifecycleService {
         }
         // Initialize hardware manager for LED control
         hardwareManager = HardwareManagerFactory.getInstance(this);
+        // Initialize camera settings for vendor-specific features (ZSL, MFNR)
+        mCameraSettings = new CameraSettings(this);
         createNotificationChannel();
         showNotification("Camera Service", "Service is running");
         startBackgroundThread();
@@ -1154,6 +1159,14 @@ public class CameraNeo extends LifecycleService {
             // Get characteristics for the selected camera
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(this.cameraId);
 
+            // Initialize MediaTek vendor keys for ZSL/MFNR (if available)
+            if (mCameraSettings != null) {
+                mCameraSettings.init(characteristics);
+                boolean zslSupported = mCameraSettings.isZslSupported();
+                boolean mfnrSupported = mCameraSettings.isMfnrSupported();
+                Log.d(TAG, "Vendor feature support - ZSL: " + zslSupported + ", MFNR: " + mfnrSupported);
+            }
+
             // Query camera capabilities for dynamic auto-exposure
             queryCameraCapabilities(characteristics);
 
@@ -1240,9 +1253,11 @@ public class CameraNeo extends LifecycleService {
             }
 
             // Setup ImageReader for JPEG data
+            // ZSL requires larger buffer (12 images) to cache preview frames for MFNR
+            // Standard buffer (2 images) is insufficient for ZSL circular buffer
             imageReader = ImageReader.newInstance(
                     jpegSize.getWidth(), jpegSize.getHeight(),
-                    ImageFormat.JPEG, 2);
+                    ImageFormat.JPEG, 12);
 
             imageReader.setOnImageAvailableListener(reader -> {
                 // Only process images when we're actually shooting, not during precapture metering
@@ -1670,6 +1685,11 @@ public class CameraNeo extends LifecycleService {
                 int jpegOrientation = JPEG_ORIENTATION.get(displayOrientation, 90);
                 previewBuilder.set(CaptureRequest.JPEG_ORIENTATION, jpegOrientation);
                 Log.d(TAG, "Setting JPEG orientation: " + jpegOrientation + " for display orientation: " + displayOrientation);
+                
+                // Apply ZSL settings for photo preview (enables ZSL buffer for MFNR)
+                if (mCameraSettings != null && mCameraSettings.isZslSupported()) {
+                    mCameraSettings.configurePreviewBuilder(previewBuilder);
+                }
             }
 
             CameraCaptureSession.StateCallback sessionStateCallback = new CameraCaptureSession.StateCallback() {
@@ -2309,22 +2329,36 @@ public class CameraNeo extends LifecycleService {
 
     /**
      * Choose optimal FPS range for photo capture
+     * Prefers wider FPS ranges (5-30fps) to allow longer exposure times
+     * Longer exposures enable higher ISO (1000+), which triggers MFNR (requires ISO>800)
+     * Fixed 30fps limits max exposure to 33ms, restricting ISO upper bound
      */
     private Range<Integer> chooseOptimalFpsRange(Range<Integer>[] ranges) {
-        // Prefer ranges that include 30fps and don't go too low (prevents long exposure times)
+        // Prefer wider ranges (5-30fps) that allow longer exposures for higher ISO
+        // This helps trigger MFNR in low-light conditions
         for (Range<Integer> range : ranges) {
-            if (range.contains(30) && range.getLower() >= 15) {
+            if (range.contains(30) && range.getLower() <= 5) {
+                Log.d(TAG, "Selected wide FPS range: " + range + " (allows longer exposure for higher ISO)");
+                return range;
+            }
+        }
+        
+        // Fallback: prefer ranges that include 30fps with lower minimum (allows longer exposure)
+        for (Range<Integer> range : ranges) {
+            if (range.contains(30) && range.getLower() <= 15) {
+                Log.d(TAG, "Selected FPS range: " + range);
                 return range;
             }
         }
 
-        // Fallback: choose range with highest minimum FPS
+        // Final fallback: choose range with highest minimum FPS
         Range<Integer> best = ranges[0];
         for (Range<Integer> range : ranges) {
             if (range.getLower() > best.getLower()) {
                 best = range;
             }
         }
+        Log.d(TAG, "Selected fallback FPS range: " + best);
         return best;
     }
 
@@ -2502,7 +2536,15 @@ public class CameraNeo extends LifecycleService {
             stillBuilder.set(CaptureRequest.JPEG_ORIENTATION, jpegOrientation);
             Log.d(TAG, "Capturing photo with JPEG orientation: " + jpegOrientation + " for display orientation: " + displayOrientation);
 
+            // Apply ZSL + MFNR settings for photo capture (if supported)
+            if (mCameraSettings != null && mCameraSettings.isMfnrSupported()) {
+                mCameraSettings.configureCaptureBuilder(stillBuilder);
+            }
+
             // Capture the photo immediately
+            // CRITICAL: Do NOT call stopRepeating() before capture - this would clear the ZSL buffer
+            // ZSL buffer is required for MFNR to access historical frames for multi-frame merging
+            // The repeating request must continue running to maintain the circular buffer
             cameraCaptureSession.capture(stillBuilder.build(), new CameraCaptureSession.CaptureCallback() {
                 @Override
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
