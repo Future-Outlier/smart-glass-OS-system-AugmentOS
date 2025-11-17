@@ -41,6 +41,10 @@ const setupSentry = () => {
 
   const release = `${process.env.EXPO_PUBLIC_MENTRAOS_VERSION}`
   const dist = `${process.env.EXPO_PUBLIC_BUILD_TIME}-${process.env.EXPO_PUBLIC_BUILD_COMMIT}`
+  const branch = process.env.EXPO_PUBLIC_BUILD_BRANCH
+  const isProd = branch == "main" || branch == "staging"
+  const sampleRate = isProd ? 0.1 : 1.0
+
   Sentry.init({
     dsn: sentryDsn,
 
@@ -49,7 +53,7 @@ const setupSentry = () => {
     sendDefaultPii: true,
 
     // send 1/10th of events in prod:
-    tracesSampleRate: __DEV__ ? 1.0 : 0.1,
+    tracesSampleRate: sampleRate,
 
     // debug: true,
     _experiments: {
