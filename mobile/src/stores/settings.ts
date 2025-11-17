@@ -138,6 +138,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.notifications_blocklist]: [],
 }
 
+// these settings are automatically synced to the core:
 const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.sensing_enabled,
   SETTINGS_KEYS.power_saving_mode,
@@ -171,6 +172,11 @@ const CORE_SETTINGS_KEYS = [
   // notifications:
   SETTINGS_KEYS.notifications_enabled,
   SETTINGS_KEYS.notifications_blocklist,
+]
+
+const PER_GLASSES_SETTINGS_KEYS = [
+  SETTINGS_KEYS.default_wearable,
+  SETTINGS_KEYS.preferred_mic,
 ]
 
 interface SettingsState {

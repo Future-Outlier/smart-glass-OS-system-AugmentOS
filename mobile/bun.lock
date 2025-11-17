@@ -93,7 +93,7 @@
         "react-native-wifi-reborn": "^4.13.6",
         "semver": "^7.7.3",
         "tar-js": "^0.3.0",
-        "typesafe-ts": "^1.6.0",
+        "typesafe-ts": "^1.7.0",
         "zustand": "^5.0.8",
         "zx": "^8.8.5",
       },
@@ -2460,7 +2460,7 @@
 
     "typed-emitter": ["typed-emitter@2.1.0", "", { "optionalDependencies": { "rxjs": "*" } }, "sha512-g/KzbYKbH5C2vPkaXGu8DJlHrGKHLsM25Zg9WuC9pMGfuvT+X25tZQWo5fK1BjBm8+UrVE9LDCvaY0CQk+fXDA=="],
 
-    "typesafe-ts": ["typesafe-ts@1.6.0", "", { "peerDependencies": { "@typescript-eslint/utils": "^8.39.0" } }, "sha512-OudSOrEg+VnEPRiXfWIgtvphQKhL03JLj5tsEkBiYXw7/UJcS2y+lLGvhMO3ZJpMe7jdV60OMhFwtsH3UxHNQQ=="],
+    "typesafe-ts": ["typesafe-ts@1.7.0", "", { "peerDependencies": { "@typescript-eslint/utils": "^8.39.0" } }, "sha512-KLwTkT0qk9mOAoYbHqdT6aOlyblKEKbvOuOgSCKjuE/hzkXciJgny5DYbJTchijl9s+WhbkxXXcpZjtIPnjt+Q=="],
 
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
