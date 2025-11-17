@@ -1,16 +1,18 @@
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
+
+import BackendUrl from "@/components/dev/BackendUrl"
 import {Header, Icon, Screen, Text} from "@/components/ignite"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
-import BackendUrl from "@/components/dev/BackendUrl"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
+
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
@@ -70,6 +72,16 @@ export default function DeveloperSettingsScreen() {
         <Spacer height={theme.spacing.s4} />
 
         <RouteButton label="🔄 Test Mini App" subtitle="Test the Mini App" onPress={() => push("/test/mini-app")} />
+
+        <Spacer height={theme.spacing.s4} />
+
+        <RouteButton
+          label="🔄 Test Sentry"
+          subtitle="Send a crash to Sentry"
+          onPress={() => {
+            throw new Error("Test Sentry crash")
+          }}
+        />
 
         <Spacer height={theme.spacing.s4} />
 
