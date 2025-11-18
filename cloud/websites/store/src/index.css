@@ -194,22 +194,25 @@
   --text-primary: #e4e4e7;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
+  --place-holder: #fafafa;
 
   /* Borders & Inputs */
   --border-color: #27272a;
   --border: #27272a;
+  --border-btn: #525252;
   --input: #262626;
 
   /* Foregrounds */
   --primary-foreground: #262626;
   --secondary-foreground: #fafafa;
   --muted-foreground: #a3a3a3;
-  --foreground: #e4e4e7;
+  --foreground: #fafafa;
 
   /* Buttons */
   --button-bg: #ffffff;
   --button-text: #000000;
   --button-hover: #e5e5e5;
+  --share-button: #222222;
 
   /* Accents & States */
   --accent-primary: #22c55e;
@@ -235,10 +238,12 @@
   --text-primary: #000000;
   --text-secondary: #6c757d;
   --text-muted: #adb5bd;
+  --place-holder: #ababab;
 
   /* Borders & Inputs */
   --border-color: #dee2e6;
   --border: #e5e5e5;
+  --border-btn: #e5e5e5;
   --input: #e5e5e5;
 
   /* Foregrounds */
@@ -251,6 +256,7 @@
   --button-bg: #000000;
   --button-text: #ffffff;
   --button-hover: #333333;
+  --share-button: #ffffff;
 
   /* Accents & States */
   --accent-primary: #242454;
@@ -262,11 +268,18 @@
 
   /* Backward compatibility alias (typo fix) */
   --primaary-foreground: #f5f5f5;
+
+  /* Special Cases FINAL */
+
+  --caption-btn-slider: #2e610b;
+  --x-btn-slider: #0a0a0a;
+  --streamer-btn-slider: #0a0a0a;
+  --merge-btn-slider: #8f2995;
 }
 
 /* Theme-aware search input */
 .theme-search-input::placeholder {
-  color: var(--text-muted);
+  color: var(--place-holder);
 }
 
 /* Custom scrollbar */

@@ -128,6 +128,10 @@ app.use(
       "https://augmentos.pages.dev",
       "https://augmentos-appstore-2.pages.dev",
 
+      // ngrok development tunnels
+      "https://webview.ngrok.dev",
+      "https://mentra-cloud-server.ngrok.app",
+
       // mentra.glass API
       "https://mentra.glass",
       "https://api.mentra.glass",

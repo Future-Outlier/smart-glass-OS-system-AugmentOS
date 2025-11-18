@@ -1,10 +1,12 @@
 import {useState, useEffect, useCallback, useMemo, useRef} from "react"
 import {useNavigate, useSearchParams} from "react-router-dom"
 import {X, Building} from "lucide-react"
-import {motion} from "framer-motion"
+import {motion, AnimatePresence} from "framer-motion"
 import {useAuth} from "@mentra/shared"
 import {useTheme} from "../hooks/useTheme"
 import {useSearch} from "../contexts/SearchContext"
+import {useProfileDropdown} from "../contexts/ProfileDropdownContext"
+import {usePlatform} from "../hooks/usePlatform"
 import SearchBar from "../components/SearchBar"
 import api, {AppFilterOptions} from "../api"
 import {AppI} from "../types"
@@ -15,6 +17,7 @@ import SkeletonSlider from "../components/SkeletonSlider"
 import {toast} from "sonner"
 import {formatCompatibilityError} from "../utils/errorHandling"
 import {CaptionsSlideMobile, MergeSlideMobile, StreamSlideMobile, XSlideMobile} from "../components/ui/slides"
+import {ProfileDropdown} from "../components/ProfileDropdown"
 
 /**
  * Mobile-optimized AppStore component
@@ -23,6 +26,8 @@ const AppStoreMobile: React.FC = () => {
   const navigate = useNavigate()
   const {isAuthenticated, supabaseToken, coreToken, isLoading: authLoading} = useAuth()
   const {theme} = useTheme()
+  const {isWebView} = usePlatform()
+  const profileDropdown = useProfileDropdown()
   const [searchParams, setSearchParams] = useSearchParams()
 
   // Get organization ID from URL query parameter
@@ -414,6 +419,35 @@ const AppStoreMobile: React.FC = () => {
           className="w-full"
         />
       </div>
+
+      {/* Profile dropdown - only show on mobile non-webview when authenticated */}
+      {!isWebView && isAuthenticated && (
+        <AnimatePresence>
+          {profileDropdown.isOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{opacity: 0}}
+                animate={{opacity: 1}}
+                exit={{opacity: 0}}
+                transition={{duration: 0.2}}
+                className="fixed inset-0 bg-black/20 z-40"
+                onClick={() => profileDropdown.setIsOpen(false)}
+              />
+
+              {/* Dropdown Content */}
+              <motion.div
+                initial={{opacity: 0, y: -10}}
+                animate={{opacity: 1, y: 0}}
+                exit={{opacity: 0, y: -10}}
+                transition={{duration: 0.2}}
+                className="fixed top-[85px] left-[24px] right-[24px] z-50">
+                <ProfileDropdown variant="mobile" />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      )}
 
       <main className="px-[24px] pb-6">
         {/* Organization filter indicator */}
