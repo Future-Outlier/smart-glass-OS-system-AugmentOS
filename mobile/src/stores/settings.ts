@@ -312,7 +312,8 @@ export const useSettingsStore = create<SettingsState>()(
       if (PER_GLASSES_SETTINGS_KEYS.includes(key as (typeof PER_GLASSES_SETTINGS_KEYS)[number])) {
         const glasses = state.getSetting(SETTINGS_KEYS.default_wearable)
         if (glasses) {
-          return `${glasses}-${key}`
+          const newKey = `${glasses}-${key}`
+          return state.getSetting(newKey)
         }
       }
 
