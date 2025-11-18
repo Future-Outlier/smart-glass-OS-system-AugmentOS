@@ -1,4 +1,4 @@
-import {useState, useEffect, useCallback, useMemo, useRef} from "react"
+import React, {useState, useEffect, useCallback, useMemo, useRef} from "react"
 import {useNavigate, useSearchParams} from "react-router-dom"
 import {X, Building, ChevronLeft, ChevronRight} from "lucide-react"
 import {motion} from "framer-motion"
