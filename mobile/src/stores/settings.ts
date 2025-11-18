@@ -173,7 +173,7 @@ const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.notifications_blocklist,
 ]
 
-const PER_GLASSES_SETTINGS_KEYS = [SETTINGS_KEYS.default_wearable, SETTINGS_KEYS.preferred_mic]
+const PER_GLASSES_SETTINGS_KEYS = [SETTINGS_KEYS.preferred_mic]
 
 interface SettingsState {
   // Settings values
@@ -190,8 +190,10 @@ interface SettingsState {
   loadAllSettings: () => Promise<void>
   // Utility methods
   getDefaultValue: (key: string) => any
-  getSpecialCases: (key: string) => Promise<any>
-  // setSpecialCases: (key: string, value: any) => Promise<void>
+  // handle special cases:
+  setSpecialCases: (key: string) => string
+  getSpecialCases: (key: string) => string
+  // helper methods:
   getRestUrl: () => string
   getWsUrl: () => string
   getCoreSettings: () => Record<string, any>
@@ -202,6 +204,9 @@ export const useSettingsStore = create<SettingsState>()(
     isInitialized: false,
     loadingKeys: new Set(),
     setSetting: async (key: string, value: any, updateCore = true, updateServer = true) => {
+      const state = get()
+      key = await state.setSpecialCases(key)
+
       // Update store immediately for optimistic UI
       set(state => ({
         settings: {...state.settings, [key]: value},
@@ -277,7 +282,18 @@ export const useSettingsStore = create<SettingsState>()(
       }
       return DEFAULT_SETTINGS[key]
     },
-    getSpecialCases: (key: string) => {
+    setSpecialCases: (key: string): string => {
+      const state = get()
+      // handle per-glasses settings:
+      if (PER_GLASSES_SETTINGS_KEYS.includes(key as (typeof PER_GLASSES_SETTINGS_KEYS)[number])) {
+        const glasses = state.getSetting(SETTINGS_KEYS.default_wearable)
+        if (glasses) {
+          return `${glasses}-${key}`
+        }
+      }
+      return key
+    },
+    getSpecialCases: (key: string): string => {
       const state = get()
       if (key === SETTINGS_KEYS.time_zone) {
         const override = state.getSetting(SETTINGS_KEYS.time_zone_override)
@@ -293,14 +309,15 @@ export const useSettingsStore = create<SettingsState>()(
       }
 
       // handle per-glasses settings:
-      // if (PER_GLASSES_SETTINGS_KEYS.includes(key as (typeof PER_GLASSES_SETTINGS_KEYS)[number])) {
-      //   const glasses = get().getSetting(SETTINGS_KEYS.default_wearable)
-      //   if (glasses) {
-      //     return glasses[key]
-      //   }
-      // }
+      if (PER_GLASSES_SETTINGS_KEYS.includes(key as (typeof PER_GLASSES_SETTINGS_KEYS)[number])) {
+        const glasses = state.getSetting(SETTINGS_KEYS.default_wearable)
+        if (glasses) {
+          const newKey = `${glasses}-${key}`
+          return state.getSetting(newKey)
+        }
+      }
 
-      return null
+      return key
     },
     loadSetting: async (key: string) => {
       // check if initialized:
@@ -382,7 +399,7 @@ export const useSettingsStore = create<SettingsState>()(
       CORE_SETTINGS_KEYS.forEach(key => {
         coreSettings[key] = state.getSetting(key)
       })
-      console.log(coreSettings)
+      // console.log(coreSettings)
       return coreSettings
     },
   })),
