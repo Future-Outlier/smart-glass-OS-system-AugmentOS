@@ -171,6 +171,10 @@ const getDefaultSettings = () =>
     {} as Record<string, any>,
   )
 
+const migrateSettings = () => {
+  useSettingsStore.getState().setSetting(SETTINGS.enable_squircles.key, true, false, true)
+}
+
 export const useSettingsStore = create<SettingsState>()(
   subscribeWithSelector((set, get) => ({
     settings: getDefaultSettings(),
@@ -366,7 +370,7 @@ export const useSettingsStore = create<SettingsState>()(
       set(_state => ({
         loadingKeys: new Set(Object.keys(SETTINGS)),
       }))
-      const loadedSettings: Record<string, any> = {}
+      let loadedSettings: Record<string, any> = {}
       for (const setting of Object.values(SETTINGS)) {
         try {
           const value = await get().loadSetting(setting.key)
@@ -382,6 +386,8 @@ export const useSettingsStore = create<SettingsState>()(
         isInitialized: true,
         loadingKeys: new Set(),
       })
+      // update any settings that need to be migrated:
+      migrateSettings()
     },
     getRestUrl: () => {
       const serverUrl = get().getSetting(SETTINGS.backend_url.key)
