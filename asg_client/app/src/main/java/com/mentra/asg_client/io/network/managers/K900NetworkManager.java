@@ -37,6 +37,10 @@ public class K900NetworkManager extends BaseNetworkManager {
     private final WifiManager wifiManager;
     private final DebugNotificationManager notificationManager;
     private BroadcastReceiver wifiStateReceiver;
+
+    // Hotspot SSID retry tracking
+    private final Handler ssidRetryHandler = new Handler(Looper.getMainLooper());
+    private Runnable pendingSsidRetryRunnable = null;
     
     /**
      * Create a new K900NetworkManager
@@ -220,6 +224,9 @@ public class K900NetworkManager extends BaseNetworkManager {
                 Log.d(TAG, "🔥 ✅ Got K900 hotspot SSID from Settings.Global: " + ssid +
                           " (attempt " + (attemptNumber + 1) + "/" + MAX_ATTEMPTS + ")");
 
+                // Clear pending retry since we succeeded
+                pendingSsidRetryRunnable = null;
+
                 updateHotspotState(true, ssid, K900_HOTSPOT_PASSWORD);
                 notifyHotspotStateChanged(true);
 
@@ -239,9 +246,12 @@ public class K900NetworkManager extends BaseNetworkManager {
                     Log.w(TAG, "🔥 ⚠️ SSID not available yet (attempt " + (attemptNumber + 1) +
                                "/" + MAX_ATTEMPTS + "), retrying in " + delayMs + "ms...");
 
-                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        tryReadHotspotSSID(nextAttempt);
-                    }, delayMs);
+                    // Cancel any previous pending retry
+                    cancelPendingSsidRetries();
+
+                    // Schedule new retry and track it
+                    pendingSsidRetryRunnable = () -> tryReadHotspotSSID(nextAttempt);
+                    ssidRetryHandler.postDelayed(pendingSsidRetryRunnable, delayMs);
                 } else {
                     // Max attempts reached - log error but DON'T disable hotspot
                     // The system may still enable it, and we don't want to send conflicting intents
@@ -264,9 +274,12 @@ public class K900NetworkManager extends BaseNetworkManager {
 
                 Log.w(TAG, "🔥 ⚠️ Retrying in " + delayMs + "ms...");
 
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    tryReadHotspotSSID(nextAttempt);
-                }, delayMs);
+                // Cancel any previous pending retry
+                cancelPendingSsidRetries();
+
+                // Schedule new retry and track it
+                pendingSsidRetryRunnable = () -> tryReadHotspotSSID(nextAttempt);
+                ssidRetryHandler.postDelayed(pendingSsidRetryRunnable, delayMs);
             } else {
                 Log.e(TAG, "🔥 ❌ Failed to read SSID after " + MAX_ATTEMPTS +
                            " attempts due to errors");
@@ -305,7 +318,19 @@ public class K900NetworkManager extends BaseNetworkManager {
             notifyHotspotStateChanged(false);
         }
     }
-    
+
+    /**
+     * Cancels any pending SSID retry attempts
+     * Called when hotspot is stopped to prevent stale callbacks from firing
+     */
+    private void cancelPendingSsidRetries() {
+        if (pendingSsidRetryRunnable != null) {
+            Log.d(TAG, "🔥 ⛔ Cancelling pending SSID retry");
+            ssidRetryHandler.removeCallbacks(pendingSsidRetryRunnable);
+            pendingSsidRetryRunnable = null;
+        }
+    }
+
     @Override
     public void stopHotspot() {
         Log.d(TAG, "🔥 =========================================");
@@ -325,7 +350,10 @@ public class K900NetworkManager extends BaseNetworkManager {
             
             // Clear hotspot state immediately
             clearHotspotState();
-            
+
+            // Cancel any pending SSID retry attempts
+            cancelPendingSsidRetries();
+
             Log.d(TAG, "🔥 ✅ K900 hotspot disable intent sent");
             notificationManager.showHotspotStateNotification(false);
             notifyHotspotStateChanged(false);
