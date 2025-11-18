@@ -1170,6 +1170,28 @@ export function GalleryScreen() {
     }
   }, [])
 
+  // Handle hotspot errors from glasses
+  useEffect(() => {
+    const handleHotspotError = (eventData: any) => {
+      console.error("[GalleryScreen] Hotspot error:", eventData.error_message)
+
+      // Clear any pending connection attempts
+      if (hotspotConnectionTimeoutRef.current) {
+        clearTimeout(hotspotConnectionTimeoutRef.current)
+        hotspotConnectionTimeoutRef.current = null
+      }
+
+      // Set error message and transition to error state
+      setErrorMessage(eventData.error_message || "Failed to start hotspot")
+      transitionToState(GalleryState.ERROR)
+    }
+
+    GlobalEventEmitter.addListener("HOTSPOT_ERROR", handleHotspotError)
+    return () => {
+      GlobalEventEmitter.removeListener("HOTSPOT_ERROR", handleHotspotError)
+    }
+  }, [])
+
   // Monitor phone SSID
   useEffect(() => {
     const phoneSSID = networkStatus.phoneSSID

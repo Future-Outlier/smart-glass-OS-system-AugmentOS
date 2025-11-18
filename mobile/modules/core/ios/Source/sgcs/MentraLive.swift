@@ -1629,6 +1629,11 @@ class MentraLive: NSObject, SGCManager {
             let ip = json["hotspot_gateway_ip"] as? String ?? ""
             updateHotspotStatus(enabled: enabled, ssid: ssid, password: password, ip: ip)
 
+        case "hotspot_error":
+            let errorMessage = json["error_message"] as? String ?? "Unknown hotspot error"
+            let timestamp = json["timestamp"] as? Int64 ?? Int64(Date().timeIntervalSince1970 * 1000)
+            handleHotspotError(errorMessage: errorMessage, timestamp: timestamp)
+
         case "wifi_scan_result":
             handleWifiScanResult(json)
 
@@ -2668,6 +2673,19 @@ class MentraLive: NSObject, SGCManager {
 
         // Trigger a full status update so React Native gets the updated glasses_info
         CoreManager.shared.handle_request_status()
+    }
+
+    private func handleHotspotError(errorMessage: String, timestamp: Int64) {
+        Bridge.log("🔥 ❌ Hotspot error: \(errorMessage)")
+        emitHotspotError(errorMessage: errorMessage, timestamp: timestamp)
+    }
+
+    private func emitHotspotError(errorMessage: String, timestamp: Int64) {
+        let eventBody: [String: Any] = [
+            "error_message": errorMessage,
+            "timestamp": timestamp,
+        ]
+        Bridge.sendTypedMessage("hotspot_error", body: eventBody)
     }
 
     private func handleGalleryStatus(

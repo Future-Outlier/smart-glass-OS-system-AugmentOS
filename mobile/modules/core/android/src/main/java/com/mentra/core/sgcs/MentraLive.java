@@ -1733,6 +1733,14 @@ public class MentraLive extends SGCManager {
                 updateHotspotStatus(hotspotEnabled, hotspotSsid, hotspotPassword, hotspotGatewayIp);
                 break;
 
+            case "hotspot_error":
+                // Process hotspot error
+                String errorMessage = json.optString("error_message", "Unknown hotspot error");
+                long timestamp = json.optLong("timestamp", System.currentTimeMillis());
+
+                handleHotspotError(errorMessage, timestamp);
+                break;
+
             case "photo_response":
                 // Process photo response (success or failure)
                 String requestId = json.optString("requestId", "");
@@ -2459,6 +2467,16 @@ public class MentraLive extends SGCManager {
 
         // Trigger a full status update so React Native gets the updated glasses_info
         CoreManager.getInstance().handle_request_status();
+    }
+
+    /**
+     * Handle hotspot error and notify React Native
+     */
+    private void handleHotspotError(String errorMessage, long timestamp) {
+        Bridge.log("LIVE: 🔥 ❌ Hotspot error: " + errorMessage);
+
+        // Send hotspot error event to React Native
+        Bridge.sendHotspotError(errorMessage, timestamp);
     }
 
     /**

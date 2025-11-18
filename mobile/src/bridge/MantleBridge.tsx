@@ -120,6 +120,12 @@ export class MantleBridge {
             local_ip: data.local_ip,
           })
           break
+        case "hotspot_error":
+          GlobalEventEmitter.emit("HOTSPOT_ERROR", {
+            error_message: data.error_message,
+            timestamp: data.timestamp,
+          })
+          break
         case "gallery_status":
           GlobalEventEmitter.emit("GALLERY_STATUS", {
             photos: data.photos,

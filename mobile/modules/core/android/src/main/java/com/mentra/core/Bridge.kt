@@ -452,6 +452,16 @@ public class Bridge private constructor() {
             sendTypedMessage("hotspot_status_change", eventBody as Map<String, Any>)
         }
 
+        /** Send hotspot error - notifies React Native of hotspot failures */
+        @JvmStatic
+        fun sendHotspotError(errorMessage: String, timestamp: Long) {
+            val eventBody = HashMap<String, Any>()
+            eventBody["error_message"] = errorMessage
+            eventBody["timestamp"] = timestamp
+
+            sendTypedMessage("hotspot_error", eventBody as Map<String, Any>)
+        }
+
         /** Send version info - matches iOS MentraLive.swift emitVersionInfo */
         @JvmStatic
         fun sendVersionInfo(
