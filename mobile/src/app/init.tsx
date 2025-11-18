@@ -65,6 +65,8 @@ export default function InitScreen() {
 
   const checkCustomUrl = async (): Promise<boolean> => {
     const defaultUrl = useSettingsStore.getState().getDefaultValue(SETTINGS.backend_url.key)
+    console.log("defaultUrl:", defaultUrl)
+    console.log("backendUrl:", backendUrl)
     const isCustom = backendUrl !== defaultUrl
     setIsUsingCustomUrl(isCustom)
     return isCustom

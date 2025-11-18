@@ -42,11 +42,15 @@ export const SETTINGS: Record<string, Setting> = {
   location_tier: {key: "location_tier", defaultValue: "", writable: true},
   // state:
   core_token: {key: "core_token", defaultValue: "", writable: true},
+  default_wearable: {key: "default_wearable", defaultValue: "", writable: true},
+  device_name: {key: "device_name", defaultValue: "", writable: true},
+  device_address: {key: "device_address", defaultValue: "", writable: true},
   // ui state:
   theme_preference: {key: "theme_preference", defaultValue: "system", writable: true},
   enable_phone_notifications: {key: "enable_phone_notifications", defaultValue: false, writable: true},
   settings_access_count: {key: "settings_access_count", defaultValue: 0, writable: true},
   show_advanced_settings: {key: "show_advanced_settings", defaultValue: false, writable: true},
+  onboarding_completed: {key: "onboarding_completed", defaultValue: false, writable: true},
 
   // core settings:
   sensing_enabled: {key: "sensing_enabled", defaultValue: true, writable: true},
@@ -150,8 +154,8 @@ interface SettingsState {
   // Utility methods
   getDefaultValue: (key: string) => any
   // handle special cases:
-  setSpecialCases: (key: string) => string
-  getSpecialCases: (key: string) => string
+  setSpecialCasesKey: (key: string) => string
+  getSpecialCasesValue: (key: string) => string | null
   // helper methods:
   getRestUrl: () => string
   getWsUrl: () => string
@@ -174,7 +178,7 @@ export const useSettingsStore = create<SettingsState>()(
     loadingKeys: new Set(),
     setSetting: async (key: string, value: any, updateCore = true, updateServer = true) => {
       const state = get()
-      key = await state.setSpecialCases(key)
+      key = await state.setSpecialCasesKey(key)
 
       if (!SETTINGS[key].writable) {
         console.error(`SETTINGS: ${key} is not writable!`)
@@ -241,10 +245,19 @@ export const useSettingsStore = create<SettingsState>()(
     },
     getSetting: (key: string) => {
       const state = get()
-      const specialCase = state.getSpecialCases(key)
+      const specialCase = state.getSpecialCasesValue(key)
       if (specialCase !== null) {
+        // console.log(`GET SETTING SPECIAL CASE: ${key} = ${specialCase}`)
         return specialCase
       }
+      // if it contains a colon, the first part is the key for the default value:
+      if (key.includes(":")) {
+        const [keyPart, specifier] = key.split(":")
+        if (specifier) {
+          return state.settings[key] ?? SETTINGS[keyPart].defaultValue
+        }
+      }
+      // console.log(`GET SETTING: ${key} = ${state.settings[key]}`)
       return state.settings[key] ?? SETTINGS[key].defaultValue
     },
     getDefaultValue: (key: string) => {
@@ -256,18 +269,18 @@ export const useSettingsStore = create<SettingsState>()(
       }
       return SETTINGS[key].defaultValue
     },
-    setSpecialCases: (key: string): string => {
+    setSpecialCasesKey: (key: string): string => {
       const state = get()
       // handle per-glasses settings:
       if (PER_GLASSES_SETTINGS_KEYS.includes(key as (typeof PER_GLASSES_SETTINGS_KEYS)[number])) {
         const glasses = state.getSetting(SETTINGS.default_wearable.key)
         if (glasses) {
-          return `${glasses}-${key}`
+          return `${key}:${glasses}`
         }
       }
       return key
     },
-    getSpecialCases: (key: string): string => {
+    getSpecialCasesValue: (key: string): string | null => {
       const state = get()
       if (key === SETTINGS.time_zone.key) {
         const override = state.getSetting(SETTINGS.time_zone_override.key)
@@ -286,12 +299,12 @@ export const useSettingsStore = create<SettingsState>()(
       if (PER_GLASSES_SETTINGS_KEYS.includes(key as (typeof PER_GLASSES_SETTINGS_KEYS)[number])) {
         const glasses = state.getSetting(SETTINGS.default_wearable.key)
         if (glasses) {
-          const newKey = `${glasses}-${key}`
+          const newKey = `${key}:${glasses}`
           return state.getSetting(newKey)
         }
       }
 
-      return key
+      return null
     },
     loadSetting: async (key: string) => {
       // check if initialized:
@@ -305,6 +318,7 @@ export const useSettingsStore = create<SettingsState>()(
         if (jsonValue !== null) {
           const value = JSON.parse(jsonValue)
           // Update store with loaded value
+          // console.log(`LOADED SETTING2: ${key} = ${value}`)
           set(state => ({
             settings: {...state.settings, [key]: value},
           }))
@@ -343,6 +357,7 @@ export const useSettingsStore = create<SettingsState>()(
       for (const setting of Object.values(SETTINGS)) {
         try {
           const value = await get().loadSetting(setting.key)
+          // console.log(`LOADED SETTING: ${setting.key} = ${value}`)
           loadedSettings[setting.key] = value
         } catch (error) {
           console.error(`Failed to load setting ${setting.key}:`, error)
