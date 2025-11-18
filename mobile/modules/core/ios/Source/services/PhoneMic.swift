@@ -528,7 +528,7 @@ class PhoneMic {
             return false
         }
 
-        inputNode.installTap(onBus: 0, bufferSize: 256, format: inputFormat) {
+        inputNode.installTap(onBus: 0, bufferSize: 256, format: nil) {
             [weak self] buffer, _ in
             guard let self = self else { return }
 
