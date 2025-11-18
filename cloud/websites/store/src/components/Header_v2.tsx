@@ -161,7 +161,7 @@ const Header: React.FC<HeaderProps> = ({onSearch, onSearchClear, onSearchChange}
         borderBottom: !isMobile && isScrolled ? `1px solid var(--border-color)` : "1px solid transparent",
       }}>
       <div
-        className={`mx-auto px-[24px] sm:px-12 md:px-16 lg:px-24  ${isMobile ? (isAppDetailPage ? "pt-[32px] pb-[32px]" : "pt-[32px]") : "pb-[16px] pt-[16px]"}`}>
+        className={`mx-auto px-[24px] sm:px-12 md:px-16 lg:px-24 z-20  ${isMobile ? (isAppDetailPage ? "pt-[32px] pb-[32px]" : "pt-[32px]") : "pb-[16px] pt-[16px]"}`}>
         {/* Two-row layout for medium screens, single row for large+ */}
         <div className="flex relative flex-row lg:flex-row lg:items-center lg:justify-between items-center ">
           {/* Top row: Logo and Buttons */}
