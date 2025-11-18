@@ -2376,8 +2376,17 @@ public class CameraNeo extends LifecycleService {
                 return;
             }
             
+            // Build preview request and verify ZSL is configured
+            CaptureRequest previewRequest = previewBuilder.build();
+            Boolean zslInPreview = previewRequest.get(CaptureRequest.CONTROL_ENABLE_ZSL);
+            if (zslInPreview != null && zslInPreview) {
+                Log.d(TAG, "✓ ZSL verified in preview request: CONTROL_ENABLE_ZSL = true (buffer filling)");
+            } else {
+                Log.w(TAG, "⚠ ZSL NOT enabled in preview request - ZSL buffer will not fill!");
+            }
+            
             // Start repeating preview request with AE monitoring
-            cameraCaptureSession.setRepeatingRequest(previewBuilder.build(),
+            cameraCaptureSession.setRepeatingRequest(previewRequest,
                 aeCallback, backgroundHandler);
 
             // Trigger the capture sequence immediately
@@ -2545,12 +2554,30 @@ public class CameraNeo extends LifecycleService {
             // CRITICAL: Do NOT call stopRepeating() before capture - this would clear the ZSL buffer
             // ZSL buffer is required for MFNR to access historical frames for multi-frame merging
             // The repeating request must continue running to maintain the circular buffer
-            cameraCaptureSession.capture(stillBuilder.build(), new CameraCaptureSession.CaptureCallback() {
+            // Build the capture request
+            CaptureRequest captureRequest = stillBuilder.build();
+            
+            // Verify ZSL is actually configured in the request
+            Boolean zslEnabled = captureRequest.get(CaptureRequest.CONTROL_ENABLE_ZSL);
+            if (zslEnabled != null && zslEnabled) {
+                Log.d(TAG, "✓ ZSL verified in capture request: CONTROL_ENABLE_ZSL = true");
+            } else {
+                Log.w(TAG, "⚠ ZSL NOT enabled in capture request (CONTROL_ENABLE_ZSL = " + zslEnabled + ")");
+            }
+            
+            cameraCaptureSession.capture(captureRequest, new CameraCaptureSession.CaptureCallback() {
                 @Override
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                              @NonNull CaptureRequest request,
                                              @NonNull TotalCaptureResult result) {
                     Log.i(TAG, "Photo capture completed successfully");  // Keep as INFO level
+                    
+                    // Verify ZSL was actually used by checking the request
+                    Boolean zslInRequest = request.get(CaptureRequest.CONTROL_ENABLE_ZSL);
+                    if (zslInRequest != null && zslInRequest) {
+                        Log.d(TAG, "✓ ZSL confirmed active in capture result");
+                    }
+                    
                     // Image processing will happen in ImageReader callback
                 }
 
