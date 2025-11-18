@@ -5,13 +5,16 @@ await setBuildEnv();
 
 console.log('Building Android release...');
 
-// Prebuild Android platform
+// Prebuild Android
 await $({ stdio: 'inherit' })`bun expo prebuild --platform android`;
+
+// bundle js code:
+await $({stdio: "inherit"})`bun expo export --platform android`
 
 // Build release bundle
 await $({ stdio: 'inherit', cwd: 'android' })`./gradlew bundleRelease`;
 
 // Install APK on device
-await $({ stdio: 'inherit' })`adb install -r app/build/outputs/apk/release/app-release.apk`;
+await $({ stdio: 'inherit' })`adb install -r android/app/build/outputs/apk/release/app-release.apk`;
 
 console.log('✅ Android release built and installed successfully!');

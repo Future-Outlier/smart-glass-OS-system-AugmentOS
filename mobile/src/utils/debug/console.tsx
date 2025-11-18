@@ -1,5 +1,15 @@
 import {useState, useEffect, useRef} from "react"
-import {ScrollView, TouchableOpacity, View, PanResponder, Animated, ViewStyle, TextStyle} from "react-native"
+import {
+  ScrollView,
+  TouchableOpacity,
+  View,
+  PanResponder,
+  Animated,
+  ViewStyle,
+  TextStyle,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+} from "react-native"
 import {Text} from "@/components/ignite/Text"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
@@ -11,6 +21,8 @@ export const ConsoleLogger = () => {
   const [isVisible, setIsVisible] = useState(false)
   const scrollViewRef = useRef(null)
   const [debugConsole] = useSetting(SETTINGS_KEYS.debug_console)
+  const consoleOverrideSetup = useRef(false)
+  const isAtBottom = useRef(true)
 
   const pan = useRef(new Animated.ValueXY({x: 0, y: 50})).current
   const toggleButtonPan = useRef(new Animated.ValueXY({x: 0, y: 0})).current
@@ -61,50 +73,73 @@ export const ConsoleLogger = () => {
     }),
   ).current
 
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const {contentOffset, contentSize, layoutMeasurement} = event.nativeEvent
+    const isBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 20
+    isAtBottom.current = isBottom
+  }
+
   useEffect(() => {
-    const originalLog = console.log
-    const originalWarn = console.warn
-    const originalError = console.error
-
-    const addLog = (type, args) => {
-      const message = args.map(arg => (typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg))).join(" ")
-
-      queueMicrotask(() => {
-        setLogs(prev => {
-          const newLogs = [
-            ...prev,
-            {
-              type,
-              message,
-              timestamp: new Date().toLocaleTimeString(),
-            },
-          ]
-          return newLogs.slice(-500)
-        })
-      })
+    // Only override console if debugConsole is enabled and we haven't set it up yet
+    if (!debugConsole || consoleOverrideSetup.current) {
+      return
     }
 
-    console.log = (...args) => {
-      addLog("log", args)
-      originalLog(...args)
-    }
+    // Use setTimeout to ensure React DevTools initializes first
+    const timeoutId = setTimeout(() => {
+      const originalLog = console.log
+      const originalWarn = console.warn
+      const originalError = console.error
 
-    console.warn = (...args) => {
-      addLog("warn", args)
-      originalWarn(...args)
-    }
+      const addLog = (type: any, args: any[]) => {
+        const message = args
+          .map(arg => (typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)))
+          .join(" ")
 
-    console.error = (...args) => {
-      addLog("error", args)
-      originalError(...args)
-    }
+        setTimeout(() => {
+          setLogs(prev => {
+            const newLogs = [
+              ...prev,
+              {
+                type,
+                message,
+                timestamp: new Date().toLocaleTimeString(),
+              },
+            ]
+            return newLogs.slice(-500)
+          })
+        }, 1000)
+      }
+
+      console.log = (...args) => {
+        addLog("log", args)
+        originalLog(...args)
+      }
+
+      console.warn = (...args) => {
+        addLog("warn", args)
+        originalWarn(...args)
+      }
+
+      console.error = (...args) => {
+        try {
+          addLog("error", args)
+          originalError(...args)
+        } catch (error) {
+          console.log("Error in console.error", error)
+        }
+      }
+
+      consoleOverrideSetup.current = true
+    }, 1000)
 
     return () => {
+      clearTimeout(timeoutId)
       // console.log = originalLog
       // console.warn = originalWarn
       // console.error = originalError
     }
-  }, [])
+  }, [debugConsole])
 
   if (!debugConsole) {
     return null
@@ -155,7 +190,14 @@ export const ConsoleLogger = () => {
       <ScrollView
         ref={scrollViewRef}
         style={themed($logContainer)}
-        onContentSizeChange={() => scrollViewRef.current?.scrollToEnd()}>
+        contentContainerStyle={themed($logContentContainer)}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onContentSizeChange={() => {
+          if (isAtBottom.current) {
+            scrollViewRef.current?.scrollToEnd()
+          }
+        }}>
         {logs.map((log, index) => (
           <View key={index} style={themed($logEntry)}>
             {/*<Text text={log.timestamp} style={themed($timestamp)} />*/}
@@ -178,10 +220,10 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
   left: 0,
   right: 0,
-  height: 250,
+  height: 300,
   width: "90%",
-  backgroundColor: colors.backgroundAlt,
-  borderWidth: 2,
+  backgroundColor: colors.primary_foreground,
+  borderWidth: 1,
   borderColor: colors.border,
   borderRadius: spacing.s6,
 })
@@ -196,9 +238,9 @@ const $header: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderRadius: spacing.s6,
   borderBottomLeftRadius: 0,
   borderBottomRightRadius: 0,
-  borderBottomWidth: 2,
+  borderBottomWidth: 1,
   borderBottomColor: colors.border,
-  borderColor: colors.backgroundAlt,
+  borderColor: colors.border,
 })
 
 const $headerText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -213,7 +255,7 @@ const $headerButtons: ThemedStyle<ViewStyle> = ({spacing}) => ({
 })
 
 const $clearButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.palette.neutral400,
+  backgroundColor: colors.primary_foreground,
   paddingHorizontal: spacing.s3,
   paddingVertical: spacing.s1,
   borderRadius: spacing.s2,
@@ -231,11 +273,14 @@ const $buttonText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 12,
 })
 
-const $logContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $logContainer: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
+})
+
+const $logContentContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingHorizontal: spacing.s2,
-  // marginbottom: spacing.s6,
-  // paddingBottom: spacing.s6,
+  paddingBottom: spacing.s3,
+  paddingTop: spacing.s2,
 })
 
 const $logEntry: ThemedStyle<ViewStyle> = () => ({
@@ -243,9 +288,11 @@ const $logEntry: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $logText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.success,
+  color: colors.secondary_foreground,
   fontFamily: "monospace",
-  fontSize: 11,
+  fontSize: 10,
+  lineHeight: 12,
+  fontWeight: 800,
 })
 
 const $errorText: ThemedStyle<TextStyle> = ({colors}) => ({

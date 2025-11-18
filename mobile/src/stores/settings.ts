@@ -1,11 +1,11 @@
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import CoreModule from "core"
+import {Platform} from "react-native"
+import {getTimeZone} from "react-native-localize"
 import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import {getTimeZone} from "react-native-localize"
+
 import restComms from "@/services/RestComms"
-import CoreModule from "core"
-import Toast from "react-native-toast-message"
-import {Platform} from "react-native"
 
 export const SETTINGS_KEYS = {
   // feature flags:
@@ -105,7 +105,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.bypass_audio_encoding_for_debugging]: false,
   [SETTINGS_KEYS.metric_system]: false,
   [SETTINGS_KEYS.enforce_local_transcription]: false,
-  [SETTINGS_KEYS.preferred_mic]: "phone",
+  [SETTINGS_KEYS.preferred_mic]: "auto",
   [SETTINGS_KEYS.screen_disabled]: false,
   // glasses settings:
   [SETTINGS_KEYS.contextual_dashboard]: true,
@@ -137,6 +137,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   [SETTINGS_KEYS.notifications_blocklist]: [],
 }
 
+// these settings are automatically synced to the core:
 const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.sensing_enabled,
   SETTINGS_KEYS.power_saving_mode,
@@ -172,6 +173,8 @@ const CORE_SETTINGS_KEYS = [
   SETTINGS_KEYS.notifications_blocklist,
 ]
 
+const PER_GLASSES_SETTINGS_KEYS = [SETTINGS_KEYS.preferred_mic]
+
 interface SettingsState {
   // Settings values
   settings: Record<string, any>
@@ -185,10 +188,12 @@ interface SettingsState {
   getSetting: (key: string) => any
   loadSetting: (key: string) => Promise<any>
   loadAllSettings: () => Promise<void>
-  initUserSettings: () => Promise<void>
   // Utility methods
   getDefaultValue: (key: string) => any
-  handleSpecialCases: (key: string) => Promise<any>
+  // handle special cases:
+  setSpecialCases: (key: string) => string
+  getSpecialCases: (key: string) => string
+  // helper methods:
   getRestUrl: () => string
   getWsUrl: () => string
   getCoreSettings: () => Record<string, any>
@@ -199,43 +204,26 @@ export const useSettingsStore = create<SettingsState>()(
     isInitialized: false,
     loadingKeys: new Set(),
     setSetting: async (key: string, value: any, updateCore = true, updateServer = true) => {
-      try {
-        // Update store immediately for optimistic UI
-        set(state => ({
-          settings: {...state.settings, [key]: value},
-        }))
-        // Persist to AsyncStorage
-        const jsonValue = JSON.stringify(value)
-        await AsyncStorage.setItem(key, jsonValue)
-        try {
-          // Update core settings if needed
-          if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number]) && updateCore) {
-            CoreModule.updateSettings({[key]: value})
-          }
-        } catch (e) {
-          console.log("SETTINGS: couldn't update core settings: ", e)
+      const state = get()
+      key = await state.setSpecialCases(key)
+
+      // Update store immediately for optimistic UI
+      set(state => ({
+        settings: {...state.settings, [key]: value},
+      }))
+      // Persist to AsyncStorage
+      const jsonValue = JSON.stringify(value)
+      await AsyncStorage.setItem(key, jsonValue)
+      // Update core settings if needed
+      if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number]) && updateCore) {
+        CoreModule.updateSettings({[key]: value})
+      }
+      // Sync with server if needed
+      if (updateServer) {
+        const result = await restComms.writeUserSettings({[key]: value})
+        if (result.is_error()) {
+          console.log("SETTINGS: couldn't sync setting to server: ", result.error)
         }
-        // Sync with server if needed
-        try {
-          if (updateServer) {
-            await restComms.writeUserSettings({[key]: value})
-          }
-        } catch (e) {
-          console.log("SETTINGS: couldn't sync setting to server: ", e)
-        }
-      } catch (error) {
-        console.error(`Failed to save setting (${key}):`, error)
-        // Rollback on error
-        const oldValue = await get().loadSetting(key)
-        set(state => ({
-          settings: {...state.settings, [key]: oldValue},
-        }))
-        Toast.show({
-          type: "error",
-          text1: "Failed to save setting",
-          text2: error + "",
-        })
-        // throw error
       }
     },
     setSettings: async (updates: Record<string, any>, updateCore = true, updateServer = true) => {
@@ -279,7 +267,7 @@ export const useSettingsStore = create<SettingsState>()(
     },
     getSetting: (key: string) => {
       const state = get()
-      const specialCase = state.handleSpecialCases(key)
+      const specialCase = state.getSpecialCases(key)
       if (specialCase !== null) {
         return specialCase
       }
@@ -294,7 +282,18 @@ export const useSettingsStore = create<SettingsState>()(
       }
       return DEFAULT_SETTINGS[key]
     },
-    handleSpecialCases: (key: string) => {
+    setSpecialCases: (key: string): string => {
+      const state = get()
+      // handle per-glasses settings:
+      if (PER_GLASSES_SETTINGS_KEYS.includes(key as (typeof PER_GLASSES_SETTINGS_KEYS)[number])) {
+        const glasses = state.getSetting(SETTINGS_KEYS.default_wearable)
+        if (glasses) {
+          return `${glasses}-${key}`
+        }
+      }
+      return key
+    },
+    getSpecialCases: (key: string): string => {
       const state = get()
       if (key === SETTINGS_KEYS.time_zone) {
         const override = state.getSetting(SETTINGS_KEYS.time_zone_override)
@@ -309,16 +308,25 @@ export const useSettingsStore = create<SettingsState>()(
         }
       }
 
-      return null
+      // handle per-glasses settings:
+      if (PER_GLASSES_SETTINGS_KEYS.includes(key as (typeof PER_GLASSES_SETTINGS_KEYS)[number])) {
+        const glasses = state.getSetting(SETTINGS_KEYS.default_wearable)
+        if (glasses) {
+          const newKey = `${glasses}-${key}`
+          return state.getSetting(newKey)
+        }
+      }
+
+      return key
     },
     loadSetting: async (key: string) => {
+      // check if initialized:
       const state = get()
+      if (state.isInitialized) {
+        return state.getSetting(key)
+      }
+
       try {
-        // Check for special cases first
-        const specialCase = state.handleSpecialCases(key)
-        if (specialCase !== null) {
-          return specialCase
-        }
         const jsonValue = await AsyncStorage.getItem(key)
         if (jsonValue !== null) {
           const value = JSON.parse(jsonValue)
@@ -326,14 +334,12 @@ export const useSettingsStore = create<SettingsState>()(
           set(state => ({
             settings: {...state.settings, [key]: value},
           }))
-          return value
         }
-        const defaultValue = get().getDefaultValue(key)
-        return defaultValue
       } catch (error) {
         console.error(`Failed to load setting (${key}):`, error)
-        return get().getDefaultValue(key)
       }
+
+      return state.getSetting(key)
     },
     setManyLocally: async (settings: Record<string, any>) => {
       // Update store immediately
@@ -375,11 +381,6 @@ export const useSettingsStore = create<SettingsState>()(
         loadingKeys: new Set(),
       })
     },
-    initUserSettings: async () => {
-      const timeZone = get().getSetting(SETTINGS_KEYS.time_zone)
-      await get().setSetting(SETTINGS_KEYS.time_zone, timeZone, true, true)
-      set({isInitialized: true})
-    },
     getRestUrl: () => {
       const serverUrl = get().getSetting(SETTINGS_KEYS.backend_url)
       const url = new URL(serverUrl)
@@ -398,16 +399,12 @@ export const useSettingsStore = create<SettingsState>()(
       CORE_SETTINGS_KEYS.forEach(key => {
         coreSettings[key] = state.getSetting(key)
       })
-      console.log(coreSettings)
+      // console.log(coreSettings)
       return coreSettings
     },
   })),
 )
-// Initialize settings on app startup
-export const initializeSettings = async () => {
-  await useSettingsStore.getState().loadAllSettings()
-  // await useSettingsStore.getState().initUserSettings()
-}
+
 // Utility hooks for common patterns
 export const useSetting = <T = any>(key: string): [T, (value: T) => Promise<void>] => {
   const value = useSettingsStore(state => state.settings[key] as T)

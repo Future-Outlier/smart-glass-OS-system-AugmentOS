@@ -29,3 +29,29 @@ struct ConnTypes {
     // Private init to prevent instantiation
     private init() {}
 }
+
+struct MicTypes {
+    static let PHONE_INTERNAL = "phone"
+    static let GLASSES_CUSTOM = "glasses"
+    static let BT_CLASSIC = "btclassic"
+    static let BT = "bt"
+
+    static let ALL = [
+        PHONE_INTERNAL,
+        GLASSES_CUSTOM,
+        BT_CLASSIC,
+        BT,
+    ]
+
+    // Private init to prevent instantiation
+    private init() {}
+}
+
+enum MicMap {
+    static var map: [String: [String]] = [
+        "auto": [MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.BT_CLASSIC],
+        "glasses": [MicTypes.GLASSES_CUSTOM],
+        "phone": [MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM],
+        "bluetooth": [MicTypes.BT, MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM],
+    ]
+}

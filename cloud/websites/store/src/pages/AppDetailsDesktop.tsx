@@ -1,7 +1,7 @@
 import {Info, Share2, Smartphone, ChevronLeft} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import GetMentraOSButton from "../components/GetMentraOSButton"
-import {HardwareRequirementLevel} from "../types"
+import {HardwareRequirementLevel, HardwareType} from "../types"
 import {
   APP_TAGS,
   hardwareIcons,
@@ -351,7 +351,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                           style={{
                             color: "var(--text-secondary)",
                           }}>
-                          {hardwareIcons[req.type]}
+                          {hardwareIcons[req.type as HardwareType]}
                         </div>
                       </div>
                       <div

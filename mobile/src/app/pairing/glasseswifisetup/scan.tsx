@@ -1,18 +1,15 @@
-import {useState, useEffect, useRef} from "react"
-import {View, FlatList, TouchableOpacity, ActivityIndicator, BackHandler} from "react-native"
-import {Text} from "@/components/ignite"
-import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
-import {Screen, Header, Button, Icon} from "@/components/ignite"
+import {Button, Header, Icon, Screen, Text} from "@/components/ignite"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useGlassesStore} from "@/stores/glasses"
+import {$styles, ThemedStyle} from "@/theme"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {$styles, ThemedStyle} from "@/theme"
-import {ViewStyle, TextStyle} from "react-native"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {useCallback} from "react"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import Toast from "react-native-toast-message"
 import CoreModule from "core"
+import {router, useFocusEffect, useLocalSearchParams} from "expo-router"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {ActivityIndicator, BackHandler, FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import Toast from "react-native-toast-message"
 
 // Enhanced network info type
 interface NetworkInfo {
@@ -24,7 +21,6 @@ interface NetworkInfo {
 export default function WifiScanScreen() {
   const {deviceModel = "Glasses", returnTo} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
-  const {status} = useCoreStatus()
 
   const [networks, setNetworks] = useState<NetworkInfo[]>([])
   const [savedNetworks, setSavedNetworks] = useState<string[]>([])
@@ -32,12 +28,11 @@ export default function WifiScanScreen() {
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const currentScanSessionRef = useRef<number>(Date.now())
   const receivedResultsForSessionRef = useRef<boolean>(false)
+  // const glassesConnected = useGlassesStore(state => state.connected)
+  const wifiSsid = useGlassesStore(state => state.wifiSsid)
+  const wifiConnected = useGlassesStore(state => state.wifiConnected)
 
   const {push, goBack} = useNavigationHistory()
-
-  // Get current WiFi status
-  const currentWifi = status.glasses_info?.glasses_wifi_ssid
-  const isWifiConnected = status.glasses_info?.glasses_wifi_connected
 
   const handleGoBack = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
@@ -205,7 +200,7 @@ export default function WifiScanScreen() {
 
   const handleNetworkSelect = (selectedNetwork: NetworkInfo) => {
     // Check if this is the currently connected network
-    if (isWifiConnected && currentWifi === selectedNetwork.ssid) {
+    if (wifiConnected && wifiSsid === selectedNetwork.ssid) {
       Toast.show({
         type: "info",
         text1: `Already connected to ${selectedNetwork.ssid}`,
@@ -248,7 +243,7 @@ export default function WifiScanScreen() {
               data={networks}
               keyExtractor={item => `network-${item.ssid}`}
               renderItem={({item}) => {
-                const isConnected = isWifiConnected && currentWifi === item.ssid
+                const isConnected = wifiConnected && wifiSsid === item.ssid
                 const isSaved = savedNetworks.includes(item.ssid)
                 return (
                   <TouchableOpacity

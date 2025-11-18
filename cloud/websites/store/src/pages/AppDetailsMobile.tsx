@@ -4,7 +4,7 @@ import {toast} from "sonner"
 import {motion, AnimatePresence} from "framer-motion"
 import {useProfileDropdown} from "../contexts/ProfileDropdownContext"
 import GetMentraOSButton from "../components/GetMentraOSButton"
-import {HardwareRequirementLevel} from "../types"
+import {HardwareRequirementLevel, HardwareType} from "../types"
 import {
   APP_TAGS,
   hardwareIcons,

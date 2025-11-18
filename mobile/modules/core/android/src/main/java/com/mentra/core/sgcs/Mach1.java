@@ -50,6 +50,7 @@ import org.greenrobot.eventbus.EventBus;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 
@@ -115,6 +116,11 @@ public class Mach1 extends SGCManager {
     @Override
     public void setMicEnabled(boolean enabled) {
 
+    }
+
+    @Override
+    public List<String> sortMicRanking(List<String> list) {
+        return list;
     }
 
     @Override

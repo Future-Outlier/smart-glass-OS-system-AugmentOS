@@ -1379,9 +1379,15 @@ public class MentraLive extends SGCManager {
 
     }
 
+    @Override
     public void setMicEnabled(boolean enabled) {
         Bridge.log("LIVE: setMicEnabled(" + enabled + ")");
         changeSmartGlassesMicrophoneState(enabled);
+    }
+
+    @Override
+    public List<String> sortMicRanking(List<String> list) {
+        return list;
     }
 
     /**
@@ -2612,7 +2618,12 @@ public class MentraLive extends SGCManager {
             @Override
             public void run() {
                 Bridge.log("LIVE: 🎤 Sending micbeat - enabling custom audio TX");
-                sendEnableCustomAudioTxMessage(shouldUseGlassesMic);
+                
+                
+                // IMPORTANT NOTE: WE ARE DISABLING LC3 MIC UNTIL AFTER RELEASE
+                // DO NOT UNDO THIS HARD DISABLE UNTIL AFTER RELEASE
+                //sendEnableCustomAudioTxMessage(shouldUseGlassesMic);
+                sendEnableCustomAudioTxMessage(false);
                 micBeatCount++;
 
                 // Schedule next micbeat
@@ -2850,6 +2861,8 @@ public class MentraLive extends SGCManager {
 
         // Update the microphone state tracker
         isMicrophoneEnabled = enable;
+        
+        micEnabled = enable;
 
         // Post event for frontend notification
         // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));

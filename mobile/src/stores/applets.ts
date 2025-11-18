@@ -1,18 +1,20 @@
+import {useMemo} from "react"
+import {create} from "zustand"
+
+import {push} from "@/contexts/NavigationRef"
+import {translate} from "@/i18n"
+import restComms from "@/services/RestComms"
+import STTModelManager from "@/services/STTModelManager"
+import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import showAlert from "@/utils/AlertUtils"
+import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
+
 import {
   AppletInterface,
   getModelCapabilities,
   HardwareRequirementLevel,
   HardwareType,
 } from "@/../../cloud/packages/types/src"
-import {translate} from "@/i18n"
-import restComms from "@/services/RestComms"
-import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
-import STTModelManager from "@/services/STTModelManager"
-import showAlert from "@/utils/AlertUtils"
-import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
-import {useMemo} from "react"
-import {create} from "zustand"
-import {router} from "expo-router"
 
 export interface ClientAppletInterface extends AppletInterface {
   offline: boolean
@@ -144,9 +146,17 @@ const toggleApplet = async (applet: ClientAppletInterface, status: boolean) => {
   }
 
   if (status) {
-    await restComms.startApp(applet.packageName)
+    const res = await restComms.startApp(applet.packageName)
+    if (res.is_error()) {
+      console.error(`Failed to start applet ${applet.packageName}: ${res.error}`)
+      return
+    }
   } else {
-    await restComms.stopApp(applet.packageName)
+    const res = await restComms.stopApp(applet.packageName)
+    if (res.is_error()) {
+      console.error(`Failed to stop applet ${applet.packageName}: ${res.error}`)
+      return
+    }
   }
   // TODO: remove this and just update when we receive the app_state_change event from the server
   setTimeout(() => {
@@ -158,7 +168,12 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   apps: [],
 
   refreshApplets: async () => {
-    const appsData: AppletInterface[] = await restComms.getApplets()
+    let res = await restComms.getApplets()
+    if (res.is_error()) {
+      console.error(`Failed to get applets: ${res.error}`)
+      return
+    }
+    const appsData = res.value
 
     const onlineApps: ClientAppletInterface[] = appsData.map(app => ({
       ...app,
@@ -221,7 +236,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
             {
               text: translate("transcription:goToSettings"),
               onPress: () => {
-                router.push("/settings/transcription")
+                push("/settings/transcription")
               },
             },
           ],

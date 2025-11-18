@@ -41,23 +41,9 @@ const BasicDialog = ({
       <View style={themed($actions)}>
         <View style={themed($actions1)}>
           {leftButtonText && (
-            <Button
-              flexContainer={false}
-              flex={false}
-              // compact
-              preset="alternate"
-              text={leftButtonText}
-              onPress={onLeftPress}
-            />
+            <Button flexContainer={false} flex={false} preset="alternate" text={leftButtonText} onPress={onLeftPress} />
           )}
-          <Button
-            flexContainer={false}
-            flex={false}
-            // compact
-            preset="primary"
-            text={rightButtonText}
-            onPress={onRightPress}
-          />
+          <Button flexContainer={false} flex={false} preset="primary" text={rightButtonText} onPress={onRightPress} />
         </View>
       </View>
     </View>
