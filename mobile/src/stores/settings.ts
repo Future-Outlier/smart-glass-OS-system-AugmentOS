@@ -73,12 +73,15 @@ export const SETTINGS: Record<string, Setting> = {
   // button settings
   button_mode: {key: "button_mode", defaultValue: "photo", writable: true},
   button_photo_size: {key: "button_photo_size", defaultValue: "medium", writable: true},
-  button_video_settings: {key: "button_video_settings", defaultValue: {width: 1920, height: 1080, fps: 30}, writable: true},
+  button_video_settings: {
+    key: "button_video_settings",
+    defaultValue: {width: 1920, height: 1080, fps: 30},
+    writable: true,
+  },
   button_camera_led: {key: "button_camera_led", defaultValue: true, writable: true},
   button_video_settings_width: {key: "button_video_settings_width", defaultValue: 1920, writable: true},
   button_max_recording_time: {key: "button_max_recording_time", defaultValue: 10, writable: true},
-  
-  
+
   // time zone settings
   time_zone: {key: "time_zone", defaultValue: "", writable: true},
   time_zone_override: {key: "time_zone_override", defaultValue: "", writable: true},
@@ -156,10 +159,13 @@ interface SettingsState {
 }
 
 const getDefaultSettings = () =>
-  Object.keys(SETTINGS).reduce((acc, key) => {
-    acc[key] = SETTINGS[key].defaultValue
-    return acc
-  }, {} as Record<string, any>)
+  Object.keys(SETTINGS).reduce(
+    (acc, key) => {
+      acc[key] = SETTINGS[key].defaultValue
+      return acc
+    },
+    {} as Record<string, any>,
+  )
 
 export const useSettingsStore = create<SettingsState>()(
   subscribeWithSelector((set, get) => ({
@@ -169,6 +175,11 @@ export const useSettingsStore = create<SettingsState>()(
     setSetting: async (key: string, value: any, updateCore = true, updateServer = true) => {
       const state = get()
       key = await state.setSpecialCases(key)
+
+      if (!SETTINGS[key].writable) {
+        console.error(`SETTINGS: ${key} is not writable!`)
+        return
+      }
 
       // Update store immediately for optimistic UI
       set(state => ({
