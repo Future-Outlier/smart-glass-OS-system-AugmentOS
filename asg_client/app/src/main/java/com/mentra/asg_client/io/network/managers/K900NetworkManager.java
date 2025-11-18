@@ -253,14 +253,22 @@ public class K900NetworkManager extends BaseNetworkManager {
                     pendingSsidRetryRunnable = () -> tryReadHotspotSSID(nextAttempt);
                     ssidRetryHandler.postDelayed(pendingSsidRetryRunnable, delayMs);
                 } else {
-                    // Max attempts reached - log error but DON'T disable hotspot
-                    // The system may still enable it, and we don't want to send conflicting intents
-                    Log.e(TAG, "🔥 ❌ Failed to read K900 SSID after " + MAX_ATTEMPTS +
-                               " attempts. Hotspot may still be starting...");
+                    // Max attempts reached - notify phone of failure
+                    Log.e(TAG, "🔥 ❌ Failed to read K900 SSID after " + MAX_ATTEMPTS + " attempts");
+
+                    // Clear pending retry
+                    pendingSsidRetryRunnable = null;
+
+                    // Clear local hotspot state
+                    clearHotspotState();
+
+                    // Notify listeners (phone) of the error
+                    String errorMessage = "Failed to read hotspot SSID after " + MAX_ATTEMPTS + " attempts";
+                    notifyHotspotError(errorMessage);
 
                     notificationManager.showDebugNotification(
-                            "Hotspot SSID Unavailable",
-                            "Could not read SSID after " + MAX_ATTEMPTS + " attempts. Check manually.");
+                            "Hotspot Failed",
+                            errorMessage);
                 }
             }
         } catch (Exception e) {
@@ -281,12 +289,22 @@ public class K900NetworkManager extends BaseNetworkManager {
                 pendingSsidRetryRunnable = () -> tryReadHotspotSSID(nextAttempt);
                 ssidRetryHandler.postDelayed(pendingSsidRetryRunnable, delayMs);
             } else {
-                Log.e(TAG, "🔥 ❌ Failed to read SSID after " + MAX_ATTEMPTS +
-                           " attempts due to errors");
+                // Max attempts reached due to exceptions - notify phone of failure
+                Log.e(TAG, "🔥 ❌ Failed to read SSID after " + MAX_ATTEMPTS + " attempts due to errors");
+
+                // Clear pending retry
+                pendingSsidRetryRunnable = null;
+
+                // Clear local hotspot state
+                clearHotspotState();
+
+                // Notify listeners (phone) of the error
+                String errorMessage = "Failed to read hotspot SSID: " + e.getMessage();
+                notifyHotspotError(errorMessage);
 
                 notificationManager.showDebugNotification(
                         "Hotspot Error",
-                        "Failed to read SSID: " + e.getMessage());
+                        errorMessage);
             }
         }
     }
