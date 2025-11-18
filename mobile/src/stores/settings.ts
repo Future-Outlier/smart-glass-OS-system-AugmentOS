@@ -180,7 +180,7 @@ export const useSettingsStore = create<SettingsState>()(
       const state = get()
       key = await state.setSpecialCasesKey(key)
 
-      if (!SETTINGS[key].writable) {
+      if (SETTINGS[key] && !SETTINGS[key].writable) {
         console.error(`SETTINGS: ${key} is not writable!`)
         return
       }
@@ -257,8 +257,15 @@ export const useSettingsStore = create<SettingsState>()(
           return state.settings[key] ?? SETTINGS[keyPart].defaultValue
         }
       }
-      // console.log(`GET SETTING: ${key} = ${state.settings[key]}`)
-      return state.settings[key] ?? SETTINGS[key].defaultValue
+      console.log(`GET SETTING: ${key} = ${state.settings[key]}`)
+      try {
+        return state.settings[key] ?? SETTINGS[key].defaultValue
+      } catch (e) {
+        // for dynamically created settings, we need to create a new setting in SETTINGS:
+        console.log(`Failed to get setting, creating new setting:(${key}):`, e)
+        SETTINGS[key] = {key: key, defaultValue: undefined, writable: true}
+        return SETTINGS[key].defaultValue
+      }
     },
     getDefaultValue: (key: string) => {
       if (key === SETTINGS.time_zone.key) {
