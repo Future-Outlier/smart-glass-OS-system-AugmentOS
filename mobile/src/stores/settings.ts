@@ -155,7 +155,7 @@ interface SettingsState {
   getDefaultValue: (key: string) => any
   // handle special cases:
   setSpecialCasesKey: (key: string) => string
-  getSpecialCasesValue: (key: string) => string | null
+  getSpecialCasesValue: (key: string) => any
   // helper methods:
   getRestUrl: () => string
   getWsUrl: () => string
@@ -287,7 +287,7 @@ export const useSettingsStore = create<SettingsState>()(
       }
       return key
     },
-    getSpecialCasesValue: (key: string): string | null => {
+    getSpecialCasesValue: (key: string): any => {
       const state = get()
       if (key === SETTINGS.time_zone.key) {
         const override = state.getSetting(SETTINGS.time_zone_override.key)
@@ -302,6 +302,11 @@ export const useSettingsStore = create<SettingsState>()(
         }
       }
 
+      // shouldn't be necessary, but just in case:
+      if (key == SETTINGS.china_deployment.key) {
+        return process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china" ? true : false
+      }
+
       // handle per-glasses settings:
       if (PER_GLASSES_SETTINGS_KEYS.includes(key as (typeof PER_GLASSES_SETTINGS_KEYS)[number])) {
         const glasses = state.getSetting(SETTINGS.default_wearable.key)
@@ -311,6 +316,7 @@ export const useSettingsStore = create<SettingsState>()(
         }
       }
 
+      // don't override the default value:
       return null
     },
     loadSetting: async (key: string) => {
