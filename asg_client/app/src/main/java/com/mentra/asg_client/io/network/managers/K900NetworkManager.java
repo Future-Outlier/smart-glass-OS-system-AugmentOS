@@ -253,16 +253,32 @@ public class K900NetworkManager extends BaseNetworkManager {
                     pendingSsidRetryRunnable = () -> tryReadHotspotSSID(nextAttempt);
                     ssidRetryHandler.postDelayed(pendingSsidRetryRunnable, delayMs);
                 } else {
-                    // Max attempts reached - notify phone of failure
-                    Log.e(TAG, "🔥 ❌ Failed to read K900 SSID after " + MAX_ATTEMPTS + " attempts");
+                    // Max attempts reached - disable hotspot and notify phone of failure
+                    Log.e(TAG, "🔥 ❌ Failed to read K900 SSID after " + MAX_ATTEMPTS + " attempts - disabling hotspot");
 
                     // Clear pending retry
                     pendingSsidRetryRunnable = null;
 
+                    // Send disable intent to K900 to clean up
+                    try {
+                        Intent disableIntent = new Intent();
+                        disableIntent.setAction("com.xy.xsetting.action");
+                        disableIntent.setPackage("com.android.systemui");
+                        disableIntent.putExtra("cmd", "ap_start");
+                        disableIntent.putExtra("enable", false);
+                        context.sendBroadcast(disableIntent);
+                        Log.d(TAG, "🔥 📡 Sent disable intent to clean up failed hotspot");
+                    } catch (Exception ex) {
+                        Log.e(TAG, "🔥 💥 Error sending disable intent", ex);
+                    }
+
                     // Clear local hotspot state
                     clearHotspotState();
 
-                    // Notify listeners (phone) of the error
+                    // Notify listeners that hotspot is disabled
+                    notifyHotspotStateChanged(false);
+
+                    // Also send specific error message
                     String errorMessage = "Failed to read hotspot SSID after " + MAX_ATTEMPTS + " attempts";
                     notifyHotspotError(errorMessage);
 
@@ -289,16 +305,32 @@ public class K900NetworkManager extends BaseNetworkManager {
                 pendingSsidRetryRunnable = () -> tryReadHotspotSSID(nextAttempt);
                 ssidRetryHandler.postDelayed(pendingSsidRetryRunnable, delayMs);
             } else {
-                // Max attempts reached due to exceptions - notify phone of failure
-                Log.e(TAG, "🔥 ❌ Failed to read SSID after " + MAX_ATTEMPTS + " attempts due to errors");
+                // Max attempts reached due to exceptions - disable hotspot and notify phone of failure
+                Log.e(TAG, "🔥 ❌ Failed to read SSID after " + MAX_ATTEMPTS + " attempts due to errors - disabling hotspot");
 
                 // Clear pending retry
                 pendingSsidRetryRunnable = null;
 
+                // Send disable intent to K900 to clean up
+                try {
+                    Intent disableIntent = new Intent();
+                    disableIntent.setAction("com.xy.xsetting.action");
+                    disableIntent.setPackage("com.android.systemui");
+                    disableIntent.putExtra("cmd", "ap_start");
+                    disableIntent.putExtra("enable", false);
+                    context.sendBroadcast(disableIntent);
+                    Log.d(TAG, "🔥 📡 Sent disable intent to clean up failed hotspot");
+                } catch (Exception ex) {
+                    Log.e(TAG, "🔥 💥 Error sending disable intent", ex);
+                }
+
                 // Clear local hotspot state
                 clearHotspotState();
 
-                // Notify listeners (phone) of the error
+                // Notify listeners that hotspot is disabled
+                notifyHotspotStateChanged(false);
+
+                // Also send specific error message
                 String errorMessage = "Failed to read hotspot SSID: " + e.getMessage();
                 notifyHotspotError(errorMessage);
 
