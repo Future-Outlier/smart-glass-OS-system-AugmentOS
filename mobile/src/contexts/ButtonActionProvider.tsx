@@ -1,6 +1,6 @@
 import {createContext, useContext, useEffect, ReactNode} from "react"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {useApplets, useStartApplet} from "@/stores/applets"
 
 interface ButtonActionContextType {
@@ -16,7 +16,7 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
   // Validate and update default button action app when device or applets change
   useEffect(() => {
     const validateAndSetDefaultApp = async () => {
-      const currentDefaultApp = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_button_action_app)
+      const currentDefaultApp = await useSettingsStore.getState().getSetting(SETTINGS.default_button_action_app.key)
 
       // Check if current default app is compatible
       const currentApp = applets.find(app => app.packageName === currentDefaultApp)
@@ -41,7 +41,7 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
 
       if (newDefaultApp) {
         console.log("🔘 Setting default button app to:", newDefaultApp.packageName)
-        await useSettingsStore.getState().setSetting(SETTINGS_KEYS.default_button_action_app, newDefaultApp.packageName)
+        await useSettingsStore.getState().setSetting(SETTINGS.default_button_action_app.key, newDefaultApp.packageName)
       }
     }
 
@@ -63,7 +63,7 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
       // Check if default button action is enabled
       const defaultButtonActionEnabled = await useSettingsStore
         .getState()
-        .getSetting(SETTINGS_KEYS.default_button_action_enabled)
+        .getSetting(SETTINGS.default_button_action_enabled.key)
 
       if (!defaultButtonActionEnabled) {
         console.log("🔘 Default button action is disabled")
@@ -82,9 +82,7 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
       }
 
       // No foreground app running - start default app
-      const defaultAppPackageName = await useSettingsStore
-        .getState()
-        .getSetting(SETTINGS_KEYS.default_button_action_app)
+      const defaultAppPackageName = await useSettingsStore.getState().getSetting(SETTINGS.default_button_action_app.key)
 
       if (!defaultAppPackageName) {
         console.log("🔘 No default app configured")

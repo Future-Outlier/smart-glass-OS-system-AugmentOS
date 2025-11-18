@@ -9,7 +9,7 @@ import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {useDisplayStore} from "@/stores/display"
 import {GlassesInfo, useGlassesStore} from "@/stores/glasses"
-import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
+import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
 
@@ -113,7 +113,7 @@ class MantleManager {
       60 * 60 * 1000,
     ) // 1 hour
     try {
-      let locationAccuracy = await useSettingsStore.getState().loadSetting(SETTINGS_KEYS.location_tier)
+      let locationAccuracy = await useSettingsStore.getState().loadSetting(SETTINGS.location_tier.key)
       let properAccuracy = this.getLocationAccuracy(locationAccuracy)
       Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
         accuracy: properAccuracy,
@@ -241,7 +241,7 @@ class MantleManager {
 
   public async handle_local_transcription(data: any) {
     // TODO: performance!
-    const offlineStt = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.offline_captions_running)
+    const offlineStt = await useSettingsStore.getState().getSetting(SETTINGS.offline_captions_running.key)
     if (offlineStt) {
       this.transcriptProcessor.changeLanguage(data.transcribeLanguage)
       const processedText = this.transcriptProcessor.processString(data.text, data.isFinal ?? false)

@@ -7,7 +7,7 @@ import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {INTENSE_LOGGING} from "@/utils/Constants"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
@@ -281,7 +281,7 @@ export class MantleBridge {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+          const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
           if (!isChinaDeployment && livekit.isRoomConnected()) {
             livekit.addPcm(bytes)
           } else {

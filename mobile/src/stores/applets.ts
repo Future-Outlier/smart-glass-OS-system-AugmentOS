@@ -5,7 +5,7 @@ import {push} from "@/contexts/NavigationRef"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import STTModelManager from "@/services/STTModelManager"
-import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
 
@@ -115,7 +115,7 @@ export const getMoreAppsApplet = (): ClientAppletInterface => {
 }
 
 // export const isAppCompatible = (app: ClientAppletInterface): boolean => {
-//   const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+//   const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
 //   const capabilities = getCapabilitiesForModel(defaultWearable)
 //   if (!capabilities) return false
 //   const requiredCapabilities = app.required
@@ -128,13 +128,13 @@ const setOfflineApplet = async (packageName: string, status: boolean) => {
   // Captions app special handling
   if (packageName === captionsPackageName) {
     console.log(`APPLET: Captions app ${status ? "started" : "stopped"}`)
-    await useSettingsStore.getState().setSetting(SETTINGS_KEYS.offline_captions_running, status, true)
+    await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, status, true)
   }
 
   // Camera app special handling - send gallery mode to glasses
   if (packageName === cameraPackageName) {
     console.log(`APPLET: Camera app ${status ? "started" : "stopped"}`)
-    await useSettingsStore.getState().setSetting(SETTINGS_KEYS.gallery_mode, status, true)
+    await useSettingsStore.getState().setSetting(SETTINGS.gallery_mode.key, status, true)
   }
 }
 
@@ -184,7 +184,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
 
     // merge in the offline apps:
     let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets())]
-    const offlineMode = useSettingsStore.getState().getSetting(SETTINGS_KEYS.offline_mode)
+    const offlineMode = useSettingsStore.getState().getSetting(SETTINGS.offline_mode.key)
 
     // remove duplicates and keep the online versions:
     const packageNameMap = new Map<string, ClientAppletInterface>()
@@ -197,7 +197,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     applets = Array.from(packageNameMap.values())
 
     // add in the compatibility info:
-    let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+    let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
     let capabilities = getModelCapabilities(defaultWearable)
 
     for (const applet of applets) {
@@ -277,7 +277,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     try {
       await toggleApplet(applet, true)
 
-      await useSettingsStore.getState().setSetting(SETTINGS_KEYS.has_ever_activated_app, true)
+      await useSettingsStore.getState().setSetting(SETTINGS.has_ever_activated_app.key, true)
     } catch (error: any) {
       if (error?.response?.data?.error?.stage === "HARDWARE_CHECK") {
         showAlert(
@@ -331,7 +331,7 @@ export const useRefreshApplets = () => useAppletStatusStore(state => state.refre
 export const useStopAllApplets = () => useAppletStatusStore(state => state.stopAllApplets)
 export const useInactiveForegroundApps = () => {
   const apps = useApplets()
-  const [isOffline] = useSetting(SETTINGS_KEYS.offline_mode)
+  const [isOffline] = useSetting(SETTINGS.offline_mode.key)
   if (isOffline) {
     return useMemo(() => apps.filter(app => app.type === "standard" && !app.running && app.offline), [apps])
   }
@@ -365,7 +365,7 @@ export const useIncompatibleApps = () => {
 
 // export const useIncompatibleApps = async () => {
 //   const apps = useApplets()
-//   const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+//   const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
 
 //   const capabilities: Capabilities | null = await getCapabilitiesForModel(defaultWearable)
 //   if (!capabilities) {
@@ -383,7 +383,7 @@ export const useIncompatibleApps = () => {
 
 // export const useFilteredApps = async () => {
 //   const apps = useApplets()
-//   const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+//   const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
 
 //   const capabilities: Capabilities | null = getCapabilitiesForModel(defaultWearable)
 //   if (!capabilities) {

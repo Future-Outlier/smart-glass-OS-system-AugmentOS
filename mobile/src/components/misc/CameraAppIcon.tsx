@@ -3,7 +3,7 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
 import {SquircleView} from "expo-squircle-view"
-import {useSetting, SETTINGS_KEYS} from "@/stores/settings"
+import {useSetting, SETTINGS} from "@/stores/settings"
 
 interface CameraAppIconProps {
   size?: "small" | "medium" | "large"
@@ -12,7 +12,7 @@ interface CameraAppIconProps {
 
 export const CameraAppIcon: React.FC<CameraAppIconProps> = ({size = "medium", style}) => {
   const {themed, theme} = useAppTheme()
-  const [enableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
+  const [enableSquircles] = useSetting(SETTINGS.enable_squircles.key)
 
   // Size configurations to match GetMoreAppsIcon
   const sizeConfig = {

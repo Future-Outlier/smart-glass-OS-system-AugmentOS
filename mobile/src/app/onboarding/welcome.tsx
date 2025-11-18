@@ -2,7 +2,7 @@ import {Screen, Text} from "@/components/ignite"
 import {Button} from "@/components/ignite/Button"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -48,7 +48,7 @@ const $cardButtonText: ThemedStyle<TextStyle> = (colors, spacing) => ({
 export default function OnboardingWelcome() {
   const {theme, themed} = useAppTheme()
   const {push} = useNavigationHistory()
-  const [_onboarding, setOnboardingCompleted] = useSetting(SETTINGS_KEYS.onboarding_completed)
+  const [_onboarding, setOnboardingCompleted] = useSetting(SETTINGS.onboarding_completed.key)
 
   // User has smart glasses - go to glasses selection screen
   const handleHasGlasses = async () => {

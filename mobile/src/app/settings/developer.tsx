@@ -8,7 +8,7 @@ import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
@@ -17,11 +17,11 @@ import {DeviceTypes} from "@/../../cloud/packages/types/src"
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
   const {goBack, push} = useNavigationHistory()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS_KEYS.power_saving_mode)
-  const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS_KEYS.reconnect_on_app_foreground)
-  const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
-  const [debugConsole, setDebugConsole] = useSetting(SETTINGS_KEYS.debug_console)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS.power_saving_mode.key)
+  const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS.reconnect_on_app_foreground.key)
+  const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS.enable_squircles.key)
+  const [debugConsole, setDebugConsole] = useSetting(SETTINGS.debug_console.key)
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>

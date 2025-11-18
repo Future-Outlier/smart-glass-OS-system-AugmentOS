@@ -7,7 +7,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import STTModelManager from "@/services/STTModelManager"
 import {useStopAllApplets} from "@/stores/applets"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -27,11 +27,11 @@ export default function TranscriptionSettingsScreen() {
   const [downloadProgress, setDownloadProgress] = useState(0)
   const [extractionProgress, setExtractionProgress] = useState(0)
   const [isCheckingModel, setIsCheckingModel] = useState(true)
-  const [bypassVadForDebugging, setBypassVadForDebugging] = useSetting(SETTINGS_KEYS.bypass_vad_for_debugging)
-  const [offlineMode, setOfflineMode] = useSetting(SETTINGS_KEYS.offline_mode)
-  const [_offlineCaptionsAppRunning, setOfflineCaptionsAppRunning] = useSetting(SETTINGS_KEYS.offline_captions_running)
+  const [bypassVadForDebugging, setBypassVadForDebugging] = useSetting(SETTINGS.bypass_vad_for_debugging.key)
+  const [offlineMode, setOfflineMode] = useSetting(SETTINGS.offline_mode.key)
+  const [_offlineCaptionsAppRunning, setOfflineCaptionsAppRunning] = useSetting(SETTINGS.offline_captions_running.key)
   const [enforceLocalTranscription, setEnforceLocalTranscription] = useSetting(
-    SETTINGS_KEYS.enforce_local_transcription,
+    SETTINGS.enforce_local_transcription.key,
   )
   const RESTART_TRANSCRIPTION_DEBOUNCE_MS = 8000 // 8 seconds
   const [lastRestartTime, setLastRestartTime] = useState(0)

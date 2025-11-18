@@ -28,7 +28,7 @@ import {
   ViewStyle,
 } from "react-native"
 import {Pressable} from "react-native-gesture-handler"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 export default function LoginScreen() {
   const [isSigningUp, setIsSigningUp] = useState(false)
@@ -39,7 +39,7 @@ export default function LoginScreen() {
   const [formAction, setFormAction] = useState<"signin" | "signup" | null>(null)
   const [backPressCount, setBackPressCount] = useState(0)
   const {push, replace} = useNavigationHistory()
-  const [isChina] = useSetting(SETTINGS_KEYS.china_deployment)
+  const [isChina] = useSetting(SETTINGS.china_deployment.key)
 
   // Get theme and safe area insets
   const {theme, themed} = useAppTheme()

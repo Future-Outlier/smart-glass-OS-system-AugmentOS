@@ -16,7 +16,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
 import {useApplets} from "@/stores/applets"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {showDestructiveAlert} from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -26,13 +26,13 @@ import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/pac
 export default function DeviceSettings() {
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS_KEYS.auto_brightness)
-  const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS.auto_brightness.key)
+  const [brightness, setBrightness] = useSetting(SETTINGS.brightness.key)
   const [defaultButtonActionEnabled, setDefaultButtonActionEnabled] = useSetting(
-    SETTINGS_KEYS.default_button_action_enabled,
+    SETTINGS.default_button_action_enabled.key,
   )
-  const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS_KEYS.default_button_action_app)
+  const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS.default_button_action_app.key)
   const glassesConnected = useGlassesStore(state => state.connected)
   const glassesModelName = useGlassesStore(state => state.modelName)
 

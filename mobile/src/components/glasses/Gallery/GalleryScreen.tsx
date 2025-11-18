@@ -34,7 +34,7 @@ import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
 import {localStorageService} from "@/services/asg/localStorageService"
 import {networkConnectivityService, NetworkStatus} from "@/services/asg/networkConnectivityService"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {spacing, ThemedStyle} from "@/theme"
 import {PhotoInfo} from "@/types/asg"
 import showAlert from "@/utils/AlertUtils"
@@ -92,7 +92,7 @@ export function GalleryScreen() {
   const ITEM_SPACING = 2 // Minimal spacing between items (1-2px hairline)
   const numColumns = screenWidth < 320 ? 2 : 3 // 2 columns for very small screens, otherwise 3
   const itemWidth = (screenWidth - ITEM_SPACING * (numColumns - 1)) / numColumns
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const features = getModelCapabilities(defaultWearable)
   const hotspotSsid = useGlassesStore(state => state.hotspotSsid)
   const hotspotPassword = useGlassesStore(state => state.hotspotPassword)

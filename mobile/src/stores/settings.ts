@@ -383,8 +383,8 @@ export const useSetting = <T = any>(key: string): [T, (value: T) => Promise<void
 //   })
 // }
 // Selectors for specific settings (memoized automatically by Zustand)
-// export const useDevMode = () => useSetting<boolean>(SETTINGS_KEYS.dev_mode)
-// export const useNotificationsEnabled = () => useSetting<boolean>(SETTINGS_KEYS.enable_phone_notifications)
+// export const useDevMode = () => useSetting<boolean>(SETTINGS.dev_mode.key)
+// export const useNotificationsEnabled = () => useSetting<boolean>(SETTINGS.enable_phone_notifications.key)
 // Example usage:
 /**
  * // In a component:

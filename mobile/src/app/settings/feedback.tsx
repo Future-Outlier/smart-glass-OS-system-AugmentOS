@@ -8,7 +8,7 @@ import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {useAppletStatusStore} from "@/stores/applets"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -18,7 +18,7 @@ export default function FeedbackPage() {
   const {goBack} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
   const apps = useAppletStatusStore(state => state.apps)
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const glassesConnected = useGlassesStore(state => state.connected)
   const glassesModelName = useGlassesStore(state => state.modelName)
 
