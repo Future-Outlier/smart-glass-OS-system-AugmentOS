@@ -1,11 +1,12 @@
-import {useDisplayStore} from "@/stores/display"
-import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {useState, useEffect, useRef} from "react"
 import {View, ViewStyle, TextStyle} from "react-native"
 import Canvas, {Image as CanvasImage} from "react-native-canvas"
+
 import {Text} from "@/components/ignite"
-import { useGlassesStore } from "@/stores/glasses"
+import {useDisplayStore} from "@/stores/display"
+import {useGlassesStore} from "@/stores/glasses"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface GlassesDisplayMirrorProps {
   fallbackMessage?: string
@@ -147,6 +148,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
       case "text_line": {
         let {text} = layout
         text = parseText(text)
+        text = text.replace(/\n/g, " ")
         return <Text style={[styles.cardContent, textStyle]}>{text || text === "" ? text : ""}</Text>
       }
       case "double_text_wall": {
@@ -225,7 +227,8 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
 
 const $glassesScreen: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   width: "100%",
-  minHeight: 140,
+  minHeight: 170,
+  maxHeight: 170,
   backgroundColor: colors.primary_foreground,
   borderRadius: spacing.s4,
   paddingHorizontal: spacing.s4,
