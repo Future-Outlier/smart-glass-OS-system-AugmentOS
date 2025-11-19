@@ -8,10 +8,12 @@ import {
   ViewStyle,
   View,
 } from "react-native"
+
 import type {ThemedStyle, ThemedStyleArray} from "@/theme"
 import {$styles, spacing} from "@/theme"
-import {Text, TextProps} from "./Text"
 import {useAppTheme} from "@/utils/useAppTheme"
+
+import {Text, TextProps} from "./Text"
 
 type Presets = "default" | "primary" | "secondary" | "accent" | "warning" | "destructive" | "outlined" | "alternate"
 
@@ -142,7 +144,7 @@ export function Button(props: ButtonProps) {
     disabledStyle: $disabledViewStyleOverride,
     compact = false,
     flex = false,
-    flexContainer = true,
+    flexContainer = false,
     compactIcon = false,
     ...rest
   } = props
