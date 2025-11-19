@@ -697,9 +697,37 @@ public class AsgClientService extends Service implements NetworkStateListener, B
     @Override
     public void onWifiCredentialsReceived(String ssid, String password, String authToken) {
         Log.i(TAG, "🔑 WiFi credentials received for network: " + ssid);
-        Log.d(TAG, "📋 Credentials - SSID: " + ssid + 
-                  ", Password: " + (password != null ? "***" : "null") + 
+        Log.d(TAG, "📋 Credentials - SSID: " + ssid +
+                  ", Password: " + (password != null ? "***" : "null") +
                   ", AuthToken: " + (authToken != null ? "***" : "null"));
+    }
+
+    @Override
+    public void onHotspotError(String errorMessage) {
+        Log.e(TAG, "📡 🔥 ❌ Hotspot error occurred: " + errorMessage);
+
+        // Send hotspot error to phone
+        try {
+            if (serviceContainer != null && serviceContainer.getServiceManager() != null) {
+                var commManager = serviceContainer.getCommunicationManager();
+
+                if (commManager != null) {
+                    // Build hotspot error JSON
+                    JSONObject hotspotError = new JSONObject();
+                    hotspotError.put("type", "hotspot_error");
+                    hotspotError.put("error_message", errorMessage);
+                    hotspotError.put("timestamp", System.currentTimeMillis());
+
+                    Log.d(TAG, "📡 🔥 Sending hotspot error: " + hotspotError.toString());
+                    boolean sent = commManager.sendBluetoothResponse(hotspotError);
+                    Log.d(TAG, "📡 🔥 " + (sent ? "✅ Hotspot error sent successfully" : "❌ Failed to send hotspot error"));
+                } else {
+                    Log.w(TAG, "📡 🔥 Cannot send hotspot error - communication manager not available");
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "📡 🔥 Error sending hotspot error message", e);
+        }
     }
 
     // ---------------------------------------------
