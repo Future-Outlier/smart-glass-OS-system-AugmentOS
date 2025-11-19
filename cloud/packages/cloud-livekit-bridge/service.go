@@ -137,11 +137,23 @@ func (s *LiveKitBridgeService) JoinRoom(
 			},
 		},
 		OnDisconnected: func() {
+			log.Printf("Disconnected from LiveKit room: %s", req.RoomName)
 			s.bsLogger.LogWarn("Disconnected from LiveKit room", map[string]interface{}{
 				"user_id":   req.UserId,
 				"room_name": req.RoomName,
 			})
-			log.Printf("Disconnected from LiveKit room: %s", req.RoomName)
+
+			// Mark session as disconnected for status RPC
+			if sessVal, ok := s.sessions.Load(req.UserId); ok {
+				session := sessVal.(*RoomSession)
+				session.mu.Lock()
+				session.connected = false
+				session.lastDisconnectAt = time.Now()
+				if session.lastDisconnectReason == "" {
+					session.lastDisconnectReason = "disconnected"
+				}
+				session.mu.Unlock()
+			}
 		},
 	}
 
@@ -165,6 +177,14 @@ func (s *LiveKitBridgeService) JoinRoom(
 	}
 
 	session.room = room
+
+	// Update connectivity state for status RPC
+	session.mu.Lock()
+	session.connected = true
+	session.participantID = string(room.LocalParticipant.Identity())
+	session.participantCount = len(room.GetRemoteParticipants()) + 1
+	session.lastDisconnectReason = "" // clear previous reason on fresh join
+	session.mu.Unlock()
 
 	// DON'T create track here - only create when actually playing audio
 	// This prevents static feedback loop (mobile hears empty track as static)
@@ -479,4 +499,57 @@ func (s *LiveKitBridgeService) getSession(userId string) (*RoomSession, error) {
 		return nil, fmt.Errorf("session not found for user %s", userId)
 	}
 	return sessionVal.(*RoomSession), nil
+}
+
+// GetStatus returns room connectivity state for a given user session
+func (s *LiveKitBridgeService) GetStatus(ctx context.Context, req *pb.BridgeStatusRequest) (*pb.BridgeStatusResponse, error) {
+	// Default response if no session
+	resp := &pb.BridgeStatusResponse{
+		Connected:            false,
+		ParticipantId:        "",
+		ParticipantCount:     0,
+		LastDisconnectAt:     0,
+		LastDisconnectReason: "",
+		ServerVersion:        "1.0.0",
+	}
+
+	if req == nil || req.UserId == "" {
+		return resp, nil
+	}
+
+	val, ok := s.sessions.Load(req.UserId)
+	if !ok {
+		// No session found: return defaults (connected=false)
+		return resp, nil
+	}
+
+	session := val.(*RoomSession)
+
+	// Collect state under lock
+	session.mu.RLock()
+	connected := session.connected
+	participantID := session.participantID
+	participantCount := session.participantCount
+	lastDiscAt := session.lastDisconnectAt
+	lastDiscReason := session.lastDisconnectReason
+	room := session.room
+	session.mu.RUnlock()
+
+	// If we have a room, prefer live counts/ids
+	if room != nil {
+		if participantID == "" {
+			participantID = string(room.LocalParticipant.Identity())
+		}
+		participantCount = len(room.GetRemoteParticipants()) + 1
+	}
+
+	resp.Connected = connected
+	resp.ParticipantId = participantID
+	resp.ParticipantCount = int32(participantCount)
+	if !lastDiscAt.IsZero() {
+		resp.LastDisconnectAt = lastDiscAt.UnixMilli()
+	}
+	resp.LastDisconnectReason = lastDiscReason
+
+	return resp, nil
 }

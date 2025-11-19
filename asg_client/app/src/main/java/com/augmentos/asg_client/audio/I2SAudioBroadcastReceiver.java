@@ -41,8 +41,16 @@ public class I2SAudioBroadcastReceiver extends BroadcastReceiver {
         }
 
         final boolean start = STATE_START.equalsIgnoreCase(state);
-        Log.i(TAG, "Audio playstate change received: " + state + " (start=" + start + ")");
+        Log.i(TAG, "Firmware I2S broadcast: " + state + " (start=" + start + ")");
 
+        // If I2SAudioController is actively managing I2S, ignore firmware broadcasts
+        // to prevent reacting to our own MediaPlayer playback state changes
+        if (I2SAudioController.isControllingI2S()) {
+            Log.d(TAG, "Ignoring firmware broadcast - I2SAudioController is in control");
+            return;
+        }
+
+        // Forward external app audio state to MCU (e.g., VLC, system sounds)
         Intent serviceIntent = new Intent(context, AsgClientService.class);
         serviceIntent.setAction(AsgClientService.ACTION_I2S_AUDIO_STATE);
         serviceIntent.putExtra(AsgClientService.EXTRA_I2S_AUDIO_PLAYING, start);

@@ -1,5 +1,3 @@
-import {MOCK_CONNECTION} from "@/consts"
-
 export interface OtaDownloadProgress {
   status: string
   progress: number
@@ -85,29 +83,13 @@ export interface CoreAuthInfo {
 }
 
 export interface CoreInfo {
-  augmentos_core_version: string | null
   core_token: string | null
   cloud_connection_status: string
-  puck_connected: boolean
-  puck_battery_life: number | null
-  puck_charging_status: boolean
   default_wearable: string | null
-  default_wearable_name: string | null
-  default_wearable_address: string | null
-  sensing_enabled: boolean
-  power_saving_mode: boolean
-  force_core_onboard_mic: boolean
-  preferred_mic: string
   is_mic_enabled_for_frontend: boolean
-  contextual_dashboard_enabled: boolean
-  bypass_vad_for_debugging: boolean
-  enforce_local_transcription: boolean
-  bypass_audio_encoding_for_debugging: boolean
-  always_on_status_bar_enabled: boolean
-  metric_system_enabled: boolean
   is_searching: boolean
-  protobuf_schema_version: string
-  glasses_protobuf_version: string
+  // protobuf_schema_version: string
+  // glasses_protobuf_version: string
 }
 
 export interface CoreStatus {
@@ -123,27 +105,11 @@ export interface CoreStatus {
 export class CoreStatusParser {
   static defaultStatus: CoreStatus = {
     core_info: {
-      augmentos_core_version: null,
       cloud_connection_status: "DISCONNECTED",
       core_token: null,
-      puck_connected: false,
-      puck_battery_life: null,
-      puck_charging_status: false,
-      sensing_enabled: false,
-      power_saving_mode: false,
-      force_core_onboard_mic: false,
-      preferred_mic: "glasses",
       is_mic_enabled_for_frontend: false,
-      contextual_dashboard_enabled: false,
-      bypass_vad_for_debugging: true,
-      enforce_local_transcription: false,
-      bypass_audio_encoding_for_debugging: false,
       default_wearable: null,
-      always_on_status_bar_enabled: false,
-      metric_system_enabled: true,
       is_searching: false,
-      protobuf_schema_version: "Unknown",
-      glasses_protobuf_version: "Unknown",
     },
     glasses_info: null,
     glasses_settings: {
@@ -172,24 +138,10 @@ export class CoreStatusParser {
 
   static mockStatus: CoreStatus = {
     core_info: {
-      augmentos_core_version: "1.0.0",
       cloud_connection_status: "CONNECTED",
       core_token: "1234567890",
-      puck_connected: true,
-      puck_battery_life: 88,
-      puck_charging_status: true,
-      sensing_enabled: true,
-      power_saving_mode: false,
-      preferred_mic: "glasses",
-      force_core_onboard_mic: false,
       is_mic_enabled_for_frontend: false,
-      contextual_dashboard_enabled: true,
-      bypass_vad_for_debugging: true,
-      enforce_local_transcription: false,
-      bypass_audio_encoding_for_debugging: false,
       default_wearable: "evenrealities_g1",
-      always_on_status_bar_enabled: false,
-      metric_system_enabled: true,
       is_searching: false,
     },
     glasses_info: {
@@ -237,11 +189,8 @@ export class CoreStatusParser {
   }
 
   static parseStatus(data: any): CoreStatus {
-    if (MOCK_CONNECTION) {
-      return CoreStatusParser.mockStatus
-    }
-    if (data && "status" in data) {
-      const status = data.status
+    if (data && "core_status" in data) {
+      const status = data.core_status
       const coreInfo = status.core_info ?? {}
       const glassesInfo = status.connected_glasses ?? {}
       const authInfo = status.auth ?? {}
@@ -252,30 +201,14 @@ export class CoreStatusParser {
 
       return {
         core_info: {
-          augmentos_core_version: coreInfo.augmentos_core_version ?? null,
           core_token: coreInfo.core_token ?? null,
           cloud_connection_status: coreInfo.cloud_connection_status ?? "DISCONNECTED",
-          puck_connected: true,
-          puck_battery_life: status.core_info.puck_battery_life ?? null,
-          puck_charging_status: status.core_info.charging_status ?? false,
-          sensing_enabled: status.core_info.sensing_enabled ?? false,
-          power_saving_mode: status.core_info.power_saving_mode ?? false,
-          force_core_onboard_mic: status.core_info.force_core_onboard_mic ?? false,
-          preferred_mic: status.core_info.preferred_mic ?? "glasses",
-          contextual_dashboard_enabled: status.core_info.contextual_dashboard_enabled ?? true,
-          bypass_vad_for_debugging: status.core_info.bypass_vad_for_debugging ?? true,
-          enforce_local_transcription: status.core_info.enforce_local_transcription ?? false,
-          bypass_audio_encoding_for_debugging: status.core_info.bypass_audio_encoding_for_debugging ?? false,
           default_wearable:
-            hasConnectedGlasses && !status.core_info.default_wearable
+            hasConnectedGlasses && !coreInfo.default_wearable
               ? status.connected_glasses.model_name
-              : (status.core_info.default_wearable ?? null),
-          is_mic_enabled_for_frontend: status.core_info.is_mic_enabled_for_frontend ?? false,
-          always_on_status_bar_enabled: status.core_info.always_on_status_bar_enabled ?? false,
-          metric_system_enabled: status.core_info.metric_system_enabled ?? true,
-          is_searching: status.core_info.is_searching ?? false,
-          protobuf_schema_version: status.core_info.protobuf_schema_version ?? "Unknown",
-          glasses_protobuf_version: status.core_info.glasses_protobuf_version ?? "Unknown",
+              : (coreInfo.default_wearable ?? null),
+          is_mic_enabled_for_frontend: coreInfo.is_mic_enabled_for_frontend ?? false,
+          is_searching: coreInfo.is_searching ?? false,
         },
         glasses_info: status.connected_glasses
           ? {
@@ -305,21 +238,37 @@ export class CoreStatusParser {
               bluetooth_name: glassesInfo.bluetooth_name,
             }
           : null,
-        glasses_settings: {
-          brightness: status.glasses_settings.brightness ?? 50,
-          auto_brightness: status.glasses_settings.auto_brightness ?? false,
-          dashboard_height: status.glasses_settings.dashboard_height ?? 4,
-          dashboard_depth: status.glasses_settings.dashboard_depth ?? 5,
-          head_up_angle: status.glasses_settings.head_up_angle ?? 30,
-          button_mode: status.glasses_settings.button_mode ?? "photo",
-          button_photo_size: status.glasses_settings.button_photo_size ?? "medium",
-          button_video_settings: status.glasses_settings.button_video_settings ?? {
-            width: 1280,
-            height: 720,
-            fps: 30,
-          },
-          button_camera_led: status.glasses_settings.button_camera_led,
-        },
+        glasses_settings: status.glasses_settings
+          ? {
+              brightness: status.glasses_settings.brightness ?? 50,
+              auto_brightness: status.glasses_settings.auto_brightness ?? false,
+              dashboard_height: status.glasses_settings.dashboard_height ?? 4,
+              dashboard_depth: status.glasses_settings.dashboard_depth ?? 5,
+              head_up_angle: status.glasses_settings.head_up_angle ?? 30,
+              button_mode: status.glasses_settings.button_mode ?? "photo",
+              button_photo_size: status.glasses_settings.button_photo_size ?? "medium",
+              button_video_settings: status.glasses_settings.button_video_settings ?? {
+                width: 1280,
+                height: 720,
+                fps: 30,
+              },
+              button_camera_led: status.glasses_settings.button_camera_led,
+            }
+          : {
+              brightness: 50,
+              auto_brightness: false,
+              dashboard_height: 4,
+              dashboard_depth: 5,
+              head_up_angle: 30,
+              button_mode: "photo",
+              button_photo_size: "medium",
+              button_video_settings: {
+                width: 1280,
+                height: 720,
+                fps: 30,
+              },
+              button_camera_led: false,
+            },
         wifi: status.wifi ?? CoreStatusParser.defaultStatus.wifi,
         gsm: status.gsm ?? CoreStatusParser.defaultStatus.gsm,
         auth: {
@@ -327,10 +276,6 @@ export class CoreStatusParser {
           core_token_status: authInfo.core_token_status,
           last_verification_timestamp: authInfo.last_verification_timestamp,
         },
-        // TODO: Hardcoding this false fixes a bug that
-        // causes us to jump back to the home screen whenever
-        // a setting is changed. I don't know why this works.
-        // Somebody look at this please.
         ota_progress:
           otaProgress.download || otaProgress.installation
             ? {
