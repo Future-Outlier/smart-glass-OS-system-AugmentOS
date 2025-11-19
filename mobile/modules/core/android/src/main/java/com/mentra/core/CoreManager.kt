@@ -891,10 +891,12 @@ class CoreManager {
 
         // Show welcome message on first connect for all display glasses
         if (shouldSendBootingMessage) {
-            sgc?.sendTextWall("// MentraOS Connected")
-            Thread.sleep(3000)
-            sgc?.clearDisplay()
             shouldSendBootingMessage = false
+            executor.execute {
+                sgc?.sendTextWall("// MentraOS Connected")
+                Thread.sleep(3000)
+                sgc?.clearDisplay()
+            }
         }
 
         // Call device-specific setup handlers
