@@ -58,8 +58,8 @@ export const captionsPackageName = "com.augmentos.livecaptions"
 
 // get offline applets:
 export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
-  const offlineCameraRunning = await useSettingsStore.getState().getSetting(cameraPackageName)
-  const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(captionsPackageName)
+  const offlineCameraRunning = await useSettingsStore.getState().getSetting(SETTINGS.gallery_mode.key)
+  const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_captions_running.key)
   return [
     {
       packageName: cameraPackageName,

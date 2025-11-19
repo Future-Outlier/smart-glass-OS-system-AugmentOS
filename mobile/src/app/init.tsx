@@ -12,7 +12,7 @@ import {translate} from "@/i18n"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
-import {useSettingsStore, SETTINGS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
@@ -64,7 +64,7 @@ export default function InitScreen() {
   }
 
   const checkCustomUrl = async (): Promise<boolean> => {
-    const defaultUrl = useSettingsStore.getState().getDefaultValue(SETTINGS.backend_url.key)
+    const defaultUrl = SETTINGS[SETTINGS.backend_url.key].defaultValue()
     const isCustom = backendUrl !== defaultUrl
     setIsUsingCustomUrl(isCustom)
     return isCustom
@@ -191,7 +191,7 @@ export default function InitScreen() {
 
   const handleResetUrl = async (): Promise<void> => {
     try {
-      const defaultUrl = (await useSettingsStore.getState().getDefaultValue(SETTINGS.backend_url.key)) as string
+      const defaultUrl = SETTINGS[SETTINGS.backend_url.key].defaultValue()
       await setBackendUrl(defaultUrl)
       setIsUsingCustomUrl(false)
       await checkCloudVersion(true) // Pass true for retry to avoid flash
