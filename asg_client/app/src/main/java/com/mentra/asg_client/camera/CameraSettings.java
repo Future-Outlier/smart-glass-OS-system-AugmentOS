@@ -33,7 +33,7 @@ public class CameraSettings {
   private CaptureRequest.Key<int[]> mKeyEisMode;  // EIS for video (optional)
 
   private final Context mContext;
-  private final AsgSettings mAsgSettings;
+  public final AsgSettings mAsgSettings;  // Public for access in CameraNeo
   private CameraCharacteristics mCharacteristics;
 
   public CameraSettings(Context context) {
@@ -124,14 +124,18 @@ public class CameraSettings {
       return;
     }
 
+    Log.d(TAG, "🔍 DIAGNOSTIC: Configuring preview builder with ZSL");
+    
     // Enable ZSL during preview to fill circular buffer
     // ZSL works by: preview accumulates full-resolution frames -> capture reads from buffer -> MFNR gets 6 frames for merging
     // If ZSL is disabled during preview, buffer will be empty and MFNR cannot get enough frames!
     builder.set(CaptureRequest.CONTROL_ENABLE_ZSL, true);
+    Log.d(TAG, "🔍 Set CONTROL_ENABLE_ZSL = true in preview builder");
+    
     if (mKeyZslMode != null) {
       byte[] zslMode = new byte[]{1};
       builder.set(mKeyZslMode, zslMode);
-      Log.d(TAG, "Preview: ZSL_MODE set to ON (1) - Required for MFNR buffer");
+      Log.d(TAG, "Preview: ZSL_MODE vendor key set to ON (1) - Required for MFNR buffer");
     }
 
     // Disable MFNR/AIS during preview (multi-frame processing only needed for capture)
@@ -162,13 +166,17 @@ public class CameraSettings {
       return;
     }
 
+    Log.d(TAG, "🔍 DIAGNOSTIC: Configuring capture builder with ZSL/MFNR");
+    
     // Enable ZSL for capture
     if (zslEnabled && isZslSupported()) {
       builder.set(CaptureRequest.CONTROL_ENABLE_ZSL, true);
+      Log.d(TAG, "🔍 Set CONTROL_ENABLE_ZSL = true in capture builder");
+      
       if (mKeyZslMode != null) {
         byte[] zslMode = new byte[]{1};
         builder.set(mKeyZslMode, zslMode);
-        Log.d(TAG, "Capture: ZSL_MODE set to ON (1)");
+        Log.d(TAG, "Capture: ZSL_MODE vendor key set to ON (1)");
       }
     } else if (zslEnabled) {
       Log.d(TAG, "ZSL enabled in settings but vendor keys not available");

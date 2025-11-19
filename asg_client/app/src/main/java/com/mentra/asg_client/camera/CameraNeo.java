@@ -218,10 +218,13 @@ public class CameraNeo extends LifecycleService {
      */
 
     // Simplified AE system - autofocus runs automatically
-    private enum ShotState { IDLE, WAITING_AE, SHOOTING }
+    // Following XyCamera2 pattern: WAITING_AE -> request lock -> WAITING_AE_LOCK -> SHOOTING
+    private enum ShotState { IDLE, WAITING_AE, WAITING_AE_LOCK, SHOOTING }
     private volatile ShotState shotState = ShotState.IDLE;
+    private boolean mWaitingForAeConvergence = false;  // Flag to track if waiting for AE (XyCamera2 pattern)
+    private boolean mAeLockRequested = false;  // Flag to track if AE lock requested (XyCamera2 pattern)
     private long aeStartTimeNs;
-    private static final long AE_WAIT_NS = 1_000_000_000L; // 0.5 second max wait for AE
+    private static final long AE_WAIT_NS = 3_000_000_000L; // 3 second max wait for AE (matching XyCamera2)
 
     // Simple AE callback - autofocus handled automatically
     private final SimplifiedAeCallback aeCallback = new SimplifiedAeCallback();
@@ -1630,8 +1633,12 @@ public class CameraNeo extends LifecycleService {
                     return;
                 }
                 surfaces.add(imageReader.getSurface());
-                previewBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+                
+                // Use TEMPLATE_PREVIEW for repeating requests (matches XyCamera2 pattern)
+                // TEMPLATE_STILL_CAPTURE is only used for the final capture, not the repeating preview
+                previewBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 previewBuilder.addTarget(imageReader.getSurface());
+                Log.d(TAG, "🔍 Using TEMPLATE_PREVIEW for repeating request (ZSL compatible)");
             }
 
             // Configure auto-exposure settings for better photo quality
@@ -2403,27 +2410,36 @@ public class CameraNeo extends LifecycleService {
 
     /**
      * Start simplified AE convergence sequence
+     * Following XyCamera2 pattern: set waiting flag, let repeating request callback monitor AE
      */
     private void startPrecaptureSequence() {
         try {
             shotState = ShotState.WAITING_AE;
+            mWaitingForAeConvergence = true;
+            mAeLockRequested = false;
             aeStartTimeNs = System.nanoTime();
 
+            // Check if ZSL is enabled
+            boolean zslEnabled = (mCameraSettings != null && mCameraSettings.isZslSupported() && 
+                                 mCameraSettings.mAsgSettings.isZslEnabled());
+            
+            Log.d(TAG, "🔍 DIAGNOSTIC: startPrecaptureSequence() called");
+            Log.d(TAG, "🔍 ZSL enabled: " + zslEnabled);
+            Log.d(TAG, "🔍 Current shot state: " + shotState);
+            Log.d(TAG, "🔍 Waiting for AE convergence: " + mWaitingForAeConvergence);
+
             // Start AE convergence - autofocus runs automatically in CONTINUOUS_PICTURE mode
-            Log.d(TAG, "Starting AE convergence" + (hasAutoFocus ? " (autofocus runs automatically)" : "") + "...");
+            Log.d(TAG, "Starting AE convergence (monitoring via repeating request callback)...");
+            
+            // XyCamera2 pattern: Don't send any triggers, just set the waiting flag
+            // The repeating request callback (aeCallback) will monitor AE state and trigger capture when ready
+            Log.d(TAG, "🔍 XyCamera2 MODE: No precapture trigger - monitoring AE via repeating request callback");
 
-            // Trigger only AE precapture - no manual AF trigger needed for CONTINUOUS_PICTURE
-            previewBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
-                CameraMetadata.CONTROL_AE_PRECAPTURE_TRIGGER_START);
-
-            cameraCaptureSession.capture(previewBuilder.build(), aeCallback, backgroundHandler);
-
-            Log.d(TAG, "Triggered AE precapture, waiting for convergence...");
-
-        } catch (CameraAccessException e) {
+        } catch (Exception e) {
             Log.e(TAG, "Error starting AE convergence", e);
             notifyPhotoError("Error starting AE convergence: " + e.getMessage());
             shotState = ShotState.IDLE;
+            mWaitingForAeConvergence = false;
             cancelKeepAliveTimer();
             closeCamera();
             stopSelf();
@@ -2432,53 +2448,84 @@ public class CameraNeo extends LifecycleService {
 
     /**
      * Simplified AE callback that waits briefly for exposure convergence
-     * Autofocus runs automatically in CONTINUOUS_PICTURE mode
+     * Following XyCamera2 pattern: monitor AE in repeating request, request lock, then capture
      */
     private class SimplifiedAeCallback extends CameraCaptureSession.CaptureCallback {
+        private int callbackCount = 0;  // Diagnostic counter
+        
         @Override
         public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                      @NonNull CaptureRequest request,
                                      @NonNull TotalCaptureResult result) {
 
+            callbackCount++;
+            
+            // Log first few callbacks to verify it's being invoked
+            if (callbackCount <= 10 || callbackCount % 30 == 0) {
+                Log.d(TAG, "🔍 AE callback #" + callbackCount + " | Shot state: " + shotState + " | Waiting: " + mWaitingForAeConvergence + " | LockRequested: " + mAeLockRequested);
+            }
+
+            // Only process if we're waiting for AE convergence
+            if (!mWaitingForAeConvergence) {
+                return;
+            }
+
             Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-            // Suppress verbose AE logging to prevent logcat overflow
-            // Only log important state transitions
+            
+            // Check if this callback is from the repeating request or one-shot precapture
+            Integer precaptureTrigger = request.get(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER);
+            Boolean zslInRequest = request.get(CaptureRequest.CONTROL_ENABLE_ZSL);
+            
+            if (callbackCount <= 5) {
+                Log.d(TAG, "🔍 Request details - ZSL: " + zslInRequest + ", Precapture trigger: " + precaptureTrigger + ", AE state: " + getAeStateName(aeState));
+            }
 
             if (aeState == null) {
-                Log.w(TAG, "AE_STATE is null, proceeding with capture anyway");
-                if (shotState == ShotState.WAITING_AE) {
-                    Log.d(TAG, "No AE state available, capturing immediately");
-                    capturePhoto();
+                Log.w(TAG, "AE_STATE is null in callback");
+                if (callbackCount % 10 == 0) {
+                    Log.w(TAG, "🔍 Still waiting for AE state... (callback #" + callbackCount + ")");
                 }
                 return;
             }
 
-            switch (shotState) {
-                case WAITING_AE:
-                    // Simple AE convergence check - no AF state checking needed
-                    boolean aeConverged = (aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED ||
-                                         aeState == CaptureResult.CONTROL_AE_STATE_FLASH_REQUIRED ||
-                                         aeState == CaptureResult.CONTROL_AE_STATE_LOCKED);
+            // Check for timeout
+            boolean timeout = (System.nanoTime() - aeStartTimeNs) > AE_WAIT_NS;
+            if (timeout) {
+                Log.w(TAG, "🔍 AE convergence timeout after 3 seconds, forcing capture");
+                mWaitingForAeConvergence = false;
+                mAeLockRequested = false;
+                capturePhoto();
+                return;
+            }
 
-                    boolean timeout = (System.nanoTime() - aeStartTimeNs) > AE_WAIT_NS;
+            // XyCamera2 pattern: Check if AE lock was requested and confirmed
+            if (mAeLockRequested) {
+                if (aeState == CaptureResult.CONTROL_AE_STATE_LOCKED || 
+                    aeState == CaptureResult.CONTROL_AE_STATE_FLASH_REQUIRED) {
+                    Log.d(TAG, "🔍 AE locked! State: " + getAeStateName(aeState) + ", capturing photo");
+                    mAeLockRequested = false;
+                    mWaitingForAeConvergence = false;
+                    shotState = ShotState.SHOOTING;
+                    capturePhoto();
+                } else if (callbackCount % 10 == 0) {
+                    Log.d(TAG, "🔍 Waiting for AE lock... State: " + getAeStateName(aeState));
+                }
+                return;
+            }
 
-                    if (aeConverged || timeout) {
-                        Log.d(TAG, "AE ready (AE: " + getAeStateName(aeState) +
-                             (timeout ? " - timeout)" : ")") + ", capturing photo...");
-                        capturePhoto();
-                    } else {
-                        // Suppress convergence logging - too verbose
-                    }
-                    break;
+            // Check if AE has converged - if so, request AE lock
+            boolean isAeConverged = (aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED ||
+                                    aeState == CaptureResult.CONTROL_AE_STATE_LOCKED);
 
-                case SHOOTING:
-                    // Photo capture in progress - suppressed log
-                    break;
-
-                case IDLE:
-                default:
-                    // Ignore callbacks when idle
-                    break;
+            if (isAeConverged) {
+                Log.d(TAG, "🔍 AE converged! Requesting AE lock, state: " + getAeStateName(aeState));
+                requestAeLock(session);
+            } else if (callbackCount % 10 == 0) {
+                // Log periodically to track convergence
+                Integer iso = result.get(CaptureResult.SENSOR_SENSITIVITY);
+                Long exposureTime = result.get(CaptureResult.SENSOR_EXPOSURE_TIME);
+                Log.d(TAG, "🔍 Waiting for AE convergence... State: " + getAeStateName(aeState) + 
+                          ", ISO: " + iso + ", Exposure: " + (exposureTime != null ? exposureTime / 1_000_000.0 : "null") + "ms");
             }
         }
 
@@ -2486,12 +2533,99 @@ public class CameraNeo extends LifecycleService {
         public void onCaptureFailed(@NonNull CameraCaptureSession session,
                                   @NonNull CaptureRequest request,
                                   @NonNull CaptureFailure failure) {
-            Log.e(TAG, "Capture failed during AE sequence: " + failure.getReason());
+            // Diagnostic: Check what type of request failed
+            Boolean zslInRequest = request.get(CaptureRequest.CONTROL_ENABLE_ZSL);
+            Integer precaptureTrigger = request.get(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER);
+            Boolean aeLock = request.get(CaptureRequest.CONTROL_AE_LOCK);
+            
+            Log.e(TAG, "🔍 DIAGNOSTIC: Capture failed during AE sequence");
+            Log.e(TAG, "🔍 Failure reason: " + failure.getReason());
+            Log.e(TAG, "🔍 ZSL in request: " + zslInRequest);
+            Log.e(TAG, "🔍 AE lock in request: " + aeLock);
+            Log.e(TAG, "🔍 Precapture trigger in request: " + precaptureTrigger);
+            Log.e(TAG, "🔍 Shot state: " + shotState);
+            Log.e(TAG, "🔍 Waiting flags - AE convergence: " + mWaitingForAeConvergence + ", Lock requested: " + mAeLockRequested);
+            Log.e(TAG, "🔍 Frame number: " + failure.getFrameNumber());
+            Log.e(TAG, "🔍 Was image captured: " + failure.wasImageCaptured());
+            
+            // XyCamera2 pattern: Failures from repeating request during SHOOTING are normal, ignore them
+            if (shotState == ShotState.SHOOTING) {
+                Log.d(TAG, "🔍 Failure during SHOOTING state - likely from repeating request, ignoring");
+                return;
+            }
+            
             notifyPhotoError("AE sequence failed: " + failure.getReason());
             shotState = ShotState.IDLE;
+            mWaitingForAeConvergence = false;
+            mAeLockRequested = false;
             cancelKeepAliveTimer();
             closeCamera();
             stopSelf();
+        }
+    }
+    
+    /**
+     * Request AE lock (XyCamera2 pattern)
+     * Updates the repeating request to lock AE, then waits for lock confirmation
+     */
+    private void requestAeLock(CameraCaptureSession session) {
+        if (session == null || cameraDevice == null) {
+            Log.w(TAG, "Cannot lock AE: session/camera is null");
+            return;
+        }
+
+        try {
+            Log.d(TAG, "🔍 Requesting AE lock by updating repeating request");
+            
+            // Update preview builder to request AE lock
+            previewBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);
+            
+            // Keep ZSL settings applied
+            if (mCameraSettings != null && mCameraSettings.isZslSupported()) {
+                mCameraSettings.configurePreviewBuilder(previewBuilder);
+            }
+            
+            // Update the repeating request with AE lock
+            session.setRepeatingRequest(previewBuilder.build(), aeCallback, backgroundHandler);
+            mAeLockRequested = true;
+            shotState = ShotState.WAITING_AE_LOCK;
+            Log.d(TAG, "🔍 AE lock requested via repeating request (CONTROL_AE_LOCK=true)");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to lock AE: " + e.getMessage());
+            mAeLockRequested = false;
+            mWaitingForAeConvergence = false;
+            // Force capture on error
+            capturePhoto();
+        }
+    }
+    
+    /**
+     * Restore preview after capture (XyCamera2 pattern)
+     * Unlocks AE and restores repeating request with ZSL enabled
+     */
+    private void restorePreview(CameraCaptureSession session) {
+        try {
+            if (session == null || cameraDevice == null) {
+                Log.w(TAG, "Cannot restore preview: session/camera is null");
+                return;
+            }
+            
+            Log.d(TAG, "🔍 Restoring preview after capture (unlocking AE)");
+            
+            // Unlock AE and restore preview settings
+            previewBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
+            mAeLockRequested = false;
+            
+            // Apply ZSL settings for preview
+            if (mCameraSettings != null && mCameraSettings.isZslSupported()) {
+                mCameraSettings.configurePreviewBuilder(previewBuilder);
+            }
+            
+            // Restore repeating preview request
+            session.setRepeatingRequest(previewBuilder.build(), aeCallback, backgroundHandler);
+            Log.d(TAG, "🔍 Preview restored (AE unlocked, repeating request restarted)");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to restore preview: " + e.getMessage());
         }
     }
 
@@ -2509,6 +2643,7 @@ public class CameraNeo extends LifecycleService {
 
             // Copy settings from preview
             stillBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+            stillBuilder.set(CaptureRequest.CONTROL_AE_LOCK, true);  // Lock AE for capture (XyCamera2 pattern)
             stillBuilder.set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO);
             stillBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, userExposureCompensation);
             stillBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, selectedFpsRange);
@@ -2578,6 +2713,9 @@ public class CameraNeo extends LifecycleService {
                         Log.d(TAG, "✓ ZSL confirmed active in capture result");
                     }
                     
+                    // XyCamera2 pattern: Restore preview after capture (unlock AE, restore repeating request)
+                    restorePreview(session);
+                    
                     // Image processing will happen in ImageReader callback
                 }
 
@@ -2587,7 +2725,13 @@ public class CameraNeo extends LifecycleService {
                                           @NonNull CaptureFailure failure) {
                     Log.e(TAG, "Photo capture failed: " + failure.getReason());
                     notifyPhotoError("Photo capture failed: " + failure.getReason());
+                    
+                    // XyCamera2 pattern: Restore preview even on failure
+                    restorePreview(session);
+                    
                     shotState = ShotState.IDLE;
+                    mWaitingForAeConvergence = false;
+                    mAeLockRequested = false;
                     cancelKeepAliveTimer();
                     closeCamera();
                     stopSelf();
