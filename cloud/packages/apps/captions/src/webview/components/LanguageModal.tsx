@@ -71,10 +71,10 @@ export function LanguageModal({currentLanguage, currentHints, onSave, trigger}: 
           <div className="space-y-2">
             <label className="text-sm font-medium">Primary Language</label>
             <Select value={tempLanguage} onValueChange={setTempLanguage}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="w-full">
                 {AVAILABLE_LANGUAGES.map((lang) => (
                   <SelectItem key={lang.code} value={lang.code}>
                     {lang.name}
@@ -115,10 +115,10 @@ export function LanguageModal({currentLanguage, currentHints, onSave, trigger}: 
                   addHint(value)
                   setSearchQuery("")
                 }}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Add a language hint..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="w-full">
                   <div className="p-2">
                     <input
                       type="text"

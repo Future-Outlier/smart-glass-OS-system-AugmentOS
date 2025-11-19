@@ -6,7 +6,7 @@ import "./index.css"
 
 export function App() {
   const {transcripts, connected} = useTranscripts()
-  const {settings, updateLanguage, updateLanguageHints} = useSettings()
+  const {settings, updateLanguage, updateLanguageHints, updateDisplayLines, updateDisplayWidth} = useSettings()
 
   return (
     <div className="flex flex-col w-screen h-screen bg-white">
@@ -15,6 +15,8 @@ export function App() {
         settings={settings}
         onUpdateLanguage={updateLanguage}
         onUpdateHints={updateLanguageHints}
+        onUpdateDisplayLines={updateDisplayLines}
+        onUpdateDisplayWidth={updateDisplayWidth}
       />
       <TranscriptList transcripts={transcripts} />
     </div>

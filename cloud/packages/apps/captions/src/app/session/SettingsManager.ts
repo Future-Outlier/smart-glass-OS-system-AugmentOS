@@ -36,8 +36,8 @@ export class SettingsManager {
   }
 
   async getLanguage(): Promise<string> {
-    const stored = await this.storage.get<string>("language")
-    return stored || "English"
+    const stored = await this.storage.get("language")
+    return stored || "auto"
   }
 
   async setLanguage(language: string): Promise<void> {
@@ -49,25 +49,32 @@ export class SettingsManager {
   }
 
   async getLanguageHints(): Promise<string[]> {
-    const stored = await this.storage.get<string[]>("languageHints")
-    return stored || []
+    const stored = await this.storage.get("languageHints")
+    if (!stored) return []
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return []
+    }
   }
 
   async setLanguageHints(hints: string[]): Promise<void> {
-    await this.storage.set("languageHints", hints)
+    await this.storage.set("languageHints", JSON.stringify(hints))
     this.logger.info(`Language hints set to: ${hints.join(", ")}`)
   }
 
   async getDisplayLines(): Promise<number> {
-    const stored = await this.storage.get<number>("displayLines")
-    return stored || 3
+    const stored = await this.storage.get("displayLines")
+    if (!stored) return 3
+    const parsed = parseInt(stored, 10)
+    return isNaN(parsed) ? 3 : parsed
   }
 
   async setDisplayLines(lines: number): Promise<void> {
     if (lines < 2 || lines > 5) {
       throw new Error("Lines must be between 2 and 5")
     }
-    await this.storage.set("displayLines", lines)
+    await this.storage.set("displayLines", lines.toString())
     this.logger.info(`Display lines set to: ${lines}`)
 
     // Update processor with new settings
@@ -75,12 +82,14 @@ export class SettingsManager {
   }
 
   async getDisplayWidth(): Promise<number> {
-    const stored = await this.storage.get<number>("displayWidth")
-    return stored || 30
+    const stored = await this.storage.get("displayWidth")
+    if (!stored) return 30
+    const parsed = parseInt(stored, 10)
+    return isNaN(parsed) ? 30 : parsed
   }
 
   async setDisplayWidth(width: number): Promise<void> {
-    await this.storage.set("displayWidth", width)
+    await this.storage.set("displayWidth", width.toString())
     this.logger.info(`Display width set to: ${width}`)
 
     // Update processor with new settings

@@ -31,6 +31,7 @@ export class LiveCaptionsApp extends AppServer {
 
       // Get current settings to determine language and processor config
       const language = await userSession.settings.getLanguage()
+      const languageHints = await userSession.settings.getLanguageHints()
       const locale = languageToLocale(language)
       const isChineseLanguage = language === "Chinese (Hanzi)"
 
@@ -42,10 +43,19 @@ export class LiveCaptionsApp extends AppServer {
       // Update display manager with settings
       userSession.display.updateSettings(lineWidth, numberOfLines, isChineseLanguage)
 
-      // Subscribe to transcription events
-      const cleanup = session.onTranscriptionForLanguage(locale, (data: TranscriptionData) => {
-        this.handleTranscription(userSession, data)
-      })
+      // Subscribe to transcription events with language hints
+      // If "auto" mode, use "en-US" as fallback for SDK
+      // Language identification is enabled by default unless explicitly disabled
+      const subscriptionLocale = language === "auto" ? "en-US" : locale
+      const cleanup = session.onTranscriptionForLanguage(
+        subscriptionLocale,
+        (data: TranscriptionData) => {
+          this.handleTranscription(userSession, data)
+        },
+        {
+          hints: languageHints,
+        },
+      )
 
       this.addCleanupHandler(cleanup)
 
