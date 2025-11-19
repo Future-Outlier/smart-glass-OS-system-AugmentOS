@@ -235,7 +235,7 @@ export const useSettingsStore = create<SettingsState>()(
       await AsyncStorage.setItem(key, jsonValue)
       // Update core settings if needed
       if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number]) && updateCore) {
-        CoreModule.updateSettings({[key]: value})
+        CoreModule.updateSettings({[originalKey]: value})
       }
       // Sync with server if needed
       if (updateServer) {
