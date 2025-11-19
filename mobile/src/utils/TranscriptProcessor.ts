@@ -1,21 +1,21 @@
 export class TranscriptProcessor {
-  private maxCharsPerLine: number
-  private maxLines: number
+  private maxCharsPerLine: number = 44
+  private maxLines: number = 3
+  private maxFinalTranscripts: number = 30
+  private isChinese: boolean = false
   private lastUserTranscript: string = ""
   private lines: string[] = []
   private partialText: string = ""
   private finalTranscriptHistory: string[] = []
-  private maxFinalTranscripts: number
-  private isChinese: boolean
   private currentDisplayLines: string[] = []
   private lastPartialUpdateTime: number = 0
   private readonly throttleInterval: number = 300 // 300ms throttle interval
+  private pendingUpdate: string | null = null
+  private pendingTimer: ReturnType<typeof setTimeout> | null = null
+  private sendPendingCallback: (() => void) | null = null
 
-  constructor(maxCharsPerLine: number, maxLines: number, maxFinalTranscripts: number = 3, isChinese: boolean = false) {
-    this.maxCharsPerLine = maxCharsPerLine
-    this.maxLines = maxLines
-    this.maxFinalTranscripts = maxFinalTranscripts
-    this.isChinese = isChinese
+  constructor(sendPendingCallback?: () => void) {
+    this.sendPendingCallback = sendPendingCallback || null
   }
 
   public processString(newText: string | null, isFinal: boolean): string | null {
@@ -40,17 +40,40 @@ export class TranscriptProcessor {
 
       const currentTime = Date.now()
       const timeSinceLastUpdate = currentTime - this.lastPartialUpdateTime
+      const processedText = this.currentDisplayLines.join("\n")
 
-      // If less than throttle interval has passed, return null
+      // If less than throttle interval has passed, queue the update
       if (timeSinceLastUpdate < this.throttleInterval) {
-        return null
+        // Store the latest update (overwrites any pending update)
+        this.pendingUpdate = processedText
+
+        // If no timer is running, schedule one
+        if (!this.pendingTimer) {
+          this.pendingTimer = setTimeout(() => {
+            // Trigger sending the most recent pending update
+            this.lastPartialUpdateTime = Date.now()
+            this.pendingTimer = null
+            // Notify that we have a pending update to send
+            if (this.sendPendingCallback && this.pendingUpdate) {
+              this.sendPendingCallback()
+            }
+          }, this.throttleInterval - timeSinceLastUpdate)
+        }
+
+        return null // Don't send now, will send via timer
       }
 
-      // Update the last update time
+      // Enough time has passed, send immediately
       this.lastPartialUpdateTime = currentTime
 
-      // Return the processed text
-      return this.currentDisplayLines.join("\n")
+      // Clear any pending update since we're sending now
+      if (this.pendingTimer) {
+        clearTimeout(this.pendingTimer)
+        this.pendingTimer = null
+      }
+      this.pendingUpdate = null
+
+      return processedText
     } else {
       // We have a final text -> clear out the partial text to avoid duplication
       this.partialText = ""
@@ -158,6 +181,19 @@ export class TranscriptProcessor {
     this.finalTranscriptHistory = []
     this.currentDisplayLines = []
     this.lastPartialUpdateTime = 0
+    if (this.pendingTimer) {
+      clearTimeout(this.pendingTimer)
+      this.pendingTimer = null
+    }
+    this.pendingUpdate = null
+  }
+
+  public getPendingUpdate(): string | null {
+    const pending = this.pendingUpdate
+    if (pending) {
+      this.pendingUpdate = null
+    }
+    return pending
   }
 
   public getMaxCharsPerLine(): number {
@@ -178,9 +214,9 @@ export class TranscriptProcessor {
     if (this.isChinese !== isChinese) {
       this.isChinese = isChinese
       if (isChinese) {
-        this.maxCharsPerLine = 10
+        this.maxCharsPerLine = 18
       } else {
-        this.maxCharsPerLine = 30
+        this.maxCharsPerLine = 44
       }
       this.clear()
     }

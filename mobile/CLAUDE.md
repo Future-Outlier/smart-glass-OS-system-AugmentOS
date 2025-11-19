@@ -69,7 +69,7 @@ bun install
 bun expo prebuild  # NEVER use --clean or --clear flags!
 rm -rf android/build android/.gradle node_modules .expo .bundle android/app/build android/app/src/main/assets
 bun install
-./fix-react-native-symlinks.sh
+./scripts/fix-react-native-symlinks.sh
 bun android
 bun start
 ```
@@ -108,6 +108,37 @@ bun start
 - Backend server required for local testing
 - Port forwarding: `bun adb` (sets up tcp:9090, tcp:3000, tcp:9001, tcp:8081)
 - Bluetooth functionality for glasses pairing
+
+## Sentry Configuration (iOS)
+
+Sentry source map and debug symbol uploads are **disabled by default** to prevent build failures when the `SENTRY_AUTH_TOKEN` is not configured.
+
+### Enabling Sentry Uploads
+
+To enable Sentry uploads for production builds:
+
+1. Obtain your Sentry auth token from https://sentry.io/settings/account/api/auth-tokens/
+2. Add the token to your environment:
+   - **Option 1**: Add to `ios/.xcode.env.local` (recommended for local development):
+     ```bash
+     export SENTRY_AUTH_TOKEN=your_token_here
+     export SENTRY_DISABLE_AUTO_UPLOAD=false
+     ```
+   - **Option 2**: Set as environment variable in your CI/CD pipeline:
+     ```bash
+     export SENTRY_AUTH_TOKEN=your_token_here
+     export SENTRY_DISABLE_AUTO_UPLOAD=false
+     ```
+
+### Disabling Sentry Uploads
+
+Sentry uploads are disabled by default. To explicitly disable them:
+
+```bash
+export SENTRY_DISABLE_AUTO_UPLOAD=true
+```
+
+This is already set in `ios/.xcode.env`, so builds will work without Sentry credentials.
 
 ## Development Environment Setup
 

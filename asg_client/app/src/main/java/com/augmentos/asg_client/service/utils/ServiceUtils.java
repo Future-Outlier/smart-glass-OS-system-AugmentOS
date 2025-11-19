@@ -310,19 +310,25 @@ public class ServiceUtils {
             for (String prop : propsToCheck) {
                 if (prop != null) {
                     String propLower = prop.toLowerCase();
-                    
+
+                    // MentraLive devices need 90° device rotation (maps to 0° JPEG orientation)
+                    if (propLower.contains("mentralive")) {
+                        Log.i(TAG, "MentraLive detected - using 90° rotation");
+                        return 90;
+                    }
+
                     // K900PlusV2 devices use 0 degrees (no rotation)
                     if (propLower.contains("k900plusv2")) {
                         Log.i(TAG, "K900PlusV2 detected - using 0° rotation");
                         return 90;
                     }
-                    
+
                     // K900Plus (without V2) devices use 270 degrees
                     if (propLower.contains("k900plus")) {
                         Log.i(TAG, "K900Plus detected - using 270° rotation");
                         return 180;
                     }
-                    
+
                     // Standard K900 devices use 270 degrees
                     if (propLower.contains("k900")) {
                         Log.i(TAG, "K900 detected - using 270° rotation");

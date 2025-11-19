@@ -1,41 +1,39 @@
 import {Fragment, useMemo} from "react"
-import {View, ScrollView, TouchableOpacity, ViewStyle, TextStyle} from "react-native"
+import {ScrollView, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
-import {Header, Screen, Text, Switch} from "@/components/ignite"
+import {Header, Screen, Switch, Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import ChevronRight from "assets/icons/component/ChevronRight"
-import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
-import {useAppStatus, useBackgroundApps} from "@/contexts/AppletStatusProvider"
-import {AppletInterface, isOfflineApp} from "@/types/AppletTypes"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/utils/useAppTheme"
-import restComms from "@/managers/RestComms"
 import Divider from "@/components/misc/Divider"
-import {Spacer} from "@/components/misc/Spacer"
-import {performHealthCheckFlow} from "@/utils/healthCheckFlow"
-import {askPermissionsUI} from "@/utils/PermissionsUtils"
-import {showAlert} from "@/utils/AlertUtils"
-import {ThemedStyle} from "@/theme"
+import {GetMoreAppsIcon} from "@/components/misc/GetMoreAppsIcon"
+import {Spacer} from "@/components/ui/Spacer"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {ClientAppletInterface, useBackgroundApps, useStartApplet, useStopApplet} from "@/stores/applets"
 import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-// Camera app protection removed - now handled by default button action system
+import {ThemedStyle} from "@/theme"
+import {showAlert} from "@/utils/AlertUtils"
+import {askPermissionsUI} from "@/utils/PermissionsUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
+import ChevronRight from "assets/icons/component/ChevronRight"
 
 export default function BackgroundAppsScreen() {
   const {themed, theme} = useAppTheme()
   const {push, goBack} = useNavigationHistory()
-  const {optimisticallyStartApp, optimisticallyStopApp, clearPendingOperation, refreshAppStatus} = useAppStatus()
   const [defaultWearable, _setDefaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-
   const {active, inactive} = useBackgroundApps()
+  const startApplet = useStartApplet()
+  const stopApplet = useStopApplet()
 
-  const incompatibleApps = useMemo(
+  const incompatibleApplets = useMemo(
     () => inactive.filter(app => app.compatibility != null && app.compatibility.isCompatible === false),
     [inactive],
   )
 
-  const toggleApp = async (app: AppletInterface) => {
-    if (app.is_running) {
-      await stopApp(app.packageName)
+  const inactiveApplets = useMemo(() => inactive.filter(app => app.compatibility?.isCompatible === true), [inactive])
+
+  const toggleApp = async (app: ClientAppletInterface) => {
+    if (app.running) {
+      await stopApplet(app.packageName)
     } else {
       await startApp(app.packageName)
     }
@@ -48,93 +46,20 @@ export default function BackgroundAppsScreen() {
       return
     }
 
-    // Handle offline apps - activate only
-    if (isOfflineApp(app)) {
-      // Activate the app (make it appear in active apps)
-      optimisticallyStartApp(packageName, app.type)
-      return
-    }
-
     const permissionResult = await askPermissionsUI(app, theme)
     if (permissionResult === -1) {
       return
     } else if (permissionResult === 0) {
-      await startApp(packageName)
+      await startApp(packageName) // start over / ask again
       return
     }
-
-    if (app.isOnline !== false) {
-      console.log("Background app is online, starting optimistically:", packageName)
-      optimisticallyStartApp(packageName)
-
-      performHealthCheckFlow({
-        app,
-        onStartApp: async () => {
-          try {
-            await restComms.startApp(packageName)
-            clearPendingOperation(packageName)
-          } catch (error) {
-            refreshAppStatus()
-            console.error("Start app error:", error)
-          }
-        },
-        onAppUninstalled: async () => {
-          await refreshAppStatus()
-        },
-        onHealthCheckFailed: async () => {
-          console.log("Health check failed, reverting background app to inactive:", packageName)
-          optimisticallyStopApp(packageName)
-          refreshAppStatus()
-        },
-        optimisticallyStopApp,
-        clearPendingOperation,
-      })
-    } else {
-      await performHealthCheckFlow({
-        app,
-        onStartApp: async () => {
-          optimisticallyStartApp(packageName)
-          try {
-            await restComms.startApp(packageName)
-            clearPendingOperation(packageName)
-          } catch (error) {
-            refreshAppStatus()
-            console.error("Start app error:", error)
-          }
-        },
-        onAppUninstalled: async () => {
-          await refreshAppStatus()
-        },
-        optimisticallyStopApp,
-        clearPendingOperation,
-      })
-    }
+    await startApplet(packageName)
   }
 
-  const stopApp = async (packageName: string) => {
-    optimisticallyStopApp(packageName)
-
-    // Skip offline apps - they don't need server communication
-    const appToStop = active.find(a => a.packageName === packageName)
-    if (appToStop && isOfflineApp(appToStop)) {
-      console.log("Skipping offline app stop in background-apps:", packageName)
-      clearPendingOperation(packageName)
-      return
-    }
-
-    try {
-      await restComms.stopApp(packageName)
-      clearPendingOperation(packageName)
-    } catch (error) {
-      refreshAppStatus()
-      console.error("Stop app error:", error)
-    }
-  }
-
-  const openAppSettings = (app: AppletInterface) => {
-    if (app.webviewURL && app.isOnline !== false) {
+  const openAppSettings = (app: ClientAppletInterface) => {
+    if (app.webviewUrl && app.offline === false) {
       push("/applet/webview", {
-        webviewURL: app.webviewURL,
+        webviewURL: app.webviewUrl,
         appName: app.name,
         packageName: app.packageName,
       })
@@ -146,9 +71,9 @@ export default function BackgroundAppsScreen() {
     }
   }
 
-  const renderAppItem = (app: AppletInterface, index: number, isLast: boolean) => {
+  const renderAppItem = (app: ClientAppletInterface, index: number, isLast: boolean) => {
     const handleRowPress = () => {
-      if (app.is_running) {
+      if (app.running) {
         openAppSettings(app)
       }
     }
@@ -158,18 +83,18 @@ export default function BackgroundAppsScreen() {
         <TouchableOpacity
           style={themed($appRow)}
           onPress={handleRowPress}
-          activeOpacity={app.is_running ? 0.7 : 1}
-          disabled={!app.is_running}>
+          activeOpacity={app.running ? 0.7 : 1}
+          disabled={!app.running}>
           <View style={themed($appContent)}>
-            <AppIcon app={app as any} style={themed($appIcon)} hideLoadingIndicator={app.is_running} />
+            <AppIcon app={app} style={themed($appIcon)} />
             <View style={themed($appInfo)}>
               <Text
                 text={app.name}
-                style={[themed($appName), app.isOnline === false && themed($offlineApp)]}
+                style={[themed($appName), app.offline && themed($offlineApp)]}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               />
-              {app.isOnline === false && (
+              {app.offline && (
                 <View style={themed($offlineRow)}>
                   <MaterialCommunityIcons name="alert-circle" size={14} color={theme.colors.error} />
                   <Text text="Offline" style={themed($offlineText)} />
@@ -178,7 +103,7 @@ export default function BackgroundAppsScreen() {
             </View>
           </View>
           <View style={themed($rightControls)}>
-            {app.is_running && (
+            {app.running && (
               <TouchableOpacity
                 onPress={e => {
                   e.stopPropagation()
@@ -195,7 +120,7 @@ export default function BackgroundAppsScreen() {
                 toggleApp(app)
               }}
               activeOpacity={1}>
-              <Switch value={app.is_running} onValueChange={() => toggleApp(app)} />
+              <Switch value={app.running} onValueChange={() => toggleApp(app)} />
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -244,11 +169,11 @@ export default function BackgroundAppsScreen() {
               </>
             )}
 
-            {inactive.length > 0 && (
+            {inactiveApplets.length > 0 && (
               <>
                 <Text style={themed($sectionHeader)} tx="home:inactiveBackgroundApps" />
                 <View style={themed($sectionContent)}>
-                  {inactive.map((app, index) => renderAppItem(app, index, false))}
+                  {inactiveApplets.map((app, index) => renderAppItem(app, index, false))}
                   <TouchableOpacity style={themed($appRow)} onPress={() => push("/store")} activeOpacity={0.7}>
                     <View style={themed($appContent)}>
                       <GetMoreAppsIcon size="medium" />
@@ -263,12 +188,12 @@ export default function BackgroundAppsScreen() {
               </>
             )}
 
-            {incompatibleApps.length > 0 && (
+            {incompatibleApplets.length > 0 && (
               <>
                 <Spacer height={theme.spacing.lg} />
                 <Text style={themed($sectionHeader)}>{`Incompatible with ${defaultWearable}`}</Text>
                 <View style={themed($sectionContent)}>
-                  {incompatibleApps.map((app, index) => (
+                  {incompatibleApplets.map((app, index) => (
                     <Fragment key={app.packageName}>
                       <TouchableOpacity
                         style={themed($appRow)}
@@ -278,8 +203,7 @@ export default function BackgroundAppsScreen() {
                             "required features"
                           showAlert(
                             "Hardware Incompatible",
-                            app.compatibility?.message ||
-                              `${app.name} requires ${missingHardware} which is not available on your connected glasses`,
+                            `${app.name} requires ${missingHardware} which is not available on your connected glasses`,
                             [{text: "OK"}],
                             {
                               iconName: "alert-circle-outline",
@@ -289,7 +213,7 @@ export default function BackgroundAppsScreen() {
                         }}
                         activeOpacity={0.7}>
                         <View style={themed($appContent)}>
-                          <AppIcon app={app as any} style={themed($incompatibleAppIcon)} />
+                          <AppIcon app={app} style={themed($incompatibleAppIcon)} />
                           <View style={themed($appInfo)}>
                             <Text
                               text={app.name}
@@ -300,7 +224,7 @@ export default function BackgroundAppsScreen() {
                           </View>
                         </View>
                       </TouchableOpacity>
-                      {index < incompatibleApps.length - 1 && <Divider />}
+                      {index < incompatibleApplets.length - 1 && <Divider />}
                     </Fragment>
                   ))}
                 </View>

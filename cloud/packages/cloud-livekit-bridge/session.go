@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	lkmedia "github.com/livekit/server-sdk-go/v2/pkg/media"
@@ -23,6 +24,13 @@ type RoomSession struct {
 	closeOnce        sync.Once
 	playbackCancel   context.CancelFunc
 	mu               sync.RWMutex
+
+	// Connectivity state (tracked for status RPC)
+	connected            bool
+	participantID        string
+	participantCount     int
+	lastDisconnectAt     time.Time
+	lastDisconnectReason string
 }
 
 // NewRoomSession creates a new room session
@@ -183,6 +191,11 @@ func (s *RoomSession) Close() {
 			s.room.Disconnect()
 			s.room = nil
 		}
+
+		// Update connectivity state
+		s.connected = false
+		s.lastDisconnectAt = time.Now()
+		s.lastDisconnectReason = "closed"
 
 		// Close audio channel
 		close(s.audioFromLiveKit)

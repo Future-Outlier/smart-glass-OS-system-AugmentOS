@@ -1,18 +1,18 @@
-import {useState} from "react"
-import {View, ScrollView, TextInput} from "react-native"
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import bridge from "@/bridge/MantleBridge"
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import {Header, PillButton, Screen, Text} from "@/components/ignite"
+import ToggleSetting from "@/components/settings/ToggleSetting"
+import RouteButton from "@/components/ui/RouteButton"
+import {Spacer} from "@/components/ui/Spacer"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {spacing} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {Header, Screen, PillButton, Text} from "@/components/ignite"
-import RouteButton from "@/components/ui/RouteButton"
-import {Spacer} from "@/components/misc/Spacer"
-import ToggleSetting from "@/components/settings/ToggleSetting"
-import {translate} from "@/i18n"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {spacing} from "@/theme"
-import {glassesFeatures} from "@/config/glassesFeatures"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {useState} from "react"
+import {ScrollView, TextInput, View} from "react-native"
+import Icon from "react-native-vector-icons/MaterialCommunityIcons"
+import Constants from "expo-constants"
 
 export default function DeveloperSettingsScreen() {
   // const {status} = useCoreStatus()
@@ -25,8 +25,8 @@ export default function DeveloperSettingsScreen() {
   const [customBackendUrl, setCustomBackendUrl] = useSetting(SETTINGS_KEYS.custom_backend_url)
   const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS_KEYS.power_saving_mode)
   const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS_KEYS.reconnect_on_app_foreground)
-  const [newUi, setNewUi] = useSetting(SETTINGS_KEYS.new_ui)
   const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
+  const [debugConsole, setDebugConsole] = useSetting(SETTINGS_KEYS.debug_console)
 
   // Triple-tap detection for Asia East button
   const [asiaButtonTapCount, setAsiaButtonTapCount] = useState(0)
@@ -35,11 +35,6 @@ export default function DeveloperSettingsScreen() {
   const toggleReconnectOnAppForeground = async () => {
     const newSetting = !reconnectOnAppForeground
     await setReconnectOnAppForeground(newSetting)
-  }
-
-  const toggleNewUi = async () => {
-    const newSetting = !newUi
-    await setNewUi(newSetting)
   }
 
   const toggleEnableSquircles = async () => {
@@ -88,7 +83,6 @@ export default function DeveloperSettingsScreen() {
 
           // Save the URL if the test passes
           await setCustomBackendUrl(urlToTest)
-          await bridge.setServerUrl(urlToTest) // TODO: config: remove
 
           await showAlert(
             "Success",
@@ -138,7 +132,6 @@ export default function DeveloperSettingsScreen() {
 
   const handleResetUrl = async () => {
     setCustomBackendUrl(null)
-    await bridge.setServerUrl("") // TODO: config: remove
     setCustomUrlInput("")
     showAlert("Success", "Reset backend URL to default.", [
       {
@@ -212,10 +205,10 @@ export default function DeveloperSettingsScreen() {
         <Spacer height={theme.spacing.md} />
 
         <ToggleSetting
-          label={translate("settings:newUi")}
-          subtitle={translate("settings:newUiSubtitle")}
-          value={newUi}
-          onValueChange={toggleNewUi}
+          label={translate("devSettings:debugConsole")}
+          subtitle={translate("devSettings:debugConsoleSubtitle")}
+          value={debugConsole}
+          onValueChange={value => setDebugConsole(value)}
         />
 
         <Spacer height={theme.spacing.md} />
@@ -229,7 +222,7 @@ export default function DeveloperSettingsScreen() {
         <Spacer height={theme.spacing.md} />
 
         {/* G1 Specific Settings - Only show when connected to Even Realities G1 */}
-        {defaultWearable && glassesFeatures[defaultWearable] && glassesFeatures[defaultWearable].powerSavingMode && (
+        {defaultWearable && defaultWearable.includes(DeviceTypes.G1) && (
           <>
             <Text style={[styles.sectionTitle, {color: theme.colors.textDim}]}>G1 Specific Settings</Text>
             <ToggleSetting
@@ -238,106 +231,107 @@ export default function DeveloperSettingsScreen() {
               value={powerSavingMode}
               onValueChange={async value => {
                 await setPowerSavingMode(value)
-                await bridge.sendTogglePowerSavingMode(value) // TODO: config: remove
               }}
             />
             <Spacer height={theme.spacing.md} />
           </>
         )}
 
-        <View
-          style={[
-            styles.settingContainer,
-            {
-              backgroundColor: theme.colors.backgroundAlt,
-              borderWidth: theme.spacing.xxxs,
-              borderColor: theme.colors.border,
-            },
-          ]}>
-          <View style={styles.settingTextContainer}>
-            <Text style={[styles.label, {color: theme.colors.text}]}>Custom Backend URL</Text>
-            <Text style={[styles.value, {color: theme.colors.textDim}]}>
-              Override the default backend server URL. Leave blank to use default.
-              {customBackendUrl && `\nCurrently using: ${customBackendUrl}`}
-            </Text>
-            <TextInput
-              style={[
-                styles.urlInput,
-                {
-                  backgroundColor: theme.colors.background,
-                  borderColor: theme.colors.primary,
-                  color: theme.colors.text,
-                },
-              ]}
-              placeholder="e.g., http://192.168.1.100:7002"
-              placeholderTextColor={theme.colors.textDim}
-              value={customUrlInput}
-              onChangeText={setCustomUrlInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              editable={!isSavingUrl}
-            />
-            <View style={styles.buttonRow}>
-              <PillButton
-                text={isSavingUrl ? "Testing..." : "Save & Test URL"}
-                variant="primary"
-                onPress={handleSaveUrl}
-                disabled={isSavingUrl}
-                buttonStyle={styles.saveButton}
+        {!Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE && (
+          <View
+            style={[
+              styles.settingContainer,
+              {
+                backgroundColor: theme.colors.backgroundAlt,
+                borderWidth: theme.spacing.xxxs,
+                borderColor: theme.colors.border,
+              },
+            ]}>
+            <View style={styles.settingTextContainer}>
+              <Text style={[styles.label, {color: theme.colors.text}]}>Custom Backend URL</Text>
+              <Text style={[styles.value, {color: theme.colors.textDim}]}>
+                Override the default backend server URL. Leave blank to use default.
+                {customBackendUrl && `\nCurrently using: ${customBackendUrl}`}
+              </Text>
+              <TextInput
+                style={[
+                  styles.urlInput,
+                  {
+                    backgroundColor: theme.colors.background,
+                    borderColor: theme.colors.primary,
+                    color: theme.colors.text,
+                  },
+                ]}
+                placeholder="e.g., http://192.168.1.100:7002"
+                placeholderTextColor={theme.colors.textDim}
+                value={customUrlInput}
+                onChangeText={setCustomUrlInput}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                editable={!isSavingUrl}
               />
-              <PillButton
-                tx="common:reset"
-                variant="icon"
-                onPress={handleResetUrl}
-                disabled={isSavingUrl}
-                buttonStyle={styles.resetButton}
-              />
-            </View>
-            <View style={styles.buttonColumn}>
-              <PillButton
-                tx="developer:global"
-                variant="icon"
-                onPress={() => setCustomUrlInput("https://api.mentra.glass:443")}
-                buttonStyle={styles.button}
-              />
-              <PillButton
-                tx="developer:dev"
-                variant="icon"
-                onPress={() => setCustomUrlInput("https://devapi.mentra.glass:443")}
-                buttonStyle={styles.button}
-              />
-            </View>
-            <View style={styles.buttonColumn}>
-              <PillButton
-                tx="developer:debug"
-                variant="icon"
-                onPress={() => setCustomUrlInput("https://debug.augmentos.cloud:443")}
-                buttonStyle={styles.button}
-              />
-              <PillButton
-                tx="developer:usCentral"
-                variant="icon"
-                onPress={() => setCustomUrlInput("https://uscentralapi.mentra.glass:443")}
-                buttonStyle={styles.button}
-              />
-            </View>
-            <View style={styles.buttonColumn}>
-              <PillButton
-                tx="developer:france"
-                variant="icon"
-                onPress={() => setCustomUrlInput("https://franceapi.mentra.glass:443")}
-                buttonStyle={styles.button}
-              />
-              <PillButton
-                tx="developer:asiaEast"
-                variant="icon"
-                onPress={handleAsiaButtonPress}
-                buttonStyle={styles.button}
-              />
+              <View style={styles.buttonRow}>
+                <PillButton
+                  text={isSavingUrl ? "Testing..." : "Save & Test URL"}
+                  variant="primary"
+                  onPress={handleSaveUrl}
+                  disabled={isSavingUrl}
+                  buttonStyle={styles.saveButton}
+                />
+                <PillButton
+                  tx="common:reset"
+                  variant="icon"
+                  onPress={handleResetUrl}
+                  disabled={isSavingUrl}
+                  buttonStyle={styles.resetButton}
+                />
+              </View>
+              <View style={styles.buttonColumn}>
+                <PillButton
+                  tx="developer:global"
+                  variant="icon"
+                  onPress={() => setCustomUrlInput("https://api.mentra.glass:443")}
+                  buttonStyle={styles.button}
+                />
+                <PillButton
+                  tx="developer:dev"
+                  variant="icon"
+                  onPress={() => setCustomUrlInput("https://devapi.mentra.glass:443")}
+                  buttonStyle={styles.button}
+                />
+              </View>
+              <View style={styles.buttonColumn}>
+                <PillButton
+                  tx="developer:debug"
+                  variant="icon"
+                  onPress={() => setCustomUrlInput("https://debug.augmentos.cloud:443")}
+                  buttonStyle={styles.button}
+                />
+                <PillButton
+                  tx="developer:usCentral"
+                  variant="icon"
+                  onPress={() => setCustomUrlInput("https://uscentralapi.mentra.glass:443")}
+                  buttonStyle={styles.button}
+                />
+              </View>
+              <View style={styles.buttonColumn}>
+                <PillButton
+                  tx="developer:france"
+                  variant="icon"
+                  onPress={() => setCustomUrlInput("https://franceapi.mentra.glass:443")}
+                  buttonStyle={styles.button}
+                />
+                <PillButton
+                  tx="developer:asiaEast"
+                  variant="icon"
+                  onPress={handleAsiaButtonPress}
+                  buttonStyle={styles.button}
+                />
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         <Spacer height={theme.spacing.md} />
         <Spacer height={theme.spacing.xxl} />
