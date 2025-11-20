@@ -17,9 +17,9 @@ type VideoResolution = "720p" | "1080p" // | "1440p" | "4K"
 type MaxRecordingTime = "3m" | "5m" | "10m" | "15m" | "20m"
 
 const PHOTO_SIZE_LABELS: Record<PhotoSize, string> = {
-  small: "Low (800×600)",
-  medium: "Medium (1440×1080)",
-  large: "High (3200×2400)",
+  small: "Low (960×720)",
+  medium: "Medium (1440×1088)",
+  large: "High (3264×2448)",
 }
 
 const VIDEO_RESOLUTION_LABELS: Record<VideoResolution, string> = {

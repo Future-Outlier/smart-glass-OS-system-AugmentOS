@@ -117,11 +117,11 @@ public class CameraNeo extends LifecycleService {
 
     // Target photo resolution (4:3 landscape orientation)
     private static final int TARGET_WIDTH = 1440;
-    private static final int TARGET_HEIGHT = 1080;
-    private static final int TARGET_WIDTH_SMALL = 800;
-    private static final int TARGET_HEIGHT_SMALL = 600;
-    private static final int TARGET_WIDTH_LARGE = 3200;
-    private static final int TARGET_HEIGHT_LARGE = 2400;
+    private static final int TARGET_HEIGHT = 1088;
+    private static final int TARGET_WIDTH_SMALL = 960;
+    private static final int TARGET_HEIGHT_SMALL = 720;
+    private static final int TARGET_WIDTH_LARGE = 3264;
+    private static final int TARGET_HEIGHT_LARGE = 2448;
 
     // Auto-exposure settings for better photo quality - now dynamic
     private static final int JPEG_QUALITY = 90; // High quality JPEG

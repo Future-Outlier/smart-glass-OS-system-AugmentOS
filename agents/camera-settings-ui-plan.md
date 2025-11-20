@@ -63,9 +63,9 @@ export interface CameraSettings {
 
 // Photo size mappings for display
 export const PHOTO_SIZE_LABELS = {
-  small: "Small (800×600)",
-  medium: "Medium (1440×1080)",
-  large: "Large (3200×2400)",
+  small: "Small (960×720)",
+  medium: "Medium (1440×1088)",
+  large: "Large (3264×2448)",
 }
 
 // Video resolution mappings for display
