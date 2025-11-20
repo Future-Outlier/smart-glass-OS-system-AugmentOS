@@ -193,7 +193,7 @@ interface SettingsState {
 const getDefaultSettings = () =>
   Object.keys(SETTINGS).reduce(
     (acc, key) => {
-      acc[key] = SETTINGS[key].defaultValue
+      acc[key] = SETTINGS[key].defaultValue()
       return acc
     },
     {} as Record<string, any>,
