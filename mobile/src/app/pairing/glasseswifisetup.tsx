@@ -5,15 +5,16 @@ import {Screen, Header, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {$styles, ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle, ScrollView} from "react-native"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import { useGlassesStore } from "@/stores/glasses"
 
 export default function GlassesWifiSetupScreen() {
   const {deviceModel = "Glasses", returnTo} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
-  const {status} = useCoreStatus()
   const {push, goBack} = useNavigationHistory()
+  const wifiSsid = useGlassesStore(state => state.wifiSsid)
+  const wifiConnected = useGlassesStore(state => state.wifiConnected)
 
   const handleGoBack = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
@@ -31,10 +32,6 @@ export default function GlassesWifiSetupScreen() {
       return () => backHandler.remove()
     }, [handleGoBack]),
   )
-
-  // Get current WiFi status from glasses
-  const currentWifi = status.glasses_info?.glasses_wifi_ssid
-  const isWifiConnected = Boolean(currentWifi)
 
   const handleScanForNetworks = () => {
     push("/pairing/glasseswifisetup/scan", {deviceModel, returnTo})
@@ -63,13 +60,13 @@ export default function GlassesWifiSetupScreen() {
           <Text style={themed($subtitle)}>Your {deviceModel} glasses needs WiFi to connect to the internet.</Text>
 
           {/* Show current WiFi status if available */}
-          {isWifiConnected && currentWifi && (
+          {wifiConnected && wifiSsid && (
             <View style={themed($statusContainer)}>
-              <Text style={themed($statusText)}>Currently connected to: {currentWifi}</Text>
+              <Text style={themed($statusText)}>Currently connected to: {wifiSsid}</Text>
             </View>
           )}
 
-          {!isWifiConnected && (
+          {!wifiConnected && (
             <View style={themed($statusContainer)}>
               <Text style={themed($statusText)}>Not connected to WiFi</Text>
               <Text style={themed($statusText)}>

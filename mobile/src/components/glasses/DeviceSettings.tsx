@@ -1,42 +1,40 @@
-import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
+import CoreModule from "core"
+import {Platform, View, ViewStyle} from "react-native"
+
 import OtaProgressSection from "@/components/glasses/OtaProgressSection"
+import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
+import {EmptyState} from "@/components/glasses/info/EmptyState"
+import {ButtonSettings} from "@/components/glasses/settings/ButtonSettings"
+import {Icon} from "@/components/ignite"
+import SliderSetting from "@/components/settings/SliderSetting"
+import ToggleSetting from "@/components/settings/ToggleSetting"
+import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
+import {Spacer} from "@/components/ui/Spacer"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
 import {useApplets} from "@/stores/applets"
-import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import showAlert, {showDestructiveAlert} from "@/utils/AlertUtils"
-import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
+import {showDestructiveAlert} from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import CoreModule from "core"
-import {Platform, View, ViewStyle} from "react-native"
-import {Spacer} from "@/components/ui/Spacer"
-import {BatteryStatus} from "./info/BatteryStatus"
-import {DeviceInformation} from "./info/DeviceInformation"
-import {EmptyState} from "./info/EmptyState"
-import {AdvancedSettingsDropdown} from "./settings/AdvancedSettingsDropdown"
-import {ButtonSettings} from "./settings/ButtonSettings"
-import {MicrophoneSelector} from "./settings/MicrophoneSelector"
-import {Group} from "@/components/ui/Group"
-import SliderSetting from "@/components/settings/SliderSetting"
-import ToggleSetting from "@/components/settings/ToggleSetting"
-import {Icon} from "@/components/ignite"
+
+import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export default function DeviceSettings() {
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
-  const isGlassesConnected = Boolean(status.glasses_info?.model_name)
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const [preferredMic, setPreferredMic] = useSetting(SETTINGS_KEYS.preferred_mic)
-  const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS_KEYS.auto_brightness)
-  const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
-  const [showAdvancedSettings, setShowAdvancedSettings] = useSetting(SETTINGS_KEYS.show_advanced_settings)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS.auto_brightness.key)
+  const [brightness, setBrightness] = useSetting(SETTINGS.brightness.key)
   const [defaultButtonActionEnabled, setDefaultButtonActionEnabled] = useSetting(
-    SETTINGS_KEYS.default_button_action_enabled,
+    SETTINGS.default_button_action_enabled.key,
   )
-  const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS_KEYS.default_button_action_app)
+  const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS.default_button_action_app.key)
+  const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesModelName = useGlassesStore(state => state.modelName)
 
   const {push, goBack} = useNavigationHistory()
   const applets = useApplets()
@@ -44,42 +42,16 @@ export default function DeviceSettings() {
 
   // Check if we have any advanced settings to show
   const hasMicrophoneSelector =
-    isGlassesConnected &&
+    glassesConnected &&
     defaultWearable &&
     features?.hasMicrophone &&
-    (defaultWearable !== "Mentra Live" ||
-      (Platform.OS === "android" && status.glasses_info?.glasses_device_model !== "K900"))
+    (defaultWearable !== "Mentra Live" || (Platform.OS === "android" && glassesModelName !== "K900"))
 
-  const hasDeviceInfo =
-    status.glasses_info?.bluetooth_name ||
-    status.glasses_info?.glasses_build_number ||
-    status.glasses_info?.glasses_wifi_local_ip
+  const wifiLocalIp = useGlassesStore(state => state.wifiSsid)
+  const bluetoothName = useGlassesStore(state => state.bluetoothName)
+  const buildNumber = useGlassesStore(state => state.buildNumber)
 
-  const hasAdvancedSettingsContent = hasMicrophoneSelector || hasDeviceInfo
-
-  const setMic = async (val: string) => {
-    if (val === "phone") {
-      // We're potentially about to enable the mic, so request permission
-      const hasMicPermission = await requestFeaturePermissions(PermissionFeatures.MICROPHONE)
-      if (!hasMicPermission) {
-        // Permission denied, don't toggle the setting
-        console.log("Microphone permission denied, cannot enable phone microphone")
-        showAlert(
-          "Microphone Permission Required",
-          "Microphone permission is required to use the phone microphone feature. Please grant microphone permission in settings.",
-          [{text: "OK"}],
-          {
-            iconName: "microphone",
-            iconColor: "#2196F3",
-          },
-        )
-        return
-      }
-    }
-
-    setPreferredMic(val)
-    await useSettingsStore.getState().setSetting(SETTINGS_KEYS.preferred_mic, val)
-  }
+  const hasDeviceInfo = Boolean(bluetoothName || buildNumber || wifiLocalIp)
 
   const confirmForgetGlasses = () => {
     showDestructiveAlert(
@@ -131,7 +103,7 @@ export default function DeviceSettings() {
           />
         )}
         {/* Brightness Settings */}
-        {features?.display?.adjustBrightness && isGlassesConnected && (
+        {features?.display?.adjustBrightness && glassesConnected && (
           <ToggleSetting
             icon={<Icon name="brightness-half" size={24} color={theme.colors.secondary_foreground} />}
             label={translate("deviceSettings:autoBrightness")}
@@ -139,7 +111,7 @@ export default function DeviceSettings() {
             onValueChange={setAutoBrightness}
           />
         )}
-        {features?.display?.adjustBrightness && isGlassesConnected && !autoBrightness && (
+        {features?.display?.adjustBrightness && glassesConnected && !autoBrightness && (
           <SliderSetting
             label={translate("deviceSettings:brightness")}
             value={brightness}
@@ -154,7 +126,7 @@ export default function DeviceSettings() {
       </Group>
 
       {/* Battery Status Section */}
-      {isGlassesConnected && <BatteryStatus />}
+      {glassesConnected && <BatteryStatus />}
 
       {/* Nex Developer Settings - Only show when connected to Mentra Nex */}
       {defaultWearable && defaultWearable.includes(DeviceTypes.NEX) && (
@@ -187,7 +159,7 @@ export default function DeviceSettings() {
           label={translate("settings:glassesWifiSettings")}
           subtitle={translate("settings:glassesWifiDescription")}
           onPress={() => {
-            push("/pairing/glasseswifisetup", {deviceModel: status.glasses_info?.model_name || "Glasses"})
+            push("/pairing/glasseswifisetup", {deviceModel: defaultWearable || "Glasses"})
           }}
         />
       )}
@@ -195,12 +167,12 @@ export default function DeviceSettings() {
       {/* Device info is rendered within the Advanced Settings section below */}
 
       {/* OTA Progress Section - Only show for Mentra Live glasses */}
-      {defaultWearable && isGlassesConnected && defaultWearable.includes(DeviceTypes.LIVE) && (
+      {defaultWearable && glassesConnected && defaultWearable.includes(DeviceTypes.LIVE) && (
         <OtaProgressSection otaProgress={status.ota_progress} />
       )}
 
       <Group title={translate("deviceSettings:general")}>
-        {isGlassesConnected && defaultWearable !== DeviceTypes.SIMULATED && (
+        {glassesConnected && defaultWearable !== DeviceTypes.SIMULATED && (
           <RouteButton
             icon={<Icon name="unlink" size={24} color={theme.colors.secondary_foreground} />}
             label={translate("deviceSettings:disconnectGlasses")}
@@ -220,23 +192,34 @@ export default function DeviceSettings() {
       </Group>
 
       {/* Advanced Settings Dropdown - Only show if there's content */}
-      {defaultWearable && hasAdvancedSettingsContent && (
+      {/* {defaultWearable && hasAdvancedSettingsContent && (
         <AdvancedSettingsDropdown
           isOpen={showAdvancedSettings}
           onToggle={() => setShowAdvancedSettings(!showAdvancedSettings)}>
-          {/* Microphone Selector */}
           {hasMicrophoneSelector && <MicrophoneSelector preferredMic={preferredMic} onMicChange={setMic} />}
-
-          {/* Spacer between sections */}
-          <Spacer height={16} />
-
-          {/* Device Information */}
-          {isGlassesConnected && <DeviceInformation />}
+          {glassesConnected && <DeviceInformation />}
         </AdvancedSettingsDropdown>
-      )}
+      )} */}
+
+      <Group title={translate("deviceSettings:advancedSettings")}>
+        {hasMicrophoneSelector && (
+          <RouteButton
+            icon={<Icon name="microphone" size={24} color={theme.colors.secondary_foreground} />}
+            label={translate("deviceSettings:microphone")}
+            onPress={() => push("/settings/microphone")}
+          />
+        )}
+        {hasDeviceInfo && (
+          <RouteButton
+            icon={<Icon name="device-ipad" size={24} color={theme.colors.secondary_foreground} />}
+            label={translate("deviceSettings:deviceInformation")}
+            onPress={() => push("/settings/device-info")}
+          />
+        )}
+      </Group>
 
       {/* this just gives the user a bit more space to scroll */}
-      <Spacer height={160} />
+      <Spacer height={theme.spacing.s2} />
     </View>
   )
 }

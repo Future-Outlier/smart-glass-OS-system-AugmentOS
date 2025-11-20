@@ -1,7 +1,7 @@
 protocol SGCManager {
     // MARK: - Device Information
 
-    var type: String { get }
+    var type: String { get set }
     var ready: Bool { get }
     var connectionState: String { get }
 
@@ -18,6 +18,7 @@ protocol SGCManager {
     // MARK: - Hardware Status
 
     var hasMic: Bool { get }
+    var micEnabled: Bool { get }
     var batteryLevel: Int { get }
     var isHeadUp: Bool { get }
 
@@ -41,6 +42,7 @@ protocol SGCManager {
     // MARK: - Audio Control
 
     func setMicEnabled(_ enabled: Bool)
+    func sortMicRanking(list: [String]) -> [String]
 
     // MARK: - Messaging
 

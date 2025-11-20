@@ -4,7 +4,7 @@ import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles} from "@/theme"
 import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
 import {checkFeaturePermissions, PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
@@ -22,7 +22,7 @@ export default function PrivacySettingsScreen() {
   const [appState, setAppState] = useState(AppState.currentState)
   const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
-  const [sensingEnabled, setSensingEnabled] = useSetting(SETTINGS_KEYS.sensing_enabled)
+  const [sensingEnabled, setSensingEnabled] = useSetting(SETTINGS.sensing_enabled.key)
 
   // Check permissions when screen loads
   useEffect(() => {

@@ -1,24 +1,26 @@
 import {useState, useEffect} from "react"
 import {View, ViewStyle, TextStyle, ScrollView} from "react-native"
+
 import {Header, Screen, Text} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {$styles, ThemedStyle} from "@/theme"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import ActionButton from "@/components/ui/ActionButton"
-import RouteButton from "@/components/ui/RouteButton"
+import InfoCardSection from "@/components/ui/InfoCard"
+import {RouteButton} from "@/components/ui/RouteButton"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
 import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
 import {localStorageService} from "@/services/asg/localStorageService"
-import {translate} from "@/i18n"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {useAppTheme} from "@/utils/useAppTheme"
+
 import {getModelCapabilities} from "@/../../cloud/packages/types/src"
-import InfoCardSection from "@/components/ui/InfoCard"
 
 export default function GallerySettingsScreen() {
   const {goBack, push} = useNavigationHistory()
   const {themed} = useAppTheme()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   const [autoSaveToCameraRoll, setAutoSaveToCameraRoll] = useState(true)
   const [localPhotoCount, setLocalPhotoCount] = useState(0)

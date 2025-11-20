@@ -179,24 +179,6 @@ public class Bridge private constructor() {
             sendTypedMessage("compatible_glasses_search_result", eventBody as Map<String, Any>)
         }
 
-        /** Send glasses connection state */
-        @JvmStatic
-        fun sendGlassesConnectionState(modelName: String, status: String) {
-            try {
-                val event = HashMap<String, Any>()
-                event["type"] = "glasses_connection_state"
-                event["modelName"] = modelName
-                event["status"] = status
-                event["timestamp"] = System.currentTimeMillis().toInt()
-
-                val jsonData = JSONObject(event as Map<*, *>)
-                val jsonString = jsonData.toString()
-                sendWSText(jsonString)
-            } catch (e: Exception) {
-                log("ServerComms: Error building glasses_connection_state JSON: $e")
-            }
-        }
-
         /** Update ASR config */
         @JvmStatic
         fun updateAsrConfig(languages: List<Map<String, Any>>) {
@@ -468,6 +450,16 @@ public class Bridge private constructor() {
             eventBody["local_ip"] = gatewayIp // Using gateway IP for consistency with iOS
 
             sendTypedMessage("hotspot_status_change", eventBody as Map<String, Any>)
+        }
+
+        /** Send hotspot error - notifies React Native of hotspot failures */
+        @JvmStatic
+        fun sendHotspotError(errorMessage: String, timestamp: Long) {
+            val eventBody = HashMap<String, Any>()
+            eventBody["error_message"] = errorMessage
+            eventBody["timestamp"] = timestamp
+
+            sendTypedMessage("hotspot_error", eventBody as Map<String, Any>)
         }
 
         /** Send version info - matches iOS MentraLive.swift emitVersionInfo */

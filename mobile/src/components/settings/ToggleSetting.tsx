@@ -11,6 +11,7 @@ type ToggleSettingProps = {
   disabled?: boolean
   style?: ViewStyle
   icon?: React.ReactNode
+  compact?: boolean
 }
 
 const ToggleSetting: React.FC<ToggleSettingProps> = ({
@@ -21,15 +22,17 @@ const ToggleSetting: React.FC<ToggleSettingProps> = ({
   disabled = false,
   style,
   icon,
+  compact = false,
 }) => {
   const {theme, themed} = useAppTheme()
 
   return (
-    <View style={[themed($container), style, disabled && {opacity: 0.5}]}>
+    <View
+      style={[themed($container), style, disabled && {opacity: 0.5}, compact && {paddingVertical: theme.spacing.s3}]}>
       <View style={themed($textContainer)}>
         <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s4, justifyContent: "center"}}>
           {icon && icon}
-          <Text text={label} style={themed($label)} />
+          <Text text={label} style={[themed($label), compact && {fontSize: 12}]} />
         </View>
         {subtitle && <Text text={subtitle} style={themed($subtitle)} />}
       </View>

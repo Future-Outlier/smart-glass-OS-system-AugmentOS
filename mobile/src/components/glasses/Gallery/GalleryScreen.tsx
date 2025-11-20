@@ -2,40 +2,51 @@
  * Main gallery screen component
  */
 
-import {useCallback, useState, useEffect, useMemo, useRef} from "react"
-import {View, BackHandler, TouchableOpacity, ActivityIndicator, Dimensions, FlatList, ViewToken} from "react-native"
-import {useFocusEffect} from "expo-router"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {spacing, ThemedStyle} from "@/theme"
-import {ViewStyle, TextStyle, ImageStyle} from "react-native"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {PhotoInfo} from "../../../types/asg"
-import {asgCameraApi} from "../../../services/asg/asgCameraApi"
-import {localStorageService} from "../../../services/asg/localStorageService"
-import {PhotoImage} from "./PhotoImage"
-import {MediaViewer} from "./MediaViewer"
-import {ProgressRing} from "./ProgressRing"
-import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
+import CoreModule from "core"
 import LinearGradient from "expo-linear-gradient"
+import * as Linking from "expo-linking"
+import {useFocusEffect} from "expo-router"
+import {useCallback, useEffect, useMemo, useRef, useState} from "react"
+import {
+  ActivityIndicator,
+  BackHandler,
+  Dimensions,
+  FlatList,
+  ImageStyle,
+  TextStyle,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+  ViewToken,
+} from "react-native"
+import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
+import WifiManager from "react-native-wifi-reborn"
+
+import bridge from "@/bridge/MantleBridge"
+import {MediaViewer} from "@/components/glasses/Gallery/MediaViewer"
+import {PhotoImage} from "@/components/glasses/Gallery/PhotoImage"
+import {ProgressRing} from "@/components/glasses/Gallery/ProgressRing"
+import {Header, Icon, Text} from "@/components/ignite"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import {asgCameraApi} from "@/services/asg/asgCameraApi"
+import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
+import {localStorageService} from "@/services/asg/localStorageService"
+import {networkConnectivityService, NetworkStatus} from "@/services/asg/networkConnectivityService"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {spacing, ThemedStyle} from "@/theme"
+import {PhotoInfo} from "@/types/asg"
+import showAlert from "@/utils/AlertUtils"
+import {shareFile} from "@/utils/FileUtils"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {MediaLibraryPermissions} from "@/utils/MediaLibraryPermissions"
+import {useAppTheme} from "@/utils/useAppTheme"
+
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 // @ts-ignore
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient)
-import showAlert from "@/utils/AlertUtils"
-import {translate} from "@/i18n"
-import {shareFile} from "@/utils/FileUtils"
-import bridge from "@/bridge/MantleBridge"
-import WifiManager from "react-native-wifi-reborn"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {networkConnectivityService, NetworkStatus} from "@/services/asg/networkConnectivityService"
-import {Header, Icon, Text} from "@/components/ignite"
-import * as Linking from "expo-linking"
-import {MediaLibraryPermissions} from "@/utils/MediaLibraryPermissions"
-import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
-import {getModelCapabilities} from "@/../../cloud/packages/types/src"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import CoreModule from "core"
-import {useGlassesStore} from "@/stores/glasses"
 
 // Gallery timing constants
 const TIMING = {
@@ -73,7 +84,6 @@ interface GalleryItem {
 }
 
 export function GalleryScreen() {
-  const {status} = useCoreStatus()
   const {goBack, push} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
 
@@ -82,12 +92,13 @@ export function GalleryScreen() {
   const ITEM_SPACING = 2 // Minimal spacing between items (1-2px hairline)
   const numColumns = screenWidth < 320 ? 2 : 3 // 2 columns for very small screens, otherwise 3
   const itemWidth = (screenWidth - ITEM_SPACING * (numColumns - 1)) / numColumns
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const features = getModelCapabilities(defaultWearable)
   const hotspotSsid = useGlassesStore(state => state.hotspotSsid)
   const hotspotPassword = useGlassesStore(state => state.hotspotPassword)
   const hotspotGatewayIp = useGlassesStore(state => state.hotspotGatewayIp)
   const hotspotEnabled = useGlassesStore(state => state.hotspotEnabled)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   const [networkStatus] = useState<NetworkStatus>(networkConnectivityService.getStatus())
 
@@ -400,15 +411,13 @@ export function GalleryScreen() {
         },
       )
 
-      const glassesModel = status.glasses_info?.model_name
-
       // Save downloaded files but keep progress states visible
       for (const photoInfo of downloadResult.downloaded) {
         const downloadedFile = localStorageService.convertToDownloadedFile(
           photoInfo,
           photoInfo.filePath || "",
           photoInfo.thumbnailPath,
-          glassesModel,
+          defaultWearable,
         )
         await localStorageService.saveDownloadedFile(downloadedFile)
       }
@@ -995,11 +1004,8 @@ export function GalleryScreen() {
       loadDownloadedPhotos()
 
       // Only query glasses if we have glasses info (meaning glasses are connected) AND glasses have gallery capability
-      if (status.glasses_info?.model_name && features?.hasCamera) {
-        console.log(
-          "[GalleryScreen] Glasses connected with gallery capability - querying gallery status",
-          status.glasses_info,
-        )
+      if (glassesConnected && features?.hasCamera) {
+        console.log("[GalleryScreen] Glasses connected with gallery capability - querying gallery status")
         transitionToState(GalleryState.QUERYING_GLASSES)
         queryGlassesGalleryStatus()
       } else {
@@ -1161,6 +1167,28 @@ export function GalleryScreen() {
         hotspotConnectionTimeoutRef.current = null
       }
       GlobalEventEmitter.removeListener("HOTSPOT_STATUS_CHANGE", handleHotspotStatusChange)
+    }
+  }, [])
+
+  // Handle hotspot errors from glasses
+  useEffect(() => {
+    const handleHotspotError = (eventData: any) => {
+      console.error("[GalleryScreen] Hotspot error:", eventData.error_message)
+
+      // Clear any pending connection attempts
+      if (hotspotConnectionTimeoutRef.current) {
+        clearTimeout(hotspotConnectionTimeoutRef.current)
+        hotspotConnectionTimeoutRef.current = null
+      }
+
+      // Set error message and transition to error state
+      setErrorMessage(eventData.error_message || "Failed to start hotspot")
+      transitionToState(GalleryState.ERROR)
+    }
+
+    GlobalEventEmitter.addListener("HOTSPOT_ERROR", handleHotspotError)
+    return () => {
+      GlobalEventEmitter.removeListener("HOTSPOT_ERROR", handleHotspotError)
     }
   }, [])
 

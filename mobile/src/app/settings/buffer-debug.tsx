@@ -1,12 +1,13 @@
+import CoreModule from "core"
 import {useState} from "react"
 import {View} from "react-native"
+import Toast from "react-native-toast-message"
+
 import {Screen, Header, Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import bridge from "@/bridge/MantleBridge"
 import ActionButton from "@/components/ui/ActionButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import Toast from "react-native-toast-message"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function BufferDebugPage() {
   const {theme} = useAppTheme()
@@ -17,7 +18,7 @@ export default function BufferDebugPage() {
 
   const handleStartStop = async () => {
     if (isBufferRecording) {
-      await bridge.sendStopBufferRecording()
+      await CoreModule.stopBufferRecording()
       setIsBufferRecording(false)
       Toast.show({
         type: "success",
@@ -26,7 +27,7 @@ export default function BufferDebugPage() {
         visibilityTime: 2000,
       })
     } else {
-      await bridge.sendStartBufferRecording()
+      await CoreModule.startBufferRecording()
       setIsBufferRecording(true)
       Toast.show({
         type: "success",
@@ -51,7 +52,7 @@ export default function BufferDebugPage() {
     }
 
     const requestId = `buffer_${Date.now()}`
-    await bridge.sendSaveBufferVideo(requestId, seconds)
+    await CoreModule.sendSaveBufferVideo(requestId, seconds)
     Toast.show({
       type: "success",
       text1: "Saving buffer video",
@@ -64,7 +65,7 @@ export default function BufferDebugPage() {
   const handleVideoStartStop = async () => {
     if (isVideoRecording) {
       if (videoRequestId) {
-        await bridge.sendStopVideoRecording(videoRequestId)
+        await CoreModule.sendStopVideoRecording(videoRequestId)
         setIsVideoRecording(false)
         setVideoRequestId(null)
         Toast.show({
@@ -77,7 +78,7 @@ export default function BufferDebugPage() {
     } else {
       const requestId = `video_${Date.now()}`
       setVideoRequestId(requestId)
-      await bridge.sendStartVideoRecording(requestId, true)
+      await CoreModule.sendStartVideoRecording(requestId, true)
       setIsVideoRecording(true)
       Toast.show({
         type: "success",

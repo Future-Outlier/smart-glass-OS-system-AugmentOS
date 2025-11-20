@@ -1,44 +1,50 @@
-import {Icon, Text} from "@/components/ignite"
+import ChevronRight from "assets/icons/component/ChevronRight"
+import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
+import CoreModule from "core"
 import {useState} from "react"
 import {ActivityIndicator, Image, ImageStyle, TextStyle, View, ViewStyle} from "react-native"
 
-import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
-import {Button} from "@/components/ignite"
+import {Button, Icon, Text} from "@/components/ignite"
+import ConnectedSimulatedGlassesInfo from "@/components/mirror/ConnectedSimulatedGlassesInfo"
+import SliderSetting from "@/components/settings/SliderSetting"
+import ToggleSetting from "@/components/settings/ToggleSetting"
+import {Divider} from "@/components/ui/Divider"
 import {Group} from "@/components/ui/Group"
+import {Spacer} from "@/components/ui/Spacer"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
+import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {
   getEvenRealitiesG1Image,
   getGlassesClosedImage,
   getGlassesImage,
   getGlassesOpenImage,
 } from "@/utils/getGlassesImage"
-import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import ChevronRight from "assets/icons/component/ChevronRight"
-import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
-import CoreModule from "core"
-import SliderSetting from "@/components/settings/SliderSetting"
-import ToggleSetting from "@/components/settings/ToggleSetting"
-import ConnectedSimulatedGlassesInfo from "@/components/mirror/ConnectedSimulatedGlassesInfo"
-import {Spacer} from "@/components/ui/Spacer"
-import {Divider} from "@/components/ui/Divider"
+
+import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const {status} = useCoreStatus()
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [isCheckingConnectivity, setIsCheckingConnectivity] = useState(false)
-  const isGlassesConnected = Boolean(status.glasses_info?.model_name)
-  const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS_KEYS.auto_brightness)
-  const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
+  const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS.auto_brightness.key)
+  const [brightness, setBrightness] = useSetting(SETTINGS.brightness.key)
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
+  const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesStyle = useGlassesStore(state => state.style)
+  const glassesColor = useGlassesStore(state => state.color)
+  const caseRemoved = useGlassesStore(state => state.caseRemoved)
+  const caseBatteryLevel = useGlassesStore(state => state.caseBatteryLevel)
+  const caseOpen = useGlassesStore(state => state.caseOpen)
 
   // If no glasses paired, show Pair Glasses button
   if (!defaultWearable || defaultWearable === "null") {
@@ -101,28 +107,23 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
     let image = getGlassesImage(defaultWearable)
 
     if (defaultWearable === DeviceTypes.G1) {
-      const style = status.glasses_info?.glasses_style
-      const color = status.glasses_info?.glasses_color
       let state = "folded"
-      if (!status.glasses_info?.case_removed) {
-        state = status.glasses_info?.case_open ? "case_open" : "case_close"
+      if (!caseRemoved) {
+        state = caseOpen ? "case_open" : "case_close"
       }
-      return getEvenRealitiesG1Image(style, color, state, "l", theme.isDark, status.glasses_info?.case_battery_level)
+      return getEvenRealitiesG1Image(glassesStyle, glassesColor, state, "l", theme.isDark, caseBatteryLevel)
     }
 
-    if (!status.glasses_info?.case_removed) {
-      image = status.glasses_info?.case_open
-        ? getGlassesOpenImage(defaultWearable)
-        : getGlassesClosedImage(defaultWearable)
+    if (!caseRemoved) {
+      image = caseOpen ? getGlassesOpenImage(defaultWearable) : getGlassesClosedImage(defaultWearable)
     }
 
     return image
   }
 
-  let isConnected = status.glasses_info?.model_name
   let isSearching = status.core_info.is_searching || isCheckingConnectivity
 
-  if (!isConnected || isSearching) {
+  if (!glassesConnected || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
         <View style={themed($header)}>
@@ -243,15 +244,16 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
         )} */}
         <Group>
           {/* Brightness Settings */}
-          {features?.display?.adjustBrightness && isGlassesConnected && (
+          {features?.display?.adjustBrightness && glassesConnected && (
             <ToggleSetting
+              compact
               style={{backgroundColor: theme.colors.background}}
               label={translate("deviceSettings:autoBrightness")}
               value={autoBrightness}
               onValueChange={setAutoBrightness}
             />
           )}
-          {features?.display?.adjustBrightness && isGlassesConnected && !autoBrightness && (
+          {features?.display?.adjustBrightness && glassesConnected && !autoBrightness && (
             <SliderSetting
               label={translate("deviceSettings:brightness")}
               value={brightness}

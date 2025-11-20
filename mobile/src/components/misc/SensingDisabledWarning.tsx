@@ -5,13 +5,13 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons"
 import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 
 const SensingDisabledWarning: React.FC = () => {
   const {push} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
-  const [sensingEnabled, _setSensingEnabled] = useSetting(SETTINGS_KEYS.sensing_enabled)
+  const [sensingEnabled, _setSensingEnabled] = useSetting(SETTINGS.sensing_enabled.key)
 
   if (sensingEnabled) {
     return null

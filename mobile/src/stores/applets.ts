@@ -1,24 +1,28 @@
+import {useMemo} from "react"
+import {AsyncResult, result as Res} from "typesafe-ts"
+import {create} from "zustand"
+
+import {push} from "@/contexts/NavigationRef"
+import {translate} from "@/i18n"
+import restComms from "@/services/RestComms"
+import STTModelManager from "@/services/STTModelManager"
+import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
+import showAlert from "@/utils/AlertUtils"
+import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
+
 import {
   AppletInterface,
   getModelCapabilities,
   HardwareRequirementLevel,
   HardwareType,
 } from "@/../../cloud/packages/types/src"
-import {translate} from "@/i18n"
-import restComms from "@/services/RestComms"
-import {SETTINGS_KEYS, useSetting, useSettingsStore} from "@/stores/settings"
-import STTModelManager from "@/services/STTModelManager"
-import showAlert from "@/utils/AlertUtils"
-import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
-import {useMemo} from "react"
-import {create} from "zustand"
-import {router} from "expo-router"
 
 export interface ClientAppletInterface extends AppletInterface {
   offline: boolean
   offlineRoute: string
   compatibility?: CompatibilityResult
   loading: boolean
+  onStart?: () => AsyncResult<void, Error>
 }
 
 interface AppStatusState {
@@ -26,7 +30,7 @@ interface AppStatusState {
   refreshApplets: () => Promise<void>
   startApplet: (packageName: string, appType?: string) => Promise<void>
   stopApplet: (packageName: string) => Promise<void>
-  stopAllApplets: () => Promise<void>
+  stopAllApplets: () => AsyncResult<void, Error>
 }
 
 export const DUMMY_APPLET: ClientAppletInterface = {
@@ -56,8 +60,8 @@ export const captionsPackageName = "com.augmentos.livecaptions"
 
 // get offline applets:
 export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
-  const offlineCameraRunning = await useSettingsStore.getState().getSetting(cameraPackageName)
-  const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(captionsPackageName)
+  const offlineCameraRunning = await useSettingsStore.getState().getSetting(SETTINGS.gallery_mode.key)
+  const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_captions_running.key)
   return [
     {
       packageName: cameraPackageName,
@@ -91,6 +95,31 @@ export const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       running: offlineCaptionsRunning,
       loading: false,
       hardwareRequirements: [{type: HardwareType.DISPLAY, level: HardwareRequirementLevel.REQUIRED}],
+      onStart: (): AsyncResult<void, Error> => {
+        return Res.try_async(async () => {
+          const modelAvailable = await STTModelManager.isModelAvailable()
+          if (modelAvailable) {
+            return undefined
+          }
+
+          showAlert(
+            translate("transcription:noModelInstalled"),
+            translate("transcription:noModelInstalledMessage"),
+            [
+              {text: translate("common:cancel"), style: "cancel"},
+              {
+                text: translate("transcription:goToSettings"),
+                onPress: () => {
+                  push("/settings/transcription")
+                },
+              },
+            ],
+            {iconName: "alert-circle-outline"},
+          )
+
+          throw new Error("No model available")
+        })
+      },
     },
   ]
 }
@@ -112,53 +141,51 @@ export const getMoreAppsApplet = (): ClientAppletInterface => {
   }
 }
 
-// export const isAppCompatible = (app: ClientAppletInterface): boolean => {
-//   const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-//   const capabilities = getCapabilitiesForModel(defaultWearable)
-//   if (!capabilities) return false
-//   const requiredCapabilities = app.required
-//   return requiredCapabilities.every(capability => capabilities.includes(capability))
-// }
+const startStopOfflineApplet = (packageName: string, status: boolean): AsyncResult<void, Error> => {
+  // await useSettingsStore.getState().setSetting(packageName, status)
+  return Res.try_async(async () => {
+    // Captions app special handling
+    if (packageName === captionsPackageName) {
+      console.log(`APPLET: Captions app ${status ? "started" : "stopped"}`)
+      await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, status, true)
+    }
 
-const setOfflineApplet = async (packageName: string, status: boolean) => {
-  await useSettingsStore.getState().setSetting(packageName, status)
-
-  // Captions app special handling
-  if (packageName === captionsPackageName) {
-    console.log(`APPLET: Captions app ${status ? "started" : "stopped"}`)
-    await useSettingsStore.getState().setSetting(SETTINGS_KEYS.offline_captions_running, status, true)
-  }
-
-  // Camera app special handling - send gallery mode to glasses
-  if (packageName === cameraPackageName) {
-    console.log(`APPLET: Camera app ${status ? "started" : "stopped"}`)
-    await useSettingsStore.getState().setSetting(SETTINGS_KEYS.gallery_mode, status, true)
-  }
+    // Camera app special handling - send gallery mode to glasses
+    if (packageName === cameraPackageName) {
+      console.log(`APPLET: Camera app ${status ? "started" : "stopped"}`)
+      await useSettingsStore.getState().setSetting(SETTINGS.gallery_mode.key, status, true)
+    }
+  })
 }
 
-const toggleApplet = async (applet: ClientAppletInterface, status: boolean) => {
+// actually turn on or off an applet:
+const startStopApplet = (applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> => {
+  // TODO: not the best way to handle this, but it works reliably:
+  setTimeout(() => {
+    useAppletStatusStore.getState().refreshApplets()
+  }, 2000)
+
   if (applet.offline) {
-    await setOfflineApplet(applet.packageName, status)
-    await useAppletStatusStore.getState().refreshApplets() // update state immediately
-    return
+    return startStopOfflineApplet(applet.packageName, status)
   }
 
   if (status) {
-    await restComms.startApp(applet.packageName)
+    return restComms.startApp(applet.packageName)
   } else {
-    await restComms.stopApp(applet.packageName)
+    return restComms.stopApp(applet.packageName)
   }
-  // TODO: remove this and just update when we receive the app_state_change event from the server
-  setTimeout(() => {
-    useAppletStatusStore.getState().refreshApplets()
-  }, 1000)
 }
 
 export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   apps: [],
 
   refreshApplets: async () => {
-    const appsData: AppletInterface[] = await restComms.getApplets()
+    let res = await restComms.getApplets()
+    if (res.is_error()) {
+      console.error(`Failed to get applets: ${res.error}`)
+      return
+    }
+    const appsData = res.value
 
     const onlineApps: ClientAppletInterface[] = appsData.map(app => ({
       ...app,
@@ -169,7 +196,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
 
     // merge in the offline apps:
     let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets())]
-    const offlineMode = useSettingsStore.getState().getSetting(SETTINGS_KEYS.offline_mode)
+    const offlineMode = useSettingsStore.getState().getSetting(SETTINGS.offline_mode.key)
 
     // remove duplicates and keep the online versions:
     const packageNameMap = new Map<string, ClientAppletInterface>()
@@ -182,7 +209,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     applets = Array.from(packageNameMap.values())
 
     // add in the compatibility info:
-    let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+    let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
     let capabilities = getModelCapabilities(defaultWearable)
 
     for (const applet of applets) {
@@ -208,25 +235,10 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       return
     }
 
-    // Validate offline Live Captions has a speech model installed
-    // Only check for offline version - online version uses cloud STT
-    if (packageName === captionsPackageName && applet.offline) {
-      const modelAvailable = await STTModelManager.isModelAvailable()
-      if (!modelAvailable) {
-        showAlert(
-          translate("transcription:noModelInstalled"),
-          translate("transcription:noModelInstalledMessage"),
-          [
-            {text: translate("common:cancel"), style: "cancel"},
-            {
-              text: translate("transcription:goToSettings"),
-              onPress: () => {
-                router.push("/settings/transcription")
-              },
-            },
-          ],
-          {iconName: "alert-circle-outline"},
-        )
+    if (applet.offline && applet.onStart) {
+      const result = await applet.onStart()
+      if (result.is_error()) {
+        console.error(`Failed to start applet ${applet.packageName}: ${result.error}`)
         return
       }
     }
@@ -243,41 +255,25 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       for (const runningApp of runningForegroundApps) {
         console.log(`Stopping foreground app: ${runningApp.name} (${runningApp.packageName})`)
 
-        // // Optimistically update UI
-        // set(state => ({
-        //   apps: state.apps.map(a =>
-        //     a.packageName === runningApp.packageName ? {...a, running: false, loading: false} : a,
-        //   ),
-        // }))
-
-        toggleApplet(runningApp, false)
+        startStopApplet(runningApp, false)
       }
     }
 
     // Start the new app
     set(state => ({
-      apps: state.apps.map(a => (a.packageName === packageName ? {...a, running: true, loading: !applet.offline} : a)),
+      apps: state.apps.map(a => (a.packageName === packageName ? {...a, running: true, loading: true} : a)),
     }))
 
-    try {
-      await toggleApplet(applet, true)
-
-      await useSettingsStore.getState().setSetting(SETTINGS_KEYS.has_ever_activated_app, true)
-    } catch (error: any) {
-      if (error?.response?.data?.error?.stage === "HARDWARE_CHECK") {
-        showAlert(
-          translate("home:hardwareIncompatible"),
-          error.response.data.error.message ||
-            translate("home:hardwareIncompatibleMessage", {app: packageName, missing: "required hardware"}),
-          [{text: translate("common:ok")}],
-          {iconName: "alert-circle-outline"},
-        )
-      }
-
+    const result = await startStopApplet(applet, true)
+    if (result.is_error()) {
+      console.error(`Failed to start applet ${applet.packageName}: ${result.error}`)
       set(state => ({
         apps: state.apps.map(a => (a.packageName === packageName ? {...a, running: false, loading: false} : a)),
       }))
+      return
     }
+
+    await useSettingsStore.getState().setSetting(SETTINGS.has_ever_activated_app.key, true)
   },
 
   stopApplet: async (packageName: string) => {
@@ -291,21 +287,19 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       apps: state.apps.map(a => (a.packageName === packageName ? {...a, running: false, loading: true} : a)),
     }))
 
-    toggleApplet(applet, false)
+    startStopApplet(applet, false)
   },
 
-  stopAllApplets: async () => {
-    const runningApps = get().apps.filter(app => app.running)
+  stopAllApplets: (): AsyncResult<void, Error> => {
+    return Res.try_async(async () => {
+      const runningApps = get().apps.filter(app => app.running)
 
-    for (const app of runningApps) {
-      if (!app.offline) {
-        await restComms.stopApp(app.packageName)
-      } else {
-        setOfflineApplet(app.packageName, false)
+      for (const app of runningApps) {
+        await startStopApplet(app, false)
       }
-    }
 
-    set({apps: get().apps.map(a => ({...a, running: false}))})
+      set({apps: get().apps.map(a => ({...a, running: false}))})
+    })
   },
 }))
 
@@ -316,7 +310,7 @@ export const useRefreshApplets = () => useAppletStatusStore(state => state.refre
 export const useStopAllApplets = () => useAppletStatusStore(state => state.stopAllApplets)
 export const useInactiveForegroundApps = () => {
   const apps = useApplets()
-  const [isOffline] = useSetting(SETTINGS_KEYS.offline_mode)
+  const [isOffline] = useSetting(SETTINGS.offline_mode.key)
   if (isOffline) {
     return useMemo(() => apps.filter(app => app.type === "standard" && !app.running && app.offline), [apps])
   }
@@ -350,7 +344,7 @@ export const useIncompatibleApps = () => {
 
 // export const useIncompatibleApps = async () => {
 //   const apps = useApplets()
-//   const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+//   const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
 
 //   const capabilities: Capabilities | null = await getCapabilitiesForModel(defaultWearable)
 //   if (!capabilities) {
@@ -368,7 +362,7 @@ export const useIncompatibleApps = () => {
 
 // export const useFilteredApps = async () => {
 //   const apps = useApplets()
-//   const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+//   const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
 
 //   const capabilities: Capabilities | null = getCapabilitiesForModel(defaultWearable)
 //   if (!capabilities) {

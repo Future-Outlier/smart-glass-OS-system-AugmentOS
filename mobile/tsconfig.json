@@ -21,6 +21,7 @@
       "@cloud/*": ["../cloud/packages/types/*"],
       "@assets/*": ["../assets/*"],
       "@plugins/*": ["./plugins/*"],
+      "core": ["./modules/core/src"]
     },
     "types": ["node", "react", "react-native", "jest"],
     "typeRoots": ["./node_modules/@types", "./src/types"]

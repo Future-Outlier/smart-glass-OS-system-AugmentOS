@@ -1,24 +1,26 @@
-import {useState} from "react"
-import {View, TextInput, ScrollView, TextStyle, ViewStyle, KeyboardAvoidingView, Platform} from "react-native"
-import {Header, Screen} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {$styles, ThemedStyle} from "@/theme"
-import {translate} from "@/i18n"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import ActionButton from "@/components/ui/ActionButton"
-import showAlert from "@/utils/AlertUtils"
-import restComms from "@/services/RestComms"
 import Constants from "expo-constants"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {useState} from "react"
+import {KeyboardAvoidingView, Platform, ScrollView, TextInput, TextStyle, View, ViewStyle} from "react-native"
+
+import {Button, Header, Screen} from "@/components/ignite"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import restComms from "@/services/RestComms"
 import {useAppletStatusStore} from "@/stores/applets"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {$styles, ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function FeedbackPage() {
   const [feedbackText, setFeedbackText] = useState("")
   const {goBack} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
-  const {status} = useCoreStatus()
   const apps = useAppletStatusStore(state => state.apps)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesModelName = useGlassesStore(state => state.modelName)
 
   const handleSubmitFeedback = async (feedbackBody: string) => {
     console.log("Feedback submitted:", feedbackBody)
@@ -29,14 +31,13 @@ export default function FeedbackPage() {
     const osVersion = `${Platform.OS} ${Platform.Version}`
     const deviceName = Constants.deviceName || "deviceName"
     const appVersion = process.env.EXPO_PUBLIC_MENTRAOS_VERSION || "version"
-    const buildCommit = Constants.expoConfig?.extra?.BUILD_COMMIT || "commit"
-    const buildBranch = Constants.expoConfig?.extra?.BUILD_BRANCH || "branch"
-    const buildTime = Constants.expoConfig?.extra?.BUILD_TIME || "time"
-    const buildUser = Constants.expoConfig?.extra?.BUILD_USER || "user"
+    const buildCommit = process.env.EXPO_PUBLIC_BUILD_COMMIT || "commit"
+    const buildBranch = process.env.EXPO_PUBLIC_BUILD_BRANCH || "branch"
+    const buildTime = process.env.EXPO_PUBLIC_BUILD_TIME || "time"
+    const buildUser = process.env.EXPO_PUBLIC_BUILD_USER || "user"
 
     // Glasses info
-    const connectedGlassesModel = status.glasses_info?.model_name || "Not connected"
-    const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable) || "Not set"
+    const connectedGlassesModel = glassesConnected ? glassesModelName : "Not connected"
 
     // Running apps
     const runningApps = apps.filter(app => app.running).map(app => app.packageName)
@@ -64,20 +65,9 @@ export default function FeedbackPage() {
     // Combine feedback with diagnostic info
     const fullFeedback = `FEEDBACK:\n${feedbackBody}\n\nADDITIONAL INFO:\n${additionalInfo}`
     console.log("Full Feedback submitted:", fullFeedback)
-    try {
-      await restComms.sendFeedback(fullFeedback)
-
-      showAlert(translate("feedback:thankYou"), translate("feedback:feedbackReceived"), [
-        {
-          text: translate("common:ok"),
-          onPress: () => {
-            setFeedbackText("")
-            goBack()
-          },
-        },
-      ])
-    } catch (error) {
-      console.error("Error sending feedback:", error)
+    const res = await restComms.sendFeedback(fullFeedback)
+    if (res.is_error()) {
+      console.error("Error sending feedback:", res.error)
       showAlert(translate("common:error"), translate("feedback:errorSendingFeedback"), [
         {
           text: translate("common:ok"),
@@ -86,7 +76,19 @@ export default function FeedbackPage() {
           },
         },
       ])
+      return
     }
+    await restComms.sendFeedback(fullFeedback)
+
+    showAlert(translate("feedback:thankYou"), translate("feedback:feedbackReceived"), [
+      {
+        text: translate("common:ok"),
+        onPress: () => {
+          setFeedbackText("")
+          goBack()
+        },
+      },
+    ])
   }
 
   return (
@@ -106,11 +108,11 @@ export default function FeedbackPage() {
               textAlignVertical="top"
             />
 
-            <ActionButton
-              label={translate("feedback:submitFeedback")}
-              variant="default"
+            <Button
+              tx="feedback:submitFeedback"
               onPress={() => handleSubmitFeedback(feedbackText)}
               disabled={!feedbackText.trim()}
+              preset="primary"
             />
           </View>
         </ScrollView>

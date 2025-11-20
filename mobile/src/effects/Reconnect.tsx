@@ -1,5 +1,5 @@
 import {AppState} from "react-native"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {useEffect} from "react"
 
@@ -12,7 +12,7 @@ export function Reconnect() {
       if (nextAppState === "active") {
         const reconnectOnAppForeground = await useSettingsStore
           .getState()
-          .getSetting(SETTINGS_KEYS.reconnect_on_app_foreground)
+          .getSetting(SETTINGS.reconnect_on_app_foreground.key)
         if (!reconnectOnAppForeground) {
           return
         }

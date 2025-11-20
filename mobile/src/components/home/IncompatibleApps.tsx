@@ -3,9 +3,9 @@ import {FlatList, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {translate} from "@/i18n"
 import {ClientAppletInterface, DUMMY_APPLET, useIncompatibleApps} from "@/stores/applets"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -14,11 +14,11 @@ const GRID_COLUMNS = 4
 
 export const IncompatibleApps: React.FC = () => {
   const {themed, theme} = useAppTheme()
-  const {status} = useCoreStatus()
   const incompatibleApps = useIncompatibleApps()
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   // Get connected glasses name
-  const glassesName = status.glasses_info?.model_name || status.core_info.default_wearable || "your glasses"
+  const glassesName = defaultWearable || "your glasses"
 
   // Prepare grid data with placeholders
   const gridData = useMemo(() => {
