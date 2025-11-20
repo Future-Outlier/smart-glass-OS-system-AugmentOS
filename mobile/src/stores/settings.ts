@@ -234,7 +234,7 @@ export const useSettingsStore = create<SettingsState>()(
       const jsonValue = JSON.stringify(value)
       await AsyncStorage.setItem(key, jsonValue)
       // Update core settings if needed
-      if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number]) && updateCore) {
+      if (CORE_SETTINGS_KEYS.includes(originalKey as (typeof CORE_SETTINGS_KEYS)[number]) && updateCore) {
         CoreModule.updateSettings({[originalKey]: value})
       }
       // Sync with server if needed
@@ -282,6 +282,14 @@ export const useSettingsStore = create<SettingsState>()(
         return state.getSetting(key)
       }
 
+      const setting = SETTINGS[key]
+      const originalKey = key
+
+      // Apply indexer if present (same as setSetting logic)
+      if (setting?.indexer) {
+        key = `${originalKey}:${setting.indexer()}`
+      }
+
       try {
         const jsonValue = await AsyncStorage.getItem(key)
         if (jsonValue !== null) {
@@ -296,7 +304,7 @@ export const useSettingsStore = create<SettingsState>()(
         console.error(`Failed to load setting (${key}):`, error)
       }
 
-      return state.getSetting(key)
+      return state.getSetting(originalKey)
     },
     setManyLocally: async (settings: Record<string, any>) => {
       // Update store immediately
@@ -310,8 +318,10 @@ export const useSettingsStore = create<SettingsState>()(
       // Update core settings
       const coreUpdates: Record<string, any> = {}
       Object.keys(settings).forEach(key => {
-        if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number])) {
-          coreUpdates[key] = settings[key]
+        // Extract base key from potentially indexed key (e.g., "preferred_mic:SIMULATED" -> "preferred_mic")
+        const baseKey = key.split(":")[0]
+        if (CORE_SETTINGS_KEYS.includes(baseKey as (typeof CORE_SETTINGS_KEYS)[number])) {
+          coreUpdates[baseKey] = settings[key]
         }
       })
       if (Object.keys(coreUpdates).length > 0) {
@@ -325,11 +335,19 @@ export const useSettingsStore = create<SettingsState>()(
       let loadedSettings: Record<string, any> = {}
       for (const setting of Object.values(SETTINGS)) {
         try {
-          const value = await get().loadSetting(setting.key)
-          // console.log(`LOADED SETTING: ${setting.key} = ${value}`)
-          loadedSettings[setting.key] = value
+          // loadSetting handles indexers and stores with indexed keys in state
+          await get().loadSetting(setting.key)
+          // Get the value using getSetting which handles indexers/overrides
+          const value = get().getSetting(setting.key)
+          // Store with indexed key if applicable
+          let storageKey = setting.key
+          if (setting.indexer) {
+            storageKey = `${setting.key}:${setting.indexer()}`
+          }
+          loadedSettings[storageKey] = value
         } catch (error) {
           console.error(`Failed to load setting ${setting.key}:`, error)
+          // Store default value with base key
           loadedSettings[setting.key] = setting.defaultValue()
         }
       }

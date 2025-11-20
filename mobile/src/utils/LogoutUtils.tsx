@@ -1,10 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import CoreModule from "core"
+
 import bridge from "@/bridge/MantleBridge"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import restComms from "@/services/RestComms"
 import {SETTINGS} from "@/stores/settings"
-import CoreModule from "core"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
 
 export class LogoutUtils {
   private static readonly TAG = "LogoutUtils"
@@ -144,8 +145,22 @@ export class LogoutUtils {
       const settingsToClear = Object.values(SETTINGS).filter(key => !settingsToKeep.includes(key.key))
 
       if (settingsToClear.length > 0) {
-        await AsyncStorage.multiRemove(settingsToClear.map(setting => setting.key))
-        console.log(`${this.TAG}: Cleared ${settingsToClear.length} app settings`)
+        // Get all AsyncStorage keys to find indexed versions (e.g., "preferred_mic:SIMULATED")
+        const allKeys = await AsyncStorage.getAllKeys()
+        const keysToRemove: string[] = []
+
+        // Add base keys
+        settingsToClear.forEach(setting => {
+          keysToRemove.push(setting.key)
+          // Find any indexed versions of this key (e.g., "preferred_mic:SIMULATED")
+          const indexedKeys = allKeys.filter(
+            (key: string) => key.startsWith(`${setting.key}:`) && !settingsToKeep.includes(setting.key),
+          )
+          keysToRemove.push(...indexedKeys)
+        })
+
+        await AsyncStorage.multiRemove(keysToRemove)
+        console.log(`${this.TAG}: Cleared ${keysToRemove.length} app settings (including indexed variants)`)
       }
     } catch (error) {
       console.error(`${this.TAG}: Error clearing app settings:`, error)
