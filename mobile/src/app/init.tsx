@@ -282,6 +282,7 @@ export default function InitScreen() {
           <View style={themed($buttonContainer)}>
             {state === "error" && (
               <Button
+                flexContainer
                 onPress={() => checkCloudVersion(true)}
                 style={themed($primaryButton)}
                 text={isRetrying ? translate("versionCheck:retrying") : translate("versionCheck:retryConnection")}
@@ -293,11 +294,18 @@ export default function InitScreen() {
             )}
 
             {state === "outdated" && (
-              <Button preset="primary" onPress={handleUpdate} disabled={isUpdating} tx="versionCheck:update" />
+              <Button
+                flexContainer
+                preset="primary"
+                onPress={handleUpdate}
+                disabled={isUpdating}
+                tx="versionCheck:update"
+              />
             )}
 
             {state === "error" && isUsingCustomUrl && (
               <Button
+                flexContainer
                 onPress={handleResetUrl}
                 style={themed($secondaryButton)}
                 tx={isRetrying ? "versionCheck:resetting" : "versionCheck:resetUrl"}
@@ -312,6 +320,7 @@ export default function InitScreen() {
             {(state === "error" || (state === "outdated" && canSkipUpdate)) && (
               <Button
                 flex
+                flexContainer
                 preset="warning"
                 RightAccessory={() => <Icon name="arrow-right" size={24} color={theme.colors.text} />}
                 onPress={navigateToDestination}

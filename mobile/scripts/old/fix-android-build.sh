@@ -15,23 +15,39 @@ fi
 echo "🔧 Fixing Android build issues..."
 echo ""
 
-# Step 1: Clean all build artifacts and caches
-echo "📦 Step 1: Cleaning build artifacts and caches..."
+# Step 1: Clean all build artifacts, caches, and lock files
+echo "📦 Step 1: Cleaning build artifacts, caches, and lock files..."
 rm -rf android/build android/.gradle node_modules .expo .bundle android/app/build android/app/src/main/assets
 
-# Step 2: Install dependencies
+# Clean lock files (critical for fixing dependency conflicts)
+echo "🗑️  Removing lock files..."
+rm -f bun.lock pnpm-lock.yaml package-lock.json yarn.lock
+
+# Clean nested node_modules in modules (critical for fixing duplicate dependencies)
+echo "🗑️  Removing nested node_modules in modules/..."
+find modules -type d -name "node_modules" -exec rm -rf {} + 2>/dev/null || true
+
+# Step 2: Install dependencies with clean slate
 echo ""
-echo "📦 Step 2: Installing dependencies..."
+echo "📦 Step 2: Installing dependencies (clean install)..."
 bun install
 
-# Step 3: Prebuild with Expo
+# Step 3: Verify dependencies are healthy
 echo ""
-echo "🏗️  Step 3: Running Expo prebuild..."
+echo "🔍 Step 3: Checking for dependency issues..."
+if command -v npx &> /dev/null; then
+    npx expo-doctor --fix-dependencies 2>&1 | grep -E "checks (passed|failed)|issues detected" || true
+    echo ""
+fi
+
+# Step 4: Prebuild with Expo
+echo ""
+echo "🏗️  Step 4: Running Expo prebuild..."
 bun expo prebuild
 
-# Step 4: Fix React Native symlinks
+# Step 5: Fix React Native symlinks
 echo ""
-echo "🔗 Step 4: Fixing React Native symlinks..."
+echo "🔗 Step 5: Fixing React Native symlinks..."
 if [ -f "./scripts/fix-react-native-symlinks.sh" ]; then
     ./scripts/fix-react-native-symlinks.sh
 else
@@ -65,30 +81,50 @@ else
     done
 fi
 
-# Step 5: Clean Gradle cache
+# Step 6: Clean Gradle cache
 echo ""
-echo "🧹 Step 5: Cleaning Gradle cache..."
+echo "🧹 Step 6: Cleaning Gradle cache..."
 cd android && ./gradlew clean && cd ..
 
-# Step 7: Build Android
+# Step 7: Final dependency check
 echo ""
-echo "🚀 Step 7: Building Android app..."
+echo "✅ Step 7: Final dependency verification..."
+if command -v npx &> /dev/null; then
+    EXPO_CHECK=$(npx expo-doctor 2>&1 | grep -c "checks passed" || echo "0")
+    if [ "$EXPO_CHECK" -gt "0" ]; then
+        echo "✅ Dependencies look good!"
+    else
+        echo "⚠️  Warning: There may still be dependency issues. Check output above."
+    fi
+fi
+
+# Step 8: Build Android
+echo ""
+echo "🚀 Step 8: Building Android app..."
 bun android
 
 # Check if build was successful
 if [ $? -eq 0 ]; then
     echo ""
     echo "✅ Android build completed successfully!"
-    echo "✅ iOS pods have been restored too!"
     echo ""
-    echo "📱 To start the development server, run:"
-    echo "   bun run start"
+    echo "📱 Your app should now be running!"
+    echo ""
+    echo "If you encounter issues:"
+    echo "  • Check that dependencies are clean: npx expo-doctor"
+    echo "  • Restart Metro bundler: bun start --clear"
+    echo "  • Force stop the app and relaunch"
 else
     echo ""
     echo "❌ Android build failed!"
     echo ""
-    echo "Try running the following commands manually:"
-    echo "1. bun expo prebuild"
-    echo "2. cd ios && pod install && cd .."
-    echo "3. bun android"
+    echo "Troubleshooting steps:"
+    echo "1. Check for dependency conflicts: npx expo-doctor"
+    echo "2. Manually run: bun expo prebuild"
+    echo "3. Try: cd android && ./gradlew clean && cd .."
+    echo "4. Then: bun android"
+    echo ""
+    echo "If MMKV or native modules fail to load:"
+    echo "  • Completely uninstall the app from your device/emulator"
+    echo "  • Run this script again"
 fi

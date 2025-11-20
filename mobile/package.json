@@ -76,7 +76,6 @@
     "intl-pluralrules": "^2.0.1",
     "livekit-client": "^2.15.15",
     "lucide-react-native": "^0.553.0",
-    "neverthrow": "^8.2.0",
     "posthog-react-native": "^4.11.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
