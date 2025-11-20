@@ -141,14 +141,6 @@ export const getMoreAppsApplet = (): ClientAppletInterface => {
   }
 }
 
-// export const isAppCompatible = (app: ClientAppletInterface): boolean => {
-//   const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
-//   const capabilities = getCapabilitiesForModel(defaultWearable)
-//   if (!capabilities) return false
-//   const requiredCapabilities = app.required
-//   return requiredCapabilities.every(capability => capabilities.includes(capability))
-// }
-
 const startStopOfflineApplet = (packageName: string, status: boolean): AsyncResult<void, Error> => {
   // await useSettingsStore.getState().setSetting(packageName, status)
   return Res.try_async(async () => {
