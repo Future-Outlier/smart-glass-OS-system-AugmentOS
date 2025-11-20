@@ -1,13 +1,14 @@
+import {ScrollView} from "react-native"
+
 import {MicrophoneSelector} from "@/components/glasses/settings/MicrophoneSelector"
 import {Header, Screen} from "@/components/ignite"
 import {Spacer} from "@/components/ui"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ScrollView} from "react-native"
 
 export default function MicrophoneScreen() {
   const {theme, themed} = useAppTheme()
@@ -34,8 +35,7 @@ export default function MicrophoneScreen() {
       }
     }
 
-    setPreferredMic(val)
-    await useSettingsStore.getState().setSetting(SETTINGS.preferred_mic.key, val)
+    await setPreferredMic(val)
   }
 
   return (

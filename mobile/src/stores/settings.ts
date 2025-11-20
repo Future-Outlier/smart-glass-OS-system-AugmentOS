@@ -365,9 +365,9 @@ export const useSettingsStore = create<SettingsState>()(
 )
 
 export const useSetting = <T = any>(key: string): [T, (value: T) => Promise<void>] => {
-  const value = useSettingsStore(state => state.settings[key] as T)
+  const value = useSettingsStore(state => state.getSetting(key))
   const setSetting = useSettingsStore(state => state.setSetting)
-  return [value ?? SETTINGS[key].defaultValue(), (newValue: T) => setSetting(key, newValue)]
+  return [value, (newValue: T) => setSetting(key, newValue)]
 }
 
 // export const useSetting = <T = any>(key: string): [T, (value: T) => Promise<void>] => {
