@@ -224,7 +224,7 @@ public class CameraNeo extends LifecycleService {
     private boolean mWaitingForAeConvergence = false;  // Flag to track if waiting for AE (XyCamera2 pattern)
     private boolean mAeLockRequested = false;  // Flag to track if AE lock requested (XyCamera2 pattern)
     private long aeStartTimeNs;
-    private static final long AE_WAIT_NS = 3_000_000_000L; // 3 second max wait for AE (matching XyCamera2)
+    private static final long AE_WAIT_NS = 1_000_000_000L; // 1 second max wait for AE (matching XyCamera2)
 
     // Simple AE callback - autofocus handled automatically
     private final SimplifiedAeCallback aeCallback = new SimplifiedAeCallback();
