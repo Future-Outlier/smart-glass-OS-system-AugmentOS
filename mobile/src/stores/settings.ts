@@ -95,7 +95,7 @@ export const SETTINGS: Record<string, Setting> = {
   gallery_mode: {key: "gallery_mode", defaultValue: () => false, writable: true},
   // button settings
   button_mode: {key: "button_mode", defaultValue: () => "photo", writable: true},
-  button_photo_size: {key: "button_photo_size", defaultValue: () => "medium", writable: true},
+  button_photo_size: {key: "button_photo_size", defaultValue: () => "large", writable: true},
   button_video_settings: {
     key: "button_video_settings",
     defaultValue: () => ({width: 1920, height: 1080, fps: 30}),

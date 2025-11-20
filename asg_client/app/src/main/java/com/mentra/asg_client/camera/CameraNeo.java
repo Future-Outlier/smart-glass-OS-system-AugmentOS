@@ -117,11 +117,11 @@ public class CameraNeo extends LifecycleService {
 
     // Target photo resolution (4:3 landscape orientation)
     private static final int TARGET_WIDTH = 1440;
-    private static final int TARGET_HEIGHT = 1080;
-    private static final int TARGET_WIDTH_SMALL = 800;
-    private static final int TARGET_HEIGHT_SMALL = 600;
-    private static final int TARGET_WIDTH_LARGE = 3200;
-    private static final int TARGET_HEIGHT_LARGE = 2400;
+    private static final int TARGET_HEIGHT = 1088;
+    private static final int TARGET_WIDTH_SMALL = 960;
+    private static final int TARGET_HEIGHT_SMALL = 720;
+    private static final int TARGET_WIDTH_LARGE = 3264;
+    private static final int TARGET_HEIGHT_LARGE = 2448;
 
     // Auto-exposure settings for better photo quality - now dynamic
     private static final int JPEG_QUALITY = 90; // High quality JPEG
@@ -1168,39 +1168,7 @@ public class CameraNeo extends LifecycleService {
                 return;
             }
 
-            // Find the closest available JPEG size to our target
-            Size[] jpegSizes = map.getOutputSizes(ImageFormat.JPEG);
-            if (jpegSizes == null || jpegSizes.length == 0) {
-                if (forVideo)
-                    notifyVideoError(currentVideoId, "Camera doesn't support JPEG format");
-                else notifyPhotoError("Camera doesn't support JPEG format");
-                stopSelf();
-                return;
-            }
-
-            int desiredW = TARGET_WIDTH;
-            int desiredH = TARGET_HEIGHT;
-            if (pendingRequestedSize != null) {
-                switch (pendingRequestedSize) {
-                    case "small":
-                        desiredW = TARGET_WIDTH_SMALL;
-                        desiredH = TARGET_HEIGHT_SMALL;
-                        break;
-                    case "large":
-                        desiredW = TARGET_WIDTH_LARGE;
-                        desiredH = TARGET_HEIGHT_LARGE;
-                        break;
-                    case "medium":
-                    default:
-                        desiredW = TARGET_WIDTH;
-                        desiredH = TARGET_HEIGHT;
-                        break;
-                }
-            }
-            jpegSize = chooseOptimalSize(jpegSizes, desiredW, desiredH);
-            Log.d(TAG, "Selected JPEG size: " + jpegSize.getWidth() + "x" + jpegSize.getHeight());
-
-            // If this is for video, set up video size too
+            // If this is for video, set up video size only
             if (forVideo) {
                 // Find a suitable video size
                 Size[] videoSizes = map.getOutputSizes(MediaRecorder.class);
@@ -1212,9 +1180,9 @@ public class CameraNeo extends LifecycleService {
                 }
 
                 // Log available video sizes
-                Log.d(TAG, "Available video sizes for camera " + this.cameraId + ":");
+                Log.i(TAG, "Available video sizes for camera " + this.cameraId + ":");
                 for (Size size : videoSizes) {
-                    Log.d(TAG, "  " + size.getWidth() + "x" + size.getHeight());
+                    Log.i(TAG, "  " + size.getWidth() + "x" + size.getHeight());
                 }
 
                 // Use pending video settings if available, otherwise default to 1080p
@@ -1223,26 +1191,56 @@ public class CameraNeo extends LifecycleService {
                 if (pendingVideoSettings != null && pendingVideoSettings.isValid()) {
                     targetVideoWidth = pendingVideoSettings.width;
                     targetVideoHeight = pendingVideoSettings.height;
-                    Log.d(TAG, "Using requested video settings: " + pendingVideoSettings);
+                    Log.i(TAG, "Using requested video settings: " + pendingVideoSettings);
                 } else {
                     targetVideoWidth = 1920;
                     targetVideoHeight = 1080;
-                    Log.d(TAG, "Using default video settings: 1920x1080@30fps");
+                    Log.i(TAG, "Using default video settings: 1920x1080@30fps");
                 }
+                Log.i(TAG, "Requesting video resolution: " + targetVideoWidth + "x" + targetVideoHeight);
                 videoSize = chooseOptimalSize(videoSizes, targetVideoWidth, targetVideoHeight);
-                Log.d(TAG, "Selected video size: " + videoSize.getWidth() + "x" + videoSize.getHeight());
+                Log.i(TAG, "Selected video size: " + videoSize.getWidth() + "x" + videoSize.getHeight());
 
                 // Initialize MediaRecorder only for single video mode
                 // In buffer mode, CircularVideoBufferInternal handles its own MediaRecorders
                 if (currentMode != RecordingMode.BUFFER) {
                     setupMediaRecorder(currentVideoPath);
                 }
-            }
+            } else {
+                // For photos, find the closest available JPEG size to our target
+                Size[] jpegSizes = map.getOutputSizes(ImageFormat.JPEG);
+                if (jpegSizes == null || jpegSizes.length == 0) {
+                    notifyPhotoError("Camera doesn't support JPEG format");
+                    stopSelf();
+                    return;
+                }
 
-            // Setup ImageReader for JPEG data
-            imageReader = ImageReader.newInstance(
-                    jpegSize.getWidth(), jpegSize.getHeight(),
-                    ImageFormat.JPEG, 2);
+                int desiredW = TARGET_WIDTH;
+                int desiredH = TARGET_HEIGHT;
+                if (pendingRequestedSize != null) {
+                    switch (pendingRequestedSize) {
+                        case "small":
+                            desiredW = TARGET_WIDTH_SMALL;
+                            desiredH = TARGET_HEIGHT_SMALL;
+                            break;
+                        case "large":
+                            desiredW = TARGET_WIDTH_LARGE;
+                            desiredH = TARGET_HEIGHT_LARGE;
+                            break;
+                        case "medium":
+                        default:
+                            desiredW = TARGET_WIDTH;
+                            desiredH = TARGET_HEIGHT;
+                            break;
+                    }
+                }
+                jpegSize = chooseOptimalSize(jpegSizes, desiredW, desiredH);
+                Log.d(TAG, "Selected JPEG size: " + jpegSize.getWidth() + "x" + jpegSize.getHeight());
+
+                // Setup ImageReader for JPEG data
+                imageReader = ImageReader.newInstance(
+                        jpegSize.getWidth(), jpegSize.getHeight(),
+                        ImageFormat.JPEG, 2);
 
             imageReader.setOnImageAvailableListener(reader -> {
                 // Only process images when we're actually shooting, not during precapture metering
@@ -1312,6 +1310,7 @@ public class CameraNeo extends LifecycleService {
                     }
                 }
             }, backgroundHandler);
+            }
 
             // Open the camera
             if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
@@ -1383,12 +1382,13 @@ public class CameraNeo extends LifecycleService {
 
             // Set video encoding parameters
             // Use higher bitrate for better reliability and to prevent encoder issues
-            int bitRate = (videoSize.getWidth() >= 1920) ? 8000000 : 5000000; // 8Mbps for 1080p, 5Mbps for 720p
+            int bitRate = (videoSize.getWidth() >= 1920) ? 16000000 : 8000000; // 8Mbps for 1080p, 5Mbps for 720p
             mediaRecorder.setVideoEncodingBitRate(bitRate);
             
             // Use fps from settings if available
             int frameRate = (pendingVideoSettings != null) ? pendingVideoSettings.fps : 30;
             mediaRecorder.setVideoFrameRate(frameRate);
+            Log.i(TAG, "Setting video resolution: " + videoSize.getWidth() + "x" + videoSize.getHeight());
             mediaRecorder.setVideoSize(videoSize.getWidth(), videoSize.getHeight());
             mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
             
@@ -1630,8 +1630,9 @@ public class CameraNeo extends LifecycleService {
             previewBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, userExposureCompensation);
 
             // Use center-weighted metering for better subject exposure
+            Size sizeForMetering = forVideo ? videoSize : jpegSize;
             previewBuilder.set(CaptureRequest.CONTROL_AE_REGIONS, new MeteringRectangle[]{
-                new MeteringRectangle(0, 0, jpegSize.getWidth(), jpegSize.getHeight(), MeteringRectangle.METERING_WEIGHT_MAX)
+                new MeteringRectangle(0, 0, sizeForMetering.getWidth(), sizeForMetering.getHeight(), MeteringRectangle.METERING_WEIGHT_MAX)
             });
 
             // Enable autofocus with center-weighted focus region for better subject focus
@@ -1639,13 +1640,13 @@ public class CameraNeo extends LifecycleService {
                 previewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
 
                 // Add center-weighted AF region for better subject focus
-                int centerX = jpegSize.getWidth() / 2;
-                int centerY = jpegSize.getHeight() / 2;
-                int regionSize = Math.min(jpegSize.getWidth(), jpegSize.getHeight()) / 3; // 1/3 of image size
+                int centerX = sizeForMetering.getWidth() / 2;
+                int centerY = sizeForMetering.getHeight() / 2;
+                int regionSize = Math.min(sizeForMetering.getWidth(), sizeForMetering.getHeight()) / 3; // 1/3 of image size
                 int left = Math.max(0, centerX - regionSize / 2);
                 int top = Math.max(0, centerY - regionSize / 2);
-                int right = Math.min(jpegSize.getWidth() - 1, centerX + regionSize / 2);
-                int bottom = Math.min(jpegSize.getHeight() - 1, centerY + regionSize / 2);
+                int right = Math.min(sizeForMetering.getWidth() - 1, centerX + regionSize / 2);
+                int bottom = Math.min(sizeForMetering.getHeight() - 1, centerY + regionSize / 2);
 
                 previewBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, new MeteringRectangle[]{
                     new MeteringRectangle(left, top, right - left, bottom - top, MeteringRectangle.METERING_WEIGHT_MAX)
@@ -1852,13 +1853,14 @@ public class CameraNeo extends LifecycleService {
         // First, try to find an exact match
         for (Size option : choices) {
             if (option.getWidth() == desiredWidth && option.getHeight() == desiredHeight) {
-                Log.d(TAG, "Found exact size match: " + option.getWidth() + "x" + option.getHeight());
+                Log.i(TAG, "Found exact size match: " + option.getWidth() + "x" + option.getHeight());
                 return option;
             }
         }
 
         // No exact match found, find the size with smallest total dimensional difference
-        Log.d(TAG, "No exact match found, finding closest size to " + desiredWidth + "x" + desiredHeight);
+        Log.i(TAG, "No exact match found for " + desiredWidth + "x" + desiredHeight + ", finding closest size");
+        Log.i(TAG, "Available size options (" + choices.length + " total):");
 
         Size bestSize = choices[0];
         int smallestDifference = Integer.MAX_VALUE;
@@ -1868,14 +1870,18 @@ public class CameraNeo extends LifecycleService {
             int heightDiff = Math.abs(option.getHeight() - desiredHeight);
             int totalDifference = widthDiff + heightDiff;
 
+            // Log each candidate with its difference
+            Log.i(TAG, "  " + option.getWidth() + "x" + option.getHeight() + 
+                  " (diff: " + totalDifference + " = width+" + widthDiff + " height+" + heightDiff + ")");
+
             if (totalDifference < smallestDifference) {
                 smallestDifference = totalDifference;
                 bestSize = option;
             }
         }
 
-        Log.d(TAG, "Selected optimal size: " + bestSize.getWidth() + "x" + bestSize.getHeight() +
-              " (total difference: " + smallestDifference + ")");
+        Log.i(TAG, "Selected optimal size: " + bestSize.getWidth() + "x" + bestSize.getHeight() +
+              " (total difference: " + smallestDifference + " from requested " + desiredWidth + "x" + desiredHeight + ")");
 
         return bestSize;
     }

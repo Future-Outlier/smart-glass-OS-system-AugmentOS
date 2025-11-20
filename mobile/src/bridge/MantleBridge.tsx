@@ -337,6 +337,8 @@ export class MantleBridge {
   }
 
   async updateButtonVideoSettings(width: number, height: number, fps: number) {
+    console.log("updateButtonVideoSettings", width, height, fps)
+    console.log("status.glasses_info?.model_name", status.glasses_info?.model_name)
     return await CoreModule.updateSettings({
       button_video_width: width,
       button_video_height: height,

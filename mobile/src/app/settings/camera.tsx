@@ -14,20 +14,20 @@ import {useAppTheme} from "@/utils/useAppTheme"
 import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 type PhotoSize = "small" | "medium" | "large"
-type VideoResolution = "720p" | "1080p" | "1440p" | "4K"
+type VideoResolution = "720p" | "1080p" // | "1440p" | "4K"
 type MaxRecordingTime = "3m" | "5m" | "10m" | "15m" | "20m"
 
 const PHOTO_SIZE_LABELS: Record<PhotoSize, string> = {
-  small: "Small (800×600)",
-  medium: "Medium (1440×1080)",
-  large: "Large (3200×2400)",
+  small: "Low (960×720)",
+  medium: "Medium (1440×1088)",
+  large: "High (3264×2448)",
 }
 
 const VIDEO_RESOLUTION_LABELS: Record<VideoResolution, string> = {
   "720p": "720p (1280×720)",
   "1080p": "1080p (1920×1080)",
-  "1440p": "1440p (2560×1920)",
-  "4K": "4K (3840×2160)",
+  // "1440p": "1440p (2560×1920)",
+  // "4K": "4K (3840×2160)",
 }
 
 const MAX_RECORDING_TIME_LABELS: Record<MaxRecordingTime, string> = {
@@ -127,7 +127,7 @@ export default function CameraSettingsScreen() {
       <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
         <Header leftIcon="chevron-left" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
         <View style={themed($emptyStateContainer)}>
-          <Text style={themed($emptyStateText)}>Camera settings are not available for this device</Text>
+          <Text style={themed($emptyStateText)}>Camera settings are not available for this device.</Text>
         </View>
       </Screen>
     )
@@ -141,7 +141,7 @@ export default function CameraSettingsScreen() {
         contentInsetAdjustmentBehavior="automatic">
         <View style={themed($settingsGroup)}>
           <Text style={themed($settingLabel)}>Action Button Photo Settings</Text>
-          <Text style={themed($settingSubtitle)}>Choose the resolution for photos taken with the action button</Text>
+          <Text style={themed($settingSubtitle)}>Choose the resolution for photos taken with the action button.</Text>
 
           {Object.entries(PHOTO_SIZE_LABELS).map(([value, label], index, arr) => {
             const isFirst = index === 0
@@ -170,7 +170,9 @@ export default function CameraSettingsScreen() {
 
         <View style={themed($settingsGroup)}>
           <Text style={themed($settingLabel)}>Action Button Video Settings</Text>
-          <Text style={themed($settingSubtitle)}>Choose the resolution for videos recorded with the camera button</Text>
+          <Text style={themed($settingSubtitle)}>
+            Choose the resolution for videos recorded with the action button.
+          </Text>
 
           {Object.entries(VIDEO_RESOLUTION_LABELS).map(([value, label], index, arr) => {
             const isFirst = index === 0

@@ -88,11 +88,13 @@ export function PhotoImage({photo, style, showPlaceholder = true}: PhotoImagePro
   }
 
   const handleError = (error: any) => {
+    // Extract error message safely without passing complex circular objects
+    const errorMessage = error?.nativeEvent?.error || error?.message || String(error)
     console.error("[PhotoImage] Error loading image:", {
       name: photo.name,
       url: imageUrl,
       isVideo: photo.is_video,
-      error: error?.nativeEvent?.error || error,
+      error: errorMessage,
     })
     setHasError(true)
     setIsLoading(false)

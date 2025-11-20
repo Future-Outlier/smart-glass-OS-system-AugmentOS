@@ -35,8 +35,8 @@ public class AsgSettings {
      * @return VideoSettings with the saved resolution and fps
      */
     public VideoSettings getButtonVideoSettings() {
-        int width = prefs.getInt(KEY_BUTTON_VIDEO_WIDTH, 1280);
-        int height = prefs.getInt(KEY_BUTTON_VIDEO_HEIGHT, 720);
+        int width = prefs.getInt(KEY_BUTTON_VIDEO_WIDTH, 1920);
+        int height = prefs.getInt(KEY_BUTTON_VIDEO_HEIGHT, 1080);
         int fps = prefs.getInt(KEY_BUTTON_VIDEO_FPS, 30);
         VideoSettings settings = new VideoSettings(width, height, fps);
         Log.d(TAG, "Retrieved button video settings: " + settings);
@@ -106,7 +106,7 @@ public class AsgSettings {
      * @return Photo size ("small", "medium", or "large")
      */
     public String getButtonPhotoSize() {
-        String size = prefs.getString(KEY_BUTTON_PHOTO_SIZE, "medium");
+        String size = prefs.getString(KEY_BUTTON_PHOTO_SIZE, "large");
         Log.d(TAG, "Retrieved button photo size: " + size);
         return size;
     }

@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.mentra.core.services.ForegroundService
 import com.mentra.core.services.PhoneMic
@@ -710,10 +711,14 @@ class CoreManager {
     }
 
     fun updateButtonVideoSettings(width: Int, height: Int, fps: Int) {
+        Log.d("CoreManager", "🎥 [SETTINGS_SYNC] updateButtonVideoSettings called: ${width}x${height}@${fps}fps")
+        Log.d("CoreManager", "📱 [SETTINGS_SYNC] Connected device model: $defaultWearable")
         buttonVideoWidth = width
         buttonVideoHeight = height
         buttonVideoFps = fps
+        Log.d("CoreManager", "📡 [SETTINGS_SYNC] Sending button video settings to glasses via SGC")
         sgc?.sendButtonVideoRecordingSettings()
+        Log.d("CoreManager", "✅ [SETTINGS_SYNC] Button video settings updated to: ${width}x${height}@${fps}fps")
         handle_request_status()
     }
 
@@ -1475,22 +1480,30 @@ class CoreManager {
             }
         }
 
-        (settings["button_video_fps"] as? Int)?.let { newFps ->
-            if (buttonVideoFps != newFps) {
-                updateButtonVideoSettings(buttonVideoWidth, buttonVideoHeight, newFps)
-            }
+        // Button video settings - handle both nested object and flat keys
+        // First check for nested object structure (from AsyncStorage)
+        val videoSettingsObj = settings["button_video_settings"] as? Map<*, *>
+        val newWidth = if (videoSettingsObj != null) {
+            (videoSettingsObj["width"] as? Number)?.toInt() ?: buttonVideoWidth
+        } else {
+            // Fallback to flat key structure (backwards compatibility)
+            (settings["button_video_width"] as? Number)?.toInt() ?: buttonVideoWidth
         }
-
-        (settings["button_video_width"] as? Int)?.let { newWidth ->
-            if (buttonVideoWidth != newWidth) {
-                updateButtonVideoSettings(newWidth, buttonVideoHeight, buttonVideoFps)
-            }
+        val newHeight = if (videoSettingsObj != null) {
+            (videoSettingsObj["height"] as? Number)?.toInt() ?: buttonVideoHeight
+        } else {
+            (settings["button_video_height"] as? Number)?.toInt() ?: buttonVideoHeight
         }
-
-        (settings["button_video_height"] as? Int)?.let { newHeight ->
-            if (buttonVideoHeight != newHeight) {
-                updateButtonVideoSettings(buttonVideoWidth, newHeight, buttonVideoFps)
-            }
+        val newFps = if (videoSettingsObj != null) {
+            (videoSettingsObj["fps"] as? Number)?.toInt() ?: buttonVideoFps
+        } else {
+            (settings["button_video_fps"] as? Number)?.toInt() ?: buttonVideoFps
+        }
+        
+        // Only update if any value actually changed
+        if (newWidth != buttonVideoWidth || newHeight != buttonVideoHeight || newFps != buttonVideoFps) {
+            Bridge.log("MAN: Updating button video settings: $newWidth x $newHeight @ ${newFps}fps (was: $buttonVideoWidth x $buttonVideoHeight @ ${buttonVideoFps}fps)")
+            updateButtonVideoSettings(newWidth, newHeight, newFps)
         }
 
         (settings["button_photo_size"] as? String)?.let { newPhotoSize ->

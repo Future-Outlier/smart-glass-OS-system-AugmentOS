@@ -561,8 +561,8 @@ public class MediaCaptureService {
                             int randomSuffix = (int)(Math.random() * 1000);
                             String videoFilePath = fileManager.getDefaultMediaDirectory() + File.separator + "VID_" + timeStamp + "_" + randomSuffix + "_" + requestId + ".mp4";
 
-        // Start video recording with the provided requestId
-        startVideoRecording(videoFilePath, requestId, enableLed);
+        // Start video recording with the provided requestId and settings (or null for defaults)
+        startVideoRecording(videoFilePath, requestId, settings, enableLed);
     }
 
     /**

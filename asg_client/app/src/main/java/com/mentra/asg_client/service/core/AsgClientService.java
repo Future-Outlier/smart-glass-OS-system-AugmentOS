@@ -5,12 +5,18 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.MediaRecorder;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.util.Size;
 
 import com.mentra.asg_client.SysControl;
 import com.mentra.asg_client.io.bluetooth.interfaces.BluetoothStateListener;
@@ -216,6 +222,10 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             // Clean up orphaned BLE transfer files from previous sessions
             Log.d(TAG, "🗑️ Cleaning up orphaned BLE transfer files");
             cleanupOrphanedBleTransfers();
+
+            // Log all available video resolutions
+            Log.d(TAG, "📹 Querying available video resolutions");
+            logAvailableVideoResolutions();
 
             Log.i(TAG, "✅ AsgClientServiceV2 onCreate() completed successfully");
         } catch (Exception e) {
@@ -1292,6 +1302,58 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             }
         } catch (Exception e) {
             Log.e(TAG, "💥 Error executing WiFi command", e);
+        }
+    }
+
+    /**
+     * Log all available video resolutions from the camera
+     */
+    private void logAvailableVideoResolutions() {
+        Log.i(TAG, "📹 ========================================");
+        Log.i(TAG, "📹 AVAILABLE VIDEO RESOLUTIONS");
+        Log.i(TAG, "📹 ========================================");
+        
+        try {
+            CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+            if (cameraManager == null) {
+                Log.w(TAG, "📹 Camera manager not available");
+                return;
+            }
+
+            String[] cameraIds = cameraManager.getCameraIdList();
+            if (cameraIds == null || cameraIds.length == 0) {
+                Log.w(TAG, "📹 No cameras found");
+                return;
+            }
+
+            for (String cameraId : cameraIds) {
+                try {
+                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+                    StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                    
+                    if (map == null) {
+                        Log.w(TAG, "📹 Camera " + cameraId + ": No stream configuration map");
+                        continue;
+                    }
+
+                    Size[] videoSizes = map.getOutputSizes(MediaRecorder.class);
+                    if (videoSizes == null || videoSizes.length == 0) {
+                        Log.w(TAG, "📹 Camera " + cameraId + ": No video sizes available");
+                        continue;
+                    }
+
+                    Log.i(TAG, "📹 Camera " + cameraId + " supports " + videoSizes.length + " video resolutions:");
+                    for (Size size : videoSizes) {
+                        Log.i(TAG, "📹   - " + size.getWidth() + "x" + size.getHeight());
+                    }
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "📹 Error accessing camera " + cameraId, e);
+                }
+            }
+            
+            Log.i(TAG, "📹 ========================================");
+        } catch (Exception e) {
+            Log.e(TAG, "📹 Error querying video resolutions", e);
         }
     }
 
