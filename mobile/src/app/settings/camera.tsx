@@ -1,15 +1,16 @@
 import {View, ScrollView, TouchableOpacity, Platform} from "react-native"
-import {Icon, Text} from "@/components/ignite"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import bridge from "@/bridge/MantleBridge"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {spacing, ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle} from "react-native"
-import {translate} from "@/i18n"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import ToggleSetting from "@/components/settings/ToggleSetting"
+
+import bridge from "@/bridge/MantleBridge"
+import {Icon, Text} from "@/components/ignite"
 import {Screen, Header} from "@/components/ignite"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {spacing, ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
+
 import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 type PhotoSize = "small" | "medium" | "large"
@@ -39,14 +40,14 @@ const MAX_RECORDING_TIME_LABELS: Record<MaxRecordingTime, string> = {
 
 export default function CameraSettingsScreen() {
   const {theme, themed} = useAppTheme()
-  const {status} = useCoreStatus()
   const {goBack} = useNavigationHistory()
-  const [devMode, _setDevMode] = useSetting(SETTINGS_KEYS.dev_mode)
-  const [photoSize, setPhotoSize] = useSetting(SETTINGS_KEYS.button_photo_size)
-  const [ledEnabled, setLedEnabled] = useSetting(SETTINGS_KEYS.button_camera_led)
-  const [videoSettings, setVideoSettings] = useSetting(SETTINGS_KEYS.button_video_settings)
-  const [maxRecordingTime, setMaxRecordingTime] = useSetting(SETTINGS_KEYS.button_max_recording_time)
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [_devMode, _setDevMode] = useSetting(SETTINGS.dev_mode.key)
+  const [photoSize, setPhotoSize] = useSetting(SETTINGS.button_photo_size.key)
+  const [_ledEnabled, setLedEnabled] = useSetting(SETTINGS.button_camera_led.key)
+  const [videoSettings, setVideoSettings] = useSetting(SETTINGS.button_video_settings.key)
+  const [maxRecordingTime, setMaxRecordingTime] = useSetting(SETTINGS.button_max_recording_time.key)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   // Derive video resolution from settings
   const videoResolution: VideoResolution = (() => {
@@ -58,7 +59,7 @@ export default function CameraSettingsScreen() {
   })()
 
   const handlePhotoSizeChange = async (size: PhotoSize) => {
-    if (!status.glasses_info?.model_name) {
+    if (!glassesConnected) {
       console.log("Cannot change photo size - glasses not connected")
       return
     }
@@ -72,9 +73,7 @@ export default function CameraSettingsScreen() {
   }
 
   const handleVideoResolutionChange = async (resolution: VideoResolution) => {
-    console.log("handleVideoResolutionChange", resolution)
-    console.log("status.glasses_info?.model_name", status.glasses_info?.model_name)
-    if (!status.glasses_info?.model_name) {
+    if (!glassesConnected) {
       console.log("Cannot change video resolution - glasses not connected")
       return
     }
@@ -92,8 +91,8 @@ export default function CameraSettingsScreen() {
     }
   }
 
-  const handleLedToggle = async (enabled: boolean) => {
-    if (!status.glasses_info?.model_name) {
+  const _handleLedToggle = async (enabled: boolean) => {
+    if (!glassesConnected) {
       console.log("Cannot toggle LED - glasses not connected")
       return
     }
@@ -106,7 +105,7 @@ export default function CameraSettingsScreen() {
   }
 
   const handleMaxRecordingTimeChange = async (time: MaxRecordingTime) => {
-    if (!status.glasses_info?.model_name) {
+    if (!glassesConnected) {
       console.log("Cannot change max recording time - glasses not connected")
       return
     }
@@ -231,17 +230,6 @@ export default function CameraSettingsScreen() {
                 </TouchableOpacity>
               )
             })}
-          </View>
-        )}
-
-        {devMode && (
-          <View style={{marginVertical: theme.spacing.s3}}>
-            <ToggleSetting
-              label="Recording LED"
-              subtitle="Shows when camera is active"
-              value={ledEnabled}
-              onValueChange={handleLedToggle}
-            />
           </View>
         )}
       </ScrollView>

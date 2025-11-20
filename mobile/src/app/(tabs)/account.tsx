@@ -1,3 +1,8 @@
+import {useRef} from "react"
+import {Platform, TextStyle, View, ViewStyle} from "react-native"
+import {ScrollView} from "react-native-gesture-handler"
+import Toast from "react-native-toast-message"
+
 import {ProfileCard} from "@/components/account/ProfileCard"
 import {Header, Icon, Screen, Text} from "@/components/ignite"
 import {Group} from "@/components/ui/Group"
@@ -5,27 +10,20 @@ import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {useRef} from "react"
-import {Platform, TextStyle, View, ViewStyle} from "react-native"
-import {ScrollView} from "react-native-gesture-handler"
-import Toast from "react-native-toast-message"
-import Constants from "expo-constants"
 
 export default function AccountPage() {
   const {theme, themed} = useAppTheme()
   const {push} = useNavigationHistory()
-  const [devMode, setDevMode] = useSetting(SETTINGS_KEYS.dev_mode)
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   const pressCount = useRef(0)
   const lastPressTime = useRef(0)
   const pressTimeout = useRef<number | null>(null)
-
-  console.log("extra", Constants.expoConfig?.extra)
 
   const handleQuickPress = () => {
     const currentTime = Date.now()
@@ -69,6 +67,37 @@ export default function AccountPage() {
     pressTimeout.current = setTimeout(() => {
       pressCount.current = 0
     }, maxTimeDiff)
+  }
+
+  const getVersionInfo = () => {
+    if (devMode) {
+      return (
+        <View style={themed($versionContainer)}>
+          <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
+            <Text
+              style={themed($buildInfo)}
+              text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
+            />
+            <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_BRANCH}`} />
+          </View>
+          <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
+            <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_TIME}`} />
+            <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_COMMIT}`} />
+          </View>
+        </View>
+      )
+    }
+
+    return (
+      <View style={themed($versionContainer)}>
+        <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
+          <Text
+            style={themed($buildInfo)}
+            text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
+          />
+        </View>
+      </View>
+    )
   }
 
   return (
@@ -140,20 +169,8 @@ export default function AccountPage() {
           </Group>
         </View>
 
-        <View style={themed($versionContainer)}>
-          <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
-            <Text
-              style={themed($buildInfo)}
-              text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
-            />
-            <Text style={themed($buildInfo)} text={`branch: ${Constants.expoConfig?.extra?.BUILD_BRANCH}`} />
-          </View>
-          {/* build time, commit hash (copy to clipboard), branch name, build number */}
-          <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
-            <Text style={themed($buildInfo)} text={`time: ${Constants.expoConfig?.extra?.BUILD_TIME}`} />
-            <Text style={themed($buildInfo)} text={`commit: ${Constants.expoConfig?.extra?.BUILD_COMMIT}`} />
-          </View>
-        </View>
+        {getVersionInfo()}
+
         <Spacer height={theme.spacing.s12} />
         <Spacer height={theme.spacing.s12} />
       </ScrollView>

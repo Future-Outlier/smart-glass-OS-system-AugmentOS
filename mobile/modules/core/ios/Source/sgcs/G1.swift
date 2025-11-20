@@ -144,6 +144,8 @@ class G1: NSObject, SGCManager {
 
     var isHotspotEnabled: Bool = false
 
+    var micEnabled: Bool = false
+
     var hotspotSsid: String = ""
 
     var hotspotPassword: String = ""
@@ -194,7 +196,7 @@ class G1: NSObject, SGCManager {
 
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
 
-    let type = DeviceTypes.G1
+    var type = DeviceTypes.G1
     let hasMic = true
 
     // TODO: we probably don't need this
@@ -594,7 +596,7 @@ class G1: NSObject, SGCManager {
         RN_stopScan()
 
         // get battery status:
-        // getBatteryStatus()
+        getBatteryStatus()
         return true
     }
 
@@ -1448,6 +1450,13 @@ extension G1 {
         if ready {
             queueChunks([heartbeatArray])
         }
+
+        // Periodically request battery status
+        if leftBatteryLevel == -1 || rightBatteryLevel == -1 || heartbeatCounter % 10 == 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.getBatteryStatus()
+            }
+        }
         //    if let txChar = findCharacteristic(uuid: UART_TX_CHAR_UUID, peripheral: peripheral) {
         //      let hexString = heartbeatData.map { String(format: "%02X", $0) }.joined()
         //      peripheral.writeValue(heartbeatData, for: txChar, type: .withoutResponse)
@@ -1726,6 +1735,7 @@ extension G1 {
 
     func setMicEnabled(_ enabled: Bool) {
         Bridge.log("G1: setMicEnabled() \(enabled)")
+        micEnabled = enabled
         var micOnData = Data()
         micOnData.append(Commands.BLE_REQ_MIC_ON.rawValue)
         if enabled {
@@ -1741,6 +1751,10 @@ extension G1 {
         //    if let txChar = findCharacteristic(uuid: UART_TX_CHAR_UUID, peripheral: peripheral) {
         //      peripheral.writeValue(micOnData, for: txChar, type: .withResponse)
         //    }
+    }
+
+    func sortMicRanking(list: [String]) -> [String] {
+        return list
     }
 
     // MARK: - Enhanced BMP Display Methods

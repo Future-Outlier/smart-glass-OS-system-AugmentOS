@@ -1,23 +1,24 @@
-import {Text, Icon} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
 import {View, TextStyle, ViewStyle} from "react-native"
+
+import {Text, Icon} from "@/components/ignite"
 import {Group} from "@/components/ui/Group"
-import {translate} from "@/i18n"
 import {StatusCard} from "@/components/ui/RouteButton"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import {translate} from "@/i18n"
+import {useGlassesStore} from "@/stores/glasses"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface BatteryStatusProps {
   compact?: boolean
 }
 
 export function BatteryStatus({compact}: BatteryStatusProps) {
-  const {status} = useCoreStatus()
   const {theme, themed} = useAppTheme()
-  const glassesBatteryLevel = status.glasses_info?.battery_level
-  const caseBatteryLevel = status.glasses_info?.case_battery_level
-  const caseCharging = status.glasses_info?.case_charging
-  const caseRemoved = status.glasses_info?.case_removed
+
+  const caseBatteryLevel = useGlassesStore(state => state.caseBatteryLevel)
+  const caseCharging = useGlassesStore(state => state.caseCharging)
+  const caseRemoved = useGlassesStore(state => state.caseRemoved)
+  const glassesBatteryLevel = useGlassesStore(state => state.batteryLevel)
 
   if (glassesBatteryLevel === undefined || glassesBatteryLevel === -1) {
     return null
@@ -128,7 +129,8 @@ const $compactBatteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $batteryValue: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  width: spacing.s16,
+  gap: spacing.s1,
+  // width: spacing.s16,
   // marginRight: spacing.s1,
-  justifyContent: "space-between",
+  // justifyContent: "space-between",
 })

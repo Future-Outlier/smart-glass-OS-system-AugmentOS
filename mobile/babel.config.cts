@@ -14,9 +14,11 @@ module.exports = function (api: any) {
             "@plugins": "./plugins",
             "@assets": "./assets",
             "@cloud": "../cloud/packages/types",
+            "core": "./modules/core/src",
           },
           extensions: [".ios.js", ".android.js", ".js", ".ts", ".tsx", ".json"],
         },
+        "transform-inline-environment-variables"
       ],
     ],
   }

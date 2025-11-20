@@ -1,14 +1,8 @@
 // GlassesPairingGuides.tsx
 
-import {useAppTheme} from "@/utils/useAppTheme"
+import {MaterialCommunityIcons} from "@expo/vector-icons"
 import {useEffect} from "react"
 import {View, Image, TouchableOpacity, Linking, ImageStyle, ViewStyle, TextStyle} from "react-native"
-import {Button, Text} from "@/components/ignite"
-import {translate} from "@/i18n"
-import {showAlert} from "@/utils/AlertUtils"
-import {Spacer} from "@/components/ui/Spacer"
-import {GlassesFeatureList} from "@/components/glasses/GlassesFeatureList"
-import {MaterialCommunityIcons} from "@expo/vector-icons"
 import Animated, {
   Easing,
   runOnJS,
@@ -17,8 +11,16 @@ import Animated, {
   withDelay,
   withTiming,
 } from "react-native-reanimated"
+
+import {GlassesFeatureList} from "@/components/glasses/GlassesFeatureList"
+import {Button, Text} from "@/components/ignite"
+import GlassesDisplayMirror from "@/components/mirror/GlassesDisplayMirror"
+import {Spacer} from "@/components/ui/Spacer"
+import {translate} from "@/i18n"
 import {ThemedStyle} from "@/theme"
-import GlassesDisplayMirror from "../mirror/GlassesDisplayMirror"
+import {showAlert} from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
+
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export function MentraNextGlassesPairingGuide() {
@@ -230,11 +232,11 @@ const $shippingText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $noteSection: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   width: "100%",
-  borderRadius: spacing.s3,
+  borderRadius: spacing.s4,
   marginTop: spacing.s4,
   alignItems: "center",
   backgroundColor: colors.primary_foreground,
-  padding: spacing.s4,
+  padding: spacing.s6,
 })
 
 const $animationContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
@@ -403,19 +405,10 @@ export function SimulatedPairingGuide() {
         style={themed($guideDescription)}
       />
 
-      {/* Note about upgrading */}
-      {/* <View style={themed($noteSection)}>
-        <MaterialCommunityIcons name="information" size={20} style={{marginRight: 8, color: theme.colors.text}} />
-        <Text
-          text="Ready to upgrade? You can connect real smart glasses later from the Glasses menu."
-          style={themed($noteText)}
-        />
-      </View> */}
-
       <View style={themed($noteSection)}>
         <View style={{flex: 1, flexDirection: "row", gap: theme.spacing.s4, marginBottom: theme.spacing.s4}}>
           <Image
-            source={require("../../../assets/glasses/mentra_live/mentra_live.png")}
+            source={require("@assets/glasses/mentra_live/mentra_live.png")}
             style={[themed($guideImage), {width: 80, height: 80}]}
             onError={() => console.log("Image failed to load")}
           />
@@ -426,6 +419,9 @@ export function SimulatedPairingGuide() {
         </View>
 
         <Button
+          preset="alternate"
+          flexContainer
+          // compact
           tx="common:learnMore"
           onPress={() => {
             showAlert("Open External Website", "This will open mentraglass.com in your web browser. Continue?", [

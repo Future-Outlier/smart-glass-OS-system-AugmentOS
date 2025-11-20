@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import {SETTINGS_KEYS} from "@/stores/settings"
+import {SETTINGS} from "@/stores/settings"
 import {storage} from "@/utils/storage"
 
 export interface UserDataExport {
@@ -157,9 +157,9 @@ export class DataExportService {
 
     try {
       // Collect all known settings
-      for (const [keyName, keyValue] of Object.entries(SETTINGS_KEYS)) {
+      for (const [keyName, keyValue] of Object.entries(SETTINGS)) {
         try {
-          const value = await AsyncStorage.getItem(keyValue)
+          const value = await AsyncStorage.getItem(keyValue.key)
           if (value !== null) {
             try {
               settings[keyName] = JSON.parse(value)

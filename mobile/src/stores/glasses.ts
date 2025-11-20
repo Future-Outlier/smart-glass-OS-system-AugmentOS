@@ -1,19 +1,32 @@
 import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
 
-interface GlassesInfo {
+export interface GlassesInfo {
+  // state:
   connected: boolean
+  // device info
   modelName: string
+  androidVersion: string
   fwVersion: string
-  usesWifi: boolean
+  buildNumber: string
+  otaVersionUrl: string
+  appVersion: string
+  bluetoothName: string
+  serialNumber: string
+  style: string
+  color: string
+  // wifi info
   wifiConnected: boolean
   wifiSsid: string
+  wifiLocalIp: string
+  // battery info
   batteryLevel: number
   charging: boolean
   caseBatteryLevel: number
   caseCharging: boolean
   caseOpen: boolean
   caseRemoved: boolean
+  // hotspot info
   hotspotEnabled: boolean
   hotspotSsid: string
   hotspotPassword: string
@@ -30,18 +43,31 @@ interface GlassesState extends GlassesInfo {
 }
 
 const initialState: GlassesInfo = {
+  // state:
   connected: false,
+  // device info
   modelName: "",
+  androidVersion: "",
   fwVersion: "",
-  usesWifi: false,
+  buildNumber: "",
+  otaVersionUrl: "",
+  appVersion: "",
+  bluetoothName: "",
+  serialNumber: "",
+  style: "",
+  color: "",
+  // wifi info
   wifiConnected: false,
   wifiSsid: "",
+  wifiLocalIp: "",
+  // battery info
   batteryLevel: -1,
   charging: false,
   caseBatteryLevel: -1,
   caseCharging: false,
   caseOpen: false,
   caseRemoved: true,
+  // hotspot info
   hotspotEnabled: false,
   hotspotSsid: "",
   hotspotPassword: "",

@@ -1,23 +1,26 @@
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import CoreModule from "core"
+import {ActivityIndicator, View} from "react-native"
+
 import {Button, Icon} from "@/components/ignite"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
 import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import CoreModule from "core"
-import {ActivityIndicator, View} from "react-native"
+
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export const ConnectDeviceButton = () => {
   const {status} = useCoreStatus()
   const {theme} = useAppTheme()
   const {push} = useNavigationHistory()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const isGlassesConnected = Boolean(status.glasses_info?.model_name)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const glassesConnected = useGlassesStore(state => state.connected)
   const isSearching = status.core_info.is_searching
 
-  if (isGlassesConnected) {
+  if (glassesConnected) {
     return null
   }
 
@@ -90,7 +93,7 @@ export const ConnectDeviceButton = () => {
     )
   }
 
-  if (!isGlassesConnected) {
+  if (!glassesConnected) {
     return (
       <Button
         compact

@@ -2276,7 +2276,16 @@ public class MediaCaptureService {
                 
                 // BLE is available - send the ready message first (phone expects this for timing tracking)
                 sendBlePhotoReadyMsg(compressedPath, bleImgId, requestId, transferStartTime);
-                
+
+                // Add delay to ensure JSON packet completes transmission through MCU before file packets start
+                // This prevents packet interleaving at the BLE MTU boundary
+                try {
+                    Thread.sleep(200); // 200ms delay for JSON packet to fully transmit over BLE
+                    Log.d(TAG, "⏱️ Waited 200ms for JSON packet to complete BLE transmission");
+                } catch (InterruptedException e) {
+                    Log.w(TAG, "Delay interrupted", e);
+                }
+
                 // Then try to start the file transfer
                 transferStarted = mServiceCallback.sendFileViaBluetooth(compressedPath);
                 
@@ -2322,7 +2331,6 @@ public class MediaCaptureService {
             json.put("type", "ble_photo_ready");
             json.put("requestId", requestId);
             json.put("bleImgId", bleImgId);
-            json.put("filePath", filePath);
             json.put("compressionDurationMs", compressionDuration);  // Send duration, not timestamp
 
             // Send through bluetooth if available

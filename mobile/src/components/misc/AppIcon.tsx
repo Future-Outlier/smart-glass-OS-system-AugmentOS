@@ -1,11 +1,11 @@
 import {ClientAppletInterface, getMoreAppsApplet} from "@/stores/applets"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {Image} from "expo-image"
 import {SquircleView} from "expo-squircle-view"
 import {memo} from "react"
-import {ActivityIndicator, ImageStyle, Platform, TouchableOpacity, View, ViewStyle} from "react-native"
+import {ActivityIndicator, ImageStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import {Icon} from "@/components/ignite"
 
 interface AppIconProps {
@@ -16,7 +16,7 @@ interface AppIconProps {
 
 const AppIcon = ({app, onClick, style}: AppIconProps) => {
   const {themed, theme} = useAppTheme()
-  const [enableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
+  const [enableSquircles] = useSetting(SETTINGS.enable_squircles.key)
   const WrapperComponent = onClick ? TouchableOpacity : View
 
   return (
@@ -27,7 +27,7 @@ const AppIcon = ({app, onClick, style}: AppIconProps) => {
         style={[themed($container), style]}
         accessibilityLabel={onClick ? `Launch ${app.name}` : undefined}
         accessibilityRole={onClick ? "button" : undefined}>
-        {Platform.OS === "ios" && enableSquircles ? (
+        {enableSquircles ? (
           <SquircleView
             cornerSmoothing={100}
             preserveSmoothing={true}

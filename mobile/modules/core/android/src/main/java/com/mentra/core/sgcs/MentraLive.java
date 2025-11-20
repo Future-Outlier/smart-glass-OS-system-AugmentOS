@@ -1379,9 +1379,15 @@ public class MentraLive extends SGCManager {
 
     }
 
+    @Override
     public void setMicEnabled(boolean enabled) {
         Bridge.log("LIVE: setMicEnabled(" + enabled + ")");
         changeSmartGlassesMicrophoneState(enabled);
+    }
+
+    @Override
+    public List<String> sortMicRanking(List<String> list) {
+        return list;
     }
 
     /**
@@ -1725,6 +1731,14 @@ public class MentraLive extends SGCManager {
                 String hotspotGatewayIp = json.optString("hotspot_gateway_ip", "");
 
                 updateHotspotStatus(hotspotEnabled, hotspotSsid, hotspotPassword, hotspotGatewayIp);
+                break;
+
+            case "hotspot_error":
+                // Process hotspot error
+                String errorMessage = json.optString("error_message", "Unknown hotspot error");
+                long timestamp = json.optLong("timestamp", System.currentTimeMillis());
+
+                handleHotspotError(errorMessage, timestamp);
                 break;
 
             case "photo_response":
@@ -2456,6 +2470,16 @@ public class MentraLive extends SGCManager {
     }
 
     /**
+     * Handle hotspot error and notify React Native
+     */
+    private void handleHotspotError(String errorMessage, long timestamp) {
+        Bridge.log("LIVE: 🔥 ❌ Hotspot error: " + errorMessage);
+
+        // Send hotspot error event to React Native
+        Bridge.sendHotspotError(errorMessage, timestamp);
+    }
+
+    /**
      * Send battery status to connected phone via BLE
      */
     private void sendBatteryStatusOverBle(int level, boolean charging) {
@@ -2612,7 +2636,12 @@ public class MentraLive extends SGCManager {
             @Override
             public void run() {
                 Bridge.log("LIVE: 🎤 Sending micbeat - enabling custom audio TX");
-                sendEnableCustomAudioTxMessage(shouldUseGlassesMic);
+                
+                
+                // IMPORTANT NOTE: WE ARE DISABLING LC3 MIC UNTIL AFTER RELEASE
+                // DO NOT UNDO THIS HARD DISABLE UNTIL AFTER RELEASE
+                //sendEnableCustomAudioTxMessage(shouldUseGlassesMic);
+                sendEnableCustomAudioTxMessage(false);
                 micBeatCount++;
 
                 // Schedule next micbeat
@@ -2850,6 +2879,8 @@ public class MentraLive extends SGCManager {
 
         // Update the microphone state tracker
         isMicrophoneEnabled = enable;
+        
+        micEnabled = enable;
 
         // Post event for frontend notification
         // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));

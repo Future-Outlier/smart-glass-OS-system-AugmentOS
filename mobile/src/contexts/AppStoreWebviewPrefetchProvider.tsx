@@ -4,7 +4,7 @@ import {View} from "react-native"
 import {useAppTheme} from "@/utils/useAppTheme"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import restComms from "@/services/RestComms"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 
 const STORE_PACKAGE_NAME = "org.augmentos.store"
 
@@ -34,7 +34,7 @@ export const AppStoreWebviewPrefetchProvider: React.FC<{children: React.ReactNod
     setWebviewLoading(true)
 
     try {
-      const baseUrl = useSettingsStore.getState().getSetting(SETTINGS_KEYS.store_url)
+      const baseUrl = useSettingsStore.getState().getSetting(SETTINGS.store_url.key)
       const url = new URL(baseUrl)
       url.searchParams.set("theme", theme.isDark ? "dark" : "light")
 
@@ -65,7 +65,7 @@ export const AppStoreWebviewPrefetchProvider: React.FC<{children: React.ReactNod
     } catch (error) {
       console.error("AppStoreWebviewPrefetchProvider: Error during prefetch:", error)
       // fallback to base URL
-      const baseUrl = useSettingsStore.getState().getSetting(SETTINGS_KEYS.store_url)
+      const baseUrl = useSettingsStore.getState().getSetting(SETTINGS.store_url.key)
       const url = new URL(baseUrl)
       url.searchParams.set("theme", theme.isDark ? "dark" : "light")
       setAppStoreUrl(url.toString())

@@ -18,11 +18,13 @@ type RoomSession struct {
 	room             *lksdk.Room
 	publishTrack     *lkmedia.PCMLocalTrack // Deprecated: use tracks map
 	tracks           map[string]*lkmedia.PCMLocalTrack
+	publications     map[string]*lksdk.LocalTrackPublication // Track publications for unpublishing
 	audioFromLiveKit chan []byte
 	ctx              context.Context
 	cancel           context.CancelFunc
 	closeOnce        sync.Once
 	playbackCancel   context.CancelFunc
+	playbackDone     chan struct{} // Signals when playback actually stops
 	mu               sync.RWMutex
 
 	// Connectivity state (tracked for status RPC)
@@ -39,6 +41,7 @@ func NewRoomSession(userId string) *RoomSession {
 	return &RoomSession{
 		userId:           userId,
 		tracks:           make(map[string]*lkmedia.PCMLocalTrack),
+		publications:     make(map[string]*lksdk.LocalTrackPublication),
 		audioFromLiveKit: make(chan []byte, 200), // Increased buffer for bursty audio
 		ctx:              ctx,
 		cancel:           cancel,
@@ -77,14 +80,16 @@ func (s *RoomSession) getOrCreateTrack(trackName string) (*lkmedia.PCMLocalTrack
 	}
 
 	// Publish track to room with specified name
-	if _, err := s.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+	publication, err := s.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
 		Name: trackName,
-	}); err != nil {
+	})
+	if err != nil {
 		track.Close()
 		return nil, fmt.Errorf("failed to publish track: %w", err)
 	}
 
 	s.tracks[trackName] = track
+	s.publications[trackName] = publication
 	log.Printf("Published PCM track '%s' for user %s", trackName, s.userId)
 	return track, nil
 }
@@ -141,21 +146,86 @@ func (s *RoomSession) closeTrack(trackName string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	// First unpublish the track from LiveKit room
+	if publication, exists := s.publications[trackName]; exists {
+		if s.room != nil && s.room.LocalParticipant != nil {
+			s.room.LocalParticipant.UnpublishTrack(publication.SID())
+			log.Printf("Unpublished track '%s' (SID: %s) for user %s", trackName, publication.SID(), s.userId)
+		}
+		delete(s.publications, trackName)
+	}
+
+	// Then close the track
 	if track, exists := s.tracks[trackName]; exists {
 		track.Close()
 		delete(s.tracks, trackName)
-		log.Printf("Closed and unpublished track '%s' for user %s", trackName, s.userId)
+		log.Printf("Closed track '%s' for user %s", trackName, s.userId)
 	}
 }
 
-// stopPlayback cancels any ongoing audio playback (does not close tracks)
-func (s *RoomSession) stopPlayback() {
+// stopPlayback cancels any ongoing audio playback and unpublishes all tracks to immediately stop audio
+// Returns a channel that closes when the old playback has actually stopped
+func (s *RoomSession) stopPlayback() <-chan struct{} {
+	s.mu.Lock()
+
+	// Unpublish all tracks immediately to stop audio output
+	// This ensures the currently playing audio is cut off right away
+	if s.room != nil && s.room.LocalParticipant != nil {
+		for trackName, publication := range s.publications {
+			s.room.LocalParticipant.UnpublishTrack(publication.SID())
+			log.Printf("Unpublished track '%s' (SID: %s) to interrupt audio for user %s", trackName, publication.SID(), s.userId)
+		}
+		// Clear publications map - tracks will be recreated on next playback
+		s.publications = make(map[string]*lksdk.LocalTrackPublication)
+	}
+
+	// Close all tracks to clean up resources
+	for trackName, track := range s.tracks {
+		track.Close()
+		log.Printf("Closed track '%s' to interrupt audio for user %s", trackName, s.userId)
+	}
+	// Clear tracks map - tracks will be recreated on next playback
+	s.tracks = make(map[string]*lkmedia.PCMLocalTrack)
+
+	// If no playback is running, return closed channel immediately
+	if s.playbackCancel == nil {
+		s.mu.Unlock()
+		done := make(chan struct{})
+		close(done)
+		return done
+	}
+
+	// Cancel the current playback
+	s.playbackCancel()
+	s.playbackCancel = nil
+
+	// Return the done channel so caller can wait for completion
+	done := s.playbackDone
+	s.mu.Unlock()
+
+	return done
+}
+
+// stopTrackPlayback stops playback on a specific track only (for audio mixing)
+// This allows other tracks to continue playing
+func (s *RoomSession) stopTrackPlayback(trackName string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.playbackCancel != nil {
-		s.playbackCancel()
-		s.playbackCancel = nil
+	// Unpublish this specific track immediately to stop its audio output
+	if s.room != nil && s.room.LocalParticipant != nil {
+		if publication, exists := s.publications[trackName]; exists {
+			s.room.LocalParticipant.UnpublishTrack(publication.SID())
+			log.Printf("Unpublished track '%s' (SID: %s) for mixing mode, user %s", trackName, publication.SID(), s.userId)
+			delete(s.publications, trackName)
+		}
+	}
+
+	// Close this specific track to clean up resources
+	if track, exists := s.tracks[trackName]; exists {
+		track.Close()
+		log.Printf("Closed track '%s' for mixing mode, user %s", trackName, s.userId)
+		delete(s.tracks, trackName)
 	}
 }
 
@@ -172,6 +242,15 @@ func (s *RoomSession) Close() {
 
 		s.mu.Lock()
 		defer s.mu.Unlock()
+
+		// Unpublish all tracks first
+		if s.room != nil && s.room.LocalParticipant != nil {
+			for name, publication := range s.publications {
+				s.room.LocalParticipant.UnpublishTrack(publication.SID())
+				log.Printf("Unpublished track '%s' for user %s", name, s.userId)
+			}
+		}
+		s.publications = make(map[string]*lksdk.LocalTrackPublication)
 
 		// Close all tracks
 		for name, track := range s.tracks {

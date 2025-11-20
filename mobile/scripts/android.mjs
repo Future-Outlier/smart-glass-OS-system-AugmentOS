@@ -1,11 +1,8 @@
 #!/usr/bin/env zx
-import { setBuildEnv } from './set-build-env.mjs';
-
-// Configure zx to run from project root
-$.cwd = path.resolve(import.meta.dirname, '..');
+import {setBuildEnv} from "./set-build-env.mjs"
 
 // Set build environment variables
-await setBuildEnv();
+await setBuildEnv()
 
 // Run expo Android command with stdin enabled for interactive prompts
-await $({ stdio: 'inherit' })`bun expo run:android --device`;
+await $({stdio: "inherit"})`bun expo run:android --device`

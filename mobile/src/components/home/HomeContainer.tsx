@@ -7,14 +7,14 @@ import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
 import {IncompatibleApps} from "@/components/home/IncompatibleApps"
 import {Spacer} from "@/components/ui/Spacer"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {Group} from "@/components/ui/Group"
 import {PairGlassesCard} from "@/components/home/PairGlassesCard"
 
 export const HomeContainer: React.FC = () => {
   const {theme} = useAppTheme()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const [offlineMode] = useSetting(SETTINGS_KEYS.offline_mode)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
 
   return (
     <View>

@@ -1,5 +1,5 @@
 import {Button, Text} from "@/components/ignite"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -13,7 +13,7 @@ export default function BackendUrl() {
   const {replace} = useNavigationHistory()
   const [customUrlInput, setCustomUrlInput] = useState("")
   const [isSavingUrl, setIsSavingUrl] = useState(false)
-  const [backendUrl, setBackendUrl] = useSetting(SETTINGS_KEYS.backend_url)
+  const [backendUrl, setBackendUrl] = useSetting(SETTINGS.backend_url.key)
 
   // Triple-tap detection for Asia East button
   const [asiaButtonTapCount, setAsiaButtonTapCount] = useState(0)

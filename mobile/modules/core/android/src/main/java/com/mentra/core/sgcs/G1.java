@@ -142,7 +142,6 @@ public class G1 extends SGCManager {
 
     // mic enable Handler
     private Handler micEnableHandler = new Handler();
-    private boolean micEnabledAlready = false;
     private boolean isMicrophoneEnabled = false; // Track current microphone state
 
     // notification period sender
@@ -164,6 +163,8 @@ public class G1 extends SGCManager {
     private boolean isRightBonded = false;
     private BluetoothDevice leftDevice = null;
     private BluetoothDevice rightDevice = null;
+    private String leftDeviceName = null;  // Store name separately since BluetoothDevice.getName() can become null
+    private String rightDeviceName = null; // Store name separately since BluetoothDevice.getName() can become null
     private String preferredG1Id = null;
     private String pendingSavedG1LeftName = null;
     private String pendingSavedG1RightName = null;
@@ -212,6 +213,7 @@ public class G1 extends SGCManager {
         super();
         this.type = DeviceTypes.G1;
         this.hasMic = true;  // G1 has a built-in microphone
+        this.micEnabled = false;
         Bridge.log("G1: G1 constructor");
         this.context = Bridge.getContext();
         loadPairedDeviceNames();
@@ -809,23 +811,53 @@ public class G1 extends SGCManager {
             String action = intent.getAction();
             if (BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(action)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                if (device.getName() == null) {
-                    Bridge.log("G1: Bluetooth Device Name is Null!!!");
+
+                // Use device address to match with stored devices instead of relying on getName()
+                // which can be null in the bonding broadcast
+                String deviceAddress = device.getAddress();
+                boolean isLeft = false;
+                boolean isRight = false;
+                String deviceName = device.getName();
+
+                // Match by address with stored left/right devices from scanning
+                if (leftDevice != null && leftDevice.getAddress().equals(deviceAddress)) {
+                    isLeft = true;
+                    // Use stored name string (more reliable than BluetoothDevice.getName())
+                    if (deviceName == null) {
+                        deviceName = leftDeviceName;
+                    }
+                } else if (rightDevice != null && rightDevice.getAddress().equals(deviceAddress)) {
+                    isRight = true;
+                    // Use stored name string (more reliable than BluetoothDevice.getName())
+                    if (deviceName == null) {
+                        deviceName = rightDeviceName;
+                    }
+                }
+
+                // If we couldn't match this device, it's not one we're pairing with
+                if (!isLeft && !isRight) {
+                    Bridge.log("G1: Bond state changed for unknown device: " + deviceAddress);
+                    return;
+                }
+
+                // If name is still null after checking stored devices, log and return
+                if (deviceName == null) {
+                    Bridge.log("G1: Could not determine device name for address: " + deviceAddress);
                     return;
                 }
 
                 int bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, -1);
 
                 if (bondState == BluetoothDevice.BOND_BONDED) {
-                    Bridge.log("G1: Bonded with device: " + device.getName());
-                    if (device.getName().contains("_L_")) {
+                    Bridge.log("G1: Bonded with device: " + deviceName + " (address: " + deviceAddress + ")");
+                    if (isLeft) {
                         isLeftBonded = true;
                         isLeftPairing = false;
-                        pendingSavedG1LeftName = device.getName();
-                    } else if (device.getName().contains("_R_")) {
+                        pendingSavedG1LeftName = deviceName;
+                    } else if (isRight) {
                         isRightBonded = true;
                         isRightPairing = false;
-                        pendingSavedG1RightName = device.getName();
+                        pendingSavedG1RightName = deviceName;
                     }
 
                     // Reset both pairing flags when a device bonds successfully
@@ -865,10 +897,10 @@ public class G1 extends SGCManager {
                         }, 2000);
                     }
                 } else if (bondState == BluetoothDevice.BOND_NONE) {
-                    Bridge.log("G1: Bonding failed for device: " + device.getName());
-                    if (device.getName().contains("_L_"))
+                    Bridge.log("G1: Bonding failed for device: " + deviceName + " (address: " + deviceAddress + ")");
+                    if (isLeft)
                         isLeftPairing = false;
-                    if (device.getName().contains("_R_"))
+                    if (isRight)
                         isRightPairing = false;
 
                     // Restart scanning to retry bonding
@@ -1144,25 +1176,28 @@ public class G1 extends SGCManager {
             //     }
             // }
 
-            // Identify which side (left/right)
+            // Identify which side (left/right) and store both device and name
             if (isLeft) {
                 leftDevice = device;
+                leftDeviceName = name;  // Store name now since getName() can return null later
             } else {
                 rightDevice = device;
+                rightDeviceName = name;  // Store name now since getName() can return null later
             }
 
             int bondState = device.getBondState();
             if (bondState != BluetoothDevice.BOND_BONDED) {
-                // Stop scan before initiating bond
-                stopScan();
-
                 if (isLeft && !isLeftPairing && !isLeftBonded) {
+                    // Stop scan before initiating bond
+                    stopScan();
                     // Bridge.log("G1: Bonding with Left Glass...");
                     isLeftPairing = true;
                     connectionState = SmartGlassesConnectionState.BONDING;
                     // connectionEvent(connectionState);
                     bondDevice(device);
                 } else if (!isLeft && !isRightPairing && !isRightBonded) {
+                    // Stop scan before initiating bond
+                    stopScan();
                     Bridge.log("G1: Attempting to bond with right device. isRightPairing=" + isRightPairing
                             + ", isRightBonded=" + isRightBonded);
                     isRightPairing = true;
@@ -1172,7 +1207,7 @@ public class G1 extends SGCManager {
                 } else {
                     Bridge.log("G1: Not running bonding - isLeft=" + isLeft + ", isLeftPairing=" + isLeftPairing +
                             ", isLeftBonded=" + isLeftBonded + ", isRightPairing=" + isRightPairing +
-                            ", isRightBonded=" + isRightBonded);
+                            ", isRightBonded=" + isRightBonded + " - continuing scan for other side");
                 }
             } else {
                 // Already bonded
@@ -1633,7 +1668,8 @@ public class G1 extends SGCManager {
 
     @Override
     public void getBatteryStatus() {
-
+        Bridge.log("G1: Requesting battery status");
+        queryBatteryStatus();
     }
 
     @Override
@@ -2090,6 +2126,11 @@ public class G1 extends SGCManager {
         isKilled = true;
         ready = false;
 
+        // Reset battery levels
+        batteryLeft = -1;
+        batteryRight = -1;
+        batteryLevel = -1;
+
         // stop BLE scanning
         stopScan();
 
@@ -2195,6 +2236,12 @@ public class G1 extends SGCManager {
 
         isLeftConnected = false;
         isRightConnected = false;
+
+        // Clear device references and stored names
+        leftDevice = null;
+        rightDevice = null;
+        leftDeviceName = null;
+        rightDeviceName = null;
 
         Bridge.log("G1: EvenRealitiesG1SGC cleanup complete");
     }
@@ -2472,6 +2519,7 @@ public class G1 extends SGCManager {
     }
 
     private void stopHeartbeat() {
+        Bridge.log("G1: stopHeartbeat()");
         if (heartbeatHandler != null) {
             heartbeatHandler.removeCallbacksAndMessages(null);
             heartbeatHandler.removeCallbacksAndMessages(heartbeatRunnable);
@@ -2480,6 +2528,7 @@ public class G1 extends SGCManager {
     }
 
     private void stopMicBeat() {
+        Bridge.log("G1: stopMicBeat()");
         sendSetMicEnabled(false, 10);
         if (micBeatHandler != null) {
             micBeatHandler.removeCallbacksAndMessages(null);
@@ -2615,9 +2664,10 @@ public class G1 extends SGCManager {
 
     // microphone stuff
     public void sendSetMicEnabled(boolean enable, int delay) {
-        Bridge.log("G1: Running set mic enabled: " + enable);
+        Bridge.log("G1: sendSetMicEnabled(): " + enable);
 
         isMicrophoneEnabled = enable; // Update the state tracker
+        micEnabled = enable;
         micEnableHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -2713,7 +2763,7 @@ public class G1 extends SGCManager {
     private static final float FONT_MULTIPLIER = 1 / 50.0f;
     private static final int OLD_FONT_SIZE = 21; // Font size
     private static final float FONT_DIVIDER = 2.0f;
-    private static final int LINES_PER_SCREEN = 3; // Lines per screen
+    private static final int LINES_PER_SCREEN = 5; // Lines per screen
     private static final int MAX_CHUNK_SIZE = 176; // Maximum chunk size for BLE packets
     // private static final int INDENT_SPACES = 32; // Number of spaces to indent
     // text
@@ -3797,7 +3847,7 @@ public class G1 extends SGCManager {
     }
 
     public void setMicEnabled(boolean isMicrophoneEnabled) {
-        Bridge.log("G1: Microphone state changed: " + isMicrophoneEnabled);
+        Bridge.log("G1: setMicEnabled(): " + isMicrophoneEnabled);
 
         // Update the shouldUseGlassesMic flag to reflect the current state
         this.shouldUseGlassesMic = isMicrophoneEnabled;
@@ -3814,13 +3864,17 @@ public class G1 extends SGCManager {
         }
     }
 
+    public List<String> sortMicRanking(List<String> list) {
+        return list;
+    }
+
     /**
      * Returns whether the microphone is currently enabled
      *
      * @return true if microphone is enabled, false otherwise
      */
     public boolean isMicrophoneEnabled() {
-        return isMicrophoneEnabled;
+        return micEnabled;
     }
 
     /**

@@ -1,27 +1,29 @@
+import {Image, ImageSourcePropType, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+
 import {Screen, Text} from "@/components/ignite"
-import {Button} from "@/components/ignite/Button"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import {TxKeyPath} from "@/i18n"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {$styles, ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {FontAwesome, MaterialCommunityIcons} from "@expo/vector-icons"
-import {ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
-const CardButton = ({onPress, tx}: any) => {
-  const {theme, themed} = useAppTheme()
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
+
+const CardButton = ({onPress, tx, imageSrc}: {onPress: () => void; tx: string; imageSrc: ImageSourcePropType}) => {
+  const {themed} = useAppTheme()
   return (
-    <TouchableOpacity onPress={onPress} style={themed($cardButton)}>
-      {/*<Image source={require('@/assets/images/card-icon.png')} style={themed($cardButtonIcon)} />*/}
-      <Text tx={tx} style={themed($cardButtonText)} />
+    <TouchableOpacity activeOpacity={0.6} onPress={onPress} style={themed($cardButton)}>
+      <Image source={imageSrc} style={themed($cardButtonImage)} />
+      <Text tx={tx as TxKeyPath} style={themed($cardButtonText)} />
     </TouchableOpacity>
   )
 }
 
-const $cardButton: ThemedStyle<ViewStyle> = (colors, spacing) => ({
-  backgroundColor: "white",
-  borderRadius: 8,
+const $cardButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  backgroundColor: colors.background,
+  height: 190,
+  borderRadius: spacing.s6,
   padding: 16,
   shadowColor: "#000",
   shadowOffset: {
@@ -31,24 +33,27 @@ const $cardButton: ThemedStyle<ViewStyle> = (colors, spacing) => ({
   shadowOpacity: 0.25,
   shadowRadius: 3.84,
   elevation: 5,
+  alignItems: "center",
+  justifyContent: "center",
+  gap: spacing.s4,
 })
 
-const $cardButtonIcon: ThemedStyle<ImageStyle> = (colors, spacing) => ({
-  width: 24,
-  height: 24,
-  marginRight: spacing(2),
+const $cardButtonImage: ThemedStyle<ImageStyle> = ({spacing}) => ({
+  // width: 100,
+  // height: 100,
+  marginRight: spacing.s2,
 })
 
-const $cardButtonText: ThemedStyle<TextStyle> = (colors, spacing) => ({
-  color: colors.text,
-  fontSize: 16,
-  // fontWeight: "bold",
+const $cardButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
+  color: colors.secondary_foreground,
+  fontSize: 20,
+  fontWeight: 400,
 })
 
 export default function OnboardingWelcome() {
   const {theme, themed} = useAppTheme()
   const {push} = useNavigationHistory()
-  const [_onboarding, setOnboardingCompleted] = useSetting(SETTINGS_KEYS.onboarding_completed)
+  const [_onboarding, setOnboardingCompleted] = useSetting(SETTINGS.onboarding_completed.key)
 
   // User has smart glasses - go to glasses selection screen
   const handleHasGlasses = async () => {
@@ -68,86 +73,58 @@ export default function OnboardingWelcome() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($screenContainer)}>
-      <View style={themed($mainContainer)}>
-        {/* <View style={styles.logoContainer}>
-          <Icon
-            name="augmented-reality"
-            size={100}
-            color={isDarkTheme ? '#FFFFFF' : '#2196F3'}
-          />
-        </View> */}
+    <Screen
+      preset="fixed"
+      backgroundColor={theme.colors.primary_foreground}
+      style={themed($styles.screen)}
+      safeAreaEdges={["top"]}>
+      <Image source={require("@assets/logo/logo.svg")} style={themed($logo)} />
 
-        <View style={themed($infoContainer)}>
-          <Text style={themed($title)} tx="onboarding:welcome" />
-          <Spacer height={20} />
-          <Text style={themed($question)} tx="onboarding:doYouHaveGlasses" />
-        </View>
-
-        <Button
-          flex={false}
-          // flexContainer={false}
-          onPress={handleHasGlasses}
-          tx="onboarding:haveGlasses"
-          textAlignment="center"
-          LeftAccessory={() => <MaterialCommunityIcons name="glasses" size={16} color={theme.colors.textAlt} />}
-        />
-
-        <Spacer height={10} />
-        <Button
-          flex={false}
-          // flexContainer={false}
-          onPress={handleNoGlasses}
-          tx="onboarding:dontHaveGlasses"
-          preset="default"
-          LeftAccessory={() => <FontAwesome name="mobile" size={16} color={theme.colors.textAlt} />}
-        />
+      <View style={themed($infoContainer)}>
+        <Text style={themed($title)} tx="onboarding:welcome" />
+        <Spacer height={theme.spacing.s4} />
+        <Text style={themed($subtitle)} tx="onboarding:doYouHaveGlasses" />
       </View>
+      <Spacer height={theme.spacing.s12} />
+      <CardButton
+        onPress={handleHasGlasses}
+        tx="onboarding:haveGlasses"
+        imageSrc={require("@assets/glasses/have.svg")}
+      />
+      <Spacer height={theme.spacing.s8} />
+      <CardButton
+        onPress={handleNoGlasses}
+        tx="onboarding:dontHaveGlasses"
+        imageSrc={require("@assets/glasses/dont-have.svg")}
+      />
     </Screen>
   )
 }
 
-const $screenContainer: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.background,
+const $logo: ThemedStyle<ImageStyle> = ({spacing}) => ({
+  alignSelf: "center",
+  marginTop: spacing.s6,
+  marginBottom: spacing.s18,
 })
 
-const $mainContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  flexDirection: "column",
-  justifyContent: "center",
-  padding: spacing.s6,
-})
-
-const $infoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $infoContainer: ThemedStyle<ViewStyle> = () => ({
   alignItems: "center",
   flex: 0,
   justifyContent: "center",
-  marginBottom: spacing.s12,
   width: "100%",
 })
 
-const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.s8,
-  lineHeight: 32,
-  fontWeight: "bold",
-  marginBottom: spacing.s4,
+const $title: ThemedStyle<TextStyle> = ({colors}) => ({
+  fontSize: 30,
+  lineHeight: 30,
+  fontWeight: 600,
   textAlign: "center",
-  color: colors.text,
+  color: colors.secondary_foreground,
 })
 
-const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 18,
-  lineHeight: 26,
-  marginBottom: spacing.s8,
-  paddingHorizontal: spacing.s6,
+const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
+  fontSize: 20,
+  fontWeight: 400,
   textAlign: "center",
-  color: colors.textDim,
-})
-
-const $question: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.s6,
-  // fontWeight: "600",
-  textAlign: "center",
-  marginBottom: spacing.s3,
-  color: colors.textDim,
+  color: colors.secondary_foreground,
 })
