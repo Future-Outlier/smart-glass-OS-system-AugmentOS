@@ -8,7 +8,7 @@ import {translate} from "@/i18n"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Screen, Header} from "@/components/ignite"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 import { useGlassesStore } from "@/stores/glasses"
 
@@ -40,12 +40,12 @@ const MAX_RECORDING_TIME_LABELS: Record<MaxRecordingTime, string> = {
 export default function CameraSettingsScreen() {
   const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
-  const [devMode, _setDevMode] = useSetting(SETTINGS_KEYS.dev_mode)
-  const [photoSize, setPhotoSize] = useSetting(SETTINGS_KEYS.button_photo_size)
-  const [ledEnabled, setLedEnabled] = useSetting(SETTINGS_KEYS.button_camera_led)
-  const [videoSettings, setVideoSettings] = useSetting(SETTINGS_KEYS.button_video_settings)
-  const [maxRecordingTime, setMaxRecordingTime] = useSetting(SETTINGS_KEYS.button_max_recording_time)
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [devMode, _setDevMode] = useSetting(SETTINGS.dev_mode.key)
+  const [photoSize, setPhotoSize] = useSetting(SETTINGS.button_photo_size.key)
+  const [ledEnabled, setLedEnabled] = useSetting(SETTINGS.button_camera_led.key)
+  const [videoSettings, setVideoSettings] = useSetting(SETTINGS.button_video_settings.key)
+  const [maxRecordingTime, setMaxRecordingTime] = useSetting(SETTINGS.button_max_recording_time.key)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const glassesConnected = useGlassesStore(state => state.connected)
 
   // Derive video resolution from settings

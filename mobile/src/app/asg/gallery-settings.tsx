@@ -11,14 +11,14 @@ import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
 import {localStorageService} from "@/services/asg/localStorageService"
 import {translate} from "@/i18n"
 import showAlert from "@/utils/AlertUtils"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 import InfoCardSection from "@/components/ui/InfoCard"
 
 export default function GallerySettingsScreen() {
   const {goBack, push} = useNavigationHistory()
   const {themed} = useAppTheme()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   const [autoSaveToCameraRoll, setAutoSaveToCameraRoll] = useState(true)
   const [localPhotoCount, setLocalPhotoCount] = useState(0)

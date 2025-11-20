@@ -21,7 +21,7 @@ import {useSafeAreaInsets} from "react-native-safe-area-context"
 import GlassesDisplayMirror from "@/components/mirror/GlassesDisplayMirror"
 import {SimulatedGlassesControls} from "@/components/mirror/SimulatedGlassesControls"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
@@ -44,7 +44,7 @@ export default function GlassesMirrorFullscreen() {
   const [recordingCount, setRecordingCount] = useState(0)
   const [isCameraOn, setIsCameraOn] = useState(true)
   const {goBack} = useNavigationHistory()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   const cameraRef = useRef<CameraView | null>(null)
   const recordingTimerRef = useRef<number | null>(null)

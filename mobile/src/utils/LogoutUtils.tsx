@@ -3,7 +3,7 @@ import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import bridge from "@/bridge/MantleBridge"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import restComms from "@/services/RestComms"
-import {SETTINGS_KEYS} from "@/stores/settings"
+import {SETTINGS} from "@/stores/settings"
 import CoreModule from "core"
 
 export class LogoutUtils {
@@ -137,14 +137,14 @@ export class LogoutUtils {
     try {
       // Clear specific settings that should be reset on logout
       const settingsToKeep = [
-        SETTINGS_KEYS.theme_preference, // Keep theme preference
-        SETTINGS_KEYS.backend_url, // Keep custom backend URL if set
+        SETTINGS.theme_preference.key, // Keep theme preference
+        SETTINGS.backend_url.key, // Keep custom backend URL if set
       ]
 
-      const settingsToClear = Object.values(SETTINGS_KEYS).filter(key => !settingsToKeep.includes(key))
+      const settingsToClear = Object.values(SETTINGS).filter(key => !settingsToKeep.includes(key.key))
 
       if (settingsToClear.length > 0) {
-        await AsyncStorage.multiRemove(settingsToClear)
+        await AsyncStorage.multiRemove(settingsToClear.map(setting => setting.key))
         console.log(`${this.TAG}: Cleared ${settingsToClear.length} app settings`)
       }
     } catch (error) {

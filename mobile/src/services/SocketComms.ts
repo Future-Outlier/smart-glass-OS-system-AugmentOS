@@ -8,7 +8,7 @@ import wsManager from "@/services/WebSocketManager"
 import {useAppletStatusStore} from "@/stores/applets"
 import {useDisplayStore} from "@/stores/display"
 import {useGlassesStore} from "@/stores/glasses"
-import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
+import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
@@ -90,7 +90,7 @@ class SocketComms {
     console.log(`SOCKET: setAuthCreds(): ${coreToken.substring(0, 10)}..., ${userid}`)
     this.coreToken = coreToken
     this.userid = userid
-    useSettingsStore.getState().setSetting(SETTINGS_KEYS.core_token, coreToken)
+    useSettingsStore.getState().setSetting(SETTINGS.core_token.key, coreToken)
     this.connectWebsocket()
   }
 
@@ -126,7 +126,7 @@ class SocketComms {
   }
 
   sendGlassesConnectionState(): void {
-    let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+    let modelName = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
     const glassesInfo = useGlassesStore.getState()
 
     // Always include WiFi info - null means "unknown", false means "explicitly disconnected"
@@ -378,7 +378,7 @@ class SocketComms {
   // message handlers, these should only ever be called from handle_message / the server:
   private async handle_connection_ack(msg: any) {
     console.log("SOCKET: connection ack, connecting to livekit")
-    const isChina = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
     if (!isChina) {
       await livekit.connect()
     }

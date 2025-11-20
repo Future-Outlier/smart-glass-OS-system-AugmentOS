@@ -1,4 +1,8 @@
-import bridge from "@/bridge/MantleBridge"
+import {useFocusEffect} from "@react-navigation/native"
+import CoreModule from "core"
+import {useCallback, useEffect, useState} from "react"
+import {ActivityIndicator, BackHandler, Platform, ScrollView, View} from "react-native"
+
 import {Header, Screen, Text} from "@/components/ignite"
 import ModelSelector from "@/components/settings/ModelSelector"
 import ToggleSetting from "@/components/settings/ToggleSetting"
@@ -7,14 +11,10 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import STTModelManager from "@/services/STTModelManager"
 import {useStopAllApplets} from "@/stores/applets"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {useFocusEffect} from "@react-navigation/native"
-import CoreModule from "core"
-import {useCallback, useEffect, useState} from "react"
-import {ActivityIndicator, BackHandler, Platform, ScrollView, View} from "react-native"
 
 export default function TranscriptionSettingsScreen() {
   const {theme, themed} = useAppTheme()
@@ -27,12 +27,10 @@ export default function TranscriptionSettingsScreen() {
   const [downloadProgress, setDownloadProgress] = useState(0)
   const [extractionProgress, setExtractionProgress] = useState(0)
   const [isCheckingModel, setIsCheckingModel] = useState(true)
-  const [bypassVadForDebugging, setBypassVadForDebugging] = useSetting(SETTINGS_KEYS.bypass_vad_for_debugging)
-  const [offlineMode, setOfflineMode] = useSetting(SETTINGS_KEYS.offline_mode)
-  const [_offlineCaptionsAppRunning, setOfflineCaptionsAppRunning] = useSetting(SETTINGS_KEYS.offline_captions_running)
-  const [enforceLocalTranscription, setEnforceLocalTranscription] = useSetting(
-    SETTINGS_KEYS.enforce_local_transcription,
-  )
+  const [bypassVadForDebugging, setBypassVadForDebugging] = useSetting(SETTINGS.bypass_vad_for_debugging.key)
+  const [offlineMode, setOfflineMode] = useSetting(SETTINGS.offline_mode.key)
+  const [_offlineCaptionsAppRunning, setOfflineCaptionsAppRunning] = useSetting(SETTINGS.offline_captions_running.key)
+  const [enforceLocalTranscription, setEnforceLocalTranscription] = useSetting(SETTINGS.enforce_local_transcription.key)
   const RESTART_TRANSCRIPTION_DEBOUNCE_MS = 8000 // 8 seconds
   const [lastRestartTime, setLastRestartTime] = useState(0)
 
@@ -130,7 +128,6 @@ export default function TranscriptionSettingsScreen() {
   }
 
   const enableEnforceLocalTranscription = async () => {
-    await bridge.sendToggleEnforceLocalTranscription(true)
     await setEnforceLocalTranscription(true)
   }
 
@@ -239,7 +236,6 @@ export default function TranscriptionSettingsScreen() {
 
               // If local transcription is enabled, disable it
               if (enforceLocalTranscription) {
-                await bridge.sendToggleEnforceLocalTranscription(false)
                 await setEnforceLocalTranscription(false)
               }
             } catch (error: any) {
@@ -273,13 +269,18 @@ export default function TranscriptionSettingsScreen() {
     }
   }
 
-  const toggleBypassVadForDebugging = async () => {
-    const newSetting = !bypassVadForDebugging
-    await setBypassVadForDebugging(newSetting)
-  }
-
   useEffect(() => {
     initSelectedModel()
+  }, [])
+
+  useEffect(() => {
+    const subscription = CoreModule.addListener("CoreMessageEvent", (_event: any) => {
+      // console.log("CoreMessageEvent:", event)
+      // let _type = event.body.type
+      // if (type === "") {
+      // }
+    })
+    return () => subscription.remove()
   }, [])
 
   return (
@@ -293,7 +294,7 @@ export default function TranscriptionSettingsScreen() {
           label={translate("settings:bypassVAD")}
           subtitle={translate("settings:bypassVADSubtitle")}
           value={bypassVadForDebugging}
-          onValueChange={toggleBypassVadForDebugging}
+          onValueChange={setBypassVadForDebugging}
         />
 
         <Spacer height={theme.spacing.s4} />

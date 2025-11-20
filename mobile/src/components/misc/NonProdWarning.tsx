@@ -5,7 +5,7 @@ import {TouchableOpacity, ViewStyle, Platform, Linking} from "react-native"
 
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -14,7 +14,7 @@ export default function NonProdWarning() {
   const {theme, themed} = useAppTheme()
   const [isProdBackend, setIsProdBackend] = useState(true)
   const {push} = useNavigationHistory()
-  const [backendUrl, _setBackendUrl] = useSetting(SETTINGS_KEYS.backend_url)
+  const [backendUrl, _setBackendUrl] = useSetting(SETTINGS.backend_url.key)
 
   const checkNonProdBackend = async () => {
     let isProd = false

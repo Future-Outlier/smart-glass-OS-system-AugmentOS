@@ -2,7 +2,7 @@ import axios, {AxiosInstance, AxiosRequestConfig} from "axios"
 import {AsyncResult, Result, result as Res} from "typesafe-ts"
 
 import {GlassesInfo} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 import {AppletInterface} from "@/../../cloud/packages/types/src"
@@ -230,7 +230,7 @@ class RestComms {
   }
 
   public exchangeToken(token: string): AsyncResult<string, Error> {
-    const isChina: string = useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    const isChina: string = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
 
     const config: RequestConfig = {
       method: "POST",

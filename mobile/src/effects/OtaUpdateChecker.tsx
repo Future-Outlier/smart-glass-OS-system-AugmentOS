@@ -2,7 +2,7 @@ import {useEffect, useState} from "react"
 
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 
 import {Capabilities, getModelCapabilities} from "@/../../cloud/packages/types/src"
@@ -99,7 +99,7 @@ export function OtaUpdateChecker() {
   const [isChecking, setIsChecking] = useState(false)
   const [hasChecked, setHasChecked] = useState(false)
   const [_latestVersion, setLatestVersion] = useState<string | null>(null)
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const {push} = useNavigationHistory()
 
   // Extract only the specific values we need to watch to avoid re-renders

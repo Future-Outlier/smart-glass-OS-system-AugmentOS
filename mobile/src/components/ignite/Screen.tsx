@@ -12,11 +12,11 @@ import {
   View,
   ViewStyle,
 } from "react-native"
-import {$styles} from "@/theme"
-import {ExtendedEdge, useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
 import {KeyboardAwareScrollView} from "react-native-keyboard-controller"
+
+import {$styles} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import BackgroundGradient from "@/components/ui/BackgroundGradient"
+import {ExtendedEdge, useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
 
 export const DEFAULT_BOTTOM_OFFSET = 50
 
