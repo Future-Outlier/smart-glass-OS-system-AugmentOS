@@ -10,6 +10,7 @@ import {
   MentraSigninResponse,
   MentraSignOutResponse,
 } from "../authProvider.types"
+import { storage } from "@/utils/storage/storage"
 
 interface Session {
   access_token?: string
@@ -252,8 +253,13 @@ export class AuthingWrapperClient {
   }
 
   private async readSessionFromStorage(): Promise<Session | null> {
-    const sessionJson = await AsyncStorage.getItem(SESSION_KEY)
-    return sessionJson ? JSON.parse(sessionJson) : null
+    const res = await storage.load<Session>(SESSION_KEY)
+    if (res.is_error()) {
+      console.error("Error loading session:", res.error)
+      return null
+    }
+    const session = res.value
+    return session
   }
 
   private async setupTokenRefresh() {
@@ -331,7 +337,10 @@ export class AuthingWrapperClient {
   }
 
   private async saveSession(session: Session): Promise<void> {
-    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session))
+    const res = await storage.save(SESSION_KEY, session)
+    if (res.is_error()) {
+      console.error("Failed to save session", res.error)
+    }
   }
 
   private async clearSession(): Promise<void> {
@@ -339,7 +348,10 @@ export class AuthingWrapperClient {
       clearTimeout(this.refreshTimeout)
       this.refreshTimeout = null
     }
-    await AsyncStorage.removeItem(SESSION_KEY)
+    const res = await storage.remove(SESSION_KEY)
+    if (res.is_error()) {
+      console.error("Failed to clear session", res.error)
+    }
     // clears the session and user
     this.authing.logout()
   }

@@ -1,8 +1,8 @@
 import {AuthenticationClient} from "authing-js-sdk"
 import type {AuthenticationClientOptions, User} from "authing-js-sdk"
-import AsyncStorage from "@react-native-async-storage/async-storage"
 import {EventEmitter} from "events"
 import {RequestResultSafeDestructure} from "@supabase/supabase-js"
+import { storage } from "@/utils/storage"
 
 interface Session {
   access_token?: string
@@ -143,8 +143,12 @@ export class AuthingClient {
   }
 
   public async getSession(): Promise<Session | null> {
-    const sessionJson = await AsyncStorage.getItem(SESSION_KEY)
-    return sessionJson ? JSON.parse(sessionJson) : null
+    const res = await storage.load<Session>(SESSION_KEY)
+    if (res.is_error()) {
+      console.error("Error loading session:", res.error)
+      return null
+    }
+    return res.value
   }
 
   private async setupTokenRefresh() {
@@ -211,7 +215,7 @@ export class AuthingClient {
   }
 
   private async saveSession(session: Session): Promise<void> {
-    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session))
+    await storage.save(SESSION_KEY, session)
   }
 
   private async clearSession(): Promise<void> {
@@ -219,7 +223,7 @@ export class AuthingClient {
       clearTimeout(this.refreshTimeout)
       this.refreshTimeout = null
     }
-    await AsyncStorage.removeItem(SESSION_KEY)
+    await storage.remove(SESSION_KEY)
     // clears the session and user
     this.authing.logout()
   }

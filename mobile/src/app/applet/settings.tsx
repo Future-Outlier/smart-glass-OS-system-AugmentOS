@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage"
 import {useFocusEffect, useLocalSearchParams} from "expo-router"
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react"
 import {Animated, BackHandler, TextStyle, View, ViewStyle} from "react-native"
@@ -33,6 +32,7 @@ import {$styles, ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
+import { storage } from "@/utils/storage"
 
 export default function AppSettings() {
   const {packageName, appName: appNameParam} = useLocalSearchParams()
@@ -248,12 +248,12 @@ export default function AppSettings() {
         })
         setSettingsState(initialState)
         // Cache the settings
-        AsyncStorage.setItem(
+        storage.save(
           SETTINGS_CACHE_KEY(packageName),
-          JSON.stringify({
+          {
             serverAppInfo: data,
             settingsState: initialState,
-          }),
+          },
         )
         setHasCachedSettings(data.settings.length > 0)
       } else {

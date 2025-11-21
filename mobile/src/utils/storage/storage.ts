@@ -1,5 +1,5 @@
 // @ts-nocheck
-import {createMMKV} from "react-native-mmkv"
+import {createMMKV, type MMKV} from "react-native-mmkv"
 import {result as Res, Result} from "typesafe-ts"
 class MMKVStorage {
   private _store?: MMKV
@@ -36,6 +36,25 @@ class MMKVStorage {
     return Res.ok(undefined)
   }
 
+  public getAllKeys(): string[] {
+    return this.store.getAllKeys()
+  }
+
+  public removeMultiple(keys: string[]): Result<void, Error> {
+    let success = true
+    for (const key of keys) {
+      const res = this.store.remove(key)
+      if (!res) {
+        success = false
+      }
+    }
+    if (!success) {
+      console.error("Failed to remove one or more keys")
+      return Res.error(new Error("Failed to remove one or more keys"))
+    }
+    return Res.ok(undefined)
+  }
+
   public loadSubKeys(key: string): Result<Record<string, unknown>, Error> {
     return Res.try(() => {
       // return the key value pair of any keys that start with the given key and contain a colon:
@@ -58,6 +77,11 @@ class MMKVStorage {
 
       return subKeysObject
     })
+  }
+
+  public remove(key: string): Result<void, Error> {
+    this.store.delete(key)
+    return Res.ok(undefined)
   }
 
   // burn it all:
