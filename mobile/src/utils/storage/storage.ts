@@ -1,5 +1,23 @@
 import {MMKV} from "react-native-mmkv"
-export const storage = new MMKV()
+
+let storageInstance: MMKV | undefined
+
+function getStorage(): MMKV {
+  if (!storageInstance) {
+    storageInstance = new MMKV()
+  }
+  return storageInstance
+}
+
+// Lazy-initialized proxy to avoid "Cannot read property 'prototype' of undefined"
+// error when MMKV Nitro module isn't ready yet
+export const storage: MMKV = new Proxy({} as any, {
+  get(_target, prop) {
+    const instance = getStorage()
+    const value = (instance as any)[prop]
+    return typeof value === "function" ? value.bind(instance) : value
+  },
+})
 
 /**
  * Loads a string from storage.
@@ -68,7 +86,9 @@ export function save(key: string, value: unknown): boolean {
 export function remove(key: string): void {
   try {
     storage.delete(key)
-  } catch {}
+  } catch {
+    // Ignore errors
+  }
 }
 
 /**
@@ -77,5 +97,7 @@ export function remove(key: string): void {
 export function clear(): void {
   try {
     storage.clearAll()
-  } catch {}
+  } catch {
+    // Ignore errors
+  }
 }
