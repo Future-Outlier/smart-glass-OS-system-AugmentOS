@@ -2,14 +2,16 @@
  * @fileoverview Soniox provider implementation using WebSocket API
  */
 
+import { Logger } from "pino";
 import WebSocket from "ws";
+
 import {
   StreamType,
   getLanguageInfo,
   TranscriptionData,
   SonioxToken,
 } from "@mentra/sdk";
-import { Logger } from "pino";
+
 import {
   TranscriptionProvider,
   StreamInstance,
@@ -18,12 +20,12 @@ import {
   ProviderHealthStatus,
   ProviderLanguageCapabilities,
   SonioxProviderConfig,
-  StreamState,
   StreamCallbacks,
-  StreamMetrics,
+  StreamState,
   StreamHealth,
+  StreamMetrics,
   SonioxProviderError,
-} from "../types";
+} from "@/services/session/transcription/types";
 
 // Import Soniox language configuration from JSON
 import sonioxLanguageData from "./SonioxLanguages.json";
@@ -73,10 +75,7 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
   private failureCount = 0;
   private lastFailureTime = 0;
 
-  constructor(
-    private config: SonioxProviderConfig,
-    parentLogger: Logger,
-  ) {
+  constructor(private config: SonioxProviderConfig, parentLogger: Logger) {
     this.logger = parentLogger.child({ provider: this.name });
 
     this.healthStatus = {
@@ -336,6 +335,11 @@ class SonioxTranscriptionStream implements StreamInstance {
       audioWriteFailures: 0,
       consecutiveFailures: 0,
       errorCount: 0,
+      totalAudioBytesSent: 0,
+      lastTranscriptEndMs: 0,
+      lastTranscriptLagMs: 0,
+      maxTranscriptLagMs: 0,
+      transcriptLagWarnings: 0,
     };
   }
 
@@ -359,8 +363,9 @@ class SonioxTranscriptionStream implements StreamInstance {
         }, 10000); // 10 second timeout
 
         this.ws.on("open", () => {
-          this.logger.debug(
-            { streamId: this.id },
+          const connectionTime = Date.now() - this.startTime;
+          this.logger.info(
+            { streamId: this.id, connectionTimeMs: connectionTime },
             "Soniox WebSocket connected",
           );
           this.sendConfiguration();
@@ -490,8 +495,10 @@ class SonioxTranscriptionStream implements StreamInstance {
             {
               streamId: this.id,
               initTime: this.metrics.initializationTime,
+              language: this.language,
+              targetLanguage: this.targetLanguage,
             },
-            "Soniox stream ready",
+            "✅ Soniox stream ready and accepting audio",
           );
         }
       }, 1000); // Give Soniox a moment to process config
@@ -542,6 +549,7 @@ class SonioxTranscriptionStream implements StreamInstance {
     // New approach: append final tokens to stablePrefixText; keep only tail (non-final) tokens
     let hasEndToken = false;
     let avgConfidence = 0;
+    let latestEndMs = 0; // Track latest token end time for latency calculation
     const tailTokens: Array<{
       text: string;
       isFinal: boolean;
@@ -556,6 +564,12 @@ class SonioxTranscriptionStream implements StreamInstance {
         hasEndToken = true;
         continue;
       }
+
+      // Track latest timestamp for latency calculation
+      if (token.end_ms && token.end_ms > latestEndMs) {
+        latestEndMs = token.end_ms;
+      }
+
       if (token.is_final) {
         this.stablePrefixText += token.text;
       } else {
@@ -567,6 +581,60 @@ class SonioxTranscriptionStream implements StreamInstance {
           end_ms: token.end_ms ?? 0,
         });
         avgConfidence += token.confidence;
+      }
+    }
+
+    // Calculate transcript latency
+    if (latestEndMs > 0) {
+      const now = Date.now();
+      const streamAge = now - this.startTime;
+      const transcriptLag = streamAge - latestEndMs;
+
+      // Update metrics
+      this.metrics.lastTranscriptEndMs = latestEndMs;
+      this.metrics.lastTranscriptLagMs = transcriptLag;
+
+      if (
+        !this.metrics.maxTranscriptLagMs ||
+        transcriptLag > this.metrics.maxTranscriptLagMs
+      ) {
+        this.metrics.maxTranscriptLagMs = transcriptLag;
+      }
+
+      // Calculate processing deficit (audio sent vs transcribed)
+      const audioSentDurationMs = (this.metrics.totalAudioBytesSent || 0) / 32; // 16kHz * 2 bytes = 32 bytes/ms
+      const processingDeficit = audioSentDurationMs - latestEndMs;
+
+      // Log warning if lag exceeds threshold
+      if (transcriptLag > 5000) {
+        this.metrics.transcriptLagWarnings =
+          (this.metrics.transcriptLagWarnings || 0) + 1;
+
+        this.logger.warn(
+          {
+            streamId: this.id,
+            transcriptLagMs: Math.round(transcriptLag),
+            streamAgeMs: Math.round(streamAge),
+            transcriptEndMs: Math.round(latestEndMs),
+            processingDeficitMs: Math.round(processingDeficit),
+            audioSentDurationMs: Math.round(audioSentDurationMs),
+            maxLagMs: Math.round(this.metrics.maxTranscriptLagMs || 0),
+            lagWarnings: this.metrics.transcriptLagWarnings,
+            provider: "soniox",
+          },
+          "⚠️ HIGH TRANSCRIPTION LATENCY DETECTED - Soniox is lagging behind real-time",
+        );
+      } else if (transcriptLag > 2000) {
+        // Info-level logging for moderate lag
+        this.logger.info(
+          {
+            streamId: this.id,
+            transcriptLagMs: Math.round(transcriptLag),
+            processingDeficitMs: Math.round(processingDeficit),
+            provider: "soniox",
+          },
+          "Moderate transcription latency detected",
+        );
       }
     }
 
@@ -736,6 +804,10 @@ class SonioxTranscriptionStream implements StreamInstance {
       this.metrics.lastSuccessfulWrite = Date.now();
       this.metrics.consecutiveFailures = 0;
 
+      // Track total audio bytes sent for backlog calculation
+      this.metrics.totalAudioBytesSent =
+        (this.metrics.totalAudioBytesSent || 0) + data.byteLength;
+
       return true;
     } catch (error) {
       this.metrics.audioWriteFailures++;
@@ -813,6 +885,8 @@ class SonioxTranscriptionStream implements StreamInstance {
       consecutiveFailures: this.metrics.consecutiveFailures,
       lastSuccessfulWrite: this.metrics.lastSuccessfulWrite,
       providerHealth: this.provider.getHealthStatus(),
+      transcriptLagMs: this.metrics.lastTranscriptLagMs,
+      maxTranscriptLagMs: this.metrics.maxTranscriptLagMs,
     };
   }
 

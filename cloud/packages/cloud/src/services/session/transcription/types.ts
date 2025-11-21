@@ -189,6 +189,13 @@ export interface StreamMetrics {
   consecutiveFailures: number;
   lastSuccessfulWrite?: number;
 
+  // Latency & Backlog Tracking
+  totalAudioBytesSent?: number; // Total bytes sent to provider
+  lastTranscriptEndMs?: number; // Last transcript end time (relative to stream start)
+  lastTranscriptLagMs?: number; // Lag between now and when the transcript was spoken
+  maxTranscriptLagMs?: number; // Maximum lag observed
+  transcriptLagWarnings?: number; // Count of lag warnings (>5s)
+
   // Error Tracking
   errorCount: number;
   lastError?: Error;
@@ -229,6 +236,8 @@ export interface StreamHealth {
   consecutiveFailures: number;
   lastSuccessfulWrite?: number;
   providerHealth: ProviderHealthStatus;
+  transcriptLagMs?: number;
+  maxTranscriptLagMs?: number;
 }
 
 //===========================================================
@@ -236,10 +245,7 @@ export interface StreamHealth {
 //===========================================================
 
 export class TranscriptionError extends Error {
-  constructor(
-    message: string,
-    public readonly context?: Record<string, any>,
-  ) {
+  constructor(message: string, public readonly context?: Record<string, any>) {
     super(message);
     this.name = "TranscriptionError";
   }
@@ -307,10 +313,7 @@ export class NoProviderAvailableError extends TranscriptionError {
 }
 
 export class ResourceLimitError extends TranscriptionError {
-  constructor(
-    message: string,
-    public readonly resourceType: string,
-  ) {
+  constructor(message: string, public readonly resourceType: string) {
     super(message, { resourceType });
     this.name = "ResourceLimitError";
   }
