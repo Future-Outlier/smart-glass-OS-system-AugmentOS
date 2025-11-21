@@ -16,7 +16,7 @@ interface Setting {
   indexer?: () => string
   // optionally override the value of the setting when it's accessed
   override?: () => any
-  onWrite?: () => void
+  // onWrite?: () => void
 }
 
 export const SETTINGS: Record<string, Setting> = {
@@ -234,8 +234,8 @@ interface SettingsState {
   // Loading states
   isInitialized: boolean
   // Actions
-  setSetting: (key: string, value: any, updateServer?: boolean) => Promise<void>
-  setManyLocally: (settings: Record<string, any>) => Promise<void>
+  setSetting: (key: string, value: any, updateServer?: boolean) => AsyncResult<void, Error>
+  setManyLocally: (settings: Record<string, any>) => AsyncResult<void, Error>
   getSetting: (key: string) => any
   // loadSetting: (key: string) => AsyncResult<void, Error>
   loadAllSettings: () => AsyncResult<void, Error>
@@ -263,44 +263,46 @@ export const useSettingsStore = create<SettingsState>()(
     settings: getDefaultSettings(),
     isInitialized: false,
     loadingKeys: new Set(),
-    setSetting: async (key: string, value: any, updateServer = true) => {
-      const setting = SETTINGS[key]
-      const originalKey = key
+    setSetting: (key: string, value: any, updateServer = true): AsyncResult<void, Error> => {
+      return Res.try_async(async () => {
+        const setting = SETTINGS[key]
+        const originalKey = key
 
-      if (!setting) {
-        console.error(`SETTINGS: SET: ${originalKey} is not a valid setting!`)
-        return
-      }
-
-      if (setting.indexer) {
-        key = `${originalKey}:${setting.indexer()}`
-      }
-
-      if (!setting.writable) {
-        console.error(`SETTINGS: ${originalKey} is not writable!`)
-        return
-      }
-
-      // Update store immediately for optimistic UI
-      set(state => ({
-        settings: {...state.settings, [key]: value},
-      }))
-
-      console.log(`SETTINGS: SET: ${key} = ${value}`)
-
-      // Persist to AsyncStorage
-      let res = await storage.save(key, value)
-      if (res.is_error()) {
-        console.error(`SETTINGS: couldn't save setting to storage: `, res.error)
-      }
-
-      // Sync with server if needed
-      if (updateServer) {
-        const result = await restComms.writeUserSettings({[key]: value})
-        if (result.is_error()) {
-          console.log("SETTINGS: couldn't sync setting to server: ", result.error)
+        if (!setting) {
+          console.error(`SETTINGS: SET: ${originalKey} is not a valid setting!`)
+          return
         }
-      }
+
+        if (setting.indexer) {
+          key = `${originalKey}:${setting.indexer()}`
+        }
+
+        if (!setting.writable) {
+          console.error(`SETTINGS: ${originalKey} is not writable!`)
+          return
+        }
+
+        // Update store immediately for optimistic UI
+        set(state => ({
+          settings: {...state.settings, [key]: value},
+        }))
+
+        console.log(`SETTINGS: SET: ${key} = ${value}`)
+
+        // Persist to AsyncStorage
+        let res = await storage.save(key, value)
+        if (res.is_error()) {
+          console.error(`SETTINGS: couldn't save setting to storage: `, res.error)
+        }
+
+        // Sync with server if needed
+        if (updateServer) {
+          const result = await restComms.writeUserSettings({[key]: value})
+          if (result.is_error()) {
+            console.log("SETTINGS: couldn't sync setting to server: ", result.error)
+          }
+        }
+      })
     },
     getSetting: (key: string) => {
       const state = get()
@@ -333,25 +335,15 @@ export const useSettingsStore = create<SettingsState>()(
       }
     },
     // batch update many settings from the server:
-    setManyLocally: async (settings: Record<string, any>) => {
-      // Update store immediately
-      set(state => ({
-        settings: {...state.settings, ...settings},
-      }))
-      // Persist all to AsyncStorage
-      await Promise.all(Object.entries(settings).map(([key, value]) => storage.save(key, value)))
-      // // Update core settings
-      // const coreUpdates: Record<string, any> = {}
-      // Object.keys(settings).forEach(key => {
-      //   // Extract base key from potentially indexed key (e.g., "preferred_mic:SIMULATED" -> "preferred_mic")
-      //   const baseKey = key.split(":")[0]
-      //   if (CORE_SETTINGS_KEYS.includes(baseKey as (typeof CORE_SETTINGS_KEYS)[number])) {
-      //     coreUpdates[baseKey] = settings[key]
-      //   }
-      // })
-      // if (Object.keys(coreUpdates).length > 0) {
-      //   CoreModule.updateSettings(coreUpdates)
-      // }
+    setManyLocally: (settings: Record<string, any>): AsyncResult<void, Error> => {
+      return Res.try_async(async () => {
+        // Update store immediately
+        set(state => ({
+          settings: {...state.settings, ...settings},
+        }))
+        // Persist all to storage
+        await Promise.all(Object.entries(settings).map(([key, value]) => storage.save(key, value)))
+      })
     },
     // loads any preferences that have been changed from the default and saved to DISK!
     loadAllSettings: (): AsyncResult<void, Error> => {
@@ -427,7 +419,7 @@ export const useSettingsStore = create<SettingsState>()(
   })),
 )
 
-export const useSetting = <T = any>(key: string): [T, (value: T) => Promise<void>] => {
+export const useSetting = <T = any>(key: string): [T, (value: T) => AsyncResult<void, Error>] => {
   const value = useSettingsStore(state => state.getSetting(key))
   const setSetting = useSettingsStore(state => state.setSetting)
   return [value, (newValue: T) => setSetting(key, newValue)]
