@@ -1,19 +1,23 @@
-import AsyncStorage from "@react-native-async-storage/async-storage"
+// import AsyncStorage from "@react-native-async-storage/async-storage"
 import CoreModule from "core"
 import {getTimeZone} from "react-native-localize"
+import {AsyncResult, result as Res, Result} from "typesafe-ts"
 import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
 
 import restComms from "@/services/RestComms"
+import {storage} from "@/utils/storage"
 
 interface Setting {
   key: string
   defaultValue: () => any
   writable: boolean
   // change the key to a different key based on the indexer
+  // NEVER do any network calls in the indexer (or performance will suffer greatly
   indexer?: () => string
-  // override the value of the setting
+  // optionally override the value of the setting when it's accessed
   override?: () => any
+  onWrite?: () => void
 }
 
 export const SETTINGS: Record<string, Setting> = {
@@ -177,13 +181,12 @@ interface SettingsState {
   settings: Record<string, any>
   // Loading states
   isInitialized: boolean
-  loadingKeys: Set<string>
   // Actions
   setSetting: (key: string, value: any, updateCore?: boolean, updateServer?: boolean) => Promise<void>
   setManyLocally: (settings: Record<string, any>) => Promise<void>
   getSetting: (key: string) => any
-  loadSetting: (key: string) => Promise<any>
-  loadAllSettings: () => Promise<void>
+  // loadSetting: (key: string) => AsyncResult<void, Error>
+  loadAllSettings: () => AsyncResult<void, Error>
   // Utility methods
   getRestUrl: () => string
   getWsUrl: () => string
@@ -230,11 +233,19 @@ export const useSettingsStore = create<SettingsState>()(
       set(state => ({
         settings: {...state.settings, [key]: value},
       }))
+
+      console.log("##############################################")
+      console.log(`SETTINGS: SET: ${key} = ${value}`)
+      console.log("##############################################")
+
       // Persist to AsyncStorage
-      const jsonValue = JSON.stringify(value)
-      await AsyncStorage.setItem(key, jsonValue)
+      let res = await storage.save(key, value)
+      if (res.is_error()) {
+        console.error(`SETTINGS: couldn't save setting to storage: `, res.error)
+      }
+
       // Update core settings if needed
-      if (CORE_SETTINGS_KEYS.includes(originalKey as (typeof CORE_SETTINGS_KEYS)[number]) && updateCore) {
+      if (updateCore && CORE_SETTINGS_KEYS.includes(originalKey as (typeof CORE_SETTINGS_KEYS)[number])) {
         CoreModule.updateSettings({[originalKey]: value})
       }
       // Sync with server if needed
@@ -275,46 +286,14 @@ export const useSettingsStore = create<SettingsState>()(
         return SETTINGS[key].defaultValue()
       }
     },
-    loadSetting: async (key: string) => {
-      // check if initialized:
-      const state = get()
-      if (state.isInitialized) {
-        return state.getSetting(key)
-      }
-
-      const setting = SETTINGS[key]
-      const originalKey = key
-
-      // Apply indexer if present (same as setSetting logic)
-      if (setting?.indexer) {
-        key = `${originalKey}:${setting.indexer()}`
-      }
-
-      try {
-        const jsonValue = await AsyncStorage.getItem(key)
-        if (jsonValue !== null) {
-          const value = JSON.parse(jsonValue)
-          // Update store with loaded value
-          // console.log(`LOADED SETTING2: ${key} = ${value}`)
-          set(state => ({
-            settings: {...state.settings, [key]: value},
-          }))
-        }
-      } catch (error) {
-        console.error(`Failed to load setting (${key}):`, error)
-      }
-
-      return state.getSetting(originalKey)
-    },
+    // batch update many settings from the server:
     setManyLocally: async (settings: Record<string, any>) => {
       // Update store immediately
       set(state => ({
         settings: {...state.settings, ...settings},
       }))
       // Persist all to AsyncStorage
-      await Promise.all(
-        Object.entries(settings).map(([key, value]) => AsyncStorage.setItem(key, JSON.stringify(value))),
-      )
+      await Promise.all(Object.entries(settings).map(([key, value]) => storage.save(key, value)))
       // Update core settings
       const coreUpdates: Record<string, any> = {}
       Object.keys(settings).forEach(key => {
@@ -328,36 +307,58 @@ export const useSettingsStore = create<SettingsState>()(
         CoreModule.updateSettings(coreUpdates)
       }
     },
-    loadAllSettings: async () => {
-      set(_state => ({
-        loadingKeys: new Set(Object.keys(SETTINGS)),
-      }))
-      let loadedSettings: Record<string, any> = {}
-      for (const setting of Object.values(SETTINGS)) {
-        try {
-          // loadSetting handles indexers and stores with indexed keys in state
-          await get().loadSetting(setting.key)
-          // Get the value using getSetting which handles indexers/overrides
-          const value = get().getSetting(setting.key)
-          // Store with indexed key if applicable
-          let storageKey = setting.key
-          if (setting.indexer) {
-            storageKey = `${setting.key}:${setting.indexer()}`
-          }
-          loadedSettings[storageKey] = value
-        } catch (error) {
-          console.error(`Failed to load setting ${setting.key}:`, error)
-          // Store default value with base key
-          loadedSettings[setting.key] = setting.defaultValue()
+    // loads any preferences that have been changed from the default and saved to DISK!
+    loadAllSettings: (): AsyncResult<void, Error> => {
+      return Res.try_async(async () => {
+        const state = get()
+        let loadedSettings: Record<string, any> = {}
+
+        if (state.isInitialized) {
+          migrateSettings()
+          return undefined
         }
-      }
-      set({
-        settings: loadedSettings,
-        isInitialized: true,
-        loadingKeys: new Set(),
+
+        for (const setting of Object.values(SETTINGS)) {
+          console.log("##############################################")
+          console.log(setting.key)
+          console.log("##############################################")
+
+          // load all subkeys for an indexed setting:
+          if (setting?.indexer) {
+            console.log(`SETTINGS: LOAD: ${setting.key} with indexer!`)
+
+            let res: Result<Record<string, unknown>, Error> = storage.loadSubKeys(setting.key)
+            if (res.is_error()) {
+              console.log(`SETTINGS: LOAD: ${setting.key}`, res.error)
+              continue
+            }
+
+            let subKeys: Record<string, unknown> = res.value
+            console.log(`SETTINGS: LOAD: ${setting.key} subkeys are set!`, subKeys)
+            loadedSettings = {...loadedSettings, ...subKeys}
+            continue
+          }
+
+          let res = await storage.load<any>(setting.key)
+          if (res.is_error()) {
+            // this setting isn't set from the default, so we don't load anything
+            continue
+          }
+          // normal key:value pair:
+          let value = res.value
+          loadedSettings[setting.key] = value
+        }
+
+        console.log("##############################################")
+        console.log(loadedSettings)
+        console.log("##############################################")
+
+        set(state => ({
+          isInitialized: true,
+          settings: {...state.settings, ...loadedSettings},
+        }))
+        migrateSettings()
       })
-      // update any settings that need to be migrated:
-      migrateSettings()
     },
     getRestUrl: () => {
       const serverUrl = get().getSetting(SETTINGS.backend_url.key)

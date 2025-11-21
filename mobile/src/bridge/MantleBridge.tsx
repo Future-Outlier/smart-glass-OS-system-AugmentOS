@@ -54,7 +54,7 @@ export class MantleBridge {
       this.handleCoreMessage(event.body)
     })
 
-    console.log("Core message event listener initialized")
+    console.log("BRIDGE: Core message event listener initialized")
   }
 
   /**

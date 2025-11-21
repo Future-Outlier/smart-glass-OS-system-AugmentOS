@@ -8,7 +8,8 @@ import bridge from "@/bridge/MantleBridge"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {useDisplayStore} from "@/stores/display"
-import {GlassesInfo, useGlassesStore} from "@/stores/glasses"
+import {useGlassesStore} from "@/stores/glasses"
+import {GlassesInfo} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
@@ -36,8 +37,8 @@ TaskManager.defineTask(LOCATION_TASK_NAME, ({data: {locations}, error}) => {
 
 class MantleManager {
   private static instance: MantleManager | null = null
-  private calendarSyncTimer: number | null = null
-  private clearTextTimeout: number | null = null
+  private calendarSyncTimer: ReturnType<typeof setInterval> | null = null
+  private clearTextTimeout: ReturnType<typeof setTimeout> | null = null
   private transcriptProcessor: TranscriptProcessor
 
   public static getInstance(): MantleManager {
@@ -73,9 +74,10 @@ class MantleManager {
   // sets up the bridge and initializes app state
   public async init() {
     await bridge.dummy()
-    const loadedSettings = await restComms.loadUserSettings() // get settings from server
-    if (loadedSettings.is_ok()) {
-      await useSettingsStore.getState().setManyLocally(loadedSettings.value) // write settings to local storage
+    const res = await restComms.loadUserSettings() // get settings from server
+    if (res.is_ok()) {
+      const loadedSettings = res.value
+      await useSettingsStore.getState().setManyLocally(loadedSettings) // write settings to local storage
     } else {
       console.error("Mantle: No settings received from server")
     }
@@ -113,7 +115,7 @@ class MantleManager {
       60 * 60 * 1000,
     ) // 1 hour
     try {
-      let locationAccuracy = await useSettingsStore.getState().loadSetting(SETTINGS.location_tier.key)
+      let locationAccuracy = await useSettingsStore.getState().getSetting(SETTINGS.location_tier.key)
       let properAccuracy = this.getLocationAccuracy(locationAccuracy)
       Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
         accuracy: properAccuracy,

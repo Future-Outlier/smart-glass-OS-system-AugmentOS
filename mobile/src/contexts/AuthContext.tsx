@@ -1,4 +1,5 @@
 import {FC, createContext, useEffect, useState, useContext} from "react"
+
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import {MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"
@@ -29,8 +30,8 @@ export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
     const getInitialSession = async () => {
       const {data: initialSessionData} = await mentraAuthProvider.getSession()
       const session = initialSessionData?.session
-      console.log("AuthContext: Initial session:", session)
-      console.log("AuthContext: Initial user:", session?.user)
+      // console.log("AuthContext: Initial session:", session)
+      // console.log("AuthContext: Initial user:", session?.user)
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
@@ -40,9 +41,9 @@ export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
     const setupAuthListener = async () => {
       try {
         const {data: authStateChangeData} = await mentraAuthProvider.onAuthStateChange((event, session: any) => {
-          console.log("AuthContext: Auth state changed:", event)
-          console.log("AuthContext: Session:", session)
-          console.log("AuthContext: User:", session?.user)
+          // console.log("AuthContext: Auth state changed:", event)
+          // console.log("AuthContext: Session:", session)
+          // console.log("AuthContext: User:", session?.user)
           setSession(session)
           setUser(session?.user ?? null)
           setLoading(false)

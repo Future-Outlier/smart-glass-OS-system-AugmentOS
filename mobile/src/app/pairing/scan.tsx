@@ -235,6 +235,11 @@ export default function SelectGlassesBluetoothScreen() {
     replace("/pairing/loading", {glassesModelName: glassesModelName})
   }
 
+  const filterDeviceName = (deviceName: string) => {
+    // filter out MENTRA_LIVE from the device name:
+    return deviceName.replace("MENTRA_LIVE_BLE_", "")
+  }
+
   return (
     <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
       <Header
@@ -271,7 +276,7 @@ export default function SelectGlassesBluetoothScreen() {
                     onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
                     <View style={themed($settingsTextContainer)}>
                       <Text
-                        text={`${glassesModelName} - ${device.deviceName}`}
+                        text={`${glassesModelName} - ${filterDeviceName(device.deviceName)}`}
                         style={themed($label)}
                         numberOfLines={2}
                       />

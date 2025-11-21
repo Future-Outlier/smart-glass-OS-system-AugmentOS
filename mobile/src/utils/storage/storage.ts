@@ -1,103 +1,70 @@
-import {MMKV} from "react-native-mmkv"
+// @ts-nocheck
+import {createMMKV} from "react-native-mmkv"
+import {result as Res, Result} from "typesafe-ts"
+class MMKVStorage {
+  private _store?: MMKV
 
-let storageInstance: MMKV | undefined
-
-function getStorage(): MMKV {
-  if (!storageInstance) {
-    storageInstance = new MMKV()
+  private get store(): MMKV {
+    if (!this._store) {
+      this._store = createMMKV()
+    }
+    return this._store
   }
-  return storageInstance
-}
 
-// Lazy-initialized proxy to avoid "Cannot read property 'prototype' of undefined"
-// error when MMKV Nitro module isn't ready yet
-export const storage: MMKV = new Proxy({} as any, {
-  get(_target, prop) {
-    const instance = getStorage()
-    const value = (instance as any)[prop]
-    return typeof value === "function" ? value.bind(instance) : value
-  },
-})
-
-/**
- * Loads a string from storage.
- *
- * @param key The key to fetch.
- */
-export function loadString(key: string): string | null {
-  try {
-    return storage.getString(key) ?? null
-  } catch {
-    // not sure why this would fail... even reading the RN docs I'm unclear
-    return null
+  public save(key: string, value: unknown): Result<void, Error> {
+    return this.saveString(key, JSON.stringify(value))
   }
-}
 
-/**
- * Saves a string to storage.
- *
- * @param key The key to fetch.
- * @param value The value to store.
- */
-export function saveString(key: string, value: string): boolean {
-  try {
-    storage.set(key, value)
-    return true
-  } catch {
-    return false
+  public load<T>(key: string): Result<T, Error> {
+    let almostThere: string | null = null
+    try {
+      almostThere = this.loadString(key)
+      let value: T = JSON.parse(almostThere ?? "") as T
+      // @ts-ignore
+      return Res.ok(value)
+    } catch {
+      return Res.error(new Error(`Failed to load ${key}`))
+    }
   }
-}
 
-/**
- * Loads something from storage and runs it thru JSON.parse.
- *
- * @param key The key to fetch.
- */
-export function load<T>(key: string): T | null {
-  let almostThere: string | null = null
-  try {
-    almostThere = loadString(key)
-    return JSON.parse(almostThere ?? "") as T
-  } catch {
-    return (almostThere as T) ?? null
+  private loadString(key: string): string | null {
+    return this.store.getString(key) ?? null
   }
-}
 
-/**
- * Saves an object to storage.
- *
- * @param key The key to fetch.
- * @param value The value to store.
- */
-export function save(key: string, value: unknown): boolean {
-  try {
-    saveString(key, JSON.stringify(value))
-    return true
-  } catch {
-    return false
+  private saveString(key: string, value: string): Result<void, Error> {
+    this.store.set(key, value)
+    return Res.ok(undefined)
+  }
+
+  public loadSubKeys(key: string): Result<Record<string, unknown>, Error> {
+    return Res.try(() => {
+      // return the key value pair of any keys that start with the given key and contain a colon:
+      const keys = this.store.getAllKeys()
+
+      const subKeys = keys.filter(key => key.startsWith(key) && key.includes(":"))
+
+      if (subKeys.length === 0) {
+        return Res.error(new Error(`No subkeys found for ${key}`))
+      }
+
+      let subKeysObject: Record<string, unknown> = {}
+
+      for (const subKey of subKeys) {
+        const res = this.load(subKey)
+        if (res.is_ok()) {
+          subKeysObject[subKey] = res.value
+        }
+      }
+
+      return subKeysObject
+    })
+  }
+
+  // burn it all:
+  public clearAll(): Result<void, Error> {
+    this.store.clearAll()
+    return Res.ok(undefined)
   }
 }
 
-/**
- * Removes something from storage.
- *
- * @param key The key to kill.
- */
-export function remove(key: string): void {
-  try {
-    storage.delete(key)
-  } catch {
-    // Ignore errors
-  }
-}
-
-/**
- * Burn it all to the ground.
- */
-export function clear(): void {
-  try {
-    storage.clearAll()
-  } catch {
-    // Ignore errors
-  }
-}
+export const storage = new MMKVStorage()
