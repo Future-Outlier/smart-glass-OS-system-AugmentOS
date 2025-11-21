@@ -232,7 +232,7 @@ export class MantleBridge {
           GlobalEventEmitter.emit("AUDIO_DISCONNECTED", {})
           break
         case "save_setting":
-          await useSettingsStore.getState().setSetting(data.key, data.value, false)
+          await useSettingsStore.getState().setSetting(data.key, data.value)
           break
         case "head_up":
           mantle.handle_head_up(data.up)

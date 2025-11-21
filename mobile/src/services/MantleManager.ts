@@ -150,6 +150,24 @@ class MantleManager {
       },
       {equalityFn: shallow},
     )
+
+    // subscribe to core settings changes and update the core:
+    useSettingsStore.subscribe(
+      state => state.getCoreSettings(),
+      (state: Record<string, any>, previousState: Record<string, any>) => {
+        const coreSettingsObj: Record<string, any> = {}
+
+        for (const key in state) {
+          const k = key as keyof Record<string, any>
+          if (state[k] !== previousState[k]) {
+            coreSettingsObj[k] = state[k] as any
+          }
+        }
+        console.log("Mantle: core settings changed", coreSettingsObj)
+        CoreModule.updateSettings(coreSettingsObj)
+      },
+      {equalityFn: shallow},
+    )
   }
 
   private async sendCalendarEvents() {
@@ -221,7 +239,7 @@ class MantleManager {
         correlationId,
       )
     } catch (error) {
-      console.error("Mantle: Error requesting single location", error)
+      console.log("Mantle: Error requesting single location", error)
     }
   }
 
