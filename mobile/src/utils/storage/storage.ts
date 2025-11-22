@@ -15,16 +15,15 @@ class MMKVStorage {
     return this.saveString(key, JSON.stringify(value))
   }
 
-  public load<T>(key: string): Result<T, Error> {
-    let almostThere: string | null = null
-    try {
-      almostThere = this.loadString(key)
-      let value: T = JSON.parse(almostThere ?? "") as T
-      // @ts-ignore
-      return Res.ok(value)
-    } catch {
-      return Res.error(new Error(`Failed to load ${key}`))
-    }
+  public load<T>(key: string): AsyncResult<T, Error> {
+    Res.try_async(
+      async () => {
+        almostThere = loadString(key)
+        let value = JSON.parse(almostThere ?? "") as T // <-- should probably use zod or similar to validate here
+        return value
+      },
+      (e: unknown) => new Error(`Failed to load ${key} ${e}`),
+    )
   }
 
   private loadString(key: string): string | null {
