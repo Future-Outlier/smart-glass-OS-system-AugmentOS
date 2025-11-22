@@ -289,7 +289,6 @@ export const useSettingsStore = create<SettingsState>()(
 
         console.log(`SETTINGS: SET: ${key} = ${value}`)
 
-        // Persist to AsyncStorage
         let res = await storage.save(key, value)
         if (res.is_error()) {
           console.error(`SETTINGS: couldn't save setting to storage: `, res.error)

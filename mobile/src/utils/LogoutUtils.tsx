@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage"
+import {Session} from "@supabase/supabase-js"
 import CoreModule from "core"
 
 import bridge from "@/bridge/MantleBridge"
@@ -7,7 +7,6 @@ import {SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import {storage} from "@/utils/storage/storage"
-import {Session} from "@supabase/supabase-js"
 
 export class LogoutUtils {
   private static readonly TAG = "LogoutUtils"

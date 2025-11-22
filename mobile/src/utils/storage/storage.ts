@@ -80,7 +80,7 @@ class MMKVStorage {
   }
 
   public remove(key: string): Result<void, Error> {
-    this.store.delete(key)
+    this.store.remove(key)
     return Res.ok(undefined)
   }
 

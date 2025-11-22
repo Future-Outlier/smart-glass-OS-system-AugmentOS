@@ -3,9 +3,9 @@
  * Manages downloaded files and sync state
  */
 
-import AsyncStorage from "@react-native-async-storage/async-storage"
 import RNFS from "react-native-fs"
-import {PhotoInfo} from "../../types/asg"
+
+import {PhotoInfo} from "@/types/asg"
 import {storage} from "@/utils/storage"
 
 export interface DownloadedFile {

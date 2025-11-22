@@ -1,7 +1,8 @@
+import {EventEmitter} from "events"
+
 import {AuthenticationClient} from "authing-js-sdk"
 import type {AuthenticationClientOptions, User} from "authing-js-sdk"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import {EventEmitter} from "events"
+
 import {
   MentraAuthSession,
   MentraAuthSessionResponse,
@@ -9,8 +10,8 @@ import {
   MentraAuthUserResponse,
   MentraSigninResponse,
   MentraSignOutResponse,
-} from "../authProvider.types"
-import { storage } from "@/utils/storage/storage"
+} from "@/utils/auth/authProvider.types"
+import {storage} from "@/utils/storage/storage"
 
 interface Session {
   access_token?: string
