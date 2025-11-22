@@ -50,6 +50,7 @@ export class AuthingWrapperClient {
   }
 
   public static async getInstance(): Promise<AuthingWrapperClient> {
+    console.log("AuthingWrapperClient: getInstance()")
     if (!AuthingWrapperClient.instance) {
       AuthingWrapperClient.instance = new AuthingWrapperClient()
       const session = await AuthingWrapperClient.instance.readSessionFromStorage()
@@ -65,6 +66,7 @@ export class AuthingWrapperClient {
   }
 
   public onAuthStateChange(callback: AuthChangeCallback): MentraAuthStateChangeSubscriptionResponse {
+    console.log("AuthingWrapperClient: onAuthStateChange()")
     const handler = (event: string, session: MentraAuthSession) => {
       callback(event as AuthChangeEvent, session)
     }
@@ -94,6 +96,7 @@ export class AuthingWrapperClient {
   }
 
   public async getUser(): Promise<MentraAuthUserResponse> {
+    console.log("AuthingWrapperClient: getUser()")
     try {
       const user = await this.authing.getCurrentUser()
       return {
@@ -123,6 +126,7 @@ export class AuthingWrapperClient {
   }
 
   public async signUp(credentials: {email: string; password: string}): Promise<MentraSigninResponse> {
+    console.log("AuthingWrapperClient: signUp()")
     try {
       const user = await this.authing.registerByEmail(credentials.email, credentials.password)
       return {
@@ -157,8 +161,8 @@ export class AuthingWrapperClient {
   }
 
   public async signInWithPassword(credentials: {email: string; password: string}): Promise<MentraSigninResponse> {
+    console.log("AuthingWrapperClient: signInWithPassword()")
     try {
-      console.log("AuthingWrapperClient: signInWithPassword")
       const user = await this.authing.loginByEmail(credentials.email, credentials.password)
       const token = user.token
       const tokenExpiresAt = user.tokenExpiredAt && new Date(user.tokenExpiredAt).getTime()
@@ -209,6 +213,7 @@ export class AuthingWrapperClient {
   }
 
   public async signOut(): Promise<MentraSignOutResponse> {
+    console.log("AuthingWrapperClient: signOut()")
     try {
       await this.authing.logout()
       await this.clearSession()
@@ -225,6 +230,7 @@ export class AuthingWrapperClient {
   }
 
   public async getSession(): Promise<MentraAuthSessionResponse> {
+    console.log("AuthingWrapperClient: getSession()")
     try {
       const session = await this.readSessionFromStorage()
       return {
@@ -254,7 +260,7 @@ export class AuthingWrapperClient {
   }
 
   private async readSessionFromStorage(): Promise<Session | null> {
-    const res = await storage.load<Session>(SESSION_KEY)
+    const res = storage.load<Session>(SESSION_KEY)
     if (res.is_error()) {
       console.error("Error loading session:", res.error)
       return null

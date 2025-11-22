@@ -372,7 +372,7 @@ export const useSettingsStore = create<SettingsState>()(
             continue
           }
 
-          let res = await storage.load<any>(setting.key)
+          let res = storage.load<any>(setting.key)
           if (res.is_error()) {
             // this setting isn't set from the default, so we don't load anything
             continue

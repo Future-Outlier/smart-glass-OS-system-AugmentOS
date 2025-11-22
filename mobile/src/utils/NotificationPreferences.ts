@@ -27,7 +27,7 @@ export class NotificationPreferences {
    * Get app-specific notification preferences
    */
   static async getAppPreferences(): Promise<Record<string, NotificationAppPreference>> {
-    const res = await storage.load<Record<string, NotificationAppPreference>>(SETTINGS.notification_app_preferences.key)
+    const res = storage.load<Record<string, NotificationAppPreference>>(SETTINGS.notification_app_preferences.key)
     if (res.is_error()) {
       console.error("Failed to get app preferences", res.error)
       return {}

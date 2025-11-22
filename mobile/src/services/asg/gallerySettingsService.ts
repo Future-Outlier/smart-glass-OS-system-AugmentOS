@@ -21,7 +21,7 @@ export class GallerySettingsService {
   }
 
   async getSettings(): Promise<GallerySettings> {
-    const res = await storage.load<GallerySettings>(this.SETTINGS_KEY)
+    const res = storage.load<GallerySettings>(this.SETTINGS_KEY)
     if (res.is_error()) {
       console.error("[GallerySettings] Error loading settings:", res.error)
       return this.DEFAULT_SETTINGS
@@ -31,13 +31,13 @@ export class GallerySettingsService {
   }
 
   async updateSettings(settings: Partial<GallerySettings>): Promise<void> {
-      const current = await this.getSettings()
-      const updated = {...current, ...settings}
-      const res = await storage.save(this.SETTINGS_KEY, updated)
-      if (res.is_error()) {
-        console.error("[GallerySettings] Error saving settings:", res.error)
-      }
-      console.log("[GallerySettings] Settings updated:", updated)
+    const current = await this.getSettings()
+    const updated = {...current, ...settings}
+    const res = await storage.save(this.SETTINGS_KEY, updated)
+    if (res.is_error()) {
+      console.error("[GallerySettings] Error saving settings:", res.error)
+    }
+    console.log("[GallerySettings] Settings updated:", updated)
   }
 
   async getAutoSaveToCameraRoll(): Promise<boolean> {

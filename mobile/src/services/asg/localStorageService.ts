@@ -87,11 +87,11 @@ export class LocalStorageService {
    * Initialize client ID if not exists
    */
   async initializeClientId(): Promise<string> {
-    let res = await storage.load<string>(this.CLIENT_ID_KEY)
+    let res = storage.load<string>(this.CLIENT_ID_KEY)
     let clientId
     if (res.is_error()) {
       clientId = `mobile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      await storage.save(this.CLIENT_ID_KEY, clientId)
+      storage.save(this.CLIENT_ID_KEY, clientId)
     } else {
       clientId = res.value
     }
@@ -103,7 +103,7 @@ export class LocalStorageService {
    */
   async getSyncState(): Promise<SyncState> {
     const clientId = await this.initializeClientId()
-    const res = await storage.load<SyncState>(this.SYNC_STATE_KEY)
+    const res = storage.load<SyncState>(this.SYNC_STATE_KEY)
 
     if (res.is_error()) {
       console.error("Error getting sync state:", res.error)
@@ -237,7 +237,7 @@ export class LocalStorageService {
         }
 
         // Delete metadata - need to get raw data to maintain relative paths
-        const res = await storage.load(this.DOWNLOADED_FILES_KEY)
+        const res = storage.load(this.DOWNLOADED_FILES_KEY)
         if (res.is_error()) {
           console.error("Error loading downloaded files:", res.error)
           return false

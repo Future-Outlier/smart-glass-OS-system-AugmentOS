@@ -184,7 +184,7 @@ export const markPermissionNotRequested = async (featureKey: string): Promise<vo
 
 // Check if a permission has been requested before
 export const hasPermissionBeenRequested = async (featureKey: string): Promise<boolean> => {
-  const res = await storage.load<boolean>(`PERMISSION_REQUESTED_${featureKey}`)
+  const res = storage.load<boolean>(`PERMISSION_REQUESTED_${featureKey}`)
   if (res.is_error()) {
     console.error("Failed to get permission requested status", res.error)
     return false
@@ -200,7 +200,7 @@ export const markPermissionGranted = async (featureKey: string): Promise<void> =
 }
 
 export const hasPermissionBeenGranted = async (featureKey: string): Promise<boolean> => {
-  const res = await storage.load<boolean>(`PERMISSION_GRANTED_${featureKey}`)
+  const res = storage.load<boolean>(`PERMISSION_GRANTED_${featureKey}`)
   if (res.is_error()) {
     console.error("Failed to get permission granted status", res.error)
     return false

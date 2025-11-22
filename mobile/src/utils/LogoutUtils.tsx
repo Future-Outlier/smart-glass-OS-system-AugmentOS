@@ -231,7 +231,7 @@ export class LogoutUtils {
    */
   public static async verifyLogoutSuccess(): Promise<boolean> {
     // Check if any critical auth tokens remain
-    const res = await storage.load<Session>("supabase.auth.session")
+    const res = storage.load<Session>("supabase.auth.session")
     let supabaseSession = null
     if (res.is_ok()) {
       supabaseSession = res.value
