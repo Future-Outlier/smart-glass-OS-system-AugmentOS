@@ -380,6 +380,20 @@ public class CommandProcessor {
     }
 
     /**
+     * Send MTK firmware update complete notification over BLE
+     */
+    public void sendMtkUpdateComplete() {
+        Log.d(TAG, "📤 sendMtkUpdateComplete() called");
+
+        try {
+            responseSender.sendMtkUpdateComplete();
+            Log.d(TAG, "✅ MTK update complete sent successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error sending MTK update complete", e);
+        }
+    }
+
+    /**
      * Send report swipe status.
      */
     public void sendReportSwipe(boolean report) {

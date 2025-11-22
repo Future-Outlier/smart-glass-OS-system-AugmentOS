@@ -1,4 +1,5 @@
 import {OtaUpdateChecker} from "@/effects/OtaUpdateChecker"
+import {MtkUpdateAlertEffect} from "@/effects/MtkUpdateAlertEffect"
 import {Reconnect} from "@/effects/Reconnect"
 
 export const AllEffects = () => {
@@ -6,6 +7,7 @@ export const AllEffects = () => {
     <>
       <Reconnect />
       <OtaUpdateChecker />
+      <MtkUpdateAlertEffect />
     </>
   )
 }
