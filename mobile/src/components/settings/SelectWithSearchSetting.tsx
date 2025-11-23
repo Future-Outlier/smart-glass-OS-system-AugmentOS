@@ -1,5 +1,4 @@
 // SelectWithSearchSetting.tsx
-import {useAppTheme} from "@/utils/useAppTheme"
 import {useState, useMemo, useEffect} from "react"
 import {
   View,
@@ -12,9 +11,11 @@ import {
   Platform,
   TouchableWithoutFeedback,
 } from "react-native"
-import {Icon, Text} from "@/components/ignite"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import SearchIcon from "../../../assets/icons/component/SearchIcon"
+
+import SearchIcon from "@/assets/icons/component/SearchIcon"
+import {Icon, Text} from "@/components/ignite"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 type Option = {
   label: string
@@ -29,13 +30,13 @@ type SelectWithSearchSettingProps = {
   defaultValue?: string
 }
 
-const SelectWithSearchSetting: React.FC<SelectWithSearchSettingProps> = ({
+const SelectWithSearchSetting = ({
   label,
   value,
   options,
   onValueChange,
   defaultValue,
-}) => {
+}: SelectWithSearchSettingProps) => {
   const {theme} = useAppTheme()
 
   const [search, setSearch] = useState("")

@@ -27,6 +27,8 @@ export const ThemedSlider: React.FC<ThemedSliderProps> = ({
   const {themed} = useAppTheme()
   const [sliderWidth, setSliderWidth] = useState(0)
   const [internalValue, setInternalValue] = useState(value)
+  const sliderPositionRef = useRef({x: 0, y: 0})
+  const containerRef = useRef<View>(null)
 
   const onValueChangeRef = useRef(onValueChange)
   const onSlidingCompleteRef = useRef(onSlidingComplete)
@@ -47,11 +49,12 @@ export const ThemedSlider: React.FC<ThemedSliderProps> = ({
     }
   }, [value])
 
-  const computeValueFromTouch = (touchX: number) => {
+  const computeValueFromPageX = (pageX: number) => {
     if (sliderWidth === 0) {
       return value
     }
-    const ratio = Math.max(0, Math.min(1, touchX / sliderWidth))
+    const relativeX = pageX - sliderPositionRef.current.x
+    const ratio = Math.max(0, Math.min(1, relativeX / sliderWidth))
     return Math.round(min + ratio * (max - min))
   }
 
@@ -59,17 +62,17 @@ export const ThemedSlider: React.FC<ThemedSliderProps> = ({
     onStartShouldSetPanResponder: () => true,
     onPanResponderGrant: evt => {
       isDraggingRef.current = true
-      const newValue = computeValueFromTouch(evt.nativeEvent.locationX)
+      const newValue = computeValueFromPageX(evt.nativeEvent.pageX)
       setInternalValue(newValue)
       onValueChangeRef.current(newValue)
     },
     onPanResponderMove: evt => {
-      const newValue = computeValueFromTouch(evt.nativeEvent.locationX)
+      const newValue = computeValueFromPageX(evt.nativeEvent.pageX)
       setInternalValue(newValue)
       onValueChangeRef.current(newValue)
     },
     onPanResponderRelease: evt => {
-      const newValue = computeValueFromTouch(evt.nativeEvent.locationX)
+      const newValue = computeValueFromPageX(evt.nativeEvent.pageX)
       setInternalValue(newValue)
       onSlidingCompleteRef.current(newValue)
       isDraggingRef.current = false
@@ -78,16 +81,36 @@ export const ThemedSlider: React.FC<ThemedSliderProps> = ({
 
   const handleLayout = (e: LayoutChangeEvent) => {
     setSliderWidth(e.nativeEvent.layout.width)
+    // Measure the absolute position of the slider
+    if (containerRef.current) {
+      containerRef.current.measureInWindow((x, y, _width, _height) => {
+        sliderPositionRef.current = {x, y}
+      })
+    }
   }
 
   const fillPercentage = ((internalValue - min) / (max - min)) * 100
 
-  // Clone icon with white color and size for visibility on colored background
+  // Calculate icon size based on slider width - shrinks progressively
+  const getIconSize = () => {
+    if (fillPercentage >= 30) return 22 // Full size
+    if (fillPercentage < 15) return 0 // Hidden
+    // Scale from 15% to 30%: proportional shrinking
+    const scale = (fillPercentage - 15) / 15
+    return Math.round(22 * scale)
+  }
+
+  const iconSize = getIconSize()
+  const shouldShowIcon = iconSize > 0
+
+  // Clone icon with white color and dynamic size for visibility on colored background
   const whiteIcon =
-    icon && isValidElement(icon) ? cloneElement(icon as React.ReactElement<any>, {color: "#FFFFFF", size: 22}) : icon
+    icon && isValidElement(icon)
+      ? cloneElement(icon as React.ReactElement<any>, {color: "#FFFFFF", size: iconSize})
+      : icon
 
   return (
-    <View style={[themed($container), style]} onLayout={handleLayout} {...panResponder.panHandlers}>
+    <View ref={containerRef} style={[themed($container), style]} onLayout={handleLayout} {...panResponder.panHandlers}>
       {/* Inactive track (thin, full width) */}
       <View style={themed($inactiveTrack)} pointerEvents="none" />
       {/* Active track (thick, filled portion with rounded ends) */}
@@ -100,7 +123,7 @@ export const ThemedSlider: React.FC<ThemedSliderProps> = ({
             adjustsFontSizeToFit
             minimumFontScale={0.5}
           />
-          {whiteIcon && <View style={themed($iconContainer)}>{whiteIcon}</View>}
+          {whiteIcon && shouldShowIcon && <View style={themed($iconContainer)}>{whiteIcon}</View>}
         </View>
       </View>
     </View>

@@ -1,14 +1,15 @@
+import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
 import {useState, useEffect, useCallback} from "react"
 import {View, TextInput, TouchableOpacity, BackHandler} from "react-native"
-import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
-import {Screen, Icon, Header, Checkbox, Button, Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle} from "react-native"
-import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {ScrollView} from "react-native"
 import Toast from "react-native-toast-message"
+
+import {Screen, Icon, Header, Checkbox, Button, Text} from "@/components/ignite"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
+import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 
 export default function WifiPasswordScreen() {
   const params = useLocalSearchParams()

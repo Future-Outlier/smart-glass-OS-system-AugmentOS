@@ -1,10 +1,11 @@
 import {createContext, useContext, useEffect, useRef, useState} from "react"
-import {WebView} from "react-native-webview"
 import {View} from "react-native"
-import {useAppTheme} from "@/utils/useAppTheme"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {WebView} from "react-native-webview"
+
 import restComms from "@/services/RestComms"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 const STORE_PACKAGE_NAME = "org.augmentos.store"
 

@@ -1,7 +1,8 @@
 import {createContext, useContext, useEffect, ReactNode} from "react"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {SETTINGS, useSettingsStore} from "@/stores/settings"
+
 import {useApplets, useStartApplet} from "@/stores/applets"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 interface ButtonActionContextType {
   // Reserved for future extensions (e.g., custom button mappings)

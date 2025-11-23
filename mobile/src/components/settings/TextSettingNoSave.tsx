@@ -1,10 +1,11 @@
-import {View, Platform, Pressable} from "react-native"
-import {Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {useFocusEffect} from "expo-router"
 import {useCallback} from "react"
-import {textEditorStore} from "@/utils/TextEditorStore"
+import {View, Platform, Pressable} from "react-native"
+
+import {Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {textEditorStore} from "@/utils/TextEditorStore"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 type TextSettingNoSaveProps = {
   label: string

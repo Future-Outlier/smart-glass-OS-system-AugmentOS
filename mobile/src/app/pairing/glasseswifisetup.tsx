@@ -1,13 +1,14 @@
+import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
 import {useCallback} from "react"
 import {View, BackHandler} from "react-native"
-import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
-import {Screen, Header, Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {$styles, ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle, ScrollView} from "react-native"
+
+import {Screen, Header, Text} from "@/components/ignite"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import { useGlassesStore } from "@/stores/glasses"
+import {useGlassesStore} from "@/stores/glasses"
+import {$styles, ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function GlassesWifiSetupScreen() {
   const {deviceModel = "Glasses", returnTo} = useLocalSearchParams()

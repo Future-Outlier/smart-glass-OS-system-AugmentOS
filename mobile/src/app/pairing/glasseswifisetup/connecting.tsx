@@ -1,14 +1,16 @@
-import {Button, Header, Icon, Screen} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {$styles, ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
-import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
+import Ionicons from "@expo/vector-icons/Ionicons"
 import CoreModule from "core"
 import {useLocalSearchParams, router} from "expo-router"
 import {useEffect, useRef, useState, useCallback} from "react"
 import {ActivityIndicator, TextStyle, View, ViewStyle} from "react-native"
+
+import {Button, Header, Icon, Screen} from "@/components/ignite"
 import {Text} from "@/components/ignite"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
+import {$styles, ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
+import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 
 export default function WifiConnectingScreen() {
   const params = useLocalSearchParams()

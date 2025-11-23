@@ -5,7 +5,8 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import RNFS from "react-native-fs"
-import {PhotoInfo} from "../../types/asg"
+
+import {PhotoInfo} from "@/types/asg"
 
 export interface DownloadedFile {
   name: string

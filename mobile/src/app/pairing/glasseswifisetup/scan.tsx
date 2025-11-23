@@ -1,3 +1,9 @@
+import CoreModule from "core"
+import {router, useFocusEffect, useLocalSearchParams} from "expo-router"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {ActivityIndicator, BackHandler, FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import Toast from "react-native-toast-message"
+
 import {Button, Header, Icon, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
@@ -5,11 +11,6 @@ import {$styles, ThemedStyle} from "@/theme"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
-import CoreModule from "core"
-import {router, useFocusEffect, useLocalSearchParams} from "expo-router"
-import {useCallback, useEffect, useRef, useState} from "react"
-import {ActivityIndicator, BackHandler, FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
-import Toast from "react-native-toast-message"
 
 // Enhanced network info type
 interface NetworkInfo {

@@ -1,15 +1,16 @@
+import {FontAwesome} from "@expo/vector-icons"
 import {useState} from "react"
 import {View, TextInput, ActivityIndicator, ScrollView, ViewStyle, TextStyle} from "react-native"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
-import {Button, Header, Screen, Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {$styles, ThemedStyle, spacing} from "@/theme"
-import {translate} from "@/i18n"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import showAlert from "@/utils/AlertUtils"
-import {FontAwesome} from "@expo/vector-icons"
-import {Spacer} from "@/components/ui/Spacer"
 import Toast from "react-native-toast-message"
+
+import {Button, Header, Screen, Text} from "@/components/ignite"
+import {Spacer} from "@/components/ui/Spacer"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import {$styles, ThemedStyle, spacing} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("")

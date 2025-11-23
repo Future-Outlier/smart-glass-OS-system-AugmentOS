@@ -1,9 +1,7 @@
-// eslint-disable-next-line no-restricted-imports
 import {TextStyle, View, ViewStyle} from "react-native"
 
 import {Button} from "@/components/ignite"
 import {Text} from "@/components/ignite/Text"
-import {Spacer} from "@/components/ui/Spacer"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
@@ -26,7 +24,7 @@ const BasicDialog = ({
   onLeftPress,
   onRightPress,
 }: BasicDialogProps) => {
-  const {theme, themed} = useAppTheme()
+  const {themed} = useAppTheme()
   return (
     <View style={themed($container)}>
       <View style={themed($titleDescription)}>
@@ -38,8 +36,6 @@ const BasicDialog = ({
           </Text>
         )}
       </View>
-      <Spacer height={theme.spacing.s6} />
-      <View style={themed($divider)} />
       <View style={themed($actions)}>
         <View style={themed($actions1)}>
           {leftButtonText && (
@@ -113,13 +109,6 @@ const $actions1: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingTop: 20,
   alignItems: "center",
   flexDirection: "row",
-})
-
-const $divider: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  height: 1,
-  backgroundColor: colors.border,
-  marginHorizontal: spacing.s6,
-  marginBottom: spacing.s6,
 })
 
 export default BasicDialog

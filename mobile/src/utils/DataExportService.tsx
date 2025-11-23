@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
+
 import {SETTINGS} from "@/stores/settings"
 import {storage} from "@/utils/storage"
 
@@ -204,7 +205,7 @@ export class DataExportService {
           if (value !== undefined) {
             localStorage[key] = value
           }
-        } catch (error) {
+        } catch {
           // Key doesn't exist, skip
           console.warn(`DataExportService: Key ${key} does not exist in local storage`)
         }
