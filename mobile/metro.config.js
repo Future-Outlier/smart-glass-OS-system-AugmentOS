@@ -4,6 +4,12 @@ const path = require("path")
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getSentryExpoConfig(__dirname)
 
+// Configure SVG transformer
+config.transformer = {
+  ...config.transformer,
+  babelTransformerPath: require.resolve("react-native-svg-transformer"),
+}
+
 config.transformer.getTransformOptions = async () => ({
   transform: {
     // Inline requires are very useful for deferring loading of large dependencies/components.
@@ -14,6 +20,10 @@ config.transformer.getTransformOptions = async () => ({
     inlineRequires: true,
   },
 })
+
+// Configure resolver for SVG files
+config.resolver.assetExts = config.resolver.assetExts.filter(ext => ext !== "svg")
+config.resolver.sourceExts = [...config.resolver.sourceExts, "svg"]
 
 // This helps support certain popular third-party libraries
 // such as Firebase that use the extension cjs.

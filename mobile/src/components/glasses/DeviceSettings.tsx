@@ -147,7 +147,6 @@ export default function DeviceSettings() {
         <RouteButton
           icon={<Icon name="wifi" size={24} color={theme.colors.secondary_foreground} />}
           label={translate("settings:glassesWifiSettings")}
-          subtitle={translate("settings:glassesWifiDescription")}
           onPress={() => {
             push("/pairing/glasseswifisetup", {deviceModel: defaultWearable || "Glasses"})
           }}

@@ -214,6 +214,8 @@ const en = {
     retry: "Retry",
     noPhotos: "No photos yet",
     takeFirstPhoto: "Take your first photo to get started!",
+    takePhotoWithButton:
+      "Take a photo by pressing the action button on your glasses, then sync here to view your photos.",
     loadingPhotos: "Loading photos...",
     loadingVideos: "Loading videos...",
     loadingItems: "Loading items...",
@@ -272,7 +274,7 @@ const en = {
     cameraSettingsDescription: "Configure photo and video resolution for button capture",
     screenSettings: "Display position settings",
     screenDescription: "Adjust depth and height of the display content.",
-    glassesWifiSettings: "Glasses WiFi Settings",
+    glassesWifiSettings: "Wi-Fi Networks",
     glassesWifiDescription: "Configure WiFi settings for your smart glasses.",
     wifiUnavailable: "Connect a pair of glasses that support WiFi to access WiFi settings.",
     developerSettings: "Developer Settings",
