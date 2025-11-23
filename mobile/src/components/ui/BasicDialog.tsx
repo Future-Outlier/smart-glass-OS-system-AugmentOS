@@ -1,10 +1,11 @@
-import {useAppTheme} from "@/utils/useAppTheme"
 // eslint-disable-next-line no-restricted-imports
 import {TextStyle, View, ViewStyle} from "react-native"
-import {Spacer} from "@/components/ui/Spacer"
-import {Text} from "@/components/ignite/Text"
-import {ThemedStyle} from "@/theme"
+
 import {Button} from "@/components/ignite"
+import {Text} from "@/components/ignite/Text"
+import {Spacer} from "@/components/ui/Spacer"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface BasicDialogProps {
   title: string
@@ -37,7 +38,8 @@ const BasicDialog = ({
           </Text>
         )}
       </View>
-      <Spacer height={theme.spacing.s12} />
+      <Spacer height={theme.spacing.s6} />
+      <View style={themed($divider)} />
       <View style={themed($actions)}>
         <View style={themed($actions1)}>
           {leftButtonText && (
@@ -111,6 +113,13 @@ const $actions1: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingTop: 20,
   alignItems: "center",
   flexDirection: "row",
+})
+
+const $divider: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
+  height: 1,
+  backgroundColor: colors.border,
+  marginHorizontal: spacing.s6,
+  marginBottom: spacing.s6,
 })
 
 export default BasicDialog

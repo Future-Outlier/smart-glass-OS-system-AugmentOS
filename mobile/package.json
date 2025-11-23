@@ -86,7 +86,6 @@
     "react-native-canvas": "^0.1.40",
     "react-native-config": "1.6.0",
     "react-native-drawer-layout": "^4.2.0",
-    "react-native-elements": "^3.4.3",
     "react-native-error-boundary": "^3.1.0",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "~2.28.0",
@@ -157,7 +156,6 @@
   "trustedDependencies": [
     "@sentry/cli",
     "esbuild",
-    "react-native-elements",
     "react-native-inappbrowser-reborn",
     "react-native-mmkv",
     "react-native-nitro-modules",

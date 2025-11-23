@@ -39,8 +39,8 @@ const $cardButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 })
 
 const $cardButtonImage: ThemedStyle<ImageStyle> = ({spacing}) => ({
-  // width: 100,
-  // height: 100,
+  width: 120,
+  height: 60,
   marginRight: spacing.s2,
 })
 

@@ -6,8 +6,7 @@ import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
 import {EmptyState} from "@/components/glasses/info/EmptyState"
 import {ButtonSettings} from "@/components/glasses/settings/ButtonSettings"
 import {Icon} from "@/components/ignite"
-import SliderSetting from "@/components/settings/SliderSetting"
-import ToggleSetting from "@/components/settings/ToggleSetting"
+import BrightnessSetting from "@/components/settings/BrightnessSetting"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
@@ -104,23 +103,14 @@ export default function DeviceSettings() {
         )}
         {/* Brightness Settings */}
         {features?.display?.adjustBrightness && glassesConnected && (
-          <ToggleSetting
+          <BrightnessSetting
             icon={<Icon name="brightness-half" size={24} color={theme.colors.secondary_foreground} />}
             label={translate("deviceSettings:autoBrightness")}
-            value={autoBrightness}
-            onValueChange={setAutoBrightness}
-          />
-        )}
-        {features?.display?.adjustBrightness && glassesConnected && !autoBrightness && (
-          <SliderSetting
-            label={translate("deviceSettings:brightness")}
-            value={brightness}
-            min={0}
-            max={100}
-            onValueChange={() => {}}
-            onValueSet={setBrightness}
-            // containerStyle={{paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0}}
-            disableBorder
+            autoBrightnessValue={autoBrightness}
+            brightnessValue={brightness}
+            onAutoBrightnessChange={setAutoBrightness}
+            onBrightnessChange={() => {}}
+            onBrightnessSet={setBrightness}
           />
         )}
       </Group>
