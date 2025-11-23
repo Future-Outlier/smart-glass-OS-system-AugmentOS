@@ -78,6 +78,7 @@ const BrightnessSetting: React.FC<BrightnessSettingProps> = ({
             onValueChange={handleBrightnessChange}
             onSlidingComplete={handleBrightnessSet}
             icon={icon}
+            suffix="%"
           />
         </View>
       )}

@@ -1,7 +1,7 @@
+import ChevronRight from "assets/icons/component/ChevronRight"
 import {ReactNode} from "react"
 import {View, TouchableOpacity, ViewStyle, TextStyle} from "react-native"
 
-import ChevronRight from "@/assets/icons/component/ChevronRight"
 import {Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"

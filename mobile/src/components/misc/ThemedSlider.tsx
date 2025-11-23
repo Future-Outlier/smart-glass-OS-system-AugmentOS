@@ -13,6 +13,7 @@ type ThemedSliderProps = {
   onSlidingComplete: (value: number) => void
   style?: ViewStyle
   icon?: React.ReactNode
+  suffix?: string
 }
 
 export const ThemedSlider: React.FC<ThemedSliderProps> = ({
@@ -23,6 +24,7 @@ export const ThemedSlider: React.FC<ThemedSliderProps> = ({
   onSlidingComplete,
   style,
   icon,
+  suffix = "",
 }) => {
   const {themed} = useAppTheme()
   const [sliderWidth, setSliderWidth] = useState(0)
@@ -117,7 +119,7 @@ export const ThemedSlider: React.FC<ThemedSliderProps> = ({
       <View style={[themed($activeTrack), {width: `${fillPercentage}%`}]} pointerEvents="none">
         <View style={themed($handleContent)}>
           <Text
-            text={String(internalValue)}
+            text={`${internalValue}${suffix}`}
             style={themed($valueText)}
             numberOfLines={1}
             adjustsFontSizeToFit

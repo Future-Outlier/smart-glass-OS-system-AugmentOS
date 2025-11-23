@@ -1,4 +1,5 @@
 // SelectWithSearchSetting.tsx
+import SearchIcon from "assets/icons/component/SearchIcon"
 import {useState, useMemo, useEffect} from "react"
 import {
   View,
@@ -13,7 +14,6 @@ import {
 } from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
-import SearchIcon from "@/assets/icons/component/SearchIcon"
 import {Icon, Text} from "@/components/ignite"
 import {useAppTheme} from "@/utils/useAppTheme"
 
