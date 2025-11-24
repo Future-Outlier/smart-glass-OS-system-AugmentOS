@@ -10,9 +10,10 @@ import {
   Platform,
   TouchableWithoutFeedback,
 } from "react-native"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {Icon, Text} from "@/components/ignite"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
+
+import {Icon, Text} from "@/components/ignite"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 type Option = {
   label: string

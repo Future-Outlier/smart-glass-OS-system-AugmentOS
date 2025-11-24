@@ -1,9 +1,10 @@
-import {useAppTheme} from "@/utils/useAppTheme"
 import {View, ViewStyle, TextStyle, Platform} from "react-native"
+
 import {Icon, Text} from "@/components/ignite"
-import {ThemedStyle} from "@/theme"
 import {PillButton} from "@/components/ignite/PillButton"
+import {ThemedStyle} from "@/theme"
 import {BluetoothSettingsHelper} from "@/utils/BluetoothSettingsHelper"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface AudioPairingPromptProps {
   deviceName: string

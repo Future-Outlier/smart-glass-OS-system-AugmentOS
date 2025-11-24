@@ -1,4 +1,5 @@
 import {View, TouchableOpacity} from "react-native"
+
 import {Text} from "@/components/ignite"
 import CheckBox from "@/components/misc/CheckBox"
 import {useAppTheme} from "@/utils/useAppTheme"

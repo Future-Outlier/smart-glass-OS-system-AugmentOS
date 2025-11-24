@@ -5,11 +5,11 @@ import {BackgroundAppsLink} from "@/components/home/BackgroundAppsLink"
 import {CompactDeviceStatus} from "@/components/home/CompactDeviceStatus"
 import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
 import {IncompatibleApps} from "@/components/home/IncompatibleApps"
-import {Spacer} from "@/components/ui/Spacer"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {SETTINGS, useSetting} from "@/stores/settings"
-import {Group} from "@/components/ui/Group"
 import {PairGlassesCard} from "@/components/home/PairGlassesCard"
+import {Group} from "@/components/ui/Group"
+import {Spacer} from "@/components/ui/Spacer"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export const HomeContainer: React.FC = () => {
   const {theme} = useAppTheme()

@@ -1,4 +1,5 @@
 import {EventEmitter} from "events"
+
 import {useConnectionStore} from "@/stores/connection"
 
 export enum WebSocketStatus {

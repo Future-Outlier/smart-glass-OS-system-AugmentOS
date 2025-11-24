@@ -1,4 +1,5 @@
 import {FC, createContext, useEffect, useState, useContext} from "react"
+
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import {MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"

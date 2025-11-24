@@ -1,16 +1,17 @@
+import {useFocusEffect} from "@react-navigation/native"
+import {useLocalSearchParams} from "expo-router"
 import {useState, useCallback, useMemo} from "react"
 import {View, ViewStyle, ActivityIndicator, BackHandler, TextStyle} from "react-native"
-import {WebView} from "react-native-webview"
-import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
-import {useFocusEffect} from "@react-navigation/native"
-import {useAppStoreWebviewPrefetch} from "@/contexts/AppStoreWebviewPrefetchProvider"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {useLocalSearchParams} from "expo-router"
-import {Text, Screen, Header} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {$styles, ThemedStyle} from "@/theme"
-import {useRefreshApplets} from "@/stores/applets"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
+import {WebView} from "react-native-webview"
+
+import {Text, Screen, Header} from "@/components/ignite"
+import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
+import {useAppStoreWebviewPrefetch} from "@/contexts/AppStoreWebviewPrefetchProvider"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useRefreshApplets} from "@/stores/applets"
+import {$styles, ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function AppStoreWeb() {
   const [_webviewLoading, setWebviewLoading] = useState(true)

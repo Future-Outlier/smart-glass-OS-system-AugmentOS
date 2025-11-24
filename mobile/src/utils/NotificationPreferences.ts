@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
+
 import {SETTINGS} from "@/stores/settings"
 
 export interface NotificationAppPreference {

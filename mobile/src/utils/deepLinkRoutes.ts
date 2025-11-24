@@ -1,6 +1,8 @@
-import {NavObject} from "@/contexts/NavigationHistoryContext"
-import {Platform} from "react-native"
 import * as WebBrowser from "expo-web-browser"
+import {Platform} from "react-native"
+
+import {NavObject} from "@/contexts/NavigationHistoryContext"
+
 import {mentraAuthProvider} from "./auth/authProvider"
 
 export interface DeepLinkRoute {

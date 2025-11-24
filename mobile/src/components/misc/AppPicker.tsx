@@ -1,13 +1,14 @@
 import {useState, useMemo, useCallback, FC} from "react"
 import {View, TouchableOpacity, ViewStyle, TextStyle, Modal, ScrollView, TextInput, Platform} from "react-native"
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
+
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
-import {translate} from "@/i18n"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import {ClientAppletInterface} from "@/stores/applets"
 import {Group} from "@/components/ui/Group"
+import {translate} from "@/i18n"
+import {ClientAppletInterface} from "@/stores/applets"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface AppPickerProps {
   visible: boolean
