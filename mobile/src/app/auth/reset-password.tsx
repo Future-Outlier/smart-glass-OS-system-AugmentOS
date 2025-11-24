@@ -1,16 +1,17 @@
-import {Button, Header, Screen, Text} from "@/components/ignite"
-import {Spacer} from "@/components/ui/Spacer"
-import {translate} from "@/i18n"
-import {$styles, ThemedStyle, spacing} from "@/theme"
-import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {FontAwesome} from "@expo/vector-icons"
 import {router} from "expo-router"
 import {useEffect, useState} from "react"
 import {ActivityIndicator, ScrollView, TextInput, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import Toast from "react-native-toast-message"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
+
+import {Button, Header, Screen, Text} from "@/components/ignite"
+import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import {$styles, ThemedStyle, spacing} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function ResetPasswordScreen() {
   const [email, setEmail] = useState("")

@@ -1315,11 +1315,7 @@ export function GalleryScreen() {
   }).current
 
   // UI state
-  const isLoadingServerPhotos = [
-    GalleryState.CONNECTED_LOADING,
-    GalleryState.INITIALIZING,
-    GalleryState.QUERYING_GLASSES,
-  ].includes(galleryState)
+  const isLoadingServerPhotos = [GalleryState.CONNECTED_LOADING, GalleryState.INITIALIZING].includes(galleryState)
 
   const error = galleryState === GalleryState.ERROR ? errorMessage : null
   const serverPhotosToSync = totalServerCount
@@ -1697,10 +1693,8 @@ export function GalleryScreen() {
                     color={theme.colors.textDim}
                     style={{marginBottom: spacing.s6}}
                   />
-                  <Text style={themed($emptyText)}>Gallery is empty</Text>
-                  <Text style={themed($emptySubtext)}>
-                    Take photos with your glasses or sync existing photos to see them here.
-                  </Text>
+                  <Text style={themed($emptyText)}>{translate("glasses:noPhotos")}</Text>
+                  <Text style={themed($emptySubtext)}>{translate("glasses:takePhotoWithButton")}</Text>
                 </View>
               )
             } else {
@@ -1777,9 +1771,10 @@ const $columnWrapper: ThemedStyle<ViewStyle> = () => ({
 
 const $emptyContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  justifyContent: "center",
+  justifyContent: "flex-start",
   alignItems: "center",
   padding: spacing.s8,
+  paddingTop: spacing.s12 * 2,
 })
 
 const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({

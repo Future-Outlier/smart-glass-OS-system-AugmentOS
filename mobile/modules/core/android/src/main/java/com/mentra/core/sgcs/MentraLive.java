@@ -2120,9 +2120,10 @@ public class MentraLive extends SGCManager {
                 Bridge.log("LIVE: 🔄 Received MTK update complete from ASG client");
 
                 String updateMessage = json.optString("message", "MTK firmware updated. Please restart glasses.");
+                long updateTimestamp = json.optLong("timestamp", System.currentTimeMillis());
 
                 Bridge.log("LIVE: 🔄 MTK Update Message: " + updateMessage);
-                
+
                 // Send to React Native via Bridge on main thread
                 handler.post(() -> {
                     Bridge.sendMtkUpdateComplete(updateMessage);

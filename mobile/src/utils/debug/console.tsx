@@ -10,10 +10,11 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from "react-native"
+
 import {Text} from "@/components/ignite/Text"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export const ConsoleLogger = () => {
   const {themed} = useAppTheme()
