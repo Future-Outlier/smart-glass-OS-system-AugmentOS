@@ -32,8 +32,6 @@ import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
 
-// Import logo SVG
-
 export default function LoginScreen() {
   const [isSigningUp, setIsSigningUp] = useState(false)
   const [email, setEmail] = useState("")
