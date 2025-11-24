@@ -252,9 +252,11 @@ export class MantleBridge {
               timestamp: data.timestamp,
               packageName: data.packageName,
             })
-            .catch(error => {
-              console.error("Failed to send phone notification:", error)
-              // TODO: Consider retry logic or queuing failed notifications
+            .then(result => {
+              if (result.is_err()) {
+                console.error("Failed to send phone notification:", result.error)
+                // TODO: Consider retry logic or queuing failed notifications
+              }
             })
           break
         case "phone_notification_dismissed":
@@ -265,8 +267,10 @@ export class MantleBridge {
               packageName: data.packageName,
               notificationId: data.notificationId,
             })
-            .catch(error => {
-              console.error("Failed to send phone notification dismissal:", error)
+            .then(result => {
+              if (result.is_err()) {
+                console.error("Failed to send phone notification dismissal:", result.error)
+              }
             })
           break
         // TODO: this is a bit of a hack, we should have dedicated functions for ws endpoints in the core:
@@ -301,6 +305,13 @@ export class MantleBridge {
         case "keep_alive_ack":
           console.log("MantleBridge: Forwarding keep-alive ACK to server:", data)
           socketComms.sendKeepAliveAck(data)
+          break
+        case "mtk_update_complete":
+          console.log("MantleBridge: MTK firmware update complete:", data.message)
+          GlobalEventEmitter.emit("MTK_UPDATE_COMPLETE", {
+            message: data.message,
+            timestamp: data.timestamp,
+          })
           break
         default:
           console.log("Unknown event type:", data.type)

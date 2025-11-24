@@ -1,7 +1,8 @@
 import {useEffect} from "react"
+import {View} from "react-native"
+
 import {useAuth} from "@/contexts/AuthContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {View} from "react-native"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function IndexPage() {

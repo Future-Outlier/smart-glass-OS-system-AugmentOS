@@ -10,19 +10,18 @@ import AppIcon from "@/components/misc/AppIcon"
 import LoadingOverlay from "@/components/misc/LoadingOverlay"
 import SettingsSkeleton from "@/components/misc/SettingsSkeleton"
 import GroupTitle from "@/components/settings/GroupTitle"
-import {InfoRow} from "@/components/settings/InfoRow"
 import MultiSelectSetting from "@/components/settings/MultiSelectSetting"
 import NumberSetting from "@/components/settings/NumberSetting"
 import SelectSetting from "@/components/settings/SelectSetting"
 import SelectWithSearchSetting from "@/components/settings/SelectWithSearchSetting"
-import {SettingsGroup} from "@/components/settings/SettingsGroup"
 import SliderSetting from "@/components/settings/SliderSetting"
 import TextSettingNoSave from "@/components/settings/TextSettingNoSave"
 import TimeSetting from "@/components/settings/TimeSetting"
 import TitleValueSetting from "@/components/settings/TitleValueSetting"
 import ToggleSetting from "@/components/settings/ToggleSetting"
-import ActionButton from "@/components/ui/ActionButton"
 import Divider from "@/components/ui/Divider"
+import InfoCardSection from "@/components/ui/InfoCard"
+import {RouteButton} from "@/components/ui/RouteButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
@@ -623,40 +622,36 @@ export default function AppSettings() {
 
           {/* Additional Information Section */}
           <View>
-            <Text
-              style={[
-                themed($groupTitle),
+            <Text style={themed($sectionTitleText)}>App info</Text>
+            <InfoCardSection
+              items={[
                 {
-                  marginTop: theme.spacing.s4,
-                  marginBottom: theme.spacing.s2,
-                  paddingHorizontal: theme.spacing.s4,
-                  fontSize: 16,
-                  fontFamily: "Montserrat-Regular",
-                  color: theme.colors.textDim,
+                  label: "Company",
+                  value: serverAppInfo?.organization?.name || "—",
                 },
-              ]}>
-              Other
-            </Text>
-            <SettingsGroup>
-              <View style={{paddingVertical: theme.spacing.s3}}>
-                <Text style={{fontSize: 15, color: theme.colors.text}}>Additional Information</Text>
-              </View>
-              <InfoRow label="Company" value={serverAppInfo?.organization?.name || "-"} showDivider={false} />
-              <InfoRow label="Website" value={serverAppInfo?.organization?.website || "-"} showDivider={false} />
-              <InfoRow label="Contact" value={serverAppInfo?.organization?.contactEmail || "-"} showDivider={false} />
-              <InfoRow
-                label="App Type"
-                value={
-                  appInfo?.type === "standard" ? "Foreground" : appInfo?.type === "background" ? "Background" : "-"
-                }
-                showDivider={false}
-              />
-              <InfoRow label="Package Name" value={packageName} showDivider={false} />
-            </SettingsGroup>
+                {
+                  label: "Website",
+                  value: serverAppInfo?.organization?.website || "—",
+                },
+                {
+                  label: "Contact",
+                  value: serverAppInfo?.organization?.contactEmail || "—",
+                },
+                {
+                  label: "App Type",
+                  value:
+                    appInfo?.type === "standard" ? "Foreground" : appInfo?.type === "background" ? "Background" : "—",
+                },
+                {
+                  label: "Package Name",
+                  value: packageName,
+                },
+              ]}
+            />
           </View>
 
           {/* Uninstall Button at the bottom */}
-          <ActionButton
+          <RouteButton
             label="Uninstall"
             variant="destructive"
             onPress={() => {
@@ -770,4 +765,14 @@ const $noSettingsText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
 })
 
-const $groupTitle: ThemedStyle<TextStyle> = () => ({})
+const _$groupTitle: ThemedStyle<TextStyle> = () => ({})
+
+const $sectionTitleText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+  fontSize: 14,
+  fontWeight: "400",
+  color: colors.text,
+  lineHeight: 20,
+  letterSpacing: 0,
+  marginBottom: spacing.s2,
+  marginTop: spacing.s3,
+})

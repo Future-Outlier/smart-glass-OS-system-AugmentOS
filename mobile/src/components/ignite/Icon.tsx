@@ -1,3 +1,18 @@
+import {createIconSet} from "@expo/vector-icons"
+import {
+  Bell,
+  CircleUser,
+  FileType2,
+  Fullscreen,
+  Glasses,
+  LayoutDashboard,
+  Locate,
+  Unlink,
+  Unplug,
+  UserRound,
+  Wifi,
+  WifiOff,
+} from "lucide-react-native"
 import {
   Image,
   ImageStyle,
@@ -9,22 +24,9 @@ import {
   ViewProps,
   ViewStyle,
 } from "react-native"
+
+import {HomeIcon, ShoppingBagIcon, UserIcon} from "@/components/icons"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {
-  Bell,
-  CircleUser,
-  FileType2,
-  Fullscreen,
-  Glasses,
-  Home,
-  LayoutDashboard,
-  Locate,
-  Unlink,
-  Unplug,
-  UserRound,
-  Wifi,
-  WifiOff,
-} from "lucide-react-native"
 
 export type IconTypes = keyof typeof iconRegistry
 
@@ -90,7 +92,6 @@ export function PressableIcon(props: PressableIconProps) {
   )
 }
 
-import {createIconSet} from "@expo/vector-icons"
 const glyphMap = require("@assets/icons/tabler/glyph-map.json")
 const TablerIcon = createIconSet(glyphMap, "tablerIcons", "tabler-icons.ttf")
 
@@ -100,8 +101,7 @@ const lucideIcons = {
   "glasses": Glasses,
   "bell": Bell,
   "file-type-2": FileType2,
-  "user-round-filled": UserRound,
-  "home": Home,
+  "user-round": UserRound,
   "wifi": Wifi,
   "unplug": Unplug,
   "unlink": Unlink,
@@ -132,6 +132,66 @@ export function Icon(props: IconProps) {
   const $textStyle: StyleProp<TextStyle> = [
     size !== undefined && {fontSize: size, lineHeight: size, width: size, height: size},
   ]
+
+  // Special handling for custom icons
+  if (name === "shopping-bag") {
+    return (
+      <ShoppingBagIcon
+        size={size}
+        color={color}
+        theme={theme}
+        containerStyle={$containerStyleOverride}
+        {...viewProps}
+      />
+    )
+  }
+
+  if (name === "shopping-bag-filled") {
+    return (
+      <ShoppingBagIcon
+        size={size}
+        color={color}
+        theme={theme}
+        containerStyle={$containerStyleOverride}
+        variant="filled"
+        {...viewProps}
+      />
+    )
+  }
+
+  if (name === "home") {
+    return <HomeIcon size={size} color={color} theme={theme} containerStyle={$containerStyleOverride} {...viewProps} />
+  }
+
+  if (name === "home-filled") {
+    return (
+      <HomeIcon
+        size={size}
+        color={color}
+        theme={theme}
+        containerStyle={$containerStyleOverride}
+        variant="filled"
+        {...viewProps}
+      />
+    )
+  }
+
+  if (name === "user") {
+    return <UserIcon size={size} color={color} theme={theme} containerStyle={$containerStyleOverride} {...viewProps} />
+  }
+
+  if (name === "user-filled") {
+    return (
+      <UserIcon
+        size={size}
+        color={color}
+        theme={theme}
+        containerStyle={$containerStyleOverride}
+        variant="filled"
+        {...viewProps}
+      />
+    )
+  }
 
   // @ts-ignore
   if (lucideIcons[name]) {
@@ -166,6 +226,11 @@ export function Icon(props: IconProps) {
 export const iconRegistry = {
   // included in other font sets (imported automatically):
   // included here mostly for ide/type hinting purposes:
+  // Custom SVG icons:
+  "home": 1,
+  "home-filled": 1,
+  "shopping-bag": 1,
+  "shopping-bag-filled": 1,
   // tabler icons:
   "settings": 1,
   "bluetooth-connected": 1,
@@ -180,7 +245,8 @@ export const iconRegistry = {
   "message-2-star": 1,
   "shield-lock": 1,
   "user-code": 1,
-  "shopping-bag": 1,
+  "user": 1,
+  "user-filled": 1,
   "sun": 1,
   "microphone": 1,
   "device-ipad": 1,

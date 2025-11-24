@@ -1,4 +1,7 @@
 import {AppState} from "react-native"
+
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
+
 import {
   MentraAuthSession,
   MentraAuthSessionResponse,
@@ -12,7 +15,6 @@ import {
 } from "./authProvider.types"
 import {AuthingWrapperClient} from "./provider/authingClient"
 import {SupabaseWrapperClient} from "./provider/supabaseClient"
-import {SETTINGS, useSettingsStore} from "@/stores/settings"
 class MentraAuthProvider {
   private isSettingUpClients = false
   private authing?: AuthingWrapperClient

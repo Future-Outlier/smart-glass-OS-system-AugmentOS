@@ -382,9 +382,9 @@ export const useSettingsStore = create<SettingsState>()(
           loadedSettings[setting.key] = value
         }
 
-        console.log("##############################################")
-        console.log(loadedSettings)
-        console.log("##############################################")
+        // console.log("##############################################")
+        // console.log(loadedSettings)
+        // console.log("##############################################")
 
         set(state => ({
           isInitialized: true,
