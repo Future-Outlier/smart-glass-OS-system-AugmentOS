@@ -16,19 +16,14 @@ class MMKVStorage {
   }
 
   public load<T>(key: string): Result<T, Error> {
-    let almostThere: string | null = null
-    try {
-      almostThere = this.loadString(key)
-      let value: T = JSON.parse(almostThere ?? "") as T
-      // @ts-ignore
-      return Res.ok(value)
-    } catch {
-      return Res.error(new Error(`Failed to load ${key}`))
-    }
-  }
-
-  private loadString(key: string): string | null {
-    return this.store.getString(key) ?? null
+    return Res.try(
+      async () => {
+        const loadedString = this.store.getString(key) ?? ""
+        const value = JSON.parse(loadedString) as T
+        return value
+      },
+      (e: unknown) => new Error(`Failed to load ${key} ${e}`),
+    )
   }
 
   private saveString(key: string, value: string): Result<void, Error> {
@@ -41,7 +36,7 @@ class MMKVStorage {
       // return the key value pair of any keys that start with the given key and contain a colon:
       const keys = this.store.getAllKeys()
 
-      const subKeys = keys.filter(key => key.startsWith(key) && key.includes(":"))
+      const subKeys = keys.filter(k => k.startsWith(key) && k.includes(":"))
 
       if (subKeys.length === 0) {
         return Res.error(new Error(`No subkeys found for ${key}`))
