@@ -2120,7 +2120,6 @@ public class MentraLive extends SGCManager {
                 Bridge.log("LIVE: 🔄 Received MTK update complete from ASG client");
                 
                 String updateMessage = json.optString("message", "MTK firmware updated. Please restart glasses.");
-                long timestamp = json.optLong("timestamp", System.currentTimeMillis());
                 
                 Bridge.log("LIVE: 🔄 MTK Update Message: " + updateMessage);
                 

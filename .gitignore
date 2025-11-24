@@ -4,6 +4,7 @@ AugmentOS-Cloud-Example-App/*
 RtmpStreamExampleBasic/*
 server/config.json
 K900_server_sdk/*
+K900_android_sdk/*
 K900Server_open/*
 K900_server/*
 .claude/*

@@ -1260,17 +1260,17 @@ public class CameraNeo extends LifecycleService {
                         jpegSize.getWidth(), jpegSize.getHeight(),
                         ImageFormat.JPEG, 12);
 
-            imageReader.setOnImageAvailableListener(reader -> {
-                // Only process images when we're actually shooting, not during precapture metering
-                if (shotState != ShotState.SHOOTING) {
-                    // Suppress logging to prevent logcat overflow
-                    // Only log errors or important state changes
-                    // Consume the image to prevent backing up the queue
-                    try (Image image = reader.acquireLatestImage()) {
-                        // Just consume and discard
-                    }
-                    return;
-                }
+                imageReader.setOnImageAvailableListener(reader -> {
+                    // Only process images when we're actually shooting, not during precapture metering
+                    if (shotState != ShotState.SHOOTING) {
+                        // Suppress logging to prevent logcat overflow
+                        // Only log errors or important state changes
+                        // Consume the image to prevent backing up the queue
+                        try (Image image = reader.acquireLatestImage()) {
+                            // Just consume and discard
+                        }
+                        return;
+            }
 
                 // Process the captured JPEG (only when in SHOOTING state)
                 Log.d(TAG, "Processing final photo capture...");
