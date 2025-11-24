@@ -1,8 +1,9 @@
+import {EventEmitter} from "events"
+
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import {RequestResultSafeDestructure} from "@supabase/supabase-js"
 import {AuthenticationClient} from "authing-js-sdk"
 import type {AuthenticationClientOptions, User} from "authing-js-sdk"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import {EventEmitter} from "events"
-import {RequestResultSafeDestructure} from "@supabase/supabase-js"
 
 interface Session {
   access_token?: string

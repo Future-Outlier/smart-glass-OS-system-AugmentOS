@@ -125,7 +125,8 @@ const PatternPreview = ({imageType, imageSize, isDark = false, showDualLayout = 
             marginBottom: 20,
             letterSpacing: 0.5,
           }}>
-          {/* /// MentraOS Connected \\\ */}
+          {/* MentraOS Connected */}
+          {"/// MentraOS Connected \\\\\\"}
         </Text>
 
         <Text

@@ -1,3 +1,4 @@
+import LogoSvg from "@assets/logo/logo.svg"
 import {FontAwesome} from "@expo/vector-icons"
 import AppleIcon from "assets/icons/component/AppleIcon"
 import GoogleIcon from "assets/icons/component/GoogleIcon"
@@ -290,13 +291,18 @@ export default function LoginScreen() {
           {isAuthLoading && (
             <Animated.View style={[themed($authLoadingOverlay), {opacity: authOverlayOpacity}]}>
               <View style={themed($authLoadingContent)}>
-                <View style={themed($authLoadingLogoPlaceholder)} />
+                <View style={themed($authLoadingLogoContainer)}>
+                  <LogoSvg width={108} height={58} />
+                </View>
                 <ActivityIndicator size="large" color={theme.colors.tint} style={themed($authLoadingIndicator)} />
                 <Text tx="login:connectingToServer" style={themed($authLoadingText)} />
               </View>
             </Animated.View>
           )}
           <Animated.View style={{opacity, transform: [{translateY}]}}>
+            <View style={themed($logoContainer)}>
+              <LogoSvg width={108} height={58} />
+            </View>
             <Text preset="heading" tx="login:title" style={themed($title)} />
             <Text preset="subheading" tx="login:subtitle" style={themed($subtitle)} />
           </Animated.View>
@@ -501,10 +507,16 @@ const $authLoadingContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
   padding: spacing.s4,
 })
 
-const $authLoadingLogoPlaceholder: ThemedStyle<ViewStyle> = () => ({
-  width: 100,
-  height: 100,
-  marginBottom: 20,
+const $authLoadingLogoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: spacing.s6,
+})
+
+const $logoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: spacing.s4,
 })
 
 const $authLoadingIndicator: ThemedStyle<ViewStyle> = ({spacing}) => ({

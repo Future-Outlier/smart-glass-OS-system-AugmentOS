@@ -1,12 +1,14 @@
 import {ReactElement} from "react"
 import {StyleProp, TextStyle, TouchableOpacity, TouchableOpacityProps, View, ViewStyle} from "react-native"
+
 import {isRTL, translate} from "@/i18n"
 import {$styles} from "@/theme"
+import type {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 import {ExtendedEdge, useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
+
 import {IconTypes, PressableIcon} from "./Icon"
 import {Text, TextProps} from "./Text"
-import {useAppTheme} from "@/utils/useAppTheme"
-import type {ThemedStyle} from "@/theme"
 
 export interface HeaderProps {
   /**
@@ -139,10 +141,7 @@ interface HeaderActionProps {
  * @returns {JSX.Element} The rendered `Header` component.
  */
 export function Header(props: HeaderProps) {
-  const {
-    theme: {colors},
-    themed,
-  } = useAppTheme()
+  const {themed} = useAppTheme()
   const {
     backgroundColor = "transparent",
     LeftActionComponent,
@@ -161,7 +160,7 @@ export function Header(props: HeaderProps) {
     rightTxOptions,
     safeAreaEdges = ["top"],
     title,
-    titleMode = "center",
+    titleMode = "flex",
     titleTx,
     titleTxOptions,
     titleContainerStyle: $titleContainerStyleOverride,
@@ -205,7 +204,7 @@ export function Header(props: HeaderProps) {
           <View
             style={[
               titleMode === "center" && themed($titleWrapperCenter),
-              titleMode === "flex" && $titleWrapperFlex,
+              titleMode === "flex" && themed($titleWrapperFlex),
               $titleContainerStyleOverride,
             ]}
             pointerEvents="none">
@@ -260,7 +259,10 @@ function HeaderAction(props: HeaderActionProps) {
         name={icon}
         color={iconColor}
         onPress={onPress}
-        containerStyle={themed([$actionIconContainer, {backgroundColor: theme.colors.primary_foreground, borderRadius: theme.spacing.s10, width: 40, height: 40 }])}
+        containerStyle={themed([
+          $actionIconContainer,
+          {backgroundColor: theme.colors.primary_foreground, borderRadius: theme.spacing.s10, width: 40, height: 40},
+        ])}
         style={isRTL ? {transform: [{rotate: "180deg"}]} : {}}
       />
     )
@@ -280,7 +282,7 @@ const $container: ViewStyle = {
 }
 
 const $title: TextStyle = {
-  textAlign: "center",
+  textAlign: "left",
   fontSize: 15,
 }
 
@@ -320,7 +322,8 @@ const $titleWrapperCenter: ThemedStyle<ViewStyle> = ({spacing}) => ({
   zIndex: 1,
 })
 
-const $titleWrapperFlex: ViewStyle = {
+const $titleWrapperFlex: ThemedStyle<ViewStyle> = ({spacing}) => ({
   justifyContent: "center",
   flexGrow: 1,
-}
+  paddingLeft: spacing.s3,
+})

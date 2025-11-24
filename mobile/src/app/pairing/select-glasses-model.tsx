@@ -3,6 +3,9 @@ import {useFocusEffect} from "expo-router"
 import {useCallback} from "react"
 import {View, TouchableOpacity, Platform, ScrollView, Image, ViewStyle, ImageStyle, TextStyle} from "react-native"
 
+import {EvenRealitiesLogo} from "@/components/brands/EvenRealitiesLogo"
+import {MentraLogo} from "@/components/brands/MentraLogo"
+import {VuzixLogo} from "@/components/brands/VuzixLogo"
 import {Text} from "@/components/ignite"
 import {Header} from "@/components/ignite"
 import {Screen} from "@/components/ignite/Screen"
@@ -27,6 +30,21 @@ export default function SelectGlassesModelScreen() {
       return () => {}
     }, []),
   )
+
+  // Get logo component for manufacturer
+  const getManufacturerLogo = (modelName: string) => {
+    switch (modelName) {
+      case DeviceTypes.G1:
+        return <EvenRealitiesLogo color={theme.colors.text} />
+      case DeviceTypes.LIVE:
+      case DeviceTypes.MACH1:
+        return <MentraLogo color={theme.colors.text} />
+      case DeviceTypes.Z100:
+        return <VuzixLogo color={theme.colors.text} />
+      default:
+        return null
+    }
+  }
 
   // Platform-specific glasses options
   const glassesOptions =
@@ -74,8 +92,11 @@ export default function SelectGlassesModelScreen() {
               key={glasses.key}
               style={themed($settingItem)}
               onPress={() => triggerGlassesPairingGuide(glasses.modelName)}>
-              <Image source={getGlassesImage(glasses.modelName)} style={themed($glassesImage)} />
-              <Text style={[themed($label)]}>{glasses.modelName}</Text>
+              <View style={themed($cardContent)}>
+                <View style={themed($manufacturerLogo)}>{getManufacturerLogo(glasses.modelName)}</View>
+                <Image source={getGlassesImage(glasses.modelName)} style={themed($glassesImage)} />
+                <Text style={[themed($label)]}>{glasses.modelName}</Text>
+              </View>
             </TouchableOpacity>
           ))}
           <Spacer height={theme.spacing.s4} />
@@ -89,10 +110,24 @@ const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: spacing.s3,
   height: 190,
   borderRadius: spacing.s4,
   backgroundColor: colors.primary_foreground,
+  overflow: "hidden",
+})
+
+const $cardContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: spacing.s3,
+  width: "100%",
+})
+
+const $manufacturerLogo: ThemedStyle<ViewStyle> = () => ({
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 24,
 })
 
 const $glassesImage: ThemedStyle<ImageStyle> = () => ({

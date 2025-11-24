@@ -1,15 +1,16 @@
 import {useEffect, useRef, useState} from "react"
 import {View, ViewStyle, TextStyle} from "react-native"
 import LinearGradient from "react-native-linear-gradient"
-import Icon from "react-native-vector-icons/FontAwesome"
 import Animated, {useSharedValue, withTiming} from "react-native-reanimated"
-import {useConnectionStore} from "@/stores/connection"
-import {WebSocketStatus} from "@/services/WebSocketManager"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import Icon from "react-native-vector-icons/FontAwesome"
+
 import {Text} from "@/components/ignite"
 import {translate} from "@/i18n"
+import {WebSocketStatus} from "@/services/WebSocketManager"
 import {useRefreshApplets} from "@/stores/applets"
+import {useConnectionStore} from "@/stores/connection"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function CloudConnection() {
   const connectionStatus = useConnectionStore(state => state.status)

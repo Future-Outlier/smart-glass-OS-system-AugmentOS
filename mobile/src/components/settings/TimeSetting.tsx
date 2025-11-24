@@ -1,8 +1,9 @@
 import {useState, useEffect, useRef} from "react"
 import {View, Pressable, Modal, ScrollView, Platform, ViewStyle, TextStyle} from "react-native"
+
 import {Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 type TimeSettingProps = {
   label: string

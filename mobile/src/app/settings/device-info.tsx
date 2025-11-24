@@ -1,10 +1,11 @@
+import {ScrollView} from "react-native"
+
 import {DeviceInformation} from "@/components/glasses/info/DeviceInformation"
 import {Header, Screen} from "@/components/ignite"
 import {Spacer} from "@/components/ui"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {$styles} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ScrollView} from "react-native"
 
 export default function DeviceInfoScreen() {
   const {theme, themed} = useAppTheme()

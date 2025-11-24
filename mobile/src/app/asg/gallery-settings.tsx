@@ -3,7 +3,6 @@ import {View, ViewStyle, TextStyle, ScrollView} from "react-native"
 
 import {Header, Screen, Text} from "@/components/ignite"
 import ToggleSetting from "@/components/settings/ToggleSetting"
-import ActionButton from "@/components/ui/ActionButton"
 import InfoCardSection from "@/components/ui/InfoCard"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -177,9 +176,8 @@ export default function GallerySettingsScreen() {
         </View>
 
         <View style={themed($section)}>
-          <ActionButton
+          <RouteButton
             label={translate("glasses:deleteAllPhotos")}
-            //subtitle="Remove all photos from device storage (camera roll photos are not affected)"
             onPress={handleDeleteAll}
             variant="destructive"
             disabled={isLoadingStats || localPhotoCount + localVideoCount === 0}

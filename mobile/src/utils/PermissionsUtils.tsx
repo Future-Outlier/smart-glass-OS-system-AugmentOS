@@ -1,13 +1,15 @@
-import {translate} from "@/i18n"
-import {Theme} from "@/theme"
-import {AppletInterface, AppletPermission} from "@/../../cloud/packages/types/src"
-import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import CoreModule from "core"
 import {Alert, Linking, PermissionsAndroid, Platform} from "react-native"
 import BleManager from "react-native-ble-manager"
 import {check, PERMISSIONS, request, RESULTS} from "react-native-permissions"
+
+import {translate} from "@/i18n"
+import {Theme} from "@/theme"
 import showAlert, {showBluetoothAlert, showLocationAlert, showLocationServicesAlert} from "@/utils/AlertUtils"
-import CoreModule from "core"
+import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
+
+import {AppletInterface, AppletPermission} from "@/../../cloud/packages/types/src"
 
 // Define permission features with their required permissions
 export const PermissionFeatures: Record<string, string> = {
