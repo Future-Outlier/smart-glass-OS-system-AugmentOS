@@ -1,8 +1,8 @@
 import axios, {AxiosInstance, AxiosRequestConfig} from "axios"
-import {AsyncResult, Result, result as TSR} from "typesafe-ts"
+import {AsyncResult, Result, result as Res} from "typesafe-ts"
 
 import {GlassesInfo} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 import {AppletInterface} from "@/../../cloud/packages/types/src"
@@ -58,9 +58,9 @@ class RestComms {
   // Helper Methods
   private validateToken(): Result<void, Error> {
     if (!this.coreToken) {
-      return TSR.error(new Error("No core token available for authentication"))
+      return Res.error(new Error("No core token available for authentication"))
     }
-    return TSR.ok(undefined)
+    return Res.ok(undefined)
   }
 
   private createAuthHeaders(): Record<string, string> {
@@ -87,7 +87,7 @@ class RestComms {
       params,
     }
 
-    return TSR.try_async(async () => {
+    return Res.try_async(async () => {
       const res = await this.axiosInstance.request<T>(axiosConfig)
       return res.data
     })
@@ -96,8 +96,7 @@ class RestComms {
   private authenticatedRequest<T>(config: RequestConfig): AsyncResult<T, Error> {
     let res = this.validateToken()
     if (res.is_error()) {
-      let err = Promise.resolve(TSR.error<T>(res.error))
-      return new AsyncResult<T, Error>(err)
+      return Res.error_async(res.error)
     }
     return this.makeRequest<T>({...config})
   }
@@ -231,7 +230,7 @@ class RestComms {
   }
 
   public exchangeToken(token: string): AsyncResult<string, Error> {
-    const isChina: string = useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    const isChina: string = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
 
     const config: RequestConfig = {
       method: "POST",
@@ -250,7 +249,7 @@ class RestComms {
     // set the core token in the store:
     return coreTokenResult.and_then((coreToken: string) => {
       this.setCoreToken(coreToken)
-      return TSR.ok(coreToken)
+      return Res.ok(coreToken)
     })
   }
 
@@ -324,9 +323,10 @@ class RestComms {
 
     // ;(async () => {
     //   console.log("result@@@@@", await result)
-    //   // const response = await TSR.value
+    //   // const response = await Res.value
     //   // return {url: response.url, token: response.token}
     // })()
+
     return res.map(response => response.data)
   }
 

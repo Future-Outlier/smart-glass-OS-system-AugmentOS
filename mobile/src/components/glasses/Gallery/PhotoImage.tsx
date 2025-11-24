@@ -6,10 +6,11 @@
 import {useState, useEffect} from "react"
 import {View, Image} from "react-native"
 import {ViewStyle, ImageStyle, TextStyle} from "react-native"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
-import {PhotoInfo} from "../../../types/asg"
+
 import {Text} from "@/components/ignite"
+import {ThemedStyle} from "@/theme"
+import {PhotoInfo} from "@/types/asg"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface PhotoImageProps {
   photo: PhotoInfo
@@ -88,11 +89,13 @@ export function PhotoImage({photo, style, showPlaceholder = true}: PhotoImagePro
   }
 
   const handleError = (error: any) => {
+    // Extract error message safely without passing complex circular objects
+    const errorMessage = error?.nativeEvent?.error || error?.message || String(error)
     console.error("[PhotoImage] Error loading image:", {
       name: photo.name,
       url: imageUrl,
       isVideo: photo.is_video,
-      error: error?.nativeEvent?.error || error,
+      error: errorMessage,
     })
     setHasError(true)
     setIsLoading(false)

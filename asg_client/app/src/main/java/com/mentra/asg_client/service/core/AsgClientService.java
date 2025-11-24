@@ -5,12 +5,18 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.MediaRecorder;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.util.Size;
 
 import com.mentra.asg_client.SysControl;
 import com.mentra.asg_client.io.bluetooth.interfaces.BluetoothStateListener;
@@ -117,6 +123,7 @@ public class AsgClientService extends Service implements NetworkStateListener, B
     private BroadcastReceiver heartbeatReceiver;
     private BroadcastReceiver restartReceiver;
     private BroadcastReceiver otaProgressReceiver;
+    private BroadcastReceiver mtkUpdateReceiver;
     
     // ---------------------------------------------
     // Heartbeat Timeout Management
@@ -216,6 +223,10 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             // Clean up orphaned BLE transfer files from previous sessions
             Log.d(TAG, "🗑️ Cleaning up orphaned BLE transfer files");
             cleanupOrphanedBleTransfers();
+
+            // Log all available video resolutions
+            Log.d(TAG, "📹 Querying available video resolutions");
+            logAvailableVideoResolutions();
 
             Log.i(TAG, "✅ AsgClientServiceV2 onCreate() completed successfully");
         } catch (Exception e) {
@@ -582,6 +593,7 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             registerHeartbeatReceiver();
             registerRestartReceiver();
             registerOtaProgressReceiver();
+            registerMtkUpdateReceiver();
             Log.d(TAG, "✅ All receivers registered successfully");
         } catch (Exception e) {
             Log.e(TAG, "💥 Error registering receivers", e);
@@ -617,6 +629,14 @@ public class AsgClientService extends Service implements NetworkStateListener, B
                 Log.d(TAG, "✅ OTA progress receiver unregistered");
             } else {
                 Log.d(TAG, "⏭️ OTA progress receiver is null - skipping");
+            }
+            
+            if (mtkUpdateReceiver != null) {
+                Log.d(TAG, "🔄 Unregistering MTK update receiver");
+                unregisterReceiver(mtkUpdateReceiver);
+                Log.d(TAG, "✅ MTK update receiver unregistered");
+            } else {
+                Log.d(TAG, "⏭️ MTK update receiver is null - skipping");
             }
             
             // Stop heartbeat monitoring
@@ -697,9 +717,37 @@ public class AsgClientService extends Service implements NetworkStateListener, B
     @Override
     public void onWifiCredentialsReceived(String ssid, String password, String authToken) {
         Log.i(TAG, "🔑 WiFi credentials received for network: " + ssid);
-        Log.d(TAG, "📋 Credentials - SSID: " + ssid + 
-                  ", Password: " + (password != null ? "***" : "null") + 
+        Log.d(TAG, "📋 Credentials - SSID: " + ssid +
+                  ", Password: " + (password != null ? "***" : "null") +
                   ", AuthToken: " + (authToken != null ? "***" : "null"));
+    }
+
+    @Override
+    public void onHotspotError(String errorMessage) {
+        Log.e(TAG, "📡 🔥 ❌ Hotspot error occurred: " + errorMessage);
+
+        // Send hotspot error to phone
+        try {
+            if (serviceContainer != null && serviceContainer.getServiceManager() != null) {
+                var commManager = serviceContainer.getCommunicationManager();
+
+                if (commManager != null) {
+                    // Build hotspot error JSON
+                    JSONObject hotspotError = new JSONObject();
+                    hotspotError.put("type", "hotspot_error");
+                    hotspotError.put("error_message", errorMessage);
+                    hotspotError.put("timestamp", System.currentTimeMillis());
+
+                    Log.d(TAG, "📡 🔥 Sending hotspot error: " + hotspotError.toString());
+                    boolean sent = commManager.sendBluetoothResponse(hotspotError);
+                    Log.d(TAG, "📡 🔥 " + (sent ? "✅ Hotspot error sent successfully" : "❌ Failed to send hotspot error"));
+                } else {
+                    Log.w(TAG, "📡 🔥 Cannot send hotspot error - communication manager not available");
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "📡 🔥 Error sending hotspot error message", e);
+        }
     }
 
     // ---------------------------------------------
@@ -1217,6 +1265,43 @@ public class AsgClientService extends Service implements NetworkStateListener, B
         }
     }
 
+    private void registerMtkUpdateReceiver() {
+        Log.d(TAG, "🔄 registerMtkUpdateReceiver() started");
+        
+        try {
+            mtkUpdateReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if ("com.mentra.asg_client.MTK_UPDATE_COMPLETE".equals(intent.getAction())) {
+                        Log.i(TAG, "🔄 Received MTK update complete broadcast");
+                        sendMtkUpdateCompleteOverBle();
+                    }
+                }
+            };
+            
+            IntentFilter filter = new IntentFilter("com.mentra.asg_client.MTK_UPDATE_COMPLETE");
+            registerReceiver(mtkUpdateReceiver, filter);
+            Log.d(TAG, "✅ MTK update receiver registered successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error registering MTK update receiver", e);
+        }
+    }
+
+    private void sendMtkUpdateCompleteOverBle() {
+        Log.d(TAG, "📤 sendMtkUpdateCompleteOverBle() started");
+        try {
+            if (commandProcessor != null) {
+                Log.d(TAG, "📤 Sending MTK update complete to command processor");
+                commandProcessor.sendMtkUpdateComplete();
+                Log.d(TAG, "✅ MTK update complete sent successfully");
+            } else {
+                Log.w(TAG, "⚠️ Command processor is null - cannot send MTK update complete");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error sending MTK update complete", e);
+        }
+    }
+
     // ---------------------------------------------
     // EventBus Subscriptions
     // ---------------------------------------------
@@ -1264,6 +1349,58 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             }
         } catch (Exception e) {
             Log.e(TAG, "💥 Error executing WiFi command", e);
+        }
+    }
+
+    /**
+     * Log all available video resolutions from the camera
+     */
+    private void logAvailableVideoResolutions() {
+        Log.i(TAG, "📹 ========================================");
+        Log.i(TAG, "📹 AVAILABLE VIDEO RESOLUTIONS");
+        Log.i(TAG, "📹 ========================================");
+        
+        try {
+            CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+            if (cameraManager == null) {
+                Log.w(TAG, "📹 Camera manager not available");
+                return;
+            }
+
+            String[] cameraIds = cameraManager.getCameraIdList();
+            if (cameraIds == null || cameraIds.length == 0) {
+                Log.w(TAG, "📹 No cameras found");
+                return;
+            }
+
+            for (String cameraId : cameraIds) {
+                try {
+                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+                    StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                    
+                    if (map == null) {
+                        Log.w(TAG, "📹 Camera " + cameraId + ": No stream configuration map");
+                        continue;
+                    }
+
+                    Size[] videoSizes = map.getOutputSizes(MediaRecorder.class);
+                    if (videoSizes == null || videoSizes.length == 0) {
+                        Log.w(TAG, "📹 Camera " + cameraId + ": No video sizes available");
+                        continue;
+                    }
+
+                    Log.i(TAG, "📹 Camera " + cameraId + " supports " + videoSizes.length + " video resolutions:");
+                    for (Size size : videoSizes) {
+                        Log.i(TAG, "📹   - " + size.getWidth() + "x" + size.getHeight());
+                    }
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "📹 Error accessing camera " + cameraId, e);
+                }
+            }
+            
+            Log.i(TAG, "📹 ========================================");
+        } catch (Exception e) {
+            Log.e(TAG, "📹 Error querying video resolutions", e);
         }
     }
 

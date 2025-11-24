@@ -1,7 +1,6 @@
 import {useState} from "react"
 import {Alert, ScrollView} from "react-native"
 
-import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {Header, Screen} from "@/components/ignite"
 import HeadUpAngleComponent from "@/components/misc/HeadUpAngleComponent"
 import ToggleSetting from "@/components/settings/ToggleSetting"
@@ -9,19 +8,21 @@ import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles} from "@/theme"
-import { useGlassesStore } from "@/stores/glasses"
+import {useAppTheme} from "@/utils/useAppTheme"
+
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export default function DashboardSettingsScreen() {
   const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
   const [headUpAngleComponentVisible, setHeadUpAngleComponentVisible] = useState(false)
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const [headUpAngle, setHeadUpAngle] = useSetting(SETTINGS_KEYS.head_up_angle)
-  const [contextualDashboardEnabled, setContextualDashboardEnabled] = useSetting(SETTINGS_KEYS.contextual_dashboard)
-  const [metricSystemEnabled, setMetricSystemEnabled] = useSetting(SETTINGS_KEYS.metric_system)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const [headUpAngle, setHeadUpAngle] = useSetting(SETTINGS.head_up_angle.key)
+  const [contextualDashboardEnabled, setContextualDashboardEnabled] = useSetting(SETTINGS.contextual_dashboard.key)
+  const [metricSystemEnabled, setMetricSystemEnabled] = useSetting(SETTINGS.metric_system.key)
   const features = getModelCapabilities(defaultWearable)
   const glassesConnected = useGlassesStore(state => state.connected)
 

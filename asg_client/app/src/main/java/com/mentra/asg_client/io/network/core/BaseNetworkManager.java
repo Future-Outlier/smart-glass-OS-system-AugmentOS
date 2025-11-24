@@ -199,6 +199,22 @@ public abstract class BaseNetworkManager implements INetworkManager {
         }
     }
 
+    /**
+     * Notify all listeners that a hotspot error occurred
+     *
+     * @param errorMessage Description of the error
+     */
+    protected void notifyHotspotError(String errorMessage) {
+        Log.e(TAG, "Hotspot error: " + errorMessage);
+        for (NetworkStateListener listener : listeners) {
+            try {
+                listener.onHotspotError(errorMessage);
+            } catch (Exception e) {
+                Log.e(TAG, "Error notifying listener of hotspot error", e);
+            }
+        }
+    }
+
     @Override
     public boolean isConnectedToWifi() {
         ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);

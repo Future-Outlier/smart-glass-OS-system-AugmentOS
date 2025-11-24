@@ -7,7 +7,7 @@ import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {INTENSE_LOGGING} from "@/utils/Constants"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
@@ -118,6 +118,12 @@ export class MantleBridge {
             ssid: data.ssid,
             password: data.password,
             local_ip: data.local_ip,
+          })
+          break
+        case "hotspot_error":
+          GlobalEventEmitter.emit("HOTSPOT_ERROR", {
+            error_message: data.error_message,
+            timestamp: data.timestamp,
           })
           break
         case "gallery_status":
@@ -281,7 +287,7 @@ export class MantleBridge {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+          const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
           if (!isChinaDeployment && livekit.isRoomConnected()) {
             livekit.addPcm(bytes)
           } else {
@@ -295,6 +301,13 @@ export class MantleBridge {
         case "keep_alive_ack":
           console.log("MantleBridge: Forwarding keep-alive ACK to server:", data)
           socketComms.sendKeepAliveAck(data)
+          break
+        case "mtk_update_complete":
+          console.log("MantleBridge: MTK firmware update complete:", data.message)
+          GlobalEventEmitter.emit("MTK_UPDATE_COMPLETE", {
+            message: data.message,
+            timestamp: data.timestamp,
+          })
           break
         default:
           console.log("Unknown event type:", data.type)
@@ -324,13 +337,6 @@ export class MantleBridge {
 
   /* Command methods to interact with Core */
 
-  async sendToggleEnforceLocalTranscription(enabled: boolean) {
-    console.log("Toggling enforce local transcription:", enabled)
-    return await CoreModule.updateSettings({
-      enforce_local_transcription: enabled,
-    })
-  }
-
   async updateButtonPhotoSize(size: string) {
     return await CoreModule.updateSettings({
       button_photo_size: size,
@@ -338,19 +344,13 @@ export class MantleBridge {
   }
 
   async updateButtonVideoSettings(width: number, height: number, fps: number) {
+    console.log("updateButtonVideoSettings", width, height, fps)
+    console.log("status.glasses_info?.model_name", status.glasses_info?.model_name)
     return await CoreModule.updateSettings({
       button_video_width: width,
       button_video_height: height,
       button_video_fps: fps,
     })
-  }
-
-  async showDashboard() {
-    return await CoreModule.showDashboard()
-  }
-
-  async updateSettings(settings: any) {
-    return await CoreModule.updateSettings(settings)
   }
 
   async setGlassesWifiCredentials(ssid: string, _password: string) {
@@ -369,48 +369,6 @@ export class MantleBridge {
     console.log("setLc3AudioEnabled", enabled)
     // TODO: Add setLc3AudioEnabled to CoreModule
     console.warn("setLc3AudioEnabled not yet implemented in new CoreModule API")
-  }
-  // Buffer recording commands
-  async sendStartBufferRecording() {
-    return await CoreModule.startBufferRecording()
-  }
-
-  async sendStopBufferRecording() {
-    return await CoreModule.stopBufferRecording()
-  }
-
-  async sendSaveBufferVideo(requestId: string, durationSeconds: number = 30) {
-    return await CoreModule.saveBufferVideo(requestId, durationSeconds)
-  }
-
-  // Video recording commands
-  async sendStartVideoRecording(requestId: string, save: boolean = true) {
-    return await CoreModule.startVideoRecording(requestId, save)
-  }
-
-  async sendStopVideoRecording(requestId: string) {
-    return await CoreModule.stopVideoRecording(requestId)
-  }
-
-  async setSttModelDetails(path: string, languageCode: string) {
-    return await CoreModule.setSttModelDetails(path, languageCode)
-  }
-
-  async getSttModelPath(): Promise<string> {
-    return await CoreModule.getSttModelPath()
-  }
-
-  async validateSTTModel(path: string): Promise<boolean> {
-    return await CoreModule.validateSttModel(path)
-  }
-
-  async extractTarBz2(sourcePath: string, destinationPath: string) {
-    return await CoreModule.extractTarBz2(sourcePath, destinationPath)
-  }
-
-  async queryGalleryStatus() {
-    console.log("[Bridge] Querying gallery status from glasses...")
-    return await CoreModule.queryGalleryStatus()
   }
 }
 

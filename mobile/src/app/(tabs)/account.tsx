@@ -10,7 +10,7 @@ import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -18,8 +18,8 @@ import {useAppTheme} from "@/utils/useAppTheme"
 export default function AccountPage() {
   const {theme, themed} = useAppTheme()
   const {push} = useNavigationHistory()
-  const [devMode, setDevMode] = useSetting(SETTINGS_KEYS.dev_mode)
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   const pressCount = useRef(0)
   const lastPressTime = useRef(0)

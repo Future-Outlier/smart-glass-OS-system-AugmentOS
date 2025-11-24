@@ -4,7 +4,7 @@ import Svg, {ClipPath, Defs, G, Path, Rect} from "react-native-svg"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 interface MicIconProps {
@@ -17,7 +17,7 @@ interface MicIconProps {
 const MicIcon = ({color, width = 17, height = 16, withBackground = false}: MicIconProps) => {
   const {theme} = useAppTheme()
   const {status} = useCoreStatus()
-  const [preferredMic] = useSetting(SETTINGS_KEYS.preferred_mic)
+  const [preferredMic] = useSetting(SETTINGS.preferred_mic.key)
   const glassesConnected = useGlassesStore(state => state.connected)
 
   const iconColor = color || theme.colors.icon

@@ -1,12 +1,3 @@
-import {Button, Screen, Text} from "@/components/ignite"
-import {Spacer} from "@/components/ui/Spacer"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {translate} from "@/i18n"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
-import {spacing, ThemedStyle} from "@/theme"
-import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
 import {FontAwesome} from "@expo/vector-icons"
 import AppleIcon from "assets/icons/component/AppleIcon"
 import GoogleIcon from "assets/icons/component/GoogleIcon"
@@ -28,7 +19,17 @@ import {
   ViewStyle,
 } from "react-native"
 import {Pressable} from "react-native-gesture-handler"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+
+import {Button, Screen, Text} from "@/components/ignite"
+import {Spacer} from "@/components/ui/Spacer"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {spacing, ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
 
 export default function LoginScreen() {
   const [isSigningUp, setIsSigningUp] = useState(false)
@@ -39,7 +40,7 @@ export default function LoginScreen() {
   const [formAction, setFormAction] = useState<"signin" | "signup" | null>(null)
   const [backPressCount, setBackPressCount] = useState(0)
   const {push, replace} = useNavigationHistory()
-  const [isChina] = useSetting(SETTINGS_KEYS.china_deployment)
+  const [isChina] = useSetting(SETTINGS.china_deployment.key)
 
   // Get theme and safe area insets
   const {theme, themed} = useAppTheme()

@@ -20,7 +20,7 @@
       "@/*": ["./src/*"],
       "@cloud/*": ["../cloud/packages/types/*"],
       "@assets/*": ["../assets/*"],
-      "@plugins/*": ["./plugins/*"],
+      "@plugins/*": ["./plugins/*"]
     },
     "types": ["node", "react", "react-native", "jest"],
     "typeRoots": ["./node_modules/@types", "./src/types"]

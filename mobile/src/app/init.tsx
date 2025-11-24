@@ -12,7 +12,7 @@ import {translate} from "@/i18n"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
-import {useSettingsStore, SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
@@ -50,8 +50,8 @@ export default function InitScreen() {
   const [loadingStatus, setLoadingStatus] = useState<string>(translate("versionCheck:checkingForUpdates"))
   const [isRetrying, setIsRetrying] = useState(false)
   // Zustand store hooks
-  const [backendUrl, setBackendUrl] = useSetting(SETTINGS_KEYS.backend_url)
-  const [onboardingCompleted, _setOnboardingCompleted] = useSetting(SETTINGS_KEYS.onboarding_completed)
+  const [backendUrl, setBackendUrl] = useSetting(SETTINGS.backend_url.key)
+  const [onboardingCompleted, _setOnboardingCompleted] = useSetting(SETTINGS.onboarding_completed.key)
 
   // Helper Functions
   const getLocalVersion = (): string | null => {
@@ -64,7 +64,7 @@ export default function InitScreen() {
   }
 
   const checkCustomUrl = async (): Promise<boolean> => {
-    const defaultUrl = useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.backend_url)
+    const defaultUrl = SETTINGS[SETTINGS.backend_url.key].defaultValue()
     const isCustom = backendUrl !== defaultUrl
     setIsUsingCustomUrl(isCustom)
     return isCustom
@@ -191,7 +191,7 @@ export default function InitScreen() {
 
   const handleResetUrl = async (): Promise<void> => {
     try {
-      const defaultUrl = (await useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.backend_url)) as string
+      const defaultUrl = SETTINGS[SETTINGS.backend_url.key].defaultValue()
       await setBackendUrl(defaultUrl)
       setIsUsingCustomUrl(false)
       await checkCloudVersion(true) // Pass true for retry to avoid flash
@@ -282,6 +282,7 @@ export default function InitScreen() {
           <View style={themed($buttonContainer)}>
             {state === "error" && (
               <Button
+                flexContainer
                 onPress={() => checkCloudVersion(true)}
                 style={themed($primaryButton)}
                 text={isRetrying ? translate("versionCheck:retrying") : translate("versionCheck:retryConnection")}
@@ -293,11 +294,18 @@ export default function InitScreen() {
             )}
 
             {state === "outdated" && (
-              <Button preset="primary" onPress={handleUpdate} disabled={isUpdating} tx="versionCheck:update" />
+              <Button
+                flexContainer
+                preset="primary"
+                onPress={handleUpdate}
+                disabled={isUpdating}
+                tx="versionCheck:update"
+              />
             )}
 
             {state === "error" && isUsingCustomUrl && (
               <Button
+                flexContainer
                 onPress={handleResetUrl}
                 style={themed($secondaryButton)}
                 tx={isRetrying ? "versionCheck:resetting" : "versionCheck:resetUrl"}
@@ -312,6 +320,7 @@ export default function InitScreen() {
             {(state === "error" || (state === "outdated" && canSkipUpdate)) && (
               <Button
                 flex
+                flexContainer
                 preset="warning"
                 RightAccessory={() => <Icon name="arrow-right" size={24} color={theme.colors.text} />}
                 onPress={navigateToDestination}

@@ -16,7 +16,7 @@ import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
@@ -34,10 +34,10 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const {status} = useCoreStatus()
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [isCheckingConnectivity, setIsCheckingConnectivity] = useState(false)
-  const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS_KEYS.auto_brightness)
-  const [brightness, setBrightness] = useSetting(SETTINGS_KEYS.brightness)
+  const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS.auto_brightness.key)
+  const [brightness, setBrightness] = useSetting(SETTINGS.brightness.key)
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
   const glassesConnected = useGlassesStore(state => state.connected)
   const glassesStyle = useGlassesStore(state => state.style)

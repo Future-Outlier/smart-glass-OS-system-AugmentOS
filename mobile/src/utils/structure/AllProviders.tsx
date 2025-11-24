@@ -18,7 +18,7 @@ import {CoreStatusProvider} from "@/contexts/CoreStatusProvider"
 import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
 import {NavigationHistoryProvider} from "@/contexts/NavigationHistoryContext"
 import {SearchResultsProvider} from "@/contexts/SearchResultsContext"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {withWrappers} from "@/utils/structure/with-wrappers"
@@ -82,7 +82,7 @@ export const AllProviders = withWrappers(
   ModalProvider,
   props => {
     const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY
-    const isChina = useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    const isChina = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
 
     // If no API key is provided, disable PostHog to prevent errors
     if (!posthogApiKey) {

@@ -5,7 +5,7 @@ import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import {translate} from "@/i18n"
 import {ClientAppletInterface, DUMMY_APPLET, useIncompatibleApps} from "@/stores/applets"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -15,7 +15,7 @@ const GRID_COLUMNS = 4
 export const IncompatibleApps: React.FC = () => {
   const {themed, theme} = useAppTheme()
   const incompatibleApps = useIncompatibleApps()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   // Get connected glasses name
   const glassesName = defaultWearable || "your glasses"

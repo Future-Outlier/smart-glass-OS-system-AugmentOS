@@ -1,22 +1,24 @@
+import {useRoute} from "@react-navigation/native"
+import CoreModule from "core"
+import {Linking, PermissionsAndroid, Platform, ScrollView} from "react-native"
+
 import {Header} from "@/components/ignite"
 import {Screen} from "@/components/ignite/Screen"
+import {PairingGuide, PairingOptions} from "@/components/pairing/GlassesPairingGuides"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import {$styles} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
-import {PairingGuide, PairingOptions} from "@/components/pairing/GlassesPairingGuides"
 import {PermissionFeatures, checkConnectivityRequirementsUI, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {useRoute} from "@react-navigation/native"
-import {Linking, PermissionsAndroid, Platform, ScrollView} from "react-native"
-import CoreModule from "core"
-import {$styles} from "@/theme"
+
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export default function PairingPrepScreen() {
   const route = useRoute()
   const {themed, theme} = useAppTheme()
   const {glassesModelName} = route.params as {glassesModelName: string}
-  const {goBack, push, clearHistoryAndGoHome} = useNavigationHistory()
+  const {goBack, replace, clearHistoryAndGoHome} = useNavigationHistory()
 
   const advanceToPairing = async () => {
     if (glassesModelName == null || glassesModelName == "") {
@@ -209,7 +211,7 @@ export default function PairingPrepScreen() {
       return
     }
 
-    push("/pairing/scan", {glassesModelName})
+    replace("/pairing/scan", {glassesModelName})
   }
 
   return (

@@ -1,24 +1,6 @@
-import {Button, Header, Screen, Text} from "@/components/ignite"
-import {PillButton} from "@/components/ignite/PillButton"
-import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
-import Divider from "@/components/ui/Divider"
-import {Group} from "@/components/ui/Group"
-import {Spacer} from "@/components/ui/Spacer"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SearchResultDevice, useSearchResults} from "@/contexts/SearchResultsContext"
-import {translate} from "@/i18n"
-import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
-import {$styles, ThemedStyle} from "@/theme"
-import showAlert from "@/utils/AlertUtils"
-import {MOCK_CONNECTION} from "@/utils/Constants"
-import {getGlassesOpenImage} from "@/utils/getGlassesImage"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {useFocusEffect} from "@react-navigation/native"
 import CoreModule from "core"
-import {router, useLocalSearchParams} from "expo-router"
+import {useLocalSearchParams} from "expo-router"
 import {useCallback, useEffect, useRef, useState} from "react"
 import {
   ActivityIndicator,
@@ -35,11 +17,29 @@ import {
 import {useSharedValue, withDelay, withTiming} from "react-native-reanimated"
 import Icon from "react-native-vector-icons/FontAwesome"
 
+import {Button, Header, Screen, Text} from "@/components/ignite"
+import {PillButton} from "@/components/ignite/PillButton"
+import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
+import Divider from "@/components/ui/Divider"
+import {Group} from "@/components/ui/Group"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {SearchResultDevice, useSearchResults} from "@/contexts/SearchResultsContext"
+import {translate} from "@/i18n"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import {$styles, ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {MOCK_CONNECTION} from "@/utils/Constants"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
+import {getGlassesOpenImage} from "@/utils/getGlassesImage"
+import {useAppTheme} from "@/utils/useAppTheme"
+
 export default function SelectGlassesBluetoothScreen() {
   const {searchResults, setSearchResults} = useSearchResults()
   const {glassesModelName}: {glassesModelName: string} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
-  const {goBack, push, clearHistory, clearHistoryAndGoHome} = useNavigationHistory()
+  const {goBack, replace, clearHistoryAndGoHome} = useNavigationHistory()
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   // Create a ref to track the current state of searchResults
   const searchResultsRef = useRef<SearchResultDevice[]>(searchResults)
@@ -62,16 +62,6 @@ export default function SelectGlassesBluetoothScreen() {
     }, [setSearchResults]),
   )
 
-  // Shared function to handle the forget glasses logic
-  const handleForgetGlasses = useCallback(async () => {
-    await CoreModule.disconnect()
-    await CoreModule.forget()
-    // Clear NavigationHistoryContext history to prevent issues with back navigation
-    clearHistory()
-    // Use dismissTo to properly go back to select-glasses-model and clear the stack
-    router.dismissTo("/pairing/select-glasses-model")
-  }, [clearHistory])
-
   // Handle Android hardware back button
   useEffect(() => {
     // Only handle on Android
@@ -79,7 +69,7 @@ export default function SelectGlassesBluetoothScreen() {
 
     const onBackPress = () => {
       // Call our custom back handler
-      handleForgetGlasses()
+      goBack()
       // Return true to prevent default back behavior and stop propagation
       return true
     }
@@ -101,7 +91,7 @@ export default function SelectGlassesBluetoothScreen() {
         backHandlerRef.current = null
       }
     }
-  }, [handleForgetGlasses])
+  }, [goBack])
 
   // Ref to store the back handler for cleanup
   const backHandlerRef = useRef<any>(null)
@@ -236,20 +226,20 @@ export default function SelectGlassesBluetoothScreen() {
     }
 
     // update the preferredmic to be the phone mic:
-    await useSettingsStore.getState().setSetting(SETTINGS_KEYS.preferred_mic, "phone")
+    await useSettingsStore.getState().setSetting(SETTINGS.preferred_mic.key, "phone")
 
     // All permissions granted, proceed with connecting to the wearable
     setTimeout(() => {
       CoreModule.connectByName(deviceName)
     }, 2000)
-    push("/pairing/loading", {glassesModelName: glassesModelName})
+    replace("/pairing/loading", {glassesModelName: glassesModelName})
   }
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
       <Header
         leftIcon="chevron-left"
-        onLeftPress={handleForgetGlasses}
+        onLeftPress={goBack}
         RightActionComponent={
           <PillButton
             text="Help"
@@ -268,11 +258,11 @@ export default function SelectGlassesBluetoothScreen() {
           />
 
           {!searchResults || searchResults.length === 0 ? (
-            <View style={{justifyContent: "center", flex: 1}}>
+            <View style={{justifyContent: "center", flex: 1, paddingVertical: theme.spacing.s4}}>
               <ActivityIndicator size="large" color={theme.colors.text} />
             </View>
           ) : (
-            <ScrollView style={{maxHeight: 300}}>
+            <ScrollView style={{maxHeight: 300, paddingRight: theme.spacing.s6, marginRight: -theme.spacing.s6}}>
               <Group>
                 {searchResults.map((device, index) => (
                   <TouchableOpacity
@@ -281,7 +271,7 @@ export default function SelectGlassesBluetoothScreen() {
                     onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
                     <View style={themed($settingsTextContainer)}>
                       <Text
-                        text={`${glassesModelName}  ${device.deviceName}`}
+                        text={`${glassesModelName} - ${device.deviceName}`}
                         style={themed($label)}
                         numberOfLines={2}
                       />
@@ -292,9 +282,15 @@ export default function SelectGlassesBluetoothScreen() {
               </Group>
             </ScrollView>
           )}
-          <Spacer height={theme.spacing.s4} />
           <Divider />
-          <Button flex={false} compact={true} tx="common:cancel" preset="alternate" onPress={() => goBack()} />
+          <Button
+            preset="alternate"
+            // flexContainer
+            // flex
+            compact
+            tx="common:cancel"
+            onPress={() => goBack()}
+          />
         </View>
       </View>
       <GlassesTroubleshootingModal
@@ -330,11 +326,10 @@ const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   height: 50,
 })
 
-const $scanningText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+const $scanningText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 20,
   fontWeight: "600",
   color: colors.textDim,
-  marginBottom: spacing.s6,
   textAlign: "center",
 })
 
@@ -345,10 +340,10 @@ const $glassesImage: ThemedStyle<ImageStyle> = () => ({
 })
 
 const $label: ThemedStyle<TextStyle> = () => ({
-  fontSize: 10,
+  fontSize: 14,
   fontWeight: "600",
   flexWrap: "wrap",
-  marginTop: 5,
+  // marginTop: 5,
 })
 
 const $settingsTextContainer: ThemedStyle<ViewStyle> = () => ({

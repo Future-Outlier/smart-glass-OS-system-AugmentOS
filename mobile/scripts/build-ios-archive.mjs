@@ -14,21 +14,23 @@ const archivePath = `${os.homedir()}/Library/Developer/Xcode/Archives/${archiveD
 
 console.log(chalk.blue(`Building archive: ${archiveName}`))
 
-
 // prebuild ios:
 await $({stdio: "inherit"})`bun expo prebuild --platform ios`
 
-// bundle js code:
-await $({stdio: "inherit"})`bun expo export --platform ios`
+// copy .env to ios/.xcode.env.local:
+await $({stdio: "inherit"})`cp .env ios/.xcode.env.local`
 
-await $({stdio: "inherit"})`xcodebuild archive \
+await $({
+  stdio: "inherit",
+  env: process.env,
+})`xcodebuild archive \
   -workspace ios/MentraOS.xcworkspace \
   -scheme MentraOS \
   -configuration Release \
   -destination generic/platform=iOS \
   -archivePath ${archivePath}`
-  
-  // -arch arm64 \
+
+// -arch arm64 \
 
 console.log(chalk.green("✓ Archive created!"))
 console.log(chalk.blue("Open: Xcode > Window > Organizer"))

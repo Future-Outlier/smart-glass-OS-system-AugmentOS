@@ -6,7 +6,7 @@ import {useEffect, useState} from "react"
 import {LogBox} from "react-native"
 
 import {initI18n} from "@/i18n"
-import {initializeSettings, SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {customFontsToLoad} from "@/theme"
 import {ConsoleLogger} from "@/utils/debug/console"
 import {loadDateFnsLocale} from "@/utils/formatDate"
@@ -30,7 +30,7 @@ const navigationIntegration = Sentry.reactNavigationIntegration({
 const setupSentry = () => {
   // Only initialize Sentry if DSN is provided
   const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN
-  const isChina = useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+  const isChina = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
 
   if (!sentryDsn || sentryDsn === "secret" || sentryDsn.trim() === "") {
     return
@@ -41,6 +41,10 @@ const setupSentry = () => {
 
   const release = `${process.env.EXPO_PUBLIC_MENTRAOS_VERSION}`
   const dist = `${process.env.EXPO_PUBLIC_BUILD_TIME}-${process.env.EXPO_PUBLIC_BUILD_COMMIT}`
+  const branch = process.env.EXPO_PUBLIC_BUILD_BRANCH
+  const isProd = branch == "main" || branch == "staging"
+  const sampleRate = isProd ? 0.1 : 1.0
+
   Sentry.init({
     dsn: sentryDsn,
 
@@ -49,7 +53,7 @@ const setupSentry = () => {
     sendDefaultPii: true,
 
     // send 1/10th of events in prod:
-    tracesSampleRate: __DEV__ ? 1.0 : 0.1,
+    tracesSampleRate: sampleRate,
 
     // debug: true,
     _experiments: {
@@ -69,7 +73,7 @@ const setupSentry = () => {
 setupSentry()
 
 // initialize the settings store
-initializeSettings()
+useSettingsStore.getState().loadAllSettings()
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync()
