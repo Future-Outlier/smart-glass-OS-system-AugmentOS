@@ -326,7 +326,7 @@ class RestComms {
     //   // const response = await Res.value
     //   // return {url: response.url, token: response.token}
     // })()
-    
+
     return res.map(response => response.data)
   }
 

@@ -1,10 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import CoreModule from "core"
+
 import bridge from "@/bridge/MantleBridge"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import restComms from "@/services/RestComms"
 import {SETTINGS} from "@/stores/settings"
-import CoreModule from "core"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
 
 export class LogoutUtils {
   private static readonly TAG = "LogoutUtils"

@@ -1,12 +1,13 @@
-import {TouchableOpacity, View, ViewStyle, TextStyle} from "react-native"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
 import ChevronRight from "assets/icons/component/ChevronRight"
-import {Text} from "@/components/ignite"
-import {router as _router} from "expo-router"
 import StoreIcon from "assets/icons/navbar/StoreIcon"
+import {router as _router} from "expo-router"
+import {TouchableOpacity, View, ViewStyle, TextStyle} from "react-native"
+
+import {Text} from "@/components/ignite"
 import {Icon} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface AppListStoreLinkProps {
   onPress?: () => void

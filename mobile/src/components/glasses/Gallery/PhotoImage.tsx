@@ -6,10 +6,11 @@
 import {useState, useEffect} from "react"
 import {View, Image} from "react-native"
 import {ViewStyle, ImageStyle, TextStyle} from "react-native"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
-import {PhotoInfo} from "../../../types/asg"
+
 import {Text} from "@/components/ignite"
+import {ThemedStyle} from "@/theme"
+import {PhotoInfo} from "@/types/asg"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface PhotoImageProps {
   photo: PhotoInfo
