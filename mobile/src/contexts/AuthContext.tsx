@@ -1,5 +1,4 @@
 import {FC, createContext, useEffect, useState, useContext} from "react"
-
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
 import {MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"
@@ -28,33 +27,33 @@ export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
 
     // 1. Check for an active session on mount
     const getInitialSession = async () => {
-      const {data: initialSessionData} = await mentraAuthProvider.getSession()
-      const session = initialSessionData?.session
+      // const {data: initialSessionData} = await mentraAuthProvider.getSession()
+      // const session = initialSessionData?.session
       // console.log("AuthContext: Initial session:", session)
       // console.log("AuthContext: Initial user:", session?.user)
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
+      // setSession(session)
+      // setUser(session?.user ?? null)
+      // setLoading(false)
     }
 
     // 2. Setup auth state change listener
     const setupAuthListener = async () => {
-      try {
-        const {data: authStateChangeData} = await mentraAuthProvider.onAuthStateChange((event, session: any) => {
-          // console.log("AuthContext: Auth state changed:", event)
-          // console.log("AuthContext: Session:", session)
-          // console.log("AuthContext: User:", session?.user)
-          setSession(session)
-          setUser(session?.user ?? null)
-          setLoading(false)
-        })
+      // try {
+      //   const {data: authStateChangeData} = await mentraAuthProvider.onAuthStateChange((event, session: any) => {
+      //     console.log("AuthContext: Auth state changed:", event)
+      //     console.log("AuthContext: Session:", session)
+      //     console.log("AuthContext: User:", session?.user)
+      //     // setSession(session)
+      //     // setUser(session?.user ?? null)
+      //     // setLoading(false)
+      //   })
 
-        if (authStateChangeData?.subscription) {
-          subscription = authStateChangeData.subscription
-        }
-      } catch (error) {
-        console.error("AuthContext: Error setting up auth listener:", error)
-      }
+      //   if (authStateChangeData?.subscription) {
+      //     subscription = authStateChangeData.subscription
+      //   }
+      // } catch (error) {
+      //   console.error("AuthContext: Error setting up auth listener:", error)
+      // }
     }
 
     // Run both initial checks
@@ -62,7 +61,10 @@ export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
       console.error("AuthContext: Error getting initial session:", error)
       setLoading(false)
     })
+    
+    setLoading(false)
 
+    console.log("AuthContext: Setting up auth listener")
     setupAuthListener()
 
     // Cleanup the listener

@@ -323,7 +323,7 @@ export const useSettingsStore = create<SettingsState>()(
       if (setting.indexer) {
         key = `${originalKey}:${setting.indexer()}`
       }
-      // console.log(`GET SETTING: ${key} = ${state.settings[key]}`)
+      console.log(`GET SETTING: ${key} = ${state.settings[key]}`)
       try {
         return state.settings[key] ?? SETTINGS[originalKey].defaultValue()
       } catch (e) {
@@ -346,6 +346,7 @@ export const useSettingsStore = create<SettingsState>()(
     },
     // loads any preferences that have been changed from the default and saved to DISK!
     loadAllSettings: (): AsyncResult<void, Error> => {
+      console.log("SETTINGS: loadAllSettings()")
       return Res.try_async(async () => {
         const state = get()
         let loadedSettings: Record<string, any> = {}
@@ -374,11 +375,13 @@ export const useSettingsStore = create<SettingsState>()(
 
           let res = storage.load<any>(setting.key)
           if (res.is_error()) {
+            console.log(`SETTINGS: LOAD: ${setting.key} is not set!`, res.error)
             // this setting isn't set from the default, so we don't load anything
             continue
           }
           // normal key:value pair:
           let value = res.value
+          console.log(`SETTINGS: LOAD: ${setting.key} = ${value.value}`)
           loadedSettings[setting.key] = value
         }
 
@@ -395,6 +398,7 @@ export const useSettingsStore = create<SettingsState>()(
     },
     getRestUrl: () => {
       const serverUrl = get().getSetting(SETTINGS.backend_url.key)
+      console.log("GET REST URL: serverUrl:", serverUrl)
       const url = new URL(serverUrl)
       const secure = url.protocol === "https:"
       return `${secure ? "https" : "http"}://${url.hostname}:${url.port || (secure ? 443 : 80)}`

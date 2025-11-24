@@ -155,7 +155,8 @@ export default function InitScreen() {
       setIsRetrying(false)
       return
     }
-
+    
+    
     const res = await restComms.getMinimumClientVersion()
     if (res.is_error()) {
       console.error("Failed to fetch cloud version:", res.error)

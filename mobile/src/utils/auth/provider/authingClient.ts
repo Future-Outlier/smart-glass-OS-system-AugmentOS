@@ -262,7 +262,7 @@ export class AuthingWrapperClient {
   private async readSessionFromStorage(): Promise<Session | null> {
     const res = storage.load<Session>(SESSION_KEY)
     if (res.is_error()) {
-      console.error("Error loading session:", res.error)
+      console.log("Error loading session:", res.error)
       return null
     }
     const session = res.value
