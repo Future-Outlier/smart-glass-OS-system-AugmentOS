@@ -46,6 +46,7 @@ Transcription stops completely after mobile reconnects following WebSocket 1006 
 ### Root Causes Identified
 
 1. **GetStatus RPC Missing from Proto** (Critical)
+
    ```
    Error: "this.client.getStatus is not a function"
    ```
@@ -53,7 +54,9 @@ Transcription stops completely after mobile reconnects following WebSocket 1006 
    - Implemented in Go (service.go line 523) but NOT in proto definition
    - TypeScript gRPC client can't find the method
    - Cloud operates blind, can't check if bridge session is healthy/stale
+
 2. **Bridge Session Check Too Strict - Causes Zombie Sessions**
+
    ```go
    // Bridge service.go line 63
    if _, exists := s.sessions.Load(req.UserId); exists {
@@ -65,6 +68,7 @@ Transcription stops completely after mobile reconnects following WebSocket 1006 
    - Blocks ALL reconnections when old session exists in memory
    - **No cleanup mechanism for orphaned sessions**
    - When cloud crashes/restarts, bridge keeps sessions forever
+
 3. **Zombie Session Problem** (Major Discovery)
    - Users hitting "session already exists" on **FIRST CONNECTION** (not reconnection!)
    - 375 failures in 7 days, 212 for one dev user (mentradevphone@gmail.com)
@@ -159,10 +163,22 @@ func (s *LiveKitBridgeService) JoinRoom(req *pb.JoinRoomRequest) {
   - 375 failures in 7 days from orphaned sessions
 - [x] Decision: Always-replace approach (not health checks)
   - Solves zombie sessions, no false positives, simplest solution
-- [ ] Implement Fix #1: Add GetStatus to livekit_bridge.proto
-- [ ] Regenerate proto: `protoc --go_out=. --go-grpc_out=. livekit_bridge.proto`
-- [ ] Implement Fix #2: Always-replace in service.go JoinRoom (remove health check)
-- [ ] Implement Fix #3: Error notification to mobile when bridge fails
+- [x] Implement Fix #1: Add GetStatus to livekit_bridge.proto
+  - Added BridgeStatusRequest and BridgeStatusResponse messages
+  - Added GetStatus RPC to service definition
+- [x] Regenerate proto files:
+  - Synchronized both proto files (cloud and cloud-livekit-bridge) - now identical
+  - Regenerated Go proto files with GetStatus RPC included
+  - TypeScript uses dynamic proto loading (@grpc/proto-loader) - no generation needed
+  - Verified GetStatus method exists in generated Go code
+- [x] Implement Fix #2: Always-replace in service.go JoinRoom
+  - Removed "session already exists" rejection
+  - Added logic to close old session and create new one
+  - Logs "Replacing existing bridge session"
+- [x] Rebuild bridge: `cd cloud/packages/cloud-livekit-bridge && go build`
+  - Binary built successfully (37MB)
+  - Compiled with updated proto definitions including GetStatus
+- [ ] Implement Fix #3: Error notification to mobile when bridge fails (optional)
 - [ ] Test reproduction: Force quit app + restart cloud = zombie session
 - [ ] Test fix: Zombie session should be replaced, transcription works
 - [ ] Deploy to staging, verify reconnection and zombie cleanup works
