@@ -16,17 +16,14 @@ class MMKVStorage {
   }
 
   public load<T>(key: string): Result<T, Error> {
-    return Res.try(
-      () => {
-        const loadedString = this.store.getString(key)
-        if (!loadedString) {
-          throw new Error(`Key ${key} not found`)
-        }
-        const value = JSON.parse(loadedString) as T
-        return value
-      },
-      (e: unknown) => new Error(`Failed to load ${key}: ${e}`),
-    )
+    return Res.try(() => {
+      const loadedString = this.store.getString(key) ?? ""
+      if (loadedString === "") {
+        return Res.error(new Error(`No value found for ${key}`))
+      }
+      const value = JSON.parse(loadedString) as T
+      return Res.ok(value)
+    })
   }
 
   private saveString(key: string, value: string): Result<void, Error> {
