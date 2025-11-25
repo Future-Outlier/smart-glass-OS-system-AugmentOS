@@ -1,11 +1,11 @@
+import * as Linking from "expo-linking"
 import {FC, ReactNode, createContext, useContext, useEffect} from "react"
+
 // import {Linking} from "react-native"
 // import {useAuth} from "@/contexts/AuthContext"
-import {deepLinkRoutes} from "@/utils/deepLinkRoutes"
 import {NavObject, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-
-import * as Linking from "expo-linking"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {deepLinkRoutes} from "@/utils/deepLinkRoutes"
 
 interface DeeplinkContextType {
   processUrl: (url: string) => Promise<void>

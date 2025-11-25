@@ -1707,6 +1707,17 @@ class MentraLive: NSObject, SGCManager {
         case "transfer_failed":
             handleTransferFailed(json)
 
+        case "mtk_update_complete":
+            Bridge.log("💾 Received MTK update complete from ASG client")
+
+            let updateMessage = json["message"] as? String ?? "MTK firmware updated. Please restart glasses."
+            let timestamp = parseTimestamp(json["timestamp"])
+
+            Bridge.log("🔄 MTK Update Message: \(updateMessage)")
+
+            // Send to React Native via Bridge
+            Bridge.sendMtkUpdateComplete(message: updateMessage, timestamp: timestamp)
+
         default:
             Bridge.log("Unhandled message type: \(type)")
         }
@@ -1942,6 +1953,9 @@ class MentraLive: NSObject, SGCManager {
             appVersion: appVersion, buildNumber: buildNumber, deviceModel: deviceModel,
             androidVersion: androidVersion, otaVersionUrl: otaVersionUrl
         )
+
+        // Trigger status update so React Native gets the updated glasses info with version details
+        CoreManager.shared.handle_request_status()
     }
 
     private func handleAck(_: [String: Any]) {

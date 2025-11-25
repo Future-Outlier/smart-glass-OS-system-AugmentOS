@@ -1,10 +1,9 @@
-import {useAppTheme} from "@/utils/useAppTheme"
-// eslint-disable-next-line no-restricted-imports
 import {TextStyle, View, ViewStyle} from "react-native"
-import {Spacer} from "@/components/ui/Spacer"
+
+import {Button} from "@/components/ignite"
 import {Text} from "@/components/ignite/Text"
 import {ThemedStyle} from "@/theme"
-import {Button} from "@/components/ignite"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface BasicDialogProps {
   title: string
@@ -25,7 +24,7 @@ const BasicDialog = ({
   onLeftPress,
   onRightPress,
 }: BasicDialogProps) => {
-  const {theme, themed} = useAppTheme()
+  const {themed} = useAppTheme()
   return (
     <View style={themed($container)}>
       <View style={themed($titleDescription)}>
@@ -37,7 +36,7 @@ const BasicDialog = ({
           </Text>
         )}
       </View>
-      <Spacer height={theme.spacing.s12} />
+      <View style={themed($divider)} />
       <View style={themed($actions)}>
         <View style={themed($actions1)}>
           {leftButtonText && (
@@ -83,16 +82,17 @@ const $titleDescription: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $headline: ThemedStyle<TextStyle> = ({colors}) => ({
   alignSelf: "stretch",
   color: colors.text,
-  textAlign: "center",
+  textAlign: "left",
   fontSize: 17,
   fontWeight: "500",
   letterSpacing: 1.7,
 })
 
 const $description: ThemedStyle<TextStyle> = ({colors}) => ({
+  alignSelf: "stretch",
   color: colors.secondary_foreground,
   fontSize: 16,
-  fontWeight: "bold",
+  fontWeight: "normal",
   textAlign: "left",
 })
 
@@ -111,6 +111,14 @@ const $actions1: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingTop: 20,
   alignItems: "center",
   flexDirection: "row",
+})
+
+const $divider: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  height: 1,
+  backgroundColor: colors.border,
+  alignSelf: "stretch",
+  marginTop: spacing.s4,
+  marginHorizontal: 24,
 })
 
 export default BasicDialog

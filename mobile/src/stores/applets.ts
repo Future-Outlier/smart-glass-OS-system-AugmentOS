@@ -147,13 +147,13 @@ const startStopOfflineApplet = (packageName: string, status: boolean): AsyncResu
     // Captions app special handling
     if (packageName === captionsPackageName) {
       console.log(`APPLET: Captions app ${status ? "started" : "stopped"}`)
-      await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, status, true)
+      await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, status)
     }
 
     // Camera app special handling - send gallery mode to glasses
     if (packageName === cameraPackageName) {
       console.log(`APPLET: Camera app ${status ? "started" : "stopped"}`)
-      await useSettingsStore.getState().setSetting(SETTINGS.gallery_mode.key, status, true)
+      await useSettingsStore.getState().setSetting(SETTINGS.gallery_mode.key, status)
     }
   })
 }

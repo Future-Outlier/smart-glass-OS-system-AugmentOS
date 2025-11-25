@@ -1,8 +1,9 @@
+import {View, ViewStyle, TextStyle} from "react-native"
+
+import {Text} from "@/components/ignite"
+import {ThemedSlider} from "@/components/misc/ThemedSlider"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {View, ViewStyle, TextStyle} from "react-native"
-import {Slider} from "react-native-elements"
-import {Text} from "@/components/ignite"
 
 type SliderSettingProps = {
   label: string
@@ -37,7 +38,7 @@ const SliderSetting: React.FC<SliderSettingProps> = ({
     onValueSet(roundedValue) // Emit only integer values
   }
 
-  const {theme, themed} = useAppTheme()
+  const {themed} = useAppTheme()
 
   return (
     <View style={[themed($container), disableBorder && {borderWidth: 0}, style]}>
@@ -48,46 +49,13 @@ const SliderSetting: React.FC<SliderSettingProps> = ({
         </View>
         {subtitle && <Text text={subtitle} style={themed($subtitle)} />}
       </View>
-      <View style={themed($sliderRow)}>
-        <Text text={String(min)} style={themed($minMaxText)} />
-        <View style={themed($sliderContainer)}>
-          <Slider
-            style={themed($slider)}
-            value={value || 0} // Fallback to 0 if undefined
-            onValueChange={handleValueChange} // Wrap the callback to round values
-            onSlidingComplete={handleValueSet} // Wrap the callback to round values
-            minimumValue={min}
-            maximumValue={max}
-            minimumTrackTintColor={theme.colors.sliderTrackActive}
-            maximumTrackTintColor={theme.colors.sliderTrackInactive}
-            trackStyle={
-              {
-                // height: 12,
-              }
-            }
-            thumbStyle={{
-              width: 24,
-              height: 24,
-              backgroundColor: theme.isDark ? theme.colors.sliderThumb : "#FFFFFF",
-              borderRadius: 12,
-              // Add purple border in light theme to match toggle styling
-              ...(!theme.isDark && {
-                borderColor: theme.colors.switchBorder,
-                borderWidth: 2,
-                shadowColor: "#000",
-                shadowOffset: {
-                  width: 0,
-                  height: 2,
-                },
-                shadowOpacity: 0.15,
-                shadowRadius: 3,
-                elevation: 3, // For Android
-              }),
-            }}
-          />
-        </View>
-        <Text text={String(max)} style={themed($minMaxText)} />
-      </View>
+      <ThemedSlider
+        value={value || 0}
+        min={min}
+        max={max}
+        onValueChange={handleValueChange}
+        onSlidingComplete={handleValueSet}
+      />
     </View>
   )
 }
@@ -124,22 +92,6 @@ const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.textDim,
 })
 
-const $sliderRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: spacing.s2,
-  width: "100%",
-})
-
-const $sliderContainer: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-})
-
-const $slider: ThemedStyle<ViewStyle> = () => ({
-  width: "100%",
-  height: 40,
-})
-
 const $labelRow: ThemedStyle<ViewStyle> = () => ({
   flexDirection: "row",
   justifyContent: "space-between",
@@ -151,13 +103,6 @@ const $valueText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 15,
   color: colors.textDim,
   fontWeight: "500",
-})
-
-const $minMaxText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 12,
-  color: colors.textDim,
-  minWidth: 25,
-  textAlign: "center",
 })
 
 export default SliderSetting
