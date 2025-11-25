@@ -19,11 +19,10 @@ class MMKVStorage {
     return Res.try(() => {
       const loadedString = this.store.getString(key) ?? ""
       if (loadedString === "") {
-        return Res.error(new Error(`No value found for ${key}`))
+        throw new Error(`No value found for ${key}`)
       }
       const value = JSON.parse(loadedString) as T
-      console.log(`STORAGE: LOAD: ${key} = ${value}`)
-      return Res.ok(value)
+      return value
     })
   }
 
