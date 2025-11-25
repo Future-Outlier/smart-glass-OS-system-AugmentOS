@@ -382,8 +382,12 @@ const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   lineHeight: 20,
 })
 
-const $content: ThemedStyle<ViewStyle> = () => ({
+const $content: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flex: 1,
+  backgroundColor: colors.primary_foreground,
+  borderRadius: spacing.s6,
+  borderWidth: 1,
+  borderColor: colors.border,
 })
 
 const $loadingContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({

@@ -19,7 +19,21 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
     const validateAndSetDefaultApp = async () => {
       const currentDefaultApp = await useSettingsStore.getState().getSetting(SETTINGS.default_button_action_app.key)
 
-      // Check if current default app is compatible
+      // 1. If camera app is available and compatible, ALWAYS prefer it
+      // This ensures glasses with cameras always default to camera app
+      const cameraApp = applets.find(
+        app => app.packageName === "com.mentra.camera" && app.compatibility?.isCompatible !== false,
+      )
+
+      if (cameraApp) {
+        if (currentDefaultApp !== cameraApp.packageName) {
+          console.log("🔘 Setting default button app to camera (glasses have camera)")
+          await useSettingsStore.getState().setSetting(SETTINGS.default_button_action_app.key, cameraApp.packageName)
+        }
+        return
+      }
+
+      // 2. For glasses WITHOUT camera, keep current app if compatible
       const currentApp = applets.find(app => app.packageName === currentDefaultApp)
       const isCurrentAppCompatible = currentApp?.compatibility?.isCompatible !== false
 
@@ -28,21 +42,16 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
         return
       }
 
-      // Need to find a new default app
-      // Prefer camera if available and compatible, otherwise first compatible standard app
-      const cameraApp = applets.find(
-        app => app.packageName === "com.mentra.camera" && app.compatibility?.isCompatible !== false,
-      )
-
+      // 3. Fallback: find first compatible standard app
       const firstCompatibleApp = applets.find(
         app => app.type === "standard" && app.compatibility?.isCompatible !== false,
       )
 
-      const newDefaultApp = cameraApp || firstCompatibleApp
-
-      if (newDefaultApp) {
-        console.log("🔘 Setting default button app to:", newDefaultApp.packageName)
-        await useSettingsStore.getState().setSetting(SETTINGS.default_button_action_app.key, newDefaultApp.packageName)
+      if (firstCompatibleApp) {
+        console.log("🔘 Setting default button app to:", firstCompatibleApp.packageName)
+        await useSettingsStore
+          .getState()
+          .setSetting(SETTINGS.default_button_action_app.key, firstCompatibleApp.packageName)
       }
     }
 
