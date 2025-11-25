@@ -1,22 +1,17 @@
 import type {AuthChangeEvent, Session, SupabaseClient} from "@supabase/supabase-js"
+import {createClient, SupportedStorage} from "@supabase/supabase-js"
+import {AsyncResult, result as Res, Result} from "typesafe-ts"
 
 import {
-  MentraAuthUserResponse,
   MentraOauthProviderResponse,
   MentraPasswordResetResponse,
   MentraSigninResponse,
   MentraSignOutResponse,
   MentraUpdateUserPasswordResponse,
-  MentraAuthSessionResponse,
-  MentraAuthStateChangeSubscriptionResponse,
   MentraAuthSession,
   MentraAuthUser,
 } from "@/utils/auth/authProvider.types"
-
-import {createClient, SupportedStorage} from "@supabase/supabase-js"
 import {storage} from "@/utils/storage"
-import {AsyncResult, result as Res, Result} from "typesafe-ts"
-import {Sub} from "@/utils/auth/authClient"
 
 const SUPABASE_URL = (process.env.EXPO_PUBLIC_SUPABASE_URL as string) || "https://auth.mentra.glass"
 const SUPABASE_ANON_KEY =
@@ -114,6 +109,9 @@ export class SupabaseWrapperClient {
   public getSession(): AsyncResult<MentraAuthSession, Error> {
     return Res.try_async(async () => {
       const {data, error} = await this.supabase.auth.getSession()
+      if (error) {
+        throw error
+      }
       if (!data.session || !data.session.user?.id) {
         return {
           token: undefined,
@@ -131,18 +129,13 @@ export class SupabaseWrapperClient {
     })
   }
 
-  public async updateSessionWithTokens(tokens: {access_token: string; refresh_token: string}) {
-    try {
+  public updateSessionWithTokens(tokens: {access_token: string; refresh_token: string}): AsyncResult<void, Error> {
+    return Res.try_async(async () => {
       const {error} = await this.supabase.auth.setSession(tokens)
-      return {error}
-    } catch (error) {
-      console.error(error)
-      return {
-        error: {
-          message: "Something went wrong. Please try again.",
-        },
+      if (error) {
+        throw new Error(error.message)
       }
-    }
+    })
   }
 
   public async startAutoRefresh(): Promise<void> {

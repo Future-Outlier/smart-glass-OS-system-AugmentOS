@@ -1,27 +1,20 @@
 import {AppState} from "react-native"
+import {AsyncResult, result as Res, Result} from "typesafe-ts"
 
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 
 import {
   MentraAuthSession,
-  MentraAuthSessionResponse,
-  MentraAuthStateChangeSubscriptionResponse,
   MentraAuthUser,
-  MentraAuthUserResponse,
-  MentraOauthProviderResponse,
   MentraPasswordResetResponse,
   MentraSigninResponse,
   MentraSignOutResponse,
-  MentraUpdateUserPasswordResponse,
 } from "./authProvider.types"
 import {AuthingWrapperClient} from "./provider/authingClient"
 import {SupabaseWrapperClient} from "./provider/supabaseClient"
-import {AsyncResult, result as Res, Result} from "typesafe-ts"
 
 export interface AuthClient {
-  onAuthStateChange(
-    callback: (event: string, session: MentraAuthSession) => void,
-  ): Result<any, Error>
+  onAuthStateChange(callback: (event: string, session: MentraAuthSession) => void): Result<any, Error>
   getUser(): AsyncResult<MentraAuthUser, Error>
   signUp(params: {email: string; password: string}): AsyncResult<MentraSigninResponse, Error>
   signInWithPassword(params: {email: string; password: string}): AsyncResult<MentraSigninResponse, Error>
@@ -34,6 +27,13 @@ export interface AuthClient {
   signOut(): AsyncResult<MentraSignOutResponse, Error>
   appleSignIn(): AsyncResult<string, Error>
   googleSignIn(): AsyncResult<string, Error>
+}
+
+function unwrapResult<T>(res: Result<T, Error>): T {
+  if (res.is_error()) {
+    throw new Error(res.error.message)
+  }
+  return res.value
 }
 
 class MentraAuthClient {
@@ -77,10 +77,14 @@ class MentraAuthClient {
     })
   }
 
-  public signIn(email: string, password: string): AsyncResult<void, Error> {
+  public signIn(email: string, password: string): AsyncResult<MentraSigninResponse, Error> {
     return Res.try_async(async () => {
       await this.init()
-      return this.client?.signInWithPassword?.({email, password})
+      if (this.client?.signInWithPassword) {
+        const res = await this.client!.signInWithPassword({email, password})
+        return unwrapResult(res)
+      }
+      throw new Error("No signInWithPassword method found in client")
     })
   }
 
