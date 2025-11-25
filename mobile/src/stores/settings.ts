@@ -13,7 +13,7 @@ interface Setting {
   saveOnServer: boolean
   // change the key to a different key based on the indexer
   // NEVER do any network calls in the indexer (or performance will suffer greatly
-  indexer?: () => string
+  indexer?: (key: string) => string
   // optionally override the value of the setting when it's accessed
   override?: () => any
   // onWrite?: () => void
@@ -111,9 +111,12 @@ export const SETTINGS: Record<string, Setting> = {
     key: "preferred_mic",
     defaultValue: () => "auto",
     writable: true,
-    indexer: () => {
+    indexer: (key: string) => {
       const glasses = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
-      return glasses
+      if (glasses) {
+        return `${key}:${glasses}`
+      }
+      return key
     },
     saveOnServer: true,
   },
@@ -276,10 +279,7 @@ export const useSettingsStore = create<SettingsState>()(
         }
 
         if (setting.indexer) {
-          const indexValue = setting.indexer()
-          if (indexValue) {
-            key = `${originalKey}:${indexValue}`
-          }
+          key = setting.indexer(originalKey)
         }
 
         if (!setting.writable) {
@@ -326,12 +326,11 @@ export const useSettingsStore = create<SettingsState>()(
       }
 
       if (setting.indexer) {
-        const indexValue = setting.indexer()
-        if (indexValue) {
-          key = `${originalKey}:${indexValue}`
-        }
+        key = setting.indexer(originalKey)
       }
+
       console.log(`GET SETTING: ${key} = ${state.settings[key]}`)
+
       try {
         return state.settings[key] ?? SETTINGS[originalKey].defaultValue()
       } catch (e) {
