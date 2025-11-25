@@ -1,7 +1,7 @@
 "on":
   push:
     branches:
-      - cloud/device-state
+      - cloud/livekit-mobile-reconnection-bug
     paths:
       - "cloud/**"
       - ".github/workflows/porter-debug.yml"
