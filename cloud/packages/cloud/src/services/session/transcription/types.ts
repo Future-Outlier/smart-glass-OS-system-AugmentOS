@@ -3,9 +3,11 @@
  */
 
 import { ExtendedStreamType, TranscriptionData } from "@mentra/sdk";
-import { Logger } from "pino";
-import UserSession from "../UserSession";
 import dotenv from "dotenv";
+import { Logger } from "pino";
+
+// eslint-disable-next-line no-restricted-imports
+import UserSession from "../UserSession";
 dotenv.config();
 
 // Environment variables for provider configuration
@@ -245,7 +247,10 @@ export interface StreamHealth {
 //===========================================================
 
 export class TranscriptionError extends Error {
-  constructor(message: string, public readonly context?: Record<string, any>) {
+  constructor(
+    message: string,
+    public readonly context?: Record<string, any>,
+  ) {
     super(message);
     this.name = "TranscriptionError";
   }
@@ -313,7 +318,10 @@ export class NoProviderAvailableError extends TranscriptionError {
 }
 
 export class ResourceLimitError extends TranscriptionError {
-  constructor(message: string, public readonly resourceType: string) {
+  constructor(
+    message: string,
+    public readonly resourceType: string,
+  ) {
     super(message, { resourceType });
     this.name = "ResourceLimitError";
   }

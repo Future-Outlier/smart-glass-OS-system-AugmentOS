@@ -2,16 +2,16 @@
  * @fileoverview Soniox provider implementation using WebSocket API
  */
 
-import { Logger } from "pino";
-import WebSocket from "ws";
-
 import {
   StreamType,
   getLanguageInfo,
   TranscriptionData,
   SonioxToken,
 } from "@mentra/sdk";
+import { Logger } from "pino";
+import WebSocket from "ws";
 
+// eslint-disable-next-line no-restricted-imports
 import {
   TranscriptionProvider,
   StreamInstance,
@@ -25,7 +25,7 @@ import {
   StreamHealth,
   StreamMetrics,
   SonioxProviderError,
-} from "@/services/session/transcription/types";
+} from "../../../../services/session/transcription/types";
 
 // Import Soniox language configuration from JSON
 import sonioxLanguageData from "./SonioxLanguages.json";
@@ -75,7 +75,10 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
   private failureCount = 0;
   private lastFailureTime = 0;
 
-  constructor(private config: SonioxProviderConfig, parentLogger: Logger) {
+  constructor(
+    private config: SonioxProviderConfig,
+    parentLogger: Logger,
+  ) {
     this.logger = parentLogger.child({ provider: this.name });
 
     this.healthStatus = {
