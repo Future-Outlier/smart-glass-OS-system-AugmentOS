@@ -1,5 +1,5 @@
 import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
-import {useState, useEffect, useCallback} from "react"
+import {useState, useEffect, useCallback, useRef} from "react"
 import {View, TextInput, TouchableOpacity, BackHandler} from "react-native"
 import {ViewStyle, TextStyle} from "react-native"
 import {ScrollView} from "react-native"
@@ -10,7 +10,9 @@ import {EyeOffIcon} from "@/components/icons/EyeOffIcon"
 import {WifiIcon} from "@/components/icons/WifiIcon"
 import {Screen, Header, Checkbox, Button, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useGlassesStore} from "@/stores/glasses"
 import {$styles, ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 
@@ -23,11 +25,27 @@ export default function WifiPasswordScreen() {
 
   const {theme, themed} = useAppTheme()
   const {push, goBack} = useNavigationHistory()
+  const glassesConnected = useGlassesStore(state => state.connected)
   const [ssid, setSsid] = useState(initialSsid)
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [rememberPassword, setRememberPassword] = useState(true)
   const [hasSavedPassword, setHasSavedPassword] = useState(false)
+
+  // Navigate away if glasses disconnect (but not on initial mount)
+  const prevGlassesConnectedRef = useRef(glassesConnected)
+  useEffect(() => {
+    if (prevGlassesConnectedRef.current && !glassesConnected) {
+      console.log("[WifiPasswordScreen] Glasses disconnected - navigating away")
+      showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [{text: "OK"}])
+      if (returnTo && typeof returnTo === "string") {
+        router.replace(decodeURIComponent(returnTo))
+      } else {
+        router.replace("/")
+      }
+    }
+    prevGlassesConnectedRef.current = glassesConnected
+  }, [glassesConnected, returnTo])
 
   const handleGoBack = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
