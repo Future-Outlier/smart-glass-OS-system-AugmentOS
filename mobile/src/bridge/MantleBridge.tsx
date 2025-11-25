@@ -102,6 +102,7 @@ export class MantleBridge {
 
       let binaryString
       let bytes
+      let res
 
       switch (data.type) {
         case "core_status_update":
@@ -250,36 +251,29 @@ export class MantleBridge {
           break
         case "phone_notification":
           // Send phone notification via REST instead of WebSocket
-          restComms
-            .sendPhoneNotification({
-              notificationId: data.notificationId,
-              app: data.app,
-              title: data.title,
-              content: data.content,
-              priority: data.priority,
-              timestamp: data.timestamp,
-              packageName: data.packageName,
-            })
-            .then(result => {
-              if (result.is_err()) {
-                console.error("Failed to send phone notification:", result.error)
-                // TODO: Consider retry logic or queuing failed notifications
-              }
-            })
+          res = await restComms.sendPhoneNotification({
+            notificationId: data.notificationId,
+            app: data.app,
+            title: data.title,
+            content: data.content,
+            priority: data.priority,
+            timestamp: data.timestamp,
+            packageName: data.packageName,
+          })
+          if (res.is_error()) {
+            console.error("Failed to send phone notification:", res.error)
+          }
           break
         case "phone_notification_dismissed":
           // Send phone notification dismissal via REST
-          restComms
-            .sendPhoneNotificationDismissed({
-              notificationKey: data.notificationKey,
-              packageName: data.packageName,
-              notificationId: data.notificationId,
-            })
-            .then(result => {
-              if (result.is_err()) {
-                console.error("Failed to send phone notification dismissal:", result.error)
-              }
-            })
+          res = await restComms.sendPhoneNotificationDismissed({
+            notificationKey: data.notificationKey,
+            packageName: data.packageName,
+            notificationId: data.notificationId,
+          })
+          if (res.is_error()) {
+            console.error("Failed to send phone notification dismissal:", res.error)
+          }
           break
         // TODO: this is a bit of a hack, we should have dedicated functions for ws endpoints in the core:
         case "ws_text":
@@ -357,7 +351,6 @@ export class MantleBridge {
 
   async updateButtonVideoSettings(width: number, height: number, fps: number) {
     console.log("updateButtonVideoSettings", width, height, fps)
-    console.log("status.glasses_info?.model_name", status.glasses_info?.model_name)
     return await CoreModule.updateSettings({
       button_video_width: width,
       button_video_height: height,
@@ -375,11 +368,6 @@ export class MantleBridge {
     console.log("Sending WiFi disconnect command to Core")
     // TODO: Add disconnectWifi to CoreModule
     console.warn("disconnectFromWifi not yet implemented in new CoreModule API")
-  }
-
-  async queryGalleryStatus() {
-    console.log("BRIDGE: Querying gallery status from glasses")
-    return await CoreModule.queryGalleryStatus()
   }
 
   async setLc3AudioEnabled(enabled: boolean) {
