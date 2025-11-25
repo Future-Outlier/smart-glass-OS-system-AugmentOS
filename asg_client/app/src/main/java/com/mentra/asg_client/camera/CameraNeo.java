@@ -1195,11 +1195,26 @@ public class CameraNeo extends LifecycleService {
                     return;
                 }
 
-                // Log available video sizes
-                Log.i(TAG, "Available video sizes for camera " + this.cameraId + ":");
+                // Log available video sizes with detailed analysis
+                Log.i(TAG, "📹 VIDEO RESOLUTION DEBUG - Available video sizes for camera " + this.cameraId + " (" + videoSizes.length + " options):");
+                boolean has1080p = false;
+                boolean has720p = false;
+                boolean has4K = false;
                 for (Size size : videoSizes) {
-                    Log.i(TAG, "  " + size.getWidth() + "x" + size.getHeight());
+                    String marker = "";
+                    if (size.getWidth() == 1920 && size.getHeight() == 1080) {
+                        has1080p = true;
+                        marker = " ← 1080p";
+                    } else if (size.getWidth() == 1280 && size.getHeight() == 720) {
+                        has720p = true;
+                        marker = " ← 720p";
+                    } else if (size.getWidth() == 3840 && size.getHeight() == 2160) {
+                        has4K = true;
+                        marker = " ← 4K";
+                    }
+                    Log.i(TAG, "  " + size.getWidth() + "x" + size.getHeight() + marker);
                 }
+                Log.i(TAG, "📹 Resolution support: 4K=" + has4K + ", 1080p=" + has1080p + ", 720p=" + has720p);
 
                 // Use pending video settings if available, otherwise default to 1080p
                 int targetVideoWidth;
@@ -1207,15 +1222,22 @@ public class CameraNeo extends LifecycleService {
                 if (pendingVideoSettings != null && pendingVideoSettings.isValid()) {
                     targetVideoWidth = pendingVideoSettings.width;
                     targetVideoHeight = pendingVideoSettings.height;
-                    Log.i(TAG, "Using requested video settings: " + pendingVideoSettings);
+                    Log.i(TAG, "📹 Using CUSTOM video settings from command: " + pendingVideoSettings);
                 } else {
                     targetVideoWidth = 1920;
                     targetVideoHeight = 1080;
-                    Log.i(TAG, "Using default video settings: 1920x1080@30fps");
+                    Log.i(TAG, "📹 Using DEFAULT video settings: 1920x1080@30fps (no custom settings provided)");
                 }
-                Log.i(TAG, "Requesting video resolution: " + targetVideoWidth + "x" + targetVideoHeight);
+                Log.i(TAG, "📹 TARGET resolution: " + targetVideoWidth + "x" + targetVideoHeight);
                 videoSize = chooseOptimalSize(videoSizes, targetVideoWidth, targetVideoHeight);
-                Log.i(TAG, "Selected video size: " + videoSize.getWidth() + "x" + videoSize.getHeight());
+                Log.i(TAG, "📹 SELECTED resolution: " + videoSize.getWidth() + "x" + videoSize.getHeight());
+
+                // Warn if we didn't get what we asked for
+                if (videoSize.getWidth() != targetVideoWidth || videoSize.getHeight() != targetVideoHeight) {
+                    Log.w(TAG, "⚠️ VIDEO RESOLUTION MISMATCH: Requested " + targetVideoWidth + "x" + targetVideoHeight +
+                          " but got " + videoSize.getWidth() + "x" + videoSize.getHeight() +
+                          " - camera may not support requested resolution for MediaRecorder");
+                }
 
                 // Initialize MediaRecorder only for single video mode
                 // In buffer mode, CircularVideoBufferInternal handles its own MediaRecorders
@@ -1645,8 +1667,19 @@ public class CameraNeo extends LifecycleService {
             previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
             previewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
 
-            // Use dynamic FPS range to prevent long exposure times that cause overexposure
-            previewBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, selectedFpsRange);
+            // Use appropriate FPS range based on mode
+            if (forVideo) {
+                // For video: use fixed FPS range to ensure consistent frame rate
+                // Using flexible range (like 5-30fps) allows AE to drop frame rate in low light
+                int targetFps = (pendingVideoSettings != null) ? pendingVideoSettings.fps : 30;
+                Range<Integer> videoFpsRange = Range.create(targetFps, targetFps);
+                previewBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, videoFpsRange);
+                Log.d(TAG, "Video: Using fixed FPS range " + videoFpsRange + " for consistent frame rate");
+            } else {
+                // For photo: use dynamic FPS range to allow longer exposure times for MFNR
+                previewBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, selectedFpsRange);
+                Log.d(TAG, "Photo: Using dynamic FPS range " + selectedFpsRange + " for exposure flexibility");
+            }
 
             // Apply user exposure compensation BEFORE capture (not during)
             previewBuilder.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, userExposureCompensation);

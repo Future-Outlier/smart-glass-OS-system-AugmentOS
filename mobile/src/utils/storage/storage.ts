@@ -59,7 +59,7 @@ class MMKVStorage {
       const subKeys = keys.filter(k => k.startsWith(key) && k.includes(":"))
 
       if (subKeys.length === 0) {
-        return Res.error(new Error(`No subkeys found for ${key}`))
+        throw new Error(`No subkeys found for ${key}`)
       }
 
       let subKeysObject: Record<string, unknown> = {}

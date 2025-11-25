@@ -106,6 +106,14 @@ export class MantleBridge {
       switch (data.type) {
         case "core_status_update":
           useGlassesStore.getState().setGlassesInfo(data.core_status.glasses_info)
+          // Sync default_wearable to settings store for per-glasses settings indexer
+          const modelName = data.core_status?.connected_glasses?.model_name
+          if (modelName) {
+            const currentWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
+            if (currentWearable !== modelName) {
+              useSettingsStore.getState().setSetting(SETTINGS.default_wearable.key, modelName, true)
+            }
+          }
           GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
           return
         case "wifi_status_change":
@@ -367,6 +375,11 @@ export class MantleBridge {
     console.log("Sending WiFi disconnect command to Core")
     // TODO: Add disconnectWifi to CoreModule
     console.warn("disconnectFromWifi not yet implemented in new CoreModule API")
+  }
+
+  async queryGalleryStatus() {
+    console.log("BRIDGE: Querying gallery status from glasses")
+    return await CoreModule.queryGalleryStatus()
   }
 
   async setLc3AudioEnabled(enabled: boolean) {

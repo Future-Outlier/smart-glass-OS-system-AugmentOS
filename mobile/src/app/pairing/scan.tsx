@@ -25,7 +25,6 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SearchResultDevice, useSearchResults} from "@/contexts/SearchResultsContext"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {MOCK_CONNECTION} from "@/utils/Constants"
@@ -224,10 +223,9 @@ export default function SelectGlassesBluetoothScreen() {
       return // Stop the connection process
     }
 
-    // update the preferredmic to be the phone mic:
-    await useSettingsStore.getState().setSetting(SETTINGS.preferred_mic.key, "phone")
-
     // All permissions granted, proceed with connecting to the wearable
+    // Note: preferred_mic will use default "auto" - user can change in settings if needed
+    // (Previously set here, but moved because default_wearable wasn't set yet for the indexer)
     setTimeout(() => {
       CoreModule.connectByName(deviceName)
     }, 2000)
