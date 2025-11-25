@@ -1,6 +1,5 @@
 import type {AuthChangeEvent, Session, SupabaseClient} from "@supabase/supabase-js"
 
-import {supabase as supabaseClient} from "@/supabase/supabaseClient"
 import {
   MentraAuthUserResponse,
   MentraOauthProviderResponse,
@@ -11,6 +10,40 @@ import {
   MentraAuthSessionResponse,
   MentraAuthStateChangeSubscriptionResponse,
 } from "@/utils/auth/authProvider.types"
+
+import {createClient, SupportedStorage} from "@supabase/supabase-js"
+import {storage} from "@/utils/storage"
+
+const SUPABASE_URL = (process.env.EXPO_PUBLIC_SUPABASE_URL as string) || "https://auth.mentra.glass"
+const SUPABASE_ANON_KEY =
+  (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string) ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrYml1bnpmYmJ0d2x6ZHBybWVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQyODA2OTMsImV4cCI6MjA0OTg1NjY5M30.rbEsE8IRz-gb3-D0H8VAJtGw-xvipl1Nc-gCnnQ748U"
+
+// shim to mmkv storage:
+class MMKVSupabaseStorage implements SupportedStorage {
+  getItem(key: string): any {
+    const res = storage.load<any>(key)
+    if (res.is_error()) {
+      return null
+    }
+    return res.value
+  }
+  setItem(key: string, value: string): void {
+    storage.save(key, value)
+  }
+  removeItem(key: string): void {
+    storage.remove(key)
+  }
+}
+
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    storage: new MMKVSupabaseStorage(),
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+})
 
 export class SupabaseWrapperClient {
   private static instance: SupabaseWrapperClient

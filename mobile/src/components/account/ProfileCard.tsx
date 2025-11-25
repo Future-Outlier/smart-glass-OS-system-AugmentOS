@@ -3,7 +3,7 @@ import {ActivityIndicator, Image, ImageStyle, TextStyle, View, ViewStyle} from "
 import Svg, {Path} from "react-native-svg"
 
 import {Text} from "@/components/ignite"
-import {supabase} from "@/supabase/supabaseClient"
+import {supabase} from "@/utils/auth/supabaseClient"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
