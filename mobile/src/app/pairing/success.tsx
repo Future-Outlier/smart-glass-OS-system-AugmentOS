@@ -104,6 +104,7 @@ const $messageContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $successTitle: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 28,
   fontWeight: "600",
+  lineHeight: 36,
   color: colors.text,
   textAlign: "center",
 })

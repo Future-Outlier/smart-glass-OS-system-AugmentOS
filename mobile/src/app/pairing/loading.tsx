@@ -165,7 +165,7 @@ export default function GlassesPairingGuideScreen() {
             <AudioPairingPrompt
               deviceName={audioDeviceName}
               onSkip={() => {
-                setAudioPairingNeeded(false)
+                // Navigate first - don't update state which could cause race conditions
                 replace("/pairing/success", {glassesModelName: glassesModelName})
               }}
             />

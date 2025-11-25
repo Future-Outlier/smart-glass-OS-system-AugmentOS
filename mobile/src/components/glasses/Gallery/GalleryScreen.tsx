@@ -18,10 +18,10 @@ import {
   ViewStyle,
   ViewToken,
 } from "react-native"
+import RNFS from "react-native-fs"
 import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 import WifiManager from "react-native-wifi-reborn"
 
-import bridge from "@/bridge/MantleBridge"
 import {MediaViewer} from "@/components/glasses/Gallery/MediaViewer"
 import {PhotoImage} from "@/components/glasses/Gallery/PhotoImage"
 import {ProgressRing} from "@/components/glasses/Gallery/ProgressRing"
@@ -107,7 +107,6 @@ export function GalleryScreen() {
 
   // State machine
   const [galleryState, setGalleryState] = useState<GalleryState>(GalleryState.INITIALIZING)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const transitionToState = (newState: GalleryState) => {
     console.log(`[GalleryScreen] State transition: ${galleryState} → ${newState}`)
@@ -156,12 +155,34 @@ export function GalleryScreen() {
   const syncTriggeredRef = useRef(false)
   const PAGE_SIZE = 20
 
-  // Load downloaded photos
+  // Load downloaded photos (validates files exist and cleans up stale entries)
   const loadDownloadedPhotos = useCallback(async () => {
     try {
       const downloadedFiles = await localStorageService.getDownloadedFiles()
-      const photoInfos = Object.values(downloadedFiles).map(file => localStorageService.convertToPhotoInfo(file))
-      setDownloadedPhotos(photoInfos)
+      const validPhotoInfos: PhotoInfo[] = []
+      const staleFileNames: string[] = []
+
+      // Check each file exists on disk
+      for (const [name, file] of Object.entries(downloadedFiles)) {
+        const fileExists = await RNFS.exists(file.filePath)
+        if (fileExists) {
+          validPhotoInfos.push(localStorageService.convertToPhotoInfo(file))
+        } else {
+          console.log(`[GalleryScreen] Cleaning up stale entry for missing file: ${name}`)
+          staleFileNames.push(name)
+        }
+      }
+
+      // Clean up stale metadata entries (files that no longer exist on disk)
+      for (const fileName of staleFileNames) {
+        await localStorageService.deleteDownloadedFile(fileName)
+      }
+
+      if (staleFileNames.length > 0) {
+        console.log(`[GalleryScreen] Cleaned up ${staleFileNames.length} stale photo entries`)
+      }
+
+      setDownloadedPhotos(validPhotoInfos)
     } catch (err) {
       console.error("Error loading downloaded photos:", err)
     }
@@ -222,13 +243,15 @@ export function GalleryScreen() {
         if (err instanceof Error) {
           if (err.message.includes("429")) {
             errorMsg = "Server is busy, please try again in a moment"
+            // Auto-retry for rate limit errors
             setTimeout(() => {
-              if (galleryState === GalleryState.ERROR) {
-                console.log("[GalleryScreen] Retrying after rate limit...")
-                transitionToState(GalleryState.CONNECTED_LOADING)
-                loadInitialPhotos()
-              }
+              console.log("[GalleryScreen] Retrying after rate limit...")
+              transitionToState(GalleryState.CONNECTED_LOADING)
+              loadInitialPhotos()
             }, TIMING.RETRY_AFTER_RATE_LIMIT_MS)
+            // Don't show alert for auto-retry, just transition to retryable state
+            transitionToState(GalleryState.MEDIA_AVAILABLE)
+            return
           } else if (err.message.includes("400")) {
             errorMsg = "Invalid request to server"
           } else {
@@ -236,8 +259,9 @@ export function GalleryScreen() {
           }
         }
 
-        setErrorMessage(errorMsg)
-        transitionToState(GalleryState.ERROR)
+        // Show error alert and return to retryable state
+        showAlert("Error", errorMsg, [{text: translate("common:ok")}])
+        transitionToState(GalleryState.MEDIA_AVAILABLE)
       }
     },
     [galleryState, hotspotEnabled, hotspotGatewayIp],
@@ -539,12 +563,27 @@ export function GalleryScreen() {
         }
       }
 
-      setErrorMessage(errorMsg)
-      if (!errorMsg.includes("busy")) {
-        showAlert("Sync Error", errorMsg, [{text: translate("common:ok")}])
-      }
-      transitionToState(GalleryState.ERROR)
+      // Show error alert
+      showAlert("Sync Error", errorMsg, [{text: translate("common:ok")}])
+
+      // Clear sync progress and states
       setSyncProgress(null)
+      setPhotoSyncStates(new Map())
+      setLoadedServerPhotos(new Map())
+      setTotalServerCount(0)
+      loadedRanges.current.clear()
+      loadingRanges.current.clear()
+
+      // Reload downloaded photos to show what we have
+      await loadDownloadedPhotos()
+
+      // Return to a recoverable state and re-query glasses
+      if (glassesConnected && features?.hasCamera) {
+        transitionToState(GalleryState.QUERYING_GLASSES)
+        queryGlassesGalleryStatus()
+      } else {
+        transitionToState(GalleryState.NO_MEDIA_ON_GLASSES)
+      }
     }
   }
 
@@ -679,9 +718,9 @@ export function GalleryScreen() {
       transitionToState(GalleryState.WAITING_FOR_WIFI_PROMPT)
     } catch (error) {
       console.error("[GalleryScreen] Failed to start hotspot:", error)
-      setErrorMessage("Failed to start hotspot")
-      showAlert("Error", "Failed to start hotspot", [{text: "OK"}])
-      transitionToState(GalleryState.ERROR)
+      showAlert("Error", "Failed to start hotspot. Please try again.", [{text: "OK"}])
+      // Return to MEDIA_AVAILABLE so user can retry
+      transitionToState(GalleryState.MEDIA_AVAILABLE)
     }
   }
 
@@ -921,12 +960,13 @@ export function GalleryScreen() {
         transitionToState(GalleryState.USER_CANCELLED_WIFI)
       } else if (error?.message?.includes("user has to enable wifi manually")) {
         // Android 10+ requires manual WiFi enable
-        setErrorMessage("Please enable WiFi in your device settings first")
         showAlert("WiFi Required", "Please enable WiFi in your device settings and try again", [{text: "OK"}])
         transitionToState(GalleryState.USER_CANCELLED_WIFI)
       } else {
-        setErrorMessage(error?.message || "Failed to connect to hotspot")
-        transitionToState(GalleryState.ERROR)
+        const errorMsg = error?.message || "Failed to connect to hotspot"
+        showAlert("Connection Error", errorMsg + ". Please try again.", [{text: "OK"}])
+        // Return to MEDIA_AVAILABLE so user can retry
+        transitionToState(GalleryState.MEDIA_AVAILABLE)
       }
     }
   }
@@ -945,9 +985,9 @@ export function GalleryScreen() {
   // Query gallery status
   const queryGlassesGalleryStatus = () => {
     console.log("[GalleryScreen] Querying glasses gallery status...")
-    bridge
-      .queryGalleryStatus()
-      .catch(error => console.error("[GalleryScreen] Failed to send gallery status query:", error))
+    CoreModule.queryGalleryStatus().catch(error =>
+      console.error("[GalleryScreen] Failed to send gallery status query:", error),
+    )
   }
 
   // Initial mount - initialize gallery immediately, permission is handled lazily when saving
@@ -975,6 +1015,21 @@ export function GalleryScreen() {
       transitionToState(GalleryState.NO_MEDIA_ON_GLASSES)
     }
   }, [])
+
+  // Reset gallery state when glasses disconnect
+  useEffect(() => {
+    if (!glassesConnected) {
+      console.log("[GalleryScreen] Glasses disconnected - clearing gallery state")
+      setGlassesGalleryStatus(null)
+      setTotalServerCount(0)
+      setLoadedServerPhotos(new Map())
+      loadedRanges.current.clear()
+      loadingRanges.current.clear()
+      setSyncProgress(null)
+      setPhotoSyncStates(new Map())
+      transitionToState(GalleryState.NO_MEDIA_ON_GLASSES)
+    }
+  }, [glassesConnected])
 
   // Refresh downloaded photos when screen comes into focus
   useFocusEffect(
@@ -1138,9 +1193,10 @@ export function GalleryScreen() {
         hotspotConnectionTimeoutRef.current = null
       }
 
-      // Set error message and transition to error state
-      setErrorMessage(eventData.error_message || "Failed to start hotspot")
-      transitionToState(GalleryState.ERROR)
+      // Show error alert and return to retryable state
+      const errorMsg = eventData.error_message || "Failed to start hotspot"
+      showAlert("Hotspot Error", errorMsg + ". Please try again.", [{text: "OK"}])
+      transitionToState(GalleryState.MEDIA_AVAILABLE)
     }
 
     GlobalEventEmitter.addListener("HOTSPOT_ERROR", handleHotspotError)
@@ -1273,8 +1329,6 @@ export function GalleryScreen() {
 
   // UI state
   const isLoadingServerPhotos = [GalleryState.CONNECTED_LOADING, GalleryState.INITIALIZING].includes(galleryState)
-
-  const error = galleryState === GalleryState.ERROR ? errorMessage : null
   const serverPhotosToSync = totalServerCount
 
   const shouldShowSyncButton =
@@ -1287,7 +1341,6 @@ export function GalleryScreen() {
       GalleryState.REQUESTING_HOTSPOT,
       GalleryState.SYNCING,
       GalleryState.SYNC_COMPLETE,
-      GalleryState.ERROR,
     ].includes(galleryState) ||
     (galleryState === GalleryState.READY_TO_SYNC && serverPhotosToSync > 0)
 
@@ -1420,13 +1473,6 @@ export function GalleryScreen() {
           return (
             <View style={themed($syncButtonRow)}>
               <Text style={themed($syncButtonText)}>Sync complete!</Text>
-            </View>
-          )
-
-        case GalleryState.ERROR:
-          return (
-            <View style={themed($syncButtonRow)}>
-              <Text style={themed($syncButtonText)}>{errorMessage || "An error occurred"}</Text>
             </View>
           )
 
@@ -1607,27 +1653,9 @@ export function GalleryScreen() {
       <View style={themed($screenContainer)}>
         <View style={themed($galleryContainer)}>
           {(() => {
-            // DEBUG: Log empty gallery condition evaluation
             const showEmpty = allPhotos.length === 0 && !isLoadingServerPhotos
-            // console.log(`[GalleryScreen] GALLERY STATE: ${galleryState}`)
-            // console.log(`[GalleryScreen] EMPTY GALLERY CHECK:`, {
-            //   hasError: !!error,
-            //   allPhotosLength: allPhotos.length,
-            //   isLoadingServerPhotos,
-            //   galleryState,
-            //   totalServerCount,
-            //   downloadedPhotosCount: downloadedPhotos.length,
-            //   showEmptyGallery: showEmpty && !error,
-            //   decision: error ? "SHOW_ERROR" : showEmpty ? "SHOW_EMPTY" : "SHOW_GALLERY",
-            // })
 
-            if (error) {
-              return (
-                <View style={themed($errorContainer)}>
-                  <Text style={themed($errorText)}>{error}</Text>
-                </View>
-              )
-            } else if (showEmpty) {
+            if (showEmpty) {
               return (
                 <View style={themed($emptyContainer)}>
                   <Icon
@@ -1685,21 +1713,6 @@ const $screenContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   // backgroundColor: colors.background,
   marginHorizontal: -spacing.s6,
-})
-
-const $errorContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.palette.angry100,
-  padding: spacing.s3,
-  borderRadius: spacing.s2,
-  margin: spacing.s6,
-  alignItems: "center",
-})
-
-const $errorText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 14,
-  color: colors.palette.angry500,
-  textAlign: "center",
-  marginBottom: spacing.s3,
 })
 
 const $photoGridContent: ThemedStyle<ViewStyle> = () => ({
