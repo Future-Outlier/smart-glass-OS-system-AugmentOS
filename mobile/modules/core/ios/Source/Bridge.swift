@@ -241,15 +241,6 @@ class Bridge {
         Bridge.sendTypedMessage("glasses_serial_number", body: body)
     }
 
-    static func sendGlassesConnectionState(modelName: String, status: String) {
-        let event: [String: Any] = [
-            "modelName": modelName,
-            "status": status,
-            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
-        ]
-        Bridge.sendTypedMessage("glasses_connection_state", body: event)
-    }
-
     static func sendWifiStatusChange(connected: Bool, ssid: String?, localIp: String?) {
         let event: [String: Any] = [
             "connected": connected,
