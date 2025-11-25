@@ -4,7 +4,6 @@
 
 import CoreModule from "core"
 import LinearGradient from "expo-linear-gradient"
-import * as Linking from "expo-linking"
 import {useFocusEffect} from "expo-router"
 import {useCallback, useEffect, useMemo, useRef, useState} from "react"
 import {
@@ -102,9 +101,9 @@ export function GalleryScreen() {
 
   const [networkStatus] = useState<NetworkStatus>(networkConnectivityService.getStatus())
 
-  // Permission state
-  const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState(false)
-  const [isRequestingPermission, setIsRequestingPermission] = useState(false)
+  // Permission state - no longer blocking, permission is requested lazily when saving
+  // Keeping state for potential future use (e.g., showing a hint in settings)
+  const [_hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState(false)
 
   // State machine
   const [galleryState, setGalleryState] = useState<GalleryState>(GalleryState.INITIALIZING)
@@ -424,8 +423,19 @@ export function GalleryScreen() {
 
       // Auto-save to camera roll if enabled
       const shouldAutoSave = await gallerySettingsService.getAutoSaveToCameraRoll()
-      if (shouldAutoSave) {
+      if (shouldAutoSave && downloadResult.downloaded.length > 0) {
         console.log("[GalleryScreen] Auto-saving photos to camera roll...")
+
+        // Request permission if needed (this is a no-op on Android 10+)
+        const hasPermission = await MediaLibraryPermissions.checkPermission()
+        if (!hasPermission) {
+          const granted = await MediaLibraryPermissions.requestPermission()
+          if (!granted) {
+            console.warn("[GalleryScreen] Camera roll permission denied, skipping auto-save")
+            // Continue without saving to camera roll - photos are still in local storage
+          }
+        }
+
         let savedCount = 0
         let failedCount = 0
 
@@ -940,83 +950,30 @@ export function GalleryScreen() {
       .catch(error => console.error("[GalleryScreen] Failed to send gallery status query:", error))
   }
 
-  // Initial mount - check permission first
+  // Initial mount - initialize gallery immediately, permission is handled lazily when saving
   useEffect(() => {
-    const checkAndRequestPermission = async () => {
-      console.log("[GalleryScreen] Component mounted - checking media library permission")
-      const hasPermission = await MediaLibraryPermissions.checkPermission()
+    console.log("[GalleryScreen] Component mounted - initializing gallery")
 
-      if (!hasPermission) {
-        // Show explanation BEFORE requesting permission
-        showAlert(
-          "Camera Roll Access",
-          "MentraOS Gallery can automatically save photos and videos from your glasses to your device's camera roll. Would you like to grant camera roll access?",
-          [
-            {
-              text: "Not Now",
-              style: "cancel",
-              onPress: () => goBack(),
-            },
-            {
-              text: "Allow",
-              onPress: async () => {
-                setIsRequestingPermission(true)
-                const granted = await MediaLibraryPermissions.requestPermission()
-                setIsRequestingPermission(false)
+    // Check permission status in background (for state tracking, not blocking)
+    MediaLibraryPermissions.checkPermission().then(hasPermission => {
+      setHasMediaLibraryPermission(hasPermission)
+      console.log("[GalleryScreen] Media library permission status:", hasPermission)
+    })
 
-                if (!granted) {
-                  // Permission was denied - show settings alert
-                  showAlert(
-                    "Permission Required",
-                    "MentraOS needs permission to save photos to your camera roll. Please grant permission in Settings.",
-                    [
-                      {text: "Cancel", onPress: () => goBack()},
-                      {
-                        text: "Open Settings",
-                        onPress: () => {
-                          Linking.openSettings()
-                          goBack()
-                        },
-                      },
-                    ],
-                  )
-                  return
-                }
+    // Initialize gallery immediately - no permission blocking
+    loadDownloadedPhotos()
 
-                // Permission granted, continue with initialization
-                setHasMediaLibraryPermission(true)
-                console.log("[GalleryScreen] Media library permission granted")
-                initializeGallery()
-              },
-            },
-          ],
-        )
-        return
-      }
-
-      setHasMediaLibraryPermission(true)
-      console.log("[GalleryScreen] Media library permission granted")
-      initializeGallery()
+    // Only query glasses if we have glasses info (meaning glasses are connected) AND glasses have gallery capability
+    if (glassesConnected && features?.hasCamera) {
+      console.log("[GalleryScreen] Glasses connected with gallery capability - querying gallery status")
+      transitionToState(GalleryState.QUERYING_GLASSES)
+      queryGlassesGalleryStatus()
+    } else {
+      console.log(
+        "[GalleryScreen] No glasses connected or glasses don't have gallery capability - showing local photos only",
+      )
+      transitionToState(GalleryState.NO_MEDIA_ON_GLASSES)
     }
-
-    const initializeGallery = () => {
-      // Continue with existing mount logic
-      loadDownloadedPhotos()
-
-      // Only query glasses if we have glasses info (meaning glasses are connected) AND glasses have gallery capability
-      if (glassesConnected && features?.hasCamera) {
-        console.log("[GalleryScreen] Glasses connected with gallery capability - querying gallery status")
-        transitionToState(GalleryState.QUERYING_GLASSES)
-        queryGlassesGalleryStatus()
-      } else {
-        console.log(
-          "[GalleryScreen] No glasses connected or glasses don't have gallery capability - showing local photos only",
-        )
-        transitionToState(GalleryState.NO_MEDIA_ON_GLASSES)
-      }
-    }
-
-    checkAndRequestPermission()
   }, [])
 
   // Refresh downloaded photos when screen comes into focus
@@ -1572,7 +1529,7 @@ export function GalleryScreen() {
                   size={50}
                   strokeWidth={4}
                   showPercentage={!isFailed && !isCompleted}
-                  progressColor={isFailed ? theme.colors.error : isCompleted ? theme.colors.tint : theme.colors.tint}
+                  progressColor={isFailed ? theme.colors.error : theme.colors.primary}
                 />
                 {isFailed && (
                   <View
@@ -1607,22 +1564,8 @@ export function GalleryScreen() {
     )
   }
 
-  // Show permission loading state
-  if (isRequestingPermission || !hasMediaLibraryPermission) {
-    return (
-      <>
-        <Header title="Glasses Gallery" leftIcon="chevron-left" onLeftPress={() => goBack()} />
-        <View style={themed($screenContainer)}>
-          <View style={themed($permissionContainer)}>
-            <ActivityIndicator size="large" color={theme.colors.tint} />
-            <Text style={themed($permissionText)}>
-              {isRequestingPermission ? "Requesting photo library permission..." : "Loading gallery..."}
-            </Text>
-          </View>
-        </View>
-      </>
-    )
-  }
+  // Permission is no longer blocking - gallery loads immediately
+  // Permission is requested lazily when saving to camera roll
 
   return (
     <>
@@ -1928,20 +1871,6 @@ const $photoDimmingOverlay: ThemedStyle<ViewStyle> = () => ({
 
 const $photoItemDisabled: ThemedStyle<ViewStyle> = () => ({
   // Removed opacity to prevent greyed out appearance during sync
-})
-
-const $permissionContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  padding: spacing.s8,
-})
-
-const $permissionText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 16,
-  color: colors.textDim,
-  marginTop: spacing.s4,
-  textAlign: "center",
 })
 
 const $settingsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({

@@ -128,11 +128,7 @@ export default function GallerySettingsScreen() {
         {/* Camera Settings button for glasses with configurable button */}
         {features?.hasButton && (
           <View style={themed($section)}>
-            <RouteButton
-              label={translate("settings:cameraSettings")}
-              subtitle={translate("settings:cameraSettingsDescription")}
-              onPress={() => push("/settings/camera")}
-            />
+            <RouteButton label={translate("settings:cameraSettings")} onPress={() => push("/settings/camera")} />
           </View>
         )}
 
@@ -140,7 +136,6 @@ export default function GallerySettingsScreen() {
           <Text style={themed($sectionTitle)}>Automatic Sync</Text>
           <ToggleSetting
             label="Save to Camera Roll"
-            subtitle="Automatically save new photos to your device's camera roll when syncing"
             value={autoSaveToCameraRoll}
             onValueChange={handleToggleAutoSave}
           />

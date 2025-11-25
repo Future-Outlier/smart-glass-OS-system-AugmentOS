@@ -17,12 +17,15 @@ class MMKVStorage {
 
   public load<T>(key: string): Result<T, Error> {
     return Res.try(
-      async () => {
-        const loadedString = this.store.getString(key) ?? ""
+      () => {
+        const loadedString = this.store.getString(key)
+        if (!loadedString) {
+          throw new Error(`Key ${key} not found`)
+        }
         const value = JSON.parse(loadedString) as T
         return value
       },
-      (e: unknown) => new Error(`Failed to load ${key} ${e}`),
+      (e: unknown) => new Error(`Failed to load ${key}: ${e}`),
     )
   }
 
@@ -39,7 +42,7 @@ class MMKVStorage {
       const subKeys = keys.filter(k => k.startsWith(key) && k.includes(":"))
 
       if (subKeys.length === 0) {
-        return Res.error(new Error(`No subkeys found for ${key}`))
+        throw new Error(`No subkeys found for ${key}`)
       }
 
       let subKeysObject: Record<string, unknown> = {}

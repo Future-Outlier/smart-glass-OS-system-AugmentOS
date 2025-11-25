@@ -21,7 +21,7 @@ export default function Layout() {
     // const iconColor = isFocused ? theme.colors.primary : theme.colors.textDim
     const iconColor = isFocused ? theme.colors.background : theme.colors.muted_foreground
     const textColor = isFocused ? theme.colors.secondary_foreground : theme.colors.muted_foreground
-    const iconBgColor = isFocused ? theme.colors.primary : theme.colors.background
+    const iconBgColor = isFocused ? theme.colors.primary : "transparent"
     const displayIcon = isFocused ? iconNameFilled : iconName
     return (
       <Pressable {...props} style={[themed($tabButton), {marginBottom: bottom}]}>

@@ -256,6 +256,8 @@ const getDefaultSettings = () =>
 
 const migrateSettings = () => {
   useSettingsStore.getState().setSetting(SETTINGS.enable_squircles.key, true, true)
+  // Force light mode - dark mode is not complete yet
+  useSettingsStore.getState().setSetting(SETTINGS.theme_preference.key, "light", true)
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -274,7 +276,10 @@ export const useSettingsStore = create<SettingsState>()(
         }
 
         if (setting.indexer) {
-          key = `${originalKey}:${setting.indexer()}`
+          const indexValue = setting.indexer()
+          if (indexValue) {
+            key = `${originalKey}:${indexValue}`
+          }
         }
 
         if (!setting.writable) {
@@ -322,7 +327,10 @@ export const useSettingsStore = create<SettingsState>()(
       }
 
       if (setting.indexer) {
-        key = `${originalKey}:${setting.indexer()}`
+        const indexValue = setting.indexer()
+        if (indexValue) {
+          key = `${originalKey}:${indexValue}`
+        }
       }
       // console.log(`GET SETTING: ${key} = ${state.settings[key]}`)
       try {
@@ -373,7 +381,7 @@ export const useSettingsStore = create<SettingsState>()(
             continue
           }
 
-          let res = await storage.load<any>(setting.key)
+          let res = storage.load<any>(setting.key)
           if (res.is_error()) {
             // this setting isn't set from the default, so we don't load anything
             continue
@@ -410,7 +418,7 @@ export const useSettingsStore = create<SettingsState>()(
       const state = get()
       const coreSettings: Record<string, any> = {}
       Object.values(SETTINGS).forEach(setting => {
-        if (setting.key in CORE_SETTINGS_KEYS) {
+        if (CORE_SETTINGS_KEYS.includes(setting.key)) {
           coreSettings[setting.key] = state.getSetting(setting.key)
         }
       })
