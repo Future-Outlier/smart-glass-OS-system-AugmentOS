@@ -52,6 +52,7 @@ export default function InitScreen() {
   // Zustand store hooks
   const [backendUrl, setBackendUrl] = useSetting(SETTINGS.backend_url.key)
   const [onboardingCompleted, _setOnboardingCompleted] = useSetting(SETTINGS.onboarding_completed.key)
+  const [defaultWearable, _setDefaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   // Helper Functions
   const getLocalVersion = (): string | null => {
@@ -77,7 +78,7 @@ export default function InitScreen() {
     }
 
     // Check onboarding status
-    if (!onboardingCompleted) {
+    if (!onboardingCompleted && !defaultWearable) {
       replace("/onboarding/welcome")
       return
     }
@@ -127,6 +128,7 @@ export default function InitScreen() {
     const uid = user?.email || user?.id || ""
 
     socketComms.setAuthCreds(coreToken, uid)
+    console.log("INIT: Socket comms auth creds set")
     await mantle.init()
     console.log("INIT: Mantle initialized")
 
@@ -165,7 +167,7 @@ export default function InitScreen() {
 
     const {required, recommended} = res.value
     setCloudVersion(recommended)
-    console.log(`Version check: local=${localVer}, required=${required}, recommended=${recommended}`)
+    console.log(`INIT: Version check: local=${localVer}, required=${required}, recommended=${recommended}`)
     if (semver.lt(localVer, recommended)) {
       setState("outdated")
       setCanSkipUpdate(!semver.lt(localVer, required))

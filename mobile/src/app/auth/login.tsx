@@ -405,6 +405,7 @@ export default function LoginScreen() {
             ) : (
               <View style={themed($signInOptions)}>
                 <Button
+                  flexContainer
                   tx="login:continueWithEmail"
                   style={themed($primaryButton)}
                   pressedStyle={themed($pressedButton)}

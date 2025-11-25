@@ -36,6 +36,7 @@ const BasicDialog = ({
           </Text>
         )}
       </View>
+      <View style={themed($divider)} />
       <View style={themed($actions)}>
         <View style={themed($actions1)}>
           {leftButtonText && (
@@ -81,16 +82,17 @@ const $titleDescription: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $headline: ThemedStyle<TextStyle> = ({colors}) => ({
   alignSelf: "stretch",
   color: colors.text,
-  textAlign: "center",
+  textAlign: "left",
   fontSize: 17,
   fontWeight: "500",
   letterSpacing: 1.7,
 })
 
 const $description: ThemedStyle<TextStyle> = ({colors}) => ({
+  alignSelf: "stretch",
   color: colors.secondary_foreground,
   fontSize: 16,
-  fontWeight: "bold",
+  fontWeight: "normal",
   textAlign: "left",
 })
 
@@ -109,6 +111,14 @@ const $actions1: ThemedStyle<ViewStyle> = ({spacing}) => ({
   paddingTop: 20,
   alignItems: "center",
   flexDirection: "row",
+})
+
+const $divider: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  height: 1,
+  backgroundColor: colors.border,
+  alignSelf: "stretch",
+  marginTop: spacing.s4,
+  marginHorizontal: 24,
 })
 
 export default BasicDialog

@@ -909,7 +909,6 @@ struct ViewState {
         Bridge.log("MAN: Device disconnected")
         handle_microphone_state_change([], false)
         shouldSendBootingMessage = true // Reset for next first connect
-        Bridge.sendGlassesConnectionState(modelName: defaultWearable, status: "DISCONNECTED")
         handle_request_status()
     }
 

@@ -3,9 +3,9 @@ import CoreModule from "core"
 
 import bridge from "@/bridge/MantleBridge"
 import restComms from "@/services/RestComms"
-import {SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {storage} from "@/utils/storage"
 
 export class LogoutUtils {
   private static readonly TAG = "LogoutUtils"
@@ -135,21 +135,17 @@ export class LogoutUtils {
   private static async clearAppSettings(): Promise<void> {
     console.log(`${this.TAG}: Clearing app settings...`)
 
+    // burn it all:
     try {
-      // Clear specific settings that should be reset on logout
-      const settingsToKeep = [
-        SETTINGS.theme_preference.key, // Keep theme preference
-        SETTINGS.backend_url.key, // Keep custom backend URL if set
-      ]
-
-      const settingsToClear = Object.values(SETTINGS).filter(key => !settingsToKeep.includes(key.key))
-
-      if (settingsToClear.length > 0) {
-        await AsyncStorage.multiRemove(settingsToClear.map(setting => setting.key))
-        console.log(`${this.TAG}: Cleared ${settingsToClear.length} app settings`)
-      }
+      storage.clearAll()
     } catch (error) {
       console.error(`${this.TAG}: Error clearing app settings:`, error)
+    }
+
+    try {
+      await AsyncStorage.clear()
+    } catch (error) {
+      console.error(`${this.TAG}: Error clearing AsyncStorage:`, error)
     }
   }
 
