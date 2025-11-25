@@ -18,6 +18,7 @@ import {
   ViewStyle,
   ViewToken,
 } from "react-native"
+import RNFS from "react-native-fs"
 import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 import WifiManager from "react-native-wifi-reborn"
 
@@ -156,12 +157,34 @@ export function GalleryScreen() {
   const syncTriggeredRef = useRef(false)
   const PAGE_SIZE = 20
 
-  // Load downloaded photos
+  // Load downloaded photos (validates files exist and cleans up stale entries)
   const loadDownloadedPhotos = useCallback(async () => {
     try {
       const downloadedFiles = await localStorageService.getDownloadedFiles()
-      const photoInfos = Object.values(downloadedFiles).map(file => localStorageService.convertToPhotoInfo(file))
-      setDownloadedPhotos(photoInfos)
+      const validPhotoInfos: PhotoInfo[] = []
+      const staleFileNames: string[] = []
+
+      // Check each file exists on disk
+      for (const [name, file] of Object.entries(downloadedFiles)) {
+        const fileExists = await RNFS.exists(file.filePath)
+        if (fileExists) {
+          validPhotoInfos.push(localStorageService.convertToPhotoInfo(file))
+        } else {
+          console.log(`[GalleryScreen] Cleaning up stale entry for missing file: ${name}`)
+          staleFileNames.push(name)
+        }
+      }
+
+      // Clean up stale metadata entries (files that no longer exist on disk)
+      for (const fileName of staleFileNames) {
+        await localStorageService.deleteDownloadedFile(fileName)
+      }
+
+      if (staleFileNames.length > 0) {
+        console.log(`[GalleryScreen] Cleaned up ${staleFileNames.length} stale photo entries`)
+      }
+
+      setDownloadedPhotos(validPhotoInfos)
     } catch (err) {
       console.error("Error loading downloaded photos:", err)
     }

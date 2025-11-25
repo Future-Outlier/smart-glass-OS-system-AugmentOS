@@ -1953,6 +1953,9 @@ class MentraLive: NSObject, SGCManager {
             appVersion: appVersion, buildNumber: buildNumber, deviceModel: deviceModel,
             androidVersion: androidVersion, otaVersionUrl: otaVersionUrl
         )
+
+        // Trigger status update so React Native gets the updated glasses info with version details
+        CoreManager.shared.handle_request_status()
     }
 
     private func handleAck(_: [String: Any]) {
