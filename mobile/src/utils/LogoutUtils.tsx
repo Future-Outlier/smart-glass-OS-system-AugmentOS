@@ -4,7 +4,7 @@ import CoreModule from "core"
 import bridge from "@/bridge/MantleBridge"
 import restComms from "@/services/RestComms"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import mentraAuth from "@/utils/auth/authClient"
 import {storage} from "@/utils/storage"
 
 export class LogoutUtils {
@@ -75,9 +75,9 @@ export class LogoutUtils {
   private static async clearSupabaseAuth(): Promise<void> {
     console.log(`${this.TAG}: Clearing Supabase authentication...`)
 
-    const {error} = await mentraAuthProvider.signOut()
-    if (error) {
-      console.error(`${this.TAG}: Error signing out:`, error)
+    const res = await mentraAuth.signOut()
+    if (res.is_error()) {
+      console.error(`${this.TAG}: Error signing out:`, res.error)
     }
 
     // Completely clear ALL Supabase Auth storage

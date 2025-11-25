@@ -69,11 +69,6 @@ export type MentraOauthProviderResponse = {
 }
 
 export type MentraSigninResponse = {
-  data: {
-    session: MentraAuthSession | null
-    user: MentraAuthUser | null
-  } | null
-  error: {
-    message: string
-  } | null
+  session: MentraAuthSession | null
+  user: MentraAuthUser | null
 }

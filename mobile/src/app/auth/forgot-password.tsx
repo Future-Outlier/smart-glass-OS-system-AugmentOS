@@ -9,7 +9,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {$styles, ThemedStyle, spacing} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import mentraAuth from "@/utils/auth/authClient"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function ForgotPasswordScreen() {
@@ -30,7 +30,7 @@ export default function ForgotPasswordScreen() {
     setIsLoading(true)
 
     try {
-      const {error} = await mentraAuthProvider.resetPasswordForEmail(email)
+      const {error} = await mentraAuth.resetPasswordForEmail(email)
 
       if (error) {
         showAlert(translate("common:error"), error.message)

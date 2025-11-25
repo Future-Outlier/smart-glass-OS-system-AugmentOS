@@ -14,7 +14,7 @@ import restComms from "@/services/RestComms"
 import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {LogoutUtils} from "@/utils/LogoutUtils"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import mentraAuth from "@/utils/auth/authClient"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 // Default user icon component for profile pictures
@@ -47,32 +47,32 @@ export default function ProfileSettingsPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       setLoading(true)
-      try {
-        const {data, error} = await mentraAuthProvider.getUser()
-        if (error) {
-          console.error(error)
-          setUserData(null)
-        } else if (data?.user) {
-          const fullName = data.user.name || null
-          const avatarUrl = data.user.avatarUrl || null
-          const email = data.user.email || null
-          const createdAt = data.user.createdAt || null
-          const provider = data.user.provider || null
-
-          setUserData({
-            fullName,
-            avatarUrl,
-            email,
-            createdAt,
-            provider,
-          })
-        }
-      } catch (error) {
-        console.error(error)
+      const res = await mentraAuth.getUser()
+      if (res.is_error()) {
+        console.error(res.error)
         setUserData(null)
-      } finally {
-        setLoading(false)
+        return
       }
+      const data = res.value
+      if (!data?.user) {
+        setUserData(null)
+        setLoading(false)
+        return
+      }
+
+      const fullName = data.user.name || null
+      const avatarUrl = data.user.avatarUrl || null
+      const email = data.user.email || null
+      const createdAt = data.user.createdAt || null
+      const provider = data.user.provider || null
+
+      setUserData({
+        fullName,
+        avatarUrl,
+        email,
+        createdAt,
+        provider,
+      })
     }
 
     fetchUserData()

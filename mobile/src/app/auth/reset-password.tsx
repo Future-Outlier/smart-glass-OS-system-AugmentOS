@@ -10,7 +10,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {$styles, ThemedStyle, spacing} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import mentraAuth from "@/utils/auth/authClient"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function ResetPasswordScreen() {
@@ -34,9 +34,14 @@ export default function ResetPasswordScreen() {
   }, [])
 
   const checkSession = async () => {
-    const {
-      data: {session},
-    } = await mentraAuthProvider.getSession()
+    const res = await mentraAuth.getSession()
+    if (res.is_error()) {
+      // No valid session, redirect back to login
+      showAlert(translate("common:error"), translate("login:invalidResetLink"))
+      router.replace("/auth/login")
+      return
+    }
+    const session = res.value
     if (session) {
       setIsValidToken(true)
       // Get the user's email from the session
@@ -44,9 +49,6 @@ export default function ResetPasswordScreen() {
         setEmail(session.user.email)
       }
     } else {
-      // No valid session, redirect back to login
-      showAlert(translate("common:error"), translate("login:invalidResetLink"))
-      router.replace("/auth/login")
     }
   }
 
@@ -64,64 +66,59 @@ export default function ResetPasswordScreen() {
 
     setIsLoading(true)
 
-    try {
-      const {error} = await mentraAuthProvider.updateUserPassword(newPassword)
-
-      if (error) {
-        showAlert(translate("common:error"), error.message)
-      } else {
-        // Try to automatically log the user in with the new password
-        if (email) {
-          const {data: signInData, error: signInError} = await mentraAuthProvider.signIn(email, newPassword)
-
-          if (!signInError && signInData?.session) {
-            Toast.show({
-              type: "success",
-              text1: translate("login:passwordResetSuccess"),
-              text2: translate("login:loggingYouIn"),
-              position: "bottom",
-            })
-
-            setTimeout(() => {
-              router.replace("/")
-            }, 1000)
-          } else {
-            // If auto-login fails, just redirect to login
-            Toast.show({
-              type: "success",
-              text1: translate("login:passwordResetSuccess"),
-              text2: translate("login:redirectingToLogin"),
-              position: "bottom",
-            })
-
-            await mentraAuthProvider.signOut()
-
-            setTimeout(() => {
-              router.replace("/auth/login")
-            }, 2000)
-          }
-        } else {
-          // No email, fallback to login redirect
-          Toast.show({
-            type: "success",
-            text1: translate("login:passwordResetSuccess"),
-            text2: translate("login:redirectingToLogin"),
-            position: "bottom",
-          })
-
-          await mentraAuthProvider.signOut()
-
-          setTimeout(() => {
-            router.replace("/auth/login")
-          }, 2000)
-        }
-      }
-    } catch (err) {
-      console.error("Error resetting password:", err)
-      showAlert(translate("common:error"), err.toString())
-    } finally {
-      setIsLoading(false)
+    const res = await mentraAuth.updateUserPassword(newPassword)
+    if (res.is_error()) {
+      showAlert(translate("common:error"), res.error.message)
+      return
     }
+
+    if (!email) {
+      // No email, fallback to login redirect
+      Toast.show({
+        type: "success",
+        text1: translate("login:passwordResetSuccess"),
+        text2: translate("login:redirectingToLogin"),
+        position: "bottom",
+      })
+
+      await mentraAuth.signOut()
+
+      setTimeout(() => {
+        router.replace("/auth/login")
+      }, 2000)
+    }
+
+    // Try to automatically log the user in with the new password
+    const {data: signInData, error: signInError} = await mentraAuth.signIn(email, newPassword)
+
+    if (!signInError && signInData?.session) {
+      Toast.show({
+        type: "success",
+        text1: translate("login:passwordResetSuccess"),
+        text2: translate("login:loggingYouIn"),
+        position: "bottom",
+      })
+
+      setTimeout(() => {
+        router.replace("/")
+      }, 1000)
+    } else {
+      // If auto-login fails, just redirect to login
+      Toast.show({
+        type: "success",
+        text1: translate("login:passwordResetSuccess"),
+        text2: translate("login:redirectingToLogin"),
+        position: "bottom",
+      })
+
+      await mentraAuth.signOut()
+
+      setTimeout(() => {
+        router.replace("/auth/login")
+      }, 2000)
+    }
+
+    setIsLoading(false)
   }
 
   if (!isValidToken) {

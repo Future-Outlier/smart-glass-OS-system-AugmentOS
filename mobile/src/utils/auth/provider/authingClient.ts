@@ -12,6 +12,7 @@ import {
   MentraSignOutResponse,
 } from "@/utils/auth/authProvider.types"
 import {storage} from "@/utils/storage/storage"
+import {Result, result as Res, AsyncResult} from "typesafe-ts"
 
 interface Session {
   access_token?: string
@@ -53,7 +54,11 @@ export class AuthingWrapperClient {
     console.log("AuthingWrapperClient: getInstance()")
     if (!AuthingWrapperClient.instance) {
       AuthingWrapperClient.instance = new AuthingWrapperClient()
-      const session = await AuthingWrapperClient.instance.readSessionFromStorage()
+      const res = await AuthingWrapperClient.instance.readSessionFromStorage()
+      if (res.is_error()) {
+        return AuthingWrapperClient.instance
+      }
+      const session = res.value
 
       if (session?.access_token) {
         AuthingWrapperClient.instance.authing.setToken(session.access_token)
@@ -65,7 +70,7 @@ export class AuthingWrapperClient {
     return AuthingWrapperClient.instance
   }
 
-  public onAuthStateChange(callback: AuthChangeCallback): MentraAuthStateChangeSubscriptionResponse {
+  public onAuthStateChange(callback: AuthChangeCallback): Result<any, Error> {
     console.log("AuthingWrapperClient: onAuthStateChange()")
     const handler = (event: string, session: MentraAuthSession) => {
       callback(event as AuthChangeEvent, session)
@@ -78,21 +83,16 @@ export class AuthingWrapperClient {
     this.eventEmitter.on("USER_DELETED", (session: MentraAuthSession) => handler("USER_DELETED", session))
     this.eventEmitter.on("PASSWORD_RECOVERY", (session: MentraAuthSession) => handler("PASSWORD_RECOVERY", session))
 
-    return {
-      data: {
-        subscription: {
-          unsubscribe: () => {
-            this.eventEmitter.off("SIGNED_IN", handler)
-            this.eventEmitter.off("SIGNED_OUT", handler)
-            this.eventEmitter.off("TOKEN_REFRESHED", handler)
-            this.eventEmitter.off("USER_UPDATED", handler)
-            this.eventEmitter.off("USER_DELETED", handler)
-            this.eventEmitter.off("PASSWORD_RECOVERY", handler)
-          },
-        },
+    return Res.ok({
+      unsubscribe: () => {
+        this.eventEmitter.off("SIGNED_IN", handler)
+        this.eventEmitter.off("SIGNED_OUT", handler)  
+        this.eventEmitter.off("TOKEN_REFRESHED", handler)
+        this.eventEmitter.off("USER_UPDATED", handler)
+        this.eventEmitter.off("USER_DELETED", handler)
+        this.eventEmitter.off("PASSWORD_RECOVERY", handler)
       },
-      error: null,
-    }
+    })
   }
 
   public async getUser(): Promise<MentraAuthUserResponse> {
@@ -229,49 +229,43 @@ export class AuthingWrapperClient {
     }
   }
 
-  public async getSession(): Promise<MentraAuthSessionResponse> {
+  public getSession(): AsyncResult<MentraAuthSession, Error> {
     console.log("AuthingWrapperClient: getSession()")
-    try {
-      const session = await this.readSessionFromStorage()
-      return {
-        data: {
-          session: session
-            ? {
-                token: session.access_token,
-                user: {
-                  id: session.user!.id,
-                  email: session.user!.email!,
-                  name: session.user!.name || "",
-                },
-              }
-            : null,
-        },
-        error: null,
-      }
-    } catch (error) {
-      console.error("Error getting session:", error)
-      return {
-        data: null,
-        error: {
-          message: "Failed to get session",
-        },
-      }
-    }
-  }
-
-  private async readSessionFromStorage(): Promise<Session | null> {
-    const res = storage.load<Session>(SESSION_KEY)
+    const res = this.readSessionFromStorage()
     if (res.is_error()) {
-      console.log("Error loading session:", res.error)
-      return null
+      console.error("Error loading session:", res.error)
+      return Res.error_async(res.error)
     }
     const session = res.value
-    return session
+    return Res.ok_async({
+      token: session.access_token,
+      user: {
+        id: session.user!.id,
+        email: session.user!.email!,
+        name: session.user!.name || "",
+      },
+    })
+  }
+
+  private readSessionFromStorage(): Result<Session, Error> {
+    const res = storage.load<Session>(SESSION_KEY)
+    return res
+    // if (res.is_error()) {
+    //   console.log("Error loading session:", res.error)
+    //   return null
+    // }
+    // const session = res.value
+    // return session
   }
 
   private async setupTokenRefresh() {
     try {
-      const session = await this.readSessionFromStorage()
+      const res = await this.readSessionFromStorage()
+      if (res.is_error()) {
+        console.error("Error loading session:", res.error)
+        return
+      }
+      const session = res.value
       if (!session?.access_token) return
 
       const now = Date.now()

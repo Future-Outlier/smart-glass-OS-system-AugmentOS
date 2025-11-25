@@ -9,10 +9,14 @@ import {
   MentraUpdateUserPasswordResponse,
   MentraAuthSessionResponse,
   MentraAuthStateChangeSubscriptionResponse,
+  MentraAuthSession,
+  MentraAuthUser,
 } from "@/utils/auth/authProvider.types"
 
 import {createClient, SupportedStorage} from "@supabase/supabase-js"
 import {storage} from "@/utils/storage"
+import {AsyncResult, result as Res, Result} from "typesafe-ts"
+import {Sub} from "@/utils/auth/authClient"
 
 const SUPABASE_URL = (process.env.EXPO_PUBLIC_SUPABASE_URL as string) || "https://auth.mentra.glass"
 const SUPABASE_ANON_KEY =
@@ -60,110 +64,71 @@ export class SupabaseWrapperClient {
     return SupabaseWrapperClient.instance
   }
 
-  public onAuthStateChange(callback: (event: string, session: any) => void): MentraAuthStateChangeSubscriptionResponse {
-    try {
-      const wrappedCallback = (event: AuthChangeEvent, session: Session | null) => {
-        // Only create a session object if we have a valid session
-        const modifiedSession = session
-          ? {
-              token: session.access_token,
-              user: {
-                id: session.user.id,
-                email: session.user.email,
-                name: session.user.user_metadata.full_name as string,
-                avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
-                createdAt: session.user.created_at,
-                provider: session.user.user_metadata.provider,
-              },
-            }
-          : null
+  public onAuthStateChange(callback: (event: string, session: any) => void): Result<any, Error> {
+    const wrappedCallback = (event: AuthChangeEvent, session: Session | null) => {
+      // Only create a session object if we have a valid session
+      const modifiedSession = session
+        ? {
+            token: session.access_token,
+            user: {
+              id: session.user.id,
+              email: session.user.email,
+              name: session.user.user_metadata.full_name as string,
+              avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
+              createdAt: session.user.created_at,
+              provider: session.user.user_metadata.provider,
+            },
+          }
+        : null
 
-        // console.log("supabaseClient: Modified session:", modifiedSession)
+      // console.log("supabaseClient: Modified session:", modifiedSession)
 
-        callback(event, modifiedSession)
-      }
-
-      const {data} = this.supabase.auth.onAuthStateChange(wrappedCallback)
-
-      return {
-        data,
-        error: null,
-      }
-    } catch (error) {
-      console.error("Error in onAuthStateChange:", error)
-      return {
-        data: null,
-        error: {
-          message: error instanceof Error ? error.message : "Something went wrong. Please try again.",
-        },
-      }
+      callback(event, modifiedSession)
     }
+
+    const {data} = this.supabase.auth.onAuthStateChange(wrappedCallback)
+
+    return Res.ok(data)
   }
 
-  public async getUser(): Promise<MentraAuthUserResponse> {
-    try {
+  public getUser(): AsyncResult<MentraAuthUser, Error> {
+    return Res.try_async(async () => {
       const {data, error} = await this.supabase.auth.getUser()
-      return {
-        data: data.user
-          ? {
-              user: {
-                id: data.user.id,
-                email: data.user.email,
-                name: (data.user.user_metadata.full_name || data.user.user_metadata.name || "") as string,
-                avatarUrl: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture,
-                createdAt: data.user.created_at,
-                provider: data.user.user_metadata.provider,
-              },
-            }
-          : null,
-        error: error?.message
-          ? {
-              message: error.message,
-            }
-          : null,
+      if (error) {
+        throw error
       }
-    } catch (error) {
-      console.error(error)
-      return {
-        data: null,
-        error: {
-          message: "Something went wrong. Please try again.",
-        },
+      if (!data.user) {
+        throw new Error("User not found")
       }
-    }
+      return {
+        id: data.user.id,
+        email: data.user.email,
+        name: (data.user.user_metadata.full_name || data.user.user_metadata.name || "") as string,
+        avatarUrl: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture,
+        createdAt: data.user.created_at,
+        provider: data.user.user_metadata.provider,
+      }
+    })
   }
 
-  public async getSession(): Promise<MentraAuthSessionResponse> {
-    try {
+  public getSession(): AsyncResult<MentraAuthSession, Error> {
+    return Res.try_async(async () => {
       const {data, error} = await this.supabase.auth.getSession()
-      return {
-        data: {
-          session: data.session
-            ? {
-                token: data.session.access_token,
-                user: {
-                  id: data.session.user.id,
-                  email: data.session.user.email,
-                  name: data.session.user.user_metadata.full_name as string,
-                },
-              }
-            : null,
-        },
-        error: error?.message
-          ? {
-              message: error.message,
-            }
-          : null,
+      if (!data.session || !data.session.user?.id) {
+        return {
+          token: undefined,
+          user: undefined,
+        }
       }
-    } catch (error) {
-      console.error(error)
       return {
-        data: null,
-        error: {
-          message: "Something went wrong. Please try again.",
+        token: data.session.access_token,
+        user: {
+          id: data.session.user.id,
+          email: data.session.user.email,
+          name: (data.session.user.user_metadata?.full_name || "") as string,
         },
       }
-    }
+    })
   }
 
   public async updateSessionWithTokens(tokens: {access_token: string; refresh_token: string}) {

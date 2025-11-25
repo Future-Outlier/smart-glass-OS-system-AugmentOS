@@ -28,7 +28,7 @@ import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {spacing, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import mentraAuth from "@/utils/auth/authClient"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
 
@@ -127,7 +127,7 @@ export default function LoginScreen() {
         authOverlayOpacity.setValue(0)
       }, 5000)
 
-      const {data, error} = await mentraAuthProvider.googleSignIn()
+      const {data, error} = await mentraAuth.googleSignIn()
 
       // 2) If there's an error, handle it
       if (error) {
@@ -173,7 +173,7 @@ export default function LoginScreen() {
         useNativeDriver: true,
       }).start()
 
-      const {data, error} = await mentraAuthProvider.appleSignIn()
+      const {data, error} = await mentraAuth.appleSignIn()
 
       // If there's an error, handle it
       if (error) {
@@ -215,7 +215,7 @@ export default function LoginScreen() {
     setFormAction("signup")
 
     try {
-      const {data, error} = await mentraAuthProvider.signup(email, password)
+      const {data, error} = await mentraAuth.signup(email, password)
 
       if (error) {
         if (error.message.includes("Email already registered")) {
@@ -246,7 +246,7 @@ export default function LoginScreen() {
     Keyboard.dismiss()
     setIsFormLoading(true)
     setFormAction("signin")
-    const {error} = await mentraAuthProvider.signIn(email, password)
+    const {error} = await mentraAuth.signIn(email, password)
 
     if (error) {
       showAlert(translate("common:error"), error.message, [{text: translate("common:ok")}])

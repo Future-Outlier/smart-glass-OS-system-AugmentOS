@@ -22,7 +22,7 @@ import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import mentraAuth from "@/utils/auth/authClient"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function FeedbackPage() {
@@ -46,13 +46,14 @@ export default function FeedbackPage() {
 
   useEffect(() => {
     const fetchUserEmail = async () => {
-      try {
-        const {data} = await mentraAuthProvider.getUser()
-        if (data?.user?.email) {
-          setUserEmail(data.user.email)
-        }
-      } catch (error) {
-        console.error("Error fetching user email:", error)
+      const res = await mentraAuth.getUser()
+      if (res.is_error()) {
+        console.error("Error fetching user email:", res.error)
+        return
+      }
+      const user = res.value
+      if (user?.email) {
+        setUserEmail(user.email)
       }
     }
 
