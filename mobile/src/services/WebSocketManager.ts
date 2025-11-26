@@ -90,7 +90,6 @@ class WebSocketManager extends EventEmitter {
     this.webSocket.onclose = event => {
       console.log("WSM: Connection closed with code:", event.code)
       this.updateStatus(WebSocketStatus.DISCONNECTED)
-      store.setDisconnected()
       this.startReconnectInterval()
     }
   }
