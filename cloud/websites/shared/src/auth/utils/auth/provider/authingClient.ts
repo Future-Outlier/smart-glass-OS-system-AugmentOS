@@ -1,12 +1,13 @@
 import {AuthenticationClient, AuthenticationClientOptions} from "authing-js-sdk"
 
+// eslint-disable-next-line no-restricted-imports
 import {
   MentraAuthSession,
   MentraAuthSessionResponse,
   MentraAuthStateChangeSubscriptionResponse,
   MentraSigninResponse,
   MentraSignOutResponse,
-} from "@/auth/utils/auth/authingProvider.types"
+} from "../authingProvider.types"
 
 // Browser-compatible EventEmitter
 type EventCallback = (...args: unknown[]) => void
