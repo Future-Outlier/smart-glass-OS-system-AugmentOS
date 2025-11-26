@@ -1,4 +1,3 @@
-import {router} from "expo-router"
 import {useState, useEffect} from "react"
 import {View, Image, ActivityIndicator, ScrollView, ImageStyle, ViewStyle, Modal} from "react-native"
 import Svg, {Path} from "react-native-svg"
@@ -180,7 +179,7 @@ export default function ProfileSettingsPage() {
         [
           {
             text: translate("common:ok"),
-            onPress: () => router.replace("/"),
+            onPress: () => replace("/"),
           },
         ],
         {cancelable: false},
@@ -192,7 +191,7 @@ export default function ProfileSettingsPage() {
         [
           {
             text: translate("common:ok"),
-            onPress: () => router.replace("/"),
+            onPress: () => replace("/"),
           },
         ],
         {cancelable: false},
