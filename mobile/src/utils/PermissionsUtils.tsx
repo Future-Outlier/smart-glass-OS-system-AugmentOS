@@ -202,7 +202,7 @@ export const markPermissionGranted = async (featureKey: string): Promise<void> =
 export const hasPermissionBeenGranted = async (featureKey: string): Promise<boolean> => {
   const res = storage.load<boolean>(`PERMISSION_GRANTED_${featureKey}`)
   if (res.is_error()) {
-    console.error("Failed to get permission granted status", res.error)
+    console.log("Failed to get permission granted status", res.error)
     return false
   }
   return true
