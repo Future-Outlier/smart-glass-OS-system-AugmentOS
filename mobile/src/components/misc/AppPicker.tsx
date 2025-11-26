@@ -174,16 +174,12 @@ export const AppPicker: FC<AppPickerProps> = ({
                           <View style={themed($appNameRow)}>
                             <Text text={app.name} style={themed($appName)} numberOfLines={1} />
                             {isOffline && (
-                              <View style={themed($badge)}>
-                                <MaterialCommunityIcons name="home" size={12} color={theme.colors.text} />
+                              <View style={[themed($badge), {backgroundColor: theme.colors.success}]}>
+                                <MaterialCommunityIcons name="home" size={12} color={theme.colors.palette.white} />
                               </View>
                             )}
                             {isSelected && (
-                              <MaterialCommunityIcons
-                                name="check-circle"
-                                size={20}
-                                color={theme.colors.palette.primary400}
-                              />
+                              <MaterialCommunityIcons name="check-circle" size={20} color={theme.colors.success} />
                             )}
                           </View>
                           {!isCompatible && showCompatibilityWarnings && compatibilityMessage && (

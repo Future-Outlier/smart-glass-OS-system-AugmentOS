@@ -4697,6 +4697,9 @@ public class MentraLive extends SGCManager {
 
         // Send button camera LED setting
         sendButtonCameraLedSetting();
+
+        // Send gallery mode state (camera app running status)
+        sendGalleryMode();
     }
 
     /**

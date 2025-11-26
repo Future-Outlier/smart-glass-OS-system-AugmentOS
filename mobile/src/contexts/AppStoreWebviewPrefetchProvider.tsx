@@ -41,19 +41,31 @@ export const AppStoreWebviewPrefetchProvider: React.FC<{children: React.ReactNod
 
       // Check if core token exists before trying to generate webview tokens
       if (!restComms.getCoreToken()) {
-        console.error("AppStoreWebviewPrefetchProvider: No core token available, skipping token generation")
-        setAppStoreUrl(url.toString())
+        console.log("AppStoreWebviewPrefetchProvider: No core token available yet, waiting for CORE_TOKEN_SET")
+        // Don't set URL without tokens - keep loading state until tokens are ready
         return
       }
 
-      const tempToken = await restComms.generateWebviewToken(STORE_PACKAGE_NAME)
+      const tempTokenResult = await restComms.generateWebviewToken(STORE_PACKAGE_NAME)
+      if (tempTokenResult.is_error()) {
+        console.error("AppStoreWebviewPrefetchProvider: Failed to generate temp token:", tempTokenResult.error)
+        return
+      }
+      const tempToken = tempTokenResult.value
 
       let signedUserToken: string | undefined
-      try {
-        signedUserToken = await restComms.generateWebviewToken(STORE_PACKAGE_NAME, "generate-webview-signed-user-token")
-      } catch (error) {
-        console.warn("AppStoreWebviewPrefetchProvider: Failed to generate signed user token:", error)
+      const signedUserTokenResult = await restComms.generateWebviewToken(
+        STORE_PACKAGE_NAME,
+        "generate-webview-signed-user-token",
+      )
+      if (signedUserTokenResult.is_error()) {
+        console.warn(
+          "AppStoreWebviewPrefetchProvider: Failed to generate signed user token:",
+          signedUserTokenResult.error,
+        )
         signedUserToken = undefined
+      } else {
+        signedUserToken = signedUserTokenResult.value
       }
 
       url.searchParams.set("aos_temp_token", tempToken)
@@ -65,11 +77,8 @@ export const AppStoreWebviewPrefetchProvider: React.FC<{children: React.ReactNod
       setAppStoreUrl(url.toString())
     } catch (error) {
       console.error("AppStoreWebviewPrefetchProvider: Error during prefetch:", error)
-      // fallback to base URL
-      const baseUrl = useSettingsStore.getState().getSetting(SETTINGS.store_url.key)
-      const url = new URL(baseUrl)
-      url.searchParams.set("theme", theme.isDark ? "dark" : "light")
-      setAppStoreUrl(url.toString())
+      // Don't set URL without tokens - keep loading state and let user retry or wait for token
+      // The store screen will show "Preparing App Store..." instead of signed-out state
     } finally {
       setWebviewLoading(false)
     }
