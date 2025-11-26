@@ -93,7 +93,7 @@ export default function AccountPage() {
         <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
           <Text
             style={themed($buildInfo)}
-            text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
+            text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION + ""})}
           />
         </View>
       </View>
@@ -134,13 +134,13 @@ export default function AccountPage() {
           )}
 
           <Group title={translate("account:appSettings")}>
-            {/* Theme selector hidden - dark mode not complete yet
-            <RouteButton
-              icon={<Icon name="sun" size={24} color={theme.colors.secondary_foreground} />}
-              label={translate("settings:appAppearance")}
-              onPress={() => push("/settings/theme")}
-            />
-            */}
+            {devMode && (
+              <RouteButton
+                icon={<Icon name="sun" size={24} color={theme.colors.secondary_foreground} />}
+                label={translate("settings:appAppearance")}
+                onPress={() => push("/settings/theme")}
+              />
+            )}
             {Platform.OS === "android" && (
               <RouteButton
                 icon={<Icon name="bell" size={24} color={theme.colors.secondary_foreground} />}

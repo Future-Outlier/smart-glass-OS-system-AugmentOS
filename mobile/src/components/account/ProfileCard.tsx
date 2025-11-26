@@ -3,10 +3,10 @@ import {ActivityIndicator, Image, ImageStyle, TextStyle, View, ViewStyle} from "
 import Svg, {Path} from "react-native-svg"
 
 import {Text} from "@/components/ignite"
-import mentraAuth from "@/utils/auth/authClient"
-import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import mentraAuth from "@/utils/auth/authClient"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 // Default user icon component for profile pictures
 const DefaultUserIcon = ({size = 100, color = "#999"}: {size?: number; color?: string}) => {
@@ -64,6 +64,7 @@ export const ProfileCard = () => {
         createdAt,
         provider,
       })
+      setLoading(false)
     }
 
     fetchUserData()

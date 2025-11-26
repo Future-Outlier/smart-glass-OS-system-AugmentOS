@@ -53,18 +53,18 @@ export default function ProfileSettingsPage() {
         setUserData(null)
         return
       }
-      const data = res.value
-      if (!data?.user) {
+      const user = res.value
+      if (!user) {
         setUserData(null)
         setLoading(false)
         return
       }
 
-      const fullName = data.user.name || null
-      const avatarUrl = data.user.avatarUrl || null
-      const email = data.user.email || null
-      const createdAt = data.user.createdAt || null
-      const provider = data.user.provider || null
+      const fullName = user.name || null
+      const avatarUrl = user.avatarUrl || null
+      const email = user.email || null
+      const createdAt = user.createdAt || null
+      const provider = user.provider || null
 
       setUserData({
         fullName,
@@ -73,6 +73,7 @@ export default function ProfileSettingsPage() {
         createdAt,
         provider,
       })
+      setLoading(false)
     }
 
     fetchUserData()

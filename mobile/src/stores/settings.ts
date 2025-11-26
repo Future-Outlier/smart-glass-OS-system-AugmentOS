@@ -260,7 +260,10 @@ const getDefaultSettings = () =>
 const migrateSettings = () => {
   useSettingsStore.getState().setSetting(SETTINGS.enable_squircles.key, true, true)
   // Force light mode - dark mode is not complete yet
-  useSettingsStore.getState().setSetting(SETTINGS.theme_preference.key, "light", true)
+  const devMode = useSettingsStore.getState().getSetting(SETTINGS.dev_mode.key)
+  if (!devMode) {
+    useSettingsStore.getState().setSetting(SETTINGS.theme_preference.key, "light", true)
+  }
 }
 
 export const useSettingsStore = create<SettingsState>()(
