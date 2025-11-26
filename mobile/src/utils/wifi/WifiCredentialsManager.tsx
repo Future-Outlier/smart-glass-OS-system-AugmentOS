@@ -1,12 +1,13 @@
 import {useState, useEffect} from "react"
 import {View, FlatList, TouchableOpacity, Alert} from "react-native"
-import {Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle} from "react-native"
-import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
-import ActionButton from "@/components/ui/ActionButton"
+
+import {Text} from "@/components/ignite"
 import {Spacer} from "@/components/misc/Spacer"
+import ActionButton from "@/components/ui/ActionButton"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
+import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 
 interface WifiCredentialsManagerProps {
   onNetworkSelect?: (ssid: string) => void
@@ -118,7 +119,7 @@ const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
 })
 
 const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -131,13 +132,13 @@ const $emptyContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingVertical: spacing.xxl,
+  paddingVertical: spacing.s12,
 })
 
 const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   color: colors.textDim,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
   textAlign: "center",
 })
 
@@ -152,8 +153,8 @@ const $networkItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   justifyContent: "space-between",
   alignItems: "center",
   backgroundColor: colors.background,
-  padding: spacing.md,
-  borderRadius: spacing.xs,
+  padding: spacing.s4,
+  borderRadius: spacing.s2,
   borderWidth: 1,
   borderColor: colors.border,
 })
@@ -176,14 +177,14 @@ const $networkDate: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $networkActions: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  gap: spacing.xs,
+  gap: spacing.s2,
 })
 
 const $selectButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.tint,
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  borderRadius: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
+  borderRadius: spacing.s2,
 })
 
 const $selectButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -194,9 +195,9 @@ const $selectButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $removeButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.error,
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  borderRadius: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
+  borderRadius: spacing.s2,
 })
 
 const $removeButtonText: ThemedStyle<TextStyle> = ({colors}) => ({

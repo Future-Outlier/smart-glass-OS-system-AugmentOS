@@ -59,15 +59,17 @@ func (s *LiveKitBridgeService) JoinRoom(
 		"livekit_url": req.LivekitUrl,
 	})
 
-	// Check if session already exists
-	if _, exists := s.sessions.Load(req.UserId); exists {
-		s.bsLogger.LogWarn("Session already exists for user", map[string]interface{}{
-			"user_id": req.UserId,
+	// Always replace existing session if present (handles reconnections, crashes, zombie sessions)
+	if existingVal, exists := s.sessions.Load(req.UserId); exists {
+		s.bsLogger.LogInfo("Replacing existing bridge session", map[string]interface{}{
+			"user_id":   req.UserId,
+			"room_name": req.RoomName,
+			"reason":    "new_join_request",
 		})
-		return &pb.JoinRoomResponse{
-			Success: false,
-			Error:   "session already exists for this user",
-		}, nil
+
+		existingSession := existingVal.(*RoomSession)
+		existingSession.Close() // Calls room.Disconnect(), closes goroutines
+		s.sessions.Delete(req.UserId)
 	}
 
 	// Create new session
@@ -393,6 +395,21 @@ func (s *LiveKitBridgeService) PlayAudio(
 	}
 	session := sessionVal.(*RoomSession)
 
+	// Convert track_id to track name FIRST (before any stopping logic)
+	trackName := trackIDToName(req.TrackId)
+
+	// Handle stopping logic based on StopOther flag
+	if req.StopOther {
+		// StopOther=true: Stop ALL tracks (interrupt mode)
+		log.Printf("StopOther flag set, stopping ALL tracks for user %s", req.UserId)
+		session.stopPlayback()
+	} else {
+		// StopOther=false: Only stop THIS specific track to avoid conflicts (mixing mode)
+		// This allows different tracks (speaker, tts, app_audio) to play simultaneously
+		log.Printf("Audio mixing mode: stopping only track '%s' for user %s", trackName, req.UserId)
+		session.stopTrackPlayback(trackName)
+	}
+
 	// Send STARTED event
 	if err := stream.Send(&pb.PlayAudioEvent{
 		Type:      pb.PlayAudioEvent_STARTED,
@@ -401,10 +418,9 @@ func (s *LiveKitBridgeService) PlayAudio(
 		return err
 	}
 
-	// Convert track_id to track name
-	trackName := trackIDToName(req.TrackId)
-
-	// Play audio file (implementation in playback.go)
+	// Play audio file synchronously - MUST wait to keep gRPC stream open
+	// Multiple PlayAudio RPC calls can run concurrently on different tracks
+	// This is the key to audio mixing: concurrent RPC calls = concurrent tracks
 	duration, err := s.playAudioFile(req, session, stream, trackName)
 	if err != nil {
 		// Send FAILED event
@@ -416,7 +432,6 @@ func (s *LiveKitBridgeService) PlayAudio(
 
 		// Close only this specific track on error
 		session.closeTrack(trackName)
-
 		return err
 	}
 
@@ -429,8 +444,10 @@ func (s *LiveKitBridgeService) PlayAudio(
 		return err
 	}
 
-	// Close only this specific track after playback to prevent static feedback
-	session.closeTrack(trackName)
+	// DON'T close the track after playback - keep it alive for reuse
+	// Tracks are only closed when explicitly stopped via StopAudio or session cleanup
+	// This prevents the "no audio after first play" issue
+	log.Printf("Playback completed for track '%s', keeping track alive for reuse", trackName)
 
 	return nil
 }
@@ -452,14 +469,17 @@ func (s *LiveKitBridgeService) StopAudio(
 
 	session := sessionVal.(*RoomSession)
 
-	// Convert track_id to track name
-	trackName := trackIDToName(req.TrackId)
-
-	// Cancel playback for this track
+	// Cancel any ongoing playback (this stops the audio without closing tracks)
 	session.stopPlayback()
+	log.Printf("Stopped playback for user %s", req.UserId)
 
-	// Close only the specific track
-	session.closeTrack(trackName)
+	// NOTE: We do NOT close tracks here anymore!
+	// Tracks should remain alive for reuse to prevent "no audio after stop" issues.
+	// Tracks are only closed during:
+	// 1. Session cleanup (session.Close())
+	// 2. PlayAudio errors
+	//
+	// If you need to explicitly close tracks, use a different RPC or add a flag to this request.
 
 	return &pb.StopAudioResponse{
 		Success:          true,

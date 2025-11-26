@@ -1,15 +1,16 @@
 import {useEffect, useRef, useState} from "react"
 import {View, ViewStyle, TextStyle} from "react-native"
 import LinearGradient from "react-native-linear-gradient"
-import Icon from "react-native-vector-icons/FontAwesome"
 import Animated, {useSharedValue, withTiming} from "react-native-reanimated"
-import {useConnectionStore} from "@/stores/connection"
-import {WebSocketStatus} from "@/services/WebSocketManager"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
+import Icon from "react-native-vector-icons/FontAwesome"
+
 import {Text} from "@/components/ignite"
 import {translate} from "@/i18n"
+import {WebSocketStatus} from "@/services/WebSocketManager"
 import {useRefreshApplets} from "@/stores/applets"
+import {useConnectionStore} from "@/stores/connection"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function CloudConnection() {
   const connectionStatus = useConnectionStore(state => state.status)
@@ -21,7 +22,8 @@ export default function CloudConnection() {
   // Add delay logic for disconnection alerts
   const [delayedStatus, setDelayedStatus] = useState<WebSocketStatus>(connectionStatus)
   const disconnectionTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const DISCONNECTION_DELAY = 3000 // 3 seconds delay
+  const firstDisconnectedTimeRef = useRef<number | null>(null)
+  const DISCONNECTION_DELAY = 5000 // 5 seconds delay
 
   /**
    * Return gradient colors based on the cloud connection status
@@ -78,31 +80,42 @@ export default function CloudConnection() {
   useEffect(() => {
     console.log("CloudConnection: Status:", connectionStatus)
 
-    // Clear any existing timer
-    if (disconnectionTimerRef.current) {
-      clearTimeout(disconnectionTimerRef.current)
-      disconnectionTimerRef.current = null
-    }
+    if (connectionStatus === WebSocketStatus.CONNECTED) {
+      // Reset disconnection tracking
+      firstDisconnectedTimeRef.current = null
 
-    if (connectionStatus === WebSocketStatus.DISCONNECTED || connectionStatus === WebSocketStatus.ERROR) {
-      // Don't update delayedStatus immediately for DISCONNECTED/ERROR - keep previous status
-      // Start timer to show disconnection after delay
-      disconnectionTimerRef.current = setTimeout(() => {
-        // Only show if still disconnected/error when timer fires
-        if (connectionStatus === WebSocketStatus.DISCONNECTED || connectionStatus === WebSocketStatus.ERROR) {
+      // Clear any pending timer
+      if (disconnectionTimerRef.current) {
+        clearTimeout(disconnectionTimerRef.current)
+        disconnectionTimerRef.current = null
+      }
+
+      // Hide the banner immediately
+      setDelayedStatus(connectionStatus)
+      setHideCloudConnection(true)
+      cloudConnectionStatusAnim.value = withTiming(0, {duration: 500})
+    } else {
+      // Not connected (DISCONNECTED, CONNECTING, or ERROR)
+
+      // Track when we first left the connected state
+      if (firstDisconnectedTimeRef.current === null) {
+        firstDisconnectedTimeRef.current = Date.now()
+
+        // Start timer to show banner after delay
+        disconnectionTimerRef.current = setTimeout(() => {
           setDelayedStatus(connectionStatus)
           cloudConnectionStatusAnim.value = withTiming(1, {duration: 500})
           setTimeout(() => {
             setHideCloudConnection(false)
           }, 500)
+        }, DISCONNECTION_DELAY)
+      } else {
+        // We're still disconnected but status changed (e.g., DISCONNECTED -> CONNECTING)
+        // Update the displayed status only if the banner is already visible
+        if (!hideCloudConnection) {
+          setDelayedStatus(connectionStatus)
         }
-      }, DISCONNECTION_DELAY)
-    } else {
-      // For connected/connecting states, update immediately and hide badge if connected
-      setDelayedStatus(connectionStatus)
-      setHideCloudConnection(connectionStatus === WebSocketStatus.CONNECTED)
-      cloudConnectionStatusAnim.value =
-        connectionStatus === WebSocketStatus.CONNECTED ? withTiming(0, {duration: 500}) : withTiming(1, {duration: 500})
+      }
     }
 
     if (connectionStatus === WebSocketStatus.CONNECTED || connectionStatus === WebSocketStatus.DISCONNECTED) {
@@ -116,7 +129,7 @@ export default function CloudConnection() {
         disconnectionTimerRef.current = null
       }
     }
-  }, [connectionStatus])
+  }, [connectionStatus, hideCloudConnection])
 
   // if (connectionStatus === WebSocketStatus.CONNECTED) {
   //   return
@@ -147,16 +160,16 @@ const $animatedContainer: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $outerContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
 })
 
 const $innerContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
-  borderRadius: spacing.md,
+  borderRadius: spacing.s4,
   elevation: 1,
-  paddingHorizontal: spacing.md,
-  paddingVertical: spacing.xs,
-  margin: spacing.xxs,
+  paddingHorizontal: spacing.s4,
+  paddingVertical: spacing.s2,
+  margin: spacing.s1,
 })
 
 const $row: ThemedStyle<ViewStyle> = () => ({
@@ -166,7 +179,7 @@ const $row: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $icon: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.xs,
+  marginRight: spacing.s2,
 })
 
 const $text: ThemedStyle<TextStyle> = ({colors, typography}) => ({

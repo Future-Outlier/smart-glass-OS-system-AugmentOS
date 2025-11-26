@@ -1,10 +1,11 @@
-import {View, Platform, Pressable} from "react-native"
-import {Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {useFocusEffect} from "expo-router"
 import {useCallback} from "react"
-import {textEditorStore} from "@/utils/TextEditorStore"
+import {View, Platform, Pressable} from "react-native"
+
+import {Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {textEditorStore} from "@/utils/TextEditorStore"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 type TextSettingNoSaveProps = {
   label: string
@@ -42,11 +43,11 @@ const TextSettingNoSave: React.FC<TextSettingNoSaveProps> = ({label, value, onCh
         styles.container,
         {
           backgroundColor: theme.colors.backgroundAlt,
-          borderWidth: theme.spacing.xxxs,
+          borderWidth: theme.spacing.s0_5,
           borderColor: theme.colors.border,
-          borderRadius: theme.borderRadius.md,
-          paddingVertical: theme.spacing.md,
-          paddingHorizontal: theme.spacing.lg,
+          borderRadius: theme.spacing.s4,
+          paddingVertical: theme.spacing.s4,
+          paddingHorizontal: theme.spacing.s6,
         },
       ]}>
       <Text style={[styles.label, {color: theme.colors.text}]}>{label}</Text>

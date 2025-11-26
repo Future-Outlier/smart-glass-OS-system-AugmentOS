@@ -1,10 +1,14 @@
 import {useEffect} from "react"
+import {View} from "react-native"
+
 import {useAuth} from "@/contexts/AuthContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function IndexPage() {
   const {loading} = useAuth()
   const {replace} = useNavigationHistory()
+  const {theme} = useAppTheme()
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -18,6 +22,6 @@ export default function IndexPage() {
     }
   }, [loading])
 
-  // this component doesn't render anything, it's just used to initialize the app
-  return null
+  // blank screen
+  return <View style={{flex: 1, backgroundColor: theme.colors.background}}></View>
 }

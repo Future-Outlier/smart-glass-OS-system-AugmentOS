@@ -1,21 +1,20 @@
 import {useState, useEffect} from "react"
 import {View, ActivityIndicator, Platform, Linking} from "react-native"
-import Constants from "expo-constants"
-import semver from "semver"
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import {Button, Screen} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useDeeplink} from "@/contexts/DeeplinkContext"
-import {useAuth} from "@/contexts/AuthContext"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {useSettingsStore, SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {translate} from "@/i18n"
 import {TextStyle, ViewStyle} from "react-native"
-import {ThemedStyle} from "@/theme"
+import semver from "semver"
+
+import {Button, Icon, Screen} from "@/components/ignite"
+import {Text} from "@/components/ignite"
+import {useAuth} from "@/contexts/AuthContext"
+import {useDeeplink} from "@/contexts/DeeplinkContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
-import mantle from "@/services/MantleManager"
-import {Text} from "@/components/ignite"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 // Types
 type ScreenState = "loading" | "error" | "outdated" | "success"
@@ -51,13 +50,14 @@ export default function InitScreen() {
   const [loadingStatus, setLoadingStatus] = useState<string>(translate("versionCheck:checkingForUpdates"))
   const [isRetrying, setIsRetrying] = useState(false)
   // Zustand store hooks
-  const [customBackendUrl, setCustomBackendUrl] = useSetting(SETTINGS_KEYS.custom_backend_url)
-  const [onboardingCompleted, _setOnboardingCompleted] = useSetting(SETTINGS_KEYS.onboarding_completed)
+  const [backendUrl, setBackendUrl] = useSetting(SETTINGS.backend_url.key)
+  const [onboardingCompleted, _setOnboardingCompleted] = useSetting(SETTINGS.onboarding_completed.key)
+  const [defaultWearable, _setDefaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   // Helper Functions
   const getLocalVersion = (): string | null => {
     try {
-      return Constants.expoConfig?.extra?.MENTRAOS_VERSION || null
+      return process.env.EXPO_PUBLIC_MENTRAOS_VERSION || null
     } catch (error) {
       console.error("Error getting local version:", error)
       return null
@@ -65,20 +65,20 @@ export default function InitScreen() {
   }
 
   const checkCustomUrl = async (): Promise<boolean> => {
-    const defaultUrl = useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.custom_backend_url)
-    const isCustom = customBackendUrl !== defaultUrl
+    const defaultUrl = SETTINGS[SETTINGS.backend_url.key].defaultValue()
+    const isCustom = backendUrl !== defaultUrl
     setIsUsingCustomUrl(isCustom)
     return isCustom
   }
 
   const navigateToDestination = async () => {
-    if (!user) {
+    if (!user?.email) {
       replace("/auth/login")
       return
     }
 
     // Check onboarding status
-    if (!onboardingCompleted) {
+    if (!onboardingCompleted && !defaultWearable) {
       replace("/onboarding/welcome")
       return
     }
@@ -108,27 +108,31 @@ export default function InitScreen() {
     setState("loading")
     setLoadingStatus(translate("versionCheck:connectingToServer"))
 
-    try {
-      const supabaseToken = session?.access_token
-      if (!supabaseToken) {
-        setErrorType("auth")
-        setState("error")
-        return
-      }
+    const token = session?.token
+    if (!token) {
+      setErrorType("auth")
+      setState("error")
+      return
+    }
 
-      const coreToken = await restComms.exchangeToken(supabaseToken)
-      const uid = user?.email || user?.id
-
-      socketComms.setAuthCreds(coreToken, uid)
-      await mantle.init()
-
-      await navigateToDestination()
-    } catch (error) {
-      console.error("Token exchange failed:", error)
+    let res = await restComms.exchangeToken(token)
+    if (res.is_error()) {
+      console.log("Token exchange failed:", res.error)
       await checkCustomUrl()
       setErrorType("connection")
       setState("error")
+      return
     }
+
+    const coreToken = res.value
+    const uid = user?.email || user?.id || ""
+
+    socketComms.setAuthCreds(coreToken, uid)
+    console.log("INIT: Socket comms auth creds set")
+    await mantle.init()
+    console.log("INIT: Mantle initialized")
+
+    await navigateToDestination()
   }
 
   const checkCloudVersion = async (isRetry = false): Promise<void> => {
@@ -141,43 +145,38 @@ export default function InitScreen() {
     }
     setErrorType(null)
 
-    try {
-      const localVer = getLocalVersion()
-      setLocalVersion(localVer)
+    const localVer = getLocalVersion()
+    setLocalVersion(localVer)
 
-      if (!localVer) {
-        console.error("Failed to get local version")
-        setErrorType("connection")
-        setState("error")
-        setIsRetrying(false)
-        return
-      }
-
-      try {
-        const {required, recommended} = await restComms.getMinimumClientVersion()
-        setCloudVersion(recommended)
-        console.log(`Version check: local=${localVer}, cloud=${required}`)
-        if (semver.lt(localVer, recommended)) {
-          setState("outdated")
-          setCanSkipUpdate(!semver.lt(localVer, required))
-          setIsRetrying(false)
-          return
-        }
-        setIsRetrying(false)
-        checkLoggedIn()
-      } catch (error) {
-        console.error("Failed to fetch cloud version:", error)
-        setErrorType("connection")
-        setState("error")
-        setIsRetrying(false)
-        return
-      }
-    } catch (error) {
-      console.error("Version check failed:", error)
+    if (!localVer) {
+      console.error("Failed to get local version")
       setErrorType("connection")
       setState("error")
       setIsRetrying(false)
+      return
     }
+
+    const res = await restComms.getMinimumClientVersion()
+    if (res.is_error()) {
+      console.error("Failed to fetch cloud version:", res.error)
+      setErrorType("connection")
+      setState("error")
+      setIsRetrying(false)
+      return
+    }
+
+    const {required, recommended} = res.value
+    setCloudVersion(recommended)
+    console.log(`INIT: Version check: local=${localVer}, required=${required}, recommended=${recommended}`)
+    if (semver.lt(localVer, recommended)) {
+      setState("outdated")
+      setCanSkipUpdate(!semver.lt(localVer, required))
+      setIsRetrying(false)
+      return
+    }
+
+    setIsRetrying(false)
+    checkLoggedIn()
   }
 
   const handleUpdate = async (): Promise<void> => {
@@ -194,8 +193,8 @@ export default function InitScreen() {
 
   const handleResetUrl = async (): Promise<void> => {
     try {
-      const defaultUrl = (await useSettingsStore.getState().getDefaultValue(SETTINGS_KEYS.custom_backend_url)) as string
-      await setCustomBackendUrl(defaultUrl)
+      const defaultUrl = SETTINGS[SETTINGS.backend_url.key].defaultValue()
+      await setBackendUrl(defaultUrl)
       setIsUsingCustomUrl(false)
       await checkCloudVersion(true) // Pass true for retry to avoid flash
     } catch (error) {
@@ -216,7 +215,7 @@ export default function InitScreen() {
         }
         return {
           icon: "wifi-off",
-          iconColor: theme.colors.error,
+          iconColor: theme.colors.destructive,
           title: "Connection Error",
           description: isUsingCustomUrl
             ? "Could not connect to the custom server. Please try using the default server or check your connection."
@@ -285,6 +284,7 @@ export default function InitScreen() {
           <View style={themed($buttonContainer)}>
             {state === "error" && (
               <Button
+                flexContainer
                 onPress={() => checkCloudVersion(true)}
                 style={themed($primaryButton)}
                 text={isRetrying ? translate("versionCheck:retrying") : translate("versionCheck:retryConnection")}
@@ -296,11 +296,18 @@ export default function InitScreen() {
             )}
 
             {state === "outdated" && (
-              <Button preset="primary" onPress={handleUpdate} disabled={isUpdating} tx="versionCheck:update" />
+              <Button
+                flexContainer
+                preset="primary"
+                onPress={handleUpdate}
+                disabled={isUpdating}
+                tx="versionCheck:update"
+              />
             )}
 
             {state === "error" && isUsingCustomUrl && (
               <Button
+                flexContainer
                 onPress={handleResetUrl}
                 style={themed($secondaryButton)}
                 tx={isRetrying ? "versionCheck:resetting" : "versionCheck:resetUrl"}
@@ -314,8 +321,9 @@ export default function InitScreen() {
 
             {(state === "error" || (state === "outdated" && canSkipUpdate)) && (
               <Button
+                flex
+                flexContainer
                 preset="warning"
-                style={themed($secondaryButton)}
                 RightAccessory={() => <Icon name="arrow-right" size={24} color={theme.colors.text} />}
                 onPress={navigateToDestination}
                 tx="versionCheck:continueAnyway"
@@ -336,56 +344,56 @@ const $centerContainer: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $loadingText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
   fontSize: 16,
   color: colors.text,
 })
 
 const $mainContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.lg,
+  padding: spacing.s6,
 })
 
 const $infoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingTop: spacing.xl,
+  paddingTop: spacing.s8,
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.xl,
+  marginBottom: spacing.s8,
 })
 
 const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 28,
   fontWeight: "bold",
   textAlign: "center",
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
   color: colors.text,
 })
 
 const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   textAlign: "center",
-  marginBottom: spacing.xl,
+  marginBottom: spacing.s8,
   lineHeight: 24,
-  paddingHorizontal: spacing.lg,
+  paddingHorizontal: spacing.s6,
   color: colors.textDim,
 })
 
 const $versionText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 14,
   textAlign: "center",
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
   color: colors.textDim,
 })
 
 const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: "100%",
   alignItems: "center",
-  paddingBottom: spacing.xl,
-  gap: spacing.xl,
+  paddingBottom: spacing.s8,
+  gap: spacing.s8,
 })
 
 const $primaryButton: ThemedStyle<ViewStyle> = () => ({

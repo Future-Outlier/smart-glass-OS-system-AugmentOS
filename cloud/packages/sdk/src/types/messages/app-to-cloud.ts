@@ -146,6 +146,14 @@ export interface AudioPlayRequest extends BaseMessage {
   audioUrl: string // URL to audio file for download and play
   volume?: number // Volume level 0.0-1.0, defaults to 1.0
   stopOtherAudio?: boolean // Whether to stop other audio playback, defaults to true
+  /**
+   * Track ID for audio playback (defaults to 0)
+   * - 0: speaker (default audio playback)
+   * - 1: app_audio (app-specific audio)
+   * - 2: tts (text-to-speech audio)
+   * Use different track IDs to play multiple audio streams simultaneously (mixing)
+   */
+  trackId?: number
 }
 
 /**
@@ -154,6 +162,25 @@ export interface AudioPlayRequest extends BaseMessage {
 export interface AudioStopRequest extends BaseMessage {
   type: AppToCloudMessageType.AUDIO_STOP_REQUEST
   packageName: string
+  /**
+   * Track ID to stop (optional)
+   * 0: speaker (default audio playback)
+   * 1: app_audio (app-specific audio)
+   * 2: tts (text-to-speech audio)
+   * If omitted, stops all tracks
+   */
+  trackId?: number
+  sessionId?: string // Session ID for routing
+}
+
+/**
+ * WiFi setup request from App
+ */
+export interface RequestWifiSetup extends BaseMessage {
+  type: AppToCloudMessageType.REQUEST_WIFI_SETUP
+  packageName: string
+  sessionId: string
+  reason?: string
 }
 
 /**
@@ -176,6 +203,7 @@ export type AppToCloudMessage =
   | DashboardContentUpdate
   | DashboardModeChange
   | DashboardSystemUpdate
+  | RequestWifiSetup
   // New App-to-App communication messages
   | AppBroadcastMessage
   | AppDirectMessage

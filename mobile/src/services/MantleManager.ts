@@ -1,14 +1,18 @@
-import socketComms from "@/services/SocketComms"
-import * as Calendar from "expo-calendar"
-import restComms from "@/services/RestComms"
-import * as TaskManager from "expo-task-manager"
-import * as Location from "expo-location"
-import TranscriptProcessor from "@/utils/TranscriptProcessor"
-import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
+import * as Calendar from "expo-calendar"
+import * as Location from "expo-location"
+import * as TaskManager from "expo-task-manager"
+import {shallow} from "zustand/shallow"
+
 import bridge from "@/bridge/MantleBridge"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import restComms from "@/services/RestComms"
+import socketComms from "@/services/SocketComms"
 import {useDisplayStore} from "@/stores/display"
+import {useGlassesStore} from "@/stores/glasses"
+import {GlassesInfo} from "@/stores/glasses"
+import {useSettingsStore, SETTINGS} from "@/stores/settings"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import TranscriptProcessor from "@/utils/TranscriptProcessor"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -16,7 +20,7 @@ const LOCATION_TASK_NAME = "handleLocationUpdates"
 TaskManager.defineTask(LOCATION_TASK_NAME, ({data: {locations}, error}) => {
   if (error) {
     // check `error.message` for more details.
-    console.error("Error handling location updates", error)
+    // console.error("Error handling location updates", error)
     return
   }
   const locs = locations as Location.LocationObject[]
@@ -33,8 +37,8 @@ TaskManager.defineTask(LOCATION_TASK_NAME, ({data: {locations}, error}) => {
 
 class MantleManager {
   private static instance: MantleManager | null = null
-  private calendarSyncTimer: number | null = null
-  private clearTextTimeout: number | null = null
+  private calendarSyncTimer: ReturnType<typeof setInterval> | null = null
+  private clearTextTimeout: ReturnType<typeof setTimeout> | null = null
   private transcriptProcessor: TranscriptProcessor
 
   public static getInstance(): MantleManager {
@@ -70,20 +74,15 @@ class MantleManager {
   // sets up the bridge and initializes app state
   public async init() {
     await bridge.dummy()
-    try {
-      const loadedSettings = await restComms.loadUserSettings() // get settings from server
+    const res = await restComms.loadUserSettings() // get settings from server
+    if (res.is_ok()) {
+      const loadedSettings = res.value
       await useSettingsStore.getState().setManyLocally(loadedSettings) // write settings to local storage
-      await useSettingsStore.getState().initUserSettings() // initialize user settings
-    } catch (e) {
-      console.error(`Failed to get settings from server: ${e}`)
+    } else {
+      console.error("Mantle: No settings received from server")
     }
-    await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
 
-    // Sync notification settings to native layer
-    const notificationsEnabled = useSettingsStore.getState().getSetting(SETTINGS_KEYS.notifications_enabled)
-    const notificationsBlocklist = useSettingsStore.getState().getSetting(SETTINGS_KEYS.notifications_blocklist)
-    CoreModule.setNotificationsEnabled(notificationsEnabled ?? true)
-    CoreModule.setNotificationsBlocklist(notificationsBlocklist ?? [])
+    await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
 
     setTimeout(async () => {
       await CoreModule.connectDefault()
@@ -93,6 +92,7 @@ class MantleManager {
     await CoreModule.requestStatus()
 
     this.setupPeriodicTasks()
+    this.setupSubscriptions()
   }
 
   public cleanup() {
@@ -115,7 +115,7 @@ class MantleManager {
       60 * 60 * 1000,
     ) // 1 hour
     try {
-      let locationAccuracy = await useSettingsStore.getState().loadSetting(SETTINGS_KEYS.location_tier)
+      let locationAccuracy = await useSettingsStore.getState().getSetting(SETTINGS.location_tier.key)
       let properAccuracy = this.getLocationAccuracy(locationAccuracy)
       Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
         accuracy: properAccuracy,
@@ -123,6 +123,51 @@ class MantleManager {
     } catch (error) {
       console.error("Mantle: Error starting location updates", error)
     }
+  }
+
+  private setupSubscriptions() {
+    useGlassesStore.subscribe(
+      state => ({
+        batteryLevel: state.batteryLevel,
+        charging: state.charging,
+        caseBatteryLevel: state.caseBatteryLevel,
+        caseCharging: state.caseCharging,
+        connected: state.connected,
+        wifiConnected: state.wifiConnected,
+        wifiSsid: state.wifiSsid,
+        modelName: state.modelName,
+      }),
+      (state: Partial<GlassesInfo>, previousState: Partial<GlassesInfo>) => {
+        const statusObj: Partial<GlassesInfo> = {}
+
+        for (const key in state) {
+          const k = key as keyof GlassesInfo
+          if (state[k] !== previousState[k]) {
+            statusObj[k] = state[k] as any
+          }
+        }
+        restComms.updateGlassesState(statusObj)
+      },
+      {equalityFn: shallow},
+    )
+
+    // subscribe to core settings changes and update the core:
+    useSettingsStore.subscribe(
+      state => state.getCoreSettings(),
+      (state: Record<string, any>, previousState: Record<string, any>) => {
+        const coreSettingsObj: Record<string, any> = {}
+
+        for (const key in state) {
+          const k = key as keyof Record<string, any>
+          if (state[k] !== previousState[k]) {
+            coreSettingsObj[k] = state[k] as any
+          }
+        }
+        console.log("Mantle: core settings changed", coreSettingsObj)
+        CoreModule.updateSettings(coreSettingsObj)
+      },
+      {equalityFn: shallow},
+    )
   }
 
   private async sendCalendarEvents() {
@@ -178,7 +223,7 @@ class MantleManager {
         pausesUpdatesAutomatically: false,
       })
     } catch (error) {
-      console.error("Mantle: Error setting location tier", error)
+      console.log("Mantle: Error setting location tier", error)
     }
   }
 
@@ -194,8 +239,19 @@ class MantleManager {
         correlationId,
       )
     } catch (error) {
-      console.error("Mantle: Error requesting single location", error)
+      console.log("Mantle: Error requesting single location", error)
     }
+  }
+
+  public async displayTextMain(text: string) {
+    socketComms.handle_display_event({
+      type: "display_event",
+      view: "main",
+      layout: {
+        layoutType: "text_wall",
+        text: text,
+      },
+    })
   }
 
   public async handle_head_up(isUp: boolean) {
@@ -205,7 +261,7 @@ class MantleManager {
 
   public async handle_local_transcription(data: any) {
     // TODO: performance!
-    const offlineStt = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.offline_captions_running)
+    const offlineStt = await useSettingsStore.getState().getSetting(SETTINGS.offline_captions_running.key)
     if (offlineStt) {
       this.transcriptProcessor.changeLanguage(data.transcribeLanguage)
       const processedText = this.transcriptProcessor.processString(data.text, data.isFinal ?? false)
@@ -219,26 +275,12 @@ class MantleManager {
         }
         this.clearTextTimeout = setTimeout(() => {
           console.log("Mantle: clearing text from wall")
-          socketComms.handle_display_event({
-            type: "display_event",
-            view: "main",
-            layout: {
-              layoutType: "text_wall",
-              text: "",
-            },
-          })
+          this.displayTextMain("")
         }, 10000) // 10 seconds
       }
 
       if (processedText) {
-        socketComms.handle_display_event({
-          type: "display_event",
-          view: "main",
-          layout: {
-            layoutType: "text_wall",
-            text: processedText,
-          },
-        })
+        this.displayTextMain(processedText)
       }
 
       return

@@ -1,4 +1,5 @@
 import {TouchableOpacity, ViewStyle, TextStyle} from "react-native"
+
 import {Icon, IconTypes, Text} from "@/components/ignite"
 import {spacing, ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -46,7 +47,7 @@ const $navButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.palette.neutral100,
   fontSize: 16,
   fontWeight: "600",
-  marginLeft: spacing.xs,
+  marginLeft: spacing.s2,
 })
 
 export default NavButton

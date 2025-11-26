@@ -1,8 +1,9 @@
 import {useState, useEffect, useRef} from "react"
 import {View, Pressable, Modal, ScrollView, Platform, ViewStyle, TextStyle} from "react-native"
+
 import {Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 type TimeSettingProps = {
   label: string
@@ -286,15 +287,15 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderWidth: 1,
   borderColor: colors.border,
   borderRadius: 8,
-  paddingVertical: spacing.md,
-  paddingHorizontal: spacing.lg,
+  paddingVertical: spacing.s4,
+  paddingHorizontal: spacing.s6,
   width: "100%",
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   color: colors.text,
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $timeButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -305,8 +306,8 @@ const $timeButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderWidth: 1,
   borderColor: colors.border,
   borderRadius: 6,
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
   minHeight: Platform.OS === "ios" ? 44 : 48,
 })
 
@@ -332,14 +333,14 @@ const $modalOverlay: ThemedStyle<ViewStyle> = () => ({
 const $modalContent: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
   borderRadius: 12,
-  padding: spacing.lg,
+  padding: spacing.s6,
   width: "90%",
   maxWidth: 400,
 })
 
 const $modalHeader: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $modalTitle: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -351,7 +352,7 @@ const $modalTitle: ThemedStyle<TextStyle> = ({colors}) => ({
 const $pickerContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-around",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $pickerColumn: ThemedStyle<ViewStyle> = () => ({
@@ -362,7 +363,7 @@ const $pickerColumn: ThemedStyle<ViewStyle> = () => ({
 const $pickerLabel: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 14,
   color: colors.textDim,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
   fontWeight: "500",
 })
 
@@ -374,7 +375,7 @@ const $pickerItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
   height: 44,
   justifyContent: "center",
   alignItems: "center",
-  paddingHorizontal: spacing.sm,
+  paddingHorizontal: spacing.s3,
 })
 
 const $pickerItemSelected: ThemedStyle<ViewStyle> = ({colors}) => ({
@@ -396,7 +397,7 @@ const $pickerItemTextSelected: ThemedStyle<TextStyle> = () => ({
 const $modalFooter: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
-  gap: spacing.md,
+  gap: spacing.s4,
 })
 
 const $cancelButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -405,7 +406,7 @@ const $cancelButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderWidth: 1,
   borderColor: colors.border,
   borderRadius: 6,
-  paddingVertical: spacing.sm,
+  paddingVertical: spacing.s3,
   alignItems: "center",
 })
 
@@ -413,7 +414,7 @@ const $confirmButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flex: 1,
   backgroundColor: colors.palette?.primary300 || "#007AFF",
   borderRadius: 6,
-  paddingVertical: spacing.sm,
+  paddingVertical: spacing.s3,
   alignItems: "center",
 })
 

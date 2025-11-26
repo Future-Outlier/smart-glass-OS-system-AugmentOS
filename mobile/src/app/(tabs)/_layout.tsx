@@ -1,17 +1,15 @@
-import {Text} from "@/components/ignite"
+import {TabList, Tabs, TabSlot, TabTrigger, TabTriggerSlotProps} from "expo-router/ui"
+import {Pressable, TextStyle, View, ViewStyle} from "react-native"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
+
+import {Icon, IconTypes, Text} from "@/components/ignite"
 import {translate} from "@/i18n"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import SolarLineIconsSet4 from "assets/icons/component/SolarLineIconsSet4"
-import HomeIcon from "assets/icons/navbar/HomeIcon"
-import StoreIcon from "assets/icons/navbar/StoreIcon"
-import UserIcon from "assets/icons/navbar/UserIcon"
-import {TabList, Tabs, TabSlot, TabTrigger, TabTriggerSlotProps} from "expo-router/ui"
-import {Pressable, TextStyle, ViewStyle} from "react-native"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 type TabButtonProps = TabTriggerSlotProps & {
-  icon: React.ComponentType<{size: number; color: string}>
+  iconName: IconTypes
+  iconNameFilled: IconTypes
   label: string
 }
 
@@ -19,76 +17,66 @@ export default function Layout() {
   const {theme, themed} = useAppTheme()
   const {bottom} = useSafeAreaInsets()
 
-  function TabButton({icon: Icon, isFocused, label, ...props}: TabButtonProps) {
-    const iconColor = isFocused ? theme.colors.primary : theme.colors.textDim
-    const textColor = isFocused ? theme.colors.text : theme.colors.textDim
+  function TabButton({iconName, iconNameFilled, isFocused, label, ...props}: TabButtonProps) {
+    // const iconColor = isFocused ? theme.colors.primary : theme.colors.textDim
+    const iconColor = isFocused ? theme.colors.background : theme.colors.muted_foreground
+    const textColor = isFocused ? theme.colors.secondary_foreground : theme.colors.muted_foreground
+    const iconBgColor = isFocused ? theme.colors.primary : "transparent"
+    const displayIcon = isFocused ? iconNameFilled : iconName
     return (
       <Pressable {...props} style={[themed($tabButton), {marginBottom: bottom}]}>
-        <Icon size={28} color={iconColor} />
+        <View style={[themed($icon), {backgroundColor: iconBgColor}]}>
+          <Icon name={displayIcon} size={24} color={iconColor} />
+        </View>
         <Text text={label} style={[themed($tabLabel), {color: textColor}]} />
       </Pressable>
     )
   }
-
-  // if (Platform.OS === "ios") {
-  //   return (
-  //     <NativeTabs minimizeBehavior="onScrollDown" disableTransparentOnScrollEdge>
-  //       <NativeTabs.Trigger name="home">
-  //         <Label>{translate("navigation:home")}</Label>
-  //         <Icon sf="house.fill" drawable="custom_android_drawable" />
-  //       </NativeTabs.Trigger>
-  //       <NativeTabs.Trigger name="glasses">
-  //         <Icon sf="sunglasses.fill" drawable="custom_settings_drawable" />
-  //         <Label>{translate("navigation:glasses")}</Label>
-  //       </NativeTabs.Trigger>
-  //       <NativeTabs.Trigger name="store">
-  //         <Icon sf="cart.fill" drawable="custom_settings_drawable" />
-  //         <Label>{translate("navigation:store")}</Label>
-  //       </NativeTabs.Trigger>
-  //       <NativeTabs.Trigger name="settings">
-  //         <Icon sf="gear" drawable="custom_settings_drawable" />
-  //         <Label>{translate("navigation:account")}</Label>
-  //       </NativeTabs.Trigger>
-  //     </NativeTabs>
-  //   )
-  // }
 
   return (
     <Tabs>
       <TabSlot />
       <TabList style={themed($tabList)}>
         <TabTrigger name="home" href="/home" style={themed($tabTrigger)} asChild>
-          <TabButton icon={HomeIcon} label={translate("navigation:home")} />
-        </TabTrigger>
-        <TabTrigger name="glasses" href="/glasses" style={themed($tabTrigger)} asChild>
-          <TabButton icon={SolarLineIconsSet4} label={translate("navigation:glasses")} />
+          <TabButton iconName="home" iconNameFilled="home-filled" label={translate("navigation:home")} />
         </TabTrigger>
         <TabTrigger name="store" href="/store" style={themed($tabTrigger)} asChild>
-          <TabButton icon={StoreIcon} label={translate("navigation:store")} />
+          <TabButton
+            iconName="shopping-bag"
+            iconNameFilled="shopping-bag-filled"
+            label={translate("navigation:store")}
+          />
         </TabTrigger>
-        <TabTrigger name="settings" href="/settings" style={themed($tabTrigger)} asChild>
-          <TabButton icon={UserIcon} label={translate("navigation:account")} />
+        <TabTrigger name="account" href="/account" style={themed($tabTrigger)} asChild>
+          <TabButton iconName="user" iconNameFilled="user-filled" label={translate("navigation:account")} />
         </TabTrigger>
       </TabList>
     </Tabs>
   )
 }
 
+const $icon: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s1,
+  borderRadius: spacing.s4,
+})
+
 const $tabList: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
-  backgroundColor: colors.backgroundStart + "cc",
-  position: "absolute",
-  bottom: 0,
   borderTopColor: colors.separator,
-  paddingVertical: spacing.xs,
-  paddingHorizontal: spacing.sm,
+  paddingVertical: spacing.s2,
+  paddingHorizontal: spacing.s3,
+  // transparent nav bar:
+  // backgroundColor: colors.primary_foreground + "fb",
+  // position: "absolute",
+  // bottom: 0,
 })
 
 const $tabTrigger: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   alignItems: "center",
   justifyContent: "center",
-  paddingVertical: spacing.xs,
+  paddingVertical: spacing.s2,
 })
 
 const $tabLabel: ThemedStyle<TextStyle> = ({typography}) => ({
@@ -101,6 +89,6 @@ const $tabButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   justifyContent: "space-between",
   alignItems: "center",
   flexDirection: "column",
-  gap: spacing.xxs,
+  gap: spacing.s1,
   flex: 1,
 })

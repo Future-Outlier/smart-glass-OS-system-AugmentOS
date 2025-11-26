@@ -293,6 +293,7 @@ export class GlassesWebSocketService {
             userSession,
             message as GlassesConnectionState,
           );
+          // Device state now stored in DeviceManager
           userSession.relayMessageToApps(message);
           break;
 
@@ -378,7 +379,10 @@ export class GlassesWebSocketService {
 
             // Update glasses model if available in status
             if (connectedGlasses.model_name) {
-              await userSession.updateGlassesModel(connectedGlasses.model_name);
+              await userSession.deviceManager.updateDeviceState({
+                connected: true,
+                modelName: connectedGlasses.model_name,
+              });
             }
 
             // Map core status fields to augmentos settings
@@ -946,7 +950,6 @@ export class GlassesWebSocketService {
 
   /**
    * Handle glasses connection state message
-   *
    * @param userSession User session
    * @param message Connection state message
    */
@@ -961,22 +964,20 @@ export class GlassesWebSocketService {
       `handleGlassesConnectionState for user ${userSession.userId}`,
     );
 
-    await userSession.deviceManager.handleGlassesConnectionState(
-      glassesConnectionStateMessage.modelName || null,
-      glassesConnectionStateMessage.status,
-    );
-
+    // Convert WebSocket message to partial device state update
     const isConnected =
       glassesConnectionStateMessage.status === "CONNECTED" ||
       glassesConnectionStateMessage.status === "RECONNECTED";
-    const reportedModel = glassesConnectionStateMessage.modelName || undefined;
 
-    // Update session-level flags for legacy consumers (e.g., validators)
-    const effectiveModel = isConnected
-      ? userSession.deviceManager.getCurrentModel() || reportedModel
-      : undefined;
-    userSession.setGlassesConnectionState(isConnected, effectiveModel, {
-      source: "glasses_connection_state",
+    // Update via DeviceManager (single source of truth)
+    await userSession.deviceManager.updateDeviceState({
+      connected: isConnected,
+      modelName: isConnected
+        ? glassesConnectionStateMessage.modelName || null
+        : null,
+      wifiConnected: glassesConnectionStateMessage.wifi?.connected,
+      wifiSsid: glassesConnectionStateMessage.wifi?.ssid ?? undefined,
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -1108,8 +1109,10 @@ export class GlassesWebSocketService {
       `[WebsocketGlassesService:handleGlassesConnectionClose]: (${userSession.userId}, ${code}, ${reason}) - Glasses connection closed`,
     );
 
-    userSession.handlePhoneConnectionClosed(
-      reason ? `${code}:${reason}` : `${code}`,
+    // WebSocket is closing - connection state will be handled by WebSocket close event
+    userSession.logger.info(
+      { service: SERVICE_NAME, code, reason },
+      "Phone WebSocket connection closing",
     );
 
     // Mark session as disconnected

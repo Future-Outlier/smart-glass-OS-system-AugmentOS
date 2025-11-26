@@ -1,32 +1,33 @@
 // SensingDisabledWarning.tsx
+import {MaterialCommunityIcons} from "@expo/vector-icons"
 import {useEffect, useState} from "react"
 import {TouchableOpacity, ViewStyle, Platform, Linking} from "react-native"
-import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {MaterialCommunityIcons} from "@expo/vector-icons"
-import showAlert from "@/utils/AlertUtils"
-import {translate} from "@/i18n"
+
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import Constants from "expo-constants"
+import {translate} from "@/i18n"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function NonProdWarning() {
   const {theme, themed} = useAppTheme()
   const [isProdBackend, setIsProdBackend] = useState(true)
   const {push} = useNavigationHistory()
-  const [customBackendUrl, _setCustomBackendUrl] = useSetting(SETTINGS_KEYS.custom_backend_url)
+  const [backendUrl, _setBackendUrl] = useSetting(SETTINGS.backend_url.key)
 
   const checkNonProdBackend = async () => {
     let isProd = false
     if (
-      customBackendUrl.includes("prod.augmentos.cloud") ||
-      customBackendUrl.includes("global.augmentos.cloud") ||
-      customBackendUrl.includes("api.mentra.glass")
+      backendUrl.includes("prod.augmentos.cloud") ||
+      backendUrl.includes("global.augmentos.cloud") ||
+      backendUrl.includes("api.mentra.glass") ||
+      backendUrl.includes("api.mentraglass.cn")
     ) {
       isProd = true
     }
 
-    if (customBackendUrl.includes("devapi")) {
+    if (backendUrl.includes("devapi")) {
       isProd = false
     }
 
@@ -35,7 +36,7 @@ export default function NonProdWarning() {
 
   useEffect(() => {
     checkNonProdBackend()
-  }, [customBackendUrl])
+  }, [backendUrl])
 
   if (isProdBackend) {
     return null
@@ -58,34 +59,43 @@ export default function NonProdWarning() {
   // )
 
   const nonProdWarning = () => {
-    const isBetaBuild = !!Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE
+    const isBetaBuild = !!process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE
 
     if (isBetaBuild) {
       // Beta build warning
       if (Platform.OS === "ios") {
         // iOS TestFlight build
         showAlert(translate("warning:testFlightBuild"), "", [
-          {text: translate("common:ok"), onPress: () => {}},
           {
             text: translate("settings:feedback"),
             onPress: () => {
               push("/settings/feedback")
             },
           },
+          {text: translate("common:ok"), onPress: () => {}},
         ])
       } else {
-        // Android Beta build (only 2 buttons supported)
+        // Android Beta build - show opt-out first, then feedback
         showAlert(translate("warning:betaBuild"), "", [
-          {
-            text: translate("settings:feedback"),
-            onPress: () => {
-              push("/settings/feedback")
-            },
-          },
           {
             text: translate("warning:optOutOfBeta"),
             onPress: () => {
               Linking.openURL("https://play.google.com/apps/testing/com.mentra.mentra")
+            },
+          },
+          {
+            text: translate("common:ok"),
+            onPress: () => {
+              // After dismissing, offer feedback option
+              showAlert(translate("warning:betaBuild"), "", [
+                {
+                  text: translate("settings:feedback"),
+                  onPress: () => {
+                    push("/settings/feedback")
+                  },
+                },
+                {text: translate("common:ok"), onPress: () => {}},
+              ])
             },
           },
         ])
@@ -93,24 +103,24 @@ export default function NonProdWarning() {
     } else {
       // Developer/non-production backend warning
       showAlert(translate("warning:nonProdBackend"), "", [
-        {text: translate("common:ok"), onPress: () => {}},
         {
           text: translate("settings:developerSettings"),
           onPress: () => {
             push("/settings/developer")
           },
         },
+        {text: translate("common:ok"), onPress: () => {}},
       ])
     }
   }
 
   return (
     <TouchableOpacity style={themed($settingsButton)} onPress={nonProdWarning}>
-      <MaterialCommunityIcons name="alert" size={theme.spacing.lg} color={theme.colors.error} />
+      <MaterialCommunityIcons name="alert" size={theme.spacing.s6} color={theme.colors.error} />
     </TouchableOpacity>
   )
 }
 
 const $settingsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.sm,
+  padding: spacing.s3,
 })

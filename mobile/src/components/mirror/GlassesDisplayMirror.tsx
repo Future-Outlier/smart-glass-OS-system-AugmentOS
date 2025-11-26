@@ -1,36 +1,35 @@
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {useDisplayStore} from "@/stores/display"
-import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {useState, useEffect, useRef} from "react"
 import {View, ViewStyle, TextStyle} from "react-native"
 import Canvas, {Image as CanvasImage} from "react-native-canvas"
+
 import {Text} from "@/components/ignite"
+import {useDisplayStore} from "@/stores/display"
+import {useGlassesStore} from "@/stores/glasses"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface GlassesDisplayMirrorProps {
   fallbackMessage?: string
-  containerStyle?: any
+  style?: ViewStyle
   fullscreen?: boolean
-  demo?: boolean
   demoText?: string
 }
 
 const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
   fallbackMessage = "",
-  containerStyle,
+  style,
   fullscreen = false,
-  demo = false,
-  demoText = "Simulated Glasses Display",
+  demoText = "",
 }) => {
   const {themed} = useAppTheme()
   const canvasRef = useRef<Canvas>(null)
   const containerRef = useRef<View | null>(null)
   const [containerWidth, setContainerWidth] = useState<number | null>(null)
-  const {status} = useCoreStatus()
   const {currentEvent} = useDisplayStore()
+  const batteryLevel = useGlassesStore(state => state.batteryLevel)
 
   // Use demo layout if in demo mode, otherwise use real layout
-  const layout = demo ? {layoutType: "text_wall", text: demoText} : currentEvent.layout
+  const layout = demoText !== "" ? {layoutType: "text_wall", text: demoText} : currentEvent.layout
 
   const processBitmap = async () => {
     if (layout?.layoutType !== "bitmap_view" || !layout.data) {
@@ -114,7 +113,6 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
     const time24Str = `${hours24}:${minutes}`
 
     // Replace battery level placeholder
-    const batteryLevel = status.glasses_info?.battery_level
     const batteryStr = typeof batteryLevel === "number" && batteryLevel >= 0 ? `${batteryLevel}%` : ""
 
     // Replace all placeholders
@@ -150,6 +148,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
       case "text_line": {
         let {text} = layout
         text = parseText(text)
+        text = text.replace(/\n/g, " ")
         return <Text style={[styles.cardContent, textStyle]}>{text || text === "" ? text : ""}</Text>
       }
       case "double_text_wall": {
@@ -207,7 +206,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
       return null
     }
     return (
-      <View style={[themed($glassesScreen), containerStyle]}>
+      <View style={[themed($glassesScreen), style]}>
         <View style={themed($emptyContainer)}>
           <Text style={themed($emptyText)}>{fallbackMessage}</Text>
         </View>
@@ -223,18 +222,17 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
     return <View style={themed($glassesScreenFullscreen)}>{content}</View>
   }
 
-  return <View style={[themed($glassesScreen), containerStyle]}>{content}</View>
+  return <View style={[themed($glassesScreen), style]}>{content}</View>
 }
 
 const $glassesScreen: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   width: "100%",
-  minHeight: 140,
-  backgroundColor: colors.backgroundAlt,
-  borderRadius: spacing.md,
-  paddingHorizontal: spacing.md,
-  paddingVertical: spacing.sm,
-  borderWidth: 2,
-  borderColor: colors.border,
+  minHeight: 170,
+  maxHeight: 170,
+  backgroundColor: colors.primary_foreground,
+  borderRadius: spacing.s4,
+  paddingHorizontal: spacing.s4,
+  paddingVertical: spacing.s3,
 })
 
 const $glassesScreenFullscreen: ThemedStyle<ViewStyle> = () => ({

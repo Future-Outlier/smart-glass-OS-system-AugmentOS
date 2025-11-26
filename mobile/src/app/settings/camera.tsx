@@ -1,33 +1,33 @@
 import {View, ScrollView, TouchableOpacity, Platform} from "react-native"
-import {Text} from "@/components/ignite"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import bridge from "@/bridge/MantleBridge"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {spacing, ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle} from "react-native"
-import {MaterialCommunityIcons} from "@expo/vector-icons"
-import {translate} from "@/i18n"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import ToggleSetting from "@/components/settings/ToggleSetting"
+
+import bridge from "@/bridge/MantleBridge"
+import {Icon, Text} from "@/components/ignite"
 import {Screen, Header} from "@/components/ignite"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {spacing, ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
+
 import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 type PhotoSize = "small" | "medium" | "large"
-type VideoResolution = "720p" | "1080p" | "1440p" | "4K"
+type VideoResolution = "720p" | "1080p" // | "1440p" | "4K"
 type MaxRecordingTime = "3m" | "5m" | "10m" | "15m" | "20m"
 
 const PHOTO_SIZE_LABELS: Record<PhotoSize, string> = {
-  small: "Small (800×600)",
-  medium: "Medium (1440×1080)",
-  large: "Large (3200×2400)",
+  small: "Low (960×720)",
+  medium: "Medium (1440×1088)",
+  large: "High (3264×2448)",
 }
 
 const VIDEO_RESOLUTION_LABELS: Record<VideoResolution, string> = {
   "720p": "720p (1280×720)",
   "1080p": "1080p (1920×1080)",
-  "1440p": "1440p (2560×1920)",
-  "4K": "4K (3840×2160)",
+  // "1440p": "1440p (2560×1920)",
+  // "4K": "4K (3840×2160)",
 }
 
 const MAX_RECORDING_TIME_LABELS: Record<MaxRecordingTime, string> = {
@@ -40,14 +40,14 @@ const MAX_RECORDING_TIME_LABELS: Record<MaxRecordingTime, string> = {
 
 export default function CameraSettingsScreen() {
   const {theme, themed} = useAppTheme()
-  const {status} = useCoreStatus()
   const {goBack} = useNavigationHistory()
-  const [devMode, _setDevMode] = useSetting(SETTINGS_KEYS.dev_mode)
-  const [photoSize, setPhotoSize] = useSetting(SETTINGS_KEYS.button_photo_size)
-  const [ledEnabled, setLedEnabled] = useSetting(SETTINGS_KEYS.button_camera_led)
-  const [videoSettings, setVideoSettings] = useSetting(SETTINGS_KEYS.button_video_settings)
-  const [maxRecordingTime, setMaxRecordingTime] = useSetting(SETTINGS_KEYS.button_max_recording_time)
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [_devMode, _setDevMode] = useSetting(SETTINGS.dev_mode.key)
+  const [photoSize, setPhotoSize] = useSetting(SETTINGS.button_photo_size.key)
+  const [_ledEnabled, setLedEnabled] = useSetting(SETTINGS.button_camera_led.key)
+  const [videoSettings, setVideoSettings] = useSetting(SETTINGS.button_video_settings.key)
+  const [maxRecordingTime, setMaxRecordingTime] = useSetting(SETTINGS.button_max_recording_time.key)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   // Derive video resolution from settings
   const videoResolution: VideoResolution = (() => {
@@ -59,7 +59,7 @@ export default function CameraSettingsScreen() {
   })()
 
   const handlePhotoSizeChange = async (size: PhotoSize) => {
-    if (!status.glasses_info?.model_name) {
+    if (!glassesConnected) {
       console.log("Cannot change photo size - glasses not connected")
       return
     }
@@ -73,7 +73,7 @@ export default function CameraSettingsScreen() {
   }
 
   const handleVideoResolutionChange = async (resolution: VideoResolution) => {
-    if (!status.glasses_info?.model_name) {
+    if (!glassesConnected) {
       console.log("Cannot change video resolution - glasses not connected")
       return
     }
@@ -91,8 +91,8 @@ export default function CameraSettingsScreen() {
     }
   }
 
-  const handleLedToggle = async (enabled: boolean) => {
-    if (!status.glasses_info?.model_name) {
+  const _handleLedToggle = async (enabled: boolean) => {
+    if (!glassesConnected) {
       console.log("Cannot toggle LED - glasses not connected")
       return
     }
@@ -105,7 +105,7 @@ export default function CameraSettingsScreen() {
   }
 
   const handleMaxRecordingTimeChange = async (time: MaxRecordingTime) => {
-    if (!status.glasses_info?.model_name) {
+    if (!glassesConnected) {
       console.log("Cannot change max recording time - glasses not connected")
       return
     }
@@ -124,24 +124,24 @@ export default function CameraSettingsScreen() {
 
   if (!supportsCameraButton) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}}>
-        <Header leftIcon="caretLeft" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
+      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
+        <Header leftIcon="chevron-left" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
         <View style={themed($emptyStateContainer)}>
-          <Text style={themed($emptyStateText)}>Camera settings are not available for this device</Text>
+          <Text style={themed($emptyStateText)}>Camera settings are not available for this device.</Text>
         </View>
       </Screen>
     )
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}}>
-      <Header leftIcon="caretLeft" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
+    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
+      <Header leftIcon="chevron-left" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
       <ScrollView
-        style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}
+        style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}
         contentInsetAdjustmentBehavior="automatic">
         <View style={themed($settingsGroup)}>
           <Text style={themed($settingLabel)}>Action Button Photo Settings</Text>
-          <Text style={themed($settingSubtitle)}>Choose the resolution for photos taken with the action button</Text>
+          <Text style={themed($settingSubtitle)}>Choose the resolution for photos taken with the action button.</Text>
 
           {Object.entries(PHOTO_SIZE_LABELS).map(([value, label], index, arr) => {
             const isFirst = index === 0
@@ -152,17 +152,17 @@ export default function CameraSettingsScreen() {
                 style={[
                   themed($optionItem),
                   {
-                    borderTopLeftRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                    borderTopRightRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                    borderBottomLeftRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
-                    borderBottomRightRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
+                    borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
                     borderWidth: photoSize === value ? 1 : undefined,
                     borderColor: photoSize === value ? theme.colors.primary : undefined,
                   },
                 ]}
                 onPress={() => handlePhotoSizeChange(value as PhotoSize)}>
                 <Text style={themed($optionText)}>{label}</Text>
-                {photoSize === value && <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />}
+                {photoSize === value && <Icon name="check" size={24} color={theme.colors.primary} />}
               </TouchableOpacity>
             )
           })}
@@ -170,7 +170,9 @@ export default function CameraSettingsScreen() {
 
         <View style={themed($settingsGroup)}>
           <Text style={themed($settingLabel)}>Action Button Video Settings</Text>
-          <Text style={themed($settingSubtitle)}>Choose the resolution for videos recorded with the camera button</Text>
+          <Text style={themed($settingSubtitle)}>
+            Choose the resolution for videos recorded with the action button.
+          </Text>
 
           {Object.entries(VIDEO_RESOLUTION_LABELS).map(([value, label], index, arr) => {
             const isFirst = index === 0
@@ -181,19 +183,17 @@ export default function CameraSettingsScreen() {
                 style={[
                   themed($optionItem),
                   {
-                    borderTopLeftRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                    borderTopRightRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                    borderBottomLeftRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
-                    borderBottomRightRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
+                    borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                    borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
                     borderWidth: videoResolution === value ? 1 : undefined,
                     borderColor: videoResolution === value ? theme.colors.primary : undefined,
                   },
                 ]}
                 onPress={() => handleVideoResolutionChange(value as VideoResolution)}>
                 <Text style={themed($optionText)}>{label}</Text>
-                {videoResolution === value && (
-                  <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
-                )}
+                {videoResolution === value && <Icon name="check" size={24} color={theme.colors.primary} />}
               </TouchableOpacity>
             )
           })}
@@ -213,10 +213,10 @@ export default function CameraSettingsScreen() {
                   style={[
                     themed($optionItem),
                     {
-                      borderTopLeftRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                      borderTopRightRadius: isFirst ? theme.spacing.md : theme.spacing.xxs,
-                      borderBottomLeftRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
-                      borderBottomRightRadius: isLast ? theme.spacing.md : theme.spacing.xxs,
+                      borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                      borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+                      borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+                      borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
                       borderWidth: maxRecordingTime === parseInt(value.replace("m", "")) ? 1 : undefined,
                       borderColor:
                         maxRecordingTime === parseInt(value.replace("m", "")) ? theme.colors.primary : undefined,
@@ -225,22 +225,11 @@ export default function CameraSettingsScreen() {
                   onPress={() => handleMaxRecordingTimeChange(value as MaxRecordingTime)}>
                   <Text style={themed($optionText)}>{label}</Text>
                   {maxRecordingTime === parseInt(value.replace("m", "")) && (
-                    <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+                    <Icon name="check" size={24} color={theme.colors.primary} />
                   )}
                 </TouchableOpacity>
               )
             })}
-          </View>
-        )}
-
-        {devMode && (
-          <View style={{marginVertical: theme.spacing.sm}}>
-            <ToggleSetting
-              label="Recording LED"
-              subtitle="Shows when camera is active"
-              value={ledEnabled}
-              onValueChange={handleLedToggle}
-            />
           </View>
         )}
       </ScrollView>
@@ -252,30 +241,30 @@ const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
   paddingVertical: 14,
   paddingHorizontal: 16,
-  borderRadius: spacing.md,
-  marginVertical: spacing.sm,
+  borderRadius: spacing.s4,
+  marginVertical: spacing.s3,
 })
 
 const $settingLabel: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.text,
   fontSize: 14,
   fontWeight: "600",
-  marginBottom: spacing.xxs,
+  marginBottom: spacing.s1,
 })
 
 const $settingSubtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
   fontSize: 12,
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $optionItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  padding: spacing.md,
+  padding: spacing.s4,
   backgroundColor: colors.background,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $optionText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -287,7 +276,7 @@ const $emptyStateContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingVertical: spacing.xxl,
+  paddingVertical: spacing.s12,
   minHeight: 300,
 })
 

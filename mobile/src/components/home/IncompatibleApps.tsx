@@ -3,9 +3,9 @@ import {FlatList, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {translate} from "@/i18n"
 import {ClientAppletInterface, DUMMY_APPLET, useIncompatibleApps} from "@/stores/applets"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -14,11 +14,11 @@ const GRID_COLUMNS = 4
 
 export const IncompatibleApps: React.FC = () => {
   const {themed, theme} = useAppTheme()
-  const {status} = useCoreStatus()
   const incompatibleApps = useIncompatibleApps()
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   // Get connected glasses name
-  const glassesName = status.glasses_info?.model_name || status.core_info.default_wearable || "your glasses"
+  const glassesName = defaultWearable || "your glasses"
 
   // Prepare grid data with placeholders
   const gridData = useMemo(() => {
@@ -103,12 +103,12 @@ export const IncompatibleApps: React.FC = () => {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
 })
 
 const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
-  paddingHorizontal: spacing.xs,
+  marginBottom: spacing.s3,
+  paddingHorizontal: spacing.s2,
 })
 
 const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -119,27 +119,27 @@ const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $gridContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingBottom: spacing.sm,
+  paddingBottom: spacing.s3,
 })
 
 const $gridItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   alignItems: "center",
-  marginVertical: spacing.sm,
-  paddingHorizontal: spacing.xs,
+  marginVertical: spacing.s3,
+  paddingHorizontal: spacing.s2,
 })
 
 const $appContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   position: "relative",
   width: 64,
   height: 64,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $appIcon: ThemedStyle<ImageStyle> = ({spacing}) => ({
   width: 64,
   height: 64,
-  borderRadius: spacing.sm,
+  borderRadius: spacing.s3,
   opacity: 0.4,
 })
 
@@ -147,7 +147,7 @@ const $appNameIncompatible: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 12,
   color: colors.textDim,
   textAlign: "center",
-  marginTop: spacing.xxs,
+  marginTop: spacing.s1,
   lineHeight: 14,
   opacity: 0.6,
 })

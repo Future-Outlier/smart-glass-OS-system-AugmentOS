@@ -1,7 +1,8 @@
+import {View, TextStyle, ViewStyle} from "react-native"
+
 import {Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {View, TextStyle, ViewStyle} from "react-native"
 
 export function EmptyState() {
   const {themed} = useAppTheme()
@@ -27,8 +28,8 @@ const $emptyStateContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "flex-start",
   alignItems: "center",
-  paddingTop: spacing.xl,
-  paddingBottom: spacing.xxl,
+  paddingTop: spacing.s8,
+  paddingBottom: spacing.s12,
   minHeight: 200,
 })
 

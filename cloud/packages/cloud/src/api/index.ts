@@ -5,6 +5,7 @@ import userSettingsApi from "./client/user-settings.api";
 import feedbackApi from "./client/feedback.api";
 import minVersionApi from "./client/min-version.api";
 import clientAppsApi from "./client/client.apps.api";
+import deviceStateApi from "./client/device-state.api";
 import simpleStorageApi from "./sdk/simple-storage.api";
 import sdkVersionApi from "./sdk/sdk-version.api";
 import publicPermissionsApi from "./public/permission";
@@ -13,10 +14,15 @@ import publicPermissionsApi from "./public/permission";
 import consoleAccountApi from "./console/console.account.api";
 import orgsApi from "./console/orgs.api";
 import consoleAppsApi from "./console/console.apps.api";
+import cliKeysApi from "./console/cli-keys.api";
 import livekitApi from "./client/livekit.api";
 import calendarApi from "./client/calendar.api";
 import locationApi from "./client/location.api";
 import notificationsApi from "./client/notifications.api";
+
+// Middleware
+import { authenticateCLI } from "./middleware/cli.middleware";
+import { authenticateConsole } from "./middleware/console.middleware";
 
 // Legacy route modules (to be migrated gradually)
 import appRoutes from "../routes/apps.routes";
@@ -55,6 +61,7 @@ export function registerApi(app: Application) {
   app.use("/api/client/calendar", calendarApi);
   app.use("/api/client/location", locationApi);
   app.use("/api/client/notifications", notificationsApi);
+  app.use("/api/client/device/state", deviceStateApi);
 
   app.use("/api/sdk", sdkVersionApi);
   app.use("/api/sdk/version", sdkVersionApi);
@@ -62,10 +69,28 @@ export function registerApi(app: Application) {
 
   // Public APIs (no auth required)
   app.use("/api/public/permissions", publicPermissionsApi);
-  // Console mounts
-  app.use("/api/console/account", consoleAccountApi);
-  app.use("/api/console/orgs", orgsApi);
-  app.use("/api/console/apps", consoleAppsApi);
+  // Console mounts (with console auth middleware)
+  app.use("/api/console/account", authenticateConsole, consoleAccountApi);
+  app.use("/api/console/orgs", authenticateConsole, orgsApi);
+  app.use("/api/console/apps", authenticateConsole, consoleAppsApi);
+  app.use("/api/console/cli-keys", authenticateConsole, cliKeysApi);
+
+  // CLI mounts - reuse console routes with CLI auth + transform
+  // Transform middleware: req.cli → req.console (handlers expect req.console)
+  const transformCLIToConsole = (req: any, _res: any, next: any) => {
+    if (req.cli) {
+      req.console = { email: req.cli.email };
+    }
+    next();
+  };
+
+  app.use(
+    "/api/cli/apps",
+    authenticateCLI,
+    transformCLIToConsole,
+    consoleAppsApi,
+  );
+  app.use("/api/cli/orgs", authenticateCLI, transformCLIToConsole, orgsApi);
 
   // Legacy mounts (to be migrated)
   app.use("/api/apps", appRoutes);

@@ -70,8 +70,8 @@ export class UserSession {
   public lastAudioTimestamp?: number;
 
   // Audio
-  public bufferedAudio: ArrayBufferLike[] = [];
-  public recentAudioBuffer: { data: ArrayBufferLike; timestamp: number }[] = [];
+  public bufferedAudio: Buffer[] = [];
+  public recentAudioBuffer: Buffer[] = [];
 
   // Cleanup state
   // When disconnected, this will be set to a timer that will clean up the session after the grace period, if user does not reconnect.
@@ -109,12 +109,6 @@ export class UserSession {
 
   // SAFETY FLAG: Set to false to disable pong timeout behavior entirely
   private static readonly PONG_TIMEOUT_ENABLED = true; // Enabled to track phone connection reliability in production
-
-  // Connection state tracking
-  public phoneConnected: boolean = false;
-  public glassesConnected: boolean = false;
-  public glassesModel?: string;
-  public lastGlassesStatusUpdate?: Date;
 
   // Audio play request tracking - maps requestId to packageName
   public audioPlayRequestMapping: Map<string, string> = new Map();
@@ -179,58 +173,6 @@ export class UserSession {
   }
 
   /**
-   * Update tracked glasses connection state and optionally log source of the update.
-   */
-  public setGlassesConnectionState(
-    isConnected: boolean,
-    modelName?: string | null,
-    options: { source?: string } = {},
-  ): void {
-    const normalizedModel =
-      isConnected && modelName
-        ? String(modelName).trim() || undefined
-        : undefined;
-    const previousState = this.glassesConnected;
-    const previousModel = this.glassesModel;
-
-    this.glassesConnected = isConnected;
-    this.glassesModel = normalizedModel;
-    this.lastGlassesStatusUpdate = new Date();
-
-    if (previousState !== isConnected || previousModel !== normalizedModel) {
-      this.logger.info(
-        {
-          source: options.source || "unknown",
-          previousState,
-          newState: isConnected,
-          previousModel,
-          newModel: normalizedModel,
-        },
-        "[UserSession:setGlassesConnectionState] Updated glasses connection state",
-      );
-    }
-  }
-
-  /**
-   * Handle phone WebSocket closure by resetting connection state trackers.
-   */
-  public handlePhoneConnectionClosed(reason?: string): void {
-    const logContext = { reason };
-    const logMessage =
-      "[UserSession] Phone WebSocket closed, marking connections as disconnected";
-    if (reason && reason.includes("ping_timeout")) {
-      this.logger.warn(logContext, logMessage);
-    } else {
-      this.logger.info(logContext, logMessage);
-    }
-    this.phoneConnected = false;
-    this.setGlassesConnectionState(false, null, {
-      source: reason ? `websocket_close:${reason}` : "websocket_close",
-    });
-    this.clearGlassesHeartbeat();
-  }
-
-  /**
    * Set up heartbeat for glasses WebSocket connection
    */
   private setupGlassesHeartbeat(): void {
@@ -258,7 +200,6 @@ export class UserSession {
     // Set up pong handler with timeout detection
     this.websocket.on("pong", () => {
       this.lastPongTime = Date.now();
-      this.phoneConnected = true; // Phone is alive if we got pong
 
       if (LOG_PING_PONG) {
         this.logger.debug(
@@ -275,7 +216,6 @@ export class UserSession {
 
     // Initialize pong tracking
     this.lastPongTime = Date.now();
-    this.phoneConnected = true;
 
     // Only start timeout tracking if enabled
     if (UserSession.PONG_TIMEOUT_ENABLED) {
@@ -333,9 +273,6 @@ export class UserSession {
         `[UserSession:pongTimeout] Phone connection timeout - no pong for ${timeSinceLastPong}ms from user ${this.userId}`,
       );
 
-      // Mark connections as dead
-      this.handlePhoneConnectionClosed("ping_timeout");
-
       // Close the zombie WebSocket connection
       if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
         this.logger.info(
@@ -367,14 +304,6 @@ export class UserSession {
     this.logger.debug(
       `[UserSession:updateWebSocket] WebSocket and heartbeat updated for user ${this.userId}`,
     );
-  }
-
-  /**
-   * Update the current glasses model and refresh capabilities
-   * Delegate to DeviceManager to centralize model/capability handling.
-   */
-  async updateGlassesModel(modelName: string): Promise<void> {
-    await this.deviceManager.setCurrentModel(modelName);
   }
 
   /**

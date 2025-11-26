@@ -26,7 +26,7 @@ def asgKeyPassword = project.hasProperty("ASG_KEY_PASSWORD") ? project.property(
 def asgKeyAlias = project.hasProperty("ASG_KEY_ALIAS") ? project.property("ASG_KEY_ALIAS") : "asg"
 
 android {
-    namespace 'com.augmentos.asg_client'
+    namespace 'com.mentra.asg_client'
     compileSdk 34
 
 
@@ -71,12 +71,12 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.augmentos.asg_client"
+        applicationId "com.mentra.asg_client"
 
         minSdk 28
         targetSdk 33
-        versionCode 14
-        versionName "14.0"
+        versionCode 16
+        versionName "16.0"
 
         ndk {
             abiFilters "armeabi-v7a", "arm64-v8a"

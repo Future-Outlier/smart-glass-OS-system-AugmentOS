@@ -2,9 +2,9 @@
  * Custom image viewer with proper zoom and pan
  */
 
+import {Image} from "expo-image"
 import {useState} from "react"
 import {View, TouchableOpacity, Modal, Dimensions, StatusBar} from "react-native"
-import {Image} from "expo-image"
 import {GestureDetector, Gesture, GestureHandlerRootView} from "react-native-gesture-handler"
 import Animated, {
   useAnimatedStyle,
@@ -16,10 +16,11 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated"
-import {PhotoInfo} from "../../../types/asg"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
-import {spacing} from "@/theme"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
+
+import {spacing} from "@/theme"
+import {PhotoInfo} from "@/types/asg"
 
 const AnimatedImage = Animated.createAnimatedComponent(Image)
 const AnimatedView = Animated.View
@@ -255,15 +256,15 @@ const $header = {
   flexDirection: "row" as const,
   alignItems: "center" as const,
   justifyContent: "space-between" as const,
-  paddingHorizontal: spacing.md,
-  paddingBottom: spacing.sm,
+  paddingHorizontal: spacing.s4,
+  paddingBottom: spacing.s3,
   backgroundColor: "rgba(0,0,0,0.7)",
 }
 
 const $closeButton = {
-  padding: spacing.sm,
+  padding: spacing.s3,
 }
 
 const $actionButton = {
-  padding: spacing.sm,
+  padding: spacing.s3,
 }

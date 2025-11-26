@@ -1,30 +1,3 @@
-import {Header, PillButton, Screen, Text} from "@/components/ignite"
-import AppIcon from "@/components/misc/AppIcon"
-import Divider from "@/components/misc/Divider"
-import LoadingOverlay from "@/components/misc/LoadingOverlay"
-import SettingsSkeleton from "@/components/misc/SettingsSkeleton"
-import GroupTitle from "@/components/settings/GroupTitle"
-import {InfoRow} from "@/components/settings/InfoRow"
-import MultiSelectSetting from "@/components/settings/MultiSelectSetting"
-import NumberSetting from "@/components/settings/NumberSetting"
-import SelectSetting from "@/components/settings/SelectSetting"
-import SelectWithSearchSetting from "@/components/settings/SelectWithSearchSetting"
-import {SettingsGroup} from "@/components/settings/SettingsGroup"
-import SliderSetting from "@/components/settings/SliderSetting"
-import TextSettingNoSave from "@/components/settings/TextSettingNoSave"
-import TimeSetting from "@/components/settings/TimeSetting"
-import TitleValueSetting from "@/components/settings/TitleValueSetting"
-import ToggleSetting from "@/components/settings/ToggleSetting"
-import ActionButton from "@/components/ui/ActionButton"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {translate} from "@/i18n"
-import restComms from "@/services/RestComms"
-import {useApplets, useRefreshApplets, useStartApplet, useStopApplet} from "@/stores/applets"
-import {useSettingsStore} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
-import {showAlert} from "@/utils/AlertUtils"
-import {askPermissionsUI} from "@/utils/PermissionsUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import {useFocusEffect, useLocalSearchParams} from "expo-router"
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react"
@@ -32,6 +5,33 @@ import {Animated, BackHandler, TextStyle, View, ViewStyle} from "react-native"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import Toast from "react-native-toast-message"
 import FontAwesome from "react-native-vector-icons/FontAwesome"
+
+import {Header, PillButton, Screen, Text} from "@/components/ignite"
+import AppIcon from "@/components/misc/AppIcon"
+import LoadingOverlay from "@/components/misc/LoadingOverlay"
+import SettingsSkeleton from "@/components/misc/SettingsSkeleton"
+import GroupTitle from "@/components/settings/GroupTitle"
+import MultiSelectSetting from "@/components/settings/MultiSelectSetting"
+import NumberSetting from "@/components/settings/NumberSetting"
+import SelectSetting from "@/components/settings/SelectSetting"
+import SelectWithSearchSetting from "@/components/settings/SelectWithSearchSetting"
+import SliderSetting from "@/components/settings/SliderSetting"
+import TextSettingNoSave from "@/components/settings/TextSettingNoSave"
+import TimeSetting from "@/components/settings/TimeSetting"
+import TitleValueSetting from "@/components/settings/TitleValueSetting"
+import ToggleSetting from "@/components/settings/ToggleSetting"
+import Divider from "@/components/ui/Divider"
+import InfoCardSection from "@/components/ui/InfoCard"
+import {RouteButton} from "@/components/ui/RouteButton"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import restComms from "@/services/RestComms"
+import {useApplets, useRefreshApplets, useStartApplet, useStopApplet} from "@/stores/applets"
+import {useSettingsStore} from "@/stores/settings"
+import {$styles, ThemedStyle} from "@/theme"
+import {showAlert} from "@/utils/AlertUtils"
+import {askPermissionsUI} from "@/utils/PermissionsUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function AppSettings() {
   const {packageName, appName: appNameParam} = useLocalSearchParams()
@@ -123,7 +123,8 @@ export default function AppSettings() {
         if (!proceed) return
       }
 
-      if (!(await restComms.checkAppHealthStatus(appInfo.packageName))) {
+      const health = await restComms.checkAppHealthStatus(appInfo.packageName)
+      if (health.is_error() || !health.value) {
         showAlert(translate("errors:appNotOnlineTitle"), translate("errors:appNotOnlineMessage"), [
           {text: translate("common:ok")},
         ])
@@ -507,11 +508,11 @@ export default function AppSettings() {
   }
 
   return (
-    <Screen preset="fixed" safeAreaEdges={[]} style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" safeAreaEdges={[]} style={themed($styles.screen)}>
       {isUninstalling && <LoadingOverlay message={`Uninstalling ${appInfo?.name || appName}...`} />}
 
       <View>
-        <Header title="" leftIcon="caretLeft" onLeftPress={() => goBack()} />
+        <Header title="" leftIcon="chevron-left" onLeftPress={() => goBack()} />
         <Animated.View
           style={{
             opacity: headerOpacity,
@@ -542,13 +543,13 @@ export default function AppSettings() {
         style={{flex: 1}}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}> */}
       <Animated.ScrollView
-        style={{marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}
+        style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event([{nativeEvent: {contentOffset: {y: scrollY}}}], {useNativeDriver: true})}
         scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled">
-        <View style={{gap: theme.spacing.lg}}>
+        <View style={{gap: theme.spacing.s6}}>
           {/* Combined App Info and Action Section */}
           <View style={themed($topSection)}>
             <AppIcon app={appInfo} style={themed($appIconLarge)} />
@@ -565,7 +566,7 @@ export default function AppSettings() {
                   text={appInfo.running ? "Stop" : "Start"}
                   onPress={handleStartStopApp}
                   variant="icon"
-                  buttonStyle={{paddingHorizontal: theme.spacing.lg, minWidth: 80}}
+                  buttonStyle={{paddingHorizontal: theme.spacing.s6, minWidth: 80}}
                 />
               </View>
             </View>
@@ -576,11 +577,11 @@ export default function AppSettings() {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                gap: theme.spacing.xs,
+                gap: theme.spacing.s2,
                 backgroundColor: theme.colors.errorBackground,
                 borderRadius: 8,
-                paddingHorizontal: theme.spacing.sm,
-                paddingVertical: theme.spacing.xs,
+                paddingHorizontal: theme.spacing.s3,
+                paddingVertical: theme.spacing.s2,
               }}>
               <FontAwesome name="warning" size={16} color={theme.colors.error} />
               <Text style={{color: theme.colors.error, flex: 1}}>
@@ -621,40 +622,36 @@ export default function AppSettings() {
 
           {/* Additional Information Section */}
           <View>
-            <Text
-              style={[
-                themed($groupTitle),
+            <Text style={themed($sectionTitleText)}>App info</Text>
+            <InfoCardSection
+              items={[
                 {
-                  marginTop: theme.spacing.md,
-                  marginBottom: theme.spacing.xs,
-                  paddingHorizontal: theme.spacing.md,
-                  fontSize: 16,
-                  fontFamily: "Montserrat-Regular",
-                  color: theme.colors.textDim,
+                  label: "Company",
+                  value: serverAppInfo?.organization?.name || "—",
                 },
-              ]}>
-              Other
-            </Text>
-            <SettingsGroup>
-              <View style={{paddingVertical: theme.spacing.sm}}>
-                <Text style={{fontSize: 15, color: theme.colors.text}}>Additional Information</Text>
-              </View>
-              <InfoRow label="Company" value={serverAppInfo?.organization?.name || "-"} showDivider={false} />
-              <InfoRow label="Website" value={serverAppInfo?.organization?.website || "-"} showDivider={false} />
-              <InfoRow label="Contact" value={serverAppInfo?.organization?.contactEmail || "-"} showDivider={false} />
-              <InfoRow
-                label="App Type"
-                value={
-                  appInfo?.type === "standard" ? "Foreground" : appInfo?.type === "background" ? "Background" : "-"
-                }
-                showDivider={false}
-              />
-              <InfoRow label="Package Name" value={packageName} showDivider={false} />
-            </SettingsGroup>
+                {
+                  label: "Website",
+                  value: serverAppInfo?.organization?.website || "—",
+                },
+                {
+                  label: "Contact",
+                  value: serverAppInfo?.organization?.contactEmail || "—",
+                },
+                {
+                  label: "App Type",
+                  value:
+                    appInfo?.type === "standard" ? "Foreground" : appInfo?.type === "background" ? "Background" : "—",
+                },
+                {
+                  label: "Package Name",
+                  value: packageName,
+                },
+              ]}
+            />
           </View>
 
           {/* Uninstall Button at the bottom */}
-          <ActionButton
+          <RouteButton
             label="Uninstall"
             variant="destructive"
             onPress={() => {
@@ -678,7 +675,7 @@ export default function AppSettings() {
 
 const $topSection: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  gap: spacing.lg,
+  gap: spacing.s6,
   alignItems: "center",
 })
 
@@ -688,12 +685,12 @@ const $rightColumn: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $textContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  gap: spacing.xxs,
+  gap: spacing.s1,
 })
 
 const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignSelf: "flex-start",
-  marginTop: spacing.sm,
+  marginTop: spacing.s3,
 })
 
 const $appIconLarge: ThemedStyle<ViewStyle> = () => ({
@@ -716,8 +713,8 @@ const $versionText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $descriptionSection: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingVertical: spacing.xs,
-  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.s2,
+  paddingHorizontal: spacing.s4,
 })
 
 const $descriptionText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -728,14 +725,14 @@ const $descriptionText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $sectionContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  borderRadius: spacing.sm,
+  borderRadius: spacing.s3,
   borderWidth: 1,
-  padding: spacing.md,
+  padding: spacing.s4,
   elevation: 2,
   shadowColor: "#000",
   shadowOffset: {width: 0, height: 2},
   shadowOpacity: 0.1,
-  shadowRadius: spacing.xxs,
+  shadowRadius: spacing.s1,
   backgroundColor: colors.background,
   borderColor: colors.border,
 })
@@ -744,7 +741,7 @@ const $sectionTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 18,
   fontWeight: "bold",
   fontFamily: "Montserrat-Bold",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
   color: colors.text,
 })
 
@@ -756,7 +753,7 @@ const $instructionsText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $settingsContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  gap: spacing.md,
+  gap: spacing.s4,
 })
 
 const $noSettingsText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -764,8 +761,18 @@ const $noSettingsText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontFamily: "Montserrat-Regular",
   fontStyle: "italic",
   textAlign: "center",
-  padding: spacing.md,
+  padding: spacing.s4,
   color: colors.textDim,
 })
 
-const $groupTitle: ThemedStyle<TextStyle> = () => ({})
+const _$groupTitle: ThemedStyle<TextStyle> = () => ({})
+
+const $sectionTitleText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+  fontSize: 14,
+  fontWeight: "400",
+  color: colors.text,
+  lineHeight: 20,
+  letterSpacing: 0,
+  marginBottom: spacing.s2,
+  marginTop: spacing.s3,
+})

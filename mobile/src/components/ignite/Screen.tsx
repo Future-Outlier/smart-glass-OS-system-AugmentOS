@@ -12,11 +12,11 @@ import {
   View,
   ViewStyle,
 } from "react-native"
-import {$styles} from "@/theme"
-import {ExtendedEdge, useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
 import {KeyboardAwareScrollView} from "react-native-keyboard-controller"
+
+import {$styles} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import BackgroundGradient from "@/components/ui/BackgroundGradient"
+import {ExtendedEdge, useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
 
 export const DEFAULT_BOTTOM_OFFSET = 50
 
@@ -255,18 +255,18 @@ export function Screen(props: ScreenProps) {
 
   return (
     <View style={[$containerStyle, {backgroundColor: backgroundColor || colors.background} /*, $containerInsets*/]}>
-      <BackgroundGradient colors={props.gradientColors}>
-        <View style={[$containerInsets, {flex: 1}]}>
-          <StatusBar style={statusBarStyle || (themeContext === "dark" ? "light" : "dark")} {...StatusBarProps} />
-          <KeyboardAvoidingView
-            behavior={isIos ? "padding" : "height"}
-            keyboardVerticalOffset={keyboardOffset}
-            {...KeyboardAvoidingViewProps}
-            style={[$styles.flex1, KeyboardAvoidingViewProps?.style]}>
-            {isNonScrolling(props.preset) ? <ScreenWithoutScrolling {...props} /> : <ScreenWithScrolling {...props} />}
-          </KeyboardAvoidingView>
-        </View>
-      </BackgroundGradient>
+      {/*<BackgroundGradient colors={props.gradientColors}>*/}
+      <View style={[$containerInsets, {flex: 1}]}>
+        <StatusBar style={statusBarStyle || (themeContext === "dark" ? "light" : "dark")} {...StatusBarProps} />
+        <KeyboardAvoidingView
+          behavior={isIos ? "padding" : "height"}
+          keyboardVerticalOffset={keyboardOffset}
+          {...KeyboardAvoidingViewProps}
+          style={[$styles.flex1, KeyboardAvoidingViewProps?.style]}>
+          {isNonScrolling(props.preset) ? <ScreenWithoutScrolling {...props} /> : <ScreenWithScrolling {...props} />}
+        </KeyboardAvoidingView>
+      </View>
+      {/*</BackgroundGradient>*/}
     </View>
   )
 }

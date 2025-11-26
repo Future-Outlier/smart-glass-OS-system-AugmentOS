@@ -1,29 +1,33 @@
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {AppletInterface} from "@/types/AppletTypes"
-import {useSettingsStore} from "@/stores/settings"
+import axios, {AxiosInstance, AxiosRequestConfig} from "axios"
+import {AsyncResult, Result, result as Res} from "typesafe-ts"
 
-interface ApiResponse<T = any> {
-  success?: boolean
-  data?: T
-  error?: string
-  token?: string
-  [key: string]: any
-}
+import {GlassesInfo} from "@/stores/glasses"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+
+import {AppletInterface} from "@/../../cloud/packages/types/src"
 
 interface RequestConfig {
   method: "GET" | "POST" | "DELETE"
-  url: string
-  headers?: Record<string, string>
+  endpoint: string
   data?: any
   params?: any
+  requiresAuth?: boolean
 }
 
 class RestComms {
   private static instance: RestComms
   private readonly TAG = "RestComms"
   private coreToken: string | null = null
+  private axiosInstance: AxiosInstance
 
-  private constructor() {}
+  private constructor() {
+    this.axiosInstance = axios.create({
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+  }
 
   public static getInstance(): RestComms {
     if (!RestComms.instance) {
@@ -52,10 +56,11 @@ class RestComms {
   }
 
   // Helper Methods
-  private validateToken(): void {
+  private validateToken(): Result<void, Error> {
     if (!this.coreToken) {
-      throw new Error("No core token available for authentication")
+      return Res.error(new Error("No core token available for authentication"))
     }
+    return Res.ok(undefined)
   }
 
   private createAuthHeaders(): Record<string, string> {
@@ -65,306 +70,353 @@ class RestComms {
     }
   }
 
-  private buildUrlWithParams(url: string, params?: any): string {
-    if (!params) return url
+  private makeRequest<T>(config: RequestConfig): AsyncResult<T, Error> {
+    const {method, endpoint, data, params, requiresAuth = true} = config
 
-    const queryString = Object.keys(params)
-      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
-      .join("&")
-
-    return `${url}?${queryString}`
-  }
-
-  private async makeRequest<T = any>(config: RequestConfig): Promise<T> {
-    const {method, url, headers, data, params} = config
-    try {
-      const fullUrl = this.buildUrlWithParams(url, params)
-
-      const fetchConfig: RequestInit = {
-        method,
-        headers: headers || {},
-      }
-
-      // Add body for POST and DELETE requests if data exists
-      if ((method === "POST" || method === "DELETE") && data) {
-        fetchConfig.body = JSON.stringify(data)
-      }
-
-      const response = await fetch(fullUrl, fetchConfig)
-      status = response.status
-
-      if (!response.ok) {
-        // Try to parse error response
-        let errorMessage = `Bad response: ${response.statusText}`
-        try {
-          const errorData = await response.json()
-          if (errorData.error) {
-            errorMessage = errorData.error
-          }
-        } catch {
-          // If we can't parse the error response, use the default message
-        }
-        return {
-          success: false,
-          error: errorMessage,
-        } as T
-      }
-
-      // Parse JSON response
-      const responseData = await response.json()
-      return responseData as T
-    } catch (error: any) {
-      const errorMessage = error.message || error
-      // console.error(`${this.TAG}: ${method} to ${url} failed with status ${status}`, errorMessage)
-      return {
-        success: false,
-        error: errorMessage,
-        data: null,
-      } as T
-    }
-  }
-
-  private async authenticatedRequest<T = any>(
-    method: "GET" | "POST" | "DELETE",
-    endpoint: string,
-    data?: any,
-    params?: any,
-  ): Promise<T> {
-    try {
-      this.validateToken()
-    } catch (error: any) {
-      const errorMessage = error.message || error
-      return {
-        success: false,
-        error: errorMessage,
-        data: null,
-      } as T
-    }
-
-    const baseUrl = await useSettingsStore.getState().getRestUrl()
+    const baseUrl = useSettingsStore.getState().getRestUrl()
     const url = `${baseUrl}${endpoint}`
-
     console.log(`REST ${method}:${url}`)
 
-    const config: RequestConfig = {
+    const headers = requiresAuth ? this.createAuthHeaders() : {"Content-Type": "application/json"}
+
+    const axiosConfig: AxiosRequestConfig = {
       method,
       url,
-      headers: this.createAuthHeaders(),
+      headers,
       data,
       params,
     }
 
-    return this.makeRequest<T>(config)
+    return Res.try_async(async () => {
+      const res = await this.axiosInstance.request<T>(axiosConfig)
+      return res.data
+    })
   }
 
-  private async request<T = any>(
-    method: "GET" | "POST" | "DELETE",
-    endpoint: string,
-    data?: any,
-    params?: any,
-  ): Promise<T> {
-    const baseUrl = await useSettingsStore.getState().getRestUrl()
-    const url = `${baseUrl}${endpoint}`
-    const config: RequestConfig = {
-      method,
-      url,
-      headers: this.createAuthHeaders(),
-      data,
-      params,
+  private authenticatedRequest<T>(config: RequestConfig): AsyncResult<T, Error> {
+    let res = this.validateToken()
+    if (res.is_error()) {
+      return Res.error_async(res.error)
     }
-    return this.makeRequest<T>(config)
+    return this.makeRequest<T>({...config})
+  }
+
+  private unauthenticatedRequest<T>(config: RequestConfig): AsyncResult<T, Error> {
+    return this.makeRequest<T>({...config, requiresAuth: false})
   }
 
   // Public API Methods
 
-  public async getMinimumClientVersion(): Promise<ApiResponse<{required: string; recommended: string}>> {
-    const response = await this.request("GET", "/api/client/min-version")
-    return response.data
-  }
-
-  public async checkAppHealthStatus(packageName: string): Promise<boolean> {
-    // GET the app's /health endpoint
-    try {
-      const baseUrl = await useSettingsStore.getState().getRestUrl()
-      // POST /api/app-uptime/app-pkg-health-check with body { "packageName": packageName }
-      const healthUrl = `${baseUrl}/api/app-uptime/app-pkg-health-check`
-      const healthResponse = await fetch(healthUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({packageName}),
-      })
-      const healthData = await healthResponse.json()
-      return healthData.success
-    } catch (error) {
-      console.error("AppStatusProvider: Error checking app health status:", error)
-      return false
+  public getMinimumClientVersion(): AsyncResult<{required: string; recommended: string}, Error> {
+    interface Response {
+      success: boolean
+      data: {required: string; recommended: string}
     }
+    const config: RequestConfig = {
+      method: "GET",
+      endpoint: "/api/client/min-version",
+    }
+    const res = this.unauthenticatedRequest<Response>(config)
+    return res.map(response => response.data)
   }
 
-  // App Management
-  // public async getApps(): Promise<AppletInterface[]> {
-  //   console.log(`${this.TAG}: getApps() called`)
-  //   const response = await this.authenticatedRequest<ApiResponse<AppletInterface[]>>("GET", "/api/apps/")
-  //   if (!response.success || !response.data) {
-  //     throw new Error("Invalid response format")
-  //   }
-  //   return response.data
-  // }
-
-  public async getApplets(): Promise<AppletInterface[]> {
-    // console.log(`${this.TAG}: getApps() called`)
-
-    const response = await this.authenticatedRequest<ApiResponse<AppletInterface[]>>("GET", "/api/client/apps")
-
-    if (!response.success || !response.data) {
-      // console.error("Invalid response format calling getApps()")
-      return []
+  public checkAppHealthStatus(packageName: string): AsyncResult<boolean, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/app-uptime/app-pkg-health-check",
+      data: {packageName},
     }
 
-    return response.data
-  }
-
-  public async startApp(packageName: string): Promise<any> {
-    try {
-      const response = await this.authenticatedRequest("POST", `/apps/${packageName}/start`)
-      console.log("App started successfully:", packageName)
-      return response
-    } catch (error: any) {
-      GlobalEventEmitter.emit("SHOW_BANNER", {
-        message: `Could not connect to ${packageName}`,
-        type: "error",
-      })
-      throw error
+    interface Response {
+      success: boolean
     }
+
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.success)
   }
 
-  public async stopApp(packageName: string): Promise<any> {
-    const response = await this.authenticatedRequest("POST", `/apps/${packageName}/stop`)
-    console.log("App stopped successfully:", packageName)
-    return response
+  public getApplets(): AsyncResult<AppletInterface[], Error> {
+    interface Response {
+      success: boolean
+      data: AppletInterface[]
+    }
+    const config: RequestConfig = {
+      method: "GET",
+      endpoint: "/api/client/apps",
+    }
+    let res = this.authenticatedRequest<Response>(config)
+    let data = res.map(response => response.data)
+    return data
   }
 
-  public async uninstallApp(packageName: string): Promise<any> {
-    const response = await this.authenticatedRequest("POST", `/api/apps/uninstall/${packageName}`)
-    console.log("App uninstalled successfully:", packageName)
-    return response
+  public startApp(packageName: string): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: `/apps/${packageName}/start`,
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
+  }
+
+  public stopApp(packageName: string): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: `/apps/${packageName}/stop`,
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
+  }
+
+  public uninstallApp(packageName: string): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: `/api/apps/uninstall/${packageName}`,
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
   // App Settings
-  public async getAppSettings(appName: string): Promise<any> {
-    return this.authenticatedRequest("GET", `/appsettings/${appName}`)
+  public getAppSettings(appName: string): AsyncResult<any, Error> {
+    const config: RequestConfig = {
+      method: "GET",
+      endpoint: `/appsettings/${appName}`,
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.data)
   }
 
-  public async updateAppSetting(appName: string, update: {key: string; value: any}): Promise<any> {
-    return this.authenticatedRequest("POST", `/appsettings/${appName}`, update)
+  public updateAppSetting(appName: string, update: {key: string; value: any}): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: `/appsettings/${appName}`,
+      data: update,
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.data)
   }
 
-  public async exchangeToken(supabaseToken: string): Promise<string> {
-    const baseUrl = await useSettingsStore.getState().getRestUrl()
-    const url = `${baseUrl}/auth/exchange-token`
+  public updateGlassesState(state: Partial<GlassesInfo>): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/client/device/state",
+      data: state,
+    }
+    interface Response {
+      success: boolean
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
+  }
+
+  public exchangeToken(token: string): AsyncResult<string, Error> {
+    const isChina: string = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
 
     const config: RequestConfig = {
       method: "POST",
-      url,
-      headers: {"Content-Type": "application/json"},
-      data: {supabaseToken},
+      endpoint: "/auth/exchange-token",
+      data: {
+        supabaseToken: !isChina ? token : undefined,
+        authingToken: isChina ? token : undefined,
+      },
     }
-
-    const response = await this.makeRequest<ApiResponse>(config)
-
-    if (!response.coreToken) {
-      throw new Error("No core token in response")
+    interface Response {
+      coreToken: string
     }
+    let res = this.makeRequest<Response>(config)
+    const coreTokenResult: AsyncResult<string, Error> = res.map(response => response.coreToken)
 
-    this.setCoreToken(response.coreToken)
-    return response.coreToken
-  }
-
-  public async generateWebviewToken(packageName: string, endpoint: string = "generate-webview-token"): Promise<string> {
-    const response = await this.authenticatedRequest<ApiResponse>("POST", `/api/auth/${endpoint}`, {packageName})
-
-    if (!response.success || !response.token) {
-      throw new Error(`Failed to generate webview token: ${response.error || "Unknown error"}`)
-    }
-
-    console.log(`Received temporary webview token for ${packageName}`)
-    return response.token
-  }
-
-  public async hashWithApiKey(stringToHash: string, packageName: string): Promise<string> {
-    const response = await this.authenticatedRequest<ApiResponse>("POST", "/api/auth/hash-with-api-key", {
-      stringToHash,
-      packageName,
+    // set the core token in the store:
+    return coreTokenResult.and_then((coreToken: string) => {
+      this.setCoreToken(coreToken)
+      return Res.ok(coreToken)
     })
+  }
 
-    if (!response.success || !response.hash) {
-      throw new Error(`Failed to generate hash: ${response.error || "Unknown error"}`)
+  public generateWebviewToken(
+    packageName: string,
+    endpoint: string = "generate-webview-token",
+  ): AsyncResult<string, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: `/api/auth/${endpoint}`,
+      data: {packageName},
     }
+    interface Response {
+      token: string
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.token)
+  }
 
-    return response.hash
+  public hashWithApiKey(stringToHash: string, packageName: string): AsyncResult<string, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/auth/hash-with-api-key",
+      data: {stringToHash, packageName},
+    }
+    interface Response {
+      hash: string
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.hash)
   }
 
   // Account Management
-  public async requestAccountDeletion(): Promise<any> {
-    return this.authenticatedRequest("POST", "/api/account/request-deletion")
+  public requestAccountDeletion(): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/account/request-deletion",
+    }
+    interface Response {
+      success: boolean
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
-  public async confirmAccountDeletion(requestId: string, confirmationCode: string): Promise<any> {
-    return this.authenticatedRequest("DELETE", "/api/account/confirm-deletion", {requestId, confirmationCode})
+  public confirmAccountDeletion(requestId: string, confirmationCode: string): AsyncResult<any, Error> {
+    const config: RequestConfig = {
+      method: "DELETE",
+      endpoint: "/api/account/confirm-deletion",
+      data: {requestId, confirmationCode},
+    }
+    interface Response {
+      success: boolean
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res
   }
 
-  public async getLivekitUrlAndToken(): Promise<{url: string; token: string}> {
-    const response = await this.authenticatedRequest("GET", "/api/client/livekit/token")
-    const {url, token} = response.data
-    return {url, token}
-  }
+  public getLivekitUrlAndToken(): AsyncResult<{url: string; token: string}, Error> {
+    const config: RequestConfig = {
+      method: "GET",
+      endpoint: "/api/client/livekit/token",
+    }
+    interface Response {
+      // url: string
+      // token: string
+      success: boolean
+      data: {url: string; token: string}
+    }
+    const res = this.authenticatedRequest<Response>(config)
 
-  // Data Export
-  public async requestDataExport(): Promise<any> {
-    return this.authenticatedRequest("POST", "/api/account/request-export", {format: "json"})
-  }
+    // ;(async () => {
+    //   console.log("result@@@@@", await result)
+    //   // const response = await Res.value
+    //   // return {url: response.url, token: response.token}
+    // })()
 
-  public async getExportStatus(exportId: string): Promise<any> {
-    return this.authenticatedRequest("GET", "/api/account/export-status", null, {id: exportId})
-  }
-
-  public async downloadExport(exportId: string): Promise<any> {
-    return this.authenticatedRequest("GET", `/api/account/download-export/${exportId}`)
+    return res.map(response => response.data)
   }
 
   // User Feedback & Settings
-  public async sendFeedback(feedbackBody: string): Promise<void> {
-    await this.authenticatedRequest("POST", "/api/client/feedback", {feedback: feedbackBody})
+  public sendFeedback(feedbackBody: string): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/client/feedback",
+      data: {feedback: feedbackBody},
+    }
+    interface Response {
+      success: boolean
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
-  public async writeUserSettings(settings: any): Promise<void> {
-    await this.authenticatedRequest("POST", "/api/client/user/settings", {settings})
+  public writeUserSettings(settings: any): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/client/user/settings",
+      data: {settings},
+    }
+    interface Response {
+      success: boolean
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
-  public async loadUserSettings(): Promise<any> {
-    return await this.authenticatedRequest("GET", "/api/client/user/settings")
+  public loadUserSettings(): AsyncResult<any, Error> {
+    const config: RequestConfig = {
+      method: "GET",
+      endpoint: "/api/client/user/settings",
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(response => response.data)
   }
 
   // Error Reporting
-  public async sendErrorReport(reportData: any): Promise<any> {
-    return this.authenticatedRequest("POST", "/app/error-report", reportData)
+  public sendErrorReport(reportData: any): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/app/error-report",
+      data: reportData,
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
   // Calendar
-  // { events: any[], calendars: any[] }
-  public async sendCalendarData(data: any): Promise<any> {
-    return this.authenticatedRequest("POST", "/api/client/calendar", data)
+  public sendCalendarData(data: any): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/client/calendar",
+      data: data,
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
   // Location
-  public async sendLocationData(data: any): Promise<any> {
-    return this.authenticatedRequest("POST", "/api/client/location", data)
+  public sendLocationData(data: any): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/client/location",
+      data: data,
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
   // Phone Notifications
-  public async sendPhoneNotification(data: {
+  public sendPhoneNotification(data: {
     notificationId: string
     app: string
     title: string
@@ -372,16 +424,36 @@ class RestComms {
     priority: string
     timestamp: number
     packageName: string
-  }): Promise<any> {
-    return this.authenticatedRequest("POST", "/api/client/notifications", data)
+  }): AsyncResult<any, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/client/notifications",
+      data: data,
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 
-  public async sendPhoneNotificationDismissed(data: {
+  public sendPhoneNotificationDismissed(data: {
     notificationId: string
     notificationKey: string
     packageName: string
-  }): Promise<any> {
-    return this.authenticatedRequest("POST", "/api/client/notifications/dismissed", data)
+  }): AsyncResult<any, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/client/notifications/dismissed",
+      data: data,
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
   }
 }
 

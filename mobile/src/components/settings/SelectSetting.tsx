@@ -10,9 +10,10 @@ import {
   Platform,
   TouchableWithoutFeedback,
 } from "react-native"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {Icon, Text} from "@/components/ignite"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
+
+import {Icon, Text} from "@/components/ignite"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 type Option = {
   label: string
@@ -66,11 +67,11 @@ const SelectSetting: React.FC<SelectSettingProps> = ({
           layout === "horizontal" ? styles.selectRow : styles.selectColumn,
           {
             backgroundColor: theme.colors.backgroundAlt,
-            borderRadius: theme.borderRadius.md,
-            borderWidth: theme.spacing.xxxs,
+            borderRadius: theme.spacing.s4,
+            borderWidth: theme.spacing.s0_5,
             borderColor: theme.colors.border,
-            paddingVertical: theme.spacing.md,
-            paddingHorizontal: theme.spacing.lg - theme.spacing.xxs, // 20px
+            paddingVertical: theme.spacing.s4,
+            paddingHorizontal: theme.spacing.s6 - theme.spacing.s1, // 20px
           },
         ]}
         onPress={() => setModalVisible(true)}
@@ -101,13 +102,13 @@ const SelectSetting: React.FC<SelectSettingProps> = ({
                     {
                       backgroundColor: theme.colors.backgroundAlt,
                       borderColor: theme.colors.border,
-                      borderWidth: theme.spacing.xxxs,
-                      padding: theme.spacing.md,
-                      borderRadius: theme.borderRadius.md,
-                      shadowRadius: theme.spacing.xs,
+                      borderWidth: theme.spacing.s0_5,
+                      padding: theme.spacing.s4,
+                      borderRadius: theme.spacing.s4,
+                      shadowRadius: theme.spacing.s2,
                     },
                   ]}>
-                  <View style={[styles.modalHeader, {marginBottom: theme.spacing.sm}]}>
+                  <View style={[styles.modalHeader, {marginBottom: theme.spacing.s3}]}>
                     <Text text={label} style={[styles.modalLabel, {color: theme.colors.textDim}]} />
                   </View>
                   <FlatList
@@ -121,8 +122,8 @@ const SelectSetting: React.FC<SelectSettingProps> = ({
                         style={[
                           styles.optionItem,
                           {
-                            paddingVertical: theme.spacing.sm,
-                            paddingRight: theme.spacing.md,
+                            paddingVertical: theme.spacing.s3,
+                            paddingRight: theme.spacing.s4,
                           },
                         ]}
                         onPress={() => {
@@ -136,7 +137,7 @@ const SelectSetting: React.FC<SelectSettingProps> = ({
                         )}
                         <Text
                           text={item.label}
-                          style={[styles.optionText, {color: theme.colors.text, flex: 1, marginLeft: theme.spacing.xs}]}
+                          style={[styles.optionText, {color: theme.colors.text, flex: 1, marginLeft: theme.spacing.s2}]}
                         />
                       </Pressable>
                     )}

@@ -1,49 +1,42 @@
-import {useState, useEffect, useRef, useCallback} from "react"
-import {View, TouchableOpacity, ScrollView, ViewStyle, TextStyle, BackHandler, Platform} from "react-native"
-import {Text} from "@/components/ignite"
 import {useRoute} from "@react-navigation/native"
+import CoreModule from "core"
+import {useEffect, useRef, useState} from "react"
+import {BackHandler, Platform, ScrollView, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import Icon from "react-native-vector-icons/FontAwesome"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import PairingDeviceInfo from "@/components/misc/PairingDeviceInfo"
-import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
-import GlassesPairingLoader from "@/components/misc/GlassesPairingLoader"
-import {getPairingGuide} from "@/components/pairing/GlassesPairingGuides"
-import {router} from "expo-router"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {Screen} from "@/components/ignite/Screen"
-import {ThemedStyle} from "@/theme"
+
+import {Button, Text} from "@/components/ignite"
 import {Header} from "@/components/ignite/Header"
 import {PillButton} from "@/components/ignite/PillButton"
+import {Screen} from "@/components/ignite/Screen"
+import GlassesPairingLoader from "@/components/misc/GlassesPairingLoader"
+import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
+import {AudioPairingPrompt} from "@/components/pairing/AudioPairingPrompt"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useGlassesStore} from "@/stores/glasses"
+import {$styles, ThemedStyle} from "@/theme"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import CoreModule from "core"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function GlassesPairingGuideScreen() {
-  const {replace, clearHistory} = useNavigationHistory()
-  const {status} = useCoreStatus()
+  const {replace, goBack} = useNavigationHistory()
   const route = useRoute()
   const {themed} = useAppTheme()
-  const {glassesModelName} = route.params as {glassesModelName: string}
+  const {glassesModelName, deviceName} = route.params as {glassesModelName: string; deviceName?: string}
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   const [pairingInProgress, setPairingInProgress] = useState(true)
+  const [audioPairingNeeded, setAudioPairingNeeded] = useState(false)
+  const [audioDeviceName, setAudioDeviceName] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const failureErrorRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasAlertShownRef = useRef(false)
   const backHandlerRef = useRef<any>(null)
-
-  const handleForgetGlasses = useCallback(async () => {
-    setPairingInProgress(false)
-    await CoreModule.disconnect()
-    await CoreModule.forget()
-    clearHistory()
-    router.dismissTo("/pairing/select-glasses-model")
-  }, [clearHistory])
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   useEffect(() => {
     if (Platform.OS !== "android") return
 
     const onBackPress = () => {
-      handleForgetGlasses()
+      goBack()
       return true
     }
 
@@ -59,7 +52,7 @@ export default function GlassesPairingGuideScreen() {
         backHandlerRef.current = null
       }
     }
-  }, [handleForgetGlasses])
+  }, [goBack])
 
   const handlePairFailure = (error: string) => {
     CoreModule.forget()
@@ -73,12 +66,38 @@ export default function GlassesPairingGuideScreen() {
     }
   }, [])
 
+  // Audio pairing event handlers
+  // Note: These events are only sent from iOS native code, so no need to gate on Platform.OS
+  useEffect(() => {
+    const handleAudioPairingNeeded = (data: {deviceName: string}) => {
+      console.log("Audio pairing needed:", data.deviceName)
+      setAudioPairingNeeded(true)
+      setAudioDeviceName(data.deviceName)
+      setPairingInProgress(false)
+    }
+
+    const handleAudioConnected = (data: {deviceName: string}) => {
+      console.log("Audio connected:", data.deviceName)
+      setAudioPairingNeeded(false)
+      // Continue to success screen after audio is connected
+      replace("/pairing/success", {glassesModelName: glassesModelName})
+    }
+
+    GlobalEventEmitter.on("AUDIO_PAIRING_NEEDED", handleAudioPairingNeeded)
+    GlobalEventEmitter.on("AUDIO_CONNECTED", handleAudioConnected)
+
+    return () => {
+      GlobalEventEmitter.off("AUDIO_PAIRING_NEEDED", handleAudioPairingNeeded)
+      GlobalEventEmitter.off("AUDIO_CONNECTED", handleAudioConnected)
+    }
+  }, [replace, glassesModelName])
+
   useEffect(() => {
     hasAlertShownRef.current = false
     setPairingInProgress(true)
 
     timerRef.current = setTimeout(() => {
-      if (!status.glasses_info?.model_name && !hasAlertShownRef.current) {
+      if (!glassesConnected && !hasAlertShownRef.current) {
         hasAlertShownRef.current = true
       }
     }, 30000)
@@ -90,19 +109,48 @@ export default function GlassesPairingGuideScreen() {
   }, [])
 
   useEffect(() => {
-    if (!status.core_info.puck_connected || !status.glasses_info?.model_name) return
+    if (!glassesConnected) return
+
+    // Don't navigate to home if we're waiting for audio pairing
+    if (audioPairingNeeded) return
 
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
-    replace("/(tabs)/home")
-  }, [status, replace])
+    replace("/pairing/success", {glassesModelName: glassesModelName})
+  }, [glassesConnected, replace, audioPairingNeeded, glassesModelName])
 
   if (pairingInProgress) {
     return (
-      <Screen preset="fixed" style={themed($screen)}>
+      <Screen preset="fixed" style={themed($styles.screen)}>
+        <Header leftIcon="chevron-left" onLeftPress={goBack} />
+        <View style={themed($pairingContainer)}>
+          <View style={themed($centerWrapper)}>
+            <GlassesPairingLoader glassesModelName={glassesModelName} deviceName={deviceName} onCancel={goBack} />
+          </View>
+          <Button
+            preset="secondary"
+            text="I need more help"
+            onPress={() => setShowTroubleshootingModal(true)}
+            style={themed($helpButtonBottom)}
+          />
+        </View>
+        <GlassesTroubleshootingModal
+          isVisible={showTroubleshootingModal}
+          onClose={() => setShowTroubleshootingModal(false)}
+          glassesModelName={glassesModelName}
+        />
+      </Screen>
+    )
+  }
+
+  // Show audio pairing prompt if needed
+  // Note: This will only trigger on iOS since the events are only sent from iOS native code
+  if (audioPairingNeeded && audioDeviceName) {
+    return (
+      <Screen preset="fixed" style={themed($styles.screen)}>
         <Header
-          leftIcon="caretLeft"
-          onLeftPress={handleForgetGlasses}
+          leftIcon="chevron-left"
+          onLeftPress={goBack}
           RightActionComponent={
             <PillButton
               text="Help"
@@ -112,7 +160,17 @@ export default function GlassesPairingGuideScreen() {
             />
           }
         />
-        <GlassesPairingLoader glassesModelName={glassesModelName} />
+        <ScrollView style={themed($scrollView)}>
+          <View style={themed($contentContainer)}>
+            <AudioPairingPrompt
+              deviceName={audioDeviceName}
+              onSkip={() => {
+                // Navigate first - don't update state which could cause race conditions
+                replace("/pairing/success", {glassesModelName: glassesModelName})
+              }}
+            />
+          </View>
+        </ScrollView>
         <GlassesTroubleshootingModal
           isVisible={showTroubleshootingModal}
           onClose={() => setShowTroubleshootingModal(false)}
@@ -125,8 +183,8 @@ export default function GlassesPairingGuideScreen() {
   return (
     <Screen preset="fixed" style={themed($screen)}>
       <Header
-        leftIcon="caretLeft"
-        onLeftPress={handleForgetGlasses}
+        leftIcon="chevron-left"
+        onLeftPress={goBack}
         RightActionComponent={
           <PillButton
             text="Help"
@@ -138,8 +196,6 @@ export default function GlassesPairingGuideScreen() {
       />
       <ScrollView style={themed($scrollView)}>
         <View style={themed($contentContainer)}>
-          <PairingDeviceInfo glassesModelName={glassesModelName} />
-          {getPairingGuide(glassesModelName)}
           <TouchableOpacity style={themed($helpButton)} onPress={() => setShowTroubleshootingModal(true)}>
             <Icon name="question-circle" size={16} color="#FFFFFF" style={{marginRight: 8}} />
             <Text style={themed($helpButtonText)}>Need Help Pairing?</Text>
@@ -156,11 +212,11 @@ export default function GlassesPairingGuideScreen() {
 }
 
 const $screen: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
 })
 
 const $pillButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.md,
+  marginRight: spacing.s4,
 })
 
 const $scrollView: ThemedStyle<ViewStyle> = () => ({
@@ -189,4 +245,18 @@ const $helpButtonText: ThemedStyle<TextStyle> = ({typography}) => ({
   fontFamily: typography.primary.normal,
   fontSize: 16,
   fontWeight: "600",
+})
+
+const $pairingContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flex: 1,
+  paddingBottom: spacing.s6,
+})
+
+const $centerWrapper: ThemedStyle<ViewStyle> = () => ({
+  flex: 1,
+  justifyContent: "center",
+})
+
+const $helpButtonBottom: ThemedStyle<ViewStyle> = () => ({
+  width: "100%",
 })

@@ -1,24 +1,25 @@
 import {useState, useEffect} from "react"
 import {View, ViewStyle, TextStyle, ScrollView} from "react-native"
+
 import {Header, Screen, Text} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
 import ToggleSetting from "@/components/settings/ToggleSetting"
-import ActionButton from "@/components/ui/ActionButton"
-import RouteButton from "@/components/ui/RouteButton"
+import InfoCardSection from "@/components/ui/InfoCard"
+import {RouteButton} from "@/components/ui/RouteButton"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
 import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
 import {localStorageService} from "@/services/asg/localStorageService"
-import {translate} from "@/i18n"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {useAppTheme} from "@/utils/useAppTheme"
+
 import {getModelCapabilities} from "@/../../cloud/packages/types/src"
-import InfoCardSection from "@/components/ui/InfoCard"
 
 export default function GallerySettingsScreen() {
   const {goBack, push} = useNavigationHistory()
-  const {theme, themed} = useAppTheme()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const {themed} = useAppTheme()
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   const [autoSaveToCameraRoll, setAutoSaveToCameraRoll] = useState(true)
   const [localPhotoCount, setLocalPhotoCount] = useState(0)
@@ -121,17 +122,13 @@ export default function GallerySettingsScreen() {
   let features = getModelCapabilities(defaultWearable)
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.lg}}>
-      <Header title="Gallery Settings" leftIcon="caretLeft" onLeftPress={() => goBack()} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title="Gallery Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Camera Settings button for glasses with configurable button */}
         {features?.hasButton && (
           <View style={themed($section)}>
-            <RouteButton
-              label={translate("settings:cameraSettings")}
-              subtitle={translate("settings:cameraSettingsDescription")}
-              onPress={() => push("/settings/camera")}
-            />
+            <RouteButton label={translate("settings:cameraSettings")} onPress={() => push("/settings/camera")} />
           </View>
         )}
 
@@ -139,7 +136,6 @@ export default function GallerySettingsScreen() {
           <Text style={themed($sectionTitle)}>Automatic Sync</Text>
           <ToggleSetting
             label="Save to Camera Roll"
-            subtitle="Automatically save new photos to your device's camera roll when syncing"
             value={autoSaveToCameraRoll}
             onValueChange={handleToggleAutoSave}
           />
@@ -175,9 +171,8 @@ export default function GallerySettingsScreen() {
         </View>
 
         <View style={themed($section)}>
-          <ActionButton
+          <RouteButton
             label={translate("glasses:deleteAllPhotos")}
-            //subtitle="Remove all photos from device storage (camera roll photos are not affected)"
             onPress={handleDeleteAll}
             variant="destructive"
             disabled={isLoadingStats || localPhotoCount + localVideoCount === 0}
@@ -189,11 +184,11 @@ export default function GallerySettingsScreen() {
 }
 
 const $section: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
 })
 
 const $sectionCompact: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $sectionTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -202,6 +197,6 @@ const $sectionTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.text,
   lineHeight: 20,
   letterSpacing: 0,
-  marginBottom: spacing.xs,
-  marginTop: spacing.sm,
+  marginBottom: spacing.s2,
+  marginTop: spacing.s3,
 })

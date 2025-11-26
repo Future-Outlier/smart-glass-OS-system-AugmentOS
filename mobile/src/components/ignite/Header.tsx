@@ -1,13 +1,14 @@
 import {ReactElement} from "react"
 import {StyleProp, TextStyle, TouchableOpacity, TouchableOpacityProps, View, ViewStyle} from "react-native"
+
 import {isRTL, translate} from "@/i18n"
 import {$styles} from "@/theme"
+import type {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 import {ExtendedEdge, useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
+
 import {IconTypes, PressableIcon} from "./Icon"
 import {Text, TextProps} from "./Text"
-import {useAppTheme} from "@/utils/useAppTheme"
-import type {ThemedStyle} from "@/theme"
-import {LinearGradient} from "expo-linear-gradient"
 
 export interface HeaderProps {
   /**
@@ -140,10 +141,7 @@ interface HeaderActionProps {
  * @returns {JSX.Element} The rendered `Header` component.
  */
 export function Header(props: HeaderProps) {
-  const {
-    theme: {colors},
-    themed,
-  } = useAppTheme()
+  const {themed} = useAppTheme()
   const {
     backgroundColor = "transparent",
     LeftActionComponent,
@@ -162,7 +160,7 @@ export function Header(props: HeaderProps) {
     rightTxOptions,
     safeAreaEdges = ["top"],
     title,
-    titleMode = "center",
+    titleMode = "flex",
     titleTx,
     titleTxOptions,
     titleContainerStyle: $titleContainerStyleOverride,
@@ -175,7 +173,7 @@ export function Header(props: HeaderProps) {
 
   const titleContent = titleTx ? translate(titleTx, titleTxOptions) : title
 
-  const {theme} = useAppTheme()
+  // const {theme} = useAppTheme()
 
   return (
     <View style={[$container, $containerInsets, {backgroundColor}, $containerStyleOverride]}>
@@ -206,7 +204,7 @@ export function Header(props: HeaderProps) {
           <View
             style={[
               titleMode === "center" && themed($titleWrapperCenter),
-              titleMode === "flex" && $titleWrapperFlex,
+              titleMode === "flex" && themed($titleWrapperFlex),
               $titleContainerStyleOverride,
             ]}
             pointerEvents="none">
@@ -236,7 +234,7 @@ export function Header(props: HeaderProps) {
  */
 function HeaderAction(props: HeaderActionProps) {
   const {backgroundColor, icon, text, tx, txOptions, onPress, ActionComponent, iconColor} = props
-  const {themed} = useAppTheme()
+  const {theme, themed} = useAppTheme()
 
   const content = tx ? translate(tx, txOptions) : text
 
@@ -258,10 +256,13 @@ function HeaderAction(props: HeaderActionProps) {
     return (
       <PressableIcon
         size={24}
-        icon={icon}
+        name={icon}
         color={iconColor}
         onPress={onPress}
-        containerStyle={themed([$actionIconContainer, {backgroundColor}])}
+        containerStyle={themed([
+          $actionIconContainer,
+          {backgroundColor: theme.colors.primary_foreground, borderRadius: theme.spacing.s10, width: 40, height: 40},
+        ])}
         style={isRTL ? {transform: [{rotate: "180deg"}]} : {}}
       />
     )
@@ -281,7 +282,7 @@ const $container: ViewStyle = {
 }
 
 const $title: TextStyle = {
-  textAlign: "center",
+  textAlign: "left",
   fontSize: 15,
 }
 
@@ -290,7 +291,7 @@ const $actionTextContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
   justifyContent: "center",
   height: "100%",
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
   zIndex: 2,
 })
 
@@ -303,7 +304,7 @@ const $actionIconContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
   justifyContent: "center",
   height: "100%",
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
   zIndex: 2,
 })
 
@@ -317,11 +318,12 @@ const $titleWrapperCenter: ThemedStyle<ViewStyle> = ({spacing}) => ({
   height: "100%",
   width: "100%",
   position: "absolute",
-  paddingHorizontal: spacing.xxl,
+  paddingHorizontal: spacing.s12,
   zIndex: 1,
 })
 
-const $titleWrapperFlex: ViewStyle = {
+const $titleWrapperFlex: ThemedStyle<ViewStyle> = ({spacing}) => ({
   justifyContent: "center",
   flexGrow: 1,
-}
+  paddingLeft: spacing.s3,
+})

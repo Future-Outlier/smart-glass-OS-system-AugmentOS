@@ -1,5 +1,6 @@
 import {ErrorInfo} from "react"
 import {ScrollView, TextStyle, View, ViewStyle} from "react-native"
+
 import {Button, Icon, Screen, Text} from "@/components/ignite"
 import type {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -37,10 +38,10 @@ export function ErrorDetails(props: ErrorDetailsProps) {
 
 const $contentContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
-  paddingHorizontal: spacing.lg,
-  paddingTop: spacing.xl,
+  paddingHorizontal: spacing.s6,
+  paddingTop: spacing.s8,
   flex: 1,
-  paddingBottom: spacing.xl,
+  paddingBottom: spacing.s8,
 })
 
 const $topSection: ViewStyle = {
@@ -50,18 +51,18 @@ const $topSection: ViewStyle = {
 
 const $heading: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.error,
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
 })
 
 const $errorSection: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flex: 2,
   backgroundColor: colors.separator,
-  marginVertical: spacing.lg,
+  marginVertical: spacing.s6,
   borderRadius: 6,
 })
 
 const $errorSectionContentContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.md,
+  padding: spacing.s4,
 })
 
 const $errorContent: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -69,6 +70,6 @@ const $errorContent: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $errorBacktrace: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
   color: colors.textDim,
 })

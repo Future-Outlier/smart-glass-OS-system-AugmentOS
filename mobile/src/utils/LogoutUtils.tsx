@@ -1,10 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import {supabase} from "@/supabase/supabaseClient"
-import bridge from "@/bridge/MantleBridge"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import restComms from "@/services/RestComms"
-import {SETTINGS_KEYS} from "@/stores/settings"
 import CoreModule from "core"
+
+import bridge from "@/bridge/MantleBridge"
+import restComms from "@/services/RestComms"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {storage} from "@/utils/storage"
 
 export class LogoutUtils {
   private static readonly TAG = "LogoutUtils"
@@ -74,13 +75,9 @@ export class LogoutUtils {
   private static async clearSupabaseAuth(): Promise<void> {
     console.log(`${this.TAG}: Clearing Supabase authentication...`)
 
-    try {
-      // Try to sign out with Supabase - may fail in offline mode
-      await supabase.auth.signOut().catch(err => {
-        console.log(`${this.TAG}: Supabase sign-out failed, continuing with local cleanup:`, err)
-      })
-    } catch (error) {
-      console.warn(`${this.TAG}: Supabase signOut failed:`, error)
+    const {error} = await mentraAuthProvider.signOut()
+    if (error) {
+      console.error(`${this.TAG}: Error signing out:`, error)
     }
 
     // Completely clear ALL Supabase Auth storage
@@ -138,21 +135,17 @@ export class LogoutUtils {
   private static async clearAppSettings(): Promise<void> {
     console.log(`${this.TAG}: Clearing app settings...`)
 
+    // burn it all:
     try {
-      // Clear specific settings that should be reset on logout
-      const settingsToKeep = [
-        SETTINGS_KEYS.theme_preference, // Keep theme preference
-        SETTINGS_KEYS.custom_backend_url, // Keep custom backend URL if set
-      ]
-
-      const settingsToClear = Object.values(SETTINGS_KEYS).filter(key => !settingsToKeep.includes(key))
-
-      if (settingsToClear.length > 0) {
-        await AsyncStorage.multiRemove(settingsToClear)
-        console.log(`${this.TAG}: Cleared ${settingsToClear.length} app settings`)
-      }
+      storage.clearAll()
     } catch (error) {
       console.error(`${this.TAG}: Error clearing app settings:`, error)
+    }
+
+    try {
+      await AsyncStorage.clear()
+    } catch (error) {
+      console.error(`${this.TAG}: Error clearing AsyncStorage:`, error)
     }
   }
 

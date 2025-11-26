@@ -1,17 +1,20 @@
+import {useLocalSearchParams, useFocusEffect} from "expo-router"
 import {useRef, useState, useEffect, useCallback} from "react"
 import {View, BackHandler} from "react-native"
 import {WebView} from "react-native-webview"
-import LoadingOverlay from "@/components/misc/LoadingOverlay"
-import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
-import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {useLocalSearchParams, useFocusEffect} from "expo-router"
+
 import {Header, Screen, Text} from "@/components/ignite"
+import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
+import LoadingOverlay from "@/components/misc/LoadingOverlay"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/services/RestComms"
+import {useSettingsStore} from "@/stores/settings"
+import {$styles} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function AppWebView() {
-  const {theme} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   const {webviewURL, appName, packageName} = useLocalSearchParams()
   const [hasError, setHasError] = useState(false)
   const webViewRef = useRef<WebView>(null)
@@ -69,20 +72,6 @@ export default function AppWebView() {
   //     }
   //   }, [fromSettings, packageName, appName]);
 
-  function determineCloudUrl(): string | undefined {
-    const cloudHostName = process.env.CLOUD_PUBLIC_HOST_NAME || process.env.CLOUD_HOST_NAME || process.env.MENTRAOS_HOST
-    if (
-      cloudHostName &&
-      cloudHostName.trim() !== "prod.augmentos.cloud" &&
-      cloudHostName.trim() !== "cloud" &&
-      cloudHostName.includes(".")
-    ) {
-      console.log(`For App webview token verification, using cloud host name: ${cloudHostName}`)
-      return `https://${cloudHostName}`
-    }
-    return undefined
-  }
-
   // Theme colors
   const theme2 = {
     backgroundColor: theme.isDark ? "#1c1c1c" : "#f9f9f9",
@@ -113,40 +102,49 @@ export default function AppWebView() {
         return
       }
 
-      try {
-        const tempToken = await restComms.generateWebviewToken(packageName)
-        let signedUserToken: string | undefined
-        try {
-          signedUserToken = await restComms.generateWebviewToken(packageName, "generate-webview-signed-user-token")
-        } catch (error) {
-          console.warn("Failed to generate signed user token:", error)
-          signedUserToken = undefined
-        }
-        const cloudApiUrl = determineCloudUrl()
-
-        // Construct final URL
-        const url = new URL(webviewURL)
-        url.searchParams.set("aos_temp_token", tempToken)
-        if (signedUserToken) {
-          url.searchParams.set("aos_signed_user_token", signedUserToken)
-        }
-        if (cloudApiUrl) {
-          const checksum = await restComms.hashWithApiKey(cloudApiUrl, packageName)
-          url.searchParams.set("cloudApiUrl", cloudApiUrl)
-          url.searchParams.set("cloudApiUrlChecksum", checksum)
-        }
-
-        setFinalUrl(url.toString())
-        console.log(`Constructed final webview URL: ${url.toString()}`)
-      } catch (error: any) {
-        console.error("Error generating webview token:", error)
-        setTokenError(`Failed to prepare secure access: ${error.message}`)
+      let res = await restComms.generateWebviewToken(packageName)
+      if (res.is_error()) {
+        console.error("Error generating webview token:", res.error)
+        setTokenError(`Failed to prepare secure access: ${res.error.message}`)
         showAlert("Authentication Error", `Could not securely connect to ${appName}. Please try again later.`, [
           {text: "OK", onPress: () => goBack()},
         ])
-      } finally {
         setIsLoadingToken(false)
+        return
       }
+
+      let tempToken = res.value
+
+      res = await restComms.generateWebviewToken(packageName, "generate-webview-signed-user-token")
+      if (res.is_error()) {
+        console.warn("Failed to generate signed user token:", res.error)
+      }
+      let signedUserToken: string = res.value_or("")
+
+      const cloudApiUrl = useSettingsStore.getState().getRestUrl()
+
+      // Construct final URL
+      const url = new URL(webviewURL)
+      url.searchParams.set("aos_temp_token", tempToken)
+      if (signedUserToken) {
+        url.searchParams.set("aos_signed_user_token", signedUserToken)
+      }
+      if (cloudApiUrl) {
+        res = await restComms.hashWithApiKey(cloudApiUrl, packageName)
+        if (res.is_error()) {
+          console.error("Error hashing cloud API URL:", res.error)
+          setIsLoadingToken(false)
+          return
+        }
+        const checksum = res.value
+        url.searchParams.set("cloudApiUrl", cloudApiUrl)
+        url.searchParams.set("cloudApiUrlChecksum", checksum)
+      }
+
+      setFinalUrl(url.toString())
+      console.log(`Constructed final webview URL: ${url.toString()}`)
+
+      setIsLoadingToken(false)
     }
 
     generateTokenAndSetUrl()
@@ -236,11 +234,11 @@ export default function AppWebView() {
 
   // Render WebView only when finalUrl is ready
   return (
-    <Screen preset="fixed" safeAreaEdges={[]}>
+    <Screen preset="fixed" safeAreaEdges={[]} style={themed($styles.screen)}>
       <Header
         title={appName}
         titleMode="center"
-        leftIcon="caretLeft"
+        leftIcon="chevron-left"
         onLeftPress={() => goBack()}
         rightIcon="settings"
         rightIconColor={theme.colors.icon}
@@ -251,10 +249,10 @@ export default function AppWebView() {
             fromWebView: "true",
           })
         }}
-        style={{height: 44}}
-        containerStyle={{paddingTop: 0}}
+        // style={{height: 44}}
+        // containerStyle={{paddingTop: 0}}
       />
-      <View style={{flex: 1}}>
+      <View style={{flex: 1, marginHorizontal: -theme.spacing.s6}}>
         {finalUrl ? (
           <WebView
             ref={webViewRef}

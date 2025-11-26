@@ -1,15 +1,16 @@
+import {FontAwesome} from "@expo/vector-icons"
 import {useState} from "react"
 import {View, TextInput, ActivityIndicator, ScrollView, ViewStyle, TextStyle} from "react-native"
-import {supabase} from "@/supabase/supabaseClient"
-import {Button, Header, Screen, Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle, spacing} from "@/theme"
-import {translate} from "@/i18n"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import showAlert from "@/utils/AlertUtils"
-import {FontAwesome} from "@expo/vector-icons"
-import {Spacer} from "@/components/ui/Spacer"
 import Toast from "react-native-toast-message"
+
+import {Button, Header, Screen, Text} from "@/components/ignite"
+import {Spacer} from "@/components/ui/Spacer"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import {$styles, ThemedStyle, spacing} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("")
@@ -29,9 +30,7 @@ export default function ForgotPasswordScreen() {
     setIsLoading(true)
 
     try {
-      const {error} = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "com.mentra://auth/reset-password",
-      })
+      const {error} = await mentraAuthProvider.resetPasswordForEmail(email)
 
       if (error) {
         showAlert(translate("common:error"), error.message)
@@ -57,8 +56,8 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header title={translate("login:forgotPasswordTitle")} leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title={translate("login:forgotPasswordTitle")} leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView
         contentContainerStyle={themed($scrollContent)}
         showsVerticalScrollIndicator={false}
@@ -71,7 +70,7 @@ export default function ForgotPasswordScreen() {
               <Text tx="login:email" style={themed($inputLabel)} />
               <View style={themed($enhancedInputContainer)}>
                 <FontAwesome name="envelope" size={16} color={theme.colors.textDim} />
-                <Spacer width={spacing.sm} />
+                <Spacer width={spacing.s3} />
                 <TextInput
                   hitSlop={{top: 16, bottom: 16}}
                   style={themed($enhancedInput)}
@@ -87,7 +86,7 @@ export default function ForgotPasswordScreen() {
               </View>
             </View>
 
-            <Spacer height={spacing.lg} />
+            <Spacer height={spacing.s6} />
 
             <Button
               tx="login:sendResetEmail"
@@ -101,7 +100,7 @@ export default function ForgotPasswordScreen() {
               }
             />
 
-            <Spacer height={spacing.md} />
+            <Spacer height={spacing.s4} />
 
             <Text tx="login:rememberPassword" style={themed($helperText)} />
             <Button
@@ -124,14 +123,14 @@ const $scrollContent: ThemedStyle<ViewStyle> = () => ({
 
 const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.lg,
+  padding: spacing.s6,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
   fontSize: 16,
   color: colors.text,
   textAlign: "left",
-  marginBottom: spacing.lg,
+  marginBottom: spacing.s6,
   lineHeight: 22,
 })
 
@@ -140,7 +139,7 @@ const $form: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $inputGroup: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $inputLabel: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -157,7 +156,7 @@ const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDar
   borderWidth: 1,
   borderColor: colors.border,
   borderRadius: 8,
-  paddingHorizontal: spacing.sm,
+  paddingHorizontal: spacing.s3,
   backgroundColor: isDark ? colors.transparent : colors.background,
   ...(isDark
     ? {
@@ -206,5 +205,5 @@ const $helperText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 14,
   color: colors.textDim,
   textAlign: "center",
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })

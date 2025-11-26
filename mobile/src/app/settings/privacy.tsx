@@ -1,18 +1,18 @@
+import CoreModule from "core"
+import {useEffect, useState} from "react"
+import {AppState, Platform, ScrollView} from "react-native"
+
 import {Header, Screen} from "@/components/ignite"
 import PermissionButton from "@/components/settings/PermButton"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {
-  checkAndRequestNotificationAccessSpecialPermission,
-  checkNotificationAccessSpecialPermission,
-} from "@/utils/NotificationServiceUtils"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {$styles} from "@/theme"
+import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
 import {checkFeaturePermissions, PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {useEffect, useState} from "react"
-import {AppState, Platform, ScrollView} from "react-native"
 
 export default function PrivacySettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
@@ -21,9 +21,9 @@ export default function PrivacySettingsScreen() {
   const [locationEnabled, setLocationEnabled] = useState(true)
   const [locationPermissionPending, setLocationPermissionPending] = useState(false)
   const [appState, setAppState] = useState(AppState.currentState)
-  const {theme} = useAppTheme()
+  const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
-  const [sensingEnabled, setSensingEnabled] = useSetting(SETTINGS_KEYS.sensing_enabled)
+  const [sensingEnabled, setSensingEnabled] = useSetting(SETTINGS.sensing_enabled.key)
 
   // Check permissions when screen loads
   useEffect(() => {
@@ -31,7 +31,7 @@ export default function PrivacySettingsScreen() {
       console.log("Checking permissions in PrivacySettingsScreen")
       // Check notification permissions
       if (Platform.OS === "android") {
-        const hasNotificationAccess = await checkNotificationAccessSpecialPermission()
+        const hasNotificationAccess = await CoreModule.hasNotificationListenerPermission()
         setNotificationsEnabled(hasNotificationAccess)
       }
 
@@ -49,7 +49,7 @@ export default function PrivacySettingsScreen() {
 
   const checkPermissions = async () => {
     if (Platform.OS === "android") {
-      const hasNotificationAccess = await checkNotificationAccessSpecialPermission()
+      const hasNotificationAccess = await CoreModule.hasNotificationListenerPermission()
 
       // If permission was granted while away, enable notifications and start service
       if (hasNotificationAccess && !notificationsEnabled) {
@@ -138,7 +138,7 @@ export default function PrivacySettingsScreen() {
       await checkAndRequestNotificationAccessSpecialPermission()
 
       // Re-check permissions after the request
-      const hasAccess = await checkNotificationAccessSpecialPermission()
+      const hasAccess = await CoreModule.hasNotificationListenerPermission()
       if (hasAccess) {
         setNotificationsEnabled(true)
       }
@@ -200,8 +200,8 @@ export default function PrivacySettingsScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header titleTx="privacySettings:title" leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header titleTx="privacySettings:title" leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView>
         {/* Notification Permission - Android Only */}
         {Platform.OS === "android" && !notificationsEnabled && (
@@ -212,7 +212,7 @@ export default function PrivacySettingsScreen() {
               value={notificationsEnabled}
               onPress={handleToggleNotifications}
             />
-            <Spacer height={theme.spacing.md} />
+            <Spacer height={theme.spacing.s4} />
           </>
         )}
 
@@ -225,7 +225,7 @@ export default function PrivacySettingsScreen() {
               value={calendarEnabled}
               onPress={handleToggleCalendar}
             />
-            <Spacer height={theme.spacing.md} />
+            <Spacer height={theme.spacing.s4} />
           </>
         )}
 
@@ -238,7 +238,7 @@ export default function PrivacySettingsScreen() {
               value={locationEnabled}
               onPress={handleToggleLocation}
             />
-            <Spacer height={theme.spacing.md} />
+            <Spacer height={theme.spacing.s4} />
           </>
         )}
 

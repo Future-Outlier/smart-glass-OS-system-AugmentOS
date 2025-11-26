@@ -1,15 +1,16 @@
-import {INTENSE_LOGGING} from "@/utils/Constants"
+import CoreModule from "core"
+import Toast from "react-native-toast-message"
+
 import {translate} from "@/i18n"
 import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
-import {useSettingsStore} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import {INTENSE_LOGGING} from "@/utils/Constants"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-
-import CoreModule from "core"
-import Toast from "react-native-toast-message"
 
 export class MantleBridge {
   private static instance: MantleBridge | null = null
@@ -53,7 +54,7 @@ export class MantleBridge {
       this.handleCoreMessage(event.body)
     })
 
-    console.log("Core message event listener initialized")
+    console.log("BRIDGE: Core message event listener initialized")
   }
 
   /**
@@ -76,7 +77,7 @@ export class MantleBridge {
       if ("core_status" in data) {
         if (this.lastMessage === jsonString) {
           console.log("BRIDGE: DUPLICATE CORE STATUS MESSAGE")
-          return
+          // return
         }
         this.lastMessage = jsonString
       }
@@ -101,24 +102,37 @@ export class MantleBridge {
 
       let binaryString
       let bytes
+      let res
 
       switch (data.type) {
         case "core_status_update":
+          useGlassesStore.getState().setGlassesInfo(data.core_status.glasses_info)
+          // Sync default_wearable to settings store for per-glasses settings indexer
+          const modelName = data.core_status?.connected_glasses?.model_name
+          if (modelName) {
+            const currentWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
+            if (currentWearable !== modelName) {
+              useSettingsStore.getState().setSetting(SETTINGS.default_wearable.key, modelName, true)
+            }
+          }
           GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
           return
         case "wifi_status_change":
-          GlobalEventEmitter.emit("WIFI_STATUS_CHANGE", {
-            connected: data.connected,
-            ssid: data.ssid,
-            local_ip: data.local_ip,
-          })
+          useGlassesStore.getState().setWifiInfo(data.connected, data.ssid)
           break
         case "hotspot_status_change":
+          useGlassesStore.getState().setHotspotInfo(data.enabled, data.ssid, data.password, data.local_ip)
           GlobalEventEmitter.emit("HOTSPOT_STATUS_CHANGE", {
             enabled: data.enabled,
             ssid: data.ssid,
             password: data.password,
             local_ip: data.local_ip,
+          })
+          break
+        case "hotspot_error":
+          GlobalEventEmitter.emit("HOTSPOT_ERROR", {
+            error_message: data.error_message,
+            timestamp: data.timestamp,
           })
           break
         case "gallery_status":
@@ -213,8 +227,21 @@ export class MantleBridge {
         case "pair_failure":
           GlobalEventEmitter.emit("PAIR_FAILURE", data.error)
           break
+        case "audio_pairing_needed":
+          GlobalEventEmitter.emit("AUDIO_PAIRING_NEEDED", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_connected":
+          GlobalEventEmitter.emit("AUDIO_CONNECTED", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_disconnected":
+          GlobalEventEmitter.emit("AUDIO_DISCONNECTED", {})
+          break
         case "save_setting":
-          await useSettingsStore.getState().setSetting(data.key, data.value, false)
+          await useSettingsStore.getState().setSetting(data.key, data.value)
           break
         case "head_up":
           mantle.handle_head_up(data.up)
@@ -224,32 +251,29 @@ export class MantleBridge {
           break
         case "phone_notification":
           // Send phone notification via REST instead of WebSocket
-          restComms
-            .sendPhoneNotification({
-              notificationId: data.notificationId,
-              app: data.app,
-              title: data.title,
-              content: data.content,
-              priority: data.priority,
-              timestamp: data.timestamp,
-              packageName: data.packageName,
-            })
-            .catch(error => {
-              console.error("Failed to send phone notification:", error)
-              // TODO: Consider retry logic or queuing failed notifications
-            })
+          res = await restComms.sendPhoneNotification({
+            notificationId: data.notificationId,
+            app: data.app,
+            title: data.title,
+            content: data.content,
+            priority: data.priority,
+            timestamp: data.timestamp,
+            packageName: data.packageName,
+          })
+          if (res.is_error()) {
+            console.error("Failed to send phone notification:", res.error)
+          }
           break
         case "phone_notification_dismissed":
           // Send phone notification dismissal via REST
-          restComms
-            .sendPhoneNotificationDismissed({
-              notificationKey: data.notificationKey,
-              packageName: data.packageName,
-              notificationId: data.notificationId,
-            })
-            .catch(error => {
-              console.error("Failed to send phone notification dismissal:", error)
-            })
+          res = await restComms.sendPhoneNotificationDismissed({
+            notificationKey: data.notificationKey,
+            packageName: data.packageName,
+            notificationId: data.notificationId,
+          })
+          if (res.is_error()) {
+            console.error("Failed to send phone notification dismissal:", res.error)
+          }
           break
         // TODO: this is a bit of a hack, we should have dedicated functions for ws endpoints in the core:
         case "ws_text":
@@ -269,7 +293,8 @@ export class MantleBridge {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          if (livekit.isRoomConnected()) {
+          const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
+          if (!isChinaDeployment && livekit.isRoomConnected()) {
             livekit.addPcm(bytes)
           } else {
             socketComms.sendBinary(bytes)
@@ -282,6 +307,13 @@ export class MantleBridge {
         case "keep_alive_ack":
           console.log("MantleBridge: Forwarding keep-alive ACK to server:", data)
           socketComms.sendKeepAliveAck(data)
+          break
+        case "mtk_update_complete":
+          console.log("MantleBridge: MTK firmware update complete:", data.message)
+          GlobalEventEmitter.emit("MTK_UPDATE_COMPLETE", {
+            message: data.message,
+            timestamp: data.timestamp,
+          })
           break
         default:
           console.log("Unknown event type:", data.type)
@@ -311,13 +343,6 @@ export class MantleBridge {
 
   /* Command methods to interact with Core */
 
-  async sendToggleEnforceLocalTranscription(enabled: boolean) {
-    console.log("Toggling enforce local transcription:", enabled)
-    return await CoreModule.updateSettings({
-      enforce_local_transcription: enabled,
-    })
-  }
-
   async updateButtonPhotoSize(size: string) {
     return await CoreModule.updateSettings({
       button_photo_size: size,
@@ -325,19 +350,12 @@ export class MantleBridge {
   }
 
   async updateButtonVideoSettings(width: number, height: number, fps: number) {
+    console.log("updateButtonVideoSettings", width, height, fps)
     return await CoreModule.updateSettings({
       button_video_width: width,
       button_video_height: height,
       button_video_fps: fps,
     })
-  }
-
-  async showDashboard() {
-    return await CoreModule.showDashboard()
-  }
-
-  async updateSettings(settings: any) {
-    return await CoreModule.updateSettings(settings)
   }
 
   async setGlassesWifiCredentials(ssid: string, _password: string) {
@@ -356,48 +374,6 @@ export class MantleBridge {
     console.log("setLc3AudioEnabled", enabled)
     // TODO: Add setLc3AudioEnabled to CoreModule
     console.warn("setLc3AudioEnabled not yet implemented in new CoreModule API")
-  }
-  // Buffer recording commands
-  async sendStartBufferRecording() {
-    return await CoreModule.startBufferRecording()
-  }
-
-  async sendStopBufferRecording() {
-    return await CoreModule.stopBufferRecording()
-  }
-
-  async sendSaveBufferVideo(requestId: string, durationSeconds: number = 30) {
-    return await CoreModule.saveBufferVideo(requestId, durationSeconds)
-  }
-
-  // Video recording commands
-  async sendStartVideoRecording(requestId: string, save: boolean = true) {
-    return await CoreModule.startVideoRecording(requestId, save)
-  }
-
-  async sendStopVideoRecording(requestId: string) {
-    return await CoreModule.stopVideoRecording(requestId)
-  }
-
-  async setSttModelDetails(path: string, languageCode: string) {
-    return await CoreModule.setSttModelDetails(path, languageCode)
-  }
-
-  async getSttModelPath(): Promise<string> {
-    return await CoreModule.getSttModelPath()
-  }
-
-  async validateSTTModel(path: string): Promise<boolean> {
-    return await CoreModule.validateSttModel(path)
-  }
-
-  async extractTarBz2(sourcePath: string, destinationPath: string) {
-    return await CoreModule.extractTarBz2(sourcePath, destinationPath)
-  }
-
-  async queryGalleryStatus() {
-    console.log("[Bridge] Querying gallery status from glasses...")
-    return await CoreModule.queryGalleryStatus()
   }
 }
 

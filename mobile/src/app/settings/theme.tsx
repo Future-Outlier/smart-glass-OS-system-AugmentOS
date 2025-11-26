@@ -1,72 +1,56 @@
-import {View, TouchableOpacity, ViewStyle, TextStyle} from "react-native"
-import {Screen, Header, Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
 import {MaterialCommunityIcons} from "@expo/vector-icons"
-import {type ThemeType} from "@/utils/useAppTheme"
-// eslint-disable-next-line
-import {StyleSheet} from "react-native"
+import {View, TouchableOpacity, ViewStyle, TextStyle} from "react-native"
+
+import {Screen, Header, Text} from "@/components/ignite"
+import {Group} from "@/components/ui/Group"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {$styles, ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {type ThemeType} from "@/utils/useAppTheme"
 
 export default function ThemeSettingsPage() {
   const {theme, themed} = useAppTheme()
-  const {replace} = useNavigationHistory()
+  const {goBack} = useNavigationHistory()
 
-  const [themePreference, setThemePreference] = useSetting(SETTINGS_KEYS.theme_preference)
+  const [themePreference, setThemePreference] = useSetting(SETTINGS.theme_preference.key)
 
   const handleThemeChange = async (newTheme: ThemeType) => {
     await setThemePreference(newTheme)
   }
 
-  const renderThemeOption = (themeKey: ThemeType, label: string, subtitle?: string, isLast: boolean = false) => (
-    <>
-      <TouchableOpacity
-        style={{flexDirection: "row", justifyContent: "space-between", paddingVertical: 8}}
-        onPress={() => handleThemeChange(themeKey)}>
-        <View style={{flexDirection: "column", gap: 4}}>
-          <Text text={label} style={{color: theme.colors.text}} />
-          {subtitle && <Text text={subtitle} style={themed($subtitle)} />}
-        </View>
-        {themePreference === themeKey && <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />}
-      </TouchableOpacity>
-      {/* @ts-ignore */}
-      {!isLast && (
-        <View
-          style={{
-            height: StyleSheet.hairlineWidth,
-            backgroundColor: theme.colors.palette.neutral300,
-            marginVertical: 4,
-          }}
-        />
-      )}
-    </>
+  const renderThemeOption = (themeKey: ThemeType, label: string, subtitle?: string, style?: ViewStyle) => (
+    <TouchableOpacity style={[themed($settingsItem), style]} onPress={() => handleThemeChange(themeKey)}>
+      <View style={{flexDirection: "column", gap: 4}}>
+        <Text text={label} style={{color: theme.colors.text}} />
+        {subtitle && <Text text={subtitle} style={themed($subtitle)} />}
+      </View>
+      {themePreference === themeKey && <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />}
+    </TouchableOpacity>
   )
 
   return (
-    <Screen preset="scroll" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header title="Theme Settings" leftIcon="caretLeft" onLeftPress={() => replace("/(tabs)/settings")} />
+    <Screen preset="scroll" style={themed($styles.screen)}>
+      <Header title="Theme Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
 
-      <View style={themed($settingsGroup)}>
-        {renderThemeOption("light", "Light Theme", undefined, false)}
-        {renderThemeOption("dark", "Dark Theme", undefined, false)}
-        {renderThemeOption("system", "System Default", undefined, true)}
-      </View>
+      <Group style={{marginTop: theme.spacing.s8}}>
+        {renderThemeOption("light", "Light Theme", undefined)}
+        {renderThemeOption("dark", "Dark Theme", undefined)}
+        {renderThemeOption("system", "System Default", undefined)}
+      </Group>
     </Screen>
   )
 }
 
-const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.background,
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-  borderRadius: 12,
-  marginTop: 16,
-  borderWidth: spacing.xxxs,
-  borderColor: colors.border,
+const $settingsItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  paddingVertical: spacing.s5,
+  paddingHorizontal: spacing.s6,
+  backgroundColor: colors.primary_foreground,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
-  fontSize: spacing.sm,
+  fontSize: spacing.s3,
 })

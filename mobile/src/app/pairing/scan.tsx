@@ -1,39 +1,49 @@
-import {Header, Screen, Text} from "@/components/ignite"
-import {PillButton} from "@/components/ignite/PillButton"
+import {useFocusEffect} from "@react-navigation/native"
+import CoreModule from "core"
+import {useLocalSearchParams} from "expo-router"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {
+  ActivityIndicator,
+  BackHandler,
+  Image,
+  ImageStyle,
+  Platform,
+  ScrollView,
+  TextStyle,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from "react-native"
+import {useSharedValue, withDelay, withTiming} from "react-native-reanimated"
+import Icon from "react-native-vector-icons/FontAwesome"
+
+import {Button, Header, Screen, Text} from "@/components/ignite"
 import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
-import PairingDeviceInfo from "@/components/misc/PairingDeviceInfo"
-import {MOCK_CONNECTION} from "@/utils/Constants"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
+import Divider from "@/components/ui/Divider"
+import {Group} from "@/components/ui/Group"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SearchResultDevice, useSearchResults} from "@/contexts/SearchResultsContext"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
+import {translate} from "@/i18n"
+import {useGlassesStore} from "@/stores/glasses"
+import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
+import {MOCK_CONNECTION} from "@/utils/Constants"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
+import {getGlassesOpenImage} from "@/utils/getGlassesImage"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {useFocusEffect} from "@react-navigation/native"
-import {router, useLocalSearchParams} from "expo-router"
-import {useCallback, useEffect, useRef, useState} from "react"
-import {BackHandler, Platform, ScrollView, TouchableOpacity, View, ViewStyle} from "react-native"
-import Animated, {useAnimatedStyle, useSharedValue, withDelay, withTiming} from "react-native-reanimated"
-import Icon from "react-native-vector-icons/FontAwesome"
-import CoreModule from "core"
 
 export default function SelectGlassesBluetoothScreen() {
-  const {status} = useCoreStatus()
   const {searchResults, setSearchResults} = useSearchResults()
   const {glassesModelName}: {glassesModelName: string} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
-  const {goBack, push, clearHistory, clearHistoryAndGoHome} = useNavigationHistory()
+  const {goBack, replace, clearHistoryAndGoHome} = useNavigationHistory()
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   // Create a ref to track the current state of searchResults
   const searchResultsRef = useRef<SearchResultDevice[]>(searchResults)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   const scrollViewOpacity = useSharedValue(0)
-  const scrollViewAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: scrollViewOpacity.value,
-  }))
   useEffect(() => {
     scrollViewOpacity.value = withDelay(2000, withTiming(1, {duration: 1000}))
   }, [])
@@ -50,16 +60,6 @@ export default function SelectGlassesBluetoothScreen() {
     }, [setSearchResults]),
   )
 
-  // Shared function to handle the forget glasses logic
-  const handleForgetGlasses = useCallback(async () => {
-    await CoreModule.disconnect()
-    await CoreModule.forget()
-    // Clear NavigationHistoryContext history to prevent issues with back navigation
-    clearHistory()
-    // Use dismissTo to properly go back to select-glasses-model and clear the stack
-    router.dismissTo("/pairing/select-glasses-model")
-  }, [clearHistory])
-
   // Handle Android hardware back button
   useEffect(() => {
     // Only handle on Android
@@ -67,7 +67,7 @@ export default function SelectGlassesBluetoothScreen() {
 
     const onBackPress = () => {
       // Call our custom back handler
-      handleForgetGlasses()
+      goBack()
       // Return true to prevent default back behavior and stop propagation
       return true
     }
@@ -89,7 +89,7 @@ export default function SelectGlassesBluetoothScreen() {
         backHandlerRef.current = null
       }
     }
-  }, [handleForgetGlasses])
+  }, [goBack])
 
   // Ref to store the back handler for cleanup
   const backHandlerRef = useRef<any>(null)
@@ -187,10 +187,10 @@ export default function SelectGlassesBluetoothScreen() {
 
   useEffect(() => {
     // If pairing successful, return to home
-    if (status.glasses_info?.model_name) {
+    if (glassesConnected) {
       clearHistoryAndGoHome()
     }
-  }, [status])
+  }, [glassesConnected])
 
   const triggerGlassesPairingGuide = async (glassesModelName: string, deviceName: string) => {
     // On Android, we need to check both microphone and location permissions
@@ -223,66 +223,76 @@ export default function SelectGlassesBluetoothScreen() {
       return // Stop the connection process
     }
 
-    // update the preferredmic to be the phone mic:
-    await useSettingsStore.getState().setSetting(SETTINGS_KEYS.preferred_mic, "phone")
-
     // All permissions granted, proceed with connecting to the wearable
+    // Note: preferred_mic will use default "auto" - user can change in settings if needed
+    // (Previously set here, but moved because default_wearable wasn't set yet for the indexer)
     setTimeout(() => {
       CoreModule.connectByName(deviceName)
     }, 2000)
-    push("/pairing/loading", {glassesModelName: glassesModelName})
+    replace("/pairing/loading", {glassesModelName: glassesModelName, deviceName: deviceName})
+  }
+
+  const filterDeviceName = (deviceName: string) => {
+    // filter out MENTRA_LIVE from the device name:
+    return deviceName.replace("MENTRA_LIVE_BLE_", "")
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}} safeAreaEdges={["bottom"]}>
-      <Header
-        leftIcon="caretLeft"
-        onLeftPress={handleForgetGlasses}
-        RightActionComponent={
-          <PillButton
-            text="Help"
-            variant="icon"
-            onPress={() => setShowTroubleshootingModal(true)}
-            buttonStyle={{marginRight: theme.spacing.md}}
-          />
-        }
-      />
-      <View style={styles.contentContainer}>
-        <PairingDeviceInfo glassesModelName={glassesModelName} />
-      </View>
-      <ScrollView
-        style={{marginBottom: 20, marginTop: 10, marginRight: -theme.spacing.md, paddingRight: theme.spacing.md}}>
-        <Animated.View style={scrollViewAnimatedStyle}>
-          {/* DISPLAY LIST OF BLUETOOTH SEARCH RESULTS */}
-          {searchResults && searchResults.length > 0 && (
-            <>
-              {searchResults.map((device, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={themed($settingItem)}
-                  onPress={() => {
-                    triggerGlassesPairingGuide(device.deviceMode, device.deviceName)
-                  }}>
-                  {/* <Image source={glassesImage} style={styles.glassesImage} /> */}
-                  <View style={styles.settingTextContainer}>
-                    <Text
-                      text={`${glassesModelName}  ${device.deviceName}`}
-                      style={[
-                        styles.label,
-                        {
-                          color: theme.colors.text,
-                        },
-                      ]}
-                    />
-                  </View>
-                  <Icon name="angle-right" size={24} color={theme.colors.text} />
-                </TouchableOpacity>
-              ))}
-            </>
-          )}
-        </Animated.View>
-      </ScrollView>
+    <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
+      <Header leftIcon="chevron-left" onLeftPress={goBack} />
+      <View style={themed($container)}>
+        <View style={themed($centerWrapper)}>
+          <View style={themed($contentContainer)}>
+            <Image source={getGlassesOpenImage(glassesModelName)} style={themed($glassesImage)} />
+            <Text
+              style={themed($scanningText)}
+              text={translate("pairing:scanningForGlassesModel", {model: glassesModelName})}
+            />
 
+            {!searchResults || searchResults.length === 0 ? (
+              <View style={{justifyContent: "center", flex: 1, paddingVertical: theme.spacing.s4}}>
+                <ActivityIndicator size="large" color={theme.colors.text} />
+              </View>
+            ) : (
+              <ScrollView style={{maxHeight: 300, paddingRight: theme.spacing.s6, marginRight: -theme.spacing.s6}}>
+                <Group>
+                  {searchResults.map((device, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={themed($settingItem)}
+                      onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
+                      <View style={themed($settingsTextContainer)}>
+                        <Text
+                          text={`${glassesModelName} - ${filterDeviceName(device.deviceName)}`}
+                          style={themed($label)}
+                          numberOfLines={2}
+                        />
+                      </View>
+                      <Icon name="angle-right" size={24} color={theme.colors.text} />
+                    </TouchableOpacity>
+                  ))}
+                </Group>
+              </ScrollView>
+            )}
+            <Divider />
+            <View style={themed($buttonContainer)}>
+              <Button
+                preset="alternate"
+                compact
+                tx="common:cancel"
+                onPress={() => goBack()}
+                style={themed($cancelButton)}
+              />
+            </View>
+          </View>
+        </View>
+        <Button
+          preset="secondary"
+          text="I need more help"
+          onPress={() => setShowTroubleshootingModal(true)}
+          style={themed($helpButton)}
+        />
+      </View>
       <GlassesTroubleshootingModal
         isVisible={showTroubleshootingModal}
         onClose={() => setShowTroubleshootingModal(false)}
@@ -292,48 +302,71 @@ export default function SelectGlassesBluetoothScreen() {
   )
 }
 
+const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flex: 1,
+  paddingBottom: spacing.s6,
+})
+
+const $centerWrapper: ThemedStyle<ViewStyle> = () => ({
+  flex: 1,
+  justifyContent: "center",
+})
+
+const $contentContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  // height: 520,
+  backgroundColor: colors.primary_foreground,
+  borderRadius: spacing.s6,
+  borderWidth: 1,
+  borderColor: colors.border,
+  padding: spacing.s6,
+  gap: spacing.s6,
+  // paddingBottom: spacing.s16,
+})
+
+const $buttonContainer: ThemedStyle<ViewStyle> = () => ({
+  flexDirection: "row",
+  justifyContent: "flex-end",
+})
+
+const $cancelButton: ThemedStyle<ViewStyle> = () => ({
+  minWidth: 100,
+})
+
+const $helpButton: ThemedStyle<ViewStyle> = () => ({
+  width: "100%",
+})
+
 const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  // Increased padding to give it a "bigger" look
-  paddingVertical: spacing.sm,
-  paddingHorizontal: 15,
-
-  // Larger margin to separate each card
-  marginVertical: 8,
-
-  // Rounded corners
-  borderRadius: 10,
-  borderWidth: spacing.xxxs,
-  borderColor: colors.border,
-
-  // More subtle shadow for iOS
-  shadowColor: "#000",
-  shadowOpacity: 0.08,
-  shadowRadius: 3,
-  shadowOffset: {width: 0, height: 1},
-
-  // More subtle elevation for Android
-  elevation: 2,
-  backgroundColor: colors.backgroundAlt,
+  paddingVertical: spacing.s3,
+  paddingHorizontal: spacing.s4,
+  backgroundColor: colors.background,
+  height: 50,
 })
 
-const styles = {
-  contentContainer: {
-    // alignItems: "center",
-    // justifyContent: "center",
-    height: 320,
-    // backgroundColor: "red",
-  },
-  settingTextContainer: {
-    flex: 1,
-    paddingHorizontal: 10,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    flexWrap: "wrap",
-    marginTop: 5,
-  },
-} as const
+const $scanningText: ThemedStyle<TextStyle> = ({colors}) => ({
+  fontSize: 20,
+  fontWeight: "600",
+  color: colors.textDim,
+  textAlign: "center",
+})
+
+const $glassesImage: ThemedStyle<ImageStyle> = () => ({
+  width: "100%",
+  resizeMode: "contain",
+  height: 90,
+})
+
+const $label: ThemedStyle<TextStyle> = () => ({
+  fontSize: 14,
+  fontWeight: "600",
+  flexWrap: "wrap",
+  // marginTop: 5,
+})
+
+const $settingsTextContainer: ThemedStyle<ViewStyle> = () => ({
+  flex: 1,
+  paddingHorizontal: 10,
+})

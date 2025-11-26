@@ -2,40 +2,50 @@
  * Main gallery screen component
  */
 
-import {useCallback, useState, useEffect, useMemo, useRef} from "react"
-import {View, BackHandler, TouchableOpacity, ActivityIndicator, Dimensions, FlatList, ViewToken} from "react-native"
-import {useFocusEffect} from "expo-router"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {spacing, ThemedStyle} from "@/theme"
-import {ViewStyle, TextStyle, ImageStyle} from "react-native"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {PhotoInfo} from "../../../types/asg"
-import {asgCameraApi} from "../../../services/asg/asgCameraApi"
-import {localStorageService} from "../../../services/asg/localStorageService"
-import {PhotoImage} from "./PhotoImage"
-import {MediaViewer} from "./MediaViewer"
-import {ProgressRing} from "./ProgressRing"
-import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
+import CoreModule from "core"
 import LinearGradient from "expo-linear-gradient"
+import {useFocusEffect} from "expo-router"
+import {useCallback, useEffect, useMemo, useRef, useState} from "react"
+import {
+  ActivityIndicator,
+  BackHandler,
+  Dimensions,
+  FlatList,
+  ImageStyle,
+  TextStyle,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+  ViewToken,
+} from "react-native"
+import RNFS from "react-native-fs"
+import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
+import WifiManager from "react-native-wifi-reborn"
+
+import {MediaViewer} from "@/components/glasses/Gallery/MediaViewer"
+import {PhotoImage} from "@/components/glasses/Gallery/PhotoImage"
+import {ProgressRing} from "@/components/glasses/Gallery/ProgressRing"
+import {Header, Icon, Text} from "@/components/ignite"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import {asgCameraApi} from "@/services/asg/asgCameraApi"
+import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
+import {localStorageService} from "@/services/asg/localStorageService"
+import {networkConnectivityService, NetworkStatus} from "@/services/asg/networkConnectivityService"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {spacing, ThemedStyle} from "@/theme"
+import {PhotoInfo} from "@/types/asg"
+import showAlert from "@/utils/AlertUtils"
+import {shareFile} from "@/utils/FileUtils"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {MediaLibraryPermissions} from "@/utils/MediaLibraryPermissions"
+import {useAppTheme} from "@/utils/useAppTheme"
+
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 // @ts-ignore
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient)
-import showAlert from "@/utils/AlertUtils"
-import {translate} from "@/i18n"
-import {shareFile} from "@/utils/FileUtils"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import bridge from "@/bridge/MantleBridge"
-import WifiManager from "react-native-wifi-reborn"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {networkConnectivityService, NetworkStatus} from "@/services/asg/networkConnectivityService"
-import {Header, Text} from "@/components/ignite"
-import * as Linking from "expo-linking"
-import {MediaLibraryPermissions} from "@/utils/MediaLibraryPermissions"
-import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
-import {getModelCapabilities} from "@/../../cloud/packages/types/src"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import CoreModule from "core"
 
 // Gallery timing constants
 const TIMING = {
@@ -73,7 +83,6 @@ interface GalleryItem {
 }
 
 export function GalleryScreen() {
-  const {status} = useCoreStatus()
   const {goBack, push} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
 
@@ -82,33 +91,22 @@ export function GalleryScreen() {
   const ITEM_SPACING = 2 // Minimal spacing between items (1-2px hairline)
   const numColumns = screenWidth < 320 ? 2 : 3 // 2 columns for very small screens, otherwise 3
   const itemWidth = (screenWidth - ITEM_SPACING * (numColumns - 1)) / numColumns
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const features = getModelCapabilities(defaultWearable)
+  const hotspotSsid = useGlassesStore(state => state.hotspotSsid)
+  const hotspotPassword = useGlassesStore(state => state.hotspotPassword)
+  const hotspotGatewayIp = useGlassesStore(state => state.hotspotGatewayIp)
+  const hotspotEnabled = useGlassesStore(state => state.hotspotEnabled)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   const [networkStatus] = useState<NetworkStatus>(networkConnectivityService.getStatus())
 
-  // Memoize connection values
-  const connectionInfo = useMemo(() => {
-    const glassesInfo = status.glasses_info
-    if (!glassesInfo) return {}
-
-    return {
-      isHotspotEnabled: glassesInfo.glasses_hotspot_enabled,
-      hotspotSsid: glassesInfo.glasses_hotspot_ssid,
-      hotspotPassword: glassesInfo.glasses_hotspot_password,
-      hotspotGatewayIp: glassesInfo.glasses_hotspot_gateway_ip,
-    }
-  }, [status.glasses_info])
-
-  const {hotspotSsid, hotspotPassword, hotspotGatewayIp, isHotspotEnabled} = connectionInfo
-
-  // Permission state
-  const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState(false)
-  const [isRequestingPermission, setIsRequestingPermission] = useState(false)
+  // Permission state - no longer blocking, permission is requested lazily when saving
+  // Keeping state for potential future use (e.g., showing a hint in settings)
+  const [_hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState(false)
 
   // State machine
   const [galleryState, setGalleryState] = useState<GalleryState>(GalleryState.INITIALIZING)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const transitionToState = (newState: GalleryState) => {
     console.log(`[GalleryScreen] State transition: ${galleryState} → ${newState}`)
@@ -157,12 +155,34 @@ export function GalleryScreen() {
   const syncTriggeredRef = useRef(false)
   const PAGE_SIZE = 20
 
-  // Load downloaded photos
+  // Load downloaded photos (validates files exist and cleans up stale entries)
   const loadDownloadedPhotos = useCallback(async () => {
     try {
       const downloadedFiles = await localStorageService.getDownloadedFiles()
-      const photoInfos = Object.values(downloadedFiles).map(file => localStorageService.convertToPhotoInfo(file))
-      setDownloadedPhotos(photoInfos)
+      const validPhotoInfos: PhotoInfo[] = []
+      const staleFileNames: string[] = []
+
+      // Check each file exists on disk
+      for (const [name, file] of Object.entries(downloadedFiles)) {
+        const fileExists = await RNFS.exists(file.filePath)
+        if (fileExists) {
+          validPhotoInfos.push(localStorageService.convertToPhotoInfo(file))
+        } else {
+          console.log(`[GalleryScreen] Cleaning up stale entry for missing file: ${name}`)
+          staleFileNames.push(name)
+        }
+      }
+
+      // Clean up stale metadata entries (files that no longer exist on disk)
+      for (const fileName of staleFileNames) {
+        await localStorageService.deleteDownloadedFile(fileName)
+      }
+
+      if (staleFileNames.length > 0) {
+        console.log(`[GalleryScreen] Cleaned up ${staleFileNames.length} stale photo entries`)
+      }
+
+      setDownloadedPhotos(validPhotoInfos)
     } catch (err) {
       console.error("Error loading downloaded photos:", err)
     }
@@ -172,7 +192,7 @@ export function GalleryScreen() {
   const loadInitialPhotos = useCallback(
     async (overrideServerIp?: string, skipThumbnails: boolean = false) => {
       const serverIp = overrideServerIp || hotspotGatewayIp
-      const hasConnection = overrideServerIp || (isHotspotEnabled && hotspotGatewayIp)
+      const hasConnection = overrideServerIp || (hotspotEnabled && hotspotGatewayIp)
 
       if (!hasConnection || !serverIp) {
         console.log("[GalleryScreen] Glasses not connected")
@@ -223,13 +243,15 @@ export function GalleryScreen() {
         if (err instanceof Error) {
           if (err.message.includes("429")) {
             errorMsg = "Server is busy, please try again in a moment"
+            // Auto-retry for rate limit errors
             setTimeout(() => {
-              if (galleryState === GalleryState.ERROR) {
-                console.log("[GalleryScreen] Retrying after rate limit...")
-                transitionToState(GalleryState.CONNECTED_LOADING)
-                loadInitialPhotos()
-              }
+              console.log("[GalleryScreen] Retrying after rate limit...")
+              transitionToState(GalleryState.CONNECTED_LOADING)
+              loadInitialPhotos()
             }, TIMING.RETRY_AFTER_RATE_LIMIT_MS)
+            // Don't show alert for auto-retry, just transition to retryable state
+            transitionToState(GalleryState.MEDIA_AVAILABLE)
+            return
           } else if (err.message.includes("400")) {
             errorMsg = "Invalid request to server"
           } else {
@@ -237,17 +259,18 @@ export function GalleryScreen() {
           }
         }
 
-        setErrorMessage(errorMsg)
-        transitionToState(GalleryState.ERROR)
+        // Show error alert and return to retryable state
+        showAlert("Error", errorMsg, [{text: translate("common:ok")}])
+        transitionToState(GalleryState.MEDIA_AVAILABLE)
       }
     },
-    [galleryState, isHotspotEnabled, hotspotGatewayIp],
+    [galleryState, hotspotEnabled, hotspotGatewayIp],
   )
 
   // Load photos for specific indices
   const loadPhotosForIndices = useCallback(
     async (indices: number[]) => {
-      if (!isHotspotEnabled || !hotspotGatewayIp || indices.length === 0) return
+      if (!hotspotEnabled || !hotspotGatewayIp || indices.length === 0) return
 
       const unloadedIndices = indices.filter(i => !loadedServerPhotos.has(i))
       if (unloadedIndices.length === 0) return
@@ -281,12 +304,12 @@ export function GalleryScreen() {
         loadingRanges.current.delete(rangeKey)
       }
     },
-    [isHotspotEnabled, hotspotGatewayIp, loadedServerPhotos],
+    [hotspotEnabled, hotspotGatewayIp, loadedServerPhotos],
   )
 
   // Sync files from server
   const handleSync = async () => {
-    const hasConnection = isHotspotEnabled && hotspotGatewayIp
+    const hasConnection = hotspotEnabled && hotspotGatewayIp
     const serverIp = hotspotGatewayIp
 
     if (!hasConnection || !serverIp) {
@@ -411,23 +434,32 @@ export function GalleryScreen() {
         },
       )
 
-      const glassesModel = status.glasses_info?.model_name
-
       // Save downloaded files but keep progress states visible
       for (const photoInfo of downloadResult.downloaded) {
         const downloadedFile = localStorageService.convertToDownloadedFile(
           photoInfo,
           photoInfo.filePath || "",
           photoInfo.thumbnailPath,
-          glassesModel,
+          defaultWearable,
         )
         await localStorageService.saveDownloadedFile(downloadedFile)
       }
 
       // Auto-save to camera roll if enabled
       const shouldAutoSave = await gallerySettingsService.getAutoSaveToCameraRoll()
-      if (shouldAutoSave) {
+      if (shouldAutoSave && downloadResult.downloaded.length > 0) {
         console.log("[GalleryScreen] Auto-saving photos to camera roll...")
+
+        // Request permission if needed (this is a no-op on Android 10+)
+        const hasPermission = await MediaLibraryPermissions.checkPermission()
+        if (!hasPermission) {
+          const granted = await MediaLibraryPermissions.requestPermission()
+          if (!granted) {
+            console.warn("[GalleryScreen] Camera roll permission denied, skipping auto-save")
+            // Continue without saving to camera roll - photos are still in local storage
+          }
+        }
+
         let savedCount = 0
         let failedCount = 0
 
@@ -531,12 +563,27 @@ export function GalleryScreen() {
         }
       }
 
-      setErrorMessage(errorMsg)
-      if (!errorMsg.includes("busy")) {
-        showAlert("Sync Error", errorMsg, [{text: translate("common:ok")}])
-      }
-      transitionToState(GalleryState.ERROR)
+      // Show error alert
+      showAlert("Sync Error", errorMsg, [{text: translate("common:ok")}])
+
+      // Clear sync progress and states
       setSyncProgress(null)
+      setPhotoSyncStates(new Map())
+      setLoadedServerPhotos(new Map())
+      setTotalServerCount(0)
+      loadedRanges.current.clear()
+      loadingRanges.current.clear()
+
+      // Reload downloaded photos to show what we have
+      await loadDownloadedPhotos()
+
+      // Return to a recoverable state and re-query glasses
+      if (glassesConnected && features?.hasCamera) {
+        transitionToState(GalleryState.QUERYING_GLASSES)
+        queryGlassesGalleryStatus()
+      } else {
+        transitionToState(GalleryState.NO_MEDIA_ON_GLASSES)
+      }
     }
   }
 
@@ -671,9 +718,9 @@ export function GalleryScreen() {
       transitionToState(GalleryState.WAITING_FOR_WIFI_PROMPT)
     } catch (error) {
       console.error("[GalleryScreen] Failed to start hotspot:", error)
-      setErrorMessage("Failed to start hotspot")
-      showAlert("Error", "Failed to start hotspot", [{text: "OK"}])
-      transitionToState(GalleryState.ERROR)
+      showAlert("Error", "Failed to start hotspot. Please try again.", [{text: "OK"}])
+      // Return to MEDIA_AVAILABLE so user can retry
+      transitionToState(GalleryState.MEDIA_AVAILABLE)
     }
   }
 
@@ -706,7 +753,7 @@ export function GalleryScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            const hasConnection = isHotspotEnabled && hotspotGatewayIp
+            const hasConnection = hotspotEnabled && hotspotGatewayIp
             const photosToDelete = Array.from(selectedPhotos)
 
             // Separate server photos and local photos
@@ -815,7 +862,7 @@ export function GalleryScreen() {
   //           let deleteErrors: string[] = []
 
   //           // Delete all server photos if connected
-  //           if (totalServerPhotos > 0 && isHotspotEnabled && hotspotGatewayIp) {
+  //           if (totalServerPhotos > 0 && hotspotEnabled && hotspotGatewayIp) {
   //             try {
   //               // Get all server photo names
   //               const serverPhotoNames: string[] = []
@@ -859,7 +906,7 @@ export function GalleryScreen() {
   //           await loadDownloadedPhotos()
 
   //           // Refresh server photos if connected
-  //           if (isHotspotEnabled && hotspotGatewayIp) {
+  //           if (hotspotEnabled && hotspotGatewayIp) {
   //             loadInitialPhotos()
   //           }
 
@@ -913,12 +960,13 @@ export function GalleryScreen() {
         transitionToState(GalleryState.USER_CANCELLED_WIFI)
       } else if (error?.message?.includes("user has to enable wifi manually")) {
         // Android 10+ requires manual WiFi enable
-        setErrorMessage("Please enable WiFi in your device settings first")
         showAlert("WiFi Required", "Please enable WiFi in your device settings and try again", [{text: "OK"}])
         transitionToState(GalleryState.USER_CANCELLED_WIFI)
       } else {
-        setErrorMessage(error?.message || "Failed to connect to hotspot")
-        transitionToState(GalleryState.ERROR)
+        const errorMsg = error?.message || "Failed to connect to hotspot"
+        showAlert("Connection Error", errorMsg + ". Please try again.", [{text: "OK"}])
+        // Return to MEDIA_AVAILABLE so user can retry
+        transitionToState(GalleryState.MEDIA_AVAILABLE)
       }
     }
   }
@@ -937,92 +985,51 @@ export function GalleryScreen() {
   // Query gallery status
   const queryGlassesGalleryStatus = () => {
     console.log("[GalleryScreen] Querying glasses gallery status...")
-    bridge
-      .queryGalleryStatus()
-      .catch(error => console.error("[GalleryScreen] Failed to send gallery status query:", error))
+    CoreModule.queryGalleryStatus().catch(error =>
+      console.error("[GalleryScreen] Failed to send gallery status query:", error),
+    )
   }
 
-  // Initial mount - check permission first
+  // Initial mount - initialize gallery immediately, permission is handled lazily when saving
   useEffect(() => {
-    const checkAndRequestPermission = async () => {
-      console.log("[GalleryScreen] Component mounted - checking media library permission")
-      const hasPermission = await MediaLibraryPermissions.checkPermission()
+    console.log("[GalleryScreen] Component mounted - initializing gallery")
 
-      if (!hasPermission) {
-        // Show explanation BEFORE requesting permission
-        showAlert(
-          "Camera Roll Access",
-          "MentraOS Gallery can automatically save photos and videos from your glasses to your device's camera roll. Would you like to grant camera roll access?",
-          [
-            {
-              text: "Not Now",
-              style: "cancel",
-              onPress: () => goBack(),
-            },
-            {
-              text: "Allow",
-              onPress: async () => {
-                setIsRequestingPermission(true)
-                const granted = await MediaLibraryPermissions.requestPermission()
-                setIsRequestingPermission(false)
+    // Check permission status in background (for state tracking, not blocking)
+    MediaLibraryPermissions.checkPermission().then(hasPermission => {
+      setHasMediaLibraryPermission(hasPermission)
+      console.log("[GalleryScreen] Media library permission status:", hasPermission)
+    })
 
-                if (!granted) {
-                  // Permission was denied - show settings alert
-                  showAlert(
-                    "Permission Required",
-                    "MentraOS needs permission to save photos to your camera roll. Please grant permission in Settings.",
-                    [
-                      {text: "Cancel", onPress: () => goBack()},
-                      {
-                        text: "Open Settings",
-                        onPress: () => {
-                          Linking.openSettings()
-                          goBack()
-                        },
-                      },
-                    ],
-                  )
-                  return
-                }
+    // Initialize gallery immediately - no permission blocking
+    loadDownloadedPhotos()
 
-                // Permission granted, continue with initialization
-                setHasMediaLibraryPermission(true)
-                console.log("[GalleryScreen] Media library permission granted")
-                initializeGallery()
-              },
-            },
-          ],
-        )
-        return
-      }
-
-      setHasMediaLibraryPermission(true)
-      console.log("[GalleryScreen] Media library permission granted")
-      initializeGallery()
+    // Only query glasses if we have glasses info (meaning glasses are connected) AND glasses have gallery capability
+    if (glassesConnected && features?.hasCamera) {
+      console.log("[GalleryScreen] Glasses connected with gallery capability - querying gallery status")
+      transitionToState(GalleryState.QUERYING_GLASSES)
+      queryGlassesGalleryStatus()
+    } else {
+      console.log(
+        "[GalleryScreen] No glasses connected or glasses don't have gallery capability - showing local photos only",
+      )
+      transitionToState(GalleryState.NO_MEDIA_ON_GLASSES)
     }
-
-    const initializeGallery = () => {
-      // Continue with existing mount logic
-      loadDownloadedPhotos()
-
-      // Only query glasses if we have glasses info (meaning glasses are connected) AND glasses have gallery capability
-      if (status.glasses_info?.model_name && features?.hasCamera) {
-        console.log(
-          "[GalleryScreen] Glasses connected with gallery capability - querying gallery status",
-          status.glasses_info,
-        )
-        transitionToState(GalleryState.QUERYING_GLASSES)
-        queryGlassesGalleryStatus()
-      } else {
-        console.log(
-          "[GalleryScreen] No glasses connected or glasses don't have gallery capability - showing local photos only",
-        )
-        transitionToState(GalleryState.NO_MEDIA_ON_GLASSES)
-      }
-    }
-
-    checkAndRequestPermission()
   }, [])
+
+  // Reset gallery state when glasses disconnect
+  useEffect(() => {
+    if (!glassesConnected) {
+      console.log("[GalleryScreen] Glasses disconnected - clearing gallery state")
+      setGlassesGalleryStatus(null)
+      setTotalServerCount(0)
+      setLoadedServerPhotos(new Map())
+      loadedRanges.current.clear()
+      loadingRanges.current.clear()
+      setSyncProgress(null)
+      setPhotoSyncStates(new Map())
+      transitionToState(GalleryState.NO_MEDIA_ON_GLASSES)
+    }
+  }, [glassesConnected])
 
   // Refresh downloaded photos when screen comes into focus
   useFocusEffect(
@@ -1135,7 +1142,13 @@ export function GalleryScreen() {
   // Listen for hotspot ready
   useEffect(() => {
     const handleHotspotStatusChange = (eventData: any) => {
-      console.log("[GalleryScreen] Received GLASSES_HOTSPOT_STATUS_CHANGE event:", eventData)
+      console.log(
+        "[GalleryScreen] hotspot status changed:",
+        eventData.enabled,
+        eventData.ssid,
+        eventData.password,
+        eventData.local_ip,
+      )
 
       if (!eventData.enabled || !eventData.ssid || !eventData.password || !galleryOpenedHotspotRef.current) {
         return
@@ -1166,6 +1179,29 @@ export function GalleryScreen() {
         hotspotConnectionTimeoutRef.current = null
       }
       GlobalEventEmitter.removeListener("HOTSPOT_STATUS_CHANGE", handleHotspotStatusChange)
+    }
+  }, [])
+
+  // Handle hotspot errors from glasses
+  useEffect(() => {
+    const handleHotspotError = (eventData: any) => {
+      console.error("[GalleryScreen] Hotspot error:", eventData.error_message)
+
+      // Clear any pending connection attempts
+      if (hotspotConnectionTimeoutRef.current) {
+        clearTimeout(hotspotConnectionTimeoutRef.current)
+        hotspotConnectionTimeoutRef.current = null
+      }
+
+      // Show error alert and return to retryable state
+      const errorMsg = eventData.error_message || "Failed to start hotspot"
+      showAlert("Hotspot Error", errorMsg + ". Please try again.", [{text: "OK"}])
+      transitionToState(GalleryState.MEDIA_AVAILABLE)
+    }
+
+    GlobalEventEmitter.addListener("HOTSPOT_ERROR", handleHotspotError)
+    return () => {
+      GlobalEventEmitter.removeListener("HOTSPOT_ERROR", handleHotspotError)
     }
   }, [])
 
@@ -1292,13 +1328,7 @@ export function GalleryScreen() {
   }).current
 
   // UI state
-  const isLoadingServerPhotos = [
-    GalleryState.CONNECTED_LOADING,
-    GalleryState.INITIALIZING,
-    GalleryState.QUERYING_GLASSES,
-  ].includes(galleryState)
-
-  const error = galleryState === GalleryState.ERROR ? errorMessage : null
+  const isLoadingServerPhotos = [GalleryState.CONNECTED_LOADING, GalleryState.INITIALIZING].includes(galleryState)
   const serverPhotosToSync = totalServerCount
 
   const shouldShowSyncButton =
@@ -1311,7 +1341,6 @@ export function GalleryScreen() {
       GalleryState.REQUESTING_HOTSPOT,
       GalleryState.SYNCING,
       GalleryState.SYNC_COMPLETE,
-      GalleryState.ERROR,
     ].includes(galleryState) ||
     (galleryState === GalleryState.READY_TO_SYNC && serverPhotosToSync > 0)
 
@@ -1325,11 +1354,11 @@ export function GalleryScreen() {
           return (
             <View>
               <View style={themed($syncButtonRow)}>
-                <MaterialCommunityIcons
+                <Icon
                   name="download-circle-outline"
                   size={20}
                   color={theme.colors.text}
-                  style={{marginRight: spacing.xs}}
+                  style={{marginRight: spacing.s2}}
                 />
                 <Text style={themed($syncButtonText)}>
                   Sync {glassesGalleryStatus?.total || 0}{" "}
@@ -1352,7 +1381,7 @@ export function GalleryScreen() {
         case GalleryState.REQUESTING_HOTSPOT:
           return (
             <View style={themed($syncButtonRow)}>
-              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
+              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
               <Text style={themed($syncButtonText)}>Starting connection...</Text>
             </View>
           )
@@ -1360,7 +1389,7 @@ export function GalleryScreen() {
         case GalleryState.WAITING_FOR_WIFI_PROMPT:
           return (
             <View style={themed($syncButtonRow)}>
-              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
+              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
               <Text style={themed($syncButtonText)}>Waiting for connection...</Text>
             </View>
           )
@@ -1368,7 +1397,7 @@ export function GalleryScreen() {
         case GalleryState.CONNECTING_TO_HOTSPOT:
           return (
             <View style={themed($syncButtonRow)}>
-              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
+              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
               <Text style={themed($syncButtonText)}>Connecting...</Text>
             </View>
           )
@@ -1376,7 +1405,7 @@ export function GalleryScreen() {
         case GalleryState.CONNECTED_LOADING:
           return (
             <View style={themed($syncButtonRow)}>
-              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
+              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
               <Text style={themed($syncButtonText)}>Loading photos...</Text>
             </View>
           )
@@ -1386,12 +1415,7 @@ export function GalleryScreen() {
           return (
             <View>
               <View style={themed($syncButtonRow)}>
-                <MaterialCommunityIcons
-                  name="wifi-alert"
-                  size={20}
-                  color={theme.colors.text}
-                  style={{marginRight: spacing.xs}}
-                />
+                <Icon name="wifi-alert" size={20} color={theme.colors.text} style={{marginRight: spacing.s2}} />
                 <Text style={themed($syncButtonText)}>
                   Sync {glassesGalleryStatus?.total || 0}{" "}
                   {(glassesGalleryStatus?.photos || 0) > 0 && (glassesGalleryStatus?.videos || 0) > 0
@@ -1422,7 +1446,7 @@ export function GalleryScreen() {
           if (!syncProgress) {
             return (
               <View style={themed($syncButtonRow)}>
-                <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.xs}} />
+                <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
                 <Text style={themed($syncButtonText)}>Syncing {serverPhotosToSync} items...</Text>
               </View>
             )
@@ -1449,13 +1473,6 @@ export function GalleryScreen() {
           return (
             <View style={themed($syncButtonRow)}>
               <Text style={themed($syncButtonText)}>Sync complete!</Text>
-            </View>
-          )
-
-        case GalleryState.ERROR:
-          return (
-            <View style={themed($syncButtonRow)}>
-              <Text style={themed($syncButtonText)}>{errorMessage || "An error occurred"}</Text>
             </View>
           )
 
@@ -1518,22 +1535,22 @@ export function GalleryScreen() {
         </View>
         {item.isOnServer && !isSelectionMode && (
           <View style={themed($serverBadge)}>
-            <MaterialCommunityIcons name="glasses" size={14} color="white" />
+            <Icon name="glasses" size={14} color="white" />
           </View>
         )}
         {item.photo.is_video && !isSelectionMode && (
           <View style={themed($videoIndicator)}>
-            <MaterialCommunityIcons name="video" size={14} color="white" />
+            <Icon name="video" size={14} color="white" />
           </View>
         )}
         {isSelectionMode &&
           (isSelected ? (
             <View style={themed($selectionCheckbox)}>
-              <MaterialCommunityIcons name={"check"} size={24} color={"white"} />
+              <Icon name={"check"} size={24} color={"white"} />
             </View>
           ) : (
             <View style={themed($unselectedCheckbox)}>
-              <MaterialCommunityIcons name={"checkbox-blank-circle-outline"} size={24} color={"white"} />
+              <Icon name={"checkbox-blank-circle-outline"} size={24} color={"white"} />
             </View>
           ))}
         {(() => {
@@ -1558,7 +1575,7 @@ export function GalleryScreen() {
                   size={50}
                   strokeWidth={4}
                   showPercentage={!isFailed && !isCompleted}
-                  progressColor={isFailed ? theme.colors.error : isCompleted ? theme.colors.tint : theme.colors.tint}
+                  progressColor={isFailed ? theme.colors.error : theme.colors.primary}
                 />
                 {isFailed && (
                   <View
@@ -1569,7 +1586,7 @@ export function GalleryScreen() {
                       width: 50,
                       height: 50,
                     }}>
-                    <MaterialCommunityIcons name="alert-circle" size={20} color={theme.colors.error} />
+                    <Icon name="alert-circle" size={20} color={theme.colors.error} />
                   </View>
                 )}
                 {isCompleted && (
@@ -1581,7 +1598,7 @@ export function GalleryScreen() {
                       width: 50,
                       height: 50,
                     }}>
-                    <MaterialCommunityIcons name="check-circle" size={20} color={theme.colors.tint} />
+                    <Icon name="check-circle" size={20} color={theme.colors.tint} />
                   </View>
                 )}
               </View>
@@ -1593,34 +1610,20 @@ export function GalleryScreen() {
     )
   }
 
-  // Show permission loading state
-  if (isRequestingPermission || !hasMediaLibraryPermission) {
-    return (
-      <>
-        <Header title="Glasses Gallery" leftIcon="caretLeft" onLeftPress={() => goBack()} />
-        <View style={themed($screenContainer)}>
-          <View style={themed($permissionContainer)}>
-            <ActivityIndicator size="large" color={theme.colors.tint} />
-            <Text style={themed($permissionText)}>
-              {isRequestingPermission ? "Requesting photo library permission..." : "Loading gallery..."}
-            </Text>
-          </View>
-        </View>
-      </>
-    )
-  }
+  // Permission is no longer blocking - gallery loads immediately
+  // Permission is requested lazily when saving to camera roll
 
   return (
     <>
       <Header
         title={isSelectionMode ? "" : "Glasses Gallery"}
-        leftIcon={isSelectionMode ? undefined : "caretLeft"}
+        leftIcon={isSelectionMode ? undefined : "chevron-left"}
         onLeftPress={isSelectionMode ? undefined : () => goBack()}
         LeftActionComponent={
           isSelectionMode ? (
             <TouchableOpacity onPress={() => exitSelectionMode()}>
               <View style={themed($selectionHeader)}>
-                <MaterialCommunityIcons name="close" size={20} color={theme.colors.text} />
+                <Icon name="x" size={20} color={theme.colors.text} />
                 <Text style={themed($selectionCountText)}>{selectedPhotos.size}</Text>
               </View>
             </TouchableOpacity>
@@ -1636,13 +1639,13 @@ export function GalleryScreen() {
               }}
               disabled={selectedPhotos.size === 0}>
               <View style={themed($deleteButton)}>
-                <MaterialCommunityIcons name="delete" size={20} color={theme.colors.text} />
+                <Icon name="trash" size={20} color={theme.colors.text} />
                 <Text style={themed($deleteButtonText)}>Delete</Text>
               </View>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={() => push("/asg/gallery-settings")} style={themed($settingsButton)}>
-              <MaterialCommunityIcons name="cog" size={24} color={theme.colors.text} />
+              <Icon name="settings" size={24} color={theme.colors.text} />
             </TouchableOpacity>
           )
         }
@@ -1650,39 +1653,19 @@ export function GalleryScreen() {
       <View style={themed($screenContainer)}>
         <View style={themed($galleryContainer)}>
           {(() => {
-            // DEBUG: Log empty gallery condition evaluation
             const showEmpty = allPhotos.length === 0 && !isLoadingServerPhotos
-            // console.log(`[GalleryScreen] GALLERY STATE: ${galleryState}`)
-            // console.log(`[GalleryScreen] EMPTY GALLERY CHECK:`, {
-            //   hasError: !!error,
-            //   allPhotosLength: allPhotos.length,
-            //   isLoadingServerPhotos,
-            //   galleryState,
-            //   totalServerCount,
-            //   downloadedPhotosCount: downloadedPhotos.length,
-            //   showEmptyGallery: showEmpty && !error,
-            //   decision: error ? "SHOW_ERROR" : showEmpty ? "SHOW_EMPTY" : "SHOW_GALLERY",
-            // })
 
-            if (error) {
-              return (
-                <View style={themed($errorContainer)}>
-                  <Text style={themed($errorText)}>{error}</Text>
-                </View>
-              )
-            } else if (showEmpty) {
+            if (showEmpty) {
               return (
                 <View style={themed($emptyContainer)}>
-                  <MaterialCommunityIcons
+                  <Icon
                     name="image-outline"
                     size={64}
                     color={theme.colors.textDim}
-                    style={{marginBottom: spacing.lg}}
+                    style={{marginBottom: spacing.s6}}
                   />
-                  <Text style={themed($emptyText)}>Gallery is empty</Text>
-                  <Text style={themed($emptySubtext)}>
-                    Take photos with your glasses or sync existing photos to see them here.
-                  </Text>
+                  <Text style={themed($emptyText)}>{translate("glasses:noPhotos")}</Text>
+                  <Text style={themed($emptySubtext)}>{translate("glasses:takePhotoWithButton")}</Text>
                 </View>
               )
             } else {
@@ -1695,7 +1678,7 @@ export function GalleryScreen() {
                   keyExtractor={item => item.id}
                   contentContainerStyle={[
                     themed($photoGridContent),
-                    {paddingBottom: shouldShowSyncButton ? 100 : spacing.lg},
+                    {paddingBottom: shouldShowSyncButton ? 100 : spacing.s6},
                   ]}
                   columnWrapperStyle={numColumns > 1 ? themed($columnWrapper) : undefined}
                   ItemSeparatorComponent={() => <View style={{height: ITEM_SPACING}} />}
@@ -1729,22 +1712,7 @@ export function GalleryScreen() {
 const $screenContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   // backgroundColor: colors.background,
-  marginHorizontal: -spacing.lg,
-})
-
-const $errorContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.palette.angry100,
-  padding: spacing.sm,
-  borderRadius: spacing.xs,
-  margin: spacing.lg,
-  alignItems: "center",
-})
-
-const $errorText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 14,
-  color: colors.palette.angry500,
-  textAlign: "center",
-  marginBottom: spacing.sm,
+  marginHorizontal: -spacing.s6,
 })
 
 const $photoGridContent: ThemedStyle<ViewStyle> = () => ({
@@ -1759,16 +1727,17 @@ const $columnWrapper: ThemedStyle<ViewStyle> = () => ({
 
 const $emptyContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  justifyContent: "center",
+  justifyContent: "flex-start",
   alignItems: "center",
-  padding: spacing.xl,
+  padding: spacing.s8,
+  paddingTop: spacing.s12 * 2,
 })
 
 const $emptyText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 20,
   fontWeight: "600",
   color: colors.text,
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $emptySubtext: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -1776,7 +1745,7 @@ const $emptySubtext: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
   textAlign: "center",
   lineHeight: 20,
-  paddingHorizontal: spacing.lg,
+  paddingHorizontal: spacing.s6,
 })
 
 const $photoItem: ThemedStyle<ViewStyle> = () => ({
@@ -1792,8 +1761,8 @@ const $photoImage: ThemedStyle<ImageStyle> = () => ({
 
 const $videoIndicator: ThemedStyle<ViewStyle> = ({spacing}) => ({
   position: "absolute",
-  top: spacing.xs,
-  left: spacing.xs,
+  top: spacing.s2,
+  left: spacing.s2,
   backgroundColor: "rgba(0,0,0,0.7)",
   borderRadius: 12,
   paddingHorizontal: 6,
@@ -1822,16 +1791,16 @@ const $galleryContainer: ThemedStyle<ViewStyle> = () => ({
 
 const $syncButtonFixed: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
   position: "absolute",
-  bottom: spacing.xl,
-  left: spacing.lg,
-  right: spacing.lg,
-  backgroundColor: colors.background,
+  bottom: spacing.s8,
+  left: spacing.s6,
+  right: spacing.s6,
+  backgroundColor: colors.primary_foreground,
   color: colors.text,
-  borderRadius: spacing.md,
-  borderWidth: spacing.xxxs,
+  borderRadius: spacing.s4,
+  borderWidth: 1,
   borderColor: colors.border,
-  paddingVertical: spacing.md,
-  paddingHorizontal: spacing.lg,
+  paddingVertical: spacing.s4,
+  paddingHorizontal: spacing.s6,
   ...(isDark
     ? {}
     : {
@@ -1863,8 +1832,8 @@ const $syncButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $serverBadge: ThemedStyle<ViewStyle> = ({spacing}) => ({
   position: "absolute",
-  top: spacing.xs,
-  right: spacing.xs,
+  top: spacing.s2,
+  right: spacing.s2,
   backgroundColor: "rgba(0,0,0,0.7)",
   borderRadius: 12,
   paddingHorizontal: 6,
@@ -1879,9 +1848,9 @@ const $serverBadge: ThemedStyle<ViewStyle> = ({spacing}) => ({
 })
 
 // const _$deleteAllButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-//   paddingHorizontal: spacing.sm,
-//   paddingVertical: spacing.xs,
-//   borderRadius: spacing.sm,
+//   paddingHorizontal: spacing.s3,
+//   paddingVertical: spacing.s2,
+//   borderRadius: spacing.s3,
 //   justifyContent: "center",
 //   alignItems: "center",
 //   minWidth: 44,
@@ -1893,7 +1862,7 @@ const $syncButtonProgressBar: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.border,
   borderRadius: 3,
   overflow: "hidden",
-  marginTop: spacing.xs,
+  marginTop: spacing.s2,
   width: "100%",
 })
 
@@ -1917,24 +1886,10 @@ const $photoItemDisabled: ThemedStyle<ViewStyle> = () => ({
   // Removed opacity to prevent greyed out appearance during sync
 })
 
-const $permissionContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  padding: spacing.xl,
-})
-
-const $permissionText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 16,
-  color: colors.textDim,
-  marginTop: spacing.md,
-  textAlign: "center",
-})
-
 const $settingsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  borderRadius: spacing.sm,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
+  borderRadius: spacing.s3,
   justifyContent: "center",
   alignItems: "center",
   minWidth: 44,
@@ -1943,8 +1898,8 @@ const $settingsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
 
 const $selectionCheckbox: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
-  top: spacing.xxs,
-  left: spacing.xxs,
+  top: spacing.s1,
+  left: spacing.s1,
   backgroundColor: colors.primary,
   borderRadius: 20,
   padding: 2,
@@ -1953,8 +1908,8 @@ const $selectionCheckbox: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 
 const $unselectedCheckbox: ThemedStyle<ViewStyle> = ({spacing}) => ({
   position: "absolute",
-  top: spacing.xxs,
-  left: spacing.xxs,
+  top: spacing.s1,
+  left: spacing.s1,
   backgroundColor: "rgba(0, 0, 0, 0.3)",
   borderRadius: 20,
   padding: 2,
@@ -1963,7 +1918,7 @@ const $unselectedCheckbox: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $deleteButton: ThemedStyle<ViewStyle> = ({colors}) => ({
   flexDirection: "row",
   alignItems: "center",
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   padding: 8,
   borderRadius: 32,
   gap: 6,
@@ -1979,7 +1934,7 @@ const $deleteButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
 const $selectionHeader: ThemedStyle<ViewStyle> = ({colors}) => ({
   flexDirection: "row",
   alignItems: "center",
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   padding: 8,
   borderRadius: 32,
   gap: 6,

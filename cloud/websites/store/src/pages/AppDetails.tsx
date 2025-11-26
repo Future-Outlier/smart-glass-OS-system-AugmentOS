@@ -17,7 +17,7 @@ import {
   CircleDot,
   Lightbulb,
 } from "lucide-react"
-import {useAuth} from "../hooks/useAuth"
+import {useAuth} from "@mentra/shared"
 import {useTheme} from "../hooks/useTheme"
 import {useIsDesktop} from "../hooks/useMediaQuery"
 import {usePlatform} from "../hooks/usePlatform"
@@ -231,7 +231,8 @@ const AppDetails: React.FC = () => {
         })
       } else {
         // Fallback to generic error message
-        const errorMessage = (err as any)?.response?.data?.message || "Failed to install app"
+        const errorMessage =
+          (err as {response?: {data?: {message?: string}}})?.response?.data?.message || "Failed to install app"
         toast.error(errorMessage)
       }
     } finally {
@@ -635,7 +636,8 @@ const AppDetails: React.FC = () => {
                               style={{
                                 color: theme === "light" ? "#000000" : "#E4E4E7",
                               }}>
-                              {permission.type || "Microphone"}
+                              {(permission.type || "Microphone").charAt(0).toUpperCase() +
+                                (permission.type || "Microphone").slice(1).toLowerCase()}
                             </div>
                             <div
                               className="text-[13px] leading-[1.4]"
@@ -713,7 +715,7 @@ const AppDetails: React.FC = () => {
                                     style={{
                                       color: theme === "light" ? "#6c757d" : "#9CA3AF",
                                     }}>
-                                    {hardwareIcons[req.type]}
+                                    {hardwareIcons[req.type as HardwareType]}
                                   </div>
                                   <div className="flex-1">
                                     <div
@@ -721,7 +723,7 @@ const AppDetails: React.FC = () => {
                                       style={{
                                         color: theme === "light" ? "#000000" : "#E4E4E7",
                                       }}>
-                                      {req.type.charAt(0) + req.type.slice(1).toLowerCase()}
+                                      {req.type.charAt(0).toUpperCase() + req.type.slice(1).toLowerCase()}
                                     </div>
                                     {req.description && (
                                       <div
@@ -764,7 +766,7 @@ const AppDetails: React.FC = () => {
                                     style={{
                                       color: theme === "light" ? "#6c757d" : "#9CA3AF",
                                     }}>
-                                    {hardwareIcons[req.type]}
+                                    {hardwareIcons[req.type as HardwareType]}
                                   </div>
                                   <div className="flex-1">
                                     <div
@@ -772,7 +774,7 @@ const AppDetails: React.FC = () => {
                                       style={{
                                         color: theme === "light" ? "#000000" : "#E4E4E7",
                                       }}>
-                                      {req.type.charAt(0) + req.type.slice(1).toLowerCase()}
+                                      {req.type.charAt(0).toUpperCase() + req.type.slice(1).toLowerCase()}
                                     </div>
                                     {req.description && (
                                       <div

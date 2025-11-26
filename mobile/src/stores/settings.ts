@@ -1,381 +1,419 @@
+import {getTimeZone} from "react-native-localize"
+import {AsyncResult, result as Res, Result} from "typesafe-ts"
 import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import {getTimeZone} from "react-native-localize"
-import restComms from "@/services/RestComms"
-import {isDeveloperBuildOrTestflight} from "@/utils/buildDetection"
-import CoreModule from "core"
-import Toast from "react-native-toast-message"
-import Constants from "expo-constants"
 
-export const SETTINGS_KEYS = {
-  // feature flags:
-  dev_mode: "dev_mode",
-  enable_squircles: "enable_squircles",
-  debug_console: "debug_console",
-  // ui state:
-  default_wearable: "default_wearable",
-  device_name: "device_name",
-  device_address: "device_address",
-  onboarding_completed: "onboarding_completed",
-  has_ever_activated_app: "has_ever_activated_app",
-  visited_livecaptions_settings: "visited_livecaptions_settings",
-  // ui settings:
-  enable_phone_notifications: "enable_phone_notifications",
-  settings_access_count: "settings_access_count",
-  custom_backend_url: "custom_backend_url",
-  reconnect_on_app_foreground: "reconnect_on_app_foreground",
-  theme_preference: "theme_preference",
-  // core settings:
-  sensing_enabled: "sensing_enabled",
-  power_saving_mode: "power_saving_mode",
-  always_on_status_bar: "always_on_status_bar",
-  bypass_vad_for_debugging: "bypass_vad_for_debugging",
-  bypass_audio_encoding_for_debugging: "bypass_audio_encoding_for_debugging",
-  metric_system: "metric_system",
-  enforce_local_transcription: "enforce_local_transcription",
-  preferred_mic: "preferred_mic",
-  screen_disabled: "screen_disabled",
-  // glasses settings:
-  contextual_dashboard: "contextual_dashboard",
-  head_up_angle: "head_up_angle",
-  brightness: "brightness",
-  auto_brightness: "auto_brightness",
-  dashboard_height: "dashboard_height",
-  dashboard_depth: "dashboard_depth",
-  gallery_mode: "gallery_mode",
-  // button settings
-  button_mode: "button_mode",
-  button_photo_size: "button_photo_size",
-  button_video_settings: "button_video_settings",
-  button_camera_led: "button_camera_led",
-  button_video_settings_width: "button_video_settings_width",
-  button_max_recording_time: "button_max_recording_time",
-  core_token: "core_token",
-  server_url: "server_url",
-  location_tier: "location_tier",
-  show_advanced_settings: "show_advanced_settings",
-  // time zone settings
-  time_zone: "time_zone",
-  time_zone_override: "time_zone_override",
-  // offline applets
-  offline_mode: "offline_mode",
-  offline_captions_running: "offline_captions_running",
-  // offline_camera_running: "offline_camera_running",
-  // Button action settings
-  default_button_action_enabled: "default_button_action_enabled",
-  default_button_action_app: "default_button_action_app",
-  // notifications
-  notifications_enabled: "notifications_enabled",
-  notifications_blocklist: "notifications_blocklist",
-} as const
-const DEFAULT_SETTINGS: Record<string, any> = {
-  // feature flags / dev:
-  [SETTINGS_KEYS.dev_mode]: false,
-  [SETTINGS_KEYS.enable_squircles]: false,
-  [SETTINGS_KEYS.debug_console]: false,
-  // ui state:
-  [SETTINGS_KEYS.default_wearable]: "",
-  [SETTINGS_KEYS.device_name]: "",
-  [SETTINGS_KEYS.device_address]: "",
-  [SETTINGS_KEYS.onboarding_completed]: false,
-  [SETTINGS_KEYS.has_ever_activated_app]: false,
-  [SETTINGS_KEYS.visited_livecaptions_settings]: false,
-  // ui settings:
-  [SETTINGS_KEYS.enable_phone_notifications]: false,
-  [SETTINGS_KEYS.settings_access_count]: 0,
-  [SETTINGS_KEYS.custom_backend_url]: "https://api.mentra.glass:443",
-  [SETTINGS_KEYS.reconnect_on_app_foreground]: false,
-  [SETTINGS_KEYS.theme_preference]: "system",
-  // core settings:
-  [SETTINGS_KEYS.sensing_enabled]: true,
-  [SETTINGS_KEYS.power_saving_mode]: false,
-  [SETTINGS_KEYS.always_on_status_bar]: false,
-  [SETTINGS_KEYS.bypass_vad_for_debugging]: true,
-  [SETTINGS_KEYS.bypass_audio_encoding_for_debugging]: false,
-  [SETTINGS_KEYS.metric_system]: false,
-  [SETTINGS_KEYS.enforce_local_transcription]: false,
-  [SETTINGS_KEYS.preferred_mic]: "phone",
-  [SETTINGS_KEYS.screen_disabled]: false,
-  // glasses settings:
-  [SETTINGS_KEYS.contextual_dashboard]: true,
-  [SETTINGS_KEYS.head_up_angle]: 45,
-  [SETTINGS_KEYS.brightness]: 50,
-  [SETTINGS_KEYS.auto_brightness]: true,
-  [SETTINGS_KEYS.dashboard_height]: 4,
-  [SETTINGS_KEYS.dashboard_depth]: 5,
-  [SETTINGS_KEYS.gallery_mode]: false,
-  // button settings
-  [SETTINGS_KEYS.button_mode]: "photo",
-  [SETTINGS_KEYS.button_photo_size]: "medium",
-  [SETTINGS_KEYS.button_video_settings]: {width: 1920, height: 1080, fps: 30},
-  [SETTINGS_KEYS.button_camera_led]: true,
-  [SETTINGS_KEYS.button_max_recording_time]: 10,
-  [SETTINGS_KEYS.location_tier]: "",
-  // time zone settings
-  [SETTINGS_KEYS.time_zone]: "",
-  [SETTINGS_KEYS.time_zone_override]: "",
-  // offline applets
-  [SETTINGS_KEYS.offline_mode]: false,
-  [SETTINGS_KEYS.offline_captions_running]: false,
-  // [SETTINGS_KEYS.offline_camera_running]: false,
-  // button action settings
-  [SETTINGS_KEYS.default_button_action_enabled]: true,
-  [SETTINGS_KEYS.default_button_action_app]: "com.mentra.camera",
-  // notifications
-  [SETTINGS_KEYS.notifications_enabled]: true,
-  [SETTINGS_KEYS.notifications_blocklist]: [],
+import restComms from "@/services/RestComms"
+import {storage} from "@/utils/storage"
+
+interface Setting {
+  key: string
+  defaultValue: () => any
+  writable: boolean
+  saveOnServer: boolean
+  // change the key to a different key based on the indexer
+  // NEVER do any network calls in the indexer (or performance will suffer greatly
+  indexer?: (key: string) => string
+  // optionally override the value of the setting when it's accessed
+  override?: () => any
+  // onWrite?: () => void
 }
-const CORE_SETTINGS_KEYS = [
-  SETTINGS_KEYS.sensing_enabled,
-  SETTINGS_KEYS.power_saving_mode,
-  SETTINGS_KEYS.always_on_status_bar,
-  SETTINGS_KEYS.bypass_vad_for_debugging,
-  SETTINGS_KEYS.bypass_audio_encoding_for_debugging,
-  SETTINGS_KEYS.metric_system,
-  SETTINGS_KEYS.enforce_local_transcription,
-  SETTINGS_KEYS.preferred_mic,
-  SETTINGS_KEYS.screen_disabled,
+
+export const SETTINGS: Record<string, Setting> = {
+  // feature flags / mantle settings:
+  dev_mode: {key: "dev_mode", defaultValue: () => __DEV__, writable: true, saveOnServer: true},
+  enable_squircles: {key: "enable_squircles", defaultValue: () => true, writable: true, saveOnServer: true},
+  debug_console: {key: "debug_console", defaultValue: () => false, writable: true, saveOnServer: true},
+  china_deployment: {
+    key: "china_deployment",
+    defaultValue: () => (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china" ? true : false),
+    override: () => (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china" ? true : false),
+    writable: false,
+    saveOnServer: false,
+  },
+  backend_url: {
+    key: "backend_url",
+    defaultValue: () =>
+      process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china"
+        ? "https://api.mentraglass.cn:443"
+        : "https://api.mentra.glass:443",
+    writable: true,
+    override: () => {
+      if (process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE) {
+        return process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE
+      }
+      return undefined
+    },
+    saveOnServer: true,
+  },
+  store_url: {
+    key: "store_url",
+    defaultValue: () =>
+      process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china"
+        ? "https://store.mentraglass.cn"
+        : "https://apps.mentra.glass",
+    writable: true,
+    override: () => {
+      if (process.env.EXPO_PUBLIC_STORE_URL_OVERRIDE) {
+        return process.env.EXPO_PUBLIC_STORE_URL_OVERRIDE
+      }
+      return undefined
+    },
+    saveOnServer: true,
+  },
+  reconnect_on_app_foreground: {
+    key: "reconnect_on_app_foreground",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+  },
+  location_tier: {key: "location_tier", defaultValue: () => "", writable: true, saveOnServer: true},
+  // state:
+  core_token: {key: "core_token", defaultValue: () => "", writable: true, saveOnServer: true},
+  default_wearable: {key: "default_wearable", defaultValue: () => "", writable: true, saveOnServer: true},
+  device_name: {key: "device_name", defaultValue: () => "", writable: true, saveOnServer: true},
+  device_address: {key: "device_address", defaultValue: () => "", writable: true, saveOnServer: true},
+  // ui state:
+  theme_preference: {key: "theme_preference", defaultValue: () => "system", writable: true, saveOnServer: true},
+  enable_phone_notifications: {
+    key: "enable_phone_notifications",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+  },
+  settings_access_count: {key: "settings_access_count", defaultValue: () => 0, writable: true, saveOnServer: true},
+  show_advanced_settings: {
+    key: "show_advanced_settings",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: false,
+  },
+  onboarding_completed: {key: "onboarding_completed", defaultValue: () => false, writable: true, saveOnServer: true},
+
+  // core settings:
+  sensing_enabled: {key: "sensing_enabled", defaultValue: () => true, writable: true, saveOnServer: true},
+  power_saving_mode: {key: "power_saving_mode", defaultValue: () => false, writable: true, saveOnServer: true},
+  always_on_status_bar: {key: "always_on_status_bar", defaultValue: () => false, writable: true, saveOnServer: true},
+  bypass_vad_for_debugging: {
+    key: "bypass_vad_for_debugging",
+    defaultValue: () => true,
+    writable: true,
+    saveOnServer: true,
+  },
+  bypass_audio_encoding_for_debugging: {
+    key: "bypass_audio_encoding_for_debugging",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+  },
+  metric_system: {key: "metric_system", defaultValue: () => false, writable: true, saveOnServer: true},
+  enforce_local_transcription: {
+    key: "enforce_local_transcription",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+  },
+  preferred_mic: {
+    key: "preferred_mic",
+    defaultValue: () => "auto",
+    writable: true,
+    indexer: (key: string) => {
+      const glasses = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
+      if (glasses) {
+        return `${key}:${glasses}`
+      }
+      return key
+    },
+    saveOnServer: true,
+  },
+  screen_disabled: {key: "screen_disabled", defaultValue: () => false, writable: true, saveOnServer: false},
   // glasses settings:
-  SETTINGS_KEYS.contextual_dashboard,
-  SETTINGS_KEYS.head_up_angle,
-  SETTINGS_KEYS.brightness,
-  SETTINGS_KEYS.auto_brightness,
-  SETTINGS_KEYS.dashboard_height,
-  SETTINGS_KEYS.dashboard_depth,
-  SETTINGS_KEYS.gallery_mode,
+  contextual_dashboard: {key: "contextual_dashboard", defaultValue: () => true, writable: true, saveOnServer: true},
+  head_up_angle: {key: "head_up_angle", defaultValue: () => 45, writable: true, saveOnServer: true},
+  brightness: {key: "brightness", defaultValue: () => 50, writable: true, saveOnServer: true},
+  auto_brightness: {key: "auto_brightness", defaultValue: () => true, writable: true, saveOnServer: true},
+  dashboard_height: {key: "dashboard_height", defaultValue: () => 4, writable: true, saveOnServer: true},
+  dashboard_depth: {key: "dashboard_depth", defaultValue: () => 5, writable: true, saveOnServer: true},
+  gallery_mode: {key: "gallery_mode", defaultValue: () => false, writable: true, saveOnServer: true},
+  // button settings
+  button_mode: {key: "button_mode", defaultValue: () => "photo", writable: true, saveOnServer: true},
+  button_photo_size: {key: "button_photo_size", defaultValue: () => "large", writable: true, saveOnServer: true},
+  button_video_settings: {
+    key: "button_video_settings",
+    defaultValue: () => ({width: 1920, height: 1080, fps: 30}),
+    writable: true,
+    saveOnServer: true,
+  },
+  button_camera_led: {key: "button_camera_led", defaultValue: () => true, writable: true, saveOnServer: true},
+  button_video_settings_width: {
+    key: "button_video_settings_width",
+    defaultValue: () => 1920,
+    writable: true,
+    saveOnServer: true,
+  },
+  button_max_recording_time: {
+    key: "button_max_recording_time",
+    defaultValue: () => 10,
+    writable: true,
+    saveOnServer: true,
+  },
+
+  // time zone settings
+  time_zone: {
+    key: "time_zone",
+    defaultValue: () => "",
+    writable: true,
+    override: () => {
+      const override = useSettingsStore.getState().getSetting(SETTINGS.time_zone_override.key)
+      if (override) {
+        return override
+      }
+      return getTimeZone()
+    },
+    saveOnServer: true,
+  },
+  time_zone_override: {key: "time_zone_override", defaultValue: () => "", writable: true, saveOnServer: true},
+  // offline applets
+  offline_mode: {key: "offline_mode", defaultValue: () => false, writable: true, saveOnServer: true},
+  offline_captions_running: {
+    key: "offline_captions_running",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+  },
+  // button action settings
+  default_button_action_enabled: {
+    key: "default_button_action_enabled",
+    defaultValue: () => true,
+    writable: true,
+    saveOnServer: true,
+  },
+  default_button_action_app: {
+    key: "default_button_action_app",
+    defaultValue: () => "com.mentra.camera",
+    writable: true,
+    saveOnServer: true,
+  },
+  // notifications
+  notifications_enabled: {key: "notifications_enabled", defaultValue: () => true, writable: true, saveOnServer: true},
+  notifications_blocklist: {key: "notifications_blocklist", defaultValue: () => [], writable: true, saveOnServer: true},
+} as const
+
+// these settings are automatically synced to the core:
+const CORE_SETTINGS_KEYS: string[] = [
+  SETTINGS.sensing_enabled.key,
+  SETTINGS.power_saving_mode.key,
+  SETTINGS.always_on_status_bar.key,
+  SETTINGS.bypass_vad_for_debugging.key,
+  SETTINGS.bypass_audio_encoding_for_debugging.key,
+  SETTINGS.metric_system.key,
+  SETTINGS.enforce_local_transcription.key,
+  SETTINGS.preferred_mic.key,
+  SETTINGS.screen_disabled.key,
+  // glasses settings:
+  SETTINGS.contextual_dashboard.key,
+  SETTINGS.head_up_angle.key,
+  SETTINGS.brightness.key,
+  SETTINGS.auto_brightness.key,
+  SETTINGS.dashboard_height.key,
+  SETTINGS.dashboard_depth.key,
+  SETTINGS.gallery_mode.key,
   // button:
-  SETTINGS_KEYS.button_mode,
-  SETTINGS_KEYS.button_photo_size,
-  SETTINGS_KEYS.button_video_settings,
-  SETTINGS_KEYS.button_camera_led,
-  SETTINGS_KEYS.button_max_recording_time,
-  SETTINGS_KEYS.default_wearable,
-  SETTINGS_KEYS.device_name,
-  SETTINGS_KEYS.device_address,
+  SETTINGS.button_mode.key,
+  SETTINGS.button_photo_size.key,
+  SETTINGS.button_video_settings.key,
+  SETTINGS.button_camera_led.key,
+  SETTINGS.button_max_recording_time.key,
+  SETTINGS.default_wearable.key,
+  SETTINGS.device_name.key,
+  SETTINGS.device_address.key,
   // offline applets:
-  SETTINGS_KEYS.offline_captions_running,
-  // SETTINGS_KEYS.offline_camera_running,
+  SETTINGS.offline_captions_running.key,
+  // SETTINGS.offline_camera_running.key,
   // notifications:
-  SETTINGS_KEYS.notifications_enabled,
-  SETTINGS_KEYS.notifications_blocklist,
+  SETTINGS.notifications_enabled.key,
+  SETTINGS.notifications_blocklist.key,
 ]
+
+// const PER_GLASSES_SETTINGS_KEYS: string[] = [SETTINGS.preferred_mic.key]
+
 interface SettingsState {
   // Settings values
   settings: Record<string, any>
   // Loading states
   isInitialized: boolean
-  loadingKeys: Set<string>
   // Actions
-  setSetting: (key: string, value: any, updateCore?: boolean, updateServer?: boolean) => Promise<void>
-  setSettings: (updates: Record<string, any>, updateCore?: boolean, updateServer?: boolean) => Promise<void>
-  setManyLocally: (settings: Record<string, any>) => Promise<void>
+  setSetting: (key: string, value: any, updateServer?: boolean) => AsyncResult<void, Error>
+  setManyLocally: (settings: Record<string, any>) => AsyncResult<void, Error>
   getSetting: (key: string) => any
-  loadSetting: (key: string) => Promise<any>
-  loadAllSettings: () => Promise<void>
-  initUserSettings: () => Promise<void>
+  // loadSetting: (key: string) => AsyncResult<void, Error>
+  loadAllSettings: () => AsyncResult<void, Error>
   // Utility methods
-  getDefaultValue: (key: string) => any
-  handleSpecialCases: (key: string) => Promise<any>
   getRestUrl: () => string
   getWsUrl: () => string
   getCoreSettings: () => Record<string, any>
 }
+
+const getDefaultSettings = () =>
+  Object.keys(SETTINGS).reduce(
+    (acc, key) => {
+      acc[key] = SETTINGS[key].defaultValue()
+      return acc
+    },
+    {} as Record<string, any>,
+  )
+
+const migrateSettings = () => {
+  useSettingsStore.getState().setSetting(SETTINGS.enable_squircles.key, true, true)
+  // Force light mode - dark mode is not complete yet
+  useSettingsStore.getState().setSetting(SETTINGS.theme_preference.key, "light", true)
+}
+
 export const useSettingsStore = create<SettingsState>()(
   subscribeWithSelector((set, get) => ({
-    settings: {...DEFAULT_SETTINGS},
+    settings: getDefaultSettings(),
     isInitialized: false,
     loadingKeys: new Set(),
-    setSetting: async (key: string, value: any, updateCore = true, updateServer = true) => {
-      try {
+    setSetting: (key: string, value: any, updateServer = true): AsyncResult<void, Error> => {
+      return Res.try_async(async () => {
+        const setting = SETTINGS[key]
+        const originalKey = key
+
+        if (!setting) {
+          console.error(`SETTINGS: SET: ${originalKey} is not a valid setting!`)
+          return
+        }
+
+        if (setting.indexer) {
+          key = setting.indexer(originalKey)
+        }
+
+        if (!setting.writable) {
+          console.error(`SETTINGS: ${originalKey} is not writable!`)
+          return
+        }
+
         // Update store immediately for optimistic UI
         set(state => ({
           settings: {...state.settings, [key]: value},
         }))
+
+        console.log(`SETTINGS: SET: ${key} = ${value}`)
+
         // Persist to AsyncStorage
-        const jsonValue = JSON.stringify(value)
-        await AsyncStorage.setItem(key, jsonValue)
-        try {
-          // Update core settings if needed
-          if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number]) && updateCore) {
-            CoreModule.updateSettings({[key]: value})
-          }
-        } catch (e) {
-          console.log("SETTINGS: couldn't update core settings: ", e)
+        let res = await storage.save(key, value)
+        if (res.is_error()) {
+          console.error(`SETTINGS: couldn't save setting to storage: `, res.error)
         }
+
         // Sync with server if needed
-        try {
-          if (updateServer) {
-            await restComms.writeUserSettings({[key]: value})
-          }
-        } catch (e) {
-          console.log("SETTINGS: couldn't sync setting to server: ", e)
-        }
-      } catch (error) {
-        console.error(`Failed to save setting (${key}):`, error)
-        // Rollback on error
-        const oldValue = await get().loadSetting(key)
-        set(state => ({
-          settings: {...state.settings, [key]: oldValue},
-        }))
-        Toast.show({
-          type: "error",
-          text1: "Failed to save setting",
-          text2: error + "",
-        })
-        // throw error
-      }
-    },
-    setSettings: async (updates: Record<string, any>, updateCore = true, updateServer = true) => {
-      try {
-        // Update store immediately
-        set(state => ({
-          settings: {...state.settings, ...updates},
-        }))
-        // Persist all to AsyncStorage
-        await Promise.all(
-          Object.entries(updates).map(([key, value]) => AsyncStorage.setItem(key, JSON.stringify(value))),
-        )
-        // Update core settings
-        if (updateCore) {
-          const coreUpdates: Record<string, any> = {}
-          Object.keys(updates).forEach(key => {
-            if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number])) {
-              coreUpdates[key] = updates[key]
-            }
-          })
-          if (Object.keys(coreUpdates).length > 0) {
-            CoreModule.updateSettings(coreUpdates)
-          }
-        }
-        // Sync with server
         if (updateServer) {
-          await restComms.writeUserSettings(updates)
+          const result = await restComms.writeUserSettings({[key]: value})
+          if (result.is_error()) {
+            console.log("SETTINGS: couldn't sync setting to server: ", result.error)
+          }
         }
-      } catch (error) {
-        console.error("Failed to save settings:", error)
-        // Rollback all on error
-        const oldValues: Record<string, any> = {}
-        for (const key of Object.keys(updates)) {
-          oldValues[key] = await get().loadSetting(key)
-        }
-        set(state => ({
-          settings: {...state.settings, ...oldValues},
-        }))
-        throw error
-      }
+      })
     },
     getSetting: (key: string) => {
       const state = get()
-      const specialCase = state.handleSpecialCases(key)
-      if (specialCase !== null) {
-        return specialCase
+      const originalKey = key
+      const setting = SETTINGS[originalKey]
+
+      if (!setting) {
+        console.error(`SETTINGS: GET: ${originalKey} is not a valid setting!`)
+        return undefined
       }
-      return state.settings[key] ?? DEFAULT_SETTINGS[key]
-    },
-    getDefaultValue: (key: string) => {
-      if (key === SETTINGS_KEYS.time_zone) {
-        return getTimeZone()
-      }
-      if (key === SETTINGS_KEYS.dev_mode) {
-        return isDeveloperBuildOrTestflight()
-      }
-      return DEFAULT_SETTINGS[key]
-    },
-    handleSpecialCases: (key: string) => {
-      const state = get()
-      if (key === SETTINGS_KEYS.time_zone) {
-        const override = state.getSetting(SETTINGS_KEYS.time_zone_override)
-        if (override) {
+
+      if (setting.override) {
+        let override = setting.override()
+        if (override !== undefined) {
           return override
-        }
-        return getTimeZone()
-      }
-      if (key == SETTINGS_KEYS.custom_backend_url) {
-        if (Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE) {
-          return Constants.expoConfig?.extra?.CUSTOM_BACKEND_URL_OVERRIDE
         }
       }
 
-      return null
-    },
-    loadSetting: async (key: string) => {
-      const state = get()
+      if (setting.indexer) {
+        key = setting.indexer(originalKey)
+      }
+
+      // console.log(`GET SETTING: ${key} = ${state.settings[key]}`)
       try {
-        // Check for special cases first
-        const specialCase = state.handleSpecialCases(key)
-        if (specialCase !== null) {
-          return specialCase
-        }
-        const jsonValue = await AsyncStorage.getItem(key)
-        if (jsonValue !== null) {
-          const value = JSON.parse(jsonValue)
-          // Update store with loaded value
-          set(state => ({
-            settings: {...state.settings, [key]: value},
-          }))
-          return value
-        }
-        const defaultValue = get().getDefaultValue(key)
-        return defaultValue
-      } catch (error) {
-        console.error(`Failed to load setting (${key}):`, error)
-        return get().getDefaultValue(key)
+        return state.settings[key] ?? SETTINGS[originalKey].defaultValue()
+      } catch (e) {
+        // for dynamically created settings, we need to create a new setting in SETTINGS:
+        console.log(`Failed to get setting, creating new setting:(${key}):`, e)
+        SETTINGS[key] = {key: key, defaultValue: () => undefined, writable: true, saveOnServer: false}
+        return SETTINGS[key].defaultValue()
       }
     },
-    setManyLocally: async (settings: Record<string, any>) => {
-      // Update store immediately
-      set(state => ({
-        settings: {...state.settings, ...settings},
-      }))
-      // Persist all to AsyncStorage
-      await Promise.all(
-        Object.entries(settings).map(([key, value]) => AsyncStorage.setItem(key, JSON.stringify(value))),
-      )
-      // Update core settings
-      const coreUpdates: Record<string, any> = {}
-      Object.keys(settings).forEach(key => {
-        if (CORE_SETTINGS_KEYS.includes(key as (typeof CORE_SETTINGS_KEYS)[number])) {
-          coreUpdates[key] = settings[key]
-        }
-      })
-      if (Object.keys(coreUpdates).length > 0) {
-        CoreModule.updateSettings(coreUpdates)
-      }
-    },
-    loadAllSettings: async () => {
-      set(_state => ({
-        loadingKeys: new Set(Object.values(SETTINGS_KEYS)),
-      }))
-      const loadedSettings: Record<string, any> = {}
-      for (const key of Object.values(SETTINGS_KEYS)) {
-        try {
-          const value = await get().loadSetting(key)
-          loadedSettings[key] = value
-        } catch (error) {
-          console.error(`Failed to load setting ${key}:`, error)
-          loadedSettings[key] = DEFAULT_SETTINGS[key]
-        }
-      }
-      set({
-        settings: loadedSettings,
-        isInitialized: true,
-        loadingKeys: new Set(),
+    // batch update many settings from the server:
+    setManyLocally: (settings: Record<string, any>): AsyncResult<void, Error> => {
+      return Res.try_async(async () => {
+        // Update store immediately
+        set(state => ({
+          settings: {...state.settings, ...settings},
+        }))
+        // Persist all to storage
+        await Promise.all(Object.entries(settings).map(([key, value]) => storage.save(key, value)))
       })
     },
-    initUserSettings: async () => {
-      const timeZone = get().getSetting(SETTINGS_KEYS.time_zone)
-      await get().setSetting(SETTINGS_KEYS.time_zone, timeZone, true, true)
-      set({isInitialized: true})
+    // loads any preferences that have been changed from the default and saved to DISK!
+    loadAllSettings: (): AsyncResult<void, Error> => {
+      return Res.try_async(async () => {
+        const state = get()
+        let loadedSettings: Record<string, any> = {}
+
+        if (state.isInitialized) {
+          migrateSettings()
+          return undefined
+        }
+
+        for (const setting of Object.values(SETTINGS)) {
+          // load all subkeys for an indexed setting:
+          if (setting?.indexer) {
+            console.log(`SETTINGS: LOAD: ${setting.key} with indexer!`)
+
+            let res: Result<Record<string, unknown>, Error> = storage.loadSubKeys(setting.key)
+            if (res.is_error()) {
+              console.log(`SETTINGS: LOAD: ${setting.key}`, res.error)
+              continue
+            }
+
+            let subKeys: Record<string, unknown> = res.value
+            console.log(`SETTINGS: LOAD: ${setting.key} subkeys are set!`, subKeys)
+            loadedSettings = {...loadedSettings, ...subKeys}
+            continue
+          }
+
+          let res = storage.load<any>(setting.key)
+          if (res.is_error()) {
+            // this setting isn't set from the default, so we don't load anything
+            continue
+          }
+          // normal key:value pair:
+          let value = res.value
+          loadedSettings[setting.key] = value
+        }
+
+        // console.log("##############################################")
+        // console.log(loadedSettings)
+        // console.log("##############################################")
+
+        set(state => ({
+          isInitialized: true,
+          settings: {...state.settings, ...loadedSettings},
+        }))
+        migrateSettings()
+      })
     },
     getRestUrl: () => {
-      const serverUrl = get().getSetting(SETTINGS_KEYS.custom_backend_url)
+      const serverUrl = get().getSetting(SETTINGS.backend_url.key)
       const url = new URL(serverUrl)
       const secure = url.protocol === "https:"
       return `${secure ? "https" : "http"}://${url.hostname}:${url.port || (secure ? 443 : 80)}`
     },
     getWsUrl: () => {
-      const serverUrl = get().getSetting(SETTINGS_KEYS.custom_backend_url)
+      const serverUrl = get().getSetting(SETTINGS.backend_url.key)
       const url = new URL(serverUrl)
       const secure = url.protocol === "https:"
       return `${secure ? "wss" : "ws"}://${url.hostname}:${url.port || (secure ? 443 : 80)}/glasses-ws`
@@ -383,72 +421,18 @@ export const useSettingsStore = create<SettingsState>()(
     getCoreSettings: () => {
       const state = get()
       const coreSettings: Record<string, any> = {}
-      CORE_SETTINGS_KEYS.forEach(key => {
-        coreSettings[key] = state.getSetting(key)
+      Object.values(SETTINGS).forEach(setting => {
+        if (CORE_SETTINGS_KEYS.includes(setting.key)) {
+          coreSettings[setting.key] = state.getSetting(setting.key)
+        }
       })
-      console.log(coreSettings)
       return coreSettings
     },
   })),
 )
-// Initialize settings on app startup
-export const initializeSettings = async () => {
-  await useSettingsStore.getState().loadAllSettings()
-  // await useSettingsStore.getState().initUserSettings()
-}
-// Utility hooks for common patterns
-export const useSetting = <T = any>(key: string): [T, (value: T) => Promise<void>] => {
-  const value = useSettingsStore(state => state.settings[key] as T)
+
+export const useSetting = <T = any>(key: string): [T, (value: T) => AsyncResult<void, Error>] => {
+  const value = useSettingsStore(state => state.getSetting(key))
   const setSetting = useSettingsStore(state => state.setSetting)
-  return [value ?? DEFAULT_SETTINGS[key], (newValue: T) => setSetting(key, newValue)]
+  return [value, (newValue: T) => setSetting(key, newValue)]
 }
-// export const useSettings = (keys: string[]): Record<string, any> => {
-//   return useSettingsStore(state => {
-//     const result: Record<string, any> = {}
-//     keys.forEach(key => {
-//       result[key] = state.getSetting(key)
-//     })
-//     return result
-//   })
-// }
-// Selectors for specific settings (memoized automatically by Zustand)
-// export const useDevMode = () => useSetting<boolean>(SETTINGS_KEYS.dev_mode)
-// export const useNotificationsEnabled = () => useSetting<boolean>(SETTINGS_KEYS.enable_phone_notifications)
-// Example usage:
-/**
- * // In a component:
- * function ThemeToggle() {
- *   const [theme, setTheme] = useTheme()
- *
- *   return (
- *     <Switch
- *       value={theme === 'dark'}
- *       onValueChange={(isDark) => setTheme(isDark ? 'dark' : 'light')}
- *     />
- *   )
- * }
- *
- * // Or with multiple settings:
- * function NotificationSettings() {
- *   const settings = useSettings([
- *     SETTINGS_KEYS.enable_phone_notifications,
- *     SETTINGS_KEYS.notification_app_preferences
- *   ])
- *   const setSetting = useSettingsStore(state => state.setSetting)
- *
- *   return (
- *     <Switch
- *       value={settings[SETTINGS_KEYS.enable_phone_notifications]}
- *       onValueChange={(enabled) =>
- *         setSetting(SETTINGS_KEYS.enable_phone_notifications, enabled)
- *       }
- *     />
- *   )
- * }
- *
- * // Subscribe to specific changes outside React:
- * const unsubscribe = useSettingsStore.subscribe(
- *   state => state.settings[SETTINGS_KEYS.theme_preference],
- *   (theme) => console.log('Theme changed to:', theme)
- * )
- */

@@ -1,49 +1,7 @@
 import CoreModule from "modules/core/src/CoreModule"
 import {Linking, Platform} from "react-native"
+
 import showAlert from "@/utils/AlertUtils"
-
-export async function checkNotificationAccessSpecialPermission() {
-  if (Platform.OS !== "android") {
-    return false
-  }
-
-  return await CoreModule.hasNotificationListenerPermission()
-}
-
-export async function setNotificationsEnabled(enabled: boolean) {
-  if (Platform.OS !== "android") {
-    return
-  }
-  return CoreModule.setNotificationsEnabled(enabled)
-}
-
-export async function getNotificationsEnabled() {
-  if (Platform.OS !== "android") {
-    return false
-  }
-  return CoreModule.getNotificationsEnabled()
-}
-
-export async function setNotificationsBlocklist(blocklist: string[]) {
-  if (Platform.OS !== "android") {
-    return
-  }
-  return CoreModule.setNotificationsBlocklist(blocklist)
-}
-
-export async function getNotificationsBlocklist() {
-  if (Platform.OS !== "android") {
-    return []
-  }
-  return CoreModule.getNotificationsBlocklist()
-}
-
-export async function getInstalledApps() {
-  if (Platform.OS !== "android") {
-    return []
-  }
-  return CoreModule.getInstalledAppsForNotifications()
-}
 
 export async function checkAndRequestNotificationAccessSpecialPermission(): Promise<boolean> {
   if (Platform.OS !== "android") {

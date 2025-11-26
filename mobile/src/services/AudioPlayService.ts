@@ -1,6 +1,7 @@
 // import {Audio} from "expo-av"
-import socketComms from "@/managers/SocketComms"
 import {createAudioPlayer} from "expo-audio"
+
+import socketComms from "@/managers/SocketComms"
 
 export interface AudioPlayRequestMessage {
   type: "audio_play_request"

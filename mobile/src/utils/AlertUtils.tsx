@@ -1,12 +1,15 @@
-import {useState} from "react"
-import {Alert, BackHandler, Platform, Animated} from "react-native"
-import BasicDialog from "@/components/ui/BasicDialog"
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import {useAppTheme} from "./useAppTheme"
-import {SettingsNavigationUtils} from "./SettingsNavigationUtils"
-import {StatusBar} from "expo-status-bar"
 import * as NavigationBar from "expo-navigation-bar"
+import {StatusBar} from "expo-status-bar"
+import {useState} from "react"
 import {useEffect, useRef} from "react"
+import {Alert, BackHandler, Platform, Animated} from "react-native"
+
+import {Icon, IconTypes} from "@/components/ignite"
+import BasicDialog from "@/components/ui/BasicDialog"
+
+import {SettingsNavigationUtils} from "./SettingsNavigationUtils"
+import {useAppTheme} from "./useAppTheme"
+
 // eslint-disable-next-line
 import {StyleSheet} from "react-native"
 
@@ -244,7 +247,11 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
                 icon={
                   options.icon ??
                   (options.iconName ? (
-                    <Icon name={options.iconName} size={options.iconSize ?? 24} color={options.iconColor} />
+                    <Icon
+                      name={options.iconName as IconTypes}
+                      size={options.iconSize ?? 24}
+                      color={options.iconColor ?? theme.colors.secondary_foreground}
+                    />
                   ) : undefined)
                 }
                 leftButtonText={buttons.length > 1 ? buttons[0].text : undefined}

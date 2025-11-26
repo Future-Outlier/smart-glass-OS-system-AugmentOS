@@ -1,18 +1,21 @@
-import {useState, useEffect} from "react"
-import {View, Image, ActivityIndicator, ScrollView, ImageStyle, TextStyle, ViewStyle, Modal} from "react-native"
-import {supabase} from "@/supabase/supabaseClient"
-import {Header, Screen, Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
 import {router} from "expo-router"
-import {translate} from "@/i18n"
+import {useState, useEffect} from "react"
+import {View, Image, ActivityIndicator, ScrollView, ImageStyle, ViewStyle, Modal} from "react-native"
+import Svg, {Path} from "react-native-svg"
+
+import {Header, Screen, Text} from "@/components/ignite"
+import {Group} from "@/components/ui/Group"
+import {RouteButton} from "@/components/ui/RouteButton"
+import {Spacer} from "@/components/ui/Spacer"
+import {useAuth} from "@/contexts/AuthContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import ActionButton from "@/components/ui/ActionButton"
+import {translate} from "@/i18n"
+import restComms from "@/services/RestComms"
+import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {LogoutUtils} from "@/utils/LogoutUtils"
-import restComms from "@/services/RestComms"
-import {useAuth} from "@/contexts/AuthContext"
-import Svg, {Path} from "react-native-svg"
+import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 // Default user icon component for profile pictures
 const DefaultUserIcon = ({size = 100, color = "#999"}: {size?: number; color?: string}) => {
@@ -45,19 +48,16 @@ export default function ProfileSettingsPage() {
     const fetchUserData = async () => {
       setLoading(true)
       try {
-        const {
-          data: {user},
-          error,
-        } = await supabase.auth.getUser()
+        const {data, error} = await mentraAuthProvider.getUser()
         if (error) {
           console.error(error)
           setUserData(null)
-        } else if (user) {
-          const fullName = user.user_metadata?.full_name || user.user_metadata?.name || null
-          const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null
-          const email = user.email || null
-          const createdAt = user.created_at || null
-          const provider = user.app_metadata?.provider || null
+        } else if (data?.user) {
+          const fullName = data.user.name || null
+          const avatarUrl = data.user.avatarUrl || null
+          const email = data.user.email || null
+          const createdAt = data.user.createdAt || null
+          const provider = data.user.provider || null
 
           setUserData({
             fullName,
@@ -149,15 +149,15 @@ export default function ProfileSettingsPage() {
 
     let deleteRequestSuccessful = false
 
-    try {
-      console.log("Profile: Requesting account deletion from server")
-      const response = await restComms.requestAccountDeletion()
+    console.log("Profile: Requesting account deletion from server")
+    const result = await restComms.requestAccountDeletion()
 
-      // Check if the response indicates success
-      deleteRequestSuccessful = response && (response.success === true || response.status === "success")
-      console.log("Profile: Account deletion request successful:", deleteRequestSuccessful)
-    } catch (error) {
-      console.error("Profile: Error requesting account deletion:", error)
+    // Check if the result indicates success
+    if (result.is_ok()) {
+      deleteRequestSuccessful = true
+      console.log("Profile: Account deletion request successful")
+    } else {
+      console.error("Profile: Error requesting account deletion:", result.error)
       deleteRequestSuccessful = false
     }
 
@@ -243,65 +243,53 @@ export default function ProfileSettingsPage() {
   const {theme, themed} = useAppTheme()
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
-      <Header title={translate("profileSettings:title")} leftIcon="caretLeft" onLeftPress={goBack} />
+    <Screen preset="fixed" style={themed($styles.screen)}>
+      <Header title={translate("profileSettings:title")} leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView>
         {loading ? (
           <ActivityIndicator size="large" color={theme.colors.palette.primary500} />
         ) : userData ? (
           <>
-            {userData.avatarUrl ? (
-              <Image source={{uri: userData.avatarUrl}} style={themed($profileImage)} />
-            ) : (
-              <View style={themed($profilePlaceholder)}>
-                <DefaultUserIcon size={60} color={theme.colors.textDim} />
-              </View>
-            )}
-
-            <View style={themed($infoContainer)}>
-              <Text tx="profileSettings:name" style={themed($label)} />
-              <Text text={userData.fullName || "N/A"} style={themed($infoText)} />
-            </View>
-
-            <View style={themed($infoContainer)}>
-              <Text tx="profileSettings:email" style={themed($label)} />
-              <Text text={userData.email || "N/A"} style={themed($infoText)} />
-            </View>
-
-            <View style={themed($infoContainer)}>
-              <Text tx="profileSettings:createdAt" style={themed($label)} />
-              <Text
-                text={userData.createdAt ? new Date(userData.createdAt).toLocaleString() : "N/A"}
-                style={themed($infoText)}
-              />
-            </View>
-
-            <View style={{gap: theme.spacing.md, marginTop: theme.spacing.lg}}>
-              {userData.provider == "email" && (
-                <ActionButton
-                  label={translate("profileSettings:changePassword")}
-                  variant="default"
-                  onPress={handleChangePassword}
-                />
+            <View style={themed($profileSection)}>
+              {userData.avatarUrl ? (
+                <Image source={{uri: userData.avatarUrl}} style={themed($profileImage)} />
+              ) : (
+                <View style={themed($profilePlaceholder)}>
+                  <DefaultUserIcon size={60} color={theme.colors.textDim} />
+                </View>
               )}
-
-              <ActionButton
-                label={translate("profileSettings:requestDataExport")}
-                variant="default"
-                onPress={handleRequestDataExport}
-              />
-
-              <ActionButton
-                label={translate("profileSettings:deleteAccount")}
-                variant="destructive"
-                onPress={handleDeleteAccount}
-              />
-
-              <ActionButton label={translate("settings:signOut")} variant="destructive" onPress={confirmSignOut} />
             </View>
+
+            <Group>
+              <RouteButton label={translate("profileSettings:name")} text={userData.fullName || "N/A"} />
+              <RouteButton label={translate("profileSettings:email")} text={userData.email || "N/A"} />
+              <RouteButton
+                label={translate("profileSettings:createdAt")}
+                text={userData.createdAt ? new Date(userData.createdAt).toLocaleString() : "N/A"}
+              />
+            </Group>
+
+            <Spacer height={theme.spacing.s6} />
+
+            <Group title={translate("account:appSettings")}>
+              {userData.provider == "email" && (
+                <RouteButton label={translate("profileSettings:changePassword")} onPress={handleChangePassword} />
+              )}
+              <RouteButton label={translate("profileSettings:requestDataExport")} onPress={handleRequestDataExport} />
+              <RouteButton
+                label={translate("profileSettings:deleteAccount")}
+                onPress={handleDeleteAccount}
+                variant="destructive"
+              />
+              <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} variant="destructive" />
+            </Group>
           </>
         ) : (
-          <Text tx="profileSettings:errorGettingUserInfo" />
+          <>
+            {/* Sign out button - always available, even if user data fails to load */}
+            <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} />
+            <Text tx="profileSettings:errorGettingUserInfo" />
+          </>
         )}
       </ScrollView>
 
@@ -317,12 +305,12 @@ export default function ProfileSettingsPage() {
           <View
             style={{
               backgroundColor: theme.colors.background,
-              padding: theme.spacing.xl,
-              borderRadius: theme.spacing.md,
+              padding: theme.spacing.s8,
+              borderRadius: theme.spacing.s4,
               alignItems: "center",
               minWidth: 200,
             }}>
-            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.md}} />
+            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.s4}} />
             <Text preset="bold" style={{color: theme.colors.text}}>
               {translate("settings:loggingOutMessage")}
             </Text>
@@ -333,18 +321,18 @@ export default function ProfileSettingsPage() {
   )
 }
 
-const $label: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontWeight: "bold",
-  fontSize: 16,
-  color: colors.text,
+const $profileSection: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "row",
+  justifyContent: "center",
+  paddingHorizontal: spacing.s4,
+  paddingTop: spacing.s4,
+  paddingBottom: spacing.s6,
 })
 
 const $profileImage: ThemedStyle<ImageStyle> = () => ({
   width: 100,
   height: 100,
   borderRadius: 50,
-  alignSelf: "center",
-  marginBottom: 20,
 })
 
 const $profilePlaceholder: ThemedStyle<ViewStyle> = ({colors}) => ({
@@ -353,17 +341,5 @@ const $profilePlaceholder: ThemedStyle<ViewStyle> = ({colors}) => ({
   borderRadius: 50,
   justifyContent: "center",
   alignItems: "center",
-  alignSelf: "center",
-  marginBottom: 20,
   backgroundColor: colors.border,
-})
-
-const $infoContainer: ThemedStyle<ViewStyle> = () => ({
-  marginBottom: 15,
-})
-
-const $infoText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 16,
-  marginTop: 4,
-  color: colors.text,
 })
