@@ -10,7 +10,7 @@ build:
 services:
   - name: captions
     type: web
-    run: bun run captions
+    run: bun run start
     port: 80
     cpuCores: 1.0
     ramMegabytes: 1024
