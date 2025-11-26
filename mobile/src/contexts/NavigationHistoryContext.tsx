@@ -1,5 +1,6 @@
 import {router, usePathname, useSegments} from "expo-router"
 import {createContext, useContext, useEffect, useRef} from "react"
+
 import {navigationRef} from "@/contexts/NavigationRef"
 
 export type NavigationHistoryPush = (path: string, params?: any) => void
@@ -19,8 +20,8 @@ interface NavigationHistoryContextType {
   goBack: () => void
   getHistory: () => string[]
   clearHistory: () => void
-  push: (path: string, params?: any) => Promise<void>
-  replace: (path: string, params?: any) => Promise<void>
+  push: (path: string, params?: any) => void
+  replace: (path: string, params?: any) => void
   setPendingRoute: (route: string | null) => void
   getPendingRoute: () => string | null
   navigate: (path: string, params?: any) => void

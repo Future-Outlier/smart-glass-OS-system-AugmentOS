@@ -93,25 +93,25 @@ public class SettingsCommandHandler implements ICommandHandler {
             int height = params.optInt("height", 720);
             int fps = params.optInt("fps", 30);
             
-            Log.d(TAG, "📱 Received button video recording settings: " + width + "x" + height + "@" + fps + "fps");
+            Log.d(TAG, "[VIDEO_SYNC] 📱 Received button video recording settings from phone: " + width + "x" + height + "@" + fps + "fps");
             
             AsgSettings asgSettings = serviceManager.getAsgSettings();
             if (asgSettings != null) {
                 VideoSettings videoSettings = new VideoSettings(width, height, fps);
                 if (videoSettings.isValid()) {
                     asgSettings.setButtonVideoSettings(videoSettings);
-                    Log.d(TAG, "✅ Button video recording settings saved");
+                    Log.d(TAG, "[VIDEO_SYNC] ✅ Video settings saved to SharedPreferences: " + width + "x" + height + "@" + fps + "fps");
                     return true;
                 } else {
-                    Log.e(TAG, "Invalid video settings: " + videoSettings);
+                    Log.e(TAG, "[VIDEO_SYNC] Invalid video settings: " + videoSettings);
                     return false;
                 }
             } else {
-                Log.e(TAG, "Settings not available");
+                Log.e(TAG, "[VIDEO_SYNC] Settings not available");
                 return false;
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error handling button video recording setting", e);
+            Log.e(TAG, "[VIDEO_SYNC] Error handling button video recording setting", e);
             return false;
         }
     }

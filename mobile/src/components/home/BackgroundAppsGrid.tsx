@@ -3,6 +3,7 @@ import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-nati
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {
   ClientAppletInterface,
   DUMMY_APPLET,
@@ -12,7 +13,6 @@ import {
 } from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 const GRID_COLUMNS = 4
 

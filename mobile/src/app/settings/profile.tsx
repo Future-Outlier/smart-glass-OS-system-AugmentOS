@@ -250,13 +250,15 @@ export default function ProfileSettingsPage() {
           <ActivityIndicator size="large" color={theme.colors.palette.primary500} />
         ) : userData ? (
           <>
-            {userData.avatarUrl ? (
-              <Image source={{uri: userData.avatarUrl}} style={themed($profileImage)} />
-            ) : (
-              <View style={themed($profilePlaceholder)}>
-                <DefaultUserIcon size={60} color={theme.colors.textDim} />
-              </View>
-            )}
+            <View style={themed($profileSection)}>
+              {userData.avatarUrl ? (
+                <Image source={{uri: userData.avatarUrl}} style={themed($profileImage)} />
+              ) : (
+                <View style={themed($profilePlaceholder)}>
+                  <DefaultUserIcon size={60} color={theme.colors.textDim} />
+                </View>
+              )}
+            </View>
 
             <Group>
               <RouteButton label={translate("profileSettings:name")} text={userData.fullName || "N/A"} />
@@ -274,8 +276,12 @@ export default function ProfileSettingsPage() {
                 <RouteButton label={translate("profileSettings:changePassword")} onPress={handleChangePassword} />
               )}
               <RouteButton label={translate("profileSettings:requestDataExport")} onPress={handleRequestDataExport} />
-              <RouteButton label={translate("profileSettings:deleteAccount")} onPress={handleDeleteAccount} />
-              <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} />
+              <RouteButton
+                label={translate("profileSettings:deleteAccount")}
+                onPress={handleDeleteAccount}
+                variant="destructive"
+              />
+              <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} variant="destructive" />
             </Group>
           </>
         ) : (
@@ -315,12 +321,18 @@ export default function ProfileSettingsPage() {
   )
 }
 
+const $profileSection: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "row",
+  justifyContent: "center",
+  paddingHorizontal: spacing.s4,
+  paddingTop: spacing.s4,
+  paddingBottom: spacing.s6,
+})
+
 const $profileImage: ThemedStyle<ImageStyle> = () => ({
   width: 100,
   height: 100,
   borderRadius: 50,
-  alignSelf: "center",
-  marginBottom: 20,
 })
 
 const $profilePlaceholder: ThemedStyle<ViewStyle> = ({colors}) => ({
@@ -329,7 +341,5 @@ const $profilePlaceholder: ThemedStyle<ViewStyle> = ({colors}) => ({
   borderRadius: 50,
   justifyContent: "center",
   alignItems: "center",
-  alignSelf: "center",
-  marginBottom: 20,
   backgroundColor: colors.border,
 })

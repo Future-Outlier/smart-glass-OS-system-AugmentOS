@@ -1291,7 +1291,7 @@ public class MentraLive extends SGCManager {
             for (byte b : data) {
                 hexBytes.append(String.format("%02X ", b));
             }
-            Bridge.log("LIVE: 🔍 Outgoing bytes: " + hexBytes.toString().trim());
+            // Bridge.log("LIVE: 🔍 Outgoing bytes: " + hexBytes.toString().trim());
 
             // Trigger queue processing if not already running
             handler.removeCallbacks(processSendQueueRunnable);
@@ -1733,6 +1733,14 @@ public class MentraLive extends SGCManager {
                 updateHotspotStatus(hotspotEnabled, hotspotSsid, hotspotPassword, hotspotGatewayIp);
                 break;
 
+            case "hotspot_error":
+                // Process hotspot error
+                String errorMessage = json.optString("error_message", "Unknown hotspot error");
+                long timestamp = json.optLong("timestamp", System.currentTimeMillis());
+
+                handleHotspotError(errorMessage, timestamp);
+                break;
+
             case "photo_response":
                 // Process photo response (success or failure)
                 String requestId = json.optString("requestId", "");
@@ -2107,6 +2115,21 @@ public class MentraLive extends SGCManager {
                 // }
                 break;
 
+            case "mtk_update_complete":
+                // Process MTK firmware update complete notification from ASG client
+                Bridge.log("LIVE: 🔄 Received MTK update complete from ASG client");
+
+                String updateMessage = json.optString("message", "MTK firmware updated. Please restart glasses.");
+                long updateTimestamp = json.optLong("timestamp", System.currentTimeMillis());
+
+                Bridge.log("LIVE: 🔄 MTK Update Message: " + updateMessage);
+
+                // Send to React Native via Bridge on main thread
+                handler.post(() -> {
+                    Bridge.sendMtkUpdateComplete(updateMessage);
+                });
+                break;
+
             default:
                 Log.d(TAG, "📦 Unknown message type: " + type);
                 // Pass the data to the subscriber for custom processing
@@ -2462,6 +2485,16 @@ public class MentraLive extends SGCManager {
     }
 
     /**
+     * Handle hotspot error and notify React Native
+     */
+    private void handleHotspotError(String errorMessage, long timestamp) {
+        Bridge.log("LIVE: 🔥 ❌ Hotspot error: " + errorMessage);
+
+        // Send hotspot error event to React Native
+        Bridge.sendHotspotError(errorMessage, timestamp);
+    }
+
+    /**
      * Send battery status to connected phone via BLE
      */
     private void sendBatteryStatusOverBle(int level, boolean charging) {
@@ -2583,7 +2616,7 @@ public class MentraLive extends SGCManager {
      * Start the heartbeat mechanism
      */
     private void startHeartbeat() {
-        Bridge.log("LIVE: 💓 Starting heartbeat mechanism");
+        // Bridge.log("LIVE: 💓 Starting heartbeat mechanism");
         heartbeatCounter = 0;
         heartbeatHandler.removeCallbacks(heartbeatRunnable); // Remove any existing callbacks
         heartbeatHandler.postDelayed(heartbeatRunnable, HEARTBEAT_INTERVAL_MS);
@@ -2608,7 +2641,7 @@ public class MentraLive extends SGCManager {
      * Start the micbeat mechanism - periodically enable custom audio TX
      */
     private void startMicBeat() {
-        Bridge.log("LIVE: 🎤 Starting micbeat mechanism");
+        // Bridge.log("LIVE: 🎤 Starting micbeat mechanism");
         micBeatCount = 0;
 
         // Initialize custom audio TX immediately
@@ -2639,7 +2672,7 @@ public class MentraLive extends SGCManager {
      * Stop the micbeat mechanism
      */
     private void stopMicBeat() {
-        Bridge.log("LIVE: 🎤 Stopping micbeat mechanism");
+        // Bridge.log("LIVE: 🎤 Stopping micbeat mechanism");
         sendEnableCustomAudioTxMessage(false);
         micBeatHandler.removeCallbacks(micBeatRunnable);
         micBeatCount = 0;
@@ -3334,7 +3367,7 @@ public class MentraLive extends SGCManager {
         int videoHeight = m.getButtonVideoHeight();
         int videoFps = m.getButtonVideoFps();
 
-        Bridge.log("LIVE: Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
+        Bridge.log("LIVE: 🎥 [SETTINGS_SYNC] Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
 
         try {
             JSONObject json = new JSONObject();
@@ -3344,9 +3377,11 @@ public class MentraLive extends SGCManager {
             settings.put("height", videoHeight);
             settings.put("fps", videoFps);
             json.put("params", settings);
+            Bridge.log("LIVE: 📤 [SETTINGS_SYNC] BLE packet prepared: " + json.toString());
             sendJson(json);
+            Bridge.log("LIVE: ✅ [SETTINGS_SYNC] Video settings transmitted via BLE");
         } catch (JSONException e) {
-            Log.e(TAG, "Error creating button video recording settings message", e);
+            Log.e(TAG, "❌ [SETTINGS_SYNC] Error creating button video recording settings message", e);
         }
     }
 
@@ -4646,7 +4681,7 @@ public class MentraLive extends SGCManager {
      * Send user settings to glasses after connection is established
      */
     private void sendUserSettings() {
-        Bridge.log("LIVE: Sending user settings to glasses");
+        Bridge.log("LIVE: [VIDEO_SYNC] Sending user settings to glasses on connection");
 
         // Send button mode setting
         sendButtonModeSetting();
@@ -4662,6 +4697,9 @@ public class MentraLive extends SGCManager {
 
         // Send button camera LED setting
         sendButtonCameraLedSetting();
+
+        // Send gallery mode state (camera app running status)
+        sendGalleryMode();
     }
 
     /**

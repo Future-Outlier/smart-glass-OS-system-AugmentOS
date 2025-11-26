@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/react-native"
 import {useNavigationContainerRef} from "expo-router"
 import {useEffect} from "react"
 
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: true,
@@ -21,7 +21,7 @@ export function SentrySetup() {
   useEffect(() => {
     // Only initialize Sentry if DSN is provided
     const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN
-    const isChina = useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+    const isChina = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
 
     if (!sentryDsn || sentryDsn === "secret" || sentryDsn.trim() === "") {
       return

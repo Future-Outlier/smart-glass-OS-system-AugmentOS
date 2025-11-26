@@ -76,6 +76,8 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
           "MentraOS accesses your calendar to display upcoming events and reminders directly on your smart glasses. For example, the app can show 'Meeting with John at 3 PM in Conference Room A' or remind you '15 minutes until dentist appointment' on your glasses display.",
         NSPhotoLibraryUsageDescription:
           "This app needs access to your photo library to provide you with photo based information on your glasses.",
+        NSPhotoLibraryAddUsageDescription:
+          "Allow MentraOS to save photos and videos from your glasses to your camera roll.",
         NSUserNotificationUsageDescription:
           "This app needs access to your notifications to provide you with notifications.",
         NSLocalNetworkUsageDescription:
@@ -154,6 +156,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
             "LocationAlways",
             "Notifications",
             "PhotoLibrary",
+            "PhotoLibraryAddOnly", // For save-only operations (no "select photos" prompt)
           ],
         },
       ],

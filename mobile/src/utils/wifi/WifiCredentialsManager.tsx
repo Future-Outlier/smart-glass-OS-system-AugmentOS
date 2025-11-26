@@ -1,12 +1,13 @@
 import {useState, useEffect} from "react"
 import {View, FlatList, TouchableOpacity, Alert} from "react-native"
-import {Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
 import {ViewStyle, TextStyle} from "react-native"
-import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
-import ActionButton from "@/components/ui/ActionButton"
+
+import {Text} from "@/components/ignite"
 import {Spacer} from "@/components/misc/Spacer"
+import ActionButton from "@/components/ui/ActionButton"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
+import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 
 interface WifiCredentialsManagerProps {
   onNetworkSelect?: (ssid: string) => void

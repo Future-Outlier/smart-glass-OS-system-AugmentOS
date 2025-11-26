@@ -8,10 +8,12 @@ import {
   ViewStyle,
   View,
 } from "react-native"
+
 import type {ThemedStyle, ThemedStyleArray} from "@/theme"
 import {$styles, spacing} from "@/theme"
-import {Text, TextProps} from "./Text"
 import {useAppTheme} from "@/utils/useAppTheme"
+
+import {Text, TextProps} from "./Text"
 
 type Presets = "default" | "primary" | "secondary" | "accent" | "warning" | "destructive" | "outlined" | "alternate"
 
@@ -142,7 +144,7 @@ export function Button(props: ButtonProps) {
     disabledStyle: $disabledViewStyleOverride,
     compact = false,
     flex = false,
-    flexContainer = true,
+    flexContainer = false,
     compactIcon = false,
     ...rest
   } = props
@@ -189,9 +191,10 @@ export function Button(props: ButtonProps) {
       {...rest}
       disabled={disabled}>
       {state => (
-        <View style={[{position: "relative", justifyContent: "center"}, flexContainer && {flex: 1}]}>
+        <View
+          style={[{position: "relative", justifyContent: "center", alignItems: "center"}, flexContainer && {flex: 1}]}>
           {!!LeftAccessory && (
-            <View style={{marginLeft: spacing.s1, position: "absolute", left: 0}}>
+            <View style={{position: "absolute", left: 0, alignItems: "center", justifyContent: "center"}}>
               <LeftAccessory style={$leftAccessoryStyle} pressableState={state} disabled={disabled} />
             </View>
           )}
@@ -200,12 +203,17 @@ export function Button(props: ButtonProps) {
             tx={tx}
             text={text}
             txOptions={txOptions}
-            style={[$textStyle(state), {textAlign: props.textAlignment === "left" ? "left" : "center"}]}>
+            style={[
+              $textStyle(state),
+              {textAlign: props.textAlignment === "left" ? "left" : "center"},
+              !!LeftAccessory && {paddingLeft: 28},
+              !!RightAccessory && {paddingRight: 28},
+            ]}>
             {children}
           </Text>
 
           {!!RightAccessory && (
-            <View style={{position: "absolute", right: 0}}>
+            <View style={{position: "absolute", right: 0, alignItems: "center", justifyContent: "center"}}>
               <RightAccessory style={$rightAccessoryStyle} pressableState={state} disabled={disabled} />
             </View>
           )}

@@ -848,6 +848,17 @@ struct ViewState {
         isSearching = false
         handle_request_status()
 
+        // Show welcome message on first connect for all display glasses
+        if shouldSendBootingMessage {
+            Task {
+                sgc.sendTextWall("// MentraOS Connected")
+                try? await Task.sleep(nanoseconds: 3_000_000_000) // 1 second
+                sgc.clearDisplay()
+            }
+            shouldSendBootingMessage = false
+        }
+
+        // Call device-specific setup handlers
         if defaultWearable.contains(DeviceTypes.G1) {
             handleG1Ready()
         } else if defaultWearable.contains(DeviceTypes.MACH1) {
@@ -866,16 +877,12 @@ struct ViewState {
     }
 
     private func handleG1Ready() {
-        // load settings and send the animation:
+        // G1-specific setup and configuration
         Task {
             // give the glasses some extra time to finish booting:
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 3 seconds
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
             await sgc?.setSilentMode(false) // turn off silent mode
             await sgc?.getBatteryStatus()
-
-            if shouldSendBootingMessage {
-                sgc?.sendTextWall("// BOOTING MENTRAOS")
-            }
 
             // send loaded settings to glasses:
             try? await Task.sleep(nanoseconds: 400_000_000)
@@ -886,13 +893,6 @@ struct ViewState {
             // self.g1Manager?.RN_setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
             // try? await Task.sleep(nanoseconds: 400_000_000)
             //      playStartupSequence()
-            if shouldSendBootingMessage {
-                sgc?.sendTextWall("// MENTRAOS CONNECTED")
-                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                sgc?.clearDisplay()
-            }
-
-            shouldSendBootingMessage = false
 
             self.handle_request_status()
         }
@@ -900,11 +900,7 @@ struct ViewState {
 
     private func handleMach1Ready() {
         Task {
-            // Send startup message
-            sgc?.sendTextWall("MENTRAOS CONNECTED")
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            sgc?.clearDisplay()
-
+            // Mach1-specific setup (if any needed in the future)
             self.handle_request_status()
         }
     }
@@ -912,6 +908,7 @@ struct ViewState {
     private func handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         handle_microphone_state_change([], false)
+        shouldSendBootingMessage = true // Reset for next first connect
         handle_request_status()
     }
 
@@ -1505,22 +1502,43 @@ struct ViewState {
             updateButtonMode(newButtonMode)
         }
 
-        if let newFps = settings["button_video_fps"] as? Int, newFps != buttonVideoFps {
-            updateButtonVideoSettings(
-                width: buttonVideoWidth, height: buttonVideoHeight, fps: newFps
-            )
-        }
+        // Button video settings - handle both nested object and flat keys
+        // First check for nested object structure (from AsyncStorage)
+        if let videoSettingsObj = settings["button_video_settings"] as? [String: Any] {
+            let newWidth = videoSettingsObj["width"] as? Int ?? buttonVideoWidth
+            let newHeight = videoSettingsObj["height"] as? Int ?? buttonVideoHeight
+            let newFps = videoSettingsObj["fps"] as? Int ?? buttonVideoFps
 
-        if let newWidth = settings["button_video_width"] as? Int, newWidth != buttonVideoWidth {
-            updateButtonVideoSettings(
-                width: newWidth, height: buttonVideoHeight, fps: buttonVideoFps
-            )
-        }
+            if newWidth != buttonVideoWidth || newHeight != buttonVideoHeight || newFps != buttonVideoFps {
+                Bridge.log("MAN: Updating button video settings: \(newWidth) x \(newHeight) @ \(newFps)fps (was: \(buttonVideoWidth) x \(buttonVideoHeight) @ \(buttonVideoFps)fps)")
+                updateButtonVideoSettings(width: newWidth, height: newHeight, fps: newFps)
+            }
+        } else {
+            // Fallback to flat key structure (backwards compatibility)
+            var newWidth = buttonVideoWidth
+            var newHeight = buttonVideoHeight
+            var newFps = buttonVideoFps
+            var changed = false
 
-        if let newHeight = settings["button_video_height"] as? Int, newHeight != buttonVideoHeight {
-            updateButtonVideoSettings(
-                width: buttonVideoWidth, height: newHeight, fps: buttonVideoFps
-            )
+            if let width = settings["button_video_width"] as? Int, width != buttonVideoWidth {
+                newWidth = width
+                changed = true
+            }
+
+            if let height = settings["button_video_height"] as? Int, height != buttonVideoHeight {
+                newHeight = height
+                changed = true
+            }
+
+            if let fps = settings["button_video_fps"] as? Int, fps != buttonVideoFps {
+                newFps = fps
+                changed = true
+            }
+
+            if changed {
+                Bridge.log("MAN: Updating button video settings: \(newWidth) x \(newHeight) @ \(newFps)fps (was: \(buttonVideoWidth) x \(buttonVideoHeight) @ \(buttonVideoFps)fps)")
+                updateButtonVideoSettings(width: newWidth, height: newHeight, fps: newFps)
+            }
         }
 
         if let newPhotoSize = settings["button_photo_size"] as? String,

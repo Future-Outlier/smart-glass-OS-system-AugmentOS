@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.mentra.core.services.ForegroundService
 import com.mentra.core.services.PhoneMic
@@ -710,10 +711,14 @@ class CoreManager {
     }
 
     fun updateButtonVideoSettings(width: Int, height: Int, fps: Int) {
+        Log.d("CoreManager", "🎥 [SETTINGS_SYNC] updateButtonVideoSettings called: ${width}x${height}@${fps}fps")
+        Log.d("CoreManager", "📱 [SETTINGS_SYNC] Connected device model: $defaultWearable")
         buttonVideoWidth = width
         buttonVideoHeight = height
         buttonVideoFps = fps
+        Log.d("CoreManager", "📡 [SETTINGS_SYNC] Sending button video settings to glasses via SGC")
         sgc?.sendButtonVideoRecordingSettings()
+        Log.d("CoreManager", "✅ [SETTINGS_SYNC] Button video settings updated to: ${width}x${height}@${fps}fps")
         handle_request_status()
     }
 
@@ -921,6 +926,17 @@ class CoreManager {
         isSearching = false
         handle_request_status()
 
+        // Show welcome message on first connect for all display glasses
+        if (shouldSendBootingMessage) {
+            shouldSendBootingMessage = false
+            executor.execute {
+                sgc?.sendTextWall("// MentraOS Connected")
+                Thread.sleep(3000)
+                sgc?.clearDisplay()
+            }
+        }
+
+        // Call device-specific setup handlers
         if (defaultWearable.contains(DeviceTypes.G1)) {
             handleG1Ready()
         } else if (defaultWearable.contains(DeviceTypes.MACH1)) {
@@ -943,52 +959,21 @@ class CoreManager {
     }
 
     private fun handleG1Ready() {
-        // Request battery status after connection
-        Thread.sleep(500)
-        sgc?.getBatteryStatus()
-
-        // load settings and send the animation:
-        // give the glasses some extra time to finish booting:
-        // Thread.sleep(1000)
-        // await sgc?.setSilentMode(false) // turn off silent mode
-
-        // if shouldSendBootingMessage {
-        //     sgc?.sendTextWall("// BOOTING MENTRAOS")
-        // }
-
-        // // send loaded settings to glasses:
-        // try? await Task.sleep(nanoseconds: 400_000_000)
-        // sgc?.setHeadUpAngle(headUpAngle)
-        // try? await Task.sleep(nanoseconds: 400_000_000)
-        // sgc?.setBrightness(brightness, autoMode: autoBrightness)
-        // try? await Task.sleep(nanoseconds: 400_000_000)
-        // // self.g1Manager?.RN_setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
-        // // try? await Task.sleep(nanoseconds: 400_000_000)
-        // //      playStartupSequence()
-        // if shouldSendBootingMessage {
-        //     sgc?.sendTextWall("// MENTRAOS CONNECTED")
-        //     try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-        //     sgc?.clearDisplay()
-        // }
-
-        // shouldSendBootingMessage = false
-
-        // handle_request_status()
+        // G1-specific setup (if any needed in the future)
+        // Note: G1-specific settings like silent mode, battery status,
+        // head up angle, brightness, etc. could be configured here
     }
 
     private fun handleMach1Ready() {
-        // Send startup message
-        sgc?.sendTextWall("MENTRAOS CONNECTED")
-        Thread.sleep(1000)
-        sgc?.clearDisplay()
-
+        // Mach1-specific setup (if any needed in the future)
         handle_request_status()
     }
 
     private fun handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         isHeadUp = false
-        lastMicState = null // Clear cache - hardware is definitely off now
+        lastMicState = null  // Clear cache - hardware is definitely off now
+        shouldSendBootingMessage = true  // Reset for next first connect
         handle_request_status()
     }
 
@@ -1475,22 +1460,30 @@ class CoreManager {
             }
         }
 
-        (settings["button_video_fps"] as? Int)?.let { newFps ->
-            if (buttonVideoFps != newFps) {
-                updateButtonVideoSettings(buttonVideoWidth, buttonVideoHeight, newFps)
-            }
+        // Button video settings - handle both nested object and flat keys
+        // First check for nested object structure (from AsyncStorage)
+        val videoSettingsObj = settings["button_video_settings"] as? Map<*, *>
+        val newWidth = if (videoSettingsObj != null) {
+            (videoSettingsObj["width"] as? Number)?.toInt() ?: buttonVideoWidth
+        } else {
+            // Fallback to flat key structure (backwards compatibility)
+            (settings["button_video_width"] as? Number)?.toInt() ?: buttonVideoWidth
         }
-
-        (settings["button_video_width"] as? Int)?.let { newWidth ->
-            if (buttonVideoWidth != newWidth) {
-                updateButtonVideoSettings(newWidth, buttonVideoHeight, buttonVideoFps)
-            }
+        val newHeight = if (videoSettingsObj != null) {
+            (videoSettingsObj["height"] as? Number)?.toInt() ?: buttonVideoHeight
+        } else {
+            (settings["button_video_height"] as? Number)?.toInt() ?: buttonVideoHeight
         }
-
-        (settings["button_video_height"] as? Int)?.let { newHeight ->
-            if (buttonVideoHeight != newHeight) {
-                updateButtonVideoSettings(buttonVideoWidth, newHeight, buttonVideoFps)
-            }
+        val newFps = if (videoSettingsObj != null) {
+            (videoSettingsObj["fps"] as? Number)?.toInt() ?: buttonVideoFps
+        } else {
+            (settings["button_video_fps"] as? Number)?.toInt() ?: buttonVideoFps
+        }
+        
+        // Only update if any value actually changed
+        if (newWidth != buttonVideoWidth || newHeight != buttonVideoHeight || newFps != buttonVideoFps) {
+            Bridge.log("MAN: Updating button video settings: $newWidth x $newHeight @ ${newFps}fps (was: $buttonVideoWidth x $buttonVideoHeight @ ${buttonVideoFps}fps)")
+            updateButtonVideoSettings(newWidth, newHeight, newFps)
         }
 
         (settings["button_photo_size"] as? String)?.let { newPhotoSize ->

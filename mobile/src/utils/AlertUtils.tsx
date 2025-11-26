@@ -1,14 +1,17 @@
-import {useState} from "react"
-import {Alert, BackHandler, Platform, Animated} from "react-native"
-import BasicDialog from "@/components/ui/BasicDialog"
-import {useAppTheme} from "./useAppTheme"
-import {SettingsNavigationUtils} from "./SettingsNavigationUtils"
-import {StatusBar} from "expo-status-bar"
 import * as NavigationBar from "expo-navigation-bar"
+import {StatusBar} from "expo-status-bar"
+import {useState} from "react"
 import {useEffect, useRef} from "react"
+import {Alert, BackHandler, Platform, Animated} from "react-native"
+
+import {Icon, IconTypes} from "@/components/ignite"
+import BasicDialog from "@/components/ui/BasicDialog"
+
+import {SettingsNavigationUtils} from "./SettingsNavigationUtils"
+import {useAppTheme} from "./useAppTheme"
+
 // eslint-disable-next-line
 import {StyleSheet} from "react-native"
-import { Icon, IconTypes } from "@/components/ignite"
 
 // Type for button style options
 type ButtonStyle = "default" | "cancel" | "destructive"

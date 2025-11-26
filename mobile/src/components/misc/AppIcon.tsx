@@ -1,12 +1,13 @@
-import {ClientAppletInterface, getMoreAppsApplet} from "@/stores/applets"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {Image} from "expo-image"
 import {SquircleView} from "expo-squircle-view"
 import {memo} from "react"
 import {ActivityIndicator, ImageStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+
 import {Icon} from "@/components/ignite"
+import {ClientAppletInterface, getMoreAppsApplet} from "@/stores/applets"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface AppIconProps {
   app: ClientAppletInterface
@@ -16,7 +17,7 @@ interface AppIconProps {
 
 const AppIcon = ({app, onClick, style}: AppIconProps) => {
   const {themed, theme} = useAppTheme()
-  const [enableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
+  const [enableSquircles] = useSetting(SETTINGS.enable_squircles.key)
   const WrapperComponent = onClick ? TouchableOpacity : View
 
   return (

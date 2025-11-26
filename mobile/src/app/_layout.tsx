@@ -6,7 +6,7 @@ import {useEffect, useState} from "react"
 import {LogBox} from "react-native"
 
 import {initI18n} from "@/i18n"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {customFontsToLoad} from "@/theme"
 import {ConsoleLogger} from "@/utils/debug/console"
 import {loadDateFnsLocale} from "@/utils/formatDate"
@@ -30,7 +30,7 @@ const navigationIntegration = Sentry.reactNavigationIntegration({
 const setupSentry = () => {
   // Only initialize Sentry if DSN is provided
   const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN
-  const isChina = useSettingsStore.getState().getSetting(SETTINGS_KEYS.china_deployment)
+  const isChina = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
 
   if (!sentryDsn || sentryDsn === "secret" || sentryDsn.trim() === "") {
     return

@@ -1,17 +1,18 @@
+import CoreModule from "core"
+import {useEffect, useState} from "react"
+import {AppState, Platform, ScrollView} from "react-native"
+
 import {Header, Screen} from "@/components/ignite"
 import PermissionButton from "@/components/settings/PermButton"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles} from "@/theme"
 import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
 import {checkFeaturePermissions, PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import CoreModule from "core"
-import {useEffect, useState} from "react"
-import {AppState, Platform, ScrollView} from "react-native"
 
 export default function PrivacySettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
@@ -22,7 +23,7 @@ export default function PrivacySettingsScreen() {
   const [appState, setAppState] = useState(AppState.currentState)
   const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
-  const [sensingEnabled, setSensingEnabled] = useSetting(SETTINGS_KEYS.sensing_enabled)
+  const [sensingEnabled, setSensingEnabled] = useSetting(SETTINGS.sensing_enabled.key)
 
   // Check permissions when screen loads
   useEffect(() => {

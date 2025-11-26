@@ -8,12 +8,12 @@ import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function Glasses() {
   const {theme} = useAppTheme()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const {goBack} = useNavigationHistory()
   const glassesConnected = useGlassesStore(state => state.connected)
 

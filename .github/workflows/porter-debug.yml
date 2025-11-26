@@ -1,7 +1,7 @@
 "on":
   push:
     branches:
-      - cloud/device-state
+      - cloud/detect-captions-lag
     paths:
       - "cloud/**"
       - ".github/workflows/porter-debug.yml"

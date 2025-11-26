@@ -1,10 +1,9 @@
-import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {Icon, Text} from "@/components/ignite"
-import {ArrowLeftIcon} from "assets/icons/component/ArrowLeftIcon"
-
 import {router as _router} from "expo-router"
 import {View, TouchableOpacity, TextStyle, ViewStyle} from "react-native"
+
+import {Icon, Text} from "@/components/ignite"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface StatusCardProps {
   label: string
@@ -52,10 +51,14 @@ interface RouteButtonProps {
   text?: string
   style?: ViewStyle
   icon?: React.ReactNode
+  variant?: "default" | "destructive"
 }
 
-export function RouteButton({label, subtitle, onPress, style, text, icon}: RouteButtonProps) {
+export function RouteButton({label, subtitle, onPress, style, text, icon, variant = "default"}: RouteButtonProps) {
   const {theme, themed} = useAppTheme()
+
+  const isDestructive = variant === "destructive"
+  const labelColor = isDestructive ? theme.colors.destructive : theme.colors.secondary_foreground
 
   return (
     <View style={[themed($settingsGroup), {paddingVertical: 0}, style]}>
@@ -71,7 +74,7 @@ export function RouteButton({label, subtitle, onPress, style, text, icon}: Route
             }}>
             <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s4}}>
               {icon && <View style={themed($icon)}>{icon}</View>}
-              <Text style={themed($label)}>{label}</Text>
+              <Text style={[themed($label), {color: labelColor}]}>{label}</Text>
             </View>
             {subtitle && <Text style={themed($subtitle)}>{subtitle}</Text>}
           </View>

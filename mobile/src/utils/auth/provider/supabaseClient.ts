@@ -1,4 +1,5 @@
 import type {AuthChangeEvent, Session, SupabaseClient} from "@supabase/supabase-js"
+
 import {supabase as supabaseClient} from "@/supabase/supabaseClient"
 import {
   MentraAuthUserResponse,
@@ -9,7 +10,7 @@ import {
   MentraUpdateUserPasswordResponse,
   MentraAuthSessionResponse,
   MentraAuthStateChangeSubscriptionResponse,
-} from "../authProvider.types"
+} from "@/utils/auth/authProvider.types"
 
 export class SupabaseWrapperClient {
   private static instance: SupabaseWrapperClient
@@ -44,7 +45,7 @@ export class SupabaseWrapperClient {
             }
           : null
 
-        console.log("AuthContext: Modified session:", modifiedSession)
+        // console.log("supabaseClient: Modified session:", modifiedSession)
 
         callback(event, modifiedSession)
       }
