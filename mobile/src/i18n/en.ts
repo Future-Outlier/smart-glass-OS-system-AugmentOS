@@ -453,6 +453,8 @@ const en = {
     version: "MentraOS v{{number}}",
     reset: "Reset",
     learnMore: "Learn more",
+    noResults: "No results found",
+    noApps: "No apps available",
   },
   developer: {
     dev: "Dev",
