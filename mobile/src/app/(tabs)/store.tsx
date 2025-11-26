@@ -2,7 +2,6 @@ import {useFocusEffect} from "@react-navigation/native"
 import {useLocalSearchParams} from "expo-router"
 import {useState, useCallback, useMemo} from "react"
 import {View, ViewStyle, ActivityIndicator, BackHandler, TextStyle} from "react-native"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {WebView} from "react-native-webview"
 
 import {Text, Screen, Header} from "@/components/ignite"
@@ -23,7 +22,6 @@ export default function AppStoreWeb() {
   const {appStoreUrl, webViewRef: prefetchedWebviewRef} = useAppStoreWebviewPrefetch()
   const refreshApplets = useRefreshApplets()
   const {theme, themed} = useAppTheme()
-  const {bottom} = useSafeAreaInsets()
 
   // Construct the final URL with packageName if provided
   const finalUrl = useMemo(() => {
@@ -166,20 +164,6 @@ export default function AppStoreWeb() {
           scalesPageToFit={false}
           bounces={false}
           scrollEnabled={true}
-          injectedJavaScript={`
-              const meta = document.createElement('meta');
-              meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-              meta.setAttribute('name', 'viewport');
-              document.getElementsByTagName('head')[0].appendChild(meta);
-              true;
-              // append a div with height 200px to the end:
-              const div = document.createElement('div');
-              div.style.height = '${bottom + theme.spacing.s6}px';
-              div.style.width = '100%';
-              div.style.backgroundColor = '${theme.colors.background}';
-              document.body.appendChild(div);
-              // document.body.style.height = 'calc(100vh + 200px)';
-            `}
           renderLoading={() => (
             <View style={themed($loadingOverlay)}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
