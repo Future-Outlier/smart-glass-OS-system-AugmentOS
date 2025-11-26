@@ -3,156 +3,94 @@ import {AsyncResult, result as Res, Result} from "typesafe-ts"
 
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 
-import {
-  MentraAuthSession,
-  MentraAuthUser,
-  MentraPasswordResetResponse,
-  MentraSigninResponse,
-} from "./authProvider.types"
-import {AuthingWrapperClient} from "./provider/authingClient"
-import {SupabaseWrapperClient} from "./provider/supabaseClient"
+import {MentraAuthSession, MentraAuthUser, MentraSigninResponse} from "@/utils/auth/authProvider.types"
+import {AuthingWrapperClient} from "@/utils/auth/provider/authingClient"
+import {SupabaseWrapperClient} from "@/utils/auth/provider/supabaseClient"
 
-export interface AuthClient {
-  onAuthStateChange(callback: (event: string, session: MentraAuthSession) => void): Result<any, Error>
-  getUser(): AsyncResult<MentraAuthUser, Error>
-  signUp(params: {email: string; password: string}): AsyncResult<MentraSigninResponse, Error>
-  signInWithPassword(params: {email: string; password: string}): AsyncResult<MentraSigninResponse, Error>
-  resetPasswordForEmail(email: string): AsyncResult<MentraPasswordResetResponse, Error>
-  updateUserPassword(password: string): AsyncResult<void, Error>
-  getSession(): AsyncResult<MentraAuthSession, Error>
-  updateSessionWithTokens(tokens: {access_token: string; refresh_token: string}): Promise<any>
-  startAutoRefresh(): AsyncResult<void, Error>
-  stopAutoRefresh(): AsyncResult<void, Error>
-  signOut(): AsyncResult<void, Error>
-  appleSignIn(): AsyncResult<string, Error>
-  googleSignIn(): AsyncResult<string, Error>
-}
-
-function unwrapResult<T>(res: Result<T, Error>): T {
-  if (res.is_error()) {
-    throw new Error(res.error.message)
-  }
-  return res.value
-}
-
-class MentraAuthClient {
-  private client: AuthClient | null = null
-  private isInitialized = false
-
-  private async init(): Promise<void> {
-    if (this.isInitialized) {
-      return
-    }
-    const isChina = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
-    if (isChina) {
-      this.client = await AuthingWrapperClient.getInstance()
-    } else {
-      this.client = await SupabaseWrapperClient.getInstance()
-    }
-  }
-
-  constructor() {
-    this.init()
-  }
-
-  public onAuthStateChange(callback: (event: string, session: MentraAuthSession) => void): Result<any, Error> {
-    if (!this.client?.onAuthStateChange) {
-      return Res.error(new Error("No onAuthStateChange method found in client"))
-    }
-    return Res.ok(this.client.onAuthStateChange(callback))
+export abstract class AuthClient {
+  public onAuthStateChange(_callback: (event: string, session: MentraAuthSession) => void): Result<any, Error> {
+    return Res.error(new Error("Method not implemented"))
   }
 
   public getUser(): AsyncResult<MentraAuthUser, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      let res = await this.client!.getUser()
-      return unwrapResult(res)
-    })
+    return Res.error_async(new Error("Method not implemented"))
   }
 
-  public signup(email: string, password: string): AsyncResult<MentraSigninResponse, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      return this.client?.signUp?.({email, password})
-    })
+  public signUp(_params: {email: string; password: string}): AsyncResult<MentraSigninResponse, Error> {
+    return Res.error_async(new Error("Method not implemented"))
   }
 
-  public signIn(email: string, password: string): AsyncResult<MentraSigninResponse, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      if (this.client?.signInWithPassword) {
-        const res = await this.client!.signInWithPassword({email, password})
-        return unwrapResult(res)
-      }
-      throw new Error("No signInWithPassword method found in client")
-    })
+  public signInWithPassword(_params: {email: string; password: string}): AsyncResult<MentraSigninResponse, Error> {
+    return Res.error_async(new Error("Method not implemented"))
   }
 
-  public resetPasswordForEmail(email: string): AsyncResult<void, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      return this.client?.resetPasswordForEmail?.(email)
-    })
+  public resetPasswordForEmail(_email: string): AsyncResult<void, Error> {
+    return Res.error_async(new Error("Method not implemented"))
   }
 
-  public updateUserPassword(password: string): AsyncResult<void, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      return this.client?.updateUserPassword?.(password)
-    })
-  }
-
-  public updateSessionWithTokens(tokens: {access_token: string; refresh_token: string}): AsyncResult<void, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      return this.client?.updateSessionWithTokens?.(tokens)
-    })
-  }
-
-  public startAutoRefresh(): AsyncResult<void, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      return this.client?.startAutoRefresh?.()
-    })
-  }
-
-  public stopAutoRefresh(): AsyncResult<void, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      return this.client?.stopAutoRefresh?.()
-    })
-  }
-
-  public signOut(): AsyncResult<MentraSignOutResponse, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      return this.client?.signOut?.()
-    })
-  }
-
-  public appleSignIn(): AsyncResult<string, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      return this.client?.appleSignIn?.()
-    })
-  }
-
-  public googleSignIn(): AsyncResult<string, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      return unwrapResult(await this.client?.googleSignIn?.())
-    })
+  public updateUserPassword(_password: string): AsyncResult<void, Error> {
+    return Res.error_async(new Error("Method not implemented"))
   }
 
   public getSession(): AsyncResult<MentraAuthSession, Error> {
-    return Res.try_async(async () => {
-      await this.init()
-      return this.client?.getSession?.()
-    })
+    return Res.error_async(new Error("Method not implemented"))
+  }
+
+  public updateSessionWithTokens(_tokens: {access_token: string; refresh_token: string}): AsyncResult<void, Error> {
+    return Res.error_async(new Error("Method not implemented"))
+  }
+
+  public startAutoRefresh(): AsyncResult<void, Error> {
+    return Res.error_async(new Error("Method not implemented"))
+  }
+
+  public stopAutoRefresh(): AsyncResult<void, Error> {
+    return Res.error_async(new Error("Method not implemented"))
+  }
+
+  public signOut(): AsyncResult<void, Error> {
+    return Res.error_async(new Error("Method not implemented"))
+  }
+
+  public appleSignIn(): AsyncResult<string, Error> {
+    return Res.error_async(new Error("Method not implemented"))
+  }
+
+  public googleSignIn(): AsyncResult<string, Error> {
+    return Res.error_async(new Error("Method not implemented"))
   }
 }
 
-const mentraAuth = new MentraAuthClient()
+function createLazyAuthClient(): AuthClient {
+  let client: AuthClient | null = null
+  let initPromise: Promise<AuthClient> | null = null
+
+  const ensureInit = async (): Promise<AuthClient> => {
+    if (!initPromise) {
+      initPromise = (async () => {
+        const isChina = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
+        if (isChina) {
+          client = await AuthingWrapperClient.getInstance()
+        } else {
+          client = await SupabaseWrapperClient.getInstance()
+        }
+        return client
+      })()
+    }
+    return initPromise
+  }
+
+  return new Proxy({} as AuthClient, {
+    get(_, prop: keyof AuthClient) {
+      return async (...args: any[]) => {
+        const c = await ensureInit()
+        return (c[prop] as Function)(...args)
+      }
+    },
+  })
+}
+
+const mentraAuth = createLazyAuthClient()
 export default mentraAuth
 
 // Tells Authing and Supabase Auth to continuously refresh the session automatically

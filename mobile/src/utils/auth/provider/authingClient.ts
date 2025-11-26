@@ -3,15 +3,7 @@ import {EventEmitter} from "events"
 import {AuthenticationClient} from "authing-js-sdk"
 import type {AuthenticationClientOptions, User} from "authing-js-sdk"
 
-import {
-  MentraAuthSession,
-  MentraAuthSessionResponse,
-  MentraAuthStateChangeSubscriptionResponse,
-  MentraAuthUser,
-  MentraAuthUserResponse,
-  MentraSigninResponse,
-  MentraSignOutResponse,
-} from "@/utils/auth/authProvider.types"
+import {MentraAuthSession, MentraAuthUser, MentraSigninResponse} from "@/utils/auth/authProvider.types"
 import {storage} from "@/utils/storage/storage"
 import {Result, result as Res, AsyncResult} from "typesafe-ts"
 import {AuthClient} from "@/utils/auth/authClient"
@@ -35,13 +27,14 @@ type AuthChangeEvent =
 
 type AuthChangeCallback = (event: AuthChangeEvent, session: any) => void
 
-export class AuthingWrapperClient implements AuthClient {
+export class AuthingWrapperClient extends AuthClient {
   private authing: AuthenticationClient
   private eventEmitter: EventEmitter
   private refreshTimeout: ReturnType<typeof setTimeout> | null = null
   private static instance: AuthingWrapperClient
 
   private constructor() {
+    super()
     const authingOptions: AuthenticationClientOptions = {
       appId: process.env.EXPO_PUBLIC_AUTHING_APP_ID || "",
       appHost: process.env.EXPO_PUBLIC_AUTHING_APP_HOST || "",
@@ -216,12 +209,6 @@ export class AuthingWrapperClient implements AuthClient {
   private readSessionFromStorage(): Result<Session, Error> {
     const res = storage.load<Session>(SESSION_KEY)
     return res
-    // if (res.is_error()) {
-    //   console.log("Error loading session:", res.error)
-    //   return null
-    // }
-    // const session = res.value
-    // return session
   }
 
   private async setupTokenRefresh() {
@@ -283,17 +270,17 @@ export class AuthingWrapperClient implements AuthClient {
     }
   }
 
-  public startAutoRefresh(): Result<void, Error> {
+  public startAutoRefresh(): AsyncResult<void, Error> {
     this.setupTokenRefresh()
-    return Res.ok(undefined)
+    return Res.ok_async(undefined)
   }
 
-  public stopAutoRefresh(): Result<void, Error> {
+  public stopAutoRefresh(): AsyncResult<void, Error> {
     if (this.refreshTimeout) {
       clearTimeout(this.refreshTimeout)
       this.refreshTimeout = null
     }
-    return Res.ok(undefined)
+    return Res.ok_async(undefined)
   }
 
   private async getCurrentUser(): Promise<User | null> {
@@ -325,8 +312,24 @@ export class AuthingWrapperClient implements AuthClient {
     this.authing.logout()
   }
 
-  public resetPasswordForEmail(_email: string): AsyncResult<void, Error> {
-    throw new Error("Method not implemented.")
+  public resetPasswordForEmail(_email: string): AsyncResult<any, Error> {
+    return Res.error_async(new Error("Method not implemented"))
+  }
+
+  public updateUserPassword(_password: string): AsyncResult<void, Error> {
+    return Res.error_async(new Error("Method not implemented"))
+  }
+
+  public updateSessionWithTokens(_tokens: {access_token: string; refresh_token: string}): AsyncResult<void, Error> {
+    return Res.error_async(new Error("Method not implemented"))
+  }
+
+  public appleSignIn(): AsyncResult<string, Error> {
+    return Res.error_async(new Error("Method not implemented"))
+  }
+
+  public googleSignIn(): AsyncResult<string, Error> {
+    return Res.error_async(new Error("Method not implemented"))
   }
 }
 

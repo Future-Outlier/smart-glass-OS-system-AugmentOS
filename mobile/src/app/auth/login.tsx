@@ -108,105 +108,74 @@ export default function LoginScreen() {
   }, [])
 
   const handleGoogleSignIn = async () => {
-    try {
-      // Start auth flow
-      setIsAuthLoading(true)
+    // Start auth flow
+    setIsAuthLoading(true)
 
-      // Show the auth loading overlay
-      Animated.timing(authOverlayOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start()
+    // Show the auth loading overlay
+    Animated.timing(authOverlayOpacity, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start()
 
-      // Automatically hide the overlay after 5 seconds regardless of what happens
-      // This is a failsafe in case the auth flow is interrupted
-      setTimeout(() => {
-        console.log("Auth flow failsafe timeout - hiding loading overlay")
-        setIsAuthLoading(false)
-        authOverlayOpacity.setValue(0)
-      }, 5000)
-
-      const {data, error} = await mentraAuth.googleSignIn()
-
-      // 2) If there's an error, handle it
-      if (error) {
-        // showAlert(translate('loginScreen.errors.authError'), error.message);
-        setIsAuthLoading(false)
-        authOverlayOpacity.setValue(0)
-        return
-      }
-
-      // 3) If we get a `url` back, we must open it ourselves in RN
-      if (data?.url) {
-        console.log("Opening browser with:", data.url)
-        // await Linking.openURL(data.url)
-
-        await WebBrowser.openBrowserAsync(data.url)
-
-        // Directly hide the loading overlay when we leave the app
-        // This ensures it won't be shown when user returns without completing auth
-        setIsAuthLoading(false)
-        authOverlayOpacity.setValue(0)
-      }
-    } catch (err) {
-      console.error("Google sign in failed:", err)
-      // showAlert(
-      //   translate('loginScreen.errors.authError'),
-      //   translate('loginScreen.errors.googleSignInFailed'),
-      // );
+    // Automatically hide the overlay after 5 seconds regardless of what happens
+    // This is a failsafe in case the auth flow is interrupted
+    setTimeout(() => {
+      console.log("Auth flow failsafe timeout - hiding loading overlay")
       setIsAuthLoading(false)
       authOverlayOpacity.setValue(0)
-    }
+    }, 5000)
 
-    console.log("signInWithOAuth call finished")
+    const res = await mentraAuth.googleSignIn()
+
+    // 2) If there's an error, handle it
+    if (res.is_error()) {
+      // showAlert(translate('loginScreen.errors.authError'), error.message);
+      setIsAuthLoading(false)
+      authOverlayOpacity.setValue(0)
+      return
+    }
+    const url = res.value
+
+    // 3) If we get a `url` back, we must open it ourselves in RN
+    console.log("Opening browser with:", url)
+    // await Linking.openURL(data.url)
+
+    await WebBrowser.openBrowserAsync(url)
+
+    // Directly hide the loading overlay when we leave the app
+    // This ensures it won't be shown when user returns without completing auth
+    setIsAuthLoading(false)
+    authOverlayOpacity.setValue(0)
   }
 
   const handleAppleSignIn = async () => {
-    try {
-      setIsAuthLoading(true)
+    setIsAuthLoading(true)
 
-      // Show the auth loading overlay
-      Animated.timing(authOverlayOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start()
+    // Show the auth loading overlay
+    Animated.timing(authOverlayOpacity, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start()
 
-      const {data, error} = await mentraAuth.appleSignIn()
-
-      // If there's an error, handle it
-      if (error) {
-        // showAlert(translate('loginScreen.errors.authError'), error.message);
-        setIsAuthLoading(false)
-        authOverlayOpacity.setValue(0)
-        return
-      }
-
-      // If we get a `url` back, we must open it ourselves in React Native
-      if (data?.url) {
-        console.log("Opening browser with:", data.url)
-        await WebBrowser.openBrowserAsync(data.url)
-
-        // Directly hide the loading overlay when we leave the app
-        // This ensures it won't be shown when user returns without completing auth
-        setIsAuthLoading(false)
-        authOverlayOpacity.setValue(0)
-      }
-
-      // Note: The actual navigation to SplashScreen will be handled by
-      // the onAuthStateChange listener you already have in place
-    } catch (err) {
-      console.error("Apple sign in failed:", err)
-      // showAlert(
-      //   translate('loginScreen.errors.authError'),
-      //   translate('loginScreen.errors.appleSignInFailed'),
-      // );
+    const res = await mentraAuth.appleSignIn()
+    if (res.is_error()) {
+      console.error("Apple sign in failed:", res.error)
       setIsAuthLoading(false)
       authOverlayOpacity.setValue(0)
+      return
     }
+    const url = res.value
 
-    console.log("signInWithOAuth for Apple finished")
+    // If we get a `url` back, we must open it ourselves in React Native
+    console.log("Opening browser with:", url)
+    await WebBrowser.openBrowserAsync(url)
+
+    // Directly hide the loading overlay when we leave the app
+    // This ensures it won't be shown when user returns without completing auth
+    setIsAuthLoading(false)
+    authOverlayOpacity.setValue(0)
   }
 
   const handleEmailSignUp = async (email: string, password: string) => {
@@ -214,47 +183,36 @@ export default function LoginScreen() {
     setIsFormLoading(true)
     setFormAction("signup")
 
-    try {
-      const {data, error} = await mentraAuth.signup(email, password)
+    const res = await mentraAuth.signup(email, password)
 
-      if (error) {
-        if (error.message.includes("Email already registered")) {
-          showAlert(translate("login:emailAlreadyRegistered"), translate("login:useGoogleSignIn"), [
-            {text: translate("common:ok")},
-          ])
-        } else {
-          showAlert(translate("common:error"), error.message, [{text: translate("common:ok")}])
-        }
-      } else if (!data?.session) {
-        // Ensure translations are resolved before passing to showAlert
-        const successTitle = translate("login:success")
-        const verificationMessage = translate("login:checkEmailVerification")
-        showAlert(successTitle, verificationMessage, [{text: translate("common:ok")}])
-      } else {
-        replace("/")
-      }
-    } catch (err) {
-      console.error("Error during sign-up:", err)
-      showAlert(translate("common:error"), err.toString(), [{text: translate("common:ok")}])
-    } finally {
+    if (res.is_error()) {
+      console.error("Error during sign-up:", res.error)
+      showAlert(translate("common:error"), res.error.toString(), [{text: translate("common:ok")}])
       setIsFormLoading(false)
       setFormAction(null)
+      return
     }
+
+    setIsFormLoading(false)
+    setFormAction(null)
+    replace("/")
   }
 
   const handleEmailSignIn = async (email: string, password: string) => {
     Keyboard.dismiss()
     setIsFormLoading(true)
     setFormAction("signin")
-    const {error} = await mentraAuth.signIn(email, password)
-
-    if (error) {
-      showAlert(translate("common:error"), error.message, [{text: translate("common:ok")}])
-      // Handle sign-in error
-    } else {
-      replace("/")
+    
+    const res = await mentraAuth.signIn(email, password)
+    if (res.is_error()) {
+      console.error("Error during sign-in:", res.error)
+      showAlert(translate("common:error"), res.error.toString(), [{text: translate("common:ok")}])
+      setIsFormLoading(false)
+      return
     }
+
     setIsFormLoading(false)
+    replace("/")
   }
 
   useEffect(() => {

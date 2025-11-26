@@ -2,15 +2,8 @@ import type {AuthChangeEvent, Session, SupabaseClient} from "@supabase/supabase-
 import {createClient, SupportedStorage} from "@supabase/supabase-js"
 import {AsyncResult, result as Res, Result} from "typesafe-ts"
 
-import {
-  MentraOauthProviderResponse,
-  MentraPasswordResetResponse,
-  MentraSigninResponse,
-  MentraSignOutResponse,
-  MentraUpdateUserPasswordResponse,
-  MentraAuthSession,
-  MentraAuthUser,
-} from "@/utils/auth/authProvider.types"
+import {MentraSigninResponse, MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"
+import {AuthClient} from "@/utils/auth/authClient"
 import {storage} from "@/utils/storage"
 
 const SUPABASE_URL = (process.env.EXPO_PUBLIC_SUPABASE_URL as string) || "https://auth.mentra.glass"
@@ -44,11 +37,12 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
 })
 
-export class SupabaseWrapperClient {
+export class SupabaseWrapperClient extends AuthClient {
   private static instance: SupabaseWrapperClient
   private supabase: SupabaseClient
 
   private constructor() {
+    super()
     this.supabase = supabaseClient
   }
 
@@ -237,7 +231,7 @@ export class SupabaseWrapperClient {
 
   public updateUserPassword(password: string): AsyncResult<void, Error> {
     return Res.try_async(async () => {
-      const {data, error} = await this.supabase.auth.updateUser({
+      const {error} = await this.supabase.auth.updateUser({
         password,
       })
       if (error) {
@@ -247,13 +241,13 @@ export class SupabaseWrapperClient {
     })
   }
 
-  public resetPasswordForEmail(email: string): AsyncResult<any, Error> {
+  public resetPasswordForEmail(email: string): AsyncResult<void, Error> {
     return Res.try_async(async () => {
-      const {data, error} = await this.supabase.auth.resetPasswordForEmail(email)
+      const {error} = await this.supabase.auth.resetPasswordForEmail(email)
       if (error) {
         throw error
       }
-      return data as any
+      return undefined
     })
   }
 
