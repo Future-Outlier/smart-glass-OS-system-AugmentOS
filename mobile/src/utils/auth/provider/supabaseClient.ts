@@ -138,60 +138,62 @@ export class SupabaseWrapperClient {
     })
   }
 
-  public async startAutoRefresh(): Promise<void> {
-    return this.supabase.auth.startAutoRefresh()
+  public startAutoRefresh(): AsyncResult<void, Error> {
+    return Res.try_async(async () => {
+      await this.supabase.auth.startAutoRefresh()
+      return undefined
+    })
   }
 
-  public async stopAutoRefresh(): Promise<void> {
-    return this.supabase.auth.stopAutoRefresh()
+  public stopAutoRefresh(): AsyncResult<void, Error> {
+    return Res.try_async(async () => {
+      await this.supabase.auth.stopAutoRefresh()
+      return undefined
+    })
   }
 
-  public async signOut(): Promise<MentraSignOutResponse> {
-    const {error} = await this.supabase.auth.signOut()
-    return {error}
+  public signOut(): AsyncResult<void, Error> {
+    return Res.try_async(async () => {
+      const {error} = await this.supabase.auth.signOut()
+      if (error) {
+        throw error
+      }
+      return undefined
+    })
   }
 
-  public async signInWithPassword(credentials: {email: string; password: string}): Promise<MentraSigninResponse> {
-    try {
+  public signInWithPassword(credentials: {email: string; password: string}): AsyncResult<MentraSigninResponse, Error> {
+    return Res.try_async(async () => {
       const {data, error} = await this.supabase.auth.signInWithPassword(credentials)
 
-      return {
-        data: data.user
-          ? {
-              session: {
-                token: data.session.access_token,
-                user: {
-                  id: data.user.id,
-                  email: data.user.email,
-                  name: data.user.user_metadata.full_name as string,
-                },
-              },
-              user: {
-                id: data.user.id,
-                email: data.user.email,
-                name: data.user.user_metadata.full_name as string,
-              },
-            }
-          : null,
-        error: error?.message
-          ? {
-              message: error.message,
-            }
-          : null,
+      if (error) {
+        throw error
       }
-    } catch (error) {
-      console.log("Supabase Sign-in error:", error)
+
+      if (!data.user) {
+        throw new Error("User not found")
+      }
+
       return {
-        data: null,
-        error: {
-          message: "Something went wrong. Please try again.",
+        session: {
+          token: data.session.access_token,
+          user: {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.user_metadata.full_name as string,
+          },
+        },
+        user: {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata.full_name as string,
         },
       }
-    }
+    })
   }
 
-  public async signUp(credentials: {email: string; password: string}): Promise<MentraSigninResponse> {
-    try {
+  public signUp(credentials: {email: string; password: string}): AsyncResult<MentraSigninResponse, Error> {
+    return Res.try_async(async () => {
       const {data, error} = await this.supabase.auth.signUp(credentials)
       let errorMessage = error?.message.toLowerCase() || ""
       if (error) {
@@ -209,92 +211,54 @@ export class SupabaseWrapperClient {
       } else {
         errorMessage = "Something went wrong. Please try again."
       }
+
       return {
-        data: {
-          user: data.user
-            ? {
-                id: data.user.id,
-                email: data.user.email,
-                name: data.user.user_metadata.full_name as string,
-              }
-            : null,
-          session:
-            data.session && data.user
-              ? {
-                  token: data.session.access_token,
-                  user: {
-                    id: data.user.id,
-                    email: data.user.email,
-                    name: data.user.user_metadata.full_name as string,
-                  },
-                }
-              : null,
-        },
-        error: error?.message
+        user: data.user
           ? {
-              message: errorMessage,
+              id: data.user.id,
+              email: data.user.email,
+              name: data.user.user_metadata.full_name as string,
             }
           : null,
+        session:
+          data.session && data.user
+            ? {
+                token: data.session.access_token,
+                user: {
+                  id: data.user.id,
+                  email: data.user.email,
+                  name: data.user.user_metadata.full_name as string,
+                },
+              }
+            : null,
       }
-    } catch (error) {
-      console.log("Supabase Sign-up error:", error)
-      return {
-        data: null,
-        error: {
-          message: "Something went wrong. Please try again.",
-        },
-      }
-    }
+    })
   }
 
-  public async updateUserPassword(password: string): Promise<MentraUpdateUserPasswordResponse> {
-    try {
+  public updateUserPassword(password: string): AsyncResult<void, Error> {
+    return Res.try_async(async () => {
       const {data, error} = await this.supabase.auth.updateUser({
         password,
       })
-      return {
-        data,
-        error: error
-          ? {
-              message: error.message,
-            }
-          : null,
+      if (error) {
+        throw error
       }
-    } catch (error) {
-      console.log("Supabase Update User Password error:", error)
-      return {
-        data: null,
-        error: {
-          message: "Something went wrong. Please try again.",
-        },
-      }
-    }
+      return undefined
+    })
   }
 
-  public async resetPasswordForEmail(email: string): Promise<MentraPasswordResetResponse> {
-    try {
+  public resetPasswordForEmail(email: string): AsyncResult<any, Error> {
+    return Res.try_async(async () => {
       const {data, error} = await this.supabase.auth.resetPasswordForEmail(email)
-      return {
-        data,
-        error: error
-          ? {
-              message: error.message,
-            }
-          : null,
+      if (error) {
+        throw error
       }
-    } catch (error) {
-      console.log("Supabase Reset Password error:", error)
-      return {
-        data: null,
-        error: {
-          message: "Something went wrong. Please try again.",
-        },
-      }
-    }
+      return data as any
+    })
   }
 
-  public async googleSignIn(): Promise<MentraOauthProviderResponse> {
-    try {
+  public googleSignIn(): AsyncResult<string, Error> {
+    return Res.try_async(async () => {
       const {data, error} = await this.supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -318,31 +282,16 @@ export class SupabaseWrapperClient {
         errorMessage = "Email already registered"
       }
 
-      return {
-        data: data.url
-          ? {
-              url: data.url,
-            }
-          : null,
-        error: error?.message
-          ? {
-              message: errorMessage,
-            }
-          : null,
+      if (error) {
+        throw error
       }
-    } catch (error) {
-      console.error("Error signing in with Google:", error)
-      return {
-        data: null,
-        error: {
-          message: "Error signing in with Google",
-        },
-      }
-    }
+
+      return data.url
+    })
   }
 
-  public async appleSignIn(): Promise<MentraOauthProviderResponse> {
-    try {
+  public appleSignIn(): AsyncResult<string, Error> {
+    return Res.try_async(async () => {
       const {data, error} = await this.supabase.auth.signInWithOAuth({
         provider: "apple",
         options: {
@@ -368,26 +317,15 @@ export class SupabaseWrapperClient {
         errorMessage = "Something went wrong. Please try again."
       }
 
-      return {
-        data: data.url
-          ? {
-              url: data?.url,
-            }
-          : null,
-        error: error?.message
-          ? {
-              message: errorMessage,
-            }
-          : null,
+      if (errorMessage) {
+        throw new Error(errorMessage)
       }
-    } catch (error) {
-      console.error("Error signing in with Apple:", error)
-      return {
-        data: null,
-        error: {
-          message: "Error signing in with Apple",
-        },
+
+      if (!data.url) {
+        throw new Error("No URL returned from Supabase")
       }
-    }
+
+      return data.url
+    })
   }
 }

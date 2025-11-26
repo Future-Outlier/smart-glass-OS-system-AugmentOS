@@ -8,7 +8,6 @@ import {
   MentraAuthUser,
   MentraPasswordResetResponse,
   MentraSigninResponse,
-  MentraSignOutResponse,
 } from "./authProvider.types"
 import {AuthingWrapperClient} from "./provider/authingClient"
 import {SupabaseWrapperClient} from "./provider/supabaseClient"
@@ -24,7 +23,7 @@ export interface AuthClient {
   updateSessionWithTokens(tokens: {access_token: string; refresh_token: string}): Promise<any>
   startAutoRefresh(): AsyncResult<void, Error>
   stopAutoRefresh(): AsyncResult<void, Error>
-  signOut(): AsyncResult<MentraSignOutResponse, Error>
+  signOut(): AsyncResult<void, Error>
   appleSignIn(): AsyncResult<string, Error>
   googleSignIn(): AsyncResult<string, Error>
 }
@@ -37,7 +36,7 @@ function unwrapResult<T>(res: Result<T, Error>): T {
 }
 
 class MentraAuthClient {
-  private client: Partial<AuthClient> | null = null
+  private client: AuthClient | null = null
   private isInitialized = false
 
   private async init(): Promise<void> {
@@ -66,7 +65,8 @@ class MentraAuthClient {
   public getUser(): AsyncResult<MentraAuthUser, Error> {
     return Res.try_async(async () => {
       await this.init()
-      return this.client!.getUser?.()
+      let res = await this.client!.getUser()
+      return unwrapResult(res)
     })
   }
 
@@ -138,8 +138,10 @@ class MentraAuthClient {
   }
 
   public googleSignIn(): AsyncResult<string, Error> {
-    await this.init()
-    return this.client?.googleSignIn?.()
+    return Res.try_async(async () => {
+      await this.init()
+      return unwrapResult(await this.client?.googleSignIn?.())
+    })
   }
 
   public getSession(): AsyncResult<MentraAuthSession, Error> {

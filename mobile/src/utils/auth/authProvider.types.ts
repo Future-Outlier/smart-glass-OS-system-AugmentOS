@@ -39,12 +39,6 @@ export type MentraAuthUserResponse = {
   } | null
 }
 
-export type MentraSignOutResponse = {
-  error: {
-    message: string
-  } | null
-}
-
 export type MentraUpdateUserPasswordResponse = {
   data: {} | null
   error: {
