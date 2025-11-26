@@ -63,12 +63,13 @@ const $icon: ThemedStyle<ViewStyle> = ({spacing}) => ({
 
 const $tabList: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
-  backgroundColor: colors.primary_foreground + "fb",
-  position: "absolute",
-  bottom: 0,
   borderTopColor: colors.separator,
   paddingVertical: spacing.s2,
   paddingHorizontal: spacing.s3,
+  // transparent nav bar:
+  // backgroundColor: colors.primary_foreground + "fb",
+  // position: "absolute",
+  // bottom: 0,
 })
 
 const $tabTrigger: ThemedStyle<ViewStyle> = ({spacing}) => ({
