@@ -1,6 +1,7 @@
 import {EventEmitter} from "events"
 
 import {useConnectionStore} from "@/stores/connection"
+import mantle from "@/services/MantleManager"
 
 export enum WebSocketStatus {
   DISCONNECTED = "disconnected",
@@ -41,8 +42,9 @@ class WebSocketManager extends EventEmitter {
     }
   }
 
-  connect(url: string, coreToken: string) {
+  public connect(url: string, coreToken: string) {
     console.log(`WSM: connect: ${url}, ${coreToken}`)
+    // mantle.displayTextMain(`WSM: connect: ${url}, ${coreToken}`)
     this.manuallyDisconnected = false
     this.url = url
     this.coreToken = coreToken
@@ -72,6 +74,7 @@ class WebSocketManager extends EventEmitter {
     // Set up event handlers
     this.webSocket.onopen = () => {
       console.log("WSM: WebSocket connection established")
+      // mantle.displayTextMain(`WSM: WebSocket connection established`)
       this.updateStatus(WebSocketStatus.CONNECTED)
       store.setConnected()
     }
@@ -82,6 +85,7 @@ class WebSocketManager extends EventEmitter {
 
     this.webSocket.onerror = error => {
       console.log("WSM: WebSocket error:", error)
+      // mantle.displayTextMain(`WSM: WebSocket error: ${error?.toString() || "WebSocket error"}`)
       this.updateStatus(WebSocketStatus.ERROR)
       store.setError(error?.toString() || "WebSocket error")
       this.startReconnectInterval()
@@ -89,12 +93,13 @@ class WebSocketManager extends EventEmitter {
 
     this.webSocket.onclose = event => {
       console.log("WSM: Connection closed with code:", event.code)
+      // mantle.displayTextMain(`WSM: Connection closed with code: ${event.code}`)
       this.updateStatus(WebSocketStatus.DISCONNECTED)
       this.startReconnectInterval()
     }
   }
 
-  startReconnectInterval() {
+  private startReconnectInterval() {
     if (this.reconnectInterval) {
       clearInterval(this.reconnectInterval)
       this.reconnectInterval = null
@@ -105,22 +110,25 @@ class WebSocketManager extends EventEmitter {
 
     this.reconnectInterval = setInterval(() => {
       console.log("WSM: Attempting reconnect")
+      // mantle.displayTextMain(`WSM: Attempting reconnect`)
       const store = useConnectionStore.getState()
       if (store.status === WebSocketStatus.DISCONNECTED) {
         this.handleReconnect()
       }
       if (store.status === WebSocketStatus.CONNECTED) {
+        console.log("WSM: Connected, stopping reconnect interval")
+        // mantle.displayTextMain(`WSM: Connected, stopping reconnect interval`)
         clearInterval(this.reconnectInterval)
       }
     }, 5000)
   }
 
-  handleReconnect() {
+  private handleReconnect() {
     console.log("WSM: Attempting reconnect")
     this.connect(this.url!, this.coreToken!)
   }
 
-  disconnect() {
+  public disconnect() {
     this.manuallyDisconnected = true
 
     if (this.reconnectTimeout) {
@@ -138,13 +146,13 @@ class WebSocketManager extends EventEmitter {
     store.setDisconnected()
   }
 
-  isConnected(): boolean {
+  public isConnected(): boolean {
     // return this.webSocket !== null && this.webSocket.readyState === WebSocket.OPEN
     return this.previousStatus === WebSocketStatus.CONNECTED
   }
 
   // Send JSON message
-  sendText(text: string) {
+  public sendText(text: string) {
     if (!this.isConnected()) {
       console.log("WSM: Cannot send message: WebSocket not connected")
       return
@@ -158,7 +166,7 @@ class WebSocketManager extends EventEmitter {
   }
 
   // Send binary data (for audio)
-  sendBinary(data: ArrayBuffer | Uint8Array) {
+  public sendBinary(data: ArrayBuffer | Uint8Array) {
     if (!this.isConnected()) {
       console.log("WSM: Cannot send binary data: WebSocket not connected")
       return
@@ -191,7 +199,7 @@ class WebSocketManager extends EventEmitter {
     }
   }
 
-  cleanup() {
+  public cleanup() {
     this.disconnect()
     this.removeAllListeners()
     WebSocketManager.instance = null
