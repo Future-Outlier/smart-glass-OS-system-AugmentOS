@@ -7,6 +7,7 @@ COPY package.json bun.lock* ./
 
 # Copy all workspace packages that are dependencies
 COPY packages/sdk ./packages/sdk
+COPY packages/types ./packages/types
 
 # Copy the captions app
 COPY packages/apps/captions ./packages/apps/captions
