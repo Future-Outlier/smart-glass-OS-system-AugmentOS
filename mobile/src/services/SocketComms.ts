@@ -407,13 +407,14 @@ class SocketComms {
   }
 
   public handle_display_event(msg: any) {
-    // console.log(`SOCKET: Handling display event: ${JSON.stringify(msg)}`)
-    if (msg.view) {
-      CoreModule.displayEvent(msg)
-      // Update the Zustand store with the display content
-      const displayEvent = JSON.stringify(msg)
-      useDisplayStore.getState().setDisplayEvent(displayEvent)
+    if (!msg.view) {
+      console.error("SOCKET: display_event missing view")
+      return
     }
+    CoreModule.displayEvent(msg)
+    // Update the Zustand store with the display content
+    const displayEvent = JSON.stringify(msg)
+    useDisplayStore.getState().setDisplayEvent(displayEvent)
   }
 
   private handle_set_location_tier(msg: any) {
