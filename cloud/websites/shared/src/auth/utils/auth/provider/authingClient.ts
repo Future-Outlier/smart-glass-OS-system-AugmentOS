@@ -1,11 +1,12 @@
 import {AuthenticationClient, AuthenticationClientOptions} from "authing-js-sdk"
+
 import {
   MentraAuthSession,
   MentraAuthSessionResponse,
   MentraAuthStateChangeSubscriptionResponse,
   MentraSigninResponse,
   MentraSignOutResponse,
-} from "../authingProvider.types"
+} from "@/auth/utils/auth/authingProvider.types"
 
 // Browser-compatible EventEmitter
 type EventCallback = (...args: unknown[]) => void
@@ -31,7 +32,7 @@ class EventEmitter {
   emit(event: string, data: unknown) {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
-      callbacks.forEach(cb => cb(data))
+      callbacks.forEach((cb) => cb(data))
     }
   }
 }
@@ -166,27 +167,30 @@ export class AuthingWrapperClient {
   }
 
   public onAuthStateChange(callback: AuthChangeCallback): MentraAuthStateChangeSubscriptionResponse {
-    const handler = (event: string, session: MentraAuthSession) => {
-      callback(event as AuthChangeEvent, session)
-    }
+    const signedInHandler: EventCallback = (data) => callback("SIGNED_IN", data as MentraAuthSession)
+    const signedOutHandler: EventCallback = (data) => callback("SIGNED_OUT", data as MentraAuthSession)
+    const tokenRefreshedHandler: EventCallback = (data) => callback("TOKEN_REFRESHED", data as MentraAuthSession)
+    const userUpdatedHandler: EventCallback = (data) => callback("USER_UPDATED", data as MentraAuthSession)
+    const userDeletedHandler: EventCallback = (data) => callback("USER_DELETED", data as MentraAuthSession)
+    const passwordRecoveryHandler: EventCallback = (data) => callback("PASSWORD_RECOVERY", data as MentraAuthSession)
 
-    this.eventEmitter.on("SIGNED_IN", (session: MentraAuthSession) => handler("SIGNED_IN", session))
-    this.eventEmitter.on("SIGNED_OUT", (session: MentraAuthSession) => handler("SIGNED_OUT", session))
-    this.eventEmitter.on("TOKEN_REFRESHED", (session: MentraAuthSession) => handler("TOKEN_REFRESHED", session))
-    this.eventEmitter.on("USER_UPDATED", (session: MentraAuthSession) => handler("USER_UPDATED", session))
-    this.eventEmitter.on("USER_DELETED", (session: MentraAuthSession) => handler("USER_DELETED", session))
-    this.eventEmitter.on("PASSWORD_RECOVERY", (session: MentraAuthSession) => handler("PASSWORD_RECOVERY", session))
+    this.eventEmitter.on("SIGNED_IN", signedInHandler)
+    this.eventEmitter.on("SIGNED_OUT", signedOutHandler)
+    this.eventEmitter.on("TOKEN_REFRESHED", tokenRefreshedHandler)
+    this.eventEmitter.on("USER_UPDATED", userUpdatedHandler)
+    this.eventEmitter.on("USER_DELETED", userDeletedHandler)
+    this.eventEmitter.on("PASSWORD_RECOVERY", passwordRecoveryHandler)
 
     return {
       data: {
         subscription: {
           unsubscribe: () => {
-            this.eventEmitter.off("SIGNED_IN", handler)
-            this.eventEmitter.off("SIGNED_OUT", handler)
-            this.eventEmitter.off("TOKEN_REFRESHED", handler)
-            this.eventEmitter.off("USER_UPDATED", handler)
-            this.eventEmitter.off("USER_DELETED", handler)
-            this.eventEmitter.off("PASSWORD_RECOVERY", handler)
+            this.eventEmitter.off("SIGNED_IN", signedInHandler)
+            this.eventEmitter.off("SIGNED_OUT", signedOutHandler)
+            this.eventEmitter.off("TOKEN_REFRESHED", tokenRefreshedHandler)
+            this.eventEmitter.off("USER_UPDATED", userUpdatedHandler)
+            this.eventEmitter.off("USER_DELETED", userDeletedHandler)
+            this.eventEmitter.off("PASSWORD_RECOVERY", passwordRecoveryHandler)
           },
         },
       },
