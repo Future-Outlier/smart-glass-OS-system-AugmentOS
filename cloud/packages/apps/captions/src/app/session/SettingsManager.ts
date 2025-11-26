@@ -1,0 +1,130 @@
+import {UserSession} from "./UserSession"
+import {convertLineWidth} from "../utils"
+
+interface CaptionSettings {
+  language: string
+  languageHints: string[]
+  displayLines: number
+  displayWidth: number
+}
+
+export class SettingsManager {
+  private readonly storage: UserSession["appSession"]["simpleStorage"]
+  private readonly logger: UserSession["logger"]
+  private readonly userSession: UserSession
+  private readonly disposables: Array<() => void> = []
+
+  constructor(userSession: UserSession) {
+    this.userSession = userSession
+    this.storage = userSession.appSession.simpleStorage
+    this.logger = userSession.logger.child({service: "SettingsManager"})
+  }
+
+  // SDK settings handlers removed - we only use SimpleStorage now
+  // Settings changes come from REST API calls (webview)
+
+  async initialize(): Promise<void> {
+    // Load settings from SimpleStorage or use defaults
+    const language = await this.getLanguage()
+    const displayLines = await this.getDisplayLines()
+    const displayWidth = await this.getDisplayWidth()
+
+    this.logger.info(`Settings initialized: language=${language}, lines=${displayLines}, width=${displayWidth}`)
+
+    // Apply settings to processor
+    await this.applyToProcessor()
+  }
+
+  async getLanguage(): Promise<string> {
+    const stored = await this.storage.get("language")
+    return stored || "auto"
+  }
+
+  async setLanguage(language: string): Promise<void> {
+    await this.storage.set("language", language)
+    this.logger.info(`Language set to: ${language}`)
+
+    // Update processor with new language settings
+    await this.applyToProcessor()
+  }
+
+  async getLanguageHints(): Promise<string[]> {
+    const stored = await this.storage.get("languageHints")
+    if (!stored) return []
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return []
+    }
+  }
+
+  async setLanguageHints(hints: string[]): Promise<void> {
+    await this.storage.set("languageHints", JSON.stringify(hints))
+    this.logger.info(`Language hints set to: ${hints.join(", ")}`)
+  }
+
+  async getDisplayLines(): Promise<number> {
+    const stored = await this.storage.get("displayLines")
+    if (!stored) return 3
+    const parsed = parseInt(stored, 10)
+    return isNaN(parsed) ? 3 : parsed
+  }
+
+  async setDisplayLines(lines: number): Promise<void> {
+    if (lines < 2 || lines > 5) {
+      throw new Error("Lines must be between 2 and 5")
+    }
+    await this.storage.set("displayLines", lines.toString())
+    this.logger.info(`Display lines set to: ${lines}`)
+
+    // Update processor with new settings
+    await this.applyToProcessor()
+  }
+
+  async getDisplayWidth(): Promise<number> {
+    const stored = await this.storage.get("displayWidth")
+    if (!stored) return 30
+    const parsed = parseInt(stored, 10)
+    return isNaN(parsed) ? 30 : parsed
+  }
+
+  async setDisplayWidth(width: number): Promise<void> {
+    await this.storage.set("displayWidth", width.toString())
+    this.logger.info(`Display width set to: ${width}`)
+
+    // Update processor with new settings
+    await this.applyToProcessor()
+  }
+
+  async getAll(): Promise<CaptionSettings> {
+    return {
+      language: await this.getLanguage(),
+      languageHints: await this.getLanguageHints(),
+      displayLines: await this.getDisplayLines(),
+      displayWidth: await this.getDisplayWidth(),
+    }
+  }
+
+  private async applyToProcessor(): Promise<void> {
+    const language = await this.getLanguage()
+    const displayLines = await this.getDisplayLines()
+    let displayWidth = await this.getDisplayWidth()
+
+    // Check if language is Chinese
+    const isChineseLanguage = language === "Chinese (Hanzi)"
+
+    // Convert line width based on language
+    displayWidth = convertLineWidth(displayWidth.toString(), isChineseLanguage)
+
+    this.logger.info(
+      `Applying settings to processor: language=${language}, lines=${displayLines}, width=${displayWidth}, isChinese=${isChineseLanguage}`,
+    )
+
+    // Update DisplayManager
+    this.userSession.display.updateSettings(displayWidth, displayLines, isChineseLanguage)
+  }
+
+  dispose(): void {
+    this.disposables.forEach((dispose) => dispose())
+  }
+}

@@ -5,6 +5,7 @@
 import {
   StreamType,
   getLanguageInfo,
+  parseLanguageStream,
   TranscriptionData,
   SonioxToken,
 } from "@mentra/sdk";
@@ -173,6 +174,11 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
   }
 
   supportsLanguage(language: string): boolean {
+    // Support "auto" for automatic language detection
+    if (language === "auto") {
+      return true;
+    }
+
     // Check if the language is in our supported transcription languages list
     // Language parameter is already a language code like "en-US", not a subscription string
 
@@ -423,16 +429,42 @@ class SonioxTranscriptionStream implements StreamInstance {
     if (!this.ws || this.isConfigSent) {
       return;
     }
+
+    // Parse subscription options for hints and language identification settings
+    const languageInfo = parseLanguageStream(this.subscription);
+    const hintsParam = languageInfo?.options?.hints;
+    const disableLangIdParam =
+      languageInfo?.options?.["no-language-identification"];
+
+    // Extract additional hints from query params
+    const additionalHints = hintsParam
+      ? (hintsParam as string).split(",").map((h) => h.trim())
+      : [];
+
+    // Determine if we're in auto mode
+    const isAutoMode = this.language === "auto";
+
+    // Build language hints array
     const languageHint = this.language.split("-")[0]; // Normalize to base language code (e.g. 'en' from 'en-US')
     const targetLanguageHint = this.targetLanguage
       ? this.targetLanguage.split("-")[0]
       : undefined;
-    const languageHints = targetLanguageHint
-      ? [languageHint, targetLanguageHint]
-      : [languageHint];
 
-    const disableLanguageIdentification = this.subscription.endsWith(
-      "?no-language-identification=true",
+    let languageHints: string[];
+    if (isAutoMode) {
+      // Auto mode: only use additional hints (no primary language)
+      languageHints = additionalHints;
+    } else if (targetLanguageHint) {
+      // Translation mode: primary + target + additional hints
+      languageHints = [languageHint, targetLanguageHint, ...additionalHints];
+    } else {
+      // Specific language mode: primary + additional hints
+      languageHints = [languageHint, ...additionalHints];
+    }
+
+    // Determine enable_language_identification flag (default to enabled)
+    const enableLanguageIdentification = !(
+      disableLangIdParam === true || disableLangIdParam === "true"
     );
     const config: any = {
       api_key: this.config.apiKey,
@@ -440,11 +472,11 @@ class SonioxTranscriptionStream implements StreamInstance {
       audio_format: "pcm_s16le",
       sample_rate: 16000,
       num_channels: 1,
-      enable_language_identification: !disableLanguageIdentification, // Toggle based on flag
+      enable_language_identification: enableLanguageIdentification,
       max_non_final_tokens_duration_ms: 2000,
       enable_endpoint_detection: true, // Automatically finalize tokens on speech pauses
       enable_speaker_diarization: true,
-      language_hints: languageHints, // Default hints, can be overridden
+      language_hints: languageHints.length > 0 ? languageHints : undefined,
       // context: "Mentra, MentraOS, Mira, Hey Mira",
     };
 
@@ -456,14 +488,15 @@ class SonioxTranscriptionStream implements StreamInstance {
         language_a: this.language.split("-")[0], // Convert en-US to en
         language_b: this.targetLanguage.split("-")[0], // Convert es-ES to es
       };
-      config.language_hints = [
-        config.translation.language_a,
-        config.translation.language_b,
-      ];
-    } else {
-      // Just transcription
+      config.language_hints =
+        languageHints.length > 0
+          ? languageHints
+          : [config.translation.language_a, config.translation.language_b];
+    } else if (!isAutoMode) {
+      // Just transcription with specific language
       config.language = this.language;
     }
+    // In auto mode, don't set a specific language - let Soniox auto-detect
 
     try {
       this.ws.send(JSON.stringify(config));
