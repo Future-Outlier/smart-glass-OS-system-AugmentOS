@@ -53,6 +53,12 @@ export const SETTINGS: Record<string, Setting> = {
         ? "https://store.mentraglass.cn"
         : "https://apps.mentra.glass",
     writable: true,
+    override: () => {
+      if (process.env.EXPO_PUBLIC_STORE_URL_OVERRIDE) {
+        return process.env.EXPO_PUBLIC_STORE_URL_OVERRIDE
+      }
+      return undefined
+    },
     saveOnServer: true,
   },
   reconnect_on_app_foreground: {
