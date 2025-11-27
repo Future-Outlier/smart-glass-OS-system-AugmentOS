@@ -437,6 +437,24 @@ public class MediaCaptureService {
     }
     
     /**
+     * Flash privacy LED synchronized with shutter sound for photo capture
+     */
+    private void flashPrivacyLedForPhoto() {
+        if (hardwareManager == null) {
+            Log.w(TAG, "⚠️ hardwareManager is null, cannot flash privacy LED");
+            return;
+        }
+
+        if (!hardwareManager.supportsRecordingLed()) {
+            Log.w(TAG, "⚠️ Privacy LED not supported on this device");
+            return;
+        }
+
+        Log.d(TAG, "📸 Flashing privacy LED synchronized with shutter sound");
+        hardwareManager.flashRecordingLed(2200); // 300ms flash duration
+    }
+    
+    /**
      * Trigger white LED flash for photo capture (synchronized with shutter sound)
      */
     private void triggerPhotoFlashLed() {
@@ -1105,12 +1123,8 @@ public class MediaCaptureService {
 
         playShutterSound();
         if (enableLed) {
-            triggerPhotoFlashLed(); // Trigger white LED flash synchronized with shutter sound
+            flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
         }
-
-
-        // LED control is now handled by CameraNeo tied to camera lifecycle
-        // This prevents LED flickering during rapid photo capture
 
         // TESTING: Check for fake camera capture failure
         if (PhotoCaptureTestFramework.shouldFail("CAMERA_CAPTURE")) {
@@ -1242,8 +1256,9 @@ public class MediaCaptureService {
 
         try {
             playShutterSound();
-            // Disable LED for webhook uploads to avoid distracting white flash
-            // LED control is handled by CameraNeo for camera lifecycle management
+            if (enableLed) {
+                flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
+            }
 
             // Use the new enqueuePhotoRequest for thread-safe rapid capture
             CameraNeo.enqueuePhotoRequest(
@@ -2050,8 +2065,9 @@ public class MediaCaptureService {
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_CAPTURE");
 
         playShutterSound();
-        // Disable LED for BLE transfers to avoid distracting white flash
-        // LED control is handled by CameraNeo for camera lifecycle management
+        if (enableLed) {
+            flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
+        }
 
         try {
             // Use CameraNeo for photo capture
