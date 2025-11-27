@@ -1551,11 +1551,7 @@ public class CameraNeo extends LifecycleService {
             cameraOpenCloseLock.release();
             cameraDevice = camera;
             
-            // Turn on LED if enabled for photo flash
-            if (pendingLedEnabled && hardwareManager != null && hardwareManager.supportsRecordingLed()) {
-                Log.d(TAG, "📸 Turning on camera LED (camera opened)");
-                hardwareManager.setRecordingLedOn();
-            }
+            // LED flash will be triggered when photo is captured, not when camera opens
             
             // Mark camera as ready
             synchronized (SERVICE_LOCK) {
@@ -2052,10 +2048,8 @@ public class CameraNeo extends LifecycleService {
             // Reset keep-alive flag when camera is actually closed
             isCameraKeptAlive = false;
             
-            // Turn off LED when camera closes
-            if (pendingLedEnabled && hardwareManager != null && hardwareManager.supportsRecordingLed()) {
-                Log.d(TAG, "📸 Turning off camera LED (camera closed)");
-                hardwareManager.setRecordingLedOff();
+            // Reset LED state when camera closes (flash already completed automatically)
+            if (pendingLedEnabled) {
                 pendingLedEnabled = false;  // Reset LED state
             }
             
@@ -2738,7 +2732,7 @@ public class CameraNeo extends LifecycleService {
             } else {
                 Log.w(TAG, "⚠ ZSL NOT enabled in capture request (CONTROL_ENABLE_ZSL = " + zslEnabled + ")");
             }
-            
+
             cameraCaptureSession.capture(captureRequest, new CameraCaptureSession.CaptureCallback() {
                 @Override
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
