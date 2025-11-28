@@ -151,4 +151,4 @@ jobs:
           use-specs: "2.0-4.0Gi"
           vswitch: "vsw-wz94gyb5cinmsod89a4tj,vsw-wz9p9qoldncmf9k5se950"
           security-group: "sg-wz95j71022jl4tezfozp"
-          env-file: "env.yaml"
+          env-yaml-file: "env.yaml"
