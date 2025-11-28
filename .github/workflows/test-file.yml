@@ -6,7 +6,7 @@ on:
       - "ya/clean-china-cicd"
     paths:
       - "cloud/**"
-      - ".github/workflows/china-deployment-new.yml"
+      - ".github/workflows/test-file.yml"
 
 jobs:
   china-cloud-deploy:
