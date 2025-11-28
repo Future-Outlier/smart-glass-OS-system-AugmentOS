@@ -14,16 +14,15 @@ jobs:
     permissions:
       contents: read
     env:
-      _MENTRA_APP_MIN_INSTANCES: 1
-      _MENTRA_APP_MAX_INSTANCES: 2
+      _MENTRA_APP_MIN_INSTANCES: "1"
+      _MENTRA_APP_MAX_INSTANCES: "2"
       _MENTRA_APP_USE_SPECS: 2.0-4.0Gi
-      _MENTRA_APP_VSWITCH: vsw-wz94gyb5cinmsod89a4tj, vsw-wz9p9qoldncmf9k5se950
+      _MENTRA_APP_VSWITCH: vsw-wz94gyb5cinmsod89a4tj
       _MENTRA_APP_SECURITY_GROUP: sg-wz98079z7qd7oz2xtmt3
       _MENTRA_APP_CONTAINER_GROUP_NAME: mentraos-dev-api-cg
       _MENTRA_APP_CONTAINER_NAME: mentraos-dev-api-eci
       _MENTRA_APP_SCALING_GROUP_NAME: mentraos-dev-api-scalingGroup
       _MENTRA_APP_IMAGE: mentra-acr-cnsz-a-registry.cn-shenzhen.cr.aliyuncs.com/dev/api:latest
-
       NODE_ENV: production
       PORT: "80"
       SYSTEM_DASHBOARD_PACKAGE_NAME: system.augmentos.dashboard
@@ -38,14 +37,12 @@ jobs:
       ACR_INSTANCE_ID: cri-h675v46p9lj694l6
       ACR_REGION_ID: cn-shenzhen
       ACR_PUBLIC_DOMAIN: mentra-acr-cnsz-a-registry.cn-shenzhen.cr.aliyuncs.com
-
       # Mentra config
       MONGO_URL: ${{ secrets.MONGO_URL }}
       AUGMENTOS_AUTH_JWT_SECRET: ${{ secrets.AUGMENTOS_AUTH_JWT_SECRET }}
       INVITE_JWT_SECRET: ${{ secrets.INVITE_JWT_SECRET }}
       JOE_MAMA_USER_JWT: ${{ secrets.JOE_MAMA_USER_JWT }}
       TPA_AUTH_JWT_PRIVATE_KEY: ${{ secrets.TPA_AUTH_JWT_PRIVATE_KEY }}
-
       # Livekit config
       LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
       LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
