@@ -21,7 +21,7 @@ jobs:
       _MENTRA_APP_SECURITY_GROUP: sg-wz95j71022jl4tezfozp
       _MENTRA_APP_CONTAINER_GROUP_NAME: mentraos-dev-api-cg
       _MENTRA_APP_CONTAINER_NAME: mentraos-dev-api-eci
-      _MENTRA_APP_SCALING_GROUP_NAME: mentraos-dev-api-scalingGroup
+      _MENTRA_APP_SCALING_CONFIGURATION_NAME: mentraos-dev-api-scalingConfiguration
       _MENTRA_APP_IMAGE: mentra-acr-cnsz-a-registry-vpc.cn-shenzhen.cr.aliyuncs.com/dev/api:latest
       NODE_ENV: production
       PORT: "80"

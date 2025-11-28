@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   annotations:
     k8s.aliyun.com/ess-scaling-group-max-size: "${_MENTRA_APP_MAX_INSTANCES}"
-    k8s.aliyun.com/ess-scaling-group-name: "${_MENTRA_APP_SCALING_GROUP_NAME}"
+    k8s.aliyun.com/ess-scaling-group-name: "${_MENTRA_APP_SCALING_CONFIGURATION_NAME}"
     k8s.aliyun.com/ess-scaling-group-min-size: "${_MENTRA_APP_MIN_INSTANCES}"
   name: "${_MENTRA_APP_CONTAINER_GROUP_NAME}"
 spec:
