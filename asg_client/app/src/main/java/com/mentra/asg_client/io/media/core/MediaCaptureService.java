@@ -461,7 +461,7 @@ public class MediaCaptureService {
         Log.i(TAG, "📸 triggerPhotoFlashLed() called");
 
         if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
-            hardwareManager.flashRgbLedWhite(5000); // 5 second flash
+            hardwareManager.flashRgbLedWhite(2200); // 5 second flash
             Log.i(TAG, "📸 Photo flash LED (white) triggered via hardware manager");
         } else {
             Log.w(TAG, "⚠️ RGB LED not supported on this device");
@@ -1123,6 +1123,7 @@ public class MediaCaptureService {
 
         playShutterSound();
         if (enableLed) {
+            triggerPhotoFlashLed(); // Trigger white RGB LED flash synchronized with shutter sound
             flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
         }
 
@@ -1257,6 +1258,7 @@ public class MediaCaptureService {
         try {
             playShutterSound();
             if (enableLed) {
+                triggerPhotoFlashLed(); // Trigger white RGB LED flash synchronized with shutter sound
                 flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
             }
 
@@ -2066,6 +2068,7 @@ public class MediaCaptureService {
 
         playShutterSound();
         if (enableLed) {
+            triggerPhotoFlashLed(); // Trigger white RGB LED flash synchronized with shutter sound
             flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
         }
 
