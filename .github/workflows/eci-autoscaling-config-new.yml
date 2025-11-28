@@ -16,7 +16,7 @@ spec:
       annotations:
         k8s.aliyun.com/eci-vswitch: "${_MENTRA_APP_VSWITCH}"
         k8s.aliyun.com/eci-spot-strategy: NoSpot
-        k8s.aliyun.com/eci-security-group: "${_MENTRA_APP_SECURITY_GROUP}"
+        # k8s.aliyun.com/eci-security-group: "${_MENTRA_APP_SECURITY_GROUP}"
         k8s.aliyun.com/eci-use-specs: "${_MENTRA_APP_USE_SPECS}"
     spec:
       containers:

@@ -17,7 +17,7 @@ jobs:
       _MENTRA_APP_MIN_INSTANCES: "1"
       _MENTRA_APP_MAX_INSTANCES: "2"
       _MENTRA_APP_USE_SPECS: 2.0-4.0Gi
-      _MENTRA_APP_VSWITCH: vsw-wz94gyb5cinmsod89a4tj
+      _MENTRA_APP_VSWITCH: vsw-wz94gyb5cinmsod89a4tj, vsw-wz9p9qoldncmf9k5se950
       _MENTRA_APP_SECURITY_GROUP: sg-wz98079z7qd7oz2xtmt3
       _MENTRA_APP_CONTAINER_GROUP_NAME: mentraos-dev-api-cg
       _MENTRA_APP_CONTAINER_NAME: mentraos-dev-api-eci
