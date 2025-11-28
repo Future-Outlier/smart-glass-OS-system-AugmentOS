@@ -22,7 +22,7 @@ jobs:
       _MENTRA_APP_CONTAINER_GROUP_NAME: mentraos-dev-api-cg
       _MENTRA_APP_CONTAINER_NAME: mentraos-dev-api-eci
       _MENTRA_APP_SCALING_GROUP_NAME: mentraos-dev-api-scalingGroup
-      _MENTRA_APP_IMAGE: mentra-acr-cnsz-a-registry.cn-shenzhen.cr.aliyuncs.com/dev/api:latest
+      _MENTRA_APP_IMAGE: mentra-acr-cnsz-a-registry-vpc.cn-shenzhen.cr.aliyuncs.com/dev/api:latest
       NODE_ENV: production
       PORT: "80"
       SYSTEM_DASHBOARD_PACKAGE_NAME: system.augmentos.dashboard
@@ -183,9 +183,6 @@ jobs:
       - name: Create Scaling Configuration
         id: create-config
         run: |
-          set -e
-          NEW_CONFIG_NAME="deploymentConfiguration_${{ steps.vars.outputs.sha_short }}"
-
           echo "🧩 Creating new scaling configuration..."
           CONFIG_JSON=$(aliyun ess ApplyEciScalingConfiguration \
             --RegionId $ACR_REGION_ID \
