@@ -22,7 +22,7 @@ jobs:
       - id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-      - uses: Mentra-Community/cloud-actions/deploy-app-alibaba@v1
+      - uses: Mentra-Community/cloud-actions/deploy-app-alibaba@main
         with:
           environment: "dev"
           alibaba-access-key-id: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
