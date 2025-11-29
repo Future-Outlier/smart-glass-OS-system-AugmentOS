@@ -338,7 +338,7 @@ export const useSettingsStore = create<SettingsState>()(
         key = setting.indexer(originalKey)
       }
 
-      console.log(`GET SETTING: ${key} = ${state.settings[key]}`)
+      // console.log(`GET SETTING: ${key} = ${state.settings[key]}`)
 
       try {
         return state.settings[key] ?? SETTINGS[originalKey].defaultValue()
