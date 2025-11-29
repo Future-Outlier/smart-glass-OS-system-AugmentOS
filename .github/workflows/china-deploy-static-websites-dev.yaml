@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - ya/clean-china-cicd
     paths:
       - "cloud/websites/**"
       - ".github/workflows/china-deploy-static-websites-dev.yaml"
