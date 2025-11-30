@@ -50,7 +50,7 @@ export const SETTINGS: Record<string, Setting> = {
     key: "store_url",
     defaultValue: () =>
       process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china"
-        ? "https://store.mentraglass.cn"
+        ? "https://dev-store.mentraglass.cn"
         : "https://apps.mentra.glass",
     writable: true,
     override: () => {
