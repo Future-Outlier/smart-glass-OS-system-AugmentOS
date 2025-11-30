@@ -54,7 +54,7 @@ export class MantleBridge {
       this.handleCoreMessage(event.body)
     })
 
-    console.log("Core message event listener initialized")
+    console.log("BRIDGE: Core message event listener initialized")
   }
 
   /**
@@ -102,10 +102,19 @@ export class MantleBridge {
 
       let binaryString
       let bytes
+      let res
 
       switch (data.type) {
         case "core_status_update":
           useGlassesStore.getState().setGlassesInfo(data.core_status.glasses_info)
+          // Sync default_wearable to settings store for per-glasses settings indexer
+          const modelName = data.core_status?.connected_glasses?.model_name
+          if (modelName) {
+            const currentWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
+            if (currentWearable !== modelName) {
+              useSettingsStore.getState().setSetting(SETTINGS.default_wearable.key, modelName, true)
+            }
+          }
           GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
           return
         case "wifi_status_change":
@@ -232,7 +241,7 @@ export class MantleBridge {
           GlobalEventEmitter.emit("AUDIO_DISCONNECTED", {})
           break
         case "save_setting":
-          await useSettingsStore.getState().setSetting(data.key, data.value, false)
+          await useSettingsStore.getState().setSetting(data.key, data.value)
           break
         case "head_up":
           mantle.handle_head_up(data.up)
@@ -242,36 +251,29 @@ export class MantleBridge {
           break
         case "phone_notification":
           // Send phone notification via REST instead of WebSocket
-          restComms
-            .sendPhoneNotification({
-              notificationId: data.notificationId,
-              app: data.app,
-              title: data.title,
-              content: data.content,
-              priority: data.priority,
-              timestamp: data.timestamp,
-              packageName: data.packageName,
-            })
-            .then(result => {
-              if (result.is_err()) {
-                console.error("Failed to send phone notification:", result.error)
-                // TODO: Consider retry logic or queuing failed notifications
-              }
-            })
+          res = await restComms.sendPhoneNotification({
+            notificationId: data.notificationId,
+            app: data.app,
+            title: data.title,
+            content: data.content,
+            priority: data.priority,
+            timestamp: data.timestamp,
+            packageName: data.packageName,
+          })
+          if (res.is_error()) {
+            console.error("Failed to send phone notification:", res.error)
+          }
           break
         case "phone_notification_dismissed":
           // Send phone notification dismissal via REST
-          restComms
-            .sendPhoneNotificationDismissed({
-              notificationKey: data.notificationKey,
-              packageName: data.packageName,
-              notificationId: data.notificationId,
-            })
-            .then(result => {
-              if (result.is_err()) {
-                console.error("Failed to send phone notification dismissal:", result.error)
-              }
-            })
+          res = await restComms.sendPhoneNotificationDismissed({
+            notificationKey: data.notificationKey,
+            packageName: data.packageName,
+            notificationId: data.notificationId,
+          })
+          if (res.is_error()) {
+            console.error("Failed to send phone notification dismissal:", res.error)
+          }
           break
         // TODO: this is a bit of a hack, we should have dedicated functions for ws endpoints in the core:
         case "ws_text":
@@ -349,7 +351,6 @@ export class MantleBridge {
 
   async updateButtonVideoSettings(width: number, height: number, fps: number) {
     console.log("updateButtonVideoSettings", width, height, fps)
-    console.log("status.glasses_info?.model_name", status.glasses_info?.model_name)
     return await CoreModule.updateSettings({
       button_video_width: width,
       button_video_height: height,

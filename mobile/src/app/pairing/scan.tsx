@@ -25,7 +25,6 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SearchResultDevice, useSearchResults} from "@/contexts/SearchResultsContext"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {MOCK_CONNECTION} from "@/utils/Constants"
@@ -224,14 +223,18 @@ export default function SelectGlassesBluetoothScreen() {
       return // Stop the connection process
     }
 
-    // update the preferredmic to be the phone mic:
-    await useSettingsStore.getState().setSetting(SETTINGS.preferred_mic.key, "phone")
-
     // All permissions granted, proceed with connecting to the wearable
+    // Note: preferred_mic will use default "auto" - user can change in settings if needed
+    // (Previously set here, but moved because default_wearable wasn't set yet for the indexer)
     setTimeout(() => {
       CoreModule.connectByName(deviceName)
     }, 2000)
     replace("/pairing/loading", {glassesModelName: glassesModelName, deviceName: deviceName})
+  }
+
+  const filterDeviceName = (deviceName: string) => {
+    // filter out MENTRA_LIVE from the device name:
+    return deviceName.replace("MENTRA_LIVE_BLE_", "")
   }
 
   return (
@@ -260,7 +263,7 @@ export default function SelectGlassesBluetoothScreen() {
                       onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
                       <View style={themed($settingsTextContainer)}>
                         <Text
-                          text={`${glassesModelName} - ${device.deviceName}`}
+                          text={`${glassesModelName} - ${filterDeviceName(device.deviceName)}`}
                           style={themed($label)}
                           numberOfLines={2}
                         />
@@ -313,6 +316,8 @@ const $contentContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   // height: 520,
   backgroundColor: colors.primary_foreground,
   borderRadius: spacing.s6,
+  borderWidth: 1,
+  borderColor: colors.border,
   padding: spacing.s6,
   gap: spacing.s6,
   // paddingBottom: spacing.s16,

@@ -11,8 +11,8 @@ await $({ stdio: 'inherit' })`bun expo prebuild --platform android`;
 // bundle js code:
 await $({stdio: "inherit"})`bun expo export --platform android`
 
-// Build release bundle
-await $({ stdio: 'inherit', cwd: 'android' })`./gradlew bundleRelease`;
+// Build release APK
+await $({ stdio: 'inherit', cwd: 'android' })`./gradlew assembleRelease`;
 
 // Install APK on device
 await $({ stdio: 'inherit' })`adb install -r android/app/build/outputs/apk/release/app-release.apk`;

@@ -2,7 +2,7 @@
  * @fileoverview AugmentOS Cloud Server entry point.
  * Initializes core services and sets up HTTP/WebSocket servers.
  */
-// Load environment variables first
+
 import { Server } from "http";
 import path from "path";
 
@@ -12,20 +12,17 @@ import dotenv from "dotenv";
 import express from "express";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
-
 dotenv.config();
-// Import services
+
 import { registerApi } from "./api";
 import * as mongoConnection from "./connections/mongodb.connection";
 import * as AppUptimeService from "./services/core/app-uptime.service";
 import { memoryTelemetryService } from "./services/debug/MemoryTelemetryService";
 import { DebugService } from "./services/debug/debug-service";
-// sessionService consolidated into UserSession static APIs
 import { logger as rootLogger } from "./services/logging/pino-logger";
 import UserSession from "./services/session/UserSession";
 import { websocketService } from "./services/websocket/websocket.service";
-// Register API routes from central index
-// Load configuration from environment
+
 const logger = rootLogger.child({ service: "index" });
 
 // Initialize MongoDB connection
@@ -127,6 +124,10 @@ app.use(
       "https://augmentos.pages.dev",
       "https://augmentos-appstore-2.pages.dev",
 
+      // ngrok development tunnels
+      "https://webview.ngrok.dev",
+      "https://mentra-cloud-server.ngrok.app",
+
       // mentra.glass API
       "https://mentra.glass",
       "https://api.mentra.glass",
@@ -174,6 +175,10 @@ app.use(
       "https://accountdev.mentraglass.com",
       "https://docsdev.mentraglass.com",
       "https://storedev.mentraglass.com",
+
+      "https://appsbeta.mentraglass.com",
+      "https://consolebeta.mentraglass.com",
+      "https://accountbeta.mentraglass.com",
 
       "https://dev.apps.mentraglass.com",
       "https://dev.console.mentraglass.com",

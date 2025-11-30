@@ -42,12 +42,14 @@ export default function FeedbackPage() {
   const glassesConnected = useGlassesStore(state => state.connected)
   const glassesModelName = useGlassesStore(state => state.modelName)
 
+  const [userEmail, setUserEmail] = useState("")
+
   useEffect(() => {
     const fetchUserEmail = async () => {
       try {
         const {data} = await mentraAuthProvider.getUser()
         if (data?.user?.email) {
-          setEmail(data.user.email)
+          setUserEmail(data.user.email)
         }
       } catch (error) {
         console.error("Error fetching user email:", error)
@@ -57,7 +59,7 @@ export default function FeedbackPage() {
     fetchUserEmail()
   }, [])
 
-  const isApplePrivateRelay = email.includes("@privaterelay.appleid.com") || email.includes("@icloud.com")
+  const isApplePrivateRelay = userEmail.includes("@privaterelay.appleid.com") || userEmail.includes("@icloud.com")
 
   const handleSubmitFeedback = async () => {
     setIsSubmitting(true)
@@ -221,7 +223,7 @@ export default function FeedbackPage() {
                   onPress: () => {
                     const appStoreUrl =
                       Platform.OS === "ios"
-                        ? "https://apps.apple.com/app/id6444107044?action=write-review"
+                        ? "https://apps.apple.com/app/id6747363193?action=write-review"
                         : "https://play.google.com/store/apps/details?id=com.mentra.mentra"
                     Linking.openURL(appStoreUrl)
                   },
@@ -252,7 +254,7 @@ export default function FeedbackPage() {
               <View>
                 <Text style={themed($label)}>{translate("feedback:emailOptional")}</Text>
                 <TextInput
-                  style={themed($textInput)}
+                  style={themed($emailInput)}
                   value={email}
                   onChangeText={setEmail}
                   placeholder={translate("feedback:email")}
@@ -386,4 +388,14 @@ const $textInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   color: colors.text,
   minHeight: 120,
+})
+
+const $emailInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+  backgroundColor: colors.background,
+  borderWidth: 1,
+  borderColor: colors.border,
+  borderRadius: spacing.s3,
+  padding: spacing.s4,
+  fontSize: 16,
+  color: colors.text,
 })

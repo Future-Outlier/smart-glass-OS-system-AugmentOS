@@ -12,6 +12,7 @@ import {Badge} from "@/components/ui/Badge"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
 import {$styles, ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
@@ -35,8 +36,24 @@ export default function WifiScanScreen() {
   const receivedResultsForSessionRef = useRef<boolean>(false)
   const wifiSsid = useGlassesStore(state => state.wifiSsid)
   const wifiConnected = useGlassesStore(state => state.wifiConnected)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   const {push, goBack} = useNavigationHistory()
+
+  // Navigate away if glasses disconnect (but not on initial mount)
+  const prevGlassesConnectedRef = useRef(glassesConnected)
+  useEffect(() => {
+    if (prevGlassesConnectedRef.current && !glassesConnected) {
+      console.log("[WifiScanScreen] Glasses disconnected - navigating away")
+      showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [{text: "OK"}])
+      if (returnTo && typeof returnTo === "string") {
+        router.replace(decodeURIComponent(returnTo))
+      } else {
+        router.replace("/")
+      }
+    }
+    prevGlassesConnectedRef.current = glassesConnected
+  }, [glassesConnected, returnTo])
 
   const handleGoBack = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
@@ -365,8 +382,12 @@ const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   lineHeight: 20,
 })
 
-const $content: ThemedStyle<ViewStyle> = () => ({
+const $content: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flex: 1,
+  backgroundColor: colors.primary_foreground,
+  borderRadius: spacing.s6,
+  borderWidth: 1,
+  borderColor: colors.border,
 })
 
 const $loadingContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({

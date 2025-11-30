@@ -9,6 +9,7 @@ import {Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
 import {$styles, ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 
@@ -30,6 +31,22 @@ export default function WifiConnectingScreen() {
   const {goBack, navigate} = useNavigationHistory()
   const wifiConnected = useGlassesStore(state => state.wifiConnected)
   const wifiSsid = useGlassesStore(state => state.wifiSsid)
+  const glassesConnected = useGlassesStore(state => state.connected)
+
+  // Navigate away if glasses disconnect (but not on initial mount)
+  const prevGlassesConnectedRef = useRef(glassesConnected)
+  useEffect(() => {
+    if (prevGlassesConnectedRef.current && !glassesConnected) {
+      console.log("[WifiConnectingScreen] Glasses disconnected - navigating away")
+      showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [{text: "OK"}])
+      if (returnTo && typeof returnTo === "string") {
+        router.replace(decodeURIComponent(returnTo))
+      } else {
+        router.replace("/")
+      }
+    }
+    prevGlassesConnectedRef.current = glassesConnected
+  }, [glassesConnected, returnTo])
 
   useEffect(() => {
     // Start connection attempt

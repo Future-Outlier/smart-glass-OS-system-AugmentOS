@@ -17,7 +17,7 @@ import {useApplets} from "@/stores/applets"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import {showDestructiveAlert} from "@/utils/AlertUtils"
+import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
@@ -53,16 +53,35 @@ export default function DeviceSettings() {
   const hasDeviceInfo = Boolean(bluetoothName || buildNumber || wifiLocalIp)
 
   const confirmForgetGlasses = () => {
-    showDestructiveAlert(
+    showAlert(
       translate("settings:forgetGlasses"),
       translate("settings:forgetGlassesConfirm"),
       [
         {text: translate("common:cancel"), style: "cancel"},
         {
-          text: translate("common:yes"),
+          text: "Unpair",
           onPress: () => {
             CoreModule.forget()
             goBack()
+          },
+        },
+      ],
+      {
+        cancelable: false,
+      },
+    )
+  }
+
+  const confirmDisconnectGlasses = () => {
+    showAlert(
+      translate("settings:disconnectGlassesTitle"),
+      translate("settings:disconnectGlassesConfirm"),
+      [
+        {text: translate("common:cancel"), style: "cancel"},
+        {
+          text: "Disconnect",
+          onPress: () => {
+            CoreModule.disconnect()
           },
         },
       ],
@@ -165,9 +184,7 @@ export default function DeviceSettings() {
           <RouteButton
             icon={<Icon name="unlink" size={24} color={theme.colors.secondary_foreground} />}
             label={translate("deviceSettings:disconnectGlasses")}
-            onPress={() => {
-              CoreModule.disconnect()
-            }}
+            onPress={confirmDisconnectGlasses}
           />
         )}
 

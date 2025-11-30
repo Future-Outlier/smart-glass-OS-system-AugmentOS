@@ -45,7 +45,7 @@ export class SupabaseWrapperClient {
             }
           : null
 
-        console.log("AuthContext: Modified session:", modifiedSession)
+        // console.log("supabaseClient: Modified session:", modifiedSession)
 
         callback(event, modifiedSession)
       }
