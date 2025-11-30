@@ -1,4 +1,4 @@
-name: China Cloud Deployment
+name: China Cloud Api Deployment (Dev)
 
 on:
   push:
@@ -39,11 +39,11 @@ jobs:
           - name: CLOUD_VERSION
             value: "2.1.2"
           - name: ADMIN_EMAILS
-            value: "israelov@mentra.glass, isaiah@mentra.glass, matt@mentra.glass, cayden@mentra.glass, nicolo@mentra.glass, team@mentra.glass"
+            value: "israelov@mentra.glass, isaiah@mentra.glass, matt@mentra.glass, cayden@mentra.glass, nicolo@mentra.glass, team@mentra.glass, yash@mentraglass.com"
           - name: CLOUD_PUBLIC_HOST_NAME
-            value: "api.mentraglass.cn"
+            value: "dev-api.mentraglass.cn"
           - name: CLOUD_HOST_NAME
-            value: "api.mentraglass.cn"
+            value: "dev-api.mentraglass.cn"
           - name: CLOUD_LOCAL_HOST_NAME
             value: "cloud-prod-cloud.default.svc.cluster.local:80"
           - name: PORTER_APP_NAME
