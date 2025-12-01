@@ -138,6 +138,13 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  has_ever_activated_app: {
+    key: "has_ever_activated_app",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
 
   // core settings:
   sensing_enabled: {
