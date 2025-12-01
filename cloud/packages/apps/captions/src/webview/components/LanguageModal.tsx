@@ -1,9 +1,10 @@
-import {useState, useEffect} from "react"
 import {X} from "lucide-react"
+import {useState, useEffect} from "react"
+
 import {Button} from "@/components/ui/button"
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
-import {AVAILABLE_LANGUAGES, getLanguageName, getAvailableHints} from "../lib/languages"
+import {AVAILABLE_LANGUAGES, getLanguageName, getAvailableHints} from "@/lib/languages"
 
 interface LanguageModalProps {
   currentLanguage: string

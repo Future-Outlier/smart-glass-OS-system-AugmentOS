@@ -1,5 +1,5 @@
-import {Transcript} from "../hooks/useTranscripts"
-import {getSpeakerColor} from "../lib/colors"
+import {Transcript} from "@/hooks/useTranscripts"
+import {getSpeakerColor} from "@/lib/colors"
 
 interface TranscriptItemProps {
   transcript: Transcript

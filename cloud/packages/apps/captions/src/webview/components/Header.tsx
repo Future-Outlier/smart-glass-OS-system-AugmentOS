@@ -1,8 +1,9 @@
 import {Button} from "@/components/ui/button"
+import {CaptionSettings} from "@/hooks/useSettings"
+import {getLanguageName} from "@/lib/languages"
+
 import {LanguageModal} from "./LanguageModal"
 import {SettingsModal} from "./SettingsModal"
-import {getLanguageName} from "../lib/languages"
-import {CaptionSettings} from "../hooks/useSettings"
 
 interface HeaderProps {
   connected: boolean
