@@ -89,7 +89,7 @@ const $textContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontWeight: "600",
+  fontWeight: 600,
   color: colors.secondary_foreground,
   fontSize: 14,
 })

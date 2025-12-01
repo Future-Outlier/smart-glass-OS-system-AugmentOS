@@ -1,20 +1,18 @@
 import {useFocusEffect} from "@react-navigation/native"
 import {useCallback} from "react"
-import {ScrollView, View, ViewStyle} from "react-native"
+import {ScrollView} from "react-native"
 
+import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {HomeContainer} from "@/components/home/HomeContainer"
-import {OfflineModeButton} from "@/components/home/OfflineModeButton"
-import PermissionsWarning from "@/components/home/PermissionsWarning"
 import {Header, Screen} from "@/components/ignite"
 import CloudConnection from "@/components/misc/CloudConnection"
-import NonProdWarning from "@/components/misc/NonProdWarning"
 import SensingDisabledWarning from "@/components/misc/SensingDisabledWarning"
+import {Spacer} from "@/components/ui/Spacer"
 import {useRefreshApplets} from "@/stores/applets"
-import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function Homepage() {
-  const {themed, theme} = useAppTheme()
+  const {theme} = useAppTheme()
   const refreshApplets = useRefreshApplets()
 
   useFocusEffect(
@@ -27,16 +25,8 @@ export default function Homepage() {
 
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
-      <Header
-        leftTx="home:title"
-        RightActionComponent={
-          <View style={themed($headerRight)}>
-            <PermissionsWarning />
-            <OfflineModeButton />
-            <NonProdWarning />
-          </View>
-        }
-      />
+      <Header leftTx="home:title" RightActionComponent={<MentraLogoStandalone />} />
+      <Spacer height={theme.spacing.s4} />
 
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
         <CloudConnection />
@@ -46,9 +36,3 @@ export default function Homepage() {
     </Screen>
   )
 }
-
-const $headerRight: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: spacing.s3,
-})
