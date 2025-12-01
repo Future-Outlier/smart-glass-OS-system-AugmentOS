@@ -1,8 +1,10 @@
 import path from "path"
+
 import {AppServer, AppSession, TranscriptionData} from "@mentra/sdk"
+
+import {UserSession} from "./session/UserSession"
 import {languageToLocale, convertLineWidth} from "./utils"
 import {convertToPinyin} from "./utils/ChineseUtils"
-import {UserSession} from "./session/UserSession"
 
 /**
  * LiveCaptionsApp - Main application class that extends AppServer

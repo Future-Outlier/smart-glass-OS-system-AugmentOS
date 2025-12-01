@@ -15,7 +15,7 @@ export function BottomNav({activeTab = "captions", onTabChange}: BottomNavProps)
           <button
             onClick={() => onTabChange?.("captions")}
             className={`w-12 h-7 p-2 rounded-3xl inline-flex justify-center items-center gap-2 transition-colors ${
-              activeTab === "captions" ? "bg-slate-400" : "bg-transparent"
+              activeTab === "captions" ? "bg-primary" : "bg-transparent"
             }`}>
             <img
               src={CaptionsIcon}

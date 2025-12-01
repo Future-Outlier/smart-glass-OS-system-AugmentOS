@@ -14,7 +14,7 @@ export function App() {
   const hasTranscripts = transcripts.length > 0
 
   return (
-    <div className="w-full max-w-md mx-auto h-screen relative bg-zinc-100 flex flex-col overflow-hidden">
+    <div className="w-screen mx-auto h-screen relative bg-zinc-100 flex flex-col overflow-hidden">
       {/* Header */}
       <Header
         connected={connected}

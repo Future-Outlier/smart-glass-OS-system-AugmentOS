@@ -23,16 +23,16 @@ export function Header({connected, settings, onUpdateLanguage, onUpdateHints}: H
   return (
     <div className="w-full flex flex-col">
       {/* Top header bar */}
-      <div className="w-full px-6 py-3 bg-slate-400 backdrop-blur-lg flex justify-between items-center">
+      <div className="w-full px-6 py-3 bg-primary backdrop-blur-lg flex justify-between items-center">
         {/* Back button */}
-        <button className="p-2 bg-background rounded-[32px] flex justify-start items-center gap-2">
+        <button className="p-2 bg-white rounded-[32px] flex justify-start items-center gap-2">
           <img src={ArrowLeftIcon} alt="Back" className="w-6 h-6 rotate-180" />
         </button>
 
         {/* Title with icon */}
         <div className="flex justify-start items-center gap-2">
           <img src={CCIcon} alt="CC" className="w-7 h-5" />
-          <div className="text-center text-background text-lg font-semibold font-['Red_Hat_Display'] leading-7">
+          <div className="text-center text-white text-lg font-semibold font-['Red_Hat_Display'] leading-7">
             Captions
           </div>
         </div>
