@@ -158,10 +158,15 @@ const startStopOfflineApplet = (packageName: string, status: boolean): AsyncResu
   })
 }
 
+let refreshTimeout: ReturnType<typeof setTimeout> | null = null
 // actually turn on or off an applet:
 const startStopApplet = (applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> => {
   // TODO: not the best way to handle this, but it works reliably:
-  setTimeout(() => {
+  if (refreshTimeout) {
+    clearTimeout(refreshTimeout)
+    refreshTimeout = null
+  }
+  refreshTimeout = setTimeout(() => {
     useAppletStatusStore.getState().refreshApplets()
   }, 2000)
 

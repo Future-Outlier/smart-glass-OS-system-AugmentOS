@@ -17,7 +17,7 @@ import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 // Types
-type ScreenState = "loading" | "error" | "outdated" | "success"
+type ScreenState = "loading" | "connection" | "auth" | "outdated" | "success"
 
 interface StatusConfig {
   icon: string
@@ -45,7 +45,6 @@ export default function InitScreen() {
   const [cloudVersion, setCloudVersion] = useState<string | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isUsingCustomUrl, setIsUsingCustomUrl] = useState(false)
-  const [errorType, setErrorType] = useState<"connection" | "auth" | null>(null)
   const [canSkipUpdate, setCanSkipUpdate] = useState(false)
   const [loadingStatus, setLoadingStatus] = useState<string>(translate("versionCheck:checkingForUpdates"))
   const [isRetrying, setIsRetrying] = useState(false)
@@ -110,8 +109,7 @@ export default function InitScreen() {
 
     const token = session?.token
     if (!token) {
-      setErrorType("auth")
-      setState("error")
+      setState("auth")
       return
     }
 
@@ -119,8 +117,7 @@ export default function InitScreen() {
     if (res.is_error()) {
       console.log("Token exchange failed:", res.error)
       await checkCustomUrl()
-      setErrorType("connection")
-      setState("error")
+      setState("connection")
       return
     }
 
@@ -143,25 +140,22 @@ export default function InitScreen() {
     } else {
       setIsRetrying(true)
     }
-    setErrorType(null)
 
     const localVer = getLocalVersion()
     setLocalVersion(localVer)
+    console.log("INIT: Local version:", localVer)
 
     if (!localVer) {
       console.error("Failed to get local version")
-      setErrorType("connection")
-      setState("error")
+      setState("connection")
       setIsRetrying(false)
       return
     }
-    
-    
+
     const res = await restComms.getMinimumClientVersion()
     if (res.is_error()) {
       console.error("Failed to fetch cloud version:", res.error)
-      setErrorType("connection")
-      setState("error")
+      setState("connection")
       setIsRetrying(false)
       return
     }
@@ -205,15 +199,15 @@ export default function InitScreen() {
 
   const getStatusConfig = (): StatusConfig => {
     switch (state) {
-      case "error":
-        if (errorType === "auth") {
-          return {
-            icon: "account-alert",
-            iconColor: theme.colors.error,
-            title: "Authentication Error",
-            description: "Unable to authenticate. Please sign in again.",
-          }
+      case "auth":
+        return {
+          icon: "account-alert",
+          iconColor: theme.colors.error,
+          title: "Authentication Error",
+          description: "Unable to authenticate. Please sign in again.",
         }
+
+      case "connection":
         return {
           icon: "wifi-off",
           iconColor: theme.colors.destructive,
@@ -283,18 +277,19 @@ export default function InitScreen() {
           )}
 
           <View style={themed($buttonContainer)}>
-            {state === "error" && (
-              <Button
-                flexContainer
-                onPress={() => checkCloudVersion(true)}
-                style={themed($primaryButton)}
-                text={isRetrying ? translate("versionCheck:retrying") : translate("versionCheck:retryConnection")}
-                disabled={isRetrying}
-                LeftAccessory={
-                  isRetrying ? () => <ActivityIndicator size="small" color={theme.colors.textAlt} /> : undefined
-                }
-              />
-            )}
+            {state === "connection" ||
+              (state === "auth" && (
+                <Button
+                  flexContainer
+                  onPress={() => checkCloudVersion(true)}
+                  style={themed($primaryButton)}
+                  text={isRetrying ? translate("versionCheck:retrying") : translate("versionCheck:retryConnection")}
+                  disabled={isRetrying}
+                  LeftAccessory={
+                    isRetrying ? () => <ActivityIndicator size="small" color={theme.colors.textAlt} /> : undefined
+                  }
+                />
+              ))}
 
             {state === "outdated" && (
               <Button
@@ -306,7 +301,7 @@ export default function InitScreen() {
               />
             )}
 
-            {state === "error" && isUsingCustomUrl && (
+            {(state === "connection" || state === "auth") && isUsingCustomUrl && (
               <Button
                 flexContainer
                 onPress={handleResetUrl}
@@ -320,7 +315,7 @@ export default function InitScreen() {
               />
             )}
 
-            {(state === "error" || (state === "outdated" && canSkipUpdate)) && (
+            {(state === "connection" || state == "auth" || (state === "outdated" && canSkipUpdate)) && (
               <Button
                 flex
                 flexContainer

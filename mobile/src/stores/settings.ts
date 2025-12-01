@@ -17,19 +17,33 @@ interface Setting {
   // optionally override the value of the setting when it's accessed
   override?: () => any
   // onWrite?: () => void
+  persist: boolean
 }
 
 export const SETTINGS: Record<string, Setting> = {
   // feature flags / mantle settings:
-  dev_mode: {key: "dev_mode", defaultValue: () => __DEV__, writable: true, saveOnServer: true},
-  enable_squircles: {key: "enable_squircles", defaultValue: () => true, writable: true, saveOnServer: true},
-  debug_console: {key: "debug_console", defaultValue: () => false, writable: true, saveOnServer: true},
+  dev_mode: {key: "dev_mode", defaultValue: () => __DEV__, writable: true, saveOnServer: true, persist: true},
+  enable_squircles: {
+    key: "enable_squircles",
+    defaultValue: () => true,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  debug_console: {
+    key: "debug_console",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   china_deployment: {
     key: "china_deployment",
     defaultValue: () => (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china" ? true : false),
     override: () => (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china" ? true : false),
     writable: false,
     saveOnServer: false,
+    persist: true,
   },
   backend_url: {
     key: "backend_url",
@@ -44,7 +58,8 @@ export const SETTINGS: Record<string, Setting> = {
       }
       return undefined
     },
-    saveOnServer: true,
+    saveOnServer: false,
+    persist: false,
   },
   store_url: {
     key: "store_url",
@@ -60,58 +75,119 @@ export const SETTINGS: Record<string, Setting> = {
       return undefined
     },
     saveOnServer: true,
+    persist: true,
   },
   reconnect_on_app_foreground: {
     key: "reconnect_on_app_foreground",
     defaultValue: () => false,
     writable: true,
     saveOnServer: true,
+    persist: true,
   },
-  location_tier: {key: "location_tier", defaultValue: () => "", writable: true, saveOnServer: true},
+  location_tier: {key: "location_tier", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
   // state:
-  core_token: {key: "core_token", defaultValue: () => "", writable: true, saveOnServer: true},
-  default_wearable: {key: "default_wearable", defaultValue: () => "", writable: true, saveOnServer: true},
-  device_name: {key: "device_name", defaultValue: () => "", writable: true, saveOnServer: true},
-  device_address: {key: "device_address", defaultValue: () => "", writable: true, saveOnServer: true},
+  core_token: {key: "core_token", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
+  default_wearable: {
+    key: "default_wearable",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  device_name: {key: "device_name", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
+  device_address: {
+    key: "device_address",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   // ui state:
-  theme_preference: {key: "theme_preference", defaultValue: () => "system", writable: true, saveOnServer: true},
+  theme_preference: {
+    key: "theme_preference",
+    defaultValue: () => "system",
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   enable_phone_notifications: {
     key: "enable_phone_notifications",
     defaultValue: () => false,
     writable: true,
     saveOnServer: true,
+    persist: true,
   },
-  settings_access_count: {key: "settings_access_count", defaultValue: () => 0, writable: true, saveOnServer: true},
+  settings_access_count: {
+    key: "settings_access_count",
+    defaultValue: () => 0,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   show_advanced_settings: {
     key: "show_advanced_settings",
     defaultValue: () => false,
     writable: true,
     saveOnServer: false,
+    persist: true,
   },
-  onboarding_completed: {key: "onboarding_completed", defaultValue: () => false, writable: true, saveOnServer: true},
+  onboarding_completed: {
+    key: "onboarding_completed",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
 
   // core settings:
-  sensing_enabled: {key: "sensing_enabled", defaultValue: () => true, writable: true, saveOnServer: true},
-  power_saving_mode: {key: "power_saving_mode", defaultValue: () => false, writable: true, saveOnServer: true},
-  always_on_status_bar: {key: "always_on_status_bar", defaultValue: () => false, writable: true, saveOnServer: true},
+  sensing_enabled: {
+    key: "sensing_enabled",
+    defaultValue: () => true,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  power_saving_mode: {
+    key: "power_saving_mode",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  always_on_status_bar: {
+    key: "always_on_status_bar",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   bypass_vad_for_debugging: {
     key: "bypass_vad_for_debugging",
     defaultValue: () => true,
     writable: true,
     saveOnServer: true,
+    persist: true,
   },
   bypass_audio_encoding_for_debugging: {
     key: "bypass_audio_encoding_for_debugging",
     defaultValue: () => false,
     writable: true,
     saveOnServer: true,
+    persist: true,
   },
-  metric_system: {key: "metric_system", defaultValue: () => false, writable: true, saveOnServer: true},
+  metric_system: {
+    key: "metric_system",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   enforce_local_transcription: {
     key: "enforce_local_transcription",
     defaultValue: () => false,
     writable: true,
     saveOnServer: true,
+    persist: true,
   },
   preferred_mic: {
     key: "preferred_mic",
@@ -125,37 +201,83 @@ export const SETTINGS: Record<string, Setting> = {
       return key
     },
     saveOnServer: true,
+    persist: true,
   },
-  screen_disabled: {key: "screen_disabled", defaultValue: () => false, writable: true, saveOnServer: false},
+  screen_disabled: {
+    key: "screen_disabled",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: false,
+    persist: true,
+  },
   // glasses settings:
-  contextual_dashboard: {key: "contextual_dashboard", defaultValue: () => true, writable: true, saveOnServer: true},
-  head_up_angle: {key: "head_up_angle", defaultValue: () => 45, writable: true, saveOnServer: true},
-  brightness: {key: "brightness", defaultValue: () => 50, writable: true, saveOnServer: true},
-  auto_brightness: {key: "auto_brightness", defaultValue: () => true, writable: true, saveOnServer: true},
-  dashboard_height: {key: "dashboard_height", defaultValue: () => 4, writable: true, saveOnServer: true},
-  dashboard_depth: {key: "dashboard_depth", defaultValue: () => 5, writable: true, saveOnServer: true},
-  gallery_mode: {key: "gallery_mode", defaultValue: () => false, writable: true, saveOnServer: true},
+  contextual_dashboard: {
+    key: "contextual_dashboard",
+    defaultValue: () => true,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  head_up_angle: {key: "head_up_angle", defaultValue: () => 45, writable: true, saveOnServer: true, persist: true},
+  brightness: {key: "brightness", defaultValue: () => 50, writable: true, saveOnServer: true, persist: true},
+  auto_brightness: {
+    key: "auto_brightness",
+    defaultValue: () => true,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  dashboard_height: {
+    key: "dashboard_height",
+    defaultValue: () => 4,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  dashboard_depth: {
+    key: "dashboard_depth",
+    defaultValue: () => 5,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  gallery_mode: {key: "gallery_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
   // button settings
-  button_mode: {key: "button_mode", defaultValue: () => "photo", writable: true, saveOnServer: true},
-  button_photo_size: {key: "button_photo_size", defaultValue: () => "large", writable: true, saveOnServer: true},
+  button_mode: {key: "button_mode", defaultValue: () => "photo", writable: true, saveOnServer: true, persist: true},
+  button_photo_size: {
+    key: "button_photo_size",
+    defaultValue: () => "large",
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   button_video_settings: {
     key: "button_video_settings",
     defaultValue: () => ({width: 1920, height: 1080, fps: 30}),
     writable: true,
     saveOnServer: true,
+    persist: true,
   },
-  button_camera_led: {key: "button_camera_led", defaultValue: () => true, writable: true, saveOnServer: true},
+  button_camera_led: {
+    key: "button_camera_led",
+    defaultValue: () => true,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   button_video_settings_width: {
     key: "button_video_settings_width",
     defaultValue: () => 1920,
     writable: true,
     saveOnServer: true,
+    persist: true,
   },
   button_max_recording_time: {
     key: "button_max_recording_time",
     defaultValue: () => 10,
     writable: true,
     saveOnServer: true,
+    persist: true,
   },
 
   // time zone settings
@@ -171,15 +293,23 @@ export const SETTINGS: Record<string, Setting> = {
       return getTimeZone()
     },
     saveOnServer: true,
+    persist: true,
   },
-  time_zone_override: {key: "time_zone_override", defaultValue: () => "", writable: true, saveOnServer: true},
+  time_zone_override: {
+    key: "time_zone_override",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   // offline applets
-  offline_mode: {key: "offline_mode", defaultValue: () => false, writable: true, saveOnServer: true},
+  offline_mode: {key: "offline_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
   offline_captions_running: {
     key: "offline_captions_running",
     defaultValue: () => false,
     writable: true,
     saveOnServer: true,
+    persist: true,
   },
   // button action settings
   default_button_action_enabled: {
@@ -187,17 +317,33 @@ export const SETTINGS: Record<string, Setting> = {
     defaultValue: () => true,
     writable: true,
     saveOnServer: true,
+    persist: true,
   },
   default_button_action_app: {
     key: "default_button_action_app",
     defaultValue: () => "com.mentra.camera",
     writable: true,
     saveOnServer: true,
+    persist: true,
   },
   // notifications
-  notifications_enabled: {key: "notifications_enabled", defaultValue: () => true, writable: true, saveOnServer: true},
-  notifications_blocklist: {key: "notifications_blocklist", defaultValue: () => [], writable: true, saveOnServer: true},
+  notifications_enabled: {
+    key: "notifications_enabled",
+    defaultValue: () => true,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  notifications_blocklist: {
+    key: "notifications_blocklist",
+    defaultValue: () => [],
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
 } as const
+
+export const OFFLINE_APPLETS: string[] = ["com.mentra.livecaptions", "com.mentra.camera"]
 
 // these settings are automatically synced to the core:
 const CORE_SETTINGS_KEYS: string[] = [
@@ -297,22 +443,23 @@ export const useSettingsStore = create<SettingsState>()(
         }
 
         // Update store immediately for optimistic UI
+        console.log(`SETTINGS: SET: ${key} = ${value}`)
         set(state => ({
           settings: {...state.settings, [key]: value},
         }))
 
-        console.log(`SETTINGS: SET: ${key} = ${value}`)
+        if (setting.persist) {
+          let res = await storage.save(key, value)
+          if (res.is_error()) {
+            console.error(`SETTINGS: couldn't save setting to storage: `, res.error)
+          }
 
-        let res = await storage.save(key, value)
-        if (res.is_error()) {
-          console.error(`SETTINGS: couldn't save setting to storage: `, res.error)
-        }
-
-        // Sync with server if needed
-        if (updateServer) {
-          const result = await restComms.writeUserSettings({[key]: value})
-          if (result.is_error()) {
-            console.log("SETTINGS: couldn't sync setting to server: ", result.error)
+          // Sync with server if needed
+          if (updateServer) {
+            const result = await restComms.writeUserSettings({[key]: value})
+            if (result.is_error()) {
+              console.log("SETTINGS: couldn't sync setting to server: ", result.error)
+            }
           }
         }
       })
