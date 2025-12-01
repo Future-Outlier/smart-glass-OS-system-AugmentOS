@@ -76,7 +76,6 @@ export default function AccountPage() {
           <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
             <Text
               style={themed($buildInfo)}
-              // doesn't work in prod for some reason:
               text={translate("common:version", {number: process.env.EXPO_PUBLIC_MENTRAOS_VERSION})}
             />
             <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_BRANCH}`} />
