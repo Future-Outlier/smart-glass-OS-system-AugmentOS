@@ -200,6 +200,7 @@ const en = {
     hardwareIncompatibleMessage:
       "{{app}} requires hardware that is not available on your connected glasses: {{missing}}",
     incompatibleApps: "Incompatible Apps",
+    incompatibleAppsCount: "Incompatible Apps ({{count}})",
     incompatibleAppsDescription: "These apps require hardware features not available on your connected glasses",
     incompatible: "Incompatible",
     noAppsInstalled: "No apps installed",
