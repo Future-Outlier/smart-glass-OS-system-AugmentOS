@@ -18,5 +18,8 @@ RUN bun install
 # Set working directory to captions app
 WORKDIR /app/packages/apps/captions
 
+# Build the webview (this resolves @/ imports at build time)
+RUN bun run build:webview
+
 # Expose the port
 EXPOSE 80

@@ -16,10 +16,11 @@
  */
 
 import {serve} from "bun"
+
 import {routes} from "./api/routes"
-import index from "./webview/index.html"
 import {LiveCaptionsApp} from "./app"
 import {UserSession} from "./app/session/UserSession"
+import indexProd from "./webview/index.prod.html"
 
 // Configuration
 const PORT = parseInt(process.env.PORT || "3333", 10)
@@ -51,16 +52,9 @@ const bunServer = serve({
     // Custom API routes
     ...routes,
 
-    // Serve webview as fallback (Bun handles JSX/Tailwind automatically)
-    "/*": index,
-  },
-
-  development: process.env.NODE_ENV !== "production" && {
-    // Enable browser hot reloading in development
-    hmr: true,
-
-    // Echo console logs from the browser to the server
-    console: true,
+    // Serve pre-built webview as fallback
+    // This ensures @/ path imports are resolved at build time, not runtime
+    "/*": indexProd,
   },
 })
 

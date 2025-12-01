@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "ngrok": "ngrok http 3333 --url https://isaiah-tpa.ngrok.app",
-    "start": "NODE_ENV=development bun src/index.ts"
+    "build:webview": "bun build src/webview/frontend.tsx --outdir src/webview/dist --target browser --minify --sourcemap=external",
+    "prebuild": "bun run build:webview",
+    "start": "bun run build:webview && NODE_ENV=development bun src/index.ts"
   },
   "dependencies": {
     "@mentra/sdk": "workspace:*",
