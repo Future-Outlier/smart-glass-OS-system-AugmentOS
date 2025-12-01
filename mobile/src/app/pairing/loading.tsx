@@ -121,7 +121,7 @@ export default function GlassesPairingGuideScreen() {
 
   if (pairingInProgress) {
     return (
-      <Screen preset="fixed" style={themed($styles.screen)}>
+      <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
         <Header leftIcon="chevron-left" onLeftPress={goBack} />
         <View style={themed($pairingContainer)}>
           <View style={themed($centerWrapper)}>
@@ -147,7 +147,7 @@ export default function GlassesPairingGuideScreen() {
   // Note: This will only trigger on iOS since the events are only sent from iOS native code
   if (audioPairingNeeded && audioDeviceName) {
     return (
-      <Screen preset="fixed" style={themed($styles.screen)}>
+      <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
         <Header
           leftIcon="chevron-left"
           onLeftPress={goBack}
@@ -181,7 +181,7 @@ export default function GlassesPairingGuideScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($screen)}>
+    <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
       <Header
         leftIcon="chevron-left"
         onLeftPress={goBack}
@@ -210,10 +210,6 @@ export default function GlassesPairingGuideScreen() {
     </Screen>
   )
 }
-
-const $screen: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.s4,
-})
 
 const $pillButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   marginRight: spacing.s4,

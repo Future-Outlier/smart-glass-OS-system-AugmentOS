@@ -102,10 +102,10 @@ const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderRadius: spacing.s4,
 })
 
-const $text: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+const $text: ThemedStyle<TextStyle> = ({colors}) => ({
   fontWeight: 300,
   color: colors.text,
-  fontSize: spacing.s4,
+  fontSize: 16,
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -121,10 +121,12 @@ const $label: ThemedStyle<TextStyle> = ({colors}) => ({
   fontWeight: 600,
   color: colors.secondary_foreground,
   fontSize: 14,
+  lineHeight: 14,
 })
 
-const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.textDim,
-  fontSize: spacing.s3,
+  fontSize: 12,
+  lineHeight: 12,
   fontWeight: "400",
 })

@@ -212,7 +212,7 @@ const en = {
     inactiveBackgroundApps: "Inactive Background Apps",
     appletPlaceholder: "Tap an app below to activate it",
     simulatedGlasses: "Simulated glasses",
-    glassesMirror: "Glasses mirror",
+    glassesMirror: "Glasses Mirror",
   },
   glasses: {
     title: "Glasses",
