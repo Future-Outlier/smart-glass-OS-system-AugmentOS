@@ -19,7 +19,13 @@ RUN bun install
 WORKDIR /app/packages/apps/captions
 
 # Build the webview (this resolves @/ imports at build time)
-RUN bun run build:webview
+# Use explicit tsconfig path to ensure Bun resolves @/ imports correctly
+RUN bun build src/webview/frontend.tsx \
+    --outdir src/webview/dist \
+    --target browser \
+    --minify \
+    --sourcemap=external \
+    --tsconfig-override ./tsconfig.json
 
 # Expose the port
 EXPOSE 80
