@@ -29,9 +29,9 @@ export const HomeContainer: React.FC = () => {
       <Spacer height={theme.spacing.s2} />
       <ForegroundAppsGrid />
       <IncompatibleApps />
-      <Spacer height={theme.spacing.s16} />
-      <Spacer height={theme.spacing.s16} />
-      <Spacer height={theme.spacing.s16} />
+      {/* <Spacer height={theme.spacing.s16} /> */}
+      {/* <Spacer height={theme.spacing.s16} /> */}
+      {/* <Spacer height={theme.spacing.s16} /> */}
     </View>
   )
 }
