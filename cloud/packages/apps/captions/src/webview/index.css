@@ -74,14 +74,23 @@
 }
 
 body {
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   min-width: 320px;
   min-height: 100vh;
   position: relative;
   margin: 0;
-  background: var(--background);
+  padding: 0;
+  background: #f4f4f5;
   color: var(--foreground);
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 0;
+  }
 }
 
 /* cool Bun background animation 😎 */

@@ -21,9 +21,9 @@ export function Header({connected, settings, onUpdateLanguage, onUpdateHints}: H
   }
 
   return (
-    <div className="flex flex-col justify-start items-start">
+    <div className="w-full flex flex-col">
       {/* Top header bar */}
-      <div className="w-96 px-6 py-3 bg-slate-400 backdrop-blur-lg inline-flex justify-between items-center">
+      <div className="w-full px-6 py-3 bg-slate-400 backdrop-blur-lg flex justify-between items-center">
         {/* Back button */}
         <button className="p-2 bg-background rounded-[32px] flex justify-start items-center gap-2">
           <img src={ArrowLeftIcon} alt="Back" className="w-6 h-6 rotate-180" />
@@ -42,7 +42,7 @@ export function Header({connected, settings, onUpdateLanguage, onUpdateHints}: H
       </div>
 
       {/* Language selector bar */}
-      <div className="w-96 px-6 py-3 bg-background rounded-bl-2xl rounded-br-2xl backdrop-blur-lg inline-flex justify-between items-center">
+      <div className="w-full px-6 py-3 bg-white rounded-bl-2xl rounded-br-2xl backdrop-blur-lg flex justify-between items-center">
         {settings && (
           <LanguageModal
             currentLanguage={settings.language}

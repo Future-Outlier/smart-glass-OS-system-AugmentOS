@@ -14,7 +14,7 @@ export function App() {
   const hasTranscripts = transcripts.length > 0
 
   return (
-    <div className="w-96 h-[844px] relative bg-zinc-100 inline-flex flex-col justify-between items-center overflow-hidden">
+    <div className="w-full max-w-md mx-auto h-screen relative bg-zinc-100 flex flex-col overflow-hidden">
       {/* Header */}
       <Header
         connected={connected}
@@ -26,21 +26,23 @@ export function App() {
       />
 
       {/* Main content area */}
-      <div className="self-stretch flex-1 p-6 flex flex-col justify-center items-start gap-2.5">
+      <div className="flex-1 px-6 py-4 flex flex-col items-start gap-2.5 overflow-hidden">
         {/* Status indicator */}
         <StatusBar isListening={connected} />
 
         {/* Content - Empty state or transcript list */}
-        {hasTranscripts ? <TranscriptList transcripts={transcripts} /> : <EmptyState className="w-80 flex-1" />}
+        <div className="w-full flex-1 min-h-0">
+          {hasTranscripts ? <TranscriptList transcripts={transcripts} /> : <EmptyState />}
+        </div>
       </div>
 
       {/* Home indicator bar */}
-      <div className="w-96 h-14 px-6 py-2 bg-neutral-100/50 backdrop-blur-lg inline-flex justify-between items-center">
-        <div className="w-24 h-[3px] bg-background rounded-2xl" />
+      <div className="w-full h-14 px-6 py-2 bg-neutral-100/50 backdrop-blur-lg flex justify-center items-center">
+        <div className="w-24 h-[3px] bg-gray-400 rounded-2xl" />
       </div>
 
       {/* Bottom navigation */}
-      <div className="absolute bottom-0 left-0 right-0">
+      <div className="w-full">
         <BottomNav activeTab="captions" />
       </div>
     </div>

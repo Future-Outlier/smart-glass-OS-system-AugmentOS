@@ -8,8 +8,8 @@ interface BottomNavProps {
 
 export function BottomNav({activeTab = "captions", onTabChange}: BottomNavProps) {
   return (
-    <div className="w-96 h-14 py-3 bg-white/80 rounded-tl-2xl rounded-tr-2xl backdrop-blur-lg flex flex-col justify-start items-center gap-2.5 overflow-hidden">
-      <div className="self-stretch inline-flex justify-center items-end">
+    <div className="w-full h-14 py-3 bg-white/80 rounded-tl-2xl rounded-tr-2xl backdrop-blur-lg flex flex-col justify-start items-center gap-2.5 overflow-hidden">
+      <div className="w-full flex justify-center items-end">
         {/* Captions tab */}
         <div className="flex-1 inline-flex flex-col justify-start items-center gap-1">
           <button
