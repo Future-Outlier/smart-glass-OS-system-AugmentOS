@@ -107,14 +107,6 @@ export class MantleBridge {
       switch (data.type) {
         case "core_status_update":
           useGlassesStore.getState().setGlassesInfo(data.core_status.glasses_info)
-          // Sync default_wearable to settings store for per-glasses settings indexer
-          const modelName = data.core_status?.connected_glasses?.model_name
-          if (modelName) {
-            const currentWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
-            if (currentWearable !== modelName) {
-              useSettingsStore.getState().setSetting(SETTINGS.default_wearable.key, modelName, true)
-            }
-          }
           GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
           return
         case "wifi_status_change":
