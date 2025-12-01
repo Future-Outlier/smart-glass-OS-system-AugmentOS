@@ -75,7 +75,7 @@ export const SETTINGS: Record<string, Setting> = {
       return undefined
     },
     saveOnServer: true,
-    persist: true,
+    persist: false,
   },
   reconnect_on_app_foreground: {
     key: "reconnect_on_app_foreground",
