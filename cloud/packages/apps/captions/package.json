@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "ngrok": "ngrok http 3333 --url https://isaiah-tpa.ngrok.app",
-    "start": "NODE_ENV=production bun src/index.ts"
+    "start": "NODE_ENV=development bun src/index.ts"
   },
   "dependencies": {
     "@mentra/sdk": "workspace:*",
