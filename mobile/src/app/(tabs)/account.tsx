@@ -94,8 +94,7 @@ export default function AccountPage() {
           <Text
             style={themed($buildInfo)}
             // doesn't work in prod for some reason:
-            // text={translate("common:version", {number: process.env?.EXPO_PUBLIC_MENTRAOS_VERSION})}
-            text={`MentraOS v${process.env.EXPO_PUBLIC_MENTRAOS_VERSION}`}
+            text={translate("common:version", {number: process.env.EXPO_PUBLIC_MENTRAOS_VERSION})}
           />
         </View>
       </View>
@@ -136,14 +135,12 @@ export default function AccountPage() {
           )}
 
           <Group title={translate("account:appSettings")}>
-            {devMode && (
-              <RouteButton
-                icon={<Icon name="sun" size={24} color={theme.colors.secondary_foreground} />}
-                label={translate("settings:appAppearance")}
-                onPress={() => push("/settings/theme")}
-              />
-            )}
-            {Platform.OS === "android" && (
+            <RouteButton
+              icon={<Icon name="sun" size={24} color={theme.colors.secondary_foreground} />}
+              label={translate("settings:appAppearance")}
+              onPress={() => push("/settings/theme")}
+            />
+            {(Platform.OS === "android" || devMode) && (
               <RouteButton
                 icon={<Icon name="bell" size={24} color={theme.colors.secondary_foreground} />}
                 label="Notification Settings"

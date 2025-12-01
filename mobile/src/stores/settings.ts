@@ -412,10 +412,10 @@ const getDefaultSettings = () =>
 const migrateSettings = () => {
   useSettingsStore.getState().setSetting(SETTINGS.enable_squircles.key, true, true)
   // Force light mode - dark mode is not complete yet
-  const devMode = useSettingsStore.getState().getSetting(SETTINGS.dev_mode.key)
-  if (!devMode) {
-    useSettingsStore.getState().setSetting(SETTINGS.theme_preference.key, "light", true)
-  }
+  // const devMode = useSettingsStore.getState().getSetting(SETTINGS.dev_mode.key)
+  // if (!devMode) {
+  // useSettingsStore.getState().setSetting(SETTINGS.theme_preference.key, "light", true)
+  // }
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -492,7 +492,7 @@ export const useSettingsStore = create<SettingsState>()(
       } catch (e) {
         // for dynamically created settings, we need to create a new setting in SETTINGS:
         console.log(`Failed to get setting, creating new setting:(${key}):`, e)
-        SETTINGS[key] = {key: key, defaultValue: () => undefined, writable: true, saveOnServer: false}
+        SETTINGS[key] = {key: key, defaultValue: () => undefined, writable: true, saveOnServer: false, persist: true}
         return SETTINGS[key].defaultValue()
       }
     },
