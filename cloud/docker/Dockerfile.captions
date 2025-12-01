@@ -18,12 +18,8 @@ RUN bun install
 # Set working directory to captions app
 WORKDIR /app/packages/apps/captions
 
-# Build the webview (this resolves @/ imports at build time)
-RUN bun build src/webview/frontend.tsx \
-    --outdir src/webview/dist \
-    --target browser \
-    --minify \
-    --sourcemap=external
+# Build the webview (this resolves @/ imports at build time and processes Tailwind)
+RUN bun run build.ts
 
 # Expose the port
 EXPOSE 80
