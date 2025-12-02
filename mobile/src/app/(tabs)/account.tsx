@@ -1,19 +1,16 @@
-import {useRef} from "react"
-import {Platform, TextStyle, View, ViewStyle} from "react-native"
+import {Platform, View} from "react-native"
 import {ScrollView} from "react-native-gesture-handler"
-import Toast from "react-native-toast-message"
 
 import {ProfileCard} from "@/components/account/ProfileCard"
-import {Header, Icon, Screen, Text} from "@/components/ignite"
+import {VersionInfo} from "@/components/dev/VersionInfo"
+import {Header, Icon, Screen} from "@/components/ignite"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
+import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {VersionInfo} from "@/components/dev/VersionInfo"
-import { Spacer } from "@/components/ui/Spacer"
 
 export default function AccountPage() {
   const {theme} = useAppTheme()
