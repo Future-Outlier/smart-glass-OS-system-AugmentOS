@@ -1,66 +1,75 @@
 import { useState } from "react"
+
 import { BottomNav } from "./components/BottomNav"
-import { EmptyState } from "./components/EmptyState"
 import { Header } from "./components/Header"
-import { StatusBar } from "./components/StatusBar"
-import { TranscriptList } from "./components/TranscriptList"
+import { LanguageSelector } from "./components/LanguageSelector"
 import { Settings } from "./components/Settings"
+import { TranscriptList } from "./components/TranscriptList"
 import { useSettings } from "./hooks/useSettings"
 import { useTranscripts } from "./hooks/useTranscripts"
 import "./index.css"
 
 export function App() {
-  const { transcripts, connected } = useTranscripts()
-  const { settings, updateLanguage, updateLanguageHints, updateDisplayLines, updateDisplayWidth } = useSettings()
   const [activeTab, setActiveTab] = useState<"captions" | "settings">("captions")
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false)
+  const {
+    settings,
+    loading: settingsLoading,
+    updateLanguage,
+    updateHints,
+    updateDisplayLines,
+    updateDisplayWidth,
+  } = useSettings()
+  const { transcripts, isRecording, toggleRecording, clearTranscripts } = useTranscripts()
 
-  const hasTranscripts = transcripts.length > 0
+  const handleSaveLanguage = async (language: string, hints: string[]) => {
+    await updateLanguage(language)
+    await updateHints(hints)
+    setShowLanguageSelector(false)
+  }
 
   return (
-    <div className="w-full max-w-md mx-auto h-screen relative bg-zinc-100 flex flex-col overflow-hidden">
+    <div className="w-screen h-screen bg-zinc-100 flex flex-col overflow-hidden font-sans">
       {/* Header */}
-      <Header
-        connected={connected}
-        settings={settings}
-        onUpdateLanguage={updateLanguage}
-        onUpdateHints={updateLanguageHints}
-        onUpdateDisplayLines={updateDisplayLines}
-        onUpdateDisplayWidth={updateDisplayWidth}
-      />
+      {/* {!showLanguageSelector && ( */}
+      {!false && (
+        <Header
+          connected={true} // Mock connection status
+          settings={settings}
+          onUpdateLanguage={updateLanguage}
+          onUpdateHints={updateHints}
+          onToggleLanguageSelector={() => setShowLanguageSelector(true)}
+        />
+      )}
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        {activeTab === "captions" && (
-          <>
-            <div className="px-6 pt-4">
-              {/* Status indicator */}
-              <StatusBar isListening={connected} />
-            </div>
-
-            {/* Content - Empty state or transcript list - This needs to scroll */}
-            <div className="flex-1 min-h-0 overflow-hidden">
-              {hasTranscripts ? <TranscriptList transcripts={transcripts} /> : <EmptyState />}
-            </div>
-          </>
-        )}
-
-        {activeTab === "settings" && (
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-hidden relative">
+        {showLanguageSelector && settings ? (
+          <LanguageSelector
+            currentLanguage={settings.language}
+            currentHints={settings.languageHints}
+            onSave={handleSaveLanguage}
+            onCancel={() => setShowLanguageSelector(false)}
+          />
+        ) : activeTab === "settings" ? (
           <Settings
             settings={settings}
-            onUpdateLanguage={updateLanguage}
-            onUpdateHints={updateLanguageHints}
             onUpdateDisplayLines={updateDisplayLines}
             onUpdateDisplayWidth={updateDisplayWidth}
+          />
+        ) : (
+          <TranscriptList
+            transcripts={transcripts}
+            isRecording={isRecording}
+            onToggleRecording={toggleRecording}
+            onClearTranscripts={clearTranscripts}
           />
         )}
       </div>
 
-      {/* Bottom navigation with home indicator inside */}
-      <div className="w-full">
-        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-      </div>
+      {/* Bottom Navigation */}
+      {!showLanguageSelector && <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />}
     </div>
   )
 }
-
 export default App

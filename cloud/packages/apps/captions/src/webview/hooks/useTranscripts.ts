@@ -112,5 +112,15 @@ export function useTranscripts() {
     }
   }, [])
 
-  return { transcripts, connected, error }
+  const [isRecording, setIsRecording] = useState(false)
+
+  const toggleRecording = () => {
+    setIsRecording((prev) => !prev)
+  }
+
+  const clearTranscripts = () => {
+    setTranscripts([])
+  }
+
+  return { transcripts, connected, error, isRecording, toggleRecording, clearTranscripts }
 }

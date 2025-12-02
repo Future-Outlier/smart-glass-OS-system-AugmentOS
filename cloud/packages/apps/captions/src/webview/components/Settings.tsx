@@ -1,11 +1,8 @@
 import { useState } from "react"
 import { CaptionSettings } from "@/hooks/useSettings"
-import { AVAILABLE_LANGUAGES, getLanguageName } from "@/lib/languages"
 
 interface SettingsProps {
   settings: CaptionSettings | null
-  onUpdateLanguage: (lang: string) => Promise<boolean>
-  onUpdateHints: (hints: string[]) => Promise<boolean>
   onUpdateDisplayLines: (lines: number) => Promise<boolean>
   onUpdateDisplayWidth: (width: number) => Promise<boolean>
 }

@@ -47,7 +47,7 @@ export function useSettings() {
     }
   }
 
-  const updateLanguageHints = async (hints: string[]) => {
+  const updateHints = async (hints: string[]) => {
     try {
       const response = await fetch("/api/settings/language-hints", {
         method: "POST",
@@ -109,7 +109,7 @@ export function useSettings() {
     loading,
     error,
     updateLanguage,
-    updateLanguageHints,
+    updateHints,
     updateDisplayLines,
     updateDisplayWidth,
     refetch: fetchSettings,
