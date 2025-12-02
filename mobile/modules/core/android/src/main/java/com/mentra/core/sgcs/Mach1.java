@@ -10,8 +10,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 
 // Mentra
 import com.mentra.core.sgcs.SGCManager;
@@ -63,7 +63,6 @@ public class Mach1 extends SGCManager {
     UltraliteListener ultraliteListener;
     Layout currentUltraliteLayout;
     boolean screenToggleOff = false; //should we keep the screen off?
-    LifecycleOwner lifecycleOwner;
     Context context;
     public static final int cardLingerTime = 15;
 
@@ -104,6 +103,9 @@ public class Mach1 extends SGCManager {
         if (isEqual) {
             return;
         }
+
+        // Update the connection state
+        connectionState = state;
 
         if (state.equals(ConnTypes.CONNECTED)) {
             ready = true;
@@ -418,13 +420,18 @@ public class Mach1 extends SGCManager {
     private LiveData<Boolean> ultraliteControlled;
     private LiveData<BatteryStatus> batteryStatusObserver;
 
+    // Observer references for cleanup
+    private Observer<Boolean> connectedObserver;
+    private Observer<Boolean> controlledObserver;
+    private Observer<BatteryStatus> batteryObserver;
+
     public Mach1() {
         super();
         this.type = DeviceTypes.MACH1;
-        // this.lifecycleOwner = lifecycleOwner;
-        // this.context = context;
 
-        // mConnectState = ConnTypes.DISCONNECTED;
+        // Get context from Bridge (like G1 does)
+        this.context = Bridge.getContext();
+
         hasUltraliteControl = false;
         screenIsClear = true;
         goHomeHandler = new Handler();
@@ -432,49 +439,35 @@ public class Mach1 extends SGCManager {
         killHandler = new Handler();
 
         rowTextsLiveNow = new ArrayList<Integer>();
-        // this.smartGlassesDevice = smartGlassesDevice;
 
+        // Initialize UltraliteSDK with valid context
         ultraliteSdk = UltraliteSDK.get(context);
         ultraliteListener = new UltraliteListener();
         ultraliteSdk.addEventListener(ultraliteListener);
 
-        // Only observe LiveData if we have a valid lifecycleOwner
-//        if (lifecycleOwner != null) {
-//            ultraliteConnectedLive = ultraliteSdk.getConnected();
-//            ultraliteConnectedLive.observe(lifecycleOwner, isConnected -> {
-//                onUltraliteConnectedChange(isConnected);
-//            });
-//
-//            ultraliteControlled = ultraliteSdk.getControlledByMe();
-//            ultraliteControlled.observe(lifecycleOwner, isControlled -> {
-//                onUltraliteControlChanged(isControlled);
-//            });
-//
-//            //setup battery status
-//            // EventBus.getDefault().post(new BatteryLevelEvent(ultraliteSdk.getBatteryLevel(), false));
-//            batteryStatusObserver = ultraliteSdk.getBatteryStatus();
-//            batteryStatusObserver.observe(lifecycleOwner, batteryStatus -> {
-//                CoreManager.getInstance().handle_request_status();
-//                // onUltraliteBatteryChanged(batteryStatus);
-//            });
-//        } else {
-            Log.w(TAG, "No LifecycleOwner provided, LiveData observation is disabled");
-            ultraliteConnectedLive = ultraliteSdk.getConnected();
-            ultraliteControlled = ultraliteSdk.getControlledByMe();
-            batteryStatusObserver = ultraliteSdk.getBatteryStatus();
+        // Set up LiveData observers using observeForever (no LifecycleOwner needed)
+        ultraliteConnectedLive = ultraliteSdk.getConnected();
+        ultraliteControlled = ultraliteSdk.getControlledByMe();
+        batteryStatusObserver = ultraliteSdk.getBatteryStatus();
 
-            // Still send the initial battery level
-            // EventBus.getDefault().post(new BatteryLevelEvent(ultraliteSdk.getBatteryLevel(), false));
-            CoreManager.getInstance().handle_request_status();
+        // Create and register observers
+        connectedObserver = isConnected -> {
+            onUltraliteConnectedChange(isConnected);
+        };
+        ultraliteConnectedLive.observeForever(connectedObserver);
 
-            // Note: We don't need polling anymore since we'll be using LifecycleService
-//        }
+        controlledObserver = isControlled -> {
+            onUltraliteControlChanged(isControlled);
+        };
+        ultraliteControlled.observeForever(controlledObserver);
 
-//        if (ultraliteSdk.isAvailable()){
-//            Log.d(TAG, "Ultralite SDK is available.");
-//        } else {
-//            Log.d(TAG, "Ultralite SDK is NOT available.");
-//        }
+        batteryObserver = batteryStatus -> {
+            onUltraliteBatteryChanged(batteryStatus);
+        };
+        batteryStatusObserver.observeForever(batteryObserver);
+
+        Log.d(TAG, "Mach1 initialized with context and observers");
+        CoreManager.getInstance().handle_request_status();
     }
 
     public void updateGlassesBrightness(int brightness) {
@@ -519,11 +512,10 @@ public class Mach1 extends SGCManager {
     }
 
     private void onUltraliteBatteryChanged(BatteryStatus batteryStatus) {
-        Log.d(TAG, "Ultralite new battery status");
-        int batteryLevel = batteryStatus.getLevel();
-        // EventBus.getDefault().post(new BatteryLevelEvent(batteryLevel, false));
+        Log.d(TAG, "Ultralite new battery status: " + batteryStatus.getLevel());
+        // Update the class field, not a local variable
+        this.batteryLevel = batteryStatus.getLevel();
         updateConnectionState(ConnTypes.CONNECTED);
-
     }
 
 
@@ -722,14 +714,18 @@ public class Mach1 extends SGCManager {
 
     public void destroy() {
         try {
-            if (ultraliteSdk != null) {
-                // Remove LiveData observers only if lifecycleOwner is not null
-                if (lifecycleOwner != null) {
-                    ultraliteConnectedLive.removeObservers(lifecycleOwner);
-                    ultraliteControlled.removeObservers(lifecycleOwner);
-                    batteryStatusObserver.removeObservers(lifecycleOwner);
-                }
+            // Remove LiveData observers (using observeForever, so use removeObserver)
+            if (ultraliteConnectedLive != null && connectedObserver != null) {
+                ultraliteConnectedLive.removeObserver(connectedObserver);
+            }
+            if (ultraliteControlled != null && controlledObserver != null) {
+                ultraliteControlled.removeObserver(controlledObserver);
+            }
+            if (batteryStatusObserver != null && batteryObserver != null) {
+                batteryStatusObserver.removeObserver(batteryObserver);
+            }
 
+            if (ultraliteSdk != null) {
                 // Remove event listeners and release control
                 ultraliteSdk.removeEventListener(ultraliteListener);
                 ultraliteSdk.releaseControl();
@@ -743,7 +739,6 @@ public class Mach1 extends SGCManager {
             if (screenOffHandler != null) {
                 screenOffHandler.removeCallbacksAndMessages(null);
             }
-            // Removed battery polling handler cleanup as we're no longer using it
             if (killHandler != null) {
                 killHandler.removeCallbacksAndMessages(null);
             }
@@ -765,7 +760,9 @@ public class Mach1 extends SGCManager {
 
             // Free up references
             this.context = null;
-            this.lifecycleOwner = null;
+            connectedObserver = null;
+            controlledObserver = null;
+            batteryObserver = null;
 
             Log.d(TAG, "UltraliteSGC destroyed successfully.");
         } catch (Exception e) {
