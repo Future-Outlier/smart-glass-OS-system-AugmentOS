@@ -20,7 +20,7 @@ export function App() {
     updateDisplayLines,
     updateDisplayWidth,
   } = useSettings()
-  const { transcripts, isRecording, toggleRecording, clearTranscripts } = useTranscripts()
+  const { transcripts, connected, error, isRecording, toggleRecording, clearTranscripts, reconnect } = useTranscripts()
 
   const handleSaveLanguage = async (language: string, hints: string[]) => {
     await updateLanguage(language)
@@ -34,11 +34,13 @@ export function App() {
       {/* {!showLanguageSelector && ( */}
       {!false && (
         <Header
-          connected={true} // Mock connection status
+          connected={connected}
+          error={error}
           settings={settings}
           onUpdateLanguage={updateLanguage}
           onUpdateHints={updateHints}
           onToggleLanguageSelector={() => setShowLanguageSelector(true)}
+          onReconnect={reconnect}
         />
       )}
 

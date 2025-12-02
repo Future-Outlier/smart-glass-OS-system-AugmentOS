@@ -89,6 +89,8 @@ const expressApp = captionsApp.getExpressApp()
 // ============================================
 // SSE Stream Route (bypasses proxy)
 // ============================================
+const SSE_HEARTBEAT_INTERVAL_MS = 15000 // Send heartbeat every 15 seconds
+
 expressApp.get("/api/transcripts/stream", (req, res) => {
   const authReq = req as any
   const userId = authReq.authUserId
@@ -112,13 +114,18 @@ expressApp.get("/api/transcripts/stream", (req, res) => {
   // Send initial connection message
   res.write(`data: ${JSON.stringify({type: "connected"})}\n\n`)
 
+  // Track if connection is still alive
+  let isAlive = true
+
   // Create SSE client
   const client = {
     send: (data: any) => {
+      if (!isAlive) return
       try {
         res.write(`data: ${JSON.stringify(data)}\n\n`)
       } catch {
         // Client disconnected
+        isAlive = false
         userSession.transcripts.removeSSEClient(client)
       }
     },
@@ -127,8 +134,35 @@ expressApp.get("/api/transcripts/stream", (req, res) => {
   // Register client
   userSession.transcripts.addSSEClient(client)
 
+  // Start heartbeat interval to keep connection alive
+  const heartbeatInterval = setInterval(() => {
+    if (!isAlive) {
+      clearInterval(heartbeatInterval)
+      return
+    }
+    try {
+      // Send heartbeat as SSE comment (: prefix) and as data message
+      res.write(`: heartbeat ${Date.now()}\n`)
+      res.write(`data: ${JSON.stringify({type: "heartbeat", timestamp: Date.now()})}\n\n`)
+    } catch {
+      // Client disconnected
+      isAlive = false
+      clearInterval(heartbeatInterval)
+      userSession.transcripts.removeSSEClient(client)
+    }
+  }, SSE_HEARTBEAT_INTERVAL_MS)
+
   // Cleanup on disconnect
   req.on("close", () => {
+    isAlive = false
+    clearInterval(heartbeatInterval)
+    userSession.transcripts.removeSSEClient(client)
+  })
+
+  // Also handle error event
+  req.on("error", () => {
+    isAlive = false
+    clearInterval(heartbeatInterval)
     userSession.transcripts.removeSSEClient(client)
   })
 })
