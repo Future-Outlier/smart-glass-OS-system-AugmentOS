@@ -12,6 +12,7 @@
     "build:ios:archive": "zx ./scripts/build-ios-archive.mjs",
     "build:android:release": "zx ./scripts/build-android-release.mjs",
     "build:flash:android:release": "zx ./scripts/build-flash-android-release.mjs",
+    "build:google:play": "zx ./scripts/build-google-play.mjs",
     "upload:google:play": "zx ./scripts/upload-google-play.mjs",
     "compile": "tsc --noEmit -p . --pretty",
     "lint": "eslint . --fix",
