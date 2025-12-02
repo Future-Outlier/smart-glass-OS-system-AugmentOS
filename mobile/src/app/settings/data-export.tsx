@@ -69,7 +69,7 @@ export default function DataExportPage() {
 
     setCopying(true)
     try {
-      Clipboard.setString(jsonString)
+      Clipboard.setStringAsync(jsonString)
       showAlert("Copied!", "Your data has been copied to the clipboard.", [{text: translate("common:ok")}])
     } catch (error) {
       console.error("DataExport: Error copying to clipboard:", error)
