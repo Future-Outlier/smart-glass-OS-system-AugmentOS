@@ -107,7 +107,7 @@ export function LanguageSelector({ currentLanguage, currentHints, onSave, onCanc
                     </div>
                     <input
                         type="text"
-                        placeholder="Search app"
+                        placeholder="Search languages"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full py-3 pl-10 pr-4 bg-white rounded-xl text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6DAEA6]/50 font-['Red_Hat_Display'] shadow-sm"
@@ -126,7 +126,7 @@ export function LanguageSelector({ currentLanguage, currentHints, onSave, onCanc
                                 onClick={() => handleLanguageClick(lang.code)}
                                 className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
                                 <div className="flex items-center gap-4">
-                                    <span className="text-2xl shadow-sm rounded-sm overflow-hidden">
+                                    <span className="text-2xl overflow-hidden">
                                         {getFlagEmoji(lang.code)}
                                     </span>
                                     <div className="flex flex-col items-start">
