@@ -1,6 +1,9 @@
-import {useRef, useEffect, useState} from "react"
 import {ChevronDown} from "lucide-react"
+import {useRef, useEffect, useState} from "react"
+
+// eslint-disable-next-line no-restricted-imports
 import {Transcript} from "../hooks/useTranscripts"
+
 import {TranscriptItem} from "./TranscriptItem"
 // import {Button} from "@/components/ui/button"
 
@@ -37,8 +40,8 @@ export function TranscriptList({transcripts}: TranscriptListProps) {
   }
 
   return (
-    <>
-      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+    <div className="h-full flex flex-col relative">
+      <div ref={scrollContainerRef} onScroll={handleScroll} className="h-full overflow-y-auto px-6 py-3 space-y-1.5">
         {transcripts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-8">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -60,7 +63,14 @@ export function TranscriptList({transcripts}: TranscriptListProps) {
             <p className="text-sm text-gray-500">Transcription will appear here when someone speaks</p>
           </div>
         ) : (
-          transcripts.map((transcript) => <TranscriptItem key={transcript.id} transcript={transcript} />)
+          transcripts.map((transcript, index) => (
+            <TranscriptItem
+              key={transcript.id}
+              transcript={transcript}
+              isFirst={index === 0}
+              isLast={index === transcripts.length - 1}
+            />
+          ))
         )}
       </div>
 
@@ -68,10 +78,10 @@ export function TranscriptList({transcripts}: TranscriptListProps) {
       {!autoScroll && transcripts.length > 0 && (
         <button
           onClick={scrollToBottom}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-black hover:bg-gray-800 text-white rounded-full shadow-lg flex items-center justify-center transition-all">
-          <ChevronDown className="w-6 h-6" />
+          className="absolute bottom-6 right-6 w-12 h-12 bg-black hover:bg-gray-800 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-10">
+          <ChevronDown className="w-5 h-5" />
         </button>
       )}
-    </>
+    </div>
   )
 }

@@ -20,6 +20,7 @@ import {serve} from "bun"
 import {routes} from "./api/routes"
 import {LiveCaptionsApp} from "./app"
 import {UserSession} from "./app/session/UserSession"
+import indexDev from "./webview/index.html"
 import indexProd from "./webview/index.prod.html"
 
 // Configuration
@@ -45,8 +46,13 @@ console.log("🚀 Starting Captions App...\n")
 // ============================================
 
 console.log(`📦 Starting Bun server on port ${BUN_PORT}...`)
+const isDevelopment = process.env.NODE_ENV === "development"
 
 const bunServer = serve({
+  development: isDevelopment && {
+    hmr: true,
+    // Add development-specific configurations here
+  },
   port: BUN_PORT,
   routes: {
     // Custom API routes
@@ -54,7 +60,7 @@ const bunServer = serve({
 
     // Serve pre-built webview as fallback
     // This ensures @/ path imports are resolved at build time, not runtime
-    "/*": indexProd,
+    "/*": isDevelopment ? indexDev : indexProd,
   },
 })
 

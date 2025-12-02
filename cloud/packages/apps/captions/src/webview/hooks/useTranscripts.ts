@@ -45,12 +45,12 @@ export function useTranscripts() {
             if (data.type === "interim") {
               // Update or add interim transcript
               setTranscripts((prev) => {
-                // Remove any existing interim transcripts
-                const withoutInterim = prev.filter((t) => t.isFinal)
+                // Remove any existing transcript with the same ID (could be interim or final)
+                const filtered = prev.filter((t) => t.id !== data.id)
 
                 // Add new interim
                 return [
-                  ...withoutInterim,
+                  ...filtered,
                   {
                     id: data.id,
                     speaker: data.speaker,
@@ -63,12 +63,18 @@ export function useTranscripts() {
             } else if (data.type === "final") {
               // Replace interim with final
               setTranscripts((prev) => {
-                // Remove interim transcripts
-                const withoutInterim = prev.filter((t) => t.isFinal)
+                // Check if we already have this final transcript
+                const alreadyExists = prev.some((t) => t.isFinal && t.id === data.id)
+                if (alreadyExists) {
+                  return prev // Don't add duplicate
+                }
+
+                // Remove only the specific interim with this ID
+                const filtered = prev.filter((t) => t.id !== data.id)
 
                 // Add final transcript
                 return [
-                  ...withoutInterim,
+                  ...filtered,
                   {
                     id: data.id,
                     speaker: data.speaker,

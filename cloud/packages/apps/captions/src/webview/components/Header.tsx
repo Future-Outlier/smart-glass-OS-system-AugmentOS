@@ -23,7 +23,9 @@ export function Header({connected, settings, onUpdateLanguage, onUpdateHints}: H
   return (
     <div className="w-full flex flex-col">
       {/* Top header bar */}
-      <div className="w-full px-6 py-3 bg-primary backdrop-blur-lg flex justify-between items-center">
+      <div
+        className="w-full px-6 py-3 backdrop-blur-lg flex justify-between items-center"
+        style={{backgroundColor: "#6DAEA6"}}>
         {/* Back button */}
         <button className="p-2 bg-white rounded-[32px] flex justify-start items-center gap-2">
           <img src={ArrowLeftIcon} alt="Back" className="w-6 h-6 rotate-180" />
@@ -51,7 +53,10 @@ export function Header({connected, settings, onUpdateLanguage, onUpdateHints}: H
             trigger={
               <button className="flex justify-center items-center gap-2">
                 {/* Connection status indicator */}
-                <div className={`w-2 h-2 rounded-full ${connected ? "bg-primary" : "bg-red-500"}`} />
+                <div
+                  className={`w-2 h-2 rounded-full ${connected ? "bg-red-500" : "bg-red-500"}`}
+                  style={connected ? {backgroundColor: "#6DAEA6"} : {}}
+                />
                 <div className="text-foreground text-base font-medium font-['Red_Hat_Display'] leading-5">
                   {getLanguageName(settings.language)}
                 </div>
