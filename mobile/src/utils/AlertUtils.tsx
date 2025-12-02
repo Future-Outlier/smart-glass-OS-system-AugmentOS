@@ -489,8 +489,8 @@ const showPermissionsAlert = (title: string, message: string, options?: Connecti
 const showDestructiveAlert = (title: string, message: string, buttons: AlertButton[], options?: AlertOptions) => {
   if (modalRef) {
     modalRef.showModal(title, message, buttons, {
-      iconName: "delete-forever",
-      iconColor: "#FF3B30",
+      iconName: "trash",
+      // iconColor not specified - will use default theme text color
       iconSize: 32,
       ...options,
     })
