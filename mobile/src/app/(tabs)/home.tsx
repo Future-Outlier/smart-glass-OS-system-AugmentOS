@@ -26,9 +26,9 @@ export default function Homepage() {
   return (
     <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
       <Header leftTx="home:title" RightActionComponent={<MentraLogoStandalone />} />
-      <Spacer height={theme.spacing.s4} />
 
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
+        <Spacer height={theme.spacing.s4} />
         <CloudConnection />
         <SensingDisabledWarning />
         <HomeContainer />

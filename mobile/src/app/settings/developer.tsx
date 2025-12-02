@@ -39,7 +39,7 @@ export default function DeveloperSettingsScreen() {
 
       <ScrollView style={{flex: 1, marginHorizontal: -theme.spacing.s4, paddingHorizontal: theme.spacing.s4}}>
         <RouteButton
-          label="🎥 Buffer Recording Debug"
+          label="Buffer Recording Debug"
           subtitle="Control 30-second video buffer on glasses"
           onPress={() => push("/settings/buffer-debug")}
         />
@@ -71,12 +71,12 @@ export default function DeveloperSettingsScreen() {
 
         <Spacer height={theme.spacing.s4} />
 
-        <RouteButton label="🔄 Test Mini App" subtitle="Test the Mini App" onPress={() => push("/test/mini-app")} />
+        <RouteButton label="Test Mini App" subtitle="Test the Mini App" onPress={() => push("/test/mini-app")} />
 
         <Spacer height={theme.spacing.s4} />
 
         <RouteButton
-          label="🔄 Test Sentry"
+          label="Test Sentry"
           subtitle="Send a crash to Sentry"
           onPress={() => {
             throw new Error("Test Sentry crash")
