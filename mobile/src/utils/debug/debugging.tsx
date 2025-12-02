@@ -4,8 +4,7 @@ import {Text} from "@/components/ignite/Text"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import {useEffect, useRef, useState} from "react"
-import {ScrollView, StyleSheet, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
-import {View} from "react-native"
+import {ScrollView, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
 export const DebugHitSlop = ({children, hitSlop, style, ...props}) => {
   if (!__DEV__ || !hitSlop) return children

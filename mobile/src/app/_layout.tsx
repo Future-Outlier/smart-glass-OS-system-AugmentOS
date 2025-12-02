@@ -12,6 +12,7 @@ import {ConsoleLogger} from "@/utils/debug/console"
 import {loadDateFnsLocale} from "@/utils/formatDate"
 import {AllEffects} from "@/utils/structure/AllEffects"
 import {AllProviders} from "@/utils/structure/AllProviders"
+import "@/global.css"
 
 // prevent the annoying warning box at the bottom of the screen from getting in the way:
 LogBox.ignoreLogs([

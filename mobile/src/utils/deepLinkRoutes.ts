@@ -201,7 +201,7 @@ export const deepLinkRoutes: DeepLinkRoute[] = [
         setTimeout(() => {
           console.log("[LOGIN DEBUG] Inside setTimeout, about to call router.replace('/')")
           try {
-            navObject.replace("/init")
+            navObject.replace("/")
             console.log("[LOGIN DEBUG] router.replace called successfully")
           } catch (navError) {
             console.error("[LOGIN DEBUG] Error calling router.replace:", navError)
