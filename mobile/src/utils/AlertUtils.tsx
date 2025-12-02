@@ -218,65 +218,65 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
     })
   }
 
+  if (!visible) {
+    return children
+  }
+
   return (
     <>
       {children}
-      {visible && (
-        <>
-          <StatusBar style="light" />
-          <Animated.View
-            style={{
-              ...StyleSheet.absoluteFillObject,
-              zIndex: 10,
-              justifyContent: "center",
-              alignItems: "center",
-              backgroundColor: theme.colors.background + "60",
-              paddingHorizontal: 24,
-              opacity: fadeAnim,
-            }}>
-            <Animated.View
-              style={{
-                width: "100%",
-                maxWidth: 400,
-                transform: [{scale: scaleAnim}],
-                opacity: fadeAnim,
-              }}>
-              <BasicDialog
-                title={title}
-                description={message}
-                icon={
-                  options.icon ??
-                  (options.iconName ? (
-                    <Icon
-                      name={options.iconName as IconTypes}
-                      size={options.iconSize ?? 24}
-                      color={options.iconColor ?? theme.colors.secondary_foreground}
-                    />
-                  ) : undefined)
-                }
-                leftButtonText={buttons.length > 1 ? buttons[0].text : undefined}
-                onLeftPress={
-                  buttons.length > 1
-                    ? () => {
-                        buttons[0].onPress?.()
-                        handleDismiss()
-                      }
-                    : undefined
-                }
-                rightButtonText={buttons.length > 1 ? buttons[1].text : buttons[0].text}
-                onRightPress={() => {
-                  if (buttons.length > 1) {
-                    buttons[1].onPress?.()
-                  } else {
+      <StatusBar style="light" />
+      <Animated.View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          zIndex: 10,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: theme.colors.background + "B3",
+          paddingHorizontal: 24,
+          opacity: fadeAnim,
+        }}>
+        <Animated.View
+          style={{
+            width: "100%",
+            maxWidth: 400,
+            transform: [{scale: scaleAnim}],
+            opacity: fadeAnim,
+          }}>
+          <BasicDialog
+            title={title}
+            description={message}
+            icon={
+              options.icon ??
+              (options.iconName ? (
+                <Icon
+                  name={options.iconName as IconTypes}
+                  size={options.iconSize ?? 24}
+                  color={options.iconColor ?? theme.colors.secondary_foreground}
+                />
+              ) : undefined)
+            }
+            leftButtonText={buttons.length > 1 ? buttons[0].text : undefined}
+            onLeftPress={
+              buttons.length > 1
+                ? () => {
                     buttons[0].onPress?.()
+                    handleDismiss()
                   }
-                  handleDismiss()
-                }}
-              />
-            </Animated.View>
-          </Animated.View>
-        </>
-      )}
+                : undefined
+            }
+            rightButtonText={buttons.length > 1 ? buttons[1].text : buttons[0].text}
+            onRightPress={() => {
+              if (buttons.length > 1) {
+                buttons[1].onPress?.()
+              } else {
+                buttons[0].onPress?.()
+              }
+              handleDismiss()
+            }}
+          />
+        </Animated.View>
+      </Animated.View>
     </>
   )
 }
