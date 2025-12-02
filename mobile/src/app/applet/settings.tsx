@@ -26,12 +26,11 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {useApplets, useRefreshApplets, useStartApplet, useStopApplet} from "@/stores/applets"
-import {useSettingsStore} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import { storage } from "@/utils/storage"
+import {storage} from "@/utils/storage"
 
 export default function AppSettings() {
   const {packageName, appName: appNameParam} = useLocalSearchParams()
@@ -247,13 +246,10 @@ export default function AppSettings() {
         })
         setSettingsState(initialState)
         // Cache the settings
-        storage.save(
-          SETTINGS_CACHE_KEY(packageName),
-          {
-            serverAppInfo: data,
-            settingsState: initialState,
-          },
-        )
+        storage.save(SETTINGS_CACHE_KEY(packageName), {
+          serverAppInfo: data,
+          settingsState: initialState,
+        })
         setHasCachedSettings(data.settings.length > 0)
       } else {
         setHasCachedSettings(false)
@@ -460,31 +456,36 @@ export default function AppSettings() {
     let debounceTimeout: NodeJS.Timeout
 
     const loadCachedSettings = async () => {
-      const cached = await useSettingsStore.getState().loadSetting(SETTINGS_CACHE_KEY(packageName))
-      if (cached && isMounted) {
-        setServerAppInfo(cached.serverAppInfo)
-        setSettingsState(cached.settingsState)
-        setHasCachedSettings(!!(cached.serverAppInfo?.settings && cached.serverAppInfo.settings.length > 0))
-        setSettingsLoading(false)
-
-        // Update appName from cached data if available
-        if (cached.serverAppInfo?.name) {
-          setAppName(cached.serverAppInfo.name)
-        }
-
-        // TACTICAL BYPASS: If webviewURL exists in cached data, execute immediate redirect
-        // if (cached.serverAppInfo?.webviewURL && fromWebView !== "true") {
-        //   replace("/applet/webview", {
-        //     webviewURL: cached.serverAppInfo.webviewURL,
-        //     appName: appName,
-        //     packageName: packageName,
-        //   })
-        //   return
-        // }
-      } else {
+      const res = await storage.load(SETTINGS_CACHE_KEY(packageName))
+      if (res.is_error()) {
         setHasCachedSettings(false)
         setSettingsLoading(true)
+        return
       }
+      const cached: any = res.value
+      if (!isMounted) {
+        return
+      }
+
+      setServerAppInfo(cached.serverAppInfo)
+      setSettingsState(cached.settingsState)
+      setHasCachedSettings(!!(cached.serverAppInfo?.settings && cached.serverAppInfo.settings.length > 0))
+      setSettingsLoading(false)
+
+      // Update appName from cached data if available
+      if (cached.serverAppInfo?.name) {
+        setAppName(cached.serverAppInfo.name)
+      }
+
+      // TACTICAL BYPASS: If webviewURL exists in cached data, execute immediate redirect
+      // if (cached.serverAppInfo?.webviewURL && fromWebView !== "true") {
+      //   replace("/applet/webview", {
+      //     webviewURL: cached.serverAppInfo.webviewURL,
+      //     appName: appName,
+      //     packageName: packageName,
+      //   })
+      //   return
+      // }
     }
 
     // Load cached settings immediately
