@@ -32,7 +32,7 @@ export const SYSTEM_DASHBOARD_PACKAGE_NAME =
 export const PRE_INSTALLED = [
   "com.augmentos.livecaptions",
   "cloud.augmentos.notify",
-  "cloud.augmentos.mira",
+  // "cloud.augmentos.mira",
 ];
 export const PRE_INSTALLED_DEBUG = [
   // "com.mentra.link",
