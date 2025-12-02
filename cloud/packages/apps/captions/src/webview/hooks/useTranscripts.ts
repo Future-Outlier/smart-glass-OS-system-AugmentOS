@@ -2,6 +2,7 @@ import {useState, useEffect} from "react"
 
 export interface Transcript {
   id: string
+  utteranceId: string | null
   speaker: string
   text: string
   timestamp: string | null
@@ -42,49 +43,79 @@ export function useTranscripts() {
               return
             }
 
-            if (data.type === "interim") {
-              // Update or add interim transcript
+            // Use utteranceId for correlation if available
+            if (data.utteranceId) {
               setTranscripts((prev) => {
-                // Remove any existing INTERIM transcript from the same speaker
-                // (Keep all final transcripts, only replace the current interim)
-                const filtered = prev.filter((t) => !(t.speaker === data.speaker && !t.isFinal))
+                const existingIndex = prev.findIndex(
+                  (t) => t.utteranceId === data.utteranceId
+                )
 
-                // Add new interim
-                return [
-                  ...filtered,
-                  {
-                    id: data.id,
-                    speaker: data.speaker,
-                    text: data.text,
-                    timestamp: null,
-                    isFinal: false,
-                  },
-                ]
-              })
-            } else if (data.type === "final") {
-              // Replace interim with final
-              setTranscripts((prev) => {
-                // Check if we already have this final transcript by ID
-                const alreadyExists = prev.some((t) => t.isFinal && t.id === data.id)
-                if (alreadyExists) {
-                  return prev // Don't add duplicate
+                const newTranscript: Transcript = {
+                  id: data.id,
+                  utteranceId: data.utteranceId,
+                  speaker: data.speaker,
+                  text: data.text,
+                  timestamp: data.timestamp,
+                  isFinal: data.type === "final",
                 }
 
-                // Remove the interim transcript from the same speaker (if any)
-                const filtered = prev.filter((t) => !(t.speaker === data.speaker && !t.isFinal))
-
-                // Add final transcript
-                return [
-                  ...filtered,
-                  {
-                    id: data.id,
-                    speaker: data.speaker,
-                    text: data.text,
-                    timestamp: data.timestamp,
-                    isFinal: true,
-                  },
-                ]
+                if (existingIndex >= 0) {
+                  // Update existing transcript (interim->interim or interim->final)
+                  const updated = [...prev]
+                  updated[existingIndex] = newTranscript
+                  return updated
+                } else {
+                  // New utterance
+                  return [...prev, newTranscript]
+                }
               })
+            } else {
+              // Legacy behavior: no utteranceId
+              if (data.type === "interim") {
+                setTranscripts((prev) => {
+                  // Remove any existing INTERIM transcript from the same speaker
+                  const filtered = prev.filter(
+                    (t) => !(t.speaker === data.speaker && !t.isFinal)
+                  )
+
+                  return [
+                    ...filtered,
+                    {
+                      id: data.id,
+                      utteranceId: null,
+                      speaker: data.speaker,
+                      text: data.text,
+                      timestamp: null,
+                      isFinal: false,
+                    },
+                  ]
+                })
+              } else if (data.type === "final") {
+                setTranscripts((prev) => {
+                  // Check if we already have this final transcript by ID
+                  const alreadyExists = prev.some((t) => t.isFinal && t.id === data.id)
+                  if (alreadyExists) {
+                    return prev
+                  }
+
+                  // Remove the interim transcript from the same speaker
+                  const filtered = prev.filter(
+                    (t) => !(t.speaker === data.speaker && !t.isFinal)
+                  )
+
+                  return [
+                    ...filtered,
+                    {
+                      id: data.id,
+                      utteranceId: null,
+                      speaker: data.speaker,
+                      text: data.text,
+                      timestamp: data.timestamp,
+                      isFinal: true,
+                    },
+                  ]
+                })
+              }
             }
           } catch (e) {
             console.error("Failed to parse SSE message:", e)

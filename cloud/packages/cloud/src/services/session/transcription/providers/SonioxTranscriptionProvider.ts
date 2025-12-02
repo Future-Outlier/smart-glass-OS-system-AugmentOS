@@ -76,10 +76,7 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
   private failureCount = 0;
   private lastFailureTime = 0;
 
-  constructor(
-    private config: SonioxProviderConfig,
-    parentLogger: Logger,
-  ) {
+  constructor(private config: SonioxProviderConfig, parentLogger: Logger) {
     this.logger = parentLogger.child({ provider: this.name });
 
     this.healthStatus = {
@@ -284,6 +281,23 @@ class SonioxTranscriptionStream implements StreamInstance {
   private stablePrefixText: string = "";
   private lastSentInterim = ""; // Track last sent interim to avoid duplicates
 
+  // Utterance tracking for correlating interim and final transcripts
+  private currentUtteranceId: string | null = null;
+  private currentSpeakerId: string | undefined = undefined;
+  private currentLanguage: string | undefined = undefined;
+
+  private generateUtteranceId(): string {
+    return `utt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  }
+
+  private startNewUtterance(speakerId?: string, language?: string): void {
+    this.currentUtteranceId = this.generateUtteranceId();
+    this.currentSpeakerId = speakerId;
+    this.currentLanguage = language;
+    this.stablePrefixText = "";
+    this.lastSentInterim = "";
+  }
+
   // Helper to convert internal tokens to SDK format
   private convertToSdkTokens(
     tokens: Array<{
@@ -462,6 +476,9 @@ class SonioxTranscriptionStream implements StreamInstance {
       languageHints = [languageHint, ...additionalHints];
     }
 
+    // Deduplicate hints to avoid Soniox "Language hints must be unique" error
+    languageHints = [...new Set(languageHints)];
+
     // Determine enable_language_identification flag (default to enabled)
     const enableLanguageIdentification = !(
       disableLangIdParam === true || disableLangIdParam === "true"
@@ -601,6 +618,40 @@ class SonioxTranscriptionStream implements StreamInstance {
         continue;
       }
 
+      // Detect speaker change → new utterance
+      if (token.speaker && token.speaker !== this.currentSpeakerId) {
+        // If we have content from previous speaker, emit final before switching
+        if (this.currentUtteranceId && this.lastSentInterim) {
+          this.emitFinalTranscription("speaker_change");
+        }
+        this.startNewUtterance(token.speaker, token.language || this.language);
+      }
+
+      // Detect language change → new utterance (same speaker)
+      if (
+        token.language &&
+        token.language !== this.currentLanguage &&
+        this.currentLanguage
+      ) {
+        if (this.currentUtteranceId && this.lastSentInterim) {
+          this.emitFinalTranscription("language_change");
+        }
+        this.startNewUtterance(this.currentSpeakerId, token.language);
+      }
+
+      // Ensure utterance exists (first token of stream)
+      if (!this.currentUtteranceId) {
+        this.startNewUtterance(token.speaker, token.language || this.language);
+      }
+
+      // Update current speaker/language if provided (for tokens that have it)
+      if (token.speaker) {
+        this.currentSpeakerId = token.speaker;
+      }
+      if (token.language) {
+        this.currentLanguage = token.language;
+      }
+
       // Track latest timestamp for latency calculation
       if (token.end_ms && token.end_ms > latestEndMs) {
         latestEndMs = token.end_ms;
@@ -615,6 +666,7 @@ class SonioxTranscriptionStream implements StreamInstance {
           confidence: token.confidence,
           start_ms: token.start_ms ?? 0,
           end_ms: token.end_ms ?? 0,
+          speaker: token.speaker,
         });
         avgConfidence += token.confidence;
       }
@@ -688,10 +740,12 @@ class SonioxTranscriptionStream implements StreamInstance {
         type: StreamType.TRANSCRIPTION,
         text: currentInterim,
         isFinal: false,
+        utteranceId: this.currentUtteranceId || undefined,
+        speakerId: this.currentSpeakerId,
         confidence: avgConfidence || undefined,
         startTime: Date.now(),
         endTime: Date.now() + 1000,
-        transcribeLanguage: this.language,
+        transcribeLanguage: this.language, // Use subscription language for routing, not detected language
         provider: "soniox",
         metadata: {
           provider: "soniox",
@@ -703,6 +757,7 @@ class SonioxTranscriptionStream implements StreamInstance {
                 confidence: t.confidence,
                 start_ms: t.start_ms,
                 end_ms: t.end_ms,
+                speaker: t.speaker,
               })),
             ),
           },
@@ -717,6 +772,8 @@ class SonioxTranscriptionStream implements StreamInstance {
           streamId: this.id,
           text: currentInterim.substring(0, 100),
           isFinal: false,
+          utteranceId: this.currentUtteranceId,
+          speakerId: this.currentSpeakerId,
           tailTokenCount: tailTokens.length,
           provider: "soniox",
         },
@@ -725,32 +782,51 @@ class SonioxTranscriptionStream implements StreamInstance {
     }
 
     if (hasEndToken) {
-      if (this.lastSentInterim) {
-        const finalData: TranscriptionData = {
-          type: StreamType.TRANSCRIPTION,
-          text: this.lastSentInterim,
-          isFinal: true,
-          startTime: Date.now(),
-          endTime: Date.now() + 1000,
-          transcribeLanguage: this.language,
-          provider: "soniox",
-          metadata: { provider: "soniox" },
-        };
-        this.callbacks.onData?.(finalData);
-        this.logger.debug(
-          {
-            streamId: this.id,
-            text: this.lastSentInterim.substring(0, 100),
-            isFinal: true,
-            provider: "soniox",
-          },
-          `🎙️ SONIOX: FINAL transcription - "${this.lastSentInterim}"`,
-        );
-      }
-      // Reset for next utterance
-      this.stablePrefixText = "";
-      this.lastSentInterim = "";
+      this.emitFinalTranscription("end_token");
+      // Reset utterance for next speech segment
+      this.currentUtteranceId = null;
     }
+  }
+
+  /**
+   * Emit a final transcription for the current utterance
+   */
+  private emitFinalTranscription(trigger: string): void {
+    if (!this.lastSentInterim) {
+      return;
+    }
+
+    const finalData: TranscriptionData = {
+      type: StreamType.TRANSCRIPTION,
+      text: this.lastSentInterim,
+      isFinal: true,
+      utteranceId: this.currentUtteranceId || undefined,
+      speakerId: this.currentSpeakerId,
+      startTime: Date.now(),
+      endTime: Date.now() + 1000,
+      transcribeLanguage: this.language, // Use subscription language for routing
+      provider: "soniox",
+      metadata: { provider: "soniox" },
+    };
+
+    this.callbacks.onData?.(finalData);
+
+    this.logger.debug(
+      {
+        streamId: this.id,
+        text: this.lastSentInterim.substring(0, 100),
+        isFinal: true,
+        utteranceId: this.currentUtteranceId,
+        speakerId: this.currentSpeakerId,
+        trigger,
+        provider: "soniox",
+      },
+      `🎙️ SONIOX: FINAL transcription - "${this.lastSentInterim}"`,
+    );
+
+    // Reset text buffers for next utterance
+    this.stablePrefixText = "";
+    this.lastSentInterim = "";
   }
 
   /**
@@ -765,13 +841,16 @@ class SonioxTranscriptionStream implements StreamInstance {
       );
       return;
     }
+
     const finalData: TranscriptionData = {
       type: StreamType.TRANSCRIPTION,
       text: this.lastSentInterim,
       isFinal: true,
+      utteranceId: this.currentUtteranceId || undefined,
+      speakerId: this.currentSpeakerId,
       startTime: Date.now(),
       endTime: Date.now() + 1000,
-      transcribeLanguage: this.language,
+      transcribeLanguage: this.language, // Use subscription language for routing
       provider: "soniox",
       metadata: { provider: "soniox" },
     };
@@ -783,6 +862,8 @@ class SonioxTranscriptionStream implements StreamInstance {
         streamId: this.id,
         text: this.lastSentInterim.substring(0, 100),
         isFinal: true,
+        utteranceId: this.currentUtteranceId,
+        speakerId: this.currentSpeakerId,
         provider: "soniox",
         trigger: "VAD_STOP",
       },
@@ -792,6 +873,8 @@ class SonioxTranscriptionStream implements StreamInstance {
     // Reset rolling state for next session
     this.stablePrefixText = "";
     this.lastSentInterim = "";
+    // Reset utterance for next speech segment
+    this.currentUtteranceId = null;
   }
 
   private handleError(error: Error): void {

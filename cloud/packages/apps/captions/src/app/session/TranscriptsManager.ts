@@ -4,6 +4,7 @@ import {randomUUID} from "crypto"
 
 export interface TranscriptEntry {
   id: string
+  utteranceId: string | null
   speaker: string
   text: string
   timestamp: string | null
@@ -23,8 +24,6 @@ export class TranscriptsManager {
   private transcripts: TranscriptEntry[] = []
   private maxTranscripts = 100
   private sseClients: Set<SSEClient> = new Set()
-  private currentSpeaker = "Speaker 1"
-  private lastInterimId: string | null = null
 
   constructor(userSession: UserSession) {
     this.userSession = userSession
@@ -34,25 +33,41 @@ export class TranscriptsManager {
   }
 
   private async onTranscription(transcriptData: TranscriptionData) {
-    this.logger.info(`Received transcription: ${transcriptData.text} (final: ${transcriptData.isFinal})`)
+    this.logger.info({
+      text: transcriptData.text,
+      isFinal: transcriptData.isFinal,
+      utteranceId: transcriptData.utteranceId,
+      speakerId: transcriptData.speakerId,
+    }, `Received transcription: ${transcriptData.text} (final: ${transcriptData.isFinal})`)
 
     const entry = this.createEntry(transcriptData)
 
-    if (transcriptData.isFinal) {
-      this.replaceInterim(entry)
+    if (transcriptData.utteranceId) {
+      // New utteranceId-based tracking
+      this.updateByUtteranceId(entry)
     } else {
-      this.updateInterim(entry)
+      // Backwards compatibility: old behavior without utteranceId
+      if (transcriptData.isFinal) {
+        this.legacyReplaceInterim(entry)
+      } else {
+        this.legacyUpdateInterim(entry)
+      }
     }
 
     this.broadcast(entry)
   }
 
   private createEntry(data: TranscriptionData): TranscriptEntry {
-    const id = data.isFinal && this.lastInterimId ? this.lastInterimId : randomUUID()
+    // Use utteranceId if available, otherwise generate a random ID
+    const id = data.utteranceId || randomUUID()
+
+    // Use speakerId from diarization if available, otherwise default
+    const speaker = this.formatSpeakerId(data.speakerId)
 
     return {
       id,
-      speaker: this.currentSpeaker,
+      utteranceId: data.utteranceId || null,
+      speaker,
       text: data.text,
       timestamp: data.isFinal ? this.formatTimestamp(new Date()) : null,
       isFinal: data.isFinal,
@@ -60,31 +75,85 @@ export class TranscriptsManager {
     }
   }
 
-  private updateInterim(entry: TranscriptEntry): void {
-    // Remove existing interim transcript
+  /**
+   * Format speaker ID from Soniox diarization (e.g., "1" -> "Speaker 1")
+   */
+  private formatSpeakerId(speakerId: string | undefined): string {
+    if (!speakerId) {
+      return "Speaker 1" // Default when no speaker info
+    }
+    // Soniox returns "1", "2", etc. - format as "Speaker 1", "Speaker 2"
+    return `Speaker ${speakerId}`
+  }
+
+  /**
+   * Update transcript using utteranceId for correlation
+   * This handles both interim updates and interim->final transitions correctly
+   */
+  private updateByUtteranceId(entry: TranscriptEntry): void {
+    const existingIndex = this.transcripts.findIndex(
+      (t) => t.utteranceId === entry.utteranceId
+    )
+
+    if (existingIndex >= 0) {
+      // Replace existing entry (interim->interim or interim->final)
+      this.transcripts[existingIndex] = entry
+      this.logger.debug({
+        utteranceId: entry.utteranceId,
+        isFinal: entry.isFinal,
+      }, `Updated transcript for utterance`)
+    } else {
+      // New utterance
+      this.transcripts.push(entry)
+      this.logger.debug({
+        utteranceId: entry.utteranceId,
+        isFinal: entry.isFinal,
+      }, `Added new transcript for utterance`)
+    }
+
+    // Enforce max transcripts limit (keep only final transcripts when trimming)
+    if (this.transcripts.length > this.maxTranscripts) {
+      // Keep recent transcripts, preferring finals
+      const finals = this.transcripts.filter((t) => t.isFinal)
+      const interims = this.transcripts.filter((t) => !t.isFinal)
+
+      // Keep all interims (they're current) and trim finals from the beginning
+      const maxFinals = this.maxTranscripts - interims.length
+      const trimmedFinals = finals.slice(-maxFinals)
+
+      this.transcripts = [...trimmedFinals, ...interims]
+    }
+  }
+
+  /**
+   * Legacy: Update interim transcript (no utteranceId)
+   */
+  private legacyUpdateInterim(entry: TranscriptEntry): void {
+    // Remove all existing interim transcripts
     this.transcripts = this.transcripts.filter((t) => t.isFinal)
 
     // Add new interim
     this.transcripts.push(entry)
-    this.lastInterimId = entry.id
 
-    this.logger.info(`Updated interim transcript: ${entry.text}`)
+    this.logger.debug(`Legacy: Updated interim transcript: ${entry.text}`)
   }
 
-  private replaceInterim(entry: TranscriptEntry): void {
-    // Remove interim transcript
+  /**
+   * Legacy: Replace interim with final (no utteranceId)
+   */
+  private legacyReplaceInterim(entry: TranscriptEntry): void {
+    // Remove all interim transcripts
     this.transcripts = this.transcripts.filter((t) => t.isFinal)
 
     // Add final transcript
     this.transcripts.push(entry)
-    this.lastInterimId = null
 
-    // Enforce max transcripts limit (circular buffer)
+    // Enforce max transcripts limit
     if (this.transcripts.length > this.maxTranscripts) {
       this.transcripts = this.transcripts.slice(-this.maxTranscripts)
     }
 
-    this.logger.info(`Added final transcript: ${entry.text}`)
+    this.logger.debug(`Legacy: Added final transcript: ${entry.text}`)
   }
 
   private formatTimestamp(date: Date): string {
@@ -100,6 +169,7 @@ export class TranscriptsManager {
     const message = {
       type: entry.isFinal ? "final" : "interim",
       id: entry.id,
+      utteranceId: entry.utteranceId,
       speaker: entry.speaker,
       text: entry.text,
       timestamp: entry.timestamp,

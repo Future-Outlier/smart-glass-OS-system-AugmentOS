@@ -19,8 +19,8 @@ Soniox returns tokens with `speaker` field when `enable_speaker_diarization: tru
 
 ## Status
 
-- [ ] Add `utteranceId?: string` to SDK `TranscriptionData` interface
-- [ ] Track utterance boundaries in `SonioxTranscriptionProvider`
-- [ ] Populate `speakerId` from Soniox tokens
-- [ ] Update captions app to use new fields
+- [x] Add `utteranceId?: string` to SDK `TranscriptionData` interface
+- [x] Track utterance boundaries in `SonioxTranscriptionProvider`
+- [x] Populate `speakerId` from Soniox tokens
+- [x] Update captions app to use new fields
 - [ ] Test with multiple speakers
