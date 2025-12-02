@@ -20,6 +20,8 @@ export default function AccountPage() {
   const {push} = useNavigationHistory()
   const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const [backendUrl] = useSetting(SETTINGS.backend_url.key)
+  const [storeUrl] = useSetting(SETTINGS.store_url.key)
 
   const pressCount = useRef(0)
   const lastPressTime = useRef(0)
@@ -73,16 +75,22 @@ export default function AccountPage() {
     if (devMode) {
       return (
         <View style={themed($versionContainer)}>
-          <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
+          <View className="flex-row gap-2">
             <Text
               style={themed($buildInfo)}
               text={translate("common:version", {number: process.env.EXPO_PUBLIC_MENTRAOS_VERSION})}
             />
             <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_BRANCH}`} />
           </View>
-          <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
+          <View className="flex-row gap-2">
             <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_TIME}`} />
             <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_COMMIT}`} />
+          </View>
+          <View className="flex-row gap-2">
+            <Text style={themed($buildInfo)} text={storeUrl} />
+          </View>
+          <View className="flex-row gap-2">
+            <Text style={themed($buildInfo)} text={`${backendUrl}`} />
           </View>
         </View>
       )
@@ -172,8 +180,6 @@ export default function AccountPage() {
 
         {getVersionInfo()}
 
-        <Spacer height={theme.spacing.s12} />
-        <Spacer height={theme.spacing.s12} />
       </ScrollView>
     </Screen>
   )

@@ -238,11 +238,13 @@ export default function InitScreen() {
 
   // Effects
   useEffect(() => {
+    console.log("INIT: Auth loading:", authLoading)
     const init = async () => {
       await checkCustomUrl()
       await checkCloudVersion()
     }
     if (!authLoading) {
+      console.log("INIT: Auth loaded, starting init")
       // auth is loaded, so we can start:
       init()
     }

@@ -1,10 +1,9 @@
+import restComms from "@/services/RestComms"
+import {storage} from "@/utils/storage"
 import {getTimeZone} from "react-native-localize"
 import {AsyncResult, result as Res, Result} from "typesafe-ts"
 import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
-
-import restComms from "@/services/RestComms"
-import {storage} from "@/utils/storage"
 
 interface Setting {
   key: string
@@ -50,7 +49,7 @@ export const SETTINGS: Record<string, Setting> = {
     defaultValue: () =>
       process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china"
         ? "https://api.mentraglass.cn:443"
-        : "https://api.mentra.glass:443",
+        : "https://api.mentra.glass",
     writable: true,
     override: () => {
       if (process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE) {

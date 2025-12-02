@@ -22,7 +22,7 @@ export default defineConfig([
   // custom config:
   {
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
-    ignores: ["eslint.config.mjs"],
+    ignores: ["eslint.config.mjs", "metro.config.js"],
     plugins: {
       "@typescript-eslint": tseslint.plugin,
       "react": pluginReact,
