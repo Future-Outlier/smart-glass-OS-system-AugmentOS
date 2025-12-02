@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import {useState, useEffect} from "react"
 
 export interface Transcript {
   id: string
@@ -45,8 +45,9 @@ export function useTranscripts() {
             if (data.type === "interim") {
               // Update or add interim transcript
               setTranscripts((prev) => {
-                // Remove any existing transcript with the same ID (could be interim or final)
-                const filtered = prev.filter((t) => t.id !== data.id)
+                // Remove any existing INTERIM transcript from the same speaker
+                // (Keep all final transcripts, only replace the current interim)
+                const filtered = prev.filter((t) => !(t.speaker === data.speaker && !t.isFinal))
 
                 // Add new interim
                 return [
@@ -63,14 +64,14 @@ export function useTranscripts() {
             } else if (data.type === "final") {
               // Replace interim with final
               setTranscripts((prev) => {
-                // Check if we already have this final transcript
+                // Check if we already have this final transcript by ID
                 const alreadyExists = prev.some((t) => t.isFinal && t.id === data.id)
                 if (alreadyExists) {
                   return prev // Don't add duplicate
                 }
 
-                // Remove only the specific interim with this ID
-                const filtered = prev.filter((t) => t.id !== data.id)
+                // Remove the interim transcript from the same speaker (if any)
+                const filtered = prev.filter((t) => !(t.speaker === data.speaker && !t.isFinal))
 
                 // Add final transcript
                 return [
@@ -122,5 +123,5 @@ export function useTranscripts() {
     setTranscripts([])
   }
 
-  return { transcripts, connected, error, isRecording, toggleRecording, clearTranscripts }
+  return {transcripts, connected, error, isRecording, toggleRecording, clearTranscripts}
 }
