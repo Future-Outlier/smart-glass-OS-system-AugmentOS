@@ -1,11 +1,10 @@
 import {useFocusEffect, useLocalSearchParams} from "expo-router"
-import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from "react"
+import {useCallback, useEffect, useMemo, useRef, useState} from "react"
 import {Animated, BackHandler, TextStyle, View, ViewStyle} from "react-native"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import Toast from "react-native-toast-message"
-import FontAwesome from "react-native-vector-icons/FontAwesome"
 
-import {Header, PillButton, Screen, Text} from "@/components/ignite"
+import {Header, Icon, PillButton, Screen, Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import LoadingOverlay from "@/components/misc/LoadingOverlay"
 import SettingsSkeleton from "@/components/misc/SettingsSkeleton"
@@ -29,8 +28,8 @@ import {useApplets, useRefreshApplets, useStartApplet, useStopApplet} from "@/st
 import {$styles, ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {storage} from "@/utils/storage"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function AppSettings() {
   const {packageName, appName: appNameParam} = useLocalSearchParams()
@@ -68,24 +67,6 @@ export default function AppSettings() {
   const SETTINGS_CACHE_KEY = (packageName: string) => `app_settings_cache_${packageName}`
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [hasCachedSettings, setHasCachedSettings] = useState(false)
-
-  if (!packageName || typeof packageName !== "string") {
-    console.error("No packageName found in params")
-    return null
-  }
-
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        goBack()
-        return true
-      }
-      const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress)
-      return () => {
-        subscription.remove()
-      }
-    }, [goBack]),
-  )
 
   // Handle app start/stop actions with debouncing
   const handleStartStopApp = async () => {
@@ -208,17 +189,17 @@ export default function AppSettings() {
     if (!hasCachedSettings) setSettingsLoading(true)
     const startTime = Date.now() // For profiling
     try {
-      const data = await restComms.getAppSettings(packageName)
+      const res = await restComms.getAppSettings(packageName)
+
       const elapsed = Date.now() - startTime
       console.log(`[PROFILE] getTpaSettings for ${packageName} took ${elapsed}ms`)
       console.log("GOT TPA SETTING")
-      console.log(JSON.stringify(data))
       // TODO: Profile backend and optimize if slow
       // If no data is returned from the server, create a minimal app info object
-      if (!data) {
+      if (res.is_error()) {
         setServerAppInfo({
           name: appInfo?.name || appName,
-          description: data?.description || "No description available.",
+          description: res.error.message || "No description available.",
           settings: [],
           uninstallable: true,
         })
@@ -227,7 +208,10 @@ export default function AppSettings() {
         setSettingsLoading(false)
         return
       }
+      const data: any = res.value
       setServerAppInfo(data)
+
+      console.log("GOT TPA SETTING", JSON.stringify(data))
 
       // Update appName if we got it from server
       if (data.name) {
@@ -410,35 +394,18 @@ export default function AppSettings() {
     }
   }
 
-  // Add header button when webviewURL exists
-  useLayoutEffect(() => {
-    if (serverAppInfo?.webviewURL) {
-      // TODO2.0:
-      // navigation.setOptions({
-      //   headerRight: () => (
-      //     <View style={{marginRight: 8}}>
-      //       <FontAwesome.Button
-      //         name="globe"
-      //         size={22}
-      //         color={isDarkTheme ? "#FFFFFF" : "#000000"}
-      //         backgroundColor="transparent"
-      //         underlayColor="transparent"
-      //         onPress={() => {
-      //           navigation.replace("AppWebView", {
-      //             webviewURL: serverAppInfo.webviewURL,
-      //             appName: appName,
-      //             packageName: packageName,
-      //             fromSettings: true,
-      //           })
-      //         }}
-      //         style={{padding: 0, margin: 0}}
-      //         iconStyle={{marginRight: 0}}
-      //       />
-      //     </View>
-      //   ),
-      // })
-    }
-  }, [serverAppInfo, packageName, appName])
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        goBack()
+        return true
+      }
+      const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress)
+      return () => {
+        subscription.remove()
+      }
+    }, [goBack]),
+  )
 
   // Reset hasLoadedData when packageName changes
   useEffect(() => {
@@ -505,6 +472,11 @@ export default function AppSettings() {
 
   if (!appInfo) {
     // Optionally, you could render a fallback error or nothing
+    return null
+  }
+
+  if (!packageName || typeof packageName !== "string") {
+    console.error("No packageName found in params")
     return null
   }
 
@@ -584,7 +556,7 @@ export default function AppSettings() {
                 paddingHorizontal: theme.spacing.s3,
                 paddingVertical: theme.spacing.s2,
               }}>
-              <FontAwesome name="warning" size={16} color={theme.colors.error} />
+              <Icon name="alert" size={16} color={theme.colors.error} />
               <Text style={{color: theme.colors.error, flex: 1}}>
                 This app appears to be offline. Some actions may not work.
               </Text>
