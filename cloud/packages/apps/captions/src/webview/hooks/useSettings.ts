@@ -1,4 +1,4 @@
-import {useState, useEffect} from "react"
+import { useState, useEffect } from "react"
 
 export interface CaptionSettings {
   language: string
@@ -17,34 +17,27 @@ export function useSettings() {
   }, [])
 
   const fetchSettings = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch("/api/settings")
-      if (response.ok) {
-        const data = await response.json()
-        setSettings(data)
-        setError(null)
-      } else {
-        setError("Failed to load settings")
-      }
-    } catch (err) {
-      console.error("Failed to fetch settings:", err)
-      setError("Failed to load settings")
-    } finally {
-      setLoading(false)
-    }
+    // Mock data for UI development
+    setSettings({
+      language: "en",
+      languageHints: [],
+      displayLines: 3,
+      displayWidth: 1,
+    })
+    setLoading(false)
+    setError(null)
   }
 
   const updateLanguage = async (language: string) => {
     try {
       const response = await fetch("/api/settings/language", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({language}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language }),
       })
 
       if (response.ok) {
-        setSettings((prev) => (prev ? {...prev, language} : null))
+        setSettings((prev) => (prev ? { ...prev, language } : null))
         return true
       }
       return false
@@ -58,12 +51,12 @@ export function useSettings() {
     try {
       const response = await fetch("/api/settings/language-hints", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({hints}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hints }),
       })
 
       if (response.ok) {
-        setSettings((prev) => (prev ? {...prev, languageHints: hints} : null))
+        setSettings((prev) => (prev ? { ...prev, languageHints: hints } : null))
         return true
       }
       return false
@@ -77,12 +70,12 @@ export function useSettings() {
     try {
       const response = await fetch("/api/settings/display-lines", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({lines}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lines }),
       })
 
       if (response.ok) {
-        setSettings((prev) => (prev ? {...prev, displayLines: lines} : null))
+        setSettings((prev) => (prev ? { ...prev, displayLines: lines } : null))
         return true
       }
       return false
@@ -96,12 +89,12 @@ export function useSettings() {
     try {
       const response = await fetch("/api/settings/display-width", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({width}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ width }),
       })
 
       if (response.ok) {
-        setSettings((prev) => (prev ? {...prev, displayWidth: width} : null))
+        setSettings((prev) => (prev ? { ...prev, displayWidth: width } : null))
         return true
       }
       return false

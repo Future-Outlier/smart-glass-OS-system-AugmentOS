@@ -1,4 +1,4 @@
-import {useState, useEffect} from "react"
+import { useState, useEffect } from "react"
 
 export interface Transcript {
   id: string
@@ -112,5 +112,5 @@ export function useTranscripts() {
     }
   }, [])
 
-  return {transcripts, connected, error}
+  return { transcripts, connected, error }
 }

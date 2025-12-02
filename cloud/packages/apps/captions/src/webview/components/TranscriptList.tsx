@@ -1,24 +1,24 @@
-import {ChevronDown} from "lucide-react"
-import {useRef, useEffect, useState} from "react"
+import { ChevronDown } from "lucide-react"
+import { useRef, useEffect, useState } from "react"
 
 // eslint-disable-next-line no-restricted-imports
-import {Transcript} from "../hooks/useTranscripts"
+import { Transcript } from "../hooks/useTranscripts"
 
-import {TranscriptItem} from "./TranscriptItem"
+import { TranscriptItem } from "./TranscriptItem"
 // import {Button} from "@/components/ui/button"
 
 interface TranscriptListProps {
   transcripts: Transcript[]
 }
 
-export function TranscriptList({transcripts}: TranscriptListProps) {
+export function TranscriptList({ transcripts }: TranscriptListProps) {
   const [autoScroll, setAutoScroll] = useState(true)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const handleScroll = () => {
     if (!scrollContainerRef.current) return
 
-    const {scrollTop, scrollHeight, clientHeight} = scrollContainerRef.current
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 50
 
     setAutoScroll(isAtBottom)
