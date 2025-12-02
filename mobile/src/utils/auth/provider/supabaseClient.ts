@@ -2,8 +2,8 @@ import type {AuthChangeEvent, Session, SupabaseClient} from "@supabase/supabase-
 import {createClient, SupportedStorage} from "@supabase/supabase-js"
 import {AsyncResult, result as Res, Result} from "typesafe-ts"
 
-import {MentraSigninResponse, MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"
 import {AuthClient} from "@/utils/auth/authClient"
+import {MentraAuthSession, MentraAuthUser, MentraSigninResponse} from "@/utils/auth/authProvider.types"
 import {storage} from "@/utils/storage"
 
 const SUPABASE_URL = (process.env.EXPO_PUBLIC_SUPABASE_URL as string) || "https://auth.mentra.glass"

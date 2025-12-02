@@ -3,7 +3,7 @@ import {View, FlatList, TouchableOpacity, Alert} from "react-native"
 import {ViewStyle, TextStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
-import {Spacer} from "@/components/misc/Spacer"
+import {Spacer} from "@/components/ui/Spacer"
 import ActionButton from "@/components/ui/ActionButton"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
