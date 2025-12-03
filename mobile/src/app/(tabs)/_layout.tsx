@@ -67,7 +67,7 @@ const $tabList: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   paddingVertical: spacing.s2,
   paddingHorizontal: spacing.s3,
   // transparent nav bar:
-  // backgroundColor: colors.primary_foreground + "fb",
+  backgroundColor: colors.primary_foreground + "fb",
   // position: "absolute",
   // bottom: 0,
 })

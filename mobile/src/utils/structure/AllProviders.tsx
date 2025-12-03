@@ -1,3 +1,4 @@
+import {BottomSheetModalProvider} from "@gorhom/bottom-sheet"
 import * as Sentry from "@sentry/react-native"
 import {PostHogProvider} from "posthog-react-native"
 import {Suspense} from "react"
@@ -80,6 +81,7 @@ export const AllProviders = withWrappers(
     return <GestureHandlerRootView style={{flex: 1}}>{props.children}</GestureHandlerRootView>
   },
   ModalProvider,
+  BottomSheetModalProvider,
   props => {
     const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY
     const isChina = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)

@@ -726,6 +726,8 @@ struct ViewState {
                 }
                 Bridge.log("MAN: Processing bitmap_view with base64 data, length: \(data.count)")
                 await sgc?.displayBitmap(base64ImageData: data)
+            case "clear_view":
+                sgc?.clearDisplay()
             default:
                 Bridge.log("UNHANDLED LAYOUT_TYPE \(layoutType)")
             }

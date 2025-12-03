@@ -1,5 +1,5 @@
 import CoreModule from "core"
-import {useLocalSearchParams, router} from "expo-router"
+import {useLocalSearchParams} from "expo-router"
 import {useEffect, useRef, useState, useCallback} from "react"
 import {ActivityIndicator, TextStyle, View, ViewStyle} from "react-native"
 
@@ -28,7 +28,7 @@ export default function WifiConnectingScreen() {
   const [errorMessage, setErrorMessage] = useState("")
   const connectionTimeoutRef = useRef<number | null>(null)
   const failureGracePeriodRef = useRef<number | null>(null)
-  const {goBack, navigate} = useNavigationHistory()
+  const {goBack, navigate, replace} = useNavigationHistory()
   const wifiConnected = useGlassesStore(state => state.wifiConnected)
   const wifiSsid = useGlassesStore(state => state.wifiSsid)
   const glassesConnected = useGlassesStore(state => state.connected)
@@ -40,9 +40,9 @@ export default function WifiConnectingScreen() {
       console.log("[WifiConnectingScreen] Glasses disconnected - navigating away")
       showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [{text: "OK"}])
       if (returnTo && typeof returnTo === "string") {
-        router.replace(decodeURIComponent(returnTo))
+        replace(decodeURIComponent(returnTo))
       } else {
-        router.replace("/")
+        replace("/")
       }
     }
     prevGlassesConnectedRef.current = glassesConnected
@@ -127,9 +127,9 @@ export default function WifiConnectingScreen() {
 
   const handleSuccess = useCallback(() => {
     if (nextRoute && typeof nextRoute === "string") {
-      router.replace(decodeURIComponent(nextRoute))
+      replace(decodeURIComponent(nextRoute))
     } else if (returnTo && typeof returnTo === "string") {
-      router.replace(decodeURIComponent(returnTo))
+      replace(decodeURIComponent(returnTo))
     } else {
       navigate("/")
     }
@@ -137,7 +137,7 @@ export default function WifiConnectingScreen() {
 
   const handleCancel = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
-      router.replace(decodeURIComponent(returnTo))
+      replace(decodeURIComponent(returnTo))
     } else {
       goBack()
     }
@@ -145,7 +145,7 @@ export default function WifiConnectingScreen() {
 
   const handleHeaderBack = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
-      router.replace(decodeURIComponent(returnTo))
+      replace(decodeURIComponent(returnTo))
     } else {
       goBack()
     }
