@@ -2345,7 +2345,10 @@ public class G1 extends SGCManager {
         // }
 
         // List<byte[]> chunks = createTextWallChunks(a);
-        // send raw:
+        if (a.trim().isEmpty()) {
+            clearDisplay();
+            return;
+        }
         List<byte[]> chunks = chunkTextForTransmission(a);
         sendChunks(chunks);
     }
