@@ -89,6 +89,16 @@ export class TranscriptProcessor {
     return this.finalTranscriptHistory.join(" ")
   }
 
+  // Get current display lines (for refreshing display after settings change)
+  public getCurrentDisplayLines(): string[] {
+    return [...this.currentDisplayLines]
+  }
+
+  // Get current display as formatted string
+  public getCurrentDisplay(): string {
+    return this.currentDisplayLines.join("\n")
+  }
+
   // Method to set max final transcripts
   public setMaxFinalTranscripts(maxFinalTranscripts: number): void {
     this.maxFinalTranscripts = maxFinalTranscripts

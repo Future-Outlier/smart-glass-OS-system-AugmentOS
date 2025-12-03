@@ -33,6 +33,43 @@ export class DisplayManager {
     }
 
     this.logger.info(`Preserved ${previousHistory.length} transcripts after settings change`)
+
+    // Immediately refresh the display with new settings
+    this.refreshDisplay()
+  }
+
+  /**
+   * Refresh the display with current transcript history using current settings
+   * Called after settings change to show instant preview
+   */
+  private refreshDisplay(): void {
+    const history = this.processor.getFinalTranscriptHistory()
+
+    if (history.length === 0) {
+      // No transcripts yet, send empty preview
+      this.userSession.transcripts.broadcastDisplayPreview("", [""], true)
+      return
+    }
+
+    // Get the current formatted display from processor
+    const currentDisplay = this.processor.getCurrentDisplay()
+    const displayLines = this.processor.getCurrentDisplayLines()
+
+    if (currentDisplay.trim()) {
+      const cleaned = this.cleanTranscriptText(currentDisplay)
+      const lines = cleaned.split("\n")
+
+      this.logger.info(`Refreshing display with new settings: ${lines.length} lines`)
+
+      // Send to glasses
+      this.userSession.appSession.layouts.showTextWall(cleaned, {
+        view: ViewType.MAIN,
+        durationMs: 20000,
+      })
+
+      // Broadcast to webview preview
+      this.userSession.transcripts.broadcastDisplayPreview(cleaned, lines, true)
+    }
   }
 
   processAndDisplay(text: string, isFinal: boolean): void {
