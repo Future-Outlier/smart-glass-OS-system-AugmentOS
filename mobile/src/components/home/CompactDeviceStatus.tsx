@@ -306,9 +306,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
 const $container: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   backgroundColor: colors.primary_foreground,
-  paddingTop: spacing.s6,
-  paddingHorizontal: spacing.s6,
-  paddingBottom: 0,
+  padding: spacing.s6,
 })
 
 const $imageContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
@@ -367,10 +365,10 @@ const $statusContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   gap: spacing.s3,
 })
 
-const $expandButton: ThemedStyle<ViewStyle> = () => ({
-  height: 56,
+const $expandButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
   justifyContent: "center",
+  paddingTop: spacing.s4,
 })
 
 const $disconnectedContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({

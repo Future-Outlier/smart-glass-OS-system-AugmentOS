@@ -1,3 +1,21 @@
+// Polyfill Event for livekit-client (Hermes doesn't have browser Event class)
+// Must be before any livekit imports
+if (typeof global.Event === "undefined") {
+  // @ts-ignore
+  global.Event = class Event {
+    type: string
+    bubbles: boolean
+    cancelable: boolean
+    currentTarget: any
+    constructor(type: string, options: {bubbles?: boolean; cancelable?: boolean} = {}) {
+      this.type = type
+      this.bubbles = options.bubbles || false
+      this.cancelable = options.cancelable || false
+      this.currentTarget = null
+    }
+  }
+}
+
 import {useFonts} from "@expo-google-fonts/space-grotesk"
 import {registerGlobals} from "@livekit/react-native-webrtc"
 import * as Sentry from "@sentry/react-native"
@@ -12,6 +30,7 @@ import {ConsoleLogger} from "@/utils/debug/console"
 import {loadDateFnsLocale} from "@/utils/formatDate"
 import {AllEffects} from "@/utils/structure/AllEffects"
 import {AllProviders} from "@/utils/structure/AllProviders"
+import "@/global.css"
 
 // prevent the annoying warning box at the bottom of the screen from getting in the way:
 LogBox.ignoreLogs([

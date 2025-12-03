@@ -152,7 +152,10 @@ class G1: NSObject, SGCManager {
 
     var hotspotGatewayIp: String = ""
 
-    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?, compress _: String?) {}
+    func requestPhoto(
+        _: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?,
+        compress _: String?
+    ) {}
 
     func startRtmpStream(_: [String: Any]) {}
 
@@ -258,7 +261,10 @@ class G1: NSObject, SGCManager {
     @Published var caseRemoved = true
 
     var isDisconnecting = false
-    private var reconnectionTimer: Timer?
+    private var reconnectionTimer: DispatchSourceTimer?
+    private let reconnectionQueue = DispatchQueue(
+        label: "com.sample.reconnectionTimerQueue", qos: .background
+    )
     private var reconnectionAttempts: Int = 0
     private let maxReconnectionAttempts: Int = -1 // unlimited reconnection attempts
     private let reconnectionInterval: TimeInterval = 30.0 // Seconds between reconnection attempts
@@ -662,6 +668,11 @@ class G1: NSObject, SGCManager {
         }
 
         let chunks = textHelper.createTextWallChunks(text)
+        // if text.isEmpty {
+        //     clearDisplay()
+        //     return
+        // }
+        // let chunks = textHelper.chunkTextForTransmission(text)
         queueChunks(chunks, sleepAfterMs: 10)
     }
 
@@ -1413,9 +1424,14 @@ extension G1 {
         queueChunks([exitDataArray])
     }
 
-    func sendRgbLedControl(requestId: String, packageName _: String?, action _: String, color _: String?, ontime _: Int, offtime _: Int, count _: Int) {
+    func sendRgbLedControl(
+        requestId: String, packageName _: String?, action _: String, color _: String?,
+        ontime _: Int, offtime _: Int, count _: Int
+    ) {
         Bridge.log("sendRgbLedControl - not supported on G1")
-        Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "device_not_supported")
+        Bridge.sendRgbLedControlResponse(
+            requestId: requestId, success: false, error: "device_not_supported"
+        )
     }
 
     // don't call semaphore signals here as it's handled elswhere:
@@ -2207,43 +2223,20 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
 
     private func startReconnectionTimer() {
         Bridge.log("G1: Starting reconnection timer")
-        // Cancel any existing timer
         stopReconnectionTimer()
-
-        // Reset attempt counter
         reconnectionAttempts = 0
 
-        // Create a new timer on a background queue
-        let queue = DispatchQueue(label: "com.sample.reconnectionTimerQueue", qos: .background)
-        queue.async { [weak self] in
-            guard let self = self else {
-                return
-            }
-            self.reconnectionTimer?.invalidate()
-            self.reconnectionTimer = Timer.scheduledTimer(
-                timeInterval: self.reconnectionInterval,
-                target: self,
-                selector: #selector(self.attemptReconnection),
-                userInfo: nil,
-                repeats: true
-            )
-
-            guard let recon = reconnectionTimer else {
-                return
-            }
-
-            // Fire immediately for first attempt
-            recon.fire()
-
-            // Add timer to the run loop
-            RunLoop.current.add(recon, forMode: .default)
-            RunLoop.current.run()
+        let timer = DispatchSource.makeTimerSource(queue: reconnectionQueue)
+        timer.schedule(deadline: .now(), repeating: reconnectionInterval)
+        timer.setEventHandler { [weak self] in
+            self?.attemptReconnection()
         }
+        reconnectionTimer = timer
+        timer.resume()
     }
 
     private func stopReconnectionTimer() {
-        // CoreCommsService.log("G1: Stopping reconnection timer")
-        reconnectionTimer?.invalidate()
+        reconnectionTimer?.cancel()
         reconnectionTimer = nil
     }
 

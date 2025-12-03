@@ -1,5 +1,5 @@
 import CoreModule from "core"
-import {router, useFocusEffect, useLocalSearchParams} from "expo-router"
+import {useFocusEffect, useLocalSearchParams} from "expo-router"
 import {useCallback, useEffect, useRef, useState} from "react"
 import {ActivityIndicator, BackHandler, FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 import Toast from "react-native-toast-message"
@@ -37,8 +37,7 @@ export default function WifiScanScreen() {
   const wifiSsid = useGlassesStore(state => state.wifiSsid)
   const wifiConnected = useGlassesStore(state => state.wifiConnected)
   const glassesConnected = useGlassesStore(state => state.connected)
-
-  const {push, goBack} = useNavigationHistory()
+  const {push, goBack, replace} = useNavigationHistory()
 
   // Navigate away if glasses disconnect (but not on initial mount)
   const prevGlassesConnectedRef = useRef(glassesConnected)
@@ -47,9 +46,9 @@ export default function WifiScanScreen() {
       console.log("[WifiScanScreen] Glasses disconnected - navigating away")
       showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [{text: "OK"}])
       if (returnTo && typeof returnTo === "string") {
-        router.replace(decodeURIComponent(returnTo))
+        replace(decodeURIComponent(returnTo))
       } else {
-        router.replace("/")
+        replace("/")
       }
     }
     prevGlassesConnectedRef.current = glassesConnected
@@ -57,7 +56,7 @@ export default function WifiScanScreen() {
 
   const handleGoBack = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
-      router.replace(decodeURIComponent(returnTo))
+      replace(decodeURIComponent(returnTo))
     } else {
       goBack()
     }
@@ -262,7 +261,7 @@ export default function WifiScanScreen() {
 
   const handleSkip = () => {
     if (nextRoute && typeof nextRoute === "string") {
-      router.replace(decodeURIComponent(nextRoute))
+      replace(decodeURIComponent(nextRoute))
     }
   }
 

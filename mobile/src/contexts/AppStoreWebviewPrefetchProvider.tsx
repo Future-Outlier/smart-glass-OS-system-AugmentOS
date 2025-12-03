@@ -30,8 +30,11 @@ export const AppStoreWebviewPrefetchProvider: React.FC<{children: React.ReactNod
   const webViewRef = useRef<WebView>(null)
   const {theme} = useAppTheme()
 
-  // Prefetch logic
-  const prefetchWebview = async () => {
+  // Prefetch logic with retry support for network errors
+  const MAX_RETRIES = 3
+  const RETRY_DELAY_MS = 500
+
+  const prefetchWebview = async (retryCount = 0) => {
     setWebviewLoading(true)
 
     try {
@@ -49,6 +52,16 @@ export const AppStoreWebviewPrefetchProvider: React.FC<{children: React.ReactNod
       const tempTokenResult = await restComms.generateWebviewToken(STORE_PACKAGE_NAME)
       if (tempTokenResult.is_error()) {
         console.error("AppStoreWebviewPrefetchProvider: Failed to generate temp token:", tempTokenResult.error)
+        // Retry on token generation failure (likely network error)
+        if (retryCount < MAX_RETRIES) {
+          console.log(`AppStoreWebviewPrefetchProvider: Retrying (attempt ${retryCount + 2}/${MAX_RETRIES + 1})...`)
+          setTimeout(
+            () => {
+              prefetchWebview(retryCount + 1).catch(console.error)
+            },
+            RETRY_DELAY_MS * Math.pow(2, retryCount),
+          ) // Exponential backoff
+        }
         return
       }
       const tempToken = tempTokenResult.value
@@ -77,22 +90,27 @@ export const AppStoreWebviewPrefetchProvider: React.FC<{children: React.ReactNod
       setAppStoreUrl(url.toString())
     } catch (error) {
       console.error("AppStoreWebviewPrefetchProvider: Error during prefetch:", error)
-      // Don't set URL without tokens - keep loading state and let user retry or wait for token
-      // The store screen will show "Preparing App Store..." instead of signed-out state
+      // Retry on unexpected errors
+      if (retryCount < MAX_RETRIES) {
+        console.log(
+          `AppStoreWebviewPrefetchProvider: Retrying after error (attempt ${retryCount + 2}/${MAX_RETRIES + 1})...`,
+        )
+        setTimeout(
+          () => {
+            prefetchWebview(retryCount + 1).catch(console.error)
+          },
+          RETRY_DELAY_MS * Math.pow(2, retryCount),
+        )
+      }
     } finally {
       setWebviewLoading(false)
     }
   }
 
   useEffect(() => {
-    // Check if we already have a core token
-    if (restComms.getCoreToken()) {
-      prefetchWebview().catch(error => {
-        console.error("AppStoreWebviewPrefetchProvider: Error during initial prefetch:", error)
-      })
-    }
-
     // Listen for when core token is set
+    // IMPORTANT: Register listener BEFORE checking token to prevent race condition
+    // where CORE_TOKEN_SET fires between our check and listener registration
     const handleCoreTokenSet = () => {
       prefetchWebview().catch(error => {
         console.error("AppStoreWebviewPrefetchProvider: Error during core token prefetch:", error)
@@ -100,6 +118,13 @@ export const AppStoreWebviewPrefetchProvider: React.FC<{children: React.ReactNod
     }
 
     GlobalEventEmitter.on("CORE_TOKEN_SET", handleCoreTokenSet)
+
+    // THEN check if we already have a core token
+    if (restComms.getCoreToken()) {
+      prefetchWebview().catch(error => {
+        console.error("AppStoreWebviewPrefetchProvider: Error during initial prefetch:", error)
+      })
+    }
 
     return () => {
       GlobalEventEmitter.removeListener("CORE_TOKEN_SET", handleCoreTokenSet)
@@ -118,15 +143,8 @@ export const AppStoreWebviewPrefetchProvider: React.FC<{children: React.ReactNod
         webViewRef.current.clearHistory?.()
       }
 
-      // Reset the URL state to force fresh token generation
+      // Reset the URL state - CORE_TOKEN_SET will trigger prefetch on next login
       setAppStoreUrl("")
-
-      // Reload with fresh tokens after clearing
-      setTimeout(() => {
-        prefetchWebview().catch(error => {
-          console.error("AppStoreWebviewPrefetchProvider: Error during clear webview data prefetch:", error)
-        })
-      }, 100)
     }
 
     GlobalEventEmitter.on("CLEAR_WEBVIEW_DATA", handleClearWebViewData)
@@ -159,7 +177,7 @@ export const AppStoreWebviewPrefetchProvider: React.FC<{children: React.ReactNod
             startInLoadingState={false}
             scalesPageToFit={false}
             cacheEnabled={true}
-            cacheMode="LOAD_CACHE_ELSE_NETWORK"
+            cacheMode="LOAD_DEFAULT"
           />
         </View>
       ) : null}

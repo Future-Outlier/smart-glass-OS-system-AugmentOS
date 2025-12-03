@@ -13,6 +13,7 @@ import {$styles, ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import StoreUrl from "@/components/dev/StoreUrl"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
@@ -39,7 +40,7 @@ export default function DeveloperSettingsScreen() {
 
       <ScrollView style={{flex: 1, marginHorizontal: -theme.spacing.s4, paddingHorizontal: theme.spacing.s4}}>
         <RouteButton
-          label="🎥 Buffer Recording Debug"
+          label="Buffer Recording Debug"
           subtitle="Control 30-second video buffer on glasses"
           onPress={() => push("/settings/buffer-debug")}
         />
@@ -71,12 +72,12 @@ export default function DeveloperSettingsScreen() {
 
         <Spacer height={theme.spacing.s4} />
 
-        <RouteButton label="🔄 Test Mini App" subtitle="Test the Mini App" onPress={() => push("/test/mini-app")} />
+        <RouteButton label="Test Mini App" subtitle="Test the Mini App" onPress={() => push("/test/mini-app")} />
 
         <Spacer height={theme.spacing.s4} />
 
         <RouteButton
-          label="🔄 Test Sentry"
+          label="Test Sentry"
           subtitle="Send a crash to Sentry"
           onPress={() => {
             throw new Error("Test Sentry crash")
@@ -100,7 +101,11 @@ export default function DeveloperSettingsScreen() {
           </Group>
         )}
 
-        {!process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE && <BackendUrl />}
+        <BackendUrl />
+
+        <Spacer height={theme.spacing.s4} />
+
+        <StoreUrl />
 
         <Spacer height={theme.spacing.s4} />
         <Spacer height={theme.spacing.s12} />

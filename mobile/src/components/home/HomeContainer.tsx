@@ -18,7 +18,7 @@ export const HomeContainer: React.FC = () => {
 
   return (
     <View>
-      <Spacer height={theme.spacing.s6} />
+      {/* <Spacer height={theme.spacing.s6} /> */}
       <Group>
         {!defaultWearable && <PairGlassesCard />}
         {defaultWearable && <CompactDeviceStatus />}
@@ -29,9 +29,9 @@ export const HomeContainer: React.FC = () => {
       <Spacer height={theme.spacing.s2} />
       <ForegroundAppsGrid />
       <IncompatibleApps />
-      <Spacer height={theme.spacing.s16} />
-      <Spacer height={theme.spacing.s16} />
-      <Spacer height={theme.spacing.s16} />
+      {/* <Spacer height={theme.spacing.s16} /> */}
+      {/* <Spacer height={theme.spacing.s16} /> */}
+      {/* <Spacer height={theme.spacing.s16} /> */}
     </View>
   )
 }
