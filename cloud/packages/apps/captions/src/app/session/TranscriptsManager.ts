@@ -16,6 +16,13 @@ interface SSEClient {
   send(data: any): void
 }
 
+interface CaptionSettings {
+  language: string
+  languageHints: string[]
+  displayLines: number
+  displayWidth: number
+}
+
 export class TranscriptsManager {
   readonly userSession: UserSession
   readonly logger: UserSession["logger"]
@@ -196,6 +203,27 @@ export class TranscriptsManager {
   public removeSSEClient(client: SSEClient): void {
     this.sseClients.delete(client)
     this.logger.info(`SSE client disconnected. Total clients: ${this.sseClients.size}`)
+  }
+
+  /**
+   * Broadcast settings update to all connected SSE clients
+   * Called by SettingsManager when settings change
+   */
+  public broadcastSettingsUpdate(settings: CaptionSettings): void {
+    const message = {
+      type: "settings_update",
+      settings,
+    }
+
+    this.logger.info(`Broadcasting settings update to ${this.sseClients.size} clients`)
+
+    for (const client of this.sseClients) {
+      try {
+        client.send(message)
+      } catch (error) {
+        this.logger.error(`Failed to send settings update to SSE client: ${error}`)
+      }
+    }
   }
 
   dispose() {

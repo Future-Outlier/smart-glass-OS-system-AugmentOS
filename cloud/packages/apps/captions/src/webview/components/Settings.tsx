@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CaptionSettings } from "@/hooks/useSettings"
 
 interface SettingsProps {
@@ -15,14 +15,30 @@ export function Settings({
   const [displayLines, setDisplayLines] = useState(settings?.displayLines || 3)
   const [displayWidth, setDisplayWidth] = useState(settings?.displayWidth || 1)
 
+  // Sync local state with props when settings change (e.g., from SSE update or initial load)
+  useEffect(() => {
+    if (settings) {
+      setDisplayLines(settings.displayLines)
+      setDisplayWidth(settings.displayWidth)
+    }
+  }, [settings])
+
   const handleDisplayLinesChange = async (lines: number) => {
-    setDisplayLines(lines)
-    await onUpdateDisplayLines(lines)
+    setDisplayLines(lines) // Optimistic update
+    const success = await onUpdateDisplayLines(lines)
+    if (!success) {
+      // Revert on failure
+      setDisplayLines(settings?.displayLines || 3)
+    }
   }
 
   const handleDisplayWidthChange = async (width: number) => {
-    setDisplayWidth(width)
-    await onUpdateDisplayWidth(width)
+    setDisplayWidth(width) // Optimistic update
+    const success = await onUpdateDisplayWidth(width)
+    if (!success) {
+      // Revert on failure
+      setDisplayWidth(settings?.displayWidth || 1)
+    }
   }
 
   if (!settings) {

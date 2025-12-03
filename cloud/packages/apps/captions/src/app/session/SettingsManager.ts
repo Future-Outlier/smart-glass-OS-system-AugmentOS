@@ -46,6 +46,9 @@ export class SettingsManager {
 
     // Update processor with new language settings
     await this.applyToProcessor()
+
+    // Broadcast settings change to all connected SSE clients
+    this.broadcastSettingsUpdate()
   }
 
   async getLanguageHints(): Promise<string[]> {
@@ -61,6 +64,9 @@ export class SettingsManager {
   async setLanguageHints(hints: string[]): Promise<void> {
     await this.storage.set("languageHints", JSON.stringify(hints))
     this.logger.info(`Language hints set to: ${hints.join(", ")}`)
+
+    // Broadcast settings change to all connected SSE clients
+    this.broadcastSettingsUpdate()
   }
 
   async getDisplayLines(): Promise<number> {
@@ -79,21 +85,34 @@ export class SettingsManager {
 
     // Update processor with new settings
     await this.applyToProcessor()
+
+    // Broadcast settings change to all connected SSE clients
+    this.broadcastSettingsUpdate()
   }
 
   async getDisplayWidth(): Promise<number> {
     const stored = await this.storage.get("displayWidth")
-    if (!stored) return 30
+    // Default to 1 (Medium) - values are 0=Narrow, 1=Medium, 2=Wide
+    if (!stored) return 1
     const parsed = parseInt(stored, 10)
-    return isNaN(parsed) ? 30 : parsed
+    // Validate it's a valid enum value (0, 1, or 2)
+    if (isNaN(parsed) || parsed < 0 || parsed > 2) return 1
+    return parsed
   }
 
   async setDisplayWidth(width: number): Promise<void> {
+    // Validate width is 0, 1, or 2
+    if (width < 0 || width > 2) {
+      throw new Error("Width must be 0 (Narrow), 1 (Medium), or 2 (Wide)")
+    }
     await this.storage.set("displayWidth", width.toString())
     this.logger.info(`Display width set to: ${width}`)
 
     // Update processor with new settings
     await this.applyToProcessor()
+
+    // Broadcast settings change to all connected SSE clients
+    this.broadcastSettingsUpdate()
   }
 
   async getAll(): Promise<CaptionSettings> {
@@ -105,6 +124,20 @@ export class SettingsManager {
     }
   }
 
+  /**
+   * Broadcast settings update to all connected SSE clients
+   * This ensures all open webviews stay in sync
+   */
+  private broadcastSettingsUpdate(): void {
+    // Use the transcripts manager's SSE clients to broadcast
+    // We'll send a special "settings_update" message type
+    this.getAll().then((settings) => {
+      this.userSession.transcripts.broadcastSettingsUpdate(settings)
+    }).catch((error) => {
+      this.logger.error(`Failed to broadcast settings update: ${error}`)
+    })
+  }
+
   private async applyToProcessor(): Promise<void> {
     const language = await this.getLanguage()
     const displayLines = await this.getDisplayLines()
@@ -113,7 +146,7 @@ export class SettingsManager {
     // Check if language is Chinese
     const isChineseLanguage = language === "Chinese (Hanzi)"
 
-    // Convert line width based on language
+    // Convert line width enum (0/1/2) to actual character width
     displayWidth = convertLineWidth(displayWidth.toString(), isChineseLanguage)
 
     this.logger.info(

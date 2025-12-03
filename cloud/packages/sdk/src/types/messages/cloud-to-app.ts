@@ -120,7 +120,8 @@ export interface TranscriptionData extends BaseMessage {
   text: string // The transcribed text
   isFinal: boolean // Whether this is a final transcription
   utteranceId?: string // Unique ID for this speech segment - interim and final for same utterance share the same ID
-  transcribeLanguage?: string // Detected language code
+  transcribeLanguage?: string // Subscription language code (used for routing, e.g., "en-US")
+  detectedLanguage?: string // Actual detected language from speech recognition (e.g., "ja", "en")
   startTime: number // Start time in milliseconds
   endTime: number // End time in milliseconds
   speakerId?: string // ID of the speaker if available (from diarization)

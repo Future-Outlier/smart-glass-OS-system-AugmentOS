@@ -627,27 +627,23 @@ class SonioxTranscriptionStream implements StreamInstance {
         this.startNewUtterance(token.speaker, token.language || this.language);
       }
 
-      // Detect language change → new utterance (same speaker)
-      if (
-        token.language &&
-        token.language !== this.currentLanguage &&
-        this.currentLanguage
-      ) {
-        if (this.currentUtteranceId && this.lastSentInterim) {
-          this.emitFinalTranscription("language_change");
-        }
-        this.startNewUtterance(this.currentSpeakerId, token.language);
-      }
+      // NOTE: We intentionally do NOT create a new utterance on language change.
+      // Soniox's language detection can fluctuate within a single utterance,
+      // especially for multi-lingual speech. Creating new utterances on every
+      // language change causes the UI to show many duplicate entries.
+      // Instead, we track the detected language and include it in the output,
+      // but keep the same utteranceId for the entire speech segment.
 
       // Ensure utterance exists (first token of stream)
       if (!this.currentUtteranceId) {
         this.startNewUtterance(token.speaker, token.language || this.language);
       }
 
-      // Update current speaker/language if provided (for tokens that have it)
+      // Update current speaker if provided
       if (token.speaker) {
         this.currentSpeakerId = token.speaker;
       }
+      // Track detected language (for output) but don't split utterance on change
       if (token.language) {
         this.currentLanguage = token.language;
       }
@@ -745,7 +741,8 @@ class SonioxTranscriptionStream implements StreamInstance {
         confidence: avgConfidence || undefined,
         startTime: Date.now(),
         endTime: Date.now() + 1000,
-        transcribeLanguage: this.language, // Use subscription language for routing, not detected language
+        transcribeLanguage: this.language, // Use subscription language for routing
+        detectedLanguage: this.currentLanguage, // Actual detected language from Soniox
         provider: "soniox",
         metadata: {
           provider: "soniox",
@@ -805,6 +802,7 @@ class SonioxTranscriptionStream implements StreamInstance {
       startTime: Date.now(),
       endTime: Date.now() + 1000,
       transcribeLanguage: this.language, // Use subscription language for routing
+      detectedLanguage: this.currentLanguage, // Actual detected language from Soniox
       provider: "soniox",
       metadata: { provider: "soniox" },
     };
@@ -851,6 +849,7 @@ class SonioxTranscriptionStream implements StreamInstance {
       startTime: Date.now(),
       endTime: Date.now() + 1000,
       transcribeLanguage: this.language, // Use subscription language for routing
+      detectedLanguage: this.currentLanguage, // Actual detected language from Soniox
       provider: "soniox",
       metadata: { provider: "soniox" },
     };

@@ -149,6 +149,15 @@ export function useTranscripts() {
             return
           }
 
+          // Handle settings update - dispatch custom event for useSettings hook
+          if (data.type === "settings_update" && data.settings) {
+            console.log("[SSE] Settings update received:", data.settings)
+            window.dispatchEvent(
+              new CustomEvent("settings_update", { detail: data.settings })
+            )
+            return
+          }
+
           // Use utteranceId for correlation if available
           if (data.utteranceId) {
             setTranscripts((prev) => {
