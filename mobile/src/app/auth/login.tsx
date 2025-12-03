@@ -183,7 +183,7 @@ export default function LoginScreen() {
     setIsFormLoading(true)
     setFormAction("signup")
 
-    const res = await mentraAuth.signup(email, password)
+    const res = await mentraAuth.signUp({email, password})
 
     if (res.is_error()) {
       console.error("Error during sign-up:", res.error)
@@ -203,7 +203,7 @@ export default function LoginScreen() {
     setIsFormLoading(true)
     setFormAction("signin")
     
-    const res = await mentraAuth.signIn(email, password)
+    const res = await mentraAuth.signInWithPassword({email, password})
     if (res.is_error()) {
       console.error("Error during sign-in:", res.error)
       showAlert(translate("common:error"), res.error.toString(), [{text: translate("common:ok")}])

@@ -189,21 +189,21 @@ export class SupabaseWrapperClient extends AuthClient {
   public signUp(credentials: {email: string; password: string}): AsyncResult<MentraSigninResponse, Error> {
     return Res.try_async(async () => {
       const {data, error} = await this.supabase.auth.signUp(credentials)
-      let errorMessage = error?.message.toLowerCase() || ""
+
       if (error) {
         console.log("Supabase Sign-up error:", error)
-      }
-      // Try to detect if it's a Google or Apple account
-      // Note: Supabase doesn't always tell us which provider, so we show a generic message
-      if (
-        errorMessage.includes("already registered") ||
-        errorMessage.includes("user already registered") ||
-        errorMessage.includes("email already exists") ||
-        errorMessage.includes("identity already linked")
-      ) {
-        errorMessage = "Email already registered"
-      } else {
-        errorMessage = "Something went wrong. Please try again."
+        const errorMessage = error.message.toLowerCase()
+        // Try to detect if it's a Google or Apple account
+        // Note: Supabase doesn't always tell us which provider, so we show a generic message
+        if (
+          errorMessage.includes("already registered") ||
+          errorMessage.includes("user already registered") ||
+          errorMessage.includes("email already exists") ||
+          errorMessage.includes("identity already linked")
+        ) {
+          throw new Error("Email already registered")
+        }
+        throw error
       }
 
       return {
@@ -298,21 +298,17 @@ export class SupabaseWrapperClient extends AuthClient {
         },
       })
 
-      let errorMessage = error ? error.message.toLowerCase() : ""
-
-      if (
-        errorMessage.includes("already registered") ||
-        errorMessage.includes("user already registered") ||
-        errorMessage.includes("email already exists") ||
-        errorMessage.includes("identity already linked")
-      ) {
-        errorMessage = "Email already registered"
-      } else {
-        errorMessage = "Something went wrong. Please try again."
-      }
-
-      if (errorMessage) {
-        throw new Error(errorMessage)
+      if (error) {
+        const errorMessage = error.message.toLowerCase()
+        if (
+          errorMessage.includes("already registered") ||
+          errorMessage.includes("user already registered") ||
+          errorMessage.includes("email already exists") ||
+          errorMessage.includes("identity already linked")
+        ) {
+          throw new Error("Email already registered")
+        }
+        throw error
       }
 
       if (!data.url) {
