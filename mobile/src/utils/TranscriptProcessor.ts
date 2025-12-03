@@ -1,19 +1,4 @@
-// Safe BackgroundTimer wrapper - falls back to regular timers if native module unavailable
-let BackgroundTimer: {
-  setTimeout: (callback: () => void, ms: number) => ReturnType<typeof setTimeout>
-  clearTimeout: (id: ReturnType<typeof setTimeout>) => void
-}
-
-try {
-  const nitroTimer = require("react-native-nitro-bg-timer")
-  BackgroundTimer = nitroTimer.BackgroundTimer
-} catch {
-  console.warn("TranscriptProcessor: BackgroundTimer not available, using regular timers")
-  BackgroundTimer = {
-    setTimeout: (callback: () => void, ms: number) => setTimeout(callback, ms),
-    clearTimeout: (id: ReturnType<typeof setTimeout>) => clearTimeout(id),
-  }
-}
+import {BackgroundTimer} from "react-native-nitro-bg-timer"
 
 export class TranscriptProcessor {
   private maxCharsPerLine: number = 44

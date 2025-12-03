@@ -1,23 +1,8 @@
 import {EventEmitter} from "events"
 
+import {BackgroundTimer} from "react-native-nitro-bg-timer"
+
 import {useConnectionStore} from "@/stores/connection"
-
-// Safe BackgroundTimer wrapper - falls back to regular timers if native module unavailable
-let BackgroundTimer: {
-  setInterval: (callback: () => void, ms: number) => number
-  clearInterval: (id: number) => void
-}
-
-try {
-  const nitroTimer = require("react-native-nitro-bg-timer")
-  BackgroundTimer = nitroTimer.BackgroundTimer
-} catch {
-  console.warn("WSM: BackgroundTimer not available, using regular timers")
-  BackgroundTimer = {
-    setInterval: (callback: () => void, ms: number) => setInterval(callback, ms) as unknown as number,
-    clearInterval: (id: number) => clearInterval(id),
-  }
-}
 // import mantle from "@/services/MantleManager"
 
 export enum WebSocketStatus {
