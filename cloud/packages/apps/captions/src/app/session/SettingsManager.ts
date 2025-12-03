@@ -143,18 +143,16 @@ export class SettingsManager {
     const displayLines = await this.getDisplayLines()
     let displayWidth = await this.getDisplayWidth()
 
-    // Check if language is Chinese
-    const isChineseLanguage = language === "Chinese (Hanzi)"
-
-    // Convert line width enum (0/1/2) to actual character width
-    displayWidth = convertLineWidth(displayWidth.toString(), isChineseLanguage)
+    // Convert line width enum (0/1/2) to visual width units
+    // Visual width calculation handles all languages automatically (no isChineseLanguage needed)
+    displayWidth = convertLineWidth(displayWidth.toString())
 
     this.logger.info(
-      `Applying settings to processor: language=${language}, lines=${displayLines}, width=${displayWidth}, isChinese=${isChineseLanguage}`,
+      `Applying settings to processor: language=${language}, lines=${displayLines}, visualWidth=${displayWidth}`,
     )
 
     // Update DisplayManager
-    this.userSession.display.updateSettings(displayWidth, displayLines, isChineseLanguage)
+    this.userSession.display.updateSettings(displayWidth, displayLines)
   }
 
   dispose(): void {

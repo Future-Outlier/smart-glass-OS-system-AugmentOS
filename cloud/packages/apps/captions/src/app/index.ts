@@ -1,13 +1,14 @@
 import path from "path"
 
-import {AppServer, AppSession, TranscriptionData} from "@mentra/sdk"
+import {AppServer, AppSession} from "@mentra/sdk"
 
 import {UserSession} from "./session/UserSession"
-import {languageToLocale, convertLineWidth} from "./utils"
-import {convertToPinyin} from "./utils/ChineseUtils"
 
 /**
  * LiveCaptionsApp - Main application class that extends AppServer
+ *
+ * This is a minimal entry point that delegates all logic to the UserSession
+ * and its managers (TranscriptsManager, SettingsManager, DisplayManager).
  */
 export class LiveCaptionsApp extends AppServer {
   constructor(config: {packageName: string; apiKey: string; port: number; publicDir?: string}) {
@@ -23,54 +24,16 @@ export class LiveCaptionsApp extends AppServer {
    * Called by AppServer when a new session is created
    */
   protected async onSession(session: AppSession, sessionId: string, userId: string): Promise<void> {
-    console.log(`\n\n🗣️🗣️🗣️Received new session for user ${userId}, session ${sessionId}\n\n`)
+    console.log(`\n\n🗣️🗣️🗣️ New session for user ${userId}, session ${sessionId}\n\n`)
 
     const userSession = new UserSession(session)
 
     try {
-      // Initialize settings
-      await userSession.settings.initialize()
-
-      // Get current settings to determine language and processor config
-      const language = await userSession.settings.getLanguage()
-      const languageHints = await userSession.settings.getLanguageHints()
-      const locale = languageToLocale(language)
-      const isChineseLanguage = language === "Chinese (Hanzi)"
-
-      let lineWidth = await userSession.settings.getDisplayWidth()
-      lineWidth = convertLineWidth(lineWidth.toString(), isChineseLanguage)
-
-      const numberOfLines = await userSession.settings.getDisplayLines()
-
-      // Update display manager with settings
-      userSession.display.updateSettings(lineWidth, numberOfLines, isChineseLanguage)
-
-      // Subscribe to transcription events with language hints
-      // If "auto" mode, use "en-US" as fallback for SDK
-      // Language identification is enabled by default unless explicitly disabled
-      const subscriptionLocale = language === "auto" ? "en-US" : locale
-      const cleanup = session.onTranscriptionForLanguage(
-        subscriptionLocale,
-        (data: TranscriptionData) => {
-          this.handleTranscription(userSession, data)
-        },
-        {
-          hints: languageHints,
-        },
-      )
-
-      this.addCleanupHandler(cleanup)
-
-      console.log(`Session initialized for user ${userId} with language ${locale}`)
+      await userSession.initialize()
+      console.log(`✅ Session initialized for user ${userId}`)
     } catch (error) {
-      console.error("Error initializing session:", error)
-
-      // Fallback: subscribe with default language
-      const cleanup = session.onTranscriptionForLanguage("en-US", (data: TranscriptionData) => {
-        this.handleTranscription(userSession, data)
-      })
-
-      this.addCleanupHandler(cleanup)
+      console.error("❌ Error initializing session:", error)
+      // UserSession.initialize() handles its own fallback subscription
     }
   }
 
@@ -80,23 +43,5 @@ export class LiveCaptionsApp extends AppServer {
   protected async onStop(sessionId: string, userId: string, reason: string): Promise<void> {
     console.log(`Session ${sessionId} stopped: ${reason}`)
     UserSession.getUserSession(userId)?.dispose()
-  }
-
-  /**
-   * Handles transcription data from the MentraOS cloud
-   */
-  private async handleTranscription(userSession: UserSession, transcriptionData: TranscriptionData): Promise<void> {
-    const isFinal = transcriptionData.isFinal
-    let newTranscript = transcriptionData.text
-
-    // Check if the language is Chinese and user has selected Pinyin format
-    const activeLanguage = await userSession.settings.getLanguage()
-    if (activeLanguage === "Chinese (Pinyin)") {
-      newTranscript = convertToPinyin(newTranscript)
-      console.log(`Converting Chinese to Pinyin`)
-    }
-
-    // Process and display on glasses via DisplayManager
-    userSession.display.processAndDisplay(newTranscript, isFinal)
   }
 }

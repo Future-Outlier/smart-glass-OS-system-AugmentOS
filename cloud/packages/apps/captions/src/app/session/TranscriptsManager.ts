@@ -3,6 +3,7 @@ import {randomUUID} from "crypto"
 import {TranscriptionData} from "@mentra/sdk"
 
 import {UserSession} from "./UserSession"
+import {convertToPinyin} from "../utils/ChineseUtils"
 
 export interface TranscriptEntry {
   id: string
@@ -28,7 +29,6 @@ interface CaptionSettings {
 export class TranscriptsManager {
   readonly userSession: UserSession
   readonly logger: UserSession["logger"]
-  readonly disposables: Array<() => void> = []
 
   private transcripts: TranscriptEntry[] = []
   private maxTranscripts = 100
@@ -37,11 +37,15 @@ export class TranscriptsManager {
   constructor(userSession: UserSession) {
     this.userSession = userSession
     this.logger = userSession.logger.child({service: "TranscriptsManager"})
-    const onTranscription = this.onTranscription.bind(this)
-    this.disposables.push(this.userSession.appSession.events.onTranscription(onTranscription))
+    // Note: No subscription here - UserSession owns the transcription subscription
+    // and calls handleTranscription() directly
   }
 
-  private async onTranscription(transcriptData: TranscriptionData) {
+  /**
+   * Handle incoming transcription data from UserSession
+   * This is the single entry point for all transcription processing
+   */
+  public async handleTranscription(transcriptData: TranscriptionData): Promise<void> {
     this.logger.info(
       {
         text: transcriptData.text,
@@ -52,6 +56,7 @@ export class TranscriptsManager {
       `Received transcription: ${transcriptData.text} (final: ${transcriptData.isFinal})`,
     )
 
+    // 1. Create entry and update transcript list
     const entry = this.createEntry(transcriptData)
 
     if (transcriptData.utteranceId) {
@@ -66,7 +71,24 @@ export class TranscriptsManager {
       }
     }
 
+    // 2. Broadcast transcript update to webview (transcript list)
     this.broadcast(entry)
+
+    // 3. Process text for display (handle Pinyin conversion, etc.)
+    let displayText = transcriptData.text
+    const activeLanguage = await this.userSession.settings.getLanguage()
+    if (activeLanguage === "Chinese (Pinyin)") {
+      displayText = convertToPinyin(displayText)
+      this.logger.debug("Converting Chinese to Pinyin for display")
+    }
+
+    // 4. Update glasses display via DisplayManager
+    // Pass speakerId for future diarization speaker labels feature
+    this.userSession.display.processAndDisplay(
+      displayText,
+      transcriptData.isFinal,
+      transcriptData.speakerId,
+    )
   }
 
   private createEntry(data: TranscriptionData): TranscriptEntry {
@@ -286,7 +308,7 @@ export class TranscriptsManager {
   }
 
   dispose() {
-    this.disposables.forEach((dispose) => dispose())
+    // No subscription to clean up - UserSession owns it
     this.sseClients.clear()
   }
 }

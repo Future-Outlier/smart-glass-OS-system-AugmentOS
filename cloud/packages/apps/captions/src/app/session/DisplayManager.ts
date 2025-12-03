@@ -16,16 +16,22 @@ export class DisplayManager {
     this.processor = new TranscriptProcessor(30, 3, 30)
   }
 
-  updateSettings(lineWidth: number, numberOfLines: number, isChineseLanguage: boolean): void {
+  /**
+   * Update display settings
+   * @param visualWidth - Maximum visual width per line (1 unit = 1 Latin char, CJK = 2 units)
+   * @param numberOfLines - Maximum number of lines to display
+   */
+  updateSettings(visualWidth: number, numberOfLines: number): void {
     this.logger.info(
-      `Updating processor settings: lineWidth=${lineWidth}, lines=${numberOfLines}, isChinese=${isChineseLanguage}`,
+      `Updating processor settings: visualWidth=${visualWidth}, lines=${numberOfLines}`,
     )
 
     // Get previous transcript history to preserve it
     const previousHistory = this.processor.getFinalTranscriptHistory()
 
     // Create new processor with updated settings
-    this.processor = new TranscriptProcessor(lineWidth, numberOfLines, 30, isChineseLanguage)
+    // Note: isChinese parameter is deprecated - visual width handles all languages automatically
+    this.processor = new TranscriptProcessor(visualWidth, numberOfLines, 30)
 
     // Restore transcript history
     for (const transcript of previousHistory) {
@@ -72,8 +78,14 @@ export class DisplayManager {
     }
   }
 
-  processAndDisplay(text: string, isFinal: boolean): void {
-    this.logger.info(`Processing transcript: "${text}" (final: ${isFinal})`)
+  /**
+   * Process transcription text and display on glasses
+   * @param text - The transcription text
+   * @param isFinal - Whether this is a final transcription
+   * @param speakerId - Optional speaker ID from diarization (for future speaker labels feature)
+   */
+  processAndDisplay(text: string, isFinal: boolean, speakerId?: string): void {
+    this.logger.info(`Processing transcript: "${text}" (final: ${isFinal}, speaker: ${speakerId || "unknown"})`)
     const formatted = this.processor.processString(text, isFinal)
     this.logger.info(`Formatted for display: "${formatted}"`)
     this.showOnGlasses(formatted, isFinal)

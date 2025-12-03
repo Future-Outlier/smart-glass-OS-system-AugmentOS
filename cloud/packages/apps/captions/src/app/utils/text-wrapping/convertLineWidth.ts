@@ -1,51 +1,28 @@
+import {VisualWidthSettings, getVisualWidthForSetting} from "./visualWidth"
+
 /**
- * Converts a line width setting to a numeric character count
+ * Converts a line width setting to visual width units
+ *
+ * Visual width units are based on character widths:
+ * - Latin characters (a-z, A-Z, 0-9): 1.0 unit
+ * - CJK characters (Chinese, Japanese, Korean): 2.0 units
+ *
+ * This means:
+ * - "wide" (44 units) fits ~44 Latin chars OR ~22 CJK chars OR a mix
+ * - The TranscriptProcessor calculates the actual fit based on content
  *
  * Supports two input formats:
  * 1. Numeric enum values: 0=Narrow, 1=Medium, 2=Wide
  * 2. String values: "narrow", "medium", "wide"
  *
  * @param width The width setting as a string or number
- * @param isHanzi Whether the text uses Hanzi characters (Chinese, Japanese)
- * @returns The number of characters per line
+ * @param _isHanzi Deprecated - no longer used, kept for backwards compatibility
+ * @returns Visual width in units (not character count)
  */
-export function convertLineWidth(width: string | number, isHanzi: boolean): number {
-  // Character counts for each width setting
-  const widthMap = isHanzi ? {narrow: 14, medium: 18, wide: 21} : {narrow: 30, medium: 38, wide: 44}
-  // : { narrow: 38, medium: 44, wide: 52 }
-
-  // Handle numeric enum values (0=Narrow, 1=Medium, 2=Wide)
-  if (typeof width === "number") {
-    switch (width) {
-      case 0:
-        return widthMap.narrow
-      case 1:
-        return widthMap.medium
-      case 2:
-        return widthMap.wide
-      default:
-        // If it's already a character count (e.g., 38, 44, 52), return as-is
-        // This handles cases where the value has already been converted
-        if (width > 2) {
-          return width
-        }
-        // Default to wide for invalid values
-        return widthMap.wide
-    }
-  }
-
-  // Handle string values ("narrow", "medium", "wide")
-  switch (width.toLowerCase()) {
-    case "narrow":
-    case "0":
-      return widthMap.narrow
-    case "medium":
-    case "1":
-      return widthMap.medium
-    case "wide":
-    case "2":
-      return widthMap.wide
-    default:
-      return widthMap.wide
-  }
+export function convertLineWidth(width: string | number, _isHanzi?: boolean): number {
+  // Use the visual width utilities for consistent handling
+  return getVisualWidthForSetting(width)
 }
+
+// Re-export the visual width settings for convenience
+export {VisualWidthSettings}

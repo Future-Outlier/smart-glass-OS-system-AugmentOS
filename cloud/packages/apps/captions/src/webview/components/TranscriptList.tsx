@@ -68,7 +68,7 @@ export function TranscriptList({ transcripts, isRecording, onToggleRecording, on
       {!autoScroll && transcripts.length > 0 && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-6 right-6 w-12 h-12 bg-black hover:bg-gray-800 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-10">
+          className="absolute bottom-6 right-6 w-12 h-12 bg-[#6DAEA6] hover:bg-[#6DAEA6]/95 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-10">
           <ChevronDown className="w-5 h-5" />
         </button>
       )}

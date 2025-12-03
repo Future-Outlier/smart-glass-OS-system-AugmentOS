@@ -1,25 +1,36 @@
-import {findChineseWordBoundary} from "../ChineseUtils"
+import {getTextVisualWidth, getCharWidth, isCJKCharacter, VISUAL_WIDTH_SAFETY_MARGIN} from "./visualWidth"
 
 export class TranscriptProcessor {
-  private maxCharsPerLine: number
+  private maxVisualWidth: number // Maximum visual width per line (not character count)
   private maxLines: number
   private lines: string[]
   private partialText: string
   private lastUserTranscript: string
   private finalTranscriptHistory: string[] // Array to store history of final transcripts
   private maxFinalTranscripts: number // Max number of final transcripts to keep
-  private isChinese: boolean
   private currentDisplayLines: string[] // Track current display lines to maintain consistency
 
-  constructor(maxCharsPerLine: number, maxLines: number, maxFinalTranscripts: number = 3, isChinese: boolean = false) {
-    this.maxCharsPerLine = maxCharsPerLine
+  /**
+   * Create a new TranscriptProcessor
+   *
+   * @param maxVisualWidth - Maximum visual width per line (1 unit = 1 Latin char, CJK = 2 units)
+   * @param maxLines - Maximum number of lines to display
+   * @param maxFinalTranscripts - Maximum number of final transcripts to keep in history
+   * @param _isChinese - Deprecated: No longer used, visual width handles all languages automatically
+   */
+  constructor(
+    maxVisualWidth: number,
+    maxLines: number,
+    maxFinalTranscripts: number = 3,
+    _isChinese: boolean = false, // Kept for backwards compatibility but no longer used
+  ) {
+    this.maxVisualWidth = maxVisualWidth
     this.maxLines = maxLines
     this.lastUserTranscript = ""
     this.lines = []
     this.partialText = ""
     this.finalTranscriptHistory = [] // Initialize empty history
     this.maxFinalTranscripts = maxFinalTranscripts // Default to 3 if not specified
-    this.isChinese = isChinese
     this.currentDisplayLines = [] // Initialize display lines
   }
 
@@ -33,7 +44,7 @@ export class TranscriptProcessor {
 
       // Combine final history with new partial text
       const combinedText = this.getCombinedTranscriptHistory() + " " + newText
-      this.currentDisplayLines = this.wrapText(combinedText, this.maxCharsPerLine)
+      this.currentDisplayLines = this.wrapTextByVisualWidth(combinedText.trim())
 
       // Ensure we have exactly maxLines
       while (this.currentDisplayLines.length < this.maxLines) {
@@ -53,7 +64,7 @@ export class TranscriptProcessor {
 
       // Use the same wrapping logic as partial to maintain consistency
       const combinedText = this.getCombinedTranscriptHistory()
-      this.currentDisplayLines = this.wrapText(combinedText, this.maxCharsPerLine)
+      this.currentDisplayLines = this.wrapTextByVisualWidth(combinedText.trim())
 
       // Ensure we have exactly maxLines
       while (this.currentDisplayLines.length < this.maxLines) {
@@ -113,14 +124,99 @@ export class TranscriptProcessor {
     return this.maxFinalTranscripts
   }
 
+  /**
+   * Wrap text by visual width instead of character count
+   * This properly handles mixed CJK and Latin text
+   *
+   * @param text - Text to wrap
+   * @returns Array of wrapped lines
+   */
+  private wrapTextByVisualWidth(text: string): string[] {
+    if (!text || text.trim() === "") {
+      return [""]
+    }
+
+    const result: string[] = []
+    const safeMaxWidth = this.maxVisualWidth * VISUAL_WIDTH_SAFETY_MARGIN
+
+    let remaining = text.trim()
+
+    while (remaining.length > 0) {
+      // Check if remaining text fits in one line
+      const remainingWidth = getTextVisualWidth(remaining)
+      if (remainingWidth <= safeMaxWidth) {
+        result.push(remaining)
+        break
+      }
+
+      // Find the best break point within visual width limit
+      const breakIndex = this.findVisualWidthBreakpoint(remaining, safeMaxWidth)
+
+      if (breakIndex <= 0) {
+        // Edge case: single character/word too wide, force break
+        result.push(remaining.charAt(0))
+        remaining = remaining.substring(1).trim()
+      } else {
+        const line = remaining.substring(0, breakIndex).trim()
+        result.push(line)
+        remaining = remaining.substring(breakIndex).trim()
+      }
+    }
+
+    return result.length > 0 ? result : [""]
+  }
+
+  /**
+   * Find the best break point within visual width limit
+   * Prefers breaking at word boundaries (spaces) or after CJK characters
+   *
+   * @param text - Text to find break point in
+   * @param maxWidth - Maximum visual width
+   * @returns Index of break point
+   */
+  private findVisualWidthBreakpoint(text: string, maxWidth: number): number {
+    let currentWidth = 0
+    let lastGoodBreakpoint = 0
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i]
+      const charWidth = getCharWidth(char)
+
+      // Would this character exceed the limit?
+      if (currentWidth + charWidth > maxWidth) {
+        // Return the last good breakpoint, or current position if none found
+        return lastGoodBreakpoint > 0 ? lastGoodBreakpoint : i
+      }
+
+      currentWidth += charWidth
+
+      // Track good breakpoints:
+      // 1. After a space (for Latin text word boundaries)
+      // 2. After a CJK character (CJK can break anywhere)
+      // 3. Before a CJK character following non-CJK
+      if (char === " ") {
+        lastGoodBreakpoint = i + 1 // Break after the space
+      } else if (isCJKCharacter(char)) {
+        lastGoodBreakpoint = i + 1 // Can break after any CJK character
+      } else if (i + 1 < text.length && isCJKCharacter(text[i + 1]) && !isCJKCharacter(char)) {
+        // Before a CJK character that follows non-CJK
+        lastGoodBreakpoint = i + 1
+      }
+    }
+
+    // If we get here, entire text fits
+    return text.length
+  }
+
   private appendToLines(chunk: string): void {
     if (this.lines.length === 0) {
       this.lines.push(chunk)
     } else {
       const lastLine = this.lines.pop() as string
       const candidate = lastLine === "" ? chunk : lastLine + " " + chunk
+      const candidateWidth = getTextVisualWidth(candidate)
 
-      if (candidate.length <= this.maxCharsPerLine) {
+      if (candidateWidth <= this.maxVisualWidth * VISUAL_WIDTH_SAFETY_MARGIN) {
         this.lines.push(candidate)
       } else {
         // Put back the last line if it doesn't fit
@@ -133,37 +229,6 @@ export class TranscriptProcessor {
     while (this.lines.length > this.maxLines) {
       this.lines.shift()
     }
-  }
-
-  private wrapText(text: string, maxLineLength: number): string[] {
-    const result: string[] = []
-    while (text !== "") {
-      if (text.length <= maxLineLength) {
-        result.push(text)
-        break
-      } else {
-        let splitIndex = maxLineLength
-
-        if (this.isChinese) {
-          // For Chinese text, find the last valid word boundary
-          splitIndex = findChineseWordBoundary(text, maxLineLength)
-        } else {
-          // For non-Chinese text, find the last space before maxLineLength
-          while (splitIndex > 0 && text.charAt(splitIndex) !== " ") {
-            splitIndex--
-          }
-          // If we didn't find a space, force split
-          if (splitIndex === 0) {
-            splitIndex = maxLineLength
-          }
-        }
-
-        const chunk = text.substring(0, splitIndex).trim()
-        result.push(chunk)
-        text = text.substring(splitIndex).trim()
-      }
-    }
-    return result
   }
 
   public getTranscript(): string {
@@ -191,10 +256,18 @@ export class TranscriptProcessor {
     this.lines = []
     this.partialText = ""
     this.finalTranscriptHistory = []
+    this.currentDisplayLines = []
   }
 
+  public getMaxVisualWidth(): number {
+    return this.maxVisualWidth
+  }
+
+  /**
+   * @deprecated Use getMaxVisualWidth() instead. Kept for backwards compatibility.
+   */
   public getMaxCharsPerLine(): number {
-    return this.maxCharsPerLine
+    return this.maxVisualWidth
   }
 
   public getMaxLines(): number {
