@@ -3,7 +3,7 @@ import {FC, createContext, useEffect, useState, useContext} from "react"
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import mentraAuth from "@/utils/auth/authClient"
 import {MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"
-import {AsyncResult} from "typesafe-ts"
+import * as Sentry from '@sentry/react-native';
 
 interface AuthContextProps {
   user: MentraAuthUser | null
@@ -44,13 +44,18 @@ export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
 
     // 2. Setup auth state change listener
     const setupAuthListener = async () => {
-      const res = await mentraAuth.onAuthStateChange((event, session: any) => {
+      const res = mentraAuth.onAuthStateChange((_event, session: any) => {
         // console.log("AuthContext: Auth state changed:", event)
         // console.log("AuthContext: Session:", session)
         // console.log("AuthContext: User:", session?.user)
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
+        // set sentry user:
+        Sentry.setUser({
+          id: session?.user?.id,
+          email: session?.user?.email,
+        })
       })
       if (res.is_ok()) {
         let changeData = res.value

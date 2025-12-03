@@ -8,6 +8,7 @@ import * as Clipboard from "expo-clipboard"
 import Toast from "react-native-toast-message"
 import showAlert from "@/utils/AlertUtils"
 import {useRef} from "react"
+import mentraAuth from "@/utils/auth/authClient"
 
 export const VersionInfo = () => {
   const {theme, themed} = useAppTheme()
@@ -64,15 +65,26 @@ export const VersionInfo = () => {
   }
 
   const handlePress = async () => {
-    const info = `
-    version: ${process.env.EXPO_PUBLIC_MENTRAOS_VERSION}
-    branch: ${process.env.EXPO_PUBLIC_BUILD_BRANCH}
-    time: ${process.env.EXPO_PUBLIC_BUILD_TIME}
-    commit: ${process.env.EXPO_PUBLIC_BUILD_COMMIT}
-    store_url: ${storeUrl}
-    backend_url: ${backendUrl}
-    `
-    await Clipboard.setStringAsync(info)
+    const res = await mentraAuth.getUser()
+    let user = null
+    if (res.is_ok()) {
+      user = res.value
+    }
+    const info = [
+      `version: ${process.env.EXPO_PUBLIC_MENTRAOS_VERSION}`,
+      `branch: ${process.env.EXPO_PUBLIC_BUILD_BRANCH}`,
+      `time: ${process.env.EXPO_PUBLIC_BUILD_TIME}`,
+      `commit: ${process.env.EXPO_PUBLIC_BUILD_COMMIT}`,
+      `store_url: ${storeUrl}`,
+      `backend_url: ${backendUrl}`,
+    ]
+
+    if (user) {
+      info.push(`id: ${user.id}`)
+      info.push(`email: ${user.email}`)
+    }
+
+    await Clipboard.setStringAsync(info.join("\n"))
     Toast.show({
       type: "info",
       text1: "Version info copied to clipboard",

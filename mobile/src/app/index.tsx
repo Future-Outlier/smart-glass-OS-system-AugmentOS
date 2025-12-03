@@ -35,10 +35,9 @@ const DEEPLINK_DELAY = 1000
 export default function InitScreen() {
   // Hooks
   const {theme, themed} = useAppTheme()
-  const {user, session} = useAuth()
+  const {user, session, loading: authLoading} = useAuth()
   const {replace, getPendingRoute, setPendingRoute} = useNavigationHistory()
   const {processUrl} = useDeeplink()
-  const {loading: authLoading} = useAuth()
 
   // State
   const [state, setState] = useState<ScreenState>("loading")
