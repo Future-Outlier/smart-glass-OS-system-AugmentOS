@@ -13,6 +13,7 @@ import {$styles, ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import StoreUrl from "@/components/dev/StoreUrl"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
@@ -101,6 +102,10 @@ export default function DeveloperSettingsScreen() {
         )}
 
         <BackendUrl />
+
+        <Spacer height={theme.spacing.s4} />
+
+        <StoreUrl />
 
         <Spacer height={theme.spacing.s4} />
         <Spacer height={theme.spacing.s12} />
