@@ -1,9 +1,10 @@
-import restComms from "@/services/RestComms"
-import {storage} from "@/utils/storage"
 import {getTimeZone} from "react-native-localize"
 import {AsyncResult, result as Res, Result} from "typesafe-ts"
 import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
+
+import restComms from "@/services/RestComms"
+import {storage} from "@/utils/storage"
 
 interface Setting {
   key: string
@@ -505,12 +506,22 @@ export const useSettingsStore = create<SettingsState>()(
     // batch update many settings from the server:
     setManyLocally: (settings: Record<string, any>): AsyncResult<void, Error> => {
       return Res.try_async(async () => {
-        // Update store immediately
-        set(state => ({
-          settings: {...state.settings, ...settings},
-        }))
-        // Persist all to storage
-        await Promise.all(Object.entries(settings).map(([key, value]) => storage.save(key, value)))
+        // // Update store immediately
+        // set(state => ({
+        //   settings: {...state.settings, ...settings},
+        // }))
+        // // check for persist key:
+        // // Persist all to storage
+        // await Promise.all(Object.entries(settings).map(([key, value]) => storage.save(key, value)))
+
+        // not as efficient but we must check the persistence key :/
+        const state = get()
+        for (const [key, value] of Object.entries(settings)) {
+          const res = await state.setSetting(key, value, false)
+          if (res.is_error()) {
+            console.error(`SETTINGS: couldn't set setting locally: ${key}: ${value}`, res.error)
+          }
+        }
       })
     },
     // loads any preferences that have been changed from the default and saved to DISK!
