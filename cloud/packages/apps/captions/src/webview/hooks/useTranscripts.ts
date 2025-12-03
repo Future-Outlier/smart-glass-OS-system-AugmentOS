@@ -1,4 +1,4 @@
-import {useState, useEffect, useRef, useCallback} from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 
 export interface Transcript {
   id: string
@@ -7,6 +7,13 @@ export interface Transcript {
   text: string
   timestamp: string | null
   isFinal: boolean
+}
+
+export interface DisplayPreview {
+  text: string
+  lines: string[]
+  isFinal: boolean
+  timestamp: number
 }
 
 // Reconnection configuration
@@ -21,10 +28,13 @@ export function useTranscripts() {
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
+  const [reconnectSecondsRemaining, setReconnectSecondsRemaining] = useState<number | null>(null)
+  const [displayPreview, setDisplayPreview] = useState<DisplayPreview | null>(null)
 
   // Refs for cleanup and state tracking
   const eventSourceRef = useRef<EventSource | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const heartbeatCheckRef = useRef<NodeJS.Timeout | null>(null)
   const lastActivityRef = useRef<number>(Date.now())
   const isConnectingRef = useRef(false)
@@ -39,6 +49,10 @@ export function useTranscripts() {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
       reconnectTimeoutRef.current = null
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+      countdownIntervalRef.current = null
     }
     if (heartbeatCheckRef.current) {
       clearInterval(heartbeatCheckRef.current)
@@ -65,11 +79,38 @@ export function useTranscripts() {
     const delay = getRetryDelay(attempt)
     console.log(`[SSE] Scheduling reconnect attempt ${attempt + 1}/${MAX_RECONNECT_ATTEMPTS} in ${delay}ms`)
 
-    setError(`Connection lost. Reconnecting in ${Math.round(delay / 1000)}s...`)
+    const secondsRemaining = Math.round(delay / 1000)
+    setReconnectSecondsRemaining(secondsRemaining)
+    setError(`Connection lost. Reconnecting in ${secondsRemaining}s...`)
     setReconnectAttempt(attempt)
+
+    // Clear any existing countdown interval
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+    }
+
+    // Update countdown every second
+    const startTime = Date.now()
+    countdownIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime
+      const remaining = Math.max(0, Math.round((delay - elapsed) / 1000))
+      setReconnectSecondsRemaining(remaining)
+      setError(`Connection lost. Reconnecting in ${remaining}s...`)
+
+      if (remaining <= 0 && countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current)
+        countdownIntervalRef.current = null
+      }
+    }, 1000)
 
     reconnectTimeoutRef.current = setTimeout(() => {
       if (mountedRef.current) {
+        // Clear countdown when actually reconnecting
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current)
+          countdownIntervalRef.current = null
+        }
+        setReconnectSecondsRemaining(null)
         connect(attempt + 1)
       }
     }, delay)
@@ -126,6 +167,7 @@ export function useTranscripts() {
         setConnected(true)
         setError(null)
         setReconnectAttempt(0)
+        setReconnectSecondsRemaining(null)
         lastActivityRef.current = Date.now()
         isConnectingRef.current = false
       }
@@ -155,6 +197,17 @@ export function useTranscripts() {
             window.dispatchEvent(
               new CustomEvent("settings_update", { detail: data.settings })
             )
+            return
+          }
+
+          // Handle display preview update
+          if (data.type === "display_preview") {
+            setDisplayPreview({
+              text: data.text,
+              lines: data.lines,
+              isFinal: data.isFinal,
+              timestamp: data.timestamp,
+            })
             return
           }
 
@@ -326,5 +379,6 @@ export function useTranscripts() {
     toggleRecording,
     clearTranscripts,
     reconnect,
+    displayPreview,
   }
 }

@@ -92,16 +92,28 @@ const expressApp = captionsApp.getExpressApp()
 const SSE_HEARTBEAT_INTERVAL_MS = 15000 // Send heartbeat every 15 seconds
 
 expressApp.get("/api/transcripts/stream", (req, res) => {
+  console.log(`[SSE] *** HIT /api/transcripts/stream route ***`)
+
   const authReq = req as any
   const userId = authReq.authUserId
 
+  console.log(`[SSE] /api/transcripts/stream request - userId: ${userId}`)
+  console.log(`[SSE] Request headers:`, JSON.stringify({
+    cookie: req.headers.cookie ? 'present' : 'missing',
+    authorization: req.headers.authorization ? 'present' : 'missing',
+  }))
+
   if (!userId) {
+    console.log("[SSE] Unauthorized - no userId")
     return res.status(401).send("Unauthorized")
   }
 
   const userSession = UserSession.getUserSession(userId)
+  console.log(`[SSE] UserSession lookup for ${userId}: ${userSession ? "FOUND" : "NOT FOUND"}`)
+  console.log(`[SSE] All UserSessions: ${Array.from(UserSession.userSessions.keys()).join(", ")}`)
 
   if (!userSession) {
+    console.log("[SSE] No active session for user")
     return res.status(404).send("No active session")
   }
 
@@ -132,7 +144,9 @@ expressApp.get("/api/transcripts/stream", (req, res) => {
   }
 
   // Register client
+  console.log(`[SSE] Registering SSE client for user ${userId}`)
   userSession.transcripts.addSSEClient(client)
+  console.log(`[SSE] SSE client registered. Total clients: ${userSession.transcripts["sseClients"].size}`)
 
   // Start heartbeat interval to keep connection alive
   const heartbeatInterval = setInterval(() => {

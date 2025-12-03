@@ -70,7 +70,7 @@ export function LanguageSelector({ currentLanguage, currentHints, onSave, onCanc
             <div className="px-6 py-4 flex flex-col gap-4 shrink-0">
                 <div className="flex flex-wrap gap-3">
                     {/* Primary Language Chip */}
-                    <div className="px-4 py-2 bg-[#6DAEA6] rounded-full flex items-center gap-2 shadow-sm">
+                    <div className="px-3 py-1.5 bg-[#6DAEA6] rounded-full flex items-center gap-2 shadow-sm">
                         <span className="text-lg">{getFlagEmoji(tempLanguage)}</span>
                         <span className="text-sm font-semibold text-white font-['Red_Hat_Display']">
                             {getLanguageName(tempLanguage)}
@@ -86,7 +86,7 @@ export function LanguageSelector({ currentLanguage, currentHints, onSave, onCanc
                     {tempHints.map((code) => (
                         <div
                             key={code}
-                            className="px-4 py-2 bg-[#6DAEA6] rounded-full flex items-center gap-2 shadow-sm">
+                            className="px-3 py-1.5 bg-[#6DAEA6] rounded-full flex items-center gap-2 shadow-sm">
                             <span className="text-lg">{getFlagEmoji(code)}</span>
                             <span className="text-sm font-semibold text-white font-['Red_Hat_Display']">
                                 {getLanguageName(code)}

@@ -2,14 +2,8 @@ import {ViewType} from "@mentra/sdk"
 import {TranscriptProcessor} from "../utils"
 import {UserSession} from "./UserSession"
 
-interface TranscriptDebouncer {
-  lastSentTime: number
-  timer: NodeJS.Timeout | null
-}
-
 export class DisplayManager {
   private processor: TranscriptProcessor
-  private debouncer: TranscriptDebouncer
   private inactivityTimer: NodeJS.Timeout | null = null
   private readonly userSession: UserSession
   private readonly logger: UserSession["logger"]
@@ -20,7 +14,6 @@ export class DisplayManager {
 
     // Initialize with defaults (will be updated by SettingsManager)
     this.processor = new TranscriptProcessor(30, 3, 30)
-    this.debouncer = {lastSentTime: 0, timer: null}
   }
 
   updateSettings(lineWidth: number, numberOfLines: number, isChineseLanguage: boolean): void {
@@ -46,50 +39,26 @@ export class DisplayManager {
     this.logger.info(`Processing transcript: "${text}" (final: ${isFinal})`)
     const formatted = this.processor.processString(text, isFinal)
     this.logger.info(`Formatted for display: "${formatted}"`)
-    this.debounceAndShow(formatted, isFinal)
+    this.showOnGlasses(formatted, isFinal)
     this.resetInactivityTimer()
-  }
-
-  private debounceAndShow(text: string, isFinal: boolean): void {
-    const debounceDelay = 400 // milliseconds
-
-    if (this.debouncer.timer) {
-      clearTimeout(this.debouncer.timer)
-      this.debouncer.timer = null
-    }
-
-    const now = Date.now()
-
-    // Show final transcripts immediately
-    if (isFinal) {
-      this.showOnGlasses(text, true)
-      this.debouncer.lastSentTime = now
-      return
-    }
-
-    // Throttle non-final transcripts
-    if (now - this.debouncer.lastSentTime >= debounceDelay) {
-      this.showOnGlasses(text, false)
-      this.debouncer.lastSentTime = now
-    } else {
-      this.debouncer.timer = setTimeout(() => {
-        this.showOnGlasses(text, false)
-        this.debouncer.lastSentTime = Date.now()
-      }, debounceDelay)
-    }
   }
 
   private showOnGlasses(text: string, isFinal: boolean): void {
     const cleaned = this.cleanTranscriptText(text)
+    const lines = cleaned.split("\n")
 
     this.logger.info(
       `Showing on glasses: "${cleaned}" (final: ${isFinal}, duration: ${isFinal ? "20s" : "indefinite"})`,
     )
 
+    // Send to glasses
     this.userSession.appSession.layouts.showTextWall(cleaned, {
       view: ViewType.MAIN,
       durationMs: isFinal ? 20000 : undefined,
     })
+
+    // Broadcast to webview preview
+    this.userSession.transcripts.broadcastDisplayPreview(cleaned, lines, isFinal)
   }
 
   private cleanTranscriptText(text: string): string {
@@ -119,9 +88,6 @@ export class DisplayManager {
   }
 
   dispose(): void {
-    if (this.debouncer.timer) {
-      clearTimeout(this.debouncer.timer)
-    }
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer)
     }

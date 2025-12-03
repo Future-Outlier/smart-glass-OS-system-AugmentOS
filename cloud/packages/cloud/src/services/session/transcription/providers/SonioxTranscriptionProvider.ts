@@ -574,6 +574,22 @@ class SonioxTranscriptionStream implements StreamInstance {
       }
 
       if (response.tokens && response.tokens.length > 0) {
+        // Debug: Log raw Soniox tokens to check speaker diarization
+        const tokensWithSpeaker = response.tokens.filter(
+          (t) => t.speaker !== undefined,
+        );
+        this.logger.debug(
+          {
+            streamId: this.id,
+            tokenCount: response.tokens.length,
+            tokensWithSpeaker: tokensWithSpeaker.length,
+            sampleToken: response.tokens[0],
+            speakers: [
+              ...new Set(response.tokens.map((t) => t.speaker).filter(Boolean)),
+            ],
+          },
+          `🔍 SONIOX RAW TOKENS: ${tokensWithSpeaker.length}/${response.tokens.length} have speaker field`,
+        );
         this.processSonioxTokens(response.tokens);
       }
     } catch (error) {

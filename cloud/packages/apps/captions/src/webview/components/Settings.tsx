@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react"
 import { CaptionSettings } from "@/hooks/useSettings"
+import { DisplayPreview } from "@/hooks/useTranscripts"
 
 interface SettingsProps {
   settings: CaptionSettings | null
+  displayPreview: DisplayPreview | null
   onUpdateDisplayLines: (lines: number) => Promise<boolean>
   onUpdateDisplayWidth: (width: number) => Promise<boolean>
 }
 
 export function Settings({
   settings,
+  displayPreview,
   onUpdateDisplayLines,
   onUpdateDisplayWidth,
 }: SettingsProps) {
@@ -54,10 +57,25 @@ export function Settings({
       {/* Preview Section */}
       <div className="space-y-3">
         <h3 className="text-base font-semibold text-gray-900 font-['Red_Hat_Display']">Preview</h3>
-        <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-          <p className="text-gray-800 text-lg font-['Red_Hat_Display'] leading-relaxed">
-            Understood. We&apos;re deciding between the options on page 3 and page 4, right?
-          </p>
+        <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100 min-h-[120px]">
+          {displayPreview?.text ? (
+            <div className="space-y-1">
+              {displayPreview.lines.map((line, i) => (
+                <p
+                  key={i}
+                  className={`text-lg font-['Red_Hat_Display'] leading-relaxed ${
+                    displayPreview.isFinal ? "text-gray-800" : "text-gray-500"
+                  }`}
+                >
+                  {line || "\u00A0"} {/* Non-breaking space for empty lines */}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400 text-lg font-['Red_Hat_Display'] leading-relaxed italic">
+              Captions will appear here
+            </p>
+          )}
         </div>
       </div>
 

@@ -20,7 +20,7 @@ export function App() {
     updateDisplayLines,
     updateDisplayWidth,
   } = useSettings()
-  const { transcripts, connected, error, isRecording, toggleRecording, clearTranscripts, reconnect } = useTranscripts()
+  const { transcripts, connected, error, isRecording, toggleRecording, clearTranscripts, reconnect, displayPreview } = useTranscripts()
 
   const handleSaveLanguage = async (language: string, hints: string[]) => {
     await updateLanguage(language)
@@ -41,6 +41,7 @@ export function App() {
           onUpdateHints={updateHints}
           onToggleLanguageSelector={() => setShowLanguageSelector(true)}
           onReconnect={reconnect}
+          isLanguageSelectorOpen={showLanguageSelector}
         />
       )}
 
@@ -56,6 +57,7 @@ export function App() {
         ) : activeTab === "settings" ? (
           <Settings
             settings={settings}
+            displayPreview={displayPreview}
             onUpdateDisplayLines={updateDisplayLines}
             onUpdateDisplayWidth={updateDisplayWidth}
           />

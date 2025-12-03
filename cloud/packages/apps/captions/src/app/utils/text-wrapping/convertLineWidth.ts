@@ -1,41 +1,52 @@
 /**
  * Converts a line width setting to a numeric character count
+ *
+ * Supports two input formats:
+ * 1. Numeric enum values: 0=Narrow, 1=Medium, 2=Wide
+ * 2. String values: "narrow", "medium", "wide"
+ *
  * @param width The width setting as a string or number
  * @param isHanzi Whether the text uses Hanzi characters (Chinese, Japanese)
  * @returns The number of characters per line
  */
 export function convertLineWidth(width: string | number, isHanzi: boolean): number {
-  if (typeof width === "number") return width
+  // Character counts for each width setting
+  const widthMap = isHanzi
+    ? { narrow: 14, medium: 18, wide: 21 }
+    : { narrow: 38, medium: 44, wide: 52 }
 
-  if (!isHanzi) {
-    switch (width.toLowerCase()) {
-      case "very narrow":
-        return 21
-      case "narrow":
-        return 30
-      case "medium":
-        return 38
-      case "wide":
-        return 44
-      case "very wide":
-        return 52
+  // Handle numeric enum values (0=Narrow, 1=Medium, 2=Wide)
+  if (typeof width === "number") {
+    switch (width) {
+      case 0:
+        return widthMap.narrow
+      case 1:
+        return widthMap.medium
+      case 2:
+        return widthMap.wide
       default:
-        return 45
+        // If it's already a character count (e.g., 38, 44, 52), return as-is
+        // This handles cases where the value has already been converted
+        if (width > 2) {
+          return width
+        }
+        // Default to wide for invalid values
+        return widthMap.wide
     }
-  } else {
-    switch (width.toLowerCase()) {
-      case "very narrow":
-        return 7
-      case "narrow":
-        return 10
-      case "medium":
-        return 14
-      case "wide":
-        return 18
-      case "very wide":
-        return 21
-      default:
-        return 14
-    }
+  }
+
+  // Handle string values ("narrow", "medium", "wide")
+  switch (width.toLowerCase()) {
+    case "narrow":
+    case "0":
+      return widthMap.narrow
+    case "medium":
+    case "1":
+      return widthMap.medium
+    case "wide":
+    case "2":
+      return widthMap.wide
+    default:
+      return widthMap.wide
   }
 }

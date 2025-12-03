@@ -1,6 +1,6 @@
 import CCIcon from "../assets/icons/path0.svg"
 import { CaptionSettings } from "../hooks/useSettings"
-import { getLanguageName } from "../lib/languages"
+import { getLanguageName, getFlagEmoji } from "../lib/languages"
 
 interface HeaderProps {
   connected: boolean
@@ -12,9 +12,10 @@ interface HeaderProps {
   onUpdateDisplayWidth?: (width: number) => Promise<boolean>
   onToggleLanguageSelector: () => void
   onReconnect: () => void
+  isLanguageSelectorOpen?: boolean
 }
 
-export function Header({ connected, error, settings, onToggleLanguageSelector, onReconnect }: HeaderProps) {
+export function Header({ connected, error, settings, onToggleLanguageSelector, onReconnect, isLanguageSelectorOpen = false }: HeaderProps) {
   return (
     <div className="w-full flex flex-col">
       {/* Top header bar */}
@@ -48,41 +49,79 @@ export function Header({ connected, error, settings, onToggleLanguageSelector, o
         </div>
       )}
 
-      {/* Language selector bar */}
-      <div className="w-full px-6 py-3 bg-white rounded-bl-2xl rounded-br-2xl backdrop-blur-lg flex justify-between items-center">
-        {settings && (
-          <button onClick={onToggleLanguageSelector} className="flex justify-center items-center gap-2">
-            {/* Connection status indicator */}
-            <div
-              className={`w-2 h-2 rounded-full transition-colors ${
-                connected ? "bg-green-500" : "bg-red-500"
-              }`}
-              style={connected ? { backgroundColor: "#6DAEA6" } : {}}
-              title={connected ? "Connected" : "Disconnected"}
-            />
-            <div className="text-foreground text-base font-medium font-['Red_Hat_Display'] leading-5">
-              {getLanguageName(settings.language)}
-            </div>
-          </button>
-        )}
+      {/* Language selector bar with chips - hidden when selector is open */}
+      {!isLanguageSelectorOpen && (
+        <button
+          onClick={onToggleLanguageSelector}
+          className="w-full px-3 py-3 bg-white rounded-bl-2xl rounded-br-2xl backdrop-blur-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+        >
+          {settings && (
+            <>
+              {/* Connection status indicator - before all chips */}
+              <div
+                className={`w-2.5 h-2.5 rounded-full flex-shrink-0 transition-colors ${connected ? "bg-green-500" : "bg-red-500"
+                  }`}
+                style={connected ? { backgroundColor: "#6DAEA6" } : {}}
+                title={connected ? "Connected" : "Disconnected"}
+              />
 
-        {/* Dropdown arrow */}
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M6 9L12 15L18 9"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-muted-foreground"
-          />
-        </svg>
-      </div>
+              {/* Scrollable chips container with fade-out edges */}
+              <div className="relative flex-1 min-w-0">
+                {/* Left fade gradient */}
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-white to-transparent pointer-events-none z-10" />
+
+                {/* Scrollable chips */}
+                <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+                  <div className="px-0"></div>
+                  {/* Primary language chip */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-[#6DAEA6] rounded-full flex-shrink-0">
+                    <span className="text-base">{getFlagEmoji(settings.language)}</span>
+                    <span className="text-sm font-semibold text-white font-['Red_Hat_Display']">
+                      {getLanguageName(settings.language)}
+                    </span>
+                  </div>
+
+                  {/* Hint chips */}
+                  {settings.languageHints && settings.languageHints.map((hint) => (
+                    <div
+                      key={hint}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-[#6DAEA6] rounded-full flex-shrink-0"
+                    >
+                      <span className="text-base">{getFlagEmoji(hint)}</span>
+                      <span className="text-sm font-semibold text-white font-['Red_Hat_Display']">
+                        {getLanguageName(hint)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="px-0"></div>
+                </div>
+
+                {/* Right fade gradient */}
+                <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
+              </div>
+
+              {/* Dropdown arrow - fixed at right edge, always visible */}
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="flex-shrink-0"
+              >
+                <path
+                  d="M6 9L12 15L18 9"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-gray-600"
+                />
+              </svg>
+            </>
+          )}
+        </button>
+      )}
     </div>
   )
 }

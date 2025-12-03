@@ -102,6 +102,7 @@ body::before {
   from {
     background-position: 0 0;
   }
+
   to {
     background-position: 256px 224px;
   }
@@ -111,12 +112,14 @@ body::before {
   from {
     transform: rotate(0);
   }
+
   to {
     transform: rotate(360deg);
   }
 }
 
 @media (prefers-reduced-motion) {
+
   *,
   ::before,
   ::after {
@@ -139,4 +142,16 @@ body::before {
 
 .delay-300 {
   animation-delay: 300ms;
+}
+
+/* Hide scrollbar while maintaining scroll functionality */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }

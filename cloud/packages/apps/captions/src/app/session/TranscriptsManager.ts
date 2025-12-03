@@ -182,9 +182,20 @@ export class TranscriptsManager {
       timestamp: entry.timestamp,
     }
 
+    this.logger.info({
+      sseClientCount: this.sseClients.size,
+      messageType: message.type,
+      text: message.text.substring(0, 50),
+    }, `📡 Broadcasting to ${this.sseClients.size} SSE clients`)
+
+    if (this.sseClients.size === 0) {
+      this.logger.warn("No SSE clients connected - transcript will not reach webview")
+    }
+
     for (const client of this.sseClients) {
       try {
         client.send(message)
+        this.logger.debug("Successfully sent to SSE client")
       } catch (error) {
         this.logger.error(`Failed to send to SSE client: ${error}`)
       }
@@ -203,6 +214,28 @@ export class TranscriptsManager {
   public removeSSEClient(client: SSEClient): void {
     this.sseClients.delete(client)
     this.logger.info(`SSE client disconnected. Total clients: ${this.sseClients.size}`)
+  }
+
+  /**
+   * Broadcast display preview to all connected SSE clients
+   * Called by DisplayManager when showing content on glasses
+   */
+  public broadcastDisplayPreview(text: string, lines: string[], isFinal: boolean): void {
+    const message = {
+      type: "display_preview",
+      text,
+      lines,
+      isFinal,
+      timestamp: Date.now(),
+    }
+
+    for (const client of this.sseClients) {
+      try {
+        client.send(message)
+      } catch (error) {
+        this.logger.error(`Failed to send display preview to SSE client: ${error}`)
+      }
+    }
   }
 
   /**
