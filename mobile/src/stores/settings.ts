@@ -537,6 +537,11 @@ export const useSettingsStore = create<SettingsState>()(
         }
 
         for (const setting of Object.values(SETTINGS)) {
+          // if the settings should not persist, don't load it:
+          if (!setting.persist) {
+            continue
+          }
+
           // load all subkeys for an indexed setting:
           if (setting?.indexer) {
             console.log(`SETTINGS: LOAD: ${setting.key} with indexer!`)
