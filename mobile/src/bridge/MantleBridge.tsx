@@ -307,6 +307,16 @@ export class MantleBridge {
             timestamp: data.timestamp,
           })
           break
+        case "version_info":
+          console.log("MantleBridge: Received version_info:", data)
+          useGlassesStore.getState().setGlassesInfo({
+            appVersion: data.app_version,
+            buildNumber: data.build_number,
+            modelName: data.device_model,
+            androidVersion: data.android_version,
+            otaVersionUrl: data.ota_version_url,
+          })
+          break
         default:
           console.log("Unknown event type:", data.type)
           break

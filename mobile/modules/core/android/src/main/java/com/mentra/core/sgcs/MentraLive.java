@@ -3042,6 +3042,9 @@ public class MentraLive extends SGCManager {
 
     @Override
     public String getConnectedBluetoothName() {
+        if (connectedDevice != null && connectedDevice.getName() != null) {
+            return connectedDevice.getName();
+        }
         return "";
     }
 
