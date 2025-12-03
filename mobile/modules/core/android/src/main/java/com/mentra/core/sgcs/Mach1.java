@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -428,46 +429,74 @@ public class Mach1 extends SGCManager {
     public Mach1() {
         super();
         this.type = DeviceTypes.MACH1;
+        Log.d(TAG, "Mach1 constructor started");
 
-        // Get context from Bridge (like G1 does)
-        this.context = Bridge.getContext();
+        try {
+            // Get context from Bridge (like G1 does)
+            this.context = Bridge.getContext();
+            Log.d(TAG, "Mach1: Got context from Bridge");
 
-        hasUltraliteControl = false;
-        screenIsClear = true;
-        goHomeHandler = new Handler();
-        screenOffHandler = new Handler();
-        killHandler = new Handler();
+            hasUltraliteControl = false;
+            screenIsClear = true;
+            goHomeHandler = new Handler(Looper.getMainLooper());
+            screenOffHandler = new Handler(Looper.getMainLooper());
+            killHandler = new Handler(Looper.getMainLooper());
+            Log.d(TAG, "Mach1: Handlers created");
 
-        rowTextsLiveNow = new ArrayList<Integer>();
+            rowTextsLiveNow = new ArrayList<Integer>();
 
-        // Initialize UltraliteSDK with valid context
-        ultraliteSdk = UltraliteSDK.get(context);
-        ultraliteListener = new UltraliteListener();
-        ultraliteSdk.addEventListener(ultraliteListener);
+            // Initialize UltraliteSDK with valid context
+            Log.d(TAG, "Mach1: About to initialize UltraliteSDK");
+            ultraliteSdk = UltraliteSDK.get(context);
+            Log.d(TAG, "Mach1: UltraliteSDK initialized");
 
-        // Set up LiveData observers using observeForever (no LifecycleOwner needed)
-        ultraliteConnectedLive = ultraliteSdk.getConnected();
-        ultraliteControlled = ultraliteSdk.getControlledByMe();
-        batteryStatusObserver = ultraliteSdk.getBatteryStatus();
+            ultraliteListener = new UltraliteListener();
+            ultraliteSdk.addEventListener(ultraliteListener);
+            Log.d(TAG, "Mach1: Event listener added");
 
-        // Create and register observers
-        connectedObserver = isConnected -> {
-            onUltraliteConnectedChange(isConnected);
-        };
-        ultraliteConnectedLive.observeForever(connectedObserver);
+            // Set up LiveData observers using observeForever (no LifecycleOwner needed)
+            ultraliteConnectedLive = ultraliteSdk.getConnected();
+            ultraliteControlled = ultraliteSdk.getControlledByMe();
+            batteryStatusObserver = ultraliteSdk.getBatteryStatus();
+            Log.d(TAG, "Mach1: LiveData references obtained");
 
-        controlledObserver = isControlled -> {
-            onUltraliteControlChanged(isControlled);
-        };
-        ultraliteControlled.observeForever(controlledObserver);
+            // Create observers
+            connectedObserver = isConnected -> {
+                onUltraliteConnectedChange(isConnected);
+            };
 
-        batteryObserver = batteryStatus -> {
-            onUltraliteBatteryChanged(batteryStatus);
-        };
-        batteryStatusObserver.observeForever(batteryObserver);
+            controlledObserver = isControlled -> {
+                onUltraliteControlChanged(isControlled);
+            };
 
-        Log.d(TAG, "Mach1 initialized with context and observers");
-        CoreManager.getInstance().handle_request_status();
+            batteryObserver = batteryStatus -> {
+                onUltraliteBatteryChanged(batteryStatus);
+            };
+
+            // Register observers on main thread (observeForever requires main thread)
+            new Handler(Looper.getMainLooper()).post(() -> {
+                try {
+                    ultraliteConnectedLive.observeForever(connectedObserver);
+                    Log.d(TAG, "Mach1: Connected observer registered");
+
+                    ultraliteControlled.observeForever(controlledObserver);
+                    Log.d(TAG, "Mach1: Controlled observer registered");
+
+                    batteryStatusObserver.observeForever(batteryObserver);
+                    Log.d(TAG, "Mach1: Battery observer registered");
+
+                    Log.d(TAG, "Mach1: All observers registered on main thread");
+                } catch (Exception e) {
+                    Log.e(TAG, "Mach1: Failed to register observers: " + e.getMessage(), e);
+                }
+            });
+
+            Log.d(TAG, "Mach1 initialized with context and observers");
+            CoreManager.getInstance().handle_request_status();
+        } catch (Exception e) {
+            Log.e(TAG, "Mach1 constructor FAILED with exception: " + e.getMessage(), e);
+            Bridge.log("Mach1 constructor FAILED: " + e.getMessage());
+        }
     }
 
     public void updateGlassesBrightness(int brightness) {
