@@ -1,14 +1,26 @@
 import {getTextVisualWidth, getCharWidth, isCJKCharacter, VISUAL_WIDTH_SAFETY_MARGIN} from "./visualWidth"
 
+/**
+ * Entry in the transcript history that preserves speaker information
+ */
+export interface TranscriptHistoryEntry {
+  text: string
+  speakerId?: string
+  hadSpeakerChange: boolean
+}
+
 export class TranscriptProcessor {
   private maxVisualWidth: number // Maximum visual width per line (not character count)
   private maxLines: number
   private lines: string[]
   private partialText: string
   private lastUserTranscript: string
-  private finalTranscriptHistory: string[] // Array to store history of final transcripts
+  private finalTranscriptHistory: TranscriptHistoryEntry[] // Array to store history of final transcripts with speaker info
   private maxFinalTranscripts: number // Max number of final transcripts to keep
   private currentDisplayLines: string[] // Track current display lines to maintain consistency
+  private lastSpeakerId: string | undefined = undefined // Track last speaker for combining history
+  private partialSpeakerId: string | undefined = undefined // Track speaker ID of current partial
+  private partialHadSpeakerChange: boolean = false // Track if current partial represents a speaker change
 
   /**
    * Create a new TranscriptProcessor
@@ -34,7 +46,21 @@ export class TranscriptProcessor {
     this.currentDisplayLines = [] // Initialize display lines
   }
 
-  public processString(newText: string | null, isFinal: boolean): string {
+  /**
+   * Process a transcription string and format it for display
+   *
+   * @param newText - The new transcription text
+   * @param isFinal - Whether this is a final transcription
+   * @param speakerId - Optional speaker ID from diarization
+   * @param speakerChanged - Whether the speaker changed from the previous transcription
+   * @returns Formatted string for display
+   */
+  public processString(
+    newText: string | null,
+    isFinal: boolean,
+    speakerId?: string,
+    speakerChanged?: boolean,
+  ): string {
     newText = newText === null ? "" : newText.trim()
 
     if (!isFinal) {
@@ -42,9 +68,22 @@ export class TranscriptProcessor {
       this.partialText = newText
       this.lastUserTranscript = newText
 
-      // Combine final history with new partial text
-      const combinedText = this.getCombinedTranscriptHistory() + " " + newText
-      this.currentDisplayLines = this.wrapTextByVisualWidth(combinedText.trim())
+      // Track speaker info for this partial
+      // If speakerChanged is true, remember it for subsequent interims from the same speaker
+      // This fixes the bug where the label disappears on the 2nd, 3rd, etc. interim
+      if (speakerChanged && speakerId) {
+        this.partialSpeakerId = speakerId
+        this.partialHadSpeakerChange = true
+      } else if (speakerId && speakerId !== this.partialSpeakerId) {
+        // Different speaker than tracked partial - this is a new speaker change
+        this.partialSpeakerId = speakerId
+        this.partialHadSpeakerChange = true
+      }
+      // If same speaker as tracked partial, keep partialHadSpeakerChange as-is
+
+      // Build display text from history + partial, using tracked speaker info
+      const displayText = this.buildDisplayText(newText, this.partialSpeakerId, this.partialHadSpeakerChange)
+      this.currentDisplayLines = this.wrapTextByVisualWidth(displayText)
 
       // Ensure we have exactly maxLines
       while (this.currentDisplayLines.length < this.maxLines) {
@@ -59,12 +98,20 @@ export class TranscriptProcessor {
       // We have a final text -> clear out the partial text to avoid duplication
       this.partialText = ""
 
-      // Add to transcript history when it's a final transcript
-      this.addToTranscriptHistory(newText)
+      // Use tracked partial speaker info if available (for when final comes after interims)
+      const finalSpeakerId = speakerId || this.partialSpeakerId
+      const finalSpeakerChanged = speakerChanged || this.partialHadSpeakerChange
 
-      // Use the same wrapping logic as partial to maintain consistency
-      const combinedText = this.getCombinedTranscriptHistory()
-      this.currentDisplayLines = this.wrapTextByVisualWidth(combinedText.trim())
+      // Clear partial speaker tracking since we're finalizing
+      this.partialSpeakerId = undefined
+      this.partialHadSpeakerChange = false
+
+      // Add to transcript history when it's a final transcript
+      this.addToTranscriptHistory(newText, finalSpeakerId, finalSpeakerChanged)
+
+      // Build display text from history only (no partial)
+      const displayText = this.buildDisplayText("", undefined, false)
+      this.currentDisplayLines = this.wrapTextByVisualWidth(displayText)
 
       // Ensure we have exactly maxLines
       while (this.currentDisplayLines.length < this.maxLines) {
@@ -78,11 +125,68 @@ export class TranscriptProcessor {
     }
   }
 
-  // Add to transcript history
-  private addToTranscriptHistory(transcript: string): void {
+  /**
+   * Build the display text from history and optional partial text
+   * Adds speaker labels [N]: when speaker changes, always on a new line
+   */
+  private buildDisplayText(partialText: string, partialSpeakerId?: string, partialSpeakerChanged?: boolean): string {
+    let result = ""
+
+    // Add history entries with speaker labels
+    for (const entry of this.finalTranscriptHistory) {
+      if (entry.hadSpeakerChange && entry.speakerId) {
+        // Speaker change: add newline before label (if not at start)
+        if (result.length > 0) {
+          result += "\n"
+        }
+        result += `[${entry.speakerId}]: ${entry.text}`
+      } else {
+        // Same speaker: append with space
+        if (result.length > 0) {
+          result += " "
+        }
+        result += entry.text
+      }
+    }
+
+    // Add partial text if present
+    if (partialText) {
+      if (partialSpeakerChanged && partialSpeakerId) {
+        // Speaker change: add newline before label (if not at start)
+        if (result.length > 0) {
+          result += "\n"
+        }
+        result += `[${partialSpeakerId}]: ${partialText}`
+      } else {
+        // Same speaker: append with space
+        if (result.length > 0) {
+          result += " "
+        }
+        result += partialText
+      }
+    }
+
+    return result
+  }
+
+  /**
+   * Add a transcript to history with speaker information
+   */
+  private addToTranscriptHistory(transcript: string, speakerId?: string, speakerChanged?: boolean): void {
     if (transcript.trim() === "") return // Don't add empty transcripts
 
-    this.finalTranscriptHistory.push(transcript)
+    const entry: TranscriptHistoryEntry = {
+      text: transcript,
+      speakerId,
+      hadSpeakerChange: speakerChanged || false,
+    }
+
+    this.finalTranscriptHistory.push(entry)
+
+    // Track the speaker for future reference
+    if (speakerId) {
+      this.lastSpeakerId = speakerId
+    }
 
     // Ensure we don't exceed maxFinalTranscripts
     while (this.finalTranscriptHistory.length > this.maxFinalTranscripts) {
@@ -90,14 +194,19 @@ export class TranscriptProcessor {
     }
   }
 
-  // Get the transcript history
-  public getFinalTranscriptHistory(): string[] {
+  /**
+   * Get the transcript history with speaker information preserved
+   */
+  public getFinalTranscriptHistory(): TranscriptHistoryEntry[] {
     return [...this.finalTranscriptHistory] // Return a copy to prevent external modification
   }
 
-  // Get combined transcript history as a single string
+  /**
+   * Get combined transcript history as a single string (for backwards compatibility)
+   * Note: This doesn't include speaker labels - use buildDisplayText for that
+   */
   public getCombinedTranscriptHistory(): string {
-    return this.finalTranscriptHistory.join(" ")
+    return this.finalTranscriptHistory.map((entry) => entry.text).join(" ")
   }
 
   // Get current display lines (for refreshing display after settings change)
@@ -127,6 +236,7 @@ export class TranscriptProcessor {
   /**
    * Wrap text by visual width instead of character count
    * This properly handles mixed CJK and Latin text
+   * Preserves explicit newlines (used for speaker change labels)
    *
    * @param text - Text to wrap
    * @returns Array of wrapped lines
@@ -139,27 +249,37 @@ export class TranscriptProcessor {
     const result: string[] = []
     const safeMaxWidth = this.maxVisualWidth * VISUAL_WIDTH_SAFETY_MARGIN
 
-    let remaining = text.trim()
+    // Split by explicit newlines first (from speaker changes)
+    const paragraphs = text.split("\n")
 
-    while (remaining.length > 0) {
-      // Check if remaining text fits in one line
-      const remainingWidth = getTextVisualWidth(remaining)
-      if (remainingWidth <= safeMaxWidth) {
-        result.push(remaining)
-        break
+    for (const paragraph of paragraphs) {
+      let remaining = paragraph.trim()
+
+      if (remaining === "") {
+        // Preserve empty lines if needed
+        continue
       }
 
-      // Find the best break point within visual width limit
-      const breakIndex = this.findVisualWidthBreakpoint(remaining, safeMaxWidth)
+      while (remaining.length > 0) {
+        // Check if remaining text fits in one line
+        const remainingWidth = getTextVisualWidth(remaining)
+        if (remainingWidth <= safeMaxWidth) {
+          result.push(remaining)
+          break
+        }
 
-      if (breakIndex <= 0) {
-        // Edge case: single character/word too wide, force break
-        result.push(remaining.charAt(0))
-        remaining = remaining.substring(1).trim()
-      } else {
-        const line = remaining.substring(0, breakIndex).trim()
-        result.push(line)
-        remaining = remaining.substring(breakIndex).trim()
+        // Find the best break point within visual width limit
+        const breakIndex = this.findVisualWidthBreakpoint(remaining, safeMaxWidth)
+
+        if (breakIndex <= 0) {
+          // Edge case: single character/word too wide, force break
+          result.push(remaining.charAt(0))
+          remaining = remaining.substring(1).trim()
+        } else {
+          const line = remaining.substring(0, breakIndex).trim()
+          result.push(line)
+          remaining = remaining.substring(breakIndex).trim()
+        }
       }
     }
 
@@ -257,6 +377,9 @@ export class TranscriptProcessor {
     this.partialText = ""
     this.finalTranscriptHistory = []
     this.currentDisplayLines = []
+    this.lastSpeakerId = undefined
+    this.partialSpeakerId = undefined
+    this.partialHadSpeakerChange = false
   }
 
   public getMaxVisualWidth(): number {

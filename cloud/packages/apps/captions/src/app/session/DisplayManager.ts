@@ -7,6 +7,7 @@ export class DisplayManager {
   private inactivityTimer: NodeJS.Timeout | null = null
   private readonly userSession: UserSession
   private readonly logger: UserSession["logger"]
+  private lastSpeakerId: string | undefined = undefined // Track last speaker for change detection
 
   constructor(userSession: UserSession) {
     this.userSession = userSession
@@ -30,12 +31,11 @@ export class DisplayManager {
     const previousHistory = this.processor.getFinalTranscriptHistory()
 
     // Create new processor with updated settings
-    // Note: isChinese parameter is deprecated - visual width handles all languages automatically
     this.processor = new TranscriptProcessor(visualWidth, numberOfLines, 30)
 
-    // Restore transcript history
-    for (const transcript of previousHistory) {
-      this.processor.processString(transcript, true)
+    // Restore transcript history (with speaker info preserved)
+    for (const entry of previousHistory) {
+      this.processor.processString(entry.text, true, entry.speakerId, entry.hadSpeakerChange)
     }
 
     this.logger.info(`Preserved ${previousHistory.length} transcripts after settings change`)
@@ -59,7 +59,6 @@ export class DisplayManager {
 
     // Get the current formatted display from processor
     const currentDisplay = this.processor.getCurrentDisplay()
-    const displayLines = this.processor.getCurrentDisplayLines()
 
     if (currentDisplay.trim()) {
       const cleaned = this.cleanTranscriptText(currentDisplay)
@@ -82,12 +81,24 @@ export class DisplayManager {
    * Process transcription text and display on glasses
    * @param text - The transcription text
    * @param isFinal - Whether this is a final transcription
-   * @param speakerId - Optional speaker ID from diarization (for future speaker labels feature)
+   * @param speakerId - Optional speaker ID from diarization
    */
   processAndDisplay(text: string, isFinal: boolean, speakerId?: string): void {
-    this.logger.info(`Processing transcript: "${text}" (final: ${isFinal}, speaker: ${speakerId || "unknown"})`)
-    const formatted = this.processor.processString(text, isFinal)
-    this.logger.info(`Formatted for display: "${formatted}"`)
+    // Detect speaker change
+    const speakerChanged = speakerId !== undefined && speakerId !== this.lastSpeakerId
+
+    if (speakerChanged) {
+      this.logger.info(`Speaker changed: ${this.lastSpeakerId || "none"} -> ${speakerId}`)
+      this.lastSpeakerId = speakerId
+    }
+
+    this.logger.info(
+      `Processing transcript: "${text.substring(0, 50)}..." (final: ${isFinal}, speaker: ${speakerId || "unknown"}, changed: ${speakerChanged})`,
+    )
+
+    // Pass speaker info to processor
+    const formatted = this.processor.processString(text, isFinal, speakerId, speakerChanged)
+    this.logger.info(`Formatted for display: "${formatted.substring(0, 100)}..."`)
     this.showOnGlasses(formatted, isFinal)
     this.resetInactivityTimer()
   }
@@ -97,7 +108,7 @@ export class DisplayManager {
     const lines = cleaned.split("\n")
 
     this.logger.info(
-      `Showing on glasses: "${cleaned}" (final: ${isFinal}, duration: ${isFinal ? "20s" : "indefinite"})`,
+      `Showing on glasses: "${cleaned.substring(0, 100)}..." (final: ${isFinal}, duration: ${isFinal ? "20s" : "indefinite"})`,
     )
 
     // Send to glasses
@@ -114,7 +125,22 @@ export class DisplayManager {
     // Remove leading punctuation marks (both Western and Chinese)
     // Western: . , ; : ! ?
     // Chinese: 。 ， ； ： ！ ？
-    return text.replace(/^[.,;:!?。，；：！？]+/, "").trim()
+    // But preserve speaker labels like [1]: at the start of lines
+    return text
+      .split("\n")
+      .map((line) => {
+        // Check if line starts with speaker label [N]:
+        const speakerLabelMatch = line.match(/^\[\d+\]:\s*/)
+        if (speakerLabelMatch) {
+          // Preserve the label, clean the rest
+          const label = speakerLabelMatch[0]
+          const rest = line.substring(label.length)
+          return label + rest.replace(/^[.,;:!?。，；：！？]+/, "").trim()
+        }
+        // No speaker label, clean normally
+        return line.replace(/^[.,;:!?。，；：！？]+/, "").trim()
+      })
+      .join("\n")
   }
 
   private resetInactivityTimer(): void {
@@ -127,6 +153,7 @@ export class DisplayManager {
       this.logger.info("Clearing transcript processor history due to inactivity")
 
       this.processor.clear()
+      this.lastSpeakerId = undefined // Reset speaker tracking
 
       // Show empty state to clear the glasses display
       this.userSession.appSession.layouts.showTextWall("", {

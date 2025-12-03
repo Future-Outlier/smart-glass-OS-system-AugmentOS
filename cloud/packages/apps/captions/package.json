@@ -5,6 +5,7 @@
   "module": "src/index.ts",
   "scripts": {
     "dev": "bun --watch src/index.ts",
+    "test": "bun test src/app/utils",
     "ngrok": "ngrok http 3333 --url https://isaiah-tpa.ngrok.app",
     "build:webview": "bun run build.ts",
     "prebuild": "bun run build:webview",
