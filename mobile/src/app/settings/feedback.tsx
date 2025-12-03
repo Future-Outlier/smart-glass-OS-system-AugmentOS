@@ -39,8 +39,19 @@ export default function FeedbackPage() {
   const {theme, themed} = useAppTheme()
   const apps = useAppletStatusStore(state => state.apps)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+
+  // Glasses info for bug reports
   const glassesConnected = useGlassesStore(state => state.connected)
   const glassesModelName = useGlassesStore(state => state.modelName)
+  const glassesBluetoothName = useGlassesStore(state => state.bluetoothName)
+  const glassesBuildNumber = useGlassesStore(state => state.buildNumber)
+  const glassesFwVersion = useGlassesStore(state => state.fwVersion)
+  const glassesAppVersion = useGlassesStore(state => state.appVersion)
+  const glassesSerialNumber = useGlassesStore(state => state.serialNumber)
+  const glassesAndroidVersion = useGlassesStore(state => state.androidVersion)
+  const glassesWifiConnected = useGlassesStore(state => state.wifiConnected)
+  const glassesWifiSsid = useGlassesStore(state => state.wifiSsid)
+  const glassesBatteryLevel = useGlassesStore(state => state.batteryLevel)
 
   const [userEmail, setUserEmail] = useState("")
 
@@ -151,23 +162,39 @@ export default function FeedbackPage() {
     const buildTime = process.env.EXPO_PUBLIC_BUILD_TIME || "time"
     const buildUser = process.env.EXPO_PUBLIC_BUILD_USER || "user"
 
-    // Glasses info
-    const connectedGlassesModel = glassesConnected ? glassesModelName : "Not connected"
-
     // Running apps
     const runningApps = apps.filter(app => app.running).map(app => app.packageName)
     const runningAppsText = runningApps.length > 0 ? runningApps.join(", ") : "None"
 
+    // Build glasses info section (only if glasses are connected and have info)
+    const glassesBluetoothId = glassesBluetoothName?.split("_").pop() || glassesBluetoothName
+    const glassesInfoHtml = glassesConnected
+      ? `
+    <h3 style="color: #666; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">🕶️ Glasses Information</h3>
+    <table>
+      <tr><th>Model</th><td>${glassesModelName || "Unknown"}</td></tr>
+      ${glassesBluetoothId ? `<tr><th>Device ID</th><td>${glassesBluetoothId}</td></tr>` : ""}
+      ${glassesSerialNumber ? `<tr><th>Serial Number</th><td>${glassesSerialNumber}</td></tr>` : ""}
+      ${glassesBuildNumber ? `<tr><th>Build Number</th><td>${glassesBuildNumber}</td></tr>` : ""}
+      ${glassesFwVersion ? `<tr><th>Firmware Version</th><td>${glassesFwVersion}</td></tr>` : ""}
+      ${glassesAppVersion ? `<tr><th>Glasses App Version</th><td>${glassesAppVersion}</td></tr>` : ""}
+      ${glassesAndroidVersion ? `<tr><th>Android Version</th><td>${glassesAndroidVersion}</td></tr>` : ""}
+      <tr><th>WiFi Connected</th><td>${glassesWifiConnected ? "Yes" : "No"}</td></tr>
+      ${glassesWifiConnected && glassesWifiSsid ? `<tr><th>WiFi Network</th><td>${glassesWifiSsid}</td></tr>` : ""}
+      ${glassesBatteryLevel >= 0 ? `<tr><th>Battery Level</th><td>${glassesBatteryLevel}%</td></tr>` : ""}
+    </table>`
+      : ""
+
     // Add diagnostic info to HTML
     const diagnosticInfoHtml = `
-    <h3 style="color: #666; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">System Information</h3>
+    <h3 style="color: #666; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">📱 System Information</h3>
     <table>
       ${isApplePrivateRelay && email ? `<tr><th>Contact Email</th><td>${email}</td></tr>` : ""}
       <tr><th>App Version</th><td>${appVersion}</td></tr>
       <tr><th>Device</th><td>${deviceName}</td></tr>
       <tr><th>OS</th><td>${osVersion}</td></tr>
       <tr><th>Platform</th><td>${Platform.OS}</td></tr>
-      <tr><th>Connected Glasses</th><td>${connectedGlassesModel}</td></tr>
+      <tr><th>Glasses Connected</th><td>${glassesConnected ? "Yes" : "No"}</td></tr>
       <tr><th>Default Wearable</th><td>${defaultWearable}</td></tr>
       <tr><th>Running Apps</th><td>${runningAppsText}</td></tr>
       ${isBetaBuild ? `<tr><th>Beta Build</th><td>Yes</td></tr>` : ""}
@@ -177,6 +204,7 @@ export default function FeedbackPage() {
       <tr><th>Build Time</th><td>${buildTime}</td></tr>
       <tr><th>Build User</th><td>${buildUser}</td></tr>
     </table>
+    ${glassesInfoHtml}
   </div>
 </body>
 </html>`
