@@ -1,9 +1,9 @@
+import * as Sentry from "@sentry/react-native"
 import {FC, createContext, useEffect, useState, useContext} from "react"
 
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import mentraAuth from "@/utils/auth/authClient"
 import {MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"
-import * as Sentry from '@sentry/react-native';
 
 interface AuthContextProps {
   user: MentraAuthUser | null
@@ -57,6 +57,7 @@ export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
           email: session?.user?.email,
         })
       })
+      console.log("AuthContext: setupAuthListener()", res)
       if (res.is_ok()) {
         let changeData = res.value
         if (changeData.data?.subscription) {

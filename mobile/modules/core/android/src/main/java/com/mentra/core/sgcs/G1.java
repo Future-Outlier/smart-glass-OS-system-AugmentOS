@@ -2345,7 +2345,7 @@ public class G1 extends SGCManager {
         // }
 
         // List<byte[]> chunks = createTextWallChunks(a);
-        if (a.trim().isEmpty()) {
+        if (a.isEmpty()) {
             clearDisplay();
             return;
         }
