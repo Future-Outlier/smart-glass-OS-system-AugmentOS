@@ -248,7 +248,6 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
-  gallery_mode: {key: "gallery_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
   // button settings
   button_mode: {key: "button_mode", defaultValue: () => "photo", writable: true, saveOnServer: true, persist: true},
   button_photo_size: {
@@ -318,6 +317,7 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  gallery_mode: {key: "gallery_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
   // button action settings
   default_button_action_enabled: {
     key: "default_button_action_enabled",
@@ -370,7 +370,6 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.auto_brightness.key,
   SETTINGS.dashboard_height.key,
   SETTINGS.dashboard_depth.key,
-  SETTINGS.gallery_mode.key,
   // button:
   SETTINGS.button_mode.key,
   SETTINGS.button_photo_size.key,
@@ -382,6 +381,7 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.device_address.key,
   // offline applets:
   SETTINGS.offline_captions_running.key,
+  SETTINGS.gallery_mode.key,
   // SETTINGS.offline_camera_running.key,
   // notifications:
   SETTINGS.notifications_enabled.key,
@@ -436,8 +436,7 @@ export const useSettingsStore = create<SettingsState>()(
         const originalKey = key
 
         if (!setting) {
-          console.error(`SETTINGS: SET: ${originalKey} is not a valid setting!`)
-          return
+          throw new Error(`SETTINGS: SET: ${originalKey} is not a valid setting!`)
         }
 
         if (setting.indexer) {
@@ -445,8 +444,7 @@ export const useSettingsStore = create<SettingsState>()(
         }
 
         if (!setting.writable) {
-          console.error(`SETTINGS: ${originalKey} is not writable!`)
-          return
+          throw new Error(`SETTINGS: ${originalKey} is not writable!`)
         }
 
         // Update store immediately for optimistic UI
@@ -458,14 +456,14 @@ export const useSettingsStore = create<SettingsState>()(
         if (setting.persist) {
           let res = await storage.save(key, value)
           if (res.is_error()) {
-            console.error(`SETTINGS: couldn't save setting to storage: `, res.error)
+            throw new Error(`SETTINGS: couldn't save setting to storage: ${res.error}`)
           }
 
           // Sync with server if needed
           if (updateServer) {
             const result = await restComms.writeUserSettings({[key]: value})
             if (result.is_error()) {
-              console.log("SETTINGS: couldn't sync setting to server: ", result.error)
+              throw new Error(`SETTINGS: couldn't sync setting to server: ${result.error}`)
             }
           }
         }
@@ -506,22 +504,25 @@ export const useSettingsStore = create<SettingsState>()(
     // batch update many settings from the server:
     setManyLocally: (settings: Record<string, any>): AsyncResult<void, Error> => {
       return Res.try_async(async () => {
-        // // Update store immediately
-        // set(state => ({
-        //   settings: {...state.settings, ...settings},
-        // }))
-        // // check for persist key:
-        // // Persist all to storage
-        // await Promise.all(Object.entries(settings).map(([key, value]) => storage.save(key, value)))
-
-        // not as efficient but we must check the persistence key :/
-        const state = get()
+        const settingsToLoad: Record<string, any> = {}
+        // if a setting should not persist, don't load it:
         for (const [key, value] of Object.entries(settings)) {
-          const res = await state.setSetting(key, value, false)
-          if (res.is_error()) {
-            console.error(`SETTINGS: couldn't set setting locally: ${key}: ${value}`, res.error)
+          const stg: Setting | undefined = SETTINGS[key.toLowerCase()]
+          if (!stg) {
+            continue
           }
+          if (!stg.persist) {
+            continue
+          }
+          settingsToLoad[key.toLowerCase()] = value
         }
+
+        set(state => ({
+          settings: {...state.settings, ...settingsToLoad},
+        }))
+
+        // save to storage:
+        await Promise.all(Object.entries(settingsToLoad).map(([key, value]) => storage.save(key, value)))
       })
     },
     // loads any preferences that have been changed from the default and saved to DISK!
@@ -537,6 +538,11 @@ export const useSettingsStore = create<SettingsState>()(
         }
 
         for (const setting of Object.values(SETTINGS)) {
+          // if the settings should not persist, don't load it:
+          if (!setting.persist) {
+            continue
+          }
+
           // load all subkeys for an indexed setting:
           if (setting?.indexer) {
             console.log(`SETTINGS: LOAD: ${setting.key} with indexer!`)

@@ -668,6 +668,10 @@ class G1: NSObject, SGCManager {
         }
 
         // let chunks = textHelper.createTextWallChunks(text)
+        if text.isEmpty {
+            clearDisplay()
+            return
+        }
         let chunks = textHelper.chunkTextForTransmission(text)
         queueChunks(chunks, sleepAfterMs: 10)
     }

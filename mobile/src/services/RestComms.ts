@@ -359,10 +359,10 @@ class RestComms {
     }
     interface Response {
       success: boolean
-      data: any
+      data: {settings: Record<string, any>}
     }
     const res = this.authenticatedRequest<Response>(config)
-    return res.map(response => response.data)
+    return res.map(response => response.data.settings)
   }
 
   // Error Reporting
