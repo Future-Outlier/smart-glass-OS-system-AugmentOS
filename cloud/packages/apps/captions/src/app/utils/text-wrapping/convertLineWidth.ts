@@ -11,9 +11,8 @@
  */
 export function convertLineWidth(width: string | number, isHanzi: boolean): number {
   // Character counts for each width setting
-  const widthMap = isHanzi
-    ? { narrow: 14, medium: 18, wide: 21 }
-    : { narrow: 38, medium: 44, wide: 52 }
+  const widthMap = isHanzi ? {narrow: 14, medium: 18, wide: 21} : {narrow: 30, medium: 38, wide: 44}
+  // : { narrow: 38, medium: 44, wide: 52 }
 
   // Handle numeric enum values (0=Narrow, 1=Medium, 2=Wide)
   if (typeof width === "number") {

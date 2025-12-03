@@ -1,6 +1,8 @@
-import {TranscriptionData} from "@mentra/sdk"
-import {UserSession} from "./UserSession"
 import {randomUUID} from "crypto"
+
+import {TranscriptionData} from "@mentra/sdk"
+
+import {UserSession} from "./UserSession"
 
 export interface TranscriptEntry {
   id: string
@@ -40,12 +42,15 @@ export class TranscriptsManager {
   }
 
   private async onTranscription(transcriptData: TranscriptionData) {
-    this.logger.info({
-      text: transcriptData.text,
-      isFinal: transcriptData.isFinal,
-      utteranceId: transcriptData.utteranceId,
-      speakerId: transcriptData.speakerId,
-    }, `Received transcription: ${transcriptData.text} (final: ${transcriptData.isFinal})`)
+    this.logger.info(
+      {
+        text: transcriptData.text,
+        isFinal: transcriptData.isFinal,
+        utteranceId: transcriptData.utteranceId,
+        speakerId: transcriptData.speakerId,
+      },
+      `Received transcription: ${transcriptData.text} (final: ${transcriptData.isFinal})`,
+    )
 
     const entry = this.createEntry(transcriptData)
 
@@ -98,24 +103,28 @@ export class TranscriptsManager {
    * This handles both interim updates and interim->final transitions correctly
    */
   private updateByUtteranceId(entry: TranscriptEntry): void {
-    const existingIndex = this.transcripts.findIndex(
-      (t) => t.utteranceId === entry.utteranceId
-    )
+    const existingIndex = this.transcripts.findIndex((t) => t.utteranceId === entry.utteranceId)
 
     if (existingIndex >= 0) {
       // Replace existing entry (interim->interim or interim->final)
       this.transcripts[existingIndex] = entry
-      this.logger.debug({
-        utteranceId: entry.utteranceId,
-        isFinal: entry.isFinal,
-      }, `Updated transcript for utterance`)
+      this.logger.debug(
+        {
+          utteranceId: entry.utteranceId,
+          isFinal: entry.isFinal,
+        },
+        `Updated transcript for utterance`,
+      )
     } else {
       // New utterance
       this.transcripts.push(entry)
-      this.logger.debug({
-        utteranceId: entry.utteranceId,
-        isFinal: entry.isFinal,
-      }, `Added new transcript for utterance`)
+      this.logger.debug(
+        {
+          utteranceId: entry.utteranceId,
+          isFinal: entry.isFinal,
+        },
+        `Added new transcript for utterance`,
+      )
     }
 
     // Enforce max transcripts limit (keep only final transcripts when trimming)
@@ -182,11 +191,14 @@ export class TranscriptsManager {
       timestamp: entry.timestamp,
     }
 
-    this.logger.info({
-      sseClientCount: this.sseClients.size,
-      messageType: message.type,
-      text: message.text.substring(0, 50),
-    }, `📡 Broadcasting to ${this.sseClients.size} SSE clients`)
+    this.logger.info(
+      {
+        sseClientCount: this.sseClients.size,
+        messageType: message.type,
+        text: message.text.substring(0, 50),
+      },
+      `📡 Broadcasting to ${this.sseClients.size} SSE clients`,
+    )
 
     if (this.sseClients.size === 0) {
       this.logger.warn("No SSE clients connected - transcript will not reach webview")
@@ -212,8 +224,12 @@ export class TranscriptsManager {
   }
 
   public removeSSEClient(client: SSEClient): void {
+    const hadClient = this.sseClients.has(client)
+    const sizeBefore = this.sseClients.size
     this.sseClients.delete(client)
-    this.logger.info(`SSE client disconnected. Total clients: ${this.sseClients.size}`)
+    this.logger.info(
+      `SSE client disconnected. Had client: ${hadClient}, Before: ${sizeBefore}, After: ${this.sseClients.size}`,
+    )
   }
 
   /**
@@ -228,6 +244,16 @@ export class TranscriptsManager {
       isFinal,
       timestamp: Date.now(),
     }
+
+    this.logger.debug(
+      {
+        sseClientCount: this.sseClients.size,
+        isFinal,
+        textLength: text.length,
+        lineCount: lines.length,
+      },
+      `📺 Broadcasting display preview to ${this.sseClients.size} SSE clients`,
+    )
 
     for (const client of this.sseClients) {
       try {

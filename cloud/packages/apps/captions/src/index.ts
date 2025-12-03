@@ -98,10 +98,13 @@ expressApp.get("/api/transcripts/stream", (req, res) => {
   const userId = authReq.authUserId
 
   console.log(`[SSE] /api/transcripts/stream request - userId: ${userId}`)
-  console.log(`[SSE] Request headers:`, JSON.stringify({
-    cookie: req.headers.cookie ? 'present' : 'missing',
-    authorization: req.headers.authorization ? 'present' : 'missing',
-  }))
+  console.log(
+    `[SSE] Request headers:`,
+    JSON.stringify({
+      cookie: req.headers.cookie ? "present" : "missing",
+      authorization: req.headers.authorization ? "present" : "missing",
+    }),
+  )
 
   if (!userId) {
     console.log("[SSE] Unauthorized - no userId")
@@ -130,18 +133,27 @@ expressApp.get("/api/transcripts/stream", (req, res) => {
   let isAlive = true
 
   // Create SSE client
+  const clientId = `${userId}-${Date.now()}`
   const client = {
     send: (data: any) => {
-      if (!isAlive) return
+      if (!isAlive) {
+        console.log(`[SSE] Client ${clientId} skipping send - not alive`)
+        return
+      }
       try {
-        res.write(`data: ${JSON.stringify(data)}\n\n`)
-      } catch {
+        const written = res.write(`data: ${JSON.stringify(data)}\n\n`)
+        if (!written) {
+          console.log(`[SSE] Client ${clientId} write returned false - buffer full or closed`)
+        }
+      } catch (err) {
+        console.log(`[SSE] Client ${clientId} send error:`, err)
         // Client disconnected
         isAlive = false
         userSession.transcripts.removeSSEClient(client)
       }
     },
   }
+  console.log(`[SSE] Created client ${clientId}`)
 
   // Register client
   console.log(`[SSE] Registering SSE client for user ${userId}`)
@@ -168,13 +180,17 @@ expressApp.get("/api/transcripts/stream", (req, res) => {
 
   // Cleanup on disconnect
   req.on("close", () => {
+    console.log(`[SSE] Connection closed for user ${userId}`)
+    console.log(`[SSE] Clients before removal: ${userSession.transcripts["sseClients"].size}`)
     isAlive = false
     clearInterval(heartbeatInterval)
     userSession.transcripts.removeSSEClient(client)
+    console.log(`[SSE] Clients after removal: ${userSession.transcripts["sseClients"].size}`)
   })
 
   // Also handle error event
-  req.on("error", () => {
+  req.on("error", (err) => {
+    console.log(`[SSE] Connection error for user ${userId}:`, err)
     isAlive = false
     clearInterval(heartbeatInterval)
     userSession.transcripts.removeSSEClient(client)
@@ -202,6 +218,12 @@ expressApp.get("/api/transcripts/stream", (req, res) => {
 expressApp.all("*", async (req, res) => {
   try {
     const bunUrl = `http://localhost:${BUN_PORT}${req.originalUrl || req.url}`
+
+    // Debug logging for API requests
+    if (req.originalUrl?.startsWith("/api/")) {
+      const authReq = req as any
+      console.log(`[PROXY] ${req.method} ${req.originalUrl} - authUserId: ${authReq.authUserId || "NONE"}`)
+    }
 
     // Build headers - forward existing headers AND add auth info
     const proxyHeaders: Record<string, string> = {}
