@@ -1,5 +1,5 @@
 {
-  "versionCode": 1,
-  "apkUrl": "",
-  "sha256": ""
+  "versionCode": 16,
+  "apkUrl": "https://github.com/Mentra-Community/MentraOS/releases/download/asg-client/asg-client-16.apk",
+  "sha256": "d2f822694c2d711b340b5a845f02b325b784f38ce03987c85d7a9254681d600a"
 }
