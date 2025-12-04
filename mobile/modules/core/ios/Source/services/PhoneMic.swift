@@ -480,7 +480,26 @@ class PhoneMic {
 
     /// Internal recording logic shared by all recording modes
     private func startRecordingInternal() -> Bool {
-        // NOW create the audio engine
+        // check if we're in the background:
+        let appState = UIApplication.shared.applicationState
+        if appState == .background {
+            Bridge.log("MIC: App is in background, cannot start recording")
+            return false
+        }
+
+        if let existingEngine = audioEngine {
+            existingEngine.inputNode.removeTap(onBus: 0)
+            existingEngine.stop()
+            audioEngine = nil
+        }
+
+        let session = AVAudioSession.sharedInstance()
+        guard let availableInputs = session.availableInputs, !availableInputs.isEmpty else {
+            Bridge.log("MIC: No audio inputs available, cannot start recording")
+            return false
+        }
+
+        // NOW create the audio engine:
         audioEngine = AVAudioEngine()
 
         // Safely get the input node
