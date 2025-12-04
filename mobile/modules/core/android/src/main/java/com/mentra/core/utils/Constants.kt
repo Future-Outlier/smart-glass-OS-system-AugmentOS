@@ -15,3 +15,21 @@ object ConnTypes {
     const val CONNECTED = "CONNECTED"
     const val DISCONNECTED = "DISCONNECTED"
 }
+
+object MicTypes {
+    const val PHONE_INTERNAL = "phone"
+    const val GLASSES_CUSTOM = "glasses"
+    const val BT_CLASSIC = "btclassic"
+    const val BT = "bt"
+    val ALL = arrayOf(PHONE_INTERNAL, GLASSES_CUSTOM, BT_CLASSIC, BT)
+}
+
+// convert to kotlin:
+object MicMap {
+    val map: Map<String, List<String>> = mapOf(
+        "auto" to listOf(MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM, MicTypes.BT, MicTypes.BT_CLASSIC),
+        "glasses" to listOf(MicTypes.GLASSES_CUSTOM),
+        "phone" to listOf(MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM),
+        "bluetooth" to listOf(MicTypes.BT, MicTypes.BT_CLASSIC, MicTypes.PHONE_INTERNAL, MicTypes.GLASSES_CUSTOM),
+    )
+}

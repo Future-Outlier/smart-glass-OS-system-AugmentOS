@@ -1,4 +1,5 @@
 import {TouchableOpacity, View} from "react-native"
+
 import {Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -86,10 +87,10 @@ export default function ActionButton({
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
-  paddingVertical: spacing.sm,
-  paddingHorizontal: spacing.md,
-  borderRadius: spacing.md,
-  borderWidth: spacing.xxxs,
+  paddingVertical: spacing.s3,
+  paddingHorizontal: spacing.s4,
+  borderRadius: spacing.s4,
+  borderWidth: spacing.s0_5,
   borderColor: colors.border,
 })
 
@@ -104,7 +105,7 @@ const $textContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "column",
   justifyContent: "center",
   maxWidth: "90%",
-  gap: spacing.xxs,
+  gap: spacing.s1,
   flex: 1,
 })
 
@@ -115,7 +116,7 @@ const $invisibleIcon: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $text: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.md,
+  fontSize: spacing.s4,
   fontWeight: "500",
   color: colors.text,
 })

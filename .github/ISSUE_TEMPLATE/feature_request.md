@@ -3,8 +3,7 @@ name: Feature request
 about: Suggest an idea for this MentraOS
 title: "[Feature Request] <enter short description here>"
 labels: enhancement
-assignees: ''
-
+assignees: ""
 ---
 
 **Is your feature request related to a problem? Please describe.**

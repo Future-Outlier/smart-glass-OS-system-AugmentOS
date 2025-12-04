@@ -85,10 +85,9 @@ export interface RtmpStreamOptions {
  * ```
  */
 export class CameraModule {
-  private send: (message: any) => void
+  private session: any // Reference to AppSession
   private packageName: string
   private sessionId: string
-  private session?: any // Reference to AppSession
   private logger: Logger
 
   // Photo functionality
@@ -112,21 +111,19 @@ export class CameraModule {
   /**
    * Create a new CameraModule
    *
+   * @param session - Reference to the parent AppSession
    * @param packageName - The App package name
    * @param sessionId - The current session ID
-   * @param send - Function to send messages to the cloud
-   * @param session - Reference to the parent AppSession (optional)
    * @param logger - Logger instance for debugging
    */
-  constructor(packageName: string, sessionId: string, send: (message: any) => void, session?: any, logger?: Logger) {
+  constructor(session: any, packageName: string, sessionId: string, logger?: Logger) {
+    this.session = session
     this.packageName = packageName
     this.sessionId = sessionId
-    this.send = send
-    this.session = session
     this.logger = logger || (console as any)
 
     // Initialize managed extension
-    this.managedExtension = new CameraManagedExtension(packageName, sessionId, send, this.logger, session)
+    this.managedExtension = new CameraManagedExtension(session, packageName, sessionId, this.logger)
   }
 
   // =====================================
@@ -179,7 +176,7 @@ export class CameraModule {
         }
 
         // Send request to cloud
-        this.send(message)
+        this.session.sendMessage(message)
 
         this.logger.info(
           {
@@ -425,7 +422,7 @@ export class CameraModule {
 
     // Send the request
     try {
-      this.send(message)
+      this.session.sendMessage(message)
       this.isStreaming = true
 
       this.logger.info({rtmpUrl: options.rtmpUrl}, `📹 RTMP stream request sent successfully`)
@@ -473,7 +470,7 @@ export class CameraModule {
 
     // Send the request
     try {
-      this.send(message)
+      this.session.sendMessage(message)
       return Promise.resolve()
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -766,7 +763,7 @@ export class CameraModule {
 
     // Stop streaming if active
     if (this.isStreaming) {
-      this.stopStream().catch(error => {
+      this.stopStream().catch((error) => {
         this.logger.error({error}, "Error stopping stream during cleanup")
       })
     }

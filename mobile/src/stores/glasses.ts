@@ -1,64 +1,109 @@
 import {create} from "zustand"
+import {subscribeWithSelector} from "zustand/middleware"
 
-interface GlassesInfo {
+export interface GlassesInfo {
+  // state:
   connected: boolean
-  deviceModelName: string | null
-  deviceFwVersion: string | null
-  glasses_use_wifi: boolean
-  glasses_wifi_connected?: boolean
-  glasses_wifi_ssid?: string | null
-  battery_level: number | null
-  is_charging: boolean
-  battery_level_case?: number | null
-  is_case_charging?: boolean
+  // device info
+  modelName: string
+  androidVersion: string
+  fwVersion: string
+  buildNumber: string
+  otaVersionUrl: string
+  appVersion: string
+  bluetoothName: string
+  serialNumber: string
+  style: string
+  color: string
+  // wifi info
+  wifiConnected: boolean
+  wifiSsid: string
+  wifiLocalIp: string
+  // battery info
+  batteryLevel: number
+  charging: boolean
+  caseBatteryLevel: number
+  caseCharging: boolean
+  caseOpen: boolean
+  caseRemoved: boolean
+  // hotspot info
+  hotspotEnabled: boolean
+  hotspotSsid: string
+  hotspotPassword: string
+  hotspotGatewayIp: string
 }
 
 interface GlassesState extends GlassesInfo {
   setGlassesInfo: (info: Partial<GlassesInfo>) => void
   setConnected: (connected: boolean) => void
-  setBatteryInfo: (
-    battery_level: number,
-    is_charging: boolean,
-    battery_level_case?: number,
-    is_case_charging?: boolean,
-  ) => void
-  setWifiInfo: (wifi_connected: boolean, wifi_ssid: string | null) => void
+  setBatteryInfo: (batteryLevel: number, charging: boolean, caseBatteryLevel: number, caseCharging: boolean) => void
+  setWifiInfo: (connected: boolean, ssid: string) => void
+  setHotspotInfo: (enabled: boolean, ssid: string, password: string, ip: string) => void
   reset: () => void
 }
 
 const initialState: GlassesInfo = {
+  // state:
   connected: false,
-  deviceModelName: null,
-  deviceFwVersion: null,
-  glasses_use_wifi: false,
-  glasses_wifi_connected: undefined,
-  glasses_wifi_ssid: null,
-  battery_level: null,
-  is_charging: false,
-  battery_level_case: undefined,
-  is_case_charging: false,
+  // device info
+  modelName: "",
+  androidVersion: "",
+  fwVersion: "",
+  buildNumber: "",
+  otaVersionUrl: "",
+  appVersion: "",
+  bluetoothName: "",
+  serialNumber: "",
+  style: "",
+  color: "",
+  // wifi info
+  wifiConnected: false,
+  wifiSsid: "",
+  wifiLocalIp: "",
+  // battery info
+  batteryLevel: -1,
+  charging: false,
+  caseBatteryLevel: -1,
+  caseCharging: false,
+  caseOpen: false,
+  caseRemoved: true,
+  // hotspot info
+  hotspotEnabled: false,
+  hotspotSsid: "",
+  hotspotPassword: "",
+  hotspotGatewayIp: "",
 }
 
-export const useGlassesStore = create<GlassesState>(set => ({
-  ...initialState,
+export const useGlassesStore = create<GlassesState>()(
+  subscribeWithSelector(set => ({
+    ...initialState,
 
-  setGlassesInfo: info => set(state => ({...state, ...info})),
+    setGlassesInfo: info => set(state => ({...state, ...info})),
 
-  setConnected: connected => set({connected}),
+    setConnected: connected => set({connected}),
 
-  setBatteryInfo: (battery_level, is_charging, battery_level_case, is_case_charging) =>
-    set({
-      battery_level,
-      is_charging,
-      battery_level_case,
-      is_case_charging: is_case_charging ?? false,
-    }),
+    setBatteryInfo: (batteryLevel, charging, caseBatteryLevel, caseCharging) =>
+      set({
+        batteryLevel,
+        charging,
+        caseBatteryLevel,
+        caseCharging,
+      }),
 
-  setWifiInfo: (wifi_connected, wifi_ssid) =>
-    set({
-      glasses_wifi_connected: wifi_connected,
-      glasses_wifi_ssid: wifi_ssid,
-    }),
+    setWifiInfo: (connected, ssid) =>
+      set({
+        wifiConnected: connected,
+        wifiSsid: ssid,
+      }),
 
-  reset: () => set(initialState),
-}))
+    setHotspotInfo: (enabled: boolean, ssid: string, password: string, ip: string) =>
+      set({
+        hotspotEnabled: enabled,
+        hotspotSsid: ssid,
+        hotspotPassword: password,
+        hotspotGatewayIp: ip,
+      }),
+
+    reset: () => set(initialState),
+  })),
+)

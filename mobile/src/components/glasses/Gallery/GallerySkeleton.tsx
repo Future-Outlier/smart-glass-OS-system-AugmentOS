@@ -2,13 +2,12 @@
  * Gallery skeleton loading component with shimmer effect
  */
 
-import React from "react"
-import {View} from "react-native"
-import {ViewStyle} from "react-native"
-import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 import LinearGradient from "expo-linear-gradient"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {View, ViewStyle} from "react-native"
+import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
+
 import {spacing, ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient)
 
@@ -20,7 +19,7 @@ interface GallerySkeletonProps {
 
 export function GallerySkeleton({itemCount = 8, numColumns = 2, itemWidth = 150}: GallerySkeletonProps) {
   const {themed} = useAppTheme()
-  const ITEM_SPACING = spacing.xs
+  const ITEM_SPACING = spacing.s2
   const itemHeight = itemWidth * 0.8 // Match aspect ratio
 
   return (
@@ -52,13 +51,13 @@ export function GallerySkeleton({itemCount = 8, numColumns = 2, itemWidth = 150}
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $container: ThemedStyle<ViewStyle> = () => ({
   flexDirection: "row",
   flexWrap: "wrap",
   justifyContent: "space-between",
 })
 
-const $skeletonItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  borderRadius: spacing.xs,
+const $skeletonItem: ThemedStyle<ViewStyle> = ({spacing: _spacing}) => ({
+  borderRadius: _spacing.s2,
   overflow: "hidden",
 })

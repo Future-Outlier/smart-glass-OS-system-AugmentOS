@@ -310,7 +310,7 @@ interface LocationUpdate {
 ### Show Nearby Places
 
 ```typescript
-const unsubscribe = session.location.subscribeToStream({accuracy: "high"}, async data => {
+const unsubscribe = session.location.subscribeToStream({accuracy: "high"}, async (data) => {
   const {latitude, longitude} = data
   const places = await fetchNearbyPlaces(latitude, longitude)
   session.layouts.showTextWall(places.join("\n"))
@@ -320,7 +320,7 @@ const unsubscribe = session.location.subscribeToStream({accuracy: "high"}, async
 ### Location-Based Reminders
 
 ```typescript
-session.location.subscribeToStream({accuracy: "hundredMeters"}, data => {
+session.location.subscribeToStream({accuracy: "hundredMeters"}, (data) => {
   const distance = calculateDistance(data, targetLocation)
   if (distance < 100) {
     // Within 100m

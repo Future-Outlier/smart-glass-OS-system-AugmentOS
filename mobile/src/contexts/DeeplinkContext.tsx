@@ -1,10 +1,11 @@
-import {createContext, useContext, useEffect} from "react"
-// import {Linking} from "react-native"
-import {NavObject, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {supabase} from "@/supabase/supabaseClient"
-import {deepLinkRoutes} from "@/utils/deepLinkRoutes"
-
 import * as Linking from "expo-linking"
+import {FC, ReactNode, createContext, useContext, useEffect} from "react"
+
+// import {Linking} from "react-native"
+// import {useAuth} from "@/contexts/AuthContext"
+import {NavObject, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import mentraAuth from "@/utils/auth/authClient"
+import {deepLinkRoutes} from "@/utils/deepLinkRoutes"
 
 interface DeeplinkContextType {
   processUrl: (url: string) => Promise<void>
@@ -29,7 +30,7 @@ const DeeplinkContext = createContext<DeeplinkContextType>({} as DeeplinkContext
 
 export const useDeeplink = () => useContext(DeeplinkContext)
 
-export const DeeplinkProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
+export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
   const {push, replace, goBack, setPendingRoute, getPendingRoute, navigate} = useNavigationHistory()
   const config = {
     scheme: "com.mentra",
@@ -37,11 +38,15 @@ export const DeeplinkProvider: React.FC<{children: React.ReactNode}> = ({childre
     routes: deepLinkRoutes,
     authCheckHandler: async () => {
       // TODO: this is a hack when we should really be using the auth context:
-      const session = await supabase.auth.getSession()
-      if (session.data.session == null) {
+      const res = await mentraAuth.getSession()
+      if (res.is_error()) {
         return false
       }
-      return true
+      const session = res.value
+      if (!session?.token) {
+        return false
+      }
+      return true      
     },
     fallbackHandler: (url: string) => {
       console.warn("Fallback handler called for URL:", url)
@@ -57,7 +62,7 @@ export const DeeplinkProvider: React.FC<{children: React.ReactNode}> = ({childre
   }
 
   useEffect(() => {
-    const _subscription = Linking.addEventListener("url", handleUrlRaw)
+    Linking.addEventListener("url", handleUrlRaw)
     Linking.getInitialURL().then(url => {
       console.log("@@@@@@@@@@@@@ INITIAL URL @@@@@@@@@@@@@@@", url)
       if (url) {

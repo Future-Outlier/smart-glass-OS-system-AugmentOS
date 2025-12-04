@@ -1,7 +1,8 @@
+import {View, TextStyle, ViewStyle} from "react-native"
+
 import {Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {View, TextStyle, ViewStyle} from "react-native"
 
 export function NotConnectedInfo() {
   const {themed} = useAppTheme()
@@ -14,9 +15,9 @@ export function NotConnectedInfo() {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.sm,
-  marginBottom: spacing.sm,
-  marginTop: spacing.sm,
+  padding: spacing.s3,
+  marginBottom: spacing.s3,
+  marginTop: spacing.s3,
 })
 
 const $text: ThemedStyle<TextStyle> = ({colors}) => ({

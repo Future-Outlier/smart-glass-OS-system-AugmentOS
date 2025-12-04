@@ -1,49 +1,34 @@
-import {memo} from "react"
-import {View, TouchableOpacity, ViewStyle, ImageStyle, TextStyle, Platform, ActivityIndicator} from "react-native"
 import {Image} from "expo-image"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {Text} from "@/components/ignite"
-import {ThemedStyle} from "@/theme"
 import {SquircleView} from "expo-squircle-view"
-import {useSetting, SETTINGS_KEYS} from "@/stores/settings"
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
-import {ClientAppletInterface} from "@/stores/applets"
+import {memo} from "react"
+import {ActivityIndicator, ImageStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+
+import {Icon} from "@/components/ignite"
+import {ClientAppletInterface, getMoreAppsApplet} from "@/stores/applets"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface AppIconProps {
   app: ClientAppletInterface
   onClick?: () => void
   style?: ViewStyle
-  showLabel?: boolean
 }
 
-const AppIcon = ({app, onClick, style, showLabel = false}: AppIconProps) => {
+const AppIcon = ({app, onClick, style}: AppIconProps) => {
   const {themed, theme} = useAppTheme()
-
+  const [enableSquircles] = useSetting(SETTINGS.enable_squircles.key)
   const WrapperComponent = onClick ? TouchableOpacity : View
 
-  const [enableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
-
-  // Use custom camera icon for camera app
-  // const isCameraApp = app.packageName === "com.mentra.camera"
-  // // Determine size based on style prop - handle various sizes used across the app
-  // const getIconSize = (): "small" | "medium" | "large" => {
-  //   const width = style?.width
-  //   if (!width) return "medium"
-  //   if (width <= 40) return "small"
-  //   if (width >= 64) return "large"
-  //   return "medium"
-  // }
-  // const iconSize = getIconSize()
-
   return (
-    <View>
+    <View style={{alignItems: "center"}}>
       <WrapperComponent
         onPress={onClick}
         activeOpacity={onClick ? 0.7 : undefined}
         style={[themed($container), style]}
         accessibilityLabel={onClick ? `Launch ${app.name}` : undefined}
         accessibilityRole={onClick ? "button" : undefined}>
-        {Platform.OS === "ios" && enableSquircles ? (
+        {enableSquircles ? (
           <SquircleView
             cornerSmoothing={100}
             preserveSmoothing={true}
@@ -53,7 +38,7 @@ const AppIcon = ({app, onClick, style, showLabel = false}: AppIconProps) => {
               justifyContent: "center",
               width: style?.width ?? 56,
               height: style?.height ?? 56,
-              borderRadius: style?.borderRadius ?? theme.spacing.md,
+              borderRadius: style?.borderRadius ?? theme.spacing.s4,
             }}>
             {app.loading && (
               <View style={themed($loadingContainer)}>
@@ -84,17 +69,16 @@ const AppIcon = ({app, onClick, style, showLabel = false}: AppIconProps) => {
             />
           </>
         )}
-        {showLabel && <Text text={app.name} style={themed($appName)} numberOfLines={2} />}
       </WrapperComponent>
       {!app.healthy && (
         <View style={themed($unhealthyBadge)}>
-          <MaterialCommunityIcons name="alert-circle" size={theme.spacing.md} color={theme.colors.error} />
+          <Icon name="alert" size={theme.spacing.s4} color={theme.colors.error} />
         </View>
       )}
       {/* Show wifi-off badge for offline apps */}
-      {app.offline && (
+      {app.offline && app.packageName !== getMoreAppsApplet().packageName && (
         <View style={themed($offlineBadge)}>
-          <MaterialCommunityIcons name="wifi-off" size={theme.spacing.md} color={theme.colors.text} />
+          <Icon name="wifi-off" size={theme.spacing.s4} color={theme.colors.text} />
         </View>
       )}
     </View>
@@ -123,33 +107,24 @@ const $icon: ThemedStyle<ImageStyle> = () => ({
   resizeMode: "cover",
 })
 
-const $appName: ThemedStyle<TextStyle> = ({isDark}) => ({
-  fontSize: 11,
-  fontWeight: "600",
-  lineHeight: 12,
-  marginTop: 5,
-  textAlign: "left",
-  color: isDark ? "#ced2ed" : "#000000",
-})
-
 const $unhealthyBadge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
-  top: -spacing.xxs,
-  right: -spacing.xxs,
-  backgroundColor: colors.background,
-  borderRadius: spacing.md,
-  borderWidth: spacing.xxs,
-  borderColor: colors.background,
+  top: -spacing.s1,
+  right: -spacing.s1,
+  backgroundColor: colors.primary_foreground,
+  borderRadius: spacing.s4,
+  borderWidth: spacing.s1,
+  borderColor: colors.primary_foreground,
 })
 
 const $offlineBadge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
-  right: -spacing.xxs,
-  bottom: -spacing.xxs,
-  backgroundColor: colors.background,
-  borderRadius: spacing.md,
-  borderWidth: spacing.xxs,
-  borderColor: colors.background,
+  right: -spacing.s1,
+  bottom: -spacing.s1,
+  backgroundColor: colors.primary_foreground,
+  borderRadius: spacing.s4,
+  borderWidth: spacing.s1,
+  borderColor: colors.primary_foreground,
 })
 
 export default memo(AppIcon)

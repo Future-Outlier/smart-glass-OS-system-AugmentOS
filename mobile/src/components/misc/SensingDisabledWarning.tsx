@@ -1,17 +1,18 @@
 // SensingDisabledWarning.tsx
 import {View, TouchableOpacity, ViewStyle, TextStyle} from "react-native"
-import {Text} from "@/components/ignite"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import {translate} from "@/i18n"
+
+import {Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {translate} from "@/i18n"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 const SensingDisabledWarning: React.FC = () => {
   const {push} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
-  const [sensingEnabled, _setSensingEnabled] = useSetting(SETTINGS_KEYS.sensing_enabled)
+  const [sensingEnabled, _setSensingEnabled] = useSetting(SETTINGS.sensing_enabled.key)
 
   if (sensingEnabled) {
     return null
@@ -39,19 +40,19 @@ const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  padding: spacing.md,
-  borderRadius: spacing.md,
-  borderWidth: spacing.xxxs,
+  padding: spacing.s4,
+  borderRadius: spacing.s4,
+  borderWidth: spacing.s0_5,
   alignSelf: "center",
 })
 
 const $settingsButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.xs,
+  padding: spacing.s2,
 })
 
 const $settingsButtonTextBlue: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
   color: colors.primary,
-  fontSize: spacing.md,
+  fontSize: spacing.s4,
   fontWeight: "bold",
 })
 
@@ -64,8 +65,8 @@ const $warningContent: ThemedStyle<ViewStyle> = () => ({
 const $warningText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.warning,
   flex: 1,
-  fontSize: spacing.md,
-  marginLeft: spacing.sm,
+  fontSize: 14,
+  marginLeft: spacing.s3,
 })
 
 export default SensingDisabledWarning

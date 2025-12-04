@@ -30,6 +30,7 @@ import {
 import { ProviderSelector } from "./ProviderSelector";
 import { AzureTranscriptionProvider } from "./providers/AzureTranscriptionProvider";
 import { SonioxTranscriptionProvider } from "./providers/SonioxTranscriptionProvider";
+import { AlibabaTranscriptionProvider } from "./providers/AlibabaTranscriptionProvider";
 // import subscriptionService from "../subscription.service";
 
 export class TranscriptionManager {
@@ -58,6 +59,9 @@ export class TranscriptionManager {
   private isBufferingForVAD = false;
   private vadBufferTimeout?: NodeJS.Timeout;
   private vadBufferTimeoutMs = 10000; // 10 second timeout if VAD never turns off
+
+  private DEPLOYMENT_REGION: string = process.env.DEPLOYMENT_REGION || "global";
+  private IS_CHINA: boolean = this.DEPLOYMENT_REGION === "china";
 
   // Health Monitoring
   private healthCheckInterval?: NodeJS.Timeout;
@@ -653,8 +657,9 @@ export class TranscriptionManager {
       }
 
       // Validate subscription (cached after first validation)
-      const validation =
-        await this.providerSelector.validateSubscription(subscription);
+      const validation = await this.providerSelector.validateSubscription(
+        subscription,
+      );
       if (!validation.valid) {
         throw new InvalidSubscriptionError(
           validation.error!,
@@ -762,7 +767,20 @@ export class TranscriptionManager {
       activeStreams: 0,
       byProvider: {} as Record<string, any>,
       byState: {} as Record<string, number>,
+      latency: {
+        maxTranscriptLagMs: 0,
+        avgTranscriptLagMs: 0,
+        totalLagWarnings: 0,
+      },
+      backlog: {
+        totalAudioBytesSent: 0,
+        totalTranscriptEndMs: 0,
+        processingDeficitMs: 0,
+      },
     };
+
+    let totalLag = 0;
+    let lagCount = 0;
 
     // Count by provider and state
     for (const stream of this.streams.values()) {
@@ -786,6 +804,47 @@ export class TranscriptionManager {
       ) {
         metrics.activeStreams++;
       }
+
+      // Aggregate latency metrics
+      if (stream.metrics.lastTranscriptLagMs) {
+        totalLag += stream.metrics.lastTranscriptLagMs;
+        lagCount++;
+      }
+      if (
+        stream.metrics.maxTranscriptLagMs &&
+        stream.metrics.maxTranscriptLagMs > metrics.latency.maxTranscriptLagMs
+      ) {
+        metrics.latency.maxTranscriptLagMs = stream.metrics.maxTranscriptLagMs;
+      }
+      if (stream.metrics.transcriptLagWarnings) {
+        metrics.latency.totalLagWarnings +=
+          stream.metrics.transcriptLagWarnings;
+      }
+
+      // Aggregate backlog metrics
+      if (stream.metrics.totalAudioBytesSent) {
+        metrics.backlog.totalAudioBytesSent +=
+          stream.metrics.totalAudioBytesSent;
+      }
+      if (stream.metrics.lastTranscriptEndMs) {
+        metrics.backlog.totalTranscriptEndMs = Math.max(
+          metrics.backlog.totalTranscriptEndMs,
+          stream.metrics.lastTranscriptEndMs,
+        );
+      }
+    }
+
+    // Calculate average lag
+    if (lagCount > 0) {
+      metrics.latency.avgTranscriptLagMs = Math.round(totalLag / lagCount);
+    }
+
+    // Calculate processing deficit
+    if (metrics.backlog.totalAudioBytesSent > 0) {
+      const audioSentDurationMs = metrics.backlog.totalAudioBytesSent / 32; // 16kHz * 2 bytes
+      metrics.backlog.processingDeficitMs = Math.round(
+        audioSentDurationMs - metrics.backlog.totalTranscriptEndMs,
+      );
     }
 
     return metrics;
@@ -935,16 +994,39 @@ export class TranscriptionManager {
       const availableProviders: ProviderType[] = [];
       const providerErrors: Array<{ provider: string; error: Error }> = [];
 
+      // try to initialize Alibaba provider
+      try {
+        if (this.IS_CHINA) {
+          const alibabaProvider = new AlibabaTranscriptionProvider(
+            this.config.alibaba,
+            this.logger,
+          );
+          await alibabaProvider.initialize();
+          this.providers.set(ProviderType.ALIBABA, alibabaProvider);
+          availableProviders.push(ProviderType.ALIBABA);
+          this.logger.info("Alibaba provider initialized successfully");
+        } else {
+          this.logger.info("Alibaba provider not initialized for non-China");
+        }
+      } catch (error) {
+        this.logger.error(error, "Failed to initialize Alibaba provider");
+        providerErrors.push({ provider: "Alibaba", error: error as Error });
+      }
+
       // Try to initialize Azure provider
       try {
-        const azureProvider = new AzureTranscriptionProvider(
-          this.config.azure,
-          this.logger,
-        );
-        await azureProvider.initialize();
-        this.providers.set(ProviderType.AZURE, azureProvider);
-        availableProviders.push(ProviderType.AZURE);
-        this.logger.info("Azure provider initialized successfully");
+        if (this.IS_CHINA) {
+          this.logger.info("Azure provider not initialized for China");
+        } else {
+          const azureProvider = new AzureTranscriptionProvider(
+            this.config.azure,
+            this.logger,
+          );
+          await azureProvider.initialize();
+          this.providers.set(ProviderType.AZURE, azureProvider);
+          availableProviders.push(ProviderType.AZURE);
+          this.logger.info("Azure provider initialized successfully");
+        }
       } catch (error) {
         this.logger.error(error, "Failed to initialize Azure provider");
         providerErrors.push({ provider: "Azure", error: error as Error });
@@ -952,14 +1034,18 @@ export class TranscriptionManager {
 
       // Try to initialize Soniox provider
       try {
-        const sonioxProvider = new SonioxTranscriptionProvider(
-          this.config.soniox,
-          this.logger,
-        );
-        await sonioxProvider.initialize();
-        this.providers.set(ProviderType.SONIOX, sonioxProvider);
-        availableProviders.push(ProviderType.SONIOX);
-        this.logger.info("Soniox provider initialized successfully");
+        if (this.IS_CHINA) {
+          this.logger.info("Soniox provider not initialized for China");
+        } else {
+          const sonioxProvider = new SonioxTranscriptionProvider(
+            this.config.soniox,
+            this.logger,
+          );
+          await sonioxProvider.initialize();
+          this.providers.set(ProviderType.SONIOX, sonioxProvider);
+          availableProviders.push(ProviderType.SONIOX);
+          this.logger.info("Soniox provider initialized successfully");
+        }
       } catch (error) {
         this.logger.error(error, "Failed to initialize Soniox provider");
         providerErrors.push({ provider: "Soniox", error: error as Error });
@@ -1081,8 +1167,9 @@ export class TranscriptionManager {
       }
 
       // Validate subscription
-      const validation =
-        await this.providerSelector.validateSubscription(subscription);
+      const validation = await this.providerSelector.validateSubscription(
+        subscription,
+      );
       if (!validation.valid) {
         throw new InvalidSubscriptionError(
           validation.error!,
@@ -1733,7 +1820,56 @@ export class TranscriptionManager {
   private startHealthMonitoring(): void {
     this.healthCheckInterval = setInterval(() => {
       this.cleanupDeadStreams();
+      this.logLatencyMetrics();
     }, this.config.performance.healthCheckIntervalMs);
+  }
+
+  /**
+   * Log latency and backlog metrics for monitoring
+   */
+  private logLatencyMetrics(): void {
+    const metrics = this.getMetrics();
+
+    // Only log if we have active streams
+    if (metrics.activeStreams === 0) {
+      return;
+    }
+
+    // Log summary of latency metrics
+    if (metrics.latency.avgTranscriptLagMs > 0) {
+      const logLevel =
+        metrics.latency.maxTranscriptLagMs > 5000 ? "warn" : "info";
+      const logData = {
+        activeStreams: metrics.activeStreams,
+        avgLagMs: metrics.latency.avgTranscriptLagMs,
+        maxLagMs: metrics.latency.maxTranscriptLagMs,
+        lagWarnings: metrics.latency.totalLagWarnings,
+        processingDeficitMs: metrics.backlog.processingDeficitMs,
+        audioSentBytes: metrics.backlog.totalAudioBytesSent,
+        transcriptEndMs: metrics.backlog.totalTranscriptEndMs,
+      };
+
+      if (logLevel === "warn") {
+        this.logger.warn(
+          logData,
+          "⚠️ HIGH LATENCY: Transcription is significantly lagging",
+        );
+      } else {
+        this.logger.debug(logData, "Transcription latency metrics");
+      }
+    }
+
+    // Alert if processing deficit is high (audio sent but not transcribed)
+    if (metrics.backlog.processingDeficitMs > 10000) {
+      this.logger.warn(
+        {
+          deficitMs: metrics.backlog.processingDeficitMs,
+          audioSentBytes: metrics.backlog.totalAudioBytesSent,
+          transcriptEndMs: metrics.backlog.totalTranscriptEndMs,
+        },
+        "⚠️ PROCESSING BACKLOG: Provider is falling behind on transcription",
+      );
+    }
   }
 
   private async cleanupDeadStreams(): Promise<void> {

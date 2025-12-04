@@ -1,21 +1,24 @@
+import CoreModule from "core"
 import {useEffect, useState} from "react"
 import {ScrollView, TextInput, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
-import {Text} from "@/components/ignite"
 
 import bridge from "@/bridge/MantleBridge"
+import {Text} from "@/components/ignite"
 import {PillButton} from "@/components/ignite"
-import RouteButton from "@/components/ui/RouteButton"
+import ToggleSetting from "@/components/settings/ToggleSetting"
+import {RouteButton} from "@/components/ui/RouteButton"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n/translate"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {MOCK_CONNECTION} from "@/utils/Constants"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {useAppTheme} from "@/utils/useAppTheme"
-import ToggleSetting from "../settings/ToggleSetting"
-import CoreModule from "core"
+
+import {Capabilities, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 // Nex Interface Version - Single source of truth
 export const NEX_INTERFACE_VERSION = "1.0.0"
@@ -113,7 +116,6 @@ const PatternPreview = ({imageType, imageSize, isDark = false, showDualLayout = 
           borderRadius: 12,
           marginVertical: 8,
         }}>
-        {/* Header */}
         <Text
           style={{
             fontSize: 16,
@@ -123,10 +125,10 @@ const PatternPreview = ({imageType, imageSize, isDark = false, showDualLayout = 
             marginBottom: 20,
             letterSpacing: 0.5,
           }}>
-          /// MentraOS Connected \\\
+          {/* MentraOS Connected */}
+          {"/// MentraOS Connected \\\\\\"}
         </Text>
 
-        {/* Status Line */}
         <Text
           style={{
             fontSize: 14,
@@ -258,7 +260,10 @@ export default function NexDeveloperSettings() {
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
   const {push} = useNavigationHistory()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesModelName = useGlassesStore(state => state.modelName)
+  const features: Capabilities = getModelCapabilities(defaultWearable)
 
   // Mentra Nex BLE test state variables
   const [text, setText] = useState("Hello World")
@@ -326,7 +331,7 @@ export default function NexDeveloperSettings() {
 
   // Mentra Nex BLE test handlers
   const onSendTextClick = async () => {
-    if (status.glasses_info?.model_name) {
+    if (glassesConnected) {
       if (text === "" || positionX === null || positionY === null || size === null) {
         showAlert("Please fill all the fields", "Please fill all the fields", [
           {
@@ -361,7 +366,7 @@ export default function NexDeveloperSettings() {
   }
 
   const onSendImageClick = async () => {
-    if (status.glasses_info?.model_name) {
+    if (glassesConnected) {
       await CoreModule.displayImage(selectedImageType, selectedImageSize)
     } else {
       showAlert("Please connect to the device", "Please connect to the device", [
@@ -375,7 +380,7 @@ export default function NexDeveloperSettings() {
   }
 
   const onClearDisplayClick = async () => {
-    if (status.glasses_info?.model_name) {
+    if (glassesConnected) {
       await CoreModule.clearDisplay()
     } else {
       showAlert("Please connect to the device", "Please connect to the device", [
@@ -390,7 +395,7 @@ export default function NexDeveloperSettings() {
 
   const onLc3AudioToggle = async (enabled: boolean) => {
     setLc3AudioEnabled(enabled)
-    if (status.glasses_info?.model_name) {
+    if (glassesConnected) {
       await bridge.setLc3AudioEnabled(enabled)
     }
   }
@@ -421,7 +426,7 @@ export default function NexDeveloperSettings() {
         </View>
 
         {/* Screen Settings for binocular glasses */}
-        {defaultWearable && glassesFeatures[defaultWearable]?.binocular && (
+        {defaultWearable && features?.display?.count && features?.display?.count > 1 && (
           <View style={themed($settingsGroup)}>
             <Text style={themed($sectionTitle)}>Display Settings</Text>
             <RouteButton
@@ -433,7 +438,7 @@ export default function NexDeveloperSettings() {
         )}
 
         {/* Mentra Nex BLE Test Section - Only show when connected to Mentra Nex */}
-        {status.glasses_info?.model_name === "Mentra Nex" && status.core_info.puck_connected ? (
+        {glassesModelName === "Mentra Nex" ? (
           <>
             {/* Custom Display Text Settings */}
             <View style={themed($settingsGroup)}>
@@ -726,15 +731,15 @@ const $container: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.md,
-  gap: spacing.md,
+  padding: spacing.s4,
+  gap: spacing.s4,
 })
 
 const $headerSection: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
-  paddingVertical: spacing.lg,
-  paddingHorizontal: spacing.md,
-  borderRadius: spacing.md,
+  paddingVertical: spacing.s6,
+  paddingHorizontal: spacing.s4,
+  borderRadius: spacing.s4,
   borderWidth: 2,
   borderColor: colors.border,
   alignItems: "center",
@@ -757,9 +762,9 @@ const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
-  paddingVertical: spacing.md,
-  paddingHorizontal: spacing.md,
-  borderRadius: spacing.md,
+  paddingVertical: spacing.s4,
+  paddingHorizontal: spacing.s4,
+  borderRadius: spacing.s4,
   borderWidth: 2,
   borderColor: colors.border,
 })
@@ -774,7 +779,7 @@ const $sectionTitle: ThemedStyle<TextStyle> = ({colors}) => ({
 const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
   fontSize: 14,
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
   lineHeight: 20,
 })
 
@@ -903,9 +908,9 @@ const $spacer: ViewStyle = {
 }
 
 const $versionContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginTop: spacing.md,
+  marginTop: spacing.s4,
   alignItems: "center",
-  gap: spacing.xs,
+  gap: spacing.s2,
 })
 
 const $versionBadge: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -913,9 +918,9 @@ const $versionBadge: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.palette.primary600,
   fontSize: 12,
   fontWeight: "600",
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  borderRadius: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
+  borderRadius: spacing.s2,
   borderWidth: 1,
   borderColor: colors.palette.primary300,
   overflow: "hidden",
@@ -926,9 +931,9 @@ const $protobufVersionBadge: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.palette.neutral600,
   fontSize: 12,
   fontWeight: "600",
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  borderRadius: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
+  borderRadius: spacing.s2,
   borderWidth: 1,
   borderColor: colors.palette.neutral300,
   overflow: "hidden",
@@ -940,9 +945,9 @@ const $glassesProtobufVersionBadge: ThemedStyle<TextStyle> = ({colors, spacing})
   color: colors.palette.accent500,
   fontSize: 12,
   fontWeight: "600",
-  paddingHorizontal: spacing.sm,
-  paddingVertical: spacing.xs,
-  borderRadius: spacing.xs,
+  paddingHorizontal: spacing.s3,
+  paddingVertical: spacing.s2,
+  borderRadius: spacing.s2,
   borderWidth: 1,
   borderColor: colors.palette.accent300,
   overflow: "hidden",

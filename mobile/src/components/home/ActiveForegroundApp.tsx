@@ -1,14 +1,15 @@
+import {ArrowLeftIcon} from "assets/icons/component/ArrowLeftIcon"
+import {CloseXIcon} from "assets/icons/component/CloseXIcon"
 import {ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
+import {Badge} from "@/components/ui"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useActiveForegroundApp, useStopApplet} from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import ChevronRight from "assets/icons/component/ChevronRight"
-import {CloseXIcon} from "assets/icons/component/CloseXIcon"
 
 export const ActiveForegroundApp: React.FC = () => {
   const {themed, theme} = useAppTheme()
@@ -96,9 +97,7 @@ export const ActiveForegroundApp: React.FC = () => {
             {applet.name}
           </Text>
           <View style={themed($tagContainer)}>
-            <View style={themed($activeTag)}>
-              <Text style={themed($tagText)}>Active</Text>
-            </View>
+            <Badge text="Active" />
           </View>
         </View>
         {!applet.loading && (
@@ -106,28 +105,40 @@ export const ActiveForegroundApp: React.FC = () => {
             <CloseXIcon size={24} color={theme.colors.textDim} />
           </TouchableOpacity>
         )}
-        <ChevronRight color={theme.colors.text} />
+        <View style={themed($iconContainer)}>
+          <ArrowLeftIcon size={24} color={theme.colors.text} />
+        </View>
       </View>
     </TouchableOpacity>
   )
 }
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  marginVertical: spacing.xs,
+  marginVertical: spacing.s2,
   minHeight: 72,
-  borderWidth: 2,
-  borderColor: colors.border,
-  borderRadius: spacing.md,
+  // borderWidth: 2,
+  // borderColor: colors.border,
+  borderRadius: spacing.s4,
   backgroundColor: colors.backgroundAlt,
-  paddingHorizontal: spacing.sm,
+  paddingHorizontal: spacing.s2,
+})
+
+const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  backgroundColor: colors.background,
+  padding: spacing.s3,
+  width: spacing.s12,
+  height: spacing.s12,
+  borderRadius: spacing.s12,
+  transform: [{scaleX: -1}],
+  alignItems: "center",
 })
 
 const $rowContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  paddingHorizontal: spacing.xs,
-  paddingVertical: spacing.sm,
-  gap: spacing.sm,
+  paddingHorizontal: spacing.s2,
+  paddingVertical: spacing.s3,
+  gap: spacing.s3,
 })
 
 const $appIcon: ThemedStyle<ImageStyle> = () => ({
@@ -144,38 +155,25 @@ const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   fontWeight: "500",
   color: colors.text,
-  marginBottom: spacing.xxs,
+  marginBottom: spacing.s1,
 })
 
 const $tagContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
-  gap: spacing.xs,
-})
-
-const $activeTag: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  paddingHorizontal: spacing.xs,
-  paddingVertical: 2,
-  backgroundColor: colors.success + "20",
-  borderRadius: spacing.xxs,
-})
-
-const $tagText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 11,
-  color: colors.primary,
-  fontWeight: "500",
+  gap: spacing.s2,
 })
 
 const $closeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.xs,
+  padding: spacing.s2,
   justifyContent: "center",
   alignItems: "center",
 })
 
 const $placeholderContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.lg,
+  padding: spacing.s6,
   alignItems: "center",
   justifyContent: "center",
-  paddingVertical: spacing.xl,
+  paddingVertical: spacing.s8,
 })
 
 const $placeholderText: ThemedStyle<TextStyle> = ({colors}) => ({

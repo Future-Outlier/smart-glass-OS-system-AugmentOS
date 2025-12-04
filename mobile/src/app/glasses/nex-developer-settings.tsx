@@ -1,22 +1,23 @@
-import React from "react"
 import {Stack} from "expo-router"
+
 import NexDeveloperSettings from "@/components/glasses/NexDeveloperSettings"
 import {Screen, Header} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {$styles} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function NexDeveloperSettingsPage() {
-  const {theme} = useAppTheme()
+  const {themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.md}}>
+    <Screen preset="fixed" style={themed($styles.screen)}>
       <Stack.Screen
         options={{
           headerShown: false,
         }}
       />
-      <Header title="Nex Developer Settings" leftIcon="caretLeft" onLeftPress={() => goBack()} />
+      <Header title="Nex Developer Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
       <NexDeveloperSettings />
     </Screen>
   )

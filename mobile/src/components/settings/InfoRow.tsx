@@ -1,5 +1,6 @@
-import React from "react"
-import {View, Text, ViewStyle, TextStyle} from "react-native"
+import {View, ViewStyle, TextStyle} from "react-native"
+
+import {Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
@@ -10,7 +11,7 @@ interface InfoRowProps {
 }
 
 export function InfoRow({label, value, showDivider = true}: InfoRowProps) {
-  const {theme, themed} = useAppTheme()
+  const {themed} = useAppTheme()
 
   // Add zero-width spaces after periods to help with text wrapping
   const formattedValue = value.replace(/\./g, ".\u200B")
@@ -18,8 +19,8 @@ export function InfoRow({label, value, showDivider = true}: InfoRowProps) {
   return (
     <>
       <View style={themed($row)}>
-        <Text style={themed($label)}>{label}</Text>
-        <Text style={themed($value)}>{formattedValue}</Text>
+        <Text text={label} style={themed($label)} />
+        <Text text={formattedValue} style={themed($value)} />
       </View>
       {showDivider && <View style={themed($divider)} />}
     </>
@@ -30,7 +31,7 @@ const $row: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  paddingVertical: spacing.sm,
+  paddingVertical: spacing.s3,
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -51,5 +52,5 @@ const $value: ThemedStyle<TextStyle> = ({colors}) => ({
 const $divider: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   height: 1,
   backgroundColor: colors.separator,
-  marginVertical: spacing.xxs,
+  marginVertical: spacing.s1,
 })

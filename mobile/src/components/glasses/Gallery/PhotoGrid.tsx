@@ -4,12 +4,13 @@
 
 import {useState} from "react"
 import {View, TouchableOpacity, Image, FlatList, ActivityIndicator} from "react-native"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {ThemedStyle} from "@/theme"
-import {PhotoInfo} from "../../../types/asg"
-import {translate} from "@/i18n/translate"
-import {asgCameraApi} from "../../../services/asg/asgCameraApi"
+
 import {Text} from "@/components/ignite"
+import {translate} from "@/i18n/translate"
+import {asgCameraApi} from "@/services/asg/asgCameraApi"
+import {ThemedStyle} from "@/theme"
+import {PhotoInfo} from "@/types/asg"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 // Helper function to determine content type based on photos array
 const getContentType = (photos: PhotoInfo[]): "photos" | "videos" | "items" => {
@@ -232,20 +233,20 @@ const formatDate = (dateString: string): string => {
 }
 
 const $gridContainer: ThemedStyle<any> = ({spacing}) => ({
-  padding: spacing.sm,
+  padding: spacing.s3,
 })
 
 const $photoRow: ThemedStyle<any> = ({spacing}) => ({
   justifyContent: "space-between",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $photoContainer: ThemedStyle<any> = ({colors, spacing}) => ({
   backgroundColor: colors.background,
-  borderRadius: spacing.sm,
+  borderRadius: spacing.s3,
   overflow: "hidden",
   flex: 1,
-  marginHorizontal: spacing.xs,
+  marginHorizontal: spacing.s2,
   shadowColor: colors.text,
   shadowOffset: {width: 0, height: 2},
   shadowOpacity: 0.1,
@@ -304,14 +305,14 @@ const $placeholderContainer: ThemedStyle<any> = () => ({
 })
 
 const $photoInfo: ThemedStyle<any> = ({spacing}) => ({
-  padding: spacing.sm,
+  padding: spacing.s3,
 })
 
 const $photoName: ThemedStyle<any> = ({colors, spacing}) => ({
   color: colors.text,
   fontSize: 14,
   fontWeight: "500",
-  marginBottom: spacing.xs,
+  marginBottom: spacing.s2,
 })
 
 const $photoMeta: ThemedStyle<any> = ({colors}) => ({
@@ -321,14 +322,14 @@ const $photoMeta: ThemedStyle<any> = ({colors}) => ({
 
 const $emptyContainer: ThemedStyle<any> = ({spacing}) => ({
   alignItems: "center",
-  paddingVertical: spacing.xl,
+  paddingVertical: spacing.s8,
 })
 
 const $emptyText: ThemedStyle<any> = ({colors, spacing}) => ({
   color: colors.textDim,
   fontSize: 16,
   fontWeight: "500",
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $emptySubtext: ThemedStyle<any> = ({colors}) => ({
@@ -339,11 +340,11 @@ const $emptySubtext: ThemedStyle<any> = ({colors}) => ({
 
 const $loadingContainer: ThemedStyle<any> = ({spacing}) => ({
   alignItems: "center",
-  paddingVertical: spacing.xl,
+  paddingVertical: spacing.s8,
 })
 
 const $loadingText: ThemedStyle<any> = ({colors, spacing}) => ({
   color: colors.textDim,
   fontSize: 16,
-  marginTop: spacing.sm,
+  marginTop: spacing.s3,
 })

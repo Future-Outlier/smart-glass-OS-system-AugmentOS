@@ -12,11 +12,16 @@ class Simulated : SGCManager() {
         type = DeviceTypes.SIMULATED
         connectionState = ConnTypes.DISCONNECTED
         batteryLevel = 100
+        micEnabled = false
     }
 
     // Audio Control
     override fun setMicEnabled(enabled: Boolean) {
         Bridge.log("setMicEnabled")
+    }
+
+    override fun sortMicRanking(list: MutableList<String>): MutableList<String> {
+        return list
     }
 
     // Camera & Media

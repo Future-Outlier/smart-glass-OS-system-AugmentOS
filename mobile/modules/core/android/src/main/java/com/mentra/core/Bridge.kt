@@ -102,6 +102,21 @@ public class Bridge private constructor() {
             sendTypedMessage("pair_failure", data as Map<String, Any>)
         }
 
+        /** Send audio connected event - matches iOS implementation for platform parity */
+        @JvmStatic
+        fun sendAudioConnected(deviceName: String) {
+            val data = HashMap<String, Any>()
+            data["device_name"] = deviceName
+            sendTypedMessage("audio_connected", data as Map<String, Any>)
+        }
+
+        /** Send audio disconnected event - matches iOS implementation for platform parity */
+        @JvmStatic
+        fun sendAudioDisconnected() {
+            val data = HashMap<String, Any>()
+            sendTypedMessage("audio_disconnected", data as Map<String, Any>)
+        }
+
         /** Send microphone data */
         @JvmStatic
         fun sendMicData(data: ByteArray) {
@@ -162,24 +177,6 @@ public class Bridge private constructor() {
             eventBody["model_name"] = modelName
             eventBody["device_name"] = deviceName
             sendTypedMessage("compatible_glasses_search_result", eventBody as Map<String, Any>)
-        }
-
-        /** Send glasses connection state */
-        @JvmStatic
-        fun sendGlassesConnectionState(modelName: String, status: String) {
-            try {
-                val event = HashMap<String, Any>()
-                event["type"] = "glasses_connection_state"
-                event["modelName"] = modelName
-                event["status"] = status
-                event["timestamp"] = System.currentTimeMillis().toInt()
-
-                val jsonData = JSONObject(event as Map<*, *>)
-                val jsonString = jsonData.toString()
-                sendWSText(jsonString)
-            } catch (e: Exception) {
-                log("ServerComms: Error building glasses_connection_state JSON: $e")
-            }
         }
 
         /** Update ASR config */
@@ -455,6 +452,16 @@ public class Bridge private constructor() {
             sendTypedMessage("hotspot_status_change", eventBody as Map<String, Any>)
         }
 
+        /** Send hotspot error - notifies React Native of hotspot failures */
+        @JvmStatic
+        fun sendHotspotError(errorMessage: String, timestamp: Long) {
+            val eventBody = HashMap<String, Any>()
+            eventBody["error_message"] = errorMessage
+            eventBody["timestamp"] = timestamp
+
+            sendTypedMessage("hotspot_error", eventBody as Map<String, Any>)
+        }
+
         /** Send version info - matches iOS MentraLive.swift emitVersionInfo */
         @JvmStatic
         fun sendVersionInfo(
@@ -472,6 +479,15 @@ public class Bridge private constructor() {
             eventBody["ota_version_url"] = otaVersionUrl
 
             sendTypedMessage("version_info", eventBody as Map<String, Any>)
+        }
+
+        /** Send MTK firmware update complete notification - matches iOS implementation */
+        @JvmStatic
+        fun sendMtkUpdateComplete(message: String) {
+            val eventBody = HashMap<String, Any>()
+            eventBody["message"] = message
+            eventBody["timestamp"] = System.currentTimeMillis()
+            sendTypedMessage("mtk_update_complete", eventBody as Map<String, Any>)
         }
 
         /** Send RTMP stream status - forwards to websocket system (matches iOS) */

@@ -1,4 +1,5 @@
 import {View, ViewStyle, TextStyle} from "react-native"
+
 import {Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
@@ -45,7 +46,7 @@ const InfoSection: React.FC<InfoSectionProps> = ({title, items, style}) => {
 
   return (
     <View style={[themed($infoSectionContainer), style]}>
-      <Text style={[themed($infoSectionTitle), {marginBottom: theme.spacing.xs}]}>{title}</Text>
+      <Text style={[themed($infoSectionTitle), {marginBottom: theme.spacing.s2}]}>{title}</Text>
       {validItems.map((item, index) => (
         <InfoRow key={index} label={item.label} value={item.value} />
       ))}
@@ -54,17 +55,17 @@ const InfoSection: React.FC<InfoSectionProps> = ({title, items, style}) => {
 }
 
 const $infoSectionContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   paddingVertical: 12,
   paddingHorizontal: 16,
-  borderRadius: spacing.md,
-  borderWidth: 2,
+  borderRadius: spacing.s4,
+  // borderWidth: 2,
   borderColor: colors.border,
 })
 
 const $infoSectionTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.textDim,
-  fontSize: spacing.sm,
+  fontSize: spacing.s3,
 })
 
 export default InfoSection

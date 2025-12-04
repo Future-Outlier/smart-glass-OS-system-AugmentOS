@@ -43,12 +43,12 @@
 <!--            android:name=".receiver.OtaCommandReceiver"-->
 <!--            android:exported="true">-->
 <!--            <intent-filter>-->
-<!--                <action android:name="com.augmentos.asg_client.ACTION_INSTALL_OTA" />-->
+<!--                <action android:name="com.mentra.asg_client.ACTION_INSTALL_OTA" />-->
 <!--            </intent-filter>-->
 <!--        </receiver>-->
         <!-- OtaHeartbeatAckReceiver removed as MainActivity now handles these broadcasts directly -->
     </application>
     <queries>
-        <package android:name="com.augmentos.asg_client" />
+        <package android:name="com.mentra.asg_client" />
     </queries>
 </manifest>

@@ -1207,6 +1207,9 @@ class DisplayManager {
               this.userSession,
             ),
             packageName: displayRequest.packageName,
+            feature: "device-state",
+            requestType: "display",
+            glassesModel: this.userSession.deviceManager.getModel(),
           },
           `[${this.getUserId()}] ❌ Display request validation failed`,
         );

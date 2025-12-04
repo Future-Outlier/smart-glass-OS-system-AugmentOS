@@ -114,10 +114,33 @@ export class UnmanagedStreamingExtension {
         },
         "RTMP stream request blocked by connection validator",
       );
-      throw new Error(
+      const error = new Error(
         validation.error ||
           "Cannot process stream request - connection validation failed",
       );
+      (error as any).code = validation.errorCode;
+      throw error;
+    }
+
+    // WiFi validation for glasses that require it
+    const wifiValidation = ConnectionValidator.validateWifiForOperation(
+      this.userSession,
+    );
+    if (!wifiValidation.valid) {
+      this.logger.error(
+        {
+          userId: this.userSession.userId,
+          packageName,
+          error: wifiValidation.error,
+          errorCode: wifiValidation.errorCode,
+        },
+        "RTMP stream request blocked - WiFi required",
+      );
+      const error = new Error(
+        wifiValidation.error || "WiFi connection required for streaming",
+      );
+      (error as any).code = wifiValidation.errorCode;
+      throw error;
     }
     if (
       !rtmpUrl ||

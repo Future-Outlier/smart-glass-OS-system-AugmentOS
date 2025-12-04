@@ -6,12 +6,23 @@ import pluginReactNative from "eslint-plugin-react-native"
 import pluginReactotron from "eslint-plugin-reactotron"
 import pluginPrettier from "eslint-plugin-prettier"
 import prettierConfig from "eslint-config-prettier"
+import expoConfig from "eslint-config-expo/flat.js"
+import {defineConfig} from "eslint/config"
 
-export default [
-  // Base config for all JS/TS files
+export default defineConfig([
+  
+  // Recommended configs
+  expoConfig,
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  pluginReact.configs.flat.recommended,
+  pluginReact.configs.flat["jsx-runtime"],
+  prettierConfig,
+
+  // custom config:
   {
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
-    ignores: ["eslint.config.mjs"],
+    ignores: ["eslint.config.mjs", "metro.config.js"],
     plugins: {
       "@typescript-eslint": tseslint.plugin,
       "react": pluginReact,
@@ -35,18 +46,12 @@ export default [
       react: {
         version: "detect", // Automatically detect the React version
       },
+      "import/resolver": {
+        typescript: {
+          project: ["./mobile/tsconfig.json", "./cloud/tsconfig.json"],
+        },
+      },
     },
-  },
-
-  // Recommended configs
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
-  pluginReact.configs.flat.recommended,
-  pluginReact.configs.flat["jsx-runtime"],
-  prettierConfig,
-
-  // All rule overrides in one place
-  {
     rules: {
       // Prettier
       "prettier/prettier": "error",
@@ -107,6 +112,30 @@ export default [
               message: "Do not import Text from 'react-native'. Use the Ignite component with the tx prop instead.",
             },
           ],
+          patterns: [
+            {
+              group: ["../*"],
+              message: "Use @/ path aliases instead of relative imports",
+            },
+          ],
+        },
+      ],
+      "import/order": [
+        "error",
+        {
+          "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
+          "pathGroups": [
+            {
+              pattern: "@/**",
+              group: "internal",
+              position: "before",
+            },
+          ],
+          "pathGroupsExcludedImportTypes": ["builtin"],
+          "newlines-between": "always",
+          "alphabetize": {
+            order: "asc",
+          },
         },
       ],
     },
@@ -161,4 +190,4 @@ export default [
       "mobile/**/*.aab",
     ],
   },
-]
+])

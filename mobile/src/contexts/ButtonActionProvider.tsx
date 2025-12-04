@@ -1,7 +1,8 @@
 import {createContext, useContext, useEffect, ReactNode} from "react"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {SETTINGS_KEYS, useSettingsStore} from "@/stores/settings"
+
 import {useApplets, useStartApplet} from "@/stores/applets"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 interface ButtonActionContextType {
   // Reserved for future extensions (e.g., custom button mappings)
@@ -16,9 +17,23 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
   // Validate and update default button action app when device or applets change
   useEffect(() => {
     const validateAndSetDefaultApp = async () => {
-      const currentDefaultApp = await useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_button_action_app)
+      const currentDefaultApp = await useSettingsStore.getState().getSetting(SETTINGS.default_button_action_app.key)
 
-      // Check if current default app is compatible
+      // 1. If camera app is available and compatible, ALWAYS prefer it
+      // This ensures glasses with cameras always default to camera app
+      const cameraApp = applets.find(
+        app => app.packageName === "com.mentra.camera" && app.compatibility?.isCompatible !== false,
+      )
+
+      if (cameraApp) {
+        if (currentDefaultApp !== cameraApp.packageName) {
+          console.log("🔘 Setting default button app to camera (glasses have camera)")
+          await useSettingsStore.getState().setSetting(SETTINGS.default_button_action_app.key, cameraApp.packageName)
+        }
+        return
+      }
+
+      // 2. For glasses WITHOUT camera, keep current app if compatible
       const currentApp = applets.find(app => app.packageName === currentDefaultApp)
       const isCurrentAppCompatible = currentApp?.compatibility?.isCompatible !== false
 
@@ -27,21 +42,16 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
         return
       }
 
-      // Need to find a new default app
-      // Prefer camera if available and compatible, otherwise first compatible standard app
-      const cameraApp = applets.find(
-        app => app.packageName === "com.mentra.camera" && app.compatibility?.isCompatible !== false,
-      )
-
+      // 3. Fallback: find first compatible standard app
       const firstCompatibleApp = applets.find(
         app => app.type === "standard" && app.compatibility?.isCompatible !== false,
       )
 
-      const newDefaultApp = cameraApp || firstCompatibleApp
-
-      if (newDefaultApp) {
-        console.log("🔘 Setting default button app to:", newDefaultApp.packageName)
-        await useSettingsStore.getState().setSetting(SETTINGS_KEYS.default_button_action_app, newDefaultApp.packageName)
+      if (firstCompatibleApp) {
+        console.log("🔘 Setting default button app to:", firstCompatibleApp.packageName)
+        await useSettingsStore
+          .getState()
+          .setSetting(SETTINGS.default_button_action_app.key, firstCompatibleApp.packageName)
       }
     }
 
@@ -63,7 +73,7 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
       // Check if default button action is enabled
       const defaultButtonActionEnabled = await useSettingsStore
         .getState()
-        .getSetting(SETTINGS_KEYS.default_button_action_enabled)
+        .getSetting(SETTINGS.default_button_action_enabled.key)
 
       if (!defaultButtonActionEnabled) {
         console.log("🔘 Default button action is disabled")
@@ -82,9 +92,7 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
       }
 
       // No foreground app running - start default app
-      const defaultAppPackageName = await useSettingsStore
-        .getState()
-        .getSetting(SETTINGS_KEYS.default_button_action_app)
+      const defaultAppPackageName = await useSettingsStore.getState().getSetting(SETTINGS.default_button_action_app.key)
 
       if (!defaultAppPackageName) {
         console.log("🔘 No default app configured")

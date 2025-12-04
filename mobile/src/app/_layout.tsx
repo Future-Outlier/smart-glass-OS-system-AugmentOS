@@ -1,20 +1,69 @@
-import {useEffect, useState} from "react"
-import {Stack, SplashScreen} from "expo-router"
-import {useFonts} from "@expo-google-fonts/space-grotesk"
-import {customFontsToLoad} from "@/theme"
-import {initI18n} from "@/i18n"
-import {loadDateFnsLocale} from "@/utils/formatDate"
-import {AllProviders} from "@/utils/structure/AllProviders"
-import {AllEffects} from "@/utils/structure/AllEffects"
-import * as Sentry from "@sentry/react-native"
-import Constants from "expo-constants"
-import {registerGlobals} from "@livekit/react-native-webrtc"
-import {initializeSettings} from "@/stores/settings"
-import {ConsoleLogger} from "@/utils/debug/console"
+// Polyfill Event for livekit-client (Hermes doesn't have browser Event class)
+// Must be before any livekit imports
+if (typeof global.Event === "undefined") {
+  // @ts-ignore
+  global.Event = class Event {
+    type: string
+    bubbles: boolean
+    cancelable: boolean
+    currentTarget: any
+    constructor(type: string, options: {bubbles?: boolean; cancelable?: boolean} = {}) {
+      this.type = type
+      this.bubbles = options.bubbles || false
+      this.cancelable = options.cancelable || false
+      this.currentTarget = null
+    }
+  }
+}
 
-// Only initialize Sentry if DSN is provided
-const sentryDsn = Constants.expoConfig?.extra?.SENTRY_DSN
-if (sentryDsn && sentryDsn !== "secret" && sentryDsn.trim() !== "") {
+import {useFonts} from "@expo-google-fonts/space-grotesk"
+import {registerGlobals} from "@livekit/react-native-webrtc"
+import * as Sentry from "@sentry/react-native"
+import {Stack, SplashScreen, useNavigationContainerRef} from "expo-router"
+import {useEffect, useState} from "react"
+import {LogBox} from "react-native"
+
+import {initI18n} from "@/i18n"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import {customFontsToLoad} from "@/theme"
+import {ConsoleLogger} from "@/utils/debug/console"
+import {loadDateFnsLocale} from "@/utils/formatDate"
+import {AllEffects} from "@/utils/structure/AllEffects"
+import {AllProviders} from "@/utils/structure/AllProviders"
+import "@/global.css"
+
+// prevent the annoying warning box at the bottom of the screen from getting in the way:
+LogBox.ignoreLogs([
+  "Failed to open debugger. Please check that the dev server is running and reload the app.",
+  "Require cycle:",
+  "is missing the required default export.",
+  "Attempted to import the module",
+])
+
+const navigationIntegration = Sentry.reactNavigationIntegration({
+  enableTimeToInitialDisplay: true,
+  routeChangeTimeoutMs: 1_000, // default: 1_000
+  ignoreEmptyBackNavigationTransactions: true, // default: true
+})
+
+const setupSentry = () => {
+  // Only initialize Sentry if DSN is provided
+  const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN
+  const isChina = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
+
+  if (!sentryDsn || sentryDsn === "secret" || sentryDsn.trim() === "") {
+    return
+  }
+  if (isChina) {
+    return
+  }
+
+  const release = `${process.env.EXPO_PUBLIC_MENTRAOS_VERSION}`
+  const dist = `${process.env.EXPO_PUBLIC_BUILD_TIME}-${process.env.EXPO_PUBLIC_BUILD_COMMIT}`
+  const branch = process.env.EXPO_PUBLIC_BUILD_BRANCH
+  const isProd = branch == "main" || branch == "staging"
+  const sampleRate = isProd ? 0.1 : 1.0
+
   Sentry.init({
     dsn: sentryDsn,
 
@@ -23,27 +72,27 @@ if (sentryDsn && sentryDsn !== "secret" && sentryDsn.trim() !== "") {
     sendDefaultPii: true,
 
     // send 1/10th of events in prod:
-    tracesSampleRate: __DEV__ ? 1.0 : 0.1,
+    tracesSampleRate: sampleRate,
 
-    // Configure Session Replay
-    // DISABLED: Mobile replay causes MediaCodec spam by recording screen every 5 seconds
-    // replaysSessionSampleRate: 0.1,
-    // replaysOnErrorSampleRate: 1,
-    // integrations: [Sentry.mobileReplayIntegration()],
-
-    // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-    // spotlight: __DEV__,
-
-    // beforeSend(event, hint) {
-    //   // console.log("Sentry.beforeSend", event, hint)
-    //   console.log("Sentry.beforeSend", hint)
-    //   return event
-    // },
+    // debug: true,
+    _experiments: {
+      enableUnhandledCPPExceptionsV2: true,
+    },
+    //   enableNativeCrashHandling: false,
+    //   enableNativeNagger: false,
+    //   enableNative: false,
+    //   enableLogs: false,
+    //   enabled: false,
+    release: release,
+    dist: dist,
+    integrations: [Sentry.feedbackIntegration({})],
   })
 }
 
+setupSentry()
+
 // initialize the settings store
-initializeSettings()
+useSettingsStore.getState().loadAllSettings()
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync()
@@ -79,6 +128,13 @@ function Root() {
     }
   }, [loaded])
 
+  const ref = useNavigationContainerRef()
+  useEffect(() => {
+    if (ref) {
+      navigationIntegration.registerNavigationContainer(ref)
+    }
+  }, [ref])
+
   if (!loaded) {
     return null
   }
@@ -91,9 +147,7 @@ function Root() {
           headerShown: false,
           gestureEnabled: true,
           gestureDirection: "horizontal",
-          // gestureResponseDistance: 100,
-          // fullScreenGestureEnabled: true,
-          animation: "none",
+          animation: "simple_push",
         }}
       />
       <ConsoleLogger />

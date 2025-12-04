@@ -1,6 +1,6 @@
 {
   "name": "@mentra/sdk",
-  "version": "2.1.27",
+  "version": "2.1.28",
   "description": "Build apps for MentraOS smartglasses. This SDK provides everything you need to create real-time smartglasses applications.",
   "source": "src/index.ts",
   "main": "dist/index.js",
@@ -22,6 +22,8 @@
   },
   "scripts": {
     "build": "bun run clean && bun run build:js && bun run build:types",
+    "build:js-only": "bun run clean && bun run build:js",
+    "build:full": "bun run clean && bun run build:js && bun run build:types",
     "clean": "rm -rf dist",
     "build:js": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap=external --external @logtail/pino --external axios --external boxen --external chalk --external cookie-parser --external dotenv --external express --external jimp --external jsonwebtoken --external jsrsasign --external multer --external pino --external pino-pretty --external strip-ansi --external ws",
     "build:types": "bun x tsc --emitDeclarationOnly",

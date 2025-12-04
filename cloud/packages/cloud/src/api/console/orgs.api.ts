@@ -2,7 +2,7 @@
  * Console Organization API (Skeleton)
  *
  * Base: /api/console/orgs
- * Mount: app.use("/api/console/orgs", orgsApi)
+ * Mount: app.use("/api/console/orgs", authenticateConsole, orgsApi)
  *
  * Endpoints:
  * - GET    /                 -> list organizations for the authenticated console user
@@ -19,26 +19,26 @@
  */
 
 import { Router, Request, Response } from "express";
-import { authenticateConsole } from "../middleware/console.middleware";
 
 const router = Router();
 
+/**
+ * Routes — declared first, handlers below (function declarations are hoisted)
+ * NOTE: No per-route middleware - authenticateConsole applied at mount point
+ */
+
 // Routes (declare first; handlers defined below)
-router.get("/", authenticateConsole, listOrgs);
-router.post("/", authenticateConsole, createOrg);
-router.get("/:orgId", authenticateConsole, getOrgById);
-router.put("/:orgId", authenticateConsole, updateOrgById);
-router.delete("/:orgId", authenticateConsole, deleteOrgById);
-router.post("/accept/:token", authenticateConsole, acceptInvite);
-router.post("/:orgId/members", authenticateConsole, inviteMember);
-router.delete("/:orgId/members/:memberId", authenticateConsole, removeMember);
-router.patch(
-  "/:orgId/members/:memberId",
-  authenticateConsole,
-  changeMemberRole,
-);
-router.post("/:orgId/invites/resend", authenticateConsole, resendInviteEmail);
-router.post("/:orgId/invites/rescind", authenticateConsole, rescindInviteEmail);
+router.get("/", listOrgs);
+router.post("/", createOrg);
+router.get("/:orgId", getOrgById);
+router.put("/:orgId", updateOrgById);
+router.delete("/:orgId", deleteOrgById);
+router.post("/accept/:token", acceptInvite);
+router.post("/:orgId/members", inviteMember);
+router.delete("/:orgId/members/:memberId", removeMember);
+router.patch("/:orgId/members/:memberId", changeMemberRole);
+router.post("/:orgId/invites/resend", resendInviteEmail);
+router.post("/:orgId/invites/rescind", rescindInviteEmail);
 
 // Handlers (function declarations - hoisted)
 async function listOrgs(req: Request, res: Response) {

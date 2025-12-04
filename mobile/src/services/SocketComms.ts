@@ -1,11 +1,16 @@
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import wsManager from "@/services/WebSocketManager"
-import {useDisplayStore} from "@/stores/display"
+import CoreModule from "core"
+import {router} from "expo-router"
+
+import {push} from "@/contexts/NavigationRef"
 import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
-import {useSettingsStore, SETTINGS_KEYS} from "@/stores/settings"
-import CoreModule from "core"
+import wsManager from "@/services/WebSocketManager"
 import {useAppletStatusStore} from "@/stores/applets"
+import {useDisplayStore} from "@/stores/display"
+import {useGlassesStore} from "@/stores/glasses"
+import {useSettingsStore, SETTINGS} from "@/stores/settings"
+import {showAlert} from "@/utils/AlertUtils"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -21,21 +26,6 @@ class SocketComms {
     this.ws.on("message", message => {
       this.handle_message(message)
     })
-
-    try {
-      // Subscribe to changes in default_wearable and call sendGlassesConnectionState() when it updates:
-      useSettingsStore.subscribe(
-        state => state.settings[SETTINGS_KEYS.default_wearable],
-        (modelName: string) => {
-          // TODO: get the connection state from mantlemanager or something
-          if (modelName != "") {
-            this.sendGlassesConnectionState(true)
-          }
-        },
-      )
-    } catch (error) {
-      console.error("SOCKET: Error subscribing to default_wearable:", error)
-    }
   }
 
   public static getInstance(): SocketComms {
@@ -66,29 +56,11 @@ class SocketComms {
     this.ws.connect(url, this.coreToken)
   }
 
-  private attemptReconnect(override = false) {
-    if (this.reconnecting && !override) return
-    this.reconnecting = true
-
-    this.connectWebsocket()
-
-    // If after some time we're still not connected, run this function again
-    setTimeout(() => {
-      if (this.ws.isConnected()) {
-        this.reconnectionAttempts = 0
-        this.reconnecting = false
-        return
-      }
-      this.reconnectionAttempts++
-      this.attemptReconnect(true)
-    }, 10000)
-  }
-
-  isWebSocketConnected(): boolean {
+  public isWebSocketConnected(): boolean {
     return this.ws.isConnected()
   }
 
-  restartConnection() {
+  public prestartConnection() {
     console.log(`SOCKET: restartConnection`)
     if (this.ws.isConnected()) {
       this.ws.disconnect()
@@ -97,10 +69,10 @@ class SocketComms {
   }
 
   public setAuthCreds(coreToken: string, userid: string) {
-    console.log(`SOCKET: setAuthCreds(): ${coreToken}, ${userid}`)
+    console.log(`SOCKET: setAuthCreds(): ${coreToken.substring(0, 10)}..., ${userid}`)
     this.coreToken = coreToken
     this.userid = userid
-    useSettingsStore.getState().setSetting(SETTINGS_KEYS.core_token, coreToken)
+    useSettingsStore.getState().setSetting(SETTINGS.core_token.key, coreToken)
     this.connectWebsocket()
   }
 
@@ -115,7 +87,7 @@ class SocketComms {
     this.ws.sendText(JSON.stringify(msg))
   }
 
-  sendRtmpStreamStatus(statusMessage: any) {
+  public sendRtmpStreamStatus(statusMessage: any) {
     try {
       // Forward the status message directly since it's already in the correct format
       this.ws.sendText(JSON.stringify(statusMessage))
@@ -125,7 +97,7 @@ class SocketComms {
     }
   }
 
-  sendKeepAliveAck(ackMessage: any) {
+  public sendKeepAliveAck(ackMessage: any) {
     try {
       // Forward the ACK message directly since it's already in the correct format
       this.ws.sendText(JSON.stringify(ackMessage))
@@ -135,9 +107,17 @@ class SocketComms {
     }
   }
 
-  sendGlassesConnectionState(connected: boolean): void {
-    let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
-    // let modelName = useSettingsStore.getState().getSetting(SETTINGS_KEYS.default_wearable)
+  public sendGlassesConnectionState(): void {
+    let modelName = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
+    const glassesInfo = useGlassesStore.getState()
+
+    // Always include WiFi info - null means "unknown", false means "explicitly disconnected"
+    const wifiInfo = {
+      connected: glassesInfo.wifiConnected ?? null,
+      ssid: glassesInfo.wifiSsid ?? null,
+    }
+
+    const connected = glassesInfo.connected
 
     this.ws.sendText(
       JSON.stringify({
@@ -145,11 +125,24 @@ class SocketComms {
         modelName: modelName,
         status: connected ? "CONNECTED" : "DISCONNECTED",
         timestamp: new Date(),
+        wifi: wifiInfo,
       }),
     )
   }
 
-  sendText(text: string) {
+  public sendBatteryStatus(): void {
+    const batteryLevel = useGlassesStore.getState().batteryLevel
+    const charging = useGlassesStore.getState().charging
+    const msg = {
+      type: "glasses_battery_update",
+      level: batteryLevel,
+      charging: charging,
+      timestamp: Date.now(),
+    }
+    this.ws.sendText(JSON.stringify(msg))
+  }
+
+  public sendText(text: string) {
     try {
       this.ws.sendText(text)
     } catch (error) {
@@ -167,27 +160,15 @@ class SocketComms {
 
   // SERVER COMMANDS
   // these are public functions that can be called from anywhere to notify the server of something:
-  // should all be prefixed with send_
+  // should all be prefixed with send
 
-  send_vad_status(isSpeaking: boolean) {
+  public sendVadStatus(isSpeaking: boolean) {
     const vadMsg = {
       type: "VAD",
       status: isSpeaking,
     }
 
     const jsonString = JSON.stringify(vadMsg)
-    this.ws.sendText(jsonString)
-  }
-
-  send_battery_status(level: number, charging: boolean) {
-    const msg = {
-      type: "glasses_battery_update",
-      level: level,
-      charging: charging,
-      timestamp: Date.now(),
-    }
-
-    const jsonString = JSON.stringify(msg)
     this.ws.sendText(jsonString)
   }
 
@@ -364,9 +345,12 @@ class SocketComms {
   }
 
   // message handlers, these should only ever be called from handle_message / the server:
-  private handle_connection_ack(msg: any) {
+  private async handle_connection_ack(msg: any) {
     console.log("SOCKET: connection ack, connecting to livekit")
-    livekit.connect()
+    const isChina = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
+    if (!isChina) {
+      await livekit.connect()
+    }
     GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
   }
 
@@ -392,13 +376,14 @@ class SocketComms {
   }
 
   public handle_display_event(msg: any) {
-    // console.log(`SOCKET: Handling display event: ${JSON.stringify(msg)}`)
-    if (msg.view) {
-      CoreModule.displayEvent(msg)
-      // Update the Zustand store with the display content
-      const displayEvent = JSON.stringify(msg)
-      useDisplayStore.getState().setDisplayEvent(displayEvent)
+    if (!msg.view) {
+      console.error("SOCKET: display_event missing view")
+      return
     }
+    CoreModule.displayEvent(msg)
+    // Update the Zustand store with the display content
+    const displayEvent = JSON.stringify(msg)
+    useDisplayStore.getState().setDisplayEvent(displayEvent)
   }
 
   private handle_set_location_tier(msg: any) {
@@ -525,11 +510,35 @@ class SocketComms {
     )
   }
 
+  private handle_show_wifi_setup(msg: any) {
+    const reason = msg.reason || "This operation requires your glasses to be connected to WiFi."
+    const currentRoute = router.pathname || "/"
+
+    showAlert(
+      "WiFi Setup Required",
+      reason,
+      [
+        {text: "Cancel", style: "cancel"},
+        {
+          text: "Setup WiFi",
+          onPress: () => {
+            const returnTo = encodeURIComponent(currentRoute)
+            push(`/pairing/glasseswifisetup?returnTo=${returnTo}`)
+          },
+        },
+      ],
+      {
+        iconName: "wifi-off",
+        iconColor: "#FF9500",
+      },
+    )
+  }
+
   // Message Handling
   private handle_message(msg: any) {
     const type = msg.type
 
-    console.log(`SOCKET: handle_incoming_message: ${type}`)
+    console.log(`SOCKET: msg: ${type}`)
 
     switch (type) {
       case "connection_ack":
@@ -610,6 +619,10 @@ class SocketComms {
 
       case "rgb_led_control":
         this.handle_rgb_led_control(msg)
+        break
+
+      case "show_wifi_setup":
+        this.handle_show_wifi_setup(msg)
         break
 
       default:

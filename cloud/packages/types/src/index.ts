@@ -41,3 +41,24 @@ export {HARDWARE_CAPABILITIES, getModelCapabilities} from "./hardware"
 // ============================================================================
 
 export type {AppletType, AppPermissionType, AppletPermission, AppletInterface} from "./applet"
+
+// ============================================================================
+// CLI types (compile-time only)
+// ============================================================================
+
+export type {GlassesInfo} from "./device"
+
+// ============================================================================
+// CLI types (compile-time only)
+// ============================================================================
+
+export type {
+  CLIApiKey,
+  CLIApiKeyListItem,
+  GenerateCLIKeyRequest,
+  GenerateCLIKeyResponse,
+  UpdateCLIKeyRequest,
+  CLITokenPayload,
+  CLICredentials,
+  Cloud,
+} from "./cli"

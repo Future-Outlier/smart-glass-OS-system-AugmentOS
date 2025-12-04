@@ -1,5 +1,5 @@
-import {Linking, Platform} from "react-native"
 import {requireNativeModule} from "expo-modules-core"
+import {Linking, Platform} from "react-native"
 
 const Core = requireNativeModule("Core")
 

@@ -1,15 +1,16 @@
+import CoreModule from "core"
+import {useLocalSearchParams} from "expo-router"
 import {useEffect} from "react"
 import {View, ViewStyle, TextStyle} from "react-native"
-import {useLocalSearchParams} from "expo-router"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {Screen, Header, Text, Button} from "@/components/ignite"
-import {ThemedStyle} from "@/theme"
-import Icon from "react-native-vector-icons/FontAwesome"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import Animated, {useAnimatedStyle, useSharedValue, withTiming} from "react-native-reanimated"
-import {translate} from "@/i18n/translate"
+import Icon from "react-native-vector-icons/FontAwesome"
+
+import {Screen, Header, Text, Button} from "@/components/ignite"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {TxKeyPath} from "@/i18n"
-import CoreModule from "core"
+import {translate} from "@/i18n/translate"
+import {ThemedStyle} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function PairingFailureScreen() {
   const {themed, theme} = useAppTheme()
@@ -58,14 +59,9 @@ export default function PairingFailureScreen() {
         />
 
         <View style={themed($buttonContainer)}>
-          <Button tx="pairing:tryAgain" preset="filled" onPress={handleRetry} style={themed($button)} />
+          <Button tx="pairing:tryAgain" preset="primary" onPress={handleRetry} style={themed($button)} />
 
-          <Button
-            tx="pairing:goHome"
-            preset="filled"
-            onPress={handleGoHome}
-            style={[themed($button), themed($secondaryButton)]}
-          />
+          <Button tx="pairing:goHome" preset="alternate" onPress={handleGoHome} style={themed($button)} />
         </View>
 
         {/* <View style={themed($helpContainer)}>
@@ -82,21 +78,21 @@ export default function PairingFailureScreen() {
 }
 
 const $screen: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
 })
 
 const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   alignItems: "center",
   justifyContent: "center",
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  padding: spacing.lg,
+  padding: spacing.s6,
   borderRadius: 130,
   backgroundColor: colors.errorBackground || colors.palette.angry100,
-  marginBottom: spacing.xl,
+  marginBottom: spacing.s8,
   width: 130,
   height: 130,
   alignItems: "center",
@@ -106,7 +102,7 @@ const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 28,
   fontWeight: "bold",
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
   textAlign: "center",
   color: colors.text,
 })
@@ -114,24 +110,18 @@ const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   textAlign: "center",
-  marginBottom: spacing.xxl,
+  marginBottom: spacing.s12,
   lineHeight: 24,
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.s4,
   color: colors.textDim,
 })
 
 const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   width: "100%",
-  paddingHorizontal: spacing.md,
-  gap: spacing.sm,
+  paddingHorizontal: spacing.s4,
+  gap: spacing.s3,
 })
 
 const $button: ThemedStyle<ViewStyle> = () => ({
   width: "100%",
-})
-
-const $secondaryButton: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.palette.neutral600,
-  borderWidth: 1,
-  borderColor: colors.border,
 })

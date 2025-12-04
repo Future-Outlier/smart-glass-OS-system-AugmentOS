@@ -13,6 +13,7 @@ on:
       - staging
     paths:
       - "cloud/websites/console/**"
+      - "cloud/websites/shared/**"
 
 concurrency:
   group: console-build-${{ github.workflow }}-${{ github.ref }}
@@ -39,6 +40,7 @@ jobs:
           filters: |
             console:
               - 'cloud/websites/console/**'
+              - 'cloud/websites/shared/**'
 
       - name: Skip if no console changes
         if: steps.filter.outputs.console != 'true'
@@ -56,14 +58,19 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-cache-console-${{ hashFiles('cloud/websites/console/bun.lock') }}
+          key: ${{ runner.os }}-bun-cache-console-${{ hashFiles('cloud/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-cache-console-
 
       - name: Install dependencies
         if: steps.filter.outputs.console == 'true'
-        working-directory: cloud/websites/console
+        working-directory: cloud
         run: bun install --frozen-lockfile
+
+      - name: Build SDK package (required for TypeScript types)
+        if: steps.filter.outputs.console == 'true'
+        working-directory: cloud/packages/sdk
+        run: bun run build
 
       - name: Run build
         if: steps.filter.outputs.console == 'true'

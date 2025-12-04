@@ -1,16 +1,15 @@
-import {translate} from "@/i18n"
-import {Theme} from "@/theme"
-import {AppletPermission} from "@/types/AppletTypes"
-import {AppletInterface} from "@/../../cloud/packages/types/src"
-import {
-  checkAndRequestNotificationAccessSpecialPermission,
-  checkNotificationAccessSpecialPermission,
-} from "@/utils/NotificationServiceUtils"
-import AsyncStorage from "@react-native-async-storage/async-storage"
+import CoreModule from "core"
 import {Alert, Linking, PermissionsAndroid, Platform} from "react-native"
 import BleManager from "react-native-ble-manager"
 import {check, PERMISSIONS, request, RESULTS} from "react-native-permissions"
+
+import {translate} from "@/i18n"
+import {Theme} from "@/theme"
 import showAlert, {showBluetoothAlert, showLocationAlert, showLocationServicesAlert} from "@/utils/AlertUtils"
+import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
+import {storage} from "@/utils/storage/storage"
+
+import {AppletInterface, AppletPermission} from "@/../../cloud/packages/types/src"
 
 // Define permission features with their required permissions
 export const PermissionFeatures: Record<string, string> = {
@@ -170,48 +169,43 @@ if (Platform.OS === "android") {
 
 // Track which permission has been requested
 export const markPermissionRequested = async (featureKey: string): Promise<void> => {
-  try {
-    await AsyncStorage.setItem(`PERMISSION_REQUESTED_${featureKey}`, "true")
-  } catch (e) {
-    console.error("Failed to save permission requested status", e)
+  const res = await storage.save(`PERMISSION_REQUESTED_${featureKey}`, true)
+  if (res.is_error()) {
+    console.error("Failed to save permission requested status", res.error)
   }
 }
 
 export const markPermissionNotRequested = async (featureKey: string): Promise<void> => {
-  try {
-    await AsyncStorage.removeItem(`PERMISSION_REQUESTED_${featureKey}`)
-  } catch (e) {
-    console.error("Failed to remove permission requested status", e)
+  const res = await storage.remove(`PERMISSION_REQUESTED_${featureKey}`)
+  if (res.is_error()) {
+    console.error("Failed to remove permission requested status", res.error)
   }
 }
 
 // Check if a permission has been requested before
 export const hasPermissionBeenRequested = async (featureKey: string): Promise<boolean> => {
-  try {
-    const value = await AsyncStorage.getItem(`PERMISSION_REQUESTED_${featureKey}`)
-    return value === "true"
-  } catch (e) {
-    console.error("Failed to get permission requested status", e)
+  const res = storage.load<boolean>(`PERMISSION_REQUESTED_${featureKey}`)
+  if (res.is_error()) {
+    console.error("Failed to get permission requested status", res.error)
     return false
   }
+  return true
 }
 
 export const markPermissionGranted = async (featureKey: string): Promise<void> => {
-  try {
-    await AsyncStorage.setItem(`PERMISSION_GRANTED_${featureKey}`, "true")
-  } catch (e) {
-    console.error("Failed to save permission granted status", e)
+  const res = await storage.save(`PERMISSION_GRANTED_${featureKey}`, true)
+  if (res.is_error()) {
+    console.error("Failed to save permission granted status", res.error)
   }
 }
 
 export const hasPermissionBeenGranted = async (featureKey: string): Promise<boolean> => {
-  try {
-    const value = await AsyncStorage.getItem(`PERMISSION_GRANTED_${featureKey}`)
-    return value === "true"
-  } catch (e) {
-    console.error("Failed to get permission granted status", e)
+  const res = storage.load<boolean>(`PERMISSION_GRANTED_${featureKey}`)
+  if (res.is_error()) {
+    console.log("Failed to get permission granted status", res.error)
     return false
   }
+  return true
 }
 
 // Battery optimization permission temporarily disabled
@@ -493,7 +487,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
 
   // For special case of Android notification access
   if (featureKey === PermissionFeatures.READ_NOTIFICATIONS && Platform.OS === "android") {
-    const notificationAccess = await checkNotificationAccessSpecialPermission()
+    const notificationAccess = await CoreModule.hasNotificationListenerPermission()
     if (!notificationAccess) {
       allGranted = false
     }
@@ -636,7 +630,7 @@ export const checkFeaturePermissions = async (featureKey: string): Promise<boole
 
   // Special case for notifications on Android
   if (featureKey === PermissionFeatures.READ_NOTIFICATIONS && Platform.OS === "android") {
-    return await checkNotificationAccessSpecialPermission()
+    return await CoreModule.hasNotificationListenerPermission()
   }
 
   return false
@@ -759,7 +753,7 @@ export const checkPermissionsUI = async (app: AppletInterface) => {
         if (Platform.OS == "ios") {
           break
         }
-        const hasNotificationAccess = await checkNotificationAccessSpecialPermission()
+        const hasNotificationAccess = await CoreModule.hasNotificationListenerPermission()
         if (!hasNotificationAccess) {
           neededPermissions.push(PermissionFeatures.READ_NOTIFICATIONS)
         }

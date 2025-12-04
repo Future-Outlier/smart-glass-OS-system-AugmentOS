@@ -1,18 +1,77 @@
+import DontHaveGlassesSvg from "@assets/glasses/dont-have.svg"
+import HaveGlassesSvg from "@assets/glasses/have.svg"
+import LogoSvg from "@assets/logo/logo.svg"
+import {TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {SvgProps} from "react-native-svg"
+
 import {Screen, Text} from "@/components/ignite"
-import {Button} from "@/components/ignite/Button"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import {TxKeyPath} from "@/i18n"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {$styles, ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {FontAwesome, MaterialCommunityIcons} from "@expo/vector-icons"
-import {TextStyle, View, ViewStyle} from "react-native"
+
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
+
+// Import SVG components
+
+const CardButton = ({
+  onPress,
+  tx,
+  SvgComponent,
+}: {
+  onPress: () => void
+  tx: string
+  SvgComponent: React.FC<SvgProps>
+}) => {
+  const {themed} = useAppTheme()
+  return (
+    <TouchableOpacity activeOpacity={0.6} onPress={onPress} style={themed($cardButton)}>
+      <View style={themed($cardButtonImageContainer)}>
+        <SvgComponent width={120} height={60} />
+      </View>
+      <Text tx={tx as TxKeyPath} style={themed($cardButtonText)} />
+    </TouchableOpacity>
+  )
+}
+
+const $cardButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  backgroundColor: colors.background,
+  height: 190,
+  borderRadius: spacing.s6,
+  padding: 16,
+  shadowColor: "#000",
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+  elevation: 5,
+  alignItems: "center",
+  justifyContent: "center",
+  gap: spacing.s4,
+})
+
+const $cardButtonImageContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  width: 120,
+  height: 60,
+  marginRight: spacing.s2,
+  alignItems: "center",
+  justifyContent: "center",
+})
+
+const $cardButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
+  color: colors.secondary_foreground,
+  fontSize: 20,
+  fontWeight: 400,
+})
 
 export default function OnboardingWelcome() {
   const {theme, themed} = useAppTheme()
   const {push} = useNavigationHistory()
-  const [_onboarding, setOnboardingCompleted] = useSetting(SETTINGS_KEYS.onboarding_completed)
+  const [_onboarding, setOnboardingCompleted] = useSetting(SETTINGS.onboarding_completed.key)
 
   // User has smart glasses - go to glasses selection screen
   const handleHasGlasses = async () => {
@@ -32,86 +91,54 @@ export default function OnboardingWelcome() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($screenContainer)}>
-      <View style={themed($mainContainer)}>
-        {/* <View style={styles.logoContainer}>
-          <Icon
-            name="augmented-reality"
-            size={100}
-            color={isDarkTheme ? '#FFFFFF' : '#2196F3'}
-          />
-        </View> */}
-
-        <View style={themed($infoContainer)}>
-          <Text style={themed($title)} tx="onboarding:welcome" />
-
-          <Text style={themed($description)} tx="onboarding:getStarted" />
-
-          <Spacer height={20} />
-
-          <Text style={themed($question)} tx="onboarding:doYouHaveGlasses" />
-        </View>
-
-        <Button
-          onPress={handleHasGlasses}
-          tx="onboarding:haveGlasses"
-          textAlignment="center"
-          LeftAccessory={() => <MaterialCommunityIcons name="glasses" size={16} color={theme.colors.textAlt} />}
-        />
-
-        <Spacer height={10} />
-        <Button
-          onPress={handleNoGlasses}
-          tx="onboarding:dontHaveGlasses"
-          preset="default"
-          LeftAccessory={() => <FontAwesome name="mobile" size={16} color={theme.colors.textAlt} />}
-        />
+    <Screen
+      preset="fixed"
+      backgroundColor={theme.colors.primary_foreground}
+      style={themed($styles.screen)}
+      safeAreaEdges={["top"]}>
+      <View style={themed($logoContainer)}>
+        <LogoSvg width={108} height={58} />
       </View>
+
+      <View style={themed($infoContainer)}>
+        <Text style={themed($title)} tx="onboarding:welcome" />
+        <Spacer height={theme.spacing.s4} />
+        <Text style={themed($subtitle)} tx="onboarding:doYouHaveGlasses" />
+      </View>
+      <Spacer height={theme.spacing.s12} />
+      <CardButton onPress={handleHasGlasses} tx="onboarding:haveGlasses" SvgComponent={HaveGlassesSvg} />
+      <Spacer height={theme.spacing.s8} />
+      <CardButton onPress={handleNoGlasses} tx="onboarding:dontHaveGlasses" SvgComponent={DontHaveGlassesSvg} />
     </Screen>
   )
 }
 
-const $screenContainer: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.background,
-})
-
-const $mainContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  flexDirection: "column",
+const $logoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  alignSelf: "center",
+  alignItems: "center",
   justifyContent: "center",
-  padding: spacing.lg,
+  marginTop: spacing.s6,
+  marginBottom: spacing.s8,
 })
 
-const $infoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $infoContainer: ThemedStyle<ViewStyle> = () => ({
   alignItems: "center",
   flex: 0,
   justifyContent: "center",
-  marginBottom: spacing.xxl,
   width: "100%",
 })
 
-const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.xl,
-  lineHeight: 32,
-  fontWeight: "bold",
-  marginBottom: spacing.md,
+const $title: ThemedStyle<TextStyle> = ({colors}) => ({
+  fontSize: 30,
+  lineHeight: 30,
+  fontWeight: 600,
   textAlign: "center",
-  color: colors.text,
+  color: colors.secondary_foreground,
 })
 
-const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 18,
-  lineHeight: 26,
-  marginBottom: spacing.xl,
-  paddingHorizontal: spacing.lg,
+const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
+  fontSize: 20,
+  fontWeight: 400,
   textAlign: "center",
-  color: colors.textDim,
-})
-
-const $question: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.lg,
-  fontWeight: "600",
-  textAlign: "center",
-  marginBottom: spacing.sm,
-  color: colors.text,
+  color: colors.secondary_foreground,
 })

@@ -1,12 +1,4 @@
-import {Button, Screen, Text} from "@/components/ignite"
-import {Spacer} from "@/components/ui/Spacer"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {translate} from "@/i18n"
-import {supabase} from "@/supabase/supabaseClient"
-import {spacing, ThemedStyle} from "@/theme"
-import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
-import {useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
+import LogoSvg from "@assets/logo/logo.svg"
 import {FontAwesome} from "@expo/vector-icons"
 import AppleIcon from "assets/icons/component/AppleIcon"
 import GoogleIcon from "assets/icons/component/GoogleIcon"
@@ -29,6 +21,17 @@ import {
 } from "react-native"
 import {Pressable} from "react-native-gesture-handler"
 
+import {Button, Screen, Text} from "@/components/ignite"
+import {Spacer} from "@/components/ui/Spacer"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {spacing, ThemedStyle} from "@/theme"
+import showAlert from "@/utils/AlertUtils"
+import mentraAuth from "@/utils/auth/authClient"
+import {useAppTheme} from "@/utils/useAppTheme"
+import {useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
+
 export default function LoginScreen() {
   const [isSigningUp, setIsSigningUp] = useState(false)
   const [email, setEmail] = useState("")
@@ -38,6 +41,7 @@ export default function LoginScreen() {
   const [formAction, setFormAction] = useState<"signin" | "signup" | null>(null)
   const [backPressCount, setBackPressCount] = useState(0)
   const {push, replace} = useNavigationHistory()
+  const [isChina] = useSetting(SETTINGS.china_deployment.key)
 
   // Get theme and safe area insets
   const {theme, themed} = useAppTheme()
@@ -104,123 +108,74 @@ export default function LoginScreen() {
   }, [])
 
   const handleGoogleSignIn = async () => {
-    try {
-      // Start auth flow
-      setIsAuthLoading(true)
+    // Start auth flow
+    setIsAuthLoading(true)
 
-      // Show the auth loading overlay
-      Animated.timing(authOverlayOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start()
+    // Show the auth loading overlay
+    Animated.timing(authOverlayOpacity, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start()
 
-      // Automatically hide the overlay after 5 seconds regardless of what happens
-      // This is a failsafe in case the auth flow is interrupted
-      setTimeout(() => {
-        console.log("Auth flow failsafe timeout - hiding loading overlay")
-        setIsAuthLoading(false)
-        authOverlayOpacity.setValue(0)
-      }, 5000)
-
-      const {data, error} = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          // Must match the deep link scheme/host/path in your AndroidManifest.xml
-          redirectTo: "com.mentra://auth/callback",
-          skipBrowserRedirect: true,
-          queryParams: {
-            prompt: "select_account",
-          },
-        },
-      })
-
-      // 2) If there's an error, handle it
-      if (error) {
-        console.error("Supabase Google sign-in error:", error)
-        // showAlert(translate('loginScreen.errors.authError'), error.message);
-        setIsAuthLoading(false)
-        authOverlayOpacity.setValue(0)
-        return
-      }
-
-      // 3) If we get a `url` back, we must open it ourselves in RN
-      if (data?.url) {
-        console.log("Opening browser with:", data.url)
-        // await Linking.openURL(data.url)
-
-        await WebBrowser.openBrowserAsync(data.url)
-
-        // Directly hide the loading overlay when we leave the app
-        // This ensures it won't be shown when user returns without completing auth
-        setIsAuthLoading(false)
-        authOverlayOpacity.setValue(0)
-      }
-    } catch (err) {
-      console.error("Google sign in failed:", err)
-      // showAlert(
-      //   translate('loginScreen.errors.authError'),
-      //   translate('loginScreen.errors.googleSignInFailed'),
-      // );
+    // Automatically hide the overlay after 5 seconds regardless of what happens
+    // This is a failsafe in case the auth flow is interrupted
+    setTimeout(() => {
+      console.log("Auth flow failsafe timeout - hiding loading overlay")
       setIsAuthLoading(false)
       authOverlayOpacity.setValue(0)
-    }
+    }, 5000)
 
-    console.log("signInWithOAuth call finished")
+    const res = await mentraAuth.googleSignIn()
+
+    // 2) If there's an error, handle it
+    if (res.is_error()) {
+      // showAlert(translate('loginScreen.errors.authError'), error.message);
+      setIsAuthLoading(false)
+      authOverlayOpacity.setValue(0)
+      return
+    }
+    const url = res.value
+
+    // 3) If we get a `url` back, we must open it ourselves in RN
+    console.log("Opening browser with:", url)
+    // await Linking.openURL(data.url)
+
+    await WebBrowser.openBrowserAsync(url)
+
+    // Directly hide the loading overlay when we leave the app
+    // This ensures it won't be shown when user returns without completing auth
+    setIsAuthLoading(false)
+    authOverlayOpacity.setValue(0)
   }
 
   const handleAppleSignIn = async () => {
-    try {
-      setIsAuthLoading(true)
+    setIsAuthLoading(true)
 
-      // Show the auth loading overlay
-      Animated.timing(authOverlayOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start()
+    // Show the auth loading overlay
+    Animated.timing(authOverlayOpacity, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start()
 
-      const {data, error} = await supabase.auth.signInWithOAuth({
-        provider: "apple",
-        options: {
-          // Match the deep link scheme/host/path in your AndroidManifest.xml
-          redirectTo: "com.mentra://auth/callback",
-        },
-      })
-
-      // If there's an error, handle it
-      if (error) {
-        console.error("Supabase Apple sign-in error:", error)
-        // showAlert(translate('loginScreen.errors.authError'), error.message);
-        setIsAuthLoading(false)
-        authOverlayOpacity.setValue(0)
-        return
-      }
-
-      // If we get a `url` back, we must open it ourselves in React Native
-      if (data?.url) {
-        console.log("Opening browser with:", data.url)
-        await WebBrowser.openBrowserAsync(data.url)
-
-        // Directly hide the loading overlay when we leave the app
-        // This ensures it won't be shown when user returns without completing auth
-        setIsAuthLoading(false)
-        authOverlayOpacity.setValue(0)
-      }
-
-      // Note: The actual navigation to SplashScreen will be handled by
-      // the onAuthStateChange listener you already have in place
-    } catch (err) {
-      console.error("Apple sign in failed:", err)
-      // showAlert(
-      //   translate('loginScreen.errors.authError'),
-      //   translate('loginScreen.errors.appleSignInFailed'),
-      // );
+    const res = await mentraAuth.appleSignIn()
+    if (res.is_error()) {
+      console.error("Apple sign in failed:", res.error)
       setIsAuthLoading(false)
       authOverlayOpacity.setValue(0)
+      return
     }
+    const url = res.value
 
-    console.log("signInWithOAuth for Apple finished")
+    // If we get a `url` back, we must open it ourselves in React Native
+    console.log("Opening browser with:", url)
+    await WebBrowser.openBrowserAsync(url)
+
+    // Directly hide the loading overlay when we leave the app
+    // This ensures it won't be shown when user returns without completing auth
+    setIsAuthLoading(false)
+    authOverlayOpacity.setValue(0)
   }
 
   const handleEmailSignUp = async (email: string, password: string) => {
@@ -228,70 +183,36 @@ export default function LoginScreen() {
     setIsFormLoading(true)
     setFormAction("signup")
 
-    try {
-      const {data, error} = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: "com.mentra://auth/callback",
-        },
-      })
+    const res = await mentraAuth.signUp({email, password})
 
-      if (error) {
-        console.log("Sign-up error:", error)
-
-        // Check for common Supabase error messages when email already exists
-        const errorMessage = error.message.toLowerCase()
-
-        if (
-          errorMessage.includes("already registered") ||
-          errorMessage.includes("user already registered") ||
-          errorMessage.includes("email already exists") ||
-          errorMessage.includes("identity already linked")
-        ) {
-          // Try to detect if it's a Google or Apple account
-          // Note: Supabase doesn't always tell us which provider, so we show a generic message
-          showAlert(translate("login:emailAlreadyRegistered"), translate("login:useGoogleSignIn"), [
-            {text: translate("common:ok")},
-          ])
-        } else {
-          showAlert(translate("common:error"), error.message, [{text: translate("common:ok")}])
-        }
-      } else if (!data.session) {
-        // Ensure translations are resolved before passing to showAlert
-        const successTitle = translate("login:success")
-        const verificationMessage = translate("login:checkEmailVerification")
-        showAlert(successTitle, verificationMessage, [{text: translate("common:ok")}])
-      } else {
-        console.log("Sign-up successful:", data)
-        replace("/")
-      }
-    } catch (err) {
-      console.error("Error during sign-up:", err)
-      showAlert(translate("common:error"), err.toString(), [{text: translate("common:ok")}])
-    } finally {
+    if (res.is_error()) {
+      console.error("Error during sign-up:", res.error)
+      showAlert(translate("common:error"), res.error.toString(), [{text: translate("common:ok")}])
       setIsFormLoading(false)
       setFormAction(null)
+      return
     }
+
+    setIsFormLoading(false)
+    setFormAction(null)
+    replace("/")
   }
 
   const handleEmailSignIn = async (email: string, password: string) => {
     Keyboard.dismiss()
     setIsFormLoading(true)
     setFormAction("signin")
-    const {data, error} = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      showAlert(translate("common:error"), error.message)
-      // Handle sign-in error
-    } else {
-      console.log("Sign-in successful:", data)
-      replace("/")
+    
+    const res = await mentraAuth.signInWithPassword({email, password})
+    if (res.is_error()) {
+      console.error("Error during sign-in:", res.error)
+      showAlert(translate("common:error"), res.error.toString(), [{text: translate("common:ok")}])
+      setIsFormLoading(false)
+      return
     }
+
     setIsFormLoading(false)
+    replace("/")
   }
 
   useEffect(() => {
@@ -328,13 +249,18 @@ export default function LoginScreen() {
           {isAuthLoading && (
             <Animated.View style={[themed($authLoadingOverlay), {opacity: authOverlayOpacity}]}>
               <View style={themed($authLoadingContent)}>
-                <View style={themed($authLoadingLogoPlaceholder)} />
+                <View style={themed($authLoadingLogoContainer)}>
+                  <LogoSvg width={108} height={58} />
+                </View>
                 <ActivityIndicator size="large" color={theme.colors.tint} style={themed($authLoadingIndicator)} />
                 <Text tx="login:connectingToServer" style={themed($authLoadingText)} />
               </View>
             </Animated.View>
           )}
           <Animated.View style={{opacity, transform: [{translateY}]}}>
+            <View style={themed($logoContainer)}>
+              <LogoSvg width={108} height={58} />
+            </View>
             <Text preset="heading" tx="login:title" style={themed($title)} />
             <Text preset="subheading" tx="login:subtitle" style={themed($subtitle)} />
           </Animated.View>
@@ -351,7 +277,7 @@ export default function LoginScreen() {
                       color={theme.colors.textDim}
                       // style={themed($inputIcon)}
                     />
-                    <Spacer width={spacing.sm} />
+                    <Spacer width={spacing.s3} />
                     <TextInput
                       hitSlop={{top: 16, bottom: 16}}
                       style={themed($enhancedInput)}
@@ -375,7 +301,7 @@ export default function LoginScreen() {
                       color={theme.colors.textDim}
                       // style={themed($inputIcon)}
                     />
-                    <Spacer width={spacing.sm} />
+                    <Spacer width={spacing.s3} />
                     <TextInput
                       hitSlop={{top: 16, bottom: 16}}
                       style={themed($enhancedInput)}
@@ -400,7 +326,7 @@ export default function LoginScreen() {
                   <Text tx="login:forgotPassword" style={themed($forgotPasswordText)} />
                 </TouchableOpacity>
 
-                <Spacer height={spacing.sm} />
+                <Spacer height={spacing.s3} />
 
                 <Button
                   tx="login:login"
@@ -410,7 +336,7 @@ export default function LoginScreen() {
                   onPress={() => handleEmailSignIn(email, password)}
                   disabled={isFormLoading}
                 />
-                <Spacer height={spacing.sm} />
+                <Spacer height={spacing.s3} />
                 <Button
                   tx="login:createAccount"
                   style={themed($secondaryButton)}
@@ -420,7 +346,7 @@ export default function LoginScreen() {
                   disabled={isFormLoading}
                 />
 
-                <Spacer height={spacing.sm} />
+                <Spacer height={spacing.s3} />
 
                 <Pressable onPress={() => setIsSigningUp(false)}>
                   <View style={{flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
@@ -436,29 +362,8 @@ export default function LoginScreen() {
               </Animated.View>
             ) : (
               <View style={themed($signInOptions)}>
-                <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
-                  <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
-                    <GoogleIcon />
-                  </View>
-                  <Text style={themed($socialButtonText)} tx="login:continueWithGoogle" />
-                </TouchableOpacity>
-
-                {Platform.OS === "ios" && (
-                  <TouchableOpacity style={[themed($socialButton), themed($appleButton)]} onPress={handleAppleSignIn}>
-                    <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
-                      <AppleIcon color={theme.colors.text} />
-                    </View>
-                    <Text style={[themed($socialButtonText), themed($appleButtonText)]} tx="login:continueWithApple" />
-                  </TouchableOpacity>
-                )}
-
-                <View style={themed($dividerContainer)}>
-                  <View style={themed($divider)} />
-                  <Text style={themed($dividerText)} tx="common:or" />
-                  <View style={themed($divider)} />
-                </View>
-
                 <Button
+                  flexContainer
                   tx="login:continueWithEmail"
                   style={themed($primaryButton)}
                   pressedStyle={themed($pressedButton)}
@@ -473,6 +378,23 @@ export default function LoginScreen() {
                     />
                   )}
                 />
+                {!isChina && (
+                  <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
+                    <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
+                      <GoogleIcon />
+                    </View>
+                    <Text style={themed($socialButtonText)} tx="login:continueWithGoogle" />
+                  </TouchableOpacity>
+                )}
+
+                {Platform.OS === "ios" && !isChina && (
+                  <TouchableOpacity style={[themed($socialButton), themed($appleButton)]} onPress={handleAppleSignIn}>
+                    <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
+                      <AppleIcon color={theme.colors.text} />
+                    </View>
+                    <Text style={[themed($socialButtonText), themed($appleButtonText)]} tx="login:continueWithApple" />
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </Animated.View>
@@ -495,12 +417,12 @@ export default function LoginScreen() {
           <View
             style={{
               backgroundColor: theme.colors.background,
-              padding: theme.spacing.xl,
-              borderRadius: theme.spacing.md,
+              padding: theme.spacing.s8,
+              borderRadius: theme.spacing.s4,
               alignItems: "center",
               minWidth: 200,
             }}>
-            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.md}} />
+            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.s4}} />
             <Text preset="bold" style={{color: theme.colors.text}}>
               {formAction === "signup" ? "Creating your account..." : "Signing in..."}
             </Text>
@@ -524,7 +446,7 @@ const $scrollContent: ThemedStyle<ViewStyle> = () => ({
 const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
-  padding: spacing.lg,
+  padding: spacing.s6,
 })
 
 const $authLoadingOverlay: ThemedStyle<ViewStyle> = ({colors}) => ({
@@ -541,17 +463,23 @@ const $authLoadingOverlay: ThemedStyle<ViewStyle> = ({colors}) => ({
 
 const $authLoadingContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignItems: "center",
-  padding: spacing.md,
+  padding: spacing.s4,
 })
 
-const $authLoadingLogoPlaceholder: ThemedStyle<ViewStyle> = () => ({
-  width: 100,
-  height: 100,
-  marginBottom: 20,
+const $authLoadingLogoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: spacing.s6,
+})
+
+const $logoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: spacing.s4,
 })
 
 const $authLoadingIndicator: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $authLoadingText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -563,20 +491,20 @@ const $title: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
   fontSize: 46,
   color: colors.text,
   textAlign: "center",
-  marginBottom: spacing.xs,
-  paddingTop: spacing.xl,
-  paddingBottom: spacing.md,
+  marginBottom: spacing.s2,
+  paddingTop: spacing.s8,
+  paddingBottom: spacing.s4,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
   fontSize: 16,
   color: colors.text,
   textAlign: "center",
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
 })
 
 const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.md,
+  marginBottom: spacing.s4,
 })
 
 const $form: ThemedStyle<ViewStyle> = () => ({
@@ -584,7 +512,7 @@ const $form: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $inputGroup: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.s3,
 })
 
 const $inputLabel: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -601,7 +529,7 @@ const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDar
   borderWidth: 1,
   borderColor: colors.border,
   borderRadius: 8,
-  paddingHorizontal: spacing.sm,
+  paddingHorizontal: spacing.s3,
   backgroundColor: isDark ? colors.palette.transparent : colors.background,
   // Remove shadows for light theme
   ...(isDark
@@ -624,39 +552,34 @@ const $enhancedInput: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $signInOptions: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  gap: spacing.xs,
+  gap: spacing.s4,
 })
 
-const $socialButton: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
+const $socialButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   height: 44,
   borderWidth: 1,
   borderColor: colors.border,
-  borderRadius: 8,
-  paddingHorizontal: spacing.sm,
-  marginBottom: spacing.xs,
-  backgroundColor: isDark ? colors.palette.transparent : colors.background,
+  borderRadius: spacing.s6,
+  paddingHorizontal: spacing.s3,
+  backgroundColor: colors.background,
   // Remove shadows for light theme to avoid thick border appearance
-  ...(isDark
-    ? {
-        shadowOffset: {
-          width: 0,
-          height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 1,
-        elevation: 1,
-      }
-    : {}),
+  shadowOffset: {
+    width: 0,
+    height: 1,
+  },
+  shadowOpacity: 0.1,
+  shadowRadius: 1,
+  elevation: 1,
 })
 
-const $googleButton: ThemedStyle<ViewStyle> = ({colors, isDark}) => ({
-  backgroundColor: isDark ? colors.palette.transparent : colors.background,
+const $googleButton: ThemedStyle<ViewStyle> = ({colors}) => ({
+  backgroundColor: colors.background,
 })
 
-const $appleButton: ThemedStyle<ViewStyle> = ({colors, isDark}) => ({
-  backgroundColor: isDark ? colors.palette.transparent : colors.background,
+const $appleButton: ThemedStyle<ViewStyle> = ({colors}) => ({
+  backgroundColor: colors.background,
   borderColor: colors.border,
 })
 
@@ -698,25 +621,6 @@ const $emailButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 16,
 })
 
-const $dividerContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  marginVertical: spacing.sm,
-})
-
-const $divider: ThemedStyle<ViewStyle> = ({colors}) => ({
-  flex: 1,
-  height: 1,
-  backgroundColor: colors.border,
-})
-
-const $dividerText: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
-  paddingHorizontal: spacing.sm,
-  color: colors.textDim,
-  fontSize: 12,
-  textTransform: "uppercase",
-})
-
 const $termsText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 11,
   color: colors.textDim,
@@ -726,7 +630,7 @@ const $termsText: ThemedStyle<TextStyle> = ({colors}) => ({
 
 const $forgotPasswordContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   alignSelf: "flex-end",
-  marginTop: spacing.xs,
+  marginTop: spacing.s2,
 })
 
 const $forgotPasswordText: ThemedStyle<TextStyle> = ({colors}) => ({

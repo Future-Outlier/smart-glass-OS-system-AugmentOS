@@ -87,9 +87,7 @@ const AppCard: React.FC<AppCardProps> = memo(
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
         {!isLastRow && (
-          <div
-            className="absolute -bottom-3 left-1/2 -translate-x-1/2 h-px w-[70%]"
-            style={{backgroundColor: "var(--border-color)"}}></div>
+          <div className="absolute -bottom-[12px] left-1/2 -translate-x-1/2 h-px w-[100%] bg-[var(--border)]"></div>
         )}
 
         {/* Image Column */}
@@ -122,7 +120,7 @@ const AppCard: React.FC<AppCardProps> = memo(
         <div className="flex-1 flex flex-col justify-center min-w-0">
           <div>
             <h3
-              className="text-[14px] sm:text-[16px] font-medium -mb-[2px] truncate "
+              className="leading-tight text-[16px] sm:text-[16px]  truncate font-semibold text-[var(--secondary-foreground)]"
               style={{
                 fontFamily: '"Red Hat Display", sans-serif',
                 letterSpacing: "0.04em",
@@ -132,7 +130,7 @@ const AppCard: React.FC<AppCardProps> = memo(
             </h3>
 
             {/* Tags */}
-            <div className="flex gap-1 mb-0.5 flex-wrap items-center items-center">
+            <div className=" mt-[1px] mb-[6px] leading-tight flex gap-1 flex-wrap items-center font-semibold text-[12px] text-[var(--secondary-foreground)]">
               {(APP_TAGS[app.name] || FALLBACK_TAGS).map((tag, index) => (
                 <span key={tag} className="flex items-center gap-1">
                   <span
@@ -156,13 +154,12 @@ const AppCard: React.FC<AppCardProps> = memo(
 
             {app.description && (
               <p
-                className="text-[11px] font-normal leading-[1.3] line-clamp-1 break-words mb-[3px]"
+                className="leading-normal text-[10px] font-normal break-words text-[var(--muted-foreground)]"
                 style={{
                   fontFamily: '"Red Hat Display", sans-serif',
                   letterSpacing: "0.04em",
                   color: theme === "light" ? "#4a4a4a" : "#9A9CAC",
                   WebkitLineClamp: 1,
-                  height: "1.3em",
                   display: "-webkit-box",
                   WebkitBoxOrient: "vertical",
                   overflow: "hidden",
@@ -202,7 +199,7 @@ const AppCard: React.FC<AppCardProps> = memo(
               // ) : (
               <Button
                 disabled={true}
-                className="text-[11px] font-normal tracking-[0.1em] px-4 py-[6px] rounded-full w-[70px] h-fit opacity-30 cursor-not-allowed bg-white text-black flex items-center justify-center"
+                className="font-normal tracking-[0.1em] px-4 py-[6px] rounded-full opacity-30 cursor-not-allowed bg-[var(--muted-foreground)] text-[var(--primaary-foreground)] flex items-center justify-center h-[36px] w-[85px] text-[14px]"
                 style={
                   {
                     // backgroundColor: "var(--button-bg)",
@@ -210,14 +207,14 @@ const AppCard: React.FC<AppCardProps> = memo(
                     // filter: "grayscale(100%)",
                   }
                 }>
-                Installed
+                <div className="text-[14px]">Installed</div>
               </Button>
             ) : (
               // )
               <Button
                 onClick={handleInstallClick}
                 disabled={installingApp === app.packageName}
-                className="text-[11px] font-normal tracking-[0.1em] px-4 py-[6px] rounded-full w-[70px] h-fit flex items-center justify-center"
+                className=" text-[11px] font-normal tracking-[0.1em] px-4 py-[6px] rounded-full w-[56px] h-[36px] flex items-center justify-center"
                 style={{
                   backgroundColor: "var(--button-bg)",
                   color: "var(--button-text)",
@@ -232,7 +229,7 @@ const AppCard: React.FC<AppCardProps> = memo(
                       borderTopColor: "transparent",
                     }}></div>
                 ) : (
-                  <div className="text-[11px] font-bold">Get</div>
+                  <div className="text-[14px]  font-medium">Get</div>
                 )}
               </Button>
             )
