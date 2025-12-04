@@ -2,6 +2,7 @@
  * Main gallery screen component
  */
 
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
 import LinearGradient from "expo-linear-gradient"
 import {useFocusEffect} from "expo-router"
@@ -37,12 +38,10 @@ import {SETTINGS, useSetting} from "@/stores/settings"
 import {spacing, ThemedStyle} from "@/theme"
 import {PhotoInfo} from "@/types/asg"
 import showAlert from "@/utils/AlertUtils"
-import {shareFile} from "@/utils/FileUtils"
+// import {shareFile} from "@/utils/FileUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {MediaLibraryPermissions} from "@/utils/MediaLibraryPermissions"
 import {useAppTheme} from "@/utils/useAppTheme"
-
-import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 // @ts-ignore
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient)
@@ -646,66 +645,66 @@ export function GalleryScreen() {
   }
 
   // Handle photo sharing
-  const handleSharePhoto = async (photo: PhotoInfo) => {
-    if (!photo) {
-      console.error("No photo provided to share")
-      return
-    }
+  // const handleSharePhoto = async (photo: PhotoInfo) => {
+  //   if (!photo) {
+  //     console.error("No photo provided to share")
+  //     return
+  //   }
 
-    try {
-      const shareUrl = photo.is_video && photo.download ? photo.download : photo.url
-      let filePath = ""
+  //   try {
+  //     const shareUrl = photo.is_video && photo.download ? photo.download : photo.url
+  //     let filePath = ""
 
-      if (shareUrl?.startsWith("file://")) {
-        filePath = shareUrl.replace("file://", "")
-      } else if (photo.filePath) {
-        filePath = photo.filePath.startsWith("file://") ? photo.filePath.replace("file://", "") : photo.filePath
-      } else {
-        const mediaType = photo.is_video ? "video" : "photo"
-        setSelectedPhoto(null)
-        setTimeout(() => {
-          showAlert("Info", `Please sync this ${mediaType} first to share it`, [{text: translate("common:ok")}])
-        }, TIMING.ALERT_DELAY_MS)
-        return
-      }
+  //     if (shareUrl?.startsWith("file://")) {
+  //       filePath = shareUrl.replace("file://", "")
+  //     } else if (photo.filePath) {
+  //       filePath = photo.filePath.startsWith("file://") ? photo.filePath.replace("file://", "") : photo.filePath
+  //     } else {
+  //       const mediaType = photo.is_video ? "video" : "photo"
+  //       setSelectedPhoto(null)
+  //       setTimeout(() => {
+  //         showAlert("Info", `Please sync this ${mediaType} first to share it`, [{text: translate("common:ok")}])
+  //       }, TIMING.ALERT_DELAY_MS)
+  //       return
+  //     }
 
-      if (!filePath) {
-        console.error("No valid file path found")
-        setSelectedPhoto(null)
-        setTimeout(() => {
-          showAlert("Error", "Unable to share this photo", [{text: translate("common:ok")}])
-        }, TIMING.ALERT_DELAY_MS)
-        return
-      }
+  //     if (!filePath) {
+  //       console.error("No valid file path found")
+  //       setSelectedPhoto(null)
+  //       setTimeout(() => {
+  //         showAlert("Error", "Unable to share this photo", [{text: translate("common:ok")}])
+  //       }, TIMING.ALERT_DELAY_MS)
+  //       return
+  //     }
 
-      let shareMessage = photo.is_video ? "Check out this video" : "Check out this photo"
-      if (photo.glassesModel) {
-        shareMessage += ` taken with ${photo.glassesModel}`
-      }
-      shareMessage += "!"
+  //     let shareMessage = photo.is_video ? "Check out this video" : "Check out this photo"
+  //     if (photo.glassesModel) {
+  //       shareMessage += ` taken with ${photo.glassesModel}`
+  //     }
+  //     shareMessage += "!"
 
-      const mimeType = photo.mime_type || (photo.is_video ? "video/mp4" : "image/jpeg")
-      await shareFile(filePath, mimeType, "Share Photo", shareMessage)
-      console.log("Share completed successfully")
-    } catch (error) {
-      if (error instanceof Error && error.message?.includes("FileProvider")) {
-        setSelectedPhoto(null)
-        setTimeout(() => {
-          showAlert(
-            "Sharing Not Available",
-            "File sharing will work after the next app build. For now, you can find your photos in the AugmentOS folder.",
-            [{text: translate("common:ok")}],
-          )
-        }, TIMING.ALERT_DELAY_MS)
-      } else {
-        console.error("Error sharing photo:", error)
-        setSelectedPhoto(null)
-        setTimeout(() => {
-          showAlert("Error", "Failed to share photo", [{text: translate("common:ok")}])
-        }, TIMING.ALERT_DELAY_MS)
-      }
-    }
-  }
+  //     const mimeType = photo.mime_type || (photo.is_video ? "video/mp4" : "image/jpeg")
+  //     await shareFile(filePath, mimeType, "Share Photo", shareMessage)
+  //     console.log("Share completed successfully")
+  //   } catch (error) {
+  //     if (error instanceof Error && error.message?.includes("FileProvider")) {
+  //       setSelectedPhoto(null)
+  //       setTimeout(() => {
+  //         showAlert(
+  //           "Sharing Not Available",
+  //           "File sharing will work after the next app build. For now, you can find your photos in the AugmentOS folder.",
+  //           [{text: translate("common:ok")}],
+  //         )
+  //       }, TIMING.ALERT_DELAY_MS)
+  //     } else {
+  //       console.error("Error sharing photo:", error)
+  //       setSelectedPhoto(null)
+  //       setTimeout(() => {
+  //         showAlert("Error", "Failed to share photo", [{text: translate("common:ok")}])
+  //       }, TIMING.ALERT_DELAY_MS)
+  //     }
+  //   }
+  // }
 
   // Handle hotspot request
   const handleRequestHotspot = async () => {
@@ -1701,7 +1700,7 @@ export function GalleryScreen() {
           visible={!!selectedPhoto}
           photo={selectedPhoto}
           onClose={() => setSelectedPhoto(null)}
-          onShare={() => selectedPhoto && handleSharePhoto(selectedPhoto)}
+          // onShare={() => selectedPhoto && handleSharePhoto(selectedPhoto)}
         />
       </View>
     </>
