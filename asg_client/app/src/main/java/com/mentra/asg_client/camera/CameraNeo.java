@@ -770,36 +770,49 @@ public class CameraNeo extends LifecycleService {
     private void setupCameraForPhotoRequest(PhotoRequest request) {
         if (request == null) return;
 
-        // Store the requested size, SDK flag, and LED state
+        // Check if size or SDK flag has changed BEFORE updating pending values
+        // This is critical for detecting when camera needs to be reopened
+        boolean sizeChanged = false;
+        boolean sdkFlagChanged = false;
+        if (pendingRequestedSize != null && request.size != null) {
+            sizeChanged = !pendingRequestedSize.equals(request.size);
+        } else if (pendingRequestedSize == null && request.size != null) {
+            sizeChanged = true;
+        } else if (pendingRequestedSize != null && request.size == null) {
+            sizeChanged = true;
+        }
+        sdkFlagChanged = (pendingIsFromSdk != request.isFromSdk);
+
+        // Now store the requested size, SDK flag, and LED state
         pendingRequestedSize = request.size;
         pendingIsFromSdk = request.isFromSdk;
         sPhotoCallback = request.callback;
-        
+
         // Update LED state if any request needs LED
         if (request.enableLed) {
             pendingLedEnabled = true;
         }
-        
+
         // Check if camera is already open and kept alive
         if (isCameraKeptAlive && cameraDevice != null) {
-            Log.d(TAG, "Camera already open, taking photo immediately");
-            
-            // Check if size has changed
-            boolean sizeChanged = false;
-            if (pendingRequestedSize != null && request.size != null) {
-                sizeChanged = !pendingRequestedSize.equals(request.size);
-            }
-            
-            if (sizeChanged) {
-                Log.d(TAG, "Photo size changed, reopening camera");
+            Log.d(TAG, "Camera already open, checking if reconfiguration needed");
+
+            // Need to reopen camera if size changed OR if SDK flag changed
+            // (SDK flag affects resolution selection even for same size tier)
+            boolean needsReopen = sizeChanged || sdkFlagChanged;
+
+            if (needsReopen) {
+                Log.d(TAG, "Camera config changed (sizeChanged=" + sizeChanged +
+                          ", sdkFlagChanged=" + sdkFlagChanged + "), reopening camera");
                 cancelKeepAliveTimer();
                 closeCamera();
                 openCameraInternal(request.filePath, false);
             } else {
-                // Cancel keep-alive timer and take photo
+                // Cancel keep-alive timer and take photo with existing config
+                Log.d(TAG, "Camera config unchanged, taking photo immediately");
                 cancelKeepAliveTimer();
                 pendingPhotoPath = request.filePath;
-                
+
                 // Start capture sequence
                 shotState = ShotState.WAITING_AE;
                 if (backgroundHandler != null) {
