@@ -547,6 +547,11 @@ class PhoneMic {
             return false
         }
 
+        // Remove any existing tap before installing new one (prevents crash if tap
+        // already exists from previous engine). This is safe even if no tap exists.
+        // See: MENTRA-OS-YM, MENTRA-OS-137
+        inputNode.removeTap(onBus: 0)
+
         inputNode.installTap(onBus: 0, bufferSize: 256, format: nil) {
             [weak self] buffer, _ in
             guard let self = self else { return }

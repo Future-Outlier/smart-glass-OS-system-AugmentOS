@@ -35,6 +35,23 @@ export function SentrySetup() {
     Sentry.init({
       dsn: sentryDsn,
 
+      // Reduce breadcrumb count to prevent memory issues during high-frequency BLE logging
+      maxBreadcrumbs: 50,
+
+      // Truncate noisy BLE breadcrumbs to prevent Sentry crashes (see MENTRA-OS-13Z, 13K, 13N, 13P)
+      beforeBreadcrumb(breadcrumb) {
+        if (breadcrumb.category === "console" && breadcrumb.message) {
+          const msg = breadcrumb.message
+          // Truncate high-frequency BLE reconnection logs
+          if (msg.includes("G1:")) {
+            breadcrumb.message = `[G1 BLE] ${msg.substring(0, 50)}...`
+          } else if (msg.includes("peripheral")) {
+            breadcrumb.message = `[BLE peripheral] ${msg.substring(0, 50)}...`
+          }
+        }
+        return breadcrumb
+      },
+
       // Adds more context data to events (IP address, cookies, user, etc.)
       // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
       sendDefaultPii: true,
