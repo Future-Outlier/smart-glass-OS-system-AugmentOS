@@ -68,6 +68,7 @@
     "expo-location": "~19.0.7",
     "expo-media-library": "~18.2.0",
     "expo-navigation-bar": "~5.0.9",
+    "expo-notifications": "^0.32.13",
     "expo-router": "~6.0.14",
     "expo-splash-screen": "~31.0.10",
     "expo-squircle-view": "^1.1.0",

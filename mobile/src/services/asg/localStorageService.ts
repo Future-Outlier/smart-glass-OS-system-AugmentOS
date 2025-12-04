@@ -27,11 +27,23 @@ export interface SyncState {
   total_size: number
 }
 
+export interface SyncQueueData {
+  files: PhotoInfo[]
+  currentIndex: number
+  startedAt: number
+  hotspotInfo: {
+    ssid: string
+    password: string
+    ip: string
+  }
+}
+
 export class LocalStorageService {
   private static instance: LocalStorageService
   private readonly DOWNLOADED_FILES_KEY = "asg_downloaded_files"
   private readonly SYNC_STATE_KEY = "asg_sync_state"
   private readonly CLIENT_ID_KEY = "asg_client_id"
+  private readonly SYNC_QUEUE_KEY = "asg_sync_queue"
   private readonly ASG_PHOTOS_DIR = `${RNFS.DocumentDirectoryPath}/MentraPhotos`
   private readonly ASG_THUMBNAILS_DIR = `${RNFS.DocumentDirectoryPath}/MentraPhotos/thumbnails`
 
@@ -367,6 +379,83 @@ export class LocalStorageService {
       throw res.error
     }
     console.log("[LocalStorage] Cleared all downloaded files")
+  }
+
+  // ============================================
+  // Sync Queue Persistence (for background sync resume)
+  // ============================================
+
+  /**
+   * Save sync queue for potential resume after app restart
+   */
+  async saveSyncQueue(queue: SyncQueueData): Promise<void> {
+    try {
+      await storage.save(this.SYNC_QUEUE_KEY, queue)
+      console.log(`[LocalStorage] Saved sync queue: ${queue.files.length} files, index ${queue.currentIndex}`)
+    } catch (error) {
+      console.error("[LocalStorage] Error saving sync queue:", error)
+      throw error
+    }
+  }
+
+  /**
+   * Get saved sync queue (for resume on app restart)
+   */
+  async getSyncQueue(): Promise<SyncQueueData | null> {
+    try {
+      const res = storage.load<SyncQueueData>(this.SYNC_QUEUE_KEY)
+      if (res.is_error()) {
+        // No queue saved - this is normal
+        return null
+      }
+      const queue = res.value
+      console.log(`[LocalStorage] Loaded sync queue: ${queue.files.length} files, index ${queue.currentIndex}`)
+      return queue
+    } catch (error) {
+      console.error("[LocalStorage] Error loading sync queue:", error)
+      return null
+    }
+  }
+
+  /**
+   * Update the current index of the sync queue (called after each file completes)
+   */
+  async updateSyncQueueIndex(newIndex: number): Promise<void> {
+    try {
+      const queue = await this.getSyncQueue()
+      if (queue) {
+        queue.currentIndex = newIndex
+        await this.saveSyncQueue(queue)
+      }
+    } catch (error) {
+      console.error("[LocalStorage] Error updating sync queue index:", error)
+    }
+  }
+
+  /**
+   * Clear sync queue (called on sync complete or cancel)
+   */
+  async clearSyncQueue(): Promise<void> {
+    try {
+      const res = await storage.remove(this.SYNC_QUEUE_KEY)
+      if (res.is_error()) {
+        console.error("[LocalStorage] Error clearing sync queue:", res.error)
+        return
+      }
+      console.log("[LocalStorage] Cleared sync queue")
+    } catch (error) {
+      console.error("[LocalStorage] Error clearing sync queue:", error)
+    }
+  }
+
+  /**
+   * Check if there's a resumable sync queue
+   */
+  async hasResumableSyncQueue(): Promise<boolean> {
+    const queue = await this.getSyncQueue()
+    if (!queue) return false
+    // Has resumable queue if there are still files to process
+    return queue.currentIndex < queue.files.length
   }
 }
 
