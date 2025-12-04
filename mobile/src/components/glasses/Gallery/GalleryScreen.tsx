@@ -21,6 +21,7 @@ import {
 } from "react-native"
 import RNFS from "react-native-fs"
 import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
+import {useShallow} from "zustand/react/shallow"
 
 import {MediaViewer} from "@/components/glasses/Gallery/MediaViewer"
 import {PhotoImage} from "@/components/glasses/Gallery/PhotoImage"
@@ -30,7 +31,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {gallerySyncService} from "@/services/asg/gallerySyncService"
 import {localStorageService} from "@/services/asg/localStorageService"
-import {useGallerySyncStore, selectGlassesGalleryStatus} from "@/stores/gallerySync"
+import {useGallerySyncStore} from "@/stores/gallerySync"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {spacing, ThemedStyle} from "@/theme"
@@ -78,7 +79,14 @@ export function GalleryScreen() {
   const totalFiles = useGallerySyncStore(state => state.totalFiles)
   const failedFiles = useGallerySyncStore(state => state.failedFiles)
   const syncQueue = useGallerySyncStore(state => state.queue)
-  const glassesGalleryStatus = useGallerySyncStore(selectGlassesGalleryStatus)
+  const glassesGalleryStatus = useGallerySyncStore(
+    useShallow(state => ({
+      photos: state.glassesPhotoCount,
+      videos: state.glassesVideoCount,
+      total: state.glassesTotalCount,
+      hasContent: state.glassesHasContent,
+    })),
+  )
 
   // Permission state - no longer blocking, permission is requested lazily when saving
   const [_hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState(false)

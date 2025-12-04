@@ -101,26 +101,44 @@ class GallerySyncNotifications {
   }
 
   /**
+   * Create a visual progress bar using Unicode block characters
+   */
+  private createProgressBar(progress: number, width: number = 15): string {
+    const filled = Math.round((progress / 100) * width)
+    const empty = width - filled
+    const filledBar = "█".repeat(filled)
+    const emptyBar = "░".repeat(empty)
+    return `${filledBar}${emptyBar}`
+  }
+
+  /**
    * Update sync progress notification
    */
-  async updateProgress(currentFile: number, totalFiles: number, fileName: string, fileProgress: number): Promise<void> {
+  async updateProgress(
+    currentFile: number,
+    totalFiles: number,
+    _fileName: string,
+    fileProgress: number,
+  ): Promise<void> {
     if (!this.notificationActive) return
 
     await this.ensureChannel()
 
-    // Format filename for display (truncate if too long)
-    const displayName = fileName.length > 20 ? fileName.substring(0, 17) + "..." : fileName
+    // Calculate overall progress (completed files + current file progress)
+    const overallProgress = Math.round(((currentFile - 1 + fileProgress / 100) / totalFiles) * 100)
 
-    // Build progress message
-    const progressPercent = Math.round(fileProgress)
-    const body = `${currentFile}/${totalFiles}: ${displayName} (${progressPercent}%)`
+    // Create visual progress bar
+    const progressBar = this.createProgressBar(overallProgress)
+
+    // Clean body with progress bar
+    const body = `${progressBar} ${overallProgress}%\nDownloading ${currentFile} of ${totalFiles}`
 
     await Notifications.scheduleNotificationAsync({
       identifier: SYNC_NOTIFICATION_ID,
       content: {
         title: "Syncing photos from glasses",
         body,
-        data: {type: "gallery-sync", progress: fileProgress},
+        data: {type: "gallery-sync", progress: overallProgress},
         sticky: Platform.OS === "android", // Keep notification visible on Android
       },
       trigger: null,

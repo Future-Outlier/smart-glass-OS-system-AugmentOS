@@ -21,16 +21,20 @@ import {localStorageService} from "./localStorageService"
 // Timing constants
 const TIMING = {
   HOTSPOT_CONNECT_DELAY_MS: 1000,
+  HOTSPOT_REQUEST_TIMEOUT_MS: 30000, // Timeout waiting for hotspot to enable
   WIFI_CONNECTION_TIMEOUT_MS: 30000,
   RETRY_DELAY_MS: 2000,
+  MAX_QUEUE_AGE_MS: 2 * 60 * 1000, // 2 min - glasses hotspot auto-disables after 40s inactivity
 } as const
 
 class GallerySyncService {
   private static instance: GallerySyncService
   private hotspotListenerRegistered = false
   private hotspotConnectionTimeout: ReturnType<typeof setTimeout> | null = null
+  private hotspotRequestTimeout: ReturnType<typeof setTimeout> | null = null
   private abortController: AbortController | null = null
   private isInitialized = false
+  private glassesStoreUnsubscribe: (() => void) | null = null
 
   private constructor() {}
 
@@ -52,6 +56,17 @@ class GallerySyncService {
     GlobalEventEmitter.addListener("HOTSPOT_ERROR", this.handleHotspotError)
     GlobalEventEmitter.addListener("GALLERY_STATUS", this.handleGalleryStatus)
 
+    // Subscribe to glasses store to detect disconnection during sync
+    this.glassesStoreUnsubscribe = useGlassesStore.subscribe(
+      state => state.connected,
+      (connected, prevConnected) => {
+        // Only trigger on disconnect (was connected, now not connected)
+        if (prevConnected && !connected) {
+          this.handleGlassesDisconnected()
+        }
+      },
+    )
+
     this.hotspotListenerRegistered = true
     this.isInitialized = true
 
@@ -72,13 +87,56 @@ class GallerySyncService {
       this.hotspotListenerRegistered = false
     }
 
+    if (this.glassesStoreUnsubscribe) {
+      this.glassesStoreUnsubscribe()
+      this.glassesStoreUnsubscribe = null
+    }
+
     if (this.hotspotConnectionTimeout) {
       clearTimeout(this.hotspotConnectionTimeout)
       this.hotspotConnectionTimeout = null
     }
 
+    if (this.hotspotRequestTimeout) {
+      clearTimeout(this.hotspotRequestTimeout)
+      this.hotspotRequestTimeout = null
+    }
+
     this.isInitialized = false
     console.log("[GallerySyncService] Cleaned up")
+  }
+
+  /**
+   * Handle glasses disconnection during sync
+   */
+  private handleGlassesDisconnected = (): void => {
+    const store = useGallerySyncStore.getState()
+
+    // Only handle if we're actively syncing
+    if (!this.isSyncing()) {
+      return
+    }
+
+    console.log("[GallerySyncService] Glasses disconnected during sync - cancelling")
+    store.setSyncError("Glasses disconnected")
+
+    // Abort ongoing downloads
+    if (this.abortController) {
+      this.abortController.abort()
+      this.abortController = null
+    }
+
+    // Clear timeouts
+    if (this.hotspotConnectionTimeout) {
+      clearTimeout(this.hotspotConnectionTimeout)
+      this.hotspotConnectionTimeout = null
+    }
+    if (this.hotspotRequestTimeout) {
+      clearTimeout(this.hotspotRequestTimeout)
+      this.hotspotRequestTimeout = null
+    }
+
+    gallerySyncNotifications.showSyncError("Glasses disconnected")
   }
 
   /**
@@ -108,6 +166,12 @@ class GallerySyncService {
     if (!eventData.enabled || !eventData.ssid || !eventData.password) {
       console.log("[GallerySyncService] Hotspot not ready yet")
       return
+    }
+
+    // Clear the hotspot request timeout since we got a response
+    if (this.hotspotRequestTimeout) {
+      clearTimeout(this.hotspotRequestTimeout)
+      this.hotspotRequestTimeout = null
     }
 
     const hotspotInfo: HotspotInfo = {
@@ -169,6 +233,9 @@ class GallerySyncService {
 
     console.log("[GallerySyncService] Starting sync...")
 
+    // Request notification permission early so user isn't interrupted during WiFi setup
+    await gallerySyncNotifications.requestPermissions()
+
     // Reset abort controller
     this.abortController = new AbortController()
 
@@ -192,10 +259,27 @@ class GallerySyncService {
     store.setRequestingHotspot()
     store.setSyncServiceOpenedHotspot(true)
 
+    // Set timeout for hotspot request - if we don't get a response, fail gracefully
+    this.hotspotRequestTimeout = setTimeout(() => {
+      const currentStore = useGallerySyncStore.getState()
+      if (currentStore.syncState === "requesting_hotspot") {
+        console.error("[GallerySyncService] Hotspot request timed out")
+        currentStore.setSyncError("Hotspot request timed out")
+        currentStore.setSyncServiceOpenedHotspot(false)
+        gallerySyncNotifications.showSyncError("Could not start hotspot - please try again")
+      }
+      this.hotspotRequestTimeout = null
+    }, TIMING.HOTSPOT_REQUEST_TIMEOUT_MS)
+
     try {
       await CoreModule.setHotspotState(true)
       console.log("[GallerySyncService] Hotspot requested")
     } catch (error) {
+      // Clear the timeout since we got an immediate error
+      if (this.hotspotRequestTimeout) {
+        clearTimeout(this.hotspotRequestTimeout)
+        this.hotspotRequestTimeout = null
+      }
       console.error("[GallerySyncService] Failed to request hotspot:", error)
       store.setSyncError("Failed to start hotspot")
       store.setSyncServiceOpenedHotspot(false)
@@ -324,6 +408,10 @@ class GallerySyncService {
             const previousFileName = files[current - 2]?.name
             if (previousFileName) {
               currentStore.onFileComplete(previousFileName)
+              // Persist queue index so we can resume from here if app is killed
+              localStorageService.updateSyncQueueIndex(current - 1).catch(err => {
+                console.error("[GallerySyncService] Failed to persist queue index:", err)
+              })
             }
           }
 
@@ -524,10 +612,23 @@ class GallerySyncService {
       return
     }
 
+    // Check if queue is too old - hotspot auto-disables after 40s of inactivity,
+    // so stale queues can't be resumed (hotspot credentials are no longer valid)
+    const queueAge = Date.now() - queue.startedAt
+    if (queueAge > TIMING.MAX_QUEUE_AGE_MS) {
+      console.log(`[GallerySyncService] Queue too old (${Math.round(queueAge / 1000)}s) - clearing stale queue`)
+      await localStorageService.clearSyncQueue()
+      // Don't auto-start - let user tap sync button if they want to continue
+      return
+    }
+
     console.log(`[GallerySyncService] Resuming sync from file ${queue.currentIndex + 1}/${queue.files.length}`)
 
     const store = useGallerySyncStore.getState()
     const remainingFiles = queue.files.slice(queue.currentIndex)
+
+    // Reset abort controller so cancellation works for resumed syncs
+    this.abortController = new AbortController()
 
     // Set up state
     store.setHotspotInfo(queue.hotspotInfo)

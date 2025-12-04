@@ -215,13 +215,21 @@ export const useGallerySyncStore = create<GallerySyncState>()(
     setSyncServiceOpenedHotspot: (opened: boolean) => set({syncServiceOpenedHotspot: opened}),
 
     // Gallery status from glasses
-    setGlassesGalleryStatus: (photos: number, videos: number, total: number, hasContent: boolean) =>
+    setGlassesGalleryStatus: (photos: number, videos: number, total: number, hasContent: boolean) => {
+      const state = get()
+      // Reset to idle if sync is in a terminal state and new content is available
+      // This allows syncing again after taking new photos
+      const shouldResetToIdle =
+        hasContent && (state.syncState === "complete" || state.syncState === "error" || state.syncState === "cancelled")
+
       set({
         glassesPhotoCount: photos,
         glassesVideoCount: videos,
         glassesTotalCount: total,
         glassesHasContent: hasContent,
-      }),
+        ...(shouldResetToIdle ? {syncState: "idle" as SyncState} : {}),
+      })
+    },
 
     clearGlassesGalleryStatus: () =>
       set({
