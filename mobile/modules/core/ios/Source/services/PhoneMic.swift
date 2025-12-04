@@ -480,7 +480,26 @@ class PhoneMic {
 
     /// Internal recording logic shared by all recording modes
     private func startRecordingInternal() -> Bool {
-        // NOW create the audio engine
+        // check if we're in the background:
+        let appState = UIApplication.shared.applicationState
+        if appState == .background {
+            Bridge.log("MIC: App is in background, cannot start recording")
+            return false
+        }
+
+        if let existingEngine = audioEngine {
+            existingEngine.inputNode.removeTap(onBus: 0)
+            existingEngine.stop()
+            audioEngine = nil
+        }
+
+        let session = AVAudioSession.sharedInstance()
+        guard let availableInputs = session.availableInputs, !availableInputs.isEmpty else {
+            Bridge.log("MIC: No audio inputs available, cannot start recording")
+            return false
+        }
+
+        // NOW create the audio engine:
         audioEngine = AVAudioEngine()
 
         // Safely get the input node
@@ -527,6 +546,11 @@ class PhoneMic {
             // audioEngine = nil
             return false
         }
+
+        // Remove any existing tap before installing new one (prevents crash if tap
+        // already exists from previous engine). This is safe even if no tap exists.
+        // See: MENTRA-OS-YM, MENTRA-OS-137
+        inputNode.removeTap(onBus: 0)
 
         inputNode.installTap(onBus: 0, bufferSize: 256, format: nil) {
             [weak self] buffer, _ in
