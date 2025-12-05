@@ -131,27 +131,28 @@ export class SettingsManager {
   private broadcastSettingsUpdate(): void {
     // Use the transcripts manager's SSE clients to broadcast
     // We'll send a special "settings_update" message type
-    this.getAll().then((settings) => {
-      this.userSession.transcripts.broadcastSettingsUpdate(settings)
-    }).catch((error) => {
-      this.logger.error(`Failed to broadcast settings update: ${error}`)
-    })
+    this.getAll()
+      .then((settings) => {
+        this.userSession.transcripts.broadcastSettingsUpdate(settings)
+      })
+      .catch((error) => {
+        this.logger.error(`Failed to broadcast settings update: ${error}`)
+      })
   }
 
   private async applyToProcessor(): Promise<void> {
     const language = await this.getLanguage()
     const displayLines = await this.getDisplayLines()
-    let displayWidth = await this.getDisplayWidth()
+    const displayWidth = await this.getDisplayWidth()
 
-    // Convert line width enum (0/1/2) to visual width units
-    // Visual width calculation handles all languages automatically (no isChineseLanguage needed)
-    displayWidth = convertLineWidth(displayWidth.toString())
+    // Pass raw width enum (0=Narrow 50%, 1=Medium 75%, 2=Wide 100%) to DisplayManager
+    // DisplayManager handles the percentage conversion internally
 
     this.logger.info(
-      `Applying settings to processor: language=${language}, lines=${displayLines}, visualWidth=${displayWidth}`,
+      `Applying settings to processor: language=${language}, lines=${displayLines}, displayWidth=${displayWidth}`,
     )
 
-    // Update DisplayManager
+    // Update DisplayManager with raw enum value
     this.userSession.display.updateSettings(displayWidth, displayLines)
   }
 
