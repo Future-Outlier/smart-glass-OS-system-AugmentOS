@@ -89,7 +89,7 @@
     "react-i18next": "^16.3.3",
     "react-native": "0.81.5",
     "react-native-ble-manager": "^12.4.1",
-    "react-native-bottom-tabs": "^1.0.2",
+    "react-native-bottom-tabs": "1.0.2",
     "react-native-canvas": "^0.1.40",
     "react-native-config": "1.6.0",
     "react-native-drawer-layout": "^4.2.0",
