@@ -230,14 +230,14 @@ const $shippingText: ThemedStyle<TextStyle> = ({colors}) => ({
   opacity: 0.8,
 })
 
-const $noteSection: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  width: "100%",
-  borderRadius: spacing.s4,
-  marginTop: spacing.s4,
-  alignItems: "center",
-  backgroundColor: colors.primary_foreground,
-  padding: spacing.s6,
-})
+// const $noteSection: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+//   width: "100%",
+//   borderRadius: spacing.s4,
+//   marginTop: spacing.s4,
+//   alignItems: "center",
+//   backgroundColor: colors.primary_foreground,
+//   padding: spacing.s6,
+// })
 
 const $animationContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   // height: 400,
@@ -393,7 +393,7 @@ export function VuzixZ100PairingGuide() {
 }
 
 export function SimulatedPairingGuide() {
-  const {themed, theme} = useAppTheme()
+  const {themed} = useAppTheme()
   return (
     <View style={themed($guideContainer)}>
       <Text text="Preview MentraOS" style={themed($guideTitle)} />
@@ -405,7 +405,7 @@ export function SimulatedPairingGuide() {
         style={themed($guideDescription)}
       />
 
-      <View style={themed($noteSection)}>
+      {/* <View style={themed($noteSection)}>
         <View style={{flex: 1, flexDirection: "row", gap: theme.spacing.s4, marginBottom: theme.spacing.s4}}>
           <Image
             source={require("@assets/glasses/mentra_live/mentra_live.png")}
@@ -436,7 +436,7 @@ export function SimulatedPairingGuide() {
             ])
           }}
         />
-      </View>
+      </View> */}
     </View>
   )
 }

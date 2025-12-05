@@ -11,10 +11,31 @@ type TimeSettingProps = {
   onValueChange: (value: number) => void
   containerStyle?: ViewStyle
   showSeconds?: boolean
+  isFirst?: boolean
+  isLast?: boolean
 }
 
-const TimeSetting: React.FC<TimeSettingProps> = ({label, value, onValueChange, containerStyle, showSeconds = true}) => {
-  const {themed} = useAppTheme()
+const TimeSetting: React.FC<TimeSettingProps> = ({
+  label,
+  value,
+  onValueChange,
+  containerStyle,
+  showSeconds = true,
+  isFirst,
+  isLast,
+}) => {
+  const {theme, themed} = useAppTheme()
+
+  const groupedStyle: ViewStyle | undefined =
+    isFirst !== undefined || isLast !== undefined
+      ? {
+          borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+          borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+          borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+          borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+          marginBottom: isLast ? 0 : theme.spacing.s2,
+        }
+      : undefined
   const [modalVisible, setModalVisible] = useState(false)
   const [localHours, setLocalHours] = useState(0)
   const [localMinutes, setLocalMinutes] = useState(0)
@@ -128,7 +149,7 @@ const TimeSetting: React.FC<TimeSettingProps> = ({label, value, onValueChange, c
   }
 
   return (
-    <View style={[themed($container), containerStyle]}>
+    <View style={[themed($container), groupedStyle, containerStyle]}>
       <Text style={themed($label)}>{label}</Text>
 
       <Pressable
@@ -283,19 +304,18 @@ const TimeSetting: React.FC<TimeSettingProps> = ({label, value, onValueChange, c
 }
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
-  borderWidth: 1,
-  borderColor: colors.border,
-  borderRadius: 8,
+  backgroundColor: colors.primary_foreground,
+  borderRadius: spacing.s4,
   paddingVertical: spacing.s4,
-  paddingHorizontal: spacing.s6,
+  paddingHorizontal: spacing.s4,
   width: "100%",
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 16,
+  fontSize: 14,
+  fontWeight: "600",
   color: colors.text,
-  marginBottom: spacing.s3,
+  marginBottom: spacing.s2,
 })
 
 const $timeButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
