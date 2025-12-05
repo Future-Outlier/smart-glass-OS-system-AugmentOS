@@ -2,7 +2,7 @@ import {AppSession, TranscriptionData} from "@mentra/sdk"
 import {TranscriptsManager} from "./TranscriptsManager"
 import {SettingsManager} from "./SettingsManager"
 import {DisplayManager} from "./DisplayManager"
-import {languageToLocale, convertLineWidth} from "../utils"
+import {languageToLocale} from "../utils/languageLocale"
 
 export class UserSession {
   static readonly userSessions: Map<string, UserSession> = new Map<string, UserSession>()
@@ -40,9 +40,8 @@ export class UserSession {
       const locale = languageToLocale(language)
 
       // Get display settings and update DisplayManager
-      // Visual width calculation handles all languages automatically (no isChineseLanguage needed)
-      let displayWidth = await this.settings.getDisplayWidth()
-      displayWidth = convertLineWidth(displayWidth.toString())
+      // DisplayManager expects raw enum values: 0=Narrow, 1=Medium, 2=Wide
+      const displayWidth = await this.settings.getDisplayWidth()
       const displayLines = await this.settings.getDisplayLines()
       this.display.updateSettings(displayWidth, displayLines)
 

@@ -1,5 +1,4 @@
 import {UserSession} from "./UserSession"
-import {convertLineWidth} from "../utils"
 
 interface CaptionSettings {
   language: string
