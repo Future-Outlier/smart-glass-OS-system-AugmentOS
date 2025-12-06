@@ -28,6 +28,7 @@
  */
 
 // Re-export everything from @mentra/display-utils
+// The JS gets bundled into the SDK, types come from the package
 export {
   // Profiles
   type DisplayProfile,
