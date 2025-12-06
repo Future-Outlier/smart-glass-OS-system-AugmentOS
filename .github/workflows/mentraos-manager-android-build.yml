@@ -11,11 +11,46 @@ on:
       - dev
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   build:
     runs-on: self-hosted
 
     steps:
+      - name: Update PR comment - Build started
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const marker = '<!-- pr-review-helper -->';
+            const comment = comments.data.find(c => c.body.includes(marker));
+            if (!comment) return; // No helper comment yet
+
+            const sha = context.payload.pull_request.head.sha.substring(0, 7);
+            const buildStatus = `### 📱 Android Build
+⏳ **Building...** (commit \`${sha}\`)`;
+
+            const newBody = comment.body.replace(
+              /<!-- android-build-status -->[\s\S]*?<!-- \/android-build-status -->/,
+              `<!-- android-build-status -->\n${buildStatus}\n<!-- /android-build-status -->`
+            );
+
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: comment.id,
+              body: newBody
+            });
+
       - name: Clean workspace
         run: |
           # Clean previous build artifacts
@@ -94,3 +129,83 @@ jobs:
         with:
           name: app-debug
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Update PR comment - Build succeeded
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const marker = '<!-- pr-review-helper -->';
+            const comment = comments.data.find(c => c.body.includes(marker));
+            if (!comment) return;
+
+            const sha = context.payload.pull_request.head.sha.substring(0, 7);
+            const runId = context.runId;
+            const downloadUrl = `https://nightly.link/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}/app-debug.zip`;
+
+            const buildStatus = `### 📱 Android Build
+✅ **Ready to test!** (commit \`${sha}\`)
+
+[📥 **Download APK**](${downloadUrl})`;
+
+            const newBody = comment.body.replace(
+              /<!-- android-build-status -->[\s\S]*?<!-- \/android-build-status -->/,
+              `<!-- android-build-status -->\n${buildStatus}\n<!-- /android-build-status -->`
+            );
+
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: comment.id,
+              body: newBody
+            });
+
+      - name: Update PR comment - Build failed
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const marker = '<!-- pr-review-helper -->';
+            const comment = comments.data.find(c => c.body.includes(marker));
+            if (!comment) return;
+
+            const sha = context.payload.pull_request.head.sha.substring(0, 7);
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            // Check if there was a previous working build (look for existing download link)
+            const previousDownloadMatch = comment.body.match(/\[📥 \*\*Download APK\*\*\]\((https:\/\/nightly\.link[^)]+)\)/);
+            const previousShaMatch = comment.body.match(/commit `([a-f0-9]+)`\)/);
+
+            let buildStatus = `### 📱 Android Build
+❌ **Build failed** (commit \`${sha}\`) - [View logs](${runUrl})`;
+
+            if (previousDownloadMatch && previousShaMatch) {
+              buildStatus += `
+
+📦 **Last working build:** commit \`${previousShaMatch[1]}\`
+[📥 **Download APK**](${previousDownloadMatch[1]})`;
+            }
+
+            const newBody = comment.body.replace(
+              /<!-- android-build-status -->[\s\S]*?<!-- \/android-build-status -->/,
+              `<!-- android-build-status -->\n${buildStatus}\n<!-- /android-build-status -->`
+            );
+
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: comment.id,
+              body: newBody
+            });

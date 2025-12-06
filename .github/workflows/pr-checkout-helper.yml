@@ -26,49 +26,41 @@ jobs:
 
             let checkoutInstructions = '';
 
+            // Build checkout section based on fork status
+            let checkoutSection = '';
             if (isFork && prRepo) {
-              // PR from fork
               const forkOwner = pr.head.repo.owner.login;
               const forkRepo = pr.head.repo.name;
               const localBranchName = `${forkOwner}-${prBranch}`.replace(/[^a-zA-Z0-9-]/g, '-');
-              
-              checkoutInstructions = `## 🚀 Checkout Instructions
 
-            To test this PR locally, use one of these methods:
+              checkoutSection = `\`\`\`bash
+gh pr checkout ${prNumber}
+\`\`\`
+<details>
+<summary>Alternative methods</summary>
 
-            ### Option 1: GitHub CLI (Recommended)
-            \`\`\`bash
-            gh pr checkout ${prNumber}
-            \`\`\`
-
-            ### Option 2: Manual fetch
-            \`\`\`bash
-            git fetch https://github.com/${forkOwner}/${forkRepo}.git ${prBranch}:${localBranchName} && git checkout ${localBranchName}
-            \`\`\`
-
-            ### Option 3: Add remote and fetch
-            \`\`\`bash
-            git remote add ${forkOwner} https://github.com/${forkOwner}/${forkRepo}.git
-            git fetch ${forkOwner} ${prBranch}
-            git checkout -b ${localBranchName} ${forkOwner}/${prBranch}
-            \`\`\``;
+\`\`\`bash
+git fetch https://github.com/${forkOwner}/${forkRepo}.git ${prBranch}:${localBranchName} && git checkout ${localBranchName}
+\`\`\`
+</details>`;
             } else {
-              // PR from same repo
-              checkoutInstructions = `## 🚀 Checkout Instructions
-
-            To test this PR locally, use one of these methods:
-
-            ### Option 1: GitHub CLI (Recommended)
-            \`\`\`bash
-            gh pr checkout ${prNumber}
-            \`\`\`
-
-            ### Option 2: Direct checkout
-            \`\`\`bash
-            git fetch origin ${prBranch}
-            git checkout ${prBranch}
-            \`\`\``;
+              checkoutSection = `\`\`\`bash
+gh pr checkout ${prNumber}
+\`\`\``;
             }
+
+            // Full comment with markers for build status updates
+            checkoutInstructions = `<!-- pr-review-helper -->
+## 📋 PR Review Helper
+
+<!-- android-build-status -->
+### 📱 Android Build
+⏳ _Waiting for build..._
+<!-- /android-build-status -->
+
+---
+### 🔀 Test Locally
+${checkoutSection}`;
 
             await github.rest.issues.createComment({
               issue_number: prNumber,
