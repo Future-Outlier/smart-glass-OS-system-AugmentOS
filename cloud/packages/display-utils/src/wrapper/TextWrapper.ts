@@ -216,7 +216,13 @@ export class TextWrapper {
         if (needsHyphen) {
           // Back off characters until hyphen fits
           const result = this.backoffForHyphen(currentLine, currentWidth, maxWidthPx, hyphenWidth, opts)
-          lines.push(result.line + opts.hyphenChar)
+
+          if (result.skipHyphen) {
+            // Found a natural word boundary while backing off - no hyphen needed
+            lines.push(result.line)
+          } else {
+            lines.push(result.line + opts.hyphenChar)
+          }
 
           // Start new line with backed-off chars + current char
           currentLine = result.remainder + char
@@ -413,7 +419,11 @@ export class TextWrapper {
         // Need to break - back off if needed to fit hyphen
         if (currentLine.length >= opts.minCharsBeforeHyphen) {
           const result = this.backoffForHyphen(currentLine, currentWidth, maxWidthPx, hyphenWidth, opts)
-          lines.push(result.line + opts.hyphenChar)
+          if (result.skipHyphen) {
+            lines.push(result.line)
+          } else {
+            lines.push(result.line + opts.hyphenChar)
+          }
           currentLine = result.remainder + char
           currentWidth = this.measurer.measureText(currentLine)
         } else {
@@ -436,6 +446,7 @@ export class TextWrapper {
 
   /**
    * Back off characters from line end until hyphen fits.
+   * Returns null if we back off to a space (natural break point - no hyphen needed).
    */
   private backoffForHyphen(
     line: string,
@@ -443,7 +454,7 @@ export class TextWrapper {
     maxWidthPx: number,
     hyphenWidth: number,
     opts: Required<WrapOptions>,
-  ): {line: string; remainder: string} {
+  ): {line: string; remainder: string; skipHyphen: boolean} {
     let adjustedLine = line
     let adjustedWidth = lineWidth
     let remainder = ""
@@ -456,9 +467,17 @@ export class TextWrapper {
       adjustedLine = adjustedLine.slice(0, -1)
       adjustedWidth -= lastCharWidth
       remainder = lastChar + remainder
+
+      // If we've backed off to a space, we've found a natural word boundary
+      // No hyphen is needed - just trim the space and break there
+      if (adjustedLine.length > 0 && adjustedLine[adjustedLine.length - 1] === " ") {
+        // Trim trailing space from the line
+        adjustedLine = adjustedLine.trimEnd()
+        return {line: adjustedLine, remainder, skipHyphen: true}
+      }
     }
 
-    return {line: adjustedLine, remainder}
+    return {line: adjustedLine, remainder, skipHyphen: false}
   }
 
   /**

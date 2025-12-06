@@ -1,4 +1,4 @@
-import type { ScriptType } from "../profiles/types"
+import type {ScriptType} from "../profiles/types"
 
 /**
  * Unicode ranges for script detection.
@@ -166,7 +166,9 @@ export function isKoreanCharacter(char: string): boolean {
  */
 export function isUniformWidthScript(char: string): boolean {
   const script = detectScript(char)
-  return script === "cjk" || script === "hiragana" || script === "katakana" || script === "korean" || script === "cyrillic"
+  return (
+    script === "cjk" || script === "hiragana" || script === "katakana" || script === "korean" || script === "cyrillic"
+  )
 }
 
 /**
@@ -181,7 +183,7 @@ export function isUnsupportedScript(char: string): boolean {
  * Check if breaking between two characters requires a hyphen.
  * Returns false for:
  * - Breaking after CJK characters (can break anywhere)
- * - Breaking after spaces
+ * - Breaking before or after spaces
  * - Breaking after punctuation
  */
 export function needsHyphenForBreak(charBefore: string, charAfter: string): boolean {
@@ -197,6 +199,11 @@ export function needsHyphenForBreak(charBefore: string, charAfter: string): bool
 
   // No hyphen needed after space
   if (charBefore === " " || charBefore === "\t") {
+    return false
+  }
+
+  // No hyphen needed before space (the space is a natural break point)
+  if (charAfter === " " || charAfter === "\t") {
     return false
   }
 

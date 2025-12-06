@@ -109,6 +109,65 @@ describe("TextWrapper", () => {
         }
       }
     })
+
+    test("should not add hyphen before space when breaking at word boundary", () => {
+      // This tests the case where a line ends exactly at a word boundary
+      // and the next character is a space - no hyphen should be added
+      const charWrapper = new TextWrapper(measurer, {
+        breakMode: "character",
+        hyphenChar: "-",
+        minCharsBeforeHyphen: 3,
+      })
+
+      // Create text where words naturally end near line boundaries
+      const text = "keep on talking and I won't stop Testing one two three"
+      const result = charWrapper.wrap(text)
+
+      // Check that we never have "word -" patterns (hyphen after complete word before space)
+      for (const line of result.lines) {
+        // A line should not end with a hyphen if it's followed by a space in the original text
+        // This is a bit tricky to test directly, but we can check that complete words
+        // at line end don't have hyphens (e.g., "keep-" when "keep " was in original)
+        if (line.endsWith("-")) {
+          // The character before hyphen should be part of a broken word, not a complete word
+          // Complete words followed by space should NOT have hyphen
+          const beforeHyphen = line.slice(0, -1)
+          const lastWord = beforeHyphen.split(" ").pop() || ""
+          // If it's a short common word that appears complete in original, it's suspicious
+          const completeWordsInOriginal = ["keep", "on", "and", "won't", "stop", "one", "two"]
+          if (completeWordsInOriginal.includes(lastWord.toLowerCase())) {
+            // This word shouldn't have been hyphenated - it's complete
+            throw new Error(`Complete word "${lastWord}" should not be followed by hyphen`)
+          }
+        }
+      }
+    })
+
+    test("should not add hyphen when backing off to a word boundary", () => {
+      // This tests the backoffForHyphen logic: when we need to make room for a hyphen
+      // and back off characters, if we encounter a space (word boundary), we should
+      // NOT add a hyphen - just break at the natural word boundary
+      const charWrapper = new TextWrapper(measurer, {
+        breakMode: "character",
+        hyphenChar: "-",
+        minCharsBeforeHyphen: 3,
+      })
+
+      // This specific text triggers the backoff scenario where "about to wr" needs
+      // to back off "wr" to fit a hyphen, but when it backs off to "about to ",
+      // it should recognize this is a word boundary and skip the hyphen
+      // Use a narrower width (350px) to force the wrap to occur at the right place
+      const text = "ng some more, and now it is about to wrap"
+      const result = charWrapper.wrap(text, {maxWidthPx: 350})
+
+      // The first line should end with "to" (no hyphen), not "to -"
+      const firstLine = result.lines[0]
+      expect(firstLine.endsWith("to")).toBe(true)
+      expect(firstLine.endsWith("-")).toBe(false)
+
+      // The second line should start with "wrap"
+      expect(result.lines[1]).toBe("wrap")
+    })
   })
 
   describe("wrap - word break mode", () => {
