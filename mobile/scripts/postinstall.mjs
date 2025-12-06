@@ -6,7 +6,10 @@ console.log('Running postinstall...');
 await $({ stdio: 'inherit' })`patch-package`;
 
 console.log('Building core module...');
-await $({ stdio: 'inherit', cwd: 'modules/core' })`bun prepare`;
+// Install core module dependencies first (needed for expo-module CLI)
+await $({ stdio: 'inherit', cwd: 'modules/core' })`bun install --ignore-scripts`;
+// Now run prepare (expo-module will be available in node_modules/.bin)
+await $({ stdio: 'inherit', cwd: 'modules/core' })`bun run prepare`;
 // ignore scripts to avoid infinite loop:
 await $({ stdio: 'inherit' })`bun install --ignore-scripts`;
 
