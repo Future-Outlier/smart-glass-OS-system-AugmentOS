@@ -70,10 +70,8 @@ jobs:
       - name: Setup environment
         working-directory: ./mobile
         run: |
-          # Create .env from example
+          # Create .env from example (Expo reads from mobile/.env, not android/.env)
           cp .env.example .env
-          # Copy to Android directory
-          cp .env android/.env
 
       - name: Run Expo prebuild
         working-directory: ./mobile
