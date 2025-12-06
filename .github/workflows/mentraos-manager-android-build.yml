@@ -36,8 +36,7 @@ jobs:
             if (!comment) return; // No helper comment yet
 
             const sha = context.payload.pull_request.head.sha.substring(0, 7);
-            const buildStatus = `### 📱 Android Build
-⏳ **Building...** (commit \`${sha}\`)`;
+            const buildStatus = `### 📱 Android Build\n⏳ **Building...** (commit \`${sha}\`)`;
 
             const newBody = comment.body.replace(
               /<!-- android-build-status -->[\s\S]*?<!-- \/android-build-status -->/,
@@ -149,10 +148,7 @@ jobs:
             const runId = context.runId;
             const downloadUrl = `https://nightly.link/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}/app-debug.zip`;
 
-            const buildStatus = `### 📱 Android Build
-✅ **Ready to test!** (commit \`${sha}\`)
-
-[📥 **Download APK**](${downloadUrl})`;
+            const buildStatus = `### 📱 Android Build\n✅ **Ready to test!** (commit \`${sha}\`)\n\n[📥 **Download APK**](${downloadUrl})`;
 
             const newBody = comment.body.replace(
               /<!-- android-build-status -->[\s\S]*?<!-- \/android-build-status -->/,
@@ -188,14 +184,10 @@ jobs:
             const previousDownloadMatch = comment.body.match(/\[📥 \*\*Download APK\*\*\]\((https:\/\/nightly\.link[^)]+)\)/);
             const previousShaMatch = comment.body.match(/commit `([a-f0-9]+)`\)/);
 
-            let buildStatus = `### 📱 Android Build
-❌ **Build failed** (commit \`${sha}\`) - [View logs](${runUrl})`;
+            let buildStatus = `### 📱 Android Build\n❌ **Build failed** (commit \`${sha}\`) - [View logs](${runUrl})`;
 
             if (previousDownloadMatch && previousShaMatch) {
-              buildStatus += `
-
-📦 **Last working build:** commit \`${previousShaMatch[1]}\`
-[📥 **Download APK**](${previousDownloadMatch[1]})`;
+              buildStatus += `\n\n📦 **Last working build:** commit \`${previousShaMatch[1]}\`\n[📥 **Download APK**](${previousDownloadMatch[1]})`;
             }
 
             const newBody = comment.body.replace(

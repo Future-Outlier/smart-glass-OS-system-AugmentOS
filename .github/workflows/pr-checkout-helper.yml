@@ -33,34 +33,13 @@ jobs:
               const forkRepo = pr.head.repo.name;
               const localBranchName = `${forkOwner}-${prBranch}`.replace(/[^a-zA-Z0-9-]/g, '-');
 
-              checkoutSection = `\`\`\`bash
-gh pr checkout ${prNumber}
-\`\`\`
-<details>
-<summary>Alternative methods</summary>
-
-\`\`\`bash
-git fetch https://github.com/${forkOwner}/${forkRepo}.git ${prBranch}:${localBranchName} && git checkout ${localBranchName}
-\`\`\`
-</details>`;
+              checkoutSection = `\`\`\`bash\ngh pr checkout ${prNumber}\n\`\`\`\n<details>\n<summary>Alternative methods</summary>\n\n\`\`\`bash\ngit fetch https://github.com/${forkOwner}/${forkRepo}.git ${prBranch}:${localBranchName} && git checkout ${localBranchName}\n\`\`\`\n</details>`;
             } else {
-              checkoutSection = `\`\`\`bash
-gh pr checkout ${prNumber}
-\`\`\``;
+              checkoutSection = `\`\`\`bash\ngh pr checkout ${prNumber}\n\`\`\``;
             }
 
             // Full comment with markers for build status updates
-            checkoutInstructions = `<!-- pr-review-helper -->
-## 📋 PR Review Helper
-
-<!-- android-build-status -->
-### 📱 Android Build
-⏳ _Waiting for build..._
-<!-- /android-build-status -->
-
----
-### 🔀 Test Locally
-${checkoutSection}`;
+            checkoutInstructions = `<!-- pr-review-helper -->\n## 📋 PR Review Helper\n\n<!-- android-build-status -->\n### 📱 Android Build\n⏳ _Waiting for build..._\n<!-- /android-build-status -->\n\n---\n### 🔀 Test Locally\n${checkoutSection}`;
 
             await github.rest.issues.createComment({
               issue_number: prNumber,
