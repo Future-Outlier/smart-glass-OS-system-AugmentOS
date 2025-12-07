@@ -2222,8 +2222,13 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
     private func stopReconnectionTimer() {
         reconnectionQueue.async { [weak self] in
             guard let self = self else { return }
+            guard let timer = self.reconnectionTimer else { return }
+
             Bridge.log("G1: Stopping reconnection timer")
-            self.reconnectionTimer?.cancel()
+            // Clear event handler first to prevent callbacks during cancellation
+            // and break retain cycle before deallocation
+            timer.setEventHandler(handler: nil)
+            timer.cancel()
             self.reconnectionTimer = nil
         }
     }
@@ -2233,7 +2238,11 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
             guard let self = self else { return }
             Bridge.log("G1: Starting reconnection timer")
 
-            self.reconnectionTimer?.cancel()
+            // Clean up existing timer properly before creating new one
+            if let existingTimer = self.reconnectionTimer {
+                existingTimer.setEventHandler(handler: nil)
+                existingTimer.cancel()
+            }
             self.reconnectionTimer = nil
             self.reconnectionAttempts = 0
 
