@@ -132,21 +132,51 @@ jobs:
       - name: Upload APK to pr-builds release
         if: github.event_name == 'pull_request'
         continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          SHA=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
-          APK_NAME="pr-${PR_NUMBER}-${SHA}.apk"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
 
-          # Copy and rename the APK
-          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk "${APK_NAME}"
+            const prNumber = context.payload.pull_request.number;
+            const sha = context.payload.pull_request.head.sha.substring(0, 7);
+            const apkName = `pr-${prNumber}-${sha}.apk`;
+            const apkPath = 'mobile/android/app/build/outputs/apk/debug/app-debug.apk';
 
-          # Delete existing asset with same name if it exists (in case of re-run)
-          gh release delete-asset pr-builds "${APK_NAME}" --yes 2>/dev/null || true
+            // Get the pr-builds release
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: 'pr-builds'
+            });
 
-          # Upload new asset
-          gh release upload pr-builds "${APK_NAME}" --clobber
+            // Delete existing asset with same name if it exists
+            for (const asset of release.data.assets) {
+              if (asset.name === apkName) {
+                console.log(`Deleting existing asset: ${asset.name}`);
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: asset.id
+                });
+                break;
+              }
+            }
+
+            // Read the APK file
+            const apkData = fs.readFileSync(apkPath);
+
+            // Upload the APK
+            console.log(`Uploading ${apkName} (${apkData.length} bytes)...`);
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: apkName,
+              data: apkData
+            });
+
+            console.log(`Successfully uploaded ${apkName}`);
 
       - name: Cleanup old release assets
         if: github.event_name == 'pull_request'
