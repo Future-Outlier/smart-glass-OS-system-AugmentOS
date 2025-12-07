@@ -60,14 +60,16 @@ jobs:
               body: newBody
             });
 
-      - name: Clean workspace
+      - name: Get cache week number
+        id: cache-week
+        run: echo "week=$(date +%Y-%U)" >> $GITHUB_OUTPUT
+
+      - name: Clean build artifacts (preserve caches)
         run: |
-          # Clean previous build artifacts
-          rm -rf mobile/node_modules mobile/.pnpm-store mobile/.pnpm
-          rm -rf mobile/android/build mobile/android/.gradle
-          rm -rf ~/.pnpm-store 2>/dev/null || true
-          # Clean Gradle caches to avoid corrupted artifacts (especially Kotlin plugin)
-          rm -rf ~/.gradle/caches ~/.gradle/wrapper 2>/dev/null || true
+          # Only clean build outputs, NOT dependency caches
+          rm -rf mobile/android/build mobile/android/app/build mobile/android/.gradle
+          # Clean node_modules to ensure fresh install (bun is fast anyway)
+          rm -rf mobile/node_modules
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -84,32 +86,35 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      - name: Install pnpm
-        run: |
-          npm install -g pnpm@8
-          # Verify pnpm is in PATH
-          which pnpm
-          pnpm --version
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ steps.cache-week.outputs.week }}-${{ hashFiles('mobile/android/**/*.gradle*', 'mobile/android/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-${{ steps.cache-week.outputs.week }}-
+            gradle-${{ runner.os }}-
 
-      - name: Configure pnpm store
-        working-directory: ./mobile
-        run: |
-          # Use local store to avoid permission issues
-          pnpm config set store-dir .pnpm-store
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('mobile/bun.lockb') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
 
       - name: Install dependencies
         working-directory: ./mobile
-        run: pnpm install --no-frozen-lockfile
-        env:
-          PNPM_HOME: ${{ github.workspace }}/mobile/.pnpm
-          PNPM_STORE_PATH: ${{ github.workspace }}/mobile/.pnpm-store
+        run: bun install
 
       - name: Setup environment
         working-directory: ./mobile
@@ -119,7 +124,7 @@ jobs:
 
       - name: Run Expo prebuild
         working-directory: ./mobile
-        run: pnpm expo prebuild --platform android
+        run: bun expo prebuild --platform android
 
       - name: Fix React Native symlinks
         working-directory: ./mobile
@@ -130,8 +135,27 @@ jobs:
           fi
 
       - name: Build Android Release APK
+        id: gradle-build
         working-directory: ./mobile/android
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --build-cache --parallel
+        continue-on-error: true
+
+      - name: Retry build with clean cache (if first attempt failed)
+        if: steps.gradle-build.outcome == 'failure'
+        working-directory: ./mobile/android
+        run: |
+          echo "First build failed, cleaning Gradle cache and retrying..."
+          rm -rf ~/.gradle/caches ~/.gradle/wrapper
+          ./gradlew assembleRelease --build-cache --parallel
+
+      - name: Fail if both builds failed
+        if: steps.gradle-build.outcome == 'failure'
+        run: |
+          # Check if retry succeeded by looking for the APK
+          if [ ! -f "mobile/android/app/build/outputs/apk/release/app-release.apk" ]; then
+            echo "Both build attempts failed"
+            exit 1
+          fi
 
       - name: Upload Release APK (artifact)
         uses: actions/upload-artifact@v4
