@@ -1,7 +1,6 @@
 import {ScrollView} from "react-native"
 
 import {Header, Screen} from "@/components/ignite"
-import {Spacer} from "@/components/ui"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -32,38 +31,26 @@ export default function DeviceInfoScreen() {
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
       <Header titleTx="deviceInfo:title" leftIcon="chevron-left" onLeftPress={goBack} />
-      <ScrollView>
-        <Spacer height={theme.spacing.s6} />
-
+      <ScrollView style={{flex: 1, gap: theme.spacing.s6, marginTop: theme.spacing.s6}}>
         {/* Device Identity */}
         <Group title={translate("deviceInfo:deviceIdentity")}>
-          {(modelName || defaultWearable) && (
-            <RouteButton label={translate("deviceInfo:model")} text={modelName || defaultWearable || "Unknown"} />
-          )}
-          {bluetoothId && <RouteButton label={translate("deviceInfo:deviceId")} text={bluetoothId} />}
-          {serialNumber && <RouteButton label={translate("deviceInfo:serialNumber")} text={serialNumber} />}
+          <RouteButton label={translate("deviceInfo:model")} text={modelName || defaultWearable || "Unknown"} />
+          {!!bluetoothId && <RouteButton label={translate("deviceInfo:deviceId")} text={bluetoothId} />}
+          {!!serialNumber && <RouteButton label={translate("deviceInfo:serialNumber")} text={serialNumber} />}
         </Group>
-
-        <Spacer height={theme.spacing.s6} />
 
         {/* Software Version */}
         <Group title={translate("deviceInfo:softwareVersion")}>
-          {buildNumber && <RouteButton label={translate("deviceInfo:buildNumber")} text={buildNumber} />}
-          {fwVersion && <RouteButton label={translate("deviceInfo:firmwareVersion")} text={fwVersion} />}
-          {appVersion && <RouteButton label={translate("deviceInfo:appVersion")} text={appVersion} />}
+          {!!buildNumber && <RouteButton label={translate("deviceInfo:buildNumber")} text={buildNumber} />}
+          {!!fwVersion && <RouteButton label={translate("deviceInfo:firmwareVersion")} text={fwVersion} />}
+          {!!appVersion && <RouteButton label={translate("deviceInfo:appVersion")} text={appVersion} />}
         </Group>
 
-        <Spacer height={theme.spacing.s6} />
-
         {/* Network Info - only show if connected to WiFi */}
-        {(wifiSsid || wifiLocalIp) && (
-          <Group title={translate("deviceInfo:networkInfo")}>
-            {wifiSsid && <RouteButton label={translate("deviceInfo:wifiNetwork")} text={wifiSsid} />}
-            {wifiLocalIp && <RouteButton label={translate("deviceInfo:localIpAddress")} text={wifiLocalIp} />}
-          </Group>
-        )}
-
-        <Spacer height={theme.spacing.s6} />
+        <Group title={translate("deviceInfo:networkInfo")}>
+          {!!wifiSsid && <RouteButton label={translate("deviceInfo:wifiNetwork")} text={wifiSsid} />}
+          {!!wifiLocalIp && <RouteButton label={translate("deviceInfo:localIpAddress")} text={wifiLocalIp} />}
+        </Group>
       </ScrollView>
     </Screen>
   )

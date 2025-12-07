@@ -1,4 +1,4 @@
-import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
+import {useLocalSearchParams, useFocusEffect} from "expo-router"
 import {useState, useEffect, useCallback, useRef} from "react"
 import {View, TextInput, TouchableOpacity, BackHandler} from "react-native"
 import {ViewStyle, TextStyle} from "react-native"
@@ -24,7 +24,7 @@ export default function WifiPasswordScreen() {
   const nextRoute = params.nextRoute as string | undefined
 
   const {theme, themed} = useAppTheme()
-  const {push, goBack} = useNavigationHistory()
+  const {push, goBack, replace} = useNavigationHistory()
   const glassesConnected = useGlassesStore(state => state.connected)
   const [ssid, setSsid] = useState(initialSsid)
   const [password, setPassword] = useState("")
@@ -39,9 +39,9 @@ export default function WifiPasswordScreen() {
       console.log("[WifiPasswordScreen] Glasses disconnected - navigating away")
       showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [{text: "OK"}])
       if (returnTo && typeof returnTo === "string") {
-        router.replace(decodeURIComponent(returnTo))
+        replace(decodeURIComponent(returnTo))
       } else {
-        router.replace("/")
+        replace("/")
       }
     }
     prevGlassesConnectedRef.current = glassesConnected
@@ -49,7 +49,7 @@ export default function WifiPasswordScreen() {
 
   const handleGoBack = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
-      router.replace(decodeURIComponent(returnTo))
+      replace(decodeURIComponent(returnTo))
     } else {
       goBack()
     }

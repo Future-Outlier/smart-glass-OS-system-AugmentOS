@@ -15,6 +15,8 @@ type SliderSettingProps = {
   onValueSet: (value: number) => void // For BLE requests or final actions
   style?: ViewStyle
   disableBorder?: boolean
+  isFirst?: boolean
+  isLast?: boolean
 }
 
 const SliderSetting: React.FC<SliderSettingProps> = ({
@@ -27,6 +29,8 @@ const SliderSetting: React.FC<SliderSettingProps> = ({
   onValueSet,
   style,
   disableBorder = false,
+  isFirst,
+  isLast,
 }) => {
   const handleValueChange = (val: number) => {
     const roundedValue = Math.round(val)
@@ -38,10 +42,21 @@ const SliderSetting: React.FC<SliderSettingProps> = ({
     onValueSet(roundedValue) // Emit only integer values
   }
 
-  const {themed} = useAppTheme()
+  const {theme, themed} = useAppTheme()
+
+  const groupedStyle: ViewStyle | undefined =
+    isFirst !== undefined || isLast !== undefined
+      ? {
+          borderTopLeftRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+          borderTopRightRadius: isFirst ? theme.spacing.s4 : theme.spacing.s1,
+          borderBottomLeftRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+          borderBottomRightRadius: isLast ? theme.spacing.s4 : theme.spacing.s1,
+          marginBottom: isLast ? 0 : theme.spacing.s2,
+        }
+      : undefined
 
   return (
-    <View style={[themed($container), disableBorder && {borderWidth: 0}, style]}>
+    <View style={[themed($container), groupedStyle, disableBorder && {borderWidth: 0}, style]}>
       <View style={themed($textContainer)}>
         <View style={themed($labelRow)}>
           <Text text={label} style={themed($label)} />
@@ -65,25 +80,24 @@ const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   justifyContent: "flex-start",
   alignItems: "flex-start",
   width: "100%",
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   paddingVertical: spacing.s4,
-  paddingHorizontal: spacing.s6,
+  paddingHorizontal: spacing.s4,
   borderRadius: spacing.s4,
-  borderWidth: spacing.s0_5,
-  borderColor: colors.border,
 })
 
-const $textContainer: ThemedStyle<ViewStyle> = () => ({
+const $textContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "column",
   alignItems: "flex-start",
   justifyContent: "flex-start",
   gap: 4,
   width: "100%",
-  marginBottom: 8,
+  marginBottom: spacing.s2,
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 15,
+  fontSize: 14,
+  fontWeight: "600",
   color: colors.text,
 })
 
@@ -100,7 +114,7 @@ const $labelRow: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $valueText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 15,
+  fontSize: 14,
   color: colors.textDim,
   fontWeight: "500",
 })

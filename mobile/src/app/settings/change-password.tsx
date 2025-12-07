@@ -9,7 +9,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {$styles, ThemedStyle, spacing} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {mentraAuthProvider} from "@/utils/auth/authProvider"
+import mentraAuth from "@/utils/auth/authClient"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function ChangePasswordScreen() {
@@ -39,25 +39,20 @@ export default function ChangePasswordScreen() {
 
     setIsLoading(true)
 
-    try {
-      const {error} = await mentraAuthProvider.updateUserPassword(newPassword)
-
-      if (error) {
-        showAlert(translate("common:error"), error.message)
-      } else {
-        Toast.show({
-          type: "success",
-          text1: translate("profileSettings:passwordUpdatedSuccess"),
-          position: "bottom",
-        })
-        goBack()
-      }
-    } catch (err) {
-      console.error("Error updating password:", err)
-      showAlert(translate("common:error"), err.toString())
-    } finally {
+    const res = await mentraAuth.updateUserPassword(newPassword)
+    if (res.is_error()) {
+      console.error("Error updating password")
+      showAlert(translate("common:error"), res.error.message)
       setIsLoading(false)
+      return
     }
+    Toast.show({
+      type: "success",
+      text1: translate("profileSettings:passwordUpdatedSuccess"),
+      position: "bottom",
+    })
+    setIsLoading(false)
+    goBack()
   }
 
   return (

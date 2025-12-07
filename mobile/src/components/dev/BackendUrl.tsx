@@ -66,7 +66,7 @@ export default function BackendUrl() {
               {
                 text: translate("common:ok"),
                 onPress: () => {
-                  replace("/init")
+                  replace("/")
                 },
               },
             ],
@@ -107,7 +107,7 @@ export default function BackendUrl() {
       {
         text: "OK",
         onPress: () => {
-          replace("/init")
+          replace("/")
         },
       },
     ])

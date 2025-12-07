@@ -177,7 +177,7 @@ export function Header(props: HeaderProps) {
 
   return (
     <View style={[$container, $containerInsets, {backgroundColor}, $containerStyleOverride]}>
-      <View style={[$styles.row, $wrapper, $styleOverride]}>
+      <View style={[$styles.row, themed($wrapper), $styleOverride]}>
         {/* <LinearGradient
       colors={theme.isDark ? ["#090A14", "#080D33"] : ["#FFA500", "#FFF5E6"]}
       style={{
@@ -208,7 +208,7 @@ export function Header(props: HeaderProps) {
               $titleContainerStyleOverride,
             ]}
             pointerEvents="none">
-            <Text weight="medium" size="md" text={titleContent} style={[$title, $titleStyleOverride]} />
+            <Text weight="normal" size="lg" text={titleContent} style={[$title, $titleStyleOverride]} />
           </View>
         )}
 
@@ -271,27 +271,29 @@ function HeaderAction(props: HeaderActionProps) {
   return <View style={[$actionFillerContainer, {backgroundColor}]} />
 }
 
-const $wrapper: ViewStyle = {
-  height: 56,
+const $wrapper: ThemedStyle<ViewStyle> = () => ({
+  height: 48,
+  // height: 28,
   alignItems: "center",
   justifyContent: "space-between",
-}
+})
 
 const $container: ViewStyle = {
   width: "100%",
 }
 
 const $title: TextStyle = {
+  // textAlign: "center",
+  // fontSize: 15,
   textAlign: "left",
-  fontSize: 15,
+  fontSize: 20,
 }
 
-const $actionTextContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $actionTextContainer: ThemedStyle<ViewStyle> = () => ({
   flexGrow: 0,
   alignItems: "center",
   justifyContent: "center",
   height: "100%",
-  paddingHorizontal: spacing.s4,
   zIndex: 2,
 })
 

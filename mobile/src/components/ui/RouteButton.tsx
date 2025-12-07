@@ -26,8 +26,8 @@ export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitl
           style={{
             gap: theme.spacing.s1,
           }}>
-          <Text style={[themed($label), textStyle]}>{label}</Text>
-          {subtitle && <Text style={themed($subtitle)}>{subtitle}</Text>}
+          <Text style={[themed($label), textStyle]} weight="semiBold" text={label} />
+          {subtitle && <Text style={themed($subtitle)} text={subtitle} />}
         </View>
       </View>
       {iconEnd && iconEnd}
@@ -52,17 +52,31 @@ interface RouteButtonProps {
   style?: ViewStyle
   icon?: React.ReactNode
   variant?: "default" | "destructive"
+  disabled?: boolean
 }
 
-export function RouteButton({label, subtitle, onPress, style, text, icon, variant = "default"}: RouteButtonProps) {
+export function RouteButton({
+  label,
+  subtitle,
+  onPress,
+  style,
+  text,
+  icon,
+  variant = "default",
+  disabled = false,
+}: RouteButtonProps) {
   const {theme, themed} = useAppTheme()
 
   const isDestructive = variant === "destructive"
-  const labelColor = isDestructive ? theme.colors.destructive : theme.colors.secondary_foreground
+  const labelColor = disabled
+    ? theme.colors.textDim
+    : isDestructive
+      ? theme.colors.destructive
+      : theme.colors.secondary_foreground
 
   return (
-    <View style={[themed($settingsGroup), {paddingVertical: 0}, style]}>
-      <TouchableOpacity onPress={onPress} disabled={!onPress}>
+    <View style={[themed($settingsGroup), {paddingVertical: 0}, disabled && {opacity: 0.5}, style]}>
+      <TouchableOpacity onPress={onPress} disabled={disabled || !onPress}>
         <View style={{flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, alignItems: "center"}}>
           <View
             style={{
@@ -80,10 +94,14 @@ export function RouteButton({label, subtitle, onPress, style, text, icon, varian
           </View>
           {onPress && (
             <View style={themed($iconContainer)}>
-              <Icon name="arrow-right" size={24} color={theme.colors.foreground} />
+              <Icon name="arrow-right" size={24} color={disabled ? theme.colors.textDim : theme.colors.text} />
             </View>
           )}
-          {text && <Text style={themed($text)}>{text}</Text>}
+          {text && (
+            <Text style={themed($text)} weight="light">
+              {text}
+            </Text>
+          )}
         </View>
       </TouchableOpacity>
     </View>
@@ -102,10 +120,9 @@ const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderRadius: spacing.s4,
 })
 
-const $text: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontWeight: 300,
+const $text: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.text,
-  fontSize: spacing.s4,
+  fontSize: 16,
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
@@ -118,13 +135,13 @@ const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontWeight: 600,
   color: colors.secondary_foreground,
   fontSize: 14,
+  lineHeight: 16,
 })
 
-const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.textDim,
-  fontSize: spacing.s3,
-  fontWeight: "400",
+  fontSize: 12,
+  lineHeight: 14,
 })

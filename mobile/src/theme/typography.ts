@@ -2,6 +2,19 @@
 // markdown file and add links from here
 
 import {
+  RedHatDisplay_300Light as redHatDisplayLight,
+  RedHatDisplay_400Regular as redHatDisplayRegular,
+  RedHatDisplay_500Medium as redHatDisplayMedium,
+  RedHatDisplay_600SemiBold as redHatDisplaySemiBold,
+  RedHatDisplay_700Bold as redHatDisplayBold,
+  RedHatDisplay_800ExtraBold as redHatDisplayExtraBold,
+  RedHatDisplay_900Black as redHatDisplayBlack,
+  RedHatDisplay_300Light_Italic as redHatDisplayLightItalic,
+  RedHatDisplay_400Regular_Italic as redHatDisplayRegularItalic,
+  // RedHatDisplay_500Medium_Italic as redHatDisplayMediumItalic,
+  // RedHatDisplay_600SemiBold_Italic as redHatDisplaySemiBoldItalic,
+} from "@expo-google-fonts/red-hat-display"
+import {
   SpaceGrotesk_300Light as spaceGroteskLight,
   SpaceGrotesk_400Regular as spaceGroteskRegular,
   SpaceGrotesk_500Medium as spaceGroteskMedium,
@@ -18,6 +31,15 @@ export const customFontsToLoad = {
   spaceGroteskBold,
   glassesMirror: require("@assets/fonts/glassesmirror.ttf"),
   tablerIcons: require("@assets/icons/tabler/tabler-icons.ttf"),
+  redHatDisplayLight,
+  redHatDisplayRegular,
+  redHatDisplayMedium,
+  redHatDisplaySemiBold,
+  redHatDisplayBold,
+  redHatDisplayExtraBold,
+  redHatDisplayBlack,
+  redHatDisplayLightItalic,
+  redHatDisplayRegularItalic,
 }
 
 const fonts = {
@@ -63,6 +85,13 @@ const fonts = {
     // Custom font for glasses display mirror
     normal: "glassesMirror",
   },
+  redHatDisplay: {
+    light: "redHatDisplayLight",
+    normal: "redHatDisplayRegular",
+    medium: "redHatDisplayMedium",
+    semiBold: "redHatDisplaySemiBold",
+    bold: "redHatDisplayBold",
+  },
 }
 
 export const typography = {
@@ -73,7 +102,7 @@ export const typography = {
   /**
    * The primary font. Used in most places.
    */
-  primary: fonts.sfProRounded,
+  primary: fonts.redHatDisplay,
   /**
    * An alternate font used for perhaps titles and stuff.
    */

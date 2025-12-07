@@ -726,6 +726,8 @@ struct ViewState {
                 }
                 Bridge.log("MAN: Processing bitmap_view with base64 data, length: \(data.count)")
                 await sgc?.displayBitmap(base64ImageData: data)
+            case "clear_view":
+                sgc?.clearDisplay()
             default:
                 Bridge.log("UNHANDLED LAYOUT_TYPE \(layoutType)")
             }
@@ -1382,8 +1384,7 @@ struct ViewState {
             "is_searching": isSearching,
             // only on if recording from glasses:
             // TODO: this isn't robust:
-            "is_mic_enabled_for_frontend": micEnabled && (preferredMic == "glasses")
-                && (sgc?.ready ?? false),
+            "is_mic_enabled_for_frontend": micEnabled && sgc?.micEnabled ?? false,
             "core_token": coreToken,
         ]
 

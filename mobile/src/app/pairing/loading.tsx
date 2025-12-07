@@ -2,9 +2,8 @@ import {useRoute} from "@react-navigation/native"
 import CoreModule from "core"
 import {useEffect, useRef, useState} from "react"
 import {BackHandler, Platform, ScrollView, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
-import Icon from "react-native-vector-icons/FontAwesome"
 
-import {Button, Text} from "@/components/ignite"
+import {Button, Icon, Text} from "@/components/ignite"
 import {Header} from "@/components/ignite/Header"
 import {PillButton} from "@/components/ignite/PillButton"
 import {Screen} from "@/components/ignite/Screen"
@@ -121,7 +120,7 @@ export default function GlassesPairingGuideScreen() {
 
   if (pairingInProgress) {
     return (
-      <Screen preset="fixed" style={themed($styles.screen)}>
+      <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
         <Header leftIcon="chevron-left" onLeftPress={goBack} />
         <View style={themed($pairingContainer)}>
           <View style={themed($centerWrapper)}>
@@ -129,7 +128,7 @@ export default function GlassesPairingGuideScreen() {
           </View>
           <Button
             preset="secondary"
-            text="I need more help"
+            tx="pairing:needMoreHelp"
             onPress={() => setShowTroubleshootingModal(true)}
             style={themed($helpButtonBottom)}
           />
@@ -147,7 +146,7 @@ export default function GlassesPairingGuideScreen() {
   // Note: This will only trigger on iOS since the events are only sent from iOS native code
   if (audioPairingNeeded && audioDeviceName) {
     return (
-      <Screen preset="fixed" style={themed($styles.screen)}>
+      <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
         <Header
           leftIcon="chevron-left"
           onLeftPress={goBack}
@@ -160,17 +159,13 @@ export default function GlassesPairingGuideScreen() {
             />
           }
         />
-        <ScrollView style={themed($scrollView)}>
-          <View style={themed($contentContainer)}>
-            <AudioPairingPrompt
-              deviceName={audioDeviceName}
-              onSkip={() => {
-                // Navigate first - don't update state which could cause race conditions
-                replace("/pairing/success", {glassesModelName: glassesModelName})
-              }}
-            />
-          </View>
-        </ScrollView>
+        <AudioPairingPrompt
+          deviceName={audioDeviceName}
+          onSkip={() => {
+            // Navigate first - don't update state which could cause race conditions
+            replace("/pairing/success", {glassesModelName: glassesModelName})
+          }}
+        />
         <GlassesTroubleshootingModal
           isVisible={showTroubleshootingModal}
           onClose={() => setShowTroubleshootingModal(false)}
@@ -181,7 +176,7 @@ export default function GlassesPairingGuideScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($screen)}>
+    <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
       <Header
         leftIcon="chevron-left"
         onLeftPress={goBack}
@@ -197,8 +192,10 @@ export default function GlassesPairingGuideScreen() {
       <ScrollView style={themed($scrollView)}>
         <View style={themed($contentContainer)}>
           <TouchableOpacity style={themed($helpButton)} onPress={() => setShowTroubleshootingModal(true)}>
-            <Icon name="question-circle" size={16} color="#FFFFFF" style={{marginRight: 8}} />
-            <Text style={themed($helpButtonText)}>Need Help Pairing?</Text>
+            <Icon name="help-circle" size={16} color="#FFFFFF" style={{marginRight: 8}} />
+            <Text style={themed($helpButtonText)} weight="bold">
+              Need Help Pairing?
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -210,10 +207,6 @@ export default function GlassesPairingGuideScreen() {
     </Screen>
   )
 }
-
-const $screen: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingHorizontal: spacing.s4,
-})
 
 const $pillButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   marginRight: spacing.s4,
@@ -240,11 +233,9 @@ const $helpButton: ThemedStyle<ViewStyle> = ({isDark}) => ({
   backgroundColor: isDark ? "#3b82f6" : "#007BFF",
 })
 
-const $helpButtonText: ThemedStyle<TextStyle> = ({typography}) => ({
+const $helpButtonText: ThemedStyle<TextStyle> = () => ({
   color: "#FFFFFF",
-  fontFamily: typography.primary.normal,
   fontSize: 16,
-  fontWeight: "600",
 })
 
 const $pairingContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({

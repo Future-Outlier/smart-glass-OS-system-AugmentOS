@@ -3,8 +3,9 @@ import {ActivityIndicator, Image, ImageStyle, TextStyle, View, ViewStyle} from "
 import Svg, {Path} from "react-native-svg"
 
 import {Text} from "@/components/ignite"
-import {supabase} from "@/supabase/supabaseClient"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
+import mentraAuth from "@/utils/auth/authClient"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 // Default user icon component for profile pictures
@@ -34,35 +35,36 @@ export const ProfileCard = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       setLoading(true)
-      try {
-        const {
-          data: {user},
-          error,
-        } = await supabase.auth.getUser()
-        if (error) {
-          console.error(error)
-          setUserData(null)
-        } else if (user) {
-          const fullName = user.user_metadata?.full_name || user.user_metadata?.name || null
-          const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null
-          const email = user.email || null
-          const createdAt = user.created_at || null
-          const provider = user.app_metadata?.provider || null
 
-          setUserData({
-            fullName,
-            avatarUrl,
-            email,
-            createdAt,
-            provider,
-          })
-        }
-      } catch (error) {
-        console.error(error)
+      const isChina = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
+      if (isChina) {
         setUserData(null)
-      } finally {
         setLoading(false)
+        return
       }
+
+      const res = await mentraAuth.getUser()
+      if (res.is_error()) {
+        setUserData(null)
+        setLoading(false)
+        return
+      }
+      const user = res.value
+
+      const fullName = user.name
+      const avatarUrl = user.avatarUrl || null
+      const email = user.email || null
+      const createdAt = user.createdAt || null
+      const provider = user.provider || null
+
+      setUserData({
+        fullName,
+        avatarUrl,
+        email,
+        createdAt,
+        provider,
+      })
+      setLoading(false)
     }
 
     fetchUserData()
