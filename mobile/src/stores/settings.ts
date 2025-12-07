@@ -47,35 +47,33 @@ export const SETTINGS: Record<string, Setting> = {
   },
   backend_url: {
     key: "backend_url",
-    defaultValue: () =>
-      process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china"
-        ? "https://api.mentraglass.cn:443"
-        : "https://api.mentra.glass",
-    writable: true,
-    override: () => {
+    defaultValue: () => {
       if (process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE) {
         return process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE
       }
-      return undefined
+      if (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china") {
+        return "https://api.mentraglass.cn:443"
+      }
+      return "https://api.mentra.glass"
     },
+    writable: true,
     saveOnServer: false,
-    persist: false,
+    persist: true,
   },
   store_url: {
     key: "store_url",
-    defaultValue: () =>
-      process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china"
-        ? "https://store.mentraglass.cn"
-        : "https://apps.mentra.glass",
-    writable: true,
-    override: () => {
+    defaultValue: () => {
       if (process.env.EXPO_PUBLIC_STORE_URL_OVERRIDE) {
         return process.env.EXPO_PUBLIC_STORE_URL_OVERRIDE
       }
-      return undefined
+      if (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china") {
+        return "https://store.mentraglass.cn"
+      }
+      return "https://apps.mentra.glass"
     },
-    saveOnServer: true,
-    persist: false,
+    writable: true,
+    saveOnServer: false,
+    persist: true,
   },
   reconnect_on_app_foreground: {
     key: "reconnect_on_app_foreground",
