@@ -33,10 +33,20 @@ jobs:
 
             const marker = '<!-- pr-review-helper -->';
             const comment = comments.data.find(c => c.body.includes(marker));
-            if (!comment) return; // No helper comment yet
+            if (!comment) return;
 
             const sha = context.payload.pull_request.head.sha.substring(0, 7);
-            const buildStatus = `### 📱 Android Build\n⏳ **Building...** (commit \`${sha}\`)`;
+
+            // Check for existing working build link to preserve
+            const existingDownloadMatch = comment.body.match(/\[📥 \*\*Download APK\*\*\]\((https:\/\/github\.com[^)]+\.apk)\)/);
+            const existingShaMatch = comment.body.match(/✅ \*\*Ready to test!\*\* \(commit `([a-f0-9]+)`\)/);
+
+            let buildStatus = `### 📱 Android Build\n⏳ **Building...** (commit \`${sha}\`)`;
+
+            // If there's a previous working build, show it
+            if (existingDownloadMatch && existingShaMatch && existingShaMatch[1] !== sha) {
+              buildStatus += `\n\n📦 **Previous build:** (commit \`${existingShaMatch[1]}\`) - [📥 **Download APK**](${existingDownloadMatch[1]})`;
+            }
 
             const newBody = comment.body.replace(
               /<!-- android-build-status -->[\s\S]*?<!-- \/android-build-status -->/,
@@ -260,14 +270,15 @@ jobs:
             const sha = context.payload.pull_request.head.sha.substring(0, 7);
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
-            // Check if there was a previous working build (look for existing download link)
+            // Check if there was a previous working build
             const previousDownloadMatch = comment.body.match(/\[📥 \*\*Download APK\*\*\]\((https:\/\/github\.com[^)]+\.apk)\)/);
-            const previousShaMatch = comment.body.match(/commit `([a-f0-9]+)`\)/);
+            const previousShaMatch = comment.body.match(/✅ \*\*Ready to test!\*\* \(commit `([a-f0-9]+)`\)/)
+                                  || comment.body.match(/📦 \*\*Previous build:\*\* \(commit `([a-f0-9]+)`\)/);
 
             let buildStatus = `### 📱 Android Build\n❌ **Build failed** (commit \`${sha}\`) - [View logs](${runUrl})`;
 
-            if (previousDownloadMatch && previousShaMatch) {
-              buildStatus += `\n\n📦 **Last working build:** commit \`${previousShaMatch[1]}\`\n[📥 **Download APK**](${previousDownloadMatch[1]})`;
+            if (previousDownloadMatch && previousShaMatch && previousShaMatch[1] !== sha) {
+              buildStatus += `\n\n📦 **Previous build:** (commit \`${previousShaMatch[1]}\`) - [📥 **Download APK**](${previousDownloadMatch[1]})`;
             }
 
             const newBody = comment.body.replace(
