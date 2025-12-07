@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -123,11 +123,44 @@ jobs:
         working-directory: ./mobile/android
         run: ./gradlew assembleDebug
 
-      - name: Upload Debug APK
+      - name: Upload Debug APK (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload APK to pr-builds release
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          SHA=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
+          APK_NAME="pr-${PR_NUMBER}-${SHA}.apk"
+
+          # Copy and rename the APK
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk "${APK_NAME}"
+
+          # Delete existing asset with same name if it exists (in case of re-run)
+          gh release delete-asset pr-builds "${APK_NAME}" --yes 2>/dev/null || true
+
+          # Upload new asset
+          gh release upload pr-builds "${APK_NAME}" --clobber
+
+      - name: Cleanup old release assets
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get assets older than 7 days and delete them
+          CUTOFF_DATE=$(date -d '7 days ago' -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -v-7d -u +%Y-%m-%dT%H:%M:%SZ)
+
+          gh api repos/${{ github.repository }}/releases/tags/pr-builds --jq '.assets[] | "\(.id) \(.name) \(.created_at)"' | while read -r ID NAME CREATED_AT; do
+            if [[ "$CREATED_AT" < "$CUTOFF_DATE" ]]; then
+              echo "Deleting old asset: $NAME (created $CREATED_AT)"
+              gh api -X DELETE repos/${{ github.repository }}/releases/assets/$ID
+            fi
+          done
 
       - name: Update PR comment - Build succeeded
         if: success() && github.event_name == 'pull_request'
@@ -144,9 +177,10 @@ jobs:
             const comment = comments.data.find(c => c.body.includes(marker));
             if (!comment) return;
 
+            const prNumber = context.payload.pull_request.number;
             const sha = context.payload.pull_request.head.sha.substring(0, 7);
-            const runId = context.runId;
-            const downloadUrl = `https://nightly.link/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}/app-debug.zip`;
+            const apkName = `pr-${prNumber}-${sha}.apk`;
+            const downloadUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/download/pr-builds/${apkName}`;
 
             const buildStatus = `### 📱 Android Build\n✅ **Ready to test!** (commit \`${sha}\`)\n\n[📥 **Download APK**](${downloadUrl})`;
 
@@ -181,7 +215,7 @@ jobs:
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
             // Check if there was a previous working build (look for existing download link)
-            const previousDownloadMatch = comment.body.match(/\[📥 \*\*Download APK\*\*\]\((https:\/\/nightly\.link[^)]+)\)/);
+            const previousDownloadMatch = comment.body.match(/\[📥 \*\*Download APK\*\*\]\((https:\/\/github\.com[^)]+\.apk)\)/);
             const previousShaMatch = comment.body.match(/commit `([a-f0-9]+)`\)/);
 
             let buildStatus = `### 📱 Android Build\n❌ **Build failed** (commit \`${sha}\`) - [View logs](${runUrl})`;
