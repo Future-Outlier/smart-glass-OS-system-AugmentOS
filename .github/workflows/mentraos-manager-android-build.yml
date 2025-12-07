@@ -99,7 +99,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ steps.cache-week.outputs.week }}-${{ hashFiles('mobile/android/**/*.gradle*', 'mobile/android/gradle-wrapper.properties') }}
+          key: gradle-${{ runner.os }}-${{ steps.cache-week.outputs.week }}-${{ hashFiles('mobile/android/**/*.gradle*', 'mobile/android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-${{ steps.cache-week.outputs.week }}-
             gradle-${{ runner.os }}-
@@ -139,14 +139,20 @@ jobs:
         working-directory: ./mobile/android
         run: ./gradlew assembleRelease --build-cache --parallel
         continue-on-error: true
+        env:
+          SENTRY_DISABLE_AUTO_UPLOAD: "true"
 
       - name: Retry build with clean cache (if first attempt failed)
         if: steps.gradle-build.outcome == 'failure'
         working-directory: ./mobile/android
         run: |
           echo "First build failed, cleaning Gradle cache and retrying..."
-          rm -rf ~/.gradle/caches ~/.gradle/wrapper
+          # Stop Gradle daemons first to release file locks
+          ./gradlew --stop || true
+          rm -rf ~/.gradle/caches ~/.gradle/wrapper || true
           ./gradlew assembleRelease --build-cache --parallel
+        env:
+          SENTRY_DISABLE_AUTO_UPLOAD: "true"
 
       - name: Fail if both builds failed
         if: steps.gradle-build.outcome == 'failure'
