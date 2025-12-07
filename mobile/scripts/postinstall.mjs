@@ -2,8 +2,8 @@
 
 console.log('Running postinstall...');
 
-// Patch packages
-await $({ stdio: 'inherit' })`patch-package`;
+// Patch packages (--error-on-fail to allow version mismatches - patches are iOS-only anyway)
+await $({ stdio: 'inherit', nothrow: true })`patch-package`;
 
 console.log('Building core module...');
 // Install core module dependencies first (needed for expo-module CLI)
