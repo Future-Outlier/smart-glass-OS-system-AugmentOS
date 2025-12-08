@@ -3,8 +3,8 @@ import {View, FlatList, TouchableOpacity, Alert} from "react-native"
 import {ViewStyle, TextStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
-import {Spacer} from "@/components/misc/Spacer"
 import ActionButton from "@/components/ui/ActionButton"
+import {Spacer} from "@/components/ui/Spacer"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
@@ -14,7 +14,7 @@ interface WifiCredentialsManagerProps {
 }
 
 export default function WifiCredentialsManager({onNetworkSelect}: WifiCredentialsManagerProps) {
-  const {themed} = useAppTheme()
+  const {themed, theme} = useAppTheme()
   const [savedNetworks, setSavedNetworks] = useState<Array<{ssid: string; lastConnected?: number}>>([])
 
   useEffect(() => {
@@ -105,7 +105,7 @@ export default function WifiCredentialsManager({onNetworkSelect}: WifiCredential
             </View>
           </View>
         )}
-        ItemSeparatorComponent={() => <Spacer size="xs" />}
+        ItemSeparatorComponent={() => <Spacer height={theme.spacing.s2} />}
       />
     </View>
   )

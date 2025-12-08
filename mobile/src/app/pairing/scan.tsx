@@ -15,14 +15,14 @@ import {
   ViewStyle,
 } from "react-native"
 import {useSharedValue, withDelay, withTiming} from "react-native-reanimated"
-import Icon from "react-native-vector-icons/FontAwesome"
 
+import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
+import {Icon} from "@/components/ignite"
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
 import Divider from "@/components/ui/Divider"
 import {Group} from "@/components/ui/Group"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SearchResultDevice, useSearchResults} from "@/contexts/SearchResultsContext"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
 import {$styles, ThemedStyle} from "@/theme"
@@ -33,8 +33,19 @@ import {PermissionFeatures, requestFeaturePermissions} from "@/utils/Permissions
 import {getGlassesOpenImage} from "@/utils/getGlassesImage"
 import {useAppTheme} from "@/utils/useAppTheme"
 
+class SearchResultDevice {
+  deviceMode: string
+  deviceName: string
+  deviceAddress: string
+  constructor(deviceMode: string, deviceName: string, deviceAddress: string) {
+    this.deviceMode = deviceMode
+    this.deviceName = deviceName
+    this.deviceAddress = deviceAddress
+  }
+}
+
 export default function SelectGlassesBluetoothScreen() {
-  const {searchResults, setSearchResults} = useSearchResults()
+  const [searchResults, setSearchResults] = useState<SearchResultDevice[]>([])
   const {glassesModelName}: {glassesModelName: string} = useLocalSearchParams()
   const {theme, themed} = useAppTheme()
   const {goBack, replace, clearHistoryAndGoHome} = useNavigationHistory()
@@ -239,7 +250,7 @@ export default function SelectGlassesBluetoothScreen() {
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
-      <Header leftIcon="chevron-left" onLeftPress={goBack} />
+      <Header leftIcon="chevron-left" onLeftPress={goBack} RightActionComponent={<MentraLogoStandalone />} />
       <View style={themed($container)}>
         <View style={themed($centerWrapper)}>
           <View style={themed($contentContainer)}>
@@ -268,7 +279,7 @@ export default function SelectGlassesBluetoothScreen() {
                           numberOfLines={2}
                         />
                       </View>
-                      <Icon name="angle-right" size={24} color={theme.colors.text} />
+                      <Icon name="chevron-right" size={24} color={theme.colors.text} />
                     </TouchableOpacity>
                   ))}
                 </Group>
@@ -288,7 +299,7 @@ export default function SelectGlassesBluetoothScreen() {
         </View>
         <Button
           preset="secondary"
-          text="I need more help"
+          tx="pairing:needMoreHelp"
           onPress={() => setShowTroubleshootingModal(true)}
           style={themed($helpButton)}
         />
@@ -316,6 +327,8 @@ const $contentContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   // height: 520,
   backgroundColor: colors.primary_foreground,
   borderRadius: spacing.s6,
+  borderWidth: 1,
+  borderColor: colors.border,
   padding: spacing.s6,
   gap: spacing.s6,
   // paddingBottom: spacing.s16,

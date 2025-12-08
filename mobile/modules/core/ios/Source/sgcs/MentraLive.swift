@@ -3508,6 +3508,9 @@ extension MentraLive {
 
         // Send button camera LED setting
         sendButtonCameraLedSetting()
+
+        // Send gallery mode state (camera app running status)
+        sendGalleryMode()
     }
 
     func sendButtonVideoRecordingSettings() {

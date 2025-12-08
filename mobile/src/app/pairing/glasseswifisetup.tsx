@@ -1,4 +1,4 @@
-import {useLocalSearchParams, useFocusEffect, router} from "expo-router"
+import {useLocalSearchParams, useFocusEffect} from "expo-router"
 import {useCallback, useEffect} from "react"
 import {BackHandler} from "react-native"
 
@@ -6,11 +6,11 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 export default function GlassesWifiSetupScreen() {
   const {deviceModel = "Glasses", returnTo, nextRoute} = useLocalSearchParams()
-  const {goBack} = useNavigationHistory()
+  const {goBack, replace} = useNavigationHistory()
 
   const handleGoBack = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {
-      router.replace(decodeURIComponent(returnTo))
+      replace(decodeURIComponent(returnTo))
     } else {
       goBack()
     }
@@ -27,10 +27,7 @@ export default function GlassesWifiSetupScreen() {
 
   // Immediately redirect to scan screen (using replace to avoid white screen on back)
   useEffect(() => {
-    router.replace({
-      pathname: "/pairing/glasseswifisetup/scan",
-      params: {deviceModel, returnTo, nextRoute},
-    })
+    replace("/pairing/glasseswifisetup/scan", {deviceModel, returnTo, nextRoute})
   }, [])
 
   // Redirect screen - no UI needed

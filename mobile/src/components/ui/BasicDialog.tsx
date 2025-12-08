@@ -29,7 +29,7 @@ const BasicDialog = ({
     <View style={themed($container)}>
       <View style={themed($titleDescription)}>
         {icon}
-        {title && <Text text={title} style={themed($headline)} />}
+        {title && <Text text={title} style={themed($headline)} weight="semiBold"/>}
         {description && (
           <Text text={typeof description === "string" ? description : undefined} style={themed($description)}>
             {typeof description !== "string" ? description : undefined}
@@ -40,9 +40,25 @@ const BasicDialog = ({
       <View style={themed($actions)}>
         <View style={themed($actions1)}>
           {leftButtonText && (
-            <Button flexContainer={false} flex={false} preset="alternate" text={leftButtonText} onPress={onLeftPress} />
+            <Button
+              style={{minWidth: 48}}
+              compact
+              flexContainer={false}
+              flex={false}
+              preset="alternate"
+              text={leftButtonText}
+              onPress={onLeftPress}
+            />
           )}
-          <Button flexContainer={false} flex={false} preset="primary" text={rightButtonText} onPress={onRightPress} />
+          <Button
+            style={{minWidth: 48}}
+            compact
+            flexContainer={false}
+            flex={false}
+            preset="primary"
+            text={rightButtonText}
+            onPress={onRightPress}
+          />
         </View>
       </View>
     </View>
@@ -81,18 +97,16 @@ const $titleDescription: ThemedStyle<ViewStyle> = ({spacing}) => ({
 
 const $headline: ThemedStyle<TextStyle> = ({colors}) => ({
   alignSelf: "stretch",
-  color: colors.text,
+  color: colors.secondary_foreground,
   textAlign: "left",
-  fontSize: 17,
-  fontWeight: "500",
-  letterSpacing: 1.7,
+  fontSize: 20,
 })
 
 const $description: ThemedStyle<TextStyle> = ({colors}) => ({
   alignSelf: "stretch",
   color: colors.secondary_foreground,
-  fontSize: 16,
-  fontWeight: "normal",
+  fontSize: 14,
+  fontWeight: 500,
   textAlign: "left",
 })
 

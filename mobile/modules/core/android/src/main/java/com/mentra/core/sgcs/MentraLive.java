@@ -3042,6 +3042,9 @@ public class MentraLive extends SGCManager {
 
     @Override
     public String getConnectedBluetoothName() {
+        if (connectedDevice != null && connectedDevice.getName() != null) {
+            return connectedDevice.getName();
+        }
         return "";
     }
 
@@ -4697,6 +4700,9 @@ public class MentraLive extends SGCManager {
 
         // Send button camera LED setting
         sendButtonCameraLedSetting();
+
+        // Send gallery mode state (camera app running status)
+        sendGalleryMode();
     }
 
     /**

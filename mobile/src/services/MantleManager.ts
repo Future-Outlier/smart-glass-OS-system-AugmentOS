@@ -243,7 +243,9 @@ class MantleManager {
     }
   }
 
+  // mostly for debugging / local stt:
   public async displayTextMain(text: string) {
+    this.resetDisplayTimeout()
     socketComms.handle_display_event({
       type: "display_event",
       view: "main",
@@ -259,6 +261,16 @@ class MantleManager {
     useDisplayStore.getState().setView(isUp ? "dashboard" : "main")
   }
 
+  public async resetDisplayTimeout() {
+    if (this.clearTextTimeout) {
+      console.log("Mantle: canceling pending timeout")
+      clearTimeout(this.clearTextTimeout)
+    }
+    this.clearTextTimeout = setTimeout(() => {
+      console.log("Mantle: clearing text from wall")
+    }, 10000) // 10 seconds
+  }
+
   public async handle_local_transcription(data: any) {
     // TODO: performance!
     const offlineStt = await useSettingsStore.getState().getSetting(SETTINGS.offline_captions_running.key)
@@ -267,17 +279,9 @@ class MantleManager {
       const processedText = this.transcriptProcessor.processString(data.text, data.isFinal ?? false)
 
       // Scheduling timeout to clear text from wall. In case of online STT online dashboard manager will handle it.
-      if (data.isFinal) {
-        console.log("Mantle: isFinal, scheduling timeout to clear text from wall")
-        if (this.clearTextTimeout) {
-          console.log("Mantle: canceling pending timeout")
-          clearTimeout(this.clearTextTimeout)
-        }
-        this.clearTextTimeout = setTimeout(() => {
-          console.log("Mantle: clearing text from wall")
-          this.displayTextMain("")
-        }, 10000) // 10 seconds
-      }
+      // if (data.isFinal) {
+      //   this.resetDisplayTimeout()
+      // }
 
       if (processedText) {
         this.displayTextMain(processedText)

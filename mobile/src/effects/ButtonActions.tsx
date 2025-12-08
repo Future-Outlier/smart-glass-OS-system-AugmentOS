@@ -1,25 +1,36 @@
-import {createContext, useContext, useEffect, ReactNode} from "react"
+import {useEffect} from "react"
 
 import {useApplets, useStartApplet} from "@/stores/applets"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {askPermissionsUI} from "@/utils/PermissionsUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
 
-interface ButtonActionContextType {
-  // Reserved for future extensions (e.g., custom button mappings)
-}
-
-const ButtonActionContext = createContext<ButtonActionContextType | undefined>(undefined)
-
-export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
+export function ButtonActions() {
   const applets = useApplets()
   const startApplet = useStartApplet()
+  const {theme} = useAppTheme()
 
   // Validate and update default button action app when device or applets change
   useEffect(() => {
     const validateAndSetDefaultApp = async () => {
       const currentDefaultApp = await useSettingsStore.getState().getSetting(SETTINGS.default_button_action_app.key)
 
-      // Check if current default app is compatible
+      // 1. If camera app is available and compatible, ALWAYS prefer it
+      // This ensures glasses with cameras always default to camera app
+      const cameraApp = applets.find(
+        app => app.packageName === "com.mentra.camera" && app.compatibility?.isCompatible !== false,
+      )
+
+      if (cameraApp) {
+        if (currentDefaultApp !== cameraApp.packageName) {
+          console.log("🔘 Setting default button app to camera (glasses have camera)")
+          await useSettingsStore.getState().setSetting(SETTINGS.default_button_action_app.key, cameraApp.packageName)
+        }
+        return
+      }
+
+      // 2. For glasses WITHOUT camera, keep current app if compatible
       const currentApp = applets.find(app => app.packageName === currentDefaultApp)
       const isCurrentAppCompatible = currentApp?.compatibility?.isCompatible !== false
 
@@ -28,21 +39,16 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
         return
       }
 
-      // Need to find a new default app
-      // Prefer camera if available and compatible, otherwise first compatible standard app
-      const cameraApp = applets.find(
-        app => app.packageName === "com.mentra.camera" && app.compatibility?.isCompatible !== false,
-      )
-
+      // 3. Fallback: find first compatible standard app
       const firstCompatibleApp = applets.find(
         app => app.type === "standard" && app.compatibility?.isCompatible !== false,
       )
 
-      const newDefaultApp = cameraApp || firstCompatibleApp
-
-      if (newDefaultApp) {
-        console.log("🔘 Setting default button app to:", newDefaultApp.packageName)
-        await useSettingsStore.getState().setSetting(SETTINGS.default_button_action_app.key, newDefaultApp.packageName)
+      if (firstCompatibleApp) {
+        console.log("🔘 Setting default button app to:", firstCompatibleApp.packageName)
+        await useSettingsStore
+          .getState()
+          .setSetting(SETTINGS.default_button_action_app.key, firstCompatibleApp.packageName)
       }
     }
 
@@ -102,6 +108,13 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
         return
       }
 
+      // Check and request permissions before starting
+      const result = await askPermissionsUI(targetApp, theme)
+      if (result !== 1) {
+        console.log("🔘 Permissions not granted for default app:", defaultAppPackageName)
+        return
+      }
+
       console.log("🔘 Starting default app:", defaultAppPackageName)
       startApplet(defaultAppPackageName)
     }
@@ -110,15 +123,7 @@ export const ButtonActionProvider = ({children}: {children: ReactNode}) => {
     return () => {
       GlobalEventEmitter.removeListener("BUTTON_PRESS", onButtonPress)
     }
-  }, [applets, startApplet])
+  }, [applets, startApplet, theme])
 
-  return <ButtonActionContext.Provider value={{}}>{children}</ButtonActionContext.Provider>
-}
-
-export const useButtonAction = () => {
-  const context = useContext(ButtonActionContext)
-  if (context === undefined) {
-    throw new Error("useButtonAction must be used within a ButtonActionProvider")
-  }
-  return context
+  return null
 }
