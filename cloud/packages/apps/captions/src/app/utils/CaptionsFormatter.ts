@@ -17,7 +17,7 @@ import {
   type DisplayProfile,
   type WrapOptions,
   type WrapResult,
-} from "@mentra/display-utils"
+} from "@mentra/sdk/display-utils"
 
 // Re-export profiles for convenience
 export {G1_PROFILE, G1_PROFILE_LEGACY}

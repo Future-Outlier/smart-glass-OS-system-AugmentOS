@@ -1,5 +1,5 @@
 /**
- * Display Utils Re-export
+ * Display Utils
  *
  * Glasses-agnostic, pixel-accurate text measurement and wrapping library
  * for smart glasses displays.
@@ -27,8 +27,7 @@
  * ```
  */
 
-// Re-export everything from @mentra/display-utils
-// The JS gets bundled into the SDK, types come from the package
+// Re-export everything from local display-utils source
 export {
   // Profiles
   type DisplayProfile,
@@ -77,4 +76,4 @@ export {
   createDisplayToolkit,
   createG1Toolkit,
   createG1LegacyToolkit,
-} from "@mentra/display-utils"
+} from "./display-utils/index"
