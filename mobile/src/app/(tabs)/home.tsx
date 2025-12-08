@@ -24,7 +24,7 @@ export default function Homepage() {
   )
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
+    <Screen preset="fixed">
       <Header leftTx="home:title" RightActionComponent={<MentraLogoStandalone />} />
 
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>

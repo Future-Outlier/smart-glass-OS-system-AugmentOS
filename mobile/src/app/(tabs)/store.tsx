@@ -135,7 +135,7 @@ export default function AppStoreWeb() {
   // Show loading state while getting the URL
   if (!finalUrl) {
     return (
-      <Screen preset="fixed" style={themed($styles.screen)}>
+      <Screen preset="fixed">
         <Header leftTx="store:title" RightActionComponent={<MentraLogoStandalone />} />
         <View style={[themed($loadingContainer), {marginHorizontal: -theme.spacing.s4}]}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -147,7 +147,7 @@ export default function AppStoreWeb() {
 
   if (hasError) {
     return (
-      <Screen preset="fixed" style={themed($styles.screen)}>
+      <Screen preset="fixed">
         <Header leftTx="store:title" RightActionComponent={<MentraLogoStandalone />} />
         <InternetConnectionFallbackComponent
           retry={handleRetry}
@@ -159,7 +159,7 @@ export default function AppStoreWeb() {
 
   // If the prefetched WebView is ready, show it in the correct style
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header leftTx="store:title" RightActionComponent={<MentraLogoStandalone />} />
       <View style={[themed($webViewContainer), {marginHorizontal: -theme.spacing.s6}]}>
         {/* Show the prefetched WebView, but now visible and full size */}

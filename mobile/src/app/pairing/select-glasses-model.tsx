@@ -76,7 +76,7 @@ export default function SelectGlassesModelScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header
         titleTx="pairing:selectModel"
         leftIcon="chevron-left"
@@ -85,7 +85,7 @@ export default function SelectGlassesModelScreen() {
         }}
         RightActionComponent={<MentraLogoStandalone />}
       />
-      <Spacer height={theme.spacing.s4} />
+      <Spacer className="h-4" />
       <ScrollView style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}>
         <View style={{flexDirection: "column", gap: theme.spacing.s4}}>
           {glassesOptions.map(glasses => (

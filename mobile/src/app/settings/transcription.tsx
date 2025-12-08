@@ -284,7 +284,7 @@ export default function TranscriptionSettingsScreen() {
   }, [])
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header
         title={translate("settings:transcriptionSettings")}
         leftIcon="chevron-left"

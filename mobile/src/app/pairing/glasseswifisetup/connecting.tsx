@@ -237,7 +237,7 @@ export default function WifiConnectingScreen() {
   return (
     <Screen
       preset="fixed"
-      contentContainerStyle={connectionStatus === "connecting" ? themed($styles.screen) : undefined}>
+      contentContainerStyle={connectionStatus === "connecting" ? undefined : undefined}>
       {connectionStatus === "connecting" && (
         <Header title="Connecting" leftIcon="chevron-left" onLeftPress={handleHeaderBack} />
       )}

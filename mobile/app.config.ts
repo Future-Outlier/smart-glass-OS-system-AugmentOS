@@ -92,7 +92,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
             },
           },
         },
-        UIBackgroundModes: ["bluetooth-central", "audio", "location"],
+        UIBackgroundModes: ["bluetooth-central", "audio", "location", "processing", "fetch"],
         NSLocationAlwaysAndWhenInUseUsageDescription:
           "MentraOS requires background location access to deliver continuous updates for apps like navigation and running, even when the app isn't in the foreground.",
         UIRequiresFullScreen: true,
@@ -100,6 +100,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
           "UIInterfaceOrientationPortrait",
           "UIInterfaceOrientationPortraitUpsideDown",
         ],
+        BGTaskSchedulerPermittedIdentifiers: ["com.mentra.background-timer"]
       },
       config: {
         usesNonExemptEncryption: false,

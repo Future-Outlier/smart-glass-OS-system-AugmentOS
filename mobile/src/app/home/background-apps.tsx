@@ -13,7 +13,7 @@ export default function BackgroundAppsScreen() {
   const {goBack} = useNavigationHistory()
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header leftIcon="chevron-left" onLeftPress={goBack} titleTx="home:backgroundApps" />
 
       <View style={themed($customHeaderDescription)}>

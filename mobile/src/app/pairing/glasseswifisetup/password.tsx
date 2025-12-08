@@ -115,7 +115,7 @@ export default function WifiPasswordScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header title="Wi-Fi" leftIcon="chevron-left" onLeftPress={handleGoBack} />
       <ScrollView contentContainerStyle={themed($scrollContent)} style={{flex: 1}}>
         {/* Centered card container */}

@@ -122,7 +122,7 @@ export default function GallerySettingsScreen() {
   let features = getModelCapabilities(defaultWearable)
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header title="Gallery Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Camera Settings button for glasses with configurable button */}
@@ -174,7 +174,7 @@ export default function GallerySettingsScreen() {
           <RouteButton
             label={translate("glasses:deleteAllPhotos")}
             onPress={handleDeleteAll}
-            variant="destructive"
+            preset="destructive"
             disabled={isLoadingStats || localPhotoCount + localVideoCount === 0}
           />
         </View>

@@ -553,7 +553,7 @@ export default function AppSettings() {
   }
 
   return (
-    <Screen preset="fixed" safeAreaEdges={[]} style={themed($styles.screen)}>
+    <Screen preset="fixed" safeAreaEdges={[]}>
       {isUninstalling && <LoadingOverlay message={`Uninstalling ${appInfo?.name || appName}...`} />}
 
       <View>
@@ -702,7 +702,7 @@ export default function AppSettings() {
           {/* Uninstall Button at the bottom */}
           <RouteButton
             label={translate("appSettings:uninstall")}
-            variant="destructive"
+            preset="destructive"
             onPress={() => {
               if (serverAppInfo?.uninstallable) {
                 handleUninstallApp()

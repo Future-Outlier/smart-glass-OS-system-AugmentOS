@@ -182,7 +182,7 @@ const GlassesTroubleshootingModal: React.FC<TroubleshootingModalProps> = ({isVis
             </View>
 
             {/* Title */}
-            <Text style={themed($title)} weight="semiBold" text={currentTip.title} />
+            <Text style={themed($title)} weight="semibold" text={currentTip.title} />
 
             {/* Body */}
             <Text style={themed($body)}>{currentTip.body}</Text>

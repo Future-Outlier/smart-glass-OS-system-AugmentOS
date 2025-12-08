@@ -29,7 +29,7 @@ export default function DeviceInfoScreen() {
   const bluetoothId = bluetoothName?.split("_").pop() || bluetoothName
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header titleTx="deviceInfo:title" leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView style={{flex: 1, gap: theme.spacing.s6, marginTop: theme.spacing.s6}}>
         {/* Device Identity */}

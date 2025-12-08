@@ -123,7 +123,7 @@ export default function ResetPasswordScreen() {
 
   if (!isValidToken) {
     return (
-      <Screen preset="fixed" style={themed($styles.screen)}>
+      <Screen preset="fixed">
         <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
           <ActivityIndicator size="large" color={theme.colors.tint} />
           <Spacer height={spacing.s4} />
@@ -134,7 +134,7 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header title={translate("login:resetPasswordTitle")} leftIcon="chevron-left" onLeftPress={() => goBack()} />
       <ScrollView
         contentContainerStyle={themed($scrollContent)}

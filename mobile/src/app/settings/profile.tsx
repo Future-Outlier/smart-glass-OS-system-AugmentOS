@@ -243,7 +243,7 @@ export default function ProfileSettingsPage() {
   const {theme, themed} = useAppTheme()
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header title={translate("profileSettings:title")} leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView>
         {loading ? (
@@ -279,9 +279,9 @@ export default function ProfileSettingsPage() {
               <RouteButton
                 label={translate("profileSettings:deleteAccount")}
                 onPress={handleDeleteAccount}
-                variant="destructive"
+                preset="destructive"
               />
-              <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} variant="destructive" />
+              <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} preset="destructive" />
             </Group>
           </>
         ) : (

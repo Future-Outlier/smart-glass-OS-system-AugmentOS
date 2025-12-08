@@ -39,7 +39,7 @@ export default function MicrophoneScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header titleTx="microphoneSettings:title" leftIcon="chevron-left" onLeftPress={goBack} />
       <Spacer height={theme.spacing.s6} />
       <ScrollView>
