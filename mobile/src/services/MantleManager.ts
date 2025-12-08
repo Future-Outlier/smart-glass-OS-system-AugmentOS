@@ -208,7 +208,7 @@ class MantleManager {
         return Location.LocationAccuracy.Lowest
       default:
         // console.error("Mantle: unknown accuracy: " + accuracy)
-        return Location.LocationAccuracy.Balanced
+        return Location.LocationAccuracy.Lowest
     }
   }
 

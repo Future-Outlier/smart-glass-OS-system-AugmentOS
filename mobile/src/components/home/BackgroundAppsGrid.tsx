@@ -148,20 +148,18 @@ const $appIcon: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 12,
   color: colors.text,
   textAlign: "center",
-  marginTop: spacing.s1,
+  marginTop: spacing.s2,
   lineHeight: 14,
   // overflow: "hidden",
   // wordWrap: "break-word",
 })
 
 const $appNameOffline: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 12,
   color: colors.textDim,
   textAlign: "center",
-  marginTop: spacing.s1,
+  marginTop: spacing.s2,
   textDecorationLine: "line-through",
   lineHeight: 14,
 })
