@@ -57,7 +57,7 @@ export function Header({
       {!isLanguageSelectorOpen && (
         <button
           onClick={onToggleLanguageSelector}
-          className="w-full px-3 py-3 bg-white rounded-bl-2xl rounded-br-2xl backdrop-blur-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
+          className="w-full px-3 py-3 bg-white rounded-bl-2xl rounded-br-2xl backdrop-blur-lg hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-md">
           {settings && (
             <>
               {/* Connection status indicator - before all chips */}
@@ -80,7 +80,7 @@ export function Header({
                   {/* Primary language chip */}
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-[#6DAEA6] rounded-full flex-shrink-0">
                     <span className="text-base">
-                      {settings.language === "auto" ? "🌐" : getFlagEmoji(settings.language)}
+                      {settings.language === "auto" ? "🏳️" : getFlagEmoji(settings.language)}
                     </span>
                     <span className="text-sm font-semibold text-white font-['Red_Hat_Display']">
                       {settings.language === "auto" ? "Auto" : getLanguageName(settings.language)}

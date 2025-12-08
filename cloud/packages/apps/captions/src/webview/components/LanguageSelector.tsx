@@ -87,7 +87,7 @@ export function LanguageSelector({currentLanguage, currentHints, onSave, onCance
             </div>
           ) : (
             <div className="px-3 py-1.5 bg-[#6DAEA6] rounded-full flex items-center gap-2 shadow-sm">
-              <span className="text-lg">🌐</span>
+              <span className="text-lg">🏳️</span>
               <span className="text-sm font-semibold text-white font-['Red_Hat_Display']">Auto</span>
             </div>
           )}
