@@ -5,7 +5,7 @@ import {BackgroundAppsGrid} from "@/components/home/BackgroundAppsGrid"
 import {Header, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {$styles, ThemedStyle} from "@/theme"
+import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function BackgroundAppsScreen() {
@@ -14,11 +14,12 @@ export default function BackgroundAppsScreen() {
 
   return (
     <Screen preset="fixed">
-      <Header leftIcon="chevron-left" onLeftPress={goBack} titleTx="home:backgroundApps" />
-
-      <View style={themed($customHeaderDescription)}>
-        <Text style={themed($subtitle)}>Multiple background apps can be active at once.</Text>
-      </View>
+      <Header
+        leftIcon="chevron-left"
+        onLeftPress={goBack}
+        titleTx="home:backgroundApps"
+        subtitleTx="home:backgroundAppsDescription"
+      />
 
       <ScrollView
         style={themed($scrollView)}

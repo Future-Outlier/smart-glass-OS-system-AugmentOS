@@ -5,13 +5,12 @@ import {Header, Screen} from "@/components/ignite"
 import {Spacer} from "@/components/ui"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {$styles} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function MicrophoneScreen() {
-  const {theme, themed} = useAppTheme()
+  const {theme} = useAppTheme()
   const {goBack} = useNavigationHistory()
   const [preferredMic, setPreferredMic] = useSetting(SETTINGS.preferred_mic.key)
 

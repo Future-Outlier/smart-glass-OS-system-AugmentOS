@@ -133,16 +133,21 @@ export const IncompatibleApps: React.FC = () => {
         enablePanDownToClose
         backgroundStyle={{backgroundColor: theme.colors.primary_foreground}}
         handleIndicatorStyle={{backgroundColor: theme.colors.textDim}}>
-        <BottomSheetView className="flex-1 px-4">
-          <Text className="text-lg font-bold text-foreground mb-4 text-center" tx="home:incompatibleApps" />
-          <Text className="text-sm text-muted-foreground mb-4 text-center"></Text>
+        <BottomSheetView className="px-6">
+          <View className="gap-4 px-4 my-6">
+            <Text className="text-lg font-bold text-foreground text-center" tx="home:incompatibleApps" />
+            <Text
+              className="text-sm text-muted-foreground font-medium"
+              tx="home:incompatibleAppsDescription"
+            />
+          </View>
           <FlatList
             data={gridData}
             renderItem={renderItem}
             keyExtractor={item => item.packageName}
             numColumns={GRID_COLUMNS}
             showsVerticalScrollIndicator={false}
-            contentContainerClassName="pb-3"
+            contentContainerClassName="pb-6"
           />
         </BottomSheetView>
       </BottomSheetModal>

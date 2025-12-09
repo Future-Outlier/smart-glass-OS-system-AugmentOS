@@ -98,7 +98,7 @@ export const BackgroundAppsGrid = () => {
   return (
     <View style={themed($container)}>
       <View style={themed($header)}>
-        <Text tx="home:inactiveApps" style={themed($headerText)} />
+        <Text tx="home:inactiveApps" className="font-semibold text-xl"/>
       </View>
       <FlatList
         data={gridData}
