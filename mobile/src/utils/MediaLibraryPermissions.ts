@@ -87,8 +87,12 @@ export class MediaLibraryPermissions {
       if (!(Platform.OS === "android" && Platform.Version >= 29)) {
         const hasPermission = await this.checkPermission()
         if (!hasPermission) {
-          console.warn("[MediaLibrary] No permission to save to library")
-          return false
+          // Try requesting permission one more time
+          const granted = await this.requestPermission()
+          if (!granted) {
+            console.warn("[MediaLibrary] No permission to save to library - photos saved to app storage only")
+            return false
+          }
         }
       }
 
@@ -98,7 +102,12 @@ export class MediaLibraryPermissions {
       // Save to camera roll
       // Gallery apps sort by "date added" to MediaStore, so ensure you call this
       // method in chronological order (oldest first) for proper gallery ordering
-      await MediaLibrary.createAssetAsync(cleanPath)
+      //
+      // IMPORTANT: Use saveToLibraryAsync instead of createAssetAsync!
+      // - createAssetAsync requires full PHOTO_LIBRARY permission (read + write)
+      // - saveToLibraryAsync works with PHOTO_LIBRARY_ADD_ONLY permission (write-only)
+      // Since we only need to save photos, not read them, saveToLibraryAsync is correct.
+      await MediaLibrary.saveToLibraryAsync(cleanPath)
 
       if (creationTime) {
         const captureDate = new Date(creationTime)
@@ -108,8 +117,18 @@ export class MediaLibraryPermissions {
       }
 
       return true
-    } catch (error) {
-      console.error("[MediaLibrary] Error saving to library:", error)
+    } catch (error: any) {
+      // On iOS, "Limited" photo access can cause permission errors even after check passes
+      // This is not a critical error - photos are still saved to app storage
+      const errorMessage = error?.message || String(error)
+      if (errorMessage.includes("permission")) {
+        console.warn(
+          "[MediaLibrary] Permission error saving to camera roll (photos still saved to app storage):",
+          errorMessage,
+        )
+      } else {
+        console.warn("[MediaLibrary] Error saving to camera roll:", errorMessage)
+      }
       return false
     }
   }
