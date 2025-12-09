@@ -1310,103 +1310,107 @@ struct ViewState {
     }
 
     func handle_request_status() {
-        // construct the status object:
-        let simulatedConnected = defaultWearable == DeviceTypes.SIMULATED
-        let glassesConnected = sgc?.ready ?? false
-        if glassesConnected {
-            isSearching = false
+        // ensure this is on the main thread:
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            // construct the status object:
+            let simulatedConnected = defaultWearable == DeviceTypes.SIMULATED
+            let glassesConnected = sgc?.ready ?? false
+            if glassesConnected {
+                isSearching = false
+            }
+
+            // also referenced as glasses_info:
+            var glassesSettings: [String: Any] = [:]
+            var glassesInfo: [String: Any] = [:]
+
+            glassesInfo = [
+                "connected": glassesConnected,
+                "modelName": defaultWearable,
+                "batteryLevel": sgc?.batteryLevel ?? -1,
+                "appVersion": sgc?.glassesAppVersion ?? "",
+                "buildNumber": sgc?.glassesBuildNumber ?? "",
+                "deviceModel": sgc?.glassesDeviceModel ?? "",
+                "androidVersion": sgc?.glassesAndroidVersion ?? "",
+                "otaVersionUrl": sgc?.glassesOtaVersionUrl ?? "",
+            ]
+
+            if sgc is G1 {
+                glassesInfo["caseRemoved"] = sgc?.caseRemoved ?? true
+                glassesInfo["caseOpen"] = sgc?.caseOpen ?? true
+                glassesInfo["caseCharging"] = sgc?.caseCharging ?? false
+                glassesInfo["caseBatteryLevel"] = sgc?.caseBatteryLevel ?? -1
+
+                glassesInfo["serialNumber"] = sgc?.glassesSerialNumber ?? ""
+                glassesInfo["style"] = sgc?.glassesStyle ?? ""
+                glassesInfo["color"] = sgc?.glassesColor ?? ""
+            }
+
+            if sgc is MentraLive {
+                glassesInfo["wifiSsid"] = sgc?.wifiSsid ?? ""
+                glassesInfo["wifiConnected"] = sgc?.wifiConnected ?? false
+                glassesInfo["wifiLocalIp"] = sgc?.wifiLocalIp ?? ""
+                glassesInfo["hotspotEnabled"] = sgc?.isHotspotEnabled ?? false
+                glassesInfo["hotspotSsid"] = sgc?.hotspotSsid ?? ""
+                glassesInfo["hotspotPassword"] = sgc?.hotspotPassword ?? ""
+                glassesInfo["hotspotGatewayIp"] = sgc?.hotspotGatewayIp ?? ""
+            }
+
+            // Add Bluetooth device name if available
+            if let bluetoothName = sgc?.getConnectedBluetoothName() {
+                glassesInfo["bluetoothName"] = bluetoothName
+            }
+
+            glassesSettings = [
+                "brightness": brightness,
+                "auto_brightness": autoBrightness,
+                "dashboard_height": dashboardHeight,
+                "dashboard_depth": dashboardDepth,
+                "head_up_angle": headUpAngle,
+                "button_mode": buttonPressMode,
+                "button_photo_size": buttonPhotoSize,
+                "button_video_settings": [
+                    "width": buttonVideoWidth,
+                    "height": buttonVideoHeight,
+                    "fps": buttonVideoFps,
+                ],
+                "button_max_recording_time": buttonMaxRecordingTime,
+                "button_camera_led": buttonCameraLed,
+            ]
+
+            //        let cloudConnectionStatus =
+            //            WebSocketManager.shared.isConnected() ? "CONNECTED" : "DISCONNECTED"
+
+            // TODO: config: remove
+            let coreInfo: [String: Any] = [
+                // "is_searching": self.isSearching && !self.defaultWearable.isEmpty,
+                "is_searching": isSearching,
+                // only on if recording from glasses:
+                // TODO: this isn't robust:
+                "is_mic_enabled_for_frontend": micEnabled && sgc?.micEnabled ?? false,
+                "core_token": coreToken,
+            ]
+
+            // hardcoded list of apps:
+            var apps: [[String: Any]] = []
+
+            let authObj: [String: Any] = [
+                "core_token_owner": coreTokenOwner,
+                //      "core_token_status":
+            ]
+
+            let statusObj: [String: Any] = [
+                "glasses_info": glassesInfo,
+                "glasses_settings": glassesSettings,
+                "apps": apps,
+                "core_info": coreInfo,
+                "auth": authObj,
+            ]
+
+            lastStatusObj = statusObj
+
+            Bridge.sendStatus(statusObj)
         }
-
-        // also referenced as glasses_info:
-        var glassesSettings: [String: Any] = [:]
-        var glassesInfo: [String: Any] = [:]
-
-        glassesInfo = [
-            "connected": glassesConnected,
-            "modelName": defaultWearable,
-            "batteryLevel": sgc?.batteryLevel ?? -1,
-            "appVersion": sgc?.glassesAppVersion ?? "",
-            "buildNumber": sgc?.glassesBuildNumber ?? "",
-            "deviceModel": sgc?.glassesDeviceModel ?? "",
-            "androidVersion": sgc?.glassesAndroidVersion ?? "",
-            "otaVersionUrl": sgc?.glassesOtaVersionUrl ?? "",
-        ]
-
-        if sgc is G1 {
-            glassesInfo["caseRemoved"] = sgc?.caseRemoved ?? true
-            glassesInfo["caseOpen"] = sgc?.caseOpen ?? true
-            glassesInfo["caseCharging"] = sgc?.caseCharging ?? false
-            glassesInfo["caseBatteryLevel"] = sgc?.caseBatteryLevel ?? -1
-
-            glassesInfo["serialNumber"] = sgc?.glassesSerialNumber ?? ""
-            glassesInfo["style"] = sgc?.glassesStyle ?? ""
-            glassesInfo["color"] = sgc?.glassesColor ?? ""
-        }
-
-        if sgc is MentraLive {
-            glassesInfo["wifiSsid"] = sgc?.wifiSsid ?? ""
-            glassesInfo["wifiConnected"] = sgc?.wifiConnected ?? false
-            glassesInfo["wifiLocalIp"] = sgc?.wifiLocalIp ?? ""
-            glassesInfo["hotspotEnabled"] = sgc?.isHotspotEnabled ?? false
-            glassesInfo["hotspotSsid"] = sgc?.hotspotSsid ?? ""
-            glassesInfo["hotspotPassword"] = sgc?.hotspotPassword ?? ""
-            glassesInfo["hotspotGatewayIp"] = sgc?.hotspotGatewayIp ?? ""
-        }
-
-        // Add Bluetooth device name if available
-        if let bluetoothName = sgc?.getConnectedBluetoothName() {
-            glassesInfo["bluetoothName"] = bluetoothName
-        }
-
-        glassesSettings = [
-            "brightness": brightness,
-            "auto_brightness": autoBrightness,
-            "dashboard_height": dashboardHeight,
-            "dashboard_depth": dashboardDepth,
-            "head_up_angle": headUpAngle,
-            "button_mode": buttonPressMode,
-            "button_photo_size": buttonPhotoSize,
-            "button_video_settings": [
-                "width": buttonVideoWidth,
-                "height": buttonVideoHeight,
-                "fps": buttonVideoFps,
-            ],
-            "button_max_recording_time": buttonMaxRecordingTime,
-            "button_camera_led": buttonCameraLed,
-        ]
-
-        //        let cloudConnectionStatus =
-        //            WebSocketManager.shared.isConnected() ? "CONNECTED" : "DISCONNECTED"
-
-        // TODO: config: remove
-        let coreInfo: [String: Any] = [
-            // "is_searching": self.isSearching && !self.defaultWearable.isEmpty,
-            "is_searching": isSearching,
-            // only on if recording from glasses:
-            // TODO: this isn't robust:
-            "is_mic_enabled_for_frontend": micEnabled && sgc?.micEnabled ?? false,
-            "core_token": coreToken,
-        ]
-
-        // hardcoded list of apps:
-        var apps: [[String: Any]] = []
-
-        let authObj: [String: Any] = [
-            "core_token_owner": coreTokenOwner,
-            //      "core_token_status":
-        ]
-
-        let statusObj: [String: Any] = [
-            "glasses_info": glassesInfo,
-            "glasses_settings": glassesSettings,
-            "apps": apps,
-            "core_info": coreInfo,
-            "auth": authObj,
-        ]
-
-        lastStatusObj = statusObj
-
-        Bridge.sendStatus(statusObj)
     }
 
     func handle_update_settings(_ settings: [String: Any]) {
@@ -1510,8 +1514,12 @@ struct ViewState {
             let newHeight = videoSettingsObj["height"] as? Int ?? buttonVideoHeight
             let newFps = videoSettingsObj["fps"] as? Int ?? buttonVideoFps
 
-            if newWidth != buttonVideoWidth || newHeight != buttonVideoHeight || newFps != buttonVideoFps {
-                Bridge.log("MAN: Updating button video settings: \(newWidth) x \(newHeight) @ \(newFps)fps (was: \(buttonVideoWidth) x \(buttonVideoHeight) @ \(buttonVideoFps)fps)")
+            if newWidth != buttonVideoWidth || newHeight != buttonVideoHeight
+                || newFps != buttonVideoFps
+            {
+                Bridge.log(
+                    "MAN: Updating button video settings: \(newWidth) x \(newHeight) @ \(newFps)fps (was: \(buttonVideoWidth) x \(buttonVideoHeight) @ \(buttonVideoFps)fps)"
+                )
                 updateButtonVideoSettings(width: newWidth, height: newHeight, fps: newFps)
             }
         } else {
@@ -1537,7 +1545,9 @@ struct ViewState {
             }
 
             if changed {
-                Bridge.log("MAN: Updating button video settings: \(newWidth) x \(newHeight) @ \(newFps)fps (was: \(buttonVideoWidth) x \(buttonVideoHeight) @ \(buttonVideoFps)fps)")
+                Bridge.log(
+                    "MAN: Updating button video settings: \(newWidth) x \(newHeight) @ \(newFps)fps (was: \(buttonVideoWidth) x \(buttonVideoHeight) @ \(buttonVideoFps)fps)"
+                )
                 updateButtonVideoSettings(width: newWidth, height: newHeight, fps: newFps)
             }
         }
