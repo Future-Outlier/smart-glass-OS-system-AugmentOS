@@ -4,6 +4,7 @@
  */
 
 import CoreModule from "core"
+import {Platform} from "react-native"
 import WifiManager from "react-native-wifi-reborn"
 
 import {useGallerySyncStore, HotspotInfo} from "@/stores/gallerySync"
@@ -25,6 +26,9 @@ const TIMING = {
   WIFI_CONNECTION_TIMEOUT_MS: 30000,
   RETRY_DELAY_MS: 2000,
   MAX_QUEUE_AGE_MS: 2 * 60 * 1000, // 2 min - glasses hotspot auto-disables after 40s inactivity
+  // iOS WiFi connection timing - the system shows a dialog that user must accept
+  IOS_WIFI_RETRY_DELAY_MS: 3000, // Wait for user to interact with iOS dialog
+  IOS_WIFI_MAX_RETRIES: 5, // Retry multiple times to give user time to accept
 } as const
 
 class GallerySyncService {
@@ -233,8 +237,24 @@ class GallerySyncService {
 
     console.log("[GallerySyncService] Starting sync...")
 
-    // Request notification permission early so user isn't interrupted during WiFi setup
+    // Request all permissions upfront so user isn't interrupted during WiFi/download
+    // 1. Notification permission (for background sync progress)
     await gallerySyncNotifications.requestPermissions()
+
+    // 2. Camera roll permission (if auto-save is enabled)
+    const shouldAutoSave = await gallerySettingsService.getAutoSaveToCameraRoll()
+    if (shouldAutoSave) {
+      const hasPermission = await MediaLibraryPermissions.checkPermission()
+      if (!hasPermission) {
+        console.log("[GallerySyncService] Requesting camera roll permission upfront...")
+        const granted = await MediaLibraryPermissions.requestPermission()
+        if (!granted) {
+          console.log("[GallerySyncService] Camera roll permission denied - photos will still sync to app")
+          // Don't block sync - photos will still be downloaded to app storage
+          // They just won't be saved to the camera roll
+        }
+      }
+    }
 
     // Reset abort controller
     this.abortController = new AbortController()
@@ -288,6 +308,8 @@ class GallerySyncService {
 
   /**
    * Connect to hotspot WiFi
+   * On iOS, the system shows a dialog that the user must accept. The library may throw
+   * "internal error" before the user has a chance to respond, so we retry with delays.
    */
   private async connectToHotspotWifi(hotspotInfo: HotspotInfo): Promise<void> {
     const store = useGallerySyncStore.getState()
@@ -295,14 +317,97 @@ class GallerySyncService {
     console.log(`[GallerySyncService] Connecting to WiFi: ${hotspotInfo.ssid}`)
     store.setSyncState("connecting_wifi")
 
+    if (Platform.OS === "ios") {
+      // iOS-specific connection with retry logic
+      await this.connectToHotspotWifiIOS(hotspotInfo)
+    } else {
+      // Android connection
+      await this.connectToHotspotWifiAndroid(hotspotInfo)
+    }
+  }
+
+  /**
+   * iOS-specific WiFi connection with retry logic
+   * iOS shows a system dialog that the user must accept. The WifiManager library
+   * often throws "internal error" before the user has responded, so we retry.
+   */
+  private async connectToHotspotWifiIOS(hotspotInfo: HotspotInfo): Promise<void> {
+    const store = useGallerySyncStore.getState()
+    let lastError: any = null
+
+    for (let attempt = 1; attempt <= TIMING.IOS_WIFI_MAX_RETRIES; attempt++) {
+      // Check if cancelled
+      if (this.abortController?.signal.aborted) {
+        store.setSyncError("Sync cancelled")
+        return
+      }
+
+      try {
+        console.log(`[GallerySyncService] iOS WiFi connection attempt ${attempt}/${TIMING.IOS_WIFI_MAX_RETRIES}`)
+
+        // Use connectToProtectedSSID with joinOnce=false for persistent connection
+        await WifiManager.connectToProtectedSSID(hotspotInfo.ssid, hotspotInfo.password, false, false)
+
+        console.log("[GallerySyncService] Connected to hotspot WiFi (iOS)")
+
+        // Start the actual download
+        await this.startFileDownload(hotspotInfo)
+        return // Success - exit the retry loop
+      } catch (error: any) {
+        lastError = error
+        console.log(
+          `[GallerySyncService] iOS WiFi attempt ${attempt} failed:`,
+          error?.message || error?.code || "unknown error",
+        )
+
+        // If user explicitly denied, don't retry
+        if (error?.code === "userDenied" || error?.message?.includes("cancel")) {
+          console.log("[GallerySyncService] User cancelled WiFi connection")
+          store.setSyncError("WiFi connection cancelled")
+          if (store.syncServiceOpenedHotspot) {
+            await this.closeHotspot()
+          }
+          return
+        }
+
+        // For "internal error" or "unableToConnect", wait and retry
+        // This gives the user time to interact with the iOS system dialog
+        if (attempt < TIMING.IOS_WIFI_MAX_RETRIES) {
+          console.log(
+            `[GallerySyncService] Waiting ${TIMING.IOS_WIFI_RETRY_DELAY_MS}ms before retry (user may be seeing iOS dialog)...`,
+          )
+          await new Promise(resolve => setTimeout(resolve, TIMING.IOS_WIFI_RETRY_DELAY_MS))
+        }
+      }
+    }
+
+    // All retries exhausted
+    console.error("[GallerySyncService] iOS WiFi connection failed after all retries:", lastError)
+    store.setSyncError(
+      lastError?.message?.includes("internal error")
+        ? "Could not connect to glasses WiFi. Please ensure you accept the WiFi prompt when it appears."
+        : lastError?.message || "Failed to connect to glasses WiFi",
+    )
+
+    if (store.syncServiceOpenedHotspot) {
+      await this.closeHotspot()
+    }
+  }
+
+  /**
+   * Android-specific WiFi connection
+   */
+  private async connectToHotspotWifiAndroid(hotspotInfo: HotspotInfo): Promise<void> {
+    const store = useGallerySyncStore.getState()
+
     try {
       await WifiManager.connectToProtectedSSID(hotspotInfo.ssid, hotspotInfo.password, false, false)
-      console.log("[GallerySyncService] Connected to hotspot WiFi")
+      console.log("[GallerySyncService] Connected to hotspot WiFi (Android)")
 
       // Start the actual download
       await this.startFileDownload(hotspotInfo)
     } catch (error: any) {
-      console.error("[GallerySyncService] WiFi connection failed:", error)
+      console.error("[GallerySyncService] Android WiFi connection failed:", error)
 
       if (error?.code === "userDenied" || error?.message?.includes("cancel")) {
         store.setSyncError("WiFi connection cancelled")

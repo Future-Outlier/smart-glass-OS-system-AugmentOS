@@ -1,10 +1,8 @@
 import {useState, useEffect} from "react"
-import {View, ActivityIndicator, Platform, Linking} from "react-native"
-import {TextStyle, ViewStyle} from "react-native"
+import {View, ActivityIndicator, Platform, Linking, TextStyle, ViewStyle} from "react-native"
 import semver from "semver"
 
-import {Button, Icon, Screen} from "@/components/ignite"
-import {Text} from "@/components/ignite"
+import {Button, Icon, Screen, Text} from "@/components/ignite"
 import {useAuth} from "@/contexts/AuthContext"
 import {useDeeplink} from "@/contexts/DeeplinkContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"

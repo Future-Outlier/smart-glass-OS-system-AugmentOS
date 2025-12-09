@@ -183,7 +183,9 @@ export class LocalStorageService {
   async getDownloadedFiles(): Promise<Record<string, DownloadedFile>> {
     const res = storage.load<Record<string, DownloadedFile>>(this.DOWNLOADED_FILES_KEY)
     if (res.is_error()) {
-      console.error("Error loading downloaded files:", res.error)
+      // Not an error - just means no files have been downloaded yet (first use)
+      // Only log as debug, not error, since this is expected on first launch
+      console.log("[LocalStorage] No downloaded files found (first use or empty gallery)")
       return {}
     }
 

@@ -1,6 +1,11 @@
 /**
  * Gallery Sync Notifications
  * Manages system notifications for gallery sync progress
+ *
+ * Platform differences:
+ * - Android: Supports ongoing/sticky notifications that update silently
+ * - iOS: Each notification update shows a banner, so we throttle updates
+ *        and only show start/complete notifications to avoid spam
  */
 
 import * as Notifications from "expo-notifications"
@@ -10,13 +15,17 @@ import {Platform} from "react-native"
 const SYNC_NOTIFICATION_ID = "gallery-sync-progress"
 const CHANNEL_ID = "gallery-sync"
 
+// iOS throttling - only update every N seconds to avoid banner spam
+const IOS_UPDATE_THROTTLE_MS = 10000 // 10 seconds between updates on iOS
+
 // Configure notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: false,
     shouldSetBadge: false,
-    shouldShowBanner: true,
+    // On iOS, minimize banner popups for progress updates
+    shouldShowBanner: Platform.OS === "android",
     shouldShowList: true,
   }),
 })
@@ -25,6 +34,7 @@ class GallerySyncNotifications {
   private static instance: GallerySyncNotifications
   private channelCreated = false
   private notificationActive = false
+  private lastUpdateTime = 0 // For iOS throttling
 
   private constructor() {}
 
@@ -97,22 +107,27 @@ class GallerySyncNotifications {
     })
 
     this.notificationActive = true
+    this.lastUpdateTime = Date.now() // Reset throttle timer
     console.log(`[SyncNotifications] Started sync notification for ${totalFiles} files`)
   }
 
   /**
-   * Create a visual progress bar using Unicode block characters
+   * Create a visual progress bar
+   * Uses simple ASCII characters that render consistently across platforms
    */
   private createProgressBar(progress: number, width: number = 15): string {
     const filled = Math.round((progress / 100) * width)
     const empty = width - filled
-    const filledBar = "█".repeat(filled)
-    const emptyBar = "░".repeat(empty)
-    return `${filledBar}${emptyBar}`
+    // Use simple characters that work on all platforms
+    // ● for filled, ○ for empty (these render well on iOS)
+    const filledBar = "●".repeat(filled)
+    const emptyBar = "○".repeat(empty)
+    return `[${filledBar}${emptyBar}]`
   }
 
   /**
    * Update sync progress notification
+   * On iOS, updates are throttled to avoid spamming the user with banner notifications
    */
   async updateProgress(
     currentFile: number,
@@ -121,6 +136,20 @@ class GallerySyncNotifications {
     fileProgress: number,
   ): Promise<void> {
     if (!this.notificationActive) return
+
+    // On iOS, throttle updates to avoid banner spam
+    // iOS doesn't support silent notification updates like Android's ongoing notifications
+    if (Platform.OS === "ios") {
+      const now = Date.now()
+      const timeSinceLastUpdate = now - this.lastUpdateTime
+
+      // Only update if enough time has passed OR if this is the last file completing
+      const isLastFileCompleting = currentFile === totalFiles && fileProgress >= 99
+      if (timeSinceLastUpdate < IOS_UPDATE_THROTTLE_MS && !isLastFileCompleting) {
+        return // Skip this update on iOS to avoid banner spam
+      }
+      this.lastUpdateTime = now
+    }
 
     await this.ensureChannel()
 

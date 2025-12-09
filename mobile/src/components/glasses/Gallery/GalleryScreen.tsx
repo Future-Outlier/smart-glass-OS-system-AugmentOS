@@ -590,7 +590,6 @@ export function GalleryScreen() {
         case "error":
           return (
             <View style={themed($syncButtonRow)}>
-              <Icon name="alert-circle" size={20} color={theme.colors.error} style={{marginRight: spacing.s2}} />
               <Text style={themed($syncButtonText)}>Sync failed - tap to retry</Text>
             </View>
           )

@@ -1,3 +1,4 @@
+import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
 import {Platform, View, ViewStyle} from "react-native"
 
@@ -19,8 +20,6 @@ import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-
-import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export default function DeviceSettings() {
   const {theme, themed} = useAppTheme()
