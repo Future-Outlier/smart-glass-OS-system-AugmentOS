@@ -97,7 +97,7 @@ export default function DeviceSettings() {
   }
 
   return (
-    <View style={themed($container)}>
+    <View className="gap-6">
       {/* Screen settings for binocular glasses */}
       <Group
         title={translate("deviceSettings:display")}
@@ -229,7 +229,3 @@ export default function DeviceSettings() {
     </View>
   )
 }
-
-const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  gap: spacing.s6,
-})
