@@ -1,7 +1,7 @@
 import {describe, expect, test, beforeEach} from "bun:test"
-import {TextWrapper} from "../src/wrapper/TextWrapper"
-import {TextMeasurer} from "../src/measurer/TextMeasurer"
-import {G1_PROFILE} from "../src/profiles/g1"
+import {TextWrapper} from "../wrapper/TextWrapper"
+import {TextMeasurer} from "../measurer/TextMeasurer"
+import {G1_PROFILE} from "../profiles/g1"
 
 describe("TextWrapper", () => {
   let measurer: TextMeasurer
