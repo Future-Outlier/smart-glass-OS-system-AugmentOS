@@ -485,12 +485,16 @@ class GallerySyncService {
 
   /**
    * Auto-save downloaded files to camera roll
+   * Files are sorted chronologically (oldest first) before saving so gallery apps
+   * display them in correct capture order (gallery apps sort by "date added" to MediaStore)
    */
   private async autoSaveToCameraRoll(downloadedFiles: PhotoInfo[]): Promise<void> {
     const shouldAutoSave = await gallerySettingsService.getAutoSaveToCameraRoll()
     if (!shouldAutoSave || downloadedFiles.length === 0) return
 
-    console.log("[GallerySyncService] Auto-saving to camera roll...")
+    console.log(
+      `[GallerySyncService] Auto-saving ${downloadedFiles.length} files to camera roll in chronological order...`,
+    )
 
     const hasPermission = await MediaLibraryPermissions.checkPermission()
     if (!hasPermission) {
@@ -501,14 +505,62 @@ class GallerySyncService {
       }
     }
 
-    let savedCount = 0
-    for (const photoInfo of downloadedFiles) {
-      const filePath = photoInfo.filePath || localStorageService.getPhotoFilePath(photoInfo.name)
-      const success = await MediaLibraryPermissions.saveToLibrary(filePath)
-      if (success) savedCount++
+    // CRITICAL: Sort all downloaded files by capture time BEFORE saving to gallery
+    // This ensures gallery displays them in chronological order, not download order
+    // (photos download first by size, videos second, but we want chronological capture order)
+    const sortedFiles = [...downloadedFiles].sort((a, b) => {
+      // Parse capture timestamps - handle both string and number formats
+      const timeA = typeof a.modified === "string" ? parseInt(a.modified, 10) : a.modified || Number.MAX_SAFE_INTEGER
+      const timeB = typeof b.modified === "string" ? parseInt(b.modified, 10) : b.modified || Number.MAX_SAFE_INTEGER
+
+      // Sort oldest first (ascending) so they're added to gallery in chronological order
+      return timeA - timeB
+    })
+
+    console.log(`[GallerySyncService] Sorted ${sortedFiles.length} files by capture time:`)
+    sortedFiles.slice(0, 5).forEach((file, idx) => {
+      const captureTime = typeof file.modified === "string" ? parseInt(file.modified, 10) : file.modified || 0
+      const captureDate = new Date(captureTime)
+      const fileType = file.is_video ? "video" : "photo"
+      console.log(`  ${idx + 1}. ${file.name} - ${captureDate.toISOString()} (${fileType})`)
+    })
+    if (sortedFiles.length > 5) {
+      console.log(`  ... and ${sortedFiles.length - 5} more files`)
     }
 
-    console.log(`[GallerySyncService] Saved ${savedCount}/${downloadedFiles.length} to camera roll`)
+    let savedCount = 0
+    let failedCount = 0
+
+    // Save files in chronological order (oldest first)
+    for (const photoInfo of sortedFiles) {
+      const filePath = photoInfo.filePath || localStorageService.getPhotoFilePath(photoInfo.name)
+
+      // Parse the capture timestamp from the photo metadata
+      // The 'modified' field contains the original capture time from the glasses
+      let captureTime: number | undefined
+      if (photoInfo.modified) {
+        captureTime = typeof photoInfo.modified === "string" ? parseInt(photoInfo.modified, 10) : photoInfo.modified
+        if (isNaN(captureTime)) {
+          console.warn(`[GallerySyncService] Invalid modified timestamp for ${photoInfo.name}:`, photoInfo.modified)
+          captureTime = undefined
+        }
+      }
+
+      // Save to camera roll with capture time for logging
+      const success = await MediaLibraryPermissions.saveToLibrary(filePath, captureTime)
+      if (success) {
+        savedCount++
+      } else {
+        failedCount++
+      }
+    }
+
+    console.log(
+      `[GallerySyncService] Saved ${savedCount}/${sortedFiles.length} files to camera roll in chronological order`,
+    )
+    if (failedCount > 0) {
+      console.warn(`[GallerySyncService] Failed to save ${failedCount} files to camera roll`)
+    }
   }
 
   /**

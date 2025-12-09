@@ -72,8 +72,15 @@ export class MediaLibraryPermissions {
   /**
    * Save a file to the device's camera roll/photo library
    * On Android 10+, this works without any permission
+   *
+   * IMPORTANT: Gallery apps typically sort by "date added" to MediaStore.
+   * To ensure chronological order, call this method in chronological sequence
+   * (oldest files first) so they're added to MediaStore in the correct order.
+   *
+   * @param filePath - Path to the file to save
+   * @param creationTime - Optional creation/capture time in milliseconds (Unix timestamp) - currently unused but kept for future EXIF support
    */
-  static async saveToLibrary(filePath: string): Promise<boolean> {
+  static async saveToLibrary(filePath: string, creationTime?: number): Promise<boolean> {
     try {
       // On Android 10+, we can save without permission
       // On iOS and older Android, check permission first
@@ -88,8 +95,18 @@ export class MediaLibraryPermissions {
       // Remove file:// prefix if present
       const cleanPath = filePath.replace("file://", "")
 
+      // Save to camera roll
+      // Gallery apps sort by "date added" to MediaStore, so ensure you call this
+      // method in chronological order (oldest first) for proper gallery ordering
       await MediaLibrary.createAssetAsync(cleanPath)
-      console.log(`[MediaLibrary] Saved to camera roll: ${cleanPath}`)
+
+      if (creationTime) {
+        const captureDate = new Date(creationTime)
+        console.log(`[MediaLibrary] Saved to camera roll: ${cleanPath} (captured: ${captureDate.toISOString()})`)
+      } else {
+        console.log(`[MediaLibrary] Saved to camera roll: ${cleanPath}`)
+      }
+
       return true
     } catch (error) {
       console.error("[MediaLibrary] Error saving to library:", error)
