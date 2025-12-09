@@ -112,17 +112,14 @@ class GallerySyncNotifications {
   }
 
   /**
-   * Create a visual progress bar
-   * Uses simple ASCII characters that render consistently across platforms
+   * Create a visual progress bar (Android only)
    */
   private createProgressBar(progress: number, width: number = 15): string {
     const filled = Math.round((progress / 100) * width)
     const empty = width - filled
-    // Use simple characters that work on all platforms
-    // ● for filled, ○ for empty (these render well on iOS)
     const filledBar = "●".repeat(filled)
     const emptyBar = "○".repeat(empty)
-    return `[${filledBar}${emptyBar}]`
+    return `${filledBar}${emptyBar}`
   }
 
   /**
@@ -156,11 +153,15 @@ class GallerySyncNotifications {
     // Calculate overall progress (completed files + current file progress)
     const overallProgress = Math.round(((currentFile - 1 + fileProgress / 100) / totalFiles) * 100)
 
-    // Create visual progress bar
-    const progressBar = this.createProgressBar(overallProgress)
-
-    // Clean body with progress bar
-    const body = `${progressBar} ${overallProgress}%\nDownloading ${currentFile} of ${totalFiles}`
+    // Build notification body - progress bar only on Android
+    let body: string
+    if (Platform.OS === "android") {
+      const progressBar = this.createProgressBar(overallProgress)
+      body = `${progressBar} ${overallProgress}%\nDownloading ${currentFile} of ${totalFiles}`
+    } else {
+      // iOS: simple text only, no progress bar
+      body = `Downloading ${currentFile} of ${totalFiles} (${overallProgress}%)`
+    }
 
     await Notifications.scheduleNotificationAsync({
       identifier: SYNC_NOTIFICATION_ID,
