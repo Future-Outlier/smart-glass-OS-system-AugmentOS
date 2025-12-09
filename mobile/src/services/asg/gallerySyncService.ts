@@ -510,8 +510,16 @@ class GallerySyncService {
     // (photos download first by size, videos second, but we want chronological capture order)
     const sortedFiles = [...downloadedFiles].sort((a, b) => {
       // Parse capture timestamps - handle both string and number formats
-      const timeA = typeof a.modified === "string" ? parseInt(a.modified, 10) : a.modified || Number.MAX_SAFE_INTEGER
-      const timeB = typeof b.modified === "string" ? parseInt(b.modified, 10) : b.modified || Number.MAX_SAFE_INTEGER
+      // Use Number.MAX_SAFE_INTEGER for invalid/missing timestamps to push them to the end
+      const parseTime = (modified: string | number | undefined): number => {
+        if (modified === undefined || modified === null) return Number.MAX_SAFE_INTEGER
+        if (typeof modified === "number") return isNaN(modified) ? Number.MAX_SAFE_INTEGER : modified
+        const parsed = parseInt(modified, 10)
+        return isNaN(parsed) ? Number.MAX_SAFE_INTEGER : parsed
+      }
+
+      const timeA = parseTime(a.modified)
+      const timeB = parseTime(b.modified)
 
       // Sort oldest first (ascending) so they're added to gallery in chronological order
       return timeA - timeB
