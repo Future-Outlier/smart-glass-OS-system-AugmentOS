@@ -2053,10 +2053,8 @@ extension G1 {
             // For now, assume success (in a real implementation, you'd check for ACK)
             Bridge.log("G1: CRC command sent successfully")
             return true
-
-            Bridge.log("G1: CRC command failed, attempt \(attempt + 1)")
         }
-
+        // Bridge.log("G1: CRC command failed, attempt \(attempt + 1)")
         Bridge.log("G1: Failed to send CRC command after \(maxAttempts) attempts")
         return false
     }
@@ -2221,23 +2219,32 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
         }
     }
 
-    private func startReconnectionTimer() {
-        Bridge.log("G1: Starting reconnection timer")
-        stopReconnectionTimer()
-        reconnectionAttempts = 0
-
-        let timer = DispatchSource.makeTimerSource(queue: reconnectionQueue)
-        timer.schedule(deadline: .now(), repeating: reconnectionInterval)
-        timer.setEventHandler { [weak self] in
-            self?.attemptReconnection()
+    private func stopReconnectionTimer() {
+        reconnectionQueue.async { [weak self] in
+            guard let self = self else { return }
+            Bridge.log("G1: Stopping reconnection timer")
+            self.reconnectionTimer?.cancel()
+            self.reconnectionTimer = nil
         }
-        reconnectionTimer = timer
-        timer.resume()
     }
 
-    private func stopReconnectionTimer() {
-        reconnectionTimer?.cancel()
-        reconnectionTimer = nil
+    private func startReconnectionTimer() {
+        reconnectionQueue.async { [weak self] in
+            guard let self = self else { return }
+            Bridge.log("G1: Starting reconnection timer")
+
+            self.reconnectionTimer?.cancel()
+            self.reconnectionTimer = nil
+            self.reconnectionAttempts = 0
+
+            let timer = DispatchSource.makeTimerSource(queue: self.reconnectionQueue)
+            timer.schedule(deadline: .now(), repeating: self.reconnectionInterval)
+            timer.setEventHandler { [weak self] in
+                self?.attemptReconnection()
+            }
+            self.reconnectionTimer = timer
+            timer.resume()
+        }
     }
 
     // Connect by UUID
