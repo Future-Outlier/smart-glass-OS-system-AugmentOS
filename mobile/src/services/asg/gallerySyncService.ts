@@ -502,22 +502,25 @@ class GallerySyncService {
           const currentStore = useGallerySyncStore.getState()
 
           if (fileProgress === 0 || fileProgress === undefined) {
-            // Starting a new file
-            currentStore.setCurrentFile(fileName, 0)
+            // Starting a new file - but only mark previous complete if this is a NEW file
+            // (not just another 0% progress report for the same file)
+            // This prevents double-counting when both batchSyncFiles and RNFS report 0%
+            const isNewFile = currentStore.currentFile !== fileName
+
+            if (isNewFile) {
+              // Mark previous file as complete when moving to next
+              if (current > 1 && currentStore.currentFile) {
+                currentStore.onFileComplete(currentStore.currentFile)
+                // Persist queue index so we can resume from here if app is killed
+                localStorageService.updateSyncQueueIndex(current - 1).catch(err => {
+                  console.error("[GallerySyncService] Failed to persist queue index:", err)
+                })
+              }
+              // Now set the new current file
+              currentStore.setCurrentFile(fileName, 0)
+            }
           } else {
             currentStore.onFileProgress(fileName, fileProgress || 0)
-          }
-
-          // Mark previous file as complete when moving to next
-          if (fileProgress === 0 && current > 1) {
-            const previousFileName = files[current - 2]?.name
-            if (previousFileName) {
-              currentStore.onFileComplete(previousFileName)
-              // Persist queue index so we can resume from here if app is killed
-              localStorageService.updateSyncQueueIndex(current - 1).catch(err => {
-                console.error("[GallerySyncService] Failed to persist queue index:", err)
-              })
-            }
           }
 
           // Update notification
