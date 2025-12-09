@@ -878,13 +878,14 @@ class MentraLive: NSObject, SGCManager {
 
     var type = "Mentra Live"
     var hasMic = false
+    var micEnabled = false
     var isHeadUp = false
     var caseOpen = false
     var caseRemoved = true
     var caseCharging = false
     func setMicEnabled(_ enabled: Bool) {
         Bridge.log("LIVE: setMicEnabled called: \(enabled)")
-
+        micEnabled = enabled
         // Only enable if device supports LC3 audio
         guard supportsLC3Audio else {
             Bridge.log("LIVE: Device does not support LC3 audio, ignoring mic enable request")
@@ -901,6 +902,10 @@ class MentraLive: NSObject, SGCManager {
             Bridge.log("LIVE: Microphone disabled, stopping audio input handling")
             stopMicBeat()
         }
+    }
+
+    func sortMicRanking(list: [String]) -> [String] {
+        return list
     }
 
     // BLE UUIDs
@@ -1193,7 +1198,7 @@ class MentraLive: NSObject, SGCManager {
         }
 
         // propagate size (default to medium if invalid)
-        if let size, ["small", "medium", "large"].contains(size) {
+        if let size, ["small", "medium", "large", "full"].contains(size) {
             json["size"] = size
         } else {
             json["size"] = "medium"
@@ -1624,6 +1629,11 @@ class MentraLive: NSObject, SGCManager {
             let ip = json["hotspot_gateway_ip"] as? String ?? ""
             updateHotspotStatus(enabled: enabled, ssid: ssid, password: password, ip: ip)
 
+        case "hotspot_error":
+            let errorMessage = json["error_message"] as? String ?? "Unknown hotspot error"
+            let timestamp = json["timestamp"] as? Int64 ?? Int64(Date().timeIntervalSince1970 * 1000)
+            handleHotspotError(errorMessage: errorMessage, timestamp: timestamp)
+
         case "wifi_scan_result":
             handleWifiScanResult(json)
 
@@ -1696,6 +1706,17 @@ class MentraLive: NSObject, SGCManager {
 
         case "transfer_failed":
             handleTransferFailed(json)
+
+        case "mtk_update_complete":
+            Bridge.log("💾 Received MTK update complete from ASG client")
+
+            let updateMessage = json["message"] as? String ?? "MTK firmware updated. Please restart glasses."
+            let timestamp = parseTimestamp(json["timestamp"])
+
+            Bridge.log("🔄 MTK Update Message: \(updateMessage)")
+
+            // Send to React Native via Bridge
+            Bridge.sendMtkUpdateComplete(message: updateMessage, timestamp: timestamp)
 
         default:
             Bridge.log("Unhandled message type: \(type)")
@@ -1932,6 +1953,9 @@ class MentraLive: NSObject, SGCManager {
             appVersion: appVersion, buildNumber: buildNumber, deviceModel: deviceModel,
             androidVersion: androidVersion, otaVersionUrl: otaVersionUrl
         )
+
+        // Trigger status update so React Native gets the updated glasses info with version details
+        CoreManager.shared.handle_request_status()
     }
 
     private func handleAck(_: [String: Any]) {
@@ -2663,6 +2687,19 @@ class MentraLive: NSObject, SGCManager {
 
         // Trigger a full status update so React Native gets the updated glasses_info
         CoreManager.shared.handle_request_status()
+    }
+
+    private func handleHotspotError(errorMessage: String, timestamp: Int64) {
+        Bridge.log("🔥 ❌ Hotspot error: \(errorMessage)")
+        emitHotspotError(errorMessage: errorMessage, timestamp: timestamp)
+    }
+
+    private func emitHotspotError(errorMessage: String, timestamp: Int64) {
+        let eventBody: [String: Any] = [
+            "error_message": errorMessage,
+            "timestamp": timestamp,
+        ]
+        Bridge.sendTypedMessage("hotspot_error", body: eventBody)
     }
 
     private func handleGalleryStatus(
@@ -3471,6 +3508,9 @@ extension MentraLive {
 
         // Send button camera LED setting
         sendButtonCameraLedSetting()
+
+        // Send gallery mode state (camera app running status)
+        sendGalleryMode()
     }
 
     func sendButtonVideoRecordingSettings() {

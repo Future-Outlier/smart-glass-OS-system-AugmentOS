@@ -1,18 +1,50 @@
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import CoreModule from "core"
+import {useFocusEffect} from "expo-router"
+import {useCallback} from "react"
 import {View, TouchableOpacity, Platform, ScrollView, Image, ViewStyle, ImageStyle, TextStyle} from "react-native"
+
+import {EvenRealitiesLogo} from "@/components/brands/EvenRealitiesLogo"
+import {MentraLogo} from "@/components/brands/MentraLogo"
+import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
+import {VuzixLogo} from "@/components/brands/VuzixLogo"
 import {Text} from "@/components/ignite"
+import {Header} from "@/components/ignite"
+import {Screen} from "@/components/ignite/Screen"
+import {Spacer} from "@/components/ui/Spacer"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {$styles, ThemedStyle} from "@/theme"
 import {getGlassesImage} from "@/utils/getGlassesImage"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {Screen} from "@/components/ignite/Screen"
-import {Header} from "@/components/ignite"
-import {$styles, ThemedStyle} from "@/theme"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
-import {useLocalSearchParams} from "expo-router"
+
+// import {useLocalSearchParams} from "expo-router"
 
 export default function SelectGlassesModelScreen() {
   const {theme, themed} = useAppTheme()
-  const {push, replace, goBack} = useNavigationHistory()
-  const {onboarding} = useLocalSearchParams()
+  const {push, goBack} = useNavigationHistory()
+
+  // when this screen is focused, forget any glasses that may be paired:
+  useFocusEffect(
+    useCallback(() => {
+      CoreModule.forget()
+      return () => {}
+    }, []),
+  )
+
+  // Get logo component for manufacturer
+  const getManufacturerLogo = (modelName: string) => {
+    switch (modelName) {
+      case DeviceTypes.G1:
+        return <EvenRealitiesLogo color={theme.colors.text} />
+      case DeviceTypes.LIVE:
+      case DeviceTypes.MACH1:
+        return <MentraLogo color={theme.colors.text} />
+      case DeviceTypes.Z100:
+        return <VuzixLogo color={theme.colors.text} />
+      default:
+        return null
+    }
+  }
 
   // Platform-specific glasses options
   const glassesOptions =
@@ -44,37 +76,31 @@ export default function SelectGlassesModelScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
+    <Screen preset="fixed" style={themed($styles.screen)}>
       <Header
         titleTx="pairing:selectModel"
         leftIcon="chevron-left"
         onLeftPress={() => {
-          if (onboarding) {
-            goBack()
-          } else {
-            replace("/(tabs)/home")
-          }
+          goBack()
         }}
+        RightActionComponent={<MentraLogoStandalone />}
       />
+      <Spacer height={theme.spacing.s4} />
       <ScrollView style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}>
         <View style={{flexDirection: "column", gap: theme.spacing.s4}}>
-          {glassesOptions
-            .filter(glasses => {
-              // Hide simulated glasses during onboarding (users get there via "I don't have glasses yet")
-              if (onboarding && glasses.modelName === DeviceTypes.SIMULATED) {
-                return false
-              }
-              return true
-            })
-            .map(glasses => (
-              <TouchableOpacity
-                key={glasses.key}
-                style={themed($settingItem)}
-                onPress={() => triggerGlassesPairingGuide(glasses.modelName)}>
+          {glassesOptions.map(glasses => (
+            <TouchableOpacity
+              key={glasses.key}
+              style={themed($settingItem)}
+              onPress={() => triggerGlassesPairingGuide(glasses.modelName)}>
+              <View style={themed($cardContent)}>
+                <View style={themed($manufacturerLogo)}>{getManufacturerLogo(glasses.modelName)}</View>
                 <Image source={getGlassesImage(glasses.modelName)} style={themed($glassesImage)} />
                 <Text style={[themed($label)]}>{glasses.modelName}</Text>
-              </TouchableOpacity>
-            ))}
+              </View>
+            </TouchableOpacity>
+          ))}
+          <Spacer height={theme.spacing.s4} />
         </View>
       </ScrollView>
     </Screen>
@@ -85,10 +111,24 @@ const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: spacing.s3,
   height: 190,
   borderRadius: spacing.s4,
   backgroundColor: colors.primary_foreground,
+  overflow: "hidden",
+})
+
+const $cardContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: spacing.s3,
+  width: "100%",
+})
+
+const $manufacturerLogo: ThemedStyle<ViewStyle> = () => ({
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 24,
 })
 
 const $glassesImage: ThemedStyle<ImageStyle> = () => ({

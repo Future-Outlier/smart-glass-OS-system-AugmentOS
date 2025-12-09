@@ -2,12 +2,15 @@
 
 console.log('Running postinstall...');
 
-// Patch packages
-await $({ stdio: 'inherit' })`patch-package`;
+// Patch packages (--error-on-fail to allow version mismatches - patches are iOS-only anyway)
+await $({ stdio: 'inherit', nothrow: true })`patch-package`;
 
-// Build and prepare core module
 console.log('Building core module...');
-await $({ stdio: 'inherit', cwd: 'modules/core' })`bun install`;
-await $({ stdio: 'inherit', cwd: 'modules/core' })`bun prepare`;
+// Install core module dependencies first (needed for expo-module CLI)
+await $({ stdio: 'inherit', cwd: 'modules/core' })`bun install --ignore-scripts`;
+// Now run prepare (expo-module will be available in node_modules/.bin)
+await $({ stdio: 'inherit', cwd: 'modules/core' })`bun run prepare`;
+// ignore scripts to avoid infinite loop:
+await $({ stdio: 'inherit' })`bun install --ignore-scripts`;
 
 console.log('✅ Postinstall completed successfully!');

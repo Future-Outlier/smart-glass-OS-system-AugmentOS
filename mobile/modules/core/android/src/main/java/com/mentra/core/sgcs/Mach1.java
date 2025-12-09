@@ -50,6 +50,7 @@ import org.greenrobot.eventbus.EventBus;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 
@@ -92,6 +93,7 @@ public class Mach1 extends SGCManager {
 
     boolean hasUltraliteControl;
     boolean screenIsClear;
+    boolean isHeadUp = false; // Dashboard state toggled by taps
     // SmartGlassesDevice smartGlassesDevice;
     private static final long TAP_DEBOUNCE_TIME = 80; // milliseconds
     private long lastTapTime = 0;
@@ -114,6 +116,11 @@ public class Mach1 extends SGCManager {
 
     @Override
     public void setMicEnabled(boolean enabled) {
+    }
+
+    @Override
+    public List<String> sortMicRanking(List<String> list) {
+        return list;
     }
 
     @Override
@@ -364,7 +371,25 @@ public class Mach1 extends SGCManager {
 
             lastTapTime = currentTime;
             Log.d(TAG, "Ultralite go tap n times: " + tapCount);
-            // tapEvent(tapCount);
+
+            // Toggle dashboard on 2+ taps (same as iOS implementation)
+            if (tapCount >= 2) {
+                isHeadUp = !isHeadUp;
+                // Notify CoreManager of head up state change (same as G1 does with IMU)
+                CoreManager.getInstance().updateHeadUp(isHeadUp);
+                Log.d(TAG, "Mach1: Dashboard toggled via tap, isHeadUp: " + isHeadUp);
+
+                // Auto turn off the dashboard after 15 seconds
+                if (isHeadUp) {
+                    goHomeHandler.postDelayed(() -> {
+                        if (isHeadUp) {
+                            isHeadUp = false;
+                            CoreManager.getInstance().updateHeadUp(false);
+                            Log.d(TAG, "Mach1: Auto-disabling dashboard after 15 seconds");
+                        }
+                    }, 15000);
+                }
+            }
         }
 
         @Override

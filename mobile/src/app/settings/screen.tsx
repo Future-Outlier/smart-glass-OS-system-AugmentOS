@@ -1,20 +1,21 @@
-import {Header, Screen} from "@/components/ignite"
-import SliderSetting from "@/components/settings/SliderSetting"
-import {Spacer} from "@/components/ui/Spacer"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import {$styles} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 import CoreModule from "core"
 import {useFocusEffect} from "expo-router"
 import {useCallback} from "react"
 import {ScrollView} from "react-native"
 
+import {Header, Screen} from "@/components/ignite"
+import SliderSetting from "@/components/settings/SliderSetting"
+import {Spacer} from "@/components/ui/Spacer"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {$styles} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
+
 export default function ScreenSettingsScreen() {
   const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
-  const [dashboardDepth, setDashboardDepth] = useSetting(SETTINGS_KEYS.dashboard_depth)
-  const [dashboardHeight, setDashboardHeight] = useSetting(SETTINGS_KEYS.dashboard_height)
+  const [dashboardDepth, setDashboardDepth] = useSetting(SETTINGS.dashboard_depth.key)
+  const [dashboardHeight, setDashboardHeight] = useSetting(SETTINGS.dashboard_height.key)
 
   useFocusEffect(
     useCallback(() => {

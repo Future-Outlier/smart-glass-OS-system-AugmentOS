@@ -1,12 +1,12 @@
-// in ../icons/MicIcon.tsx
-import React from "react"
-import {View, TouchableOpacity} from "react-native"
-import Svg, {G, Path, Defs, ClipPath, Rect} from "react-native-svg"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {TouchableOpacity, View} from "react-native"
+import Svg, {ClipPath, Defs, G, Path, Rect} from "react-native-svg"
+
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import showAlert from "@/utils/AlertUtils"
 import {translate} from "@/i18n"
-import { SETTINGS_KEYS, useSetting } from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import showAlert from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
 interface MicIconProps {
   color?: string
   height?: number
@@ -15,10 +15,10 @@ interface MicIconProps {
 }
 
 const MicIcon = ({color, width = 17, height = 16, withBackground = false}: MicIconProps) => {
-  const {themed, theme} = useAppTheme()
+  const {theme} = useAppTheme()
   const {status} = useCoreStatus()
-  const [preferredMic] = useSetting(SETTINGS_KEYS.preferred_mic)
-  const isGlassesConnected = Boolean(status.glasses_info?.model_name)
+  const [preferredMic] = useSetting(SETTINGS.preferred_mic.key)
+  const glassesConnected = useGlassesStore(state => state.connected)
 
   const iconColor = color || theme.colors.icon
 
@@ -41,7 +41,7 @@ const MicIcon = ({color, width = 17, height = 16, withBackground = false}: MicIc
     return null
   }
 
-  if (preferredMic === "glasses" && !isGlassesConnected) {
+  if (preferredMic === "glasses" && !glassesConnected) {
     return null
   }
 

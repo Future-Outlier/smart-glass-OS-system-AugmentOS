@@ -1,14 +1,9 @@
 // GlassesPairingGuides.tsx
 
-import {useAppTheme} from "@/utils/useAppTheme"
-import {useEffect} from "react"
-import {View, Image, TouchableOpacity, Linking, ImageStyle, ViewStyle, TextStyle} from "react-native"
-import {Button, Text} from "@/components/ignite"
-import {translate} from "@/i18n"
-import {showAlert} from "@/utils/AlertUtils"
-import {Spacer} from "@/components/ui/Spacer"
-import {GlassesFeatureList} from "@/components/glasses/GlassesFeatureList"
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {MaterialCommunityIcons} from "@expo/vector-icons"
+import {useEffect, useState} from "react"
+import {View, Image, TouchableOpacity, Linking, ImageStyle, ViewStyle, TextStyle} from "react-native"
 import Animated, {
   Easing,
   runOnJS,
@@ -17,9 +12,16 @@ import Animated, {
   withDelay,
   withTiming,
 } from "react-native-reanimated"
+
+import {GlassesFeatureList} from "@/components/glasses/GlassesFeatureList"
+import {Button, Text} from "@/components/ignite"
+import GlassesDisplayMirror from "@/components/mirror/GlassesDisplayMirror"
+import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
+import {Spacer} from "@/components/ui/Spacer"
+import {translate} from "@/i18n"
 import {ThemedStyle} from "@/theme"
-import GlassesDisplayMirror from "../mirror/GlassesDisplayMirror"
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import {showAlert} from "@/utils/AlertUtils"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 export function MentraNextGlassesPairingGuide() {
   const {theme, themed} = useAppTheme()
@@ -169,19 +171,17 @@ const $guideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   justifyContent: "space-between",
 })
 
-const $guideTitle: ThemedStyle<TextStyle> = ({colors, typography, spacing}) => ({
+const $guideTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 24,
   fontWeight: "bold",
   marginBottom: spacing.s3 + 2,
   color: colors.text,
-  fontFamily: typography.primary.bold,
 })
 
-const $guideStep: ThemedStyle<TextStyle> = ({colors, spacing, typography}) => ({
+const $guideStep: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 16,
   marginBottom: spacing.s3,
   color: colors.text,
-  fontFamily: typography.primary.normal,
 })
 
 const $guideDescription: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
@@ -214,11 +214,9 @@ const $preorderButton: ThemedStyle<ViewStyle> = ({colors}) => ({
   backgroundColor: colors.tint,
 })
 
-const $buyButtonText: ThemedStyle<TextStyle> = ({colors, typography}) => ({
+const $buyButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 16,
-  fontWeight: "bold",
   color: colors.background,
-  fontFamily: typography.primary.bold,
 })
 
 const $shippingText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -228,14 +226,14 @@ const $shippingText: ThemedStyle<TextStyle> = ({colors}) => ({
   opacity: 0.8,
 })
 
-const $noteSection: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  width: "100%",
-  borderRadius: spacing.s3,
-  marginTop: spacing.s4,
-  alignItems: "center",
-  backgroundColor: colors.primary_foreground,
-  padding: spacing.s4,
-})
+// const $noteSection: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+//   width: "100%",
+//   borderRadius: spacing.s4,
+//   marginTop: spacing.s4,
+//   alignItems: "center",
+//   backgroundColor: colors.primary_foreground,
+//   padding: spacing.s6,
+// })
 
 const $animationContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
   // height: 400,
@@ -288,7 +286,7 @@ export function MentraMach1PairingGuide() {
 
   return (
     <View style={themed($guideContainer)}>
-      <Text text="Mentra Mach1" style={themed($guideTitle)} />
+      <Text text="Mentra Mach1" style={themed($guideTitle)} weight="bold" />
       <Text text="1. Make sure your Mach1 is fully charged and turned on." style={themed($guideStep)} />
       <Text
         text="2. Make sure your device is running the latest firmware by using the Vuzix Connect app."
@@ -341,7 +339,7 @@ export function MentraLivePairingGuide() {
                 },
               ])
             }}>
-            <Text text={`${translate("pairing:preorderNow")}`} style={themed($buyButtonText)} />
+            <Text text={`${translate("pairing:preorderNow")}`} style={themed($buyButtonText)} weight="bold" />
             <Text tx="pairing:preorderNowShipMessage" style={themed($shippingText)} />
           </TouchableOpacity>
           <Spacer height={16} />
@@ -391,7 +389,7 @@ export function VuzixZ100PairingGuide() {
 }
 
 export function SimulatedPairingGuide() {
-  const {themed, theme} = useAppTheme()
+  const {themed} = useAppTheme()
   return (
     <View style={themed($guideContainer)}>
       <Text text="Preview MentraOS" style={themed($guideTitle)} />
@@ -403,19 +401,10 @@ export function SimulatedPairingGuide() {
         style={themed($guideDescription)}
       />
 
-      {/* Note about upgrading */}
       {/* <View style={themed($noteSection)}>
-        <MaterialCommunityIcons name="information" size={20} style={{marginRight: 8, color: theme.colors.text}} />
-        <Text
-          text="Ready to upgrade? You can connect real smart glasses later from the Glasses menu."
-          style={themed($noteText)}
-        />
-      </View> */}
-
-      <View style={themed($noteSection)}>
         <View style={{flex: 1, flexDirection: "row", gap: theme.spacing.s4, marginBottom: theme.spacing.s4}}>
           <Image
-            source={require("../../../assets/glasses/mentra_live/mentra_live.png")}
+            source={require("@assets/glasses/mentra_live/mentra_live.png")}
             style={[themed($guideImage), {width: 80, height: 80}]}
             onError={() => console.log("Image failed to load")}
           />
@@ -426,6 +415,9 @@ export function SimulatedPairingGuide() {
         </View>
 
         <Button
+          preset="alternate"
+          flexContainer
+          // compact
           tx="common:learnMore"
           onPress={() => {
             showAlert("Open External Website", "This will open mentraglass.com in your web browser. Continue?", [
@@ -440,7 +432,7 @@ export function SimulatedPairingGuide() {
             ])
           }}
         />
-      </View>
+      </View> */}
     </View>
   )
 }
@@ -501,13 +493,21 @@ export const PairingGuide = ({model}: {model: string}) => {
 
 export const PairingOptions = ({model, continueFn}: {model: string; continueFn?: () => void}) => {
   const {themed} = useAppTheme()
+  const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   switch (model) {
     case DeviceTypes.G1:
       return (
-        <View style={themed($buttonsContainer)}>
-          <Button tx="pairing:g1Ready" onPress={continueFn} />
-          <Button tx="pairing:g1NotReady" preset="secondary" />
-        </View>
+        <>
+          <View style={themed($buttonsContainer)}>
+            <Button tx="pairing:g1Ready" onPress={continueFn} />
+            <Button tx="pairing:g1NotReady" preset="secondary" onPress={() => setShowTroubleshootingModal(true)} />
+          </View>
+          <GlassesTroubleshootingModal
+            isVisible={showTroubleshootingModal}
+            onClose={() => setShowTroubleshootingModal(false)}
+            glassesModelName={model}
+          />
+        </>
       )
     default:
       return (

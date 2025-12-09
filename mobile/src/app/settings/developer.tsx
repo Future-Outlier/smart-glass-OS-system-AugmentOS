@@ -1,25 +1,27 @@
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
+
+import BackendUrl from "@/components/dev/BackendUrl"
+import StoreUrl from "@/components/dev/StoreUrl"
 import {Header, Icon, Screen, Text} from "@/components/ignite"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
-import BackendUrl from "@/components/dev/BackendUrl"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
   const {goBack, push} = useNavigationHistory()
-  const [defaultWearable] = useSetting(SETTINGS_KEYS.default_wearable)
-  const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS_KEYS.power_saving_mode)
-  const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS_KEYS.reconnect_on_app_foreground)
-  const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS_KEYS.enable_squircles)
-  const [debugConsole, setDebugConsole] = useSetting(SETTINGS_KEYS.debug_console)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS.power_saving_mode.key)
+  const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS.reconnect_on_app_foreground.key)
+  const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS.enable_squircles.key)
+  const [debugConsole, setDebugConsole] = useSetting(SETTINGS.debug_console.key)
 
   return (
     <Screen preset="fixed" style={themed($styles.screen)}>
@@ -37,7 +39,7 @@ export default function DeveloperSettingsScreen() {
 
       <ScrollView style={{flex: 1, marginHorizontal: -theme.spacing.s4, paddingHorizontal: theme.spacing.s4}}>
         <RouteButton
-          label="🎥 Buffer Recording Debug"
+          label="Buffer Recording Debug"
           subtitle="Control 30-second video buffer on glasses"
           onPress={() => push("/settings/buffer-debug")}
         />
@@ -69,12 +71,30 @@ export default function DeveloperSettingsScreen() {
 
         <Spacer height={theme.spacing.s4} />
 
-        <RouteButton label="🔄 Test Mini App" subtitle="Test the Mini App" onPress={() => push("/test/mini-app")} />
+        <RouteButton label="Test Mini App" subtitle="Test the Mini App" onPress={() => push("/test/mini-app")} />
+
+        <Spacer height={theme.spacing.s4} />
+
+        <RouteButton
+          label="Sitemap"
+          subtitle="view the app's route map"
+          onPress={() => push("/_sitemap")}
+        />
+
+        <Spacer height={theme.spacing.s4} />
+
+        <RouteButton
+          label="Test Sentry"
+          subtitle="Send a crash to Sentry"
+          onPress={() => {
+            throw new Error("Test Sentry crash")
+          }}
+        />
 
         <Spacer height={theme.spacing.s4} />
 
         {/* G1 Specific Settings - Only show when connected to Even Realities G1 */}
-        {defaultWearable && defaultWearable.includes(DeviceTypes.G1) && (
+        {defaultWearable?.includes(DeviceTypes.G1) && (
           <Group title="G1 Specific Settings">
             <ToggleSetting
               label={translate("settings:powerSavingMode")}
@@ -84,11 +104,16 @@ export default function DeveloperSettingsScreen() {
                 await setPowerSavingMode(value)
               }}
             />
-            <Spacer height={theme.spacing.s4} />
           </Group>
         )}
 
-        {!process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE && <BackendUrl />}
+        <Spacer height={theme.spacing.s4} />
+
+        <BackendUrl />
+
+        <Spacer height={theme.spacing.s4} />
+
+        <StoreUrl />
 
         <Spacer height={theme.spacing.s4} />
         <Spacer height={theme.spacing.s12} />

@@ -1,13 +1,13 @@
+import CoreModule from "core"
 import {useState, useEffect, useCallback, useMemo} from "react"
 import {View, Platform, TextInput, FlatList, ActivityIndicator, Image} from "react-native"
 import Toast from "react-native-toast-message"
 
 import {Screen, Text, Header, Switch} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS_KEYS, useSetting} from "@/stores/settings"
-import CoreModule from "core"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles} from "@/theme"
+import {useAppTheme} from "@/utils/useAppTheme"
 
 interface InstalledApp {
   packageName: string
@@ -24,7 +24,7 @@ export default function NotificationSettingsScreen() {
   const {goBack} = useNavigationHistory()
 
   const [apps, setApps] = useState<InstalledApp[]>([])
-  const [blocklist, setBlocklist] = useSetting(SETTINGS_KEYS.notifications_blocklist)
+  const [blocklist, setBlocklist] = useSetting(SETTINGS.notifications_blocklist.key)
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)

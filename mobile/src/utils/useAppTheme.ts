@@ -1,9 +1,10 @@
+import {DarkTheme, DefaultTheme, useTheme as _useNavTheme} from "@react-navigation/native"
+import * as SystemUI from "expo-system-ui"
 import {createContext, useCallback, useContext, useEffect, useMemo, useState} from "react"
 import {Platform, StyleProp, useColorScheme} from "react-native"
-import {DarkTheme, DefaultTheme, useTheme as _useNavTheme} from "@react-navigation/native"
+
+import {useSetting, SETTINGS} from "@/stores/settings"
 import {type Theme, type ThemeContexts, type ThemedStyle, type ThemedStyleArray, lightTheme, darkTheme} from "@/theme"
-import * as SystemUI from "expo-system-ui"
-import {useSetting, SETTINGS_KEYS} from "@/stores/settings"
 
 type ThemeContextType = {
   themeScheme: ThemeContexts
@@ -36,7 +37,7 @@ export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
   const colorScheme = useColorScheme()
   const [overrideTheme, setTheme] = useState<ThemeContexts>(initialTheme)
   const [isLoaded, setIsLoaded] = useState(false)
-  const [savedTheme, _setSavedTheme] = useSetting(SETTINGS_KEYS.theme_preference)
+  const [savedTheme, _setSavedTheme] = useSetting(SETTINGS.theme_preference.key)
 
   const setThemeContextOverride = useCallback((newTheme: ThemeContexts) => {
     setTheme(newTheme)

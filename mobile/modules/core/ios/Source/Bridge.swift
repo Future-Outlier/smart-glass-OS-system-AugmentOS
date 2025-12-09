@@ -89,23 +89,6 @@ class Bridge {
         sendTypedMessage("compatible_glasses_search_result", body: eventBody)
     }
 
-    static func sendGlassesConnectionState(modelName: String, status: String) {
-        do {
-            let event: [String: Any] = [
-                "type": "glasses_connection_state",
-                "modelName": modelName,
-                "status": status,
-                "timestamp": Int(Date().timeIntervalSince1970 * 1000),
-            ]
-            let jsonData = try JSONSerialization.data(withJSONObject: event)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendWSText(jsonString)
-            }
-        } catch {
-            Bridge.log("ServerComms: Error building location_update JSON: \(error)")
-        }
-    }
-
     static func updateAsrConfig(languages: [[String: Any]]) {
         do {
             let configMsg: [String: Any] = [
@@ -272,6 +255,14 @@ class Bridge {
             "networks": networks,
         ]
         Bridge.sendTypedMessage("wifi_scan_results", body: eventBody)
+    }
+
+    static func sendMtkUpdateComplete(message: String, timestamp: Int64) {
+        let eventBody: [String: Any] = [
+            "message": message,
+            "timestamp": timestamp,
+        ]
+        Bridge.sendTypedMessage("mtk_update_complete", body: eventBody)
     }
 
     // Arbitrary WS Comms (dont use these, make a dedicated function for your use case):

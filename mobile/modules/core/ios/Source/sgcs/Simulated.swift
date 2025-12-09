@@ -26,6 +26,7 @@ class Simulated: SGCManager {
     var hasMic: Bool = false
     var batteryLevel: Int = 100
     var isHeadUp: Bool = false
+    var micEnabled: Bool = false
 
     // MARK: - Case Status
 
@@ -48,6 +49,10 @@ class Simulated: SGCManager {
 
     func setMicEnabled(_: Bool) {
         Bridge.log("setMicEnabled")
+    }
+
+    func sortMicRanking(list: [String]) -> [String] {
+        return list
     }
 
     // MARK: - Messaging

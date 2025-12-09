@@ -23,4 +23,10 @@ public interface NetworkStateListener {
      * @param authToken Optional authentication token
      */
     void onWifiCredentialsReceived(String ssid, String password, String authToken);
+
+    /**
+     * Called when a hotspot error occurs (e.g., failed to read SSID after retries)
+     * @param errorMessage Description of the error
+     */
+    void onHotspotError(String errorMessage);
 } 

@@ -1,79 +1,99 @@
+import {MaterialCommunityIcons} from "@expo/vector-icons"
+import {Fragment} from "react"
+import {View, TouchableOpacity, TextStyle, ViewStyle} from "react-native"
+
 import {Text} from "@/components/ignite"
+import {Badge} from "@/components/ui"
+import {translate} from "@/i18n/translate"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {MaterialCommunityIcons} from "@expo/vector-icons"
-import {View, TouchableOpacity, TextStyle, ViewStyle} from "react-native"
-import {translate} from "@/i18n/translate"
 
 interface MicrophoneSelectorProps {
   preferredMic: string
   onMicChange: (mic: string) => void
 }
 
+const MIC_OPTIONS = [
+  // auto is rendered by itself since it has the recommended label
+  {
+    label: translate("microphoneSettings:glasses"),
+    value: "glasses",
+  },
+  {
+    label: translate("microphoneSettings:phone"),
+    value: "phone",
+  },
+  {
+    label: translate("microphoneSettings:bluetooth"),
+    value: "bluetooth",
+  },
+]
+
 export function MicrophoneSelector({preferredMic, onMicChange}: MicrophoneSelectorProps) {
   const {theme, themed} = useAppTheme()
 
   return (
     <View style={themed($container)}>
-      <Text tx="deviceSettings:microphoneSelection" style={[themed($label), {marginBottom: theme.spacing.s3}]} />
+      <Text tx="microphoneSettings:preferredMic" style={[themed($label), {marginBottom: theme.spacing.s3}]} />
 
-      <TouchableOpacity
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          paddingBottom: theme.spacing.s2,
-          paddingTop: theme.spacing.s2,
-        }}
-        onPress={() => onMicChange("phone")}>
-        <View style={{flexDirection: "row", alignItems: "center", gap: 8}}>
-          <Text style={{color: theme.colors.text}}>{translate("deviceSettings:systemMic")}</Text>
-          <View
-            style={{
-              backgroundColor: theme.colors.primary + "20",
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-              borderRadius: 4,
-            }}>
-            <Text
-              tx="deviceSettings:recommended"
-              style={{color: theme.colors.primary, fontSize: 11, fontWeight: "600"}}
-            />
-          </View>
+      <TouchableOpacity style={themed($itemContainer)} onPress={() => onMicChange("auto")}>
+        <View style={themed($recommendedWrapper)}>
+          <Text style={{color: theme.colors.text}}>{translate("microphoneSettings:auto")}</Text>
+          <Badge text={translate("deviceSettings:recommended")} />
         </View>
-        {preferredMic === "phone" && <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />}
+        {preferredMic === "auto" && <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />}
       </TouchableOpacity>
 
-      <View
-        style={{
-          height: 1,
-          backgroundColor: theme.colors.separator,
-          marginVertical: 4,
-        }}
-      />
+      {MIC_OPTIONS.map((option: {label: string; value: string}) => (
+        <Fragment key={option.value}>
+          <View style={themed($separator)} />
+          <TouchableOpacity key={option.value} style={themed($itemContainer)} onPress={() => onMicChange(option.value)}>
+            <Text text={option.label} style={themed($itemText)} />
+            {preferredMic === option.value && (
+              <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />
+            )}
+          </TouchableOpacity>
+        </Fragment>
+      ))}
+      {/* 
+      <View style={themed($separator)} />
 
-      <TouchableOpacity
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          paddingTop: theme.spacing.s2,
-        }}
-        onPress={() => onMicChange("glasses")}>
-        <View style={{flexDirection: "column", gap: 4}}>
-          <Text tx="deviceSettings:glassesMic" style={{color: theme.colors.text}} />
-        </View>
+      <TouchableOpacity style={themed($itemContainer)} onPress={() => onMicChange("glasses")}>
+        <Text tx="deviceSettings:glassesMic" style={themed($itemText)} />
         {preferredMic === "glasses" && <MaterialCommunityIcons name="check" size={24} color={theme.colors.primary} />}
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   )
 }
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
-  paddingVertical: 12,
-  paddingHorizontal: 16,
+  backgroundColor: colors.primary_foreground,
+  paddingVertical: spacing.s5,
+  paddingHorizontal: spacing.s5,
   borderRadius: spacing.s4,
-  borderWidth: 2,
-  borderColor: colors.border,
+  gap: spacing.s1,
+})
+
+const $itemContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingVertical: spacing.s2,
+})
+
+const $itemText: ThemedStyle<TextStyle> = ({colors}) => ({
+  color: colors.text,
+})
+
+const $recommendedWrapper: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: spacing.s2,
+})
+
+const $separator: ThemedStyle<ViewStyle> = ({colors}) => ({
+  height: 1,
+  backgroundColor: colors.separator,
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors}) => ({

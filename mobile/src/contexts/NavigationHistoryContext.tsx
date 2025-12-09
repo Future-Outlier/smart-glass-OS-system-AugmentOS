@@ -1,6 +1,8 @@
 import {router, usePathname, useSegments} from "expo-router"
 import {createContext, useContext, useEffect, useRef} from "react"
 
+import {navigationRef} from "@/contexts/NavigationRef"
+
 export type NavigationHistoryPush = (path: string, params?: any) => void
 export type NavigationHistoryReplace = (path: string, params?: any) => void
 export type NavigationHistoryGoBack = () => void
@@ -18,8 +20,8 @@ interface NavigationHistoryContextType {
   goBack: () => void
   getHistory: () => string[]
   clearHistory: () => void
-  push: (path: string, params?: any) => Promise<void>
-  replace: (path: string, params?: any) => Promise<void>
+  push: (path: string, params?: any) => void
+  replace: (path: string, params?: any) => void
   setPendingRoute: (route: string | null) => void
   getPendingRoute: () => string | null
   navigate: (path: string, params?: any) => void
@@ -155,6 +157,20 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     }
     // router.replace("/(tabs)/home")
   }
+
+  const navObject: NavObject = {
+    push,
+    replace,
+    goBack,
+    setPendingRoute,
+    getPendingRoute,
+    navigate,
+  }
+
+  // Set the ref so we can use it from outside the context:
+  useEffect(() => {
+    navigationRef.current = navObject
+  }, [])
 
   return (
     <NavigationHistoryContext.Provider

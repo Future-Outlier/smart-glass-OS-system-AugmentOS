@@ -726,10 +726,15 @@ public class MentraLive extends SGCManager {
      * Handle reconnection with exponential backoff
      */
     private void handleReconnection() {
+        // Don't attempt reconnection if we've been killed/forgotten
+        if (isKilled) {
+            Bridge.log("LIVE: Skipping reconnection - device has been killed/forgotten");
+            return;
+        }
+
         if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             Bridge.log("LIVE: Maximum reconnection attempts reached (" + MAX_RECONNECT_ATTEMPTS + ")");
             reconnectAttempts = 0;
-            // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
             return;
         }
 
@@ -741,28 +746,30 @@ public class MentraLive extends SGCManager {
               " in " + delay + "ms (max " + MAX_RECONNECT_ATTEMPTS + ")");
 
         // Schedule reconnection attempt
-        // handler.postDelayed(new Runnable() {
-        //     @Override
-        //     public void run() {
-        //         if (!isConnected && !isConnecting && !isKilled) {
-        //             // Check for last known device name to start scan
-        //             SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        //             String lastDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!isConnected && !isConnecting && !isKilled) {
+                    // Check for last known device name to start scan
+                    SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                    String lastDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
 
-        //             if (lastDeviceName != null && bluetoothAdapter != null) {
-        //                 Bridge.log("LIVE: Reconnection attempt " + reconnectAttempts + " - looking for device with name: " + lastDeviceName);
-        //                 // Start scan to find this device
-        //                 startScan();
-        //                 // The scan will automatically connect if it finds a device with the saved name
-        //             } else {
-        //                 Bridge.log("LIVE: Reconnection attempt " + reconnectAttempts + " - no last device name available");
-        //                 // Note: We don't start scanning here without a name to avoid unexpected behavior
-        //                 // Instead, let the user explicitly trigger a new scan when needed
-        //                 connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
-        //             }
-        //         }
-        //     }
-        // }, delay);
+                    if (lastDeviceName != null && bluetoothAdapter != null) {
+                        Bridge.log("LIVE: Reconnection attempt " + reconnectAttempts + " - looking for device with name: " + lastDeviceName);
+                        // Start scan to find this device
+                        startScan();
+                        // The scan will automatically connect if it finds a device with the saved name
+                    } else {
+                        Bridge.log("LIVE: Reconnection attempt " + reconnectAttempts + " - no last device name available, scheduling next attempt");
+                        // Schedule another reconnection attempt - maybe the name will be available later
+                        handleReconnection();
+                    }
+                } else if (isConnected) {
+                    Bridge.log("LIVE: Reconnection successful - already connected");
+                    reconnectAttempts = 0;
+                }
+            }
+        }, delay);
     }
 
     /**
@@ -828,7 +835,8 @@ public class MentraLive extends SGCManager {
                     glassesReadyReceived = false;
                     audioConnected = false;
 
-                    // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+                    // Notify frontend and backend of disconnection
+                    updateConnectionState(ConnTypes.DISCONNECTED);
 
                     handler.removeCallbacks(processSendQueueRunnable);
 
@@ -863,7 +871,12 @@ public class MentraLive extends SGCManager {
                 Log.e(TAG, "GATT connection error: " + status);
                 isConnected = false;
                 isConnecting = false;
-                // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
+                glassesReady = false;
+                glassesReadyReceived = false;
+                audioConnected = false;
+
+                // Notify frontend and backend of disconnection
+                updateConnectionState(ConnTypes.DISCONNECTED);
 
                 // Stop heartbeat mechanism
                 stopHeartbeat();
@@ -1288,7 +1301,7 @@ public class MentraLive extends SGCManager {
             for (byte b : data) {
                 hexBytes.append(String.format("%02X ", b));
             }
-            Bridge.log("LIVE: 🔍 Outgoing bytes: " + hexBytes.toString().trim());
+            // Bridge.log("LIVE: 🔍 Outgoing bytes: " + hexBytes.toString().trim());
 
             // Trigger queue processing if not already running
             handler.removeCallbacks(processSendQueueRunnable);
@@ -1376,9 +1389,15 @@ public class MentraLive extends SGCManager {
 
     }
 
+    @Override
     public void setMicEnabled(boolean enabled) {
         Bridge.log("LIVE: setMicEnabled(" + enabled + ")");
         changeSmartGlassesMicrophoneState(enabled);
+    }
+
+    @Override
+    public List<String> sortMicRanking(List<String> list) {
+        return list;
     }
 
     /**
@@ -1722,6 +1741,14 @@ public class MentraLive extends SGCManager {
                 String hotspotGatewayIp = json.optString("hotspot_gateway_ip", "");
 
                 updateHotspotStatus(hotspotEnabled, hotspotSsid, hotspotPassword, hotspotGatewayIp);
+                break;
+
+            case "hotspot_error":
+                // Process hotspot error
+                String errorMessage = json.optString("error_message", "Unknown hotspot error");
+                long timestamp = json.optLong("timestamp", System.currentTimeMillis());
+
+                handleHotspotError(errorMessage, timestamp);
                 break;
 
             case "photo_response":
@@ -2090,6 +2117,21 @@ public class MentraLive extends SGCManager {
                 // }
                 break;
 
+            case "mtk_update_complete":
+                // Process MTK firmware update complete notification from ASG client
+                Bridge.log("LIVE: 🔄 Received MTK update complete from ASG client");
+
+                String updateMessage = json.optString("message", "MTK firmware updated. Please restart glasses.");
+                long updateTimestamp = json.optLong("timestamp", System.currentTimeMillis());
+
+                Bridge.log("LIVE: 🔄 MTK Update Message: " + updateMessage);
+
+                // Send to React Native via Bridge on main thread
+                handler.post(() -> {
+                    Bridge.sendMtkUpdateComplete(updateMessage);
+                });
+                break;
+
             default:
                 Log.d(TAG, "📦 Unknown message type: " + type);
                 // Pass the data to the subscriber for custom processing
@@ -2445,6 +2487,16 @@ public class MentraLive extends SGCManager {
     }
 
     /**
+     * Handle hotspot error and notify React Native
+     */
+    private void handleHotspotError(String errorMessage, long timestamp) {
+        Bridge.log("LIVE: 🔥 ❌ Hotspot error: " + errorMessage);
+
+        // Send hotspot error event to React Native
+        Bridge.sendHotspotError(errorMessage, timestamp);
+    }
+
+    /**
      * Send battery status to connected phone via BLE
      */
     private void sendBatteryStatusOverBle(int level, boolean charging) {
@@ -2566,7 +2618,7 @@ public class MentraLive extends SGCManager {
      * Start the heartbeat mechanism
      */
     private void startHeartbeat() {
-        Bridge.log("LIVE: 💓 Starting heartbeat mechanism");
+        // Bridge.log("LIVE: 💓 Starting heartbeat mechanism");
         heartbeatCounter = 0;
         heartbeatHandler.removeCallbacks(heartbeatRunnable); // Remove any existing callbacks
         heartbeatHandler.postDelayed(heartbeatRunnable, HEARTBEAT_INTERVAL_MS);
@@ -2591,7 +2643,7 @@ public class MentraLive extends SGCManager {
      * Start the micbeat mechanism - periodically enable custom audio TX
      */
     private void startMicBeat() {
-        Bridge.log("LIVE: 🎤 Starting micbeat mechanism");
+        // Bridge.log("LIVE: 🎤 Starting micbeat mechanism");
         micBeatCount = 0;
 
         // Initialize custom audio TX immediately
@@ -2601,7 +2653,12 @@ public class MentraLive extends SGCManager {
             @Override
             public void run() {
                 Bridge.log("LIVE: 🎤 Sending micbeat - enabling custom audio TX");
-                sendEnableCustomAudioTxMessage(shouldUseGlassesMic);
+                
+                
+                // IMPORTANT NOTE: WE ARE DISABLING LC3 MIC UNTIL AFTER RELEASE
+                // DO NOT UNDO THIS HARD DISABLE UNTIL AFTER RELEASE
+                //sendEnableCustomAudioTxMessage(shouldUseGlassesMic);
+                sendEnableCustomAudioTxMessage(false);
                 micBeatCount++;
 
                 // Schedule next micbeat
@@ -2617,7 +2674,7 @@ public class MentraLive extends SGCManager {
      * Stop the micbeat mechanism
      */
     private void stopMicBeat() {
-        Bridge.log("LIVE: 🎤 Stopping micbeat mechanism");
+        // Bridge.log("LIVE: 🎤 Stopping micbeat mechanism");
         sendEnableCustomAudioTxMessage(false);
         micBeatHandler.removeCallbacks(micBeatRunnable);
         micBeatCount = 0;
@@ -2744,6 +2801,15 @@ public class MentraLive extends SGCManager {
 
     public void forget() {
         Bridge.log("LIVE: Forgetting Mentra Live glasses");
+
+        // Clear saved device name to prevent reconnection to this device
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().remove(PREF_DEVICE_NAME).apply();
+        Bridge.log("LIVE: Cleared saved device name");
+
+        // Reset reconnection attempts
+        reconnectAttempts = 0;
+
         stopScan();
         disconnect();
     }
@@ -2839,6 +2905,8 @@ public class MentraLive extends SGCManager {
 
         // Update the microphone state tracker
         isMicrophoneEnabled = enable;
+        
+        micEnabled = enable;
 
         // Post event for frontend notification
         // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
@@ -2985,6 +3053,9 @@ public class MentraLive extends SGCManager {
 
     @Override
     public String getConnectedBluetoothName() {
+        if (connectedDevice != null && connectedDevice.getName() != null) {
+            return connectedDevice.getName();
+        }
         return "";
     }
 
@@ -3310,7 +3381,7 @@ public class MentraLive extends SGCManager {
         int videoHeight = m.getButtonVideoHeight();
         int videoFps = m.getButtonVideoFps();
 
-        Bridge.log("LIVE: Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
+        Bridge.log("LIVE: 🎥 [SETTINGS_SYNC] Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
 
         try {
             JSONObject json = new JSONObject();
@@ -3320,9 +3391,11 @@ public class MentraLive extends SGCManager {
             settings.put("height", videoHeight);
             settings.put("fps", videoFps);
             json.put("params", settings);
+            Bridge.log("LIVE: 📤 [SETTINGS_SYNC] BLE packet prepared: " + json.toString());
             sendJson(json);
+            Bridge.log("LIVE: ✅ [SETTINGS_SYNC] Video settings transmitted via BLE");
         } catch (JSONException e) {
-            Log.e(TAG, "Error creating button video recording settings message", e);
+            Log.e(TAG, "❌ [SETTINGS_SYNC] Error creating button video recording settings message", e);
         }
     }
 
@@ -4654,7 +4727,7 @@ public class MentraLive extends SGCManager {
      * Send user settings to glasses after connection is established
      */
     private void sendUserSettings() {
-        Bridge.log("LIVE: Sending user settings to glasses");
+        Bridge.log("LIVE: [VIDEO_SYNC] Sending user settings to glasses on connection");
 
         // Send button mode setting
         sendButtonModeSetting();
@@ -4670,6 +4743,9 @@ public class MentraLive extends SGCManager {
 
         // Send button camera LED setting
         sendButtonCameraLedSetting();
+
+        // Send gallery mode state (camera app running status)
+        sendGalleryMode();
     }
 
     /**

@@ -989,6 +989,10 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         return true
     }
 
+    func sortMicRanking(list: [String]) -> [String] {
+        return list
+    }
+
     // MARK: - Status Query Commands
 
     @objc func queryBatteryStatus() {

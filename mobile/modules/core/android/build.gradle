@@ -50,7 +50,8 @@ android {
 
 dependencies {
   // Kotlin standard library (explicitly added for IDE support)
-  implementation "org.jetbrains.kotlin:kotlin-stdlib"
+  // Version is managed by Expo modules, but explicit dependency helps IDE indexing
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
   
   implementation "androidx.lifecycle:lifecycle-service:2.6.1"
   implementation "org.greenrobot:eventbus:3.3.1"

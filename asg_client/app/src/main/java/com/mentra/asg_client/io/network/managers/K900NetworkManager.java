@@ -37,6 +37,10 @@ public class K900NetworkManager extends BaseNetworkManager {
     private final WifiManager wifiManager;
     private final DebugNotificationManager notificationManager;
     private BroadcastReceiver wifiStateReceiver;
+
+    // Hotspot SSID retry tracking
+    private final Handler ssidRetryHandler = new Handler(Looper.getMainLooper());
+    private Runnable pendingSsidRetryRunnable = null;
     
     /**
      * Create a new K900NetworkManager
@@ -185,60 +189,11 @@ public class K900NetworkManager extends BaseNetworkManager {
             
             context.sendBroadcast(intent);
             Log.d(TAG, "🔥 ✅ K900 hotspot enable intent sent");
-            
-            // Read the SSID directly from Settings.Global (no delay needed - it's already there)
-            try {
-                String ssid = Settings.Global.getString(context.getContentResolver(), "xy_ssid");
-                
-                if (ssid != null && !ssid.isEmpty()) {
-                    Log.d(TAG, "🔥 ✅ Got K900 hotspot SSID from Settings.Global: " + ssid);
-                    
-                    // Update state with detected SSID and known password
-                    updateHotspotState(true, ssid, K900_HOTSPOT_PASSWORD);
-                    notifyHotspotStateChanged(true);
-                    
-                    notificationManager.showHotspotStateNotification(true);
-                    notificationManager.showDebugNotification(
-                            "K900 Hotspot Active", 
-                            ssid + " | " + K900_HOTSPOT_PASSWORD);
-                    
-                    Log.i(TAG, "🔥 ✅ K900 hotspot active: " + ssid);
-                } else {
-                    Log.e(TAG, "🔥 ❌ Failed to read K900 SSID from Settings.Global");
-                    
-                    // Turn off the hotspot since we can't get credentials
-                    Intent disableIntent = new Intent();
-                    disableIntent.setAction("com.xy.xsetting.action");
-                    disableIntent.setPackage("com.android.systemui");
-                    disableIntent.putExtra("cmd", "ap_start");
-                    disableIntent.putExtra("enable", false);
-                    context.sendBroadcast(disableIntent);
-                    
-                    clearHotspotState();
-                    notifyHotspotStateChanged(false);
-                    
-                    notificationManager.showDebugNotification(
-                            "Hotspot Failed", 
-                            "Could not read hotspot SSID. Hotspot disabled.");
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "🔥 💥 Error reading K900 SSID from Settings.Global", e);
-                
-                // Turn off the hotspot on error
-                Intent disableIntent = new Intent();
-                disableIntent.setAction("com.xy.xsetting.action");
-                disableIntent.setPackage("com.android.systemui");
-                disableIntent.putExtra("cmd", "ap_start");
-                disableIntent.putExtra("enable", false);
-                context.sendBroadcast(disableIntent);
-                
-                clearHotspotState();
-                notifyHotspotStateChanged(false);
-                
-                notificationManager.showDebugNotification(
-                        "Hotspot Error", 
-                        "Failed to read SSID: " + e.getMessage());
-            }
+
+            // Try to read SSID from Settings.Global
+            // Note: There may be a race condition where the SSID isn't immediately available
+            // after sending the enable intent. We'll retry with delays if needed.
+            tryReadHotspotSSID(0);
             
             Log.i(TAG, "🔥 ✅ K900 hotspot start initiated");
         } catch (Exception e) {
@@ -249,10 +204,144 @@ public class K900NetworkManager extends BaseNetworkManager {
                     "Failed to start: " + e.getMessage());
         }
     }
-    
-    
-    
-    
+
+    /**
+     * Attempts to read the K900 hotspot SSID from Settings.Global with retries
+     * This handles the race condition where the SSID may not be immediately available
+     * after sending the hotspot enable intent
+     *
+     * @param attemptNumber Current attempt number (0-based)
+     */
+    private void tryReadHotspotSSID(int attemptNumber) {
+        final int MAX_ATTEMPTS = 5;
+        final int[] RETRY_DELAYS_MS = {0, 200, 500, 1000, 2000}; // Progressive backoff
+
+        try {
+            String ssid = Settings.Global.getString(context.getContentResolver(), "xy_ssid");
+
+            if (ssid != null && !ssid.isEmpty()) {
+                // Success! Update state and notify
+                Log.d(TAG, "🔥 ✅ Got K900 hotspot SSID from Settings.Global: " + ssid +
+                          " (attempt " + (attemptNumber + 1) + "/" + MAX_ATTEMPTS + ")");
+
+                // Clear pending retry since we succeeded
+                pendingSsidRetryRunnable = null;
+
+                updateHotspotState(true, ssid, K900_HOTSPOT_PASSWORD);
+                notifyHotspotStateChanged(true);
+
+                notificationManager.showHotspotStateNotification(true);
+                notificationManager.showDebugNotification(
+                        "K900 Hotspot Active",
+                        ssid + " | " + K900_HOTSPOT_PASSWORD);
+
+                Log.i(TAG, "🔥 ✅ K900 hotspot active: " + ssid);
+            } else {
+                // SSID not available yet
+                if (attemptNumber < MAX_ATTEMPTS - 1) {
+                    // Retry with delay
+                    int nextAttempt = attemptNumber + 1;
+                    int delayMs = RETRY_DELAYS_MS[nextAttempt];
+
+                    Log.w(TAG, "🔥 ⚠️ SSID not available yet (attempt " + (attemptNumber + 1) +
+                               "/" + MAX_ATTEMPTS + "), retrying in " + delayMs + "ms...");
+
+                    // Cancel any previous pending retry
+                    cancelPendingSsidRetries();
+
+                    // Schedule new retry and track it
+                    pendingSsidRetryRunnable = () -> tryReadHotspotSSID(nextAttempt);
+                    ssidRetryHandler.postDelayed(pendingSsidRetryRunnable, delayMs);
+                } else {
+                    // Max attempts reached - disable hotspot and notify phone of failure
+                    Log.e(TAG, "🔥 ❌ Failed to read K900 SSID after " + MAX_ATTEMPTS + " attempts - disabling hotspot");
+
+                    // Clear pending retry
+                    pendingSsidRetryRunnable = null;
+
+                    // Send disable intent to K900 to clean up
+                    try {
+                        Intent disableIntent = new Intent();
+                        disableIntent.setAction("com.xy.xsetting.action");
+                        disableIntent.setPackage("com.android.systemui");
+                        disableIntent.putExtra("cmd", "ap_start");
+                        disableIntent.putExtra("enable", false);
+                        context.sendBroadcast(disableIntent);
+                        Log.d(TAG, "🔥 📡 Sent disable intent to clean up failed hotspot");
+                    } catch (Exception ex) {
+                        Log.e(TAG, "🔥 💥 Error sending disable intent", ex);
+                    }
+
+                    // Clear local hotspot state
+                    clearHotspotState();
+
+                    // Notify listeners that hotspot is disabled
+                    notifyHotspotStateChanged(false);
+
+                    // Also send specific error message
+                    String errorMessage = "Failed to read hotspot SSID after " + MAX_ATTEMPTS + " attempts";
+                    notifyHotspotError(errorMessage);
+
+                    notificationManager.showDebugNotification(
+                            "Hotspot Failed",
+                            errorMessage);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "🔥 💥 Error reading K900 SSID from Settings.Global (attempt " +
+                       (attemptNumber + 1) + "): " + e.getMessage(), e);
+
+            // On exception, retry if attempts remaining
+            if (attemptNumber < MAX_ATTEMPTS - 1) {
+                int nextAttempt = attemptNumber + 1;
+                int delayMs = RETRY_DELAYS_MS[nextAttempt];
+
+                Log.w(TAG, "🔥 ⚠️ Retrying in " + delayMs + "ms...");
+
+                // Cancel any previous pending retry
+                cancelPendingSsidRetries();
+
+                // Schedule new retry and track it
+                pendingSsidRetryRunnable = () -> tryReadHotspotSSID(nextAttempt);
+                ssidRetryHandler.postDelayed(pendingSsidRetryRunnable, delayMs);
+            } else {
+                // Max attempts reached due to exceptions - disable hotspot and notify phone of failure
+                Log.e(TAG, "🔥 ❌ Failed to read SSID after " + MAX_ATTEMPTS + " attempts due to errors - disabling hotspot");
+
+                // Clear pending retry
+                pendingSsidRetryRunnable = null;
+
+                // Send disable intent to K900 to clean up
+                try {
+                    Intent disableIntent = new Intent();
+                    disableIntent.setAction("com.xy.xsetting.action");
+                    disableIntent.setPackage("com.android.systemui");
+                    disableIntent.putExtra("cmd", "ap_start");
+                    disableIntent.putExtra("enable", false);
+                    context.sendBroadcast(disableIntent);
+                    Log.d(TAG, "🔥 📡 Sent disable intent to clean up failed hotspot");
+                } catch (Exception ex) {
+                    Log.e(TAG, "🔥 💥 Error sending disable intent", ex);
+                }
+
+                // Clear local hotspot state
+                clearHotspotState();
+
+                // Notify listeners that hotspot is disabled
+                notifyHotspotStateChanged(false);
+
+                // Also send specific error message
+                String errorMessage = "Failed to read hotspot SSID: " + e.getMessage();
+                notifyHotspotError(errorMessage);
+
+                notificationManager.showDebugNotification(
+                        "Hotspot Error",
+                        errorMessage);
+            }
+        }
+    }
+
+
     @Override
     protected void refreshHotspotCredentials() {
         // K900 specific: Read SSID from Settings.Global
@@ -279,7 +368,19 @@ public class K900NetworkManager extends BaseNetworkManager {
             notifyHotspotStateChanged(false);
         }
     }
-    
+
+    /**
+     * Cancels any pending SSID retry attempts
+     * Called when hotspot is stopped to prevent stale callbacks from firing
+     */
+    private void cancelPendingSsidRetries() {
+        if (pendingSsidRetryRunnable != null) {
+            Log.d(TAG, "🔥 ⛔ Cancelling pending SSID retry");
+            ssidRetryHandler.removeCallbacks(pendingSsidRetryRunnable);
+            pendingSsidRetryRunnable = null;
+        }
+    }
+
     @Override
     public void stopHotspot() {
         Log.d(TAG, "🔥 =========================================");
@@ -299,7 +400,10 @@ public class K900NetworkManager extends BaseNetworkManager {
             
             // Clear hotspot state immediately
             clearHotspotState();
-            
+
+            // Cancel any pending SSID retry attempts
+            cancelPendingSsidRetries();
+
             Log.d(TAG, "🔥 ✅ K900 hotspot disable intent sent");
             notificationManager.showHotspotStateNotification(false);
             notifyHotspotStateChanged(false);
