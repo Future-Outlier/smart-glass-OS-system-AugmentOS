@@ -10,6 +10,7 @@ import {translate} from "@/i18n"
 import {ThemedStyle, spacing} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import mentraAuth from "@/utils/auth/authClient"
+import {mapAuthError} from "@/utils/auth/authErrors"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function ChangePasswordScreen() {
@@ -41,8 +42,8 @@ export default function ChangePasswordScreen() {
 
     const res = await mentraAuth.updateUserPassword(newPassword)
     if (res.is_error()) {
-      console.error("Error updating password")
-      showAlert(translate("common:error"), res.error.message)
+      console.error("Error updating password:", res.error)
+      showAlert(translate("common:error"), mapAuthError(res.error), [{text: translate("common:ok")}])
       setIsLoading(false)
       return
     }

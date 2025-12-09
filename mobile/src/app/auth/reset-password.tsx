@@ -7,9 +7,10 @@ import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {$styles, ThemedStyle, spacing} from "@/theme"
+import {ThemedStyle, spacing} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import mentraAuth from "@/utils/auth/authClient"
+import {mapAuthError} from "@/utils/auth/authErrors"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function ResetPasswordScreen() {
@@ -64,7 +65,9 @@ export default function ResetPasswordScreen() {
 
     let res = await mentraAuth.updateUserPassword(newPassword)
     if (res.is_error()) {
-      showAlert(translate("common:error"), res.error.message)
+      console.error("Error resetting password:", res.error)
+      showAlert(translate("common:error"), mapAuthError(res.error), [{text: translate("common:ok")}])
+      setIsLoading(false)
       return
     }
 
@@ -87,7 +90,9 @@ export default function ResetPasswordScreen() {
     // Try to automatically log the user in with the new password
     const res2 = await mentraAuth.signInWithPassword({email, password: newPassword})
     if (res2.is_error()) {
-      showAlert(translate("common:error"), res2.error.message)
+      console.error("Error auto-logging in after password reset:", res2.error)
+      showAlert(translate("common:error"), mapAuthError(res2.error), [{text: translate("common:ok")}])
+      setIsLoading(false)
       return
     }
 

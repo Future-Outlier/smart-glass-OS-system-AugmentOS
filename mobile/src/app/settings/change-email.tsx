@@ -13,26 +13,31 @@ import mentraAuth from "@/utils/auth/authClient"
 import {mapAuthError} from "@/utils/auth/authErrors"
 import {useAppTheme} from "@/utils/useAppTheme"
 
-export default function ForgotPasswordScreen() {
-  const [email, setEmail] = useState("")
+export default function ChangeEmailScreen() {
+  const [newEmail, setNewEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
   const {goBack} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
 
-  const isEmailValid = email.includes("@") && email.includes(".")
+  const isValidEmail = newEmail.includes("@") && newEmail.includes(".")
 
-  const handleSendResetEmail = async () => {
-    if (!isEmailValid) {
-      showAlert(translate("common:error"), translate("login:invalidEmail"))
+  const handleChangeEmail = async () => {
+    // Validate email format
+    if (!newEmail.trim()) {
+      showAlert(translate("common:error"), translate("login:errors.emailRequired"), [{text: translate("common:ok")}])
+      return
+    }
+    if (!isValidEmail) {
+      showAlert(translate("common:error"), translate("login:invalidEmail"), [{text: translate("common:ok")}])
       return
     }
 
     setIsLoading(true)
 
-    const res = await mentraAuth.resetPasswordForEmail(email)
+    const res = await mentraAuth.updateUserEmail(newEmail)
     if (res.is_error()) {
-      console.error("Error sending reset email:", res.error)
+      console.error("Error updating email:", res.error)
       showAlert(translate("common:error"), mapAuthError(res.error), [{text: translate("common:ok")}])
       setIsLoading(false)
       return
@@ -40,44 +45,38 @@ export default function ForgotPasswordScreen() {
 
     Toast.show({
       type: "success",
-      text1: translate("login:resetEmailSent"),
-      text2: translate("login:checkEmailForReset"),
-      position: "bottom",
+      text1: translate("profileSettings:emailChangeRequested"),
+      text2: translate("profileSettings:checkNewEmailForVerification"),
       visibilityTime: 5000,
+      position: "bottom",
     })
-    // Navigate back to login screen after showing success message
-    setTimeout(() => {
-      goBack()
-    }, 2000)
 
     setIsLoading(false)
+    goBack()
   }
 
   return (
     <Screen preset="fixed">
-      <Header title={translate("login:forgotPasswordTitle")} leftIcon="chevron-left" onLeftPress={goBack} />
-      <ScrollView
-        contentContainerStyle={themed($scrollContent)}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
+      <Header title={translate("profileSettings:changeEmail")} leftIcon="chevron-left" onLeftPress={goBack} />
+      <ScrollView contentContainerStyle={themed($scrollContent)} showsVerticalScrollIndicator={false}>
         <View style={themed($card)}>
-          <Text tx="login:forgotPasswordSubtitle" style={themed($subtitle)} />
+          <Text style={themed($subtitle)}>{translate("profileSettings:changeEmailSubtitle")}</Text>
 
           <View style={themed($form)}>
             <View style={themed($inputGroup)}>
-              <Text tx="login:email" style={themed($inputLabel)} />
+              <Text style={themed($inputLabel)}>{translate("profileSettings:newEmailPlaceholder")}</Text>
               <View style={themed($enhancedInputContainer)}>
-                <FontAwesome name="envelope" size={16} color={theme.colors.textDim} />
-                <Spacer width={spacing.s3} />
+                <FontAwesome name="envelope" size={16} color={theme.colors.text} />
+                <Spacer width={spacing.s1} />
                 <TextInput
                   hitSlop={{top: 16, bottom: 16}}
                   style={themed($enhancedInput)}
-                  placeholder={translate("login:emailPlaceholder")}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
+                  placeholder={translate("profileSettings:newEmailPlaceholder")}
+                  value={newEmail}
                   autoCapitalize="none"
-                  autoCorrect={false}
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  onChangeText={setNewEmail}
                   placeholderTextColor={theme.colors.textDim}
                   autoFocus={true}
                 />
@@ -87,25 +86,17 @@ export default function ForgotPasswordScreen() {
             <Spacer height={spacing.s6} />
 
             <Button
-              tx="login:sendResetEmail"
+              text={translate("profileSettings:sendVerificationEmail")}
               style={themed($primaryButton)}
               pressedStyle={themed($pressedButton)}
               textStyle={themed($buttonText)}
-              onPress={handleSendResetEmail}
-              disabled={!isEmailValid || isLoading}
+              onPress={handleChangeEmail}
+              disabled={!newEmail.trim() || isLoading}
               LeftAccessory={() =>
-                isLoading && <ActivityIndicator size="small" color={theme.colors.icon} style={{marginRight: 8}} />
+                isLoading ? (
+                  <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
+                ) : null
               }
-            />
-
-            <Spacer height={spacing.s4} />
-
-            <Text tx="login:rememberPassword" style={themed($helperText)} />
-            <Button
-              tx="login:backToLogin"
-              style={themed($secondaryButton)}
-              textStyle={themed($secondaryButtonText)}
-              onPress={goBack}
             />
           </View>
         </View>
@@ -114,7 +105,7 @@ export default function ForgotPasswordScreen() {
   )
 }
 
-// Themed Styles - matching login and change-password screens
+// Themed Styles - matching change-password screen styling
 const $scrollContent: ThemedStyle<ViewStyle> = () => ({
   flexGrow: 1,
 })
@@ -129,7 +120,6 @@ const $subtitle: ThemedStyle<TextStyle> = ({spacing, colors}) => ({
   color: colors.text,
   textAlign: "left",
   marginBottom: spacing.s6,
-  lineHeight: 22,
 })
 
 const $form: ThemedStyle<ViewStyle> = () => ({
@@ -155,7 +145,7 @@ const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDar
   borderColor: colors.border,
   borderRadius: 8,
   paddingHorizontal: spacing.s3,
-  backgroundColor: isDark ? colors.transparent : colors.background,
+  backgroundColor: isDark ? colors.palette.transparent : colors.background,
   ...(isDark
     ? {
         shadowOffset: {
@@ -178,7 +168,7 @@ const $enhancedInput: ThemedStyle<TextStyle> = ({colors}) => ({
 const $primaryButton: ThemedStyle<ViewStyle> = () => ({})
 
 const $pressedButton: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.buttonPressed,
+  backgroundColor: colors.primary_foreground,
   opacity: 0.9,
 })
 
@@ -186,22 +176,4 @@ const $buttonText: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.textAlt,
   fontSize: 16,
   fontWeight: "bold",
-})
-
-const $secondaryButton: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.transparent,
-  borderWidth: 0,
-})
-
-const $secondaryButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.tint,
-  fontSize: 14,
-  textDecorationLine: "underline",
-})
-
-const $helperText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 14,
-  color: colors.textDim,
-  textAlign: "center",
-  marginBottom: spacing.s2,
 })
