@@ -6,27 +6,43 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    "development": {
-      "import": "./src/index.ts",
-      "require": "./src/index.ts",
-      "types": "./src/index.ts"
+    ".": {
+      "development": {
+        "import": "./src/index.ts",
+        "require": "./src/index.ts",
+        "types": "./src/index.ts"
+      },
+      "default": {
+        "import": "./dist/index.js",
+        "require": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
     },
-    "default": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+    "./display-utils": {
+      "development": {
+        "import": "./src/display-utils.ts",
+        "require": "./src/display-utils.ts",
+        "types": "./src/display-utils.ts"
+      },
+      "default": {
+        "import": "./dist/display-utils.js",
+        "require": "./dist/display-utils.js",
+        "types": "./dist/display-utils.d.ts"
+      }
     }
   },
   "bin": {
     "mentra": "./dist/cli.js"
   },
   "scripts": {
-    "build": "bun run clean && bun run build:js && bun run build:types",
-    "build:js-only": "bun run clean && bun run build:js",
-    "build:full": "bun run clean && bun run build:js && bun run build:types",
+    "build": "bun run prebuild-display-utils-types && bun run clean && bun run build:js && bun run build:types && bun run bundle-display-utils-types",
+    "build:js-only": "bun run prebuild-display-utils-types && bun run clean && bun run build:js",
+    "build:full": "bun run prebuild-display-utils-types && bun run clean && bun run build:js && bun run build:types && bun run bundle-display-utils-types",
     "clean": "rm -rf dist",
-    "build:js": "bun build src/index.ts --outdir dist --target node --format esm --sourcemap=external --external @logtail/pino --external axios --external boxen --external chalk --external cookie-parser --external dotenv --external express --external jimp --external jsonwebtoken --external jsrsasign --external multer --external pino --external pino-pretty --external strip-ansi --external ws",
+    "build:js": "bun build src/index.ts src/display-utils.ts --outdir dist --target node --format esm --sourcemap=external --external @logtail/pino --external axios --external boxen --external chalk --external cookie-parser --external dotenv --external express --external jimp --external jsonwebtoken --external jsrsasign --external multer --external pino --external pino-pretty --external strip-ansi --external ws",
     "build:types": "bun x tsc --emitDeclarationOnly",
+    "prebuild-display-utils-types": "cd ../display-utils && bun x tsc --emitDeclarationOnly",
+    "bundle-display-utils-types": "bun run scripts/bundle-display-utils-types.ts",
     "dev": "echo 'No build needed in dev mode - using source files directly'",
     "prepare": "bun run build",
     "link-pkg": "bun link"
@@ -49,6 +65,7 @@
     "ws": "^8.18.2"
   },
   "devDependencies": {
+    "@mentra/display-utils": "workspace:*",
     "@mentra/types": "workspace:*",
     "@types/babel__core": "^7.20.5",
     "@types/express": "^4.17.17",

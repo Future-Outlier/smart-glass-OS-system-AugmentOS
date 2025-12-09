@@ -1198,7 +1198,7 @@ class MentraLive: NSObject, SGCManager {
         }
 
         // propagate size (default to medium if invalid)
-        if let size, ["small", "medium", "large"].contains(size) {
+        if let size, ["small", "medium", "large", "full"].contains(size) {
             json["size"] = size
         } else {
             json["size"] = "medium"
