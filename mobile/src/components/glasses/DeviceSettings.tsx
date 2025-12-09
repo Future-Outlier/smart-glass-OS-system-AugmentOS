@@ -40,11 +40,7 @@ export default function DeviceSettings() {
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
   // Check if we have any advanced settings to show
-  const hasMicrophoneSelector =
-    glassesConnected &&
-    defaultWearable &&
-    features?.hasMicrophone &&
-    (defaultWearable !== "Mentra Live" || (Platform.OS === "android" && glassesModelName !== "K900"))
+  const hasMicrophoneSelector = glassesConnected && defaultWearable && features?.hasMicrophone
 
   const wifiLocalIp = useGlassesStore(state => state.wifiSsid)
   const bluetoothName = useGlassesStore(state => state.bluetoothName)

@@ -101,7 +101,7 @@ class CoreManager {
 
     // mic
     public var useOnboardMic = false
-    public var preferredMic = "glasses"
+    public var preferredMic = "auto"
     public var micEnabled = false
     private var lastMicState: Triple<Boolean, Boolean, String>? =
             null // (useGlassesMic, useOnboardMic, preferredMic)
@@ -690,8 +690,9 @@ class CoreManager {
     }
 
     fun updatePreferredMic(mic: String) {
+        preferredMic = mic
         micRanking =
-                MicMap.map[mic]?.toMutableList()
+                MicMap.map[preferredMic]?.toMutableList()
                         ?: MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
         handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
         handle_request_status()
