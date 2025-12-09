@@ -1,8 +1,8 @@
 import {describe, expect, test, beforeEach} from "bun:test"
-import {ScrollView} from "../src/helpers/ScrollView"
-import {TextMeasurer} from "../src/measurer/TextMeasurer"
-import {TextWrapper} from "../src/wrapper/TextWrapper"
-import {G1_PROFILE} from "../src/profiles/g1"
+import {ScrollView} from "../helpers/ScrollView"
+import {TextMeasurer} from "../measurer/TextMeasurer"
+import {TextWrapper} from "../wrapper/TextWrapper"
+import {G1_PROFILE} from "../profiles/g1"
 
 describe("ScrollView", () => {
   let measurer: TextMeasurer
