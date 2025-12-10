@@ -10,7 +10,7 @@ import InternetConnectionFallbackComponent from "@/components/misc/InternetConne
 import {useAppStoreWebviewPrefetch} from "@/contexts/AppStoreWebviewPrefetchProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useRefreshApplets} from "@/stores/applets"
-import {$styles, ThemedStyle} from "@/theme"
+import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function AppStoreWeb() {
@@ -45,6 +45,16 @@ export default function AppStoreWeb() {
   useEffect(() => {
     setIsAuthReady(false)
   }, [finalUrl])
+
+  // prevents the auth getting stuck after a hot-reload during development:
+  useEffect(() => {
+    // reload the webview when auth is false:
+    if (!isAuthReady) {
+      if (prefetchedWebviewRef.current) {
+        prefetchedWebviewRef.current.reload()
+      }
+    }
+  }, [isAuthReady])
 
   const handleError = (syntheticEvent: any) => {
     const {nativeEvent} = syntheticEvent
@@ -181,6 +191,24 @@ export default function AppStoreWeb() {
           scalesPageToFit={false}
           bounces={false}
           scrollEnabled={true}
+          // Inject CSS/JS to disable zoom and selection
+          injectedJavaScript={`
+              document.body.style.userSelect = 'none';
+              document.body.style.webkitUserSelect = 'none';
+              document.body.style.webkitTouchCallout = 'none';
+              
+              document.addEventListener('gesturestart', function(e) {
+                e.preventDefault();
+              });
+
+              const meta = document.createElement('meta');
+              meta.name = 'viewport';
+              meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+              document.head.appendChild(meta);
+              true;
+              
+              true;
+          `}
         />
         {/* Loading overlay - stays visible until store confirms auth ready */}
         {!isAuthReady && (
