@@ -300,7 +300,7 @@ public class CommandProcessor {
             commandHandlerRegistry.registerHandler(new VideoCommandHandler(context, serviceManager, streamingManager, fileManager, stateManager));
             Log.d(TAG, "✅ Registered VideoCommandHandler");
 
-            commandHandlerRegistry.registerHandler(new PingCommandHandler(communicationManager, responseBuilder));
+            commandHandlerRegistry.registerHandler(new PingCommandHandler(communicationManager, responseBuilder, serviceManager));
             Log.d(TAG, "✅ Registered PingCommandHandler");
 
             commandHandlerRegistry.registerHandler(new RtmpCommandHandler(context, stateManager, streamingManager));
