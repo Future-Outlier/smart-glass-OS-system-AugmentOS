@@ -202,9 +202,15 @@ This timestamp represents when the file was captured on the glasses, not when it
 
 ## Files Modified
 
-1. `mobile/src/utils/MediaLibraryPermissions.ts` - Core timestamp preservation logic
-2. `mobile/src/components/glasses/Gallery/GalleryScreen.tsx` - Parse and pass capture time
-3. `mobile/src/types/asg/index.ts` - Updated type definitions
+1. **Native Modules** (NEW - Critical for proper metadata):
+   - `mobile/modules/core/android/src/main/java/com/mentra/core/CoreModule.kt` - Android MediaStore DATE_TAKEN
+   - `mobile/modules/core/ios/CoreModule.swift` - iOS Photos creationDate
+   - `mobile/modules/core/src/CoreModule.ts` - TypeScript interface
+
+2. **JavaScript/TypeScript**:
+   - `mobile/src/utils/MediaLibraryPermissions.ts` - Uses native module for saving
+   - `mobile/src/components/glasses/Gallery/GalleryScreen.tsx` - Sort and pass capture time
+   - `mobile/src/types/asg/index.ts` - Updated type definitions
 
 ## Future Enhancements
 

@@ -2,6 +2,8 @@ import * as MediaLibrary from "expo-media-library"
 import {Platform} from "react-native"
 import {check, request, PERMISSIONS, RESULTS} from "react-native-permissions"
 
+import CoreModule from "@/modules/core"
+
 /**
  * MediaLibraryPermissions - Handles save-only permissions for camera roll
  *
@@ -73,12 +75,12 @@ export class MediaLibraryPermissions {
    * Save a file to the device's camera roll/photo library
    * On Android 10+, this works without any permission
    *
-   * IMPORTANT: Gallery apps typically sort by "date added" to MediaStore.
-   * To ensure chronological order, call this method in chronological sequence
-   * (oldest files first) so they're added to MediaStore in the correct order.
+   * IMPORTANT: This method sets the DATE_TAKEN (Android) or creation date (iOS)
+   * metadata to the original capture time, so gallery apps show the correct date.
+   * Also saves files in chronological order for proper "date added" ordering.
    *
    * @param filePath - Path to the file to save
-   * @param creationTime - Optional creation/capture time in milliseconds (Unix timestamp) - currently unused but kept for future EXIF support
+   * @param creationTime - Optional creation/capture time in milliseconds (Unix timestamp)
    */
   static async saveToLibrary(filePath: string, creationTime?: number): Promise<boolean> {
     try {
@@ -95,19 +97,24 @@ export class MediaLibraryPermissions {
       // Remove file:// prefix if present
       const cleanPath = filePath.replace("file://", "")
 
-      // Save to camera roll
-      // Gallery apps sort by "date added" to MediaStore, so ensure you call this
-      // method in chronological order (oldest first) for proper gallery ordering
-      await MediaLibrary.createAssetAsync(cleanPath)
+      // Use native module to save with proper DATE_TAKEN / creation date metadata
+      // This ensures gallery apps show the correct capture date, not the sync date
+      const result = await CoreModule.saveToGalleryWithDate(cleanPath, creationTime)
 
-      if (creationTime) {
-        const captureDate = new Date(creationTime)
-        console.log(`[MediaLibrary] Saved to camera roll: ${cleanPath} (captured: ${captureDate.toISOString()})`)
+      if (result.success) {
+        if (creationTime) {
+          const captureDate = new Date(creationTime)
+          console.log(
+            `[MediaLibrary] Saved to camera roll with DATE_TAKEN: ${cleanPath} (captured: ${captureDate.toISOString()})`,
+          )
+        } else {
+          console.log(`[MediaLibrary] Saved to camera roll: ${cleanPath}`)
+        }
+        return true
       } else {
-        console.log(`[MediaLibrary] Saved to camera roll: ${cleanPath}`)
+        console.error(`[MediaLibrary] Failed to save to library: ${result.error}`)
+        return false
       }
-
-      return true
     } catch (error) {
       console.error("[MediaLibrary] Error saving to library:", error)
       return false
