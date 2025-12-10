@@ -89,7 +89,6 @@ class CoreManager {
     private var isHeadUp = false
 
     // core settings
-    public var sensingEnabled = true
     public var powerSavingMode = false
     private var alwaysOnStatusBar = false
     private var bypassVad = true
@@ -636,10 +635,6 @@ class CoreManager {
                         "MAN: External app released microphone - marking onboard mic as available"
                 )
                 systemMicUnavailable = false
-                // // Only trigger recovery if we're in automatic/phone mode
-                // if (preferredMic == "phone") {
-                //     setMicState(currentRequiredData, bypassVadForPCM)
-                // }
             }
             "phone_call_interruption" -> {
                 // Phone call started - mark mic as unavailable
@@ -680,7 +675,7 @@ class CoreManager {
     fun onInterruption(began: Boolean) {
         Bridge.log("MAN: Interruption: $began")
         systemMicUnavailable = began
-        setMicState(currentRequiredData, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
     }
 
     // MARK: - State Management
@@ -701,7 +696,7 @@ class CoreManager {
         micRanking =
                 MicMap.map[preferredMic]?.toMutableList()
                         ?: MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
-        setMicState(currentRequiredData, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
         getStatus()
     }
 
@@ -812,12 +807,6 @@ class CoreManager {
         getStatus()
     }
 
-    fun updateSensing(enabled: Boolean) {
-        sensingEnabled = enabled
-        setMicState(currentRequiredData, bypassVadForPCM)
-        getStatus()
-    }
-
     fun updatePowerSavingMode(enabled: Boolean) {
         powerSavingMode = enabled
         getStatus()
@@ -835,30 +824,14 @@ class CoreManager {
 
     fun updateEnforceLocalTranscription(enabled: Boolean) {
         enforceLocalTranscription = enabled
-
-        if (currentRequiredData.contains(SpeechRequiredDataType.PCM_OR_TRANSCRIPTION)) {
-            if (enforceLocalTranscription) {
-                shouldSendTranscript = true
-                shouldSendPcmData = false
-            } else {
-                shouldSendPcmData = true
-                shouldSendTranscript = false
-            }
-        }
-
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
         getStatus()
     }
 
     fun updateOfflineMode(enabled: Boolean) {
         offlineMode = enabled
-        Bridge.log("Mentra: updating offline mode $enabled")
-
-        val requiredData = mutableListOf<SpeechRequiredDataType>()
-        if (enabled) {
-            requiredData.add(SpeechRequiredDataType.TRANSCRIPTION)
-        }
-
-        setMicState(requiredData, bypassVadForPCM)
+        Bridge.log("MAN: updating offline mode: $enabled")
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
     }
 
     fun updateBypassAudioEncoding(enabled: Boolean) {
@@ -992,7 +965,6 @@ class CoreManager {
         Bridge.log("MAN: Device disconnected")
         isHeadUp = false
         lastMicState = null // Clear cache - hardware is definitely off now
-        shouldSendBootingMessage = true // Reset for next first connect
         getStatus()
     }
 
@@ -1103,68 +1075,20 @@ class CoreManager {
         sgc?.stopVideoRecording(requestId)
     }
 
-    fun setMicState(
-            requiredData: List<SpeechRequiredDataType>,
-            bypassVad: Boolean
-    ) {
-        // Bridge.log(
-        //         "MAN: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad
-        // offlineMode=$offlineMode"
-        // )
+    fun setMicState(sendPcm: Boolean, sendTranscript: Boolean, bypassVad: Boolean) {
+        Bridge.log("MAN: MIC: setMicState($sendPcm, $sendTranscript, $bypassVad)")
 
+        shouldSendPcmData = sendPcm
+        shouldSendTranscript = sendTranscript
         bypassVadForPCM = bypassVad
 
-        shouldSendPcmData = false
-        shouldSendTranscript = false
-
-        // This must be done before the requiredData is modified by offline mode
-        currentRequiredData.clear()
-        currentRequiredData.addAll(requiredData)
-
-        val mutableRequiredData = requiredData.toMutableList()
-        if (offlineMode &&
-                        !mutableRequiredData.contains(
-                                SpeechRequiredDataType.PCM_OR_TRANSCRIPTION
-                        ) &&
-                        !mutableRequiredData.contains(SpeechRequiredDataType.TRANSCRIPTION)
-        ) {
-            Bridge.log("MAN: MIC: Offline mode active - adding TRANSCRIPTION requirement")
-            mutableRequiredData.add(SpeechRequiredDataType.TRANSCRIPTION)
-        }
-
-        when {
-            mutableRequiredData.contains(SpeechRequiredDataType.PCM) &&
-                    mutableRequiredData.contains(SpeechRequiredDataType.TRANSCRIPTION) -> {
-                shouldSendPcmData = true
-                shouldSendTranscript = true
-            }
-            mutableRequiredData.contains(SpeechRequiredDataType.PCM) -> {
-                shouldSendPcmData = true
-                shouldSendTranscript = false
-            }
-            mutableRequiredData.contains(SpeechRequiredDataType.TRANSCRIPTION) -> {
-                shouldSendTranscript = true
-                shouldSendPcmData = false
-            }
-            mutableRequiredData.contains(SpeechRequiredDataType.PCM_OR_TRANSCRIPTION) -> {
-                if (enforceLocalTranscription) {
-                    shouldSendTranscript = true
-                    shouldSendPcmData = false
-                } else {
-                    shouldSendPcmData = true
-                    shouldSendTranscript = false
-                }
-            }
+        // if offline mode is enabled and no PCM or transcription is requested, force transcription
+        if (offlineMode && (!shouldSendPcmData && !shouldSendTranscript)) {
+            shouldSendTranscript = true
         }
 
         vadBuffer.clear()
-        micEnabled = mutableRequiredData.isNotEmpty()
-
-        // Bridge.log(
-        //         "MAN: MIC: Result - shouldSendPcmData=$shouldSendPcmData,
-        // shouldSendTranscript=$shouldSendTranscript, micEnabled=$micEnabled"
-        // )
-
+        micEnabled = shouldSendPcmData || shouldSendTranscript
         updateMicState()
     }
 
@@ -1243,6 +1167,10 @@ class CoreManager {
         sgc?.disconnect()
         sgc = null // Clear the SGC reference after disconnect
         isSearching = false
+        shouldSendPcmData = false
+        shouldSendTranscript = false
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
+        shouldSendBootingMessage = true // Reset for next first connect
         getStatus()
     }
 
@@ -1253,15 +1181,13 @@ class CoreManager {
         sgc?.forget()
 
         // Then disconnect to close connections
-        sgc?.disconnect()
+        disconnect()
 
         // Clear state
         defaultWearable = ""
         deviceName = ""
-        sgc = null
         Bridge.saveSetting("default_wearable", "")
         Bridge.saveSetting("device_name", "")
-        isSearching = false
         getStatus()
     }
 
@@ -1421,12 +1347,6 @@ class CoreManager {
         (settings["auto_brightness"] as? Boolean)?.let { newAutoBrightness ->
             if (autoBrightness != newAutoBrightness) {
                 updateGlassesBrightness(brightness, newAutoBrightness)
-            }
-        }
-
-        (settings["sensing"] as? Boolean)?.let { newSensingEnabled ->
-            if (sensingEnabled != newSensingEnabled) {
-                updateSensing(newSensingEnabled)
             }
         }
 

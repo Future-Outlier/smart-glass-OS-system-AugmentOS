@@ -543,13 +543,6 @@ struct ViewState {
         getStatus() // to update the UI
     }
 
-    func updateSensing(_ enabled: Bool) {
-        sensingEnabled = enabled
-        // Update microphone state when sensing is toggled
-        setMicState(currentRequiredData, bypassVadForPCM)
-        getStatus() // to update the UI
-    }
-
     func updatePowerSavingMode(_ enabled: Bool) {
         powerSavingMode = enabled
         getStatus() // to update the UI
@@ -567,33 +560,14 @@ struct ViewState {
 
     func updateEnforceLocalTranscription(_ enabled: Bool) {
         enforceLocalTranscription = enabled
-
-        if currentRequiredData.contains(.PCM_OR_TRANSCRIPTION) {
-            // TODO: Later add bandwidth based logic
-            if enforceLocalTranscription {
-                shouldSendTranscript = true
-                shouldSendPcmData = false
-            } else {
-                shouldSendPcmData = true
-                shouldSendTranscript = false
-            }
-        }
-
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
         getStatus() // to update the UI
     }
 
     func updateOfflineMode(_ enabled: Bool) {
         offlineMode = enabled
-
-        Bridge.log("updating offline mode \(enabled)")
-
-        var requiredData: [SpeechRequiredDataType] = []
-
-        if enabled {
-            requiredData.append(.TRANSCRIPTION)
-        }
-
-        setMicState(requiredData, bypassVadForPCM)
+        Bridge.log("MAN: updating offline mode: \(enabled)")
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
     }
 
     func updateBypassAudioEncoding(_ enabled: Bool) {
@@ -931,8 +905,8 @@ struct ViewState {
 
     private func handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
-        setMicState([], false)
-        shouldSendBootingMessage = true // Reset for next first connect
+        // setMicState(shouldSendPcmData, shouldSendTranscript, false)
+        // shouldSendBootingMessage = true  // Reset for next first connect
         getStatus()
     }
 
@@ -1089,49 +1063,21 @@ struct ViewState {
         sgc?.stopVideoRecording(requestId: requestId)
     }
 
-    func setMicState(_ requiredData: [SpeechRequiredDataType], _ bypassVad: Bool) {
-        var requiredData = requiredData // make mutable
-        Bridge.log(
-            "MAN: MIC: @@@@@@@@ changing mic with requiredData: \(requiredData) bypassVad=\(bypassVad) enforceLocalTranscription=\(enforceLocalTranscription) @@@@@@@@@@@@@@@@"
-        )
+    func setMicState(_ sendPcm: Bool, _ sendTranscript: Bool, _ bypassVad: Bool) {
+        Bridge.log("MAN: MIC: setMicState(\(sendPcm),\(sendTranscript),\(bypassVad)")
 
+        shouldSendPcmData = sendPcm
+        shouldSendTranscript = sendTranscript
         bypassVadForPCM = bypassVad
-
-        shouldSendPcmData = false
-        shouldSendTranscript = false
 
         // this must be done before the requiredData is modified by offlineStt:
         currentRequiredData = requiredData
 
-        if offlineMode, !requiredData.contains(.PCM_OR_TRANSCRIPTION),
-           !requiredData.contains(.TRANSCRIPTION)
-        {
-            requiredData.append(.TRANSCRIPTION)
+        if offlineMode && (!shouldSendPcmData && !shouldSendTranscript) {
+            shouldSendTranscript = true
         }
 
-        if requiredData.contains(.PCM), requiredData.contains(.TRANSCRIPTION) {
-            shouldSendPcmData = true
-            shouldSendTranscript = true
-        } else if requiredData.contains(.PCM) {
-            shouldSendPcmData = true
-            shouldSendTranscript = false
-        } else if requiredData.contains(.TRANSCRIPTION) {
-            shouldSendTranscript = true
-            shouldSendPcmData = false
-        } else if requiredData.contains(.PCM_OR_TRANSCRIPTION) {
-            // TODO: Later add bandwidth based logic
-            if enforceLocalTranscription {
-                shouldSendTranscript = true
-                shouldSendPcmData = false
-            } else {
-                shouldSendPcmData = true
-                shouldSendTranscript = false
-            }
-        }
-
-        // Core.log("MAN: MIC: shouldSendPcmData=\(shouldSendPcmData), shouldSendTranscript=\(shouldSendTranscript)")
-
-        micEnabled = !requiredData.isEmpty && sensingEnabled
+        micEnabled = shouldSendPcmData || shouldSendTranscript
         updateMicState()
     }
 
@@ -1224,6 +1170,10 @@ struct ViewState {
         sgc?.disconnect()
         sgc = nil // Clear the SGC reference after disconnect
         isSearching = false
+        shouldSendPcmData = false
+        shouldSendTranscript = false
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
+        shouldSendBootingMessage = true // Reset for next first connect
         getStatus()
     }
 
@@ -1233,16 +1183,13 @@ struct ViewState {
         // Call forget first to stop timers/handlers/reconnect logic
         sgc?.forget()
 
-        // Then disconnect to close connections
-        sgc?.disconnect()
+        disconnect()
 
         // Clear state
         defaultWearable = ""
         deviceName = ""
-        sgc = nil
         Bridge.saveSetting("default_wearable", "")
         Bridge.saveSetting("device_name", "")
-        isSearching = false
         getStatus()
     }
 
@@ -1366,7 +1313,9 @@ struct ViewState {
         Bridge.log("MAN: Received update settings: \(settings)")
 
         // update our settings with the new values:
-        if let newPreferredMic = settings["preferred_mic"] as? String, newPreferredMic != preferredMic {
+        if let newPreferredMic = settings["preferred_mic"] as? String,
+           newPreferredMic != preferredMic
+        {
             updatePreferredMic(newPreferredMic)
         }
 
@@ -1400,12 +1349,6 @@ struct ViewState {
            newAutoBrightness != autoBrightness
         {
             updateGlassesBrightness(brightness, autoBrightness: newAutoBrightness)
-        }
-
-        if let sensingEnabled = settings["sensing_enabled"] as? Bool,
-           sensingEnabled != self.sensingEnabled
-        {
-            updateSensing(sensingEnabled)
         }
 
         if let powerSavingMode = settings["power_saving_mode"] as? Bool,
