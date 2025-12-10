@@ -258,7 +258,7 @@ struct ViewState {
             return
         }
 
-        if bypassVad || bypassVadForPCM {
+        if bypassVad {
             //          let pcmConverter = PcmConverter()
             //          let lc3Data = pcmConverter.encode(pcmData) as Data
             //          checkSetVadStatus(speaking: true)
@@ -452,7 +452,7 @@ struct ViewState {
     func updatePreferredMic(_ mic: String) {
         preferredMic = mic
         micRanking = MicMap.map[preferredMic] ?? MicMap.map["auto"]!
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         getStatus() // to update the UI
     }
 
@@ -553,14 +553,14 @@ struct ViewState {
 
     func updateEnforceLocalTranscription(_ enabled: Bool) {
         enforceLocalTranscription = enabled
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         getStatus() // to update the UI
     }
 
     func updateOfflineMode(_ enabled: Bool) {
         offlineMode = enabled
         Bridge.log("MAN: updating offline mode: \(enabled)")
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
     }
 
     func updateBypassAudioEncoding(_ enabled: Bool) {
@@ -1030,7 +1030,7 @@ struct ViewState {
     }
 
     func setMicState(_ sendPcm: Bool, _ sendTranscript: Bool, _ bypassVadForPCM: Bool) {
-        Bridge.log("MAN: MIC: setMicState(\(sendPcm),\(sendTranscript),\(bypassVad)")
+        Bridge.log("MAN: MIC: setMicState(\(sendPcm),\(sendTranscript),\(bypassVadForPCM)")
 
         shouldSendPcmData = sendPcm
         shouldSendTranscript = sendTranscript
