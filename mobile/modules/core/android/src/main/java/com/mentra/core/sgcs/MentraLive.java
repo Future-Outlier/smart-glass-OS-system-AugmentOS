@@ -2058,7 +2058,7 @@ public class MentraLive extends SGCManager {
                       otaVersionUrl != null ? otaVersionUrl : "");
 
                 // Notify CoreManager to update status and send to frontend
-                CoreManager.getInstance().handle_request_status();
+                CoreManager.getInstance().getStatus();
                 break;
 
             case "ota_download_progress":
@@ -2501,7 +2501,7 @@ public class MentraLive extends SGCManager {
         isCharging = charging;  // Local field
 
         // Notify CoreManager to update status and send to frontend
-        CoreManager.getInstance().handle_request_status();
+        CoreManager.getInstance().getStatus();
     }
 
     /**
@@ -2537,7 +2537,7 @@ public class MentraLive extends SGCManager {
         Bridge.sendHotspotStatusChange(enabled, ssid, password, gatewayIp);
 
         // Trigger a full status update so React Native gets the updated glasses_info
-        CoreManager.getInstance().handle_request_status();
+        CoreManager.getInstance().getStatus();
     }
 
     /**

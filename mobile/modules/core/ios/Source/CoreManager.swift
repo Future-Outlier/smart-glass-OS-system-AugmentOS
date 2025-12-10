@@ -453,26 +453,26 @@ struct ViewState {
 
     func updateContextualDashboard(_ enabled: Bool) {
         contextualDashboard = enabled
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updatePreferredMic(_ mic: String) {
         preferredMic = mic
         micRanking = MicMap.map[preferredMic] ?? MicMap.map["auto"]!
-        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-        handle_request_status() // to update the UI
+        setMicState(currentRequiredData, bypassVadForPCM)
+        getStatus() // to update the UI
     }
 
     func updateButtonMode(_ mode: String) {
         buttonPressMode = mode
         sgc?.sendButtonModeSetting()
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateButtonPhotoSize(_ size: String) {
         buttonPhotoSize = size
         sgc?.sendButtonPhotoSettings()
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateButtonVideoSettings(width: Int, height: Int, fps: Int) {
@@ -480,31 +480,31 @@ struct ViewState {
         buttonVideoHeight = height
         buttonVideoFps = fps
         sgc?.sendButtonVideoRecordingSettings()
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateButtonCameraLed(_ enabled: Bool) {
         buttonCameraLed = enabled
         sgc?.sendButtonCameraLedSetting()
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateGalleryMode(_ enabled: Bool) {
         galleryMode = enabled
         sgc?.sendGalleryMode()
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateButtonMaxRecordingTime(_ value: Int) {
         buttonMaxRecordingTime = value
         sgc?.sendButtonMaxRecordingTime()
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateGlassesHeadUpAngle(_ value: Int) {
         headUpAngle = value
         sgc?.setHeadUpAngle(value)
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateGlassesBrightness(_ value: Int, autoBrightness: Bool) {
@@ -522,7 +522,7 @@ struct ViewState {
             try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
             sgc?.clearDisplay() // clear screen
         }
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateGlassesDepth(_ value: Int) {
@@ -531,7 +531,7 @@ struct ViewState {
             await sgc?.setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
             Bridge.log("MAN: Set dashboard depth to \(value)")
         }
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateGlassesHeight(_ value: Int) {
@@ -540,29 +540,29 @@ struct ViewState {
             await sgc?.setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
             Bridge.log("MAN: Set dashboard height to \(value)")
         }
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateSensing(_ enabled: Bool) {
         sensingEnabled = enabled
         // Update microphone state when sensing is toggled
-        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-        handle_request_status() // to update the UI
+        setMicState(currentRequiredData, bypassVadForPCM)
+        getStatus() // to update the UI
     }
 
     func updatePowerSavingMode(_ enabled: Bool) {
         powerSavingMode = enabled
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateAlwaysOnStatusBar(_ enabled: Bool) {
         alwaysOnStatusBar = enabled
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateBypassVad(_ enabled: Bool) {
         bypassVad = enabled
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateEnforceLocalTranscription(_ enabled: Bool) {
@@ -579,7 +579,7 @@ struct ViewState {
             }
         }
 
-        handle_request_status() // to update the UI
+        getStatus() // to update the UI
     }
 
     func updateOfflineMode(_ enabled: Bool) {
@@ -593,7 +593,7 @@ struct ViewState {
             requiredData.append(.TRANSCRIPTION)
         }
 
-        handle_microphone_state_change(requiredData, bypassVadForPCM)
+        setMicState(requiredData, bypassVadForPCM)
     }
 
     func updateBypassAudioEncoding(_ enabled: Bool) {
@@ -602,7 +602,7 @@ struct ViewState {
 
     func updateMetricSystem(_ enabled: Bool) {
         metricSystem = enabled
-        handle_request_status()
+        getStatus()
     }
 
     func updateScreenDisabled(_ enabled: Bool) {
@@ -816,7 +816,7 @@ struct ViewState {
         // if availableInputs.isEmpty {
         //   self.systemMicUnavailable = true
         //   self.setOnboardMicEnabled(false)
-        //   handle_microphone_state_change([], false)
+        //   setMicState([], false)
         //   return
         // } else {
         //   self.systemMicUnavailable = false
@@ -833,7 +833,7 @@ struct ViewState {
         //            break
         //        }
         // TODO: re-enable this:
-        // handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+        // setMicState(currentRequiredData, bypassVadForPCM)
     }
 
     func onInterruption(began: Bool) {
@@ -856,7 +856,7 @@ struct ViewState {
             handleDeviceReady()
         } else {
             handleDeviceDisconnected()
-            handle_request_status()
+            getStatus()
         }
     }
 
@@ -870,7 +870,7 @@ struct ViewState {
         pendingWearable = ""
         defaultWearable = sgc.type
         isSearching = false
-        handle_request_status()
+        getStatus()
 
         // Show welcome message on first connect for all display glasses
         if shouldSendBootingMessage {
@@ -918,27 +918,27 @@ struct ViewState {
             // try? await Task.sleep(nanoseconds: 400_000_000)
             //      playStartupSequence()
 
-            self.handle_request_status()
+            self.getStatus()
         }
     }
 
     private func handleMach1Ready() {
         Task {
             // Mach1-specific setup (if any needed in the future)
-            self.handle_request_status()
+            self.getStatus()
         }
     }
 
     private func handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
-        handle_microphone_state_change([], false)
+        setMicState([], false)
         shouldSendBootingMessage = true // Reset for next first connect
-        handle_request_status()
+        getStatus()
     }
 
     // MARK: - Network Command handlers
 
-    func handle_display_text(_ params: [String: Any]) {
+    func displayText(_ params: [String: Any]) {
         guard let text = params["text"] as? String else {
             Bridge.log("MAN: display_text missing text parameter")
             return
@@ -948,7 +948,7 @@ struct ViewState {
         sgc?.sendTextWall(text)
     }
 
-    func handle_display_event(_ event: [String: Any]) {
+    func displayEvent(_ event: [String: Any]) {
         guard let view = event["view"] as? String else {
             Bridge.log("MAN: invalid view")
             return
@@ -1024,7 +1024,7 @@ struct ViewState {
         }
     }
 
-    func handle_show_dashboard() {
+    func showDashboard() {
         sgc?.showDashboard()
     }
 
@@ -1033,63 +1033,63 @@ struct ViewState {
         sgc?.startRtmpStream(message)
     }
 
-    func handle_stop_rtmp_stream() {
+    func stopRtmpStream() {
         Bridge.log("MAN: stopRtmpStream")
         sgc?.stopRtmpStream()
     }
 
-    func handle_keep_rtmp_stream_alive(_ message: [String: Any]) {
+    func keepRtmpStreamAlive(_ message: [String: Any]) {
         Bridge.log("MAN: sendRtmpKeepAlive: \(message)")
         sgc?.sendRtmpKeepAlive(message)
     }
 
-    func handle_request_wifi_scan() {
+    func requestWifiScan() {
         Bridge.log("MAN: Requesting wifi scan")
         sgc?.requestWifiScan()
     }
 
-    func handle_send_wifi_credentials(_ ssid: String, _ password: String) {
+    func sendWifiCredentials(_ ssid: String, _ password: String) {
         Bridge.log("MAN: Sending wifi credentials: \(ssid) \(password)")
         sgc?.sendWifiCredentials(ssid, password)
     }
 
-    func handle_set_hotspot_state(_ enabled: Bool) {
+    func setHotspotState(_ enabled: Bool) {
         Bridge.log("MAN: 🔥 Setting glasses hotspot state: \(enabled)")
         sgc?.sendHotspotState(enabled)
     }
 
-    func handle_query_gallery_status() {
+    func queryGalleryStatus() {
         Bridge.log("MAN: 📸 Querying gallery status from glasses")
         sgc?.queryGalleryStatus()
     }
 
-    func handle_start_buffer_recording() {
+    func startBufferRecording() {
         Bridge.log("MAN: onStartBufferRecording")
         sgc?.startBufferRecording()
     }
 
-    func handle_stop_buffer_recording() {
+    func stopBufferRecording() {
         Bridge.log("MAN: onStopBufferRecording")
         sgc?.stopBufferRecording()
     }
 
-    func handle_save_buffer_video(_ requestId: String, _ durationSeconds: Int) {
+    func saveBufferVideo(_ requestId: String, _ durationSeconds: Int) {
         Bridge.log(
             "MAN: onSaveBufferVideo: requestId=\(requestId), duration=\(durationSeconds)s")
         sgc?.saveBufferVideo(requestId: requestId, durationSeconds: durationSeconds)
     }
 
-    func handle_start_video_recording(_ requestId: String, _ save: Bool) {
+    func startVideoRecording(_ requestId: String, _ save: Bool) {
         Bridge.log("MAN: onStartVideoRecording: requestId=\(requestId), save=\(save)")
         sgc?.startVideoRecording(requestId: requestId, save: save)
     }
 
-    func handle_stop_video_recording(_ requestId: String) {
+    func stopVideoRecording(_ requestId: String) {
         Bridge.log("MAN: onStopVideoRecording: requestId=\(requestId)")
         sgc?.stopVideoRecording(requestId: requestId)
     }
 
-    func handle_microphone_state_change(_ requiredData: [SpeechRequiredDataType], _ bypassVad: Bool) {
+    func setMicState(_ requiredData: [SpeechRequiredDataType], _ bypassVad: Bool) {
         var requiredData = requiredData // make mutable
         Bridge.log(
             "MAN: MIC: @@@@@@@@ changing mic with requiredData: \(requiredData) bypassVad=\(bypassVad) enforceLocalTranscription=\(enforceLocalTranscription) @@@@@@@@@@@@@@@@"
@@ -1208,7 +1208,7 @@ struct ViewState {
         // }
     }
 
-    func handle_rgb_led_control(
+    func rgbLedControl(
         requestId: String,
         packageName: String?,
         action: String,
@@ -1228,7 +1228,7 @@ struct ViewState {
         )
     }
 
-    func handle_photo_request(
+    func photoRequest(
         _ requestId: String,
         _ appId: String,
         _ size: String,
@@ -1245,7 +1245,7 @@ struct ViewState {
         )
     }
 
-    func handle_connect_default() {
+    func connectDefault() {
         if defaultWearable.isEmpty {
             Bridge.log("MAN: No default wearable, returning")
             return
@@ -1256,7 +1256,7 @@ struct ViewState {
         }
         initSGC(defaultWearable)
         isSearching = true
-        handle_request_status()
+        getStatus()
         sgc?.connectById(deviceName)
     }
 
@@ -1274,33 +1274,33 @@ struct ViewState {
         }
 
         Task {
-            handle_disconnect()
+            disconnect()
             try? await Task.sleep(nanoseconds: 100 * 1_000_000) // 100ms
             self.isSearching = true
             self.deviceName = dName
 
             initSGC(self.pendingWearable)
             sgc?.connectById(self.deviceName)
-            handle_request_status()
+            getStatus()
         }
     }
 
-    func handle_connect_simulated() {
+    func connectSimulated() {
         defaultWearable = DeviceTypes.SIMULATED
         deviceName = DeviceTypes.SIMULATED
         initSGC(defaultWearable)
         handleDeviceReady()
     }
 
-    func handle_disconnect() {
+    func disconnect() {
         sgc?.clearDisplay() // clear the screen
         sgc?.disconnect()
         sgc = nil // Clear the SGC reference after disconnect
         isSearching = false
-        handle_request_status()
+        getStatus()
     }
 
-    func handle_forget() {
+    func forget() {
         Bridge.log("MAN: Forgetting smart glasses")
 
         // Call forget first to stop timers/handlers/reconnect logic
@@ -1316,10 +1316,10 @@ struct ViewState {
         Bridge.saveSetting("default_wearable", "")
         Bridge.saveSetting("device_name", "")
         isSearching = false
-        handle_request_status()
+        getStatus()
     }
 
-    func handle_find_compatible_devices(_ modelName: String) {
+    func findCompatibleDevices(_ modelName: String) {
         Bridge.log("MAN: Searching for compatible device names for: \(modelName)")
 
         if DeviceTypes.ALL.contains(modelName) {
@@ -1328,10 +1328,10 @@ struct ViewState {
 
         initSGC(pendingWearable)
         sgc?.findCompatibleDevices()
-        handle_request_status()
+        getStatus()
     }
 
-    func handle_request_status() {
+    func getStatus() {
         // ensure this is on the main thread:
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -1435,7 +1435,7 @@ struct ViewState {
         }
     }
 
-    func handle_update_settings(_ settings: [String: Any]) {
+    func updateSettings(_ settings: [String: Any]) {
         Bridge.log("MAN: Received update settings: \(settings)")
 
         // update our settings with the new values:

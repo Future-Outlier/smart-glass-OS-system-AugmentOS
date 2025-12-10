@@ -89,7 +89,7 @@ class MantleManager {
     }, 3000)
 
     // send initial status request:
-    await CoreModule.requestStatus()
+    await CoreModule.getStatus()
 
     this.setupPeriodicTasks()
     this.setupSubscriptions()

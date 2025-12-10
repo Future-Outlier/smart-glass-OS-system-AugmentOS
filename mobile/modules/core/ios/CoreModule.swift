@@ -18,22 +18,21 @@ public class CoreModule: Module {
         // MARK: - Display Commands
 
         AsyncFunction("displayEvent") { (params: [String: Any]) in
-            CoreManager.shared.handle_display_event(params)
+            CoreManager.shared.displayEvent(params)
         }
 
         AsyncFunction("displayText") { (params: [String: Any]) in
-            CoreManager.shared.handle_display_text(params)
+            CoreManager.shared.displayText(params)
         }
 
         // MARK: - Connection Commands
 
-        AsyncFunction("requestStatus") {
-            CoreManager.shared.handle_request_status()
+        AsyncFunction("getStatus") {
+            CoreManager.shared.getStatus()
         }
 
         AsyncFunction("connectDefault") {
-            Bridge.log("calling connectDefault!")
-            CoreManager.shared.handle_connect_default()
+            CoreManager.shared.connectDefault()
         }
 
         AsyncFunction("connectByName") { (deviceName: String) in
@@ -41,73 +40,70 @@ public class CoreModule: Module {
         }
 
         AsyncFunction("connectSimulated") {
-            Bridge.log("calling connectSimulated!")
-            CoreManager.shared.handle_connect_simulated()
+            CoreManager.shared.connectSimulated()
         }
 
         AsyncFunction("disconnect") {
-            Bridge.log("calling disconnect!")
-            CoreManager.shared.handle_disconnect()
+            CoreManager.shared.disconnect()
         }
 
         AsyncFunction("forget") {
-            Bridge.log("calling forget!")
-            CoreManager.shared.handle_forget()
+            CoreManager.shared.forget()
         }
 
         AsyncFunction("findCompatibleDevices") { (modelName: String) in
-            CoreManager.shared.handle_find_compatible_devices(modelName)
+            CoreManager.shared.findCompatibleDevices(modelName)
         }
 
         AsyncFunction("showDashboard") {
-            CoreManager.shared.handle_show_dashboard()
+            CoreManager.shared.showDashboard()
         }
 
         // MARK: - WiFi Commands
 
         AsyncFunction("requestWifiScan") {
-            CoreManager.shared.handle_request_wifi_scan()
+            CoreManager.shared.requestWifiScan()
         }
 
         AsyncFunction("sendWifiCredentials") { (ssid: String, password: String) in
-            CoreManager.shared.handle_send_wifi_credentials(ssid, password)
+            CoreManager.shared.sendWifiCredentials(ssid, password)
         }
 
         AsyncFunction("setHotspotState") { (enabled: Bool) in
-            CoreManager.shared.handle_set_hotspot_state(enabled)
+            CoreManager.shared.setHotspotState(enabled)
         }
 
         // MARK: - Gallery Commands
 
         AsyncFunction("queryGalleryStatus") {
-            CoreManager.shared.handle_query_gallery_status()
+            CoreManager.shared.queryGalleryStatus()
         }
 
         AsyncFunction("photoRequest") {
             (requestId: String, appId: String, size: String, webhookUrl: String?, authToken: String?, compress: String?) in
-            CoreManager.shared.handle_photo_request(requestId, appId, size, webhookUrl, authToken, compress)
+            CoreManager.shared.photoRequest(requestId, appId, size, webhookUrl, authToken, compress)
         }
 
         // MARK: - Video Recording Commands
 
         AsyncFunction("startBufferRecording") {
-            CoreManager.shared.handle_start_buffer_recording()
+            CoreManager.shared.startBufferRecording()
         }
 
         AsyncFunction("stopBufferRecording") {
-            CoreManager.shared.handle_stop_buffer_recording()
+            CoreManager.shared.stopBufferRecording()
         }
 
         AsyncFunction("saveBufferVideo") { (requestId: String, durationSeconds: Int) in
-            CoreManager.shared.handle_save_buffer_video(requestId, durationSeconds)
+            CoreManager.shared.saveBufferVideo(requestId, durationSeconds)
         }
 
         AsyncFunction("startVideoRecording") { (requestId: String, save: Bool) in
-            CoreManager.shared.handle_start_video_recording(requestId, save)
+            CoreManager.shared.startVideoRecording(requestId, save)
         }
 
         AsyncFunction("stopVideoRecording") { (requestId: String) in
-            CoreManager.shared.handle_stop_video_recording(requestId)
+            CoreManager.shared.stopVideoRecording(requestId)
         }
 
         // MARK: - RTMP Stream Commands
@@ -117,18 +113,18 @@ public class CoreModule: Module {
         }
 
         AsyncFunction("stopRtmpStream") {
-            CoreManager.shared.handle_stop_rtmp_stream()
+            CoreManager.shared.stopRtmpStream()
         }
 
         AsyncFunction("keepRtmpStreamAlive") { (params: [String: Any]) in
-            CoreManager.shared.handle_keep_rtmp_stream_alive(params)
+            CoreManager.shared.keepRtmpStreamAlive(params)
         }
 
         // MARK: - Microphone Commands
 
-        AsyncFunction("microphoneStateChange") { (requiredDataStrings: [String], bypassVad: Bool) in
+        AsyncFunction("setMicState") { (requiredDataStrings: [String], bypassVad: Bool) in
             let requiredData = SpeechRequiredDataType.fromStringArray(requiredDataStrings)
-            CoreManager.shared.handle_microphone_state_change(requiredData, bypassVad)
+            CoreManager.shared.setMicState(requiredData, bypassVad)
         }
 
         AsyncFunction("restartTranscriber") {
@@ -138,7 +134,7 @@ public class CoreModule: Module {
         // MARK: - RGB LED Control
 
         AsyncFunction("rgbLedControl") { (requestId: String, packageName: String?, action: String, color: String?, ontime: Int, offtime: Int, count: Int) in
-            CoreManager.shared.handle_rgb_led_control(
+            CoreManager.shared.rgbLedControl(
                 requestId: requestId,
                 packageName: packageName,
                 action: action,
@@ -152,7 +148,7 @@ public class CoreModule: Module {
         // MARK: - Settings Commands
 
         AsyncFunction("updateSettings") { (params: [String: Any]) in
-            CoreManager.shared.handle_update_settings(params)
+            CoreManager.shared.updateSettings(params)
         }
 
         // MARK: - STT Commands

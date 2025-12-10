@@ -372,7 +372,7 @@ class SocketComms {
     const bypassVad = msg.bypassVad || false
     const requiredDataStrings = msg.requiredData || []
     // console.log(`SOCKET: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
-    CoreModule.microphoneStateChange(requiredDataStrings, bypassVad)
+    CoreModule.setMicState(requiredDataStrings, bypassVad)
   }
 
   public handle_display_event(msg: any) {

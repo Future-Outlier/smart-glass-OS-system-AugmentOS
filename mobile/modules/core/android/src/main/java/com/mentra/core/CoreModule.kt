@@ -29,50 +29,50 @@ class CoreModule : Module() {
         // MARK: - Display Commands
 
         AsyncFunction("displayEvent") { params: Map<String, Any> ->
-            coreManager?.handle_display_event(params)
+            coreManager?.displayEvent(params)
         }
 
         AsyncFunction("displayText") { params: Map<String, Any> ->
-            coreManager?.handle_display_text(params)
+            coreManager?.displayText(params)
         }
 
         // MARK: - Connection Commands
 
-        AsyncFunction("requestStatus") { coreManager?.handle_request_status() }
+        AsyncFunction("getStatus") { coreManager?.getStatus() }
 
-        AsyncFunction("connectDefault") { coreManager?.handle_connect_default() }
+        AsyncFunction("connectDefault") { coreManager?.connectDefault() }
 
         AsyncFunction("connectByName") { deviceName: String ->
             coreManager?.handle_connect_by_name(deviceName)
         }
 
-        AsyncFunction("connectSimulated") { coreManager?.handle_connect_simulated() }
+        AsyncFunction("connectSimulated") { coreManager?.connectSimulated() }
 
-        AsyncFunction("disconnect") { coreManager?.handle_disconnect() }
+        AsyncFunction("disconnect") { coreManager?.disconnect() }
 
-        AsyncFunction("forget") { coreManager?.handle_forget() }
+        AsyncFunction("forget") { coreManager?.forget() }
 
         AsyncFunction("findCompatibleDevices") { modelName: String ->
-            coreManager?.handle_find_compatible_devices(modelName)
+            coreManager?.findCompatibleDevices(modelName)
         }
 
-        AsyncFunction("showDashboard") { coreManager?.handle_show_dashboard() }
+        AsyncFunction("showDashboard") { coreManager?.showDashboard() }
 
         // MARK: - WiFi Commands
 
-        AsyncFunction("requestWifiScan") { coreManager?.handle_request_wifi_scan() }
+        AsyncFunction("requestWifiScan") { coreManager?.requestWifiScan() }
 
         AsyncFunction("sendWifiCredentials") { ssid: String, password: String ->
-            coreManager?.handle_send_wifi_credentials(ssid, password)
+            coreManager?.sendWifiCredentials(ssid, password)
         }
 
         AsyncFunction("setHotspotState") { enabled: Boolean ->
-            coreManager?.handle_set_hotspot_state(enabled)
+            coreManager?.setHotspotState(enabled)
         }
 
         // MARK: - Gallery Commands
 
-        AsyncFunction("queryGalleryStatus") { coreManager?.handle_query_gallery_status() }
+        AsyncFunction("queryGalleryStatus") { coreManager?.queryGalleryStatus() }
 
         AsyncFunction("photoRequest") {
                 requestId: String,
@@ -81,48 +81,48 @@ class CoreModule : Module() {
                 webhookUrl: String,
                 authToken: String,
                 compress: String ->
-            coreManager?.handle_photo_request(requestId, appId, size, webhookUrl, authToken, compress)
+            coreManager?.photoRequest(requestId, appId, size, webhookUrl, authToken, compress)
         }
 
         // MARK: - Video Recording Commands
 
-        AsyncFunction("startBufferRecording") { coreManager?.handle_start_buffer_recording() }
+        AsyncFunction("startBufferRecording") { coreManager?.startBufferRecording() }
 
-        AsyncFunction("stopBufferRecording") { coreManager?.handle_stop_buffer_recording() }
+        AsyncFunction("stopBufferRecording") { coreManager?.stopBufferRecording() }
 
         AsyncFunction("saveBufferVideo") { requestId: String, durationSeconds: Int ->
-            coreManager?.handle_save_buffer_video(requestId, durationSeconds)
+            coreManager?.saveBufferVideo(requestId, durationSeconds)
         }
 
         AsyncFunction("startVideoRecording") { requestId: String, save: Boolean ->
-            coreManager?.handle_start_video_recording(requestId, save)
+            coreManager?.startVideoRecording(requestId, save)
         }
 
         AsyncFunction("stopVideoRecording") { requestId: String ->
-            coreManager?.handle_stop_video_recording(requestId)
+            coreManager?.stopVideoRecording(requestId)
         }
 
         // MARK: - RTMP Stream Commands
 
         AsyncFunction("startRtmpStream") { params: Map<String, Any> ->
-            coreManager?.handle_send_rtmp_stream_start(params.toMutableMap())
+            coreManager?.startRtmpStream(params.toMutableMap())
         }
 
         AsyncFunction("stopRtmpStream") {
-            coreManager?.handle_stop_rtmp_stream()
+            coreManager?.stopRtmpStream()
         }
 
         AsyncFunction("keepRtmpStreamAlive") { params: Map<String, Any> ->
-            coreManager?.handle_keep_rtmp_stream_alive(params.toMutableMap())
+            coreManager?.keepRtmpStreamAlive(params.toMutableMap())
         }
 
         // MARK: - Microphone Commands
 
-        AsyncFunction("microphoneStateChange") {
+        AsyncFunction("setMicState") {
                 requiredDataStrings: List<String>,
                 bypassVad: Boolean ->
             val requiredData = CoreManager.SpeechRequiredDataType.fromStringArray(requiredDataStrings)
-            coreManager?.handle_microphone_state_change(requiredData, bypassVad)
+            coreManager?.setMicState(requiredData, bypassVad)
         }
 
         AsyncFunction("restartTranscriber") { coreManager?.restartTranscriber() }
@@ -137,14 +137,14 @@ class CoreModule : Module() {
                 ontime: Int,
                 offtime: Int,
                 count: Int ->
-            coreManager?.handle_rgb_led_control(requestId, packageName, action,
+            coreManager?.rgbLedControl(requestId, packageName, action,
                     color, ontime, offtime, count)
         }
 
         // MARK: - Settings Commands
 
         AsyncFunction("updateSettings") { params: Map<String, Any> ->
-            coreManager?.handle_update_settings(params)
+            coreManager?.updateSettings(params)
         }
 
         // MARK: - STT Commands

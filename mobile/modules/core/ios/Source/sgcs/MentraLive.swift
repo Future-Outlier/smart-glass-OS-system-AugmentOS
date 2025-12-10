@@ -1984,7 +1984,7 @@ class MentraLive: NSObject, SGCManager {
         )
 
         // Trigger status update so React Native gets the updated glasses info with version details
-        CoreManager.shared.handle_request_status()
+        CoreManager.shared.getStatus()
     }
 
     private func handleAck(_: [String: Any]) {
@@ -2734,7 +2734,7 @@ class MentraLive: NSObject, SGCManager {
     private func updateBatteryStatus(level: Int, charging: Bool) {
         batteryLevel = level
         isCharging = charging
-        CoreManager.shared.handle_request_status()
+        CoreManager.shared.getStatus()
         // emitBatteryLevelEvent(level: level, charging: charging)
     }
 
@@ -2755,7 +2755,7 @@ class MentraLive: NSObject, SGCManager {
         emitHotspotStatusChange()
 
         // Trigger a full status update so React Native gets the updated glasses_info
-        CoreManager.shared.handle_request_status()
+        CoreManager.shared.getStatus()
     }
 
     private func handleHotspotError(errorMessage: String, timestamp: Int64) {

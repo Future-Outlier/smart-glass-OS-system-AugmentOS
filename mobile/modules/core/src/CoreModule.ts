@@ -48,7 +48,7 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   keepRtmpStreamAlive(params: Record<string, any>): Promise<void>
 
   // Microphone Commands
-  microphoneStateChange(requiredDataStrings: string[], bypassVad: boolean): Promise<void>
+  setMicState(requiredDataStrings: string[], bypassVad: boolean): Promise<void>
   restartTranscriber(): Promise<void>
 
   // RGB LED Control

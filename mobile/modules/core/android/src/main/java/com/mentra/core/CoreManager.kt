@@ -638,7 +638,7 @@ class CoreManager {
                 systemMicUnavailable = false
                 // // Only trigger recovery if we're in automatic/phone mode
                 // if (preferredMic == "phone") {
-                //     handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+                //     setMicState(currentRequiredData, bypassVadForPCM)
                 // }
             }
             "phone_call_interruption" -> {
@@ -680,7 +680,7 @@ class CoreManager {
     fun onInterruption(began: Boolean) {
         Bridge.log("MAN: Interruption: $began")
         systemMicUnavailable = began
-        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+        setMicState(currentRequiredData, bypassVadForPCM)
     }
 
     // MARK: - State Management
@@ -693,7 +693,7 @@ class CoreManager {
 
     fun updateContextualDashboard(enabled: Boolean) {
         contextualDashboard = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updatePreferredMic(mic: String) {
@@ -701,26 +701,26 @@ class CoreManager {
         micRanking =
                 MicMap.map[preferredMic]?.toMutableList()
                         ?: MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
-        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-        handle_request_status()
+        setMicState(currentRequiredData, bypassVadForPCM)
+        getStatus()
     }
 
     fun updateButtonMode(mode: String) {
         buttonPressMode = mode
         sgc?.sendButtonModeSetting()
-        handle_request_status()
+        getStatus()
     }
 
     fun updateButtonPhotoSize(size: String) {
         buttonPhotoSize = size
         sgc?.sendButtonPhotoSettings()
-        handle_request_status()
+        getStatus()
     }
 
     fun updateGalleryMode(mode: Boolean) {
         galleryMode = mode
         sgc?.sendGalleryMode()
-        handle_request_status()
+        getStatus()
     }
 
     fun updateButtonVideoSettings(width: Int, height: Int, fps: Int) {
@@ -738,35 +738,35 @@ class CoreManager {
                 "CoreManager",
                 "✅ [SETTINGS_SYNC] Button video settings updated to: ${width}x${height}@${fps}fps"
         )
-        handle_request_status()
+        getStatus()
     }
 
     fun updateButtonCameraLed(enabled: Boolean) {
         buttonCameraLed = enabled
         sgc?.sendButtonCameraLedSetting()
-        handle_request_status()
+        getStatus()
     }
 
     fun updateButtonMaxRecordingTime(minutes: Int) {
         buttonMaxRecordingTime = minutes
         sgc?.sendButtonMaxRecordingTime()
-        handle_request_status()
+        getStatus()
     }
 
     fun updateNotificationsBlocklist(blacklist: List<String>) {
         notificationsBlocklist = blacklist
-        handle_request_status()
+        getStatus()
     }
 
     fun updateNotificationsEnabled(enabled: Boolean) {
         notificationsEnabled = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updateGlassesHeadUpAngle(value: Int) {
         headUpAngle = value
         sgc?.setHeadUpAngle(value)
-        handle_request_status()
+        getStatus()
     }
 
     fun updateGlassesBrightness(value: Int, autoMode: Boolean) {
@@ -791,7 +791,7 @@ class CoreManager {
             sgc?.clearDisplay()
         }
 
-        handle_request_status()
+        getStatus()
     }
 
     fun updateGlassesDepth(value: Int) {
@@ -800,7 +800,7 @@ class CoreManager {
             it.setDashboardPosition(dashboardHeight, dashboardDepth)
             Bridge.log("MAN: Set dashboard depth to $value")
         }
-        handle_request_status()
+        getStatus()
     }
 
     fun updateGlassesHeight(value: Int) {
@@ -809,28 +809,28 @@ class CoreManager {
             it.setDashboardPosition(dashboardHeight, dashboardDepth)
             Bridge.log("MAN: Set dashboard height to $value")
         }
-        handle_request_status()
+        getStatus()
     }
 
     fun updateSensing(enabled: Boolean) {
         sensingEnabled = enabled
-        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-        handle_request_status()
+        setMicState(currentRequiredData, bypassVadForPCM)
+        getStatus()
     }
 
     fun updatePowerSavingMode(enabled: Boolean) {
         powerSavingMode = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updateAlwaysOnStatusBar(enabled: Boolean) {
         alwaysOnStatusBar = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updateBypassVad(enabled: Boolean) {
         bypassVad = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updateEnforceLocalTranscription(enabled: Boolean) {
@@ -846,7 +846,7 @@ class CoreManager {
             }
         }
 
-        handle_request_status()
+        getStatus()
     }
 
     fun updateOfflineMode(enabled: Boolean) {
@@ -858,7 +858,7 @@ class CoreManager {
             requiredData.add(SpeechRequiredDataType.TRANSCRIPTION)
         }
 
-        handle_microphone_state_change(requiredData, bypassVadForPCM)
+        setMicState(requiredData, bypassVadForPCM)
     }
 
     fun updateBypassAudioEncoding(enabled: Boolean) {
@@ -867,7 +867,7 @@ class CoreManager {
 
     fun updateMetricSystem(enabled: Boolean) {
         metricSystem = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updateScreenDisabled(enabled: Boolean) {
@@ -928,7 +928,7 @@ class CoreManager {
             handleDeviceReady()
         } else {
             handleDeviceDisconnected()
-            handle_request_status()
+            getStatus()
         }
     }
 
@@ -943,7 +943,7 @@ class CoreManager {
         defaultWearable = sgc?.type ?: ""
 
         isSearching = false
-        handle_request_status()
+        getStatus()
 
         // Show welcome message on first connect for all display glasses
         if (shouldSendBootingMessage) {
@@ -985,7 +985,7 @@ class CoreManager {
 
     private fun handleMach1Ready() {
         // Mach1-specific setup (if any needed in the future)
-        handle_request_status()
+        getStatus()
     }
 
     private fun handleDeviceDisconnected() {
@@ -993,19 +993,19 @@ class CoreManager {
         isHeadUp = false
         lastMicState = null // Clear cache - hardware is definitely off now
         shouldSendBootingMessage = true // Reset for next first connect
-        handle_request_status()
+        getStatus()
     }
 
     // MARK: - Network Command handlers
 
-    fun handle_display_text(params: Map<String, Any>) {
+    fun displayText(params: Map<String, Any>) {
         (params["text"] as? String)?.let { text ->
             Bridge.log("MAN: Displaying text: $text")
             sgc?.sendTextWall(text)
         }
     }
 
-    fun handle_display_event(event: Map<String, Any>) {
+    fun displayEvent(event: Map<String, Any>) {
         val view = event["view"] as? String
         if (view == null) {
             Bridge.log("MAN: Invalid view")
@@ -1039,71 +1039,71 @@ class CoreManager {
         }
     }
 
-    fun handle_show_dashboard() {
+    fun showDashboard() {
         sgc?.showDashboard()
     }
 
-    fun handle_send_rtmp_stream_start(message: MutableMap<String, Any>) {
+    fun startRtmpStream(message: MutableMap<String, Any>) {
         Bridge.log("MAN: startRtmpStream")
         sgc?.startRtmpStream(message)
     }
 
-    fun handle_stop_rtmp_stream() {
+    fun stopRtmpStream() {
         Bridge.log("MAN: stopRtmpStream")
         sgc?.stopRtmpStream()
     }
 
-    fun handle_keep_rtmp_stream_alive(message: MutableMap<String, Any>) {
+    fun keepRtmpStreamAlive(message: MutableMap<String, Any>) {
         Bridge.log("MAN: keepRtmpStreamAlive: (message)")
         sgc?.sendRtmpKeepAlive(message)
     }
 
-    fun handle_request_wifi_scan() {
+    fun requestWifiScan() {
         Bridge.log("MAN: Requesting wifi scan")
         sgc?.requestWifiScan()
     }
 
-    fun handle_send_wifi_credentials(ssid: String, password: String) {
+    fun sendWifiCredentials(ssid: String, password: String) {
         Bridge.log("MAN: Sending wifi credentials: $ssid")
         sgc?.sendWifiCredentials(ssid, password)
     }
 
-    fun handle_set_hotspot_state(enabled: Boolean) {
+    fun setHotspotState(enabled: Boolean) {
         Bridge.log("MAN: Setting glasses hotspot state: $enabled")
         sgc?.sendHotspotState(enabled)
     }
 
-    fun handle_query_gallery_status() {
+    fun queryGalleryStatus() {
         Bridge.log("MAN: Querying gallery status from glasses")
         sgc?.queryGalleryStatus()
     }
 
-    fun handle_start_buffer_recording() {
+    fun startBufferRecording() {
         Bridge.log("MAN: onStartBufferRecording")
         sgc?.startBufferRecording()
     }
 
-    fun handle_stop_buffer_recording() {
+    fun stopBufferRecording() {
         Bridge.log("MAN: onStopBufferRecording")
         sgc?.stopBufferRecording()
     }
 
-    fun handle_save_buffer_video(requestId: String, durationSeconds: Int) {
+    fun saveBufferVideo(requestId: String, durationSeconds: Int) {
         Bridge.log("MAN: onSaveBufferVideo: requestId=$requestId, duration=$durationSeconds")
         sgc?.saveBufferVideo(requestId, durationSeconds)
     }
 
-    fun handle_start_video_recording(requestId: String, save: Boolean) {
+    fun startVideoRecording(requestId: String, save: Boolean) {
         Bridge.log("MAN: onStartVideoRecording: requestId=$requestId, save=$save")
         sgc?.startVideoRecording(requestId, save)
     }
 
-    fun handle_stop_video_recording(requestId: String) {
+    fun stopVideoRecording(requestId: String) {
         Bridge.log("MAN: onStopVideoRecording: requestId=$requestId")
         sgc?.stopVideoRecording(requestId)
     }
 
-    fun handle_microphone_state_change(
+    fun setMicState(
             requiredData: List<SpeechRequiredDataType>,
             bypassVad: Boolean
     ) {
@@ -1168,7 +1168,7 @@ class CoreManager {
         updateMicState()
     }
 
-    fun handle_photo_request(
+    fun photoRequest(
             requestId: String,
             appId: String,
             size: String,
@@ -1180,7 +1180,7 @@ class CoreManager {
         sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken, compress)
     }
 
-    fun handle_rgb_led_control(
+    fun rgbLedControl(
             requestId: String,
             packageName: String?,
             action: String,
@@ -1193,7 +1193,7 @@ class CoreManager {
         sgc?.sendRgbLedControl(requestId, packageName, action, color, ontime, offtime, count)
     }
 
-    fun handle_connect_default() {
+    fun connectDefault() {
         if (defaultWearable.isEmpty()) {
             Bridge.log("MAN: No default wearable, returning")
             return
@@ -1204,7 +1204,7 @@ class CoreManager {
         }
         initSGC(defaultWearable)
         isSearching = true
-        handle_request_status()
+        getStatus()
         sgc?.connectById(deviceName)
     }
 
@@ -1221,32 +1221,32 @@ class CoreManager {
             pendingWearable = defaultWearable
         }
 
-        handle_disconnect()
+        disconnect()
         Thread.sleep(100)
         isSearching = true
         deviceName = dName
 
         initSGC(pendingWearable)
         sgc?.connectById(deviceName)
-        handle_request_status()
+        getStatus()
     }
 
-    fun handle_connect_simulated() {
+    fun connectSimulated() {
         defaultWearable = DeviceTypes.SIMULATED
         deviceName = DeviceTypes.SIMULATED
         initSGC(defaultWearable)
         handleDeviceReady()
     }
 
-    fun handle_disconnect() {
+    fun disconnect() {
         sgc?.clearDisplay()
         sgc?.disconnect()
         sgc = null // Clear the SGC reference after disconnect
         isSearching = false
-        handle_request_status()
+        getStatus()
     }
 
-    fun handle_forget() {
+    fun forget() {
         Bridge.log("MAN: Forgetting smart glasses")
 
         // Call forget first to stop timers/handlers/reconnect logic
@@ -1262,10 +1262,10 @@ class CoreManager {
         Bridge.saveSetting("default_wearable", "")
         Bridge.saveSetting("device_name", "")
         isSearching = false
-        handle_request_status()
+        getStatus()
     }
 
-    fun handle_find_compatible_devices(modelName: String) {
+    fun findCompatibleDevices(modelName: String) {
         Bridge.log("MAN: Searching for compatible device names for: $modelName")
 
         if (DeviceTypes.ALL.contains(modelName)) {
@@ -1275,10 +1275,10 @@ class CoreManager {
         initSGC(pendingWearable)
         Bridge.log("MAN: sgc initialized, calling findCompatibleDevices")
         sgc?.findCompatibleDevices()
-        handle_request_status()
+        getStatus()
     }
 
-    fun handle_request_status() {
+    fun getStatus() {
         val simulatedConnected = defaultWearable == DeviceTypes.SIMULATED
         val glassesConnected = sgc?.ready ?: false
 
@@ -1370,7 +1370,7 @@ class CoreManager {
         Bridge.sendStatus(statusObj)
     }
 
-    fun handle_update_settings(settings: Map<String, Any>) {
+    fun updateSettings(settings: Map<String, Any>) {
         Bridge.log("MAN: Received update settings: $settings")
 
         // Update settings with new values
