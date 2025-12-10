@@ -149,8 +149,8 @@ export const useGallerySyncStore = create<GallerySyncState>()(
         syncState: "complete",
         currentFile: null,
         currentFileProgress: 0,
-        queue: [],
-        queueIndex: 0,
+        // Keep queue intact so photos remain visible after sync
+        // Don't clear: queue: [], queueIndex: 0
       }),
 
     setSyncError: (error: string) =>

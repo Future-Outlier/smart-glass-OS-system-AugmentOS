@@ -1079,10 +1079,32 @@ public class AsgCameraServer extends AsgServer {
                     fileInfo.put("url", "/api/photo?file=" + fileMetadata.getFileName());
                     fileInfo.put("download", "/api/download?file=" + fileMetadata.getFileName());
 
-                    // Add video-specific information
+                    // Add media type and thumbnail information
                     if (isVideoFile(fileMetadata.getFileName())) {
                         fileInfo.put("is_video", true);
                         if (includeThumbnailsFlag) {
+                            // Include base64 thumbnail data for immediate display
+                            try {
+                                File videoFile = fileManager.getFile(fileManager.getDefaultPackageName(), fileMetadata.getFileName());
+                                if (videoFile != null && videoFile.exists()) {
+                                    File thumbnailFile = fileManager.getThumbnailManager().getOrCreateThumbnail(videoFile);
+                                    if (thumbnailFile != null && thumbnailFile.exists()) {
+                                        try (FileInputStream fis = new FileInputStream(thumbnailFile)) {
+                                            byte[] thumbnailData;
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                                thumbnailData = fis.readAllBytes();
+                                            } else {
+                                                thumbnailData = new byte[(int) thumbnailFile.length()];
+                                                fis.read(thumbnailData);
+                                            }
+                                            String thumbnailBase64 = android.util.Base64.encodeToString(thumbnailData, android.util.Base64.DEFAULT);
+                                            fileInfo.put("thumbnail_data", thumbnailBase64);
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                logger.warn(TAG, "Failed to include thumbnail for " + fileMetadata.getFileName() + ": " + e.getMessage());
+                            }
                             fileInfo.put("thumbnail_url", "/api/photo?file=" + fileMetadata.getFileName());
                         }
                     } else {

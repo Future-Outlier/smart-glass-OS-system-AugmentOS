@@ -216,12 +216,15 @@ export function GalleryScreen() {
     }
   }, [syncState, currentFile, currentFileProgress, completedFiles, failedFiles, syncQueue])
 
-  // Reload downloaded photos when sync completes
-  useEffect(() => {
-    if (syncState === "complete") {
-      loadDownloadedPhotos()
-    }
-  }, [syncState, loadDownloadedPhotos])
+  // Don't reload photos when sync completes - causes jarring animation
+  // Files are already updated in the queue with downloaded paths
+  // They'll naturally transition to downloadedPhotos on next screen focus
+  // Commenting out to prevent jarring reload:
+  // useEffect(() => {
+  //   if (syncState === "complete") {
+  //     loadDownloadedPhotos()
+  //   }
+  // }, [syncState, loadDownloadedPhotos])
 
   // Handle photo selection
   const handlePhotoPress = (item: GalleryItem) => {
@@ -467,9 +470,10 @@ export function GalleryScreen() {
   const allPhotos = useMemo(() => {
     const items: GalleryItem[] = []
 
-    // During sync, show photos from the sync queue in chronological order
+    // Show photos from the sync queue in chronological order
     // Files download in size order (performance), but display chronologically (UX)
-    if (syncState === "syncing" && syncQueue.length > 0) {
+    // Keep showing queue even when state transitions to idle after sync
+    if (syncQueue.length > 0) {
       const sortedQueue = [...syncQueue].sort((a, b) => {
         const aTime = typeof a.modified === "string" ? new Date(a.modified).getTime() : a.modified || 0
         const bTime = typeof b.modified === "string" ? new Date(b.modified).getTime() : b.modified || 0

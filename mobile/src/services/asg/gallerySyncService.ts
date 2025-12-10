@@ -525,7 +525,27 @@ class GallerySyncService {
 
           // When file completes (100%), update it in the queue with downloaded paths
           if (fileProgress === 100 && downloadedFile) {
-            currentStore.updateFileInQueue(fileName, downloadedFile)
+            // Update file with local paths and URLs for immediate preview display
+            const localFileUrl = downloadedFile.filePath
+              ? downloadedFile.filePath.startsWith("file://")
+                ? downloadedFile.filePath
+                : `file://${downloadedFile.filePath}`
+              : downloadedFile.url
+
+            const localThumbnailUrl = downloadedFile.thumbnailPath
+              ? downloadedFile.thumbnailPath.startsWith("file://")
+                ? downloadedFile.thumbnailPath
+                : `file://${downloadedFile.thumbnailPath}`
+              : undefined
+
+            const updatedFile = {
+              ...downloadedFile,
+              url: localFileUrl, // Update URL to local file for immediate preview
+              download: localFileUrl, // Update download URL for videos
+              filePath: downloadedFile.filePath,
+              thumbnailPath: localThumbnailUrl,
+            }
+            currentStore.updateFileInQueue(fileName, updatedFile)
           }
 
           // Update notification
