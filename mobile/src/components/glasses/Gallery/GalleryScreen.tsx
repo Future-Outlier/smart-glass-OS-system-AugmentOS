@@ -207,17 +207,13 @@ export function GalleryScreen() {
       return
     }
 
-    // Prevent opening photos that are currently being synced
+    // Prevent opening photos that are currently being downloaded (but allow completed ones)
     const itemSyncState = photoSyncStates.get(item.photo.name)
-    if (
-      itemSyncState &&
-      (itemSyncState.status === "downloading" ||
-        itemSyncState.status === "pending" ||
-        itemSyncState.status === "completed")
-    ) {
+    if (itemSyncState && (itemSyncState.status === "downloading" || itemSyncState.status === "pending")) {
       console.log(`[GalleryScreen] Photo ${item.photo.name} is being synced, preventing open`)
       return
     }
+    // Allow opening photos with status "completed" - they're already downloaded and accessible
 
     if (item.photo.is_video && item.isOnServer) {
       showAlert("Video Not Downloaded", "Please sync this video to your device to watch it", [
@@ -631,10 +627,8 @@ export function GalleryScreen() {
 
     const itemSyncState = photoSyncStates.get(item.photo.name)
     const isDownloading =
-      itemSyncState &&
-      (itemSyncState.status === "downloading" ||
-        itemSyncState.status === "pending" ||
-        itemSyncState.status === "completed")
+      itemSyncState && (itemSyncState.status === "downloading" || itemSyncState.status === "pending")
+    // Don't include "completed" - those are accessible and should allow interaction
     const isSelected = selectedPhotos.has(item.photo.name)
 
     return (
