@@ -2024,19 +2024,24 @@ class MentraLive: NSObject, SGCManager {
         }
         lastReceivedLc3Sequence = sequenceNumber
 
-        // Decode LC3 to PCM using existing PcmConverter
-        let pcmConverter = PcmConverter()
-        guard let pcmData = pcmConverter.decode(lc3Data) as? Data, pcmData.count > 0 else {
-            Bridge.log("LIVE: Failed to decode LC3 data to PCM")
-            return
-        }
+        // // Decode LC3 to PCM using existing PcmConverter
+        // let pcmConverter = PcmConverter()
+        // guard let pcmData = pcmConverter.decode(lc3Data) as? Data, pcmData.count > 0 else {
+        //     Bridge.log("LIVE: Failed to decode LC3 data to PCM")
+        //     return
+        // }
 
-        // Forward PCM data to CoreManager for VAD and server transmission (same as Android)
-        CoreManager.shared.handlePcm(pcmData)
+        // // Forward PCM data to CoreManager for VAD and server transmission (same as Android)
+        // CoreManager.shared.handlePcm(pcmData)
 
         Bridge.log(
-            "LIVE: Processed LC3 audio seq=\(sequenceNumber), \(lc3Data.count)→\(pcmData.count) bytes"
+            "LIVE: Processed LC3 audio seq=\(sequenceNumber), \(lc3Data.count) bytes"
         )
+        CoreManager.shared.handleGlassesMicData(lc3Data)
+
+        // Bridge.log(
+        //     "LIVE: Processed LC3 audio seq=\(sequenceNumber), \(lc3Data.count)→\(pcmData.count) bytes"
+        // )
     }
 
     // MARK: - BLE Photo Transfer Handlers

@@ -1979,7 +1979,7 @@ public class MentraLive extends SGCManager {
                 startHeartbeat();
 
                 // Start the micbeat mechanism now that glasses are ready
-                startMicBeat();
+                // startMicBeat();
 
                 // Send user settings to glasses
                 sendUserSettings();
@@ -2712,7 +2712,7 @@ public class MentraLive extends SGCManager {
                 // IMPORTANT NOTE: WE ARE DISABLING LC3 MIC UNTIL AFTER RELEASE
                 // DO NOT UNDO THIS HARD DISABLE UNTIL AFTER RELEASE
                 //sendEnableCustomAudioTxMessage(shouldUseGlassesMic);
-                sendEnableCustomAudioTxMessage(false);
+                sendEnableCustomAudioTxMessage(true);
                 micBeatCount++;
 
                 // Schedule next micbeat
