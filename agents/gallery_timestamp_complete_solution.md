@@ -3,18 +3,21 @@
 ## Problem Statement
 
 When syncing photos and videos from Mentra Live glasses to phone:
+
 1. **Original issue**: Files appeared in download order (all photos, then all videos) instead of capture order
 2. **Deeper issue**: Files captured days ago appeared as "today's" photos in gallery
 
 ## Root Causes
 
 ### Issue 1: Download Order ≠ Capture Order
+
 - Photos download first (small files, fast)
 - Videos download second (large files, slow)
 - Files saved immediately as downloaded
 - Result: Gallery showed all photos first, then all videos
 
-### Issue 2: Sync Time ≠ Capture Time  
+### Issue 2: Sync Time ≠ Capture Time
+
 - Files added to MediaStore with current timestamp
 - `DATE_TAKEN` metadata not set to original capture time
 - Gallery apps show photos by capture date, not by "date added"
@@ -23,17 +26,19 @@ When syncing photos and videos from Mentra Live glasses to phone:
 ## Complete Solution
 
 ### Part 1: Sort Before Save (Fixes Issue 1)
+
 **What**: Download all files, sort by capture time, then save in chronological order
 
 **Why**: Ensures "date added" matches capture order as fallback
 
 **How**:
+
 ```typescript
 // Sort all files by capture timestamp
 const sortedFiles = [...files].sort((a, b) => {
   const timeA = parseInt(a.modified) || Number.MAX_SAFE_INTEGER
   const timeB = parseInt(b.modified) || Number.MAX_SAFE_INTEGER
-  return timeA - timeB  // Oldest first
+  return timeA - timeB // Oldest first
 })
 
 // Save in chronological order
@@ -43,6 +48,7 @@ for (const file of sortedFiles) {
 ```
 
 ### Part 2: Set DATE_TAKEN Metadata (Fixes Issue 2)
+
 **What**: Write actual capture timestamp to MediaStore/Photos metadata
 
 **Why**: Gallery apps primarily sort by DATE_TAKEN, not "date added"
@@ -50,6 +56,7 @@ for (const file of sortedFiles) {
 **How**: Native module sets metadata using platform APIs
 
 **Android** (`MediaStore.Images.Media.DATE_TAKEN`):
+
 ```kotlin
 val values = ContentValues().apply {
     put(MediaStore.Images.Media.DATE_TAKEN, captureTimeMillis)
@@ -58,6 +65,7 @@ resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
 ```
 
 **iOS** (`PHAsset.creationDate`):
+
 ```swift
 PHPhotoLibrary.shared().performChanges {
     let request = PHAssetChangeRequest.creationRequestForAsset(from: image)
@@ -70,6 +78,7 @@ PHPhotoLibrary.shared().performChanges {
 ### 1. Native Module - `CoreModule.saveToGalleryWithDate()`
 
 **Android**: `mobile/modules/core/android/src/main/java/com/mentra/core/CoreModule.kt`
+
 ```kotlin
 AsyncFunction("saveToGalleryWithDate") { filePath: String, captureTimeMillis: Long? ->
     val values = ContentValues().apply {
@@ -85,6 +94,7 @@ AsyncFunction("saveToGalleryWithDate") { filePath: String, captureTimeMillis: Lo
 ```
 
 **iOS**: `mobile/modules/core/ios/CoreModule.swift`
+
 ```swift
 AsyncFunction("saveToGalleryWithDate") { (filePath: String, captureTimeMillis: Int64?) ->
     PHPhotoLibrary.shared().performChanges {
@@ -99,6 +109,7 @@ AsyncFunction("saveToGalleryWithDate") { (filePath: String, captureTimeMillis: I
 ### 2. TypeScript Interface
 
 **File**: `mobile/modules/core/src/CoreModule.ts`
+
 ```typescript
 declare class CoreModule {
   saveToGalleryWithDate(
@@ -111,6 +122,7 @@ declare class CoreModule {
 ### 3. Updated MediaLibraryPermissions
 
 **File**: `mobile/src/utils/MediaLibraryPermissions.ts`
+
 ```typescript
 static async saveToLibrary(filePath: string, creationTime?: number): Promise<boolean> {
   // Use native module instead of MediaLibrary.createAssetAsync
@@ -122,6 +134,7 @@ static async saveToLibrary(filePath: string, creationTime?: number): Promise<boo
 ### 4. Gallery Screen - Sort and Save
 
 **File**: `mobile/src/components/glasses/Gallery/GalleryScreen.tsx`
+
 ```typescript
 // After all files downloaded
 const sortedFiles = [...downloadResult.downloaded].sort((a, b) => {
@@ -132,9 +145,7 @@ const sortedFiles = [...downloadResult.downloaded].sort((a, b) => {
 
 // Save in chronological order with capture timestamps
 for (const photoInfo of sortedFiles) {
-  const captureTime = typeof photoInfo.modified === "string" 
-    ? parseInt(photoInfo.modified, 10) 
-    : photoInfo.modified
+  const captureTime = typeof photoInfo.modified === "string" ? parseInt(photoInfo.modified, 10) : photoInfo.modified
   await MediaLibraryPermissions.saveToLibrary(filePath, captureTime)
 }
 ```
@@ -142,29 +153,34 @@ for (const photoInfo of sortedFiles) {
 ## How Gallery Sorting Works
 
 ### Android Gallery Apps
+
 1. **DATE_TAKEN** (primary) - `MediaStore.Images.Media.DATE_TAKEN` / `MediaStore.Video.Media.DATE_TAKEN`
 2. **DATE_ADDED** (fallback) - when file was added to MediaStore
 3. **DATE_MODIFIED** (last resort) - file modification time
 
 ### iOS Photos App
+
 1. **creationDate** (primary) - `PHAsset.creationDate`
 2. **modificationDate** (fallback) - when file was last modified
 
 ## Test Scenarios
 
 ### Scenario 1: Same-Day Mixed Media
+
 - Capture: Photo A (10:00), Video B (10:05), Photo C (10:10)
 - Sync: 11:00
 - **Expected**: A, B, C in order
 - **Tests**: ✅ Download order (sort) + ✅ DATE_TAKEN metadata
 
 ### Scenario 2: Delayed Sync (2 Days)
+
 - Capture: Photo A (Monday 10:00), Photo B (Monday 10:05)
 - Sync: Wednesday 11:00
 - **Expected**: Photos appear under Monday in gallery, not Wednesday
 - **Tests**: ✅ DATE_TAKEN set to Monday timestamps
 
 ### Scenario 3: Mixed with Phone Camera
+
 - Monday 10:00: Take Photo A on phone camera
 - Tuesday 10:00: Take Photo B on glasses
 - Wednesday: Sync glasses photo
@@ -174,6 +190,7 @@ for (const photoInfo of sortedFiles) {
 ## Verification
 
 ### Check Logs
+
 ```
 [GalleryScreen] Sorted 5 files by capture time:
   1. photo_001.jpg - 2024-01-15T10:00:00.000Z (photo)
@@ -184,6 +201,7 @@ CoreModule: Successfully saved to gallery with proper DATE_TAKEN
 ```
 
 ### Check Gallery
+
 1. Open phone's gallery app
 2. View by "Date" or "Timeline"
 3. Verify:
@@ -192,6 +210,7 @@ CoreModule: Successfully saved to gallery with proper DATE_TAKEN
    - Order matches capture sequence
 
 ### Check Metadata (Android)
+
 ```bash
 adb shell content query --uri content://media/external/images/media \
   --projection _display_name,datetaken
@@ -200,11 +219,13 @@ adb shell content query --uri content://media/external/images/media \
 ## Files Modified
 
 ### Native Modules (New)
+
 1. `mobile/modules/core/android/src/main/java/com/mentra/core/CoreModule.kt` - Android MediaStore DATE_TAKEN
-2. `mobile/modules/core/ios/CoreModule.swift` - iOS Photos creationDate  
+2. `mobile/modules/core/ios/CoreModule.swift` - iOS Photos creationDate
 3. `mobile/modules/core/src/CoreModule.ts` - TypeScript interface
 
 ### JavaScript/TypeScript
+
 4. `mobile/src/utils/MediaLibraryPermissions.ts` - Calls native module
 5. `mobile/src/components/glasses/Gallery/GalleryScreen.tsx` - Sorts files, passes timestamps
 6. `mobile/src/types/asg/index.ts` - Type definitions
@@ -221,7 +242,7 @@ adb shell content query --uri content://media/external/images/media \
 ## Status
 
 ✅ **COMPLETE** - Both issues resolved:
+
 - Files saved in chronological order (sort before save)
 - Metadata includes original capture timestamp (DATE_TAKEN / creationDate)
 - Gallery displays media correctly by capture date and time
-

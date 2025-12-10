@@ -88,8 +88,12 @@ export class MediaLibraryPermissions {
       if (!(Platform.OS === "android" && Platform.Version >= 29)) {
         const hasPermission = await this.checkPermission()
         if (!hasPermission) {
-          console.warn("[MediaLibrary] No permission to save to library")
-          return false
+          // Try requesting permission one more time
+          const granted = await this.requestPermission()
+          if (!granted) {
+            console.warn("[MediaLibrary] No permission to save to library - photos saved to app storage only")
+            return false
+          }
         }
       }
 

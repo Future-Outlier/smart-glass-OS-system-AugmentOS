@@ -1,5 +1,6 @@
+import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
-import {Platform, View, ViewStyle} from "react-native"
+import {View, ViewStyle} from "react-native"
 
 import OtaProgressSection from "@/components/glasses/OtaProgressSection"
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
@@ -20,8 +21,6 @@ import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 
-import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
-
 export default function DeviceSettings() {
   const {theme, themed} = useAppTheme()
   const {status} = useCoreStatus()
@@ -33,7 +32,6 @@ export default function DeviceSettings() {
   )
   const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS.default_button_action_app.key)
   const glassesConnected = useGlassesStore(state => state.connected)
-  const glassesModelName = useGlassesStore(state => state.modelName)
 
   const {push, goBack} = useNavigationHistory()
   const applets = useApplets()

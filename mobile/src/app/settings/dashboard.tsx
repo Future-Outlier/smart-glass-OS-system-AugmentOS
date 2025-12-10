@@ -1,3 +1,4 @@
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {useState} from "react"
 import {Alert, ScrollView} from "react-native"
 
@@ -12,8 +13,6 @@ import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-
-import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export default function DashboardSettingsScreen() {
   const {theme, themed} = useAppTheme()
