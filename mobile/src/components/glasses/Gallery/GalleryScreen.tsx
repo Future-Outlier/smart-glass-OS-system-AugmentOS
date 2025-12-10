@@ -20,6 +20,7 @@ import {
   ViewToken,
 } from "react-native"
 import RNFS from "react-native-fs"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 import {useShallow} from "zustand/react/shallow"
 
@@ -61,6 +62,7 @@ interface GalleryItem {
 export function GalleryScreen() {
   const {goBack, push} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
+  const insets = useSafeAreaInsets()
 
   // Column calculation - 3 per row like Google Photos / Apple Photos
   const screenWidth = Dimensions.get("window").width
@@ -599,7 +601,7 @@ export function GalleryScreen() {
 
     return (
       <TouchableOpacity
-        style={[themed($syncButtonFixed)]}
+        style={[themed($syncButtonFixed), {bottom: insets.bottom + spacing.s4}]}
         onPress={isTappable ? handleSyncPress : undefined}
         activeOpacity={isTappable ? 0.8 : 1}
         disabled={!isTappable}>
@@ -785,7 +787,11 @@ export function GalleryScreen() {
                   keyExtractor={item => item.id}
                   contentContainerStyle={[
                     themed($photoGridContent),
-                    {paddingBottom: shouldShowSyncButton ? 100 : spacing.s6},
+                    {
+                      paddingBottom: shouldShowSyncButton
+                        ? 100 + insets.bottom + spacing.s6
+                        : spacing.s6 + insets.bottom,
+                    },
                   ]}
                   columnWrapperStyle={numColumns > 1 ? themed($columnWrapper) : undefined}
                   ItemSeparatorComponent={() => <View style={{height: ITEM_SPACING}} />}
