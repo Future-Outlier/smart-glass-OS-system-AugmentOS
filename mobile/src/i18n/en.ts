@@ -431,18 +431,50 @@ const en = {
     verifyingResetLink: "Verifying reset link...",
     // Error messages - user-friendly versions of API errors
     errors: {
+      // Credentials errors
       invalidCredentials: "Incorrect email or password",
       enterCredentials: "Please enter your email and password",
       emailRequired: "Please enter your email address",
       passwordRequired: "Please enter your password",
+      // Password errors
       passwordTooShort: "Password must be at least 6 characters",
       passwordsMismatch: "Passwords don't match",
-      alreadySentEmail: "We already sent you a verification email. Please check your inbox (and spam folder).",
+      passwordSameAsOld: "New password must be different from your current password.",
+      weakPassword: "Password is too weak. Please use a stronger password.",
+      // Email errors
       emailAlreadyRegistered: "This email is already registered",
-      networkError: "Connection failed. Please check your internet and try again.",
-      genericError: "Something went wrong. Please try again.",
       emailNotConfirmed: "Please verify your email address before signing in.",
+      emailSameAsCurrent: "New email must be different from your current email.",
+      invalidEmailDomain: "Please use a valid email address.",
+      // Phone errors
+      phoneAlreadyRegistered: "This phone number is already registered.",
+      phoneNotConfirmed: "Please verify your phone number before signing in.",
+      // Account status errors
+      userBanned: "This account has been suspended.",
+      userNotFound: "Account not found.",
+      signupDisabled: "Account creation is currently disabled.",
+      // Verification errors
+      alreadySentEmail: "We already sent you a verification email. Please check your inbox (and spam folder).",
+      otpExpired: "The verification code has expired. Please request a new one.",
+      invalidOtp: "Invalid verification code. Please try again.",
+      // Session errors
+      sessionExpired: "Your session has expired. Please sign in again.",
+      refreshTokenExpired: "Your session has expired. Please sign in again.",
+      // Rate limiting
       tooManyAttempts: "Too many attempts. Please wait a moment and try again.",
+      tooManyEmails: "Too many emails sent. Please wait before trying again.",
+      tooManySms: "Too many SMS messages sent. Please wait before trying again.",
+      // OAuth/SSO errors
+      oauthError: "Sign in with this provider failed. Please try again.",
+      providerDisabled: "This sign-in method is not available.",
+      // MFA errors
+      mfaRequired: "Additional verification is required.",
+      mfaFailed: "Verification failed. Please try again.",
+      // Network errors
+      networkError: "Connection failed. Please check your internet and try again.",
+      requestTimeout: "Request timed out. Please try again.",
+      // Generic fallback
+      genericError: "Something went wrong. Please try again.",
     },
     // Signup flow
     signup: {
