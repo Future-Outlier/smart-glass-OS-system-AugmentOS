@@ -1181,6 +1181,11 @@ class CoreManager {
             glassesInfo["deviceModel"] = sgc.glassesDeviceModel
             glassesInfo["androidVersion"] = sgc.glassesAndroidVersion
             glassesInfo["otaVersionUrl"] = sgc.glassesOtaVersionUrl
+            // state:
+            glassesInfo["connected"] = glassesConnected
+            glassesInfo["connectionState"] = sgc.connectionState
+            glassesInfo["micEnabled"] = sgc.micEnabled
+            
         }
 
         if (sgc is G1) {
@@ -1232,7 +1237,6 @@ class CoreManager {
                         "default_wearable" to defaultWearable,
                         "preferred_mic" to preferredMic,
                         "is_searching" to isSearching,
-                        "is_mic_enabled_for_frontend" to (micEnabled && sgc?.micEnabled == true),
                         "core_token" to coreToken,
                 )
 

@@ -1184,7 +1184,6 @@ struct ViewState {
             var glassesInfo: [String: Any] = [:]
 
             glassesInfo = [
-                "connected": glassesConnected,
                 "modelName": defaultWearable,
                 "batteryLevel": sgc?.batteryLevel ?? -1,
                 "appVersion": sgc?.glassesAppVersion ?? "",
@@ -1192,6 +1191,10 @@ struct ViewState {
                 "deviceModel": sgc?.glassesDeviceModel ?? "",
                 "androidVersion": sgc?.glassesAndroidVersion ?? "",
                 "otaVersionUrl": sgc?.glassesOtaVersionUrl ?? "",
+                // state:
+                "connected": glassesConnected,
+                "micEnabled": sgc?.micEnabled ?? false,
+                "connectionState": sgc?.connectionState ?? "disconnected",
             ]
 
             if sgc is G1 {
@@ -1245,8 +1248,6 @@ struct ViewState {
                 // "is_searching": self.isSearching && !self.defaultWearable.isEmpty,
                 "is_searching": isSearching,
                 // only on if recording from glasses:
-                // TODO: this isn't robust:
-                "is_mic_enabled_for_frontend": micEnabled && sgc?.micEnabled ?? false,
                 "core_token": coreToken,
             ]
 
