@@ -195,19 +195,19 @@ struct ViewState {
         }
 
         if bypassVad {
-            Bridge.log("MAN: Glasses mic VAD bypassed - bypassVad=\(bypassVad)")
+            // Bridge.log("MAN: Glasses mic VAD bypassed - bypassVad=\(bypassVad)")
             checkSetVadStatus(speaking: true)
             // first send out whatever's in the vadBuffer (if there is anything):
             emptyVadBuffer()
             let pcmConverter = PcmConverter()
-            let pcmData = pcmConverter.decode(lc3Data) as Data
+            let pcmData = pcmConverter.decode(lc3Data, frameSize: 20) as Data
             //        self.serverComms.sendAudioChunk(lc3Data)
             Bridge.sendMicData(pcmData)
             return
         }
 
         let pcmConverter = PcmConverter()
-        let pcmData = pcmConverter.decode(lc3Data) as Data
+        let pcmData = pcmConverter.decode(lc3Data, frameSize: 20) as Data
 
         guard pcmData.count > 0 else {
             Bridge.log("PCM conversion resulted in empty data")
