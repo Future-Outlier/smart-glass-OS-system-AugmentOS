@@ -504,7 +504,14 @@ class CoreManager {
         }
 
         // go through and disable all mics after the first used one:
-        for (micMode in micRanking) {
+        val allMics = micRanking
+        // add any missing mics to the list:
+        for (micMode in MicMap.map["auto"]!!) {
+            if (!allMics.contains(micMode)) {
+                allMics.add(micMode)
+            }
+        }
+        for (micMode in allMics) {
             if (micMode == micUsed) {
                 continue
             }
