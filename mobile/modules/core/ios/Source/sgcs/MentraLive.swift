@@ -1085,7 +1085,42 @@ class MentraLive: NSObject, SGCManager {
         rgbLedAuthorityClaimed = false
     }
 
-    @objc func setMicrophoneEnabled(_ enabled: Bool) {
+    // MARK: - Micbeat System (LC3 Audio Keepalive)
+
+    /// Start the micbeat mechanism to keep LC3 audio streaming active
+    private func startMicBeat() {
+        Bridge.log("LIVE: 🎤 Starting micbeat mechanism")
+        micBeatCount = 0
+
+        // Send initial command to enable custom audio TX
+        sendEnableCustomAudioTxMessage(shouldUseGlassesMic)
+
+        // Stop any existing timer
+        micBeatTimer?.invalidate()
+
+        // Schedule periodic micbeat (every 30 minutes)
+        micBeatTimer = Timer.scheduledTimer(withTimeInterval: MICBEAT_INTERVAL_MS, repeats: true) {
+            [weak self] _ in
+            guard let self = self else { return }
+            Bridge.log("LIVE: 🎤 Sending micbeat - enabling custom audio TX")
+            self.sendEnableCustomAudioTxMessage(self.shouldUseGlassesMic)
+            self.micBeatCount += 1
+        }
+
+        Bridge.log("LIVE: Micbeat scheduled every \(MICBEAT_INTERVAL_MS / 60) minutes")
+    }
+
+    /// Stop the micbeat mechanism
+    private func stopMicBeat() {
+        Bridge.log("LIVE: 🎤 Stopping micbeat mechanism")
+        sendEnableCustomAudioTxMessage(false)
+        micBeatTimer?.invalidate()
+        micBeatTimer = nil
+        micBeatCount = 0
+    }
+
+    /// Send command to enable/disable custom audio TX on glasses
+    @objc func sendEnableCustomAudioTxMessage(_ enabled: Bool) {
         Bridge.log("LIVE: Setting microphone state to: \(enabled)")
 
         // cs_batv is a K900 protocol command handled directly by BES2700
@@ -1124,49 +1159,6 @@ class MentraLive: NSObject, SGCManager {
         } catch {
             Bridge.log("Error creating K900 enable_custom_audio_tx request: \(error)")
         }
-    }
-
-    // MARK: - Micbeat System (LC3 Audio Keepalive)
-
-    /// Start the micbeat mechanism to keep LC3 audio streaming active
-    private func startMicBeat() {
-        Bridge.log("LIVE: 🎤 Starting micbeat mechanism")
-        micBeatCount = 0
-
-        // Send initial command to enable custom audio TX
-        sendEnableCustomAudioTxMessage(shouldUseGlassesMic)
-
-        // Stop any existing timer
-        micBeatTimer?.invalidate()
-
-        // Schedule periodic micbeat (every 30 minutes)
-        micBeatTimer = Timer.scheduledTimer(withTimeInterval: MICBEAT_INTERVAL_MS, repeats: true) {
-            [weak self] _ in
-            guard let self = self else { return }
-            Bridge.log("LIVE: 🎤 Sending micbeat - enabling custom audio TX")
-            self.sendEnableCustomAudioTxMessage(self.shouldUseGlassesMic)
-            self.micBeatCount += 1
-        }
-
-        Bridge.log("LIVE: Micbeat scheduled every \(MICBEAT_INTERVAL_MS / 60) minutes")
-    }
-
-    /// Stop the micbeat mechanism
-    private func stopMicBeat() {
-        Bridge.log("LIVE: 🎤 Stopping micbeat mechanism")
-        sendEnableCustomAudioTxMessage(false)
-        micBeatTimer?.invalidate()
-        micBeatTimer = nil
-        micBeatCount = 0
-    }
-
-    /// Send command to enable/disable custom audio TX on glasses
-    private func sendEnableCustomAudioTxMessage(_ enabled: Bool) {
-        let json: [String: Any] = [
-            "type": "set_mic_state",
-            "enabled": enabled,
-        ]
-        sendJson(json, wakeUp: true)
     }
 
     func requestPhoto(
