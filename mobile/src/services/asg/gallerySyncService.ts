@@ -697,6 +697,15 @@ class GallerySyncService {
       await this.closeHotspot()
     }
 
+    // Auto-reset to idle after 3 seconds to clear "Sync complete!" message
+    setTimeout(() => {
+      const currentStore = useGallerySyncStore.getState()
+      if (currentStore.syncState === "complete") {
+        console.log("[GallerySyncService] Auto-resetting sync state to idle")
+        currentStore.setSyncState("idle")
+      }
+    }, 4000)
+
     // Clear glasses gallery status since files are now synced
     store.clearGlassesGalleryStatus()
   }
