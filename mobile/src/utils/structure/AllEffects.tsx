@@ -1,4 +1,5 @@
 import {ButtonActions} from "@/effects/ButtonActions"
+import {GallerySyncEffect} from "@/effects/GallerySyncEffect"
 import {MtkUpdateAlertEffect} from "@/effects/MtkUpdateAlertEffect"
 import {NetworkMonitoring} from "@/effects/NetworkMonitoring"
 import {OtaUpdateChecker} from "@/effects/OtaUpdateChecker"
@@ -12,6 +13,7 @@ export const AllEffects = () => {
       <MtkUpdateAlertEffect />
       <NetworkMonitoring />
       <ButtonActions />
+      <GallerySyncEffect />
     </>
   )
 }
