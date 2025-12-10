@@ -1,7 +1,6 @@
 import {FontAwesome} from "@expo/vector-icons"
 import {useEffect, useState} from "react"
 import {ActivityIndicator, ScrollView, TextInput, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
-import Toast from "react-native-toast-message"
 
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
@@ -73,57 +72,32 @@ export default function ResetPasswordScreen() {
 
     if (!email) {
       // No email, fallback to login redirect
-      Toast.show({
-        type: "success",
-        text1: translate("login:passwordResetSuccess"),
-        text2: translate("login:redirectingToLogin"),
-        position: "bottom",
-      })
-
+      setIsLoading(false)
       await mentraAuth.signOut()
-
-      setTimeout(() => {
-        replace("/auth/login")
-      }, 2000)
+      showAlert(translate("login:passwordResetSuccess"), translate("login:redirectingToLogin"), [
+        {text: translate("common:ok"), onPress: () => replace("/auth/login")},
+      ])
+      return
     }
 
     // Try to automatically log the user in with the new password
     const res2 = await mentraAuth.signInWithPassword({email, password: newPassword})
-    if (res2.is_error()) {
-      console.error("Error auto-logging in after password reset:", res2.error)
-      showAlert(translate("common:error"), mapAuthError(res2.error), [{text: translate("common:ok")}])
-      setIsLoading(false)
-      return
-    }
+    setIsLoading(false)
 
     if (res2.is_error()) {
       // If auto-login fails, just redirect to login
-      Toast.show({
-        type: "success",
-        text1: translate("login:passwordResetSuccess"),
-        text2: translate("login:redirectingToLogin"),
-        position: "bottom",
-      })
-
+      console.error("Error auto-logging in after password reset:", res2.error)
       await mentraAuth.signOut()
-
-      setTimeout(() => {
-        replace("/auth/login")
-      }, 2000)
+      showAlert(translate("login:passwordResetSuccess"), translate("login:redirectingToLogin"), [
+        {text: translate("common:ok"), onPress: () => replace("/auth/login")},
+      ])
+      return
     }
 
-    Toast.show({
-      type: "success",
-      text1: translate("login:passwordResetSuccess"),
-      text2: translate("login:loggingYouIn"),
-      position: "bottom",
-    })
-
-    setTimeout(() => {
-      replace("/")
-    }, 1000)
-
-    setIsLoading(false)
+    // Auto-login succeeded
+    showAlert(translate("login:passwordResetSuccess"), translate("login:loggingYouIn"), [
+      {text: translate("common:ok"), onPress: () => replace("/")},
+    ])
   }
 
   if (!isValidToken) {
@@ -227,9 +201,11 @@ export default function ResetPasswordScreen() {
               textStyle={themed($buttonText)}
               onPress={handleResetPassword}
               disabled={!isFormValid || isLoading}
-              LeftAccessory={() =>
-                isLoading && <ActivityIndicator size="small" color={theme.colors.icon} style={{marginRight: 8}} />
-              }
+              {...(isLoading && {
+                LeftAccessory: () => (
+                  <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
+                ),
+              })}
             />
           </View>
         </View>

@@ -85,9 +85,11 @@ export default function ForgotPasswordScreen() {
               textStyle={themed($buttonText)}
               onPress={handleSendResetEmail}
               disabled={!isEmailValid || isLoading}
-              LeftAccessory={() =>
-                isLoading && <ActivityIndicator size="small" color={theme.colors.icon} style={{marginRight: 8}} />
-              }
+              {...(isLoading && {
+                LeftAccessory: () => (
+                  <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
+                ),
+              })}
             />
 
             <Spacer height={spacing.s4} />

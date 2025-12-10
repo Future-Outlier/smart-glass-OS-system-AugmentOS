@@ -1,6 +1,5 @@
 import {useState} from "react"
 import {View, TextInput, ActivityIndicator, ScrollView, ViewStyle, TextStyle} from "react-native"
-import Toast from "react-native-toast-message"
 
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
@@ -42,16 +41,12 @@ export default function ChangeEmailScreen() {
       return
     }
 
-    Toast.show({
-      type: "success",
-      text1: translate("profileSettings:emailChangeRequested"),
-      text2: translate("profileSettings:checkNewEmailForVerification"),
-      visibilityTime: 5000,
-      position: "bottom",
-    })
-
     setIsLoading(false)
-    goBack()
+    showAlert(
+      translate("profileSettings:emailChangeRequested"),
+      translate("profileSettings:checkNewEmailForVerification"),
+      [{text: translate("common:ok"), onPress: () => goBack()}],
+    )
   }
 
   return (
@@ -89,11 +84,11 @@ export default function ChangeEmailScreen() {
               textStyle={themed($buttonText)}
               onPress={handleChangeEmail}
               disabled={!newEmail.trim() || isLoading}
-              LeftAccessory={() =>
-                isLoading ? (
+              {...(isLoading && {
+                LeftAccessory: () => (
                   <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
-                ) : null
-              }
+                ),
+              })}
             />
           </View>
         </View>

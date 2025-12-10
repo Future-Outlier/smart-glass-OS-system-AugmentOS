@@ -343,11 +343,12 @@ export default function LoginScreen() {
                   textStyle={themed($buttonText)}
                   onPress={() => handleEmailSignIn(email, password)}
                   disabled={isFormLoading}
-                  LeftAccessory={() =>
-                    isFormLoading && formAction === "signin" ? (
-                      <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
-                    ) : null
-                  }
+                  {...(isFormLoading &&
+                    formAction === "signin" && {
+                      LeftAccessory: () => (
+                        <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
+                      ),
+                    })}
                 />
 
                 <Spacer height={spacing.s4} />

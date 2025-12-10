@@ -46,6 +46,9 @@ const en = {
     bluetooth: "Bluetooth",
     preferredMic: "Preferred microphone",
   },
+  wifiSetup: {
+    pleaseEnterNetworkName: "Please enter a network name",
+  },
   screenSettings: {
     title: "Display Position Settings",
   },

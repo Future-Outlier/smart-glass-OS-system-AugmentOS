@@ -265,7 +265,9 @@ export class SupabaseWrapperClient extends AuthClient {
 
   public resetPasswordForEmail(email: string): AsyncResult<void, Error> {
     return Res.try_async(async () => {
-      const {error} = await this.supabase.auth.resetPasswordForEmail(email)
+      const {error} = await this.supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: "https://mentra.glass/reset-password",
+      })
       if (error) {
         throw error
       }

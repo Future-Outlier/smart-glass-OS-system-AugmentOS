@@ -1,7 +1,6 @@
 import {FontAwesome} from "@expo/vector-icons"
 import {useState} from "react"
 import {View, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, ViewStyle, TextStyle} from "react-native"
-import Toast from "react-native-toast-message"
 
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
@@ -47,13 +46,10 @@ export default function ChangePasswordScreen() {
       setIsLoading(false)
       return
     }
-    Toast.show({
-      type: "success",
-      text1: translate("profileSettings:passwordUpdatedSuccess"),
-      position: "bottom",
-    })
     setIsLoading(false)
-    goBack()
+    showAlert(translate("common:success"), translate("profileSettings:passwordUpdatedSuccess"), [
+      {text: translate("common:ok"), onPress: () => goBack()},
+    ])
   }
 
   return (
@@ -123,9 +119,11 @@ export default function ChangePasswordScreen() {
               textStyle={themed($buttonText)}
               onPress={handleUpdatePassword}
               disabled={!isFormValid || isLoading}
-              LeftAccessory={() =>
-                isLoading && <ActivityIndicator size="small" color={theme.colors.icon} style={{marginRight: 8}} />
-              }
+              {...(isLoading && {
+                LeftAccessory: () => (
+                  <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
+                ),
+              })}
             />
           </View>
         </View>

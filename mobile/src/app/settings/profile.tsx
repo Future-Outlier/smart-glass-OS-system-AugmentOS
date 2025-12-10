@@ -278,10 +278,10 @@ export default function ProfileSettingsPage() {
 
             <Group title={translate("account:appSettings")}>
               {/* Show password/email options only for email/password users (not OAuth) */}
-              {(!userData.provider || userData.provider === "email") && (
+              {userData.provider !== "google" && userData.provider !== "apple" && (
                 <RouteButton label={translate("profileSettings:changePassword")} onPress={handleChangePassword} />
               )}
-              {(!userData.provider || userData.provider === "email") && (
+              {userData.provider !== "google" && userData.provider !== "apple" && (
                 <RouteButton label={translate("profileSettings:changeEmail")} onPress={handleChangeEmail} />
               )}
               <RouteButton label={translate("profileSettings:requestDataExport")} onPress={handleRequestDataExport} />

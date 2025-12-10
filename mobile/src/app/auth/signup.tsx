@@ -245,11 +245,11 @@ export default function SignupScreen() {
                   textStyle={themed($buttonText)}
                   onPress={handleSignup}
                   disabled={!isStep2Valid || isLoading}
-                  LeftAccessory={() =>
-                    isLoading ? (
+                  {...(isLoading && {
+                    LeftAccessory: () => (
                       <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
-                    ) : null
-                  }
+                    ),
+                  })}
                 />
               </View>
             </>
