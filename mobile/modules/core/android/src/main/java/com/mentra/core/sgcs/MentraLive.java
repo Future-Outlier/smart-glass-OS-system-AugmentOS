@@ -2709,9 +2709,6 @@ public class MentraLive extends SGCManager {
                 Bridge.log("LIVE: 🎤 Sending micbeat - enabling custom audio TX");
                 
                 
-                // IMPORTANT NOTE: WE ARE DISABLING LC3 MIC UNTIL AFTER RELEASE
-                // DO NOT UNDO THIS HARD DISABLE UNTIL AFTER RELEASE
-                //sendEnableCustomAudioTxMessage(shouldUseGlassesMic);
                 sendEnableCustomAudioTxMessage(true);
                 micBeatCount++;
 
