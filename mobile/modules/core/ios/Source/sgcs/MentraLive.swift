@@ -1139,7 +1139,7 @@ class MentraLive: NSObject, SGCManager {
         let json: [String: Any] = [
             "C": "enable_custom_audio_tx",
             "V": 1,
-            "B": enableObj.toString(),
+            "B": enableObj,
         ]
 
         do {
