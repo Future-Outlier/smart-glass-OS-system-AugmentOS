@@ -492,7 +492,7 @@ class GallerySyncService {
       const downloadResult = await asgCameraApi.batchSyncFiles(
         files,
         true,
-        (current, total, fileName, fileProgress) => {
+        (current, total, fileName, fileProgress, downloadedFile) => {
           // Check if cancelled
           if (this.abortController?.signal.aborted) {
             throw new Error("Sync cancelled")
@@ -521,6 +521,11 @@ class GallerySyncService {
             }
           } else {
             currentStore.onFileProgress(fileName, fileProgress || 0)
+          }
+
+          // When file completes (100%), update it in the queue with downloaded paths
+          if (fileProgress === 100 && downloadedFile) {
+            currentStore.updateFileInQueue(fileName, downloadedFile)
           }
 
           // Update notification

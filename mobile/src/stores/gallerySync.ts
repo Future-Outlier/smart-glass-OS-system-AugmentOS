@@ -75,6 +75,7 @@ interface GallerySyncState extends GallerySyncInfo {
   onFileProgress: (fileName: string, progress: number) => void
   onFileComplete: (fileName: string) => void
   onFileFailed: (fileName: string, error?: string) => void
+  updateFileInQueue: (fileName: string, updatedFile: PhotoInfo) => void
 
   // Hotspot management
   setHotspotInfo: (info: HotspotInfo | null) => void
@@ -207,6 +208,12 @@ export const useGallerySyncStore = create<GallerySyncState>()(
         currentFile: nextFile?.name || null,
         currentFileProgress: 0,
       })
+    },
+
+    updateFileInQueue: (fileName: string, updatedFile: PhotoInfo) => {
+      const state = get()
+      const updatedQueue = state.queue.map(file => (file.name === fileName ? updatedFile : file))
+      set({queue: updatedQueue})
     },
 
     // Hotspot management

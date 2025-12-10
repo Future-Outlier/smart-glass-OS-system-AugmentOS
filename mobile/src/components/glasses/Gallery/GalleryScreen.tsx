@@ -145,6 +145,28 @@ export function GalleryScreen() {
     }
   }, [])
 
+  // Initialize pending status for all files when sync starts
+  useEffect(() => {
+    if (syncState === "syncing" && syncQueue.length > 0) {
+      // On first render of syncing state, initialize all files as pending
+      setPhotoSyncStates(prev => {
+        // Only initialize if we don't have states yet (avoid overwriting progress)
+        if (prev.size === 0) {
+          const initialStates = new Map()
+          syncQueue.forEach(file => {
+            initialStates.set(file.name, {
+              status: "pending" as const,
+              progress: 0,
+            })
+          })
+          console.log(`[GalleryScreen] Initialized ${syncQueue.length} files as pending`)
+          return initialStates
+        }
+        return prev
+      })
+    }
+  }, [syncState, syncQueue])
+
   // Update photo sync states based on store state
   useEffect(() => {
     if (syncState !== "syncing") {
@@ -162,20 +184,22 @@ export function GalleryScreen() {
       setPhotoSyncStates(prev => {
         const newStates = new Map(prev)
 
-        // Set current file as downloading
-        newStates.set(currentFile, {
-          status: "downloading",
-          progress: currentFileProgress,
-        })
+        // If current file is at 100%, remove it immediately (no green ring)
+        if (currentFileProgress >= 100) {
+          newStates.delete(currentFile)
+        } else {
+          // Set current file as downloading if not complete
+          newStates.set(currentFile, {
+            status: "downloading",
+            progress: currentFileProgress,
+          })
+        }
 
-        // Mark completed files
+        // Remove completed files from sync states immediately (no green ring)
         for (let i = 0; i < completedFiles; i++) {
           const completedFileName = syncQueue[i]?.name
           if (completedFileName) {
-            newStates.set(completedFileName, {
-              status: "completed",
-              progress: 100,
-            })
+            newStates.delete(completedFileName)
           }
         }
 
@@ -443,15 +467,23 @@ export function GalleryScreen() {
   const allPhotos = useMemo(() => {
     const items: GalleryItem[] = []
 
-    // During sync, show photos from the sync queue
+    // During sync, show photos from the sync queue in chronological order
+    // Files download in size order (performance), but display chronologically (UX)
     if (syncState === "syncing" && syncQueue.length > 0) {
-      syncQueue.forEach((photo, i) => {
+      const sortedQueue = [...syncQueue].sort((a, b) => {
+        const aTime = typeof a.modified === "string" ? new Date(a.modified).getTime() : a.modified || 0
+        const bTime = typeof b.modified === "string" ? new Date(b.modified).getTime() : b.modified || 0
+        return bTime - aTime // Newest first
+      })
+
+      sortedQueue.forEach((photo, i) => {
         items.push({
-          id: `sync-${i}`,
+          id: `sync-${photo.name}`,
           type: "server",
           index: i,
           photo,
-          isOnServer: true,
+          // File is only on server if it hasn't been downloaded yet (no filePath)
+          isOnServer: !photo.filePath,
         })
       })
     }
@@ -674,11 +706,9 @@ export function GalleryScreen() {
             syncStateForItem &&
             (syncStateForItem.status === "pending" ||
               syncStateForItem.status === "downloading" ||
-              syncStateForItem.status === "failed" ||
-              syncStateForItem.status === "completed")
+              syncStateForItem.status === "failed")
           ) {
             const isFailed = syncStateForItem.status === "failed"
-            const isCompleted = syncStateForItem.status === "completed"
 
             return (
               <View style={themed($progressRingOverlay)}>
@@ -686,7 +716,7 @@ export function GalleryScreen() {
                   progress={Math.max(0, Math.min(100, syncStateForItem.progress || 0))}
                   size={50}
                   strokeWidth={4}
-                  showPercentage={!isFailed && !isCompleted}
+                  showPercentage={!isFailed}
                   progressColor={isFailed ? theme.colors.error : theme.colors.primary}
                 />
                 {isFailed && (
@@ -699,18 +729,6 @@ export function GalleryScreen() {
                       height: 50,
                     }}>
                     <Icon name="alert-circle" size={20} color={theme.colors.error} />
-                  </View>
-                )}
-                {isCompleted && (
-                  <View
-                    style={{
-                      position: "absolute",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      width: 50,
-                      height: 50,
-                    }}>
-                    <Icon name="check-circle" size={20} color={theme.colors.tint} />
                   </View>
                 )}
               </View>
