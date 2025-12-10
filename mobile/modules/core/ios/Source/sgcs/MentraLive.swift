@@ -1086,14 +1086,44 @@ class MentraLive: NSObject, SGCManager {
     }
 
     @objc func setMicrophoneEnabled(_ enabled: Bool) {
-        Bridge.log("Setting microphone state to: \(enabled)")
+        Bridge.log("LIVE: Setting microphone state to: \(enabled)")
 
-        let json: [String: Any] = [
-            "type": "set_mic_state",
-            "enabled": enabled,
+        // cs_batv is a K900 protocol command handled directly by BES2700
+        // It doesn't go through MTK Android, so it doesn't use ACK system
+        guard let peripheral = connectedPeripheral,
+              let txChar = txCharacteristic
+        else {
+            Bridge.log("LIVE: Cannot send enable_custom_audio_tx request - not connected")
+            return
+        }
+
+        let enableObj: [String: Any] = [
+            "enable": enabled,
         ]
 
-        sendJson(json, wakeUp: true)
+        let json: [String: Any] = [
+            "C": "enable_custom_audio_tx",
+            "V": 1,
+            "B": enableObj.toString(),
+        ]
+
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: json)
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                Bridge.log("LIVE: Sending enable_custom_audio_tx request: \(jsonString)")
+                if let packedData = packDataToK900(
+                    jsonData, cmdType: K900ProtocolUtils.CMD_TYPE_STRING
+                ) {
+                    // Send directly without ACK tracking (like Android's queueData)
+                    peripheral.writeValue(packedData, for: txChar, type: .withResponse)
+                    Bridge.log(
+                        "LIVE: Sent enable_custom_audio_tx without ACK tracking (BES-handled command)"
+                    )
+                }
+            }
+        } catch {
+            Bridge.log("Error creating K900 enable_custom_audio_tx request: \(error)")
+        }
     }
 
     // MARK: - Micbeat System (LC3 Audio Keepalive)
