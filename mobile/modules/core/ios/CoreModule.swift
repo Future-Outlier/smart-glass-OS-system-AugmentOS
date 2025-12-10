@@ -80,7 +80,10 @@ public class CoreModule: Module {
         }
 
         AsyncFunction("photoRequest") {
-            (requestId: String, appId: String, size: String, webhookUrl: String?, authToken: String?, compress: String?) in
+            (
+                requestId: String, appId: String, size: String, webhookUrl: String?,
+                authToken: String?, compress: String?
+            ) in
             CoreManager.shared.photoRequest(requestId, appId, size, webhookUrl, authToken, compress)
         }
 
@@ -122,9 +125,8 @@ public class CoreModule: Module {
 
         // MARK: - Microphone Commands
 
-        AsyncFunction("setMicState") { (requiredDataStrings: [String], bypassVad: Bool) in
-            let requiredData = SpeechRequiredDataType.fromStringArray(requiredDataStrings)
-            CoreManager.shared.setMicState(requiredData, bypassVad)
+        AsyncFunction("setMicState") { (sendPcmData: Bool, sendTranscript: Bool, bypassVad: Bool) in
+            CoreManager.shared.setMicState(sendPcmData, sendTranscript, bypassVad)
         }
 
         AsyncFunction("restartTranscriber") {
@@ -133,7 +135,11 @@ public class CoreModule: Module {
 
         // MARK: - RGB LED Control
 
-        AsyncFunction("rgbLedControl") { (requestId: String, packageName: String?, action: String, color: String?, ontime: Int, offtime: Int, count: Int) in
+        AsyncFunction("rgbLedControl") {
+            (
+                requestId: String, packageName: String?, action: String, color: String?,
+                ontime: Int, offtime: Int, count: Int
+            ) in
             CoreManager.shared.rgbLedControl(
                 requestId: requestId,
                 packageName: packageName,
@@ -206,7 +212,8 @@ public class CoreModule: Module {
 
         // MARK: - Media Library Commands
 
-        AsyncFunction("saveToGalleryWithDate") { (filePath: String, captureTimeMillis: Int64?) -> [String: Any] in
+        AsyncFunction("saveToGalleryWithDate") {
+            (filePath: String, captureTimeMillis: Int64?) -> [String: Any] in
             do {
                 let fileURL = URL(fileURLWithPath: filePath)
 
@@ -224,15 +231,18 @@ public class CoreModule: Module {
 
                     if ["mp4", "mov", "avi", "m4v"].contains(pathExtension) {
                         // Video
-                        creationRequest = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: fileURL)!
+                        creationRequest = PHAssetChangeRequest.creationRequestForAssetFromVideo(
+                            atFileURL: fileURL)!
                     } else {
                         // Photo
-                        creationRequest = PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: fileURL)!
+                        creationRequest = PHAssetChangeRequest.creationRequestForAssetFromImage(
+                            atFileURL: fileURL)!
                     }
 
                     // Set the creation date if provided
                     if let captureMillis = captureTimeMillis {
-                        let captureDate = Date(timeIntervalSince1970: TimeInterval(captureMillis) / 1000.0)
+                        let captureDate = Date(
+                            timeIntervalSince1970: TimeInterval(captureMillis) / 1000.0)
                         creationRequest.creationDate = captureDate
                         Bridge.log("CoreModule: Setting creation date to: \(captureDate)")
                     }

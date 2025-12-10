@@ -73,7 +73,6 @@ class CoreManager {
     private var screenDisabled = false
     private var isSearching = false
     private var systemMicUnavailable = false
-    public val currentRequiredData = mutableListOf<SpeechRequiredDataType>()
     public var micRanking = MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
 
     // glasses settings
@@ -358,49 +357,6 @@ class CoreManager {
             var data: String?,
             var animationData: Map<String, Any>?
     )
-
-    enum class SpeechRequiredDataType(val rawValue: String) {
-        PCM("pcm"),
-        TRANSCRIPTION("transcription"),
-        PCM_OR_TRANSCRIPTION("pcm_or_transcription");
-
-        companion object {
-            /**
-             * Convert from string value to enum
-             * @param value The string value to convert
-             * @return The corresponding enum value, or null if not found
-             */
-            fun fromString(value: String): SpeechRequiredDataType? {
-                return values().find { it.rawValue == value }
-            }
-
-            /**
-             * Convert array of strings to array of enums
-             * @param stringArray Array of string values
-             * @return Array of enum values, filtering out invalid strings
-             */
-            fun fromStringArray(stringArray: List<String>): List<SpeechRequiredDataType> {
-                return stringArray.mapNotNull { fromString(it) }
-            }
-
-            /**
-             * Convert array of enums to array of strings
-             * @param enumArray Array of enum values
-             * @return Array of string values
-             */
-            fun toStringArray(enumArray: List<SpeechRequiredDataType>): List<String> {
-                return enumArray.map { it.rawValue }
-            }
-        }
-
-        /**
-         * Convert enum to string value
-         * @return The string representation of the enum
-         */
-        override fun toString(): String {
-            return rawValue
-        }
-    }
     // MARK: - End Unique
 
     // MARK: - Voice Data Handling

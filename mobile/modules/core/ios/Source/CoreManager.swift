@@ -54,7 +54,6 @@ struct ViewState {
     private var screenDisabled: Bool = false
     private var isSearching: Bool = false
     private var systemMicUnavailable: Bool = false
-    private var currentRequiredData: [SpeechRequiredDataType] = []
     var micRanking: [String] = MicMap.map["auto"]!
 
     // glasses settings
@@ -459,7 +458,7 @@ struct ViewState {
     func updatePreferredMic(_ mic: String) {
         preferredMic = mic
         micRanking = MicMap.map[preferredMic] ?? MicMap.map["auto"]!
-        setMicState(currentRequiredData, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
         getStatus() // to update the UI
     }
 
@@ -781,33 +780,6 @@ struct ViewState {
         Bridge.log("MAN: onRouteChange: reason: \(reason)")
         Bridge.log("MAN: onRouteChange: inputs: \(availableInputs)")
         updateMicState()
-
-        // Core.log the available inputs and see if any are an onboard mic:
-        // for input in availableInputs {
-        //   Core.log("input: \(input.portType)")
-        // }
-
-        // if availableInputs.isEmpty {
-        //   self.systemMicUnavailable = true
-        //   self.setOnboardMicEnabled(false)
-        //   setMicState([], false)
-        //   return
-        // } else {
-        //   self.systemMicUnavailable = false
-        // }
-
-        //        switch reason {
-        //        case .newDeviceAvailable:
-        //            micManager?.stopRecording()
-        //            micManager?.startRecording()
-        //        case .oldDeviceUnavailable:
-        //            micManager?.stopRecording()
-        //            micManager?.startRecording()
-        //        default:
-        //            break
-        //        }
-        // TODO: re-enable this:
-        // setMicState(currentRequiredData, bypassVadForPCM)
     }
 
     func onInterruption(began: Bool) {
@@ -1069,9 +1041,6 @@ struct ViewState {
         shouldSendPcmData = sendPcm
         shouldSendTranscript = sendTranscript
         bypassVadForPCM = bypassVad
-
-        // this must be done before the requiredData is modified by offlineStt:
-        currentRequiredData = requiredData
 
         if offlineMode && (!shouldSendPcmData && !shouldSendTranscript) {
             shouldSendTranscript = true
