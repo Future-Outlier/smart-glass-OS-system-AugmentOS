@@ -1,3 +1,4 @@
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {useState, useEffect} from "react"
 import {View, ViewStyle, TextStyle, ScrollView} from "react-native"
 
@@ -13,8 +14,6 @@ import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-
-import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export default function GallerySettingsScreen() {
   const {goBack, push} = useNavigationHistory()

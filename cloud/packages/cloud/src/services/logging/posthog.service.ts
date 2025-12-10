@@ -1,6 +1,7 @@
 // posthog.service.ts
-import { logger } from "./pino-logger";
 import { PostHog } from "posthog-node";
+
+import { logger } from "./pino-logger";
 
 // Environment constants (mirroring pino-logger for consistency)
 const NODE_ENV = process.env.NODE_ENV || "development";

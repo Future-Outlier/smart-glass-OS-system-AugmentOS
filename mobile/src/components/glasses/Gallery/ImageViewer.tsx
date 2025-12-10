@@ -17,6 +17,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
+// eslint-disable-next-line import/no-unresolved
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
 import {spacing} from "@/theme"
@@ -52,6 +53,19 @@ export function ImageViewer({visible, photo, onClose, onShare}: ImageViewerProps
   const dismissTranslationY = useSharedValue(0)
   const dismissScale = useSharedValue(1)
   const backgroundOpacity = useSharedValue(1)
+
+  // Animated styles - must be declared before any conditional returns
+  const animatedImageStyle = useAnimatedStyle(() => ({
+    transform: [
+      {translateX: translationX.value},
+      {translateY: translationY.value + dismissTranslationY.value},
+      {scale: scale.value * dismissScale.value},
+    ],
+  }))
+
+  const animatedBackgroundStyle = useAnimatedStyle(() => ({
+    opacity: backgroundOpacity.value,
+  }))
 
   if (!photo) return null
 
@@ -187,18 +201,6 @@ export function ImageViewer({visible, photo, onClose, onShare}: ImageViewerProps
     pinchGesture,
     dismissGesture,
   )
-
-  const animatedImageStyle = useAnimatedStyle(() => ({
-    transform: [
-      {translateX: translationX.value},
-      {translateY: translationY.value + dismissTranslationY.value},
-      {scale: scale.value * dismissScale.value},
-    ],
-  }))
-
-  const animatedBackgroundStyle = useAnimatedStyle(() => ({
-    opacity: backgroundOpacity.value,
-  }))
 
   return (
     <Modal visible={visible} transparent={false} animationType="fade" onRequestClose={onClose} statusBarTranslucent>

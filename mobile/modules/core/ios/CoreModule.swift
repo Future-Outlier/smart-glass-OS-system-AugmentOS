@@ -213,7 +213,7 @@ public class CoreModule: Module {
         AsyncFunction("saveToGalleryWithDate") { (filePath: String, captureTimeMillis: Int64?) -> [String: Any] in
             do {
                 let fileURL = URL(fileURLWithPath: filePath)
-                
+
                 guard FileManager.default.fileExists(atPath: filePath) else {
                     return ["success": false, "error": "File does not exist"]
                 }
@@ -225,7 +225,7 @@ public class CoreModule: Module {
                 PHPhotoLibrary.shared().performChanges({
                     let creationRequest: PHAssetChangeRequest
                     let pathExtension = fileURL.pathExtension.lowercased()
-                    
+
                     if ["mp4", "mov", "avi", "m4v"].contains(pathExtension) {
                         // Video
                         creationRequest = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: fileURL)!
@@ -242,7 +242,7 @@ public class CoreModule: Module {
                     }
 
                     assetIdentifier = creationRequest.placeholderForCreatedAsset?.localIdentifier
-                }, completionHandler: { success, error in
+                }, completionHandler: { _, error in
                     resultError = error
                     semaphore.signal()
                 })
