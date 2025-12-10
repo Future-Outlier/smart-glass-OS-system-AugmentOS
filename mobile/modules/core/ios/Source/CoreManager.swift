@@ -73,7 +73,6 @@ struct ViewState {
     var powerSavingMode: Bool = false
     private var alwaysOnStatusBar: Bool = false
     private var bypassVad: Bool = true
-    private var bypassVadForPCM: Bool = false // NEW: PCM subscription bypass
     private var enforceLocalTranscription: Bool = false
     private var bypassAudioEncoding: Bool = false
     private var offlineMode: Bool = false
@@ -180,17 +179,14 @@ struct ViewState {
         }
     }
 
-    func handleGlassesMicData(_ rawLC3Data: Data) {
+    func handleGlassesMicData(_ lc3Data: Data) {
         // decode the g1 audio data to PCM and feed to the VAD:
 
         // Ensure we have enough data to process
-        guard rawLC3Data.count > 2 else {
-            Bridge.log("Received invalid PCM data size: \(rawLC3Data.count)")
+        guard lc3Data.count > 2 else {
+            Bridge.log("Received invalid PCM data size: \(lc3Data.count)")
             return
         }
-
-        // Skip the first 2 bytes which are command bytes
-        let lc3Data = rawLC3Data.subdata(in: 2 ..< rawLC3Data.count)
 
         // Ensure we have valid PCM data
         guard lc3Data.count > 0 else {
@@ -198,10 +194,8 @@ struct ViewState {
             return
         }
 
-        if bypassVad || bypassVadForPCM {
-            Bridge.log(
-                "MAN: Glasses mic VAD bypassed - bypassVad=\(bypassVad), bypassVadForPCM=\(bypassVadForPCM)"
-            )
+        if bypassVad {
+            Bridge.log("MAN: Glasses mic VAD bypassed - bypassVad=\(bypassVad)")
             checkSetVadStatus(speaking: true)
             // first send out whatever's in the vadBuffer (if there is anything):
             emptyVadBuffer()
@@ -1035,12 +1029,12 @@ struct ViewState {
         sgc?.stopVideoRecording(requestId: requestId)
     }
 
-    func setMicState(_ sendPcm: Bool, _ sendTranscript: Bool, _ bypassVad: Bool) {
+    func setMicState(_ sendPcm: Bool, _ sendTranscript: Bool, _ bypassVadForPCM: Bool) {
         Bridge.log("MAN: MIC: setMicState(\(sendPcm),\(sendTranscript),\(bypassVad)")
 
         shouldSendPcmData = sendPcm
         shouldSendTranscript = sendTranscript
-        bypassVadForPCM = bypassVad
+        bypassVad = bypassVadForPCM
 
         if offlineMode && (!shouldSendPcmData && !shouldSendTranscript) {
             shouldSendTranscript = true
@@ -1141,7 +1135,7 @@ struct ViewState {
         isSearching = false
         shouldSendPcmData = false
         shouldSendTranscript = false
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         shouldSendBootingMessage = true // Reset for next first connect
         getStatus()
     }

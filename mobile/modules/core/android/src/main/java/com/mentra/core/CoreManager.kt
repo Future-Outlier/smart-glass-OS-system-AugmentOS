@@ -91,7 +91,6 @@ class CoreManager {
     public var powerSavingMode = false
     private var alwaysOnStatusBar = false
     private var bypassVad = true
-    private var bypassVadForPCM = false
     private var enforceLocalTranscription = false
     private var bypassAudioEncoding = false
     private var offlineMode = false
@@ -386,6 +385,7 @@ class CoreManager {
     fun handleGlassesMicData(rawLC3Data: ByteArray) {
         // decode the lc3 data to pcm and pass to the bridge to be sent to the server:
         // TODO: config
+
     }
 
     fun handlePcm(pcmData: ByteArray) {
@@ -631,7 +631,7 @@ class CoreManager {
     fun onInterruption(began: Boolean) {
         Bridge.log("MAN: Interruption: $began")
         systemMicUnavailable = began
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
     }
 
     // MARK: - State Management
@@ -652,7 +652,7 @@ class CoreManager {
         micRanking =
                 MicMap.map[preferredMic]?.toMutableList()
                         ?: MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         getStatus()
     }
 
@@ -780,14 +780,14 @@ class CoreManager {
 
     fun updateEnforceLocalTranscription(enabled: Boolean) {
         enforceLocalTranscription = enabled
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         getStatus()
     }
 
     fun updateOfflineMode(enabled: Boolean) {
         offlineMode = enabled
         Bridge.log("MAN: updating offline mode: $enabled")
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
     }
 
     fun updateBypassAudioEncoding(enabled: Boolean) {
@@ -1031,12 +1031,12 @@ class CoreManager {
         sgc?.stopVideoRecording(requestId)
     }
 
-    fun setMicState(sendPcm: Boolean, sendTranscript: Boolean, bypassVad: Boolean) {
+    fun setMicState(sendPcm: Boolean, sendTranscript: Boolean, bypassVadForPCM: Boolean) {
         Bridge.log("MAN: MIC: setMicState($sendPcm, $sendTranscript, $bypassVad)")
 
         shouldSendPcmData = sendPcm
         shouldSendTranscript = sendTranscript
-        bypassVadForPCM = bypassVad
+        bypassVad = bypassVadForPCM
 
         // if offline mode is enabled and no PCM or transcription is requested, force transcription
         if (offlineMode && (!shouldSendPcmData && !shouldSendTranscript)) {
@@ -1125,7 +1125,7 @@ class CoreManager {
         isSearching = false
         shouldSendPcmData = false
         shouldSendTranscript = false
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         shouldSendBootingMessage = true // Reset for next first connect
         getStatus()
     }

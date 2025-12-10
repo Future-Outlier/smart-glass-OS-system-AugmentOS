@@ -1162,7 +1162,9 @@ class G1: NSObject, SGCManager {
             handleAck(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
         case .BLE_REQ_TRANSFER_MIC_DATA:
             // compressedVoiceData = data
-            CoreManager.shared.handleGlassesMicData(data)
+            // skip the first 2 bytes:
+            let lc3Data = data.subdata(in: 2 ..< data.count)
+            CoreManager.shared.handleGlassesMicData(lc3Data)
         //                CoreCommsService.log("G1: Got voice data: " + String(data.count))
         case .UNK_1:
             handleAck(from: peripheral, success: true)

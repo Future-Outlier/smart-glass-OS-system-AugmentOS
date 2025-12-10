@@ -731,7 +731,7 @@ extension MentraLive: CBPeripheralDelegate {
 
         // Handle LC3 audio data separately (dedicated characteristic for LC3-capable devices)
         if uuid == LC3_READ_UUID && supportsLC3Audio {
-            Bridge.log("LIVE: Received data on LC3_READ characteristic (audio input)")
+            // Bridge.log("LIVE: Received data on LC3_READ characteristic (audio input)")
             processLc3AudioPacket(data)
             return
         }
