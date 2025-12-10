@@ -1,8 +1,7 @@
-import * as MediaLibrary from "expo-media-library"
 import {Platform} from "react-native"
 import {check, request, PERMISSIONS, RESULTS} from "react-native-permissions"
 
-import CoreModule from "@/modules/core"
+import CoreModule from "modules/core/src/CoreModule"
 
 /**
  * MediaLibraryPermissions - Handles save-only permissions for camera roll
