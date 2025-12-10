@@ -32,6 +32,7 @@ const ERROR_CODE_MAP: Record<string, string> = {
   // Verification errors
   otp_expired: "login:errors.otpExpired",
   otp_disabled: "login:errors.invalidOtp",
+  invalid_reset_link: "login:errors.invalidResetLink",
 
   // Session errors
   session_expired: "login:errors.sessionExpired",

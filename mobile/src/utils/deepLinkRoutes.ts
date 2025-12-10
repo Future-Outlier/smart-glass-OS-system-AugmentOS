@@ -236,16 +236,27 @@ export const deepLinkRoutes: DeepLinkRoute[] = [
         const parts = url.split("#")
         if (parts.length < 2) return null
         const paramsString = parts[1]
-        const params = new URLSearchParams(paramsString)
+        const urlParams = new URLSearchParams(paramsString)
         return {
-          access_token: params.get("access_token"),
-          refresh_token: params.get("refresh_token"),
-          type: params.get("type"),
-          // Add any other parameters that might be in the reset link
+          access_token: urlParams.get("access_token"),
+          refresh_token: urlParams.get("refresh_token"),
+          type: urlParams.get("type"),
+          // Error params (when link is expired/invalid)
+          error: urlParams.get("error"),
+          error_code: urlParams.get("error_code"),
+          error_description: urlParams.get("error_description"),
         }
       }
 
       const authParams = parseAuthParams(url)
+
+      // Check if there's an error in the URL (e.g., expired link)
+      if (authParams?.error || authParams?.error_code) {
+        console.log("[RESET PASSWORD DEBUG] Error in reset link:", authParams.error_code, authParams.error_description)
+        // Navigate to login with the error code so login screen can show the message
+        navObject.replace(`/auth/login?authError=${authParams.error_code || authParams.error}`)
+        return
+      }
 
       if (authParams && authParams.access_token && authParams.refresh_token && authParams.type === "recovery") {
         // Set the recovery session
@@ -255,7 +266,7 @@ export const deepLinkRoutes: DeepLinkRoute[] = [
         })
         if (res.is_error()) {
           console.error("[RESET PASSWORD DEBUG] Error setting recovery session:", res.error)
-          navObject.replace("/auth/login")
+          navObject.replace("/auth/login?authError=invalid_reset_link")
           return
         }
 
@@ -264,7 +275,7 @@ export const deepLinkRoutes: DeepLinkRoute[] = [
         navObject.replace("/auth/reset-password")
       } else {
         console.log("[RESET PASSWORD DEBUG] Missing required auth parameters for password reset")
-        navObject.replace("/auth/login")
+        navObject.replace("/auth/login?authError=invalid_reset_link")
       }
     },
   },

@@ -457,6 +457,7 @@ const en = {
       alreadySentEmail: "We already sent you a verification email. Please check your inbox (and spam folder).",
       otpExpired: "The verification code has expired. Please request a new one.",
       invalidOtp: "Invalid verification code. Please try again.",
+      invalidResetLink: "This password reset link is invalid or has expired. Please request a new one.",
       // Session errors
       sessionExpired: "Your session has expired. Please sign in again.",
       refreshTokenExpired: "Your session has expired. Please sign in again.",

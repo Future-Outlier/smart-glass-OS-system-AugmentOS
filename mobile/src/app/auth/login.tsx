@@ -1,6 +1,7 @@
 // eslint-disable-next-line import/no-unresolved
 import LogoSvg from "@assets/logo/logo.svg"
 import {FontAwesome} from "@expo/vector-icons"
+import {useLocalSearchParams} from "expo-router"
 import * as WebBrowser from "expo-web-browser"
 import {useEffect, useRef, useState} from "react"
 import {
@@ -45,6 +46,7 @@ export default function LoginScreen() {
   const [backPressCount, setBackPressCount] = useState(0)
   const {push, replace} = useNavigationHistory()
   const [isChina] = useSetting(SETTINGS.china_deployment.key)
+  const {authError} = useLocalSearchParams<{authError?: string}>()
 
   // Get theme and safe area insets
   const {theme, themed} = useAppTheme()
@@ -76,6 +78,14 @@ export default function LoginScreen() {
       }),
     ]).start()
   }, [opacity, translateY])
+
+  // Handle auth errors passed via URL params (e.g., from expired reset links)
+  useEffect(() => {
+    if (authError) {
+      const errorMessage = mapAuthError(authError)
+      showAlert(translate("common:error"), errorMessage, [{text: translate("common:ok")}])
+    }
+  }, [authError])
 
   useEffect(() => {
     if (isSigningUp) {
