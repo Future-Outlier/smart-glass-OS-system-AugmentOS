@@ -1028,7 +1028,7 @@ struct ViewState {
         sgc?.showDashboard()
     }
 
-    func handle_start_rtmp_stream(_ message: [String: Any]) {
+    func startRtmpStream(_ message: [String: Any]) {
         Bridge.log("MAN: startRtmpStream: \(message)")
         sgc?.startRtmpStream(message)
     }
@@ -1133,79 +1133,6 @@ struct ViewState {
 
         micEnabled = !requiredData.isEmpty && sensingEnabled
         updateMicState()
-
-        // // Handle microphone state change if needed
-        // Task {
-        //     // Only enable microphone if sensing is also enabled
-        //     var actuallyEnabled = micEnabled && self.sensingEnabled
-
-        //     let glassesHasMic = sgc?.hasMic ?? false
-
-        //     var useGlassesMic = false
-        //     var useOnboardMic = false
-
-        //     useOnboardMic = self.preferredMic == "phone"
-        //     useGlassesMic = self.preferredMic == "glasses"
-
-        //     if self.systemMicUnavailable {
-        //         useOnboardMic = false
-        //     }
-
-        //     if !glassesHasMic {
-        //         useGlassesMic = false
-        //     }
-
-        //     if !useGlassesMic, !useOnboardMic {
-        //         // if we have a non-preferred mic, use it:
-        //         if glassesHasMic {
-        //             useGlassesMic = true
-        //         } else if !self.systemMicUnavailable {
-        //             useOnboardMic = true
-        //         }
-
-        //         if !useGlassesMic, !useOnboardMic {
-        //             Bridge.log(
-        //                 "MAN: no mic to use! falling back to glasses mic!!!!! (this should not happen)"
-        //             )
-        //             useGlassesMic = true
-        //         }
-        //     }
-
-        //     let appState = UIApplication.shared.applicationState
-        //     if appState == .background {
-        //         Bridge.log("App is in background - onboard mic unavailable to start!")
-        //         if useOnboardMic {
-        //             // if we're using the onboard mic and already recording, simply return as we shouldn't interrupt
-        //             // the audio session
-        //             if PhoneMic.shared.isRecording {
-        //                 return
-        //             }
-
-        //             // if we want to use the onboard mic but aren't currently recording, switch to using the glasses mic
-        //             // instead since we won't be able to start the mic from the background
-        //             useGlassesMic = true
-        //             useOnboardMic = false
-        //         }
-        //     }
-
-        //     // preferred state:
-        //     useGlassesMic = actuallyEnabled && useGlassesMic
-        //     useOnboardMic = actuallyEnabled && useOnboardMic
-
-        //     // Core.log(
-        //     //     "MAN: MIC: isEnabled: \(isEnabled) sensingEnabled: \(self.sensingEnabled) useOnboardMic: \(useOnboardMic) " +
-        //     //         "useGlassesMic: \(useGlassesMic) glassesHasMic: \(glassesHasMic) preferredMic: \(self.preferredMic) " +
-        //     //         "somethingConnected: \(isSomethingConnected()) systemMicUnavailable: \(self.systemMicUnavailable)" +
-        //     //         "actuallyEnabled: \(actuallyEnabled)"
-        //     // )
-
-        //     // if a g1 is connected, set the mic enabled:
-        //     if sgc?.type == DeviceTypes.G1, sgc!.ready {
-        //         await sgc!.setMicEnabled(useGlassesMic)
-        //     }
-
-        //     setOnboardMicEnabled(useOnboardMic)
-        // }
     }
 
     func rgbLedControl(
@@ -1260,7 +1187,7 @@ struct ViewState {
         sgc?.connectById(deviceName)
     }
 
-    func handle_connect_by_name(_ dName: String) {
+    func connectByName(_ dName: String) {
         Bridge.log("MAN: Connecting to wearable: \(dName)")
 
         if pendingWearable.isEmpty, defaultWearable.isEmpty {

@@ -36,7 +36,7 @@ public class CoreModule: Module {
         }
 
         AsyncFunction("connectByName") { (deviceName: String) in
-            CoreManager.shared.handle_connect_by_name(deviceName)
+            CoreManager.shared.connectByName(deviceName)
         }
 
         AsyncFunction("connectSimulated") {
@@ -109,7 +109,7 @@ public class CoreModule: Module {
         // MARK: - RTMP Stream Commands
 
         AsyncFunction("startRtmpStream") { (params: [String: Any]) in
-            CoreManager.shared.handle_start_rtmp_stream(params)
+            CoreManager.shared.startRtmpStream(params)
         }
 
         AsyncFunction("stopRtmpStream") {
@@ -209,7 +209,7 @@ public class CoreModule: Module {
         AsyncFunction("saveToGalleryWithDate") { (filePath: String, captureTimeMillis: Int64?) -> [String: Any] in
             do {
                 let fileURL = URL(fileURLWithPath: filePath)
-                
+
                 guard FileManager.default.fileExists(atPath: filePath) else {
                     return ["success": false, "error": "File does not exist"]
                 }
@@ -218,10 +218,10 @@ public class CoreModule: Module {
                 let semaphore = DispatchSemaphore(value: 0)
                 var resultError: Error?
 
-                PHPhotoLibrary.shared().performChanges({
+                PHPhotoLibrary.shared().performChanges {
                     let creationRequest: PHAssetChangeRequest
                     let pathExtension = fileURL.pathExtension.lowercased()
-                    
+
                     if ["mp4", "mov", "avi", "m4v"].contains(pathExtension) {
                         // Video
                         creationRequest = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: fileURL)!
@@ -238,10 +238,10 @@ public class CoreModule: Module {
                     }
 
                     assetIdentifier = creationRequest.placeholderForCreatedAsset?.localIdentifier
-                }, completionHandler: { success, error in
+                } completionHandler: { _, error in
                     resultError = error
                     semaphore.signal()
-                })
+                }
 
                 semaphore.wait()
 

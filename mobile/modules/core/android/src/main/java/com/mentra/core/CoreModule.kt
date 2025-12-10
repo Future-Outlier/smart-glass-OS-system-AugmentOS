@@ -43,7 +43,7 @@ class CoreModule : Module() {
         AsyncFunction("connectDefault") { coreManager?.connectDefault() }
 
         AsyncFunction("connectByName") { deviceName: String ->
-            coreManager?.handle_connect_by_name(deviceName)
+            coreManager?.connectByName(deviceName)
         }
 
         AsyncFunction("connectSimulated") { coreManager?.connectSimulated() }

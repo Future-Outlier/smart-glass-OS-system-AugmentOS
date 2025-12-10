@@ -1208,7 +1208,7 @@ class CoreManager {
         sgc?.connectById(deviceName)
     }
 
-    fun handle_connect_by_name(dName: String) {
+    fun connectByName(dName: String) {
         Bridge.log("MAN: Connecting to wearable: $dName")
 
         if (pendingWearable.isEmpty() && defaultWearable.isEmpty()) {
