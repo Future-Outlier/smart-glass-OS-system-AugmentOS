@@ -2232,10 +2232,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
             guard let self = self else { return }
             Bridge.log("G1: Starting reconnection timer")
 
-            // Clean up existing timer properly before creating new one
-            if let existingTimer = self.reconnectionTimer {
-                existingTimer.cancel()
-            }
+            self.reconnectionTimer?.cancel()
             self.reconnectionAttempts = 0
 
             let timer = DispatchSource.makeTimerSource(queue: self.reconnectionQueue)
