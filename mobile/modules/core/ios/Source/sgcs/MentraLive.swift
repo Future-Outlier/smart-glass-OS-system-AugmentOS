@@ -744,7 +744,7 @@ extension MentraLive: CBPeripheralDelegate {
         if let error {
             Bridge.log("LIVE: Error writing characteristic: \(error.localizedDescription)")
         } else {
-            // Bridge.log("Characteristic write successful")
+            Bridge.log("LIVE: Characteristic write successful")
         }
     }
 
