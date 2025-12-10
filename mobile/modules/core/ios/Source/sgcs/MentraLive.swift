@@ -1136,13 +1136,15 @@ class MentraLive: NSObject, SGCManager {
             "enable": enabled,
         ]
 
-        let json: [String: Any] = [
-            "C": "enable_custom_audio_tx",
-            "V": 1,
-            "B": enableObj,
-        ]
-
         do {
+            let enableData = try JSONSerialization.data(withJSONObject: enableObj)
+            let enableString = String(data: enableData, encoding: .utf8) ?? ""
+
+            let json: [String: Any] = [
+                "C": "enable_custom_audio_tx",
+                "B": enableString,
+            ]
+
             let jsonData = try JSONSerialization.data(withJSONObject: json)
             if let jsonString = String(data: jsonData, encoding: .utf8) {
                 Bridge.log("LIVE: Sending enable_custom_audio_tx request: \(jsonString)")
@@ -2032,7 +2034,9 @@ class MentraLive: NSObject, SGCManager {
         // Forward PCM data to CoreManager for VAD and server transmission (same as Android)
         CoreManager.shared.handlePcm(pcmData)
 
-        Bridge.log("LIVE: Processed LC3 audio seq=\(sequenceNumber), \(lc3Data.count)→\(pcmData.count) bytes")
+        Bridge.log(
+            "LIVE: Processed LC3 audio seq=\(sequenceNumber), \(lc3Data.count)→\(pcmData.count) bytes"
+        )
     }
 
     // MARK: - BLE Photo Transfer Handlers
