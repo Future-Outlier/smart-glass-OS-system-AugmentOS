@@ -1,17 +1,14 @@
-import {View, ScrollView, TouchableOpacity, Platform} from "react-native"
-import {ViewStyle, TextStyle} from "react-native"
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
+import {View, ScrollView, TouchableOpacity, Platform, ViewStyle, TextStyle} from "react-native"
 
 import bridge from "@/bridge/MantleBridge"
-import {Icon, Text} from "@/components/ignite"
-import {Screen, Header} from "@/components/ignite"
+import {Icon, Text, Screen, Header} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {spacing, ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
-
-import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 type PhotoSize = "small" | "medium" | "large"
 type VideoResolution = "720p" | "1080p" // | "1440p" | "4K"

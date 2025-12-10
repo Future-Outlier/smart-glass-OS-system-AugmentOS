@@ -17,8 +17,7 @@ import {
 import {useSharedValue, withDelay, withTiming} from "react-native-reanimated"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {Icon} from "@/components/ignite"
-import {Button, Header, Screen, Text} from "@/components/ignite"
+import {Icon, Button, Header, Screen, Text} from "@/components/ignite"
 import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
 import Divider from "@/components/ui/Divider"
 import {Group} from "@/components/ui/Group"

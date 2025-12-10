@@ -1,8 +1,8 @@
 import {EventEmitter} from "events"
 
+import {useConnectionStore} from "@/stores/connection"
 import {BackgroundTimer} from "@/utils/timers"
 
-import {useConnectionStore} from "@/stores/connection"
 // import mantle from "@/services/MantleManager"
 
 export enum WebSocketStatus {
