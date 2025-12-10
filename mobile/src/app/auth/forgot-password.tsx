@@ -1,7 +1,6 @@
 import {FontAwesome} from "@expo/vector-icons"
 import {useState} from "react"
 import {View, TextInput, ActivityIndicator, ScrollView, ViewStyle, TextStyle} from "react-native"
-import Toast from "react-native-toast-message"
 
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
@@ -38,19 +37,12 @@ export default function ForgotPasswordScreen() {
       return
     }
 
-    Toast.show({
-      type: "success",
-      text1: translate("login:resetEmailSent"),
-      text2: translate("login:checkEmailForReset"),
-      position: "bottom",
-      visibilityTime: 5000,
-    })
-    // Navigate back to login screen after showing success message
-    setTimeout(() => {
-      goBack()
-    }, 2000)
-
     setIsLoading(false)
+
+    // Show success alert and navigate back after dismissal
+    showAlert(translate("login:resetEmailSent"), translate("login:checkEmailForReset"), [
+      {text: translate("common:ok"), onPress: () => goBack()},
+    ])
   }
 
   return (
@@ -121,7 +113,7 @@ const $scrollContent: ThemedStyle<ViewStyle> = () => ({
 
 const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.s6,
+  padding: spacing.s4,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({spacing, colors}) => ({

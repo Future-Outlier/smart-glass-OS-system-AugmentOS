@@ -141,7 +141,7 @@ const $scrollContent: ThemedStyle<ViewStyle> = () => ({
 
 const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.s6,
+  padding: spacing.s4,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({spacing, colors}) => ({

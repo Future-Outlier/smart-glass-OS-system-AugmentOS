@@ -1,4 +1,3 @@
-import {FontAwesome} from "@expo/vector-icons"
 import {useState} from "react"
 import {View, TextInput, ActivityIndicator, ScrollView, ViewStyle, TextStyle} from "react-native"
 import Toast from "react-native-toast-message"
@@ -66,8 +65,6 @@ export default function ChangeEmailScreen() {
             <View style={themed($inputGroup)}>
               <Text style={themed($inputLabel)}>{translate("profileSettings:newEmailPlaceholder")}</Text>
               <View style={themed($enhancedInputContainer)}>
-                <FontAwesome name="envelope" size={16} color={theme.colors.text} />
-                <Spacer width={spacing.s1} />
                 <TextInput
                   hitSlop={{top: 16, bottom: 16}}
                   style={themed($enhancedInput)}
@@ -112,7 +109,7 @@ const $scrollContent: ThemedStyle<ViewStyle> = () => ({
 
 const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.s6,
+  padding: spacing.s4,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({spacing, colors}) => ({

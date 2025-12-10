@@ -11,7 +11,6 @@ import {
   View,
   ViewStyle,
 } from "react-native"
-import Toast from "react-native-toast-message"
 
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
@@ -98,17 +97,12 @@ export default function SignupScreen() {
       return
     }
 
-    // Show success toast
-    Toast.show({
-      type: "success",
-      text1: translate("login:success"),
-      text2: translate("login:checkEmailVerification"),
-      visibilityTime: 5000,
-      position: "bottom",
-    })
-
     setIsLoading(false)
-    replace("/")
+
+    // Show success alert and navigate after dismissal
+    showAlert(translate("login:success"), translate("login:checkEmailVerification"), [
+      {text: translate("common:ok"), onPress: () => replace("/")},
+    ])
   }
 
   const handleBack = () => {
@@ -289,7 +283,7 @@ const $scrollContent: ThemedStyle<ViewStyle> = () => ({
 
 const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
-  padding: spacing.s6,
+  padding: spacing.s4,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({spacing, colors}) => ({

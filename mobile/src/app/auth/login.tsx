@@ -455,7 +455,7 @@ const $scrollContent: ThemedStyle<ViewStyle> = () => ({
 const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   justifyContent: "center",
-  padding: spacing.s6,
+  padding: spacing.s4,
 })
 
 const $authLoadingOverlay: ThemedStyle<ViewStyle> = ({colors}) => ({
