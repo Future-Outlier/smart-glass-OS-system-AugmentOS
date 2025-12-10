@@ -337,6 +337,12 @@ public class AsgCameraServer extends AsgServer {
                     return createErrorResponse(Response.Status.REQUEST_TIMEOUT, "Gallery processing timeout");
                 }
 
+                // Skip AVIF transfer artifacts - they should not appear in gallery
+                if (isAvifTransferArtifact(photoMetadata.getFileName())) {
+                    logger.debug(TAG, "📚 Skipping AVIF transfer artifact in gallery: " + photoMetadata.getFileName());
+                    continue;
+                }
+
                 Map<String, Object> photoInfo = new HashMap<>();
                 photoInfo.put("name", photoMetadata.getFileName());
                 photoInfo.put("size", photoMetadata.getFileSize());

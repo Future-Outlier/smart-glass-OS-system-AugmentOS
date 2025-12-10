@@ -492,11 +492,22 @@ export function GalleryScreen() {
       })
     }
 
-    // Downloaded photos (exclude any that are in the sync queue)
+    // Downloaded photos (exclude any that are in the sync queue or are AVIF artifacts)
     const syncQueueNames = new Set(syncQueue.map(p => p.name))
 
+    const isAvifArtifact = (name: string) => {
+      // Filter out AVIF transfer artifacts by pattern
+      return (
+        name.match(/^I\d+$/) || // "I" + digits
+        name.match(/^ble_\d+$/) || // "ble_" + digits
+        name.match(/^\d+$/) || // Pure digits
+        name.endsWith(".avif") ||
+        name.endsWith(".avifs")
+      )
+    }
+
     const downloadedOnly = downloadedPhotos
-      .filter(p => !syncQueueNames.has(p.name))
+      .filter(p => !syncQueueNames.has(p.name) && !isAvifArtifact(p.name))
       .sort((a, b) => {
         const aTime = typeof a.modified === "string" ? new Date(a.modified).getTime() : a.modified
         const bTime = typeof b.modified === "string" ? new Date(b.modified).getTime() : b.modified
