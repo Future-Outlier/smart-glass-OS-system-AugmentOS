@@ -5,7 +5,6 @@ import {
   FileType2,
   Fullscreen,
   Glasses,
-  House,
   LayoutDashboard,
   Locate,
   Unlink,
@@ -146,17 +145,11 @@ export function Icon(props: IconProps) {
     // @ts-ignore
     const IconComponent = lucideIcons[name] as any
 
-    let colorOverride = color
-    let fillOverride = undefined
-
-    if (name.includes("filled")) {
-      colorOverride = color
-      fillOverride = "transparent"
-    }
+    let fillOverride = "transparent"
 
     return (
       <View {...viewProps} style={$containerStyleOverride}>
-        <IconComponent style={$imageStyle} size={size} color={colorOverride} fill={fillOverride} />
+        <IconComponent style={$imageStyle} size={size} color={color} fill={fillOverride} />
       </View>
     )
   }
