@@ -393,7 +393,7 @@ class CoreManager {
 
         // Send PCM to cloud if needed
         if (shouldSendPcmData) {
-            Bridge.log("MAN: handlePcm() - sending PCM to cloud")
+            // Bridge.log("MAN: handlePcm() - sending PCM to cloud")
             Bridge.sendMicData(pcmData)
         }
 
@@ -444,11 +444,20 @@ class CoreManager {
                 }
 
                 if (micMode == MicTypes.GLASSES_CUSTOM) {
-                    if (sgc?.hasMic == true && sgc?.micEnabled == false) {
-                        sgc?.setMicEnabled(true)
-                        micUsed = micMode
-                        break
+                    if (sgc?.hasMic == true) {
+                        // enable the mic if it's not already on:
+                        if (sgc?.micEnabled == false) {
+                            sgc?.setMicEnabled(true)
+                            micUsed = micMode
+                            break
+                        } else {
+                            // the mic is already on, mark it as used and break:
+                            micUsed = micMode
+                            break
+                        }
                     }
+                    // if the glasses doesn't have a mic, continue to the next mic:
+                    continue
                 }
             }
         }

@@ -2975,6 +2975,8 @@ public class MentraLive extends SGCManager {
             Bridge.log("LIVE: 🎤 Microphone disabled, stopping audio input handling");
             stopMicBeat();
         }
+
+        enableAudioPlayback(enable);
     }
 
     /**
