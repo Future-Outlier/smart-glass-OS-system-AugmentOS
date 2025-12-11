@@ -177,8 +177,8 @@ actor AckManager {
     func waitForAck(
         key: String,
         timeoutMs: Int,
-        onRegistered: @Sendable () -> Void,
-        onTimeout: @Sendable () -> Void = {}
+        onRegistered: @escaping @Sendable () -> Void,
+        onTimeout: @escaping @Sendable () -> Void = {}
     ) async -> Bool {
         return await withCheckedContinuation { continuation in
             pending[key] = continuation
@@ -662,7 +662,7 @@ class G1: NSObject, SGCManager {
     // @@@ REACT NATIVE FUNCTIONS @@@
 
     // this scans for glasses to connect to and only connnects if SEARCH_ID is set
-    func startScan() {
+    func startScan() -> Bool {
         if centralManager == nil {
             centralManager = CBCentralManager(
                 delegate: self, queue: G1._bluetoothQueue,
@@ -1053,7 +1053,7 @@ class G1: NSObject, SGCManager {
             let firstFewBytes = String(Data(lastChunk).hexEncodedString().prefix(16)).uppercased()
             // don't log if it starts with 25 (heartbeat):
             if lastChunk[0] != Commands.BLE_REQ_HEARTBEAT.rawValue {
-                Bridge.log("SEND (\(side)) \(firstFewBytes)")
+                // Bridge.log("SEND (\(side)) \(firstFewBytes)")
             }
 
             //      if (lastChunk[0] == 0x4E) {
@@ -1159,7 +1159,7 @@ class G1: NSObject, SGCManager {
         Task {
             let wasWaiting = await ackManager.receiveAck(key: key)
             if wasWaiting {
-                Bridge.log("G1: ✅ ACK received for \(key)")
+                // Bridge.log("G1: ✅ ACK received for \(key)")
             }
         }
     }
