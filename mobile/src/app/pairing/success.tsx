@@ -35,7 +35,7 @@ export default function PairingSuccessScreen() {
   const glassesImage = getGlassesImage(glassesModelName)
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
+    <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <View style={{flex: 1}} />
 
       {/* Glasses Image with Logo on top */}

@@ -82,9 +82,9 @@ export const ForegroundAppsGrid: React.FC = () => {
 
       // small hack to help with some long app names:
       const numberOfLines = item.name.split(" ").length > 1 ? 2 : 1
-      let size = 12
+      let size = 14
       if (numberOfLines == 1 && item.name.length > 10) {
-        size = 11
+        size = 14
       }
 
       return (
@@ -154,18 +154,16 @@ const $appIcon: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 12,
-  color: colors.text,
+  color: colors.secondary_foreground,
   textAlign: "center",
-  marginTop: spacing.s1,
+  marginTop: spacing.s2,
   lineHeight: 14,
 })
 
 const $appNameOffline: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 12,
   color: colors.textDim,
   textAlign: "center",
-  marginTop: spacing.s1,
+  marginTop: spacing.s2,
   textDecorationLine: "line-through",
   lineHeight: 14,
 })
