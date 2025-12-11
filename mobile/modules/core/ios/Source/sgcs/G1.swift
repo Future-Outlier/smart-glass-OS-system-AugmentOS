@@ -2222,8 +2222,12 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
     private func stopReconnectionTimer() {
         reconnectionQueue.async { [weak self] in
             guard let self = self else { return }
+            guard let timer = self.reconnectionTimer else { return }
             Bridge.log("G1: Stopping reconnection timer")
-            self.reconnectionTimer?.cancel()
+            // Clear event handler before cancel to prevent race condition
+            // where timer is deallocated while dispatch still holds references
+            timer.setEventHandler(handler: nil)
+            timer.cancel()
             self.reconnectionTimer = nil
         }
     }
@@ -2233,8 +2237,12 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
             guard let self = self else { return }
             Bridge.log("G1: Starting reconnection timer")
 
-            self.reconnectionTimer?.cancel()
-            self.reconnectionTimer = nil
+            // Clean up existing timer properly before creating new one
+            if let existingTimer = self.reconnectionTimer {
+                existingTimer.setEventHandler(handler: nil)
+                existingTimer.cancel()
+                self.reconnectionTimer = nil
+            }
             self.reconnectionAttempts = 0
 
             let timer = DispatchSource.makeTimerSource(queue: self.reconnectionQueue)
@@ -2248,7 +2256,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
     }
 
     // Connect by UUID
-    @objc func connectByUUID() -> Bool {
+    func connectByUUID() -> Bool {
         // don't do this if we don't have a search id set:
         if DEVICE_SEARCH_ID == "NOT_SET" || DEVICE_SEARCH_ID.isEmpty {
             Bridge.log("G1: 🔵 No DEVICE_SEARCH_ID set, skipping connect by UUID")
@@ -2301,7 +2309,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
         return foundAny
     }
 
-    @objc private func attemptReconnection() {
+    private func attemptReconnection() {
         Bridge.log("G1: Attempting reconnection (attempt \(reconnectionAttempts))...")
         // Check if we're already connected
         if ready {
