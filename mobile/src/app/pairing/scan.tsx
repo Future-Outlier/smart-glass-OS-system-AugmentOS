@@ -245,7 +245,10 @@ export default function SelectGlassesBluetoothScreen() {
 
   const filterDeviceName = (deviceName: string) => {
     // filter out MENTRA_LIVE from the device name:
-    return deviceName.replace("MENTRA_LIVE_BLE_", "")
+    let newName = deviceName.replace("MENTRA_LIVE_BLE_", "")
+    newName = newName.replace("MENTRA_LIVE_BT_", "")
+    newName = newName.replace("Mentra_Live_", "")
+    return newName
   }
 
   return (

@@ -602,7 +602,7 @@ public class MentraLive extends SGCManager {
 
             // Post the discovered device to the event bus ONLY
             // Don't automatically connect - wait for explicit connect request from UI
-            if (deviceName.equals("Xy_A") || deviceName.startsWith("XyBLE_") || deviceName.startsWith("MENTRA_LIVE_BLE") || deviceName.startsWith("MENTRA_LIVE_BT")) {
+            if (deviceName.equals("Xy_A") || deviceName.startsWith("XyBLE_") || deviceName.startsWith("MENTRA_LIVE_BLE") || deviceName.startsWith("MENTRA_LIVE_BT") || deviceName.toLowerCase().startsWith("mentra_live")) {
                 String glassType = deviceName.equals("Xy_A") ? "Standard" : "K900";
                 Bridge.log("LIVE: Found compatible " + glassType + " glasses device: " + deviceName);
                 // EventBus.getDefault().post(new GlassesBluetoothSearchDiscoverEvent(
