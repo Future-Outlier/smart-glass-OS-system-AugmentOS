@@ -843,6 +843,7 @@ typealias JSONObject = [String: Any]
 
 // MARK: - Main Manager Class
 
+@MainActor
 class MentraLive: NSObject, SGCManager {
     var connectionState: String = ConnTypes.DISCONNECTED
 
