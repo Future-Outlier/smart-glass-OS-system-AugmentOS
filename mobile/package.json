@@ -47,7 +47,7 @@
     "apisauce": "3.2.1",
     "authing-js-sdk": "^4.23.55",
     "axios": "^1.13.2",
-    "babel-plugin-module-resolver": "^5.0.2",
+    "babel-plugin-module-resolver": "5.0.0",
     "bzip2": "^0.1.1",
     "core": "file:./modules/core",
     "date-fns": "^4.1.0",
