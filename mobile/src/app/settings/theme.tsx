@@ -52,8 +52,6 @@ const $settingsItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   paddingVertical: spacing.s5,
   paddingHorizontal: spacing.s6,
   backgroundColor: colors.primary_foreground,
-  // height: spacing.s16,
-  // paddingVertical: spacing.s4,
   alignItems: "center",
 })
 

@@ -187,7 +187,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     let res = await restComms.getApplets()
     if (res.is_error()) {
       console.error(`Failed to get applets: ${res.error}`)
-      return
+      // continue anyway in case we're just offline:
     } else {
       // convert to the client applet interface:
       onlineApps = res.value.map(app => ({
