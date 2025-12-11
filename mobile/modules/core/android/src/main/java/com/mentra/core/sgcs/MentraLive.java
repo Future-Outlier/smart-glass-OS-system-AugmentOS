@@ -2965,7 +2965,7 @@ public class MentraLive extends SGCManager {
 
         // Update the shouldUseGlassesMic flag to reflect the current state
         var m = CoreManager.getInstance();
-        this.shouldUseGlassesMic = enable && m.getSensingEnabled();
+        this.shouldUseGlassesMic = enable;
         Bridge.log("LIVE: 🎤 Updated shouldUseGlassesMic to: " + shouldUseGlassesMic);
 
         if (this.shouldUseGlassesMic) {
