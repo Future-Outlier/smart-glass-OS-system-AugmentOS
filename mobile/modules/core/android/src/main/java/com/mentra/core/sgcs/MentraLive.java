@@ -363,7 +363,7 @@ public class MentraLive extends SGCManager {
     private boolean audioPlaybackEnabled = true;
     // Rolling recording control - saves last 20 seconds of audio as M4A file every 20 seconds
     // Set to true to enable rolling recording, false to disable.
-    private boolean rollingRecordingEnabled = true;
+    private boolean rollingRecordingEnabled = false;
 
     // Periodic test message for ACK testing
     private static final int TEST_MESSAGE_INTERVAL_MS = 5000; // 5 seconds
@@ -1065,7 +1065,7 @@ public class MentraLive extends SGCManager {
             long threadId = Thread.currentThread().getId();
             UUID uuid = characteristic.getUuid();
 
-            Bridge.log("LIVE: onCharacteristicChanged triggered for: " + uuid);
+            // Bridge.log("LIVE: onCharacteristicChanged triggered for: " + uuid);
 
             boolean isRxCharacteristic = uuid.equals(RX_CHAR_UUID);
             boolean isTxCharacteristic = uuid.equals(TX_CHAR_UUID);
@@ -1569,7 +1569,7 @@ public class MentraLive extends SGCManager {
      * Process data received from the glasses
      */
     private void processReceivedData(byte[] data, int size) {
-        Bridge.log("LIVE: Processing received data: " + bytesToHex(data));
+        // Bridge.log("LIVE: Processing received data: " + bytesToHex(data));
 
         // Check if we have enough data
         if (data == null || size < 1) {
@@ -4947,7 +4947,7 @@ public class MentraLive extends SGCManager {
      * Bytes 2-401: LC3 encoded audio data (400 bytes - 10 frames × 40 bytes per frame)
      */
     private void processLc3AudioPacket(byte[] data) {
-        Bridge.log("LIVE: Processing LC3 audio packet: " + data.length + " bytes");
+        // Bridge.log("LIVE: Processing LC3 audio packet: " + data.length + " bytes");
 
         if (data == null || data.length < 2) {
             Log.w(TAG, "Invalid LC3 audio packet received: too short");
@@ -4956,7 +4956,7 @@ public class MentraLive extends SGCManager {
 
         // Check for audio packet header
         if (data[0] == (byte) 0xF1) {
-            Bridge.log("LIVE: Valid LC3 audio packet received");
+            // Bridge.log("LIVE: Valid LC3 audio packet received");
             byte sequenceNumber = data[1];
             long receiveTime = System.currentTimeMillis();
 
@@ -4995,25 +4995,27 @@ public class MentraLive extends SGCManager {
                 Log.e(TAG, "❌ LC3 decoder not initialized - cannot decode to PCM");
 
             }
+
+            // Bridge.log("LIVE: 🔊 Audio playback enabled: " + audioPlaybackEnabled);
         // } else {
             // Log.w(TAG, "No audio processing callback registered - audio data will not be processed");
         // }
 
-        // Play LC3 audio directly through LC3 player if enabled
-        // This allows monitoring of the glasses microphone in real-time
-        if (audioPlaybackEnabled && lc3AudioPlayer != null) {
-            Log.d(TAG, "LIVE: 🔊 Playing LC3 audio through phone speakers: " + data.length + " bytes");
-            // The data array already contains the full packet with F1 header and sequence
-            // Just pass it directly to the LC3 player
-            lc3AudioPlayer.write(data, 0, data.length);
-            // Bridge.log("LIVE: 🔊 Playing LC3 audio through phone speakers: " + data.length + " bytes");
-        } else if (!audioPlaybackEnabled) {
-            // Audio playback is disabled - only processing for PCM conversion
-            // Bridge.log("LIVE: 🔇 Audio playback disabled - processing for PCM only");
-        }
+            // Play LC3 audio directly through LC3 player if enabled
+            // This allows monitoring of the glasses microphone in real-time
+            if (audioPlaybackEnabled && lc3AudioPlayer != null) {
+                Bridge.log("LIVE: 🔊 Playing LC3 audio through phone speakers: " + data.length + " bytes");
+                // The data array already contains the full packet with F1 header and sequence
+                // Just pass it directly to the LC3 player
+                lc3AudioPlayer.write(data, 0, data.length);
+                // Bridge.log("LIVE: 🔊 Playing LC3 audio through phone speakers: " + data.length + " bytes");
+            } else if (!audioPlaybackEnabled) {
+                // Audio playback is disabled - only processing for PCM conversion
+                // Bridge.log("LIVE: 🔇 Audio playback disabled - processing for PCM only");
+            }
 
         } else {
-            Log.w(TAG, "Received non-audio packet on LC3 characteristic.");
+            Bridge.log("LIVE: ⚠️ Received non-audio packet on LC3 characteristic.");
         }
     }
 
