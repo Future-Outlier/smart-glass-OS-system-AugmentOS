@@ -99,8 +99,8 @@ public class Lc3Player extends Thread{
     private byte[]mTestBuffer = new byte[20];       // Single frame buffer (20 bytes)
     public void write(byte[] data, int offset, int size)
     {
-        if(size != 102)  // 20 bytes × 5 frames + 2 header bytes
-            return;
+        // if(size != 102)  // 20 bytes × 5 frames + 2 header bytes
+        //     return;
         if(!mQueue.offer(data))
         {
             Log.e("_test_","+++++++++ addFrame fail");
@@ -215,7 +215,6 @@ public class Lc3Player extends Thread{
                             addToRollingBuffer(decData);
                             
                             // Audio playback disabled - uncomment to play through phone speakers
-                            /*
                             synchronized (this) {
                                 if (mTrack != null && isPlaying) {
                                     try {
@@ -228,7 +227,6 @@ public class Lc3Player extends Thread{
                                     }
                                 }
                             }
-                            */
                         }
                     }
 

@@ -1077,7 +1077,7 @@ public class MentraLive extends SGCManager {
             } else if (isTxCharacteristic) {
                 Bridge.log("LIVE: Received data on TX characteristic");
             } else if (isLc3ReadCharacteristic) {
-                Bridge.log("LIVE: Received data on LC3_READ characteristic");
+                // Bridge.log("LIVE: Received data on LC3_READ characteristic");
                 processLc3AudioPacket(characteristic.getValue());
             } else if (isLc3WriteCharacteristic) {
                 Bridge.log("LIVE: Received data on LC3_WRITE characteristic");
@@ -2976,7 +2976,7 @@ public class MentraLive extends SGCManager {
             stopMicBeat();
         }
 
-        enableAudioPlayback(enable);
+        enableAudioPlayback(true);
     }
 
     /**
@@ -5004,7 +5004,10 @@ public class MentraLive extends SGCManager {
             // Play LC3 audio directly through LC3 player if enabled
             // This allows monitoring of the glasses microphone in real-time
             if (audioPlaybackEnabled && lc3AudioPlayer != null) {
-                Bridge.log("LIVE: 🔊 Playing LC3 audio through phone speakers: " + data.length + " bytes");
+                // log 1/50th of the time:
+                if (Math.random() < 0.02) {
+                    Bridge.log("LIVE: 🔊 Playing LC3 audio through phone speakers: " + data.length + " bytes");
+                }
                 // The data array already contains the full packet with F1 header and sequence
                 // Just pass it directly to the LC3 player
                 lc3AudioPlayer.write(data, 0, data.length);
