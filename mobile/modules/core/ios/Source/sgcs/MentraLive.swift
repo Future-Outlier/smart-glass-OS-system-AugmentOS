@@ -1564,7 +1564,7 @@ class MentraLive: NSObject, SGCManager {
 
         // Determine endianness based on device name
         if let deviceName = connectedPeripheral?.name,
-           deviceName.hasPrefix("XyBLE_") || deviceName.hasPrefix("MENTRA_LIVE")
+           deviceName.hasPrefix("XyBLE_") || deviceName.lowercased().hasPrefix("mentra_live")
         {
             // K900 device - big-endian
             payloadLength = (Int(bytes[3]) << 8) | Int(bytes[4])
