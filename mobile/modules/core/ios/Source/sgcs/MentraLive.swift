@@ -381,7 +381,8 @@ private struct FileTransferSession {
     init(fileName: String, fileSize: Int, announcedPackets: Int? = nil) {
         self.fileName = fileName
         self.fileSize = fileSize
-        let computedPackets = (fileSize + K900ProtocolUtils.FILE_PACK_SIZE - 1) / K900ProtocolUtils.FILE_PACK_SIZE
+        let computedPackets =
+            (fileSize + K900ProtocolUtils.FILE_PACK_SIZE - 1) / K900ProtocolUtils.FILE_PACK_SIZE
         if let announced = announcedPackets, announced > 0 {
             totalPackets = announced
             isAnnounced = true
@@ -619,7 +620,10 @@ extension MentraLive: CBPeripheralDelegate {
         for service in services where service.uuid == SERVICE_UUID {
             Bridge.log("Found UART service, discovering characteristics...")
             peripheral.discoverCharacteristics(
-                [TX_CHAR_UUID, RX_CHAR_UUID, FILE_READ_UUID, FILE_WRITE_UUID, LC3_READ_UUID, LC3_WRITE_UUID], for: service
+                [
+                    TX_CHAR_UUID, RX_CHAR_UUID, FILE_READ_UUID, FILE_WRITE_UUID, LC3_READ_UUID,
+                    LC3_WRITE_UUID,
+                ], for: service
             )
         }
     }
@@ -843,6 +847,7 @@ typealias JSONObject = [String: Any]
 
 // MARK: - Main Manager Class
 
+@MainActor
 class MentraLive: NSObject, SGCManager {
     var connectionState: String = ConnTypes.DISCONNECTED
 
@@ -1032,7 +1037,10 @@ class MentraLive: NSObject, SGCManager {
     }
 
     deinit {
-        destroy()
+        // Prevent delegate callbacks to deallocated object
+        centralManager?.delegate = nil
+        connectedPeripheral?.delegate = nil
+        Bridge.log("MentraLive: deinitialized")
     }
 
     func cleanup() {
@@ -1134,7 +1142,8 @@ class MentraLive: NSObject, SGCManager {
         micBeatTimer?.invalidate()
 
         // Schedule periodic micbeat (every 30 minutes)
-        micBeatTimer = Timer.scheduledTimer(withTimeInterval: MICBEAT_INTERVAL_MS, repeats: true) { [weak self] _ in
+        micBeatTimer = Timer.scheduledTimer(withTimeInterval: MICBEAT_INTERVAL_MS, repeats: true) {
+            [weak self] _ in
             guard let self = self else { return }
             Bridge.log("LIVE: 🎤 Sending micbeat - enabling custom audio TX")
             self.sendEnableCustomAudioTxMessage(self.shouldUseGlassesMic)
@@ -1162,7 +1171,10 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
-    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?, compress: String?) {
+    func requestPhoto(
+        _ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?,
+        compress: String?
+    ) {
         Bridge.log("Requesting photo: \(requestId) for app: \(appId)")
 
         var json: [String: Any] = [
@@ -1288,7 +1300,8 @@ class MentraLive: NSObject, SGCManager {
         Task.detached { [weak self] in
             guard let self else { return }
             while true {
-                if self.pending == nil {
+                let pendingIsNil = await MainActor.run { self.pending == nil }
+                if pendingIsNil {
                     if let command = await self.commandQueue.dequeue() {
                         await self.processSendQueue(command)
                     }
@@ -1329,7 +1342,9 @@ class MentraLive: NSObject, SGCManager {
             // Start retry timer for 1s
             DispatchQueue.main.async { [weak self] in
                 self?.pendingMessageTimer?.invalidate()
-                self?.pendingMessageTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: false) { _ in
+                self?.pendingMessageTimer = Timer.scheduledTimer(
+                    withTimeInterval: 1, repeats: false
+                ) { _ in
                     self?.handlePendingMessageTimeout()
                 }
             }
@@ -1442,10 +1457,14 @@ class MentraLive: NSObject, SGCManager {
         }
 
         // Calculate delay with exponential backoff
-        let delayNanoseconds = min(BASE_RECONNECT_DELAY_MS * UInt64(1 << reconnectAttempts), MAX_RECONNECT_DELAY_MS)
+        let delayNanoseconds = min(
+            BASE_RECONNECT_DELAY_MS * UInt64(1 << reconnectAttempts), MAX_RECONNECT_DELAY_MS
+        )
         reconnectAttempts += 1
 
-        Bridge.log("Scheduling reconnection attempt \(reconnectAttempts) in \(Double(delayNanoseconds) / 1_000_000_000)s (max \(MAX_RECONNECT_ATTEMPTS))")
+        Bridge.log(
+            "Scheduling reconnection attempt \(reconnectAttempts) in \(Double(delayNanoseconds) / 1_000_000_000)s (max \(MAX_RECONNECT_ATTEMPTS))"
+        )
 
         // Schedule reconnection attempt
         let workItem = DispatchWorkItem { [weak self] in
@@ -1453,13 +1472,19 @@ class MentraLive: NSObject, SGCManager {
 
             if self.connectionState == ConnTypes.DISCONNECTED && !self.isKilled {
                 // Check for last known device name to start scan
-                if let lastDeviceName = UserDefaults.standard.string(forKey: self.PREFS_DEVICE_NAME), !lastDeviceName.isEmpty {
-                    Bridge.log("Reconnection attempt \(self.reconnectAttempts) - looking for device with name: \(lastDeviceName)")
+                if let lastDeviceName = UserDefaults.standard.string(
+                    forKey: self.PREFS_DEVICE_NAME), !lastDeviceName.isEmpty
+                {
+                    Bridge.log(
+                        "Reconnection attempt \(self.reconnectAttempts) - looking for device with name: \(lastDeviceName)"
+                    )
                     // Start scan to find this device
                     // The scan will automatically connect if it finds a device with the saved name
                     self.startScan()
                 } else {
-                    Bridge.log("Reconnection attempt \(self.reconnectAttempts) - no last device name available")
+                    Bridge.log(
+                        "Reconnection attempt \(self.reconnectAttempts) - no last device name available"
+                    )
                     self.connectionState = ConnTypes.DISCONNECTED
                 }
             }
@@ -1469,7 +1494,9 @@ class MentraLive: NSObject, SGCManager {
         reconnectionWorkItem = workItem
 
         // Schedule the work item
-        DispatchQueue.main.asyncAfter(deadline: .now() + .nanoseconds(Int(delayNanoseconds)), execute: workItem)
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + .nanoseconds(Int(delayNanoseconds)), execute: workItem
+        )
     }
 
     // MARK: - Data Processing
@@ -1594,7 +1621,8 @@ class MentraLive: NSObject, SGCManager {
                     pendingMessageTimer?.invalidate()
                     pendingMessageTimer = nil
                 } else if pending?.id != nil {
-                    Bridge.log("Received unexpected ACK! expected: \(pending!.id), received: \(mId)")
+                    Bridge.log(
+                        "Received unexpected ACK! expected: \(pending!.id), received: \(mId)")
                 }
             }
             return // Don't send ACK for ACKs!
@@ -1631,7 +1659,8 @@ class MentraLive: NSObject, SGCManager {
 
         case "hotspot_error":
             let errorMessage = json["error_message"] as? String ?? "Unknown hotspot error"
-            let timestamp = json["timestamp"] as? Int64 ?? Int64(Date().timeIntervalSince1970 * 1000)
+            let timestamp =
+                json["timestamp"] as? Int64 ?? Int64(Date().timeIntervalSince1970 * 1000)
             handleHotspotError(errorMessage: errorMessage, timestamp: timestamp)
 
         case "wifi_scan_result":
@@ -1662,7 +1691,9 @@ class MentraLive: NSObject, SGCManager {
             let gestureName = json["gesture_name"] as? String ?? "unknown"
             let timestamp = parseTimestamp(json["timestamp"])
             let deviceModel = json["device_model"] as? String ?? glassesDeviceModel
-            Bridge.sendTouchEvent(deviceModel: deviceModel, gestureName: gestureName, timestamp: timestamp)
+            Bridge.sendTouchEvent(
+                deviceModel: deviceModel, gestureName: gestureName, timestamp: timestamp
+            )
 
         case "swipe_volume_status":
             let enabled = json["enabled"] as? Bool ?? false
@@ -1673,7 +1704,9 @@ class MentraLive: NSObject, SGCManager {
             let switchType = (json["switch_type"] as? Int) ?? (json["switchType"] as? Int) ?? -1
             let switchValue = (json["switch_value"] as? Int) ?? (json["switchValue"] as? Int) ?? -1
             let timestamp = parseTimestamp(json["timestamp"])
-            Bridge.sendSwitchStatus(switchType: switchType, value: switchValue, timestamp: timestamp)
+            Bridge.sendSwitchStatus(
+                switchType: switchType, value: switchValue, timestamp: timestamp
+            )
 
         case "rgb_led_control_response":
             let requestId = json["requestId"] as? String ?? ""
@@ -1710,7 +1743,8 @@ class MentraLive: NSObject, SGCManager {
         case "mtk_update_complete":
             Bridge.log("💾 Received MTK update complete from ASG client")
 
-            let updateMessage = json["message"] as? String ?? "MTK firmware updated. Please restart glasses."
+            let updateMessage =
+                json["message"] as? String ?? "MTK firmware updated. Please restart glasses."
             let timestamp = parseTimestamp(json["timestamp"])
 
             Bridge.log("🔄 MTK Update Message: \(updateMessage)")
@@ -1760,7 +1794,9 @@ class MentraLive: NSObject, SGCManager {
                     updateBatteryStatus(level: percentage, charging: charging)
                     if voltage > 0 {
                         let voltageVolts = Double(voltage) / 1000.0
-                        Bridge.log("🔋 Battery from heartbeat - \(percentage)%, \(voltageVolts)V, charging: \(charging)")
+                        Bridge.log(
+                            "🔋 Battery from heartbeat - \(percentage)%, \(voltageVolts)V, charging: \(charging)"
+                        )
                     }
                 }
 
@@ -1987,7 +2023,9 @@ class MentraLive: NSObject, SGCManager {
 
         // Validate sequence number for packet loss detection
         if lastReceivedLc3Sequence != -1 && (lastReceivedLc3Sequence &+ 1) != sequenceNumber {
-            Bridge.log("LIVE: LC3 packet sequence mismatch. Expected: \(lastReceivedLc3Sequence &+ 1), Got: \(sequenceNumber)")
+            Bridge.log(
+                "LIVE: LC3 packet sequence mismatch. Expected: \(lastReceivedLc3Sequence &+ 1), Got: \(sequenceNumber)"
+            )
         }
         lastReceivedLc3Sequence = sequenceNumber
 
@@ -2052,21 +2090,30 @@ class MentraLive: NSObject, SGCManager {
             return
         }
 
-        Bridge.log("📢 File transfer announcement: \(fileName), \(totalPackets) packets, \(fileSize) bytes")
+        Bridge.log(
+            "📢 File transfer announcement: \(fileName), \(totalPackets) packets, \(fileSize) bytes")
 
         if var existing = activeFileTransfers[fileName] {
             Bridge.log("📢 Restart detected - clearing existing session for \(fileName)")
-            Bridge.log("📊 Previous session had \(existing.receivedPackets.count)/\(existing.totalPackets) packets")
+            Bridge.log(
+                "📊 Previous session had \(existing.receivedPackets.count)/\(existing.totalPackets) packets"
+            )
             activeFileTransfers.removeValue(forKey: fileName)
         }
 
-        var session = FileTransferSession(fileName: fileName, fileSize: fileSize, announcedPackets: totalPackets)
+        var session = FileTransferSession(
+            fileName: fileName, fileSize: fileSize, announcedPackets: totalPackets
+        )
         session.isAnnounced = true
         activeFileTransfers[fileName] = session
 
         let bleImgId = fileName.split(separator: ".").first.map(String.init) ?? ""
         if var bleTransfer = blePhotoTransfers[bleImgId] {
-            var bleSession = bleTransfer.session ?? FileTransferSession(fileName: fileName, fileSize: fileSize, announcedPackets: totalPackets)
+            var bleSession =
+                bleTransfer.session
+                    ?? FileTransferSession(
+                        fileName: fileName, fileSize: fileSize, announcedPackets: totalPackets
+                    )
             bleSession.updateAnnouncedPackets(totalPackets)
             bleTransfer.session = bleSession
             blePhotoTransfers[bleImgId] = bleTransfer
@@ -2102,12 +2149,16 @@ class MentraLive: NSObject, SGCManager {
         Bridge.log("❌ Transfer failed for: \(fileName) (reason: \(reason))")
 
         if let session = activeFileTransfers.removeValue(forKey: fileName) {
-            Bridge.log("📊 Transfer stats - Received: \(session.receivedPackets.count)/\(session.totalPackets) packets")
+            Bridge.log(
+                "📊 Transfer stats - Received: \(session.receivedPackets.count)/\(session.totalPackets) packets"
+            )
         }
 
         let bleImgId = fileName.split(separator: ".").first.map(String.init) ?? ""
         if let transfer = blePhotoTransfers.removeValue(forKey: bleImgId) {
-            Bridge.log("🧹 Cleaned up failed BLE photo transfer for: \(bleImgId) (requestId: \(transfer.requestId))")
+            Bridge.log(
+                "🧹 Cleaned up failed BLE photo transfer for: \(bleImgId) (requestId: \(transfer.requestId))"
+            )
         }
     }
 
@@ -2131,8 +2182,10 @@ class MentraLive: NSObject, SGCManager {
 
             // Get or create session for this transfer
             if photoTransfer.session == nil {
-                var session = FileTransferSession(fileName: packetInfo.fileName,
-                                                  fileSize: Int(packetInfo.fileSize))
+                var session = FileTransferSession(
+                    fileName: packetInfo.fileName,
+                    fileSize: Int(packetInfo.fileSize)
+                )
                 photoTransfer.session = session
                 blePhotoTransfers[bleImgId] = photoTransfer
                 Bridge.log(
@@ -2149,32 +2202,46 @@ class MentraLive: NSObject, SGCManager {
                 if added {
                     if session.isComplete {
                         let transferEndTime = Date()
-                        let totalDuration = transferEndTime.timeIntervalSince(photoTransfer.phoneStartTime) * 1000
-                        let bleTransferDuration = photoTransfer.bleTransferStartTime != nil ?
-                            transferEndTime.timeIntervalSince(photoTransfer.bleTransferStartTime!) * 1000 : 0
+                        let totalDuration =
+                            transferEndTime.timeIntervalSince(photoTransfer.phoneStartTime) * 1000
+                        let bleTransferDuration =
+                            photoTransfer.bleTransferStartTime != nil
+                                ? transferEndTime.timeIntervalSince(photoTransfer.bleTransferStartTime!)
+                                * 1000 : 0
 
                         Bridge.log("✅ BLE photo transfer complete: \(packetInfo.fileName)")
-                        Bridge.log("⏱️ Total duration (request to complete): \(Int(totalDuration))ms")
-                        Bridge.log("⏱️ Glasses compression: \(photoTransfer.glassesCompressionDurationMs)ms")
+                        Bridge.log(
+                            "⏱️ Total duration (request to complete): \(Int(totalDuration))ms")
+                        Bridge.log(
+                            "⏱️ Glasses compression: \(photoTransfer.glassesCompressionDurationMs)ms"
+                        )
                         if bleTransferDuration > 0 {
                             Bridge.log("⏱️ BLE transfer duration: \(Int(bleTransferDuration))ms")
-                            Bridge.log("📊 Transfer rate: \(Int(packetInfo.fileSize) * 1000 / Int(bleTransferDuration)) bytes/sec")
+                            Bridge.log(
+                                "📊 Transfer rate: \(Int(packetInfo.fileSize) * 1000 / Int(bleTransferDuration)) bytes/sec"
+                            )
                         }
 
                         if let imageData = session.assembleFile() {
                             processAndUploadBlePhoto(photoTransfer, imageData: imageData)
                         }
 
-                        sendTransferCompleteConfirmation(fileName: packetInfo.fileName, success: true)
+                        sendTransferCompleteConfirmation(
+                            fileName: packetInfo.fileName, success: true
+                        )
                         blePhotoTransfers.removeValue(forKey: bleImgId)
                     } else if session.isFinalPacket(Int(packetInfo.packIndex)) {
                         let missingPackets = session.missingPacketIndices()
                         if !missingPackets.isEmpty {
-                            Bridge.log("❌ BLE photo transfer incomplete after final packet. Missing \(missingPackets.count) packets: \(missingPackets)")
+                            Bridge.log(
+                                "❌ BLE photo transfer incomplete after final packet. Missing \(missingPackets.count) packets: \(missingPackets)"
+                            )
                             Bridge.log("❌ Telling glasses to retry entire transfer")
 
                             // Tell glasses transfer failed, they will retry
-                            sendTransferCompleteConfirmation(fileName: packetInfo.fileName, success: false)
+                            sendTransferCompleteConfirmation(
+                                fileName: packetInfo.fileName, success: false
+                            )
                             blePhotoTransfers.removeValue(forKey: bleImgId)
                         }
                     }
@@ -2222,11 +2289,15 @@ class MentraLive: NSObject, SGCManager {
                 } else if sess.isFinalPacket(Int(packetInfo.packIndex)) {
                     let missingPackets = sess.missingPacketIndices()
                     if !missingPackets.isEmpty {
-                        Bridge.log("❌ File transfer incomplete after final packet. Missing \(missingPackets.count) packets: \(missingPackets)")
+                        Bridge.log(
+                            "❌ File transfer incomplete after final packet. Missing \(missingPackets.count) packets: \(missingPackets)"
+                        )
                         Bridge.log("❌ Telling glasses to retry entire transfer")
 
                         // Tell glasses transfer failed, they will retry
-                        sendTransferCompleteConfirmation(fileName: packetInfo.fileName, success: false)
+                        sendTransferCompleteConfirmation(
+                            fileName: packetInfo.fileName, success: false
+                        )
                         activeFileTransfers.removeValue(forKey: packetInfo.fileName)
                     }
                 }
@@ -2348,7 +2419,9 @@ class MentraLive: NSObject, SGCManager {
         ]
 
         sendJson(json, wakeUp: true)
-        Bridge.log("\(success ? "✅" : "❌") Sent transfer completion confirmation for: \(fileName) (success: \(success))")
+        Bridge.log(
+            "\(success ? "✅" : "❌") Sent transfer completion confirmation for: \(fileName) (success: \(success))"
+        )
     }
 
     // MARK: - Sending Data
@@ -2711,13 +2784,14 @@ class MentraLive: NSObject, SGCManager {
         )
 
         // Emit gallery status event as CoreMessageEvent like other status events
-        let eventBody = [
-            "photos": photoCount,
-            "videos": videoCount,
-            "total": totalCount,
-            "total_size": totalSize,
-            "has_content": hasContent,
-        ] as [String: Any]
+        let eventBody =
+            [
+                "photos": photoCount,
+                "videos": videoCount,
+                "total": totalCount,
+                "total_size": totalSize,
+                "has_content": hasContent,
+            ] as [String: Any]
         Bridge.sendTypedMessage("gallery_status", body: eventBody)
     }
 
@@ -2731,7 +2805,9 @@ class MentraLive: NSObject, SGCManager {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.heartbeatTimer?.invalidate()
-            self.heartbeatTimer = Timer.scheduledTimer(withTimeInterval: self.HEARTBEAT_INTERVAL_MS, repeats: true) { [weak self] _ in
+            self.heartbeatTimer = Timer.scheduledTimer(
+                withTimeInterval: self.HEARTBEAT_INTERVAL_MS, repeats: true
+            ) { [weak self] _ in
                 self?.sendHeartbeat()
             }
         }
@@ -3007,7 +3083,9 @@ class MentraLive: NSObject, SGCManager {
         // Don't configure audio session - PhoneMic.swift handles that
         // Just check if audio session supports Bluetooth (informational only)
         if !monitor.isAudioSessionConfigured() {
-            Bridge.log("Audio: Audio session not configured for Bluetooth yet - mic system will configure it when recording")
+            Bridge.log(
+                "Audio: Audio session not configured for Bluetooth yet - mic system will configure it when recording"
+            )
         }
 
         // Extract device ID pattern to match the specific device
@@ -3044,18 +3122,25 @@ class MentraLive: NSObject, SGCManager {
                 connectionState = ConnTypes.CONNECTED
             }
 
-            Bridge.sendTypedMessage("audio_connected", body: [
-                "device_name": deviceName,
-            ])
+            Bridge.sendTypedMessage(
+                "audio_connected",
+                body: [
+                    "device_name": deviceName,
+                ]
+            )
         } else {
             // Not found in availableInputs - not paired yet
             Bridge.log("Audio: Device not paired, prompting user to pair")
-            Bridge.sendTypedMessage("audio_pairing_needed", body: [
-                "device_name": deviceName,
-            ])
+            Bridge.sendTypedMessage(
+                "audio_pairing_needed",
+                body: [
+                    "device_name": deviceName,
+                ]
+            )
 
             // Start monitoring for when user pairs manually
-            monitor.startMonitoring(devicePattern: audioDevicePattern) { [weak self] (connected: Bool, deviceName: String?) in
+            monitor.startMonitoring(devicePattern: audioDevicePattern) {
+                [weak self] (connected: Bool, deviceName: String?) in
                 guard let self = self else { return }
 
                 if connected {
@@ -3066,14 +3151,19 @@ class MentraLive: NSObject, SGCManager {
 
                     // If glasses_ready was already received, now we're fully ready
                     if self.glassesReadyReceived {
-                        Bridge.log("Audio: Both audio and glasses_ready confirmed - marking as fully ready")
+                        Bridge.log(
+                            "Audio: Both audio and glasses_ready confirmed - marking as fully ready"
+                        )
                         self.ready = true
                         self.connectionState = ConnTypes.CONNECTED
                     }
 
-                    Bridge.sendTypedMessage("audio_connected", body: [
-                        "device_name": deviceName ?? "Mentra Live",
-                    ])
+                    Bridge.sendTypedMessage(
+                        "audio_connected",
+                        body: [
+                            "device_name": deviceName ?? "Mentra Live",
+                        ]
+                    )
                 } else {
                     Bridge.log("Audio: Device disconnected")
                     self.audioConnected = false
@@ -3213,7 +3303,9 @@ extension MentraLive {
                 payload["W"] = 1
             }
             let commandData = try JSONSerialization.data(withJSONObject: payload)
-            guard let packet = packDataToK900(commandData, cmdType: K900ProtocolUtils.CMD_TYPE_STRING) else {
+            guard
+                let packet = packDataToK900(commandData, cmdType: K900ProtocolUtils.CMD_TYPE_STRING)
+            else {
                 Bridge.log("MentraLive: Failed to pack raw K900 command")
                 return false
             }
@@ -3255,7 +3347,9 @@ extension MentraLive {
 
     private func setTouchEventReporting(_ enable: Bool) {
         do {
-            let bodyData = try JSONSerialization.data(withJSONObject: ["type": 26, "switch": enable])
+            let bodyData = try JSONSerialization.data(withJSONObject: [
+                "type": 26, "switch": enable,
+            ])
             guard let bodyString = String(data: bodyData, encoding: .utf8) else {
                 Bridge.log("MentraLive: Failed to encode touch event control payload")
                 return
@@ -3301,17 +3395,20 @@ extension MentraLive {
         }
     }
 
-    func sendRgbLedControl(requestId: String,
-                           packageName: String?,
-                           action: String,
-                           color: String?,
-                           ontime: Int,
-                           offtime: Int,
-                           count: Int)
-    {
+    func sendRgbLedControl(
+        requestId: String,
+        packageName: String?,
+        action: String,
+        color: String?,
+        ontime: Int,
+        offtime: Int,
+        count: Int
+    ) {
         guard connectionState == ConnTypes.CONNECTED, ready else {
             Bridge.log("MentraLive: Cannot handle RGB LED control - glasses not connected")
-            Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "glasses_not_connected")
+            Bridge.sendRgbLedControlResponse(
+                requestId: requestId, success: false, error: "glasses_not_connected"
+            )
             return
         }
 
@@ -3339,7 +3436,9 @@ extension MentraLive {
             command["type"] = "rgb_led_control_off"
         default:
             Bridge.log("MentraLive: Unsupported RGB LED action: \(action)")
-            Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "unsupported_action")
+            Bridge.sendRgbLedControlResponse(
+                requestId: requestId, success: false, error: "unsupported_action"
+            )
             return
         }
 
