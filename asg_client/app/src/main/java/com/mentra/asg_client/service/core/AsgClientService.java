@@ -35,6 +35,7 @@ import com.mentra.asg_client.service.media.interfaces.IMediaManager;
 // Note: AugmentosService removed - legacy dependency no longer needed
 // import com.augmentos.augmentos_core.AugmentosService;
 import com.mentra.asg_client.service.utils.ServiceUtils;
+import com.mentra.asg_client.service.utils.SysProp;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -871,8 +872,22 @@ public class AsgClientService extends Service implements NetworkStateListener, B
             versionInfo.put("android_version", android.os.Build.VERSION.RELEASE);
             versionInfo.put("ota_version_url", OtaConstants.VERSION_JSON_URL);
 
-            Log.d(TAG, "📋 Version info prepared - Device: " + ServiceUtils.getDeviceTypeString(this) + 
-                      ", Android: " + android.os.Build.VERSION.RELEASE + 
+            // Include MCU firmware version if available (cached from hs_syvr command)
+            String mcuFirmwareVersion = "";
+            if (serviceContainer.getServiceManager() != null &&
+                serviceContainer.getServiceManager().getAsgSettings() != null) {
+                mcuFirmwareVersion = serviceContainer.getServiceManager().getAsgSettings().getMcuFirmwareVersion();
+            }
+            versionInfo.put("firmware_version", mcuFirmwareVersion);
+
+            // Include BES BT MAC address as unique device identifier (stored in system properties)
+            String besBtMac = SysProp.getBesBtMac(this);
+            versionInfo.put("bt_mac_address", besBtMac);
+
+            Log.d(TAG, "📋 Version info prepared - Device: " + ServiceUtils.getDeviceTypeString(this) +
+                      ", Android: " + android.os.Build.VERSION.RELEASE +
+                      ", MCU Firmware: " + mcuFirmwareVersion +
+                      ", BT MAC: " + besBtMac +
                       ", OTA URL: " + OtaConstants.VERSION_JSON_URL);
 
             if (serviceContainer.getServiceManager().getBluetoothManager() != null &&

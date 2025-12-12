@@ -12,6 +12,7 @@ export interface GlassesInfo {
   modelName: string
   androidVersion: string
   fwVersion: string
+  btMacAddress: string
   buildNumber: string
   otaVersionUrl: string
   appVersion: string
@@ -55,6 +56,7 @@ const initialState: GlassesInfo = {
   modelName: "",
   androidVersion: "",
   fwVersion: "",
+  btMacAddress: "",
   buildNumber: "",
   otaVersionUrl: "",
   appVersion: "",

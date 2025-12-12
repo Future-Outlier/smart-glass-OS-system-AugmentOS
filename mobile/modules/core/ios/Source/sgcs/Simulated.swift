@@ -18,6 +18,8 @@ class Simulated: SGCManager {
     var glassesDeviceModel: String = ""
     var glassesAndroidVersion: String = ""
     var glassesOtaVersionUrl: String = ""
+    var glassesFirmwareVersion: String = ""
+    var glassesBtMacAddress: String = ""
     var glassesSerialNumber: String = ""
     var glassesStyle: String = ""
     var glassesColor: String = ""

@@ -1190,11 +1190,12 @@ class CoreManager {
             glassesInfo["deviceModel"] = sgc.glassesDeviceModel
             glassesInfo["androidVersion"] = sgc.glassesAndroidVersion
             glassesInfo["otaVersionUrl"] = sgc.glassesOtaVersionUrl
+            glassesInfo["fwVersion"] = sgc.glassesFirmwareVersion
+            glassesInfo["btMacAddress"] = sgc.glassesBtMacAddress
             // state:
             glassesInfo["connected"] = glassesConnected
             glassesInfo["connectionState"] = sgc.connectionState
             glassesInfo["micEnabled"] = sgc.micEnabled
-            
         }
 
         if (sgc is G1) {

@@ -18,10 +18,12 @@ export default function Layout() {
   const {bottom} = useSafeAreaInsets()
 
   function TabButton({iconName, iconNameFilled, isFocused, label, ...props}: TabButtonProps) {
-    const iconColor = isFocused ? theme.colors.primary_foreground : theme.colors.muted_foreground
-    // const iconColor = isFocused ? theme.colors.muted_foreground : theme.colors.primary_foreground
+    let iconColor = isFocused ? theme.colors.primary_foreground : theme.colors.muted_foreground
+    if (iconName === "house") {
+      iconColor = isFocused ? theme.colors.primary : theme.colors.muted_foreground
+    }
     const textColor = isFocused ? theme.colors.secondary_foreground : theme.colors.muted_foreground
-    const iconBgColor = isFocused ? theme.colors.primary : theme.colors.primary_foreground
+    const iconBgColor = isFocused ? theme.colors.primary : "transparent"
     const displayIcon = isFocused ? iconNameFilled : iconName
     return (
       <Pressable {...props} style={[themed($tabButton), {marginBottom: bottom}]}>

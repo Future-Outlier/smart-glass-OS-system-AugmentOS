@@ -647,12 +647,23 @@ extension MentraLive: CBPeripheralDelegate {
         guard let characteristics = service.characteristics else { return }
 
         for characteristic in characteristics {
+            // Log characteristic properties for debugging
+            let props = characteristic.properties
+            let propsStr = [
+                props.contains(.notify) ? "NOTIFY" : nil,
+                props.contains(.indicate) ? "INDICATE" : nil,
+                props.contains(.read) ? "READ" : nil,
+                props.contains(.write) ? "WRITE" : nil,
+                props.contains(.writeWithoutResponse) ? "WRITE_NO_RESPONSE" : nil,
+            ].compactMap { $0 }.joined(separator: " ")
+            Bridge.log("📋 Characteristic \(characteristic.uuid): properties=[\(propsStr)]")
+
             if characteristic.uuid == TX_CHAR_UUID {
                 txCharacteristic = characteristic
                 Bridge.log("LIVE: ✅ Found TX characteristic")
             } else if characteristic.uuid == RX_CHAR_UUID {
                 rxCharacteristic = characteristic
-                Bridge.log("LIVE: ✅ Found RX characteristic")
+                Bridge.log("LIVE: ✅ Found RX characteristic - hasNotify=\(props.contains(.notify)), hasIndicate=\(props.contains(.indicate))")
             } else if characteristic.uuid == FILE_READ_UUID {
                 fileReadCharacteristic = characteristic
                 Bridge.log("LIVE: 📁 Found FILE_READ characteristic (72FF)!")
@@ -712,7 +723,12 @@ extension MentraLive: CBPeripheralDelegate {
     func peripheral(
         _: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?
     ) {
-        // Bridge.log("GOT CHARACTERISTIC UPDATE @@@@@@@@@@@@@@@@@@@@@")
+        Bridge.log("📥 didUpdateValueFor CALLED - characteristic: \(characteristic.uuid), dataSize: \(characteristic.value?.count ?? 0)")
+        // Log raw hex for debugging glasses_ready issue
+        if let data = characteristic.value {
+            let hexString = data.prefix(50).map { String(format: "%02X ", $0) }.joined()
+            Bridge.log("📥 RAW HEX (first 50): \(hexString)")
+        }
         if let error {
             Bridge.log(
                 "LIVE: Error updating value for characteristic: \(error.localizedDescription)")
@@ -932,6 +948,8 @@ class MentraLive: NSObject, SGCManager {
     var glassesAppVersion: String = ""
     var glassesBuildNumber: String = ""
     var glassesOtaVersionUrl: String = ""
+    var glassesFirmwareVersion: String = ""
+    var glassesBtMacAddress: String = ""
     var glassesDeviceModel: String = ""
     var glassesAndroidVersion: String = ""
 
@@ -1605,6 +1623,9 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func processJsonObject(_ json: [String: Any]) {
+        // Log ALL incoming JSON objects for debugging
+        Bridge.log("📨 processJsonObject: \(json)")
+
         // Check for K900 command format
         if let command = json["C"] as? String {
             processK900JsonMessage(json)
@@ -1612,6 +1633,7 @@ class MentraLive: NSObject, SGCManager {
         }
 
         guard let type = json["type"] as? String else {
+            Bridge.log("⚠️ JSON has no 'type' field and no 'C' field - ignoring")
             return
         }
 
@@ -1978,10 +2000,14 @@ class MentraLive: NSObject, SGCManager {
         let deviceModel = json["device_model"] as? String ?? ""
         let androidVersion = json["android_version"] as? String ?? ""
         let otaVersionUrl = json["ota_version_url"] as? String ?? ""
+        let firmwareVersion = json["firmware_version"] as? String ?? ""
+        let btMacAddress = json["bt_mac_address"] as? String ?? ""
 
         glassesAppVersion = appVersion
         glassesBuildNumber = buildNumber
         glassesOtaVersionUrl = otaVersionUrl
+        glassesFirmwareVersion = firmwareVersion
+        glassesBtMacAddress = btMacAddress
         isNewVersion = (Int(buildNumber) ?? 0) >= 5
         glassesDeviceModel = deviceModel
         glassesAndroidVersion = androidVersion
@@ -1991,12 +2017,13 @@ class MentraLive: NSObject, SGCManager {
         // hasMic = supportsLC3Audio
 
         Bridge.log(
-            "Glasses Version - App: \(appVersion), Build: \(buildNumber), Device: \(deviceModel), Android: \(androidVersion), OTA URL: \(otaVersionUrl)"
+            "Glasses Version - App: \(appVersion), Build: \(buildNumber), Device: \(deviceModel), Android: \(androidVersion), Firmware: \(firmwareVersion), BT MAC: \(btMacAddress), OTA URL: \(otaVersionUrl)"
         )
         Bridge.log("LIVE: LC3 Audio Support: \(supportsLC3Audio), Has Mic: \(hasMic)")
         emitVersionInfo(
             appVersion: appVersion, buildNumber: buildNumber, deviceModel: deviceModel,
-            androidVersion: androidVersion, otaVersionUrl: otaVersionUrl
+            androidVersion: androidVersion, otaVersionUrl: otaVersionUrl, firmwareVersion: firmwareVersion,
+            btMacAddress: btMacAddress
         )
 
         // Trigger status update so React Native gets the updated glasses info with version details
@@ -3049,7 +3076,7 @@ class MentraLive: NSObject, SGCManager {
 
     private func emitVersionInfo(
         appVersion: String, buildNumber: String, deviceModel: String, androidVersion: String,
-        otaVersionUrl: String
+        otaVersionUrl: String, firmwareVersion: String, btMacAddress: String
     ) {
         let eventBody: [String: Any] = [
             "app_version": appVersion,
@@ -3057,6 +3084,8 @@ class MentraLive: NSObject, SGCManager {
             "device_model": deviceModel,
             "android_version": androidVersion,
             "ota_version_url": otaVersionUrl,
+            "firmware_version": firmwareVersion,
+            "bt_mac_address": btMacAddress,
         ]
 
         Bridge.sendTypedMessage("version_info", body: eventBody)
