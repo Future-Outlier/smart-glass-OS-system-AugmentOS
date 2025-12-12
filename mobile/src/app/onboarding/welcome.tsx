@@ -92,14 +92,14 @@ export default function OnboardingWelcome() {
     <Screen
       preset="fixed"
       backgroundColor={theme.colors.primary_foreground}
-      style={[themed($styles.screen), {paddingHorizontal: theme.spacing.s8}]}
+      style={[{paddingHorizontal: theme.spacing.s8}]}
       safeAreaEdges={["top"]}>
       <View style={themed($logoContainer)}>
         <LogoSvg width={108} height={58} />
       </View>
 
       <View style={themed($infoContainer)}>
-        <Text style={themed($title)} tx="onboarding:welcome" weight="semiBold" />
+        <Text style={themed($title)} tx="onboarding:welcome" weight="semibold" />
         <Spacer height={theme.spacing.s4} />
         <Text style={themed($subtitle)} tx="onboarding:doYouHaveGlasses" />
       </View>

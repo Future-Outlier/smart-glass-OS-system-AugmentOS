@@ -1,15 +1,17 @@
 import {useLocalSearchParams, useFocusEffect} from "expo-router"
 import {useState, useEffect, useCallback, useRef} from "react"
-import {View, TextInput, TouchableOpacity, BackHandler, ViewStyle, TextStyle, ScrollView} from "react-native"
-import Toast from "react-native-toast-message"
+import {View, TextInput, TouchableOpacity, BackHandler} from "react-native"
+import {ViewStyle, TextStyle} from "react-native"
+import {ScrollView} from "react-native"
 
 import {EyeIcon} from "@/components/icons/EyeIcon"
 import {EyeOffIcon} from "@/components/icons/EyeOffIcon"
 import {WifiIcon} from "@/components/icons/WifiIcon"
 import {Screen, Header, Checkbox, Button, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
-import {$styles, ThemedStyle} from "@/theme"
+import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
@@ -88,10 +90,9 @@ export default function WifiPasswordScreen() {
 
   const handleConnect = async () => {
     if (!ssid) {
-      Toast.show({
-        type: "error",
-        text1: "Please enter a network name",
-      })
+      showAlert(translate("common:error"), translate("wifiSetup:pleaseEnterNetworkName"), [
+        {text: translate("common:ok")},
+      ])
       return
     }
 
@@ -113,7 +114,7 @@ export default function WifiPasswordScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header title="Wi-Fi" leftIcon="chevron-left" onLeftPress={handleGoBack} />
       <ScrollView contentContainerStyle={themed($scrollContent)} style={{flex: 1}}>
         {/* Centered card container */}

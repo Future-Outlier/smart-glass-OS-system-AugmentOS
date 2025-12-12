@@ -5,6 +5,7 @@
 //  Created by Matthew Fosse on 10/7/25.
 //
 
+@MainActor
 class Simulated: SGCManager {
     // MARK: - Device Information
 
