@@ -640,12 +640,23 @@ extension MentraLive: CBPeripheralDelegate {
         guard let characteristics = service.characteristics else { return }
 
         for characteristic in characteristics {
+            // Log characteristic properties for debugging
+            let props = characteristic.properties
+            let propsStr = [
+                props.contains(.notify) ? "NOTIFY" : nil,
+                props.contains(.indicate) ? "INDICATE" : nil,
+                props.contains(.read) ? "READ" : nil,
+                props.contains(.write) ? "WRITE" : nil,
+                props.contains(.writeWithoutResponse) ? "WRITE_NO_RESPONSE" : nil,
+            ].compactMap { $0 }.joined(separator: " ")
+            Bridge.log("📋 Characteristic \(characteristic.uuid): properties=[\(propsStr)]")
+
             if characteristic.uuid == TX_CHAR_UUID {
                 txCharacteristic = characteristic
                 Bridge.log("✅ Found TX characteristic")
             } else if characteristic.uuid == RX_CHAR_UUID {
                 rxCharacteristic = characteristic
-                Bridge.log("✅ Found RX characteristic")
+                Bridge.log("✅ Found RX characteristic - hasNotify=\(props.contains(.notify)), hasIndicate=\(props.contains(.indicate))")
             } else if characteristic.uuid == FILE_READ_UUID {
                 fileReadCharacteristic = characteristic
                 Bridge.log("📁 Found FILE_READ characteristic (72FF)!")
@@ -705,7 +716,12 @@ extension MentraLive: CBPeripheralDelegate {
     func peripheral(
         _: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?
     ) {
-        // Bridge.log("GOT CHARACTERISTIC UPDATE @@@@@@@@@@@@@@@@@@@@@")
+        Bridge.log("📥 didUpdateValueFor CALLED - characteristic: \(characteristic.uuid), dataSize: \(characteristic.value?.count ?? 0)")
+        // Log raw hex for debugging glasses_ready issue
+        if let data = characteristic.value {
+            let hexString = data.prefix(50).map { String(format: "%02X ", $0) }.joined()
+            Bridge.log("📥 RAW HEX (first 50): \(hexString)")
+        }
         if let error {
             Bridge.log("Error updating value for characteristic: \(error.localizedDescription)")
             return
@@ -1561,7 +1577,7 @@ class MentraLive: NSObject, SGCManager {
 
         // Determine endianness based on device name
         if let deviceName = connectedPeripheral?.name,
-           deviceName.hasPrefix("XyBLE_") || deviceName.hasPrefix("MENTRA_LIVE")
+           deviceName.hasPrefix("XyBLE_") || deviceName.lowercased().hasPrefix("mentra_live")
         {
             // K900 device - big-endian
             payloadLength = (Int(bytes[3]) << 8) | Int(bytes[4])
@@ -1602,6 +1618,9 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func processJsonObject(_ json: [String: Any]) {
+        // Log ALL incoming JSON objects for debugging
+        Bridge.log("📨 processJsonObject: \(json)")
+
         // Check for K900 command format
         if let command = json["C"] as? String {
             processK900JsonMessage(json)
@@ -1609,6 +1628,7 @@ class MentraLive: NSObject, SGCManager {
         }
 
         guard let type = json["type"] as? String else {
+            Bridge.log("⚠️ JSON has no 'type' field and no 'C' field - ignoring")
             return
         }
 
