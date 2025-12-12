@@ -26,7 +26,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
     android: {
       icon: "./assets/app-icons/ic_launcher.png",
       package: "com.mentra.mentra",
-      versionCode: 66,
+      versionCode: 68,
       adaptiveIcon: {
         foregroundImage: "./assets/app-icons/ic_launcher_foreground.png",
         backgroundImage: "./assets/app-icons/ic_launcher.png",
@@ -100,7 +100,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
           "UIInterfaceOrientationPortrait",
           "UIInterfaceOrientationPortraitUpsideDown",
         ],
-        BGTaskSchedulerPermittedIdentifiers: ["com.mentra.background-timer"]
+        BGTaskSchedulerPermittedIdentifiers: ["com.mentra.background-timer"],
       },
       config: {
         usesNonExemptEncryption: false,
