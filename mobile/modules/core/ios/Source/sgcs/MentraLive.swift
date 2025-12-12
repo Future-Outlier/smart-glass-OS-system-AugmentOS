@@ -2034,10 +2034,10 @@ class MentraLive: NSObject, SGCManager {
         // // Forward PCM data to CoreManager for VAD and server transmission (same as Android)
         // CoreManager.shared.handlePcm(pcmData)
 
-        Bridge.log(
-            "LIVE: Processed LC3 audio seq=\(sequenceNumber), \(lc3Data.count) bytes"
-        )
-        CoreManager.shared.handleGlassesMicData(lc3Data)
+        // Bridge.log(
+        //     "LIVE: Processed LC3 audio seq=\(sequenceNumber), \(lc3Data.count) bytes"
+        // )
+        CoreManager.shared.handleGlassesMicData(lc3Data, 40)
 
         // Bridge.log(
         //     "LIVE: Processed LC3 audio seq=\(sequenceNumber), \(lc3Data.count)→\(pcmData.count) bytes"

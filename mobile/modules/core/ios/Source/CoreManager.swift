@@ -179,7 +179,7 @@ struct ViewState {
         }
     }
 
-    func handleGlassesMicData(_ lc3Data: Data) {
+    func handleGlassesMicData(_ lc3Data: Data, _ frameSize: Int = 20) {
         // decode the g1 audio data to PCM and feed to the VAD:
 
         // Ensure we have enough data to process
@@ -200,14 +200,14 @@ struct ViewState {
             // first send out whatever's in the vadBuffer (if there is anything):
             emptyVadBuffer()
             let pcmConverter = PcmConverter()
-            let pcmData = pcmConverter.decode(lc3Data, frameSize: 20) as Data
+            let pcmData = pcmConverter.decode(lc3Data, frameSize: frameSize) as Data
             //        self.serverComms.sendAudioChunk(lc3Data)
             Bridge.sendMicData(pcmData)
             return
         }
 
         let pcmConverter = PcmConverter()
-        let pcmData = pcmConverter.decode(lc3Data, frameSize: 20) as Data
+        let pcmData = pcmConverter.decode(lc3Data, frameSize: frameSize) as Data
 
         guard pcmData.count > 0 else {
             Bridge.log("PCM conversion resulted in empty data")
