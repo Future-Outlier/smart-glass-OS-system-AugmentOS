@@ -215,7 +215,7 @@ export default function PairingPrepScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
+    <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header
         title={glassesModelName}
         leftIcon="chevron-left"

@@ -24,7 +24,7 @@ export default function DeveloperSettingsScreen() {
   const [debugConsole, setDebugConsole] = useSetting(SETTINGS.debug_console.key)
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header title="Developer Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
 
       <View style={themed($warningContainer)}>
@@ -75,11 +75,7 @@ export default function DeveloperSettingsScreen() {
 
         <Spacer height={theme.spacing.s4} />
 
-        <RouteButton
-          label="Sitemap"
-          subtitle="view the app's route map"
-          onPress={() => push("/_sitemap")}
-        />
+        <RouteButton label="Sitemap" subtitle="view the app's route map" onPress={() => push("/_sitemap")} />
 
         <Spacer height={theme.spacing.s4} />
 

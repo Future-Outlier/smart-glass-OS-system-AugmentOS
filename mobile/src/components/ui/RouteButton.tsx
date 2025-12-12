@@ -26,7 +26,7 @@ export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitl
           style={{
             gap: theme.spacing.s1,
           }}>
-          <Text style={[themed($label), textStyle]} weight="semiBold" text={label} />
+          <Text style={[themed($label), textStyle]} weight="semibold" text={label} />
           {subtitle && <Text style={themed($subtitle)} text={subtitle} />}
         </View>
       </View>
@@ -51,7 +51,7 @@ interface RouteButtonProps {
   text?: string
   style?: ViewStyle
   icon?: React.ReactNode
-  variant?: "default" | "destructive"
+  preset?: "default" | "destructive"
   disabled?: boolean
 }
 
@@ -62,12 +62,12 @@ export function RouteButton({
   style,
   text,
   icon,
-  variant = "default",
+  preset = "default",
   disabled = false,
 }: RouteButtonProps) {
   const {theme, themed} = useAppTheme()
 
-  const isDestructive = variant === "destructive"
+  const isDestructive = preset === "destructive"
   const labelColor = disabled
     ? theme.colors.textDim
     : isDestructive

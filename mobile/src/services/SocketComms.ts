@@ -18,9 +18,6 @@ class SocketComms {
   private coreToken: string = ""
   public userid: string = ""
 
-  private reconnecting = false
-  private reconnectionAttempts = 0
-
   private constructor() {
     // Subscribe to WebSocket messages
     this.ws.on("message", message => {

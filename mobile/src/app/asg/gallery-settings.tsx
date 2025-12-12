@@ -1,3 +1,4 @@
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {useState, useEffect} from "react"
 import {View, ViewStyle, TextStyle, ScrollView} from "react-native"
 
@@ -13,8 +14,6 @@ import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-
-import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export default function GallerySettingsScreen() {
   const {goBack, push} = useNavigationHistory()
@@ -122,7 +121,7 @@ export default function GallerySettingsScreen() {
   let features = getModelCapabilities(defaultWearable)
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header title="Gallery Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Camera Settings button for glasses with configurable button */}
@@ -174,7 +173,7 @@ export default function GallerySettingsScreen() {
           <RouteButton
             label={translate("glasses:deleteAllPhotos")}
             onPress={handleDeleteAll}
-            variant="destructive"
+            preset="destructive"
             disabled={isLoadingStats || localPhotoCount + localVideoCount === 0}
           />
         </View>

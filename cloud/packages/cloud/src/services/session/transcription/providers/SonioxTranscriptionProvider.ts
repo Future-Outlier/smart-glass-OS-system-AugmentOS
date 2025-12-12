@@ -5,6 +5,7 @@
 import {
   StreamType,
   getLanguageInfo,
+  parseLanguageStream,
   TranscriptionData,
   SonioxToken,
 } from "@mentra/sdk";
@@ -75,10 +76,7 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
   private failureCount = 0;
   private lastFailureTime = 0;
 
-  constructor(
-    private config: SonioxProviderConfig,
-    parentLogger: Logger,
-  ) {
+  constructor(private config: SonioxProviderConfig, parentLogger: Logger) {
     this.logger = parentLogger.child({ provider: this.name });
 
     this.healthStatus = {
@@ -173,6 +171,11 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
   }
 
   supportsLanguage(language: string): boolean {
+    // Support "auto" for automatic language detection
+    if (language === "auto") {
+      return true;
+    }
+
     // Check if the language is in our supported transcription languages list
     // Language parameter is already a language code like "en-US", not a subscription string
 
@@ -278,6 +281,23 @@ class SonioxTranscriptionStream implements StreamInstance {
   private stablePrefixText: string = "";
   private lastSentInterim = ""; // Track last sent interim to avoid duplicates
 
+  // Utterance tracking for correlating interim and final transcripts
+  private currentUtteranceId: string | null = null;
+  private currentSpeakerId: string | undefined = undefined;
+  private currentLanguage: string | undefined = undefined;
+
+  private generateUtteranceId(): string {
+    return `utt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  }
+
+  private startNewUtterance(speakerId?: string, language?: string): void {
+    this.currentUtteranceId = this.generateUtteranceId();
+    this.currentSpeakerId = speakerId;
+    this.currentLanguage = language;
+    this.stablePrefixText = "";
+    this.lastSentInterim = "";
+  }
+
   // Helper to convert internal tokens to SDK format
   private convertToSdkTokens(
     tokens: Array<{
@@ -342,7 +362,21 @@ class SonioxTranscriptionStream implements StreamInstance {
       lastTranscriptEndMs: 0,
       lastTranscriptLagMs: 0,
       maxTranscriptLagMs: 0,
+      processingDeficitMs: 0,
+      wallClockLagMs: 0,
       transcriptLagWarnings: 0,
+      // Activity tracking (NEW)
+      lastTokenReceivedAt: undefined,
+      tokenBatchesReceived: 0,
+      lastTokenBatchSize: 0,
+      audioBytesSentAtLastToken: 0,
+      // Silence detection (NEW)
+      timeSinceLastTokenMs: 0,
+      audioSentSinceLastTokenMs: 0,
+      isReceivingTokens: false,
+      // True latency (NEW)
+      realtimeLatencyMs: 0,
+      avgRealtimeLatencyMs: 0,
     };
   }
 
@@ -423,16 +457,45 @@ class SonioxTranscriptionStream implements StreamInstance {
     if (!this.ws || this.isConfigSent) {
       return;
     }
+
+    // Parse subscription options for hints and language identification settings
+    const languageInfo = parseLanguageStream(this.subscription);
+    const hintsParam = languageInfo?.options?.hints;
+    const disableLangIdParam =
+      languageInfo?.options?.["no-language-identification"];
+
+    // Extract additional hints from query params
+    const additionalHints = hintsParam
+      ? (hintsParam as string).split(",").map((h) => h.trim())
+      : [];
+
+    // Determine if we're in auto mode
+    const isAutoMode = this.language === "auto";
+
+    // Build language hints array
     const languageHint = this.language.split("-")[0]; // Normalize to base language code (e.g. 'en' from 'en-US')
     const targetLanguageHint = this.targetLanguage
       ? this.targetLanguage.split("-")[0]
       : undefined;
-    const languageHints = targetLanguageHint
-      ? [languageHint, targetLanguageHint]
-      : [languageHint];
 
-    const disableLanguageIdentification = this.subscription.endsWith(
-      "?no-language-identification=true",
+    let languageHints: string[];
+    if (isAutoMode) {
+      // Auto mode: only use additional hints (no primary language)
+      languageHints = additionalHints;
+    } else if (targetLanguageHint) {
+      // Translation mode: primary + target + additional hints
+      languageHints = [languageHint, targetLanguageHint, ...additionalHints];
+    } else {
+      // Specific language mode: primary + additional hints
+      languageHints = [languageHint, ...additionalHints];
+    }
+
+    // Deduplicate hints to avoid Soniox "Language hints must be unique" error
+    languageHints = [...new Set(languageHints)];
+
+    // Determine enable_language_identification flag (default to enabled)
+    const enableLanguageIdentification = !(
+      disableLangIdParam === true || disableLangIdParam === "true"
     );
     const config: any = {
       api_key: this.config.apiKey,
@@ -440,11 +503,11 @@ class SonioxTranscriptionStream implements StreamInstance {
       audio_format: "pcm_s16le",
       sample_rate: 16000,
       num_channels: 1,
-      enable_language_identification: !disableLanguageIdentification, // Toggle based on flag
+      enable_language_identification: enableLanguageIdentification,
       max_non_final_tokens_duration_ms: 2000,
       enable_endpoint_detection: true, // Automatically finalize tokens on speech pauses
       enable_speaker_diarization: true,
-      language_hints: languageHints, // Default hints, can be overridden
+      language_hints: languageHints.length > 0 ? languageHints : undefined,
       // context: "Mentra, MentraOS, Mira, Hey Mira",
     };
 
@@ -456,14 +519,15 @@ class SonioxTranscriptionStream implements StreamInstance {
         language_a: this.language.split("-")[0], // Convert en-US to en
         language_b: this.targetLanguage.split("-")[0], // Convert es-ES to es
       };
-      config.language_hints = [
-        config.translation.language_a,
-        config.translation.language_b,
-      ];
-    } else {
-      // Just transcription
+      config.language_hints =
+        languageHints.length > 0
+          ? languageHints
+          : [config.translation.language_a, config.translation.language_b];
+    } else if (!isAutoMode) {
+      // Just transcription with specific language
       config.language = this.language;
     }
+    // In auto mode, don't set a specific language - let Soniox auto-detect
 
     try {
       this.ws.send(JSON.stringify(config));
@@ -524,6 +588,22 @@ class SonioxTranscriptionStream implements StreamInstance {
       }
 
       if (response.tokens && response.tokens.length > 0) {
+        // Debug: Log raw Soniox tokens to check speaker diarization
+        const tokensWithSpeaker = response.tokens.filter(
+          (t) => t.speaker !== undefined,
+        );
+        this.logger.debug(
+          {
+            streamId: this.id,
+            tokenCount: response.tokens.length,
+            tokensWithSpeaker: tokensWithSpeaker.length,
+            sampleToken: response.tokens[0],
+            speakers: [
+              ...new Set(response.tokens.map((t) => t.speaker).filter(Boolean)),
+            ],
+          },
+          `🔍 SONIOX RAW TOKENS: ${tokensWithSpeaker.length}/${response.tokens.length} have speaker field`,
+        );
         this.processSonioxTokens(response.tokens);
       }
     } catch (error) {
@@ -549,6 +629,20 @@ class SonioxTranscriptionStream implements StreamInstance {
   }
 
   private processTranscriptionTokens(tokens: SonioxApiToken[]): void {
+    const now = Date.now();
+
+    // NEW: Track token activity - we received tokens from Soniox
+    if (tokens.length > 0) {
+      this.metrics.lastTokenReceivedAt = now;
+      this.metrics.tokenBatchesReceived =
+        (this.metrics.tokenBatchesReceived || 0) + 1;
+      this.metrics.lastTokenBatchSize = tokens.length;
+      this.metrics.isReceivingTokens = true;
+      // Track audio bytes at time of token receipt for silence detection
+      this.metrics.audioBytesSentAtLastToken =
+        this.metrics.totalAudioBytesSent || 0;
+    }
+
     // New approach: append final tokens to stablePrefixText; keep only tail (non-final) tokens
     let hasEndToken = false;
     let avgConfidence = 0;
@@ -568,6 +662,36 @@ class SonioxTranscriptionStream implements StreamInstance {
         continue;
       }
 
+      // Detect speaker change → new utterance
+      if (token.speaker && token.speaker !== this.currentSpeakerId) {
+        // If we have content from previous speaker, emit final before switching
+        if (this.currentUtteranceId && this.lastSentInterim) {
+          this.emitFinalTranscription("speaker_change");
+        }
+        this.startNewUtterance(token.speaker, token.language || this.language);
+      }
+
+      // NOTE: We intentionally do NOT create a new utterance on language change.
+      // Soniox's language detection can fluctuate within a single utterance,
+      // especially for multi-lingual speech. Creating new utterances on every
+      // language change causes the UI to show many duplicate entries.
+      // Instead, we track the detected language and include it in the output,
+      // but keep the same utteranceId for the entire speech segment.
+
+      // Ensure utterance exists (first token of stream)
+      if (!this.currentUtteranceId) {
+        this.startNewUtterance(token.speaker, token.language || this.language);
+      }
+
+      // Update current speaker if provided
+      if (token.speaker) {
+        this.currentSpeakerId = token.speaker;
+      }
+      // Track detected language (for output) but don't split utterance on change
+      if (token.language) {
+        this.currentLanguage = token.language;
+      }
+
       // Track latest timestamp for latency calculation
       if (token.end_ms && token.end_ms > latestEndMs) {
         latestEndMs = token.end_ms;
@@ -582,6 +706,7 @@ class SonioxTranscriptionStream implements StreamInstance {
           confidence: token.confidence,
           start_ms: token.start_ms ?? 0,
           end_ms: token.end_ms ?? 0,
+          speaker: token.speaker,
         });
         avgConfidence += token.confidence;
       }
@@ -589,51 +714,72 @@ class SonioxTranscriptionStream implements StreamInstance {
 
     // Calculate transcript latency
     if (latestEndMs > 0) {
-      const now = Date.now();
       const streamAge = now - this.startTime;
-      const transcriptLag = streamAge - latestEndMs;
 
-      // Update metrics
-      this.metrics.lastTranscriptEndMs = latestEndMs;
-      this.metrics.lastTranscriptLagMs = transcriptLag;
-
-      if (
-        !this.metrics.maxTranscriptLagMs ||
-        transcriptLag > this.metrics.maxTranscriptLagMs
-      ) {
-        this.metrics.maxTranscriptLagMs = transcriptLag;
-      }
-
-      // Calculate processing deficit (audio sent vs transcribed)
+      // Calculate REAL lag: audio sent duration vs transcript position
+      // This is the TRUE measure of Soniox processing lag, unaffected by VAD gaps
       const audioSentDurationMs = (this.metrics.totalAudioBytesSent || 0) / 32; // 16kHz * 2 bytes = 32 bytes/ms
       const processingDeficit = audioSentDurationMs - latestEndMs;
 
-      // Log warning if lag exceeds threshold
-      if (transcriptLag > 5000) {
+      // Wall-clock lag (for debugging only - includes VAD gaps, NOT a true measure of Soniox lag)
+      const wallClockLag = streamAge - latestEndMs;
+
+      // NEW: Calculate realtime latency - this is the TRUE latency when actively receiving tokens
+      // Only meaningful when isReceivingTokens === true
+      this.metrics.realtimeLatencyMs = processingDeficit;
+
+      // Update rolling average (exponential moving average with alpha=0.2)
+      const alpha = 0.2;
+      this.metrics.avgRealtimeLatencyMs =
+        alpha * processingDeficit +
+        (1 - alpha) * (this.metrics.avgRealtimeLatencyMs || processingDeficit);
+
+      // Update legacy metrics for backwards compatibility
+      this.metrics.lastTranscriptEndMs = latestEndMs;
+      this.metrics.lastTranscriptLagMs = processingDeficit;
+      this.metrics.processingDeficitMs = processingDeficit; // Keep for backwards compat
+      this.metrics.wallClockLagMs = wallClockLag;
+
+      if (
+        !this.metrics.maxTranscriptLagMs ||
+        processingDeficit > this.metrics.maxTranscriptLagMs
+      ) {
+        this.metrics.maxTranscriptLagMs = processingDeficit;
+      }
+
+      // Log warning if REAL lag exceeds threshold AND we're actively receiving tokens
+      // This is actual Soniox lag, not silence
+      if (processingDeficit > 5000) {
         this.metrics.transcriptLagWarnings =
           (this.metrics.transcriptLagWarnings || 0) + 1;
 
         this.logger.warn(
           {
             streamId: this.id,
-            transcriptLagMs: Math.round(transcriptLag),
-            streamAgeMs: Math.round(streamAge),
-            transcriptEndMs: Math.round(latestEndMs),
-            processingDeficitMs: Math.round(processingDeficit),
+            realtimeLatencyMs: Math.round(processingDeficit),
+            avgRealtimeLatencyMs: Math.round(
+              this.metrics.avgRealtimeLatencyMs || 0,
+            ),
             audioSentDurationMs: Math.round(audioSentDurationMs),
+            transcriptEndMs: Math.round(latestEndMs),
+            wallClockLagMs: Math.round(wallClockLag),
+            streamAgeMs: Math.round(streamAge),
             maxLagMs: Math.round(this.metrics.maxTranscriptLagMs || 0),
             lagWarnings: this.metrics.transcriptLagWarnings,
+            isReceivingTokens: true,
             provider: "soniox",
           },
           "⚠️ HIGH TRANSCRIPTION LATENCY DETECTED - Soniox is lagging behind real-time",
         );
-      } else if (transcriptLag > 2000) {
+      } else if (processingDeficit > 2000) {
         // Info-level logging for moderate lag
         this.logger.info(
           {
             streamId: this.id,
-            transcriptLagMs: Math.round(transcriptLag),
-            processingDeficitMs: Math.round(processingDeficit),
+            realtimeLatencyMs: Math.round(processingDeficit),
+            audioSentDurationMs: Math.round(audioSentDurationMs),
+            wallClockLagMs: Math.round(wallClockLag),
+            isReceivingTokens: true,
             provider: "soniox",
           },
           "Moderate transcription latency detected",
@@ -655,10 +801,13 @@ class SonioxTranscriptionStream implements StreamInstance {
         type: StreamType.TRANSCRIPTION,
         text: currentInterim,
         isFinal: false,
+        utteranceId: this.currentUtteranceId || undefined,
+        speakerId: this.currentSpeakerId,
         confidence: avgConfidence || undefined,
         startTime: Date.now(),
         endTime: Date.now() + 1000,
-        transcribeLanguage: this.language,
+        transcribeLanguage: this.language, // Use subscription language for routing
+        detectedLanguage: this.currentLanguage, // Actual detected language from Soniox
         provider: "soniox",
         metadata: {
           provider: "soniox",
@@ -670,6 +819,7 @@ class SonioxTranscriptionStream implements StreamInstance {
                 confidence: t.confidence,
                 start_ms: t.start_ms,
                 end_ms: t.end_ms,
+                speaker: t.speaker,
               })),
             ),
           },
@@ -684,6 +834,8 @@ class SonioxTranscriptionStream implements StreamInstance {
           streamId: this.id,
           text: currentInterim.substring(0, 100),
           isFinal: false,
+          utteranceId: this.currentUtteranceId,
+          speakerId: this.currentSpeakerId,
           tailTokenCount: tailTokens.length,
           provider: "soniox",
         },
@@ -692,32 +844,52 @@ class SonioxTranscriptionStream implements StreamInstance {
     }
 
     if (hasEndToken) {
-      if (this.lastSentInterim) {
-        const finalData: TranscriptionData = {
-          type: StreamType.TRANSCRIPTION,
-          text: this.lastSentInterim,
-          isFinal: true,
-          startTime: Date.now(),
-          endTime: Date.now() + 1000,
-          transcribeLanguage: this.language,
-          provider: "soniox",
-          metadata: { provider: "soniox" },
-        };
-        this.callbacks.onData?.(finalData);
-        this.logger.debug(
-          {
-            streamId: this.id,
-            text: this.lastSentInterim.substring(0, 100),
-            isFinal: true,
-            provider: "soniox",
-          },
-          `🎙️ SONIOX: FINAL transcription - "${this.lastSentInterim}"`,
-        );
-      }
-      // Reset for next utterance
-      this.stablePrefixText = "";
-      this.lastSentInterim = "";
+      this.emitFinalTranscription("end_token");
+      // Reset utterance for next speech segment
+      this.currentUtteranceId = null;
     }
+  }
+
+  /**
+   * Emit a final transcription for the current utterance
+   */
+  private emitFinalTranscription(trigger: string): void {
+    if (!this.lastSentInterim) {
+      return;
+    }
+
+    const finalData: TranscriptionData = {
+      type: StreamType.TRANSCRIPTION,
+      text: this.lastSentInterim,
+      isFinal: true,
+      utteranceId: this.currentUtteranceId || undefined,
+      speakerId: this.currentSpeakerId,
+      startTime: Date.now(),
+      endTime: Date.now() + 1000,
+      transcribeLanguage: this.language, // Use subscription language for routing
+      detectedLanguage: this.currentLanguage, // Actual detected language from Soniox
+      provider: "soniox",
+      metadata: { provider: "soniox" },
+    };
+
+    this.callbacks.onData?.(finalData);
+
+    this.logger.debug(
+      {
+        streamId: this.id,
+        text: this.lastSentInterim.substring(0, 100),
+        isFinal: true,
+        utteranceId: this.currentUtteranceId,
+        speakerId: this.currentSpeakerId,
+        trigger,
+        provider: "soniox",
+      },
+      `🎙️ SONIOX: FINAL transcription - "${this.lastSentInterim}"`,
+    );
+
+    // Reset text buffers for next utterance
+    this.stablePrefixText = "";
+    this.lastSentInterim = "";
   }
 
   /**
@@ -732,13 +904,17 @@ class SonioxTranscriptionStream implements StreamInstance {
       );
       return;
     }
+
     const finalData: TranscriptionData = {
       type: StreamType.TRANSCRIPTION,
       text: this.lastSentInterim,
       isFinal: true,
+      utteranceId: this.currentUtteranceId || undefined,
+      speakerId: this.currentSpeakerId,
       startTime: Date.now(),
       endTime: Date.now() + 1000,
-      transcribeLanguage: this.language,
+      transcribeLanguage: this.language, // Use subscription language for routing
+      detectedLanguage: this.currentLanguage, // Actual detected language from Soniox
       provider: "soniox",
       metadata: { provider: "soniox" },
     };
@@ -750,6 +926,8 @@ class SonioxTranscriptionStream implements StreamInstance {
         streamId: this.id,
         text: this.lastSentInterim.substring(0, 100),
         isFinal: true,
+        utteranceId: this.currentUtteranceId,
+        speakerId: this.currentSpeakerId,
         provider: "soniox",
         trigger: "VAD_STOP",
       },
@@ -759,6 +937,8 @@ class SonioxTranscriptionStream implements StreamInstance {
     // Reset rolling state for next session
     this.stablePrefixText = "";
     this.lastSentInterim = "";
+    // Reset utterance for next speech segment
+    this.currentUtteranceId = null;
   }
 
   private handleError(error: Error): void {
@@ -881,6 +1061,9 @@ class SonioxTranscriptionStream implements StreamInstance {
   }
 
   getHealth(): StreamHealth {
+    // Calculate activity metrics on-demand
+    this.updateActivityMetrics();
+
     return {
       isAlive:
         this.state === StreamState.READY || this.state === StreamState.ACTIVE,
@@ -888,9 +1071,41 @@ class SonioxTranscriptionStream implements StreamInstance {
       consecutiveFailures: this.metrics.consecutiveFailures,
       lastSuccessfulWrite: this.metrics.lastSuccessfulWrite,
       providerHealth: this.provider.getHealthStatus(),
+      // Legacy metrics (kept for backwards compatibility)
       transcriptLagMs: this.metrics.lastTranscriptLagMs,
       maxTranscriptLagMs: this.metrics.maxTranscriptLagMs,
+      processingDeficitMs: this.metrics.processingDeficitMs,
+      wallClockLagMs: this.metrics.wallClockLagMs,
+      // NEW: Activity and true latency metrics
+      isReceivingTokens: this.metrics.isReceivingTokens,
+      realtimeLatencyMs: this.metrics.realtimeLatencyMs,
+      avgRealtimeLatencyMs: this.metrics.avgRealtimeLatencyMs,
+      timeSinceLastTokenMs: this.metrics.timeSinceLastTokenMs,
+      audioSentSinceLastTokenMs: this.metrics.audioSentSinceLastTokenMs,
     };
+  }
+
+  /**
+   * Update activity metrics for silence detection
+   * Called on-demand when health is requested
+   */
+  private updateActivityMetrics(): void {
+    const now = Date.now();
+    const lastTokenTime = this.metrics.lastTokenReceivedAt || this.startTime;
+
+    // Time since last token received
+    this.metrics.timeSinceLastTokenMs = now - lastTokenTime;
+
+    // Are we actively receiving tokens? (30 second window)
+    this.metrics.isReceivingTokens = this.metrics.timeSinceLastTokenMs < 30000;
+
+    // Calculate audio sent since last token (for silence detection)
+    const audioBytesSentAtLastToken =
+      this.metrics.audioBytesSentAtLastToken || 0;
+    const currentAudioBytesSent = this.metrics.totalAudioBytesSent || 0;
+    const bytesSinceLastToken =
+      currentAudioBytesSent - audioBytesSentAtLastToken;
+    this.metrics.audioSentSinceLastTokenMs = bytesSinceLastToken / 32; // 32 bytes per ms at 16kHz 16-bit
   }
 
   /**
