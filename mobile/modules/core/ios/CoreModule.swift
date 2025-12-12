@@ -192,21 +192,25 @@ public class CoreModule: Module {
                 requestId: String, packageName: String?, action: String, color: String?,
                 ontime: Int, offtime: Int, count: Int
             ) in
-            CoreManager.shared.rgbLedControl(
-                requestId: requestId,
-                packageName: packageName,
-                action: action,
-                color: color,
-                ontime: ontime,
-                offtime: offtime,
-                count: count
-            )
+            await MainActor.run {
+                CoreManager.shared.rgbLedControl(
+                    requestId: requestId,
+                    packageName: packageName,
+                    action: action,
+                    color: color,
+                    ontime: ontime,
+                    offtime: offtime,
+                    count: count
+                )
+            }
         }
 
         // MARK: - Settings Commands
 
         AsyncFunction("updateSettings") { (params: [String: Any]) in
-            CoreManager.shared.updateSettings(params)
+            await MainActor.run {
+                CoreManager.shared.updateSettings(params)
+            }
         }
 
         // MARK: - STT Commands

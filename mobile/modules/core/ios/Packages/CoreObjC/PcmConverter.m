@@ -66,7 +66,7 @@ static const uint16_t outputByteCount = 20;
     _decoderInitialized = YES;
 }
 
-- (NSMutableData *)decode:(NSData *)lc3data frameSize:(uint16_t)frameSize {
+- (NSMutableData *)decode:(NSData *)lc3data frameSize:(NSInteger)frameSize {
     if (lc3data == nil) {
         printf("Failed to decode Base64 data\n");
         return [[NSMutableData alloc] init];
