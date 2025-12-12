@@ -22,7 +22,7 @@ struct ViewState {
     var animationData: [String: Any]?
 }
 
-// This class handles logic for managing devices and connections to AugmentOS servers
+@MainActor
 @objc(CoreManager) class CoreManager: NSObject {
     static let shared = CoreManager()
 

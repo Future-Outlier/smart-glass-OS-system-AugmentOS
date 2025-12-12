@@ -793,6 +793,7 @@ typealias JSONObject = [String: Any]
 
 // MARK: - Main Manager Class
 
+@MainActor
 class MentraLive: NSObject, SGCManager {
     var connectionState: String = ConnTypes.DISCONNECTED
 
@@ -982,7 +983,10 @@ class MentraLive: NSObject, SGCManager {
     }
 
     deinit {
-        destroy()
+        // Prevent delegate callbacks to deallocated object
+        centralManager?.delegate = nil
+        connectedPeripheral?.delegate = nil
+        Bridge.log("MentraLive: deinitialized")
     }
 
     func cleanup() {
@@ -1292,7 +1296,8 @@ class MentraLive: NSObject, SGCManager {
         Task.detached { [weak self] in
             guard let self else { return }
             while true {
-                if self.pending == nil {
+                let pendingIsNil = await MainActor.run { self.pending == nil }
+                if pendingIsNil {
                     if let command = await self.commandQueue.dequeue() {
                         await self.processSendQueue(command)
                     }
