@@ -360,7 +360,7 @@ public class MentraLive extends SGCManager {
     private Lc3Player lc3AudioPlayer;
     // Audio playback control - allows monitoring glasses microphone through phone speakers
     // Set to true to enable playback, false to disable. Independent of microphone state.
-    private boolean audioPlaybackEnabled = true;
+    private boolean audioPlaybackEnabled = false;
     // Rolling recording control - saves last 20 seconds of audio as M4A file every 20 seconds
     // Set to true to enable rolling recording, false to disable.
     private boolean rollingRecordingEnabled = false;
@@ -2981,8 +2981,6 @@ public class MentraLive extends SGCManager {
             Bridge.log("LIVE: 🎤 Microphone disabled, stopping audio input handling");
             stopMicBeat();
         }
-
-        enableAudioPlayback(true);
     }
 
     /**
