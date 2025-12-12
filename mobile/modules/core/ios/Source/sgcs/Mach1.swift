@@ -35,6 +35,10 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     var glassesOtaVersionUrl: String = ""
 
+    var glassesFirmwareVersion: String = ""
+
+    var glassesBtMacAddress: String = ""
+
     var glassesSerialNumber: String = ""
 
     var glassesStyle: String = ""

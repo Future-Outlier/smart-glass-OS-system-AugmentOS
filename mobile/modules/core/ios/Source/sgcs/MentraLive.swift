@@ -975,6 +975,8 @@ class MentraLive: NSObject, SGCManager {
     var glassesAppVersion: String = ""
     var glassesBuildNumber: String = ""
     var glassesOtaVersionUrl: String = ""
+    var glassesFirmwareVersion: String = ""
+    var glassesBtMacAddress: String = ""
     var glassesDeviceModel: String = ""
     var glassesAndroidVersion: String = ""
 
@@ -1933,10 +1935,14 @@ class MentraLive: NSObject, SGCManager {
         let deviceModel = json["device_model"] as? String ?? ""
         let androidVersion = json["android_version"] as? String ?? ""
         let otaVersionUrl = json["ota_version_url"] as? String ?? ""
+        let firmwareVersion = json["firmware_version"] as? String ?? ""
+        let btMacAddress = json["bt_mac_address"] as? String ?? ""
 
         glassesAppVersion = appVersion
         glassesBuildNumber = buildNumber
         glassesOtaVersionUrl = otaVersionUrl
+        glassesFirmwareVersion = firmwareVersion
+        glassesBtMacAddress = btMacAddress
         isNewVersion = (Int(buildNumber) ?? 0) >= 5
         glassesDeviceModel = deviceModel
         glassesAndroidVersion = androidVersion
@@ -1946,12 +1952,13 @@ class MentraLive: NSObject, SGCManager {
         hasMic = supportsLC3Audio
 
         Bridge.log(
-            "Glasses Version - App: \(appVersion), Build: \(buildNumber), Device: \(deviceModel), Android: \(androidVersion), OTA URL: \(otaVersionUrl)"
+            "Glasses Version - App: \(appVersion), Build: \(buildNumber), Device: \(deviceModel), Android: \(androidVersion), Firmware: \(firmwareVersion), BT MAC: \(btMacAddress), OTA URL: \(otaVersionUrl)"
         )
         Bridge.log("LIVE: LC3 Audio Support: \(supportsLC3Audio), Has Mic: \(hasMic)")
         emitVersionInfo(
             appVersion: appVersion, buildNumber: buildNumber, deviceModel: deviceModel,
-            androidVersion: androidVersion, otaVersionUrl: otaVersionUrl
+            androidVersion: androidVersion, otaVersionUrl: otaVersionUrl, firmwareVersion: firmwareVersion,
+            btMacAddress: btMacAddress
         )
 
         // Trigger status update so React Native gets the updated glasses info with version details
@@ -2946,7 +2953,7 @@ class MentraLive: NSObject, SGCManager {
 
     private func emitVersionInfo(
         appVersion: String, buildNumber: String, deviceModel: String, androidVersion: String,
-        otaVersionUrl: String
+        otaVersionUrl: String, firmwareVersion: String, btMacAddress: String
     ) {
         let eventBody: [String: Any] = [
             "app_version": appVersion,
@@ -2954,6 +2961,8 @@ class MentraLive: NSObject, SGCManager {
             "device_model": deviceModel,
             "android_version": androidVersion,
             "ota_version_url": otaVersionUrl,
+            "firmware_version": firmwareVersion,
+            "bt_mac_address": btMacAddress,
         ]
 
         Bridge.sendTypedMessage("version_info", body: eventBody)

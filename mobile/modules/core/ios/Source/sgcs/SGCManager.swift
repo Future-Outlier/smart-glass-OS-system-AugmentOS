@@ -11,6 +11,8 @@ protocol SGCManager {
     var glassesDeviceModel: String { get }
     var glassesAndroidVersion: String { get }
     var glassesOtaVersionUrl: String { get }
+    var glassesFirmwareVersion: String { get }
+    var glassesBtMacAddress: String { get }
     var glassesSerialNumber: String { get }
     var glassesStyle: String { get }
     var glassesColor: String { get }

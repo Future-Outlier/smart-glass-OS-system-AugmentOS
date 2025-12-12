@@ -1330,6 +1330,8 @@ struct ViewState {
             "deviceModel": sgc?.glassesDeviceModel ?? "",
             "androidVersion": sgc?.glassesAndroidVersion ?? "",
             "otaVersionUrl": sgc?.glassesOtaVersionUrl ?? "",
+            "fwVersion": sgc?.glassesFirmwareVersion ?? "",
+            "btMacAddress": sgc?.glassesBtMacAddress ?? "",
         ]
 
         if sgc is G1 {

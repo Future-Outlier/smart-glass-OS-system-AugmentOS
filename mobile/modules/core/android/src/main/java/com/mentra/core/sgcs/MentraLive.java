@@ -2037,6 +2037,8 @@ public class MentraLive extends SGCManager {
                 String deviceModel = json.optString("device_model", "");
                 String androidVersion = json.optString("android_version", "");
                 String otaVersionUrl = json.optString("ota_version_url", null);
+                String firmwareVersion = json.optString("firmware_version", "");
+                String btMacAddress = json.optString("bt_mac_address", "");
 
                 // Update parent SGCManager fields
                 glassesAppVersion = appVersion;
@@ -2044,6 +2046,8 @@ public class MentraLive extends SGCManager {
                 glassesDeviceModel = deviceModel;
                 glassesAndroidVersion = androidVersion;
                 glassesOtaVersionUrl = otaVersionUrl != null ? otaVersionUrl : "";
+                glassesFirmwareVersion = firmwareVersion;
+                glassesBtMacAddress = btMacAddress;
 
                 // Parse build number as integer for version checks (local field)
                 try {
@@ -2062,11 +2066,13 @@ public class MentraLive extends SGCManager {
                       ", Build: " + buildNumber +
                       ", Device: " + deviceModel +
                       ", Android: " + androidVersion +
+                      ", Firmware: " + firmwareVersion +
+                      ", BT MAC: " + btMacAddress +
                       ", OTA URL: " + otaVersionUrl);
 
                 // Send version info event (matches iOS emitVersionInfo)
                 Bridge.sendVersionInfo(appVersion, buildNumber, deviceModel, androidVersion,
-                      otaVersionUrl != null ? otaVersionUrl : "");
+                      otaVersionUrl != null ? otaVersionUrl : "", firmwareVersion, btMacAddress);
 
                 // Notify CoreManager to update status and send to frontend
                 CoreManager.getInstance().handle_request_status();
