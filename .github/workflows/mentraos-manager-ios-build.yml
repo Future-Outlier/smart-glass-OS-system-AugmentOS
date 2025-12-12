@@ -82,7 +82,7 @@ jobs:
                      -scheme MentraOS \
                      -configuration Debug \
                      -sdk iphonesimulator \
-                     -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+                     -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.0' \
                      -derivedDataPath build
 
       - name: Build iOS app for Device

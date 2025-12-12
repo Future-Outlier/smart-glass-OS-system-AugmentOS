@@ -285,6 +285,10 @@ class G1: NSObject, SGCManager {
 
     var glassesOtaVersionUrl: String = ""
 
+    var glassesFirmwareVersion: String = ""
+
+    var glassesBtMacAddress: String = ""
+
     var glassesSerialNumber: String = ""
 
     var glassesStyle: String = ""
