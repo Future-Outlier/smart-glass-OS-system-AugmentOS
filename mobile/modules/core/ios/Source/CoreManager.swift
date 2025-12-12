@@ -325,7 +325,7 @@ struct ViewState {
 
         // allow the sgc to make changes to the micRanking:
         micRanking = sgc?.sortMicRanking(list: micRanking) ?? micRanking
-        Bridge.log("MAN: micRanking: \(micRanking)")
+        // Bridge.log("MAN: micRanking: \(micRanking)")
 
         var phoneMicUnavailable = systemMicUnavailable
 
@@ -359,9 +359,9 @@ struct ViewState {
                 }
 
                 if micMode == MicTypes.GLASSES_CUSTOM {
-                    Bridge.log(
-                        "MAN: glasses custom mic found - hasMic: \(sgc?.hasMic ?? false), micEnabled: \(sgc?.micEnabled ?? false)"
-                    )
+                    // Bridge.log(
+                    //     "MAN: glasses custom mic found - hasMic: \(sgc?.hasMic ?? false), micEnabled: \(sgc?.micEnabled ?? false)"
+                    // )
                     // if the glasses has a mic that's already on, mark it as used and break:
                     if sgc?.hasMic ?? false {
                         // enable the mic if it's not already on:
