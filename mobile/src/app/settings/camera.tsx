@@ -121,7 +121,7 @@ export default function CameraSettingsScreen() {
 
   if (!supportsCameraButton) {
     return (
-      <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
+      <Screen preset="fixed">
         <Header leftIcon="chevron-left" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
         <View style={themed($emptyStateContainer)}>
           <Text style={themed($emptyStateText)}>Camera settings are not available for this device.</Text>
@@ -131,7 +131,7 @@ export default function CameraSettingsScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
+    <Screen preset="fixed">
       <Header leftIcon="chevron-left" onLeftPress={() => goBack()} title={translate("settings:cameraSettings")} />
       <ScrollView
         style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}

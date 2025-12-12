@@ -9,6 +9,7 @@ import AVFoundation
 import Combine
 import Foundation
 
+@MainActor
 class PhoneMic {
     static let shared = PhoneMic()
 
@@ -187,7 +188,7 @@ class PhoneMic {
             try session.setCategory(
                 .playAndRecord,
                 mode: .default,
-                options: [.allowBluetooth, .defaultToSpeaker, .mixWithOthers, .allowBluetoothA2DP]
+                options: [ /* .allowBluetooth, */ .defaultToSpeaker, .mixWithOthers, .allowBluetoothA2DP]
             )
 
             // Override the output to use Bluetooth (AirPods) for speaker
@@ -226,7 +227,7 @@ class PhoneMic {
             try session.setCategory(
                 .playAndRecord,
                 mode: .voiceChat,
-                options: [.allowBluetooth]
+                options: [.allowBluetooth, .mixWithOthers]
             )
 
             // Try to set Bluetooth HFP as preferred input

@@ -24,7 +24,7 @@ export default function DeveloperSettingsScreen() {
   const [debugConsole, setDebugConsole] = useSetting(SETTINGS.debug_console.key)
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header title="Developer Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
 
       <View style={themed($warningContainer)}>

@@ -1,3 +1,4 @@
+@MainActor
 protocol SGCManager {
     // MARK: - Device Information
 
@@ -52,7 +53,10 @@ protocol SGCManager {
 
     // MARK: - Camera & Media
 
-    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?, compress: String?)
+    func requestPhoto(
+        _ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?,
+        compress: String?
+    )
     func startRtmpStream(_ message: [String: Any])
     func stopRtmpStream()
     func sendRtmpKeepAlive(_ message: [String: Any])
@@ -86,7 +90,10 @@ protocol SGCManager {
     func getBatteryStatus()
     func setSilentMode(_ enabled: Bool)
     func exit()
-    func sendRgbLedControl(requestId: String, packageName: String?, action: String, color: String?, ontime: Int, offtime: Int, count: Int)
+    func sendRgbLedControl(
+        requestId: String, packageName: String?, action: String, color: String?, ontime: Int,
+        offtime: Int, count: Int
+    )
 
     // MARK: - Connection Management
 
