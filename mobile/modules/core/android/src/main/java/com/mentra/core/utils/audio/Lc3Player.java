@@ -63,10 +63,10 @@ public class Lc3Player extends Thread{
         mQueue = new ArrayBlockingQueue(100);
     }
 
-    // Backward compatibility constructor (defaults to 20-byte frames for Mentra Live)
+    // Backward compatibility constructor (defaults to 40-byte frames for 16kbps, mono, 10ms)
     public Lc3Player(Context context)
     {
-        this(context, 20);
+        this(context, 40);
     }
 
     public void init()
@@ -94,9 +94,9 @@ public class Lc3Player extends Thread{
         // startRec(); // Recording disabled
     }
 
-    private byte[] mRecvBuffer = new byte[100*10];  // 5 frames × 20 bytes = 100
-    private byte[]mBuffer = new byte[100];          // 5 frames × 20 bytes = 100
-    private byte[]mTestBuffer = new byte[20];       // Single frame buffer (20 bytes)
+    private byte[] mRecvBuffer = new byte[200*10];  // 5 frames × 40 bytes = 200
+    private byte[]mBuffer = new byte[200];          // 5 frames × 40 bytes = 200
+    private byte[]mTestBuffer = new byte[40];       // Single frame buffer (40 bytes)
     public void write(byte[] data, int offset, int size)
     {
         // if(size != 102)  // 20 bytes × 5 frames + 2 header bytes
@@ -108,11 +108,11 @@ public class Lc3Player extends Thread{
     }
     public void write1(byte[] data, int offset, int size)
     {
-        if(size != 102)  // 20 bytes × 5 frames + 2 header bytes
+        if(size != 202)  // 40 bytes × 5 frames + 2 header bytes
             return;
         for(int i = 0;i < 5; i++)
         {
-            System.arraycopy(data, i*20 + 2, mTestBuffer, 0, 20);
+            System.arraycopy(data, i*40 + 2, mTestBuffer, 0, 40);
             byte []decData = Lc3Cpp.decodeLC3(mDecorderHandle, mTestBuffer, mFrameSize);
             if(decData != null)
                 mTrack.write(decData, 0, decData.length);
@@ -120,9 +120,9 @@ public class Lc3Player extends Thread{
     }
     public void write2(byte[] data, int offset, int size)
     {
-        if(size != 102)  // 20 bytes × 5 frames + 2 header bytes
+        if(size != 202)  // 40 bytes × 5 frames + 2 header bytes
             return;
-        System.arraycopy(data, 2, mBuffer, 0, 100);  // Copy 100 bytes (5 × 20)
+        System.arraycopy(data, 2, mBuffer, 0, 200);  // Copy 200 bytes (5 × 40)
         byte []decData = Lc3Cpp.decodeLC3(mDecorderHandle, mBuffer, mFrameSize);
         if(decData == null)
         {
@@ -175,11 +175,11 @@ public class Lc3Player extends Thread{
                     {
                         for(int i = 0;i < 5; i++)
                         {
-                            System.arraycopy(data, i*20 + 2, mTestBuffer, 0, 20);
+                            System.arraycopy(data, i*40 + 2, mTestBuffer, 0, 40);
                             byte []decData = Lc3Cpp.decodeLC3(mDecorderHandle, mTestBuffer, mFrameSize);
                             if(decData != null) {
                                 addToRollingBuffer(decData);
-                                
+
                                 // Audio playback disabled - uncomment to play through phone speakers
                                 /*
                                 synchronized (this) {
@@ -198,7 +198,7 @@ public class Lc3Player extends Thread{
                     }
                     else
                     {
-                        System.arraycopy(data, 2, mBuffer, 0, 100);  // Copy 100 bytes (5 × 20)
+                        System.arraycopy(data, 2, mBuffer, 0, 200);  // Copy 200 bytes (5 × 40)
                         if(ByteUtilAudioPlayer.byte2Int(data[1]) != mLastSeq)
                         {
                             Log.e("_test_", "seq error,should be=0x"+ ByteUtilAudioPlayer.intToHexString(mLastSeq, 2)+",but seq="+ByteUtilAudioPlayer.bytetoHexString(data[1]));

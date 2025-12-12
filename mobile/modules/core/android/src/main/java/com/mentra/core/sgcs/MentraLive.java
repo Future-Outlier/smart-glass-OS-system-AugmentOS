@@ -119,7 +119,7 @@ public class MentraLive extends SGCManager {
     public String savedDeviceName = "";
 
     // LC3 frame size for Mentra Live
-    private static final int LC3_FRAME_SIZE = 20;
+    private static final int LC3_FRAME_SIZE = 40;
 
     // Local-only fields (not in parent SGCManager)
     private int glassesBuildNumberInt = 0; // Build number as integer for version checks
