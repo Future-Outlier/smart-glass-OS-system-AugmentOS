@@ -408,6 +408,20 @@ public class CommandProcessor {
     }
 
     /**
+     * Request BT MAC address from BES chip.
+     * This should be called after UART connection is established to retrieve the unique device identifier.
+     */
+    public void requestBtMacAddress() {
+        Log.d(TAG, "📤 requestBtMacAddress() called");
+
+        if (k900CommandHandler != null) {
+            k900CommandHandler.requestBtMacAddress();
+        } else {
+            Log.w(TAG, "⚠️ K900CommandHandler not available - cannot request BT MAC address");
+        }
+    }
+
+    /**
      * Check if a message ID has been recently processed (duplicate detection).
      * Also cleans up old entries to prevent memory growth.
      */

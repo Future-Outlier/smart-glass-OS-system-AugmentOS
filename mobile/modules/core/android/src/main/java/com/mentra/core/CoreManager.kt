@@ -1289,6 +1289,8 @@ class CoreManager {
             glassesInfo["deviceModel"] = sgc.glassesDeviceModel
             glassesInfo["androidVersion"] = sgc.glassesAndroidVersion
             glassesInfo["otaVersionUrl"] = sgc.glassesOtaVersionUrl
+            glassesInfo["fwVersion"] = sgc.glassesFirmwareVersion
+            glassesInfo["btMacAddress"] = sgc.glassesBtMacAddress
         }
 
         if (sgc is G1) {

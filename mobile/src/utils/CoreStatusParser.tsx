@@ -40,6 +40,7 @@ export interface Glasses {
   glasses_device_model?: string
   glasses_android_version?: string
   glasses_ota_version_url?: string
+  glasses_firmware_version?: string
   glasses_serial_number?: string
   glasses_style?: string
   glasses_color?: string
@@ -233,6 +234,7 @@ export class CoreStatusParser {
               glasses_android_version: glassesInfo.glasses_android_version,
               glasses_ota_version_url:
                 glassesInfo.glasses_ota_version_url || "https://ota.mentraglass.com/live_version.json",
+              glasses_firmware_version: glassesInfo.glasses_firmware_version,
               glasses_serial_number: glassesInfo.glasses_serial_number,
               glasses_style: glassesInfo.glasses_style,
               glasses_color: glassesInfo.glasses_color,
