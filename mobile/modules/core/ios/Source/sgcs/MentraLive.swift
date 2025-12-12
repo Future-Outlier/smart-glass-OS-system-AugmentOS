@@ -503,7 +503,7 @@ extension MentraLive: CBCentralManagerDelegate {
 
         // Check for compatible device names
         if name == "Xy_A" || name.hasPrefix("XyBLE_") || name.hasPrefix("MENTRA_LIVE_BLE")
-            || name.hasPrefix("MENTRA_LIVE_BT")
+            || name.hasPrefix("MENTRA_LIVE_BT") || name.lowercased().hasPrefix("mentra_live")
         {
             let glassType = name == "Xy_A" ? "Standard" : "K900"
             Bridge.log("Found compatible \(glassType) glasses device: \(name)")
