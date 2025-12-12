@@ -496,10 +496,7 @@ extension MentraLive: CBCentralManagerDelegate {
         }
     }
 
-    func centralManager(
-        _: CBCentralManager, didDiscover peripheral: CBPeripheral,
-        advertisementData _: [String: Any], rssi _: NSNumber
-    ) {
+    func handleDiscoveredPeripheral(_ peripheral: CBPeripheral) {
         guard let name = peripheral.name else { return }
 
         // Check for compatible device names
@@ -519,10 +516,19 @@ extension MentraLive: CBCentralManagerDelegate {
                savedDeviceName == name
             {
                 Bridge.log("Found our remembered device by name, connecting: \(name)")
-                stopScan()
+                // stopScan()
+                centralManager?.stopScan()
+                isScanning = false
                 connectToDevice(peripheral)
             }
         }
+    }
+
+    func centralManager(
+        _: CBCentralManager, didDiscover peripheral: CBPeripheral,
+        advertisementData _: [String: Any], rssi _: NSNumber
+    ) {
+        handleDiscoveredPeripheral(peripheral)
     }
 
     func centralManager(_: CBCentralManager, didConnect peripheral: CBPeripheral) {
@@ -1019,49 +1025,46 @@ class MentraLive: NSObject, SGCManager {
 
     func connectById(_ deviceName: String) {
         Bridge.log("connectById: \(deviceName)")
-        Task {
-            // Save the device name for future reconnection
-            UserDefaults.standard.set(deviceName, forKey: PREFS_DEVICE_NAME)
+        // Save the device name for future reconnection
+        UserDefaults.standard.set(deviceName, forKey: PREFS_DEVICE_NAME)
 
-            // Start scanning to find this specific device
-            if centralManager == nil {
-                centralManager = CBCentralManager(
-                    delegate: self, queue: bluetoothQueue,
-                    options: ["CBCentralManagerOptionShowPowerAlertKey": 0]
-                )
-                // wait for the central manager to be fully initialized before we start scanning:
-                try? await Task.sleep(nanoseconds: 100 * 1_000_000) // 100ms
-            }
+        // Start scanning to find this specific device
+        if centralManager == nil {
+            centralManager = CBCentralManager(
+                delegate: self, queue: bluetoothQueue,
+                options: ["CBCentralManagerOptionShowPowerAlertKey": 0]
+            )
+        }
 
-            // Check for already-connected peripherals first
-            let connectedPeripherals = centralManager!.retrieveConnectedPeripherals(withServices: [
-                SERVICE_UUID,
-            ])
-            for peripheral in connectedPeripherals {
-                if let name = peripheral.name,
-                   name == "Xy_A" || name.hasPrefix("XyBLE_") || name.hasPrefix("MENTRA_LIVE_BLE")
-                   || name.hasPrefix("MENTRA_LIVE_BT")
+        // Check for already-connected peripherals first
+        let connectedPeripherals = centralManager!.retrieveConnectedPeripherals(withServices: [
+            SERVICE_UUID,
+        ])
+        for peripheral in connectedPeripherals {
+            Bridge.log("Found already-connected peripheral: \(peripheral.name ?? "Unknown")")
+            if let name = peripheral.name,
+               name == "Xy_A" || name.hasPrefix("XyBLE_") || name.hasPrefix("MENTRA_LIVE_BLE")
+               || name.hasPrefix("MENTRA_LIVE_BT")
+            {
+                Bridge.log("Found already-connected peripheral: \(name)")
+                discoveredPeripherals[name] = peripheral
+                emitDiscoveredDevice(name)
+
+                // Check if this is the device we want
+                if let savedDeviceName = UserDefaults.standard.string(
+                    forKey: PREFS_DEVICE_NAME),
+                    savedDeviceName == name
                 {
-                    Bridge.log("Found already-connected peripheral: \(name)")
-                    discoveredPeripherals[name] = peripheral
-                    emitDiscoveredDevice(name)
-
-                    // Check if this is the device we want
-                    if let savedDeviceName = UserDefaults.standard.string(
-                        forKey: PREFS_DEVICE_NAME),
-                        savedDeviceName == name
-                    {
-                        Bridge.log(
-                            "Found our remembered device already connected, connecting: \(name)")
-                        connectToDevice(peripheral)
-                        return
-                    }
+                    Bridge.log(
+                        "Found our remembered device already connected, connecting: \(name)")
+                    connectToDevice(peripheral)
+                    return
                 }
             }
-
-            // Will connect when found during scan
-            startScan()
         }
+
+        // Will connect when found during scan
+        startScan()
     }
 
     func getConnectedBluetoothName() -> String? {
@@ -1398,6 +1401,12 @@ class MentraLive: NSObject, SGCManager {
         let scanOptions: [String: Any] = [
             CBCentralManagerScanOptionAllowDuplicatesKey: false,
         ]
+
+        // let knownPeripherals = centralManager?.retrieveConnectedPeripherals(withServices: [SERVICE_UUID])
+        // // check already known peripherals:
+        // for peripheral in knownPeripherals {
+        //     handleDiscoveredPeripheral(peripheral)
+        // }
 
         centralManager?.scanForPeripherals(withServices: nil, options: scanOptions)
 
@@ -1756,7 +1765,7 @@ class MentraLive: NSObject, SGCManager {
     private func processK900JsonMessage(_ json: [String: Any]) {
         guard let command = json["C"] as? String else { return }
 
-        // Bridge.log("Processing K900 command: \(command)")
+        Bridge.log("Processing K900 command: \(command)")
 
         // convert command string (which is a json string) to a json object:
         let commandJson =
@@ -1790,9 +1799,9 @@ class MentraLive: NSObject, SGCManager {
                     updateBatteryStatus(level: percentage, charging: charging)
                     if voltage > 0 {
                         let voltageVolts = Double(voltage) / 1000.0
-                        // Bridge.log(
-                        //     "🔋 Battery from heartbeat - \(percentage)%, \(voltageVolts)V, charging: \(charging)"
-                        // )
+                        Bridge.log(
+                            "🔋 Battery from heartbeat - \(percentage)%, \(voltageVolts)V, charging: \(charging)"
+                        )
                     }
                 }
 
@@ -2885,7 +2894,14 @@ class MentraLive: NSObject, SGCManager {
             Bridge.log(
                 "LIVE: 🔄 Readiness check #\(self.readinessCheckCounter): waiting for glasses SOC to boot"
             )
-            requestReadyK900()
+            // requestReadyK900()
+
+            let readyMsg: [String: Any] = [
+                "type": "phone_ready",
+                "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
+            ]
+            // Send it through our data channel
+            sendJson(readyMsg, wakeUp: true)
         }
 
         readinessCheckDispatchTimer!.resume()
@@ -3131,14 +3147,15 @@ class MentraLive: NSObject, SGCManager {
                 Bridge.log("Audio: Both audio and glasses_ready confirmed - marking as fully ready")
                 ready = true
                 connectionState = ConnTypes.CONNECTED
+
+                Bridge.sendTypedMessage(
+                    "audio_connected",
+                    body: [
+                        "device_name": deviceName,
+                    ]
+                )
             }
 
-            Bridge.sendTypedMessage(
-                "audio_connected",
-                body: [
-                    "device_name": deviceName,
-                ]
-            )
         } else {
             // Not found in availableInputs - not paired yet
             Bridge.log("Audio: Device not paired, prompting user to pair")

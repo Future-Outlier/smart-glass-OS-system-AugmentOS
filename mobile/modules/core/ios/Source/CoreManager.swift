@@ -1030,7 +1030,7 @@ struct ViewState {
     }
 
     func setMicState(_ sendPcm: Bool, _ sendTranscript: Bool, _ bypassVadForPCM: Bool) {
-        Bridge.log("MAN: MIC: setMicState(\(sendPcm),\(sendTranscript),\(bypassVadForPCM)")
+        Bridge.log("MAN: setMicState(\(sendPcm),\(sendTranscript),\(bypassVadForPCM))")
 
         shouldSendPcmData = sendPcm
         shouldSendTranscript = sendTranscript
