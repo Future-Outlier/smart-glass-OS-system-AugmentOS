@@ -1001,6 +1001,10 @@ class MentraLive: NSObject, SGCManager {
     var glassesDeviceModel: String = ""
     var glassesAndroidVersion: String = ""
 
+    // Version info chunking support (for MTU workaround)
+    // Glasses send version_info in 2 chunks to fit within BLE MTU limits
+    private var pendingVersionInfoChunk1: [String: Any]?
+
     var _ready = false
     var ready: Bool {
         get { return _ready }
@@ -1706,7 +1710,38 @@ class MentraLive: NSObject, SGCManager {
         case "button_press":
             handleButtonPress(json)
 
+        case "version_info_1":
+            // Chunk 1 of version info (MTU workaround) - contains basic device info
+            print("LIVE: Received version_info_1 (chunk 1/2): \(json)")
+            pendingVersionInfoChunk1 = json
+            // Wait for chunk 2 to arrive before processing
+
+        case "version_info_2":
+            // Chunk 2 of version info (MTU workaround) - contains URLs and identifiers
+            print("LIVE: Received version_info_2 (chunk 2/2): \(json)")
+
+            if let chunk1 = pendingVersionInfoChunk1 {
+                // Merge both chunks into a complete version_info dict
+                var mergedJson: [String: Any] = [:]
+                // Copy all fields from chunk 1
+                for (key, value) in chunk1 {
+                    mergedJson[key] = value
+                }
+                // Copy all fields from chunk 2
+                for (key, value) in json {
+                    mergedJson[key] = value
+                }
+                // Process as complete version_info
+                print("LIVE: Processing merged version_info from chunks: \(mergedJson)")
+                handleVersionInfo(mergedJson)
+                // Clear the pending chunk
+                pendingVersionInfoChunk1 = nil
+            } else {
+                print("LIVE: ⚠️ Received version_info_2 without version_info_1 - ignoring")
+            }
+
         case "version_info":
+            // Legacy single-message format
             handleVersionInfo(json)
 
         case "touch_event":
