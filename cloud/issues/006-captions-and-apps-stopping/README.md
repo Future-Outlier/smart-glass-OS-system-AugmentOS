@@ -15,6 +15,8 @@ Apps connected to multiple backend environments can corrupt state when one envir
 - **009-architecture-brainstorm.md** - Holistic redesign: AppSession class, OWNERSHIP_RELEASE, coordinated recovery
 - **010-subscription-manager-usage-analysis.md** - Analysis of SubscriptionManager usage across codebase
 - **011-sdk-subscription-architecture-mismatch.md** - **ROOT CAUSE FOUND**: Dual storage allows handlers/subscriptions to drift
+- **012-concrete-patch-plan.md** - **IMPLEMENTATION PLAN**: Exact code changes for Phase 1 SDK fix
+- **013-disconnect-analysis.md** - Analysis of `disconnect()` behavior and reconnection design (Phase 2 deferred)
 
 ## Quick Context
 

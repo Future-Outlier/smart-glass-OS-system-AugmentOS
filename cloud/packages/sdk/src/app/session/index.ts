@@ -6,6 +6,12 @@
  * Manages an active Third Party App session with MentraOS Cloud.
  * Handles real-time communication, event subscriptions, and display management.
  */
+
+// Patch version for tracking Bug 007 fix (subscriptions derived from handlers)
+// v1: Derive subscriptions from handlers (single source of truth)
+// v2: Add 'terminated' flag to prevent reconnection after "User session ended"
+// This helps verify the correct SDK version is running in production
+const SDK_SUBSCRIPTION_PATCH = "bug007-fix-v2"
 import {WebSocket} from "ws"
 import {EventManager, EventData} from "./events"
 import {LayoutManager} from "./layouts"
@@ -152,8 +158,12 @@ export class AppSession {
   private sessionId: string | null = null
   /** Number of reconnection attempts made */
   private reconnectAttempts = 0
-  /** Active event subscriptions */
-  private subscriptions = new Set<ExtendedStreamType>()
+  /** Flag to prevent reconnection after session termination (e.g., "User session ended") */
+  private terminated = false
+  // REMOVED: private subscriptions = new Set<ExtendedStreamType>()
+  // Subscriptions are now derived from EventManager.handlers (single source of truth)
+  // This prevents drift between handlers and subscriptions that caused Bug 007
+  // See: cloud/issues/006-captions-and-apps-stopping/011-sdk-subscription-architecture-mismatch.md
   /** Map to store rate options for streams */
   private streamRates = new Map<ExtendedStreamType, string>()
   /** Resource tracker for automatic cleanup */
@@ -290,24 +300,26 @@ export class AppSession {
       this.config.mentraOSWebsocketUrl,
       this.sessionId ?? undefined,
       async (streams: string[]) => {
+        // NOTE: With Bug 007 fix, subscriptions are derived from EventManager.handlers
+        // This subscribeFn is called by SettingsManager to auto-subscribe to streams for MentraOS settings
+        // The actual subscription intent should be tracked via handlers, not a separate Set
         this.logger.debug({streams: JSON.stringify(streams)}, `[AppSession] subscribeFn called for streams`)
-        streams.forEach((stream) => {
-          if (!this.subscriptions.has(stream as ExtendedStreamType)) {
-            this.subscriptions.add(stream as ExtendedStreamType)
-            this.logger.debug(`[AppSession] Auto-subscribed to stream '${stream}' for MentraOS setting.`)
-          } else {
-            this.logger.debug(`[AppSession] Already subscribed to stream '${stream}'.`)
-          }
-        })
+
+        // Log current handler-based subscriptions for debugging
+        const currentHandlerStreams = this.events.getRegisteredStreams()
         this.logger.debug(
-          {subscriptions: JSON.stringify(Array.from(this.subscriptions))},
-          `[AppSession] Current subscriptions after subscribeFn`,
+          {
+            requestedStreams: JSON.stringify(streams),
+            currentHandlerStreams: JSON.stringify(currentHandlerStreams),
+          },
+          `[AppSession] subscribeFn: requested streams vs current handler streams`,
         )
+
+        // Send subscription update if connected
+        // Note: The actual subscriptions sent are derived from handlers
         if (this.ws?.readyState === 1) {
           this.updateSubscriptions()
-          this.logger.debug(
-            `[AppSession] Sent updated subscriptions to cloud after auto-subscribing to MentraOS setting.`,
-          )
+          this.logger.debug(`[AppSession] Sent updated subscriptions to cloud (derived from handlers).`)
         } else {
           this.logger.debug(`[AppSession] WebSocket not open, will send subscriptions when connected.`)
         }
@@ -540,7 +552,10 @@ export class AppSession {
       return
     }
 
-    this.subscriptions.add(type)
+    // NOTE: We no longer maintain this.subscriptions - subscriptions are derived from handlers
+    // This prevents drift between handlers and subscriptions (Bug 007 fix)
+    // The EventManager.addHandler() already tracks the subscription intent via handlers
+
     if (rate) {
       this.streamRates.set(type, rate)
     }
@@ -568,7 +583,9 @@ export class AppSession {
       )
       return
     }
-    this.subscriptions.delete(type)
+    // NOTE: We no longer maintain this.subscriptions - subscriptions are derived from handlers
+    // The EventManager.removeHandler() already tracks the unsubscription intent
+
     this.streamRates.delete(type) // also remove from our rate map
     if (this.ws?.readyState === 1) {
       this.updateSubscriptions()
@@ -772,11 +789,21 @@ export class AppSession {
             `🔌 [${this.config.packageName}] isNormalClosure: ${isNormalClosure}, isManualStop: ${isManualStop}, isUserSessionEnded: ${isUserSessionEnded}`,
           )
 
-          if (!isNormalClosure && !isManualStop) {
+          // If user session ended, mark as terminated to prevent any future reconnection
+          if (isUserSessionEnded) {
+            this.terminated = true
+            this.logger.info(
+              `🛑 [${this.config.packageName}] User session ended - marking as terminated, no reconnection allowed`,
+            )
+          }
+
+          if (!isNormalClosure && !isManualStop && !this.terminated) {
             this.logger.warn(`🔌 [${this.config.packageName}] Abnormal closure detected, attempting reconnection`)
             this.handleReconnection()
           } else {
-            this.logger.debug(`🔌 [${this.config.packageName}] Normal closure detected, not attempting reconnection`)
+            this.logger.debug(
+              `🔌 [${this.config.packageName}] Normal/terminated closure detected, not attempting reconnection (terminated: ${this.terminated})`,
+            )
           }
 
           // if user session ended, then trigger onStop.
@@ -911,7 +938,11 @@ export class AppSession {
     // Clean up additional resources not handled by the tracker
     this.ws = null
     this.sessionId = null
-    this.subscriptions.clear()
+    // REMOVED: this.subscriptions.clear()
+    // We no longer clear subscriptions here - they are derived from handlers
+    // This is the key fix for Bug 007: clearing subscriptions here caused
+    // empty subscription updates on reconnect when handlers still existed
+    // See: cloud/issues/006-captions-and-apps-stopping/011-sdk-subscription-architecture-mismatch.md
     this.reconnectAttempts = 0
   }
 
@@ -961,16 +992,30 @@ export class AppSession {
     if (!this.subscriptionSettingsHandler) return
 
     try {
-      // Get new subscriptions from handler
-      const newSubscriptions = this.subscriptionSettingsHandler(this.settingsData)
+      // Get desired subscriptions from settings handler
+      const settingsSubscriptions = this.subscriptionSettingsHandler(this.settingsData)
 
-      // Update all subscriptions at once
-      this.subscriptions.clear()
-      newSubscriptions.forEach((subscription) => {
-        this.subscriptions.add(subscription)
-      })
+      // NOTE: Settings-based subscriptions work differently from handler-based subscriptions
+      // With the Bug 007 fix, subscriptions are now derived from EventManager.handlers
+      // Apps using setSubscriptionSettings() should ensure their settings correspond to
+      // registered handlers for the subscriptions to take effect.
+      //
+      // Log if there's a mismatch (for debugging during migration)
+      const handlerStreams = this.events.getRegisteredStreams()
+      if (settingsSubscriptions.length !== handlerStreams.length) {
+        this.logger.warn(
+          {
+            settingsSubscriptions: JSON.stringify(settingsSubscriptions),
+            handlerStreams: JSON.stringify(handlerStreams),
+          },
+          `[AppSession] Settings-based subscriptions (${settingsSubscriptions.length}) differ from handler-based subscriptions (${handlerStreams.length}). ` +
+            `Subscriptions are now derived from handlers. Ensure handlers are registered for desired streams.`,
+        )
+      }
 
       // Send subscription update to cloud if connected
+      // Note: updateSubscriptions() derives from handlers, so settings-based apps
+      // should ensure their settings correspond to registered handlers
       if (this.ws && this.ws.readyState === 1) {
         this.updateSubscriptions()
       }
@@ -1209,6 +1254,13 @@ export class AppSession {
           // Emit connected event with settings
           this.events.emit("connected", this.settingsData)
 
+          // Log once to confirm Bug 007 fix is active (subscriptions derived from handlers)
+          const handlerCount = this.events.getRegisteredStreams().length
+          this.logger.info(
+            {patch: SDK_SUBSCRIPTION_PATCH, handlerCount},
+            `[AppSession] 🔧 SDK Patch Active: ${SDK_SUBSCRIPTION_PATCH} - Subscriptions derived from ${handlerCount} handler(s)`,
+          )
+
           // Update subscriptions (normal flow)
           this.updateSubscriptions()
 
@@ -1221,7 +1273,9 @@ export class AppSession {
           const errorMessage = message.message || "Unknown connection error"
           this.events.emit("error", new Error(errorMessage))
         } else if (message.type === StreamType.AUDIO_CHUNK) {
-          if (this.subscriptions.has(StreamType.AUDIO_CHUNK)) {
+          // Check if we have a handler registered for AUDIO_CHUNK (derived from handlers)
+          const hasAudioHandler = this.events.getRegisteredStreams().includes(StreamType.AUDIO_CHUNK)
+          if (hasAudioHandler) {
             // Only process if we're subscribed to avoid unnecessary processing
             this.events.emit(StreamType.AUDIO_CHUNK, message)
           }
@@ -1229,8 +1283,11 @@ export class AppSession {
           // Store latest glasses connection state (includes WiFi info)
           this.glassesConnectionState = message.data
 
-          // Emit to subscribed listeners
-          if (this.subscriptions.has(StreamType.GLASSES_CONNECTION_STATE)) {
+          // Emit to subscribed listeners (check derived from handlers)
+          const hasGlassesStateHandler = this.events
+            .getRegisteredStreams()
+            .includes(StreamType.GLASSES_CONNECTION_STATE)
+          if (hasGlassesStateHandler) {
             const sanitizedData = this.sanitizeEventData(
               StreamType.GLASSES_CONNECTION_STATE,
               message.data,
@@ -1252,23 +1309,27 @@ export class AppSession {
           //   }
           // }
 
-          if (messageStreamType && this.subscriptions.has(messageStreamType)) {
+          // Check if we have a handler registered for this stream type (derived from handlers)
+          const hasHandler = this.events.getRegisteredStreams().includes(messageStreamType)
+          if (messageStreamType && hasHandler) {
             const sanitizedData = this.sanitizeEventData(messageStreamType, message.data) as EventData<
               typeof messageStreamType
             >
             this.events.emit(messageStreamType, sanitizedData)
           }
         } else if (isRtmpStreamStatus(message)) {
-          // Emit as a standard stream event if subscribed
-          if (this.subscriptions.has(StreamType.RTMP_STREAM_STATUS)) {
+          // Emit as a standard stream event if subscribed (check derived from handlers)
+          const hasRtmpHandler = this.events.getRegisteredStreams().includes(StreamType.RTMP_STREAM_STATUS)
+          if (hasRtmpHandler) {
             this.events.emit(StreamType.RTMP_STREAM_STATUS, message)
           }
 
           // Update camera module's internal stream state
           this.camera.updateStreamState(message)
         } else if (isManagedStreamStatus(message)) {
-          // Emit as a standard stream event if subscribed
-          if (this.subscriptions.has(StreamType.MANAGED_STREAM_STATUS)) {
+          // Emit as a standard stream event if subscribed (check derived from handlers)
+          const hasManagedStreamHandler = this.events.getRegisteredStreams().includes(StreamType.MANAGED_STREAM_STATUS)
+          if (hasManagedStreamHandler) {
             this.events.emit(StreamType.MANAGED_STREAM_STATUS, message)
           }
 
@@ -1492,8 +1553,9 @@ export class AppSession {
    */
   private handleBinaryMessage(buffer: ArrayBuffer): void {
     try {
-      // Safety check - only process if we're subscribed to avoid unnecessary work
-      if (!this.subscriptions.has(StreamType.AUDIO_CHUNK)) {
+      // Safety check - only process if we have a handler registered (derived from handlers)
+      const hasAudioHandler = this.events.getRegisteredStreams().includes(StreamType.AUDIO_CHUNK)
+      if (!hasAudioHandler) {
         return
       }
 
@@ -1598,13 +1660,19 @@ export class AppSession {
    * 📝 Update subscription list with cloud
    */
   private updateSubscriptions(): void {
+    // CRITICAL FIX (Bug 007): Derive subscriptions from EventManager.handlers
+    // This ensures subscriptions can NEVER be empty if handlers exist
+    // Previously, this.subscriptions could drift out of sync with handlers
+    // See: cloud/issues/006-captions-and-apps-stopping/011-sdk-subscription-architecture-mismatch.md
+    const derivedSubscriptions = this.events.getRegisteredStreams()
+
     this.logger.info(
-      {subscriptions: JSON.stringify(Array.from(this.subscriptions))},
-      `[AppSession] updateSubscriptions: sending subscriptions to cloud`,
+      {subscriptions: JSON.stringify(derivedSubscriptions)},
+      `[AppSession] updateSubscriptions: sending ${derivedSubscriptions.length} subscriptions to cloud (derived from handlers)`,
     )
 
-    // [MODIFIED] builds the array of SubscriptionRequest objects to send to the cloud
-    const subscriptionPayload: SubscriptionRequest[] = Array.from(this.subscriptions).map((stream) => {
+    // Build the array of SubscriptionRequest objects to send to the cloud
+    const subscriptionPayload: SubscriptionRequest[] = derivedSubscriptions.map((stream) => {
       const rate = this.streamRates.get(stream)
       if (rate && stream === StreamType.LOCATION_STREAM) {
         return {stream: "location_stream", rate: rate as any}
@@ -1615,7 +1683,7 @@ export class AppSession {
     const message: AppSubscriptionUpdate = {
       type: AppToCloudMessageType.SUBSCRIPTION_UPDATE,
       packageName: this.config.packageName,
-      subscriptions: subscriptionPayload, // [MODIFIED]
+      subscriptions: subscriptionPayload,
       sessionId: this.sessionId!,
       timestamp: new Date(),
     }
@@ -1626,6 +1694,15 @@ export class AppSession {
    * 🔄 Handle reconnection with exponential backoff
    */
   private async handleReconnection(): Promise<void> {
+    // Check if session was terminated (e.g., "User session ended")
+    if (this.terminated) {
+      this.logger.info(
+        `🔄 Reconnection skipped: session was terminated (User session ended). ` +
+          `If cloud restarts app, onSession will be called with fresh handlers.`,
+      )
+      return
+    }
+
     // Check if reconnection is allowed
     if (!this.config.autoReconnect || !this.sessionId) {
       this.logger.debug(

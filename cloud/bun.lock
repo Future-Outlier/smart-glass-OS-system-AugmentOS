@@ -49,7 +49,6 @@
       "name": "@mentra/captions",
       "version": "0.1.0",
       "dependencies": {
-        "@mentra/display-utils": "workspace:*",
         "@mentra/sdk": "workspace:*",
         "@node-rs/jieba": "^2.0.1",
         "@radix-ui/react-label": "^2.1.7",
@@ -244,14 +243,6 @@
         "typescript": ">=4.7.0",
       },
     },
-    "packages/display-utils": {
-      "name": "@mentra/display-utils",
-      "version": "1.0.0",
-      "devDependencies": {
-        "@types/node": "^20.0.0",
-        "typescript": "^5.0.0",
-      },
-    },
     "packages/react-sdk": {
       "name": "@mentra/react",
       "version": "2.0.2",
@@ -265,7 +256,7 @@
     },
     "packages/sdk": {
       "name": "@mentra/sdk",
-      "version": "2.1.29-beta.1",
+      "version": "2.1.29-beta.2",
       "bin": {
         "mentra": "./dist/cli.js",
       },
@@ -287,7 +278,6 @@
         "ws": "^8.18.2",
       },
       "devDependencies": {
-        "@mentra/display-utils": "workspace:*",
         "@mentra/types": "workspace:*",
         "@types/babel__core": "^7.20.5",
         "@types/express": "^4.17.17",
@@ -1011,8 +1001,6 @@
     "@mentra/cloud": ["@mentra/cloud@workspace:packages/cloud"],
 
     "@mentra/debugger": ["@mentra/debugger@workspace:websites/debugger"],
-
-    "@mentra/display-utils": ["@mentra/display-utils@workspace:packages/display-utils"],
 
     "@mentra/example-webview": ["@mentra/example-webview@workspace:packages/apps/example-webview"],
 
