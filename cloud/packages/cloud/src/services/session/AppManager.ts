@@ -128,6 +128,13 @@ export class AppManager {
   // Track app start times for session duration calculation
   private appStartTimes = new Map<string, number>(); // packageName -> Date.now()
 
+  // Track apps that have released ownership (won't be resurrected on disconnect)
+  // This enables clean handoffs when SDK switches clouds or shuts down intentionally
+  private ownershipReleased = new Map<
+    string,
+    { reason: string; timestamp: Date }
+  >();
+
   // Cache of installed apps
   // private installedApps: AppI[] = [];
 
@@ -228,6 +235,43 @@ export class AppManager {
       { packageName },
       `App connection state removed: ${packageName}`,
     );
+  }
+
+  /**
+   * Mark an app as having released ownership
+   * When the connection closes, we won't try to resurrect it
+   * This enables clean handoffs when SDK switches clouds or shuts down intentionally
+   */
+  markOwnershipReleased(packageName: string, reason: string): void {
+    this.ownershipReleased.set(packageName, {
+      reason,
+      timestamp: new Date(),
+    });
+
+    this.logger.info(
+      { packageName, reason },
+      `[AppManager] App ${packageName} released ownership: ${reason} - will not resurrect on disconnect`,
+    );
+  }
+
+  /**
+   * Check if an app has released ownership
+   */
+  hasReleasedOwnership(packageName: string): boolean {
+    return this.ownershipReleased.has(packageName);
+  }
+
+  /**
+   * Clear ownership release flag (called when app reconnects)
+   */
+  clearOwnershipRelease(packageName: string): void {
+    if (this.ownershipReleased.has(packageName)) {
+      this.logger.debug(
+        { packageName },
+        `[AppManager] Clearing ownership release flag for ${packageName}`,
+      );
+      this.ownershipReleased.delete(packageName);
+    }
   }
 
   /**
@@ -1011,6 +1055,10 @@ export class AppManager {
           `App ${packageName} successfully connected and authenticated in ${duration}ms`,
         );
 
+        // Clear any ownership release flag from previous connection
+        // (in case app reconnects after releasing ownership)
+        this.clearOwnershipRelease(packageName);
+
         this.setAppConnectionState(packageName, AppConnectionState.RUNNING);
 
         // Track app start time for session duration calculation
@@ -1270,6 +1318,30 @@ export class AppManager {
           { packageName },
           `[AppManager]: (currentState === AppConnectionState.STOPPING) - App ${packageName} stopped as expected, removing from tracking`,
         );
+        return;
+      }
+
+      // Check if ownership was released (SDK sent OWNERSHIP_RELEASE before disconnect)
+      // This indicates a clean handoff - no resurrection needed
+      if (this.hasReleasedOwnership(packageName)) {
+        const releaseInfo = this.ownershipReleased.get(packageName);
+        logger.info(
+          { packageName, code, reason, releaseReason: releaseInfo?.reason },
+          `[AppManager] App ${packageName} closed after ownership release (${releaseInfo?.reason}) - no resurrection`,
+        );
+
+        // Clean up immediately, no grace period, no resurrection
+        this.ownershipReleased.delete(packageName);
+        this.removeAppConnectionState(packageName);
+        this.userSession.runningApps.delete(packageName);
+        this.userSession.loadingApps.delete(packageName);
+        await this.userSession.subscriptionManager.removeSubscriptions(
+          packageName,
+        );
+
+        // Notify display manager
+        this.userSession.displayManager.handleAppStop(packageName);
+
         return;
       }
 

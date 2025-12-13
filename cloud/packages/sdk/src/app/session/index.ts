@@ -29,6 +29,7 @@ import {
   AppSubscriptionUpdate,
   AudioPlayResponse,
   RequestWifiSetup,
+  OwnershipReleaseMessage,
   AppToCloudMessageType,
   CloudToAppMessageType,
 
@@ -909,10 +910,54 @@ export class AppSession {
   }
 
   /**
+   * 🔄 Release ownership of this session to allow clean handoff
+   * Call this before connecting to a different cloud instance or shutting down cleanly.
+   * This signals to the cloud that no resurrection is needed.
+   *
+   * @param reason - Why ownership is being released
+   */
+  async releaseOwnership(reason: "switching_clouds" | "clean_shutdown" | "user_logout"): Promise<void> {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      this.logger.debug(`[${this.config.packageName}] Cannot release ownership - WebSocket not open`)
+      return
+    }
+
+    const message: OwnershipReleaseMessage = {
+      type: AppToCloudMessageType.OWNERSHIP_RELEASE,
+      packageName: this.config.packageName,
+      sessionId: this.sessionId || "",
+      reason,
+      timestamp: new Date(),
+    }
+
+    this.logger.info(
+      {reason, sessionId: this.sessionId},
+      `🔄 [${this.config.packageName}] Releasing ownership: ${reason}`,
+    )
+
+    this.send(message)
+
+    // Small delay to ensure message is sent before any subsequent disconnect
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+
+  /**
    * 👋 Disconnect from MentraOS Cloud
    * Flushes any pending SimpleStorage writes before closing
+   *
+   * @param options - Optional disconnect options
+   * @param options.releaseOwnership - If true, send OWNERSHIP_RELEASE before disconnecting (enables clean handoff)
+   * @param options.reason - Reason for ownership release (required if releaseOwnership is true)
    */
-  async disconnect(): Promise<void> {
+  async disconnect(options?: {
+    releaseOwnership?: boolean
+    reason?: "switching_clouds" | "clean_shutdown" | "user_logout"
+  }): Promise<void> {
+    // Release ownership if requested (for clean handoffs)
+    if (options?.releaseOwnership && options?.reason) {
+      await this.releaseOwnership(options.reason)
+    }
+
     // Flush any pending SimpleStorage writes before closing
     try {
       await this.simpleStorage.flush()

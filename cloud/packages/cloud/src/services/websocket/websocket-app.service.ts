@@ -26,6 +26,7 @@ import {
   StreamStatusCheckResponse,
   PermissionType,
   RgbLedControlRequest,
+  OwnershipReleaseMessage,
 } from "@mentra/sdk";
 import UserSession from "../session/UserSession";
 import { logger as rootLogger } from "../logging/pino-logger";
@@ -808,6 +809,37 @@ export class AppWebSocketService {
                 packageName: message.packageName,
               },
               "Error processing WiFi setup request",
+            );
+          }
+          break;
+
+        case AppToCloudMessageType.OWNERSHIP_RELEASE:
+          // Handle ownership release - SDK is signaling clean handoff (no resurrection needed)
+          try {
+            const ownershipMsg = message as OwnershipReleaseMessage;
+            userSession.logger.info(
+              {
+                service: SERVICE_NAME,
+                packageName: ownershipMsg.packageName,
+                reason: ownershipMsg.reason,
+                sessionId: ownershipMsg.sessionId,
+              },
+              `📤 Received OWNERSHIP_RELEASE from ${ownershipMsg.packageName}: ${ownershipMsg.reason}`,
+            );
+
+            // Mark in AppManager that this app has released ownership
+            // When the connection closes, we won't try to resurrect it
+            userSession.appManager.markOwnershipReleased(
+              ownershipMsg.packageName,
+              ownershipMsg.reason,
+            );
+          } catch (e) {
+            this.logger.error(
+              {
+                e,
+                packageName: (message as any).packageName,
+              },
+              "Error processing OWNERSHIP_RELEASE message",
             );
           }
           break;

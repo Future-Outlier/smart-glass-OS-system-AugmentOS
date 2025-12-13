@@ -16,7 +16,9 @@ Apps connected to multiple backend environments can corrupt state when one envir
 - **010-subscription-manager-usage-analysis.md** - Analysis of SubscriptionManager usage across codebase
 - **011-sdk-subscription-architecture-mismatch.md** - **ROOT CAUSE FOUND**: Dual storage allows handlers/subscriptions to drift
 - **012-concrete-patch-plan.md** - **IMPLEMENTATION PLAN**: Exact code changes for Phase 1 SDK fix
-- **013-disconnect-analysis.md** - Analysis of `disconnect()` behavior and reconnection design (Phase 2 deferred)
+- **013-disconnect-analysis.md** - Analysis of `disconnect()` behavior and reconnection design
+- **014-mic-on-intermittent-failure.md** - Investigation of mic-on intermittent failure (cross-env contamination)
+- **015-phase2-ownership-release-plan.md** - **IMPLEMENTATION PLAN**: Phase 2 OWNERSHIP_RELEASE protocol
 
 ## Quick Context
 
@@ -91,9 +93,35 @@ private updateSubscriptions(): void {
 - [x] State/data flow mapped (004)
 - [x] System confusion points documented (008)
 - [x] Architecture redesign documented (009)
-- [ ] Implement SDK fix: Derive subscriptions from handlers
-- [ ] Implement Cloud fix: AppSession class + OWNERSHIP_RELEASE
-- [ ] Verify fixes
+- [x] **Phase 1a**: Derive subscriptions from handlers (SDK) ✅ IMPLEMENTED
+- [x] **Phase 1b**: Terminated flag to prevent reconnection after session end ✅ IMPLEMENTED
+- [x] **Phase 2**: OWNERSHIP_RELEASE protocol for clean cloud handoffs ✅ IMPLEMENTED
+- [ ] **Phase 3**: SDK one-session-per-user enforcement (future)
+- [ ] **Phase 4**: Cloud AppSession class consolidation (future, optional)
+- [ ] Verify fixes in production
+
+## Implementation Summary
+
+### Phase 1a: Derive Subscriptions from Handlers ✅
+- Removed `AppSession.subscriptions` Set
+- Added `EventManager.getRegisteredStreams()` method
+- `updateSubscriptions()` now derives from handlers (single source of truth)
+- **Result**: Subscriptions can never be empty if handlers exist
+
+### Phase 1b: Terminated Flag ✅
+- Added `terminated` flag to AppSession
+- Set when "User session ended" received
+- Prevents reconnection attempts after termination
+- **Result**: No reconnection with empty handlers after session end
+
+### Phase 2: OWNERSHIP_RELEASE Protocol ✅
+- Added `OWNERSHIP_RELEASE` message type (SDK → Cloud)
+- SDK sends before intentional disconnect (clean_shutdown, switching_clouds, user_logout)
+- Cloud skips resurrection when ownership was released
+- AppServer.cleanup() now releases ownership before disconnecting
+- **Result**: Clean handoffs between cloud instances, no accidental resurrections
+
+**Backward Compatible**: Old SDKs don't send OWNERSHIP_RELEASE, so they get existing grace period + resurrection behavior.
 
 ## The Core Problems
 
