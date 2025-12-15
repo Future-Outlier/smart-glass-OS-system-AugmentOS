@@ -58,12 +58,34 @@ export class UserSession {
   // WebSocket connection
   public websocket: WebSocket;
 
-  // App state // TODO: move these state variables to AppManager, don't let other managers access them directly
-  // They should only be accessed through AppManager methods!!!.
+  // App state
+  // NOTE: runningApps, loadingApps, and appWebsockets are now derived from AppManager/AppSession (Phase 4d)
+  // They are exposed as getters for backward compatibility with existing code
   public installedApps: Map<string, AppI> = new Map();
-  public runningApps: Set<string> = new Set();
-  public loadingApps: Set<string> = new Set();
-  public appWebsockets: Map<string, WebSocket> = new Map();
+
+  /**
+   * Get running apps (derived from AppManager/AppSession)
+   * @returns Set of package names for running apps
+   */
+  get runningApps(): Set<string> {
+    return this.appManager.getRunningAppNames();
+  }
+
+  /**
+   * Get loading/connecting apps (derived from AppManager/AppSession)
+   * @returns Set of package names for apps currently connecting
+   */
+  get loadingApps(): Set<string> {
+    return this.appManager.getLoadingAppNames();
+  }
+
+  /**
+   * Get app WebSockets (derived from AppManager/AppSession)
+   * @returns Map of packageName -> WebSocket for connected apps
+   */
+  get appWebsockets(): Map<string, WebSocket> {
+    return this.appManager.getAllAppWebSockets();
+  }
 
   // Transcription
   public isTranscribing = false; // TODO(isaiah): Sync with frontend to see if we can remove this property.
@@ -97,9 +119,6 @@ export class UserSession {
   public unmanagedStreamingExtension: UnmanagedStreamingExtension;
   public photoManager: PhotoManager;
   public managedStreamingExtension: ManagedStreamingExtension;
-
-  // Reconnection
-  public _reconnectionTimers: Map<string, NodeJS.Timeout>;
 
   // Heartbeat for glasses connection
   private glassesHeartbeatInterval?: NodeJS.Timeout;
@@ -156,8 +175,6 @@ export class UserSession {
     this.userSettingsManager = new UserSettingsManager(this);
     this.speakerManager = new SpeakerManager(this);
     this.deviceManager = new DeviceManager(this);
-
-    this._reconnectionTimers = new Map();
 
     // Set up heartbeat for glasses connection
     this.setupGlassesHeartbeat();
@@ -622,17 +639,9 @@ export class UserSession {
       this.cleanupTimerId = undefined;
     }
 
-    if (this._reconnectionTimers) {
-      for (const timer of this._reconnectionTimers.values()) {
-        clearTimeout(timer);
-      }
-      this._reconnectionTimers.clear();
-    }
-
     // Clear collections
-    this.appWebsockets.clear();
-    this.runningApps.clear();
-    this.loadingApps.clear();
+    // Note: runningApps, loadingApps, appWebsockets are now derived from AppManager/AppSession (Phase 4d)
+    // They are cleared when appManager.dispose() is called above
     this.bufferedAudio = [];
     this.recentAudioBuffer = [];
 

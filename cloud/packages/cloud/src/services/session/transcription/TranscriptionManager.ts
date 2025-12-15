@@ -1328,9 +1328,26 @@ export class TranscriptionManager {
         }
       },
 
-      onClosed: () => {
-        this.logger.info({ subscription }, "Stream closed by provider");
+      onClosed: (code?: number) => {
+        this.logger.info(
+          { subscription, closeCode: code },
+          "Stream closed by provider",
+        );
         this.streams.delete(subscription);
+
+        // Only reconnect on abnormal close (not code 1000 which is intentional)
+        // Code 1000 = normal/intentional close (VAD silence, explicit stop, etc.)
+        // Code 1006 = abnormal close (network issue, provider crash, etc.)
+        // undefined = provider doesn't support close codes, treat as normal
+        const isAbnormalClose = code !== undefined && code !== 1000;
+
+        if (isAbnormalClose && this.activeSubscriptions.has(subscription)) {
+          this.logger.info(
+            { subscription, closeCode: code },
+            "Abnormal close detected with active subscription - scheduling reconnect",
+          );
+          this.scheduleStreamReconnect(subscription);
+        }
       },
 
       onData: (data: any) => {
@@ -1637,6 +1654,57 @@ export class TranscriptionManager {
     }
 
     return false;
+  }
+
+  /**
+   * Schedule a stream reconnect after provider disconnect (e.g., WebSocket close)
+   * This is different from scheduleStreamRetry which handles errors with backoff.
+   * This method is for clean disconnects where we just need to recreate the stream.
+   */
+  private scheduleStreamReconnect(
+    subscription: ExtendedStreamType,
+    delayMs: number = 1000,
+  ): void {
+    this.logger.info(
+      { subscription, delayMs },
+      "Scheduling stream reconnect after provider disconnect",
+    );
+
+    setTimeout(async () => {
+      // Double-check subscription is still active
+      if (!this.activeSubscriptions.has(subscription)) {
+        this.logger.debug(
+          { subscription },
+          "Subscription no longer active - skipping reconnect",
+        );
+        return;
+      }
+
+      // Check if stream was recreated by something else
+      const existingStream = this.streams.get(subscription);
+      if (existingStream && this.isStreamHealthy(existingStream)) {
+        this.logger.debug(
+          { subscription },
+          "Stream already recreated - skipping reconnect",
+        );
+        return;
+      }
+
+      try {
+        await this.startStream(subscription);
+        this.logger.info(
+          { subscription },
+          "Stream reconnected successfully after provider disconnect",
+        );
+      } catch (error) {
+        this.logger.error(
+          { subscription, error },
+          "Failed to reconnect stream after provider disconnect - will retry via health check or next ensureStreamsExist call",
+        );
+        // Don't schedule another retry here - let the health monitoring or
+        // next subscription update handle it to avoid potential infinite loops
+      }
+    }, delayMs);
   }
 
   private scheduleStreamRetry(

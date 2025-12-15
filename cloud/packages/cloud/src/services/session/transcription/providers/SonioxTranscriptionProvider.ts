@@ -76,7 +76,10 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
   private failureCount = 0;
   private lastFailureTime = 0;
 
-  constructor(private config: SonioxProviderConfig, parentLogger: Logger) {
+  constructor(
+    private config: SonioxProviderConfig,
+    parentLogger: Logger,
+  ) {
     this.logger = parentLogger.child({ provider: this.name });
 
     this.healthStatus = {
@@ -431,7 +434,7 @@ class SonioxTranscriptionStream implements StreamInstance {
           );
           this.state = StreamState.CLOSED;
           if (this.callbacks.onClosed) {
-            this.callbacks.onClosed();
+            this.callbacks.onClosed(code);
           }
         });
 

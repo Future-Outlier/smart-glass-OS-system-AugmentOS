@@ -19,6 +19,7 @@ Apps connected to multiple backend environments can corrupt state when one envir
 - **013-disconnect-analysis.md** - Analysis of `disconnect()` behavior and reconnection design
 - **014-mic-on-intermittent-failure.md** - Investigation of mic-on intermittent failure (cross-env contamination)
 - **015-phase2-ownership-release-plan.md** - **IMPLEMENTATION PLAN**: Phase 2 OWNERSHIP_RELEASE protocol
+- **016-appsession-consolidation-plan.md** - **IMPLEMENTATION PLAN**: Phase 4 AppSession class consolidation
 
 ## Quick Context
 
@@ -97,7 +98,11 @@ private updateSubscriptions(): void {
 - [x] **Phase 1b**: Terminated flag to prevent reconnection after session end ✅ IMPLEMENTED
 - [x] **Phase 2**: OWNERSHIP_RELEASE protocol for clean cloud handoffs ✅ IMPLEMENTED
 - [ ] **Phase 3**: SDK one-session-per-user enforcement (future)
-- [ ] **Phase 4**: Cloud AppSession class consolidation (future, optional)
+- [x] **Phase 4a**: Cloud AppSession class created ✅ IMPLEMENTED
+- [x] **Phase 4b**: Connection state migrated to AppSession ✅ IMPLEMENTED
+- [x] **Phase 4c**: Subscriptions migrated to AppSession ✅ IMPLEMENTED
+- [x] **Phase 4d**: UserSession state migrated to AppSession ✅ IMPLEMENTED
+- [x] **Phase 4e**: Cleanup and testing ✅ IMPLEMENTED
 - [ ] Verify fixes in production
 
 ## Implementation Summary
@@ -122,6 +127,44 @@ private updateSubscriptions(): void {
 - **Result**: Clean handoffs between cloud instances, no accidental resurrections
 
 **Backward Compatible**: Old SDKs don't send OWNERSHIP_RELEASE, so they get existing grace period + resurrection behavior.
+
+### Phase 4a: AppSession Class ✅
+- Created `AppSession` class to consolidate per-app state
+- Single source of truth for connection state, heartbeat, grace period, ownership release
+- Added to AppManager with `getAppSession()`, `getOrCreateAppSession()` methods
+- **Result**: Foundation for state consolidation
+
+### Phase 4b: Connection State Migration ✅
+- Removed `connectionStates`, `heartbeatIntervals`, `appStartTimes`, `ownershipReleased` Maps from AppManager
+- AppSession now manages:
+  - Connection state machine (CONNECTING → RUNNING → GRACE_PERIOD → RESURRECTING → STOPPED)
+  - Heartbeat intervals internally
+  - Grace period timers and resurrection callbacks
+  - Ownership release tracking
+- Removed old `AppConnectionState` enum, now using `AppSessionState` from AppSession
+- **Result**: Single source of truth for app connection lifecycle
+
+### Phase 4c: Subscriptions Migration ✅
+- Removed `subscriptions`, `history`, `lastAppReconnectAt` Maps from SubscriptionManager
+- SubscriptionManager now delegates per-app subscription storage to AppSession
+- AppSession handles empty-subscription grace window internally
+- SubscriptionManager still maintains cross-app aggregates (`appsWithPCM`, `appsWithTranscription`, `languageStreamCounts`)
+- Added `getAllAppSessions()` method to AppManager for iteration
+- **Result**: Single source of truth for per-app subscriptions
+
+### Phase 4d: UserSession State Migration ✅
+- Converted `runningApps`, `loadingApps`, `appWebsockets` from stored properties to derived getters
+- UserSession now delegates to AppManager which delegates to AppSession
+- Added WebSocket management methods to AppManager (`getAppWebSocket()`, `getAllAppWebSockets()`, etc.)
+- Updated AppManager to use AppSession for all state checks and WebSocket access
+- External code continues to work unchanged (backward compatible getters)
+- **Result**: Single source of truth for all per-app state in AppSession
+
+### Phase 4e: Cleanup ✅
+- Removed dead `_reconnectionTimers` property from UserSession (grace period now in AppSession)
+- Removed initialization and cleanup code for `_reconnectionTimers`
+- All tests passing, no TypeScript errors in migrated files
+- **Result**: Clean codebase with no dead code from migration
 
 ## The Core Problems
 

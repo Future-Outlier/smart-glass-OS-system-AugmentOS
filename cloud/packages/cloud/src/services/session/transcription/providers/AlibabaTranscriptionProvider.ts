@@ -245,7 +245,7 @@ class AlibabaTranscriptionStream implements StreamInstance {
             setTimeout(() => this.connect(), 1000 * this.reconnectAttempts);
           } else {
             this.state = StreamState.CLOSED;
-            this.callbacks.onClosed?.();
+            this.callbacks.onClosed?.(code);
           }
         });
       } catch (error) {
@@ -369,7 +369,8 @@ class AlibabaTranscriptionStream implements StreamInstance {
   private handleFinished(): void {
     this.logger.debug("Alibaba transcription task finished");
     this.state = StreamState.CLOSED;
-    this.callbacks.onClosed?.();
+    // Pass 1000 (normal close) since this is an intentional/expected completion
+    this.callbacks.onClosed?.(1000);
     // Update metrics
     this.metrics.totalDuration = Date.now() - this.startTime;
 
