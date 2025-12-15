@@ -19,6 +19,7 @@ import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
 import {NavigationHistoryProvider} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
+import {KonamiCodeProvider} from "@/utils/debug/konami"
 import {withWrappers} from "@/utils/structure/with-wrappers"
 import {useThemeProvider} from "@/utils/useAppTheme"
 
@@ -113,4 +114,5 @@ export const AllProviders = withWrappers(
       </>
     )
   },
+  KonamiCodeProvider,
 )
