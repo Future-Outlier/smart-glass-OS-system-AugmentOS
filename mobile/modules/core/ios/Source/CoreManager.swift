@@ -319,13 +319,12 @@ struct ViewState {
     }
 
     func updateMicState() {
-        Bridge.log("MAN: updateMicState()")
         // go through the micRanking and find the first mic that is available:
         var micUsed = ""
 
         // allow the sgc to make changes to the micRanking:
         micRanking = sgc?.sortMicRanking(list: micRanking) ?? micRanking
-        // Bridge.log("MAN: micRanking: \(micRanking)")
+        Bridge.log("MAN: updateMicState() micRanking: \(micRanking)")
 
         var phoneMicUnavailable = systemMicUnavailable
 
