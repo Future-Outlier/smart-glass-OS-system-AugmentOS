@@ -2442,19 +2442,10 @@ class MentraLive: NSObject, SGCManager {
 
     private func processAndUploadBlePhoto(_ transfer: BlePhotoTransfer, imageData: Data) {
         Bridge.log("Processing BLE photo for upload. RequestId: \(transfer.requestId)")
-        let uploadStartTime = Date()
 
-        // Use provided authToken if available, otherwise use core token
-        let authToken: String
-        if let transferAuthToken = transfer.authToken, !transferAuthToken.isEmpty {
-            authToken = transferAuthToken
-        } else {
-            authToken = CoreManager.shared.coreToken
-            if authToken.isEmpty {
-                Bridge.log("LIVE: No auth token available (neither transfer nor core_token)!")
-                return
-            }
-        }
+        // authToken is optional - webhook may not require authentication
+        // If provided in transfer, use it; otherwise pass empty string (uploadToWebhook handles this)
+        let authToken: String = transfer.authToken ?? ""
 
         BlePhotoUploadService.processAndUploadPhoto(
             imageData: imageData, requestId: transfer.requestId, webhookUrl: transfer.webhookUrl,
