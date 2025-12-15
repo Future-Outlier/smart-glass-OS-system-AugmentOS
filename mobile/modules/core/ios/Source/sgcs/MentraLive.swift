@@ -723,11 +723,11 @@ extension MentraLive: CBPeripheralDelegate {
     func peripheral(
         _: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?
     ) {
-        Bridge.log("📥 didUpdateValueFor CALLED - characteristic: \(characteristic.uuid), dataSize: \(characteristic.value?.count ?? 0)")
+        // Bridge.log("LIVE: DEBUG: didUpdateValueFor CALLED - characteristic: \(characteristic.uuid), dataSize: \(characteristic.value?.count ?? 0)")
         // Log raw hex for debugging glasses_ready issue
         if let data = characteristic.value {
             let hexString = data.prefix(50).map { String(format: "%02X ", $0) }.joined()
-            Bridge.log("📥 RAW HEX (first 50): \(hexString)")
+            // Bridge.log("LIVE: DEBUG: RAW HEX (first 50): \(hexString)")
         }
         if let error {
             Bridge.log(
@@ -1624,7 +1624,7 @@ class MentraLive: NSObject, SGCManager {
 
     private func processJsonObject(_ json: [String: Any]) {
         // Log ALL incoming JSON objects for debugging
-        Bridge.log("📨 processJsonObject: \(json)")
+        // Bridge.log("LIVE: DEBUG: processJsonObject: \(json)")
 
         // Check for K900 command format
         if let command = json["C"] as? String {
