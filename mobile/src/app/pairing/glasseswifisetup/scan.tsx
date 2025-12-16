@@ -152,10 +152,10 @@ export default function WifiScanScreen() {
       console.log("🎯 ========= END SCAN.TSX WIFI RESULTS =========")
     }
 
-    GlobalEventEmitter.on("WIFI_SCAN_RESULTS", handleWifiScanResults)
+    GlobalEventEmitter.on("wifi_scan_results", handleWifiScanResults)
 
     return () => {
-      GlobalEventEmitter.removeListener("WIFI_SCAN_RESULTS", handleWifiScanResults)
+      GlobalEventEmitter.removeListener("wifi_scan_results", handleWifiScanResults)
       // Clean up timeout on unmount
       if (scanTimeoutRef.current) {
         clearTimeout(scanTimeoutRef.current)

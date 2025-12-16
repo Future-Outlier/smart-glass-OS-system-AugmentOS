@@ -122,7 +122,7 @@ export default function SelectGlassesBluetoothScreen() {
         console.log("SKIPPING")
 
         // Quick hack // bugfix => we get NOTREQUIREDSKIP twice in some cases, so just stop after the initial one
-        GlobalEventEmitter.removeListener("COMPATIBLE_GLASSES_SEARCH_RESULT", handleSearchResult)
+        GlobalEventEmitter.removeListener("compatible_glasses_search_result", handleSearchResult)
 
         triggerGlassesPairingGuide(glassesModelName as string, deviceName)
         return
@@ -165,14 +165,14 @@ export default function SelectGlassesBluetoothScreen() {
     }
 
     if (!MOCK_CONNECTION) {
-      GlobalEventEmitter.on("COMPATIBLE_GLASSES_SEARCH_RESULT", handleSearchResult)
-      GlobalEventEmitter.on("COMPATIBLE_GLASSES_SEARCH_STOP", stopSearch)
+      GlobalEventEmitter.on("compatible_glasses_search_result", handleSearchResult)
+      GlobalEventEmitter.on("compatible_glasses_search_stop", stopSearch)
     }
 
     return () => {
       if (!MOCK_CONNECTION) {
-        GlobalEventEmitter.removeListener("COMPATIBLE_GLASSES_SEARCH_RESULT", handleSearchResult)
-        GlobalEventEmitter.removeListener("COMPATIBLE_GLASSES_SEARCH_STOP", stopSearch)
+        GlobalEventEmitter.removeListener("compatible_glasses_search_result", handleSearchResult)
+        GlobalEventEmitter.removeListener("compatible_glasses_search_stop", stopSearch)
       }
     }
   }, [])

@@ -21,11 +21,11 @@ export function MtkUpdateAlert() {
     }
 
     // Subscribe to MTK update complete events
-    GlobalEventEmitter.on("MTK_UPDATE_COMPLETE", handleMtkUpdateComplete)
+    GlobalEventEmitter.on("mtk_update_complete", handleMtkUpdateComplete)
 
     // Cleanup subscription on unmount
     return () => {
-      GlobalEventEmitter.off("MTK_UPDATE_COMPLETE", handleMtkUpdateComplete)
+      GlobalEventEmitter.off("mtk_update_complete", handleMtkUpdateComplete)
     }
   }, [])
 
