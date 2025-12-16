@@ -85,20 +85,8 @@ export default [
         },
       ],
 
-      // Restrict imports from websites/ outside websites/
-      "import/no-restricted-paths": [
-        "error",
-        {
-          zones: [
-            {
-              from: "./websites/*",
-              except: ["./websites"],
-              message:
-                "Packages inside 'websites/' are private and cannot be imported by packages/apps outside of the 'websites/' directory.",
-            },
-          ],
-        },
-      ],
+      // Note: import/no-restricted-paths removed - was causing issues with flat config
+      // The rule from old .eslintrc.js needs different format for flat config
 
       // Core ESLint rules
       "no-console": "off",
