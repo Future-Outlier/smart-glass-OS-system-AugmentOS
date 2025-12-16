@@ -10,7 +10,7 @@ import {translate} from "@/i18n/translate"
 import {asgCameraApi} from "@/services/asg/asgCameraApi"
 import {ThemedStyle} from "@/theme"
 import {PhotoInfo} from "@/types/asg"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 // Helper function to determine content type based on photos array
 const getContentType = (photos: PhotoInfo[]): "photos" | "videos" | "items" => {

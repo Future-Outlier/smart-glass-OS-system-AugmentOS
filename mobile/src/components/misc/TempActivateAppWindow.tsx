@@ -4,7 +4,7 @@ import {View, ViewStyle, TextStyle, TouchableOpacity} from "react-native"
 import {Icon, Text} from "@/components/ignite"
 import {Switch} from "@/components/ignite/Toggle/Switch"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 const TempActivateAppWindow = () => {
   const {themed, theme} = useAppTheme()

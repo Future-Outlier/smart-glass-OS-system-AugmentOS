@@ -5,7 +5,7 @@ import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {Icon, IconTypes, Text} from "@/components/ignite"
 import {translate} from "@/i18n"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 type TabButtonProps = TabTriggerSlotProps & {
   iconName: IconTypes

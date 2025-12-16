@@ -11,7 +11,7 @@ import restComms from "@/services/RestComms"
 import {useSettingsStore} from "@/stores/settings"
 import {$styles} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function AppWebView() {
   const {theme, themed} = useAppTheme()

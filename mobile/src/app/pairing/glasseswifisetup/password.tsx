@@ -13,7 +13,7 @@ import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 
 export default function WifiPasswordScreen() {

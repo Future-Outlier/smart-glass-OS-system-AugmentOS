@@ -12,7 +12,7 @@ import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {PhotoInfo} from "@/types/asg"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {MediaLibraryPermissions} from "@/utils/MediaLibraryPermissions"
+import {MediaLibraryPermissions} from "@/utils/permissions/MediaLibraryPermissions"
 
 import {asgCameraApi} from "./asgCameraApi"
 import {gallerySettingsService} from "./gallerySettingsService"

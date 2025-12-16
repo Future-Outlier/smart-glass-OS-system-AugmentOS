@@ -2,7 +2,7 @@ import {TouchableOpacity, ViewStyle, TextStyle} from "react-native"
 
 import {Icon, IconTypes, Text} from "@/components/ignite"
 import {spacing, ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 interface NavButtonProps {
   icon: IconTypes

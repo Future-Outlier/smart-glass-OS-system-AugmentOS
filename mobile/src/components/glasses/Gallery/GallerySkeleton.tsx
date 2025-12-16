@@ -7,7 +7,7 @@ import {View, ViewStyle} from "react-native"
 import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 
 import {spacing, ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient)
 

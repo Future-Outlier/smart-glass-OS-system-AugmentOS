@@ -10,7 +10,7 @@ import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {$styles, ThemedStyle} from "@/theme"
 import {getGlassesImage} from "@/utils/getGlassesImage"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function PairingSuccessScreen() {
   const {theme, themed} = useAppTheme()

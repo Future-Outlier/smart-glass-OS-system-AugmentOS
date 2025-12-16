@@ -4,7 +4,7 @@ import {Animated, TouchableOpacity, View, TextStyle, ViewStyle} from "react-nati
 
 import {Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 interface AdvancedSettingsDropdownProps {
   isOpen: boolean

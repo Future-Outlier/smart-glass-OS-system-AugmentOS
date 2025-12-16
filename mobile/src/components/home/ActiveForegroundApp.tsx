@@ -7,7 +7,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useActiveForegroundApp, useStopApplet} from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 import {ArrowLeftIcon} from "assets/icons/component/ArrowLeftIcon"
 import {CloseXIcon} from "assets/icons/component/CloseXIcon"

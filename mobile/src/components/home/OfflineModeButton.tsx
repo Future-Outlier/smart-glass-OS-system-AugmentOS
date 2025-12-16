@@ -11,7 +11,7 @@ import {
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 export const OfflineModeButton: React.FC = () => {
   const {theme, themed} = useAppTheme()

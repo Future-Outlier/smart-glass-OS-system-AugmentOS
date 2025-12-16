@@ -13,7 +13,7 @@ import {localStorageService} from "@/services/asg/localStorageService"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function GallerySettingsScreen() {
   const {goBack, push} = useNavigationHistory()

@@ -26,7 +26,7 @@ import {
 } from "react-native"
 
 import {ShoppingBagIcon, HomeIcon} from "@/components/icons"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 export type IconTypes = keyof typeof iconRegistry
 

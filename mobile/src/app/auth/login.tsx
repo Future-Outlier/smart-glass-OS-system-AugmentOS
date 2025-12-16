@@ -30,7 +30,7 @@ import {spacing, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import mentraAuth from "@/utils/auth/authClient"
 import {mapAuthError} from "@/utils/auth/authErrors"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
 
 import AppleIcon from "assets/icons/component/AppleIcon"

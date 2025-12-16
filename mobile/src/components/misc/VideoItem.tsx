@@ -2,7 +2,7 @@ import {View, TouchableOpacity} from "react-native"
 import Icon from "react-native-vector-icons/MaterialIcons"
 
 import {Text} from "@/components/ignite"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 import VideoThumbnail from "./VideoThumbnail"
 

@@ -23,7 +23,7 @@ import {
   getGlassesImage,
   getGlassesOpenImage,
 } from "@/utils/getGlassesImage"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 import ChevronRight from "assets/icons/component/ChevronRight"
 import MicIcon from "assets/icons/component/MicIcon"

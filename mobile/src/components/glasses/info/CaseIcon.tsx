@@ -1,6 +1,6 @@
 import {SvgXml} from "react-native-svg"
 
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 interface CaseIconProps {
   size?: number

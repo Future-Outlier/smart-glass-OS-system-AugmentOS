@@ -14,7 +14,7 @@ import {
 import {Text} from "@/components/ignite/Text"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 export const ConsoleLogger = () => {
   const {themed} = useAppTheme()

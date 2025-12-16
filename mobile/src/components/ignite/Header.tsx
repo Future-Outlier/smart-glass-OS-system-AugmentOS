@@ -4,7 +4,7 @@ import {StyleProp, TextStyle, TouchableOpacity, TouchableOpacityProps, View, Vie
 import {isRTL, translate} from "@/i18n"
 import {$styles} from "@/theme"
 import type {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {ExtendedEdge, useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
 
 import {IconTypes, PressableIcon} from "./Icon"

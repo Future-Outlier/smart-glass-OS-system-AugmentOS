@@ -2,7 +2,7 @@ import {PropsWithChildren} from "react"
 import {View, ViewStyle} from "react-native"
 
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 interface SettingsGroupProps extends PropsWithChildren {
   style?: ViewStyle

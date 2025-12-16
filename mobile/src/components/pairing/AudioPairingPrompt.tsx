@@ -4,7 +4,7 @@ import {Button, Icon, Text} from "@/components/ignite"
 import Divider from "@/components/ui/Divider"
 import {ThemedStyle} from "@/theme"
 import {BluetoothSettingsHelper} from "@/utils/BluetoothSettingsHelper"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 interface AudioPairingPromptProps {
   deviceName: string
