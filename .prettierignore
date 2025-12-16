@@ -6,3 +6,6 @@ android
 ignite/ignite.json
 package.json
 .eslintignore
+
+# Cloud has its own prettier config (cloud/packages/cloud/.prettierrc.js)
+cloud/

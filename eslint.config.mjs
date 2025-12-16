@@ -10,7 +10,6 @@ import expoConfig from "eslint-config-expo/flat.js"
 import {defineConfig} from "eslint/config"
 
 export default defineConfig([
-  
   // Recommended configs
   expoConfig,
   js.configs.recommended,
@@ -43,7 +42,7 @@ export default defineConfig([
       },
     },
     settings: {
-      react: {
+      "react": {
         version: "detect", // Automatically detect the React version
       },
       "import/resolver": {
@@ -175,6 +174,9 @@ export default defineConfig([
       "**/build/**",
       "**/coverage/**",
       "**/.vscode/**",
+
+      // Cloud has its own eslint config (cloud/.eslintrc.js)
+      "cloud/**",
 
       // Mobile-specific ignores
       "mobile/ios/**",
