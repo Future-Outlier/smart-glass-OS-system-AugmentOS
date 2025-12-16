@@ -4,11 +4,11 @@ import {FlatList, TouchableOpacity, View} from "react-native"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
+import {Badge} from "@/components/ui"
 import {translate} from "@/i18n"
 import {ClientAppletInterface, DUMMY_APPLET, useIncompatibleApps} from "@/stores/applets"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/utils/useAppTheme"
-import {Badge} from "@/components/ui"
 
 const GRID_COLUMNS = 4
 
@@ -98,7 +98,8 @@ export const IncompatibleApps: React.FC = () => {
     <>
       <TouchableOpacity
         onPress={handleOpenSheet}
-        className="bg-primary-foreground py-3 px-2 rounded-2xl flex-row justify-between items-center min-h-[72px] opacity-40 mb-8">
+        activeOpacity={0.8}
+        className="bg-primary-foreground py-3 px-2 rounded-2xl flex-row justify-between items-center min-h-[72px] mb-8">
         <View className="flex-row items-center gap-3 flex-1 px-2">
           {/* Stacked app icons */}
           <View className="flex-row items-center">
@@ -115,7 +116,7 @@ export const IncompatibleApps: React.FC = () => {
           </View>
 
           {/* Text and badge */}
-          <View className="flex-col gap-1 flex-1">
+          <View className="flex-col gap-1 flex-1 opacity-40">
             <Text className="font-semibold text-secondary-foreground text-sm">
               {translate("home:incompatibleApps")}
             </Text>
@@ -136,10 +137,7 @@ export const IncompatibleApps: React.FC = () => {
         <BottomSheetView className="px-6">
           <View className="gap-4 px-4 my-6">
             <Text className="text-lg font-bold text-foreground text-center" tx="home:incompatibleApps" />
-            <Text
-              className="text-sm text-muted-foreground font-medium"
-              tx="home:incompatibleAppsDescription"
-            />
+            <Text className="text-sm text-muted-foreground font-medium" tx="home:incompatibleAppsDescription" />
           </View>
           <FlatList
             data={gridData}
