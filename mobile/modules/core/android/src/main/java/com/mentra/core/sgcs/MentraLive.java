@@ -126,6 +126,10 @@ public class MentraLive extends SGCManager {
     // Note: glassesAppVersion, glassesBuildNumber, glassesDeviceModel, glassesAndroidVersion
     // are inherited from SGCManager parent class
 
+    // Version info chunking support (for MTU workaround)
+    // Glasses send version_info in 2 chunks to fit within BLE MTU limits
+    private JSONObject pendingVersionInfoChunk1 = null; // Stores chunk 1 until chunk 2 arrives
+
     // BLE UUIDs - updated to match K900 BES2800 MCU UUIDs for compatibility with both glass types
     // CRITICAL FIX: Swapped TX and RX UUIDs to match actual usage from central device perspective
     // In BLE, characteristic names are from the perspective of the device that owns them:
@@ -2014,8 +2018,73 @@ public class MentraLive extends SGCManager {
                 }
                 break;
 
+            case "version_info_1":
+                // Chunk 1 of version info (MTU workaround) - contains basic device info
+                Bridge.log("LIVE: Received version_info_1 (chunk 1/2): " + json.toString());
+                pendingVersionInfoChunk1 = json;
+                // Wait for chunk 2 to arrive before processing
+                break;
+
+            case "version_info_2":
+                // Chunk 2 of version info (MTU workaround) - contains URLs and identifiers
+                Bridge.log("LIVE: Received version_info_2 (chunk 2/2): " + json.toString());
+
+                if (pendingVersionInfoChunk1 != null) {
+                    // Merge both chunks and process as complete version_info
+                    String appVersionChunked = pendingVersionInfoChunk1.optString("app_version", "");
+                    String buildNumberChunked = pendingVersionInfoChunk1.optString("build_number", "");
+                    String deviceModelChunked = pendingVersionInfoChunk1.optString("device_model", "");
+                    String androidVersionChunked = pendingVersionInfoChunk1.optString("android_version", "");
+                    String otaVersionUrlChunked = json.optString("ota_version_url", null);
+                    String firmwareVersionChunked = json.optString("firmware_version", "");
+                    String btMacAddressChunked = json.optString("bt_mac_address", "");
+
+                    // Update parent SGCManager fields
+                    glassesAppVersion = appVersionChunked;
+                    glassesBuildNumber = buildNumberChunked;
+                    glassesDeviceModel = deviceModelChunked;
+                    glassesAndroidVersion = androidVersionChunked;
+                    glassesOtaVersionUrl = otaVersionUrlChunked != null ? otaVersionUrlChunked : "";
+                    glassesFirmwareVersion = firmwareVersionChunked;
+                    glassesBtMacAddress = btMacAddressChunked;
+
+                    // Parse build number as integer for version checks (local field)
+                    try {
+                        glassesBuildNumberInt = Integer.parseInt(buildNumberChunked);
+                        Bridge.log("LIVE: Parsed build number as integer: " + glassesBuildNumberInt);
+                    } catch (NumberFormatException e) {
+                        glassesBuildNumberInt = 0;
+                        Log.e(TAG, "Failed to parse build number as integer: " + buildNumberChunked);
+                    }
+
+                    // Determine LC3 audio support: base K900 doesn't support LC3, variants do (local field)
+                    supportsLC3Audio = !"K900".equals(deviceModelChunked);
+                    Bridge.log("LIVE: 📱 LC3 audio support: " + supportsLC3Audio + " (device: " + deviceModelChunked + ")");
+
+                    Bridge.log("LIVE: Glasses Version (from chunks) - App: " + appVersionChunked +
+                          ", Build: " + buildNumberChunked +
+                          ", Device: " + deviceModelChunked +
+                          ", Android: " + androidVersionChunked +
+                          ", Firmware: " + firmwareVersionChunked +
+                          ", BT MAC: " + btMacAddressChunked +
+                          ", OTA URL: " + otaVersionUrlChunked);
+
+                    // Send version info event (matches iOS emitVersionInfo)
+                    Bridge.sendVersionInfo(appVersionChunked, buildNumberChunked, deviceModelChunked, androidVersionChunked,
+                          otaVersionUrlChunked != null ? otaVersionUrlChunked : "", firmwareVersionChunked, btMacAddressChunked);
+
+                    // Notify CoreManager to update status and send to frontend
+                    CoreManager.getInstance().handle_request_status();
+
+                    // Clear the pending chunk
+                    pendingVersionInfoChunk1 = null;
+                } else {
+                    Bridge.log("LIVE: ⚠️ Received version_info_2 without version_info_1 - ignoring");
+                }
+                break;
+
             case "version_info":
-                // Process version information from ASG client
+                // Process version information from ASG client (legacy single-message format)
                 Bridge.log("LIVE: Received version info from ASG client: " + json.toString());
 
                 // Extract version information
