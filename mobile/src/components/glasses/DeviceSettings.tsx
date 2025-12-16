@@ -1,6 +1,6 @@
 import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
-import {Platform, View} from "react-native"
+import {View} from "react-native"
 
 import OtaProgressSection from "@/components/glasses/OtaProgressSection"
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
@@ -31,18 +31,13 @@ export default function DeviceSettings() {
   )
   const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS.default_button_action_app.key)
   const glassesConnected = useGlassesStore(state => state.connected)
-  const glassesModelName = useGlassesStore(state => state.modelName)
 
   const {push, goBack} = useNavigationHistory()
   const applets = useApplets()
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
   // Check if we have any advanced settings to show
-  const hasMicrophoneSelector =
-    glassesConnected &&
-    defaultWearable &&
-    features?.hasMicrophone &&
-    (defaultWearable !== "Mentra Live" || (Platform.OS === "android" && glassesModelName !== "K900"))
+  const hasMicrophoneSelector = glassesConnected && defaultWearable && features?.hasMicrophone
 
   const wifiLocalIp = useGlassesStore(state => state.wifiSsid)
   const bluetoothName = useGlassesStore(state => state.bluetoothName)

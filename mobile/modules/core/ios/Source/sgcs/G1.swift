@@ -655,7 +655,7 @@ class G1: NSObject, SGCManager {
 
                 // Trigger status update to include serial number in status JSON
                 DispatchQueue.main.async {
-                    CoreManager.shared.handle_request_status()
+                    CoreManager.shared.getStatus()
                 }
             }
         } catch {
@@ -1210,7 +1210,9 @@ class G1: NSObject, SGCManager {
             handleAck(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
         case .BLE_REQ_TRANSFER_MIC_DATA:
             // compressedVoiceData = data
-            CoreManager.shared.handleGlassesMicData(data)
+            // skip the first 2 bytes:
+            let lc3Data = data.subdata(in: 2 ..< data.count)
+            CoreManager.shared.handleGlassesMicData(lc3Data)
         //                CoreCommsService.log("G1: Got voice data: " + String(data.count))
         case .UNK_1:
             handleAck(from: peripheral, success: true)
@@ -1297,21 +1299,21 @@ class G1: NSObject, SGCManager {
             case .CASE_REMOVED:
                 Bridge.log("G1: REMOVED FROM CASE")
                 caseRemoved = true
-                CoreManager.shared.handle_request_status()
+                CoreManager.shared.getStatus()
             case .CASE_REMOVED2:
                 Bridge.log("G1: REMOVED FROM CASE2")
                 caseRemoved = true
-                CoreManager.shared.handle_request_status()
+                CoreManager.shared.getStatus()
             case .CASE_OPEN:
                 caseOpen = true
                 caseRemoved = false
                 Bridge.log("G1: CASE OPEN")
-                CoreManager.shared.handle_request_status()
+                CoreManager.shared.getStatus()
             case .CASE_CLOSED:
                 caseOpen = false
                 caseRemoved = false
                 Bridge.log("G1: CASE CLOSED")
-                CoreManager.shared.handle_request_status()
+                CoreManager.shared.getStatus()
             case .CASE_CHARGING_STATUS:
                 guard data.count >= 3 else { break }
                 let status = data[2]
