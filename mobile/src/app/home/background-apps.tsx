@@ -19,6 +19,7 @@ export default function BackgroundAppsScreen() {
         onLeftPress={goBack}
         titleTx="home:backgroundApps"
         subtitleTx="home:backgroundAppsDescription"
+        // titleContainerStyle={{ paddingBo: theme.spacing.s4 }}
       />
 
       <ScrollView

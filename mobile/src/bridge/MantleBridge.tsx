@@ -107,6 +107,7 @@ export class MantleBridge {
       switch (data.type) {
         case "core_status_update":
           useGlassesStore.getState().setGlassesInfo(data.core_status.glasses_info)
+          console.log("CORE_STATUS_UPDATE", data.core_status.glasses_info)
           GlobalEventEmitter.emit("CORE_STATUS_UPDATE", data)
           return
         case "wifi_status_change":
