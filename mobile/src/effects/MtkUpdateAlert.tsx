@@ -7,7 +7,7 @@ import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
  * Effect that listens for MTK firmware update completion
  * and shows an alert to the user instructing them to restart their glasses
  */
-export function MtkUpdateAlertEffect() {
+export function MtkUpdateAlert() {
   useEffect(() => {
     const handleMtkUpdateComplete = (data: {message: string; timestamp: number}) => {
       console.log("MTK firmware update complete:", data.message)
