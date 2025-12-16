@@ -3,19 +3,18 @@ import {useCallback} from "react"
 import {ScrollView} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
+import {ActiveForegroundApp} from "@/components/home/ActiveForegroundApp"
+import {BackgroundAppsLink} from "@/components/home/BackgroundAppsLink"
+import {CompactDeviceStatus} from "@/components/home/CompactDeviceStatus"
+import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
+import {IncompatibleApps} from "@/components/home/IncompatibleApps"
+import {PairGlassesCard} from "@/components/home/PairGlassesCard"
 import {Header, Screen} from "@/components/ignite"
 import CloudConnection from "@/components/misc/CloudConnection"
-import SensingDisabledWarning from "@/components/misc/SensingDisabledWarning"
-import {Spacer} from "@/components/ui/Spacer"
-import {useRefreshApplets} from "@/stores/applets"
-import {useAppTheme} from "@/contexts/ThemeContext"
-import {IncompatibleApps} from "@/components/home/IncompatibleApps"
-import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
-import {ActiveForegroundApp} from "@/components/home/ActiveForegroundApp"
 import {Group} from "@/components/ui"
-import {PairGlassesCard} from "@/components/home/PairGlassesCard"
-import {CompactDeviceStatus} from "@/components/home/CompactDeviceStatus"
-import {BackgroundAppsLink} from "@/components/home/BackgroundAppsLink"
+import {Spacer} from "@/components/ui/Spacer"
+import {useAppTheme} from "@/contexts/ThemeContext"
+import {useRefreshApplets} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
 export default function Homepage() {
@@ -39,7 +38,6 @@ export default function Homepage() {
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
         <Spacer height={theme.spacing.s4} />
         <CloudConnection />
-        <SensingDisabledWarning />
         <Group>
           {!defaultWearable && <PairGlassesCard />}
           {defaultWearable && <CompactDeviceStatus />}
