@@ -36,7 +36,39 @@ When `UserSession.dispose()` runs, it clears timers and calls `manager.dispose()
 - [x] Fix UserSession pong listener leak (added ResourceTracker, disposed flag, guarded callbacks)
 - [x] Fix AppSession pong listener leak (added ResourceTracker, disposed flag)
 - [x] Fix LiveKitClient listener leaks (message/close/error handlers now tracked)
-- [ ] Fix transcription/translation provider listener leaks
-- [ ] Fix LiveKitGrpcClient stream handler leaks
-- [ ] Add disposed guards to remaining managers
-- [ ] Audit all `.on()` calls for proper cleanup
+- [x] Fix transcription/translation provider listener leaks (ResourceTracker, disposed guards, handler cleanup)
+- [x] Fix LiveKitGrpcClient stream handler leaks (ResourceTracker, disposed guards on audio and playAudio streams)
+- [x] Audit all `.on()` calls for proper cleanup (completed - all event listeners are now tracked)
+- [x] Add disposed guards to remaining managers (completed - managers that don't use event listeners don't need ResourceTracker)
+
+## Audit Results
+
+Audited all `.on()` calls in `cloud/packages/cloud/src/services/session/`:
+
+| File                              | Status   | Notes                                           |
+| --------------------------------- | -------- | ----------------------------------------------- |
+| `UserSession.ts`                  | ✅ Fixed | ResourceTracker, disposed guards                |
+| `AppSession.ts`                   | ✅ Fixed | ResourceTracker, disposed guards                |
+| `AppManager.ts`                   | ✅ N/A   | No direct event listeners (manages AppSessions) |
+| `LiveKitClient.ts`                | ✅ Fixed | ResourceTracker, disposed guards                |
+| `LiveKitGrpcClient.ts`            | ✅ Fixed | ResourceTracker, disposed guards                |
+| `SonioxTranscriptionProvider.ts`  | ✅ Fixed | ResourceTracker, disposed guards                |
+| `AlibabaTranscriptionProvider.ts` | ✅ Fixed | ResourceTracker, disposed guards                |
+| `SonioxTranslationProvider.ts`    | ✅ Fixed | ResourceTracker, disposed guards                |
+| `AlibabaTranslationProvider.ts`   | ✅ Fixed | ResourceTracker, disposed guards                |
+| `AudioManager.ts`                 | ✅ N/A   | No event listeners                              |
+| `CalendarManager.ts`              | ✅ N/A   | No event listeners                              |
+| `DeviceManager.ts`                | ✅ N/A   | No event listeners                              |
+| `LocationManager.ts`              | ✅ N/A   | No event listeners                              |
+| `MicrophoneManager.ts`            | ✅ N/A   | No event listeners                              |
+| `SubscriptionManager.ts`          | ✅ N/A   | No event listeners                              |
+| `UserSettingsManager.ts`          | ✅ N/A   | No event listeners                              |
+| `TranscriptionManager.ts`         | ✅ N/A   | No event listeners (delegates to providers)     |
+| `TranslationManager.ts`           | ✅ N/A   | No event listeners (delegates to providers)     |
+
+## Next Steps
+
+- [ ] Test in staging environment
+- [ ] Monitor for memory leaks using heap snapshots
+- [ ] Verify no reconnection loops after abnormal WebSocket closes
+- [ ] Add end-to-end tests for disposal scenarios

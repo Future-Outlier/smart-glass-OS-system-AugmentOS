@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # Manual trigger fallback
   push:
     branches:
-      - cloud/apps-never-die
+      - cloud/007-resource-lifecycle-cleanup
     paths:
       - "cloud/**"
       - ".github/workflows/porter-debug.yml"
