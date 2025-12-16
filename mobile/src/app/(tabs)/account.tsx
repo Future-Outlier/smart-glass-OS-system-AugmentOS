@@ -1,67 +1,97 @@
+import {Platform, View} from "react-native"
+import {ScrollView} from "react-native-gesture-handler"
+
+import {ProfileCard} from "@/components/account/ProfileCard"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {Button, Header, Screen} from "@/components/ignite"
+import {VersionInfo} from "@/components/dev/VersionInfo"
+import {Header, Icon, Screen} from "@/components/ignite"
+import {Group} from "@/components/ui/Group"
+import {RouteButton} from "@/components/ui/RouteButton"
+import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useVideoPlayer, VideoView, VideoSource} from "expo-video"
-import {useState, useCallback, useEffect} from "react"
-import {Text, TouchableOpacity, View} from "react-native"
+import {translate} from "@/i18n"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {useAppTheme} from "@/contexts/ThemeContext"
+import {$styles} from "@/theme"
 
-const videoFiles = [
-  require("../../../assets/onboarding/live/ONB1_StartOnboarding.mp4"),
-  require("../../../assets/onboarding/live/ONB1_PowerButton.mp4"),
-  require("../../../assets/onboarding/live/ONB2_Pairing Successful.mp4"),
-  require("../../../assets/onboarding/live/ONB4_ActionButtonClick.mp4"),
-  require("../../../assets/onboarding/live/ONB5_ActionButtonRecord.mp4"),
-  require("../../../assets/onboarding/live/ONB6_TransitionTrackpad.mp4"),
-  require("../../../assets/onboarding/live/ONB7_TrackpadTap.mp4"),
-  require("../../../assets/onboarding/live/ONB8_TransitionTrackpad2.mp4"),
-  require("../../../assets/onboarding/live/ONB8_TrackpadSlide.mp4"),
-  require("../../../assets/onboarding/live/ONB9_TrackpadPause.mp4"),
-  require("../../../assets/onboarding/live/ONB10_Cord.mp4"),
-  require("../../../assets/onboarding/live/ONB11_End.mp4"),
-]
-
-export default function Onboarding1() {
-  const {goBack} = useNavigationHistory()
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [showNextButton, setShowNextButton] = useState(false)
-
-  const player = useVideoPlayer(videoFiles[currentIndex] as VideoSource, (player: any) => {
-    player.play()
-  })
-
-  useEffect(() => {
-    const subscription = player.addListener("playingChange", (status: any) => {
-      if (!status.isPlaying && player.currentTime >= player.duration - 0.1) {
-        setShowNextButton(true)
-      }
-    })
-
-    return () => {
-      subscription.remove()
-    }
-  }, [player])
-
-  const handleNext = useCallback(() => {
-    if (currentIndex < videoFiles.length - 1) {
-      setShowNextButton(false)
-      setCurrentIndex(currentIndex + 1)
-      player.replace(videoFiles[currentIndex + 1] as VideoSource)
-      player.play()
-    }
-  }, [currentIndex, player])
+export default function AccountPage() {
+  const {theme, themed} = useAppTheme()
+  const {push} = useNavigationHistory()
+  const [devMode] = useSetting(SETTINGS.dev_mode.key)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   return (
     <Screen preset="fixed">
-      <Header
-        title="Onboarding"
-        leftIcon="x"
-        RightActionComponent={<MentraLogoStandalone />}
-        onLeftPress={() => goBack()}
-      />
-      {/* <View className="flex justify-center items-center px-12 h-full"> */}
-        <VideoView player={player} style={{width: "100%", height: "100%"}} nativeControls={false} />
-        {showNextButton && currentIndex < videoFiles.length - 1 && <Button text="Next Video" onPress={handleNext} />}
-      {/* </View> */}
+      <Header leftTx="settings:title" RightActionComponent={<MentraLogoStandalone />} />
+
+      <ScrollView style={themed($styles.scrollView)} contentInsetAdjustmentBehavior="automatic">
+        <ProfileCard />
+
+        <View style={{flex: 1, gap: theme.spacing.s6}}>
+          <Group title={translate("account:accountSettings")}>
+            <RouteButton
+              icon={<Icon name="circle-user" size={24} color={theme.colors.secondary_foreground} />}
+              label={translate("settings:profileSettings")}
+              onPress={() => push("/settings/profile")}
+            />
+            <RouteButton
+              icon={<Icon name="message-2-star" size={24} color={theme.colors.secondary_foreground} />}
+              label={translate("settings:feedback")}
+              onPress={() => push("/settings/feedback")}
+            />
+          </Group>
+
+          {defaultWearable && (
+            <Group title={translate("account:deviceSettings")}>
+              <RouteButton
+                icon={<Icon name="glasses" color={theme.colors.secondary_foreground} size={24} />}
+                label={defaultWearable}
+                onPress={() => push("/settings/glasses")}
+              />
+            </Group>
+          )}
+
+          <Group title={translate("account:appSettings")}>
+            {devMode && (
+              <RouteButton
+                icon={<Icon name="sun" size={24} color={theme.colors.secondary_foreground} />}
+                label={translate("settings:appAppearance")}
+                onPress={() => push("/settings/theme")}
+              />
+            )}
+            {(Platform.OS === "android" || devMode) && (
+              <RouteButton
+                icon={<Icon name="bell" size={24} color={theme.colors.secondary_foreground} />}
+                label={translate("settings:notificationsSettings")}
+                onPress={() => push("/settings/notifications")}
+              />
+            )}
+            <RouteButton
+              icon={<Icon name="file-type-2" size={24} color={theme.colors.secondary_foreground} />}
+              label={translate("settings:transcriptionSettings")}
+              onPress={() => push("/settings/transcription")}
+            />
+            <RouteButton
+              icon={<Icon name="shield-lock" size={24} color={theme.colors.secondary_foreground} />}
+              label={translate("settings:privacySettings")}
+              onPress={() => push("/settings/privacy")}
+            />
+          </Group>
+
+          <Group title={translate("deviceSettings:advancedSettings")}>
+            {devMode && (
+              <RouteButton
+                icon={<Icon name="user-code" size={24} color={theme.colors.secondary_foreground} />}
+                label={translate("settings:developerSettings")}
+                onPress={() => push("/settings/developer")}
+              />
+            )}
+          </Group>
+        </View>
+
+        <VersionInfo />
+        <Spacer height={theme.spacing.s10} />
+      </ScrollView>
     </Screen>
   )
 }

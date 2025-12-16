@@ -163,6 +163,8 @@ const en = {
     haveGlasses: "I have glasses",
     dontHaveGlasses: "I don't have glasses yet",
     welcome: "Welcome to MentraOS",
+    learnTheBasics: "Learn the basics",
+    continueOnboarding: "Continue onboarding",
   },
   home: {
     title: "MentraOS",
@@ -536,6 +538,7 @@ const en = {
     learnMore: "Learn more",
     noResults: "No results found",
     noApps: "No apps available",
+    skip: "Skip",
   },
   developer: {
     dev: "Dev",
