@@ -210,6 +210,15 @@ export class SubscriptionManager {
     const appSession =
       this.userSession.appManager.getOrCreateAppSession(packageName);
 
+    // If AppManager is disposed, we can't update subscriptions
+    if (!appSession) {
+      this.logger.warn(
+        { packageName },
+        "Cannot update subscriptions - AppManager disposed",
+      );
+      return;
+    }
+
     // Process incoming subscriptions array (strings and special location objects)
     const streamSubscriptions: ExtendedStreamType[] = [];
     let locationRate: LocationRate | null = null;

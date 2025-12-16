@@ -113,6 +113,10 @@ export class AppManager {
   private userSession: UserSession;
   private logger: Logger;
 
+  // ===== Disposed flag =====
+  // Prevents creating new AppSessions after UserSession disposal
+  private disposed = false;
+
   // ===== Consolidated per-app state (Phase 4) =====
   // AppSession instances hold all per-app state in one place
   // This is the SINGLE SOURCE OF TRUTH for per-app state
@@ -142,7 +146,16 @@ export class AppManager {
   /**
    * Get or create an AppSession for a package
    */
-  getOrCreateAppSession(packageName: string): AppSession {
+  getOrCreateAppSession(packageName: string): AppSession | undefined {
+    // Don't create new AppSessions after disposal
+    if (this.disposed) {
+      this.logger.warn(
+        { packageName },
+        `[AppManager] Ignoring getOrCreateAppSession after disposal`,
+      );
+      return undefined;
+    }
+
     let session = this.apps.get(packageName);
     if (!session) {
       session = new AppSession({
@@ -157,6 +170,23 @@ export class AppManager {
             oldSubs,
             newSubs,
           );
+        },
+        // Handle WebSocket close events - this callback is called by AppSession
+        // when its close handler fires. We call handleAppConnectionClosed for
+        // full cleanup logic (ownership release, subscription cleanup, etc.)
+        onDisconnect: (code: number, reason: string) => {
+          // Don't process disconnects if we're already disposed
+          if (this.disposed) {
+            this.logger.debug(
+              { packageName, code, reason },
+              `[AppManager] Ignoring onDisconnect callback after disposal`,
+            );
+            return;
+          }
+          // Note: AppSession.handleDisconnect() is already called before this callback
+          // We call handleAppConnectionClosed for ownership/subscription cleanup
+          // but skip the parts that AppSession already handled
+          this.handleAppConnectionClosedFromCallback(packageName, code, reason);
         },
       });
       this.apps.set(packageName, session);
@@ -330,6 +360,13 @@ export class AppManager {
    */
   markOwnershipReleased(packageName: string, reason: string): void {
     const appSession = this.getOrCreateAppSession(packageName);
+    if (!appSession) {
+      this.logger.warn(
+        { packageName, reason },
+        `[AppManager] Cannot mark ownership released - AppManager disposed`,
+      );
+      return;
+    }
     appSession.handleOwnershipRelease(reason);
 
     this.logger.info(
@@ -582,6 +619,14 @@ export class AppManager {
 
       // Get or create AppSession and mark as connecting
       const appSession = this.getOrCreateAppSession(packageName);
+      if (!appSession) {
+        this.userSession.loadingApps.delete(packageName);
+        reject({
+          success: false,
+          error: { stage: "CONNECTION", message: "AppManager disposed" },
+        });
+        return;
+      }
       appSession.startConnecting();
 
       // Continue with webhook trigger
@@ -1053,12 +1098,19 @@ export class AppManager {
       // Get or create AppSession and handle the connection
       // AppSession now owns the WebSocket (Phase 4d)
       const connectedAppSession = this.getOrCreateAppSession(packageName);
+      if (!connectedAppSession) {
+        this.logger.warn(
+          { packageName },
+          `[AppManager] Cannot handle app init - AppManager disposed`,
+        );
+        ws.close(1008, "Session ended");
+        return;
+      }
       connectedAppSession.handleConnect(ws);
 
-      // Set up close event handler for proper grace period handling
-      ws.on("close", (code: number, reason: Buffer) => {
-        this.handleAppConnectionClosed(packageName, code, reason.toString());
-      });
+      // Note: Close event handler is now managed by AppSession.handleConnect()
+      // AppSession registers its own close handler and calls our onDisconnect callback
+      // This ensures proper cleanup when AppSession is disposed
 
       // Note: AppSession state is now RUNNING after handleConnect()
       // runningApps and loadingApps are derived from AppSession state via getRunningAppNames()/getLoadingAppNames()
@@ -1341,7 +1393,55 @@ export class AppManager {
   }
 
   /**
+   * Handle app connection close from AppSession callback
+   * This is called AFTER AppSession.handleDisconnect() has already run,
+   * so we only need to handle AppManager-level concerns (ownership, subscriptions, display)
+   */
+  private handleAppConnectionClosedFromCallback(
+    packageName: string,
+    code: number,
+    reason: string,
+  ): void {
+    const logger = this.logger.child({
+      function: "handleAppConnectionClosedFromCallback",
+      packageName,
+      code,
+      reason,
+    });
+
+    const appSession = this.apps.get(packageName);
+    if (!appSession) {
+      logger.debug("No AppSession found, nothing to clean up");
+      return;
+    }
+
+    // Check if ownership was released - if so, clean up subscriptions and display
+    if (appSession.ownershipReleased) {
+      const releaseInfo = appSession.ownershipReleaseInfo;
+      logger.info(
+        { releaseReason: releaseInfo?.reason },
+        `App closed after ownership release - cleaning up`,
+      );
+
+      // Clean up subscriptions
+      this.userSession.subscriptionManager
+        .removeSubscriptions(packageName)
+        .catch((error) => {
+          logger.error(
+            error,
+            "Error removing subscriptions after ownership release",
+          );
+        });
+
+      // Notify display manager
+      this.userSession.displayManager.handleAppStop(packageName);
+    }
+  }
+
+  /**
    * Handle app connection close
+   * Note: This is now mainly called manually (e.g., from sendMessageToApp)
+   * WebSocket close events are handled via AppSession callback -> handleAppConnectionClosedFromCallback
    *
    * @param packageName Package name
    * @param code Close code
@@ -1434,13 +1534,24 @@ export class AppManager {
         appSession.handleDisconnect(code, reason);
       } else {
         // Fallback for edge case where AppSession doesn't exist
-        // This shouldn't happen, but handle gracefully
+        // This can happen if dispose() was called and cleared apps map before
+        // the WebSocket close event fired - in that case, don't create new sessions
+        if (this.disposed) {
+          logger.info(
+            { packageName, code, reason },
+            `[AppManager] Ignoring app disconnect after disposal - this is expected`,
+          );
+          return;
+        }
+
         logger.warn(
           { packageName },
           `[AppManager] No AppSession found for disconnected app, creating one`,
         );
         const newAppSession = this.getOrCreateAppSession(packageName);
-        newAppSession.handleDisconnect(code, reason);
+        if (newAppSession) {
+          newAppSession.handleDisconnect(code, reason);
+        }
       }
     } catch (error) {
       this.logger.error(
@@ -1575,6 +1686,10 @@ export class AppManager {
    * Clean up all resources
    */
   dispose(): void {
+    // Mark as disposed FIRST to prevent any new AppSessions from being created
+    // during the disposal process (e.g., from delayed WebSocket close events)
+    this.disposed = true;
+
     try {
       this.logger.debug(
         { userId: this.userSession.userId, service: "AppManager" },

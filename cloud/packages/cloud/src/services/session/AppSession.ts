@@ -21,6 +21,7 @@ import {
   isLanguageStream,
   parseLanguageStream,
 } from "@mentra/sdk";
+import { ResourceTracker } from "../../utils/resource-tracker";
 
 /**
  * Location rate/accuracy tier for location subscriptions
@@ -59,6 +60,7 @@ export interface AppSessionConfig {
     oldSubs: Set<ExtendedStreamType>,
     newSubs: Set<ExtendedStreamType>,
   ) => void;
+  onDisconnect?: (code: number, reason: string) => void;
 }
 
 /**
@@ -118,6 +120,17 @@ export class AppSession {
 
   // ===== Heartbeat =====
   private heartbeatInterval: NodeJS.Timeout | null = null;
+  private pongHandler: (() => void) | null = null;
+
+  // ===== Resource Tracking =====
+  private resources = new ResourceTracker();
+  private disposed = false;
+
+  // ===== Close Handler (for proper cleanup) =====
+  private closeHandler: ((code: number, reason: Buffer) => void) | null = null;
+  private onDisconnectCallback:
+    | ((code: number, reason: string) => void)
+    | null = null;
 
   // ===== Grace Period =====
   private graceTimer: NodeJS.Timeout | null = null;
@@ -158,6 +171,7 @@ export class AppSession {
     });
     this.onGracePeriodExpired = config.onGracePeriodExpired;
     this.onSubscriptionsChanged = config.onSubscriptionsChanged;
+    this.onDisconnectCallback = config.onDisconnect ?? null;
 
     this.logger.debug("AppSession created");
   }
@@ -245,6 +259,9 @@ export class AppSession {
   handleConnect(ws: WebSocket): void {
     this.logger.info("App connected");
 
+    // Remove old close handler if exists (from previous connection)
+    this.removeCloseHandler();
+
     // Cancel any pending grace period
     this.cancelGracePeriod();
 
@@ -258,6 +275,24 @@ export class AppSession {
     this._lastReconnectAt = Date.now();
     this.setState(AppConnectionState.RUNNING);
 
+    // Set up close handler (owned by AppSession for proper cleanup)
+    this.closeHandler = (code: number, reason: Buffer) => {
+      const reasonStr = reason.toString();
+      this.logger.debug(
+        { code, reason: reasonStr },
+        "WebSocket close event received",
+      );
+
+      // First handle internal state
+      this.handleDisconnect(code, reasonStr);
+
+      // Then notify AppManager if callback provided
+      if (this.onDisconnectCallback) {
+        this.onDisconnectCallback(code, reasonStr);
+      }
+    };
+    ws.on("close", this.closeHandler);
+
     // Start heartbeat
     this.setupHeartbeat(ws);
 
@@ -267,6 +302,18 @@ export class AppSession {
       this.pendingConnection.resolve(true);
       this.pendingConnection = null;
     }
+  }
+
+  /**
+   * Remove the close handler from the WebSocket
+   * This prevents memory leaks and stale callbacks after disposal
+   */
+  private removeCloseHandler(): void {
+    if (this._webSocket && this.closeHandler) {
+      this._webSocket.off("close", this.closeHandler);
+      this.logger.debug("Removed WebSocket close handler");
+    }
+    this.closeHandler = null;
   }
 
   /**
@@ -352,6 +399,7 @@ export class AppSession {
     this.clearHeartbeat();
 
     this.heartbeatInterval = setInterval(() => {
+      if (this.disposed) return; // Guard against stale callback
       if (ws.readyState === WebSocket.OPEN) {
         ws.ping();
         if (LOG_PING_PONG) {
@@ -363,11 +411,23 @@ export class AppSession {
       }
     }, HEARTBEAT_INTERVAL_MS);
 
-    // Setup pong handler
-    ws.on("pong", () => {
+    // Track interval for automatic cleanup
+    this.resources.trackInterval(this.heartbeatInterval);
+
+    // Setup pong handler (store reference for cleanup)
+    this.pongHandler = () => {
+      if (this.disposed) return; // Guard against stale callback
       if (LOG_PING_PONG) {
         this.logger.debug("Received pong");
       }
+    };
+
+    ws.on("pong", this.pongHandler);
+
+    // Track pong handler for cleanup
+    const pongRef = this.pongHandler;
+    this.resources.track(() => {
+      ws.off("pong", pongRef);
     });
 
     this.logger.debug("Heartbeat started");
@@ -379,6 +439,7 @@ export class AppSession {
       this.heartbeatInterval = null;
       this.logger.debug("Heartbeat cleared");
     }
+    this.pongHandler = null;
   }
 
   // ===== Grace Period Management =====
@@ -713,10 +774,20 @@ export class AppSession {
    * Full cleanup - call when app is being removed
    */
   cleanup(): void {
+    if (this.disposed) return; // Idempotent
+    this.disposed = true;
+
     this.logger.debug("Cleaning up AppSession");
+
+    // Clean up all tracked resources (removes event listeners, clears timers)
+    this.resources.dispose();
 
     this.clearHeartbeat();
     this.cancelGracePeriod();
+
+    // Remove close handler BEFORE closing connection to prevent it from firing
+    this.removeCloseHandler();
+
     this.closeConnection(1000, "App session cleanup");
 
     if (this.pendingConnection) {
@@ -729,6 +800,7 @@ export class AppSession {
     this._ownershipReleased = null;
     this._connectedAt = null;
     this._disconnectedAt = null;
+    this.onDisconnectCallback = null;
   }
 
   /**
@@ -738,6 +810,13 @@ export class AppSession {
     this.cleanup();
     this.setState(AppConnectionState.STOPPED);
     this.logger.info("AppSession disposed");
+  }
+
+  /**
+   * Check if this AppSession has been disposed
+   */
+  get isDisposed(): boolean {
+    return this.disposed;
   }
 
   // ===== Debug/Inspection =====
