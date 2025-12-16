@@ -10,7 +10,7 @@ import {ExtendedEdge, useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsSty
 import {IconTypes, PressableIcon} from "./Icon"
 import {Text, TextProps} from "./Text"
 
-export interface HeaderProps {
+interface HeaderProps {
   /**
    * The layout of the title relative to the action components.
    * - `center` will force the title to always be centered relative to the header. If the title or the action buttons are too long, the title will be cut off.

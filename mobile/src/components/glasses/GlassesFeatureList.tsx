@@ -11,7 +11,7 @@ interface GlassesFeatureListProps {
 
 export type GlassesFeature = "camera" | "microphone" | "speakers" | "display"
 
-export const featureLabels: Record<GlassesFeature, string> = {
+const featureLabels: Record<GlassesFeature, string> = {
   camera: "Camera",
   microphone: "Microphone",
   speakers: "Speakers",

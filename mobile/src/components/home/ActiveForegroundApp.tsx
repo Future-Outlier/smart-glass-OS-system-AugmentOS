@@ -1,6 +1,6 @@
 import {ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
-import {Text} from "@/components/ignite"
+import {Icon, Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import {Badge} from "@/components/ui"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -9,7 +9,6 @@ import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {useAppTheme} from "@/contexts/ThemeContext"
 
-import {ArrowLeftIcon} from "assets/icons/component/ArrowLeftIcon"
 import {CloseXIcon} from "assets/icons/component/CloseXIcon"
 
 export const ActiveForegroundApp: React.FC = () => {
@@ -107,7 +106,7 @@ export const ActiveForegroundApp: React.FC = () => {
           </TouchableOpacity>
         )}
         <View style={themed($iconContainer)}>
-          <ArrowLeftIcon size={24} color={theme.colors.text} />
+          <Icon name="arrow-left" size={24} color={theme.colors.text} />
         </View>
       </View>
     </TouchableOpacity>

@@ -7,7 +7,7 @@ import {TxKeyPath} from "@/i18n"
 import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/contexts/ThemeContext"
 
-export type PillButtonVariant = "primary" | "secondary" | "icon"
+type PillButtonVariant = "primary" | "secondary" | "icon"
 
 interface PillButtonProps extends Omit<TouchableOpacityProps, "style"> {
   /**

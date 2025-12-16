@@ -360,7 +360,7 @@ export interface DeepLinkRoute {
   requiresAuth?: boolean
 }
 
-export interface DeepLinkConfig {
+interface DeepLinkConfig {
   scheme: string
   host?: string
   routes: DeepLinkRoute[]
