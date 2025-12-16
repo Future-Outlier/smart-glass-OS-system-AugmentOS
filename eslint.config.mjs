@@ -175,9 +175,6 @@ export default defineConfig([
       "**/coverage/**",
       "**/.vscode/**",
 
-      // Cloud has its own eslint config (cloud/.eslintrc.js)
-      "cloud/**",
-
       // Mobile-specific ignores
       "mobile/ios/**",
       "mobile/android/**",
