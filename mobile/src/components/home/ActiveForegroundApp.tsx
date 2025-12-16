@@ -9,8 +9,6 @@ import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {useAppTheme} from "@/contexts/ThemeContext"
 
-import {CloseXIcon} from "assets/icons/component/CloseXIcon"
-
 export const ActiveForegroundApp: React.FC = () => {
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
@@ -102,7 +100,7 @@ export const ActiveForegroundApp: React.FC = () => {
         </View>
         {!applet.loading && (
           <TouchableOpacity onPress={handleStopApp} style={themed($closeButton)} activeOpacity={0.7}>
-            <CloseXIcon size={24} color={theme.colors.textDim} />
+            <Icon name="x" size={24} color={theme.colors.textDim} />
           </TouchableOpacity>
         )}
         <View style={themed($iconContainer)}>

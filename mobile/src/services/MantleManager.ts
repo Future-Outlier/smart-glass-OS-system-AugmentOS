@@ -12,6 +12,7 @@ import {useGlassesStore, GlassesInfo} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
+import {gallerySyncService} from "@/services/asg/gallerySyncService"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -90,6 +91,7 @@ class MantleManager {
     // send initial status request:
     await CoreModule.getStatus()
 
+    this.initServices()
     this.setupPeriodicTasks()
     this.setupSubscriptions()
   }
@@ -102,6 +104,10 @@ class MantleManager {
     }
     Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME)
     this.transcriptProcessor.clear()
+  }
+
+  private initServices() {
+    gallerySyncService.initialize()
   }
 
   private async setupPeriodicTasks() {

@@ -8,6 +8,7 @@ import {ThemedStyle} from "@/theme"
 import {textEditorStore} from "@/utils/TextEditorStore"
 import {useAppTheme} from "@/contexts/ThemeContext"
 
+
 type TextSettingNoSaveProps = {
   label: string
   value: string
