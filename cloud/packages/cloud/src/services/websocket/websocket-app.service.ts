@@ -135,10 +135,7 @@ export class AppWebSocketService {
           apiKey: appJwtPayload.apiKey,
         };
         await userSession.appManager.handleAppInit(ws, initMessage);
-        // Mark app reconnect for subscription grace handling
-        userSession.subscriptionManager.markAppReconnected(
-          appJwtPayload.packageName,
-        );
+        // Note: AppSession.handleConnect() now handles reconnect timestamp for subscription grace
       }
     } catch (error) {
       logger.error(error, "Error processing App connection request");
@@ -181,9 +178,7 @@ export class AppWebSocketService {
             return;
           }
           await userSession.appManager.handleAppInit(ws, initMessage);
-          userSession.subscriptionManager.markAppReconnected(
-            initMessage.packageName,
-          );
+          // Note: AppSession.handleConnect() now handles reconnect timestamp for subscription grace
         } else {
           // If we don't have a user session, we can't process other messages.
           if (!userSession) {

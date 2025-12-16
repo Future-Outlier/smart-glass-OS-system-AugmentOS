@@ -23,6 +23,19 @@ import {
 } from "@mentra/sdk";
 
 /**
+ * Location rate/accuracy tier for location subscriptions
+ */
+export type LocationRate =
+  | "standard"
+  | "high"
+  | "realtime"
+  | "tenMeters"
+  | "hundredMeters"
+  | "kilometer"
+  | "threeKilometers"
+  | "reduced";
+
+/**
  * Connection states for an app session
  */
 export enum AppConnectionState {
@@ -124,6 +137,11 @@ export class AppSession {
     newSubs: Set<ExtendedStreamType>,
   ) => void;
 
+  // ===== Location Subscription Metadata =====
+  // Location is the only subscription type with additional metadata (rate/accuracy tier)
+  // This is stored separately rather than changing the subscription storage type
+  private _locationRate: LocationRate | null = null;
+
   // ===== Pending Connection (for startApp promise) =====
   private pendingConnection: {
     resolve: (success: boolean) => void;
@@ -168,6 +186,10 @@ export class AppSession {
 
   get subscriptions(): Set<ExtendedStreamType> {
     return this._subscriptions;
+  }
+
+  get locationRate(): LocationRate | null {
+    return this._locationRate;
   }
 
   get isRunning(): boolean {
@@ -399,9 +421,14 @@ export class AppSession {
 
   /**
    * Update subscriptions for this app
+   * @param newSubscriptions - Array of stream types to subscribe to
+   * @param locationRate - Optional location rate/accuracy tier (only relevant if subscribing to location_stream)
    * Returns true if update was applied, false if ignored (e.g., empty update during grace)
    */
-  updateSubscriptions(newSubscriptions: ExtendedStreamType[]): {
+  updateSubscriptions(
+    newSubscriptions: ExtendedStreamType[],
+    locationRate?: LocationRate | null,
+  ): {
     applied: boolean;
     reason?: string;
   } {
@@ -432,11 +459,19 @@ export class AppSession {
     // Update subscriptions
     this._subscriptions = newSubs;
 
+    // Update location rate if provided or clear if no longer subscribed to location
+    if (locationRate !== undefined) {
+      this._locationRate = locationRate;
+    } else if (!newSubs.has(StreamType.LOCATION_STREAM)) {
+      this._locationRate = null;
+    }
+
     this.logger.info(
       {
         oldCount: oldSubs.size,
         newCount: newSubs.size,
         subscriptions: newSubscriptions,
+        locationRate: this._locationRate,
       },
       "Subscriptions updated",
     );
@@ -526,6 +561,7 @@ export class AppSession {
   clearSubscriptions(): void {
     const oldSubs = this._subscriptions;
     this._subscriptions = new Set();
+    this._locationRate = null;
     this.addToHistory([], "remove");
 
     this.logger.debug("All subscriptions cleared");
@@ -533,6 +569,22 @@ export class AppSession {
     if (this.onSubscriptionsChanged && oldSubs.size > 0) {
       this.onSubscriptionsChanged(this, oldSubs, this._subscriptions);
     }
+  }
+
+  /**
+   * Set location rate/accuracy tier
+   * Used when app subscribes to location_stream with a specific rate
+   */
+  setLocationRate(rate: LocationRate | null): void {
+    this._locationRate = rate;
+    this.logger.debug({ rate }, "Location rate updated");
+  }
+
+  /**
+   * Get location rate/accuracy tier
+   */
+  getLocationRate(): LocationRate | null {
+    return this._locationRate;
   }
 
   private addToHistory(
