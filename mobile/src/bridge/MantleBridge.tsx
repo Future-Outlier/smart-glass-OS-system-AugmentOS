@@ -286,6 +286,10 @@ export class MantleBridge {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
+
+          if ((Math.random() < 0.2) && __DEV__) {
+            console.log("MantleBridge: Received mic data:", bytes.length, "bytes")
+          }
           const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
           if (!isChinaDeployment && livekit.isRoomConnected()) {
             livekit.addPcm(bytes)

@@ -29,19 +29,16 @@ class Livekit {
   }
 
   public async connect() {
-    if (this.room) {
-      await this.room.disconnect()
-      this.room = null
-    }
+    // disconnect first:
+    this.disconnect()
 
     const res = await restComms.getLivekitUrlAndToken()
     if (res.is_error()) {
-      console.error("LivekitManager: Error connecting to room", res.error)
+      console.error("LIVEKIT: Error connecting to room", res.error)
       return
     }
     const {url, token} = res.value
-    console.log(`LivekitManager: Connecting to room: ${url}, ${token}`)
-    this.room = new Room()
+    console.log(`LIVEKIT: Connecting to room: ${url}, ${token}`)
     await AudioSession.configureAudio({
       android: {
         // currently supports .media and .communication presets
@@ -49,18 +46,19 @@ class Livekit {
       },
     })
     await AudioSession.startAudioSession()
-    await this.room.connect(url, token)
-    this.room.on(RoomEvent.Connected, () => {
-      console.log("LivekitManager: Connected to room")
+    this.room = new Room()
+    await this.room?.connect(url, token)
+    this.room?.on(RoomEvent.Connected, () => {
+      console.log("LIVEKIT: Connected to room")
     })
-    this.room.on(RoomEvent.Disconnected, () => {
-      console.log("LivekitManager: Disconnected from room")
+    this.room?.on(RoomEvent.Disconnected, () => {
+      console.log("LIVEKIT: Disconnected from room")
     })
   }
 
   public async addPcm(data: Uint8Array) {
     if (!this.room || this.room.state !== ConnectionState.Connected) {
-      console.log("LivekitManager: Room not connected")
+      console.log("LIVEKIT: Room not connected")
       return
     }
 
@@ -72,7 +70,11 @@ class Livekit {
 
   async disconnect() {
     if (this.room) {
-      await this.room.disconnect()
+      try {
+        await this.room.disconnect()
+      } catch (error) {
+        console.error("LIVEKIT: Error disconnecting from room", error)
+      }
       this.room = null
     }
   }
