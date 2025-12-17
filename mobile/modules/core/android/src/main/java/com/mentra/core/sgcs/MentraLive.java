@@ -2057,8 +2057,8 @@ public class MentraLive extends SGCManager {
                         Log.e(TAG, "Failed to parse build number as integer: " + buildNumberChunked);
                     }
 
-                    // Determine LC3 audio support: base K900 doesn't support LC3, variants do (local field)
-                    supportsLC3Audio = !"K900".equals(deviceModelChunked);
+                    // Determine LC3 audio support: base K900 doesn't support LC3, variants do
+                    boolean supportsLC3Audio = !"K900".equals(deviceModelChunked);
                     Bridge.log("LIVE: 📱 LC3 audio support: " + supportsLC3Audio + " (device: " + deviceModelChunked + ")");
 
                     Bridge.log("LIVE: Glasses Version (from chunks) - App: " + appVersionChunked +
@@ -2074,7 +2074,7 @@ public class MentraLive extends SGCManager {
                           otaVersionUrlChunked != null ? otaVersionUrlChunked : "", firmwareVersionChunked, btMacAddressChunked);
 
                     // Notify CoreManager to update status and send to frontend
-                    CoreManager.getInstance().handle_request_status();
+                    CoreManager.getInstance().getStatus();
 
                     // Clear the pending chunk
                     pendingVersionInfoChunk1 = null;
