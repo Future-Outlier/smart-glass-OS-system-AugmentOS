@@ -1,14 +1,14 @@
-import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {Button, Header, Icon, Screen} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
 import {useState, useCallback, useEffect} from "react"
 import {View} from "react-native"
-import {Text} from "@/components/ignite"
 import Toast from "react-native-toast-message"
-import {translate} from "@/i18n"
-import {Spacer} from "@/components/ui"
+
+import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
+import {Text} from "@/components/ignite"
+import {Button, Header, Icon, Screen} from "@/components/ignite"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {translate} from "@/i18n"
 
 interface OnboardingVideo {
   source: VideoSource
@@ -295,8 +295,6 @@ export default function Onboarding1() {
           return
         }
         if (playCount < 1 && video.loop) {
-          // TODO:
-          // Play again
           setShowNextButton(true)
           setPlayCount(prev => prev + 1)
           currentPlayer.currentTime = 0
