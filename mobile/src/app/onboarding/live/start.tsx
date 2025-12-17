@@ -289,8 +289,6 @@ export default function Onboarding1() {
 
   useEffect(() => {
     const subscription = currentPlayer.addListener("playingChange", (status: any) => {
-      console.log("playingChange", status)
-      console.log(`ONBOARD: currentIndex: ${currentIndex}`)
       if (!status.isPlaying && currentPlayer.currentTime >= currentPlayer.duration - 0.1) {
         if (video.transition) {
           handleNext()
@@ -354,8 +352,41 @@ export default function Onboarding1() {
 
           <View className="-mx-6">
             <View className="relative">
+              <View className="relative" style={{width: "100%", aspectRatio: 1}}>
+                <VideoView
+                  player={player1}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: isPlayer1 ? 1 : 0,
+                    borderColor: theme.colors.chart_2,
+                    borderWidth: 3,
+                    borderRadius: 10,
+                  }}
+                  nativeControls={false}
+                />
+                <VideoView
+                  player={player2}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: isPlayer1 ? 0 : 1,
+                    borderColor: theme.colors.chart_4,
+                    borderWidth: 3,
+                    borderRadius: 10,
+                  }}
+                  nativeControls={false}
+                />
+              </View>
+
               <View className="flex-row">
-                <VideoView player={currentPlayer} style={{flex: 1, aspectRatio: 1}} nativeControls={false} />
+                {/* <VideoView player={currentPlayer} style={{flex: 1, aspectRatio: 1}} nativeControls={false} /> */}
                 {/* <VideoView
                   player={player1}
                   style={{flex: 1, aspectRatio: 1, borderWidth: isPlayer1 ? 3 : 0, borderColor: "red"}}
