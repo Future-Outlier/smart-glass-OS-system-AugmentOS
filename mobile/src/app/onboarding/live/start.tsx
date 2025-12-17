@@ -362,9 +362,9 @@ export default function Onboarding1() {
                     right: 0,
                     bottom: 0,
                     zIndex: isPlayer1 ? 1 : 0,
-                    borderColor: theme.colors.chart_2,
-                    borderWidth: 3,
-                    borderRadius: 10,
+                    // borderColor: theme.colors.chart_2,
+                    // borderWidth: 3,
+                    // borderRadius: 10,
                   }}
                   nativeControls={false}
                 />
@@ -377,30 +377,16 @@ export default function Onboarding1() {
                     right: 0,
                     bottom: 0,
                     zIndex: isPlayer1 ? 0 : 1,
-                    borderColor: theme.colors.chart_4,
-                    borderWidth: 3,
-                    borderRadius: 10,
+                    // borderColor: theme.colors.chart_4,
+                    // borderWidth: 3,
+                    // borderRadius: 10,
                   }}
                   nativeControls={false}
                 />
               </View>
 
-              <View className="flex-row">
-                {/* <VideoView player={currentPlayer} style={{flex: 1, aspectRatio: 1}} nativeControls={false} /> */}
-                {/* <VideoView
-                  player={player1}
-                  style={{flex: 1, aspectRatio: 1, borderWidth: isPlayer1 ? 3 : 0, borderColor: "red"}}
-                  nativeControls={false}
-                />
-                <VideoView
-                  player={player2}
-                  style={{flex: 1, aspectRatio: 1, borderWidth: !isPlayer1 ? 3 : 0, borderColor: "red"}}
-                  nativeControls={false}
-                /> */}
-              </View>
-
               {showReplayButton && (
-                <View className="absolute bottom-8 left-0 right-0 items-center">
+                <View className="absolute bottom-8 left-0 right-0 items-center z-10">
                   <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
                 </View>
               )}
