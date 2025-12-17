@@ -6,7 +6,10 @@
  * This follows the pattern used by other managers like MicrophoneManager and DisplayManager.
  */
 
+import axios, { AxiosError } from "axios";
+import { Logger } from "pino";
 import WebSocket from "ws";
+
 import {
   CloudToAppMessageType,
   CloudToGlassesMessageType,
@@ -18,22 +21,22 @@ import {
   AppType,
   ExtendedStreamType,
 } from "@mentra/sdk";
-import { Logger } from "pino";
+
 // import subscriptionService from "./subscription.service";
+import App from "../../models/app.model";
+import { User } from "../../models/user.model";
 import appService from "../core/app.service";
 import * as developerService from "../core/developer.service";
-import { PosthogService } from "../logging/posthog.service";
-import UserSession from "./UserSession";
-import { User } from "../../models/user.model";
 import { logger as rootLogger } from "../logging/pino-logger";
-// session.service APIs are being consolidated into UserSession
-import axios, { AxiosError } from "axios";
-import App from "../../models/app.model";
+import { PosthogService } from "../logging/posthog.service";
+
+import { AppSession, AppConnectionState as AppSessionState } from "./AppSession";
 import { HardwareCompatibilityService } from "./HardwareCompatibilityService";
-import {
-  AppSession,
-  AppConnectionState as AppSessionState,
-} from "./AppSession";
+import UserSession from "./UserSession";
+
+// session.service APIs are being consolidated into UserSession
+
+
 
 const logger = rootLogger.child({ service: "AppManager" });
 
@@ -61,21 +64,15 @@ const APP_SESSION_TIMEOUT_MS = 5000; // 5 seconds
 // The old AppConnectionState enum has been removed in Phase 4b
 
 if (!CLOUD_PUBLIC_HOST_NAME) {
-  logger.error(
-    "CLOUD_PUBLIC_HOST_NAME is not set. Please set it in your environment variables.",
-  );
+  logger.error("CLOUD_PUBLIC_HOST_NAME is not set. Please set it in your environment variables.");
 }
 
 if (!CLOUD_LOCAL_HOST_NAME) {
-  logger.error(
-    "CLOUD_LOCAL_HOST_NAME is not set. Please set it in your environment variables.",
-  );
+  logger.error("CLOUD_LOCAL_HOST_NAME is not set. Please set it in your environment variables.");
 }
 
 if (!AUGMENTOS_AUTH_JWT_SECRET) {
-  logger.error(
-    "AUGMENTOS_AUTH_JWT_SECRET is not set. Please set it in your environment variables.",
-  );
+  logger.error("AUGMENTOS_AUTH_JWT_SECRET is not set. Please set it in your environment variables.");
 }
 
 /**
@@ -84,12 +81,7 @@ if (!AUGMENTOS_AUTH_JWT_SECRET) {
 interface AppStartResult {
   success: boolean;
   error?: {
-    stage:
-      | "WEBHOOK"
-      | "CONNECTION"
-      | "AUTHENTICATION"
-      | "TIMEOUT"
-      | "HARDWARE_CHECK";
+    stage: "WEBHOOK" | "CONNECTION" | "AUTHENTICATION" | "TIMEOUT" | "HARDWARE_CHECK";
     message: string;
     details?: any;
   };
@@ -149,10 +141,7 @@ export class AppManager {
   getOrCreateAppSession(packageName: string): AppSession | undefined {
     // Don't create new AppSessions after disposal
     if (this.disposed) {
-      this.logger.warn(
-        { packageName },
-        `[AppManager] Ignoring getOrCreateAppSession after disposal`,
-      );
+      this.logger.warn({ packageName }, `[AppManager] Ignoring getOrCreateAppSession after disposal`);
       return undefined;
     }
 
@@ -165,11 +154,7 @@ export class AppManager {
           await this.handleAppSessionGracePeriodExpired(appSession);
         },
         onSubscriptionsChanged: (appSession, oldSubs, newSubs) => {
-          this.handleAppSessionSubscriptionsChanged(
-            appSession,
-            oldSubs,
-            newSubs,
-          );
+          this.handleAppSessionSubscriptionsChanged(appSession, oldSubs, newSubs);
         },
         // Handle WebSocket close events - this callback is called by AppSession
         // when its close handler fires. We call handleAppConnectionClosed for
@@ -190,10 +175,7 @@ export class AppManager {
         },
       });
       this.apps.set(packageName, session);
-      this.logger.debug(
-        { packageName },
-        `[AppManager] Created new AppSession for ${packageName}`,
-      );
+      this.logger.debug({ packageName }, `[AppManager] Created new AppSession for ${packageName}`);
     }
     return session;
   }
@@ -206,10 +188,7 @@ export class AppManager {
     if (session) {
       session.dispose();
       this.apps.delete(packageName);
-      this.logger.debug(
-        { packageName },
-        `[AppManager] Removed AppSession for ${packageName}`,
-      );
+      this.logger.debug({ packageName }, `[AppManager] Removed AppSession for ${packageName}`);
     }
   }
 
@@ -277,9 +256,7 @@ export class AppManager {
    */
   hasAppWebSocket(packageName: string): boolean {
     const appSession = this.apps.get(packageName);
-    return (
-      appSession?.webSocket !== null && appSession?.webSocket !== undefined
-    );
+    return appSession?.webSocket !== null && appSession?.webSocket !== undefined;
   }
 
   /**
@@ -298,24 +275,17 @@ export class AppManager {
   /**
    * Handle grace period expiration from AppSession
    */
-  private async handleAppSessionGracePeriodExpired(
-    appSession: AppSession,
-  ): Promise<void> {
+  private async handleAppSessionGracePeriodExpired(appSession: AppSession): Promise<void> {
     const packageName = appSession.packageName;
-    this.logger.info(
-      { packageName },
-      `[AppManager] AppSession grace period expired, attempting resurrection`,
-    );
+    this.logger.info({ packageName }, `[AppManager] AppSession grace period expired, attempting resurrection`);
 
     try {
       // Stop and restart the app (resurrection)
       await this.stopApp(packageName, true);
       await this.startApp(packageName);
     } catch (error) {
-      this.logger.error(
-        { error, packageName },
-        `[AppManager] Error during AppSession resurrection`,
-      );
+      const logger = this.logger.child({ packageName });
+      logger.error(error, `[AppManager] Error during AppSession resurrection`);
     }
   }
 
@@ -347,9 +317,7 @@ export class AppManager {
   /**
    * Get the connection state for an app (from AppSession)
    */
-  private getAppConnectionState(
-    packageName: string,
-  ): AppSessionState | undefined {
+  private getAppConnectionState(packageName: string): AppSessionState | undefined {
     const appSession = this.apps.get(packageName);
     return appSession?.state;
   }
@@ -361,10 +329,7 @@ export class AppManager {
   markOwnershipReleased(packageName: string, reason: string): void {
     const appSession = this.getOrCreateAppSession(packageName);
     if (!appSession) {
-      this.logger.warn(
-        { packageName, reason },
-        `[AppManager] Cannot mark ownership released - AppManager disposed`,
-      );
+      this.logger.warn({ packageName, reason }, `[AppManager] Cannot mark ownership released - AppManager disposed`);
       return;
     }
     appSession.handleOwnershipRelease(reason);
@@ -438,10 +403,7 @@ export class AppManager {
         success: false,
         error: {
           stage: "HARDWARE_CHECK",
-          message:
-            HardwareCompatibilityService.getCompatibilityMessage(
-              compatibilityResult,
-            ),
+          message: HardwareCompatibilityService.getCompatibilityMessage(compatibilityResult),
         },
       };
     }
@@ -460,13 +422,9 @@ export class AppManager {
     // If the app is a standard app, check if any other foreground app is running
 
     if (app.appType === AppType.STANDARD) {
-      logger.debug(
-        `App ${packageName} is a standard app, checking for running foreground apps`,
-      );
+      logger.debug(`App ${packageName} is a standard app, checking for running foreground apps`);
       // Check if any other foreground app is running
-      const runningAppsPackageNames = Array.from(
-        this.userSession.runningApps.keys(),
-      );
+      const runningAppsPackageNames = Array.from(this.userSession.runningApps.keys());
       const runningForegroundApps = await App.find({
         packageName: { $in: runningAppsPackageNames },
         appType: AppType.STANDARD,
@@ -550,10 +508,7 @@ export class AppManager {
         // Check if connection is still pending (race condition protection)
         if (!this.pendingConnections.has(packageName)) {
           // Connection already succeeded, don't clean up
-          this.logger.debug(
-            { packageName },
-            `Timeout fired but connection already succeeded, skipping cleanup`,
-          );
+          this.logger.debug({ packageName }, `Timeout fired but connection already succeeded, skipping cleanup`);
           return;
         }
 
@@ -580,10 +535,7 @@ export class AppManager {
               `Removing app ${packageName} from user's running apps due to timeout`,
             );
             user.removeRunningApp(packageName).catch((err) => {
-              this.logger.error(
-                { error: err },
-                `Error removing app ${packageName} from user's running apps`,
-              );
+              this.logger.error(err, `Error removing app ${packageName} from user's running apps`);
             });
           }
         } catch (error) {
@@ -687,10 +639,7 @@ export class AppManager {
 
       // Construct the webhook URL from the app's public URL
       const webhookURL = `${app.publicUrl}/webhook`;
-      this.logger.info(
-        { augmentOSWebsocketUrl, packageName },
-        `Triggering webhook for ${packageName}: ${webhookURL}`,
-      );
+      this.logger.info({ augmentOSWebsocketUrl, packageName }, `Triggering webhook for ${packageName}: ${webhookURL}`);
 
       // Trigger boot screen.
       this.userSession.displayManager.handleAppStart(app.packageName);
@@ -716,8 +665,7 @@ export class AppManager {
       // Note: Database will be updated when App actually connects in handleAppInit()
       // Note: App start message to glasses will be sent when App connects
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(
         {
           userId: this.userSession.userId,
@@ -798,10 +746,7 @@ export class AppManager {
    * @param payload - Data to send
    * @throws If webhook fails after retries
    */
-  private async triggerWebhook(
-    url: string,
-    payload: SessionWebhookRequest,
-  ): Promise<void> {
+  private async triggerWebhook(url: string, payload: SessionWebhookRequest): Promise<void> {
     const maxRetries = 2;
     const baseDelay = 1000; // 1 second
 
@@ -827,21 +772,14 @@ export class AppManager {
               userId: payload.userId,
               payloadType: payload.type,
             });
-            this.logger.error(
-              enrichedError,
-              `Webhook failed after ${maxRetries} attempts`,
-            );
+            this.logger.error(enrichedError, `Webhook failed after ${maxRetries} attempts`);
           }
           throw new Error(
-            `Webhook failed after ${maxRetries} attempts: ${
-              (error as AxiosError).message || "Unknown error"
-            }`,
+            `Webhook failed after ${maxRetries} attempts: ${(error as AxiosError).message || "Unknown error"}`,
           );
         }
         // Exponential backoff
-        await new Promise((resolve) =>
-          setTimeout(resolve, baseDelay * Math.pow(2, attempt)),
-        );
+        await new Promise((resolve) => setTimeout(resolve, baseDelay * Math.pow(2, attempt)));
       }
     }
   }
@@ -859,9 +797,7 @@ export class AppManager {
       const isConnecting = appSession?.isConnecting ?? false;
 
       if (!isRunning && !isConnecting && !restart) {
-        this.logger.info(
-          `App ${packageName} not running, ignoring stop request`,
-        );
+        this.logger.info(`App ${packageName} not running, ignoring stop request`);
         return;
       }
 
@@ -879,28 +815,17 @@ export class AppManager {
       // Trigger app stop webhook
       try {
         // TODO(isaiah): Move logic to stop app out of appService and into this class.
-        await appService.triggerStopByPackageName(
-          packageName,
-          this.userSession.userId,
-        );
+        await appService.triggerStopByPackageName(packageName, this.userSession.userId);
       } catch (webhookError) {
-        this.logger.error(
-          webhookError,
-          `Error triggering stop webhook for ${packageName}:`,
-        );
+        this.logger.error(webhookError, `Error triggering stop webhook for ${packageName}:`);
       }
 
       // Remove subscriptions.
       try {
-        await this.userSession.subscriptionManager.removeSubscriptions(
-          packageName,
-        );
+        await this.userSession.subscriptionManager.removeSubscriptions(packageName);
         // Location tier is now computed in-memory by SubscriptionManager.syncManagers()
       } catch (error) {
-        this.logger.error(
-          error,
-          `Error removing subscriptions for ${packageName}`,
-        );
+        this.logger.error(error, `Error removing subscriptions for ${packageName}`);
       }
 
       // Broadcast app state change
@@ -921,10 +846,7 @@ export class AppManager {
             // Close the connection (AppSession will clean up internally)
             appWebsocket.close(1000, "App stopped");
           } catch (error) {
-            this.logger.error(
-              error,
-              `Error closing connection for ${packageName}`,
-            );
+            this.logger.error(error, `Error closing connection for ${packageName}`);
           }
         }
       }
@@ -936,10 +858,7 @@ export class AppManager {
           await user.removeRunningApp(packageName);
         }
       } catch (error) {
-        this.userSession.logger.error(
-          error,
-          `Error updating user's running apps`,
-        );
+        this.userSession.logger.error(error, `Error updating user's running apps`);
       }
 
       // Clean up display state for stopped app
@@ -963,10 +882,7 @@ export class AppManager {
           });
         } else {
           // App stopped but no start time recorded (edge case)
-          this.logger.debug(
-            { packageName },
-            "App stopped but no start time recorded",
-          );
+          this.logger.debug({ packageName }, "App stopped but no start time recorded");
         }
 
         // Clean up AppSession
@@ -974,10 +890,8 @@ export class AppManager {
           appSession.markStopped();
         }
       } catch (error) {
-        this.logger.error(
-          { error, packageName },
-          "Error tracking app_stop event in PostHog",
-        );
+        const logger = this.logger.child({ packageName });
+        logger.error(error, "Error tracking app_stop event in PostHog");
       }
 
       this.updateAppLastActive(packageName);
@@ -1003,19 +917,12 @@ export class AppManager {
    * @param ws WebSocket connection
    * @param initMessage App initialization message
    */
-  async handleAppInit(
-    ws: WebSocket,
-    initMessage: AppConnectionInit,
-  ): Promise<void> {
+  async handleAppInit(ws: WebSocket, initMessage: AppConnectionInit): Promise<void> {
     try {
       const { packageName, apiKey, sessionId } = initMessage;
 
       // Validate the API key
-      const isValidApiKey = await developerService.validateApiKey(
-        packageName,
-        apiKey,
-        this.userSession,
-      );
+      const isValidApiKey = await developerService.validateApiKey(packageName, apiKey, this.userSession);
 
       if (!isValidApiKey) {
         this.logger.error(
@@ -1028,11 +935,7 @@ export class AppManager {
         );
 
         // Resolve pending connection with auth error
-        this.resolvePendingConnectionWithError(
-          packageName,
-          "AUTHENTICATION",
-          "Invalid API key",
-        );
+        this.resolvePendingConnectionWithError(packageName, "AUTHENTICATION", "Invalid API key");
 
         try {
           ws.send(
@@ -1046,35 +949,31 @@ export class AppManager {
 
           ws.close(1008, "Invalid API key");
         } catch (sendError) {
-          this.logger.error(
-            sendError,
-            `Error sending auth error to App ${packageName}:`,
-          );
+          this.logger.error(sendError, `Error sending auth error to App ${packageName}:`);
         }
 
         return;
       }
 
-      // Check if app is in loading or running state via AppSession
+      // Check if app is in loading, running, or grace period state via AppSession
+      // Grace period allows SDK reconnection after temporary disconnection (e.g., network hiccup)
       const appSession = this.apps.get(packageName);
       const isConnecting = appSession?.isConnecting ?? false;
       const isRunning = appSession?.isRunning ?? false;
-      if (!isConnecting && !isRunning) {
+      const isInGracePeriod = appSession?.isInGracePeriod ?? false;
+      if (!isConnecting && !isRunning && !isInGracePeriod) {
         this.logger.error(
           {
             userId: this.userSession.userId,
             packageName,
             service: "AppManager",
+            appState: appSession?.state ?? "no_session",
           },
-          `App ${packageName} not in loading or active state for session ${this.userSession.userId}`,
+          `App ${packageName} not in loading, active, or grace period state for session ${this.userSession.userId}`,
         );
 
         // Resolve pending connection with connection error
-        this.resolvePendingConnectionWithError(
-          packageName,
-          "CONNECTION",
-          "App not started for this session",
-        );
+        this.resolvePendingConnectionWithError(packageName, "CONNECTION", "App not started for this session");
 
         try {
           ws.send(
@@ -1086,10 +985,7 @@ export class AppManager {
             }),
           );
         } catch (sendError) {
-          this.logger.error(
-            sendError,
-            `Error sending app not started error to App ${packageName}:`,
-          );
+          this.logger.error(sendError, `Error sending app not started error to App ${packageName}:`);
         }
         ws.close(1008, "App not started for this session");
         return;
@@ -1099,10 +995,7 @@ export class AppManager {
       // AppSession now owns the WebSocket (Phase 4d)
       const connectedAppSession = this.getOrCreateAppSession(packageName);
       if (!connectedAppSession) {
-        this.logger.warn(
-          { packageName },
-          `[AppManager] Cannot handle app init - AppManager disposed`,
-        );
+        this.logger.warn({ packageName }, `[AppManager] Cannot handle app init - AppManager disposed`);
         ws.close(1008, "Session ended");
         return;
       }
@@ -1120,12 +1013,10 @@ export class AppManager {
 
       // Get user's settings with fallback to app defaults
       const user = await User.findOrCreateUser(this.userSession.userId);
-      const userSettings =
-        user.getAppSettings(packageName) || app?.settings || [];
+      const userSettings = user.getAppSettings(packageName) || app?.settings || [];
 
       // Get user's AugmentOS system settings with fallback to defaults
-      const userAugmentosSettings =
-        user.augmentosSettings || DEFAULT_AUGMENTOS_SETTINGS;
+      const userAugmentosSettings = user.augmentosSettings || DEFAULT_AUGMENTOS_SETTINGS;
 
       // Send connection acknowledgment with capabilities
       const ackMessage = {
@@ -1178,20 +1069,14 @@ export class AppManager {
 
         // Track app_start event in PostHog
         try {
-          await PosthogService.trackEvent(
-            "app_start",
-            this.userSession.userId,
-            {
-              packageName,
-              userId: this.userSession.userId,
-              sessionId: this.userSession.sessionId,
-            },
-          );
+          await PosthogService.trackEvent("app_start", this.userSession.userId, {
+            packageName,
+            userId: this.userSession.userId,
+            sessionId: this.userSession.sessionId,
+          });
         } catch (error) {
-          this.logger.error(
-            { error, packageName },
-            "Error tracking app_start event in PostHog",
-          );
+          const logger = this.logger.child({ packageName });
+          logger.error(error, "Error tracking app_start event in PostHog");
         }
 
         pending.resolve({ success: true });
@@ -1218,8 +1103,7 @@ export class AppManager {
       // Broadcast app state change
       await this.broadcastAppState();
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(
         {
           userId: this.userSession.userId,
@@ -1231,11 +1115,7 @@ export class AppManager {
       );
 
       // Resolve pending connection with general error
-      this.resolvePendingConnectionWithError(
-        initMessage.packageName,
-        "CONNECTION",
-        `Internal error: ${errorMessage}`,
-      );
+      this.resolvePendingConnectionWithError(initMessage.packageName, "CONNECTION", `Internal error: ${errorMessage}`);
 
       try {
         ws.send(
@@ -1258,20 +1138,14 @@ export class AppManager {
    * Broadcast app state to connected clients
    */
   async broadcastAppState(): Promise<AppStateChange | null> {
-    this.logger.debug(
-      { function: "broadcastAppState" },
-      `Broadcasting app state for user ${this.userSession.userId}`,
-    );
+    this.logger.debug({ function: "broadcastAppState" }, `Broadcasting app state for user ${this.userSession.userId}`);
     try {
       // Refresh installed apps
       await this.refreshInstalledApps();
 
       // Transform session for client
       const clientSessionData = await this.userSession.snapshotForClient();
-      this.logger.debug(
-        { clientSessionData },
-        `Transformed user session data for ${this.userSession.userId}`,
-      );
+      this.logger.debug({ clientSessionData }, `Transformed user session data for ${this.userSession.userId}`);
       // Create app state change message
       const appStateChange: AppStateChange = {
         type: CloudToGlassesMessageType.APP_STATE_CHANGE,
@@ -1281,25 +1155,16 @@ export class AppManager {
       };
 
       // Send to client
-      if (
-        !this.userSession.websocket ||
-        this.userSession.websocket.readyState !== WebSocket.OPEN
-      ) {
+      if (!this.userSession.websocket || this.userSession.websocket.readyState !== WebSocket.OPEN) {
         this.logger.warn(`WebSocket is not open for client app state change`);
         return appStateChange;
       }
 
       this.userSession.websocket.send(JSON.stringify(appStateChange));
-      this.logger.debug(
-        { appStateChange },
-        `Sent APP_STATE_CHANGE to ${this.userSession.userId}`,
-      );
+      this.logger.debug({ appStateChange }, `Sent APP_STATE_CHANGE to ${this.userSession.userId}`);
       return appStateChange;
     } catch (error) {
-      this.logger.error(
-        error,
-        `Error broadcasting app state for ${this.userSession.userId}`,
-      );
+      this.logger.error(error, `Error broadcasting app state for ${this.userSession.userId}`);
       return null;
     }
   }
@@ -1310,9 +1175,7 @@ export class AppManager {
   async refreshInstalledApps(): Promise<void> {
     try {
       // Fetch installed apps
-      const installedAppsList = await appService.getAllApps(
-        this.userSession.userId,
-      );
+      const installedAppsList = await appService.getAllApps(this.userSession.userId);
       const installedApps = new Map<string, AppI>();
       for (const app of installedAppsList) {
         installedApps.set(app.packageName, app);
@@ -1338,24 +1201,18 @@ export class AppManager {
     const logger = this.logger.child({
       function: "startPreviouslyRunningApps",
     });
-    logger.debug(
-      `Starting previously running apps for user ${this.userSession.userId}`,
-    );
+    logger.debug(`Starting previously running apps for user ${this.userSession.userId}`);
     try {
       // Fetch previously running apps from database
       const user = await User.findOrCreateUser(this.userSession.userId);
       const previouslyRunningApps = user.runningApps;
 
       if (previouslyRunningApps.length === 0) {
-        logger.debug(
-          `No previously running apps for ${this.userSession.userId}`,
-        );
+        logger.debug(`No previously running apps for ${this.userSession.userId}`);
         return;
       }
 
-      logger.debug(
-        `Starting ${previouslyRunningApps.length} previously running apps for ${this.userSession.userId}`,
-      );
+      logger.debug(`Starting ${previouslyRunningApps.length} previously running apps for ${this.userSession.userId}`);
 
       // Start each app
       // Use Promise.all to start all apps concurrently
@@ -1364,8 +1221,7 @@ export class AppManager {
       await Promise.all(
         previouslyRunningApps.map(async (packageName) => {
           try {
-            const appStartResult: AppStartResult =
-              await this.startApp(packageName);
+            const appStartResult: AppStartResult = await this.startApp(packageName);
             if (!appStartResult.success) {
               logger.warn(
                 { packageName, userId: this.userSession.userId },
@@ -1375,10 +1231,7 @@ export class AppManager {
             }
             startedApps.push(packageName);
           } catch (error) {
-            logger.error(
-              error,
-              `Error starting previously running app ${packageName}:`,
-            );
+            logger.error(error, `Error starting previously running app ${packageName}:`);
             // Continue with other apps
           }
         }),
@@ -1397,11 +1250,7 @@ export class AppManager {
    * This is called AFTER AppSession.handleDisconnect() has already run,
    * so we only need to handle AppManager-level concerns (ownership, subscriptions, display)
    */
-  private handleAppConnectionClosedFromCallback(
-    packageName: string,
-    code: number,
-    reason: string,
-  ): void {
+  private handleAppConnectionClosedFromCallback(packageName: string, code: number, reason: string): void {
     const logger = this.logger.child({
       function: "handleAppConnectionClosedFromCallback",
       packageName,
@@ -1418,20 +1267,12 @@ export class AppManager {
     // Check if ownership was released - if so, clean up subscriptions and display
     if (appSession.ownershipReleased) {
       const releaseInfo = appSession.ownershipReleaseInfo;
-      logger.info(
-        { releaseReason: releaseInfo?.reason },
-        `App closed after ownership release - cleaning up`,
-      );
+      logger.info({ releaseReason: releaseInfo?.reason }, `App closed after ownership release - cleaning up`);
 
       // Clean up subscriptions
-      this.userSession.subscriptionManager
-        .removeSubscriptions(packageName)
-        .catch((error) => {
-          logger.error(
-            error,
-            "Error removing subscriptions after ownership release",
-          );
-        });
+      this.userSession.subscriptionManager.removeSubscriptions(packageName).catch((error) => {
+        logger.error(error, "Error removing subscriptions after ownership release");
+      });
 
       // Notify display manager
       this.userSession.displayManager.handleAppStop(packageName);
@@ -1447,11 +1288,7 @@ export class AppManager {
    * @param code Close code
    * @param reason Close reason
    */
-  async handleAppConnectionClosed(
-    packageName: string,
-    code: number,
-    reason: string,
-  ): Promise<void> {
+  async handleAppConnectionClosed(packageName: string, code: number, reason: string): Promise<void> {
     const logger = this.logger.child({
       function: "handleAppConnectionClosed",
       packageName,
@@ -1459,10 +1296,7 @@ export class AppManager {
       reason,
     });
     try {
-      logger.info(
-        { packageName, code, reason },
-        `[AppManager]: (${packageName}, ${code}, ${reason})`,
-      );
+      logger.info({ packageName, code, reason }, `[AppManager]: (${packageName}, ${code}, ${reason})`);
 
       // Note: WebSocket is now owned by AppSession (Phase 4d)
       // Heartbeat is managed by AppSession and cleared in handleDisconnect()
@@ -1494,9 +1328,7 @@ export class AppManager {
           appSession.handleDisconnect(code, reason);
 
           // Clean up subscriptions
-          await this.userSession.subscriptionManager.removeSubscriptions(
-            packageName,
-          );
+          await this.userSession.subscriptionManager.removeSubscriptions(packageName);
 
           // Notify display manager
           this.userSession.displayManager.handleAppStop(packageName);
@@ -1544,20 +1376,14 @@ export class AppManager {
           return;
         }
 
-        logger.warn(
-          { packageName },
-          `[AppManager] No AppSession found for disconnected app, creating one`,
-        );
+        logger.warn({ packageName }, `[AppManager] No AppSession found for disconnected app, creating one`);
         const newAppSession = this.getOrCreateAppSession(packageName);
         if (newAppSession) {
           newAppSession.handleDisconnect(code, reason);
         }
       }
     } catch (error) {
-      this.logger.error(
-        error,
-        `Error handling app connection close for ${packageName}:`,
-      );
+      this.logger.error(error, `Error handling app connection close for ${packageName}:`);
     }
   }
 
@@ -1567,10 +1393,7 @@ export class AppManager {
    * @param message - Message to send (will be JSON.stringify'd)
    * @returns Promise with send result and resurrection info
    */
-  async sendMessageToApp(
-    packageName: string,
-    message: any,
-  ): Promise<AppMessageResult> {
+  async sendMessageToApp(packageName: string, message: any): Promise<AppMessageResult> {
     try {
       // Check connection state first (via AppSession)
       const appState = this.getAppConnectionState(packageName);
@@ -1636,8 +1459,7 @@ export class AppManager {
           return { sent: true, resurrectionTriggered: false };
         } catch (sendError) {
           const logger = this.logger.child({ packageName });
-          const errorMessage =
-            sendError instanceof Error ? sendError.message : String(sendError);
+          const errorMessage = sendError instanceof Error ? sendError.message : String(sendError);
           logger.error(
             sendError,
             `[AppManager:sendMessageToApp]: Failed to send message to App ${packageName}: ${errorMessage}`,
@@ -1655,11 +1477,7 @@ export class AppManager {
       );
 
       // manually trigger handleAppConnectionClosed, which will handle the grace period and resurrection logic.
-      await this.handleAppConnectionClosed(
-        packageName,
-        1069,
-        "Connection not available for messaging",
-      );
+      await this.handleAppConnectionClosed(packageName, 1069, "Connection not available for messaging");
       return {
         sent: false,
         resurrectionTriggered: true,
@@ -1667,8 +1485,7 @@ export class AppManager {
       };
     } catch (error) {
       const logger = this.logger.child({ packageName });
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(
         error,
         `[AppManager:sendMessageToApp]: Internal Server Error in sendMessageToApp: ${errorMessage} - ${this.userSession.userId} ${packageName}`,
@@ -1724,17 +1541,13 @@ export class AppManager {
               sessionDuration,
               stopReason: "session_end",
             }).catch((error) => {
-              this.logger.error(
-                { error, packageName },
-                "Error tracking app_stop event during disposal",
-              );
+              const logger = this.logger.child({ packageName });
+              logger.error(error, "Error tracking app_stop event during disposal");
             });
           }
         } catch (error) {
-          this.logger.error(
-            { error, packageName },
-            "Error tracking app stop during disposal",
-          );
+          const logger = this.logger.child({ packageName });
+          logger.error(error, "Error tracking app stop during disposal");
         }
       }
 
@@ -1782,10 +1595,7 @@ export class AppManager {
       for (const [packageName, appSession] of this.apps) {
         try {
           appSession.dispose();
-          this.logger.debug(
-            { packageName },
-            `[AppManager:dispose] Disposed AppSession for ${packageName}`,
-          );
+          this.logger.debug({ packageName }, `[AppManager:dispose] Disposed AppSession for ${packageName}`);
         } catch (error) {
           this.logger.error(
             { error, packageName },
@@ -1795,10 +1605,7 @@ export class AppManager {
       }
       this.apps.clear();
     } catch (error) {
-      this.logger.error(
-        error,
-        `Error disposing AppManager for ${this.userSession.userId}`,
-      );
+      this.logger.error(error, `Error disposing AppManager for ${this.userSession.userId}`);
     }
   }
 }

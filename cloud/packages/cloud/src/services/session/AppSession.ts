@@ -13,14 +13,11 @@
  * Consolidating it here makes the system easier to understand and maintain.
  */
 
-import WebSocket from "ws";
 import { Logger } from "pino";
-import {
-  ExtendedStreamType,
-  StreamType,
-  isLanguageStream,
-  parseLanguageStream,
-} from "@mentra/sdk";
+import WebSocket from "ws";
+
+import { ExtendedStreamType, StreamType, isLanguageStream, parseLanguageStream } from "@mentra/sdk";
+
 import { ResourceTracker } from "../../utils/resource-tracker";
 
 /**
@@ -128,15 +125,11 @@ export class AppSession {
 
   // ===== Close Handler (for proper cleanup) =====
   private closeHandler: ((code: number, reason: Buffer) => void) | null = null;
-  private onDisconnectCallback:
-    | ((code: number, reason: string) => void)
-    | null = null;
+  private onDisconnectCallback: ((code: number, reason: string) => void) | null = null;
 
   // ===== Grace Period =====
   private graceTimer: NodeJS.Timeout | null = null;
-  private readonly onGracePeriodExpired: (
-    appSession: AppSession,
-  ) => Promise<void>;
+  private readonly onGracePeriodExpired: (appSession: AppSession) => Promise<void>;
 
   // ===== Ownership Release =====
   private _ownershipReleased: OwnershipReleaseInfo | null = null;
@@ -235,10 +228,7 @@ export class AppSession {
   private setState(newState: AppConnectionState): void {
     const oldState = this._state;
     this._state = newState;
-    this.logger.debug(
-      { oldState, newState },
-      `State transition: ${oldState} -> ${newState}`,
-    );
+    this.logger.debug({ oldState, newState }, `State transition: ${oldState} -> ${newState}`);
   }
 
   // ===== Connection Lifecycle =====
@@ -257,7 +247,15 @@ export class AppSession {
    * Handle successful WebSocket connection
    */
   handleConnect(ws: WebSocket): void {
-    this.logger.info("App connected");
+    // Log if this is a reconnection during grace period (SDK successfully reconnected!)
+    if (this._state === AppConnectionState.GRACE_PERIOD) {
+      this.logger.info(
+        { previousState: this._state },
+        "✅ SDK reconnected during grace period - resurrection avoided!",
+      );
+    } else {
+      this.logger.info("App connected");
+    }
 
     // Remove old close handler if exists (from previous connection)
     this.removeCloseHandler();
@@ -278,10 +276,7 @@ export class AppSession {
     // Set up close handler (owned by AppSession for proper cleanup)
     this.closeHandler = (code: number, reason: Buffer) => {
       const reasonStr = reason.toString();
-      this.logger.debug(
-        { code, reason: reasonStr },
-        "WebSocket close event received",
-      );
+      this.logger.debug({ code, reason: reasonStr }, "WebSocket close event received");
 
       // First handle internal state
       this.handleDisconnect(code, reasonStr);
@@ -339,10 +334,7 @@ export class AppSession {
 
     // Check if ownership was released (clean handoff)
     if (this._ownershipReleased) {
-      this.logger.info(
-        { reason: this._ownershipReleased.reason },
-        "Ownership was released, no resurrection needed",
-      );
+      this.logger.info({ reason: this._ownershipReleased.reason }, "Ownership was released, no resurrection needed");
       this.setState(AppConnectionState.STOPPED);
       this.cleanup();
       return;
@@ -362,10 +354,7 @@ export class AppSession {
       reason,
       timestamp: new Date(),
     };
-    this.logger.info(
-      { reason },
-      "Ownership released - will not resurrect on disconnect",
-    );
+    this.logger.info({ reason }, "Ownership released - will not resurrect on disconnect");
   }
 
   /**
@@ -450,10 +439,7 @@ export class AppSession {
     this.graceTimer = setTimeout(async () => {
       this.logger.info("Grace period expired");
 
-      if (
-        this._state === AppConnectionState.GRACE_PERIOD &&
-        !this._ownershipReleased
-      ) {
+      if (this._state === AppConnectionState.GRACE_PERIOD && !this._ownershipReleased) {
         // No reconnect, no ownership release - trigger resurrection
         this.setState(AppConnectionState.RESURRECTING);
         try {
@@ -464,10 +450,7 @@ export class AppSession {
       }
     }, GRACE_PERIOD_MS);
 
-    this.logger.debug(
-      { gracePeriodMs: GRACE_PERIOD_MS },
-      "Grace period started",
-    );
+    this.logger.debug({ gracePeriodMs: GRACE_PERIOD_MS }, "Grace period started");
   }
 
   private cancelGracePeriod(): void {
@@ -497,10 +480,7 @@ export class AppSession {
     const timeSinceReconnect = now - this._lastReconnectAt;
 
     // Check for empty subscription update during reconnect grace window
-    if (
-      newSubscriptions.length === 0 &&
-      timeSinceReconnect <= SUBSCRIPTION_GRACE_MS
-    ) {
+    if (newSubscriptions.length === 0 && timeSinceReconnect <= SUBSCRIPTION_GRACE_MS) {
       this.logger.warn(
         { timeSinceReconnect, graceMs: SUBSCRIPTION_GRACE_MS },
         "Ignoring empty subscription update within reconnect grace window",
@@ -648,10 +628,7 @@ export class AppSession {
     return this._locationRate;
   }
 
-  private addToHistory(
-    subscriptions: ExtendedStreamType[],
-    action: "add" | "remove" | "update",
-  ): void {
+  private addToHistory(subscriptions: ExtendedStreamType[], action: "add" | "remove" | "update"): void {
     this.subscriptionHistory.push({
       timestamp: new Date(),
       subscriptions: [...subscriptions],
@@ -676,24 +653,16 @@ export class AppSession {
   /**
    * Set up pending connection promise for startApp
    */
-  setPendingConnection(
-    resolve: (success: boolean) => void,
-    reject: (error: Error) => void,
-    timeoutMs: number,
-  ): void {
+  setPendingConnection(resolve: (success: boolean) => void, reject: (error: Error) => void, timeoutMs: number): void {
     // Clear existing pending connection
     if (this.pendingConnection) {
       clearTimeout(this.pendingConnection.timeout);
-      this.pendingConnection.reject(
-        new Error("New connection attempt started"),
-      );
+      this.pendingConnection.reject(new Error("New connection attempt started"));
     }
 
     const timeout = setTimeout(() => {
       if (this.pendingConnection) {
-        this.pendingConnection.reject(
-          new Error(`Connection timeout after ${timeoutMs}ms`),
-        );
+        this.pendingConnection.reject(new Error(`Connection timeout after ${timeoutMs}ms`));
         this.pendingConnection = null;
       }
     }, timeoutMs);
@@ -738,10 +707,7 @@ export class AppSession {
    */
   send(message: any): boolean {
     if (!this._webSocket || this._webSocket.readyState !== WebSocket.OPEN) {
-      this.logger.warn(
-        { messageType: message?.type },
-        "Cannot send message - WebSocket not open",
-      );
+      this.logger.warn({ messageType: message?.type }, "Cannot send message - WebSocket not open");
       return false;
     }
 
@@ -839,9 +805,7 @@ export class AppSession {
     return {
       packageName: this.packageName,
       state: this._state,
-      isConnected:
-        this._webSocket !== null &&
-        this._webSocket.readyState === WebSocket.OPEN,
+      isConnected: this._webSocket !== null && this._webSocket.readyState === WebSocket.OPEN,
       subscriptionCount: this._subscriptions.size,
       subscriptions: this.getSubscriptions(),
       connectedAt: this._connectedAt,
