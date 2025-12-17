@@ -11,6 +11,7 @@ import {
   CloudToGlassesMessageType,
   ConnectionError,
 } from "@mentra/sdk";
+import { ResourceTracker } from "../../utils/resource-tracker";
 import { logger as rootLogger } from "../logging/pino-logger";
 import { Capabilities } from "@mentra/sdk";
 import AppManager from "./AppManager";
@@ -120,8 +121,13 @@ export class UserSession {
   public photoManager: PhotoManager;
   public managedStreamingExtension: ManagedStreamingExtension;
 
+  // Resource tracking for automatic cleanup (prevents memory leaks)
+  private resources = new ResourceTracker();
+  private disposed = false;
+
   // Heartbeat for glasses connection
   private glassesHeartbeatInterval?: NodeJS.Timeout;
+  private pongHandler?: () => void; // Stored for cleanup
   private lastPongTime?: number;
   private pongTimeoutTimer?: NodeJS.Timeout;
   private readonly PONG_TIMEOUT_MS = 30000; // 30 seconds - 3x heartbeat interval
@@ -198,8 +204,9 @@ export class UserSession {
     // Clear any existing heartbeat
     this.clearGlassesHeartbeat();
 
-    // Set up new heartbeat
+    // Set up new heartbeat interval
     this.glassesHeartbeatInterval = setInterval(() => {
+      if (this.disposed) return; // Guard against stale callback
       if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
         this.websocket.ping();
         if (LOG_PING_PONG) {
@@ -214,8 +221,13 @@ export class UserSession {
       }
     }, HEARTBEAT_INTERVAL);
 
+    // Track interval for automatic cleanup
+    this.resources.trackInterval(this.glassesHeartbeatInterval);
+
     // Set up pong handler with timeout detection
-    this.websocket.on("pong", () => {
+    // Store reference for proper cleanup (prevents memory leak)
+    this.pongHandler = () => {
+      if (this.disposed) return; // Guard against stale callback
       this.lastPongTime = Date.now();
 
       if (LOG_PING_PONG) {
@@ -228,6 +240,15 @@ export class UserSession {
       // Reset the timeout timer only if enabled
       if (UserSession.PONG_TIMEOUT_ENABLED) {
         this.resetPongTimeout();
+      }
+    };
+
+    this.websocket.on("pong", this.pongHandler);
+
+    // Track pong handler for cleanup (prevents memory leak)
+    this.resources.track(() => {
+      if (this.websocket && this.pongHandler) {
+        this.websocket.off("pong", this.pongHandler);
       }
     });
 
@@ -587,9 +608,24 @@ export class UserSession {
    * Dispose of all resources and remove from sessions map
    */
   async dispose(): Promise<void> {
+    // Idempotent - can be called multiple times safely
+    if (this.disposed) {
+      this.logger.debug(
+        `[UserSession:dispose]: Already disposed, skipping: ${this.userId}`,
+      );
+      return;
+    }
+
+    // Set disposed flag FIRST to prevent any new operations
+    this.disposed = true;
+
     this.logger.warn(
       `[UserSession:dispose]: Disposing UserSession: ${this.userId}`,
     );
+
+    // Clean up all tracked resources (removes event listeners, clears timers)
+    // This must happen BEFORE disposing managers to prevent stale callbacks
+    this.resources.dispose();
 
     // Log to posthog disconnected duration.
     const now = new Date();
@@ -630,7 +666,7 @@ export class UserSession {
     // Persist location to DB cold cache and clean up
     if (this.locationManager) await this.locationManager.dispose();
 
-    // Clear glasses heartbeat
+    // Clear glasses heartbeat (timers already cleared by resources.dispose(), but clear references)
     this.clearGlassesHeartbeat();
 
     // Clear any timers
