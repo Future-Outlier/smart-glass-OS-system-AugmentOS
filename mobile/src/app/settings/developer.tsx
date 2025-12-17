@@ -28,8 +28,6 @@ export default function DeveloperSettingsScreen() {
     <Screen preset="fixed">
       <Header title="Developer Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
 
-      <Spacer height={theme.spacing.s4} />
-
       <ScrollView
         style={{
           flex: 1,

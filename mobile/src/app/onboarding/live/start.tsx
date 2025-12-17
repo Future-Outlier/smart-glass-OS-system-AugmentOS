@@ -8,6 +8,7 @@ import {Text} from "@/components/ignite"
 import Toast from "react-native-toast-message"
 import {translate} from "@/i18n"
 import {Spacer} from "@/components/ui"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 interface OnboardingVideo {
   source: VideoSource
@@ -20,6 +21,7 @@ interface OnboardingVideo {
   info?: string
 }
 
+// NOTE: you can't have 2 transition videos in a row or things will break:
 const videoFiles: OnboardingVideo[] = [
   {
     source: require("../../../../assets/onboarding/live/ONB0_start_onboarding.mp4"),
@@ -50,29 +52,32 @@ const videoFiles: OnboardingVideo[] = [
     subtitle: translate("onboarding:livePressActionButton"),
     info: translate("onboarding:liveLedFlashWarning"),
   },
-  {
-    source: require("../../../../assets/onboarding/live/ONB5_action_button_record.mp4"),
-    name: "Action Button Record",
-    loop: true,
-    transition: false,
-    title: translate("onboarding:liveStartRecording"),
-    subtitle: translate("onboarding:livePressAndHold"),
-    info: translate("onboarding:liveLedFlashWarning"),
-  },
-  {
-    source: require("../../../../assets/onboarding/live/ONB5_action_button_record.mp4"),
-    name: "Action Button Stop Recording",
-    loop: true,
-    transition: false,
-    title: translate("onboarding:liveStopRecording"),
-    subtitle: translate("onboarding:livePressAndHoldAgain"),
-    info: translate("onboarding:liveLedFlashWarning"),
-  },
+  // {
+  //   source: require("../../../../assets/onboarding/live/ONB5_action_button_record.mp4"),
+  //   name: "Action Button Record",
+  //   loop: true,
+  //   transition: false,
+  //   title: translate("onboarding:liveStartRecording"),
+  //   subtitle: translate("onboarding:livePressAndHold"),
+  //   info: translate("onboarding:liveLedFlashWarning"),
+  // },
+  // {
+  //   source: require("../../../../assets/onboarding/live/ONB5_action_button_record.mp4"),
+  //   name: "Action Button Stop Recording",
+  //   loop: true,
+  //   transition: false,
+  //   title: translate("onboarding:liveStopRecording"),
+  //   subtitle: translate("onboarding:livePressAndHoldAgain"),
+  //   info: translate("onboarding:liveLedFlashWarning"),
+  // },
   {
     source: require("../../../../assets/onboarding/live/ONB6_transition_trackpad.mp4"),
     name: "Transition Trackpad",
     loop: false,
     transition: true,
+    // show next slide's title and subtitle:
+    title: translate("onboarding:livePlayMusic"),
+    subtitle: translate("onboarding:liveDoubleTapTouchpad"),
   },
   {
     source: require("../../../../assets/onboarding/live/ONB7_trackpad_tap.mp4"),
@@ -102,89 +107,171 @@ const videoFiles: OnboardingVideo[] = [
     name: "Trackpad Pause",
     loop: false,
     transition: false,
+    title: translate("onboarding:livePauseMusic"),
+    subtitle: translate("onboarding:liveDoubleTapTouchpad"),
   },
   {
     source: require("../../../../assets/onboarding/live/ONB10_cord.mp4"),
     name: "Cord",
     loop: true,
     transition: false,
+    title: translate("onboarding:liveConnectCable"),
+    subtitle: translate("onboarding:liveCableDescription"),
+    info: translate("onboarding:liveCableInfo"),
   },
   {
     source: require("../../../../assets/onboarding/live/ONB11_end.mp4"),
     name: "End",
     loop: true,
     transition: false,
+    subtitle: translate("onboarding:liveEndTitle"),
+    subtitle2: translate("onboarding:liveEndMessage"),
   },
 ]
 
 export default function Onboarding1() {
   const {goBack} = useNavigationHistory()
+  const {theme} = useAppTheme()
+
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [secondaryIndex, setSecondaryIndex] = useState(1)
   const [showNextButton, setShowNextButton] = useState(false)
   const [showReplayButton, setShowReplayButton] = useState(false)
   const [hasStarted, setHasStarted] = useState(false)
   const [playCount, setPlayCount] = useState(0)
+  const [transitionCount, setTransitionCount] = useState(0)
+  const [uiIndex, setUiIndex] = useState(1)
 
-  const player: VideoPlayer = useVideoPlayer(videoFiles[currentIndex].source, (player: any) => {
+  const player1: VideoPlayer = useVideoPlayer(videoFiles[0].source, (player: any) => {
     player.loop = false
+    player.audioMixingMode = "mixWithOthers"
   })
-  const player2: VideoPlayer = useVideoPlayer(videoFiles[secondaryIndex].source, (player2: any) => {
-    player2.loop = false
+  const player2: VideoPlayer = useVideoPlayer(videoFiles[1].source, (player: any) => {
+    player.loop = false
+    player.audioMixingMode = "mixWithOthers"
   })
-  const [currentPlayer, setCurrentPlayer] = useState(player)
+  const [currentPlayer, setCurrentPlayer] = useState(player1)
 
-  const counter = `${currentIndex + 1} / ${videoFiles.length}`
+  // don't count transition videos:
+  const nonTransitionVideoFiles = videoFiles.filter(video => !video.transition)
+  const counter = `${uiIndex} / ${nonTransitionVideoFiles.length}`
   const video = videoFiles[currentIndex]
 
-  const handleNext = useCallback(() => {
-    const nextIndex = currentIndex < videoFiles.length - 1 ? currentIndex + 1 : 0
-    setShowNextButton(false)
-    setShowReplayButton(false)
+  const handleNext = useCallback(
+    (manual: boolean = false) => {
+      console.log(`ONBOARD: handleNext(${manual})`)
 
-    // special case for when the video files are the same:
-    if (videoFiles[nextIndex].source == videoFiles[currentIndex].source) {
-      // we didn't change the video, so we need to reset the current time
-      player.currentTime = 0
-      player.play()
-      setCurrentIndex(nextIndex)
-      setPlayCount(0)
-      return
-    }
+      if (manual) {
+        setUiIndex(uiIndex + 1)
+      }
 
-    setCurrentIndex(nextIndex)
-    setPlayCount(0)
-    player.replace(videoFiles[nextIndex].source)
-  }, [currentIndex, player])
-
-  useEffect(() => {
-    const subscription = player.addListener("statusChange", (status: any) => {
-      console.log("statusChange", status)
-      if (currentIndex === 0) {
-        // we don't auto play the first video
+      if (currentIndex == videoFiles.length - 1) {
+        console.log("last video")
         return
       }
-      if (status.status === "readyToPlay") {
-        player.play()
-      }
-    })
 
-    return () => subscription.remove()
-  }, [player])
+      const nextIndex = currentIndex < videoFiles.length - 1 ? currentIndex + 1 : 0
+      const nextNextIndex = nextIndex < videoFiles.length - 1 ? nextIndex + 1 : 0
+      console.log(`ONBOARD: current: ${currentIndex} next: ${nextIndex}`)
+      console.log(`ONBOARD: currentPlayer: ${currentPlayer == player1 ? "player1" : "player2"}`)
+
+      setShowNextButton(false)
+      setShowReplayButton(false)
+
+      if (currentPlayer === player1) {
+        setCurrentPlayer(player2)
+        player2.play()
+        player1.replace(videoFiles[nextNextIndex].source)
+        player1.pause()
+      } else if (currentPlayer === player2) {
+        setCurrentPlayer(player1)
+        player1.play()
+        player2.replace(videoFiles[nextNextIndex].source)
+        player2.pause()
+      }
+
+      if (videoFiles[nextIndex].transition) {
+        setTransitionCount(transitionCount + 1)
+      }
+
+      setCurrentIndex(nextIndex)
+      setPlayCount(0)
+
+      console.log(`ONBOARD: current is now ${nextIndex}`)
+    },
+    [currentIndex, currentPlayer],
+  )
+
+  const handleBack = useCallback(() => {
+    setUiIndex(uiIndex - 1)
+    setPlayCount(0)
+    // if (currentIndex === 1) {
+    //   setHasStarted(false)
+    //   return
+    // }
+
+    // if the previous index is a transition, we need to go back two indices
+    let prevIndex = currentIndex - 1
+    if (videoFiles[prevIndex].transition) {
+      prevIndex = currentIndex - 2
+    }
+    setCurrentIndex(prevIndex)
+    let prevPrevIndex = prevIndex - 1
+
+    if (prevIndex < 0) {
+      prevIndex = 0
+    }
+    if (prevPrevIndex < 0) {
+      prevPrevIndex = 0
+    }
+
+    if (prevPrevIndex === 0 && prevIndex === 0) {
+      console.log("going back to start")
+      setHasStarted(false)
+    }
+
+    if (currentPlayer === player1) {
+      setCurrentPlayer(player2)
+      player2.replace(videoFiles[prevIndex].source)
+      player1.replace(videoFiles[prevPrevIndex].source)
+      // player1.replace(videoFiles[currentIndex - 1].source)
+      // player1.pause()
+    } else if (currentPlayer === player2) {
+      setCurrentPlayer(player1)
+      player1.replace(videoFiles[prevIndex].source)
+      player2.replace(videoFiles[prevPrevIndex].source)
+      player2.pause()
+    }
+
+  }, [uiIndex])
+
+  // useEffect(() => {
+  //   const subscription = currentPlayer.addListener("statusChange", (status: any) => {
+  //     console.log("statusChange", status)
+  //     if (currentIndex === 0) {
+  //       // we don't auto play the first video
+  //       return
+  //     }
+  //     if (status.status === "readyToPlay") {
+  //       currentPlayer.play()
+  //     }
+  //   })
+
+  //   return () => subscription.remove()
+  // }, [currentPlayer])
 
   useEffect(() => {
-    const subscription = player.addListener("playingChange", (status: any) => {
+    const subscription = currentPlayer.addListener("playingChange", (status: any) => {
       console.log("playingChange", status)
-      if (!status.isPlaying && player.currentTime >= player.duration - 0.1) {
+      if (!status.isPlaying && currentPlayer.currentTime >= currentPlayer.duration - 0.1) {
         if (video.transition) {
           handleNext()
           return
         }
-        if (playCount < 1) {
+        if (playCount < 1 && false) {// TODO:
           // Play again
           setPlayCount(prev => prev + 1)
-          player.currentTime = 0
-          player.play()
+          currentPlayer.currentTime = 0
+          currentPlayer.play()
         } else {
           // Played twice, now stop
           setShowReplayButton(true)
@@ -196,19 +283,19 @@ export default function Onboarding1() {
     return () => {
       subscription.remove()
     }
-  }, [player, video, handleNext, playCount])
+  }, [currentPlayer, video, handleNext, playCount])
 
   const handleReplay = useCallback(() => {
     setShowReplayButton(false)
     setPlayCount(0)
-    player.currentTime = 0
-    player.play()
-  }, [player])
+    currentPlayer.currentTime = 0
+    currentPlayer.play()
+  }, [currentPlayer])
 
   const handleStart = useCallback(() => {
     setHasStarted(true)
-    player.play()
-  }, [player])
+    currentPlayer.play()
+  }, [currentPlayer])
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
@@ -236,8 +323,19 @@ export default function Onboarding1() {
 
           <View className="-mx-6">
             <View className="relative">
-              <VideoView player={currentPlayer} style={{width: "100%", aspectRatio: 1}} nativeControls={false} />
-              
+              <View className="flex-row">
+                <VideoView player={currentPlayer} style={{flex: 1, aspectRatio: 1}} nativeControls={false} />
+                {/* <VideoView
+                  player={player1}
+                  style={{flex: 1, aspectRatio: 1, borderWidth: isPlayer1 ? 3 : 0, borderColor: "red"}}
+                  nativeControls={false}
+                />
+                <VideoView
+                  player={player2}
+                  style={{flex: 1, aspectRatio: 1, borderWidth: !isPlayer1 ? 3 : 0, borderColor: "red"}}
+                  nativeControls={false}
+                /> */}
+              </View>
 
               {showReplayButton && (
                 <View className="absolute bottom-8 left-0 right-0 items-center">
@@ -252,9 +350,13 @@ export default function Onboarding1() {
               {video.subtitle && <Text className="text-center text-xl font-semibold" text={video.subtitle} />}
               {video.subtitle2 && <Text className="text-center text-xl font-semibold" text={video.subtitle2} />}
               {video.info && (
-                <View className="flex flex-row gap-2">
-                  <Icon name="info" size={20} color="muted-foreground" />
-                  <Text className="text-center text-sm font-medium text-muted-foreground" text={video.info} />
+                <View className="flex flex-row gap-2 justify-center items-center px-12">
+                  <Icon name="info" size={20} color={theme.colors.muted_foreground} />
+                  <Text
+                    className="text-center text-sm font-medium text-muted-foreground"
+                    text={video.info}
+                    numberOfLines={2}
+                  />
                 </View>
               )}
             </View>
@@ -290,19 +392,16 @@ export default function Onboarding1() {
 
           {hasStarted && showNextButton && (
             <View className="flex flex-col gap-2">
-              <Button flexContainer tx="common:continue" onPress={handleNext} />
+              <Button
+                flexContainer
+                tx="common:continue"
+                onPress={() => {
+                  handleNext(true)
+                }}
+              />
             </View>
           )}
-
-          <Button
-            flexContainer
-            className="mt-8"
-            preset="secondary"
-            text="Play"
-            onPress={() => {
-              player.play()
-            }}
-          />
+          {hasStarted && <Button flexContainer className="mt-8" preset="secondary" text="Back" onPress={handleBack} />}
         </View>
       </View>
     </Screen>
