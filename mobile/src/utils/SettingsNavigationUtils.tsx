@@ -8,9 +8,9 @@ const Core = requireNativeModule("Core")
  */
 export class SettingsNavigationUtils {
   static async openIosSettings(): Promise<void> {
-    const canOpen = await Linking.canOpenURL("App-Prefs:")
+    const canOpen = await Linking.canOpenURL("App-prefs:")
     if (canOpen) {
-      await Linking.openURL("App-Prefs:")
+      await Linking.openURL("App-prefs:")
     } else {
       await Linking.openURL("app-settings:")
     }
@@ -29,6 +29,7 @@ export class SettingsNavigationUtils {
       } else if (Platform.OS === "ios") {
         // iOS doesn't have direct Bluetooth settings access, open general settings
         await this.openIosSettings()
+        // await Linking.openURL("App-prefs:")
       }
       return true
     } catch (error) {

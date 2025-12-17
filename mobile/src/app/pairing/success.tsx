@@ -8,9 +8,9 @@ import {VuzixLogo} from "@/components/brands/VuzixLogo"
 import {Screen, Text, Button} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {$styles, ThemedStyle} from "@/theme"
-import {getGlassesImage} from "@/utils/getGlassesImage"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {ThemedStyle} from "@/theme"
+import {getGlassesImage} from "@/utils/getGlassesImage"
 
 export default function PairingSuccessScreen() {
   const {theme, themed} = useAppTheme()
