@@ -312,7 +312,7 @@ public class CommandProcessor {
             commandHandlerRegistry.registerHandler(new BatteryCommandHandler(stateManager));
             Log.d(TAG, "✅ Registered BatteryCommandHandler");
 
-            commandHandlerRegistry.registerHandler(new VersionCommandHandler(context, serviceManager));
+            commandHandlerRegistry.registerHandler(new VersionCommandHandler(serviceManager));
             Log.d(TAG, "✅ Registered VersionCommandHandler");
 
             commandHandlerRegistry.registerHandler(new SettingsCommandHandler(serviceManager, communicationManager, responseBuilder));
