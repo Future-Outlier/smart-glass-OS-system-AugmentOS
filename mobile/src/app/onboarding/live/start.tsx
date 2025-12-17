@@ -155,6 +155,7 @@ export default function Onboarding1() {
   const nonTransitionVideoFiles = videoFiles.filter(video => !video.transition)
   const counter = `${uiIndex} / ${nonTransitionVideoFiles.length}`
   const video = videoFiles[currentIndex]
+  const isPlayer1 = currentPlayer == player1
 
   const handleNext = useCallback(
     (manual: boolean = false) => {
@@ -204,44 +205,67 @@ export default function Onboarding1() {
   const handleBack = useCallback(() => {
     setUiIndex(uiIndex - 1)
     setPlayCount(0)
-    // if (currentIndex === 1) {
-    //   setHasStarted(false)
-    //   return
-    // }
+
+    // the start is a special case:
+    if (currentIndex === 0 || currentIndex === 1) {
+      setHasStarted(false)
+      setCurrentIndex(0)
+      setCurrentPlayer(player1)
+      setShowReplayButton(false)
+      setShowNextButton(false)
+      setUiIndex(1)
+      player1.replace(videoFiles[0].source)
+      player1.currentTime = 0
+      player1.pause()
+      player2.replace(videoFiles[1].source)
+      player2.currentTime = 0
+      player2.pause()
+      return
+    }
 
     // if the previous index is a transition, we need to go back two indices
     let prevIndex = currentIndex - 1
+    let doubleBack = false
     if (videoFiles[prevIndex].transition) {
       prevIndex = currentIndex - 2
+      doubleBack = true
     }
-    setCurrentIndex(prevIndex)
-    let prevPrevIndex = prevIndex - 1
 
     if (prevIndex < 0) {
       prevIndex = 0
     }
-    if (prevPrevIndex < 0) {
-      prevPrevIndex = 0
-    }
+    let newCurrent = prevIndex + 1
 
-    if (prevPrevIndex === 0 && prevIndex === 0) {
-      console.log("going back to start")
-      setHasStarted(false)
+    setCurrentIndex(prevIndex)
+
+    // if (prevIndex === 0) {
+    //   console.log(`ONBOARD: going back to start`)
+    //   setHasStarted(false)
+    // }
+
+    if (doubleBack) {
+      if (currentPlayer === player1) {
+        player1.replace(videoFiles[prevIndex].source)
+        player2.replace(videoFiles[newCurrent].source)
+      } else if (currentPlayer === player2) {
+        player2.replace(videoFiles[prevIndex].source)
+        player1.replace(videoFiles[newCurrent].source)
+      }
+      currentPlayer.play()
+      return
     }
 
     if (currentPlayer === player1) {
       setCurrentPlayer(player2)
       player2.replace(videoFiles[prevIndex].source)
-      player1.replace(videoFiles[prevPrevIndex].source)
-      // player1.replace(videoFiles[currentIndex - 1].source)
-      // player1.pause()
+      player1.replace(videoFiles[newCurrent].source)
+      player2.play()
     } else if (currentPlayer === player2) {
       setCurrentPlayer(player1)
       player1.replace(videoFiles[prevIndex].source)
-      player2.replace(videoFiles[prevPrevIndex].source)
-      player2.pause()
+      player2.replace(videoFiles[newCurrent].source)
+      player1.play()
     }
-
   }, [uiIndex])
 
   // useEffect(() => {
@@ -251,6 +275,7 @@ export default function Onboarding1() {
   //       // we don't auto play the first video
   //       return
   //     }
+  //     // console.log(`ONBOARD: auto playing@@@@@@@@@@@@@@@@@@@@@@@`)
   //     if (status.status === "readyToPlay") {
   //       currentPlayer.play()
   //     }
@@ -262,12 +287,14 @@ export default function Onboarding1() {
   useEffect(() => {
     const subscription = currentPlayer.addListener("playingChange", (status: any) => {
       console.log("playingChange", status)
+      console.log(`ONBOARD: currentIndex: ${currentIndex}`)
       if (!status.isPlaying && currentPlayer.currentTime >= currentPlayer.duration - 0.1) {
         if (video.transition) {
           handleNext()
           return
         }
-        if (playCount < 1 && false) {// TODO:
+        if (playCount < 1 && false) {
+          // TODO:
           // Play again
           setPlayCount(prev => prev + 1)
           currentPlayer.currentTime = 0
@@ -391,7 +418,7 @@ export default function Onboarding1() {
           )}
 
           {hasStarted && showNextButton && (
-            <View className="flex flex-col gap-2">
+            <View className="flex flex-col gap-4">
               <Button
                 flexContainer
                 tx="common:continue"
@@ -399,9 +426,9 @@ export default function Onboarding1() {
                   handleNext(true)
                 }}
               />
+              <Button flexContainer preset="secondary" text="Back" onPress={handleBack} />
             </View>
           )}
-          {hasStarted && <Button flexContainer className="mt-8" preset="secondary" text="Back" onPress={handleBack} />}
         </View>
       </View>
     </Screen>
