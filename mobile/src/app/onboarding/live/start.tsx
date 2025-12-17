@@ -52,24 +52,24 @@ const videoFiles: OnboardingVideo[] = [
     subtitle: translate("onboarding:livePressActionButton"),
     info: translate("onboarding:liveLedFlashWarning"),
   },
-  // {
-  //   source: require("../../../../assets/onboarding/live/ONB5_action_button_record.mp4"),
-  //   name: "Action Button Record",
-  //   loop: true,
-  //   transition: false,
-  //   title: translate("onboarding:liveStartRecording"),
-  //   subtitle: translate("onboarding:livePressAndHold"),
-  //   info: translate("onboarding:liveLedFlashWarning"),
-  // },
-  // {
-  //   source: require("../../../../assets/onboarding/live/ONB5_action_button_record.mp4"),
-  //   name: "Action Button Stop Recording",
-  //   loop: true,
-  //   transition: false,
-  //   title: translate("onboarding:liveStopRecording"),
-  //   subtitle: translate("onboarding:livePressAndHoldAgain"),
-  //   info: translate("onboarding:liveLedFlashWarning"),
-  // },
+  {
+    source: require("../../../../assets/onboarding/live/ONB5_action_button_record.mp4"),
+    name: "Action Button Record",
+    loop: true,
+    transition: false,
+    title: translate("onboarding:liveStartRecording"),
+    subtitle: translate("onboarding:livePressAndHold"),
+    info: translate("onboarding:liveLedFlashWarning"),
+  },
+  {
+    source: require("../../../../assets/onboarding/live/ONB5_action_button_record.mp4"),
+    name: "Action Button Stop Recording",
+    loop: true,
+    transition: false,
+    title: translate("onboarding:liveStopRecording"),
+    subtitle: translate("onboarding:livePressAndHoldAgain"),
+    info: translate("onboarding:liveLedFlashWarning"),
+  },
   {
     source: require("../../../../assets/onboarding/live/ONB6_transition_trackpad.mp4"),
     name: "Transition Trackpad",
@@ -105,7 +105,7 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("../../../../assets/onboarding/live/ONB9_trackpad_pause.mp4"),
     name: "Trackpad Pause",
-    loop: false,
+    loop: true,
     transition: false,
     title: translate("onboarding:livePauseMusic"),
     subtitle: translate("onboarding:liveDoubleTapTouchpad"),
@@ -113,7 +113,7 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("../../../../assets/onboarding/live/ONB10_cord.mp4"),
     name: "Cord",
-    loop: true,
+    loop: false,
     transition: false,
     title: translate("onboarding:liveConnectCable"),
     subtitle: translate("onboarding:liveCableDescription"),
@@ -122,7 +122,7 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("../../../../assets/onboarding/live/ONB11_end.mp4"),
     name: "End",
-    loop: true,
+    loop: false,
     transition: false,
     subtitle: translate("onboarding:liveEndTitle"),
     subtitle2: translate("onboarding:liveEndMessage"),
@@ -237,6 +237,8 @@ export default function Onboarding1() {
     let newCurrent = prevIndex + 1
 
     setCurrentIndex(prevIndex)
+    setShowReplayButton(true)
+    setShowNextButton(true)
 
     // if (prevIndex === 0) {
     //   console.log(`ONBOARD: going back to start`)
@@ -247,11 +249,12 @@ export default function Onboarding1() {
       if (currentPlayer === player1) {
         player1.replace(videoFiles[prevIndex].source)
         player2.replace(videoFiles[newCurrent].source)
+        player1.pause()
       } else if (currentPlayer === player2) {
         player2.replace(videoFiles[prevIndex].source)
         player1.replace(videoFiles[newCurrent].source)
+        player2.pause()
       }
-      currentPlayer.play()
       return
     }
 
@@ -259,12 +262,12 @@ export default function Onboarding1() {
       setCurrentPlayer(player2)
       player2.replace(videoFiles[prevIndex].source)
       player1.replace(videoFiles[newCurrent].source)
-      player2.play()
+      player2.pause()
     } else if (currentPlayer === player2) {
       setCurrentPlayer(player1)
       player1.replace(videoFiles[prevIndex].source)
       player2.replace(videoFiles[newCurrent].source)
-      player1.play()
+      player1.pause()
     }
   }, [uiIndex])
 
@@ -293,9 +296,10 @@ export default function Onboarding1() {
           handleNext()
           return
         }
-        if (playCount < 1 && false) {
+        if (playCount < 1 && video.loop) {
           // TODO:
           // Play again
+          setShowNextButton(true)
           setPlayCount(prev => prev + 1)
           currentPlayer.currentTime = 0
           currentPlayer.play()
