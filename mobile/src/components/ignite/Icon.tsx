@@ -5,6 +5,7 @@ import {
   FileType2,
   Fullscreen,
   Glasses,
+  Info,
   LayoutDashboard,
   Locate,
   Unlink,
@@ -109,6 +110,7 @@ const lucideIcons = {
   "locate": Locate,
   "layout-dashboard": LayoutDashboard,
   "wifi-off": WifiOff,
+  "info": Info,
   // "house": House,
   // custom icons:
   "shopping-bag": ShoppingBagIcon,

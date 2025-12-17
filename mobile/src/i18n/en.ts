@@ -165,6 +165,12 @@ const en = {
     welcome: "Welcome to MentraOS",
     learnTheBasics: "Learn the basics",
     continueOnboarding: "Continue onboarding",
+    replay: "Replay",
+    liveTakeAPhoto: "Take a photo",
+    livePressActionButton: "Press the action button once",
+    liveLedFlashWarning: "The LED flash turns on when the camera turns on",
+    liveStartRecording: "Start recording",
+    livePressAndHold: "Press and hold the action button for 3 seconds",
   },
   home: {
     title: "MentraOS",

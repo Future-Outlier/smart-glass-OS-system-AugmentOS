@@ -9,7 +9,6 @@ import LoadingOverlay from "@/components/misc/LoadingOverlay"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/services/RestComms"
 import {useSettingsStore} from "@/stores/settings"
-import {$styles} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/contexts/ThemeContext"
 
@@ -234,7 +233,7 @@ export default function AppWebView() {
 
   // Render WebView only when finalUrl is ready
   return (
-    <Screen preset="fixed" safeAreaEdges={[]}>
+    <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header
         title={appName}
         titleMode="center"
