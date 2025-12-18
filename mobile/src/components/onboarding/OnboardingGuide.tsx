@@ -1,6 +1,7 @@
+import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
-import {useState, useCallback, useEffect} from "react"
-import {View} from "react-native"
+import {useState, useCallback, useEffect, useMemo} from "react"
+import {ImageStyle, View, ViewStyle} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text} from "@/components/ignite"
@@ -8,10 +9,7 @@ import {Button, Header, Icon} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 
-export interface OnboardingStep {
-  source: VideoSource
-//   loop: boolean
-  playCount: number
+interface BaseStep {
   name: string
   transition: boolean
   title?: string
@@ -21,13 +19,52 @@ export interface OnboardingStep {
   bullets?: string[]
 }
 
+interface VideoStep extends BaseStep {
+  type: "video"
+  source: VideoSource
+  playCount: number
+}
+
+interface ImageStep extends BaseStep {
+  type: "image"
+  source: ImageSource
+  imageContainerStyle?: ViewStyle
+  //   imageComponent: React.ComponentType
+  duration?: number // ms before showing next button, undefined = immediate
+}
+
+export type OnboardingStep = VideoStep | ImageStep
+
 interface OnboardingGuideProps {
   steps: OnboardingStep[]
   showSkipButton?: boolean
   autoStart?: boolean
+  mainTitle?: string
+  mainSubtitle?: string
 }
 
-export function OnboardingGuide({steps, showSkipButton = true, autoStart = false}: OnboardingGuideProps) {
+// Helper to get a video source (for preloading into players)
+const getVideoSource = (step: OnboardingStep): VideoSource | null => {
+  return step.type === "video" ? step.source : null
+}
+
+// Find next video step's source for preloading
+const findNextVideoSource = (steps: OnboardingStep[], fromIndex: number): VideoSource | null => {
+  for (let i = fromIndex; i < steps.length; i++) {
+    if (steps[i].type === "video") {
+      return steps[i].source
+    }
+  }
+  return null
+}
+
+export function OnboardingGuide({
+  steps,
+  showSkipButton = true,
+  autoStart = false,
+  mainTitle,
+  mainSubtitle,
+}: OnboardingGuideProps) {
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const {theme} = useAppTheme()
 
@@ -38,29 +75,57 @@ export function OnboardingGuide({steps, showSkipButton = true, autoStart = false
   const [playCount, setPlayCount] = useState(0)
   const [transitionCount, setTransitionCount] = useState(0)
   const [uiIndex, setUiIndex] = useState(1)
+  const [activePlayer, setActivePlayer] = useState<1 | 2>(1)
 
-  const player1: VideoPlayer = useVideoPlayer(steps[0].source, (player: any) => {
+  // Initialize players with first video sources found
+  const initialSource1 = useMemo(() => findNextVideoSource(steps, 0), [steps])
+  const initialSource2 = useMemo(() => findNextVideoSource(steps, 1), [steps])
+
+  const player1: VideoPlayer = useVideoPlayer(initialSource1, (player: any) => {
     player.loop = false
     player.audioMixingMode = "mixWithOthers"
   })
-  const player2: VideoPlayer = useVideoPlayer(steps[1].source, (player: any) => {
+  const player2: VideoPlayer = useVideoPlayer(initialSource2, (player: any) => {
     player.loop = false
     player.audioMixingMode = "mixWithOthers"
   })
-  const [currentPlayer, setCurrentPlayer] = useState(player1)
 
-  // don't count transition videos:
+  const currentPlayer = activePlayer === 1 ? player1 : player2
+
   const nonTransitionVideoFiles = steps.filter(step => !step.transition)
   const counter = `${uiIndex} / ${nonTransitionVideoFiles.length}`
-  const video = steps[currentIndex]
-  const isPlayer1 = currentPlayer == player1
+  const step = steps[currentIndex]
+  const isCurrentStepImage = step.type === "image"
+  const isCurrentStepVideo = step.type === "video"
+
+  // Handle image step timing
+  useEffect(() => {
+    if (!hasStarted || !isCurrentStepImage) return
+
+    if (step.transition) {
+      // Auto-advance transition images
+      const timer = setTimeout(() => {
+        handleNext(false)
+      }, step.duration ?? 500)
+      return () => clearTimeout(timer)
+    }
+
+    if (step.duration) {
+      const timer = setTimeout(() => {
+        setShowNextButton(true)
+      }, step.duration)
+      return () => clearTimeout(timer)
+    } else {
+      setShowNextButton(true)
+    }
+    return () => {}
+  }, [currentIndex, hasStarted, isCurrentStepImage])
 
   const handleNext = useCallback(
     (manual: boolean = false) => {
       console.log(`ONBOARD: handleNext(${manual})`)
 
-      if (currentIndex == steps.length - 1) {
-        // go back to home screen
+      if (currentIndex === steps.length - 1) {
         clearHistoryAndGoHome()
         return
       }
@@ -70,59 +135,92 @@ export function OnboardingGuide({steps, showSkipButton = true, autoStart = false
       }
 
       const nextIndex = currentIndex < steps.length - 1 ? currentIndex + 1 : 0
-      const nextNextIndex = nextIndex < steps.length - 1 ? nextIndex + 1 : 0
+      const nextStep = steps[nextIndex]
+
       console.log(`ONBOARD: current: ${currentIndex} next: ${nextIndex}`)
-      console.log(`ONBOARD: currentPlayer: ${currentPlayer == player1 ? "player1" : "player2"}`)
 
       setShowNextButton(false)
       setShowReplayButton(false)
-
-      if (currentPlayer === player1) {
-        setCurrentPlayer(player2)
-        player2.play()
-        player1.replace(steps[nextNextIndex].source)
-        player1.pause()
-      } else if (currentPlayer === player2) {
-        setCurrentPlayer(player1)
-        player1.play()
-        player2.replace(steps[nextNextIndex].source)
-        player2.pause()
-      }
-
-      if (steps[nextIndex].transition) {
-        setTransitionCount(transitionCount + 1)
-      }
-
       setCurrentIndex(nextIndex)
       setPlayCount(0)
 
+      if (nextStep.transition) {
+        setTransitionCount(transitionCount + 1)
+      }
+
+      // If next step is an image, just pause current player and preload next video
+      if (nextStep.type === "image") {
+        player1.pause()
+        player2.pause()
+
+        // Preload next video source into inactive player
+        const nextVideoSource = findNextVideoSource(steps, nextIndex + 1)
+        if (nextVideoSource) {
+          if (activePlayer === 1) {
+            player2.replace(nextVideoSource)
+          } else {
+            player1.replace(nextVideoSource)
+          }
+        }
+        return
+      }
+
+      // Next step is a video - handle player swapping
+      const nextNextVideoSource = findNextVideoSource(steps, nextIndex + 1)
+
+      if (activePlayer === 1) {
+        setActivePlayer(2)
+        player2.replace(nextStep.source)
+        player2.play()
+        if (nextNextVideoSource) {
+          player1.replace(nextNextVideoSource)
+        }
+        player1.pause()
+      } else {
+        setActivePlayer(1)
+        player1.replace(nextStep.source)
+        player1.play()
+        if (nextNextVideoSource) {
+          player2.replace(nextNextVideoSource)
+        }
+        player2.pause()
+      }
+
       console.log(`ONBOARD: current is now ${nextIndex}`)
     },
-    [currentIndex, currentPlayer],
+    [currentIndex, activePlayer, uiIndex, steps, transitionCount, clearHistoryAndGoHome],
   )
 
   const handleBack = useCallback(() => {
     setUiIndex(uiIndex - 1)
     setPlayCount(0)
 
-    // the start is a special case:
+    // The start is a special case
     if (currentIndex === 0 || currentIndex === 1) {
       setHasStarted(false)
       setCurrentIndex(0)
-      setCurrentPlayer(player1)
+      setActivePlayer(1)
       setShowReplayButton(false)
       setShowNextButton(false)
       setUiIndex(1)
-      player1.replace(steps[0].source)
-      player1.currentTime = 0
-      player1.pause()
-      player2.replace(steps[1].source)
-      player2.currentTime = 0
-      player2.pause()
+
+      const firstVideoSource = findNextVideoSource(steps, 0)
+      const secondVideoSource = findNextVideoSource(steps, 1)
+
+      if (firstVideoSource) {
+        player1.replace(firstVideoSource)
+        player1.currentTime = 0
+        player1.pause()
+      }
+      if (secondVideoSource) {
+        player2.replace(secondVideoSource)
+        player2.currentTime = 0
+        player2.pause()
+      }
       return
     }
 
-    // if the previous index is a transition, we need to go back two indices
+    // If the previous index is a transition, go back two indices
     let prevIndex = currentIndex - 1
     let doubleBack = false
     if (steps[prevIndex].transition) {
@@ -133,96 +231,105 @@ export function OnboardingGuide({steps, showSkipButton = true, autoStart = false
     if (prevIndex < 0) {
       prevIndex = 0
     }
-    let newCurrent = prevIndex + 1
 
+    const prevStep = steps[prevIndex]
     setCurrentIndex(prevIndex)
-    setShowReplayButton(true)
+    setShowReplayButton(prevStep.type === "video")
     setShowNextButton(true)
 
-    // if (prevIndex === 0) {
-    //   console.log(`ONBOARD: going back to start`)
-    //   setHasStarted(false)
-    // }
+    // If going back to an image, just pause players
+    if (prevStep.type === "image") {
+      player1.pause()
+      player2.pause()
+      return
+    }
+
+    // Going back to a video
+    const nextVideoSource = findNextVideoSource(steps, prevIndex + 1)
 
     if (doubleBack) {
-      if (currentPlayer === player1) {
-        player1.replace(steps[prevIndex].source)
-        player2.replace(steps[newCurrent].source)
+      if (activePlayer === 1) {
+        player1.replace(prevStep.source)
+        if (nextVideoSource) player2.replace(nextVideoSource)
         player1.pause()
-      } else if (currentPlayer === player2) {
-        player2.replace(steps[prevIndex].source)
-        player1.replace(steps[newCurrent].source)
+      } else {
+        player2.replace(prevStep.source)
+        if (nextVideoSource) player1.replace(nextVideoSource)
         player2.pause()
       }
       return
     }
 
-    if (currentPlayer === player1) {
-      setCurrentPlayer(player2)
-      player2.replace(steps[prevIndex].source)
-      player1.replace(steps[newCurrent].source)
+    if (activePlayer === 1) {
+      setActivePlayer(2)
+      player2.replace(prevStep.source)
+      if (nextVideoSource) player1.replace(nextVideoSource)
       player2.pause()
-    } else if (currentPlayer === player2) {
-      setCurrentPlayer(player1)
-      player1.replace(steps[prevIndex].source)
-      player2.replace(steps[newCurrent].source)
+    } else {
+      setActivePlayer(1)
+      player1.replace(prevStep.source)
+      if (nextVideoSource) player2.replace(nextVideoSource)
       player1.pause()
     }
-  }, [uiIndex])
+  }, [currentIndex, uiIndex, activePlayer, steps])
 
+  // Video status change listener
   useEffect(() => {
+    if (isCurrentStepImage) return
+
     const subscription = currentPlayer.addListener("statusChange", (status: any) => {
       console.log("statusChange", status)
       if (currentIndex === 0 && !autoStart) {
-        // we don't auto play the first video
         return
       }
-      // console.log(`ONBOARD: auto playing@@@@@@@@@@@@@@@@@@@@@@@`)
       if (status.status === "readyToPlay") {
         currentPlayer.play()
       }
     })
 
     return () => subscription.remove()
-  }, [currentPlayer])
+  }, [currentPlayer, currentIndex, autoStart, isCurrentStepImage])
 
+  // Video playing change listener
   useEffect(() => {
+    if (isCurrentStepImage) return
+
     const subscription = currentPlayer.addListener("playingChange", (status: any) => {
       if (!status.isPlaying && currentPlayer.currentTime >= currentPlayer.duration - 0.1) {
-        if (video.transition) {
-          handleNext()
+        if (step.transition) {
+          handleNext(false)
           return
         }
-        if (playCount < (video.playCount - 1)) {
+        if (step.type === "video" && playCount < step.playCount - 1) {
           setShowNextButton(true)
           setPlayCount(prev => prev + 1)
           currentPlayer.currentTime = 0
           currentPlayer.play()
         } else {
-          // Played the last time, now stop
           setShowReplayButton(true)
           setShowNextButton(true)
         }
       }
     })
 
-    return () => {
-      subscription.remove()
-    }
-  }, [currentPlayer, video, handleNext, playCount])
+    return () => subscription.remove()
+  }, [currentPlayer, step, handleNext, playCount, isCurrentStepImage])
 
   const handleReplay = useCallback(() => {
-    setShowReplayButton(false)
-    setPlayCount(0)
-    currentPlayer.currentTime = 0
-    currentPlayer.play()
-  }, [currentPlayer])
+    if (isCurrentStepVideo) {
+      setShowReplayButton(false)
+      setPlayCount(0)
+      currentPlayer.currentTime = 0
+      currentPlayer.play()
+    }
+  }, [currentPlayer, isCurrentStepVideo])
 
   const handleStart = useCallback(() => {
     setHasStarted(true)
-    currentPlayer.play()
-  }, [currentPlayer])
-
+    if (isCurrentStepVideo) {
+      currentPlayer.play()
+    }
+  }, [currentPlayer, isCurrentStepVideo])
 
   const renderBullets = useCallback((bullets: string[]) => {
     return (
@@ -254,8 +361,8 @@ export function OnboardingGuide({steps, showSkipButton = true, autoStart = false
         <View id="top" className="flex">
           {hasStarted && (
             <View className="flex">
-              {video.title ? (
-                <Text className="text-center text-2xl font-semibold" text={video.title} />
+              {step.title ? (
+                <Text className="text-center text-2xl font-semibold" text={step.title} />
               ) : (
                 <Text className="text-center text-2xl font-semibold" text="" />
               )}
@@ -263,58 +370,65 @@ export function OnboardingGuide({steps, showSkipButton = true, autoStart = false
           )}
 
           <View className="-mx-6">
-            <View className="relative">
-              <View className="relative" style={{width: "100%", aspectRatio: 1}}>
-                <VideoView
-                  player={player1}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: isPlayer1 ? 1 : 0,
-                    // borderColor: theme.colors.chart_2,
-                    // borderWidth: 3,
-                    // borderRadius: 10,
-                  }}
-                  nativeControls={false}
-                />
-                <VideoView
-                  player={player2}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: isPlayer1 ? 0 : 1,
-                    // borderColor: theme.colors.chart_4,
-                    // borderWidth: 3,
-                    // borderRadius: 10,
-                  }}
-                  nativeControls={false}
-                />
-              </View>
-
-              {showReplayButton && (
-                <View className="absolute bottom-8 left-0 right-0 items-center z-10">
-                  <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
+            <View className="relative" style={{width: "100%", aspectRatio: 1}}>
+              {isCurrentStepImage ? (
+                <View style={step.imageContainerStyle}>
+                  <Image
+                    source={step.source}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                    contentFit="contain"
+                  />
                 </View>
+              ) : (
+                <>
+                  <VideoView
+                    player={player1}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      zIndex: activePlayer === 1 ? 1 : 0,
+                    }}
+                    nativeControls={false}
+                  />
+                  <VideoView
+                    player={player2}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      zIndex: activePlayer === 1 ? 0 : 1,
+                    }}
+                    nativeControls={false}
+                  />
+                </>
               )}
             </View>
+
+            {showReplayButton && isCurrentStepVideo && (
+              <View className="absolute bottom-8 left-0 right-0 items-center z-10">
+                <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
+              </View>
+            )}
           </View>
 
           {hasStarted && (
             <View className="flex flex-col gap-2 mt-4">
-              {video.subtitle && <Text className="text-center text-xl font-semibold" text={video.subtitle} />}
-              {video.subtitle2 && <Text className="text-center text-xl font-semibold" text={video.subtitle2} />}
-              {video.info && (
+              {step.subtitle && <Text className="text-center text-xl font-semibold" text={step.subtitle} />}
+              {step.subtitle2 && <Text className="text-center text-xl font-semibold" text={step.subtitle2} />}
+              {step.info && (
                 <View className="flex flex-row gap-2 justify-center items-center px-12">
                   <Icon name="info" size={20} color={theme.colors.muted_foreground} />
                   <Text
                     className="text-center text-sm font-medium text-muted-foreground"
-                    text={video.info}
+                    text={step.info}
                     numberOfLines={2}
                   />
                 </View>
@@ -324,16 +438,14 @@ export function OnboardingGuide({steps, showSkipButton = true, autoStart = false
         </View>
 
         <View id="bottom" className="flex justify-end flex-grow">
-          {/* <Button flexContainer preset="secondary" text="Replay" onPress={handleReplay} /> */}
-
-          {!hasStarted && (
+          {!hasStarted && (mainTitle || mainSubtitle) && (
             <View className="flex flex-col gap-2">
-              <Text className="text-center text-xl font-semibold" text="Welcome to Mentra Live" />
-              <Text className="text-center text-sm font-medium" text="Learn the basics" />
+              {mainTitle && <Text className="text-center text-xl font-semibold" text={mainTitle} />}
+              {mainSubtitle && <Text className="text-center text-sm font-medium" text={mainSubtitle} />}
             </View>
           )}
 
-          {video.bullets && (renderBullets(video.bullets))}
+          {step.bullets && renderBullets(step.bullets)}
 
           {!hasStarted && (
             <View className="flex flex-col gap-4 mt-8">

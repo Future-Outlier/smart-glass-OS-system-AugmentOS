@@ -5,6 +5,7 @@ import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/Onboardin
 // NOTE: you can't have 2 transition videos in a row or things will break:
 const steps: OnboardingStep[] = [
   {
+    type: "video",
     source: require("@assets/onboarding/live/ONB0_start_onboarding.mp4"),
     name: "Start Onboarding",
     playCount: 1,
@@ -13,18 +14,21 @@ const steps: OnboardingStep[] = [
     // info: "Learn the basics",
   },
   // {
+  //   type: "video",
   //   source: require("@assets/onboarding/live/ONB1_power_button.mp4"),
   //   name: "Power Button",
   //   loop: true,
   //   transition: false,
   // },
   // {
+  //   type: "video",
   //   source: require("@assets/onboarding/live/ONB2_pairing_successful.mp4"),
   //   name: "Pairing Successful",
   //   loop: false,
   //   transition: false,
   // },
   {
+    type: "video",
     source: require("@assets/onboarding/live/ONB4_action_button_click.mp4"),
     name: "Action Button Click",
     playCount: 2,
@@ -34,6 +38,7 @@ const steps: OnboardingStep[] = [
     info: translate("onboarding:liveLedFlashWarning"),
   },
   {
+    type: "video",
     source: require("@assets/onboarding/live/ONB5_action_button_record.mp4"),
     name: "Action Button Record",
     playCount: 2,
@@ -43,6 +48,7 @@ const steps: OnboardingStep[] = [
     info: translate("onboarding:liveLedFlashWarning"),
   },
   {
+    type: "video",
     source: require("@assets/onboarding/live/ONB5_action_button_record.mp4"),
     name: "Action Button Stop Recording",
     playCount: 2,
@@ -52,6 +58,7 @@ const steps: OnboardingStep[] = [
     info: translate("onboarding:liveLedFlashWarning"),
   },
   {
+    type: "video",
     source: require("@assets/onboarding/live/ONB6_transition_trackpad.mp4"),
     name: "Transition Trackpad",
     playCount: 1,
@@ -61,6 +68,7 @@ const steps: OnboardingStep[] = [
     subtitle: translate("onboarding:liveDoubleTapTouchpad"),
   },
   {
+    type: "video",
     source: require("@assets/onboarding/live/ONB7_trackpad_tap.mp4"),
     name: "Trackpad Tap",
     playCount: 1,
@@ -75,6 +83,7 @@ const steps: OnboardingStep[] = [
   //   transition: true,
   // },
   {
+    type: "video",
     source: require("@assets/onboarding/live/ONB8_trackpad_slide.mp4"),
     name: "Trackpad Volume Slide",
     playCount: 1,
@@ -84,6 +93,7 @@ const steps: OnboardingStep[] = [
     subtitle2: translate("onboarding:liveSwipeTouchpadDown"),
   },
   {
+    type: "video",
     source: require("@assets/onboarding/live/ONB9_trackpad_pause.mp4"),
     name: "Trackpad Pause",
     playCount: 1,
@@ -92,6 +102,7 @@ const steps: OnboardingStep[] = [
     subtitle: translate("onboarding:liveDoubleTapTouchpad"),
   },
   {
+    type: "video",
     source: require("@assets/onboarding/live/ONB10_cord.mp4"),
     name: "Cord",
     playCount: 1,
@@ -101,6 +112,7 @@ const steps: OnboardingStep[] = [
     info: translate("onboarding:liveCableInfo"),
   },
   {
+    type: "video",
     source: require("@assets/onboarding/live/ONB11_end.mp4"),
     name: "End",
     playCount: 1,
@@ -113,7 +125,10 @@ const steps: OnboardingStep[] = [
 export default function MentraLiveOnboarding() {
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-      <OnboardingGuide steps={steps} autoStart={false} />
+      <OnboardingGuide steps={steps} autoStart={false}
+      mainTitle={translate("onboarding:liveWelcomeTitle")}
+      mainSubtitle={translate("onboarding:liveWelcomeSubtitle")}
+      />
     </Screen>
   )
 }
