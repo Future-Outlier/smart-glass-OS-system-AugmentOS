@@ -189,6 +189,12 @@ const en = {
     osStartStopApps: "Start and stop apps",
     osStartStopAppsBullet1: "Tap any inactive app to start that app",
     osStartStopAppsBullet2: "Tap the X button beside an app to stop it",
+    osOpenApp: "Open an app",
+    osOpenAppBullet1: "Tap a running app to open its view",
+    osOpenAppBullet2: "Tap the top left arrow to exit the app's view",
+    osBackgroundApps: "Background apps",
+    osBackgroundAppsBullet1: "Tap the background apps button to view all background apps",
+    osBackgroundAppsBullet2: "Tap an inactive app to start it. Tap the X icon beside an app to stop it",
   },
   home: {
     title: "MentraOS",

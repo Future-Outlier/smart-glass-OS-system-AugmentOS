@@ -2,6 +2,12 @@ import {Screen} from "@/components/ignite"
 import {translate} from "@/i18n"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 
+export const unstable_settings = {
+  options: {
+    gestureEnabled: false,
+  },
+}
+
 // NOTE: you can't have 2 transition videos in a row or things will break:
 const steps: OnboardingStep[] = [
   {
@@ -10,6 +16,7 @@ const steps: OnboardingStep[] = [
     name: "Start Onboarding",
     playCount: 1,
     transition: true,
+    title: " ", // for spacing so it's consistent with the other steps
     // title: "Welcome to Mentra Live",
     // info: "Learn the basics",
   },
@@ -125,9 +132,11 @@ const steps: OnboardingStep[] = [
 export default function MentraLiveOnboarding() {
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-      <OnboardingGuide steps={steps} autoStart={false}
-      mainTitle={translate("onboarding:liveWelcomeTitle")}
-      mainSubtitle={translate("onboarding:liveWelcomeSubtitle")}
+      <OnboardingGuide
+        steps={steps}
+        autoStart={false}
+        mainTitle={translate("onboarding:liveWelcomeTitle")}
+        mainSubtitle={translate("onboarding:liveWelcomeSubtitle")}
       />
     </Screen>
   )

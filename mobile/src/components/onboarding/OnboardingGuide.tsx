@@ -1,7 +1,7 @@
 import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
 import {useState, useCallback, useEffect, useMemo} from "react"
-import {ImageStyle, View, ViewStyle} from "react-native"
+import {BackHandler, ImageStyle, Platform, View, ViewStyle} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text} from "@/components/ignite"
@@ -29,6 +29,7 @@ interface ImageStep extends BaseStep {
   type: "image"
   source: ImageSource
   imageContainerStyle?: ViewStyle
+  imageContainerClassName?: string
   //   imageComponent: React.ComponentType
   duration?: number // ms before showing next button, undefined = immediate
 }
@@ -345,6 +346,15 @@ export function OnboardingGuide({
     )
   }, [])
 
+  // disable android back button:
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      BackHandler.addEventListener("hardwareBackPress", () => {
+        return true
+      })
+    }
+  }, [])
+
   return (
     <>
       <Header
@@ -359,20 +369,12 @@ export function OnboardingGuide({
       />
       <View id="main" className="flex flex-1">
         <View id="top" className="flex">
-          {hasStarted && (
-            <View className="flex">
-              {step.title ? (
-                <Text className="text-center text-2xl font-semibold" text={step.title} />
-              ) : (
-                <Text className="text-center text-2xl font-semibold" text="" />
-              )}
-            </View>
-          )}
+          {step.title && <Text className="text-center text-2xl font-semibold" text={step.title} />}
 
           <View className="-mx-6">
             <View className="relative" style={{width: "100%", aspectRatio: 1}}>
               {isCurrentStepImage ? (
-                <View style={step.imageContainerStyle}>
+                <View style={step.imageContainerStyle} className={step.imageContainerClassName}>
                   <Image
                     source={step.source}
                     style={{
@@ -450,7 +452,9 @@ export function OnboardingGuide({
           {!hasStarted && (
             <View className="flex flex-col gap-4 mt-8">
               <Button flexContainer tx="onboarding:continueOnboarding" onPress={handleStart} />
-              <Button flexContainer preset="secondary" tx="common:skip" onPress={clearHistoryAndGoHome} />
+              {showSkipButton && (
+                <Button flexContainer preset="secondary" tx="common:skip" onPress={clearHistoryAndGoHome} />
+              )}
             </View>
           )}
 

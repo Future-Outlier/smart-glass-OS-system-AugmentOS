@@ -7,8 +7,9 @@ import {spacing} from "@/theme"
 const steps: OnboardingStep[] = [
   {
     type: "image",
-    name: "Start Onboarding",
-    source: require("@assets/glasses/g1.png"),
+    name: "Start and stop apps",
+    source: require("@assets/onboarding/os/start_app.png"),
+    imageContainerClassName: "bg-input pt-11 mx-6 rounded-lg",
     imageContainerStyle: {
       paddingHorizontal: spacing.s6,
     },
@@ -20,13 +21,44 @@ const steps: OnboardingStep[] = [
     ],
   },
   {
+    type: "image",
+    name: "Open an app",
+    source: require("@assets/onboarding/os/start_app.png"),
+    imageContainerClassName: "bg-input pt-11 mx-6 rounded-lg",
+    imageContainerStyle: {
+      // backgroundColor: colors.background,
+      paddingHorizontal: spacing.s6,
+    },
+    transition: false,
+    bullets: [
+      translate("onboarding:osOpenApp"),
+      translate("onboarding:osOpenAppBullet1"),
+      translate("onboarding:osOpenAppBullet2"),
+    ],
+  },
+  {
+    type: "image",
+    name: "Background apps",
+    source: require("@assets/onboarding/os/start_app.png"),
+    imageContainerClassName: "bg-input pt-11 mx-6 rounded-lg",
+    imageContainerStyle: {
+      paddingHorizontal: spacing.s6,
+    },
+    transition: false,
+    bullets: [
+      translate("onboarding:osBackgroundApps"),
+      translate("onboarding:osBackgroundAppsBullet1"),
+      translate("onboarding:osBackgroundAppsBullet2"),
+    ],
+  },
+  {
     type: "video",
     name: "Action Button Click",
     source: require("@assets/onboarding/live/ONB4_action_button_click.mp4"),
     playCount: 1,
     transition: false,
     bullets: [
-      translate("onboarding:osStartStopApps"),
+      translate("onboarding:osOpenApp"),
       translate("onboarding:osStartStopAppsBullet1"),
       translate("onboarding:osStartStopAppsBullet2"),
     ],
@@ -76,7 +108,7 @@ const steps: OnboardingStep[] = [
 export default function MentraOSOnboarding() {
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-      <OnboardingGuide steps={steps} autoStart={true} />
+      <OnboardingGuide steps={steps} autoStart={true} showSkipButton={false} />
     </Screen>
   )
 }

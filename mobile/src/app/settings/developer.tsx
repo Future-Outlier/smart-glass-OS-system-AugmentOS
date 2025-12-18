@@ -16,7 +16,7 @@ import {ThemedStyle} from "@/theme"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
-  const {goBack, push} = useNavigationHistory()
+  const {goBack, push, replace, clearHistoryAndGoHome} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
   const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS.power_saving_mode.key)
@@ -75,7 +75,10 @@ export default function DeveloperSettingsScreen() {
           <RouteButton
             label="Mentra Live Onboarding"
             subtitle="Start the Mentra Live onboarding"
-            onPress={() => push("/onboarding/live")}
+            onPress={() => {
+              clearHistoryAndGoHome()
+              replace("/onboarding/live")
+            }}
           />
 
           <RouteButton
