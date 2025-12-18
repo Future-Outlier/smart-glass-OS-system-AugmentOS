@@ -16,7 +16,7 @@ import {ThemedStyle} from "@/theme"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
-  const {goBack, push} = useNavigationHistory()
+  const {goBack, push, replace, clearHistoryAndGoHome} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
   const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS.power_saving_mode.key)
@@ -27,8 +27,6 @@ export default function DeveloperSettingsScreen() {
   return (
     <Screen preset="fixed">
       <Header title="Developer Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
-
-      <Spacer height={theme.spacing.s4} />
 
       <ScrollView
         style={{
@@ -77,7 +75,16 @@ export default function DeveloperSettingsScreen() {
           <RouteButton
             label="Mentra Live Onboarding"
             subtitle="Start the Mentra Live onboarding"
-            onPress={() => push("/onboarding/live/start")}
+            onPress={() => {
+              clearHistoryAndGoHome()
+              replace("/onboarding/live")
+            }}
+          />
+
+          <RouteButton
+            label="Mentra OS Onboarding"
+            subtitle="Start the Mentra Live onboarding"
+            onPress={() => push("/onboarding/os")}
           />
 
           <RouteButton label="Sitemap" subtitle="View the app's route map" onPress={() => push("/_sitemap")} />
