@@ -75,7 +75,13 @@ export default function DeveloperSettingsScreen() {
           <RouteButton
             label="Mentra Live Onboarding"
             subtitle="Start the Mentra Live onboarding"
-            onPress={() => push("/onboarding/live/start")}
+            onPress={() => push("/onboarding/live")}
+          />
+
+          <RouteButton
+            label="Mentra OS Onboarding"
+            subtitle="Start the Mentra Live onboarding"
+            onPress={() => push("/onboarding/os")}
           />
 
           <RouteButton label="Sitemap" subtitle="View the app's route map" onPress={() => push("/_sitemap")} />

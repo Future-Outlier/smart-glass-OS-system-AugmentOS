@@ -184,6 +184,9 @@ const en = {
     liveCableInfo: "The cable allows you to use Mentra Live while it charges",
     liveEndTitle: "Great job!",
     liveEndMessage: "That's the basics. Now let's set up some advanced features",
+    osStartStopApps: "Start and stop apps",
+    osStartStopAppsBullet1: "Tap any inactive app to start that app",
+    osStartStopAppsBullet2: "Tap the X button beside an app to stop it",
   },
   home: {
     title: "MentraOS",

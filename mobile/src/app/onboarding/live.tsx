@@ -1,31 +1,13 @@
-import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
-import {useState, useCallback, useEffect} from "react"
-import {View} from "react-native"
-
-import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {Text} from "@/components/ignite"
-import {Button, Header, Icon, Screen} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/contexts/ThemeContext"
+import {Screen} from "@/components/ignite"
 import {translate} from "@/i18n"
-
-interface OnboardingVideo {
-  source: VideoSource
-  loop: boolean
-  name: string
-  transition: boolean
-  title?: string
-  subtitle?: string
-  subtitle2?: string
-  info?: string
-}
+import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 
 // NOTE: you can't have 2 transition videos in a row or things will break:
-const videoFiles: OnboardingVideo[] = [
+const steps: OnboardingStep[] = [
   {
     source: require("@assets/onboarding/live/ONB0_start_onboarding.mp4"),
     name: "Start Onboarding",
-    loop: false,
+    playCount: 1,
     transition: true,
     // title: "Welcome to Mentra Live",
     // info: "Learn the basics",
@@ -45,7 +27,7 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("@assets/onboarding/live/ONB4_action_button_click.mp4"),
     name: "Action Button Click",
-    loop: true,
+    playCount: 2,
     transition: false,
     title: translate("onboarding:liveTakeAPhoto"),
     subtitle: translate("onboarding:livePressActionButton"),
@@ -54,7 +36,7 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("@assets/onboarding/live/ONB5_action_button_record.mp4"),
     name: "Action Button Record",
-    loop: true,
+    playCount: 2,
     transition: false,
     title: translate("onboarding:liveStartRecording"),
     subtitle: translate("onboarding:livePressAndHold"),
@@ -63,7 +45,7 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("@assets/onboarding/live/ONB5_action_button_record.mp4"),
     name: "Action Button Stop Recording",
-    loop: true,
+    playCount: 2,
     transition: false,
     title: translate("onboarding:liveStopRecording"),
     subtitle: translate("onboarding:livePressAndHoldAgain"),
@@ -72,7 +54,7 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("@assets/onboarding/live/ONB6_transition_trackpad.mp4"),
     name: "Transition Trackpad",
-    loop: false,
+    playCount: 1,
     transition: true,
     // show next slide's title and subtitle:
     title: translate("onboarding:livePlayMusic"),
@@ -81,7 +63,7 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("@assets/onboarding/live/ONB7_trackpad_tap.mp4"),
     name: "Trackpad Tap",
-    loop: true,
+    playCount: 1,
     transition: false,
     title: translate("onboarding:livePlayMusic"),
     subtitle: translate("onboarding:liveDoubleTapTouchpad"),
@@ -95,7 +77,7 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("@assets/onboarding/live/ONB8_trackpad_slide.mp4"),
     name: "Trackpad Volume Slide",
-    loop: true,
+    playCount: 1,
     transition: false,
     title: translate("onboarding:liveAdjustVolume"),
     subtitle: translate("onboarding:liveSwipeTouchpadUp"),
@@ -104,7 +86,7 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("@assets/onboarding/live/ONB9_trackpad_pause.mp4"),
     name: "Trackpad Pause",
-    loop: true,
+    playCount: 1,
     transition: false,
     title: translate("onboarding:livePauseMusic"),
     subtitle: translate("onboarding:liveDoubleTapTouchpad"),
@@ -112,7 +94,7 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("@assets/onboarding/live/ONB10_cord.mp4"),
     name: "Cord",
-    loop: false,
+    playCount: 1,
     transition: false,
     title: translate("onboarding:liveConnectCable"),
     subtitle: translate("onboarding:liveCableDescription"),
@@ -121,325 +103,17 @@ const videoFiles: OnboardingVideo[] = [
   {
     source: require("@assets/onboarding/live/ONB11_end.mp4"),
     name: "End",
-    loop: false,
+    playCount: 1,
     transition: false,
     subtitle: translate("onboarding:liveEndTitle"),
     subtitle2: translate("onboarding:liveEndMessage"),
   },
 ]
 
-export default function Onboarding1() {
-  const {clearHistoryAndGoHome} = useNavigationHistory()
-  const {theme} = useAppTheme()
-
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [showNextButton, setShowNextButton] = useState(false)
-  const [showReplayButton, setShowReplayButton] = useState(false)
-  const [hasStarted, setHasStarted] = useState(false)
-  const [playCount, setPlayCount] = useState(0)
-  const [transitionCount, setTransitionCount] = useState(0)
-  const [uiIndex, setUiIndex] = useState(1)
-
-  const player1: VideoPlayer = useVideoPlayer(videoFiles[0].source, (player: any) => {
-    player.loop = false
-    player.audioMixingMode = "mixWithOthers"
-  })
-  const player2: VideoPlayer = useVideoPlayer(videoFiles[1].source, (player: any) => {
-    player.loop = false
-    player.audioMixingMode = "mixWithOthers"
-  })
-  const [currentPlayer, setCurrentPlayer] = useState(player1)
-
-  // don't count transition videos:
-  const nonTransitionVideoFiles = videoFiles.filter(video => !video.transition)
-  const counter = `${uiIndex} / ${nonTransitionVideoFiles.length}`
-  const video = videoFiles[currentIndex]
-  const isPlayer1 = currentPlayer == player1
-
-  const handleNext = useCallback(
-    (manual: boolean = false) => {
-      console.log(`ONBOARD: handleNext(${manual})`)
-
-      if (currentIndex == videoFiles.length - 1) {
-        // go back to home screen
-        clearHistoryAndGoHome()
-        return
-      }
-
-      if (manual) {
-        setUiIndex(uiIndex + 1)
-      }
-
-      const nextIndex = currentIndex < videoFiles.length - 1 ? currentIndex + 1 : 0
-      const nextNextIndex = nextIndex < videoFiles.length - 1 ? nextIndex + 1 : 0
-      console.log(`ONBOARD: current: ${currentIndex} next: ${nextIndex}`)
-      console.log(`ONBOARD: currentPlayer: ${currentPlayer == player1 ? "player1" : "player2"}`)
-
-      setShowNextButton(false)
-      setShowReplayButton(false)
-
-      if (currentPlayer === player1) {
-        setCurrentPlayer(player2)
-        player2.play()
-        player1.replace(videoFiles[nextNextIndex].source)
-        player1.pause()
-      } else if (currentPlayer === player2) {
-        setCurrentPlayer(player1)
-        player1.play()
-        player2.replace(videoFiles[nextNextIndex].source)
-        player2.pause()
-      }
-
-      if (videoFiles[nextIndex].transition) {
-        setTransitionCount(transitionCount + 1)
-      }
-
-      setCurrentIndex(nextIndex)
-      setPlayCount(0)
-
-      console.log(`ONBOARD: current is now ${nextIndex}`)
-    },
-    [currentIndex, currentPlayer],
-  )
-
-  const handleBack = useCallback(() => {
-    setUiIndex(uiIndex - 1)
-    setPlayCount(0)
-
-    // the start is a special case:
-    if (currentIndex === 0 || currentIndex === 1) {
-      setHasStarted(false)
-      setCurrentIndex(0)
-      setCurrentPlayer(player1)
-      setShowReplayButton(false)
-      setShowNextButton(false)
-      setUiIndex(1)
-      player1.replace(videoFiles[0].source)
-      player1.currentTime = 0
-      player1.pause()
-      player2.replace(videoFiles[1].source)
-      player2.currentTime = 0
-      player2.pause()
-      return
-    }
-
-    // if the previous index is a transition, we need to go back two indices
-    let prevIndex = currentIndex - 1
-    let doubleBack = false
-    if (videoFiles[prevIndex].transition) {
-      prevIndex = currentIndex - 2
-      doubleBack = true
-    }
-
-    if (prevIndex < 0) {
-      prevIndex = 0
-    }
-    let newCurrent = prevIndex + 1
-
-    setCurrentIndex(prevIndex)
-    setShowReplayButton(true)
-    setShowNextButton(true)
-
-    // if (prevIndex === 0) {
-    //   console.log(`ONBOARD: going back to start`)
-    //   setHasStarted(false)
-    // }
-
-    if (doubleBack) {
-      if (currentPlayer === player1) {
-        player1.replace(videoFiles[prevIndex].source)
-        player2.replace(videoFiles[newCurrent].source)
-        player1.pause()
-      } else if (currentPlayer === player2) {
-        player2.replace(videoFiles[prevIndex].source)
-        player1.replace(videoFiles[newCurrent].source)
-        player2.pause()
-      }
-      return
-    }
-
-    if (currentPlayer === player1) {
-      setCurrentPlayer(player2)
-      player2.replace(videoFiles[prevIndex].source)
-      player1.replace(videoFiles[newCurrent].source)
-      player2.pause()
-    } else if (currentPlayer === player2) {
-      setCurrentPlayer(player1)
-      player1.replace(videoFiles[prevIndex].source)
-      player2.replace(videoFiles[newCurrent].source)
-      player1.pause()
-    }
-  }, [uiIndex])
-
-  // useEffect(() => {
-  //   const subscription = currentPlayer.addListener("statusChange", (status: any) => {
-  //     console.log("statusChange", status)
-  //     if (currentIndex === 0) {
-  //       // we don't auto play the first video
-  //       return
-  //     }
-  //     // console.log(`ONBOARD: auto playing@@@@@@@@@@@@@@@@@@@@@@@`)
-  //     if (status.status === "readyToPlay") {
-  //       currentPlayer.play()
-  //     }
-  //   })
-
-  //   return () => subscription.remove()
-  // }, [currentPlayer])
-
-  useEffect(() => {
-    const subscription = currentPlayer.addListener("playingChange", (status: any) => {
-      if (!status.isPlaying && currentPlayer.currentTime >= currentPlayer.duration - 0.1) {
-        if (video.transition) {
-          handleNext()
-          return
-        }
-        if (playCount < 1 && video.loop) {
-          setShowNextButton(true)
-          setPlayCount(prev => prev + 1)
-          currentPlayer.currentTime = 0
-          currentPlayer.play()
-        } else {
-          // Played twice, now stop
-          setShowReplayButton(true)
-          setShowNextButton(true)
-        }
-      }
-    })
-
-    return () => {
-      subscription.remove()
-    }
-  }, [currentPlayer, video, handleNext, playCount])
-
-  const handleReplay = useCallback(() => {
-    setShowReplayButton(false)
-    setPlayCount(0)
-    currentPlayer.currentTime = 0
-    currentPlayer.play()
-  }, [currentPlayer])
-
-  const handleStart = useCallback(() => {
-    setHasStarted(true)
-    currentPlayer.play()
-  }, [currentPlayer])
-
+export default function MentraLiveOnboarding() {
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-      <Header
-        leftIcon="x"
-        RightActionComponent={
-          <View className="flex flex-row gap-2">
-            {hasStarted && <Text className="text-center text-sm font-medium" text={counter} />}
-            <MentraLogoStandalone />
-          </View>
-        }
-        onLeftPress={() => clearHistoryAndGoHome()}
-      />
-      <View id="main" className="flex flex-1">
-        <View id="top" className="flex">
-          {hasStarted && (
-            <View className="flex">
-              {video.title ? (
-                <Text className="text-center text-2xl font-semibold" text={video.title} />
-              ) : (
-                <Text className="text-center text-2xl font-semibold" text="" />
-              )}
-            </View>
-          )}
-
-          <View className="-mx-6">
-            <View className="relative">
-              <View className="relative" style={{width: "100%", aspectRatio: 1}}>
-                <VideoView
-                  player={player1}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: isPlayer1 ? 1 : 0,
-                    // borderColor: theme.colors.chart_2,
-                    // borderWidth: 3,
-                    // borderRadius: 10,
-                  }}
-                  nativeControls={false}
-                />
-                <VideoView
-                  player={player2}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: isPlayer1 ? 0 : 1,
-                    // borderColor: theme.colors.chart_4,
-                    // borderWidth: 3,
-                    // borderRadius: 10,
-                  }}
-                  nativeControls={false}
-                />
-              </View>
-
-              {showReplayButton && (
-                <View className="absolute bottom-8 left-0 right-0 items-center z-10">
-                  <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
-                </View>
-              )}
-            </View>
-          </View>
-
-          {hasStarted && (
-            <View className="flex flex-col gap-2 mt-4">
-              {video.subtitle && <Text className="text-center text-xl font-semibold" text={video.subtitle} />}
-              {video.subtitle2 && <Text className="text-center text-xl font-semibold" text={video.subtitle2} />}
-              {video.info && (
-                <View className="flex flex-row gap-2 justify-center items-center px-12">
-                  <Icon name="info" size={20} color={theme.colors.muted_foreground} />
-                  <Text
-                    className="text-center text-sm font-medium text-muted-foreground"
-                    text={video.info}
-                    numberOfLines={2}
-                  />
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-
-        <View id="bottom" className="flex justify-end flex-grow">
-          {/* <Button flexContainer preset="secondary" text="Replay" onPress={handleReplay} /> */}
-
-          {!hasStarted && (
-            <View className="flex flex-col gap-2">
-              <Text className="text-center text-xl font-semibold" text="Welcome to Mentra Live" />
-              <Text className="text-center text-sm font-medium" text="Learn the basics" />
-            </View>
-          )}
-
-          {!hasStarted && (
-            <View className="flex flex-col gap-4 mt-8">
-              <Button flexContainer tx="onboarding:continueOnboarding" onPress={handleStart} />
-              <Button flexContainer preset="secondary" tx="common:skip" onPress={clearHistoryAndGoHome} />
-            </View>
-          )}
-
-          {hasStarted && showNextButton && (
-            <View className="flex flex-col gap-4">
-              <Button
-                flexContainer
-                tx="common:continue"
-                onPress={() => {
-                  handleNext(true)
-                }}
-              />
-              <Button flexContainer preset="secondary" text="Back" onPress={handleBack} />
-            </View>
-          )}
-        </View>
-      </View>
+      <OnboardingGuide steps={steps} autoStart={false} />
     </Screen>
   )
 }
