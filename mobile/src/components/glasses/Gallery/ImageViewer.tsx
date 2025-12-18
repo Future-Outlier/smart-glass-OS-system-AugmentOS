@@ -31,13 +31,14 @@ interface ImageViewerProps {
   photo: PhotoInfo | null
   onClose: () => void
   onShare?: () => void
+  isEmbedded?: boolean // When true, renders without Modal wrapper
 }
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get("window")
 const DISMISS_THRESHOLD = 150 // Vertical distance to trigger dismiss
 const VELOCITY_THRESHOLD = 500 // Velocity to trigger dismiss regardless of distance
 
-export function ImageViewer({visible, photo, onClose, onShare}: ImageViewerProps) {
+export function ImageViewer({visible, photo, onClose, onShare, isEmbedded = false}: ImageViewerProps) {
   const insets = useSafeAreaInsets()
   const [showHeader, setShowHeader] = useState(true)
 
@@ -202,39 +203,49 @@ export function ImageViewer({visible, photo, onClose, onShare}: ImageViewerProps
     dismissGesture,
   )
 
+  // Render content without Modal wrapper when embedded
+  const content = (
+    <GestureHandlerRootView style={$container}>
+      {!isEmbedded && <StatusBar hidden={!showHeader} />}
+
+      {/* Animated Background */}
+      <AnimatedView style={[$background, animatedBackgroundStyle]} />
+
+      {/* Image */}
+      <GestureDetector gesture={composed}>
+        <AnimatedImage
+          source={{uri: imageUri}}
+          style={[$image, animatedImageStyle]}
+          contentFit="contain"
+          transition={200}
+        />
+      </GestureDetector>
+
+      {/* Header - only show when not embedded (parent handles header) */}
+      {!isEmbedded && showHeader && (
+        <View style={[$header, {paddingTop: insets.top}]}>
+          <TouchableOpacity onPress={onClose} style={$closeButton}>
+            <MaterialCommunityIcons name="chevron-left" size={32} color="white" />
+          </TouchableOpacity>
+          <View style={{flex: 1}} />
+          {onShare && (
+            <TouchableOpacity onPress={onShare} style={$actionButton}>
+              <MaterialCommunityIcons name="share-variant" size={24} color="white" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+    </GestureHandlerRootView>
+  )
+
+  // Return content with or without Modal wrapper
+  if (isEmbedded) {
+    return content
+  }
+
   return (
     <Modal visible={visible} transparent={false} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <GestureHandlerRootView style={$container}>
-        <StatusBar hidden={!showHeader} />
-
-        {/* Animated Background */}
-        <AnimatedView style={[$background, animatedBackgroundStyle]} />
-
-        {/* Image */}
-        <GestureDetector gesture={composed}>
-          <AnimatedImage
-            source={{uri: imageUri}}
-            style={[$image, animatedImageStyle]}
-            contentFit="contain"
-            transition={200}
-          />
-        </GestureDetector>
-
-        {/* Header */}
-        {showHeader && (
-          <View style={[$header, {paddingTop: insets.top}]}>
-            <TouchableOpacity onPress={onClose} style={$closeButton}>
-              <MaterialCommunityIcons name="chevron-left" size={32} color="white" />
-            </TouchableOpacity>
-            <View style={{flex: 1}} />
-            {onShare && (
-              <TouchableOpacity onPress={onShare} style={$actionButton}>
-                <MaterialCommunityIcons name="share-variant" size={24} color="white" />
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </GestureHandlerRootView>
+      {content}
     </Modal>
   )
 }

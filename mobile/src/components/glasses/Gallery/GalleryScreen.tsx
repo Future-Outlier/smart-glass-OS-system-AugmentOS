@@ -96,6 +96,7 @@ export function GalleryScreen() {
   // Data state
   const [downloadedPhotos, setDownloadedPhotos] = useState<PhotoInfo[]>([])
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoInfo | null>(null)
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number>(0)
 
   // Photo sync states for UI (progress rings on thumbnails)
   const [photoSyncStates, setPhotoSyncStates] = useState<
@@ -260,6 +261,7 @@ export function GalleryScreen() {
       return
     }
     setSelectedPhoto(item.photo)
+    setSelectedPhotoIndex(item.index)
   }
 
   // Toggle photo selection
@@ -886,6 +888,8 @@ export function GalleryScreen() {
         <MediaViewer
           visible={!!selectedPhoto}
           photo={selectedPhoto}
+          photos={allPhotos.map(item => item.photo).filter((p): p is PhotoInfo => p !== undefined)}
+          initialIndex={selectedPhotoIndex}
           onClose={() => setSelectedPhoto(null)}
           // onShare={() => selectedPhoto && handleSharePhoto(selectedPhoto)}
         />
