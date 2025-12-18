@@ -20,10 +20,12 @@ import {
   ViewToken,
 } from "react-native"
 import RNFS from "react-native-fs"
+import {useSharedValue, withTiming, runOnJS} from "react-native-reanimated"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 import {useShallow} from "zustand/react/shallow"
 
+import {FloatingImageLayer} from "@/components/glasses/Gallery/FloatingImageLayer"
 import {MediaViewer} from "@/components/glasses/Gallery/MediaViewer"
 import {PhotoImage} from "@/components/glasses/Gallery/PhotoImage"
 import {ProgressRing} from "@/components/glasses/Gallery/ProgressRing"
@@ -59,6 +61,24 @@ interface GalleryItem {
   isOnServer?: boolean
 }
 
+// Floating transition types
+interface SourceFrame {
+  x: number
+  y: number
+  width: number
+  height: number
+  photoName: string
+}
+
+type TransitionPhase = "idle" | "opening" | "fullscreen" | "dragging" | "dismissing"
+
+interface TransitionState {
+  phase: TransitionPhase
+  activePhoto: PhotoInfo | null
+  sourceFrame: SourceFrame | null
+  progress: number
+}
+
 export function GalleryScreen() {
   const {goBack, push} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
@@ -66,6 +86,7 @@ export function GalleryScreen() {
 
   // Column calculation - 3 per row like Google Photos / Apple Photos
   const screenWidth = Dimensions.get("window").width
+  const screenHeight = Dimensions.get("window").height
   const ITEM_SPACING = 2 // Minimal spacing between items (1-2px hairline)
   const numColumns = screenWidth < 320 ? 2 : 3 // 2 columns for very small screens, otherwise 3
   const itemWidth = (screenWidth - ITEM_SPACING * (numColumns - 1)) / numColumns
@@ -97,6 +118,25 @@ export function GalleryScreen() {
   const [downloadedPhotos, setDownloadedPhotos] = useState<PhotoInfo[]>([])
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoInfo | null>(null)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number>(0)
+
+  // Floating transition state
+  const [sourceFrames, setSourceFrames] = useState<Map<string, SourceFrame>>(new Map())
+  const [hiddenPhotoName, setHiddenPhotoName] = useState<string | null>(null)
+  const [transitionState, setTransitionState] = useState<TransitionState>({
+    phase: "idle",
+    activePhoto: null,
+    sourceFrame: null,
+    progress: 0,
+  })
+
+  // Animated values for floating image
+  const floatingX = useSharedValue(0)
+  const floatingY = useSharedValue(0)
+  const floatingWidth = useSharedValue(0)
+  const floatingHeight = useSharedValue(0)
+  const floatingOpacity = useSharedValue(0)
+  const floatingBorderRadius = useSharedValue(8)
+  const floatingBackgroundOpacity = useSharedValue(0)
 
   // Photo sync states for UI (progress rings on thumbnails)
   const [photoSyncStates, setPhotoSyncStates] = useState<
@@ -236,7 +276,79 @@ export function GalleryScreen() {
     }
   }, [syncState, loadDownloadedPhotos])
 
-  // Handle photo selection
+  // Calculate fullscreen frame with aspect-fit
+  const calculateFullscreenFrame = useCallback(
+    (_photo: PhotoInfo): {x: number; y: number; width: number; height: number} => {
+      // Default to 4:3 aspect ratio for images
+      // For exact aspect ratio, we'd need to load image dimensions first
+      const aspectRatio = 4 / 3
+
+      let width = screenWidth
+      let height = screenWidth / aspectRatio
+
+      if (height > screenHeight) {
+        height = screenHeight
+        width = height * aspectRatio
+      }
+
+      return {
+        x: (screenWidth - width) / 2,
+        y: (screenHeight - height) / 2,
+        width,
+        height,
+      }
+    },
+    [screenWidth, screenHeight],
+  )
+
+  // Handle dismiss animation (fullscreen → grid)
+  const handleDismiss = useCallback(() => {
+    const {sourceFrame} = transitionState
+    if (!sourceFrame) return
+
+    console.log("[GalleryScreen] Starting dismiss animation to source frame:", sourceFrame)
+
+    // Update state
+    setTransitionState(prev => ({...prev, phase: "dismissing"}))
+
+    // Cleanup function to run after animation
+    const cleanupAfterDismiss = () => {
+      console.log("[GalleryScreen] Dismiss animation complete - cleaning up")
+      setTransitionState({
+        phase: "idle",
+        activePhoto: null,
+        sourceFrame: null,
+        progress: 0,
+      })
+      setHiddenPhotoName(null) // Show grid thumbnail again
+      setSelectedPhoto(null)
+    }
+
+    // Animate back to source frame - use timing for precise motion
+    const timingConfig = {duration: 300}
+    floatingX.value = withTiming(sourceFrame.x, timingConfig)
+    floatingY.value = withTiming(sourceFrame.y, timingConfig)
+    floatingWidth.value = withTiming(sourceFrame.width, timingConfig)
+    floatingHeight.value = withTiming(sourceFrame.height, timingConfig)
+    floatingBorderRadius.value = withTiming(8, timingConfig)
+    floatingBackgroundOpacity.value = withTiming(0, timingConfig)
+    floatingOpacity.value = withTiming(0, timingConfig, finished => {
+      if (finished) {
+        runOnJS(cleanupAfterDismiss)()
+      }
+    })
+  }, [
+    transitionState,
+    floatingX,
+    floatingY,
+    floatingWidth,
+    floatingHeight,
+    floatingBorderRadius,
+    floatingBackgroundOpacity,
+    floatingOpacity,
+  ])
+
+  // Handle photo selection with floating transition
   const handlePhotoPress = (item: GalleryItem) => {
     if (!item.photo) return
 
@@ -252,7 +364,6 @@ export function GalleryScreen() {
       console.log(`[GalleryScreen] Photo ${item.photo.name} is being synced, preventing open`)
       return
     }
-    // Allow opening photos with status "completed" - they're already downloaded and accessible
 
     if (item.photo.is_video && item.isOnServer) {
       showAlert("Video Not Downloaded", "Please sync this video to your device to watch it", [
@@ -260,8 +371,64 @@ export function GalleryScreen() {
       ])
       return
     }
-    setSelectedPhoto(item.photo)
-    setSelectedPhotoIndex(item.index)
+
+    // Get source frame for this thumbnail
+    const sourceFrame = sourceFrames.get(item.photo.name)
+    if (!sourceFrame) {
+      console.warn("[GalleryScreen] Source frame not measured yet for:", item.photo.name)
+      // Fallback to old modal-based viewer
+      setSelectedPhoto(item.photo)
+      setSelectedPhotoIndex(item.index)
+      return
+    }
+
+    console.log("[GalleryScreen] Starting transition from source frame:", sourceFrame)
+
+    // Calculate destination frame (fullscreen, aspect-fit)
+    const destFrame = calculateFullscreenFrame(item.photo)
+
+    // Set initial position (at grid thumbnail)
+    floatingX.value = sourceFrame.x
+    floatingY.value = sourceFrame.y
+    floatingWidth.value = sourceFrame.width
+    floatingHeight.value = sourceFrame.height
+    floatingOpacity.value = 1
+    floatingBorderRadius.value = 8
+    floatingBackgroundOpacity.value = 0
+
+    // Update state to show floating layer
+    setTransitionState({
+      phase: "opening",
+      activePhoto: item.photo,
+      sourceFrame,
+      progress: 0,
+    })
+
+    // Hide the grid thumbnail (so it doesn't show underneath)
+    setHiddenPhotoName(item.photo.name)
+
+    // Completion function for opening animation
+    const completeOpenAnimation = () => {
+      console.log("[GalleryScreen] Open animation complete - now in fullscreen")
+      setTransitionState(prev => ({
+        ...prev,
+        phase: "fullscreen",
+        progress: 1,
+      }))
+    }
+
+    // Animate to fullscreen - use timing for precise, no-bounce motion
+    const timingConfig = {duration: 300}
+    floatingX.value = withTiming(destFrame.x, timingConfig)
+    floatingY.value = withTiming(destFrame.y, timingConfig)
+    floatingWidth.value = withTiming(destFrame.width, timingConfig)
+    floatingHeight.value = withTiming(destFrame.height, timingConfig)
+    floatingBorderRadius.value = withTiming(0, timingConfig)
+    floatingBackgroundOpacity.value = withTiming(1, timingConfig, finished => {
+      if (finished) {
+        runOnJS(completeOpenAnimation)()
+      }
+    })
   }
 
   // Toggle photo selection
@@ -467,14 +634,22 @@ export function GalleryScreen() {
           exitSelectionMode()
           return true
         }
-        if (!selectedPhoto) return false
-        setSelectedPhoto(null)
-        return true
+        // Handle floating transition dismissal
+        if (transitionState.phase !== "idle") {
+          handleDismiss()
+          return true
+        }
+        // Handle modal viewer dismissal (fallback)
+        if (selectedPhoto) {
+          setSelectedPhoto(null)
+          return true
+        }
+        return false
       }
 
       const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress)
       return () => subscription.remove()
-    }, [selectedPhoto, isSelectionMode]),
+    }, [selectedPhoto, isSelectionMode, transitionState.phase, handleDismiss]),
   )
 
   // Combine syncing photos with downloaded photos
@@ -724,7 +899,35 @@ export function GalleryScreen() {
 
     return (
       <TouchableOpacity
-        style={[themed($photoItem), {width: itemWidth}, isDownloading && themed($photoItemDisabled)]}
+        ref={ref => {
+          // Measure this thumbnail's position for transition
+          if (ref && item.photo) {
+            // Use setTimeout to ensure layout is complete
+            setTimeout(() => {
+              ref.measureInWindow((x, y, width, height) => {
+                if (x !== undefined && y !== undefined && width > 0 && height > 0) {
+                  setSourceFrames(prev => {
+                    const newMap = new Map(prev)
+                    newMap.set(item.photo!.name, {
+                      x,
+                      y,
+                      width,
+                      height,
+                      photoName: item.photo!.name,
+                    })
+                    return newMap
+                  })
+                }
+              })
+            }, 100)
+          }
+        }}
+        style={[
+          themed($photoItem),
+          {width: itemWidth},
+          isDownloading && themed($photoItemDisabled),
+          item.photo?.name === hiddenPhotoName && {opacity: 0}, // Hide during transition
+        ]}
         onPress={() => handlePhotoPress(item)}
         onLongPress={() => {
           if (item.photo && !isDownloading) {
@@ -885,14 +1088,33 @@ export function GalleryScreen() {
 
         {renderStatusBar()}
 
-        <MediaViewer
-          visible={!!selectedPhoto}
-          photo={selectedPhoto}
-          photos={allPhotos.map(item => item.photo).filter((p): p is PhotoInfo => p !== undefined)}
-          initialIndex={selectedPhotoIndex}
-          onClose={() => setSelectedPhoto(null)}
-          // onShare={() => selectedPhoto && handleSharePhoto(selectedPhoto)}
-        />
+        {/* Floating image transition layer */}
+        {transitionState.activePhoto && (
+          <FloatingImageLayer
+            photo={transitionState.activePhoto}
+            x={floatingX}
+            y={floatingY}
+            width={floatingWidth}
+            height={floatingHeight}
+            opacity={floatingOpacity}
+            borderRadius={floatingBorderRadius}
+            backgroundOpacity={floatingBackgroundOpacity}
+            backgroundColor={theme.colors.background}
+            onDismiss={handleDismiss}
+          />
+        )}
+
+        {/* Fallback to modal viewer for videos or when source frame not measured */}
+        {selectedPhoto && !transitionState.activePhoto && (
+          <MediaViewer
+            visible={true}
+            photo={selectedPhoto}
+            photos={allPhotos.map(item => item.photo).filter((p): p is PhotoInfo => p !== undefined)}
+            initialIndex={selectedPhotoIndex}
+            onClose={() => setSelectedPhoto(null)}
+            // onShare={() => selectedPhoto && handleSharePhoto(selectedPhoto)}
+          />
+        )}
       </View>
     </>
   )

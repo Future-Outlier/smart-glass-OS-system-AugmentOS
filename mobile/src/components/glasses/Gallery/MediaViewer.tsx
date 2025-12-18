@@ -8,6 +8,7 @@ import {useState, useRef, useEffect, type ElementRef, memo} from "react"
 import {View, TouchableOpacity, Modal, StatusBar, Dimensions} from "react-native"
 // eslint-disable-next-line no-restricted-imports
 import {Text, StyleSheet} from "react-native"
+import {GestureDetector, Gesture} from "react-native-gesture-handler"
 import PagerView from "react-native-pager-view"
 import Animated, {
   useAnimatedStyle,
@@ -15,7 +16,8 @@ import Animated, {
   withSpring,
   withTiming,
   runOnJS,
-  Easing,
+  interpolate,
+  Extrapolate,
 } from "react-native-reanimated"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
@@ -29,6 +31,9 @@ import {ImageViewer} from "./ImageViewer"
 const AnimatedView = Animated.View
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
+
+const DISMISS_THRESHOLD = 150 // Vertical distance to trigger dismiss
+const VELOCITY_THRESHOLD = 800 // Velocity to trigger dismiss regardless of distance
 
 interface MediaViewerProps {
   visible: boolean
@@ -175,9 +180,10 @@ export function MediaViewer({
   const pagerRef = useRef<ElementRef<typeof PagerView>>(null)
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
 
-  // Animation values for smooth zoom transition
-  const scale = useSharedValue(0.85)
-  const opacity = useSharedValue(0)
+  // Dismiss gesture values
+  const translateY = useSharedValue(0)
+  const scale = useSharedValue(1)
+  const backgroundOpacity = useSharedValue(1)
 
   // If photos array is provided, use gallery mode
   const isGalleryMode = photos && photos.length > 0
@@ -199,24 +205,14 @@ export function MediaViewer({
       currentPhoto.name.match(/\.(mp4|mov|avi|webm|mkv)$/i)
     : false
 
-  // Animate in when opening
+  // Reset gesture values when modal opens/closes
   useEffect(() => {
     if (visible) {
-      // Smooth spring animation for opening
-      scale.value = withSpring(1, {
-        damping: 20,
-        stiffness: 90,
-      })
-      opacity.value = withTiming(1, {
-        duration: 250,
-        easing: Easing.out(Easing.cubic),
-      })
-    } else {
-      // Reset for next open
-      scale.value = 0.85
-      opacity.value = 0
+      translateY.value = 0
+      scale.value = 1
+      backgroundOpacity.value = 1
     }
-  }, [visible, scale, opacity])
+  }, [visible, translateY, scale, backgroundOpacity])
 
   // Reset to initial index when modal opens
   useEffect(() => {
@@ -250,118 +246,152 @@ export function MediaViewer({
     return undefined
   }, [isVideo, showControls, isPlaying, currentIndex])
 
-  // Animated style for zoom transition
+  // Helper functions for gesture
+  const triggerClose = () => {
+    onClose()
+  }
+
+  const resetDismissValues = () => {
+    "worklet"
+    translateY.value = withSpring(0, {damping: 20, stiffness: 300})
+    scale.value = withSpring(1, {damping: 20, stiffness: 300})
+    backgroundOpacity.value = withTiming(1, {duration: 200})
+  }
+
+  // Vertical pan gesture for dismiss (only in gallery mode)
+  const dismissGesture = Gesture.Pan()
+    .enabled(isGalleryMode || false)
+    .activeOffsetY([-10, 10])
+    .failOffsetX([-30, 30])
+    .onUpdate(e => {
+      // Only allow vertical drag, not horizontal
+      if (Math.abs(e.velocityX) < Math.abs(e.velocityY)) {
+        translateY.value = e.translationY
+
+        // Scale down as user drags
+        const dragProgress = Math.abs(e.translationY) / SCREEN_HEIGHT
+        scale.value = interpolate(dragProgress, [0, 0.3], [1, 0.85], Extrapolate.CLAMP)
+
+        // Fade background
+        backgroundOpacity.value = interpolate(
+          Math.abs(e.translationY),
+          [0, DISMISS_THRESHOLD * 2],
+          [1, 0],
+          Extrapolate.CLAMP,
+        )
+      }
+    })
+    .onEnd(e => {
+      const shouldDismiss = Math.abs(e.translationY) > DISMISS_THRESHOLD || Math.abs(e.velocityY) > VELOCITY_THRESHOLD
+
+      if (shouldDismiss) {
+        // Animate out and close
+        translateY.value = withTiming(e.translationY > 0 ? SCREEN_HEIGHT : -SCREEN_HEIGHT, {duration: 250}, () => {
+          runOnJS(triggerClose)()
+        })
+        scale.value = withTiming(0.7, {duration: 250})
+        backgroundOpacity.value = withTiming(0, {duration: 250})
+      } else {
+        // Snap back
+        resetDismissValues()
+      }
+    })
+
+  // Animated styles
   const animatedContainerStyle = useAnimatedStyle(() => ({
-    transform: [{scale: scale.value}],
-    opacity: opacity.value,
+    transform: [{translateY: translateY.value}, {scale: scale.value}],
   }))
 
-  // Enhanced close handler with animation
-  const handleClose = () => {
-    scale.value = withTiming(0.85, {
-      duration: 200,
-      easing: Easing.in(Easing.cubic),
-    })
-    opacity.value = withTiming(
-      0,
-      {
-        duration: 200,
-        easing: Easing.in(Easing.cubic),
-      },
-      () => {
-        runOnJS(onClose)()
-      },
-    )
-  }
+  const animatedBackgroundStyle = useAnimatedStyle(() => ({
+    opacity: backgroundOpacity.value,
+  }))
 
   if (!currentPhoto) return null
 
   // For gallery mode (images or videos), use pager
   if (isGalleryMode) {
     return (
-      <Modal
-        visible={visible}
-        transparent={true}
-        animationType="none"
-        onRequestClose={handleClose}
-        statusBarTranslucent>
-        <AnimatedView style={[styles.container, animatedContainerStyle]}>
-          <StatusBar hidden />
+      <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+        <AnimatedView style={[styles.backgroundOverlay, animatedBackgroundStyle]} />
+        <GestureDetector gesture={dismissGesture}>
+          <AnimatedView style={[styles.container, animatedContainerStyle]}>
+            <StatusBar hidden />
 
-          {/* Header */}
-          <View style={[styles.header, {paddingTop: insets.top}]}>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <MaterialCommunityIcons name="chevron-left" size={32} color="white" />
-            </TouchableOpacity>
-            <Text style={styles.counterText}>
-              {currentIndex + 1} / {displayPhotos.length}
-            </Text>
-            {onShare && (
-              <TouchableOpacity onPress={onShare} style={styles.actionButton}>
-                <MaterialCommunityIcons name="share-variant" size={24} color="white" />
+            {/* Header */}
+            <View style={[styles.header, {paddingTop: insets.top}]}>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <MaterialCommunityIcons name="chevron-left" size={32} color="white" />
               </TouchableOpacity>
-            )}
-          </View>
+              <Text style={styles.counterText}>
+                {currentIndex + 1} / {displayPhotos.length}
+              </Text>
+              {onShare && (
+                <TouchableOpacity onPress={onShare} style={styles.actionButton}>
+                  <MaterialCommunityIcons name="share-variant" size={24} color="white" />
+                </TouchableOpacity>
+              )}
+            </View>
 
-          {/* Pager for swiping */}
-          <PagerView
-            ref={pagerRef}
-            style={styles.pager}
-            initialPage={initialIndex}
-            offscreenPageLimit={1}
-            overdrag={false}
-            onPageSelected={e => {
-              const newIndex = e.nativeEvent.position
-              setCurrentIndex(newIndex)
-              // Pause video when swiping away
-              if (isPlaying) {
-                setIsPlaying(false)
-              }
-            }}>
-            {displayPhotos.map((photoItem, index) => {
-              const itemIsVideo =
-                photoItem.is_video ||
-                photoItem.mime_type?.startsWith("video/") ||
-                photoItem.name.match(/\.(mp4|mov|avi|webm|mkv)$/i)
+            {/* Pager for swiping */}
+            <PagerView
+              ref={pagerRef}
+              style={styles.pager}
+              initialPage={initialIndex}
+              offscreenPageLimit={1}
+              overdrag={false}
+              onPageSelected={e => {
+                const newIndex = e.nativeEvent.position
+                setCurrentIndex(newIndex)
+                // Pause video when swiping away
+                if (isPlaying) {
+                  setIsPlaying(false)
+                }
+              }}>
+              {displayPhotos.map((photoItem, index) => {
+                const itemIsVideo =
+                  photoItem.is_video ||
+                  photoItem.mime_type?.startsWith("video/") ||
+                  photoItem.name.match(/\.(mp4|mov|avi|webm|mkv)$/i)
 
-              // Only render pages within range of current index (lazy loading)
-              const isWithinRange = Math.abs(index - currentIndex) <= 2
+                // Only render pages within range of current index (lazy loading)
+                const isWithinRange = Math.abs(index - currentIndex) <= 2
 
-              if (!isWithinRange) {
-                // Render empty placeholder for far-away pages
-                return <View key={`${photoItem.name}-${index}`} style={styles.page} />
-              }
+                if (!isWithinRange) {
+                  // Render empty placeholder for far-away pages
+                  return <View key={`${photoItem.name}-${index}`} style={styles.page} />
+                }
 
-              if (itemIsVideo) {
-                // Render video player for this page
-                return (
-                  <View key={`${photoItem.name}-${index}`} style={styles.page}>
-                    <VideoPlayer
-                      photo={photoItem}
-                      isActive={currentIndex === index}
-                      showControls={showControls}
-                      onToggleControls={() => setShowControls(!showControls)}
-                    />
-                  </View>
-                )
-              } else {
-                // Render image viewer for this page
-                return (
-                  <View key={`${photoItem.name}-${index}`} style={styles.page}>
-                    <ImageViewer visible={true} photo={photoItem} onClose={handleClose} onShare={onShare} isEmbedded />
-                  </View>
-                )
-              }
-            })}
-          </PagerView>
-        </AnimatedView>
+                if (itemIsVideo) {
+                  // Render video player for this page
+                  return (
+                    <View key={`${photoItem.name}-${index}`} style={styles.page}>
+                      <VideoPlayer
+                        photo={photoItem}
+                        isActive={currentIndex === index}
+                        showControls={showControls}
+                        onToggleControls={() => setShowControls(!showControls)}
+                      />
+                    </View>
+                  )
+                } else {
+                  // Render image viewer for this page
+                  return (
+                    <View key={`${photoItem.name}-${index}`} style={styles.page}>
+                      <ImageViewer visible={true} photo={photoItem} onClose={onClose} onShare={onShare} isEmbedded />
+                    </View>
+                  )
+                }
+              })}
+            </PagerView>
+          </AnimatedView>
+        </GestureDetector>
       </Modal>
     )
   }
 
   // For single images without gallery mode, use simple viewer
   if (!isVideo && !isGalleryMode) {
-    return <ImageViewer visible={visible} photo={currentPhoto} onClose={handleClose} onShare={onShare} />
+    return <ImageViewer visible={visible} photo={currentPhoto} onClose={onClose} onShare={onShare} />
   }
 
   // For videos, use a custom modal with video player
@@ -377,8 +407,8 @@ export function MediaViewer({
   }
 
   return (
-    <Modal visible={visible} transparent={true} animationType="none" onRequestClose={handleClose} statusBarTranslucent>
-      <AnimatedView style={[styles.videoContainer, animatedContainerStyle]}>
+    <Modal visible={visible} transparent={false} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <View style={styles.videoContainer}>
         <StatusBar hidden />
 
         {/* Video Player */}
@@ -418,7 +448,7 @@ export function MediaViewer({
         {/* Header - Show/hide with controls */}
         {showControls && (
           <View style={[styles.header, {paddingTop: insets.top}]}>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <MaterialCommunityIcons name="chevron-left" size={32} color="white" />
             </TouchableOpacity>
             {isGalleryMode && (
@@ -494,15 +524,23 @@ export function MediaViewer({
             </View>
           </View>
         )}
-      </AnimatedView>
+      </View>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
+  backgroundOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "black",
+  },
   container: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: "transparent",
   },
   pager: {
     flex: 1,
