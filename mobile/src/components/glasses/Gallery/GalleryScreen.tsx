@@ -650,7 +650,7 @@ export function GalleryScreen() {
           return (
             <>
               <Text style={themed($syncButtonText)}>
-                Syncing {completedFiles + 1} of {totalFiles} items
+                Syncing {Math.min(completedFiles + 1, totalFiles)} of {totalFiles} items
               </Text>
               <View style={themed($syncButtonProgressBar)}>
                 <View
