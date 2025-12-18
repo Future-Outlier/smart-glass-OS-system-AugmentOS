@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # Manual trigger fallback
   push:
     branches:
-      - cloud/007-resource-lifecycle-cleanup
+      - cloud/bun-time
     paths:
       - "cloud/**"
       - ".github/workflows/porter-debug.yml"

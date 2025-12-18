@@ -36,23 +36,7 @@ import UserSession from "./UserSession";
 
 // session.service APIs are being consolidated into UserSession
 
-
-
 const logger = rootLogger.child({ service: "AppManager" });
-
-// Default AugmentOS system settings
-const DEFAULT_AUGMENTOS_SETTINGS = {
-  useOnboardMic: false,
-  contextualDashboard: true,
-  headUpAngle: 20,
-  brightness: 50,
-  autoBrightness: false,
-  sensingEnabled: true,
-  alwaysOnStatusBar: false,
-  bypassVad: false,
-  bypassAudioEncoding: false,
-  metricSystemEnabled: false,
-} as const;
 
 const CLOUD_PUBLIC_HOST_NAME = process.env.CLOUD_PUBLIC_HOST_NAME; // e.g., "prod.augmentos.cloud"
 const CLOUD_LOCAL_HOST_NAME = process.env.CLOUD_LOCAL_HOST_NAME; // e.g., "localhost:8002" | "cloud" | "cloud-debug-cloud.default.svc.cluster.local:80"
@@ -1016,7 +1000,20 @@ export class AppManager {
       const userSettings = user.getAppSettings(packageName) || app?.settings || [];
 
       // Get user's AugmentOS system settings with fallback to defaults
-      const userAugmentosSettings = user.augmentosSettings || DEFAULT_AUGMENTOS_SETTINGS;
+      // NOTE: user.augmentosSettings is legacy - new settings go through UserSettings model
+      // This fallback is kept for backward compatibility with apps expecting augmentosSettings in CONNECTION_ACK
+      const userAugmentosSettings = user.augmentosSettings || {
+        useOnboardMic: false,
+        contextualDashboard: true,
+        headUpAngle: 20,
+        brightness: 50,
+        autoBrightness: false,
+        sensingEnabled: true,
+        alwaysOnStatusBar: false,
+        bypassVad: false,
+        bypassAudioEncoding: false,
+        metricSystemEnabled: false,
+      };
 
       // Send connection acknowledgment with capabilities
       const ackMessage = {

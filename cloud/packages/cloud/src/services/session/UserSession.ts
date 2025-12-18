@@ -5,38 +5,42 @@
 
 import { Logger } from "pino";
 import WebSocket from "ws";
+
 import {
   AppI,
+  AppToCloudMessage,
+  Capabilities,
   CloudToAppMessageType,
   CloudToGlassesMessageType,
   ConnectionError,
+  GlassesToCloudMessage,
 } from "@mentra/sdk";
+
 import { ResourceTracker } from "../../utils/resource-tracker";
-import { logger as rootLogger } from "../logging/pino-logger";
-import { Capabilities } from "@mentra/sdk";
-import AppManager from "./AppManager";
-import AudioManager from "./AudioManager";
-import MicrophoneManager from "./MicrophoneManager";
-import DisplayManager from "../layout/DisplayManager6.1";
-import { DashboardManager } from "./dashboard";
-import UnmanagedStreamingExtension from "./UnmanagedStreamingExtension";
-import PhotoManager from "./PhotoManager";
-import { GlassesErrorCode } from "../websocket/websocket-glasses.service";
-// Session map will be maintained statically on UserSession to avoid an external SessionStorage singleton
+import appService from "../core/app.service";
 import { memoryLeakDetector } from "../debug/MemoryLeakDetector";
+import DisplayManager from "../layout/DisplayManager6.1";
+import { logger as rootLogger } from "../logging/pino-logger";
 import { PosthogService } from "../logging/posthog.service";
-import { TranscriptionManager } from "./transcription/TranscriptionManager";
-import { TranslationManager } from "./translation/TranslationManager";
 import { ManagedStreamingExtension } from "../streaming/ManagedStreamingExtension";
 import { StreamRegistry } from "../streaming/StreamRegistry";
+import { GlassesErrorCode } from "../websocket/websocket-glasses.service";
 
-import appService from "../core/app.service";
-import SubscriptionManager from "./SubscriptionManager";
+import AppManager from "./AppManager";
+import AudioManager from "./AudioManager";
+import CalendarManager from "./CalendarManager";
+import { DashboardManager } from "./dashboard";
+import DeviceManager from "./DeviceManager";
+import { handleAppMessage as appMessageHandler, handleGlassesMessage as glassesMessageHandler } from "./handlers";
 import LiveKitManager from "./livekit/LiveKitManager";
 import SpeakerManager from "./livekit/SpeakerManager";
-import DeviceManager from "./DeviceManager";
-import CalendarManager from "./CalendarManager";
 import LocationManager from "./LocationManager";
+import MicrophoneManager from "./MicrophoneManager";
+import PhotoManager from "./PhotoManager";
+import SubscriptionManager from "./SubscriptionManager";
+import { TranscriptionManager } from "./transcription/TranscriptionManager";
+import { TranslationManager } from "./translation/TranslationManager";
+import UnmanagedStreamingExtension from "./UnmanagedStreamingExtension";
 import UserSettingsManager from "./UserSettingsManager";
 
 export const LOG_PING_PONG = false; // Set to true to enable detailed ping/pong logging
@@ -173,10 +177,7 @@ export class UserSession {
     this.photoManager = new PhotoManager(this);
     this.streamRegistry = new StreamRegistry(this.logger);
     this.unmanagedStreamingExtension = new UnmanagedStreamingExtension(this);
-    this.managedStreamingExtension = new ManagedStreamingExtension(
-      this.logger,
-      this.streamRegistry,
-    );
+    this.managedStreamingExtension = new ManagedStreamingExtension(this.logger, this.streamRegistry);
     this.liveKitManager = new LiveKitManager(this);
     this.userSettingsManager = new UserSettingsManager(this);
     this.speakerManager = new SpeakerManager(this);
@@ -187,9 +188,7 @@ export class UserSession {
 
     // Register in static session map
     UserSession.sessions.set(userId, this);
-    this.logger.info(
-      `✅ User session created and registered for ${userId} (static map)`,
-    );
+    this.logger.info(`✅ User session created and registered for ${userId} (static map)`);
 
     // Register for leak detection
     memoryLeakDetector.register(this, `UserSession:${userId}`);
@@ -260,9 +259,7 @@ export class UserSession {
       this.resetPongTimeout();
     }
 
-    this.logger.debug(
-      `[UserSession:setupGlassesHeartbeat] Heartbeat established for glasses connection`,
-    );
+    this.logger.debug(`[UserSession:setupGlassesHeartbeat] Heartbeat established for glasses connection`);
   }
 
   /**
@@ -272,9 +269,7 @@ export class UserSession {
     if (this.glassesHeartbeatInterval) {
       clearInterval(this.glassesHeartbeatInterval);
       this.glassesHeartbeatInterval = undefined;
-      this.logger.debug(
-        `[UserSession:clearGlassesHeartbeat] Heartbeat cleared for glasses connection`,
-      );
+      this.logger.debug(`[UserSession:clearGlassesHeartbeat] Heartbeat cleared for glasses connection`);
     }
 
     // Clear pong timeout as well
@@ -290,9 +285,7 @@ export class UserSession {
   private resetPongTimeout(): void {
     // Skip if pong timeout is disabled
     if (!UserSession.PONG_TIMEOUT_ENABLED) {
-      this.logger.debug(
-        "[UserSession:resetPongTimeout] Pong timeout disabled by PONG_TIMEOUT_ENABLED=false",
-      );
+      this.logger.debug("[UserSession:resetPongTimeout] Pong timeout disabled by PONG_TIMEOUT_ENABLED=false");
       return;
     }
 
@@ -303,9 +296,7 @@ export class UserSession {
 
     // Set new timeout
     this.pongTimeoutTimer = setTimeout(() => {
-      const timeSinceLastPong = this.lastPongTime
-        ? Date.now() - this.lastPongTime
-        : this.PONG_TIMEOUT_MS;
+      const timeSinceLastPong = this.lastPongTime ? Date.now() - this.lastPongTime : this.PONG_TIMEOUT_MS;
 
       this.logger.error(
         `[UserSession:pongTimeout] Phone connection timeout - no pong for ${timeSinceLastPong}ms from user ${this.userId}`,
@@ -313,9 +304,7 @@ export class UserSession {
 
       // Close the zombie WebSocket connection
       if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-        this.logger.info(
-          `[UserSession:pongTimeout] Closing zombie WebSocket connection for user ${this.userId}`,
-        );
+        this.logger.info(`[UserSession:pongTimeout] Closing zombie WebSocket connection for user ${this.userId}`);
         this.websocket.close(1001, "Ping timeout - no pong received");
       }
     }, this.PONG_TIMEOUT_MS);
@@ -326,9 +315,7 @@ export class UserSession {
    * Called when glasses reconnect with a new WebSocket
    */
   updateWebSocket(newWebSocket: WebSocket): void {
-    this.logger.info(
-      `[UserSession:updateWebSocket] Updating WebSocket connection for user ${this.userId}`,
-    );
+    this.logger.info(`[UserSession:updateWebSocket] Updating WebSocket connection for user ${this.userId}`);
 
     // Clear old heartbeat
     this.clearGlassesHeartbeat();
@@ -339,9 +326,7 @@ export class UserSession {
     // Set up new heartbeat with the new WebSocket
     this.setupGlassesHeartbeat();
 
-    this.logger.debug(
-      `[UserSession:updateWebSocket] WebSocket and heartbeat updated for user ${this.userId}`,
-    );
+    this.logger.debug(`[UserSession:updateWebSocket] WebSocket and heartbeat updated for user ${this.userId}`);
   }
 
   /**
@@ -400,14 +385,9 @@ export class UserSession {
       for (const app of installedApps) {
         userSession.installedApps.set(app.packageName, app);
       }
-      userSession.logger.info(
-        `Fetched ${installedApps.length} installed apps for user ${userId}`,
-      );
+      userSession.logger.info(`Fetched ${installedApps.length} installed apps for user ${userId}`);
     } catch (error) {
-      userSession.logger.error(
-        { error },
-        `Error fetching apps for user ${userId}`,
-      );
+      userSession.logger.error({ error }, `Error fetching apps for user ${userId}`);
     }
 
     return { userSession, reconnection: false };
@@ -421,12 +401,10 @@ export class UserSession {
     try {
       const appSubscriptions: Record<string, string[]> = {};
       for (const packageName of this.runningApps) {
-        appSubscriptions[packageName] =
-          this.subscriptionManager.getAppSubscriptions(packageName);
+        appSubscriptions[packageName] = this.subscriptionManager.getAppSubscriptions(packageName);
       }
 
-      const hasPCMTranscriptionSubscriptions =
-        this.subscriptionManager.hasPCMTranscriptionSubscriptions();
+      const hasPCMTranscriptionSubscriptions = this.subscriptionManager.hasPCMTranscriptionSubscriptions();
       const requiresAudio = hasPCMTranscriptionSubscriptions.hasMedia;
       const requiredData = this.microphoneManager.calculateRequiredData(
         hasPCMTranscriptionSubscriptions.hasPCM,
@@ -435,8 +413,7 @@ export class UserSession {
       // Side-effect: update mic state to reflect current needs
       this.microphoneManager.updateState(requiresAudio, requiredData);
 
-      const minimumTranscriptionLanguages =
-        this.subscriptionManager.getMinimalLanguageSubscriptions();
+      const minimumTranscriptionLanguages = this.subscriptionManager.getMinimalLanguageSubscriptions();
 
       return {
         userId: this.userId,
@@ -465,9 +442,7 @@ export class UserSession {
    */
   relayMessageToApps(data: any): void {
     try {
-      const subscribedPackageNames = this.subscriptionManager.getSubscribedApps(
-        data.type as any,
-      );
+      const subscribedPackageNames = this.subscriptionManager.getSubscribedApps(data.type as any);
       if (subscribedPackageNames.length === 0) return;
 
       this.logger.debug(
@@ -507,10 +482,7 @@ export class UserSession {
     try {
       this.audioManager.processAudioData(audioData);
     } catch (error) {
-      this.logger.error(
-        { error },
-        `Error relaying audio for user: ${this.userId}`,
-      );
+      this.logger.error({ error }, `Error relaying audio for user: ${this.userId}`);
     }
   }
 
@@ -521,10 +493,7 @@ export class UserSession {
     try {
       const requestId = audioResponse.requestId;
       if (!requestId) {
-        this.logger.error(
-          { audioResponse },
-          "Audio play response missing requestId",
-        );
+        this.logger.error({ audioResponse }, "Audio play response missing requestId");
         return;
       }
       const packageName = this.audioPlayRequestMapping.get(requestId);
@@ -555,9 +524,7 @@ export class UserSession {
       } as any;
       try {
         appWebSocket.send(JSON.stringify(appAudioResponse));
-        this.logger.info(
-          `🔊 [UserSession] Successfully sent audio play response ${requestId} to app ${packageName}`,
-        );
+        this.logger.info(`🔊 [UserSession] Successfully sent audio play response ${requestId} to app ${packageName}`);
       } catch (sendError) {
         this.logger.error(
           sendError,
@@ -569,11 +536,35 @@ export class UserSession {
         `🔊 [UserSession] Cleaned up audio request mapping for ${requestId}. Remaining: ${this.audioPlayRequestMapping.size}`,
       );
     } catch (error) {
-      this.logger.error(
-        { error, audioResponse },
-        `Error relaying audio play response`,
-      );
+      this.logger.error({ error, audioResponse }, `Error relaying audio play response`);
     }
+  }
+
+  /**
+   * Handle incoming glasses message by routing to appropriate managers
+   *
+   * This method centralizes message routing that was previously in websocket-glasses.service.ts.
+   * It delegates to the appropriate manager based on message type, making the logic
+   * testable without requiring a WebSocket connection.
+   *
+   * @param message The glasses message to handle
+   */
+  async handleGlassesMessage(message: GlassesToCloudMessage): Promise<void> {
+    await glassesMessageHandler(this, message);
+  }
+
+  /**
+   * Handle incoming app message by routing to appropriate managers
+   *
+   * This method centralizes message routing that was previously in websocket-app.service.ts.
+   * It delegates to the appropriate manager based on message type, making the logic
+   * testable without requiring a WebSocket connection.
+   *
+   * @param appWebsocket The app's WebSocket connection
+   * @param message The app message to handle
+   */
+  async handleAppMessage(appWebsocket: WebSocket, message: AppToCloudMessage): Promise<void> {
+    await appMessageHandler(appWebsocket, this, message);
   }
 
   /**
@@ -610,18 +601,14 @@ export class UserSession {
   async dispose(): Promise<void> {
     // Idempotent - can be called multiple times safely
     if (this.disposed) {
-      this.logger.debug(
-        `[UserSession:dispose]: Already disposed, skipping: ${this.userId}`,
-      );
+      this.logger.debug(`[UserSession:dispose]: Already disposed, skipping: ${this.userId}`);
       return;
     }
 
     // Set disposed flag FIRST to prevent any new operations
     this.disposed = true;
 
-    this.logger.warn(
-      `[UserSession:dispose]: Disposing UserSession: ${this.userId}`,
-    );
+    this.logger.warn(`[UserSession:dispose]: Disposing UserSession: ${this.userId}`);
 
     // Clean up all tracked resources (removes event listeners, clears timers)
     // This must happen BEFORE disposing managers to prevent stale callbacks
@@ -630,10 +617,7 @@ export class UserSession {
     // Log to posthog disconnected duration.
     const now = new Date();
     const duration = now.getTime() - this.startTime.getTime();
-    this.logger.info(
-      { duration },
-      `User session ${this.userId} disconnected. Connected for ${duration}ms`,
-    );
+    this.logger.info({ duration }, `User session ${this.userId} disconnected. Connected for ${duration}ms`);
     try {
       await PosthogService.trackEvent("disconnected", this.userId, {
         duration: duration,
@@ -657,11 +641,9 @@ export class UserSession {
     if (this.translationManager) this.translationManager.dispose();
     if (this.subscriptionManager) this.subscriptionManager.dispose();
     // if (this.heartbeatManager) this.heartbeatManager.dispose();
-    if (this.unmanagedStreamingExtension)
-      this.unmanagedStreamingExtension.dispose();
+    if (this.unmanagedStreamingExtension) this.unmanagedStreamingExtension.dispose();
     if (this.photoManager) this.photoManager.dispose();
-    if (this.managedStreamingExtension)
-      this.managedStreamingExtension.dispose();
+    if (this.managedStreamingExtension) this.managedStreamingExtension.dispose();
 
     // Persist location to DB cold cache and clean up
     if (this.locationManager) await this.locationManager.dispose();
@@ -689,9 +671,7 @@ export class UserSession {
 
     this.logger.info(
       {
-        disposalReason: this.disconnectedAt
-          ? "grace_period_timeout"
-          : "explicit_disposal",
+        disposalReason: this.disconnectedAt ? "grace_period_timeout" : "explicit_disposal",
       },
       `🗑️ Session disposed and removed from storage for ${this.userId}`,
     );
