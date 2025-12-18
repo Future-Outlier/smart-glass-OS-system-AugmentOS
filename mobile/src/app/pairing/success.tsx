@@ -16,6 +16,7 @@ export default function PairingSuccessScreen() {
   const {theme, themed} = useAppTheme()
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const {glassesModelName} = useLocalSearchParams<{glassesModelName: string}>()
+  const {replace} = useNavigationHistory()
 
   // Get manufacturer logo component
   const getManufacturerLogo = (modelName: string) => {
@@ -33,6 +34,14 @@ export default function PairingSuccessScreen() {
   }
 
   const glassesImage = getGlassesImage(glassesModelName)
+
+  const handleContinue = () => {
+    if (glassesModelName === DeviceTypes.LIVE) {
+      replace("/onboarding/live")
+      return
+    }
+    clearHistoryAndGoHome()
+  }
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
@@ -59,7 +68,7 @@ export default function PairingSuccessScreen() {
       <View style={{flex: 1}} />
 
       {/* Continue Button */}
-      <Button preset="primary" text="Go to home" onPress={clearHistoryAndGoHome} style={themed($continueButton)} />
+      <Button preset="primary" tx="common:continue" onPress={handleContinue} style={themed($continueButton)} />
     </Screen>
   )
 }

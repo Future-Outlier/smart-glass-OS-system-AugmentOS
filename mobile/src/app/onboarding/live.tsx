@@ -1,7 +1,6 @@
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
 import {useState, useCallback, useEffect} from "react"
 import {View} from "react-native"
-import Toast from "react-native-toast-message"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text} from "@/components/ignite"
@@ -24,7 +23,7 @@ interface OnboardingVideo {
 // NOTE: you can't have 2 transition videos in a row or things will break:
 const videoFiles: OnboardingVideo[] = [
   {
-    source: require("../../../../assets/onboarding/live/ONB0_start_onboarding.mp4"),
+    source: require("@assets/onboarding/live/ONB0_start_onboarding.mp4"),
     name: "Start Onboarding",
     loop: false,
     transition: true,
@@ -32,19 +31,19 @@ const videoFiles: OnboardingVideo[] = [
     // info: "Learn the basics",
   },
   // {
-  //   source: require("../../../../assets/onboarding/live/ONB1_power_button.mp4"),
+  //   source: require("@assets/onboarding/live/ONB1_power_button.mp4"),
   //   name: "Power Button",
   //   loop: true,
   //   transition: false,
   // },
   // {
-  //   source: require("../../../../assets/onboarding/live/ONB2_pairing_successful.mp4"),
+  //   source: require("@assets/onboarding/live/ONB2_pairing_successful.mp4"),
   //   name: "Pairing Successful",
   //   loop: false,
   //   transition: false,
   // },
   {
-    source: require("../../../../assets/onboarding/live/ONB4_action_button_click.mp4"),
+    source: require("@assets/onboarding/live/ONB4_action_button_click.mp4"),
     name: "Action Button Click",
     loop: true,
     transition: false,
@@ -53,7 +52,7 @@ const videoFiles: OnboardingVideo[] = [
     info: translate("onboarding:liveLedFlashWarning"),
   },
   {
-    source: require("../../../../assets/onboarding/live/ONB5_action_button_record.mp4"),
+    source: require("@assets/onboarding/live/ONB5_action_button_record.mp4"),
     name: "Action Button Record",
     loop: true,
     transition: false,
@@ -62,7 +61,7 @@ const videoFiles: OnboardingVideo[] = [
     info: translate("onboarding:liveLedFlashWarning"),
   },
   {
-    source: require("../../../../assets/onboarding/live/ONB5_action_button_record.mp4"),
+    source: require("@assets/onboarding/live/ONB5_action_button_record.mp4"),
     name: "Action Button Stop Recording",
     loop: true,
     transition: false,
@@ -71,7 +70,7 @@ const videoFiles: OnboardingVideo[] = [
     info: translate("onboarding:liveLedFlashWarning"),
   },
   {
-    source: require("../../../../assets/onboarding/live/ONB6_transition_trackpad.mp4"),
+    source: require("@assets/onboarding/live/ONB6_transition_trackpad.mp4"),
     name: "Transition Trackpad",
     loop: false,
     transition: true,
@@ -80,7 +79,7 @@ const videoFiles: OnboardingVideo[] = [
     subtitle: translate("onboarding:liveDoubleTapTouchpad"),
   },
   {
-    source: require("../../../../assets/onboarding/live/ONB7_trackpad_tap.mp4"),
+    source: require("@assets/onboarding/live/ONB7_trackpad_tap.mp4"),
     name: "Trackpad Tap",
     loop: true,
     transition: false,
@@ -88,13 +87,13 @@ const videoFiles: OnboardingVideo[] = [
     subtitle: translate("onboarding:liveDoubleTapTouchpad"),
   },
   // {
-  //   source: require("../../../../assets/onboarding/live/ONB8_transition_trackpad2.mp4"),
+  //   source: require("@assets/onboarding/live/ONB8_transition_trackpad2.mp4"),
   //   name: "Transition Trackpad 2",
   //   loop: false,
   //   transition: true,
   // },
   {
-    source: require("../../../../assets/onboarding/live/ONB8_trackpad_slide.mp4"),
+    source: require("@assets/onboarding/live/ONB8_trackpad_slide.mp4"),
     name: "Trackpad Volume Slide",
     loop: true,
     transition: false,
@@ -103,7 +102,7 @@ const videoFiles: OnboardingVideo[] = [
     subtitle2: translate("onboarding:liveSwipeTouchpadDown"),
   },
   {
-    source: require("../../../../assets/onboarding/live/ONB9_trackpad_pause.mp4"),
+    source: require("@assets/onboarding/live/ONB9_trackpad_pause.mp4"),
     name: "Trackpad Pause",
     loop: true,
     transition: false,
@@ -111,7 +110,7 @@ const videoFiles: OnboardingVideo[] = [
     subtitle: translate("onboarding:liveDoubleTapTouchpad"),
   },
   {
-    source: require("../../../../assets/onboarding/live/ONB10_cord.mp4"),
+    source: require("@assets/onboarding/live/ONB10_cord.mp4"),
     name: "Cord",
     loop: false,
     transition: false,
@@ -120,7 +119,7 @@ const videoFiles: OnboardingVideo[] = [
     info: translate("onboarding:liveCableInfo"),
   },
   {
-    source: require("../../../../assets/onboarding/live/ONB11_end.mp4"),
+    source: require("@assets/onboarding/live/ONB11_end.mp4"),
     name: "End",
     loop: false,
     transition: false,
@@ -130,7 +129,7 @@ const videoFiles: OnboardingVideo[] = [
 ]
 
 export default function Onboarding1() {
-  const {goBack} = useNavigationHistory()
+  const {clearHistoryAndGoHome} = useNavigationHistory()
   const {theme} = useAppTheme()
 
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -161,13 +160,14 @@ export default function Onboarding1() {
     (manual: boolean = false) => {
       console.log(`ONBOARD: handleNext(${manual})`)
 
-      if (manual) {
-        setUiIndex(uiIndex + 1)
+      if (currentIndex == videoFiles.length - 1) {
+        // go back to home screen
+        clearHistoryAndGoHome()
+        return
       }
 
-      if (currentIndex == videoFiles.length - 1) {
-        console.log("last video")
-        return
+      if (manual) {
+        setUiIndex(uiIndex + 1)
       }
 
       const nextIndex = currentIndex < videoFiles.length - 1 ? currentIndex + 1 : 0
@@ -334,7 +334,7 @@ export default function Onboarding1() {
             <MentraLogoStandalone />
           </View>
         }
-        onLeftPress={() => goBack()}
+        onLeftPress={() => clearHistoryAndGoHome()}
       />
       <View id="main" className="flex flex-1">
         <View id="top" className="flex">
@@ -422,17 +422,7 @@ export default function Onboarding1() {
           {!hasStarted && (
             <View className="flex flex-col gap-4 mt-8">
               <Button flexContainer tx="onboarding:continueOnboarding" onPress={handleStart} />
-              <Button
-                flexContainer
-                preset="secondary"
-                tx="common:skip"
-                onPress={() => {
-                  Toast.show({
-                    type: "info",
-                    text1: "TODO",
-                  })
-                }}
-              />
+              <Button flexContainer preset="secondary" tx="common:skip" onPress={clearHistoryAndGoHome} />
             </View>
           )}
 
