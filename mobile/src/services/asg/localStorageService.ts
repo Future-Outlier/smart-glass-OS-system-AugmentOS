@@ -151,6 +151,26 @@ export class LocalStorageService {
   async saveDownloadedFile(file: DownloadedFile): Promise<void> {
     try {
       const files = await this.getDownloadedFiles()
+
+      // 🔍 DIAGNOSTIC: Check if file already exists
+      // const existingFile = files[file.name]
+      // if (existingFile) {
+      //   console.log(`[LocalStorage] ⚠️ WARNING: File ${file.name} ALREADY EXISTS - will be REPLACED!`)
+      //   console.log(`[LocalStorage]   📁 Existing file:`)
+      //   console.log(`[LocalStorage]      - Downloaded at: ${new Date(existingFile.downloaded_at).toISOString()}`)
+      //   console.log(`[LocalStorage]      - Modified: ${new Date(existingFile.modified).toISOString()}`)
+      //   console.log(`[LocalStorage]      - Size: ${existingFile.size} bytes`)
+      //   console.log(`[LocalStorage]      - Path: ${existingFile.filePath}`)
+      //   console.log(`[LocalStorage]   📁 New file:`)
+      //   console.log(`[LocalStorage]      - Downloaded at: ${new Date(file.downloaded_at).toISOString()}`)
+      //   console.log(`[LocalStorage]      - Modified: ${new Date(file.modified).toISOString()}`)
+      //   console.log(`[LocalStorage]      - Size: ${file.size} bytes`)
+      //   console.log(`[LocalStorage]      - Path: ${file.filePath}`)
+      //   console.log(`[LocalStorage]   🔄 This will OVERWRITE the existing entry!`)
+      // } else {
+      //   console.log(`[LocalStorage] ✅ File ${file.name} is NEW - saving metadata`)
+      // }
+
       // Store relative paths to handle iOS app container changes between launches
       // Convert absolute paths to relative (remove DocumentDirectoryPath prefix)
       const docPath = RNFS.DocumentDirectoryPath
@@ -170,7 +190,7 @@ export class LocalStorageService {
         thumbnailPath: relativeThumbnailPath,
       }
       await storage.save(this.DOWNLOADED_FILES_KEY, files)
-      console.log(`[LocalStorage] Saved metadata for ${file.name} with relative path: ${relativePath}`)
+      // console.log(`[LocalStorage] 💾 Saved metadata for ${file.name} with relative path: ${relativePath}`)
     } catch (error) {
       console.error("Error saving downloaded file metadata:", error)
       throw error

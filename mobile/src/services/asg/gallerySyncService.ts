@@ -407,7 +407,16 @@ class GallerySyncService {
       }
 
       const filesToSync = syncData.changed_files
-      console.log(`[GallerySyncService] Found ${filesToSync.length} files to sync`)
+      // console.log(`[GallerySyncService] 🔄 Found ${filesToSync.length} files to sync from server`)
+      // console.log(`[GallerySyncService] 📊 Server returned these files:`)
+      // filesToSync.slice(0, 10).forEach((file: any, idx: number) => {
+      //   console.log(
+      //     `[GallerySyncService]   ${idx + 1}. ${file.name} (${file.is_video ? "video" : "photo"}, ${file.size} bytes, modified: ${file.modified})`,
+      //   )
+      // })
+      // if (filesToSync.length > 10) {
+      //   console.log(`[GallerySyncService]   ... and ${filesToSync.length - 10} more files`)
+      // }
 
       // Update store with files
       store.setSyncing(filesToSync)
@@ -525,7 +534,11 @@ class GallerySyncService {
       }
 
       // Save downloaded files metadata
+      // console.log(`[GallerySyncService] 💾 Saving metadata for ${downloadResult.downloaded.length} downloaded files...`)
       for (const photoInfo of downloadResult.downloaded) {
+        // console.log(
+        //   `[GallerySyncService] 📝 Processing: ${photoInfo.name} (${photoInfo.is_video ? "video" : "photo"}, ${photoInfo.size} bytes)`,
+        // )
         const downloadedFile = localStorageService.convertToDownloadedFile(
           photoInfo,
           photoInfo.filePath || "",
@@ -534,6 +547,7 @@ class GallerySyncService {
         )
         await localStorageService.saveDownloadedFile(downloadedFile)
       }
+      // console.log(`[GallerySyncService] ✅ Finished saving metadata for all files`)
 
       // Update queue index to final position
       await localStorageService.updateSyncQueueIndex(files.length)
@@ -668,6 +682,34 @@ class GallerySyncService {
    */
   private async onSyncComplete(downloadedCount: number, failedCount: number): Promise<void> {
     console.log(`[GallerySyncService] Sync complete: ${downloadedCount} downloaded, ${failedCount} failed`)
+
+    // 🔍 DIAGNOSTIC: Show all pictures currently in storage after sync
+    // try {
+    //   const allStoredFiles = await localStorageService.getDownloadedFiles()
+    //   const fileNames = Object.keys(allStoredFiles)
+    //   console.log(`[GallerySyncService] 📸 POST-SYNC INVENTORY: ${fileNames.length} total files in storage`)
+    //   console.log(`[GallerySyncService] 📋 Complete file list:`)
+    //   fileNames
+    //     .sort((a, b) => {
+    //       const fileA = allStoredFiles[a]
+    //       const fileB = allStoredFiles[b]
+    //       return fileB.downloaded_at - fileA.downloaded_at // Most recent first
+    //     })
+    //     .slice(0, 20)
+    //     .forEach((fileName, idx) => {
+    //       const file = allStoredFiles[fileName]
+    //       const captureDate = new Date(file.modified).toISOString()
+    //       const downloadDate = new Date(file.downloaded_at).toISOString()
+    //       console.log(
+    //         `[GallerySyncService]   ${idx + 1}. ${fileName} - captured: ${captureDate}, downloaded: ${downloadDate}`,
+    //       )
+    //     })
+    //   if (fileNames.length > 20) {
+    //     console.log(`[GallerySyncService]   ... and ${fileNames.length - 20} more files`)
+    //   }
+    // } catch (error) {
+    //   console.error(`[GallerySyncService] Failed to get post-sync inventory:`, error)
+    // }
 
     // Clear the queue
     await localStorageService.clearSyncQueue()

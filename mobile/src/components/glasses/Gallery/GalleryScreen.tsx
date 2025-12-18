@@ -115,16 +115,21 @@ export function GalleryScreen() {
   // Load downloaded photos (validates files exist and cleans up stale entries)
   const loadDownloadedPhotos = useCallback(async () => {
     try {
+      // console.log("[GalleryScreen] 🔍 Loading downloaded photos from storage...")
       const downloadedFiles = await localStorageService.getDownloadedFiles()
+      // console.log(`[GalleryScreen] 📦 Found ${Object.keys(downloadedFiles).length} files in storage metadata`)
       const validPhotoInfos: PhotoInfo[] = []
       const staleFileNames: string[] = []
 
       // Check each file exists on disk
       for (const [name, file] of Object.entries(downloadedFiles)) {
+        // console.log(`[GalleryScreen]   Checking file: ${name} at ${file.filePath}`)
         const fileExists = await RNFS.exists(file.filePath)
         if (fileExists) {
+          // console.log(`[GalleryScreen]     ✅ File exists on disk`)
           validPhotoInfos.push(localStorageService.convertToPhotoInfo(file))
         } else {
+          // console.log(`[GalleryScreen]     ❌ File missing on disk - marking as stale`)
           console.log(`[GalleryScreen] Cleaning up stale entry for missing file: ${name}`)
           staleFileNames.push(name)
         }
@@ -138,6 +143,11 @@ export function GalleryScreen() {
       if (staleFileNames.length > 0) {
         console.log(`[GalleryScreen] Cleaned up ${staleFileNames.length} stale photo entries`)
       }
+
+      console.log(`[GalleryScreen] ✅ Loaded ${validPhotoInfos.length} valid photos`)
+      validPhotoInfos.forEach((photo, idx) => {
+        console.log(`[GalleryScreen]   ${idx + 1}. ${photo.name}`)
+      })
 
       setDownloadedPhotos(validPhotoInfos)
     } catch (err) {
@@ -216,15 +226,14 @@ export function GalleryScreen() {
     }
   }, [syncState, currentFile, currentFileProgress, completedFiles, failedFiles, syncQueue])
 
-  // Don't reload photos when sync completes - causes jarring animation
-  // Files are already updated in the queue with downloaded paths
-  // They'll naturally transition to downloadedPhotos on next screen focus
-  // Commenting out to prevent jarring reload:
-  // useEffect(() => {
-  //   if (syncState === "complete") {
-  //     loadDownloadedPhotos()
-  //   }
-  // }, [syncState, loadDownloadedPhotos])
+  // Reload photos when sync completes to populate downloadedPhotos state
+  // This ensures all photos (old + new) are visible in the gallery
+  useEffect(() => {
+    if (syncState === "complete") {
+      console.log("[GalleryScreen] 🔄 Sync complete - reloading all photos from storage")
+      loadDownloadedPhotos()
+    }
+  }, [syncState, loadDownloadedPhotos])
 
   // Handle photo selection
   const handlePhotoPress = (item: GalleryItem) => {
@@ -468,12 +477,23 @@ export function GalleryScreen() {
 
   // Combine syncing photos with downloaded photos
   const allPhotos = useMemo(() => {
+    console.log("[GalleryScreen] 🖼️ Computing allPhotos display list...")
+    console.log(`[GalleryScreen] 📊 Input state:`)
+    console.log(`[GalleryScreen]   - syncQueue.length: ${syncQueue.length}`)
+    console.log(`[GalleryScreen]   - downloadedPhotos.length: ${downloadedPhotos.length}`)
+    console.log(`[GalleryScreen]   - syncState: ${syncState}`)
+
     const items: GalleryItem[] = []
 
     // Show photos from the sync queue in chronological order
     // Files download in size order (performance), but display chronologically (UX)
     // Keep showing queue even when state transitions to idle after sync
     if (syncQueue.length > 0) {
+      console.log(`[GalleryScreen] 📋 syncQueue contains:`)
+      syncQueue.forEach((photo, idx) => {
+        console.log(`[GalleryScreen]   ${idx + 1}. ${photo.name} (filePath: ${photo.filePath ? "✅" : "❌"})`)
+      })
+
       const sortedQueue = [...syncQueue].sort((a, b) => {
         const aTime = typeof a.modified === "string" ? new Date(a.modified).getTime() : a.modified || 0
         const bTime = typeof b.modified === "string" ? new Date(b.modified).getTime() : b.modified || 0
@@ -490,10 +510,14 @@ export function GalleryScreen() {
           isOnServer: !photo.filePath,
         })
       })
+      // console.log(`[GalleryScreen] ➕ Added ${sortedQueue.length} items from syncQueue`)
     }
 
     // Downloaded photos (exclude any that are in the sync queue or are AVIF artifacts)
     const syncQueueNames = new Set(syncQueue.map(p => p.name))
+    // console.log(
+    //   `[GalleryScreen] 🚫 Will exclude these names from downloadedPhotos: ${Array.from(syncQueueNames).join(", ")}`,
+    // )
 
     const isAvifArtifact = (name: string) => {
       // Filter out AVIF transfer artifacts by pattern
@@ -506,6 +530,14 @@ export function GalleryScreen() {
       )
     }
 
+    // console.log(`[GalleryScreen] 📥 Processing downloadedPhotos:`)
+    // const filteredBeforeAvif = downloadedPhotos.filter(p => !syncQueueNames.has(p.name))
+    // console.log(`[GalleryScreen]   - After removing syncQueue duplicates: ${filteredBeforeAvif.length}`)
+    // filteredBeforeAvif.forEach((photo, idx) => {
+    //   const isAvif = isAvifArtifact(photo.name)
+    //   console.log(`[GalleryScreen]     ${idx + 1}. ${photo.name}${isAvif ? " (AVIF - will be filtered)" : ""}`)
+    // })
+
     const downloadedOnly = downloadedPhotos
       .filter(p => !syncQueueNames.has(p.name) && !isAvifArtifact(p.name))
       .sort((a, b) => {
@@ -513,6 +545,8 @@ export function GalleryScreen() {
         const bTime = typeof b.modified === "string" ? new Date(b.modified).getTime() : b.modified
         return bTime - aTime
       })
+
+    // console.log(`[GalleryScreen]   - After AVIF filtering: ${downloadedOnly.length}`)
 
     downloadedOnly.forEach((photo, i) => {
       items.push({
@@ -523,6 +557,12 @@ export function GalleryScreen() {
         isOnServer: false,
       })
     })
+    // console.log(`[GalleryScreen] ➕ Added ${downloadedOnly.length} items from downloadedPhotos`)
+
+    // console.log(`[GalleryScreen] ✅ Final allPhotos list: ${items.length} items`)
+    // items.forEach((item, idx) => {
+    //   console.log(`[GalleryScreen]   ${idx + 1}. ${item.photo?.name} (type: ${item.type})`)
+    // })
 
     return items
   }, [syncState, syncQueue, downloadedPhotos])

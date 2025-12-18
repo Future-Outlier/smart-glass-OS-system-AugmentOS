@@ -10,8 +10,9 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {gallerySettingsService} from "@/services/asg/gallerySettingsService"
 import {localStorageService} from "@/services/asg/localStorageService"
+import {useGallerySyncStore} from "@/stores/gallerySync"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {$styles, ThemedStyle} from "@/theme"
+import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/contexts/ThemeContext"
 
@@ -99,7 +100,14 @@ export default function GallerySettingsScreen() {
         style: "destructive",
         onPress: async () => {
           try {
+            // console.log("[GallerySettings] 🗑️ Clearing all downloaded files and sync queue")
             await localStorageService.clearAllFiles()
+
+            // Clear the sync queue in Zustand store to remove zombie files
+            const gallerySyncStore = useGallerySyncStore.getState()
+            gallerySyncStore.clearQueue()
+            // console.log("[GallerySettings] ✅ Cleared sync queue from store")
+
             showAlert("Success", "All photos deleted from device storage", [{text: translate("common:ok")}])
             loadStats() // Refresh stats
           } catch {
