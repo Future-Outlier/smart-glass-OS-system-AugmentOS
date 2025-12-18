@@ -42,6 +42,8 @@ interface OnboardingGuideProps {
   autoStart?: boolean
   mainTitle?: string
   mainSubtitle?: string
+  endButtonText?: string
+  endButtonFn?: () => void
 }
 
 // Helper to get a video source (for preloading into players)
@@ -65,6 +67,8 @@ export function OnboardingGuide({
   autoStart = false,
   mainTitle,
   mainSubtitle,
+  endButtonText = "Done",
+  endButtonFn,
 }: OnboardingGuideProps) {
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const {theme} = useAppTheme()
@@ -346,14 +350,7 @@ export function OnboardingGuide({
     )
   }, [])
 
-  // disable android back button:
-  useEffect(() => {
-    if (Platform.OS === "android") {
-      BackHandler.addEventListener("hardwareBackPress", () => {
-        return true
-      })
-    }
-  }, [])
+  const isLastStep = currentIndex === steps.length - 1
 
   return (
     <>
@@ -460,13 +457,17 @@ export function OnboardingGuide({
 
           {hasStarted && showNextButton && (
             <View className="flex flex-col gap-4">
-              <Button
-                flexContainer
-                tx="common:continue"
-                onPress={() => {
-                  handleNext(true)
-                }}
-              />
+              {!isLastStep ? (
+                <Button
+                  flexContainer
+                  tx="common:continue"
+                  onPress={() => {
+                    handleNext(true)
+                  }}
+                />
+              ) : (
+                <Button flexContainer text={endButtonText} onPress={endButtonFn} />
+              )}
               <Button flexContainer preset="secondary" text="Back" onPress={handleBack} />
             </View>
           )}
