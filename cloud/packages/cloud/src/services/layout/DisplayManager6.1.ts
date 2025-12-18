@@ -1,11 +1,12 @@
 import { Logger } from "pino";
-import { WebSocket } from "ws";
 
 import { AppToCloudMessageType, DisplayRequest, LayoutType, ViewType } from "@mentra/sdk";
+
 
 import { SYSTEM_DASHBOARD_PACKAGE_NAME } from "../core/app.service";
 import UserSession from "../session/UserSession";
 import { ConnectionValidator } from "../validators/ConnectionValidator";
+import { IWebSocket } from "../websocket/types";
 // import axios from "axios";
 // const CLOUD_PUBLIC_HOST_NAME = "https://" + process.env.CLOUD_PUBLIC_HOST_NAME;
 // TODO(isaiah): Fix or remove onboarding status/instructions system.
@@ -1027,7 +1028,7 @@ class DisplayManager {
     return success;
   }
 
-  private sendToWebSocket(displayRequest: DisplayRequest, webSocket?: WebSocket): boolean {
+  private sendToWebSocket(displayRequest: DisplayRequest, webSocket?: IWebSocket): boolean {
     // Use ConnectionValidator for consistent validation
     if (this.userSession) {
       const validation = ConnectionValidator.validateForHardwareRequest(this.userSession, "display");

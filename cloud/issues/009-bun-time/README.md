@@ -35,8 +35,8 @@ The `UserSession` → Manager → Session hierarchy is already solid (good work 
 ## Status
 
 - [x] 001: Extract message routing to UserSession ✅ COMPLETE
-- [ ] 002: Bun native WebSocket migration
-- [ ] 003: Config extraction (CORS, timeouts, grace periods)
+- [x] 002: Bun native WebSocket migration ✅ COMPLETE
+- [x] 003: Config extraction (CORS only) ✅ COMPLETE
 - [ ] 004: Metrics and observability layer
 - [x] 005: Dead code cleanup (core→mantle migration) ✅ COMPLETE
 

@@ -11,7 +11,7 @@
  */
 
 import type { Logger } from "pino";
-import WebSocket from "ws";
+
 
 import {
   GlassesToCloudMessage,
@@ -31,6 +31,7 @@ import {
 } from "@mentra/sdk";
 
 import { PosthogService } from "../../logging/posthog.service";
+import { WebSocketReadyState } from "../../websocket/types";
 import type UserSession from "../UserSession";
 
 const SERVICE_NAME = "GlassesMessageHandler";
@@ -274,7 +275,7 @@ async function handleTouchEvent(userSession: UserSession, touchEvent: TouchEvent
   // Send to each subscribed app
   for (const packageName of allSubscribers) {
     const connection = userSession.appWebsockets.get(packageName);
-    if (connection && connection.readyState === WebSocket.OPEN) {
+    if (connection && connection.readyState === WebSocketReadyState.OPEN) {
       const appSessionId = `${userSession.sessionId}-${packageName}`;
 
       // Determine which subscription this app is using

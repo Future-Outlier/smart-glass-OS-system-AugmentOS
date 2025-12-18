@@ -8,7 +8,7 @@
 
 import axios, { AxiosError } from "axios";
 import { Logger } from "pino";
-import WebSocket from "ws";
+
 
 import {
   CloudToAppMessageType,
@@ -29,6 +29,7 @@ import appService from "../core/app.service";
 import * as developerService from "../core/developer.service";
 import { logger as rootLogger } from "../logging/pino-logger";
 import { PosthogService } from "../logging/posthog.service";
+import { IWebSocket, WebSocketReadyState } from "../websocket/types";
 
 import { AppSession, AppConnectionState as AppSessionState } from "./AppSession";
 import { HardwareCompatibilityService } from "./HardwareCompatibilityService";
@@ -215,7 +216,7 @@ export class AppManager {
   /**
    * Get WebSocket for an app (from AppSession)
    */
-  getAppWebSocket(packageName: string): WebSocket | null {
+  getAppWebSocket(packageName: string): IWebSocket | null {
     const appSession = this.apps.get(packageName);
     return appSession?.webSocket ?? null;
   }
@@ -224,8 +225,8 @@ export class AppManager {
    * Get all app WebSockets as a Map (for iteration)
    * Returns a new Map with packageName -> WebSocket entries
    */
-  getAllAppWebSockets(): Map<string, WebSocket> {
-    const websockets = new Map<string, WebSocket>();
+  getAllAppWebSockets(): Map<string, IWebSocket> {
+    const websockets = new Map<string, IWebSocket>();
     for (const [packageName, appSession] of this.apps) {
       const ws = appSession.webSocket;
       if (ws) {
@@ -818,7 +819,7 @@ export class AppManager {
       // Close WebSocket connection via AppSession
       if (appSession) {
         const appWebsocket = appSession.webSocket;
-        if (appWebsocket && appWebsocket.readyState === WebSocket.OPEN) {
+        if (appWebsocket && appWebsocket.readyState === WebSocketReadyState.OPEN) {
           try {
             // Send app stopped message
             const message = {
@@ -901,7 +902,7 @@ export class AppManager {
    * @param ws WebSocket connection
    * @param initMessage App initialization message
    */
-  async handleAppInit(ws: WebSocket, initMessage: AppConnectionInit): Promise<void> {
+  async handleAppInit(ws: IWebSocket, initMessage: AppConnectionInit): Promise<void> {
     try {
       const { packageName, apiKey, sessionId } = initMessage;
 
@@ -1152,7 +1153,7 @@ export class AppManager {
       };
 
       // Send to client
-      if (!this.userSession.websocket || this.userSession.websocket.readyState !== WebSocket.OPEN) {
+      if (!this.userSession.websocket || this.userSession.websocket.readyState !== WebSocketReadyState.OPEN) {
         this.logger.warn(`WebSocket is not open for client app state change`);
         return appStateChange;
       }
@@ -1424,7 +1425,7 @@ export class AppManager {
       const websocket = appSession?.webSocket;
 
       // If connection is connecting, then we can't send messages yet.
-      if (websocket && websocket.readyState === WebSocket.CONNECTING) {
+      if (websocket && websocket.readyState === WebSocketReadyState.CONNECTING) {
         this.logger.warn(
           {
             userId: this.userSession.userId,
@@ -1441,7 +1442,7 @@ export class AppManager {
       }
 
       // Check if websocket exists and is ready
-      if (websocket && websocket.readyState === WebSocket.OPEN) {
+      if (websocket && websocket.readyState === WebSocketReadyState.OPEN) {
         try {
           // Send message successfully
           websocket.send(JSON.stringify(message));
@@ -1551,7 +1552,7 @@ export class AppManager {
       // Close all app connections via AppSession (Phase 4d)
       for (const [packageName, appSession] of this.apps) {
         const connection = appSession.webSocket;
-        if (connection && connection.readyState === WebSocket.OPEN) {
+        if (connection && connection.readyState === WebSocketReadyState.OPEN) {
           try {
             // Send app stopped message using direct connection (no resurrection needed during dispose)
             const message = {

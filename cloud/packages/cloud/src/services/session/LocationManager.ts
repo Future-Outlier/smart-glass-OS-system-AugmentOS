@@ -14,12 +14,12 @@
  */
 
 import type { Logger } from "pino";
-import WebSocket from "ws";
 
 
 import { CloudToAppMessageType, CloudToGlassesMessageType, DataStream, LocationUpdate, StreamType } from "@mentra/sdk";
 
 import { User } from "../../models/user.model";
+import { WebSocketReadyState } from "../websocket/types";
 
 import type UserSession from "./UserSession";
 
@@ -194,7 +194,7 @@ export class LocationManager {
       }
 
       // Otherwise, command device if possible
-      if (this.userSession.websocket && this.userSession.websocket.readyState === WebSocket.OPEN) {
+      if (this.userSession.websocket && this.userSession.websocket.readyState === WebSocketReadyState.OPEN) {
         this.pendingPolls.set(correlationId, packageName);
         this.sendDeviceCommand(CloudToGlassesMessageType.REQUEST_SINGLE_LOCATION, {
           accuracy,
@@ -249,7 +249,7 @@ export class LocationManager {
 
       this.effectiveTier = desiredTier;
       // If device is connected, set the new tier
-      if (this.userSession.websocket && this.userSession.websocket.readyState === WebSocket.OPEN) {
+      if (this.userSession.websocket && this.userSession.websocket.readyState === WebSocketReadyState.OPEN) {
         this.sendDeviceCommand(CloudToGlassesMessageType.SET_LOCATION_TIER, {
           tier: desiredTier,
         });
@@ -364,7 +364,7 @@ export class LocationManager {
     }
 
     const appWebsocket = this.userSession.appWebsockets.get(packageName);
-    if (!appWebsocket || appWebsocket.readyState !== WebSocket.OPEN) {
+    if (!appWebsocket || appWebsocket.readyState !== WebSocketReadyState.OPEN) {
       this.logger.warn({ packageName }, "App websocket not available for location relay");
       return;
     }
@@ -458,7 +458,7 @@ export class LocationManager {
   private sendTargetedLocationToApp(loc: NormalizedLocation, correlationId: string, packageName: string): void {
     try {
       const appWs = this.userSession.appWebsockets.get(packageName);
-      if (!appWs || appWs.readyState !== WebSocket.OPEN) {
+      if (!appWs || appWs.readyState !== WebSocketReadyState.OPEN) {
         this.logger.warn(
           { userId: this.userSession.userId, packageName, correlationId },
           "Target App websocket not available for location poll response",
@@ -486,7 +486,7 @@ export class LocationManager {
 
   private sendDeviceCommand(type: CloudToGlassesMessageType, payload: Record<string, unknown>): void {
     try {
-      if (!this.userSession.websocket || this.userSession.websocket.readyState !== WebSocket.OPEN) {
+      if (!this.userSession.websocket || this.userSession.websocket.readyState !== WebSocketReadyState.OPEN) {
         this.logger.warn({ userId: this.userSession.userId, type }, "Cannot send device command; WS not available");
         return;
       }

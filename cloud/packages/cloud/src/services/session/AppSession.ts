@@ -14,11 +14,12 @@
  */
 
 import { Logger } from "pino";
-import WebSocket from "ws";
 
 import { ExtendedStreamType, StreamType, isLanguageStream, parseLanguageStream } from "@mentra/sdk";
 
 import { ResourceTracker } from "../../utils/resource-tracker";
+import { IWebSocket, WebSocketReadyState, hasEventEmitter } from "../websocket/types";
+
 
 /**
  * Location rate/accuracy tier for location subscriptions
@@ -106,7 +107,7 @@ export class AppSession {
   private readonly logger: Logger;
 
   // ===== WebSocket Connection =====
-  private _webSocket: WebSocket | null = null;
+  private _webSocket: IWebSocket | null = null;
   private _state: AppConnectionState = AppConnectionState.STOPPED;
 
   // ===== Timing =====
@@ -171,7 +172,7 @@ export class AppSession {
 
   // ===== Getters =====
 
-  get webSocket(): WebSocket | null {
+  get webSocket(): IWebSocket | null {
     return this._webSocket;
   }
 
@@ -246,7 +247,7 @@ export class AppSession {
   /**
    * Handle successful WebSocket connection
    */
-  handleConnect(ws: WebSocket): void {
+  handleConnect(ws: IWebSocket): void {
     // Log if this is a reconnection during grace period (SDK successfully reconnected!)
     if (this._state === AppConnectionState.GRACE_PERIOD) {
       this.logger.info(
@@ -286,7 +287,11 @@ export class AppSession {
         this.onDisconnectCallback(code, reasonStr);
       }
     };
-    ws.on("close", this.closeHandler);
+    // Only set up event-based close handler for ws package (not Bun's ServerWebSocket)
+    // Bun's close handling is done in websocketHandlers.close()
+    if (hasEventEmitter(ws)) {
+      ws.on("close", this.closeHandler);
+    }
 
     // Start heartbeat
     this.setupHeartbeat(ws);
@@ -304,7 +309,7 @@ export class AppSession {
    * This prevents memory leaks and stale callbacks after disposal
    */
   private removeCloseHandler(): void {
-    if (this._webSocket && this.closeHandler) {
+    if (this._webSocket && this.closeHandler && hasEventEmitter(this._webSocket)) {
       this._webSocket.off("close", this.closeHandler);
       this.logger.debug("Removed WebSocket close handler");
     }
@@ -384,13 +389,13 @@ export class AppSession {
 
   // ===== Heartbeat Management =====
 
-  private setupHeartbeat(ws: WebSocket): void {
+  private setupHeartbeat(ws: IWebSocket): void {
     this.clearHeartbeat();
 
     this.heartbeatInterval = setInterval(() => {
       if (this.disposed) return; // Guard against stale callback
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.ping();
+      if (ws.readyState === WebSocketReadyState.OPEN) {
+        ws.ping?.();
         if (LOG_PING_PONG) {
           this.logger.debug("Sent ping");
         }
@@ -411,13 +416,19 @@ export class AppSession {
       }
     };
 
-    ws.on("pong", this.pongHandler);
+    // Only set up event-based pong handler for ws package (not Bun's ServerWebSocket)
+    // Bun's pong handling is done in websocketHandlers.pong()
+    if (hasEventEmitter(ws)) {
+      ws.on("pong", this.pongHandler);
 
-    // Track pong handler for cleanup
-    const pongRef = this.pongHandler;
-    this.resources.track(() => {
-      ws.off("pong", pongRef);
-    });
+      // Track pong handler for cleanup
+      const pongRef = this.pongHandler;
+      this.resources.track(() => {
+        if (hasEventEmitter(ws)) {
+          ws.off("pong", pongRef);
+        }
+      });
+    }
 
     this.logger.debug("Heartbeat started");
   }
@@ -706,7 +717,7 @@ export class AppSession {
    * Send a message to the app
    */
   send(message: any): boolean {
-    if (!this._webSocket || this._webSocket.readyState !== WebSocket.OPEN) {
+    if (!this._webSocket || this._webSocket.readyState !== WebSocketReadyState.OPEN) {
       this.logger.warn({ messageType: message?.type }, "Cannot send message - WebSocket not open");
       return false;
     }
@@ -805,7 +816,7 @@ export class AppSession {
     return {
       packageName: this.packageName,
       state: this._state,
-      isConnected: this._webSocket !== null && this._webSocket.readyState === WebSocket.OPEN,
+      isConnected: this._webSocket !== null && this._webSocket.readyState === WebSocketReadyState.OPEN,
       subscriptionCount: this._subscriptions.size,
       subscriptions: this.getSubscriptions(),
       connectedAt: this._connectedAt,

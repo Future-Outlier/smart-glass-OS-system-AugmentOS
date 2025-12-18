@@ -145,7 +145,7 @@ export class AppWebSocketService {
 
           // Delegate message handling to UserSession
           // This keeps the WebSocket service focused on connection lifecycle
-          await userSession.handleAppMessage(ws, message);
+          await userSession.handleAppMessage(ws as any, message);
         }
       } catch (error) {
         logger.error(error, "Unexpected error processing App message");

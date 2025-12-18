@@ -9,7 +9,7 @@
  */
 
 import type { Logger } from "pino";
-import WebSocket from "ws";
+
 
 import {
   AppToCloudMessage,
@@ -35,6 +35,7 @@ import {
 
 import App from "../../../models/app.model";
 import { SimplePermissionChecker } from "../../permissions/simple-permission-checker";
+import { IWebSocket, WebSocketReadyState } from "../../websocket/types";
 import type UserSession from "../UserSession";
 
 const SERVICE_NAME = "AppMessageHandler";
@@ -66,7 +67,7 @@ const SUBSCRIPTION_DEBOUNCE_MS = 500;
  * @param message The app message to handle
  */
 export async function handleAppMessage(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: AppToCloudMessage,
 ): Promise<void> {
@@ -164,7 +165,7 @@ export async function handleAppMessage(
  * Handle subscription update
  */
 async function handleSubscriptionUpdate(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: AppSubscriptionUpdate,
   logger: Logger,
@@ -235,7 +236,7 @@ async function handleSubscriptionUpdate(
 
   if (isNewCustomMessageSubscription && userSession.userDatetime) {
     logger.info(`Sending cached userDatetime to app ${message.packageName} on custom_message subscription`);
-    if (appWebsocket && appWebsocket.readyState === WebSocket.OPEN) {
+    if (appWebsocket && appWebsocket.readyState === WebSocketReadyState.OPEN) {
       const customMessage = {
         type: CloudToAppMessageType.CUSTOM_MESSAGE,
         action: "update_datetime",
@@ -260,7 +261,7 @@ async function handleSubscriptionUpdate(
  * Handle RGB LED control request
  */
 async function handleRgbLedControl(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: RgbLedControlRequest,
   logger: Logger,
@@ -284,7 +285,7 @@ async function handleRgbLedControl(
       timestamp: new Date(),
     };
 
-    if (userSession.websocket && userSession.websocket.readyState === WebSocket.OPEN) {
+    if (userSession.websocket && userSession.websocket.readyState === WebSocketReadyState.OPEN) {
       userSession.websocket.send(JSON.stringify(glassesLedRequest));
       logger.info({ requestId: message.requestId, action: message.action }, "💡 RGB LED control request forwarded");
     } else {
@@ -305,7 +306,7 @@ async function handleRgbLedControl(
  * Handle RTMP stream request
  */
 async function handleRtmpStreamRequest(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: RtmpStreamRequest,
   logger: Logger,
@@ -346,7 +347,7 @@ async function handleRtmpStreamRequest(
  * Handle RTMP stream stop
  */
 async function handleRtmpStreamStop(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: RtmpStreamStopRequest,
   logger: Logger,
@@ -364,7 +365,7 @@ async function handleRtmpStreamStop(
  * Handle location poll request
  */
 async function handleLocationPollRequest(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: any,
   logger: Logger,
@@ -390,7 +391,7 @@ async function handleLocationPollRequest(
  * Handle photo request
  */
 async function handlePhotoRequest(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: PhotoRequest,
   logger: Logger,
@@ -416,7 +417,7 @@ async function handlePhotoRequest(
  * Handle audio play request
  */
 async function handleAudioPlayRequest(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: AudioPlayRequest,
   logger: Logger,
@@ -437,7 +438,7 @@ async function handleAudioPlayRequest(
       timestamp: new Date(),
     };
 
-    if (userSession.websocket && userSession.websocket.readyState === WebSocket.OPEN) {
+    if (userSession.websocket && userSession.websocket.readyState === WebSocketReadyState.OPEN) {
       userSession.websocket.send(JSON.stringify(glassesAudioRequest));
       logger.debug(`🔊 Forwarded audio request ${message.requestId} to glasses`);
       // Also request server-side playback via Go bridge when enabled
@@ -463,7 +464,7 @@ async function handleAudioPlayRequest(
  * Handle audio stop request
  */
 async function handleAudioStopRequest(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: AudioStopRequest,
   logger: Logger,
@@ -476,7 +477,7 @@ async function handleAudioStopRequest(
       timestamp: new Date(),
     };
 
-    if (userSession.websocket && userSession.websocket.readyState === WebSocket.OPEN) {
+    if (userSession.websocket && userSession.websocket.readyState === WebSocketReadyState.OPEN) {
       userSession.websocket.send(JSON.stringify(glassesAudioStopRequest));
       logger.debug(`🔇 Forwarded audio stop request from ${message.packageName} to glasses`);
       void userSession.speakerManager.stop(message);
@@ -497,7 +498,7 @@ async function handleAudioStopRequest(
  * Handle managed stream request
  */
 async function handleManagedStreamRequest(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: ManagedStreamRequest,
   logger: Logger,
@@ -527,7 +528,7 @@ async function handleManagedStreamRequest(
  * Handle managed stream stop
  */
 async function handleManagedStreamStop(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: ManagedStreamStopRequest,
   logger: Logger,
@@ -550,7 +551,7 @@ async function handleManagedStreamStop(
  * Handle stream status check
  */
 async function handleStreamStatusCheck(
-  appWebsocket: WebSocket,
+  appWebsocket: IWebSocket,
   userSession: UserSession,
   message: StreamStatusCheckRequest,
   logger: Logger,
@@ -639,7 +640,7 @@ async function handleWifiSetupRequest(userSession: UserSession, message: any, lo
       timestamp: new Date(),
     };
 
-    if (userSession.websocket && userSession.websocket.readyState === WebSocket.OPEN) {
+    if (userSession.websocket && userSession.websocket.readyState === WebSocketReadyState.OPEN) {
       userSession.websocket.send(JSON.stringify(showWifiSetup));
       logger.info({ packageName: message.packageName, reason: message.reason }, "WiFi setup request forwarded");
     } else {
@@ -683,7 +684,7 @@ async function checkCameraPermission(packageName: string, userSession: UserSessi
 /**
  * Send an error response to the App client
  */
-function sendError(ws: WebSocket, code: AppErrorCode, message: string, logger: Logger): void {
+function sendError(ws: IWebSocket, code: AppErrorCode, message: string, logger: Logger): void {
   try {
     const errorResponse = {
       type: CloudToAppMessageType.CONNECTION_ERROR,

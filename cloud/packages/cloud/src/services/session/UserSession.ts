@@ -4,7 +4,6 @@
  */
 
 import { Logger } from "pino";
-import WebSocket from "ws";
 
 import {
   AppI,
@@ -24,7 +23,7 @@ import { logger as rootLogger } from "../logging/pino-logger";
 import { PosthogService } from "../logging/posthog.service";
 import { ManagedStreamingExtension } from "../streaming/ManagedStreamingExtension";
 import { StreamRegistry } from "../streaming/StreamRegistry";
-import { GlassesErrorCode } from "../websocket/websocket-glasses.service";
+import { IWebSocket, WebSocketReadyState, hasEventEmitter } from "../websocket/types";
 
 import AppManager from "./AppManager";
 import AudioManager from "./AudioManager";
@@ -60,8 +59,8 @@ export class UserSession {
   // Logging
   public readonly logger: Logger;
 
-  // WebSocket connection
-  public websocket: WebSocket;
+  // WebSocket connection (supports both ws package and Bun's ServerWebSocket)
+  public websocket: IWebSocket;
 
   // App state
   // NOTE: runningApps, loadingApps, and appWebsockets are now derived from AppManager/AppSession (Phase 4d)
@@ -86,9 +85,9 @@ export class UserSession {
 
   /**
    * Get app WebSockets (derived from AppManager/AppSession)
-   * @returns Map of packageName -> WebSocket for connected apps
+   * @returns Map of packageName -> IWebSocket for connected apps
    */
-  get appWebsockets(): Map<string, WebSocket> {
+  get appWebsockets(): Map<string, IWebSocket> {
     return this.appManager.getAllAppWebSockets();
   }
 
@@ -156,7 +155,7 @@ export class UserSession {
   // Current connected glasses model
   // public currentGlassesModel: string | null = null;
 
-  constructor(userId: string, websocket: WebSocket) {
+  constructor(userId: string, websocket: IWebSocket) {
     this.userId = userId;
     this.websocket = websocket;
     this.logger = rootLogger.child({ userId, service: "UserSession" });
@@ -206,8 +205,8 @@ export class UserSession {
     // Set up new heartbeat interval
     this.glassesHeartbeatInterval = setInterval(() => {
       if (this.disposed) return; // Guard against stale callback
-      if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-        this.websocket.ping();
+      if (this.websocket && this.websocket.readyState === WebSocketReadyState.OPEN) {
+        this.websocket.ping?.();
         if (LOG_PING_PONG) {
           this.logger.debug(
             { ping: true },
@@ -242,14 +241,18 @@ export class UserSession {
       }
     };
 
-    this.websocket.on("pong", this.pongHandler);
+    // Only set up event-based pong handler for ws package (not Bun's ServerWebSocket)
+    // Bun's pong handling is done in websocketHandlers.pong() which calls handleGlassesPong()
+    if (hasEventEmitter(this.websocket)) {
+      this.websocket.on("pong", this.pongHandler);
 
-    // Track pong handler for cleanup (prevents memory leak)
-    this.resources.track(() => {
-      if (this.websocket && this.pongHandler) {
-        this.websocket.off("pong", this.pongHandler);
-      }
-    });
+      // Track pong handler for cleanup (prevents memory leak)
+      this.resources.track(() => {
+        if (this.websocket && hasEventEmitter(this.websocket) && this.pongHandler) {
+          this.websocket.off("pong", this.pongHandler);
+        }
+      });
+    }
 
     // Initialize pong tracking
     this.lastPongTime = Date.now();
@@ -280,6 +283,28 @@ export class UserSession {
   }
 
   /**
+   * Handle pong response from glasses connection
+   * Called by Bun WebSocket handler (websocketHandlers.pong)
+   * For ws package, this is handled by the pongHandler event listener
+   */
+  public handlePong(): void {
+    if (this.disposed) return;
+    this.lastPongTime = Date.now();
+
+    if (LOG_PING_PONG) {
+      this.logger.debug(
+        { pong: true },
+        `[UserSession:heartbeat:pong] Received pong from glasses for user ${this.userId}`,
+      );
+    }
+
+    // Reset the timeout timer only if enabled
+    if (UserSession.PONG_TIMEOUT_ENABLED) {
+      this.resetPongTimeout();
+    }
+  }
+
+  /**
    * Reset the pong timeout timer
    */
   private resetPongTimeout(): void {
@@ -303,7 +328,7 @@ export class UserSession {
       );
 
       // Close the zombie WebSocket connection
-      if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+      if (this.websocket && this.websocket.readyState === WebSocketReadyState.OPEN) {
         this.logger.info(`[UserSession:pongTimeout] Closing zombie WebSocket connection for user ${this.userId}`);
         this.websocket.close(1001, "Ping timeout - no pong received");
       }
@@ -314,7 +339,7 @@ export class UserSession {
    * Update WebSocket connection and restart heartbeat
    * Called when glasses reconnect with a new WebSocket
    */
-  updateWebSocket(newWebSocket: WebSocket): void {
+  updateWebSocket(newWebSocket: IWebSocket): void {
     this.logger.info(`[UserSession:updateWebSocket] Updating WebSocket connection for user ${this.userId}`);
 
     // Clear old heartbeat
@@ -354,7 +379,7 @@ export class UserSession {
    * Create a new session or reconnect an existing one, updating websocket & timers.
    */
   static async createOrReconnect(
-    ws: WebSocket,
+    ws: IWebSocket,
     userId: string,
   ): Promise<{ userSession: UserSession; reconnection: boolean }> {
     const existingSession = UserSession.getById(userId);
@@ -451,7 +476,7 @@ export class UserSession {
       );
       for (const packageName of subscribedPackageNames) {
         const connection = this.appWebsockets.get(packageName);
-        if (connection && connection.readyState === WebSocket.OPEN) {
+        if (connection && connection.readyState === WebSocketReadyState.OPEN) {
           const appSessionId = `${this.sessionId}-${packageName}`;
           const dataStream = {
             type: CloudToAppMessageType.DATA_STREAM,
@@ -506,7 +531,7 @@ export class UserSession {
         return;
       }
       const appWebSocket = this.appWebsockets.get(packageName);
-      if (!appWebSocket || appWebSocket.readyState !== WebSocket.OPEN) {
+      if (!appWebSocket || appWebSocket.readyState !== WebSocketReadyState.OPEN) {
         this.logger.warn(
           `🔊 [UserSession] App ${packageName} not connected or WebSocket not ready for audio response ${requestId}`,
         );
@@ -573,7 +598,7 @@ export class UserSession {
    * @param message Error message
    * @param code Error code
    */
-  public sendError(message: string, code: GlassesErrorCode): void {
+  public sendError(message: string, code: string): void {
     try {
       const errorMessage: ConnectionError = {
         type: CloudToGlassesMessageType.CONNECTION_ERROR,
