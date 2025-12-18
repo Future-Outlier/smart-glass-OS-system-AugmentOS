@@ -5,14 +5,15 @@ import * as TaskManager from "expo-task-manager"
 import {shallow} from "zustand/shallow"
 
 import bridge from "@/bridge/MantleBridge"
+import {migrate} from "@/services/Migrations"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
+import {gallerySyncService} from "@/services/asg/gallerySyncService"
 import {useDisplayStore} from "@/stores/display"
 import {useGlassesStore, GlassesInfo} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
-import {gallerySyncService} from "@/services/asg/gallerySyncService"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -74,6 +75,7 @@ class MantleManager {
   // sets up the bridge and initializes app state
   public async init() {
     await bridge.dummy()
+    await migrate() // do any local migrations here
     const res = await restComms.loadUserSettings() // get settings from server
     if (res.is_ok()) {
       const loadedSettings = res.value
