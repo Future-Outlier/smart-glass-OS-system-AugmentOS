@@ -261,13 +261,23 @@ class STTModelManager {
         readTimeout: 30000,
       }
 
-      const result = await RNFS.downloadFile(downloadOptions)
-      this.downloadJobId = result.jobId
+      // Wrap RNFS download with defensive error handling
+      let downloadResult
+      try {
+        const result = RNFS.downloadFile(downloadOptions)
+        this.downloadJobId = result.jobId
 
-      const downloadResult = await result.promise
+        downloadResult = await result.promise
+      } catch (rnfsError: any) {
+        // RNFS can sometimes reject with null error code causing native crash
+        const errorMessage = rnfsError?.message || rnfsError?.toString() || "Unknown RNFS download error"
+        console.error(`[STTModelManager] RNFS download error for model:`, errorMessage)
+        throw new Error(`Model download failed: ${errorMessage}`)
+      }
 
-      if (downloadResult.statusCode !== 200) {
-        throw new Error(`Download failed with status code: ${downloadResult.statusCode}`)
+      if (!downloadResult || downloadResult.statusCode !== 200) {
+        const statusCode = downloadResult?.statusCode || "unknown"
+        throw new Error(`Download failed with status code: ${statusCode}`)
       }
 
       console.log("Download completed, extracting...")

@@ -813,48 +813,61 @@ export class AsgCameraApiClient {
       console.log(`[ASG Camera API] Downloading ${isVideo ? "video" : "photo"} from: ${downloadUrl}`)
       console.log(`[ASG Camera API] Saving to: ${localFilePath}`)
 
-      const downloadResult = await RNFS.downloadFile({
-        fromUrl: downloadUrl,
-        toFile: localFilePath,
-        headers: {
-          "Accept": "*/*",
-          "User-Agent": "MentraOS-Mobile/1.0",
-        },
-        connectionTimeout: 300000, // 5 minutes for connection establishment
-        readTimeout: 300000, // 5 minutes for data reading
-        backgroundTimeout: 600000, // 10 minutes for background downloads (iOS)
-        progressDivider: 1, // Get progress updates every 1% instead of 10%
-        progressInterval: 250, // Update progress every 250ms max
-        begin: res => {
-          console.log(`[ASG Camera API] Download started for ${filename}, size: ${res.contentLength}`)
-        },
-        progress: res => {
-          // Validate progress data to prevent negative percentages
-          const contentLength = res.contentLength || 0
-          const bytesWritten = res.bytesWritten || 0
+      // Wrap RNFS download in defensive error handling to prevent null rejection crashes
+      let downloadResult
+      try {
+        const downloadJob = RNFS.downloadFile({
+          fromUrl: downloadUrl,
+          toFile: localFilePath,
+          headers: {
+            "Accept": "*/*",
+            "User-Agent": "MentraOS-Mobile/1.0",
+          },
+          connectionTimeout: 300000, // 5 minutes for connection establishment
+          readTimeout: 300000, // 5 minutes for data reading
+          backgroundTimeout: 600000, // 10 minutes for background downloads (iOS)
+          progressDivider: 1, // Get progress updates every 1% instead of 10%
+          progressInterval: 250, // Update progress every 250ms max
+          begin: res => {
+            console.log(`[ASG Camera API] Download started for ${filename}, size: ${res.contentLength}`)
+          },
+          progress: res => {
+            // Validate progress data to prevent negative percentages
+            const contentLength = res.contentLength || 0
+            const bytesWritten = res.bytesWritten || 0
 
-          let percentage = 0
-          if (contentLength > 0 && bytesWritten >= 0) {
-            percentage = Math.round((bytesWritten / contentLength) * 100)
-            // Clamp percentage between 0 and 100
-            percentage = Math.max(0, Math.min(100, percentage))
-          }
+            let percentage = 0
+            if (contentLength > 0 && bytesWritten >= 0) {
+              percentage = Math.round((bytesWritten / contentLength) * 100)
+              // Clamp percentage between 0 and 100
+              percentage = Math.max(0, Math.min(100, percentage))
+            }
 
-          // Call the progress callback if provided - now reports all progress
-          if (onProgress) {
-            onProgress(percentage)
-          }
+            // Call the progress callback if provided - now reports all progress
+            if (onProgress) {
+              onProgress(percentage)
+            }
 
-          // Log less frequently to avoid spam, but UI gets all updates
-          if (percentage % 10 === 0) {
-            // Log every 10%
-            console.log(`[ASG Camera API] Download progress ${filename}: ${percentage}%`)
-          }
-        },
-      }).promise
+            // Log less frequently to avoid spam, but UI gets all updates
+            if (percentage % 10 === 0) {
+              // Log every 10%
+              console.log(`[ASG Camera API] Download progress ${filename}: ${percentage}%`)
+            }
+          },
+        })
 
-      if (downloadResult.statusCode !== 200) {
-        throw new Error(`Failed to download ${filename}: HTTP ${downloadResult.statusCode}`)
+        downloadResult = await downloadJob.promise
+      } catch (rnfsError: any) {
+        // RNFS can sometimes reject with null error code causing native crash
+        // Wrap and provide a meaningful error message
+        const errorMessage = rnfsError?.message || rnfsError?.toString() || "Unknown RNFS download error"
+        console.error(`[ASG Camera API] RNFS download error for ${filename}:`, errorMessage)
+        throw new Error(`Download failed for ${filename}: ${errorMessage}`)
+      }
+
+      if (!downloadResult || downloadResult.statusCode !== 200) {
+        const statusCode = downloadResult?.statusCode || "unknown"
+        throw new Error(`Failed to download ${filename}: HTTP ${statusCode}`)
       }
 
       console.log(`[ASG Camera API] Successfully downloaded ${filename} to filesystem`)
@@ -905,26 +918,36 @@ export class AsgCameraApiClient {
 
           // The server's /api/photo endpoint serves thumbnails for video files
           // It detects video files and automatically generates/serves thumbnails instead of the full video
-          const thumbResult = await RNFS.downloadFile({
-            fromUrl: `${this.baseUrl}/api/photo?file=${encodeURIComponent(filename)}`,
-            toFile: localThumbnailPath as string,
-            headers: {
-              "Accept": "image/*",
-              "User-Agent": "MentraOS-Mobile/1.0",
-            },
-            connectionTimeout: 60000, // 1 minute for thumbnails (smaller files)
-            readTimeout: 60000, // 1 minute for thumbnails
-            progressDivider: 1, // Get all progress updates for thumbnails too
-            begin: res => {
-              console.log(`[ASG Camera API] Thumbnail download started for ${filename}, size: ${res.contentLength}`)
-            },
-            progress: res => {
-              const percentage = Math.round((res.bytesWritten / res.contentLength) * 100)
-              if (percentage % 25 === 0) {
-                console.log(`[ASG Camera API] Thumbnail download progress ${filename}: ${percentage}%`)
-              }
-            },
-          }).promise
+          // Wrap thumbnail download with defensive error handling
+          let thumbResult
+          try {
+            const thumbJob = RNFS.downloadFile({
+              fromUrl: `${this.baseUrl}/api/photo?file=${encodeURIComponent(filename)}`,
+              toFile: localThumbnailPath as string,
+              headers: {
+                "Accept": "image/*",
+                "User-Agent": "MentraOS-Mobile/1.0",
+              },
+              connectionTimeout: 60000, // 1 minute for thumbnails (smaller files)
+              readTimeout: 60000, // 1 minute for thumbnails
+              progressDivider: 1, // Get all progress updates for thumbnails too
+              begin: res => {
+                console.log(`[ASG Camera API] Thumbnail download started for ${filename}, size: ${res.contentLength}`)
+              },
+              progress: res => {
+                const percentage = Math.round((res.bytesWritten / res.contentLength) * 100)
+                if (percentage % 25 === 0) {
+                  console.log(`[ASG Camera API] Thumbnail download progress ${filename}: ${percentage}%`)
+                }
+              },
+            })
+            thumbResult = await thumbJob.promise
+          } catch (thumbRnfsError: any) {
+            // Don't crash on thumbnail download errors, just log and continue
+            const thumbErrorMsg = thumbRnfsError?.message || thumbRnfsError?.toString() || "Unknown error"
+            console.warn(`[ASG Camera API] RNFS thumbnail download error for ${filename}: ${thumbErrorMsg}`)
+            throw thumbRnfsError // Re-throw to be caught by outer try-catch
+          }
 
           console.log(
             `[ASG Camera API] Thumbnail download result for ${filename}: status=${thumbResult.statusCode}, bytesWritten=${thumbResult.bytesWritten}`,
