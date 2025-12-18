@@ -222,6 +222,14 @@ export * from "./app/session/modules"
 // Export photo data types
 export {PhotoData} from "./types/photo-data"
 
+// Export device manager types
+export {
+  DeviceManager,
+  WiFiStatus,
+  BatteryStatus,
+  HotspotStatus,
+} from "./app/session/device-manager"
+
 /**
  * WebSocket error information
  */

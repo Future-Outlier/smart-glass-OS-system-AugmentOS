@@ -256,7 +256,7 @@
     },
     "packages/sdk": {
       "name": "@mentra/sdk",
-      "version": "2.1.30-beta.1",
+      "version": "2.1.31-beta.1",
       "dependencies": {
         "@logtail/pino": "^0.5.4",
         "axios": "^1.8.1",
