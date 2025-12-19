@@ -119,7 +119,6 @@ public class Mach1 extends SGCManager {
 
     @Override
     public void setMicEnabled(boolean enabled) {
-
     }
 
     @Override
@@ -492,7 +491,7 @@ public class Mach1 extends SGCManager {
             });
 
             Log.d(TAG, "Mach1 initialized with context and observers");
-            CoreManager.getInstance().handle_request_status();
+            CoreManager.getInstance().getStatus();
         } catch (Exception e) {
             Log.e(TAG, "Mach1 constructor FAILED with exception: " + e.getMessage(), e);
             Bridge.log("Mach1 constructor FAILED: " + e.getMessage());

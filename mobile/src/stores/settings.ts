@@ -105,7 +105,7 @@ export const SETTINGS: Record<string, Setting> = {
     key: "theme_preference",
     defaultValue: () => "light",
     // Force light mode - dark mode is not complete yet
-    override: () => "light",
+    // override: () => "light",
     writable: true,
     saveOnServer: true,
     persist: true,
@@ -584,7 +584,7 @@ export const useSettingsStore = create<SettingsState>()(
     },
     getRestUrl: () => {
       const serverUrl = get().getSetting(SETTINGS.backend_url.key)
-      console.log("GET REST URL: serverUrl:", serverUrl)
+      // console.log("GET REST URL: serverUrl:", serverUrl)
       const url = new URL(serverUrl)
       const secure = url.protocol === "https:"
       return `${secure ? "https" : "http"}://${url.hostname}:${url.port || (secure ? 443 : 80)}`

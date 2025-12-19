@@ -9,7 +9,7 @@ import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {TxKeyPath} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {$styles, ThemedStyle} from "@/theme"
+import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/utils/useAppTheme"
 
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
@@ -92,14 +92,14 @@ export default function OnboardingWelcome() {
     <Screen
       preset="fixed"
       backgroundColor={theme.colors.primary_foreground}
-      style={[themed($styles.screen), {paddingHorizontal: theme.spacing.s8}]}
+      style={[{paddingHorizontal: theme.spacing.s2}]}
       safeAreaEdges={["top"]}>
       <View style={themed($logoContainer)}>
         <LogoSvg width={108} height={58} />
       </View>
 
       <View style={themed($infoContainer)}>
-        <Text style={themed($title)} tx="onboarding:welcome" weight="semiBold" />
+        <Text style={themed($title)} tx="onboarding:welcome" weight="semibold" />
         <Spacer height={theme.spacing.s4} />
         <Text style={themed($subtitle)} tx="onboarding:doYouHaveGlasses" />
       </View>

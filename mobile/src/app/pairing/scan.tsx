@@ -24,7 +24,7 @@ import {Group} from "@/components/ui/Group"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
-import {$styles, ThemedStyle} from "@/theme"
+import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {MOCK_CONNECTION} from "@/utils/Constants"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
@@ -244,11 +244,15 @@ export default function SelectGlassesBluetoothScreen() {
 
   const filterDeviceName = (deviceName: string) => {
     // filter out MENTRA_LIVE from the device name:
-    return deviceName.replace("MENTRA_LIVE_BLE_", "")
+    let newName = deviceName.replace("MENTRA_LIVE_BLE_", "")
+    newName = newName.replace("MENTRA_LIVE_BT_", "")
+    newName = newName.replace("Mentra_Live_", "")
+    newName = newName.replace("MENTRA_LIVE_", "")
+    return newName
   }
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)} safeAreaEdges={["bottom"]}>
+    <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header leftIcon="chevron-left" onLeftPress={goBack} RightActionComponent={<MentraLogoStandalone />} />
       <View style={themed($container)}>
         <View style={themed($centerWrapper)}>

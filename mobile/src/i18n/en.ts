@@ -31,6 +31,7 @@ const en = {
     model: "Model",
     deviceId: "Device ID",
     serialNumber: "Serial number",
+    btMacAddress: "MAC address",
     buildNumber: "Build number",
     firmwareVersion: "Firmware version",
     appVersion: "App version",
@@ -45,6 +46,9 @@ const en = {
     phone: "Phone",
     bluetooth: "Bluetooth",
     preferredMic: "Preferred microphone",
+  },
+  wifiSetup: {
+    pleaseEnterNetworkName: "Please enter a network name",
   },
   screenSettings: {
     title: "Display Position Settings",
@@ -201,13 +205,16 @@ const en = {
     hardwareIncompatibleMessage:
       "{{app}} requires hardware that is not available on your connected glasses: {{missing}}",
     incompatibleApps: "Incompatible Apps",
-    incompatibleAppsCount: "Incompatible Apps ({{count}})",
-    incompatibleAppsDescription: "These apps require hardware features not available on your connected glasses",
+    incompatibleAppsCount: "{{count}} Incompatible Apps",
+    incompatibleAppsDescription:
+      "The following apps require specific hardware that is currently not available on your connected glasses.",
     incompatible: "Incompatible",
     noAppsInstalled: "No apps installed",
     swipeToView: "Swipe to view {{target}}",
     backgroundApps: "Background Apps",
+    backgroundAppsDescription: "Multiple background apps can be active at once.",
     backgroundAppsActive: "active",
+    backgroundAppsActiveCount: "{{count}} Active",
     tapAnAppSwitch: "Tap an app's switch to activate it",
     activeBackgroundApps: "Active Background Apps",
     inactiveBackgroundApps: "Inactive Background Apps",
@@ -375,6 +382,14 @@ const en = {
     passwordsDoNotMatch: "Passwords do not match",
     passwordTooShort: "Password must be at least 6 characters long",
     passwordUpdatedSuccess: "Password updated successfully",
+    // Change email
+    changeEmail: "Change Email",
+    changeEmailSubtitle: "Enter your new email address. We'll send a verification link to confirm the change.",
+    newEmailPlaceholder: "New email address",
+    sendVerificationEmail: "Send Verification Email",
+    emailChangeRequested: "Verification Email Sent",
+    checkNewEmailForVerification:
+      "Please check your new email address and click the verification link to complete the change.",
   },
   login: {
     title: "MentraOS",
@@ -388,8 +403,8 @@ const en = {
     continueWithApple: "Continue with Apple",
     continueWithEmail: "Continue with Email",
     termsText: "By signing in, you agree to our terms of service and privacy policy.",
-    emailPlaceholder: "you@example.com",
-    passwordPlaceholder: "********",
+    emailPlaceholder: "Email address",
+    passwordPlaceholder: "Password",
     createAccount: "Create Account",
     login: "Login",
     connectingToServer: "Connecting to MentraOS...",
@@ -417,6 +432,67 @@ const en = {
     loggingYouIn: "Logging you in...",
     invalidResetLink: "Invalid or expired reset link",
     verifyingResetLink: "Verifying reset link...",
+    // Error messages - user-friendly versions of API errors
+    errors: {
+      // Credentials errors
+      invalidCredentials: "Incorrect email or password",
+      enterCredentials: "Please enter your email and password",
+      emailRequired: "Please enter your email address",
+      passwordRequired: "Please enter your password",
+      // Password errors
+      passwordTooShort: "Password must be at least 6 characters",
+      passwordsMismatch: "Passwords don't match",
+      passwordSameAsOld: "New password must be different from your current password.",
+      weakPassword: "Password is too weak. Please use a stronger password.",
+      // Email errors
+      emailAlreadyRegistered: "This email is already registered",
+      emailNotConfirmed: "Please verify your email address before signing in.",
+      emailSameAsCurrent: "New email must be different from your current email.",
+      invalidEmailDomain: "Please use a valid email address.",
+      // Phone errors
+      phoneAlreadyRegistered: "This phone number is already registered.",
+      phoneNotConfirmed: "Please verify your phone number before signing in.",
+      // Account status errors
+      userBanned: "This account has been suspended.",
+      userNotFound: "Account not found.",
+      signupDisabled: "Account creation is currently disabled.",
+      // Verification errors
+      alreadySentEmail: "We already sent you a verification email. Please check your inbox (and spam folder).",
+      otpExpired: "The verification code has expired. Please request a new one.",
+      invalidOtp: "Invalid verification code. Please try again.",
+      invalidResetLink: "This password reset link is invalid or has expired. Please request a new one.",
+      // Session errors
+      sessionExpired: "Your session has expired. Please sign in again.",
+      refreshTokenExpired: "Your session has expired. Please sign in again.",
+      // Rate limiting
+      tooManyAttempts: "Too many attempts. Please wait a moment and try again.",
+      tooManyEmails: "Too many emails sent. Please wait before trying again.",
+      tooManySms: "Too many SMS messages sent. Please wait before trying again.",
+      // OAuth/SSO errors
+      oauthError: "Sign in with this provider failed. Please try again.",
+      providerDisabled: "This sign-in method is not available.",
+      // MFA errors
+      mfaRequired: "Additional verification is required.",
+      mfaFailed: "Verification failed. Please try again.",
+      // Network errors
+      networkError: "Connection failed. Please check your internet and try again.",
+      requestTimeout: "Request timed out. Please try again.",
+      // Generic fallback
+      genericError: "Something went wrong. Please try again.",
+    },
+    // Signup flow
+    signup: {
+      title: "Create Account",
+      subtitle: "Enter your email to get started",
+      createPassword: "Create a Password",
+      createPasswordSubtitle: "Choose a secure password for your account",
+      confirmPassword: "Confirm Password",
+      confirmPasswordPlaceholder: "Re-enter password",
+      continue: "Continue",
+      createAccount: "Create Account",
+      newToMentra: "New to MentraOS?",
+      creatingAccount: "Creating your account...",
+    },
   },
   warning: {
     nonProdBackend: "You are using a non-production backend.",

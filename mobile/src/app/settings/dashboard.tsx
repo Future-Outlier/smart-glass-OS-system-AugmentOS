@@ -58,7 +58,7 @@ export default function DashboardSettingsScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header titleTx="settings:dashboardSettings" leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView>
         <ToggleSetting

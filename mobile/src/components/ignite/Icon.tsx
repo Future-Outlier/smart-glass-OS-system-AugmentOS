@@ -109,6 +109,12 @@ const lucideIcons = {
   "locate": Locate,
   "layout-dashboard": LayoutDashboard,
   "wifi-off": WifiOff,
+  // "house": House,
+  // custom icons:
+  "shopping-bag": ShoppingBagIcon,
+  "shopping-bag-filled": ShoppingBagIcon,
+  "house": HomeIcon,
+  "house-filled": HomeIcon,
 }
 
 /**
@@ -119,7 +125,15 @@ const lucideIcons = {
  * @returns {JSX.Element} The rendered `Icon` component.
  */
 export function Icon(props: IconProps) {
-  const {name, color, size, style: $imageStyleOverride, containerStyle: $containerStyleOverride, ...viewProps} = props
+  const {
+    name,
+    color,
+    backgroundColor,
+    size,
+    style: $imageStyleOverride,
+    containerStyle: $containerStyleOverride,
+    ...viewProps
+  } = props
 
   const {theme} = useAppTheme()
 
@@ -134,46 +148,14 @@ export function Icon(props: IconProps) {
     size !== undefined && {fontSize: size, lineHeight: size, width: size, height: size},
   ]
 
-  // Special handling for custom icons
-
-  if (name === "shopping-bag-filled") {
-    return (
-      <ShoppingBagIcon
-        size={size}
-        color={color}
-        theme={theme}
-        containerStyle={$containerStyleOverride}
-        variant="filled"
-        {...viewProps}
-      />
-    )
-  }
-
-  if (name === "home-filled") {
-    return (
-      <HomeIcon
-        size={size}
-        color={color}
-        theme={theme}
-        containerStyle={$containerStyleOverride}
-        variant="filled"
-        {...viewProps}
-      />
-    )
-  }
-
   // @ts-ignore
   if (lucideIcons[name]) {
     // @ts-ignore
     const IconComponent = lucideIcons[name] as any
-    const fill = name.includes("filled") ? color : "transparent"
-    // const fill = color
-    // const fill = undefined
-    // const variant = name.includes("filled") ? "filled" : "default"
 
     return (
       <View {...viewProps} style={$containerStyleOverride}>
-        <IconComponent style={$imageStyle} size={size} color={color} fill={fill} />
+        <IconComponent style={$imageStyle} size={size} color={color} fill={backgroundColor ?? "transparent"} />
       </View>
     )
   }
@@ -196,11 +178,6 @@ export function Icon(props: IconProps) {
 export const iconRegistry = {
   // included in other font sets (imported automatically):
   // included here mostly for ide/type hinting purposes:
-  // Custom SVG icons:
-  "home": 1,
-  "home-filled": 1,
-  "shopping-bag": 1,
-  "shopping-bag-filled": 1,
   // tabler icons:
   "settings": 1,
   "bluetooth-connected": 1,
@@ -228,6 +205,7 @@ export const iconRegistry = {
   "chevron-right": 1,
   "trash": 1,
   "trash-x": 1,
+  "check": 1,
   // lucide-react-native icons:
   ...lucideIcons,
 }

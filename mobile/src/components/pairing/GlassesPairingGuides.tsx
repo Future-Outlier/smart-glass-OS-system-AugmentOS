@@ -173,9 +173,9 @@ const $guideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
 
 const $guideTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   fontSize: 24,
-  fontWeight: "bold",
+  fontWeight: 600,
   marginBottom: spacing.s3 + 2,
-  color: colors.text,
+  color: colors.secondary_foreground,
 })
 
 const $guideStep: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
