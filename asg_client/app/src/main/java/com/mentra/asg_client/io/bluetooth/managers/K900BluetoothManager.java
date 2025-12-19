@@ -649,15 +649,8 @@ public class K900BluetoothManager extends BaseBluetoothManager implements Serial
             // Move to next packet
             currentFileTransfer.currentPacketIndex = zeroBasedIndex + 1;
 
-            // CRITICAL: Add pacing delay between packets to prevent BES2700 BLE TX buffer overflow.
-            // BES2700 ACKs via UART faster than it can send BLE notifications to phone.
-            // Without this delay, packets queue up until BES2700's BLE TX buffer overflows,
-            // causing state=0 failures and eventually freezing BLE TX completely.
-            fileTransferExecutor.schedule(() -> {
-                if (currentFileTransfer != null && currentFileTransfer.isActive) {
-                    sendNextFilePacket();
-                }
-            }, PACING_DELAY_MS, java.util.concurrent.TimeUnit.MILLISECONDS);
+            // Send next packet immediately - BES flow control via ACKs handles pacing
+            sendNextFilePacket();
         } else {
             // Error - BES2700 buffer likely full, need to backoff before retry
             // state=0 means BES couldn't process the packet (flow control)
@@ -736,9 +729,26 @@ public class K900BluetoothManager extends BaseBluetoothManager implements Serial
      * @param success True if phone confirmed success, false if phone wants retry
      */
     public void handlePhoneConfirmation(String fileName, boolean success) {
-        if (currentFileTransfer == null || !currentFileTransfer.waitingForPhoneConfirmation) {
-            Log.w(TAG, "⚠️ Received unexpected phone confirmation for: " + fileName);
+        if (currentFileTransfer == null) {
+            Log.w(TAG, "⚠️ Received phone confirmation but no active transfer for: " + fileName);
             return;
+        }
+
+        // Accept confirmation if:
+        // 1. We're explicitly waiting for it (waitingForPhoneConfirmation == true), OR
+        // 2. Transfer is active and all packets have been sent (race condition: phone responded faster than expected)
+        boolean allPacketsSent = currentFileTransfer.currentPacketIndex >= currentFileTransfer.totalPackets;
+        if (!currentFileTransfer.waitingForPhoneConfirmation && !allPacketsSent) {
+            Log.w(TAG, "⚠️ Received phone confirmation too early for: " + fileName +
+                      " (currentPacket=" + currentFileTransfer.currentPacketIndex +
+                      "/" + currentFileTransfer.totalPackets + ")");
+            return;
+        }
+
+        // If phone responded before we entered waiting state, log it
+        if (!currentFileTransfer.waitingForPhoneConfirmation && allPacketsSent) {
+            Log.i(TAG, "📱 Phone responded before waiting state - accepting early confirmation for: " + fileName);
+            currentFileTransfer.waitingForPhoneConfirmation = true; // Set it now to avoid timeout firing
         }
 
         if (!currentFileTransfer.fileName.equals(fileName)) {
