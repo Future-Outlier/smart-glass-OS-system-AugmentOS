@@ -32,6 +32,7 @@ interface FloatingImageLayerProps {
   backgroundOpacity: SharedValue<number>
   backgroundColor: string
   onDismiss: () => void
+  onDismissStart?: () => void // Called when dismiss animation starts
 }
 
 export function FloatingImageLayer({
@@ -45,6 +46,7 @@ export function FloatingImageLayer({
   backgroundOpacity,
   backgroundColor,
   onDismiss,
+  onDismissStart,
 }: FloatingImageLayerProps) {
   // Drag state (reversible gesture)
   const dragOffset = useSharedValue(0)
@@ -70,7 +72,28 @@ export function FloatingImageLayer({
       const shouldDismiss = Math.abs(e.translationY) > DISMISS_THRESHOLD || Math.abs(e.velocityY) > VELOCITY_THRESHOLD
 
       if (shouldDismiss) {
-        // Branch B - Dismiss: animate to source frame
+        // Branch B - Dismiss
+        // CRITICAL: Merge dragOffset into y.value AND ensure scale is exactly 1.0
+        const currentDragOffset = dragOffset.value
+        const currentScale = dragScale.value
+        const currentY = y.value
+
+        // Merge the drag offset into base position
+        const mergedY = currentY + currentDragOffset
+        y.value = mergedY
+
+        // Force reset all drag transforms to 0/1 IMMEDIATELY
+        dragOffset.value = 0
+        dragScale.value = 1.0
+
+        console.log("[FloatingImageLayer] Merging drag offset into position:", currentDragOffset)
+
+        // Notify parent that dismiss is starting
+        if (onDismissStart) {
+          runOnJS(onDismissStart)()
+        }
+
+        // Then trigger actual dismiss animation
         runOnJS(onDismiss)()
       } else {
         // Branch A - Cancel: snap back to fullscreen - linear timing only
@@ -80,17 +103,22 @@ export function FloatingImageLayer({
       }
     })
 
-  const imageStyle = useAnimatedStyle(() => ({
-    position: "absolute",
-    left: x.value,
-    top: y.value + dragOffset.value,
-    width: width.value,
-    height: height.value,
-    opacity: opacity.value,
-    borderRadius: borderRadius.value,
-    transform: [{scale: dragScale.value}],
-    overflow: "hidden",
-  }))
+  const imageStyle = useAnimatedStyle(() => {
+    // Only apply scale if it's not 1.0 (optimization and prevents rounding errors)
+    const transforms = dragScale.value !== 1.0 ? [{scale: dragScale.value}] : []
+
+    return {
+      position: "absolute",
+      left: x.value,
+      top: y.value + dragOffset.value,
+      width: width.value,
+      height: height.value,
+      opacity: opacity.value,
+      borderRadius: borderRadius.value,
+      transform: transforms,
+      overflow: "hidden",
+    }
+  })
 
   const backgroundStyle = useAnimatedStyle(() => ({
     opacity: backgroundOpacity.value,

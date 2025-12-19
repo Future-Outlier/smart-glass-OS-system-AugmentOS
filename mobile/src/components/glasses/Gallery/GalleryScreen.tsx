@@ -121,7 +121,6 @@ export function GalleryScreen() {
 
   // Floating transition state
   const [sourceFrames, setSourceFrames] = useState<Map<string, SourceFrame>>(new Map())
-  const [hiddenPhotoName, setHiddenPhotoName] = useState<string | null>(null)
   const [transitionState, setTransitionState] = useState<TransitionState>({
     phase: "idle",
     activePhoto: null,
@@ -152,6 +151,9 @@ export function GalleryScreen() {
   // Selection mode state
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set())
+
+  // Store refs to thumbnails for re-measurement
+  const thumbnailRefs = useRef<Map<string, any>>(new Map())
 
   // Load downloaded photos (validates files exist and cleans up stale entries)
   const loadDownloadedPhotos = useCallback(async () => {
@@ -303,40 +305,81 @@ export function GalleryScreen() {
 
   // Handle dismiss animation (fullscreen → grid)
   const handleDismiss = useCallback(() => {
-    const {sourceFrame} = transitionState
-    if (!sourceFrame) return
+    const {sourceFrame, activePhoto} = transitionState
+    if (!sourceFrame || !activePhoto) return
 
-    console.log("[GalleryScreen] Starting dismiss animation to source frame:", sourceFrame)
+    console.log("[GalleryScreen] Starting dismiss animation")
 
     // Update state
     setTransitionState(prev => ({...prev, phase: "dismissing"}))
 
-    // Cleanup function to run after animation
-    const cleanupAfterDismiss = () => {
-      console.log("[GalleryScreen] Dismiss animation complete - cleaning up")
-      setTransitionState({
-        phase: "idle",
-        activePhoto: null,
-        sourceFrame: null,
-        progress: 0,
+    // RE-MEASURE thumbnail position RIGHT NOW (may have scrolled since opening)
+    const thumbnailRef = thumbnailRefs.current.get(activePhoto.name)
+    if (thumbnailRef) {
+      thumbnailRef.measureInWindow((x: number, y: number, width: number, height: number) => {
+        if (x !== undefined && y !== undefined && width > 0 && height > 0) {
+          const freshSourceFrame = {x, y, width, height, photoName: activePhoto.name}
+
+          // Cleanup function to run after animation
+          const cleanupAfterDismiss = () => {
+            console.log("[GalleryScreen] ✅ Dismiss animation complete!")
+
+            // Clean up state - floating layer will be unmounted
+            // Thumbnail was visible underneath the entire time
+            setTransitionState({
+              phase: "idle",
+              activePhoto: null,
+              sourceFrame: null,
+              progress: 0,
+            })
+            setSelectedPhoto(null)
+          }
+
+          // Animate back to FRESH source frame - keep image visible during entire animation
+          const timingConfig = {duration: 300}
+
+          console.log("[GalleryScreen] Starting dismiss animation to thumbnail")
+
+          // Animate back to thumbnail position AND fade out simultaneously
+          floatingX.value = withTiming(freshSourceFrame.x, timingConfig)
+          floatingY.value = withTiming(freshSourceFrame.y, timingConfig)
+          floatingWidth.value = withTiming(freshSourceFrame.width, timingConfig)
+          floatingHeight.value = withTiming(freshSourceFrame.height, timingConfig)
+          floatingBorderRadius.value = withTiming(8, timingConfig)
+          floatingBackgroundOpacity.value = withTiming(0, timingConfig)
+
+          // Fade out as it shrinks (thumbnail visible underneath entire time)
+          floatingOpacity.value = withTiming(0, {duration: 250}, finished => {
+            if (finished) {
+              console.log("[GalleryScreen] ✅ Fade out complete")
+              runOnJS(cleanupAfterDismiss)()
+            }
+          })
+        } else {
+          console.warn("[GalleryScreen] Re-measurement failed, using old source frame")
+          // Fallback to old behavior if measurement fails
+          const timingConfig = {duration: 300}
+          floatingX.value = withTiming(sourceFrame.x, timingConfig)
+          floatingY.value = withTiming(sourceFrame.y, timingConfig)
+          floatingWidth.value = withTiming(sourceFrame.width, timingConfig)
+          floatingHeight.value = withTiming(sourceFrame.height, timingConfig)
+          floatingBorderRadius.value = withTiming(8, timingConfig)
+          floatingBackgroundOpacity.value = withTiming(0, timingConfig)
+          floatingOpacity.value = withTiming(0, timingConfig, finished => {
+            if (finished) {
+              runOnJS(() => {
+                setTransitionState({phase: "idle", activePhoto: null, sourceFrame: null, progress: 0})
+                setSelectedPhoto(null)
+              })()
+            }
+          })
+        }
       })
-      setHiddenPhotoName(null) // Show grid thumbnail again
+    } else {
+      console.warn("[GalleryScreen] Thumbnail ref not found, cleaning up immediately")
+      setTransitionState({phase: "idle", activePhoto: null, sourceFrame: null, progress: 0})
       setSelectedPhoto(null)
     }
-
-    // Animate back to source frame - use timing for precise motion
-    const timingConfig = {duration: 300}
-    floatingX.value = withTiming(sourceFrame.x, timingConfig)
-    floatingY.value = withTiming(sourceFrame.y, timingConfig)
-    floatingWidth.value = withTiming(sourceFrame.width, timingConfig)
-    floatingHeight.value = withTiming(sourceFrame.height, timingConfig)
-    floatingBorderRadius.value = withTiming(8, timingConfig)
-    floatingBackgroundOpacity.value = withTiming(0, timingConfig)
-    floatingOpacity.value = withTiming(0, timingConfig, finished => {
-      if (finished) {
-        runOnJS(cleanupAfterDismiss)()
-      }
-    })
   }, [
     transitionState,
     floatingX,
@@ -386,6 +429,7 @@ export function GalleryScreen() {
 
     // Calculate destination frame (fullscreen, aspect-fit)
     const destFrame = calculateFullscreenFrame(item.photo)
+    console.log("[GalleryScreen] Destination frame (fullscreen):", destFrame)
 
     // Set initial position (at grid thumbnail)
     floatingX.value = sourceFrame.x
@@ -404,8 +448,7 @@ export function GalleryScreen() {
       progress: 0,
     })
 
-    // Hide the grid thumbnail (so it doesn't show underneath)
-    setHiddenPhotoName(item.photo.name)
+    // Thumbnail stays visible underneath - no hiding needed
 
     // Completion function for opening animation
     const completeOpenAnimation = () => {
@@ -900,9 +943,11 @@ export function GalleryScreen() {
     return (
       <TouchableOpacity
         ref={ref => {
-          // Measure this thumbnail's position for transition
+          // Store ref for re-measurement on dismiss
           if (ref && item.photo) {
-            // Use setTimeout to ensure layout is complete
+            thumbnailRefs.current.set(item.photo.name, ref)
+
+            // Initial measurement for transition
             setTimeout(() => {
               ref.measureInWindow((x, y, width, height) => {
                 if (x !== undefined && y !== undefined && width > 0 && height > 0) {
@@ -922,12 +967,7 @@ export function GalleryScreen() {
             }, 100)
           }
         }}
-        style={[
-          themed($photoItem),
-          {width: itemWidth},
-          isDownloading && themed($photoItemDisabled),
-          item.photo?.name === hiddenPhotoName && {opacity: 0}, // Hide during transition
-        ]}
+        style={[themed($photoItem), {width: itemWidth}, isDownloading && themed($photoItemDisabled)]}
         onPress={() => handlePhotoPress(item)}
         onLongPress={() => {
           if (item.photo && !isDownloading) {
@@ -1101,6 +1141,9 @@ export function GalleryScreen() {
             backgroundOpacity={floatingBackgroundOpacity}
             backgroundColor={theme.colors.background}
             onDismiss={handleDismiss}
+            onDismissStart={() => {
+              console.log("[GalleryScreen] Dismiss started - dragOffset has been reset to 0")
+            }}
           />
         )}
 
