@@ -7,9 +7,11 @@
  */
 
 import { Logger } from "pino";
-import WebSocket from "ws";
 
 import { CloudToGlassesMessageType, MicrophoneStateChange } from "@mentra/sdk";
+
+import { WebSocketReadyState } from "../websocket/types";
+
 
 // import subscriptionService from "./subscription.service";
 import UserSession from "./UserSession";
@@ -153,7 +155,7 @@ export class MicrophoneManager {
     requiredData: Array<"pcm" | "transcription" | "pcm_or_transcription">,
     isKeepAlive = false,
   ): void {
-    if (!this.session.websocket || this.session.websocket.readyState !== WebSocket.OPEN) {
+    if (!this.session.websocket || this.session.websocket.readyState !== WebSocketReadyState.OPEN) {
       this.logger.warn("Cannot send microphone state change: WebSocket not open");
       return;
     }
@@ -337,7 +339,7 @@ export class MicrophoneManager {
       // Start keep-alive timer (no logging - routine operation)
       this.keepAliveTimer = setInterval(() => {
         // Only send if WebSocket is still open and we still have media subscriptions
-        if (this.session.websocket && this.session.websocket.readyState === WebSocket.OPEN) {
+        if (this.session.websocket && this.session.websocket.readyState === WebSocketReadyState.OPEN) {
           // Use cached state for the check
           if (this.cachedSubscriptionState.hasMedia && this.enabled) {
             // Don't log routine keepalives - they create noise every 10 seconds

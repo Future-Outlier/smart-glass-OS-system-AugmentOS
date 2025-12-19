@@ -6,12 +6,15 @@
  * This follows the pattern used by other managers like MicrophoneManager and DisplayManager.
  */
 
-import WebSocket from "ws";
-import { StreamType } from "@mentra/sdk";
 import { Logger } from "pino";
+
+import { StreamType } from "@mentra/sdk";
+
 // import subscriptionService from "./subscription.service";
 // import { createLC3Service } from "../lc3/lc3.service";
 import { AudioWriter } from "../debug/audio-writer";
+import { WebSocketReadyState } from "../websocket/types";
+
 import UserSession from "./UserSession";
 
 /**
@@ -53,8 +56,7 @@ export class AudioManager {
   private audioWriter?: AudioWriter;
 
   // Buffer for recent audio (last 10 seconds)
-  private recentAudioBuffer: { data: ArrayBufferLike; timestamp: number }[] =
-    [];
+  private recentAudioBuffer: { data: ArrayBufferLike; timestamp: number }[] = [];
 
   // Ordered buffer for sequenced audio chunks
   // private orderedBuffer: OrderedAudioBuffer;
@@ -98,11 +100,7 @@ export class AudioManager {
           buf = Buffer.from(audioData as ArrayBuffer);
         } else if (ArrayBuffer.isView(audioData)) {
           const view = audioData as ArrayBufferView;
-          buf = Buffer.from(
-            view.buffer,
-            (view as any).byteOffset || 0,
-            (view as any).byteLength || view.byteLength,
-          );
+          buf = Buffer.from(view.buffer, (view as any).byteOffset || 0, (view as any).byteLength || view.byteLength);
         }
 
         if (!buf) {
@@ -178,17 +176,11 @@ export class AudioManager {
   private relayAudioToApps(audioData: ArrayBuffer | Buffer): void {
     try {
       // Get subscribers using subscriptionService instead of subscriptionManager
-      const subscribedPackageNames =
-        this.userSession.subscriptionManager.getSubscribedApps(
-          StreamType.AUDIO_CHUNK,
-        );
+      const subscribedPackageNames = this.userSession.subscriptionManager.getSubscribedApps(StreamType.AUDIO_CHUNK);
       // Skip if no subscribers
       if (subscribedPackageNames.length === 0) {
         if (this.logAudioChunkCount % 500 === 0) {
-          this.logger.debug(
-            { feature: "livekit" },
-            "AUDIO_CHUNK: no subscribed apps",
-          );
+          this.logger.debug({ feature: "livekit" }, "AUDIO_CHUNK: no subscribed apps");
         }
         this.logAudioChunkCount++;
         return;
@@ -209,13 +201,10 @@ export class AudioManager {
       for (const packageName of subscribedPackageNames) {
         const connection = this.userSession.appWebsockets.get(packageName);
 
-        if (connection && connection.readyState === WebSocket.OPEN) {
+        if (connection && connection.readyState === WebSocketReadyState.OPEN) {
           try {
             if (this.logAudioChunkCount % 500 === 0) {
-              this.logger.debug(
-                { feature: "livekit", packageName, bytes },
-                "AUDIO_CHUNK: sending to app",
-              );
+              this.logger.debug({ feature: "livekit", packageName, bytes }, "AUDIO_CHUNK: sending to app");
             }
 
             // Node ws supports Buffer; ensure we send Buffer for efficiency
@@ -226,17 +215,11 @@ export class AudioManager {
             }
 
             if (this.logAudioChunkCount % 500 === 0) {
-              this.logger.debug(
-                { feature: "livekit", packageName, bytes },
-                "AUDIO_CHUNK: sent to app",
-              );
+              this.logger.debug({ feature: "livekit", packageName, bytes }, "AUDIO_CHUNK: sent to app");
             }
           } catch (sendError) {
             if (this.logAudioChunkCount % 500 === 0) {
-              this.logger.error(
-                sendError,
-                `Error sending audio to ${packageName}:`,
-              );
+              this.logger.error(sendError, `Error sending audio to ${packageName}:`);
             }
           }
         }

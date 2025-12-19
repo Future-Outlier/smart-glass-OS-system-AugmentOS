@@ -3,10 +3,10 @@
  * Validates that both phone and glasses are connected before allowing hardware operations
  */
 
-import { WebSocket } from "ws";
 
 import { logger } from "../logging/pino-logger";
 import UserSession from "../session/UserSession";
+import { WebSocketReadyState } from "../websocket/types";
 
 export interface ValidationResult {
   valid: boolean;
@@ -69,7 +69,7 @@ export class ConnectionValidator {
       };
     }
 
-    if (userSession.websocket.readyState !== WebSocket.OPEN) {
+    if (userSession.websocket.readyState !== WebSocketReadyState.OPEN) {
       logger.debug(
         {
           userId: userSession.userId,
@@ -167,7 +167,7 @@ export class ConnectionValidator {
       return { valid: true };
     }
 
-    if (!userSession.websocket || userSession.websocket.readyState !== WebSocket.OPEN) {
+    if (!userSession.websocket || userSession.websocket.readyState !== WebSocketReadyState.OPEN) {
       return {
         valid: false,
         error: "Phone is not connected",
@@ -247,7 +247,7 @@ export class ConnectionValidator {
 
     if (!userSession.websocket) {
       parts.push("No WebSocket");
-    } else if (userSession.websocket.readyState !== WebSocket.OPEN) {
+    } else if (userSession.websocket.readyState !== WebSocketReadyState.OPEN) {
       parts.push(`WebSocket state: ${userSession.websocket.readyState}`);
     } else {
       parts.push("WebSocket: OPEN");
