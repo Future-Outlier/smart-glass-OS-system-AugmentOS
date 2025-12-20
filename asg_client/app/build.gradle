@@ -25,8 +25,10 @@ def asgStorePassword = project.hasProperty("ASG_STORE_PASSWORD") ? project.prope
 def asgKeyPassword = project.hasProperty("ASG_KEY_PASSWORD") ? project.property("ASG_KEY_PASSWORD") : ""
 def asgKeyAlias = project.hasProperty("ASG_KEY_ALIAS") ? project.property("ASG_KEY_ALIAS") : "asg"
 
-// Determine which signing config will be used
-def productionKeystoreFile = file("credentials/asg-keystore.jks")
+// Find keystore: check shared location first, then local
+def sharedKeystoreFile = new File(System.getProperty("user.home"), ".mentra/credentials/asg-keystore.jks")
+def localKeystoreFile = file("../credentials/asg-keystore.jks")
+def productionKeystoreFile = sharedKeystoreFile.exists() ? sharedKeystoreFile : localKeystoreFile
 def useReleaseKey = productionKeystoreFile.exists() && asgStorePassword ? true : false
 
 // Print signing configuration status during build
@@ -43,7 +45,7 @@ gradle.taskGraph.whenReady { taskGraph ->
         if (isReleaseBuild) {
             if (useReleaseKey) {
                 println "║  ✅ RELEASE BUILD: Using PRODUCTION signing key               ║"
-                println "║     Keystore: credentials/asg-keystore.jks                    ║"
+                println "║     Keystore: ${productionKeystoreFile.absolutePath.take(50).padRight(50)}║"
                 println "║     Key Alias: ${asgKeyAlias.padRight(48)}║"
             } else {
                 println "║  ⚠️  RELEASE BUILD: Using DEBUG signing key (FALLBACK!)       ║"
@@ -68,7 +70,7 @@ gradle.taskGraph.whenReady { taskGraph ->
         if (isDebugBuild && !isReleaseBuild) {
             if (useReleaseKey) {
                 println "║  🔧 DEBUG BUILD: Using PRODUCTION signing key                 ║"
-                println "║     Keystore: credentials/asg-keystore.jks                    ║"
+                println "║     Keystore: ${productionKeystoreFile.absolutePath.take(50).padRight(50)}║"
                 println "║     Key Alias: ${asgKeyAlias.padRight(48)}║"
                 println "║     ⚠️  Same signature as release builds                      ║"
             } else {
@@ -103,9 +105,8 @@ android {
         debug {
             // Use production keystore for debug builds if available (maintains app identity)
             // Otherwise fall back to default debug keystore
-            def productionKeystore = file("../credentials/asg-keystore.jks")
-            if (productionKeystore.exists() && asgStorePassword) {
-                storeFile productionKeystore
+            if (productionKeystoreFile.exists() && asgStorePassword) {
+                storeFile productionKeystoreFile
                 storePassword = asgStorePassword
                 keyAlias = asgKeyAlias
                 keyPassword = asgKeyPassword
@@ -121,9 +122,8 @@ android {
         release {
             // Use production keystore for release builds if available
             // Otherwise fall back to debug keystore (with warning)
-            def productionKeystore = file("../credentials/asg-keystore.jks")
-            if (productionKeystore.exists() && asgStorePassword) {
-                storeFile productionKeystore
+            if (productionKeystoreFile.exists() && asgStorePassword) {
+                storeFile productionKeystoreFile
                 storePassword = asgStorePassword
                 keyAlias = asgKeyAlias
                 keyPassword = asgKeyPassword
