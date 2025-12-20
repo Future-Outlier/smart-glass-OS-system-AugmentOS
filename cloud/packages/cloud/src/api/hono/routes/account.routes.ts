@@ -82,12 +82,12 @@ app.get("/me", validateCoreToken, getProfile);
 app.put("/profile", validateCoreToken, updateProfile);
 app.post("/request-deletion", validateCoreToken, requestDeletion);
 app.post("/request-export", validateCoreToken, requestExport);
-app.get("/export-status/:id", validateCoreToken, getExportStatus);
-app.get("/export-download/:id", validateCoreToken, downloadExport);
-app.get("/privacy-settings", validateCoreToken, getPrivacySettings);
-app.put("/privacy-settings", validateCoreToken, updatePrivacySettings);
-app.get("/app/:packageName", validateCoreToken, getAppInfo);
-app.get("/app/:packageName/webview-token", validateCoreToken, getWebviewToken);
+app.get("/export-status", validateCoreToken, getExportStatus);
+app.get("/download-export/:id", validateCoreToken, downloadExport);
+app.get("/privacy", validateCoreToken, getPrivacySettings);
+app.put("/privacy", validateCoreToken, updatePrivacySettings);
+app.get("/oauth/app/:packageName", validateCoreToken, getAppInfo);
+app.post("/oauth/token", validateCoreToken, generateOAuthToken);
 
 // ============================================================================
 // Middleware
@@ -430,10 +430,14 @@ async function requestExport(c: AppContext) {
 async function getExportStatus(c: AppContext) {
   try {
     const userEmail = c.get("email");
-    const id = c.req.param("id");
+    const id = c.req.query("id");
 
     if (!userEmail) {
       return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    if (!id) {
+      return c.json({ error: "Export ID is required" }, 400);
     }
 
     const exportRequest = exportRequests.get(id);
@@ -637,10 +641,15 @@ async function getAppInfo(c: AppContext) {
  * GET /api/account/app/:packageName/webview-token
  * Get a signed token for webview authentication.
  */
-async function getWebviewToken(c: AppContext) {
+/**
+ * POST /api/account/oauth/token
+ * Generate signed user token for OAuth flow.
+ */
+async function generateOAuthToken(c: AppContext) {
   try {
-    const packageName = c.req.param("packageName");
     const userEmail = c.get("email");
+    const body = await c.req.json().catch(() => ({}));
+    const { packageName } = body;
 
     if (!userEmail) {
       return c.json({ error: "Unauthorized" }, 401);
@@ -652,14 +661,16 @@ async function getWebviewToken(c: AppContext) {
 
     const signedToken = await tokenService.issueUserToken(userEmail, packageName);
 
+    logger.info(`Generated OAuth token for user ${userEmail} and app ${packageName}`);
+
     return c.json({
       success: true,
       token: signedToken,
-      expiresIn: "1h",
+      expiresIn: "10m",
     });
   } catch (error) {
-    logger.error(error, "Error in /account/app/:packageName/webview-token:");
-    return c.json({ error: "Internal server error" }, 500);
+    logger.error(error, "Error in /account/oauth/token:");
+    return c.json({ error: "Failed to generate authentication token" }, 500);
   }
 }
 

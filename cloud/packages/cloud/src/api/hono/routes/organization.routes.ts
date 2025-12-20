@@ -38,12 +38,12 @@ app.put("/:orgId", authMiddleware, updateOrg);
 app.delete("/:orgId", authMiddleware, deleteOrg);
 
 // Member management
-app.post("/:orgId/invite", authMiddleware, invite);
-app.post("/:orgId/accept-invite", authMiddleware, acceptInvite);
-app.put("/:orgId/members/:memberId/role", authMiddleware, changeRole);
+app.post("/:orgId/members", authMiddleware, invite);
+app.post("/accept/:token", authMiddleware, acceptInvite);
+app.patch("/:orgId/members/:memberId", authMiddleware, changeRole);
 app.delete("/:orgId/members/:memberId", authMiddleware, removeMember);
-app.post("/:orgId/resend-invite", authMiddleware, resendInvite);
-app.post("/:orgId/rescind-invite", authMiddleware, rescindInvite);
+app.post("/:orgId/invites/resend", authMiddleware, resendInvite);
+app.post("/:orgId/invites/rescind", authMiddleware, rescindInvite);
 
 // ============================================================================
 // Middleware
@@ -294,17 +294,12 @@ async function invite(c: AppContext) {
  */
 async function acceptInvite(c: AppContext) {
   try {
-    const body = await c.req.json().catch(() => ({}));
-    const { token } = body as { token?: string };
+    const token = c.req.param("token");
     const userEmail = c.get("email");
     const user = await User.findOne({ email: userEmail });
 
     if (!user) {
       return c.json({ success: false, message: "User not found" }, 404);
-    }
-
-    if (!token) {
-      return c.json({ success: false, message: "Invite token is required" }, 400);
     }
 
     const org = await OrganizationService.acceptInvite(token, user);
@@ -317,7 +312,7 @@ async function acceptInvite(c: AppContext) {
 }
 
 /**
- * PUT /api/orgs/:orgId/members/:memberId/role
+ * PATCH /api/orgs/:orgId/members/:memberId
  * Change a member's role.
  */
 async function changeRole(c: AppContext) {

@@ -17,14 +17,14 @@ const app = new Hono<AppEnv>();
 // Routes
 // ============================================================================
 
-app.get("/api/transcripts/:appSessionId", getTranscripts);
+app.get("/:appSessionId", getTranscripts);
 
 // ============================================================================
 // Handlers
 // ============================================================================
 
 /**
- * GET /api/transcripts/api/transcripts/:appSessionId
+ * GET /api/transcripts/:appSessionId
  * Get transcripts for a session.
  *
  * Headers:

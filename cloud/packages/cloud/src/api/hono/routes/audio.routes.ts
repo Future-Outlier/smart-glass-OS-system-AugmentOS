@@ -21,8 +21,8 @@ const ALLOWED_PACKAGE = "com.augmentos.shazam";
 // Routes
 // ============================================================================
 
-app.get("/api/audio/:userId", shazamAuthMiddleware, getAudio);
-app.get("/api/tts", textToSpeech);
+app.get("/:userId", shazamAuthMiddleware, getAudio);
+app.get("/tts", textToSpeech);
 
 // ============================================================================
 // Middleware
@@ -81,7 +81,7 @@ async function shazamAuthMiddleware(c: AppContext, next: () => Promise<void>) {
 // ============================================================================
 
 /**
- * GET /api/audio/api/audio/:userId
+ * GET /api/audio/:userId
  * Returns the last 10 seconds of audio for the session as a binary buffer.
  */
 async function getAudio(c: AppContext) {
@@ -118,7 +118,7 @@ async function getAudio(c: AppContext) {
 }
 
 /**
- * GET /api/audio/api/tts
+ * GET /api/audio/tts
  * Text-to-speech using ElevenLabs API.
  * Query params: text, voice_id, model_id, voice_settings
  */
@@ -253,4 +253,5 @@ async function textToSpeech(c: AppContext) {
   }
 }
 
+export { textToSpeech };
 export default app;

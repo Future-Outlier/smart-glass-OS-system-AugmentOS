@@ -47,8 +47,8 @@ app.get("/version", getVersion);
 app.get("/:packageName", getAppByPackage);
 app.post("/:packageName/start", authWithOptionalSession, startApp);
 app.post("/:packageName/stop", authWithOptionalSession, stopApp);
-app.post("/:packageName/install", authWithOptionalSession, installApp);
-app.post("/:packageName/uninstall", authWithOptionalSession, uninstallApp);
+app.post("/install/:packageName", authWithOptionalSession, installApp);
+app.post("/uninstall/:packageName", authWithOptionalSession, uninstallApp);
 
 // ============================================================================
 // Middleware

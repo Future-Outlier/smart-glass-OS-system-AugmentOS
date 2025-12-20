@@ -57,7 +57,7 @@ import accountRoutes from "./api/hono/routes/account.routes";
 import appUptimeRoutes from "./api/hono/routes/app-uptime.routes";
 import developerRoutes from "./api/hono/routes/developer.routes";
 import organizationRoutes from "./api/hono/routes/organization.routes";
-import audioRoutes from "./api/hono/routes/audio.routes";
+import audioRoutes, { textToSpeech } from "./api/hono/routes/audio.routes";
 import errorReportRoutes from "./api/hono/routes/error-report.routes";
 import transcriptsRoutes from "./api/hono/routes/transcripts.routes";
 import appCommunicationRoutes from "./api/hono/routes/app-communication.routes";
@@ -314,6 +314,9 @@ app.route("/api/orgs", organizationRoutes);
 
 // Audio routes
 app.route("/api/audio", audioRoutes);
+
+// TTS route (backwards compatibility - SDK calls /api/tts directly)
+app.get("/api/tts", textToSpeech);
 
 // Error report routes
 app.route("/", errorReportRoutes);
