@@ -3,20 +3,24 @@
  * Initializes core services and sets up HTTP/WebSocket servers using Bun.serve().
  *
  * This is the new entry point using Hono for native Bun HTTP handling.
- * Includes optional Express fallback for truly legacy routes not yet migrated.
+ *
+ * IMPORTANT: This file explicitly calls Bun.serve() and does NOT use export default
+ * to prevent Bun from auto-starting the server a second time. Bun auto-detects
+ * `export default` with a `fetch` function and tries to call Bun.serve() on it,
+ * which would cause EADDRINUSE errors.
  */
 
 import dotenv from "dotenv";
 dotenv.config();
 
 import * as mongoConnection from "./connections/mongodb.connection";
+import honoApp from "./hono-app";
 import * as AppUptimeService from "./services/core/app-uptime.service";
 import { memoryTelemetryService } from "./services/debug/MemoryTelemetryService";
 import { logger as rootLogger } from "./services/logging/pino-logger";
 import { handleUpgrade, websocketHandlers } from "./services/websocket/bun-websocket";
 
 // Hono app with all routes
-import honoApp from "./hono-app";
 
 // Optional: Legacy Express handler for routes not yet migrated
 // Uncomment the import below if you need Express fallback
@@ -139,4 +143,9 @@ logger.info(`\n
     ☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️
     ☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️\n`);
 
-export default server;
+// IMPORTANT: Do NOT add `export default server` here!
+// Bun auto-detects default exports with a `fetch` function and calls Bun.serve() on them.
+// Since we already called Bun.serve() above, this would cause EADDRINUSE (port already in use).
+//
+// If you need to export the server for testing, use a named export:
+// export { server };
