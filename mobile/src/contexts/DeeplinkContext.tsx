@@ -1,5 +1,7 @@
 import * as Linking from "expo-linking"
+import * as WebBrowser from "expo-web-browser"
 import {FC, ReactNode, createContext, useContext, useEffect} from "react"
+import {Platform} from "react-native"
 
 // import {Linking} from "react-native"
 // import {useAuth} from "@/contexts/AuthContext"
@@ -352,21 +354,6 @@ const deepLinkRoutes: DeepLinkRoute[] = [
 
 interface DeeplinkContextType {
   processUrl: (url: string) => Promise<void>
-}
-
-export interface DeepLinkRoute {
-  pattern: string
-  handler: (url: string, params: Record<string, string>, navObject: NavObject) => void | Promise<void>
-  requiresAuth?: boolean
-}
-
-interface DeepLinkConfig {
-  scheme: string
-  host?: string
-  routes: DeepLinkRoute[]
-  fallbackHandler: (url: string) => void
-  authCheckHandler: () => Promise<boolean>
-  navObject: NavObject
 }
 
 const DeeplinkContext = createContext<DeeplinkContextType>({} as DeeplinkContextType)
