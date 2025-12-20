@@ -95,8 +95,21 @@ jobs:
           fi
 
       - name: Build Android Release APK
+        id: gradle-build
         working-directory: ./mobile/android
         run: ./gradlew assembleRelease --build-cache --parallel
+        continue-on-error: true
+        env:
+          SENTRY_DISABLE_AUTO_UPLOAD: "true"
+
+      - name: Retry build with clean cache (if first attempt failed)
+        if: steps.gradle-build.outcome == 'failure'
+        working-directory: ./mobile/android
+        run: |
+          echo "First build failed, cleaning Gradle cache and retrying..."
+          ./gradlew --stop || true
+          rm -rf ~/.gradle/caches ~/.gradle/wrapper || true
+          ./gradlew assembleRelease --build-cache --parallel
         env:
           SENTRY_DISABLE_AUTO_UPLOAD: "true"
 
@@ -157,8 +170,19 @@ jobs:
             asg-gradle-${{ runner.os }}-
 
       - name: Build Release APK
+        id: gradle-build
         working-directory: ./asg_client
         run: ./gradlew assembleRelease --build-cache --parallel
+        continue-on-error: true
+
+      - name: Retry build with clean cache (if first attempt failed)
+        if: steps.gradle-build.outcome == 'failure'
+        working-directory: ./asg_client
+        run: |
+          echo "First build failed, cleaning Gradle cache and retrying..."
+          ./gradlew --stop || true
+          rm -rf ~/.gradle/caches ~/.gradle/wrapper || true
+          ./gradlew assembleRelease --build-cache --parallel
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -184,11 +208,17 @@ jobs:
           name: asg-nightly
           path: ./asg-apk
 
+      - name: Checkout to get dev SHA
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 1
+
       - name: Get build info
         id: build-info
         run: |
           echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
-          echo "sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+          echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Upload APKs to nightly-builds release
         uses: actions/github-script@v7
