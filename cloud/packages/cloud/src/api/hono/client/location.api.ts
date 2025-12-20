@@ -5,9 +5,9 @@
  */
 
 import { Hono } from "hono";
-import { clientAuth, requireUserSession } from "../middleware/hono/client.middleware";
-import { logger as rootLogger } from "../../services/logging/pino-logger";
-import type { AppEnv, AppContext } from "../../types/hono";
+import { clientAuth, requireUserSession } from "../middleware/client.middleware";
+import { logger as rootLogger } from "../../../services/logging/pino-logger";
+import type { AppEnv, AppContext } from "../../../types/hono";
 
 const logger = rootLogger.child({ service: "location.api" });
 

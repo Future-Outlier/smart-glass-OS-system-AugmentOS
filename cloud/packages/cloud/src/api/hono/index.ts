@@ -3,20 +3,24 @@
  * Exports all Hono route modules for registration in the main app.
  */
 
-// Client APIs
-export { default as livekitApi } from "./livekit.api";
-export { default as minVersionApi } from "./min-version.api";
-export { default as clientAppsApi } from "./client.apps.api";
-export { default as userSettingsApi } from "./user-settings.api";
-export { default as feedbackApi } from "./feedback.api";
-export { default as calendarApi } from "./calendar.api";
-export { default as locationApi } from "./location.api";
-export { default as notificationsApi } from "./notifications.api";
-export { default as deviceStateApi } from "./device-state.api";
+// Client APIs (mobile app and glasses client)
+export {
+  calendarApi,
+  clientAppsApi,
+  deviceStateApi,
+  feedbackApi,
+  livekitApi,
+  locationApi,
+  minVersionApi,
+  notificationsApi,
+  userSettingsApi,
+} from "./client";
 
-// SDK APIs
-export { default as sdkVersionApi } from "./sdk-version.api";
-export { default as simpleStorageApi } from "./simple-storage.api";
+// SDK APIs (third-party apps)
+export { sdkVersionApi, simpleStorageApi } from "./sdk";
 
-// Public APIs
-export { default as publicPermissionsApi } from "./public-permissions.api";
+// Public APIs (no auth required)
+export { publicPermissionsApi } from "./public";
+
+// Console APIs (developer console)
+export { consoleAccountApi, consoleOrgsApi, consoleAppsApi, cliKeysApi } from "./console";

@@ -5,9 +5,9 @@
  */
 
 import { Hono } from "hono";
-import { SDK_VERSIONS } from "../../version";
-import { logger as rootLogger } from "../../services/logging/pino-logger";
-import type { AppEnv, AppContext } from "../../types/hono";
+import { SDK_VERSIONS } from "../../../version";
+import { logger as rootLogger } from "../../../services/logging/pino-logger";
+import type { AppEnv, AppContext } from "../../../types/hono";
 
 const logger = rootLogger.child({ service: "sdk-version.api" });
 

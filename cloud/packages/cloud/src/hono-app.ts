@@ -16,8 +16,9 @@ import { logger as rootLogger } from "./services/logging/pino-logger";
 import UserSession from "./services/session/UserSession";
 import type { AppEnv } from "./types/hono";
 
-// Hono Client API routes
+// Hono API routes - organized by category
 import {
+  // Client APIs (mobile app and glasses client)
   livekitApi,
   minVersionApi,
   clientAppsApi,
@@ -27,13 +28,17 @@ import {
   locationApi,
   notificationsApi,
   deviceStateApi,
+  // SDK APIs (third-party apps)
   sdkVersionApi,
   simpleStorageApi,
+  // Public APIs (no auth required)
   publicPermissionsApi,
+  // Console APIs (developer console)
+  consoleAccountApi,
+  consoleOrgsApi,
+  consoleAppsApi,
+  cliKeysApi,
 } from "./api/hono";
-
-// Hono Console API routes
-import { consoleAccountApi, consoleOrgsApi, consoleAppsApi, cliKeysApi } from "./api/hono/console";
 
 // Hono Legacy routes (migrated from Express)
 import authRoutes from "./api/hono/routes/auth.routes";
@@ -58,7 +63,7 @@ import transcriptsRoutes from "./api/hono/routes/transcripts.routes";
 import appCommunicationRoutes from "./api/hono/routes/app-communication.routes";
 
 // Hono middleware
-import { authenticateConsole, authenticateCLI, transformCLIToConsole } from "./api/middleware/hono";
+import { authenticateConsole, authenticateCLI, transformCLIToConsole } from "./api/hono/middleware";
 
 const logger = rootLogger.child({ service: "hono-app" });
 

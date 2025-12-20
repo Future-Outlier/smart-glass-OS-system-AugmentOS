@@ -5,9 +5,9 @@
  */
 
 import { Hono } from "hono";
-import { logger as rootLogger } from "../../services/logging/pino-logger";
-import { CLIENT_VERSIONS } from "../../version";
-import type { AppEnv, AppContext } from "../../types/hono";
+import { logger as rootLogger } from "../../../services/logging/pino-logger";
+import { CLIENT_VERSIONS } from "../../../version";
+import type { AppEnv, AppContext } from "../../../types/hono";
 
 const logger = rootLogger.child({ service: "min-version.api" });
 

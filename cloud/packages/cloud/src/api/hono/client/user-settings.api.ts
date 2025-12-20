@@ -7,11 +7,11 @@
  */
 
 import { Hono } from "hono";
-import { logger as rootLogger } from "../../services/logging/pino-logger";
-import * as UserSettingsService from "../../services/client/user-settings.service";
-import { clientAuth } from "../middleware/hono/client.middleware";
-import UserSession from "../../services/session/UserSession";
-import type { AppEnv, AppContext } from "../../types/hono";
+import { logger as rootLogger } from "../../../services/logging/pino-logger";
+import * as UserSettingsService from "../../../services/client/user-settings.service";
+import { clientAuth } from "../middleware/client.middleware";
+import UserSession from "../../../services/session/UserSession";
+import type { AppEnv, AppContext } from "../../../types/hono";
 
 const logger = rootLogger.child({ service: "user-settings.api" });
 

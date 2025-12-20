@@ -5,10 +5,10 @@
  */
 
 import { Hono } from "hono";
-import * as LiveKitService from "../../services/client/livekit.service";
-import { logger as rootLogger } from "../../services/logging/pino-logger";
-import { clientAuth, requireUserSession } from "../middleware/hono/client.middleware";
-import type { AppEnv, AppContext } from "../../types/hono";
+import * as LiveKitService from "../../../services/client/livekit.service";
+import { logger as rootLogger } from "../../../services/logging/pino-logger";
+import { clientAuth, requireUserSession } from "../middleware/client.middleware";
+import type { AppEnv, AppContext } from "../../../types/hono";
 
 const logger = rootLogger.child({ service: "livekit.api" });
 

@@ -15,10 +15,10 @@
  */
 
 import { Hono } from "hono";
-import { authenticateSDK } from "../middleware/hono/sdk.middleware";
-import * as SimpleStorageService from "../../services/sdk/simple-storage.service";
-import { logger as rootLogger } from "../../services/logging/pino-logger";
-import type { AppEnv, AppContext } from "../../types/hono";
+import { authenticateSDK } from "../middleware/sdk.middleware";
+import * as SimpleStorageService from "../../../services/sdk/simple-storage.service";
+import { logger as rootLogger } from "../../../services/logging/pino-logger";
+import type { AppEnv, AppContext } from "../../../types/hono";
 
 const logger = rootLogger.child({ service: "simple-storage.api" });
 

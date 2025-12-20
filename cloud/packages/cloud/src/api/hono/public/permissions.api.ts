@@ -6,9 +6,9 @@
  */
 
 import { Hono } from "hono";
-import App from "../../models/app.model";
-import { logger as rootLogger } from "../../services/logging/pino-logger";
-import type { AppEnv, AppContext } from "../../types/hono";
+import App from "../../../models/app.model";
+import { logger as rootLogger } from "../../../services/logging/pino-logger";
+import type { AppEnv, AppContext } from "../../../types/hono";
 
 const logger = rootLogger.child({ service: "public-permissions.api" });
 

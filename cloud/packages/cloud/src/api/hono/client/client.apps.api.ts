@@ -8,10 +8,10 @@
  */
 
 import { Hono } from "hono";
-import { ClientAppsService } from "../../services/client/apps.service";
-import { clientAuth } from "../middleware/hono/client.middleware";
-import { logger as rootLogger } from "../../services/logging/pino-logger";
-import type { AppEnv, AppContext } from "../../types/hono";
+import { ClientAppsService } from "../../../services/client/apps.service";
+import { clientAuth } from "../middleware/client.middleware";
+import { logger as rootLogger } from "../../../services/logging/pino-logger";
+import type { AppEnv, AppContext } from "../../../types/hono";
 
 const logger = rootLogger.child({ service: "client.apps.api" });
 

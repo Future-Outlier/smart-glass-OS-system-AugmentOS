@@ -5,10 +5,10 @@
  */
 
 import { Hono } from "hono";
-import * as FeedbackService from "../../services/client/feedback.service";
-import { clientAuth } from "../middleware/hono/client.middleware";
-import { logger as rootLogger } from "../../services/logging/pino-logger";
-import type { AppEnv, AppContext } from "../../types/hono";
+import * as FeedbackService from "../../../services/client/feedback.service";
+import { clientAuth } from "../middleware/client.middleware";
+import { logger as rootLogger } from "../../../services/logging/pino-logger";
+import type { AppEnv, AppContext } from "../../../types/hono";
 
 const logger = rootLogger.child({ service: "feedback.api" });
 
