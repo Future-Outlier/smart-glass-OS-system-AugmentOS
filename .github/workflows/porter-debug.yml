@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # Manual trigger fallback
   push:
     branches:
-      - cloud/giga-lag
+      - cloud/bun-time
     paths:
       - "cloud/**"
       - ".github/workflows/porter-debug.yml"

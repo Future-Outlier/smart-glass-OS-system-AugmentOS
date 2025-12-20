@@ -414,6 +414,18 @@ export class EventManager {
   }
 
   /**
+   * 🔍 Get all currently registered stream types
+   * Returns the streams that have at least one handler registered.
+   * Used to derive subscriptions from handlers (single source of truth).
+   *
+   * This is the fix for Bug 007: subscriptions are now derived from handlers
+   * instead of being stored separately, preventing drift between the two.
+   */
+  getRegisteredStreams(): ExtendedStreamType[] {
+    return Array.from(this.handlers.keys()) as ExtendedStreamType[]
+  }
+
+  /**
    * 📡 Emit an event to all registered handlers with error isolation
    */
   emit<T extends EventType>(event: T, data: EventData<T>): void {
