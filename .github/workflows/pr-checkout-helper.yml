@@ -39,7 +39,7 @@ jobs:
             }
 
             // Full comment with markers for build status updates
-            checkoutInstructions = `<!-- pr-review-helper -->\n## 📋 PR Review Helper\n\n<!-- android-build-status -->\n### 📱 Android Build\n⏳ _Waiting for build..._\n<!-- /android-build-status -->\n\n---\n### 🔀 Test Locally\n${checkoutSection}`;
+            checkoutInstructions = `<!-- pr-review-helper -->\n## 📋 PR Review Helper\n\n<!-- android-build-status -->\n### 📱 Mobile App Build\n⏳ _Waiting for build..._\n<!-- /android-build-status -->\n\n<!-- asg-build-status -->\n### 🕶️ ASG Client Build\n⏳ _Waiting for build..._\n<!-- /asg-build-status -->\n\n---\n### 🔀 Test Locally\n${checkoutSection}`;
 
             await github.rest.issues.createComment({
               issue_number: prNumber,
