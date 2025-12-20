@@ -29,6 +29,7 @@
 export class Observable<T> {
   private _value: T;
   private _listeners: Set<(value: T) => void> = new Set();
+  private _initialized: boolean = false; // Track if value has been set from WebSocket
 
   constructor(initialValue: T) {
     this._value = initialValue;
@@ -69,8 +70,9 @@ export class Observable<T> {
   /**
    * Subscribe to value changes
    *
-   * The callback is called immediately with the current value,
-   * then again whenever setValue() is called with a new value.
+   * The callback is called immediately with the current value ONLY if
+   * the Observable has been initialized (setValue() called at least once).
+   * This prevents callbacks from firing with default/uninitialized values.
    *
    * @param callback - Function to call when value changes
    * @returns Cleanup function to unsubscribe
@@ -87,8 +89,10 @@ export class Observable<T> {
    */
   onChange(callback: (value: T) => void): () => void {
     this._listeners.add(callback);
-    // Call immediately with current value
-    callback(this._value);
+    // Call immediately with current value ONLY if initialized
+    if (this._initialized) {
+      callback(this._value);
+    }
     // Return cleanup function
     return () => this._listeners.delete(callback);
   }
@@ -96,7 +100,10 @@ export class Observable<T> {
   /**
    * Update the value and notify listeners
    *
-   * Only triggers callbacks if the new value is different from current value.
+   * Triggers callbacks if:
+   * 1. This is the first setValue() call (initialization from WebSocket), OR
+   * 2. The new value is different from current value
+   *
    * Uses strict equality (===) for comparison.
    *
    * @param value - New value to set
@@ -104,7 +111,15 @@ export class Observable<T> {
    * @internal This method is called by DeviceState when receiving WebSocket updates
    */
   setValue(value: T): void {
-    if (this._value !== value) {
+    const isFirstInit = !this._initialized;
+
+    // Mark as initialized (first setValue call from WebSocket)
+    if (isFirstInit) {
+      this._initialized = true;
+    }
+
+    // Notify listeners if this is initialization OR value changed
+    if (isFirstInit || this._value !== value) {
       this._value = value;
       // Notify all listeners
       this._listeners.forEach((cb) => {
