@@ -19,6 +19,7 @@ import * as AppUptimeService from "./services/core/app-uptime.service";
 import { memoryTelemetryService } from "./services/debug/MemoryTelemetryService";
 import { logger as rootLogger } from "./services/logging/pino-logger";
 import { handleUpgrade, websocketHandlers } from "./services/websocket/bun-websocket";
+import generateCoreToken from "./utils/generateCoreToken";
 
 // Hono app with all routes
 
@@ -142,6 +143,13 @@ logger.info(`\n
     ☁️☁️☁️      ⚡ Pure Hono + Bun Native ⚡
     ☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️
     ☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️\n`);
+
+// Generate core token for debugging with postman.
+// generateCoreToken
+(async () => {
+  const coreToken = await generateCoreToken("isaiahballah@gmail.com");
+  logger.debug(`Core Token:\n${coreToken}`);
+})();
 
 // IMPORTANT: Do NOT add `export default server` here!
 // Bun auto-detects default exports with a `fetch` function and calls Bun.serve() on them.
