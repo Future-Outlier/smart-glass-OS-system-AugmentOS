@@ -10,7 +10,7 @@ import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {gallerySyncService} from "@/services/asg/gallerySyncService"
 import {useDisplayStore} from "@/stores/display"
-import {useGlassesStore, GlassesInfo} from "@/stores/glasses"
+import {useGlassesStore, GlassesInfo, getGlasesInfoPartial} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
@@ -134,16 +134,7 @@ class MantleManager {
 
   private setupSubscriptions() {
     useGlassesStore.subscribe(
-      state => ({
-        batteryLevel: state.batteryLevel,
-        charging: state.charging,
-        caseBatteryLevel: state.caseBatteryLevel,
-        caseCharging: state.caseCharging,
-        connected: state.connected,
-        wifiConnected: state.wifiConnected,
-        wifiSsid: state.wifiSsid,
-        modelName: state.modelName,
-      }),
+      getGlasesInfoPartial,
       (state: Partial<GlassesInfo>, previousState: Partial<GlassesInfo>) => {
         const statusObj: Partial<GlassesInfo> = {}
 
