@@ -2,17 +2,13 @@
  * @fileoverview Soniox provider implementation using WebSocket API
  */
 
-import {
-  StreamType,
-  getLanguageInfo,
-  parseLanguageStream,
-  TranscriptionData,
-  SonioxToken,
-} from "@mentra/sdk";
 import { Logger } from "pino";
 import WebSocket from "ws";
 
-// eslint-disable-next-line no-restricted-imports
+import { StreamType, getLanguageInfo, parseLanguageStream, TranscriptionData, SonioxToken } from "@mentra/sdk";
+
+
+ 
 import {
   TranscriptionProvider,
   StreamInstance,
@@ -27,15 +23,14 @@ import {
   StreamMetrics,
   SonioxProviderError,
 } from "../../../../services/session/transcription/types";
+import { ResourceTracker } from "../../../../utils/resource-tracker";
 
 // Import Soniox language configuration from JSON
 import sonioxLanguageData from "./SonioxLanguages.json";
 
 // Extract supported language codes for the real-time model
 const SONIOX_SUPPORTED_LANGUAGES: string[] = [];
-const rtModel = sonioxLanguageData.models.find(
-  (m) => m.id === "stt-rt-preview",
-);
+const rtModel = sonioxLanguageData.models.find((m) => m.id === "stt-rt-preview");
 if (rtModel) {
   // Extract just the language codes (e.g., "en", "es", "fr")
   rtModel.languages.forEach((lang) => {
@@ -76,7 +71,10 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
   private failureCount = 0;
   private lastFailureTime = 0;
 
-  constructor(private config: SonioxProviderConfig, parentLogger: Logger) {
+  constructor(
+    private config: SonioxProviderConfig,
+    parentLogger: Logger,
+  ) {
     this.logger = parentLogger.child({ provider: this.name });
 
     this.healthStatus = {
@@ -116,10 +114,7 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
     // TODO: Cleanup Soniox client when implementing
   }
 
-  async createTranscriptionStream(
-    language: string,
-    options: StreamOptions,
-  ): Promise<StreamInstance> {
+  async createTranscriptionStream(language: string, options: StreamOptions): Promise<StreamInstance> {
     this.logger.debug(
       {
         language,
@@ -129,10 +124,7 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
     );
 
     if (!this.supportsLanguage(language)) {
-      throw new SonioxProviderError(
-        `Language ${language} not supported by Soniox`,
-        400,
-      );
+      throw new SonioxProviderError(`Language ${language} not supported by Soniox`, 400);
     }
 
     // Create real Soniox WebSocket stream
@@ -257,9 +249,7 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
 
   private getRecentFailureCount(timeWindowMs: number): number {
     const now = Date.now();
-    return this.lastFailureTime && now - this.lastFailureTime < timeWindowMs
-      ? this.failureCount
-      : 0;
+    return this.lastFailureTime && now - this.lastFailureTime < timeWindowMs ? this.failureCount : 0;
   }
 }
 
@@ -277,6 +267,8 @@ class SonioxTranscriptionStream implements StreamInstance {
   private ws?: WebSocket;
   private connectionTimeout?: NodeJS.Timeout;
   private isConfigSent = false;
+  private disposed = false;
+  private resources = new ResourceTracker();
   // Rolling compaction: maintain finalized prefix as plain text; retain only current tail tokens
   private stablePrefixText: string = "";
   private lastSentInterim = ""; // Track last sent interim to avoid duplicates
@@ -383,10 +375,7 @@ class SonioxTranscriptionStream implements StreamInstance {
   async initialize(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.logger.debug(
-          { streamId: this.id },
-          "Connecting to Soniox WebSocket",
-        );
+        this.logger.debug({ streamId: this.id }, "Connecting to Soniox WebSocket");
 
         // Create WebSocket connection
         this.ws = new WebSocket(SONIOX_WEBSOCKET_URL);
@@ -399,39 +388,50 @@ class SonioxTranscriptionStream implements StreamInstance {
           }
         }, 10000); // 10 second timeout
 
-        this.ws.on("open", () => {
+        // Store handler references for proper cleanup (prevents memory leaks)
+        const openHandler = () => {
+          if (this.disposed) return;
           const connectionTime = Date.now() - this.startTime;
-          this.logger.info(
-            { streamId: this.id, connectionTimeMs: connectionTime },
-            "Soniox WebSocket connected",
-          );
+          this.logger.info({ streamId: this.id, connectionTimeMs: connectionTime }, "Soniox WebSocket connected");
           this.sendConfiguration();
 
           // Start automatic keepalive for this stream
           this.startKeepalive();
-        });
+        };
 
-        this.ws.on("message", (data: Buffer) => {
+        const messageHandler = (data: Buffer) => {
+          if (this.disposed) return;
           this.handleMessage(data);
-        });
+        };
 
-        this.ws.on("error", (error: Error) => {
-          this.logger.error(
-            { error, streamId: this.id },
-            "Soniox WebSocket error",
-          );
+        const errorHandler = (error: Error) => {
+          if (this.disposed) return;
+          this.logger.error({ error, streamId: this.id }, "Soniox WebSocket error");
           this.handleError(error);
           reject(error);
-        });
+        };
 
-        this.ws.on("close", (code: number, reason: Buffer) => {
-          this.logger.info(
-            { code, reason: reason.toString(), streamId: this.id },
-            "Soniox WebSocket closed",
-          );
+        const closeHandler = (code: number, reason: Buffer) => {
+          if (this.disposed) return;
+          this.logger.info({ code, reason: reason.toString(), streamId: this.id }, "Soniox WebSocket closed");
           this.state = StreamState.CLOSED;
           if (this.callbacks.onClosed) {
-            this.callbacks.onClosed();
+            this.callbacks.onClosed(code);
+          }
+        };
+
+        this.ws.on("open", openHandler);
+        this.ws.on("message", messageHandler);
+        this.ws.on("error", errorHandler);
+        this.ws.on("close", closeHandler);
+
+        // Track handlers for cleanup
+        this.resources.track(() => {
+          if (this.ws) {
+            this.ws.off("open", openHandler);
+            this.ws.off("message", messageHandler);
+            this.ws.off("error", errorHandler);
+            this.ws.off("close", closeHandler);
           }
         });
 
@@ -461,22 +461,17 @@ class SonioxTranscriptionStream implements StreamInstance {
     // Parse subscription options for hints and language identification settings
     const languageInfo = parseLanguageStream(this.subscription);
     const hintsParam = languageInfo?.options?.hints;
-    const disableLangIdParam =
-      languageInfo?.options?.["no-language-identification"];
+    const disableLangIdParam = languageInfo?.options?.["no-language-identification"];
 
     // Extract additional hints from query params
-    const additionalHints = hintsParam
-      ? (hintsParam as string).split(",").map((h) => h.trim())
-      : [];
+    const additionalHints = hintsParam ? (hintsParam as string).split(",").map((h) => h.trim()) : [];
 
     // Determine if we're in auto mode
     const isAutoMode = this.language === "auto";
 
     // Build language hints array
     const languageHint = this.language.split("-")[0]; // Normalize to base language code (e.g. 'en' from 'en-US')
-    const targetLanguageHint = this.targetLanguage
-      ? this.targetLanguage.split("-")[0]
-      : undefined;
+    const targetLanguageHint = this.targetLanguage ? this.targetLanguage.split("-")[0] : undefined;
 
     let languageHints: string[];
     if (isAutoMode) {
@@ -494,9 +489,7 @@ class SonioxTranscriptionStream implements StreamInstance {
     languageHints = [...new Set(languageHints)];
 
     // Determine enable_language_identification flag (default to enabled)
-    const enableLanguageIdentification = !(
-      disableLangIdParam === true || disableLangIdParam === "true"
-    );
+    const enableLanguageIdentification = !(disableLangIdParam === true || disableLangIdParam === "true");
     const config: any = {
       api_key: this.config.apiKey,
       model: this.config.model || "stt-rt-v3-preview",
@@ -520,9 +513,7 @@ class SonioxTranscriptionStream implements StreamInstance {
         language_b: this.targetLanguage.split("-")[0], // Convert es-ES to es
       };
       config.language_hints =
-        languageHints.length > 0
-          ? languageHints
-          : [config.translation.language_a, config.translation.language_b];
+        languageHints.length > 0 ? languageHints : [config.translation.language_a, config.translation.language_b];
     } else if (!isAutoMode) {
       // Just transcription with specific language
       config.language = this.language;
@@ -579,48 +570,34 @@ class SonioxTranscriptionStream implements StreamInstance {
       const response: SonioxResponse = JSON.parse(data.toString());
 
       if (response.error_code) {
-        this.handleError(
-          new Error(
-            `Soniox error ${response.error_code}: ${response.error_message}`,
-          ),
-        );
+        this.handleError(new Error(`Soniox error ${response.error_code}: ${response.error_message}`));
         return;
       }
 
       if (response.tokens && response.tokens.length > 0) {
         // Debug: Log raw Soniox tokens to check speaker diarization
-        const tokensWithSpeaker = response.tokens.filter(
-          (t) => t.speaker !== undefined,
-        );
+        const tokensWithSpeaker = response.tokens.filter((t) => t.speaker !== undefined);
         this.logger.debug(
           {
             streamId: this.id,
             tokenCount: response.tokens.length,
             tokensWithSpeaker: tokensWithSpeaker.length,
             sampleToken: response.tokens[0],
-            speakers: [
-              ...new Set(response.tokens.map((t) => t.speaker).filter(Boolean)),
-            ],
+            speakers: [...new Set(response.tokens.map((t) => t.speaker).filter(Boolean))],
           },
           `🔍 SONIOX RAW TOKENS: ${tokensWithSpeaker.length}/${response.tokens.length} have speaker field`,
         );
         this.processSonioxTokens(response.tokens);
       }
     } catch (error) {
-      this.logger.warn(
-        { error, streamId: this.id },
-        "Error parsing Soniox response",
-      );
+      this.logger.warn({ error, streamId: this.id }, "Error parsing Soniox response");
     }
   }
 
   private processSonioxTokens(tokens: SonioxApiToken[]): void {
     if (this.targetLanguage) {
       // Should never receive translation tokens in transcription provider
-      this.logger.error(
-        { streamId: this.id },
-        "Transcription provider incorrectly receiving translation tokens",
-      );
+      this.logger.error({ streamId: this.id }, "Transcription provider incorrectly receiving translation tokens");
       return;
     } else {
       // Transcription mode
@@ -634,13 +611,11 @@ class SonioxTranscriptionStream implements StreamInstance {
     // NEW: Track token activity - we received tokens from Soniox
     if (tokens.length > 0) {
       this.metrics.lastTokenReceivedAt = now;
-      this.metrics.tokenBatchesReceived =
-        (this.metrics.tokenBatchesReceived || 0) + 1;
+      this.metrics.tokenBatchesReceived = (this.metrics.tokenBatchesReceived || 0) + 1;
       this.metrics.lastTokenBatchSize = tokens.length;
       this.metrics.isReceivingTokens = true;
       // Track audio bytes at time of token receipt for silence detection
-      this.metrics.audioBytesSentAtLastToken =
-        this.metrics.totalAudioBytesSent || 0;
+      this.metrics.audioBytesSentAtLastToken = this.metrics.totalAudioBytesSent || 0;
     }
 
     // New approach: append final tokens to stablePrefixText; keep only tail (non-final) tokens
@@ -731,8 +706,7 @@ class SonioxTranscriptionStream implements StreamInstance {
       // Update rolling average (exponential moving average with alpha=0.2)
       const alpha = 0.2;
       this.metrics.avgRealtimeLatencyMs =
-        alpha * processingDeficit +
-        (1 - alpha) * (this.metrics.avgRealtimeLatencyMs || processingDeficit);
+        alpha * processingDeficit + (1 - alpha) * (this.metrics.avgRealtimeLatencyMs || processingDeficit);
 
       // Update legacy metrics for backwards compatibility
       this.metrics.lastTranscriptEndMs = latestEndMs;
@@ -740,50 +714,13 @@ class SonioxTranscriptionStream implements StreamInstance {
       this.metrics.processingDeficitMs = processingDeficit; // Keep for backwards compat
       this.metrics.wallClockLagMs = wallClockLag;
 
-      if (
-        !this.metrics.maxTranscriptLagMs ||
-        processingDeficit > this.metrics.maxTranscriptLagMs
-      ) {
+      if (!this.metrics.maxTranscriptLagMs || processingDeficit > this.metrics.maxTranscriptLagMs) {
         this.metrics.maxTranscriptLagMs = processingDeficit;
       }
 
-      // Log warning if REAL lag exceeds threshold AND we're actively receiving tokens
-      // This is actual Soniox lag, not silence
+      // Track lag warnings in metrics only (no logging - calculation was unreliable and spamming logs)
       if (processingDeficit > 5000) {
-        this.metrics.transcriptLagWarnings =
-          (this.metrics.transcriptLagWarnings || 0) + 1;
-
-        this.logger.warn(
-          {
-            streamId: this.id,
-            realtimeLatencyMs: Math.round(processingDeficit),
-            avgRealtimeLatencyMs: Math.round(
-              this.metrics.avgRealtimeLatencyMs || 0,
-            ),
-            audioSentDurationMs: Math.round(audioSentDurationMs),
-            transcriptEndMs: Math.round(latestEndMs),
-            wallClockLagMs: Math.round(wallClockLag),
-            streamAgeMs: Math.round(streamAge),
-            maxLagMs: Math.round(this.metrics.maxTranscriptLagMs || 0),
-            lagWarnings: this.metrics.transcriptLagWarnings,
-            isReceivingTokens: true,
-            provider: "soniox",
-          },
-          "⚠️ HIGH TRANSCRIPTION LATENCY DETECTED - Soniox is lagging behind real-time",
-        );
-      } else if (processingDeficit > 2000) {
-        // Info-level logging for moderate lag
-        this.logger.info(
-          {
-            streamId: this.id,
-            realtimeLatencyMs: Math.round(processingDeficit),
-            audioSentDurationMs: Math.round(audioSentDurationMs),
-            wallClockLagMs: Math.round(wallClockLag),
-            isReceivingTokens: true,
-            provider: "soniox",
-          },
-          "Moderate transcription latency detected",
-        );
+        this.metrics.transcriptLagWarnings = (this.metrics.transcriptLagWarnings || 0) + 1;
       }
     }
 
@@ -792,9 +729,7 @@ class SonioxTranscriptionStream implements StreamInstance {
     }
 
     const tailText = tailTokens.map((t) => t.text).join("");
-    const currentInterim = (this.stablePrefixText + tailText)
-      .replace(/\s+/g, " ")
-      .trim();
+    const currentInterim = (this.stablePrefixText + tailText).replace(/\s+/g, " ").trim();
 
     if (currentInterim && currentInterim !== this.lastSentInterim) {
       const interimData: TranscriptionData = {
@@ -898,10 +833,7 @@ class SonioxTranscriptionStream implements StreamInstance {
    */
   forceFinalizePendingTokens(): void {
     if (!this.lastSentInterim) {
-      this.logger.debug(
-        { streamId: this.id, provider: "soniox" },
-        "🎙️ SONIOX: VAD stop - no interim to finalize",
-      );
+      this.logger.debug({ streamId: this.id, provider: "soniox" }, "🎙️ SONIOX: VAD stop - no interim to finalize");
       return;
     }
 
@@ -988,8 +920,7 @@ class SonioxTranscriptionStream implements StreamInstance {
       this.metrics.consecutiveFailures = 0;
 
       // Track total audio bytes sent for backlog calculation
-      this.metrics.totalAudioBytesSent =
-        (this.metrics.totalAudioBytesSent || 0) + data.byteLength;
+      this.metrics.totalAudioBytesSent = (this.metrics.totalAudioBytesSent || 0) + data.byteLength;
 
       return true;
     } catch (error) {
@@ -997,10 +928,7 @@ class SonioxTranscriptionStream implements StreamInstance {
       this.metrics.consecutiveFailures++;
       this.metrics.errorCount++;
 
-      this.logger.warn(
-        { error, streamId: this.id },
-        "Error writing audio to Soniox",
-      );
+      this.logger.warn({ error, streamId: this.id }, "Error writing audio to Soniox");
 
       // Too many failures? Mark as error
       if (this.metrics.consecutiveFailures >= 5) {
@@ -1012,9 +940,14 @@ class SonioxTranscriptionStream implements StreamInstance {
   }
 
   async close(): Promise<void> {
+    if (this.disposed) return; // Idempotent
+    this.disposed = true;
     this.state = StreamState.CLOSING;
 
     try {
+      // Clean up all tracked resources (removes event listeners)
+      this.resources.dispose();
+
       if (this.connectionTimeout) {
         clearTimeout(this.connectionTimeout);
         this.connectionTimeout = undefined;
@@ -1052,10 +985,7 @@ class SonioxTranscriptionStream implements StreamInstance {
         "Soniox stream closed",
       );
     } catch (error) {
-      this.logger.warn(
-        { error, streamId: this.id },
-        "Error during Soniox stream close",
-      );
+      this.logger.warn({ error, streamId: this.id }, "Error during Soniox stream close");
       this.state = StreamState.CLOSED; // Force closed even on error
     }
   }
@@ -1065,8 +995,7 @@ class SonioxTranscriptionStream implements StreamInstance {
     this.updateActivityMetrics();
 
     return {
-      isAlive:
-        this.state === StreamState.READY || this.state === StreamState.ACTIVE,
+      isAlive: this.state === StreamState.READY || this.state === StreamState.ACTIVE,
       lastActivity: this.lastActivity,
       consecutiveFailures: this.metrics.consecutiveFailures,
       lastSuccessfulWrite: this.metrics.lastSuccessfulWrite,
@@ -1100,11 +1029,9 @@ class SonioxTranscriptionStream implements StreamInstance {
     this.metrics.isReceivingTokens = this.metrics.timeSinceLastTokenMs < 30000;
 
     // Calculate audio sent since last token (for silence detection)
-    const audioBytesSentAtLastToken =
-      this.metrics.audioBytesSentAtLastToken || 0;
+    const audioBytesSentAtLastToken = this.metrics.audioBytesSentAtLastToken || 0;
     const currentAudioBytesSent = this.metrics.totalAudioBytesSent || 0;
-    const bytesSinceLastToken =
-      currentAudioBytesSent - audioBytesSentAtLastToken;
+    const bytesSinceLastToken = currentAudioBytesSent - audioBytesSentAtLastToken;
     this.metrics.audioSentSinceLastTokenMs = bytesSinceLastToken / 32; // 32 bytes per ms at 16kHz 16-bit
   }
 
@@ -1117,10 +1044,7 @@ class SonioxTranscriptionStream implements StreamInstance {
       return; // Already started
     }
 
-    this.logger.debug(
-      { streamId: this.id },
-      "Starting automatic Soniox keepalive",
-    );
+    this.logger.debug({ streamId: this.id }, "Starting automatic Soniox keepalive");
 
     // Set up interval to send keepalive every 15 seconds
     // (Soniox requires at least once every 20 seconds)
@@ -1136,10 +1060,7 @@ class SonioxTranscriptionStream implements StreamInstance {
     if (this.keepaliveInterval) {
       clearInterval(this.keepaliveInterval);
       this.keepaliveInterval = undefined;
-      this.logger.debug(
-        { streamId: this.id },
-        "Stopped automatic Soniox keepalive",
-      );
+      this.logger.debug({ streamId: this.id }, "Stopped automatic Soniox keepalive");
     }
   }
 
@@ -1148,10 +1069,7 @@ class SonioxTranscriptionStream implements StreamInstance {
    */
   private sendKeepalive(): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      this.logger.warn(
-        { streamId: this.id },
-        "Cannot send keepalive - WebSocket not open",
-      );
+      this.logger.warn({ streamId: this.id }, "Cannot send keepalive - WebSocket not open");
       this.stopKeepalive();
       return;
     }
@@ -1159,17 +1077,11 @@ class SonioxTranscriptionStream implements StreamInstance {
     try {
       const keepaliveMessage = { type: "keepalive" };
       this.ws.send(JSON.stringify(keepaliveMessage));
-
-      this.logger.debug(
-        { streamId: this.id },
-        "Sent keepalive message to Soniox",
-      );
+      // Don't log routine keepalives - they create too much noise (every 15 seconds)
+      // The lastActivity update is sufficient for health monitoring
       this.lastActivity = Date.now();
     } catch (error) {
-      this.logger.error(
-        { error, streamId: this.id },
-        "Error sending keepalive message",
-      );
+      this.logger.error({ error, streamId: this.id }, "Error sending keepalive message");
     }
   }
 }

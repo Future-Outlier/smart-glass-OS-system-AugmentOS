@@ -145,7 +145,12 @@ export interface StreamOptions {
 export interface StreamCallbacks {
   onReady?: () => void;
   onError?: (error: Error) => void;
-  onClosed?: () => void;
+  /**
+   * Called when stream is closed.
+   * @param code - WebSocket close code (1000 = normal/intentional, 1006 = abnormal/unexpected)
+   *               undefined means close code is not available (e.g., non-WebSocket providers)
+   */
+  onClosed?: (code?: number) => void;
   onData?: (data: TranscriptionData) => void;
 }
 
