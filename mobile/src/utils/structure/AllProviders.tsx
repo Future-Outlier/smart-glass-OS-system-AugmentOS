@@ -17,10 +17,11 @@ import {AuthProvider} from "@/contexts/AuthContext"
 import {CoreStatusProvider} from "@/contexts/CoreStatusProvider"
 import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
 import {NavigationHistoryProvider} from "@/contexts/NavigationHistoryContext"
+import {useThemeProvider} from "@/contexts/ThemeContext"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
+import {KonamiCodeProvider} from "@/utils/debug/konami"
 import {withWrappers} from "@/utils/structure/with-wrappers"
-import {useThemeProvider} from "@/contexts/ThemeContext"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
@@ -113,4 +114,5 @@ export const AllProviders = withWrappers(
       </>
     )
   },
+  KonamiCodeProvider,
 )
