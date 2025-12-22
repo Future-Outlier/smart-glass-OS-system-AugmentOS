@@ -179,7 +179,7 @@ class WebSocketManager extends EventEmitter {
 
   // Send binary data (for audio)
   public sendBinary(data: ArrayBuffer | Uint8Array) {
-    if (!this.isConnected()) {
+    if (!this.isConnected() && __DEV__ && Math.random() < 0.03) {
       console.log("WSM: Cannot send binary data: WebSocket not connected")
       return
     }

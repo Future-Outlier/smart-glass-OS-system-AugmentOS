@@ -286,7 +286,7 @@ export class MantleBridge {
             bytes[i] = binaryString.charCodeAt(i)
           }
 
-          if ((Math.random() < 0.2) && __DEV__) {
+          if (__DEV__ && Math.random() < 0.03) {
             console.log("MantleBridge: Received mic data:", bytes.length, "bytes")
           }
           const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
