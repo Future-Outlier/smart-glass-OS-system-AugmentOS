@@ -2,6 +2,7 @@ import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import { useNavigationHistory } from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
+import { SETTINGS, useSetting } from "@/stores/settings"
 import {spacing} from "@/theme"
 
 // NOTE: you can't have 2 transition videos in a row or things will break:
@@ -75,9 +76,11 @@ const steps: OnboardingStep[] = [
 
 export default function MentraOSOnboarding() {
   const {clearHistoryAndGoHome} = useNavigationHistory()
+  const [_onboardingOsCompleted, setOnboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <OnboardingGuide steps={steps} autoStart={true} showSkipButton={false} endButtonFn={() => {
+        setOnboardingOsCompleted(true)
         clearHistoryAndGoHome()
       }}/>
     </Screen>

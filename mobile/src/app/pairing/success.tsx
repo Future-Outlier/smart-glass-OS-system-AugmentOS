@@ -11,12 +11,14 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
 import {getGlassesImage} from "@/utils/getGlassesImage"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 export default function PairingSuccessScreen() {
   const {theme, themed} = useAppTheme()
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const {glassesModelName} = useLocalSearchParams<{glassesModelName: string}>()
-  const {replace} = useNavigationHistory()
+  const {replaceAll} = useNavigationHistory()
+  const [onboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
 
   // Get manufacturer logo component
   const getManufacturerLogo = (modelName: string) => {
@@ -37,9 +39,17 @@ export default function PairingSuccessScreen() {
 
   const handleContinue = () => {
     if (glassesModelName === DeviceTypes.LIVE) {
-      replace("/onboarding/live")
+      replaceAll("/onboarding/live")
       return
     }
+
+    if (glassesModelName === DeviceTypes.G1) {
+      if (!onboardingOsCompleted) {
+        replaceAll("/onboarding/os")
+        return
+      }
+    }
+
     clearHistoryAndGoHome()
   }
 

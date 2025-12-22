@@ -132,7 +132,7 @@ const steps: OnboardingStep[] = [
 ]
 
 export default function MentraLiveOnboarding() {
-  const [hasDoneOsOnboarding] = useSetting(SETTINGS.onboarding_os_completed.key)
+  const [onboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
   const {clearHistoryAndGoHome, replaceAll} = useNavigationHistory()
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
@@ -142,14 +142,14 @@ export default function MentraLiveOnboarding() {
         mainTitle={translate("onboarding:liveWelcomeTitle")}
         mainSubtitle={translate("onboarding:liveWelcomeSubtitle")}
         endButtonFn={() => {
-          if (hasDoneOsOnboarding) {
+          if (onboardingOsCompleted) {
             clearHistoryAndGoHome()
             return
           }
           replaceAll("/onboarding/os")
         }}
         endButtonText={
-          hasDoneOsOnboarding ? translate("onboarding:liveEndTitle") : translate("onboarding:learnAboutOs")
+          onboardingOsCompleted ? translate("onboarding:liveEndTitle") : translate("onboarding:learnAboutOs")
         }
       />
     </Screen>
