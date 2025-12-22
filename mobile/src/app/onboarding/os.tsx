@@ -6,14 +6,12 @@ import {spacing} from "@/theme"
 // NOTE: you can't have 2 transition videos in a row or things will break:
 const steps: OnboardingStep[] = [
   {
-    type: "image",
+    type: "video",
     name: "Start and stop apps",
-    source: require("@assets/onboarding/os/start_app.png"),
-    imageContainerClassName: "bg-input pt-11 mx-6 rounded-lg",
-    imageContainerStyle: {
-      paddingHorizontal: spacing.s6,
-    },
+    source: require("@assets/onboarding/os/start_stop_apps.mov"),
+    containerClassName: "bg-background",
     transition: false,
+    playCount: 2,
     bullets: [
       translate("onboarding:osStartStopApps"),
       translate("onboarding:osStartStopAppsBullet1"),
@@ -21,15 +19,12 @@ const steps: OnboardingStep[] = [
     ],
   },
   {
-    type: "image",
+    type: "video",
     name: "Open an app",
-    source: require("@assets/onboarding/os/start_app.png"),
-    imageContainerClassName: "bg-input pt-11 mx-6 rounded-lg",
-    imageContainerStyle: {
-      // backgroundColor: colors.background,
-      paddingHorizontal: spacing.s6,
-    },
+    source: require("@assets/onboarding/os/open_an_app.mov"),
+    containerClassName: "bg-background",
     transition: false,
+    playCount: 2,
     bullets: [
       translate("onboarding:osOpenApp"),
       translate("onboarding:osOpenAppBullet1"),
@@ -37,14 +32,12 @@ const steps: OnboardingStep[] = [
     ],
   },
   {
-    type: "image",
+    type: "video",
     name: "Background apps",
-    source: require("@assets/onboarding/os/start_app.png"),
-    imageContainerClassName: "bg-input pt-11 mx-6 rounded-lg",
-    imageContainerStyle: {
-      paddingHorizontal: spacing.s6,
-    },
+    source: require("@assets/onboarding/os/background_apps.mov"),
+    containerClassName: "bg-background",
     transition: false,
+    playCount: 2,
     bullets: [
       translate("onboarding:osBackgroundApps"),
       translate("onboarding:osBackgroundAppsBullet1"),
@@ -53,54 +46,28 @@ const steps: OnboardingStep[] = [
   },
   {
     type: "video",
-    name: "Action Button Click",
-    source: require("@assets/onboarding/live/ONB4_action_button_click.mp4"),
-    playCount: 1,
+    name: "Foreground and Background Apps",
+    source: require("@assets/onboarding/os/foreground_background_apps.mov"),
+    containerClassName: "bg-background",
     transition: false,
+    playCount: 2,
     bullets: [
-      translate("onboarding:osOpenApp"),
-      translate("onboarding:osStartStopAppsBullet1"),
-      translate("onboarding:osStartStopAppsBullet2"),
+      translate("onboarding:osForegroundAndBackgroundApps"),
+      translate("onboarding:osForegroundAndBackgroundAppsBullet1"),
+      translate("onboarding:osForegroundAndBackgroundAppsBullet2"),
     ],
   },
   {
-    type: "image",
-    name: "Unknown Wearable",
-    transition: false,
-    source: require("@assets/glasses/unknown_wearable.png"),
-    imageContainerStyle: {
-      paddingHorizontal: spacing.s6,
-    },
-    bullets: [
-      translate("onboarding:osStartStopApps"),
-      translate("onboarding:osStartStopAppsBullet1"),
-      translate("onboarding:osStartStopAppsBullet2"),
-    ],
-  },
-  {
-    name: "Action Button Click",
     type: "video",
+    name: "Mentra AI",
+    source: require("@assets/onboarding/os/mentra_ai.mov"),
+    containerClassName: "bg-background",
     transition: false,
-    playCount: 1,
-    source: require("@assets/onboarding/live/ONB4_action_button_click.mp4"),
+    playCount: 2,
     bullets: [
-      translate("onboarding:osStartStopApps"),
-      translate("onboarding:osStartStopAppsBullet1"),
-      translate("onboarding:osStartStopAppsBullet2"),
-    ],
-  },
-  {
-    name: "Unknown Wearable",
-    type: "image",
-    transition: false,
-    source: require("@assets/glasses/unknown_wearable.png"),
-    imageContainerStyle: {
-      paddingHorizontal: spacing.s6,
-    },
-    bullets: [
-      translate("onboarding:osStartStopApps"),
-      translate("onboarding:osStartStopAppsBullet1"),
-      translate("onboarding:osStartStopAppsBullet2"),
+      translate("onboarding:osMentraAi"),
+      translate("onboarding:osMentraAiBullet1"),
+      translate("onboarding:osMentraAiBullet2"),
     ],
   },
 ]

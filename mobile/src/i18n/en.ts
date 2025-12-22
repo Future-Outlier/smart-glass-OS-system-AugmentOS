@@ -195,6 +195,12 @@ const en = {
     osBackgroundApps: "Background apps",
     osBackgroundAppsBullet1: "Tap the background apps button to view all background apps",
     osBackgroundAppsBullet2: "Tap an inactive app to start it. Tap the X icon beside an app to stop it",
+    osForegroundAndBackgroundApps: "Foreground and Background Apps",
+    osForegroundAndBackgroundAppsBullet1: "Foreground apps take over your screen and show info most of the time.",
+    osForegroundAndBackgroundAppsBullet2: "Background apps run in the background and only show info when needed.",
+    osMentraAi: "Mentra AI",
+    osMentraAiBullet1: "TODO1",
+    osMentraAiBullet2: "TODO2",
   },
   home: {
     title: "MentraOS",

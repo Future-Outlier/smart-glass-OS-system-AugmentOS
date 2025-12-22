@@ -23,13 +23,15 @@ interface VideoStep extends BaseStep {
   type: "video"
   source: VideoSource
   playCount: number
+  containerStyle?: ViewStyle
+  containerClassName?: string
 }
 
 interface ImageStep extends BaseStep {
   type: "image"
   source: ImageSource
-  imageContainerStyle?: ViewStyle
-  imageContainerClassName?: string
+  containerStyle?: ViewStyle
+  containerClassName?: string
   //   imageComponent: React.ComponentType
   duration?: number // ms before showing next button, undefined = immediate
 }
@@ -369,9 +371,9 @@ export function OnboardingGuide({
           {step.title && <Text className="text-center text-2xl font-semibold" text={step.title} />}
 
           <View className="-mx-6">
-            <View className="relative" style={{width: "100%", aspectRatio: 1}}>
+            {/* <View className="relative" style={{width: "100%", aspectRatio: 1}}> */}
               {isCurrentStepImage ? (
-                <View style={step.imageContainerStyle} className={step.imageContainerClassName}>
+                <View style={step.containerStyle} className={step.containerClassName}>
                   <Image
                     source={step.source}
                     style={{
@@ -383,8 +385,7 @@ export function OnboardingGuide({
                 </View>
               ) : (
                 <>
-                  <VideoView
-                    player={player1}
+                  <View
                     style={{
                       position: "absolute",
                       top: 0,
@@ -392,11 +393,20 @@ export function OnboardingGuide({
                       right: 0,
                       bottom: 0,
                       zIndex: activePlayer === 1 ? 1 : 0,
+                      ...step.containerStyle,
+                      
                     }}
-                    nativeControls={false}
-                  />
-                  <VideoView
-                    player={player2}
+                    className={step.containerClassName}>
+                    <VideoView
+                      player={player1}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                      }}
+                      nativeControls={false}
+                    />
+                  </View>
+                  <View
                     style={{
                       position: "absolute",
                       top: 0,
@@ -404,12 +414,21 @@ export function OnboardingGuide({
                       right: 0,
                       bottom: 0,
                       zIndex: activePlayer === 1 ? 0 : 1,
+                      ...step.containerStyle,
                     }}
-                    nativeControls={false}
-                  />
+                    className={step.containerClassName}>
+                    <VideoView
+                      player={player2}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                      }}
+                      nativeControls={false}
+                    />
+                  </View>
                 </>
               )}
-            </View>
+            {/* </View> */}
 
             {showReplayButton && isCurrentStepVideo && (
               <View className="absolute bottom-8 left-0 right-0 items-center z-10">

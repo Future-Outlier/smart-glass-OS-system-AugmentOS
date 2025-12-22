@@ -51,6 +51,27 @@ class Livekit {
     this.room?.on(RoomEvent.Connected, () => {
       console.log("LIVEKIT: Connected to room")
     })
+    this.room?.on(RoomEvent.Reconnected, () => {
+      console.log("LIVEKIT: Reconnected to room")
+    })
+    this.room?.on(RoomEvent.Reconnecting, () => {
+      console.log("LIVEKIT: Reconnecting to room")
+    })
+    this.room?.on(RoomEvent.EncryptionError, (error) => {
+      console.log("LIVEKIT: Encryption error", error)
+    })
+    this.room?.on(RoomEvent.ParticipantConnected, (participant) => {
+      console.log("LIVEKIT: Participant connected", participant.identity)
+    })
+    this.room?.on(RoomEvent.ParticipantDisconnected, (participant) => {
+      console.log("LIVEKIT: Participant disconnected", participant.identity)
+    })
+    this.room?.on(RoomEvent.MediaDevicesChanged, () => {
+      console.log("LIVEKIT: Media devices changed")
+    })
+    this.room?.on(RoomEvent.MediaDevicesError, (error) => {
+      console.log("LIVEKIT: Media devices error", error)
+    })
     this.room?.on(RoomEvent.Disconnected, () => {
       console.log("LIVEKIT: Disconnected from room")
     })

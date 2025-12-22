@@ -26,6 +26,7 @@ interface NavigationHistoryContextType {
   getPendingRoute: () => string | null
   navigate: (path: string, params?: any) => void
   clearHistoryAndGoHome: () => void
+  replaceAll: (path: string, params?: any) => void
 }
 
 const NavigationHistoryContext = createContext<NavigationHistoryContextType | undefined>(undefined)
@@ -158,6 +159,12 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     // router.replace("/(tabs)/home")
   }
 
+  const replaceAll = (path: string, params?: any) => {
+    console.info("NavHistory: replaceAll()", path)
+    clearHistoryAndGoHome()
+    replace(path, params)
+  }
+
   const navObject: NavObject = {
     push,
     replace,
@@ -184,6 +191,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
         getPendingRoute,
         navigate,
         clearHistoryAndGoHome,
+        replaceAll,
       }}>
       {children}
     </NavigationHistoryContext.Provider>
