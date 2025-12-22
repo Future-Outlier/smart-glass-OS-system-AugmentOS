@@ -78,14 +78,13 @@ class Livekit {
   }
 
   public async addPcm(data: Uint8Array) {
+    // Don't send data if not connected
     if (!this.room || this.room.state !== ConnectionState.Connected) {
-      console.log("LIVEKIT: Room not connected")
       return
     }
 
     // prepend a sequence number:
     data = new Uint8Array([this.getSequence(), ...data])
-
     this.room?.localParticipant.publishData(data, {reliable: false})
   }
 
@@ -98,6 +97,7 @@ class Livekit {
       }
       this.room = null
     }
+    this.isReconnecting = false
   }
 }
 
