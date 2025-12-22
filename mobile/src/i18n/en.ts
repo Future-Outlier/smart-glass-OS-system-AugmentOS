@@ -201,6 +201,7 @@ const en = {
     osMentraAi: "Mentra AI",
     osMentraAiBullet1: "TODO1",
     osMentraAiBullet2: "TODO2",
+    learnAboutOs: "Learn about Mentra OS",
   },
   home: {
     title: "MentraOS",

@@ -1,6 +1,8 @@
 import {Screen} from "@/components/ignite"
 import {translate} from "@/i18n"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 export const unstable_settings = {
   options: {
@@ -130,6 +132,8 @@ const steps: OnboardingStep[] = [
 ]
 
 export default function MentraLiveOnboarding() {
+  const [hasDoneOsOnboarding, setHasDoneOsOnboarding] = useSetting(SETTINGS.onboarding_os_completed.key)
+  const {clearHistoryAndGoHome, replaceAll} = useNavigationHistory()
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <OnboardingGuide
@@ -137,6 +141,14 @@ export default function MentraLiveOnboarding() {
         autoStart={false}
         mainTitle={translate("onboarding:liveWelcomeTitle")}
         mainSubtitle={translate("onboarding:liveWelcomeSubtitle")}
+        endButtonFn={() => {
+          if (hasDoneOsOnboarding) {
+            clearHistoryAndGoHome()
+            return
+          }
+          replaceAll("/onboarding/os")
+        }}
+        endButtonText={hasDoneOsOnboarding ? translate("onboarding:liveEndTitle") : translate("onboarding:learnAboutOs")}
       />
     </Screen>
   )

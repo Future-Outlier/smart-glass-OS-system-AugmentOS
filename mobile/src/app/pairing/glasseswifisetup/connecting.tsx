@@ -33,19 +33,19 @@ export default function WifiConnectingScreen() {
   const glassesConnected = useGlassesStore(state => state.connected)
 
   // Navigate away if glasses disconnect (but not on initial mount)
-  const prevGlassesConnectedRef = useRef(glassesConnected)
   useEffect(() => {
-    if (prevGlassesConnectedRef.current && !glassesConnected) {
-      console.log("[WifiConnectingScreen] Glasses disconnected - navigating away")
-      showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [{text: "OK"}])
-      if (returnTo && typeof returnTo === "string") {
-        replace(decodeURIComponent(returnTo))
-      } else {
-        replace("/")
-      }
+    if (!glassesConnected) {
+      console.log("CONNECTING: Glasses disconnected - navigating away")
+      showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [
+        {
+          text: "OK",
+          onPress() {
+            goBack()
+          },
+        },
+      ])
     }
-    prevGlassesConnectedRef.current = glassesConnected
-  }, [glassesConnected, returnTo])
+  }, [glassesConnected])
 
   useEffect(() => {
     // Start connection attempt
@@ -234,9 +234,7 @@ export default function WifiConnectingScreen() {
   }
 
   return (
-    <Screen
-      preset="fixed"
-      contentContainerStyle={connectionStatus === "connecting" ? undefined : undefined}>
+    <Screen preset="fixed" contentContainerStyle={connectionStatus === "connecting" ? undefined : undefined}>
       {connectionStatus === "connecting" && (
         <Header title="Connecting" leftIcon="chevron-left" onLeftPress={handleHeaderBack} />
       )}

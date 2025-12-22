@@ -1,5 +1,6 @@
 import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
+import { useNavigationHistory } from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {spacing} from "@/theme"
 
@@ -73,9 +74,12 @@ const steps: OnboardingStep[] = [
 ]
 
 export default function MentraOSOnboarding() {
+  const {clearHistoryAndGoHome} = useNavigationHistory()
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-      <OnboardingGuide steps={steps} autoStart={true} showSkipButton={false} />
+      <OnboardingGuide steps={steps} autoStart={true} showSkipButton={false} endButtonFn={() => {
+        clearHistoryAndGoHome()
+      }}/>
     </Screen>
   )
 }
