@@ -1,7 +1,7 @@
 import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
 import {useState, useCallback, useEffect, useMemo} from "react"
-import {BackHandler, ImageStyle, Platform, View, ViewStyle} from "react-native"
+import {View, ViewStyle} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text} from "@/components/ignite"
@@ -46,11 +46,6 @@ interface OnboardingGuideProps {
   mainSubtitle?: string
   endButtonText?: string
   endButtonFn?: () => void
-}
-
-// Helper to get a video source (for preloading into players)
-const getVideoSource = (step: OnboardingStep): VideoSource | null => {
-  return step.type === "video" ? step.source : null
 }
 
 // Find next video step's source for preloading
@@ -340,7 +335,7 @@ export function OnboardingGuide({
 
   const renderBullets = useCallback((bullets: string[]) => {
     return (
-      <View className="flex flex-col gap-2 flex-1 px-2">
+      <View className="flex flex-col gap-2 flex-1 px-2 mt-6">
         <Text className="text-center text-xl self-start font-semibold" text={bullets[0]} />
         {bullets.slice(1).map((bullet, index) => (
           <View key={index} className="flex-row items-start gap-2 px-4">
@@ -371,7 +366,7 @@ export function OnboardingGuide({
           {step.title && <Text className="text-center text-2xl font-semibold" text={step.title} />}
 
           <View className="-mx-6">
-            {/* <View className="relative" style={{width: "100%", aspectRatio: 1}}> */}
+            <View className="relative" style={{width: "100%", aspectRatio: 1}}>
               {isCurrentStepImage ? (
                 <View style={step.containerStyle} className={step.containerClassName}>
                   <Image
@@ -394,7 +389,6 @@ export function OnboardingGuide({
                       bottom: 0,
                       zIndex: activePlayer === 1 ? 1 : 0,
                       ...step.containerStyle,
-                      
                     }}
                     className={step.containerClassName}>
                     <VideoView
@@ -428,7 +422,7 @@ export function OnboardingGuide({
                   </View>
                 </>
               )}
-            {/* </View> */}
+            </View>
 
             {showReplayButton && isCurrentStepVideo && (
               <View className="absolute bottom-8 left-0 right-0 items-center z-10">
