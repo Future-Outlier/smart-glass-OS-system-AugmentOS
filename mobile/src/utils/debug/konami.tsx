@@ -12,20 +12,18 @@ const KONAMI_CODE: Direction[] = ["up", "up", "down", "down", "left", "right", "
 export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
   const [sequence, setSequence] = useState<Direction[]>([])
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const {replace} = useNavigationHistory()
+  const {goHomeAndPush} = useNavigationHistory()
 
   useEffect(() => {
-    // console.log("KONAMI: Sequence:", sequence)
-
     if (sequence.length === KONAMI_CODE.length) {
       const matches = sequence.every((dir, i) => dir === KONAMI_CODE[i])
       if (matches) {
         console.log("KONAMI: Konami code activated!")
-        replace("/settings/developer")
+        goHomeAndPush("/settings/developer")
         setSequence([])
       }
     }
-  }, [sequence, replace])
+  }, [sequence, goHomeAndPush])
 
   useEffect(() => {
     return () => {

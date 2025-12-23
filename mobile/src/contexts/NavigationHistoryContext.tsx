@@ -27,6 +27,7 @@ interface NavigationHistoryContextType {
   navigate: (path: string, params?: any) => void
   clearHistoryAndGoHome: () => void
   replaceAll: (path: string, params?: any) => void
+  goHomeAndPush: (path: string, params?: any) => void
 }
 
 const NavigationHistoryContext = createContext<NavigationHistoryContextType | undefined>(undefined)
@@ -152,17 +153,27 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     historyRef.current = []
     historyParamsRef.current = []
     try {
-      router.dismissTo("/(tabs)/home")
+      // router.navigate("/(tabs)/home")
+      router.dismissTo("/")
+      router.replace("/(tabs)/home")
     } catch (error) {
       console.error("NavHistory: clearHistoryAndGoHome() error", error)
     }
     // router.replace("/(tabs)/home")
   }
 
+  // whatever route we pass, will be the only route in the entire stack:
   const replaceAll = (path: string, params?: any) => {
     console.info("NavHistory: replaceAll()", path)
     clearHistoryAndGoHome()
     replace(path, params)
+  }
+
+  // the only routes in the stack will be home and the one we pass:
+  const goHomeAndPush = (path: string, params?: any) => {
+    console.info("NavHistory: goHomeAndPush()", path)
+    clearHistoryAndGoHome()
+    push(path, params)
   }
 
   const navObject: NavObject = {
@@ -192,6 +203,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
         navigate,
         clearHistoryAndGoHome,
         replaceAll,
+        goHomeAndPush,
       }}>
       {children}
     </NavigationHistoryContext.Provider>
