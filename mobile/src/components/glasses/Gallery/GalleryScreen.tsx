@@ -415,6 +415,14 @@ export function GalleryScreen() {
       return
     }
 
+    // Videos use MediaViewer modal (no floating transition)
+    if (item.photo.is_video) {
+      console.log("[GalleryScreen] Opening video in MediaViewer:", item.photo.name)
+      setSelectedPhoto(item.photo)
+      setSelectedPhotoIndex(item.index)
+      return
+    }
+
     // Get source frame for this thumbnail
     const sourceFrame = sourceFrames.get(item.photo.name)
     if (!sourceFrame) {
