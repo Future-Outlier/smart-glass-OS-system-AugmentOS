@@ -265,6 +265,46 @@ class Bridge {
         Bridge.sendTypedMessage("mtk_update_complete", body: eventBody)
     }
 
+    /// Send OTA update available notification - glasses have detected an available update (background mode)
+    static func sendOtaUpdateAvailable(
+        versionCode: Int64,
+        versionName: String,
+        updates: [String],
+        totalSize: Int64
+    ) {
+        let eventBody: [String: Any] = [
+            "version_code": versionCode,
+            "version_name": versionName,
+            "updates": updates,
+            "total_size": totalSize,
+        ]
+        Bridge.sendTypedMessage("ota_update_available", body: eventBody)
+    }
+
+    /// Send OTA progress update - glasses are downloading/installing an update
+    static func sendOtaProgress(
+        stage: String,
+        status: String,
+        progress: Int,
+        bytesDownloaded: Int64,
+        totalBytes: Int64,
+        currentUpdate: String,
+        errorMessage: String?
+    ) {
+        var eventBody: [String: Any] = [
+            "stage": stage,
+            "status": status,
+            "progress": progress,
+            "bytes_downloaded": bytesDownloaded,
+            "total_bytes": totalBytes,
+            "current_update": currentUpdate,
+        ]
+        if let error = errorMessage {
+            eventBody["error_message"] = error
+        }
+        Bridge.sendTypedMessage("ota_progress", body: eventBody)
+    }
+
     // Arbitrary WS Comms (dont use these, make a dedicated function for your use case):
     static func sendWSText(_ msg: String) {
         let data = ["text": msg]

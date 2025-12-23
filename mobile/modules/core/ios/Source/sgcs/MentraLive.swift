@@ -1858,6 +1858,55 @@ class MentraLive: NSObject, SGCManager {
             // Send to React Native via Bridge
             Bridge.sendMtkUpdateComplete(message: updateMessage, timestamp: timestamp)
 
+        case "ota_update_available":
+            // Process OTA update available notification from glasses (background mode)
+            Bridge.log("📱 Received ota_update_available from glasses")
+
+            let versionCode = json["version_code"] as? Int64 ?? 0
+            let versionName = json["version_name"] as? String ?? ""
+            let totalSize = json["total_size"] as? Int64 ?? 0
+
+            // Parse updates array
+            var updates: [String] = []
+            if let updatesArray = json["updates"] as? [String] {
+                updates = updatesArray
+            }
+
+            Bridge.log(
+                "📱 OTA available - version: \(versionName) (\(versionCode)), updates: \(updates), size: \(totalSize) bytes"
+            )
+
+            // Send to React Native
+            Bridge.sendOtaUpdateAvailable(
+                versionCode: versionCode,
+                versionName: versionName,
+                updates: updates,
+                totalSize: totalSize
+            )
+
+        case "ota_progress":
+            // Process OTA progress update from glasses
+            let stage = json["stage"] as? String ?? "download"
+            let status = json["status"] as? String ?? "PROGRESS"
+            let progress = json["progress"] as? Int ?? 0
+            let bytesDownloaded = json["bytes_downloaded"] as? Int64 ?? 0
+            let totalBytes = json["total_bytes"] as? Int64 ?? 0
+            let currentUpdate = json["current_update"] as? String ?? "apk"
+            let errorMessage = json["error_message"] as? String
+
+            Bridge.log("📱 OTA progress - \(stage) \(status) \(progress)% (\(currentUpdate))")
+
+            // Send to React Native
+            Bridge.sendOtaProgress(
+                stage: stage,
+                status: status,
+                progress: progress,
+                bytesDownloaded: bytesDownloaded,
+                totalBytes: totalBytes,
+                currentUpdate: currentUpdate,
+                errorMessage: errorMessage
+            )
+
         default:
             Bridge.log("Unhandled message type: \(type)")
         }
@@ -2006,6 +2055,20 @@ class MentraLive: NSObject, SGCManager {
         let json: [String: Any] = [
             "type": "save_in_gallery_mode",
             "active": active,
+            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
+        ]
+
+        sendJson(json, wakeUp: true)
+    }
+
+    /// Send OTA start command to glasses.
+    /// Called when user approves an update (onboarding or background mode).
+    /// Triggers glasses to begin download and installation.
+    func sendOtaStart() {
+        Bridge.log("LIVE: 📱 Sending ota_start command to glasses")
+
+        let json: [String: Any] = [
+            "type": "ota_start",
             "timestamp": Int(Date().timeIntervalSince1970 * 1000),
         ]
 

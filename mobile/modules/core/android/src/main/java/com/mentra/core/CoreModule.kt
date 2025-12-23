@@ -84,6 +84,10 @@ class CoreModule : Module() {
             coreManager?.photoRequest(requestId, appId, size, webhookUrl, authToken, compress)
         }
 
+        // MARK: - OTA Commands
+
+        AsyncFunction("sendOtaStart") { coreManager?.sendOtaStart() }
+
         // MARK: - Video Recording Commands
 
         AsyncFunction("startBufferRecording") { coreManager?.startBufferRecording() }

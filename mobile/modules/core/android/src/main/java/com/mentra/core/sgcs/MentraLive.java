@@ -2134,6 +2134,52 @@ public class MentraLive extends SGCManager {
                 Bridge.log("LIVE: Received token status from ASG client: " + (success ? "SUCCESS" : "FAILED"));
                 break;
 
+            case "ota_update_available":
+                // Process OTA update available notification from glasses (background mode)
+                Bridge.log("LIVE: 📱 Received ota_update_available from glasses");
+                try {
+                    long otaVersionCode = json.optLong("version_code", 0);
+                    String otaVersionName = json.optString("version_name", "");
+                    long otaTotalSize = json.optLong("total_size", 0);
+
+                    // Parse updates array
+                    List<String> updates = new ArrayList<>();
+                    if (json.has("updates")) {
+                        JSONArray updatesArray = json.getJSONArray("updates");
+                        for (int i = 0; i < updatesArray.length(); i++) {
+                            updates.add(updatesArray.getString(i));
+                        }
+                    }
+
+                    Bridge.log("LIVE: 📱 OTA available - version: " + otaVersionName +
+                          " (" + otaVersionCode + "), updates: " + updates +
+                          ", size: " + otaTotalSize + " bytes");
+
+                    // Send to React Native
+                    Bridge.sendOtaUpdateAvailable(otaVersionCode, otaVersionName, updates, otaTotalSize);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error parsing ota_update_available", e);
+                }
+                break;
+
+            case "ota_progress":
+                // Process OTA progress update from glasses
+                String otaStage = json.optString("stage", "download");
+                String otaStatus = json.optString("status", "PROGRESS");
+                int otaProgress = json.optInt("progress", 0);
+                long otaBytesDownloaded = json.optLong("bytes_downloaded", 0);
+                long otaTotalBytes = json.optLong("total_bytes", 0);
+                String otaCurrentUpdate = json.optString("current_update", "apk");
+                String otaErrorMessage = json.optString("error_message", null);
+
+                Bridge.log("LIVE: 📱 OTA progress - " + otaStage + " " + otaStatus +
+                      " " + otaProgress + "% (" + otaCurrentUpdate + ")");
+
+                // Send to React Native
+                Bridge.sendOtaProgress(otaStage, otaStatus, otaProgress,
+                    otaBytesDownloaded, otaTotalBytes, otaCurrentUpdate, otaErrorMessage);
+                break;
+
             case "button_press":
                 // Process button press event
                 String buttonId = json.optString("buttonId", "unknown");
@@ -2952,6 +2998,23 @@ public class MentraLive extends SGCManager {
             Bridge.log("LIVE: 📸 Sending gallery status query to glasses");
         } catch (JSONException e) {
             Log.e(TAG, "📸 Error creating gallery status query", e);
+        }
+    }
+
+    /**
+     * Send OTA start command to glasses.
+     * Called when user approves an update (onboarding or background mode).
+     * Triggers glasses to begin download and installation.
+     */
+    public void sendOtaStart() {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "ota_start");
+            json.put("timestamp", System.currentTimeMillis());
+            sendJson(json, true);
+            Bridge.log("LIVE: 📱 Sending ota_start command to glasses");
+        } catch (JSONException e) {
+            Log.e(TAG, "📱 Error creating ota_start command", e);
         }
     }
 
