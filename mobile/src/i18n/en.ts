@@ -207,7 +207,7 @@ const en = {
     incompatibleApps: "Incompatible Apps",
     incompatibleAppsCount: "{{count}} Incompatible Apps",
     incompatibleAppsDescription:
-      "Following app requires specific hardware for your connected glasses, which is currently not available.",
+      "The following apps require specific hardware that is currently not available on your connected glasses.",
     incompatible: "Incompatible",
     noAppsInstalled: "No apps installed",
     swipeToView: "Swipe to view {{target}}",

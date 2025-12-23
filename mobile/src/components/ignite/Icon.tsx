@@ -5,7 +5,6 @@ import {
   FileType2,
   Fullscreen,
   Glasses,
-  House,
   LayoutDashboard,
   Locate,
   Unlink,
@@ -126,7 +125,15 @@ const lucideIcons = {
  * @returns {JSX.Element} The rendered `Icon` component.
  */
 export function Icon(props: IconProps) {
-  const {name, color, size, style: $imageStyleOverride, containerStyle: $containerStyleOverride, ...viewProps} = props
+  const {
+    name,
+    color,
+    backgroundColor,
+    size,
+    style: $imageStyleOverride,
+    containerStyle: $containerStyleOverride,
+    ...viewProps
+  } = props
 
   const {theme} = useAppTheme()
 
@@ -146,17 +153,9 @@ export function Icon(props: IconProps) {
     // @ts-ignore
     const IconComponent = lucideIcons[name] as any
 
-    let colorOverride = color
-    let fillOverride = undefined
-
-    if (name.includes("filled")) {
-      colorOverride = color
-      fillOverride = "transparent"
-    }
-
     return (
       <View {...viewProps} style={$containerStyleOverride}>
-        <IconComponent style={$imageStyle} size={size} color={colorOverride} fill={fillOverride} />
+        <IconComponent style={$imageStyle} size={size} color={color} fill={backgroundColor ?? "transparent"} />
       </View>
     )
   }
@@ -206,6 +205,7 @@ export const iconRegistry = {
   "chevron-right": 1,
   "trash": 1,
   "trash-x": 1,
+  "check": 1,
   // lucide-react-native icons:
   ...lucideIcons,
 }

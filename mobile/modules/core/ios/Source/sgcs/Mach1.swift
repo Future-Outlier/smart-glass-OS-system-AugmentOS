@@ -466,7 +466,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
         guard let device = UltraliteManager.shared.currentDevice else {
             Bridge.log("MACH1: No current device")
-            CoreManager.shared.handle_forget()
+            CoreManager.shared.forget()
             return false
         }
 

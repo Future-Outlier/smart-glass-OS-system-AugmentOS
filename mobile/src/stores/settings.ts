@@ -588,7 +588,7 @@ export const useSettingsStore = create<SettingsState>()(
     },
     getRestUrl: () => {
       const serverUrl = get().getSetting(SETTINGS.backend_url.key)
-      console.log("GET REST URL: serverUrl:", serverUrl)
+      // console.log("GET REST URL: serverUrl:", serverUrl)
       const url = new URL(serverUrl)
       const secure = url.protocol === "https:"
       return `${secure ? "https" : "http"}://${url.hostname}:${url.port || (secure ? 443 : 80)}`

@@ -119,7 +119,6 @@ public class Mach1 extends SGCManager {
 
     @Override
     public void setMicEnabled(boolean enabled) {
-
     }
 
     @Override
@@ -492,7 +491,7 @@ public class Mach1 extends SGCManager {
             });
 
             Log.d(TAG, "Mach1 initialized with context and observers");
-            CoreManager.getInstance().handle_request_status();
+            CoreManager.getInstance().getStatus();
         } catch (Exception e) {
             Log.e(TAG, "Mach1 constructor FAILED with exception: " + e.getMessage(), e);
             Bridge.log("Mach1 constructor FAILED: " + e.getMessage());
@@ -541,6 +540,12 @@ public class Mach1 extends SGCManager {
     }
 
     private void onUltraliteBatteryChanged(BatteryStatus batteryStatus) {
+        // Guard against null batteryStatus which can occur during connection/disconnection
+        // See: MENTRA-OS-154
+        if (batteryStatus == null) {
+            Log.d(TAG, "Ultralite battery status is null, ignoring");
+            return;
+        }
         Log.d(TAG, "Ultralite new battery status: " + batteryStatus.getLevel());
         // Update the class field, not a local variable
         this.batteryLevel = batteryStatus.getLevel();

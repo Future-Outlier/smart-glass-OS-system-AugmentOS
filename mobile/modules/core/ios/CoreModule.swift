@@ -19,67 +19,63 @@ public class CoreModule: Module {
 
         AsyncFunction("displayEvent") { (params: [String: Any]) in
             await MainActor.run {
-                CoreManager.shared.handle_display_event(params)
+                CoreManager.shared.displayEvent(params)
             }
         }
 
         AsyncFunction("displayText") { (params: [String: Any]) in
             await MainActor.run {
-                CoreManager.shared.handle_display_text(params)
+                CoreManager.shared.displayText(params)
             }
         }
 
         // MARK: - Connection Commands
 
-        AsyncFunction("requestStatus") {
+        AsyncFunction("getStatus") {
             await MainActor.run {
-                CoreManager.shared.handle_request_status()
+                CoreManager.shared.getStatus()
             }
         }
 
         AsyncFunction("connectDefault") {
-            Bridge.log("calling connectDefault!")
             await MainActor.run {
-                CoreManager.shared.handle_connect_default()
+                CoreManager.shared.connectDefault()
             }
         }
 
         AsyncFunction("connectByName") { (deviceName: String) in
             await MainActor.run {
-                CoreManager.shared.handle_connect_by_name(deviceName)
+                CoreManager.shared.connectByName(deviceName)
             }
         }
 
         AsyncFunction("connectSimulated") {
-            Bridge.log("calling connectSimulated!")
             await MainActor.run {
-                CoreManager.shared.handle_connect_simulated()
+                CoreManager.shared.connectSimulated()
             }
         }
 
         AsyncFunction("disconnect") {
-            Bridge.log("calling disconnect!")
             await MainActor.run {
-                CoreManager.shared.handle_disconnect()
+                CoreManager.shared.disconnect()
             }
         }
 
         AsyncFunction("forget") {
-            Bridge.log("calling forget!")
             await MainActor.run {
-                CoreManager.shared.handle_forget()
+                CoreManager.shared.forget()
             }
         }
 
         AsyncFunction("findCompatibleDevices") { (modelName: String) in
             await MainActor.run {
-                CoreManager.shared.handle_find_compatible_devices(modelName)
+                CoreManager.shared.findCompatibleDevices(modelName)
             }
         }
 
         AsyncFunction("showDashboard") {
             await MainActor.run {
-                CoreManager.shared.handle_show_dashboard()
+                CoreManager.shared.showDashboard()
             }
         }
 
@@ -87,19 +83,19 @@ public class CoreModule: Module {
 
         AsyncFunction("requestWifiScan") {
             await MainActor.run {
-                CoreManager.shared.handle_request_wifi_scan()
+                CoreManager.shared.requestWifiScan()
             }
         }
 
         AsyncFunction("sendWifiCredentials") { (ssid: String, password: String) in
             await MainActor.run {
-                CoreManager.shared.handle_send_wifi_credentials(ssid, password)
+                CoreManager.shared.sendWifiCredentials(ssid, password)
             }
         }
 
         AsyncFunction("setHotspotState") { (enabled: Bool) in
             await MainActor.run {
-                CoreManager.shared.handle_set_hotspot_state(enabled)
+                CoreManager.shared.setHotspotState(enabled)
             }
         }
 
@@ -107,7 +103,7 @@ public class CoreModule: Module {
 
         AsyncFunction("queryGalleryStatus") {
             await MainActor.run {
-                CoreManager.shared.handle_query_gallery_status()
+                CoreManager.shared.queryGalleryStatus()
             }
         }
 
@@ -117,7 +113,7 @@ public class CoreModule: Module {
                 authToken: String?, compress: String?
             ) in
             await MainActor.run {
-                CoreManager.shared.handle_photo_request(
+                CoreManager.shared.photoRequest(
                     requestId, appId, size, webhookUrl, authToken, compress
                 )
             }
@@ -127,31 +123,31 @@ public class CoreModule: Module {
 
         AsyncFunction("startBufferRecording") {
             await MainActor.run {
-                CoreManager.shared.handle_start_buffer_recording()
+                CoreManager.shared.startBufferRecording()
             }
         }
 
         AsyncFunction("stopBufferRecording") {
             await MainActor.run {
-                CoreManager.shared.handle_stop_buffer_recording()
+                CoreManager.shared.stopBufferRecording()
             }
         }
 
         AsyncFunction("saveBufferVideo") { (requestId: String, durationSeconds: Int) in
             await MainActor.run {
-                CoreManager.shared.handle_save_buffer_video(requestId, durationSeconds)
+                CoreManager.shared.saveBufferVideo(requestId, durationSeconds)
             }
         }
 
         AsyncFunction("startVideoRecording") { (requestId: String, save: Bool) in
             await MainActor.run {
-                CoreManager.shared.handle_start_video_recording(requestId, save)
+                CoreManager.shared.startVideoRecording(requestId, save)
             }
         }
 
         AsyncFunction("stopVideoRecording") { (requestId: String) in
             await MainActor.run {
-                CoreManager.shared.handle_stop_video_recording(requestId)
+                CoreManager.shared.stopVideoRecording(requestId)
             }
         }
 
@@ -159,28 +155,27 @@ public class CoreModule: Module {
 
         AsyncFunction("startRtmpStream") { (params: [String: Any]) in
             await MainActor.run {
-                CoreManager.shared.handle_start_rtmp_stream(params)
+                CoreManager.shared.startRtmpStream(params)
             }
         }
 
         AsyncFunction("stopRtmpStream") {
             await MainActor.run {
-                CoreManager.shared.handle_stop_rtmp_stream()
+                CoreManager.shared.stopRtmpStream()
             }
         }
 
         AsyncFunction("keepRtmpStreamAlive") { (params: [String: Any]) in
             await MainActor.run {
-                CoreManager.shared.handle_keep_rtmp_stream_alive(params)
+                CoreManager.shared.keepRtmpStreamAlive(params)
             }
         }
 
         // MARK: - Microphone Commands
 
-        AsyncFunction("microphoneStateChange") { (requiredDataStrings: [String], bypassVad: Bool) in
+        AsyncFunction("setMicState") { (sendPcmData: Bool, sendTranscript: Bool, bypassVad: Bool) in
             await MainActor.run {
-                let requiredData = SpeechRequiredDataType.fromStringArray(requiredDataStrings)
-                CoreManager.shared.handle_microphone_state_change(requiredData, bypassVad)
+                CoreManager.shared.setMicState(sendPcmData, sendTranscript, bypassVad)
             }
         }
 
@@ -198,7 +193,7 @@ public class CoreModule: Module {
                 ontime: Int, offtime: Int, count: Int
             ) in
             await MainActor.run {
-                CoreManager.shared.handle_rgb_led_control(
+                CoreManager.shared.rgbLedControl(
                     requestId: requestId,
                     packageName: packageName,
                     action: action,
@@ -214,7 +209,7 @@ public class CoreModule: Module {
 
         AsyncFunction("updateSettings") { (params: [String: Any]) in
             await MainActor.run {
-                CoreManager.shared.handle_update_settings(params)
+                CoreManager.shared.updateSettings(params)
             }
         }
 

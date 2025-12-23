@@ -307,33 +307,17 @@ class GallerySyncService {
   }
 
   /**
-   * Connect to hotspot WiFi
-   * On iOS, the system shows a dialog that the user must accept. The library may throw
-   * "internal error" before the user has a chance to respond, so we retry with delays.
+   * Connect to hotspot WiFi with retry logic (unified for both platforms)
+   * Both iOS and Android benefit from retries:
+   * - iOS: Library throws "internal error" before user responds to system dialog
+   * - Android: Hotspot needs time to initialize, especially when glasses WiFi was cold
    */
   private async connectToHotspotWifi(hotspotInfo: HotspotInfo): Promise<void> {
     const store = useGallerySyncStore.getState()
+    let lastError: any = null
 
     console.log(`[GallerySyncService] Connecting to WiFi: ${hotspotInfo.ssid}`)
     store.setSyncState("connecting_wifi")
-
-    if (Platform.OS === "ios") {
-      // iOS-specific connection with retry logic
-      await this.connectToHotspotWifiIOS(hotspotInfo)
-    } else {
-      // Android connection
-      await this.connectToHotspotWifiAndroid(hotspotInfo)
-    }
-  }
-
-  /**
-   * iOS-specific WiFi connection with retry logic
-   * iOS shows a system dialog that the user must accept. The WifiManager library
-   * often throws "internal error" before the user has responded, so we retry.
-   */
-  private async connectToHotspotWifiIOS(hotspotInfo: HotspotInfo): Promise<void> {
-    const store = useGallerySyncStore.getState()
-    let lastError: any = null
 
     for (let attempt = 1; attempt <= TIMING.IOS_WIFI_MAX_RETRIES; attempt++) {
       // Check if cancelled
@@ -343,12 +327,14 @@ class GallerySyncService {
       }
 
       try {
-        console.log(`[GallerySyncService] iOS WiFi connection attempt ${attempt}/${TIMING.IOS_WIFI_MAX_RETRIES}`)
+        console.log(
+          `[GallerySyncService] WiFi connection attempt ${attempt}/${TIMING.IOS_WIFI_MAX_RETRIES} (${Platform.OS})`,
+        )
 
         // Use connectToProtectedSSID with joinOnce=false for persistent connection
         await WifiManager.connectToProtectedSSID(hotspotInfo.ssid, hotspotInfo.password, false, false)
 
-        console.log("[GallerySyncService] Connected to hotspot WiFi (iOS)")
+        console.log(`[GallerySyncService] Connected to hotspot WiFi (${Platform.OS})`)
 
         // Start the actual download
         await this.startFileDownload(hotspotInfo)
@@ -356,7 +342,7 @@ class GallerySyncService {
       } catch (error: any) {
         lastError = error
         console.log(
-          `[GallerySyncService] iOS WiFi attempt ${attempt} failed:`,
+          `[GallerySyncService] WiFi attempt ${attempt} failed (${Platform.OS}):`,
           error?.message || error?.code || "unknown error",
         )
 
@@ -371,18 +357,19 @@ class GallerySyncService {
         }
 
         // For "internal error" or "unableToConnect", wait and retry
-        // This gives the user time to interact with the iOS system dialog
+        // iOS: Gives user time to interact with system dialog
+        // Android: Gives hotspot time to fully initialize and start broadcasting
         if (attempt < TIMING.IOS_WIFI_MAX_RETRIES) {
-          console.log(
-            `[GallerySyncService] Waiting ${TIMING.IOS_WIFI_RETRY_DELAY_MS}ms before retry (user may be seeing iOS dialog)...`,
-          )
+          const reason =
+            Platform.OS === "ios" ? "user may be seeing system dialog" : "hotspot may still be initializing"
+          console.log(`[GallerySyncService] Waiting ${TIMING.IOS_WIFI_RETRY_DELAY_MS}ms before retry (${reason})...`)
           await new Promise(resolve => setTimeout(resolve, TIMING.IOS_WIFI_RETRY_DELAY_MS))
         }
       }
     }
 
     // All retries exhausted
-    console.error("[GallerySyncService] iOS WiFi connection failed after all retries:", lastError)
+    console.error(`[GallerySyncService] WiFi connection failed after all retries (${Platform.OS}):`, lastError)
     store.setSyncError(
       lastError?.message?.includes("internal error")
         ? "Could not connect to glasses WiFi. Please ensure you accept the WiFi prompt when it appears."
@@ -391,34 +378,6 @@ class GallerySyncService {
 
     if (store.syncServiceOpenedHotspot) {
       await this.closeHotspot()
-    }
-  }
-
-  /**
-   * Android-specific WiFi connection
-   */
-  private async connectToHotspotWifiAndroid(hotspotInfo: HotspotInfo): Promise<void> {
-    const store = useGallerySyncStore.getState()
-
-    try {
-      await WifiManager.connectToProtectedSSID(hotspotInfo.ssid, hotspotInfo.password, false, false)
-      console.log("[GallerySyncService] Connected to hotspot WiFi (Android)")
-
-      // Start the actual download
-      await this.startFileDownload(hotspotInfo)
-    } catch (error: any) {
-      console.error("[GallerySyncService] Android WiFi connection failed:", error)
-
-      if (error?.code === "userDenied" || error?.message?.includes("cancel")) {
-        store.setSyncError("WiFi connection cancelled")
-      } else {
-        store.setSyncError(error?.message || "Failed to connect to glasses WiFi")
-      }
-
-      // Close hotspot if we opened it
-      if (store.syncServiceOpenedHotspot) {
-        await this.closeHotspot()
-      }
     }
   }
 
@@ -448,7 +407,16 @@ class GallerySyncService {
       }
 
       const filesToSync = syncData.changed_files
-      console.log(`[GallerySyncService] Found ${filesToSync.length} files to sync`)
+      // console.log(`[GallerySyncService] 🔄 Found ${filesToSync.length} files to sync from server`)
+      // console.log(`[GallerySyncService] 📊 Server returned these files:`)
+      // filesToSync.slice(0, 10).forEach((file: any, idx: number) => {
+      //   console.log(
+      //     `[GallerySyncService]   ${idx + 1}. ${file.name} (${file.is_video ? "video" : "photo"}, ${file.size} bytes, modified: ${file.modified})`,
+      //   )
+      // })
+      // if (filesToSync.length > 10) {
+      //   console.log(`[GallerySyncService]   ... and ${filesToSync.length - 10} more files`)
+      // }
 
       // Update store with files
       store.setSyncing(filesToSync)
@@ -566,7 +534,11 @@ class GallerySyncService {
       }
 
       // Save downloaded files metadata
+      // console.log(`[GallerySyncService] 💾 Saving metadata for ${downloadResult.downloaded.length} downloaded files...`)
       for (const photoInfo of downloadResult.downloaded) {
+        // console.log(
+        //   `[GallerySyncService] 📝 Processing: ${photoInfo.name} (${photoInfo.is_video ? "video" : "photo"}, ${photoInfo.size} bytes)`,
+        // )
         const downloadedFile = localStorageService.convertToDownloadedFile(
           photoInfo,
           photoInfo.filePath || "",
@@ -575,6 +547,7 @@ class GallerySyncService {
         )
         await localStorageService.saveDownloadedFile(downloadedFile)
       }
+      // console.log(`[GallerySyncService] ✅ Finished saving metadata for all files`)
 
       // Update queue index to final position
       await localStorageService.updateSyncQueueIndex(files.length)
@@ -709,6 +682,34 @@ class GallerySyncService {
    */
   private async onSyncComplete(downloadedCount: number, failedCount: number): Promise<void> {
     console.log(`[GallerySyncService] Sync complete: ${downloadedCount} downloaded, ${failedCount} failed`)
+
+    // 🔍 DIAGNOSTIC: Show all pictures currently in storage after sync
+    // try {
+    //   const allStoredFiles = await localStorageService.getDownloadedFiles()
+    //   const fileNames = Object.keys(allStoredFiles)
+    //   console.log(`[GallerySyncService] 📸 POST-SYNC INVENTORY: ${fileNames.length} total files in storage`)
+    //   console.log(`[GallerySyncService] 📋 Complete file list:`)
+    //   fileNames
+    //     .sort((a, b) => {
+    //       const fileA = allStoredFiles[a]
+    //       const fileB = allStoredFiles[b]
+    //       return fileB.downloaded_at - fileA.downloaded_at // Most recent first
+    //     })
+    //     .slice(0, 20)
+    //     .forEach((fileName, idx) => {
+    //       const file = allStoredFiles[fileName]
+    //       const captureDate = new Date(file.modified).toISOString()
+    //       const downloadDate = new Date(file.downloaded_at).toISOString()
+    //       console.log(
+    //         `[GallerySyncService]   ${idx + 1}. ${fileName} - captured: ${captureDate}, downloaded: ${downloadDate}`,
+    //       )
+    //     })
+    //   if (fileNames.length > 20) {
+    //     console.log(`[GallerySyncService]   ... and ${fileNames.length - 20} more files`)
+    //   }
+    // } catch (error) {
+    //   console.error(`[GallerySyncService] Failed to get post-sync inventory:`, error)
+    // }
 
     // Clear the queue
     await localStorageService.clearSyncQueue()
