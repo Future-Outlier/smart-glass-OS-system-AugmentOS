@@ -285,22 +285,25 @@ export function GalleryScreen() {
       // For exact aspect ratio, we'd need to load image dimensions first
       const aspectRatio = 4 / 3
 
+      // Calculate available height accounting for safe areas
+      const availableHeight = screenHeight - insets.top - insets.bottom
+
       let width = screenWidth
       let height = screenWidth / aspectRatio
 
-      if (height > screenHeight) {
-        height = screenHeight
+      if (height > availableHeight) {
+        height = availableHeight
         width = height * aspectRatio
       }
 
       return {
         x: (screenWidth - width) / 2,
-        y: (screenHeight - height) / 2,
+        y: insets.top + (availableHeight - height) / 2 - 30, // Slightly above center
         width,
         height,
       }
     },
-    [screenWidth, screenHeight],
+    [screenWidth, screenHeight, insets.top, insets.bottom],
   )
 
   // Handle dismiss animation (fullscreen → grid)
