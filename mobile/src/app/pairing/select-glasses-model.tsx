@@ -12,11 +12,9 @@ import {Text, Header} from "@/components/ignite"
 import {Screen} from "@/components/ignite/Screen"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {$styles, ThemedStyle} from "@/theme"
-import {getGlassesImage} from "@/utils/getGlassesImage"
 import {useAppTheme} from "@/contexts/ThemeContext"
-
-// import {useLocalSearchParams} from "expo-router"
+import {ThemedStyle} from "@/theme"
+import {getGlassesImage} from "@/utils/getGlassesImage"
 
 export default function SelectGlassesModelScreen() {
   const {theme, themed} = useAppTheme()
@@ -34,6 +32,7 @@ export default function SelectGlassesModelScreen() {
   const getManufacturerLogo = (modelName: string) => {
     switch (modelName) {
       case DeviceTypes.G1:
+      case DeviceTypes.G2:
         return <EvenRealitiesLogo color={theme.colors.text} />
       case DeviceTypes.LIVE:
       case DeviceTypes.MACH1:
@@ -51,6 +50,7 @@ export default function SelectGlassesModelScreen() {
       ? [
           // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
           {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
+          {modelName: DeviceTypes.G2, key: "evenrealities_g2"},
           {modelName: DeviceTypes.LIVE, key: "mentra_live"},
           {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
           {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
@@ -61,6 +61,7 @@ export default function SelectGlassesModelScreen() {
           // Android:
           // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
           {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
+          {modelName: DeviceTypes.G2, key: "evenrealities_g2"},
           {modelName: DeviceTypes.LIVE, key: "mentra_live"},
           {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
           {modelName: DeviceTypes.Z100, key: "vuzix-z100"},

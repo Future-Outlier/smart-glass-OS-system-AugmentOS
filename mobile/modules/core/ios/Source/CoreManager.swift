@@ -655,6 +655,8 @@ struct ViewState {
             sgc = Simulated()
         } else if wearable.contains(DeviceTypes.G1) {
             sgc = G1()
+        } else if wearable.contains(DeviceTypes.G2) {
+            sgc = G2()
         } else if wearable.contains(DeviceTypes.LIVE) {
             sgc = MentraLive()
         } else if wearable.contains(DeviceTypes.MACH1) {
@@ -825,6 +827,8 @@ struct ViewState {
         // Call device-specific setup handlers
         if defaultWearable.contains(DeviceTypes.G1) {
             handleG1Ready()
+        } else if defaultWearable.contains(DeviceTypes.G2) {
+            handleG2Ready()
         } else if defaultWearable.contains(DeviceTypes.MACH1) {
             handleMach1Ready()
         } else if defaultWearable.contains(DeviceTypes.Z100) {
