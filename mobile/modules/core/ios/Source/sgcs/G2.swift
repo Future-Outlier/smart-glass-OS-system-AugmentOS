@@ -656,6 +656,7 @@ class G2: NSObject, SGCManager {
 
     // this scans for glasses to connect to and only connnects if SEARCH_ID is set
     func startScan() -> Bool {
+        Bridge.log("G2: startScan()")
         if centralManager == nil {
             centralManager = CBCentralManager(
                 delegate: self, queue: G2._bluetoothQueue,
@@ -709,6 +710,7 @@ class G2: NSObject, SGCManager {
     }
 
     func findCompatibleDevices() {
+        Bridge.log("G2: findCompatibleDevices()")
         DEVICE_SEARCH_ID = "NOT_SET"
         startScan()
     }
@@ -1986,7 +1988,7 @@ extension G2: CBCentralManagerDelegate, CBPeripheralDelegate {
 
     func extractIdNumber(_ string: String) -> Int? {
         // Pattern to match "G1_" followed by digits, followed by "_"
-        let pattern = "G1_(\\d+)_"
+        let pattern = "G2_(\\d+)_"
 
         // Create a regular expression
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
