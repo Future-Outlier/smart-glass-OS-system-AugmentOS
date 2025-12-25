@@ -740,7 +740,7 @@ class G2: NSObject, SGCManager {
         stopScan()
 
         // get battery status:
-        getBatteryStatus()
+        // getBatteryStatus()
         return true
     }
 
@@ -1050,6 +1050,7 @@ class G2: NSObject, SGCManager {
     }
 
     private func handleNotification(from peripheral: CBPeripheral, data: Data) {
+        Bridge.log("G2: handleNotification()")
         guard let command = data.first else { return } // ensure the data isn't empty
 
         let side = peripheral == leftPeripheral ? "L" : "R"
