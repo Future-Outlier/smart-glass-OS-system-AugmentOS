@@ -2,6 +2,7 @@ import CoreModule from "core"
 import Toast from "react-native-toast-message"
 
 import {translate} from "@/i18n"
+import audioWebSocket from "@/services/AudioWebSocket"
 import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
@@ -285,12 +286,24 @@ export class MantleBridge {
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
-          const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
-          if (!isChinaDeployment && livekit.isRoomConnected()) {
-            livekit.addPcm(bytes)
-          } else {
-            socketComms.sendBinary(bytes)
+
+          if (__DEV__ && Math.random() < 0.03) {
+            console.log("MantleBridge: Received mic data:", bytes.length, "bytes")
           }
+          
+          // This is the old code, feel free to re-implement if needed:
+          // const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
+          // if (!isChinaDeployment && livekit.isRoomConnected()) {
+          //   livekit.addPcm(bytes)
+          // } else {
+          //   socketComms.sendBinary(bytes)
+          // }
+          
+          // Use AudioWebSocket for UDP-like behavior with drop-oldest buffering.
+          // This replaces both LiveKit (unreliable) and direct WebSocket (no buffering).
+          // The ring buffer drops oldest packets when network is slow, preventing
+          // TCP backpressure from building up a stale audio queue.
+          audioWebSocket.addPcm(bytes)
           break
         case "rtmp_stream_status":
           console.log("MantleBridge: Forwarding RTMP stream status to server:", data)

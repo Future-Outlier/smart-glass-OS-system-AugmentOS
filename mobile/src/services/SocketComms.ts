@@ -2,6 +2,7 @@ import CoreModule from "core"
 import {router} from "expo-router"
 
 import {push} from "@/contexts/NavigationRef"
+import audioWebSocket from "@/services/AudioWebSocket"
 import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
 import wsManager from "@/services/WebSocketManager"
@@ -34,6 +35,9 @@ class SocketComms {
   }
 
   public cleanup() {
+    // Disable audio streaming
+    audioWebSocket.disable()
+
     // Cleanup WebSocket
     this.ws.cleanup()
 
@@ -343,7 +347,12 @@ class SocketComms {
 
   // message handlers, these should only ever be called from handle_message / the server:
   private async handle_connection_ack(msg: any) {
-    console.log("SOCKET: connection ack, connecting to livekit")
+    console.log("SOCKET: connection ack, enabling audio streaming")
+    // Enable AudioWebSocket for UDP-like audio streaming over WebSocket
+    // This replaces LiveKit which was unreliable (dropping packets permanently)
+    audioWebSocket.enable()
+
+    // Still connect LiveKit for backwards compatibility (can be removed later)
     const isChina = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
     if (!isChina) {
       await livekit.connect()
