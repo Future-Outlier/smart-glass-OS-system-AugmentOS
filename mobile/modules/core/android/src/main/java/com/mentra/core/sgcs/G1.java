@@ -1571,7 +1571,7 @@ public class G1 extends SGCManager {
     }
 
     @Override
-    public void startVideoRecording(String requestId, boolean save) {
+    public void startVideoRecording(String requestId, boolean save, boolean silent) {
 
     }
 

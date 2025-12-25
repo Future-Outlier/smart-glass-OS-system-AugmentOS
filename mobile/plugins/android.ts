@@ -46,7 +46,7 @@ def releaseKeyAlias = project.hasProperty("MENTRAOS_UPLOAD_KEY_ALIAS") ? project
 
 // Find keystore: check shared location first, then local
 def sharedKeystore = new File(System.getProperty("user.home"), ".mentra/credentials/upload-keystore.jks")
-def localKeystore = file('../credentials/upload-keystore.jks')
+def localKeystore = file('../../credentials/upload-keystore.jks')
 def releaseKeystoreFile = sharedKeystore.exists() ? sharedKeystore : localKeystore
 
 // Conditionally apply Sentry gradle script for source map uploads

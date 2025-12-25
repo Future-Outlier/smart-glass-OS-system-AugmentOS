@@ -162,7 +162,7 @@ public class Mach1 extends SGCManager {
     }
 
     @Override
-    public void startVideoRecording(@NonNull String requestId, boolean save) {
+    public void startVideoRecording(@NonNull String requestId, boolean save, boolean silent) {
 
     }
 

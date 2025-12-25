@@ -454,7 +454,7 @@ public class MediaCaptureService {
         }
 
         Log.d(TAG, "📸 Flashing privacy LED synchronized with shutter sound");
-        hardwareManager.flashRecordingLed(2200); // 300ms flash duration
+        hardwareManager.flashRecordingLed(300); // 300ms flash duration
     }
     
     /**
@@ -1124,9 +1124,12 @@ public class MediaCaptureService {
         // TESTING: Add fake delay for camera init
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_INIT");
 
-        playShutterSound();
+        // RGB LED always flashes for photos (user visibility indicator)
+        triggerPhotoFlashLed();
+
+        // enableLed (from silent param) controls sound and privacy LED only
         if (enableLed) {
-            triggerPhotoFlashLed(); // Trigger white RGB LED flash synchronized with shutter sound
+            playShutterSound();
             flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
         }
 
@@ -1261,9 +1264,12 @@ public class MediaCaptureService {
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_CAPTURE");
 
         try {
-            playShutterSound();
+            // RGB LED always flashes for photos (user visibility indicator)
+            triggerPhotoFlashLed();
+
+            // enableLed (from silent param) controls sound and privacy LED only
             if (enableLed) {
-                triggerPhotoFlashLed(); // Trigger white RGB LED flash synchronized with shutter sound
+                playShutterSound();
                 flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
             }
 
@@ -2073,9 +2079,12 @@ public class MediaCaptureService {
         // TESTING: Add fake delay for camera capture
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_CAPTURE");
 
-        playShutterSound();
+        // RGB LED always flashes for photos (user visibility indicator)
+        triggerPhotoFlashLed();
+
+        // enableLed (from silent param) controls sound and privacy LED only
         if (enableLed) {
-            triggerPhotoFlashLed(); // Trigger white RGB LED flash synchronized with shutter sound
+            playShutterSound();
             flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
         }
 
