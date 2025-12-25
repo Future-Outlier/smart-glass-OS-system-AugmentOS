@@ -828,7 +828,7 @@ struct ViewState {
         if defaultWearable.contains(DeviceTypes.G1) {
             handleG1Ready()
         } else if defaultWearable.contains(DeviceTypes.G2) {
-            handleG2Ready()
+            // handleG2Ready()
         } else if defaultWearable.contains(DeviceTypes.MACH1) {
             handleMach1Ready()
         } else if defaultWearable.contains(DeviceTypes.Z100) {
