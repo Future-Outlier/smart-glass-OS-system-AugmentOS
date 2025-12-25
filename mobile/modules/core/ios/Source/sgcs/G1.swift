@@ -273,8 +273,6 @@ actor ReconnectionManager {
 class G1: NSObject, SGCManager {
     func sendGalleryMode() {}
 
-    func sendButtonMaxRecordingTime() {}
-
     var glassesAppVersion: String = ""
 
     var glassesBuildNumber: String = ""
@@ -340,7 +338,7 @@ class G1: NSObject, SGCManager {
 
     func sendButtonVideoRecordingSettings() {}
 
-    func sendButtonMaxRecordingTime(_: Int) {}
+    func sendButtonMaxRecordingTime() {}
 
     func sendButtonCameraLedSetting() {}
 
