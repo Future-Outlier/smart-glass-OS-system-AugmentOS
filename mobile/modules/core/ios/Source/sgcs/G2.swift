@@ -11,64 +11,64 @@ import Foundation
 import React
 import UIKit
 
-extension Data {
-    func chunked(into size: Int) -> [Data] {
-        var chunks = [Data]()
-        var index = 0
-        while index < count {
-            let chunkSize = Swift.min(size, count - index)
-            let chunk = subdata(in: index ..< (index + chunkSize))
-            chunks.append(chunk)
-            index += chunkSize
-        }
-        return chunks
-    }
+// extension Data {
+//     func chunked(into size: Int) -> [Data] {
+//         var chunks = [Data]()
+//         var index = 0
+//         while index < count {
+//             let chunkSize = Swift.min(size, count - index)
+//             let chunk = subdata(in: index ..< (index + chunkSize))
+//             chunks.append(chunk)
+//             index += chunkSize
+//         }
+//         return chunks
+//     }
 
-    func hexEncodedString() -> String {
-        return map { String(format: "%02x", $0) }.joined(separator: " ")
-        //    return map { String(format: "%02x", $0) }.joined(separator: ", ")
-    }
+//     func hexEncodedString() -> String {
+//         return map { String(format: "%02x", $0) }.joined(separator: " ")
+//         //    return map { String(format: "%02x", $0) }.joined(separator: ", ")
+//     }
 
-    // Extension for CRC32 calculation
-    var crc32: UInt32 {
-        return withUnsafeBytes { bytes in
-            let buffer = bytes.bindMemory(to: UInt8.self)
-            var crc: UInt32 = 0xFFFF_FFFF
+//     // Extension for CRC32 calculation
+//     var crc32: UInt32 {
+//         return withUnsafeBytes { bytes in
+//             let buffer = bytes.bindMemory(to: UInt8.self)
+//             var crc: UInt32 = 0xFFFF_FFFF
 
-            for byte in buffer {
-                crc ^= UInt32(byte)
-                for _ in 0 ..< 8 {
-                    if crc & 1 == 1 {
-                        crc = (crc >> 1) ^ 0xEDB8_8320
-                    } else {
-                        crc >>= 1
-                    }
-                }
-            }
+//             for byte in buffer {
+//                 crc ^= UInt32(byte)
+//                 for _ in 0 ..< 8 {
+//                     if crc & 1 == 1 {
+//                         crc = (crc >> 1) ^ 0xEDB8_8320
+//                     } else {
+//                         crc >>= 1
+//                     }
+//                 }
+//             }
 
-            return ~crc
-        }
-    }
+//             return ~crc
+//         }
+//     }
 
-    /// Initialize Data from hex string
-    init?(hexString: String) {
-        let cleanHex = hexString.replacingOccurrences(of: " ", with: "")
-        guard cleanHex.count % 2 == 0 else { return nil }
+//     /// Initialize Data from hex string
+//     init?(hexString: String) {
+//         let cleanHex = hexString.replacingOccurrences(of: " ", with: "")
+//         guard cleanHex.count % 2 == 0 else { return nil }
 
-        var data = Data()
-        var index = cleanHex.startIndex
+//         var data = Data()
+//         var index = cleanHex.startIndex
 
-        while index < cleanHex.endIndex {
-            let nextIndex = cleanHex.index(index, offsetBy: 2)
-            let byteString = cleanHex[index ..< nextIndex]
-            guard let byte = UInt8(byteString, radix: 16) else { return nil }
-            data.append(byte)
-            index = nextIndex
-        }
+//         while index < cleanHex.endIndex {
+//             let nextIndex = cleanHex.index(index, offsetBy: 2)
+//             let byteString = cleanHex[index ..< nextIndex]
+//             guard let byte = UInt8(byteString, radix: 16) else { return nil }
+//             data.append(byte)
+//             index = nextIndex
+//         }
 
-        self = data
-    }
-}
+//         self = data
+//     }
+// }
 
 // struct BufferedCommand {
 //     let chunks: [[UInt8]]
@@ -94,174 +94,176 @@ extension Data {
 // }
 
 // Simple struct to hold app info
-struct AppInfo {
-    let id: String
-    let name: String
-}
+// struct AppInfo {
+//     let id: String
+//     let name: String
+// }
 
-enum GlassesError: Error {
-    case missingGlasses(String)
-}
+// enum GlassesError: Error {
+//     case missingGlasses(String)
+// }
 
-// Dedicated actor for timer management
-actor HeartbeatManager {
-    private var task: Task<Void, Never>?
-    private let intervalSeconds: TimeInterval
+// // Dedicated actor for timer management
+// actor HeartbeatManager {
+//     private var task: Task<Void, Never>?
+//     private let intervalSeconds: TimeInterval
 
-    init(intervalSeconds: TimeInterval = 20) {
-        self.intervalSeconds = intervalSeconds
-    }
+//     init(intervalSeconds: TimeInterval = 20) {
+//         self.intervalSeconds = intervalSeconds
+//     }
 
-    func start(onTick: @escaping @Sendable () async -> Void) {
-        stop()
+//     func start(onTick: @escaping @Sendable () async -> Void) {
+//         stop()
 
-        task = Task {
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
-                } catch {
-                    break
-                }
-                guard !Task.isCancelled else { break }
-                await onTick()
-            }
-        }
-    }
+//         task = Task {
+//             while !Task.isCancelled {
+//                 do {
+//                     try await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
+//                 } catch {
+//                     break
+//                 }
+//                 guard !Task.isCancelled else { break }
+//                 await onTick()
+//             }
+//         }
+//     }
 
-    func stop() {
-        task?.cancel()
-        task = nil
-    }
-}
+//     func stop() {
+//         task?.cancel()
+//         task = nil
+//     }
+// }
 
-// Dedicated actor for command queue (you already have this partially)
-actor CommandQueue {
-    private var commands: [BufferedCommand] = []
-    private var continuation: CheckedContinuation<BufferedCommand, Never>?
+// // Dedicated actor for command queue (you already have this partially)
+// actor CommandQueue {
+//     private var commands: [BufferedCommand] = []
+//     private var continuation: CheckedContinuation<BufferedCommand, Never>?
 
-    func enqueue(_ command: BufferedCommand) {
-        if let continuation {
-            self.continuation = nil
-            continuation.resume(returning: command)
-        } else {
-            commands.append(command)
-        }
-    }
+//     func enqueue(_ command: BufferedCommand) {
+//         if let continuation {
+//             self.continuation = nil
+//             continuation.resume(returning: command)
+//         } else {
+//             commands.append(command)
+//         }
+//     }
 
-    func dequeue() async -> BufferedCommand {
-        if let command = commands.first {
-            commands.removeFirst()
-            return command
-        }
+//     func dequeue() async -> BufferedCommand {
+//         if let command = commands.first {
+//             commands.removeFirst()
+//             return command
+//         }
 
-        return await withCheckedContinuation { continuation in
-            self.continuation = continuation
-        }
-    }
-}
+//         return await withCheckedContinuation { continuation in
+//             self.continuation = continuation
+//         }
+//     }
+// }
 
-// Actor for managing pending ACKs
-actor AckManager {
-    private var pending: [String: CheckedContinuation<Bool, Never>] = [:]
+// // Actor for managing pending ACKs
+// actor AckManager {
+//     private var pending: [String: CheckedContinuation<Bool, Never>] = [:]
 
-    func waitForAck(
-        key: String,
-        timeoutMs: Int,
-        onRegistered: @escaping @Sendable () -> Void,
-        onTimeout: @escaping @Sendable () -> Void = {}
-    ) async -> Bool {
-        return await withCheckedContinuation { continuation in
-            pending[key] = continuation
+//     func waitForAck(
+//         key: String,
+//         timeoutMs: Int,
+//         onRegistered: @escaping @Sendable () -> Void,
+//         onTimeout: @escaping @Sendable () -> Void = {}
+//     ) async -> Bool {
+//         return await withCheckedContinuation { continuation in
+//             pending[key] = continuation
 
-            // Now it's safe to send — registration is complete
-            onRegistered()
+//             // Now it's safe to send — registration is complete
+//             onRegistered()
 
-            // Start timeout
-            Task { [weak self] in
-                try? await Task.sleep(nanoseconds: UInt64(timeoutMs) * 1_000_000)
+//             // Start timeout
+//             Task { [weak self] in
+//                 try? await Task.sleep(nanoseconds: UInt64(timeoutMs) * 1_000_000)
 
-                guard let self else { return }
-                if let timedOut = await self.removeIfPending(key: key) {
-                    onTimeout()
-                    timedOut.resume(returning: false)
-                }
-            }
-        }
-    }
+//                 guard let self else { return }
+//                 if let timedOut = await self.removeIfPending(key: key) {
+//                     onTimeout()
+//                     timedOut.resume(returning: false)
+//                 }
+//             }
+//         }
+//     }
 
-    func receiveAck(key: String) -> Bool {
-        if let continuation = pending.removeValue(forKey: key) {
-            continuation.resume(returning: true)
-            return true
-        }
-        return false
-    }
+//     func receiveAck(key: String) -> Bool {
+//         if let continuation = pending.removeValue(forKey: key) {
+//             continuation.resume(returning: true)
+//             return true
+//         }
+//         return false
+//     }
 
-    private func removeIfPending(key: String) -> CheckedContinuation<Bool, Never>? {
-        return pending.removeValue(forKey: key)
-    }
-}
+//     private func removeIfPending(key: String) -> CheckedContinuation<Bool, Never>? {
+//         return pending.removeValue(forKey: key)
+//     }
+// }
 
-// Actor for reconnection logic
-actor ReconnectionManager {
-    private var task: Task<Void, Never>?
-    private let intervalSeconds: TimeInterval
-    private var attempts = 0
-    private let maxAttempts: Int // -1 for unlimited
+// // Actor for reconnection logic
+// actor ReconnectionManager {
+//     private var task: Task<Void, Never>?
+//     private let intervalSeconds: TimeInterval
+//     private var attempts = 0
+//     private let maxAttempts: Int // -1 for unlimited
 
-    init(intervalSeconds: TimeInterval = 30, maxAttempts: Int = -1) {
-        self.intervalSeconds = intervalSeconds
-        self.maxAttempts = maxAttempts
-    }
+//     init(intervalSeconds: TimeInterval = 30, maxAttempts: Int = -1) {
+//         self.intervalSeconds = intervalSeconds
+//         self.maxAttempts = maxAttempts
+//     }
 
-    var isRunning: Bool {
-        task != nil && task?.isCancelled == false
-    }
+//     var isRunning: Bool {
+//         task != nil && task?.isCancelled == false
+//     }
 
-    var attemptCount: Int {
-        attempts
-    }
+//     var attemptCount: Int {
+//         attempts
+//     }
 
-    func start(onAttempt: @escaping @Sendable () async -> Bool) {
-        stop()
-        attempts = 0
+//     func start(onAttempt: @escaping @Sendable () async -> Bool) {
+//         stop()
+//         attempts = 0
 
-        task = Task {
-            while !Task.isCancelled {
-                if maxAttempts > 0, attempts >= maxAttempts {
-                    Bridge.log("G2: Max reconnection attempts (\(maxAttempts)) reached")
-                    break
-                }
+//         task = Task {
+//             while !Task.isCancelled {
+//                 if maxAttempts > 0, attempts >= maxAttempts {
+//                     Bridge.log("G2: Max reconnection attempts (\(maxAttempts)) reached")
+//                     break
+//                 }
 
-                attempts += 1
-                Bridge.log("G2: Reconnection attempt \(attempts)")
+//                 attempts += 1
+//                 Bridge.log("G2: Reconnection attempt \(attempts)")
 
-                let shouldStop = await onAttempt()
+//                 let shouldStop = await onAttempt()
 
-                if shouldStop {
-                    Bridge.log("G2: Reconnection successful, stopping")
-                    break
-                }
+//                 if shouldStop {
+//                     Bridge.log("G2: Reconnection successful, stopping")
+//                     break
+//                 }
 
-                do {
-                    try await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
-                } catch {
-                    break
-                }
-            }
-        }
-    }
+//                 do {
+//                     try await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
+//                 } catch {
+//                     break
+//                 }
+//             }
+//         }
+//     }
 
-    func stop() {
-        task?.cancel()
-        task = nil
-        attempts = 0
-    }
-}
+//     func stop() {
+//         task?.cancel()
+//         task = nil
+//         attempts = 0
+//     }
+// }
 
 @MainActor
 class G2: NSObject, SGCManager {
     func sendGalleryMode() {}
+
+    func sendButtonMaxRecordingTime() {}
 
     var glassesAppVersion: String = ""
 
@@ -328,7 +330,7 @@ class G2: NSObject, SGCManager {
 
     func sendButtonVideoRecordingSettings() {}
 
-    func sendButtonMaxRecordingTime() {}
+    func sendButtonMaxRecordingTime(_: Int) {}
 
     func sendButtonCameraLedSetting() {}
 
@@ -1231,7 +1233,7 @@ class G2: NSObject, SGCManager {
 
 // MARK: Commands
 
-extension G1 {
+extension G2 {
     // Handle whitelist functionality
     func getWhitelistChunks() -> [[UInt8]] {
         // Define the hardcoded whitelist JSON
