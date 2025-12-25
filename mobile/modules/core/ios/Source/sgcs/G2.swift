@@ -658,7 +658,7 @@ class G2: NSObject, SGCManager {
     func startScan() -> Bool {
         if centralManager == nil {
             centralManager = CBCentralManager(
-                delegate: self, queue: G1._bluetoothQueue,
+                delegate: self, queue: G2._bluetoothQueue,
                 options: ["CBCentralManagerOptionShowPowerAlertKey": 0]
             )
         }
