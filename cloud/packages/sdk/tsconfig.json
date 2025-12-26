@@ -13,10 +13,11 @@
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {
-      "@mentra/types": ["../types/src/index.ts"]
+      "@mentra/types": ["../types/src"]
     },
     "lib": ["ES2020"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/**/test/**"]
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/**/test/**"],
+  "references": [{ "path": "../types" }]
 }
