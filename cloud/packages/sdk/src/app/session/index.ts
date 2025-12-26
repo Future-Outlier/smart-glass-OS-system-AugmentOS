@@ -85,7 +85,6 @@ import {
   isDeviceStateUpdate,
 } from "../../types/messages/cloud-to-app";
 import { SimpleStorage } from "./modules/simple-storage";
-import { DeviceManager } from "./device-manager";
 import { DeviceState } from "./device-state";
 import { readNotificationWarnLog } from "../../utils/permissions-utils";
 
@@ -217,8 +216,6 @@ export class AppSession {
   public readonly audio: AudioManager;
   /** 🔐 Simple key-value storage interface */
   public readonly simpleStorage: SimpleStorage;
-  /** 📱 Device manager for accessing device information */
-  public readonly deviceManager: DeviceManager;
   /** 📱 Reactive device state (WebSocket-based observables) */
   public readonly device: { state: DeviceState };
 
@@ -364,7 +361,6 @@ export class AppSession {
     );
 
     this.simpleStorage = new SimpleStorage(this);
-    this.deviceManager = new DeviceManager(this);
     this.device = { state: new DeviceState(this) };
 
     this.location = new LocationManager(this);
