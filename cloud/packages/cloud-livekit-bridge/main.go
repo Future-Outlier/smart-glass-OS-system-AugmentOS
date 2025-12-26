@@ -64,7 +64,6 @@ func main() {
 
 	// Determine if we should use Unix socket or TCP
 	var lis net.Listener
-	var err error
 
 	socketPath := os.Getenv("LIVEKIT_GRPC_SOCKET")
 	if socketPath != "" {
@@ -84,12 +83,13 @@ func main() {
 			log.Fatalf("Failed to create socket directory: %v", err)
 		}
 
-		lis, err = net.Listen("unix", socketPath)
-		if err != nil {
-			bsLogger.LogError("Failed to listen on Unix socket", err, map[string]interface{}{
+		var lisErr error
+		lis, lisErr = net.Listen("unix", socketPath)
+		if lisErr != nil {
+			bsLogger.LogError("Failed to listen on Unix socket", lisErr, map[string]interface{}{
 				"socket_path": socketPath,
 			})
-			log.Fatalf("Failed to listen on Unix socket %s: %v", socketPath, err)
+			log.Fatalf("Failed to listen on Unix socket %s: %v", socketPath, lisErr)
 		}
 
 		// Set socket permissions to allow access
@@ -104,12 +104,13 @@ func main() {
 		})
 	} else {
 		// Use TCP port (backward compatibility)
-		lis, err = net.Listen("tcp", ":"+config.Port)
-		if err != nil {
-			bsLogger.LogError("Failed to listen on TCP", err, map[string]interface{}{
+		var lisErr error
+		lis, lisErr = net.Listen("tcp", ":"+config.Port)
+		if lisErr != nil {
+			bsLogger.LogError("Failed to listen on TCP", lisErr, map[string]interface{}{
 				"port": config.Port,
 			})
-			log.Fatalf("Failed to listen on port %s: %v", config.Port, err)
+			log.Fatalf("Failed to listen on port %s: %v", config.Port, lisErr)
 		}
 		log.Printf("✅ LiveKit gRPC Bridge listening on TCP port: %s", config.Port)
 		bsLogger.LogInfo("Server listening on TCP", map[string]interface{}{
