@@ -37,14 +37,26 @@ type LiveKitBridgeService struct {
 	config   *Config
 	bsLogger *logger.BetterStackLogger
 	mu       sync.RWMutex
+
+	// UDP audio support
+	udpListener    *UdpAudioListener
+	udpPingChans   map[string]chan struct{} // userId -> ping notification channel
+	udpPingStreams []chan string            // broadcast channels for SubscribeUdpPings
 }
 
 // NewLiveKitBridgeService creates a new service instance
 func NewLiveKitBridgeService(config *Config, bsLogger *logger.BetterStackLogger) *LiveKitBridgeService {
 	return &LiveKitBridgeService{
-		config:   config,
-		bsLogger: bsLogger,
+		config:         config,
+		bsLogger:       bsLogger,
+		udpPingChans:   make(map[string]chan struct{}),
+		udpPingStreams: make([]chan string, 0),
 	}
+}
+
+// SetUdpListener sets the UDP listener for this service
+func (s *LiveKitBridgeService) SetUdpListener(listener *UdpAudioListener) {
+	s.udpListener = listener
 }
 
 // createLogger creates a context logger for a user
@@ -88,8 +100,37 @@ func (s *LiveKitBridgeService) JoinRoom(
 	// Setup callbacks for LiveKit room
 	var receivedPackets int64
 	var droppedPackets int64
+	var lastPacketTime = time.Now()
 
 	roomCallback := &lksdk.RoomCallback{
+		OnParticipantConnected: func(p *lksdk.RemoteParticipant) {
+			log.Printf("Participant connected to room %s: identity=%s, sid=%s",
+				req.RoomName, p.Identity(), p.SID())
+			lg.Info("Participant connected", logger.LogEntry{
+				Extra: map[string]interface{}{
+					"participant_identity": string(p.Identity()),
+					"participant_sid":      string(p.SID()),
+				},
+			})
+		},
+		OnParticipantDisconnected: func(p *lksdk.RemoteParticipant) {
+			log.Printf("Participant disconnected from room %s: identity=%s, sid=%s",
+				req.RoomName, p.Identity(), p.SID())
+			lg.Info("Participant disconnected", logger.LogEntry{
+				Extra: map[string]interface{}{
+					"participant_identity": string(p.Identity()),
+					"participant_sid":      string(p.SID()),
+				},
+			})
+		},
+		OnReconnecting: func() {
+			log.Printf("Room %s is reconnecting for user %s", req.RoomName, req.UserId)
+			lg.Warn("LiveKit room is reconnecting", logger.LogEntry{})
+		},
+		OnReconnected: func() {
+			log.Printf("Room %s reconnected for user %s", req.RoomName, req.UserId)
+			lg.Info("LiveKit room reconnected", logger.LogEntry{})
+		},
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnDataPacket: func(packet lksdk.DataPacket, params lksdk.DataReceiveParams) {
 				// Only process packets from target identity if specified
@@ -103,7 +144,17 @@ func (s *LiveKitBridgeService) JoinRoom(
 					return
 				}
 
-				receivedPackets++
+					receivedPackets++
+				now := time.Now()
+				gapMs := now.Sub(lastPacketTime).Milliseconds()
+				lastPacketTime = now
+
+				// Log first 10 packets and then every 100 to catch early flow issues
+				// Also log if there was a gap > 500ms between packets
+				if receivedPackets <= 10 || receivedPackets%100 == 0 || gapMs > 500 {
+					log.Printf("OnDataPacket for %s: packet #%d, sender=%s, size=%d bytes, gapMs=%d",
+						req.UserId, receivedPackets, params.SenderIdentity, len(userPacket.Payload), gapMs)
+				}
 
 				// Match old bridge behavior exactly
 				pcmData := userPacket.Payload
@@ -270,12 +321,19 @@ func (s *LiveKitBridgeService) StreamAudio(
 
 	// Start goroutine to send audio FROM LiveKit TO client
 	go func() {
+		var sentChunks int64
 		for {
 			select {
 			case pcmData, ok := <-session.audioFromLiveKit:
 				if !ok {
 					lg.Debug("StreamAudio: audio channel closed", logger.LogEntry{})
 					return
+				}
+				sentChunks++
+				// Log first 10 chunks and then every 100 to track gRPC send rate
+				if sentChunks <= 10 || sentChunks%100 == 0 {
+					log.Printf("StreamAudio sending chunk #%d for %s: size=%d bytes, channelLen=%d",
+						sentChunks, userId, len(pcmData), len(session.audioFromLiveKit))
 				}
 				if err := stream.Send(&pb.AudioChunk{
 					PcmData:     pcmData,

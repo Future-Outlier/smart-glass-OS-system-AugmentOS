@@ -11,12 +11,22 @@ import {useGlassesStore} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {BackgroundTimer} from "@/utils/timers"
+
+// UDP audio probe state
+interface UdpProbeState {
+  pending: boolean
+  timeout: number | null
+  resolve: ((available: boolean) => void) | null
+}
 
 class SocketComms {
   private static instance: SocketComms | null = null
   private ws = wsManager
   private coreToken: string = ""
   public userid: string = ""
+  private udpAudioEnabled = false
+  private udpProbeState: UdpProbeState = {pending: false, timeout: null, resolve: null}
 
   private constructor() {
     // Subscribe to WebSocket messages
@@ -341,6 +351,163 @@ class SocketComms {
     }
   }
 
+  // MARK: - UDP Audio Methods
+
+  /**
+   * Probe UDP availability by sending a ping and waiting for WebSocket response.
+   * Returns true if UDP is available (server responds within timeout).
+   *
+   * @param host UDP server hostname
+   * @param port UDP server port (default 8000)
+   * @param timeoutMs Timeout in milliseconds (default 2000)
+   * @returns Promise resolving to true if UDP is available
+   */
+  public async probeUdpAvailability(host: string, port: number = 8000, timeoutMs: number = 2000): Promise<boolean> {
+    if (this.udpProbeState.pending) {
+      console.log("UDP: Probe already in progress")
+      return false
+    }
+
+    try {
+      // Configure UDP sender with user ID
+      await CoreModule.configureUdpAudio(host, port, this.userid)
+    } catch (error) {
+      console.log(`UDP: Configure error: ${error}`)
+      return false
+    }
+
+    return new Promise(resolve => {
+      // Set up probe state with timeout
+      this.udpProbeState = {
+        pending: true,
+        resolve,
+        timeout: BackgroundTimer.setTimeout(() => {
+          console.log("UDP: Probe timed out - UDP not available")
+          this.udpProbeState.pending = false
+          this.udpProbeState.timeout = null
+          this.udpProbeState.resolve = null
+          resolve(false)
+        }, timeoutMs),
+      }
+
+      // Send UDP ping (async but we don't await - the response comes via WebSocket)
+      CoreModule.sendUdpPing()
+        .then(pingResult => {
+          if (!pingResult) {
+            console.log("UDP: Failed to send ping")
+            if (this.udpProbeState.timeout) {
+              BackgroundTimer.clearTimeout(this.udpProbeState.timeout)
+            }
+            this.udpProbeState = {pending: false, timeout: null, resolve: null}
+            resolve(false)
+          }
+          // If ping was sent, wait for WebSocket response (handled in handle_udp_ping_ack)
+        })
+        .catch(error => {
+          console.log(`UDP: Probe error: ${error}`)
+          if (this.udpProbeState.timeout) {
+            BackgroundTimer.clearTimeout(this.udpProbeState.timeout)
+          }
+          this.udpProbeState = {pending: false, timeout: null, resolve: null}
+          resolve(false)
+        })
+    })
+  }
+
+  /**
+   * Register this user for UDP audio with the server and probe availability.
+   * Derives UDP host from backend_url - same server, port 8000.
+   */
+  public async registerUdpAudio(): Promise<boolean> {
+    try {
+      // Derive UDP host from backend_url (same host, port 8000)
+      const backendUrl = useSettingsStore.getState().getSetting(SETTINGS.backend_url.key)
+      if (!backendUrl) {
+        console.log("UDP: No backend_url configured")
+        return false
+      }
+
+      const url = new URL(backendUrl)
+      const udpHost = url.hostname
+      const udpPort = 8000
+
+      console.log(`UDP: Using endpoint ${udpHost}:${udpPort} (derived from backend_url)`)
+
+      // Compute FNV-1a hash of userId
+      const userIdHash = this.fnv1aHash(this.userid)
+
+      // Send registration to server via WebSocket (so server knows our hash for routing)
+      const msg = {
+        type: "udp_register",
+        userIdHash: userIdHash,
+      }
+      this.ws.sendText(JSON.stringify(msg))
+      console.log(`UDP: Sent registration with hash ${userIdHash}`)
+
+      // Probe UDP availability (configure native + send ping + wait for ack)
+      const udpAvailable = await this.probeUdpAvailability(udpHost, udpPort)
+      if (udpAvailable) {
+        console.log("UDP: Probe successful - UDP audio enabled")
+        this.udpAudioEnabled = true
+        return true
+      } else {
+        console.log("UDP: Probe failed - using WebSocket fallback")
+        this.udpAudioEnabled = false
+        return false
+      }
+    } catch (error) {
+      console.log(`UDP: Registration error: ${error}`)
+      return false
+    }
+  }
+
+  /**
+   * Compute FNV-1a hash of a string (32-bit).
+   * Must match the implementation on server and native side.
+   */
+  private fnv1aHash(str: string): number {
+    const FNV_PRIME = 0x01000193
+    let hash = 0x811c9dc5
+
+    for (let i = 0; i < str.length; i++) {
+      hash ^= str.charCodeAt(i)
+      hash = Math.imul(hash, FNV_PRIME)
+    }
+
+    return hash >>> 0 // Ensure unsigned 32-bit
+  }
+
+  /**
+   * Unregister UDP audio and fall back to WebSocket/LiveKit.
+   */
+  public async unregisterUdpAudio(): Promise<void> {
+    try {
+      if (this.udpAudioEnabled) {
+        // Send unregister message
+        const userIdHash = this.fnv1aHash(this.userid)
+        const msg = {
+          type: "udp_unregister",
+          userIdHash: userIdHash,
+        }
+        this.ws.sendText(JSON.stringify(msg))
+
+        // Stop UDP sender
+        await CoreModule.stopUdpAudio()
+        this.udpAudioEnabled = false
+        console.log("UDP: Audio disabled")
+      }
+    } catch (error) {
+      console.log(`UDP: Unregister error: ${error}`)
+    }
+  }
+
+  /**
+   * Check if UDP audio is currently enabled.
+   */
+  public isUdpAudioEnabled(): boolean {
+    return this.udpAudioEnabled
+  }
+
   // message handlers, these should only ever be called from handle_message / the server:
   private async handle_connection_ack(msg: any) {
     console.log("SOCKET: connection ack, connecting to livekit")
@@ -348,6 +515,13 @@ class SocketComms {
     if (!isChina) {
       await livekit.connect()
     }
+
+    // Try to register for UDP audio (non-blocking)
+    // UDP host is derived from backend_url, no server response needed
+    this.registerUdpAudio().catch(err => {
+      console.log("SOCKET: UDP registration failed (will use WebSocket fallback):", err)
+    })
+
     GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
   }
 
@@ -543,6 +717,27 @@ class SocketComms {
     )
   }
 
+  /**
+   * Handle UDP ping acknowledgement from server.
+   * This is sent via WebSocket when the Go bridge receives our UDP ping.
+   */
+  private async handle_udp_ping_ack(_msg: any) {
+    console.log("UDP: Received ping ack from server")
+
+    // Notify native module
+    await CoreModule.onUdpPingResponse()
+
+    // Resolve the probe promise
+    if (this.udpProbeState.pending && this.udpProbeState.resolve) {
+      if (this.udpProbeState.timeout) {
+        BackgroundTimer.clearTimeout(this.udpProbeState.timeout)
+      }
+      const resolve = this.udpProbeState.resolve
+      this.udpProbeState = {pending: false, timeout: null, resolve: null}
+      resolve(true)
+    }
+  }
+
   // Message Handling
   private handle_message(msg: any) {
     const type = msg.type
@@ -632,6 +827,10 @@ class SocketComms {
 
       case "show_wifi_setup":
         this.handle_show_wifi_setup(msg)
+        break
+
+      case "udp_ping_ack":
+        this.handle_udp_ping_ack(msg)
         break
 
       default:

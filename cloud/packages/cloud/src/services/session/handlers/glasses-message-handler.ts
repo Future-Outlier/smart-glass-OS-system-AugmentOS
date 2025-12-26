@@ -12,7 +12,6 @@
 
 import type { Logger } from "pino";
 
-
 import {
   GlassesToCloudMessage,
   GlassesToCloudMessageType,
@@ -28,6 +27,8 @@ import {
   TouchEvent,
   StreamType,
   CloudToAppMessageType,
+  UdpRegister,
+  UdpUnregister,
 } from "@mentra/sdk";
 
 import { PosthogService } from "../../logging/posthog.service";
@@ -139,6 +140,15 @@ export async function handleGlassesMessage(userSession: UserSession, message: Gl
       // Touch events
       case GlassesToCloudMessageType.TOUCH_EVENT:
         await handleTouchEvent(userSession, message as TouchEvent, logger);
+        break;
+
+      // UDP audio registration
+      case GlassesToCloudMessageType.UDP_REGISTER:
+        await handleUdpRegister(userSession, message as UdpRegister, logger);
+        break;
+
+      case GlassesToCloudMessageType.UDP_UNREGISTER:
+        await handleUdpUnregister(userSession, message as UdpUnregister, logger);
         break;
 
       // Default - relay to apps based on subscriptions
@@ -314,6 +324,54 @@ async function handleTouchEvent(userSession: UserSession, touchEvent: TouchEvent
         `Skipping sending touch event to app '${packageName}'`,
       );
     }
+  }
+}
+
+/**
+ * Handle UDP audio registration
+ * Mobile sends this to register its userIdHash for UDP audio routing
+ */
+async function handleUdpRegister(userSession: UserSession, message: UdpRegister, logger: Logger): Promise<void> {
+  const { userIdHash } = message;
+  logger.info({ userIdHash, feature: "udp-audio" }, "UDP register request received");
+
+  try {
+    // Store the userIdHash in the session
+    userSession.userIdHash = userIdHash;
+
+    // Register with the LiveKit manager (which will call gRPC to Go bridge)
+    const success = await userSession.liveKitManager.registerUdpUser(userIdHash);
+
+    if (success) {
+      userSession.udpAudioEnabled = true;
+      logger.info({ userIdHash, feature: "udp-audio" }, "UDP audio registered successfully");
+      // Mobile derives UDP endpoint from backend_url, no need to send it
+    } else {
+      logger.warn({ userIdHash, feature: "udp-audio" }, "UDP registration failed");
+    }
+  } catch (error) {
+    logger.error({ error, userIdHash, feature: "udp-audio" }, "Error registering UDP audio");
+  }
+}
+
+/**
+ * Handle UDP audio unregistration
+ * Mobile sends this when stopping UDP audio
+ */
+async function handleUdpUnregister(userSession: UserSession, message: UdpUnregister, logger: Logger): Promise<void> {
+  const { userIdHash } = message;
+  logger.info({ userIdHash, feature: "udp-audio" }, "UDP unregister request received");
+
+  try {
+    // Unregister from the LiveKit manager
+    await userSession.liveKitManager.unregisterUdpUser();
+
+    userSession.udpAudioEnabled = false;
+    userSession.userIdHash = undefined;
+
+    logger.info({ userIdHash, feature: "udp-audio" }, "UDP audio unregistered successfully");
+  } catch (error) {
+    logger.error({ error, userIdHash, feature: "udp-audio" }, "Error unregistering UDP audio");
   }
 }
 

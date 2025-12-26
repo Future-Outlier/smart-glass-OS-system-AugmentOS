@@ -150,6 +150,14 @@ export class UserSession {
   // LiveKit transport preference
   public livekitRequested?: boolean;
 
+  // UDP Audio Support
+  // FNV-1a hash of userId for UDP packet identification
+  // Set when mobile registers for UDP audio
+  public userIdHash?: number;
+
+  // Whether UDP audio mode is active for this session
+  public udpAudioEnabled = false;
+
   // Capability Discovery
 
   // Current connected glasses model

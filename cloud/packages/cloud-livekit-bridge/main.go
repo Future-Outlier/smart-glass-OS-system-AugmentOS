@@ -44,6 +44,16 @@ func main() {
 	bridgeService := NewLiveKitBridgeService(config, bsLogger)
 	pb.RegisterLiveKitBridgeServer(grpcServer, bridgeService)
 
+	// Start UDP audio listener
+	udpListener, err := NewUdpAudioListener(bridgeService, bsLogger)
+	if err != nil {
+		bsLogger.LogError("Failed to start UDP audio listener", err, nil)
+		log.Printf("Warning: UDP audio listener failed to start: %v (continuing without UDP support)", err)
+	} else {
+		bridgeService.SetUdpListener(udpListener)
+		go udpListener.Start()
+	}
+
 	// Register health check service
 	healthServer := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
@@ -118,6 +128,9 @@ func main() {
 		<-sigCh
 		bsLogger.LogInfo("Received shutdown signal, gracefully stopping", nil)
 		log.Println("Received shutdown signal, gracefully stopping...")
+		if udpListener != nil {
+			udpListener.Close()
+		}
 		grpcServer.GracefulStop()
 	}()
 

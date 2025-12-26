@@ -125,6 +125,26 @@ class CoreModule : Module() {
 
         AsyncFunction("restartTranscriber") { coreManager?.restartTranscriber() }
 
+        // MARK: - UDP Audio Commands
+
+        AsyncFunction("configureUdpAudio") { host: String, port: Int, userId: String ->
+            Bridge.configureUdpAudio(host, port, userId)
+        }
+
+        AsyncFunction("startUdpAudio") { Bridge.startUdpAudio() }
+
+        AsyncFunction("stopUdpAudio") { Bridge.stopUdpAudio() }
+
+        AsyncFunction("sendUdpPing") { Bridge.sendUdpPing() }
+
+        AsyncFunction("onUdpPingResponse") { Bridge.onUdpPingResponse() }
+
+        AsyncFunction("getUdpUserIdHash") { Bridge.getUdpUserIdHash() }
+
+        AsyncFunction("isUdpReady") { Bridge.isUdpReady() }
+
+        AsyncFunction("fnv1aHash") { str: String -> Bridge.fnv1aHash(str) }
+
         // MARK: - RGB LED Control
 
         AsyncFunction("rgbLedControl") {
