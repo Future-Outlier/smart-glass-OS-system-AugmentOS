@@ -12,7 +12,9 @@
     "declaration": true,
     "declarationMap": true,
     "baseUrl": ".",
-    "paths": {},
+    "paths": {
+      "@mentra/types": ["../types/src/index.ts"]
+    },
     "lib": ["ES2020"]
   },
   "include": ["src/**/*"],
