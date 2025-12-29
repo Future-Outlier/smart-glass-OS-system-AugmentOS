@@ -3,14 +3,20 @@
  *
  * Creates and manages a server for Apps in the MentraOS ecosystem.
  * Handles webhook endpoints, session management, and cleanup.
+ *
+ * Now built on Hono + Bun for better performance and developer experience.
  */
-import express, {type Express} from "express"
-import path from "path"
-import fs from "fs"
-import {AppSession} from "../session/index"
-import {createAuthMiddleware} from "../webview"
-import {newSDKUpdate} from "../../constants/log-messages/updates"
+import fs from "fs";
+import path from "path";
 
+import axios from "axios";
+import { Hono } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
+import { serveStatic } from "hono/bun";
+import { Logger } from "pino";
+
+import { newSDKUpdate } from "../../constants/log-messages/updates";
+import { logger as rootLogger } from "../../logging/logger";
 import {
   WebhookRequest,
   WebhookResponse,
@@ -18,13 +24,16 @@ import {
   StopWebhookRequest,
   ToolCall,
   WebhookRequestType,
-} from "../../types"
+  AuthVariables,
+} from "../../types";
+import { AppSession } from "../session/index";
+import { createAuthMiddleware } from "../webview";
 
-import {Logger} from "pino"
-import {logger as rootLogger} from "../../logging/logger"
-import axios from "axios"
 
-export const GIVE_APP_CONTROL_OF_TOOL_RESPONSE: string = "GIVE_APP_CONTROL_OF_TOOL_RESPONSE"
+
+
+
+export const GIVE_APP_CONTROL_OF_TOOL_RESPONSE: string = "GIVE_APP_CONTROL_OF_TOOL_RESPONSE";
 
 /**
  * 🔧 Configuration options for App Server
@@ -41,38 +50,42 @@ export const GIVE_APP_CONTROL_OF_TOOL_RESPONSE: string = "GIVE_APP_CONTROL_OF_TO
  */
 export interface AppServerConfig {
   /** 📦 Unique identifier for your App (e.g., 'org.company.appname') must match what you specified at https://console.mentra.glass */
-  packageName: string
+  packageName: string;
   /** 🔑 API key for authentication with MentraOS Cloud */
-  apiKey: string
+  apiKey: string;
   /** 🌐 Port number for the server (default: 7010) */
-  port?: number
+  port?: number;
 
   /** Cloud API URL (default: 'api.mentra.glass') */
-  cloudApiUrl?: string
+  cloudApiUrl?: string;
 
   /** 🛣️ [DEPRECATED] do not set: The SDK will automatically expose an endpoint at '/webhook' */
-  webhookPath?: string
+  webhookPath?: string;
   /**
    * 📂 Directory for serving static files (e.g., images, logos)
    * Set to false to disable static file serving
    */
-  publicDir?: string | false
+  publicDir?: string | false;
 
   /** ❤️ Enable health check endpoint at /health (default: true) */
-  healthCheck?: boolean
+  healthCheck?: boolean;
   /**
    * 🔐 Secret key used to sign session cookies
    * This must be a strong, unique secret
    */
-  cookieSecret?: string
+  cookieSecret?: string;
   /** App instructions string shown to the user */
-  appInstructions?: string
+  appInstructions?: string;
 }
+
+// Type for Hono app with auth variables
+type AppHono = Hono<{ Variables: AuthVariables }>;
 
 /**
  * 🎯 App Server Implementation
  *
- * Base class for creating App servers. Handles:
+ * Base class for creating App servers, now extending Hono for a modern API.
+ * Handles:
  * - 🔄 Session lifecycle management
  * - 📡 Webhook endpoints for MentraOS Cloud
  * - 📂 Static file serving
@@ -82,6 +95,13 @@ export interface AppServerConfig {
  * @example
  * ```typescript
  * class MyAppServer extends AppServer {
+ *   constructor(config: AppServerConfig) {
+ *     super(config)
+ *
+ *     // Add custom API routes (Hono syntax)
+ *     this.get("/api/custom", (c) => c.json({ message: "Hello!" }))
+ *   }
+ *
  *   protected async onSession(session: AppSession, sessionId: string, userId: string) {
  *     // Handle new user sessions here
  *     session.events.onTranscription((data) => {
@@ -93,27 +113,32 @@ export interface AppServerConfig {
  * const server = new MyAppServer({
  *   packageName: 'org.example.myapp',
  *   apiKey: 'your_api_key',
- *   publicDir: "/public",
  * });
  *
  * await server.start();
  * ```
  */
-export class AppServer {
-  /** Express app instance */
-  private app: Express
+export class AppServer extends Hono<{ Variables: AuthVariables }> {
+  /** Server configuration */
+  protected config: AppServerConfig;
   /** Map of active user sessions by sessionId */
-  private activeSessions = new Map<string, AppSession>()
+  private activeSessions = new Map<string, AppSession>();
   /** Map of active user sessions by userId */
-  private activeSessionsByUserId = new Map<string, AppSession>()
+  private activeSessionsByUserId = new Map<string, AppSession>();
   /** Array of cleanup handlers to run on shutdown */
-  private cleanupHandlers: Array<() => void> = []
+  private cleanupHandlers: Array<() => void> = [];
   /** App instructions string shown to the user */
-  private appInstructions: string | null = null
+  private appInstructions: string | null = null;
+  /** Webview HTML import for Bun's native bundling */
+  private webviewHtml: unknown = null;
+  /** Bun server instance */
+  private server: ReturnType<typeof Bun.serve> | null = null;
 
-  public readonly logger: Logger
+  public readonly logger: Logger;
 
-  constructor(private config: AppServerConfig) {
+  constructor(config: AppServerConfig) {
+    super(); // Initialize Hono
+
     // Set defaults and merge with provided config
     this.config = {
       port: 7010,
@@ -121,53 +146,72 @@ export class AppServer {
       publicDir: false,
       healthCheck: true,
       ...config,
-    }
+    };
 
     this.logger = rootLogger.child({
       app: this.config.packageName,
       packageName: this.config.packageName,
       service: "app-server",
-    })
-
-    // Initialize Express app
-    this.app = express()
-    this.app.use(express.json())
-
-    const cookieParser = require("cookie-parser")
-    this.app.use(
-      cookieParser(this.config.cookieSecret || `AOS_${this.config.packageName}_${this.config.apiKey.substring(0, 8)}`),
-    )
+    });
 
     // Apply authentication middleware
-    this.app.use(
+    this.use(
+      "*",
       createAuthMiddleware({
         apiKey: this.config.apiKey,
         packageName: this.config.packageName,
         getAppSessionForUser: (userId: string) => {
-          return this.activeSessionsByUserId.get(userId) || null
+          return this.activeSessionsByUserId.get(userId) || null;
         },
         cookieSecret:
           this.config.cookieSecret || `AOS_${this.config.packageName}_${this.config.apiKey.substring(0, 8)}`,
-      }) as any,
-    )
+      }),
+    );
 
-    this.appInstructions = (config as any).appInstructions || null
+    this.appInstructions = (config as any).appInstructions || null;
 
     // Setup server features
-    this.setupWebhook()
-    this.setupSettingsEndpoint()
-    this.setupHealthCheck()
-    this.setupToolCallEndpoint()
-    this.setupPhotoUploadEndpoint()
-    this.setupMentraAuthRedirect()
-    this.setupPublicDir()
-    this.setupShutdown()
+    this.setupWebhook();
+    this.setupSettingsEndpoint();
+    this.setupHealthCheck();
+    this.setupToolCallEndpoint();
+    this.setupPhotoUploadEndpoint();
+    this.setupMentraAuthRedirect();
+    this.setupPublicDir();
+    this.setupShutdown();
   }
 
-  // Expose Express app for custom routes.
-  // This is useful for adding custom API routes or middleware.
-  public getExpressApp(): Express {
-    return this.app
+  /**
+   * 📺 Configure a webview HTML file for Bun's native bundling
+   * The HTML file can reference .tsx/.css files that Bun will bundle and serve with HMR
+   *
+   * @example
+   * ```typescript
+   * import webview from "./webview/index.html"
+   * server.setWebview(webview)
+   * ```
+   */
+  public setWebview(htmlImport: unknown): this {
+    this.webviewHtml = htmlImport;
+    return this;
+  }
+
+  /**
+   * @deprecated Use `this.get()`, `this.post()`, etc. directly since AppServer now extends Hono
+   * This method is kept for backward compatibility during migration.
+   */
+  public getExpressApp(): AppHono {
+    console.warn(
+      "⚠️ DEPRECATION: getExpressApp() is deprecated. AppServer now extends Hono - use this.get(), this.post(), etc. directly.",
+    );
+    return this as AppHono;
+  }
+
+  /**
+   * Get the Hono app instance (returns this since AppServer extends Hono)
+   */
+  public getHonoApp(): AppHono {
+    return this as AppHono;
   }
 
   /**
@@ -180,9 +224,9 @@ export class AppServer {
    * @param userId - User's identifier
    */
   protected async onSession(session: AppSession, sessionId: string, userId: string): Promise<void> {
-    this.logger.info(`🚀 Starting new session handling for session ${sessionId} and user ${userId}`)
+    this.logger.info(`🚀 Starting new session handling for session ${sessionId} and user ${userId}`);
     // Core session handling logic (onboarding removed)
-    this.logger.info(`✅ Session handling completed for session ${sessionId} and user ${userId}`)
+    this.logger.info(`✅ Session handling completed for session ${sessionId} and user ${userId}`);
   }
 
   /**
@@ -195,14 +239,14 @@ export class AppServer {
    * @param reason - Reason for stopping
    */
   protected async onStop(sessionId: string, userId: string, reason: string): Promise<void> {
-    this.logger.debug(`Session ${sessionId} stopped for user ${userId}. Reason: ${reason}`)
+    this.logger.debug(`Session ${sessionId} stopped for user ${userId}. Reason: ${reason}`);
 
     // Default implementation: close the session if it exists
-    const session = this.activeSessions.get(sessionId)
+    const session = this.activeSessions.get(sessionId);
     if (session) {
-      session.disconnect()
-      this.activeSessions.delete(sessionId)
-      this.activeSessionsByUserId.delete(userId)
+      session.disconnect();
+      this.activeSessions.delete(sessionId);
+      this.activeSessionsByUserId.delete(userId);
     }
   }
 
@@ -215,74 +259,98 @@ export class AppServer {
    * @returns Optional string response that will be sent back to MentraOS Cloud
    */
   protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
-    this.logger.debug(`Tool call received: ${toolCall.toolId}`)
-    this.logger.debug(`Parameters: ${JSON.stringify(toolCall.toolParameters)}`)
-    return undefined
+    this.logger.debug(`Tool call received: ${toolCall.toolId}`);
+    this.logger.debug(`Parameters: ${JSON.stringify(toolCall.toolParameters)}`);
+    return undefined;
   }
 
   /**
    * 🚀 Start the Server
    * Starts listening for incoming connections and webhook calls.
+   * Uses Bun.serve() with hybrid routes (for webviews) + fetch (for API).
    *
    * @returns Promise that resolves when server is ready
    */
-  public start(): Promise<void> {
-    return new Promise((resolve) => {
-      this.app.listen(this.config.port, async () => {
-        this.logger.info(`🎯 App server running at http://localhost:${this.config.port}`)
-        if (this.config.publicDir) {
-          this.logger.info(`📂 Serving static files from ${this.config.publicDir}`)
-        }
+  public async start(): Promise<void> {
+     
+    const routes: any = {};
 
-        // 🔑 Grab SDK version
-        try {
-          // Look for the actual installed @mentra/sdk package.json in node_modules
-          const sdkPkgPath = path.resolve(process.cwd(), "node_modules/@mentra/sdk/package.json")
+    // If webview is configured, use Bun's native HTML bundling
+    if (this.webviewHtml) {
+      routes["/*"] = this.webviewHtml; // Catch-all for SPA
+    }
 
-          let currentVersion = "unknown"
+    // Start server with Bun.serve()
+    this.server = Bun.serve({
+      port: this.config.port!,
 
-          if (fs.existsSync(sdkPkgPath)) {
-            const sdkPkg = JSON.parse(fs.readFileSync(sdkPkgPath, "utf-8"))
+      // Bun handles React/HTML bundling with HMR for routes
+      routes: Object.keys(routes).length > 0 ? routes : undefined,
 
-            // Get the actual installed version
-            currentVersion = sdkPkg.version || "not-found" // located in the node module
-          } else {
-            this.logger.debug({sdkPkgPath}, "No @mentra/sdk package.json found at path")
-          }
+      // Hono handles ALL API logic (this class extends Hono)
+      fetch: this.fetch.bind(this),
 
-          // this.logger.debug(`Developer is using SDK version: ${currentVersion}`);
-
-          // Fetch latest SDK version from the API endpoint
-          let latest: string | null = null
-          try {
-            const cloudHost = "api.mentra.glass"
-            const response = await axios.get(
-              `https://${cloudHost}/api/sdk/version`,
-              {timeout: 3000}, // 3 second timeout
-            )
-            if (response.data && response.data.success && response.data.data) {
-              latest = response.data.data.latest
+      // Development mode with HMR
+      development:
+        process.env.NODE_ENV !== "production"
+          ? {
+              hmr: true,
+              console: true,
             }
-          } catch {
-            this.logger.debug(
-              "Failed to fetch latest SDK version - skipping version check (offline or API unavailable)",
-            )
-          }
+          : false,
+    });
 
-          if (currentVersion === "not-found") {
-            this.logger.warn(
-              `⚠️ @mentra/sdk not found in your project dependencies. Please install it with: npm install @mentra/sdk`,
-            )
-          } else if (latest && latest !== currentVersion) {
-            this.logger.warn(newSDKUpdate(latest))
-          }
-        } catch (err) {
-          this.logger.error(err, "Version check failed")
+    this.logger.info(`🎯 App server running at http://localhost:${this.config.port}`);
+    if (this.config.publicDir) {
+      this.logger.info(`📂 Serving static files from ${this.config.publicDir}`);
+    }
+    if (this.webviewHtml) {
+      this.logger.info(`📺 Webview configured with Bun native bundling + HMR`);
+    }
+
+    // 🔑 Grab SDK version
+    await this.checkSDKVersion();
+  }
+
+  /**
+   * Check and log SDK version
+   */
+  private async checkSDKVersion(): Promise<void> {
+    try {
+      // Look for the actual installed @mentra/sdk package.json in node_modules
+      const sdkPkgPath = path.resolve(process.cwd(), "node_modules/@mentra/sdk/package.json");
+
+      let currentVersion = "unknown";
+
+      if (fs.existsSync(sdkPkgPath)) {
+        const sdkPkg = JSON.parse(fs.readFileSync(sdkPkgPath, "utf-8"));
+        currentVersion = sdkPkg.version || "not-found";
+      } else {
+        this.logger.debug({ sdkPkgPath }, "No @mentra/sdk package.json found at path");
+      }
+
+      // Fetch latest SDK version from the API endpoint
+      let latest: string | null = null;
+      try {
+        const cloudHost = "api.mentra.glass";
+        const response = await axios.get(`https://${cloudHost}/api/sdk/version`, { timeout: 3000 });
+        if (response.data && response.data.success && response.data.data) {
+          latest = response.data.data.latest;
         }
+      } catch {
+        this.logger.debug("Failed to fetch latest SDK version - skipping version check (offline or API unavailable)");
+      }
 
-        resolve()
-      })
-    })
+      if (currentVersion === "not-found") {
+        this.logger.warn(
+          `⚠️ @mentra/sdk not found in your project dependencies. Please install it with: npm install @mentra/sdk`,
+        );
+      } else if (latest && latest !== currentVersion) {
+        this.logger.warn(newSDKUpdate(latest));
+      }
+    } catch (err) {
+      this.logger.error(err, "Version check failed");
+    }
   }
 
   /**
@@ -290,9 +358,12 @@ export class AppServer {
    * Gracefully shuts down the server and cleans up all sessions.
    */
   public async stop(): Promise<void> {
-    this.logger.info("\n🛑 Shutting down...")
-    await this.cleanup()
-    process.exit(0)
+    this.logger.info("\n🛑 Shutting down...");
+    await this.cleanup();
+    if (this.server) {
+      this.server.stop();
+    }
+    process.exit(0);
   }
 
   /**
@@ -305,15 +376,15 @@ export class AppServer {
    * @returns JWT token string
    */
   protected generateToken(userId: string, sessionId: string, secretKey: string): string {
-    const {createToken} = require("../token/utils")
+    const { createToken } = require("../token/utils");
     return createToken(
       {
         userId,
         packageName: this.config.packageName,
         sessionId,
       },
-      {secretKey},
-    )
+      { secretKey },
+    );
   }
 
   /**
@@ -323,7 +394,7 @@ export class AppServer {
    * @param handler - Function to call during cleanup
    */
   protected addCleanupHandler(handler: () => void): void {
-    this.cleanupHandlers.push(handler)
+    this.cleanupHandlers.push(handler);
   }
 
   /**
@@ -331,39 +402,42 @@ export class AppServer {
    * Creates the webhook endpoint that MentraOS Cloud calls to start new sessions.
    */
   private setupWebhook(): void {
-    if (!this.config.webhookPath) {
-      this.logger.error("❌ Webhook path not set")
-      throw new Error("Webhook path not set")
-    }
+    const webhookPath = this.config.webhookPath || "/webhook";
 
-    this.app.post(this.config.webhookPath, async (req, res) => {
+    this.post(webhookPath, async (c) => {
       try {
-        const webhookRequest = req.body as WebhookRequest
+        const webhookRequest = (await c.req.json()) as WebhookRequest;
 
         // Handle session request
         if (webhookRequest.type === WebhookRequestType.SESSION_REQUEST) {
-          await this.handleSessionRequest(webhookRequest, res)
+          return this.handleSessionRequest(webhookRequest as SessionWebhookRequest, c);
         }
         // Handle stop request
         else if (webhookRequest.type === WebhookRequestType.STOP_REQUEST) {
-          await this.handleStopRequest(webhookRequest, res)
+          return this.handleStopRequest(webhookRequest as StopWebhookRequest, c);
         }
         // Unknown webhook type
         else {
-          this.logger.error("❌ Unknown webhook request type")
-          res.status(400).json({
-            status: "error",
-            message: "Unknown webhook request type",
-          } as WebhookResponse)
+          this.logger.error("❌ Unknown webhook request type");
+          return c.json(
+            {
+              status: "error",
+              message: "Unknown webhook request type",
+            } as WebhookResponse,
+            400,
+          );
         }
       } catch (error) {
-        this.logger.error(error, "❌ Error handling webhook: " + (error as Error).message)
-        res.status(500).json({
-          status: "error",
-          message: "Error handling webhook: " + (error as Error).message,
-        } as WebhookResponse)
+        this.logger.error(error, "❌ Error handling webhook: " + (error as Error).message);
+        return c.json(
+          {
+            status: "error",
+            message: "Error handling webhook: " + (error as Error).message,
+          } as WebhookResponse,
+          500,
+        );
       }
-    })
+    });
   }
 
   /**
@@ -371,133 +445,134 @@ export class AppServer {
    * Creates a /tool endpoint for handling tool calls from MentraOS Cloud.
    */
   private setupToolCallEndpoint(): void {
-    this.app.post("/tool", async (req, res) => {
+    this.post("/tool", async (c) => {
       try {
-        const toolCall = req.body as ToolCall
+        const toolCall = (await c.req.json()) as ToolCall;
         if (this.activeSessionsByUserId.has(toolCall.userId)) {
-          toolCall.activeSession = this.activeSessionsByUserId.get(toolCall.userId) || null
+          toolCall.activeSession = this.activeSessionsByUserId.get(toolCall.userId) || null;
         } else {
-          toolCall.activeSession = null
+          toolCall.activeSession = null;
         }
-        this.logger.info({body: req.body}, `🔧 Received tool call: ${toolCall.toolId}`)
+        this.logger.info({ body: toolCall }, `🔧 Received tool call: ${toolCall.toolId}`);
+
         // Call the onToolCall handler and get the response
-        const response = await this.onToolCall(toolCall)
+        const response = await this.onToolCall(toolCall);
 
         // Send back the response if one was provided
         if (response !== undefined) {
-          res.json({status: "success", reply: response})
+          return c.json({ status: "success", reply: response });
         } else {
-          res.json({status: "success", reply: null})
+          return c.json({ status: "success", reply: null });
         }
       } catch (error) {
-        this.logger.error(error, "❌ Error handling tool call:")
-        res.status(500).json({
-          status: "error",
-          message: error instanceof Error ? error.message : "Unknown error occurred calling tool",
-        })
+        this.logger.error(error, "❌ Error handling tool call:");
+        return c.json(
+          {
+            status: "error",
+            message: error instanceof Error ? error.message : "Unknown error occurred calling tool",
+          },
+          500,
+        );
       }
-    })
-    this.app.get("/tool", async (req, res) => {
-      res.json({status: "success", reply: "Hello, world!"})
-    })
+    });
+
+    this.get("/tool", async (c) => {
+      return c.json({ status: "success", reply: "Hello, world!" });
+    });
   }
 
   /**
    * Handle a session request webhook
    */
-  private async handleSessionRequest(request: SessionWebhookRequest, res: express.Response): Promise<void> {
-    const {sessionId, userId, mentraOSWebsocketUrl, augmentOSWebsocketUrl} = request
-    this.logger.info({userId}, `🗣️ Received session request for user ${userId}, session ${sessionId}\n\n`)
+  private async handleSessionRequest(
+    request: SessionWebhookRequest,
+    c: Context<{ Variables: AuthVariables }>,
+  ): Promise<Response> {
+    const { sessionId, userId, mentraOSWebsocketUrl, augmentOSWebsocketUrl } = request;
+    this.logger.info({ userId }, `🗣️ Received session request for user ${userId}, session ${sessionId}\n\n`);
 
     // Create new App session
     const session = new AppSession({
       packageName: this.config.packageName,
       apiKey: this.config.apiKey,
-      mentraOSWebsocketUrl: mentraOSWebsocketUrl || augmentOSWebsocketUrl, // The websocket URL for the specific MentraOS server that this userSession is connecting to.
+      mentraOSWebsocketUrl: mentraOSWebsocketUrl || augmentOSWebsocketUrl,
       appServer: this,
       userId,
-    })
+    });
 
     // Setup session event handlers
     const cleanupDisconnect = session.events.onDisconnected((info) => {
-      // Handle different disconnect info formats (string or object)
       if (typeof info === "string") {
-        this.logger.info(`👋 Session ${sessionId} disconnected: ${info}`)
+        this.logger.info(`👋 Session ${sessionId} disconnected: ${info}`);
       } else {
-        // It's an object with detailed disconnect information
         this.logger.info(
           `👋 Session ${sessionId} disconnected: ${info.message} (code: ${info.code}, reason: ${info.reason})`,
-        )
+        );
 
-        // Check if this is a user session end event
-        // This happens when the UserSession is disposed after 1 minute grace period
         if (info.sessionEnded === true) {
-          this.logger.info(`🛑 User session ended for session ${sessionId}, calling onStop`)
-
-          // Call onStop with session end reason
-          // This allows apps to clean up resources when the user's session ends
+          this.logger.info(`🛑 User session ended for session ${sessionId}, calling onStop`);
           this.onStop(sessionId, userId, "User session ended").catch((error) => {
-            this.logger.error(error, `❌ Error in onStop handler for session end:`)
-          })
-        }
-        // Check if this is a permanent disconnection after exhausted reconnection attempts
-        else if (info.permanent === true) {
-          this.logger.info(`🛑 Permanent disconnection detected for session ${sessionId}, calling onStop`)
-
-          // Keep track of the original session before removal
-          // const session = this.activeSessions.get(sessionId);
-          const _session = this.activeSessions.get(sessionId)
-
-          // Call onStop with a reconnection failure reason
+            this.logger.error(error, `❌ Error in onStop handler for session end:`);
+          });
+        } else if (info.permanent === true) {
+          this.logger.info(`🛑 Permanent disconnection detected for session ${sessionId}, calling onStop`);
           this.onStop(sessionId, userId, `Connection permanently lost: ${info.reason}`).catch((error) => {
-            this.logger.error(error, `❌ Error in onStop handler for permanent disconnection:`)
-          })
+            this.logger.error(error, `❌ Error in onStop handler for permanent disconnection:`);
+          });
         }
       }
 
-      // Remove the session from active sessions in all cases
-      this.activeSessions.delete(sessionId)
-      this.activeSessionsByUserId.delete(userId)
-    })
+      this.activeSessions.delete(sessionId);
+      this.activeSessionsByUserId.delete(userId);
+    });
 
     const cleanupError = session.events.onError((error) => {
-      this.logger.error(error, `❌ [Session ${sessionId}] Error:`)
-    })
+      this.logger.error(error, `❌ [Session ${sessionId}] Error:`);
+    });
 
     // Start the session
     try {
-      await session.connect(sessionId)
-      this.activeSessions.set(sessionId, session)
-      this.activeSessionsByUserId.set(userId, session)
-      await this.onSession(session, sessionId, userId)
-      res.status(200).json({status: "success"} as WebhookResponse)
+      await session.connect(sessionId);
+      this.activeSessions.set(sessionId, session);
+      this.activeSessionsByUserId.set(userId, session);
+      await this.onSession(session, sessionId, userId);
+      return c.json({ status: "success" } as WebhookResponse);
     } catch (error) {
-      this.logger.error(error, "❌ Failed to connect:")
-      cleanupDisconnect()
-      cleanupError()
-      res.status(500).json({
-        status: "error",
-        message: "Failed to connect",
-      } as WebhookResponse)
+      this.logger.error(error, "❌ Failed to connect:");
+      cleanupDisconnect();
+      cleanupError();
+      return c.json(
+        {
+          status: "error",
+          message: "Failed to connect",
+        } as WebhookResponse,
+        500,
+      );
     }
   }
 
   /**
    * Handle a stop request webhook
    */
-  private async handleStopRequest(request: StopWebhookRequest, res: express.Response): Promise<void> {
-    const {sessionId, userId, reason} = request
-    this.logger.info(`\n\n🛑 Received stop request for user ${userId}, session ${sessionId}, reason: ${reason}\n\n`)
+  private async handleStopRequest(
+    request: StopWebhookRequest,
+    c: Context<{ Variables: AuthVariables }>,
+  ): Promise<Response> {
+    const { sessionId, userId, reason } = request;
+    this.logger.info(`\n\n🛑 Received stop request for user ${userId}, session ${sessionId}, reason: ${reason}\n\n`);
 
     try {
-      await this.onStop(sessionId, userId, reason)
-      res.status(200).json({status: "success"} as WebhookResponse)
+      await this.onStop(sessionId, userId, reason);
+      return c.json({ status: "success" } as WebhookResponse);
     } catch (error) {
-      this.logger.error(error, "❌ Error handling stop request:")
-      res.status(500).json({
-        status: "error",
-        message: "Failed to process stop request",
-      } as WebhookResponse)
+      this.logger.error(error, "❌ Error handling stop request:");
+      return c.json(
+        {
+          status: "error",
+          message: "Failed to process stop request",
+        } as WebhookResponse,
+        500,
+      );
     }
   }
 
@@ -507,13 +582,13 @@ export class AppServer {
    */
   private setupHealthCheck(): void {
     if (this.config.healthCheck) {
-      this.app.get("/health", (req, res) => {
-        res.json({
+      this.get("/health", (c) => {
+        return c.json({
           status: "healthy",
           app: this.config.packageName,
           activeSessions: this.activeSessions.size,
-        })
-      })
+        });
+      });
     }
   }
 
@@ -522,71 +597,74 @@ export class AppServer {
    * Creates a /settings endpoint that the MentraOS Cloud can use to update settings.
    */
   private setupSettingsEndpoint(): void {
-    this.app.post("/settings", async (req, res) => {
+    this.post("/settings", async (c) => {
       try {
-        const {userIdForSettings, settings} = req.body
+        const { userIdForSettings, settings } = await c.req.json();
 
         if (!userIdForSettings || !Array.isArray(settings)) {
-          return res.status(400).json({
-            status: "error",
-            message: "Missing userId or settings array in request body",
-          })
+          return c.json(
+            {
+              status: "error",
+              message: "Missing userId or settings array in request body",
+            },
+            400,
+          );
         }
 
-        this.logger.info(`⚙️ Received settings update for user ${userIdForSettings}`)
+        this.logger.info(`⚙️ Received settings update for user ${userIdForSettings}`);
 
         // Find all active sessions for this user
-        const userSessions: AppSession[] = []
+        const userSessions: AppSession[] = [];
 
-        // Look through all active sessions
         this.activeSessions.forEach((session, _sessionId) => {
-          // Check if the session has this userId (not directly accessible)
-          // We're relying on the webhook handler to have already verified this
           if (session.userId === userIdForSettings) {
-            userSessions.push(session)
+            userSessions.push(session);
           }
-        })
+        });
 
         if (userSessions.length === 0) {
-          this.logger.warn(`⚠️ No active sessions found for user ${userIdForSettings}`)
+          this.logger.warn(`⚠️ No active sessions found for user ${userIdForSettings}`);
         } else {
-          this.logger.info(`🔄 Updating settings for ${userSessions.length} active sessions`)
+          this.logger.info(`🔄 Updating settings for ${userSessions.length} active sessions`);
         }
 
         // Update settings for all of the user's sessions
         for (const session of userSessions) {
-          session.updateSettingsForTesting(settings)
+          session.updateSettingsForTesting(settings);
         }
 
         // Allow subclasses to handle settings updates if they implement the method
         if (typeof (this as any).onSettingsUpdate === "function") {
-          await (this as any).onSettingsUpdate(userIdForSettings, settings)
+          await (this as any).onSettingsUpdate(userIdForSettings, settings);
         }
 
-        res.json({
+        return c.json({
           status: "success",
           message: "Settings updated successfully",
           sessionsUpdated: userSessions.length,
-        })
+        });
       } catch (error) {
-        this.logger.error(error, "❌ Error handling settings update:")
-        res.status(500).json({
-          status: "error",
-          message: "Internal server error processing settings update",
-        })
+        this.logger.error(error, "❌ Error handling settings update:");
+        return c.json(
+          {
+            status: "error",
+            message: "Internal server error processing settings update",
+          },
+          500,
+        );
       }
-    })
+    });
   }
 
   /**
    * 📂 Setup Static File Serving
-   * Configures Express to serve static files from the specified directory.
+   * Configures Hono to serve static files from the specified directory.
    */
   private setupPublicDir(): void {
     if (this.config.publicDir) {
-      const publicPath = path.resolve(this.config.publicDir)
-      this.app.use(express.static(publicPath))
-      this.logger.info(`📂 Serving static files from ${publicPath}`)
+      const publicPath = path.resolve(this.config.publicDir);
+      this.use("/*", serveStatic({ root: publicPath }));
+      this.logger.info(`📂 Serving static files from ${publicPath}`);
     }
   }
 
@@ -595,8 +673,8 @@ export class AppServer {
    * Registers process signal handlers for graceful shutdown.
    */
   private setupShutdown(): void {
-    process.on("SIGTERM", () => this.stop())
-    process.on("SIGINT", () => this.stop())
+    process.on("SIGTERM", () => this.stop());
+    process.on("SIGINT", () => this.stop());
   }
 
   /**
@@ -607,29 +685,26 @@ export class AppServer {
   private async cleanup(): Promise<void> {
     // Close all active sessions with ownership release for clean handoff
     for (const [sessionId, session] of this.activeSessions) {
-      this.logger.info(`👋 Closing session ${sessionId} with ownership release`)
+      this.logger.info(`👋 Closing session ${sessionId} with ownership release`);
       try {
-        // Release ownership first, then disconnect
-        // This tells the cloud not to resurrect this app
         await session.disconnect({
           releaseOwnership: true,
           reason: "clean_shutdown",
-        })
+        });
       } catch (error) {
-        this.logger.error(error, `Error during cleanup of session ${sessionId}`)
-        // Still try to disconnect even if release fails
+        this.logger.error(error, `Error during cleanup of session ${sessionId}`);
         try {
-          await session.disconnect()
+          await session.disconnect();
         } catch {
           // Ignore secondary errors
         }
       }
     }
-    this.activeSessions.clear()
-    this.activeSessionsByUserId.clear()
+    this.activeSessions.clear();
+    this.activeSessionsByUserId.clear();
 
     // Run cleanup handlers
-    this.cleanupHandlers.forEach((handler) => handler())
+    this.cleanupHandlers.forEach((handler) => handler());
   }
 
   /**
@@ -637,57 +712,39 @@ export class AppServer {
    * Creates a /photo-upload endpoint for receiving photos directly from ASG glasses
    */
   private setupPhotoUploadEndpoint(): void {
-    const multer = require("multer")
-
-    // Configure multer for handling multipart form data
-    const upload = multer({
-      storage: multer.memoryStorage(),
-      limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
-      },
-      fileFilter: (req: any, file: any, cb: any) => {
-        // Accept image files only
-        if (file.mimetype && file.mimetype.startsWith("image/")) {
-          cb(null, true)
-        } else {
-          cb(new Error("Only image files are allowed"), false)
-        }
-      },
-    })
-
-    this.app.post("/photo-upload", upload.single("photo"), async (req: any, res: any) => {
+    this.post("/photo-upload", async (c) => {
       try {
-        const {requestId, type, success, errorCode, errorMessage} = req.body
-        const photoFile = req.file
+        // Parse multipart form data
+        const body = await c.req.parseBody();
+        const requestId = body.requestId as string;
+        const type = body.type as string;
+        const successStr = String(body.success);
+        const success = successStr === "true";
+        const errorCode = body.errorCode as string;
+        const errorMessage = body.errorMessage as string;
+        const photoFile = body.photo as File | undefined;
 
-        console.log("Received photo response: ", req.body)
+        console.log("Received photo response:", { requestId, type, success, errorCode });
 
         this.logger.info(
-          {requestId, type, success, errorCode},
+          { requestId, type, success, errorCode },
           `📸 Received photo response: ${requestId} (type: ${type})`,
-        )
+        );
 
         if (!requestId) {
-          this.logger.error("No requestId in photo response")
-          return res.status(400).json({
-            success: false,
-            error: "No requestId provided",
-          })
+          this.logger.error("No requestId in photo response");
+          return c.json({ success: false, error: "No requestId provided" }, 400);
         }
 
         // Find the corresponding session that made this photo request
-        const session = this.findSessionByPhotoRequestId(requestId)
+        const session = this.findSessionByPhotoRequestId(requestId);
         if (!session) {
-          this.logger.warn({requestId}, "No active session found for photo request")
-          return res.status(404).json({
-            success: false,
-            error: "No active session found for this photo request",
-          })
+          this.logger.warn({ requestId }, "No active session found for photo request");
+          return c.json({ success: false, error: "No active session found for this photo request" }, 404);
         }
 
         // Handle error response (no photo file, but has error info)
         if (type === "photo_error" || success === false) {
-          // Create error response object
           const errorResponse = {
             requestId,
             success: false as const,
@@ -695,55 +752,49 @@ export class AppServer {
               code: errorCode || "UNKNOWN_ERROR",
               message: errorMessage || "Unknown error occurred",
             },
-          }
+          };
 
-          // Deliver error to the session (logging happens in camera module)
-          session.camera.handlePhotoError(errorResponse)
+          session.camera.handlePhotoError(errorResponse);
 
-          // Respond to ASG client
-          return res.json({
+          return c.json({
             success: true,
             requestId,
             message: "Photo error received successfully",
-          })
+          });
         }
 
         // Handle successful photo upload
         if (!photoFile) {
-          this.logger.error({requestId}, "No photo file in successful upload")
-          return res.status(400).json({
-            success: false,
-            error: "No photo file provided for successful upload",
-          })
+          this.logger.error({ requestId }, "No photo file in successful upload");
+          return c.json({ success: false, error: "No photo file provided for successful upload" }, 400);
         }
+
+        // Read file buffer
+        const buffer = Buffer.from(await photoFile.arrayBuffer());
 
         // Create photo data object
         const photoData = {
-          buffer: photoFile.buffer,
-          mimeType: photoFile.mimetype,
-          filename: photoFile.originalname || "photo.jpg",
+          buffer,
+          mimeType: photoFile.type,
+          filename: photoFile.name || "photo.jpg",
           requestId,
           size: photoFile.size,
           timestamp: new Date(),
-        }
+        };
 
         // Deliver photo to the session
-        session.camera.handlePhotoReceived(photoData)
+        session.camera.handlePhotoReceived(photoData);
 
-        // Respond to ASG client
-        res.json({
+        return c.json({
           success: true,
           requestId,
           message: "Photo received successfully",
-        })
+        });
       } catch (error) {
-        this.logger.error(error, "❌ Error handling photo response")
-        res.status(500).json({
-          success: false,
-          error: "Internal server error processing photo response",
-        })
+        this.logger.error(error, "❌ Error handling photo response");
+        return c.json({ success: false, error: "Internal server error processing photo response" }, 500);
       }
-    })
+    });
   }
 
   /**
@@ -751,14 +802,11 @@ export class AppServer {
    * Creates a /mentra-auth endpoint that redirects to the MentraOS OAuth flow.
    */
   private setupMentraAuthRedirect(): void {
-    this.app.get("/mentra-auth", (req, res) => {
-      // Redirect to the account.mentra.glass OAuth flow with the app's package name
-      const authUrl = `https://account.mentra.glass/auth?packagename=${encodeURIComponent(this.config.packageName)}`
-
-      this.logger.info(`🔐 Redirecting to MentraOS OAuth flow: ${authUrl}`)
-
-      res.redirect(302, authUrl)
-    })
+    this.get("/mentra-auth", (c) => {
+      const authUrl = `https://account.mentra.glass/auth?packagename=${encodeURIComponent(this.config.packageName)}`;
+      this.logger.info(`🔐 Redirecting to MentraOS OAuth flow: ${authUrl}`);
+      return c.redirect(authUrl, 302);
+    });
   }
 
   /**
@@ -767,49 +815,30 @@ export class AppServer {
   private findSessionByPhotoRequestId(requestId: string): AppSession | undefined {
     for (const [_sessionId, session] of this.activeSessions) {
       if (session.camera.hasPhotoPendingRequest(requestId)) {
-        return session
+        return session;
       }
     }
-    return undefined
+    return undefined;
   }
 }
 
 /**
  * @deprecated Use `AppServerConfig` instead. `TpaServerConfig` is deprecated and will be removed in a future version.
  * This is an alias for backward compatibility only.
- *
- * @example
- * ```typescript
- * // ❌ Deprecated - Don't use this
- * const config: TpaServerConfig = { ... };
- *
- * // ✅ Use this instead
- * const config: AppServerConfig = { ... };
- * ```
  */
-export type TpaServerConfig = AppServerConfig
+export type TpaServerConfig = AppServerConfig;
 
 /**
  * @deprecated Use `AppServer` instead. `TpaServer` is deprecated and will be removed in a future version.
  * This is an alias for backward compatibility only.
- *
- * @example
- * ```typescript
- * // ❌ Deprecated - Don't use this
- * class MyServer extends TpaServer { ... }
- *
- * // ✅ Use this instead
- * class MyServer extends AppServer { ... }
- * ```
  */
 export class TpaServer extends AppServer {
   constructor(config: TpaServerConfig) {
-    super(config)
-    // Emit a deprecation warning to help developers migrate
+    super(config);
     console.warn(
       "⚠️  DEPRECATION WARNING: TpaServer is deprecated and will be removed in a future version. " +
         "Please use AppServer instead. " +
         'Simply replace "TpaServer" with "AppServer" in your code.',
-    )
+    );
   }
 }
