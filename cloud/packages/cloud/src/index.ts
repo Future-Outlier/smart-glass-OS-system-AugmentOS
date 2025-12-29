@@ -1,5 +1,5 @@
 /**
- * @fileoverview AugmentOS Cloud Server entry point (Hono + Bun native).
+ * @fileoverview MentraOS Cloud Server entry point (Hono + Bun native).
  * Initializes core services and sets up HTTP/WebSocket servers using Bun.serve().
  *
  * This is the new entry point using Hono for native Bun HTTP handling.
@@ -146,10 +146,10 @@ logger.info(`\n
 
 // Generate core token for debugging with postman.
 // generateCoreToken
-(async () => {
-  const coreToken = await generateCoreToken("isaiahballah@gmail.com");
-  logger.debug(`Core Token:\n${coreToken}`);
-})();
+// (async () => {
+//   const coreToken = await generateCoreToken("");
+//   logger.debug(`Core Token:\n${coreToken}`);
+// })();
 
 // IMPORTANT: Do NOT add `export default server` here!
 // Bun auto-detects default exports with a `fetch` function and calls Bun.serve() on them.
