@@ -185,40 +185,6 @@ public class CoreModule: Module {
             }
         }
 
-        // MARK: - UDP Audio Commands
-
-        AsyncFunction("configureUdpAudio") { (host: String, port: Int, userId: String) in
-            Bridge.configureUdpAudio(host: host, port: port, userId: userId)
-        }
-
-        AsyncFunction("startUdpAudio") { () -> Bool in
-            return Bridge.startUdpAudio()
-        }
-
-        AsyncFunction("stopUdpAudio") {
-            Bridge.stopUdpAudio()
-        }
-
-        AsyncFunction("sendUdpPing") { () -> Bool in
-            return Bridge.sendUdpPing()
-        }
-
-        AsyncFunction("onUdpPingResponse") {
-            Bridge.onUdpPingResponse()
-        }
-
-        AsyncFunction("getUdpUserIdHash") { () -> Int in
-            return Int(Bridge.getUdpUserIdHash())
-        }
-
-        AsyncFunction("isUdpReady") { () -> Bool in
-            return Bridge.isUdpReady()
-        }
-
-        AsyncFunction("fnv1aHash") { (str: String) -> Int in
-            return Int(Bridge.fnv1aHash(str))
-        }
-
         // MARK: - RGB LED Control
 
         AsyncFunction("rgbLedControl") {
