@@ -113,7 +113,7 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
       {/* Tap area to toggle controls */}
       <TouchableOpacity activeOpacity={1} style={themed($tapArea)} onPress={() => setShowControls(!showControls)} />
 
-      {/* Error overlay */}
+      {/* Error Message Overlay */}
       {hasError && (
         <View style={themed($errorContainer)}>
           <View style={themed($errorBadge)}>
@@ -125,36 +125,35 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
         </View>
       )}
 
-      {/* Play button - positioned at true screen center + offset */}
+      {/* Unified video controls - elegant bottom bar */}
       {showControls && !hasError && (
-        <TouchableOpacity
-          onPress={e => {
-            e.stopPropagation()
-            if (!isPlaying && duration > 0 && currentTime >= duration - 0.5) {
-              videoRef.current?.seek(0)
-              setCurrentTime(0)
-              setIsPlaying(true)
-            } else {
-              setIsPlaying(!isPlaying)
-            }
-          }}
-          style={themed($playButton)}
-          hitSlop={{top: 20, bottom: 20, left: 20, right: 20}}>
-          <View style={[themed($playButtonBackground), isPlaying && themed($playButtonPlaying)]}>
-            <MaterialCommunityIcons
-              name={isPlaying ? "pause" : duration > 0 && currentTime >= duration - 0.5 ? "replay" : "play"}
-              size={50}
-              color="white"
-            />
-          </View>
-        </TouchableOpacity>
-      )}
+        <View style={themed($videoControlsContainer)}>
+          <View style={themed($unifiedControlBar)}>
+            {/* Play/Pause button on left */}
+            <TouchableOpacity
+              onPress={e => {
+                e.stopPropagation()
+                if (!isPlaying && duration > 0 && currentTime >= duration - 0.5) {
+                  videoRef.current?.seek(0)
+                  setCurrentTime(0)
+                  setIsPlaying(true)
+                } else {
+                  setIsPlaying(!isPlaying)
+                }
+              }}
+              style={themed($playButtonInline)}
+              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+              <MaterialCommunityIcons
+                name={isPlaying ? "pause" : duration > 0 && currentTime >= duration - 0.5 ? "replay" : "play"}
+                size={28}
+                color="white"
+              />
+            </TouchableOpacity>
 
-      {/* Seek bar */}
-      {showControls && !hasError && (
-        <View style={themed($seekContainer)}>
-          <View style={themed($seekBarWrapper)}>
+            {/* Time display */}
             <Text style={themed($timeText)}>{formatTime(currentTime)}</Text>
+
+            {/* Seek slider */}
             <Slider
               style={themed($seekBar)}
               value={currentTime}
@@ -168,6 +167,8 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
                 videoRef.current?.seek(value)
               }}
             />
+
+            {/* Duration display */}
             <Text style={themed($timeText)}>{formatTime(duration)}</Text>
           </View>
         </View>
@@ -367,7 +368,7 @@ const $videoPlayerContainer: ThemedStyle<any> = () => ({
   backgroundColor: "black",
   justifyContent: "center",
   alignItems: "center",
-  // No padding - keep video at true center for proper play button positioning
+  paddingTop: SCREEN_HEIGHT * 0.05, // Shift videos 5% down for better visual balance (matches images)
 })
 
 const $video: ThemedStyle<any> = () => ({
@@ -428,28 +429,7 @@ const $errorSubtext: ThemedStyle<any> = () => ({
   lineHeight: 18,
 })
 
-const $playButton: ThemedStyle<any> = () => ({
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: [{translateX: -40}, {translateY: -40}], // Perfectly centered on video
-  zIndex: 100,
-})
-
-const $playButtonBackground: ThemedStyle<any> = () => ({
-  width: 80,
-  height: 80,
-  borderRadius: 40,
-  backgroundColor: "rgba(0,0,0,0.6)",
-  justifyContent: "center",
-  alignItems: "center",
-})
-
-const $playButtonPlaying: ThemedStyle<any> = () => ({
-  backgroundColor: "rgba(0,0,0,0.3)",
-})
-
-const $seekContainer: ThemedStyle<any> = ({spacing}) => ({
+const $videoControlsContainer: ThemedStyle<any> = ({spacing}) => ({
   position: "absolute",
   bottom: spacing.s8,
   left: 0,
@@ -458,24 +438,34 @@ const $seekContainer: ThemedStyle<any> = ({spacing}) => ({
   zIndex: 100,
 })
 
-const $seekBarWrapper: ThemedStyle<any> = ({spacing}) => ({
+const $unifiedControlBar: ThemedStyle<any> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
-  backgroundColor: "rgba(0,0,0,0.7)",
+  backgroundColor: "rgba(0,0,0,0.85)",
   borderRadius: 16,
   paddingVertical: spacing.s3,
   paddingHorizontal: spacing.s4,
+  gap: spacing.s3,
 })
 
-const $seekBar: ThemedStyle<any> = ({spacing}) => ({
+const $playButtonInline: ThemedStyle<any> = () => ({
+  width: 40,
+  height: 40,
+  justifyContent: "center",
+  alignItems: "center",
+  borderRadius: 20,
+  backgroundColor: "rgba(255,255,255,0.15)",
+})
+
+const $seekBar: ThemedStyle<any> = () => ({
   flex: 1,
   height: 40,
-  marginHorizontal: spacing.s3,
 })
 
 const $timeText: ThemedStyle<any> = () => ({
   color: "white",
-  fontSize: 12,
+  fontSize: 13,
+  fontWeight: "500",
   minWidth: 45,
   textAlign: "center",
 })
