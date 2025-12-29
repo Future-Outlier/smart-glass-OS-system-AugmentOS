@@ -37,7 +37,7 @@
     "build:full": "bun run clean && bun run build:js && bun run build:types",
     "clean": "rm -rf dist",
     "build:js": "bun build src/index.ts src/display-utils.ts --outdir dist --target node --format esm --sourcemap=external --external @logtail/pino --external axios --external boxen --external chalk --external cookie-parser --external dotenv --external express --external jimp --external jsonwebtoken --external jsrsasign --external multer --external pino --external pino-pretty --external strip-ansi --external ws",
-    "build:types": "bun x tsc --emitDeclarationOnly",
+    "build:types": "bun x tsc --build --force",
     "dev": "echo 'No build needed in dev mode - using source files directly'",
     "prepare": "bun run build",
     "link-pkg": "bun link"
