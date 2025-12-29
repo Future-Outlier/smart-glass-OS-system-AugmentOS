@@ -43,9 +43,9 @@ Problems:
 
 ```
 AppServer extends Hono
-    └── Bun.serve()
-          ├── routes: { "/*": webview.html }  → Bun bundler + HMR
-          └── fetch: this.fetch               → Hono API
+    └── Developer calls Bun.serve()
+          ├── routes: { "/*": webview.html }  → Bun handles webview
+          └── fetch: app.fetch                → Hono handles API
 ```
 
 Single server handles everything:
@@ -87,44 +87,16 @@ export interface AuthVariables {
 }
 
 export class AppServer extends Hono<{ Variables: AuthVariables }> {
-  private activeSessions = new Map<string, AppSession>()
-  private webviewHtml: string | null = null
-
   constructor(private config: AppServerConfig) {
     super()
-
-    // Middleware
     this.use("*", createAuthMiddleware({...}))
-
-    // SDK endpoints
-    this.post("/webhook", (c) => this.handleWebhook(c))
-    this.post("/tool", (c) => this.handleToolCall(c))
-    this.get("/health", (c) => this.handleHealth(c))
-    this.post("/settings", (c) => this.handleSettings(c))
-    this.post("/photo-upload", (c) => this.handlePhotoUpload(c))
-    this.get("/mentra-auth", (c) => this.handleMentraAuth(c))
-  }
-
-  setWebview(htmlImport: string) {
-    this.webviewHtml = htmlImport
-    return this
+    this.setupWebhook()
+    // ... setup other SDK endpoints
   }
 
   async start(): Promise<void> {
-    const routes: Record<string, any> = {}
-    if (this.webviewHtml) {
-      routes["/*"] = this.webviewHtml
-    }
-
-    Bun.serve({
-      port: this.config.port,
-      routes,
-      fetch: this.fetch,
-      development: process.env.NODE_ENV !== "production" && {
-        hmr: true,
-        console: true,
-      },
-    })
+    this.logger.info(`🎯 App initialized: ${this.config.packageName}`)
+    // SDK doesn't manage Bun.serve anymore (Option C)
   }
 }
 ```
@@ -179,60 +151,47 @@ export function createAuthMiddleware(options: AuthMiddlewareOptions) {
 ```typescript
 // Hono handles multipart natively
 this.post("/photo-upload", async (c) => {
-  const body = await c.req.parseBody()
-  const file = body.photo as File
+  const body = await c.req.parseBody();
+  const file = body.photo as File;
 
   if (!file) {
-    return c.json({success: false, error: "No photo"}, 400)
+    return c.json({ success: false, error: "No photo" }, 400);
   }
 
-  const buffer = await file.arrayBuffer()
+  const buffer = await file.arrayBuffer();
   const photoData = {
     buffer: Buffer.from(buffer),
     mimeType: file.type,
     filename: file.name,
     size: file.size,
-  }
+  };
 
   // ... handle photo
-  return c.json({success: true})
-})
+  return c.json({ success: true });
+});
 ```
 
 ### Example App Usage
 
 ```typescript
 // Apps/LiveCaptionsOnSmartGlasses/src/index.ts
+import {serve} from "bun"
 import {AppServer} from "@mentra/sdk"
+import {api} from "./api"
 import webview from "./webview/index.html"
 
-class LiveCaptionsApp extends AppServer {
-  constructor(config: AppServerConfig) {
-    super(config)
-    this.setWebview(webview)
-
-    // Custom routes (Hono syntax)
-    this.get("/api/transcripts/stream", (c) => this.handleSSE(c))
-    this.get("/api/settings", (c) => this.handleGetSettings(c))
-  }
-
-  private handleSSE(c: Context) {
-    const userId = c.get("authUserId")
-    if (!userId) return c.text("Unauthorized", 401)
-
-    return streamSSE(c, async (stream) => {
-      // SSE logic
-    })
-  }
-}
-
-const app = new LiveCaptionsApp({
-  packageName: "com.mentra.captions",
-  apiKey: API_KEY,
-  port: 3333,
-})
-
+const app = new AppServer({ ... })
 await app.start()
+
+// Mount API routes (Hono sub-app pattern)
+app.route("/", api)
+
+// Developer controls Bun.serve directly (Option C)
+serve({
+  port: 3333,
+  routes: { "/*": webview },
+  fetch: app.fetch,
+})
 ```
 
 ---

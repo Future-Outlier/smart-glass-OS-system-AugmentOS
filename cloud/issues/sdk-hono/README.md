@@ -9,9 +9,9 @@ Migrate `@mentra/sdk` AppServer from Express to Hono with Bun fullstack integrat
 
 ## Quick Context
 
-**Current**: AppServer wraps Express, requiring two-server architecture for React webviews (Express + Bun). Manual proxy, auth header forwarding, 800+ lines of boilerplate.
+**Current**: AppServer extends Hono. Single server architecture (Bun.serve). Native bundling. No more Express.
 
-**Proposed**: AppServer extends Hono, uses `Bun.serve()` with `routes` for React/HMR and `fetch` for Hono API. Single server, native bundling.
+**Implemented (Option C)**: AppServer provides API/webhook logic via Hono. Developer controls the `Bun.serve` instance and mounts the app. API is organized into feature-based Hono sub-apps.
 
 ## Key Insight
 
@@ -22,10 +22,10 @@ Bun 1.2.3+ fullstack framework provides:
 
 ```typescript
 Bun.serve({
-  routes: {"/*": webview}, // Bun handles React
+  routes: { "/*": webview }, // Bun handles React
   fetch: honoApp.fetch, // Hono handles API
-  development: {hmr: true},
-})
+  development: { hmr: true },
+});
 ```
 
 This eliminates the two-server pattern entirely.
@@ -36,8 +36,8 @@ This eliminates the two-server pattern entirely.
 - [x] Investigation of LiveCaptionsOnSmartGlasses pain points
 - [x] Research Bun fullstack + Hono integration
 - [x] Create implementation plan
-- [ ] Phase 1: Core SDK refactor (AppServer, middleware, types)
-- [ ] Phase 2: AppServer extends Hono
-- [ ] Phase 3: Bun.serve() hybrid integration
-- [ ] Phase 4: Package updates
-- [ ] Test with LiveCaptionsOnSmartGlasses
+- [x] Phase 1: Core SDK refactor (AppServer, middleware, types)
+- [x] Phase 2: AppServer extends Hono
+- [x] Phase 3: Bun.serve() hybrid integration (Option C)
+- [x] Phase 4: Package updates
+- [x] Test with LiveCaptionsOnSmartGlasses & Verify TypeScript compilation

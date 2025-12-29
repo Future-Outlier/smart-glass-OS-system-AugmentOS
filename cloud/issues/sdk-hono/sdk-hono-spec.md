@@ -51,8 +51,9 @@ expressApp.all("*", async (req, res) => {
 1. **Single server architecture** - No more Express+Bun proxy pattern
 2. **Native Bun integration** - `Bun.serve()` with routes for React, fetch for API
 3. **Hono for API layer** - Modern, typed, fast
-4. **AppServer extends Hono** - Developers use `.get()`, `.post()` directly
-5. **Zero proxy code** - Auth handled by Hono middleware
+4. **AppServer extends Hono** - Developers use `.get()`, `.post()`, or `.route()` directly
+5. **Option C Pattern** - Developer controls `Bun.serve` instance
+6. **Zero proxy code** - Auth handled by AppServer middleware
 
 ## Non-Goals
 
@@ -63,16 +64,14 @@ expressApp.all("*", async (req, res) => {
 ## Open Questions
 
 1. **multer replacement for photo uploads?**
-   - Option: Hono's built-in body parsing for multipart
-   - Option: Bun-native file handling
-   - **Need to test**
+   - **Implemented**: Used Hono's native `c.req.parseBody()` for multipart parsing.
 
 2. **Cookie handling migration?**
-   - Express: `cookie-parser` + `res.cookie()`
-   - Hono: `getCookie()` / `setCookie()` from `hono/cookie`
-   - **Straightforward migration**
+   - **Implemented**: Used `hono/cookie` (getCookie/setCookie).
 
 3. **Static file serving for apps without webview?**
-   - Hono's `serveStatic` from `hono/bun`
-   - Or just omit routes in `Bun.serve()`
-   - **Decision**: Support both patterns
+   - **Implemented**: Support both `serveStatic` from `hono/bun` and native `Bun.serve` routes.
+
+4. **AppServer Lifecycle?**
+   - **Implemented**: `AppServer` provides the logic (Hono app), developer manages the server (Bun.serve).
+   - This prevents issues with multiple servers or conflicting configurations.

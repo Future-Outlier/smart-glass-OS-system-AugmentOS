@@ -29,10 +29,6 @@ import {
 import { AppSession } from "../session/index";
 import { createAuthMiddleware } from "../webview";
 
-
-
-
-
 export const GIVE_APP_CONTROL_OF_TOOL_RESPONSE: string = "GIVE_APP_CONTROL_OF_TOOL_RESPONSE";
 
 /**
@@ -129,10 +125,6 @@ export class AppServer extends Hono<{ Variables: AuthVariables }> {
   private cleanupHandlers: Array<() => void> = [];
   /** App instructions string shown to the user */
   private appInstructions: string | null = null;
-  /** Webview HTML import for Bun's native bundling */
-  private webviewHtml: unknown = null;
-  /** Bun server instance */
-  private server: ReturnType<typeof Bun.serve> | null = null;
 
   public readonly logger: Logger;
 
@@ -179,21 +171,6 @@ export class AppServer extends Hono<{ Variables: AuthVariables }> {
     this.setupMentraAuthRedirect();
     this.setupPublicDir();
     this.setupShutdown();
-  }
-
-  /**
-   * 📺 Configure a webview HTML file for Bun's native bundling
-   * The HTML file can reference .tsx/.css files that Bun will bundle and serve with HMR
-   *
-   * @example
-   * ```typescript
-   * import webview from "./webview/index.html"
-   * server.setWebview(webview)
-   * ```
-   */
-  public setWebview(htmlImport: unknown): this {
-    this.webviewHtml = htmlImport;
-    return this;
   }
 
   /**
@@ -265,47 +242,30 @@ export class AppServer extends Hono<{ Variables: AuthVariables }> {
   }
 
   /**
-   * 🚀 Start the Server
-   * Starts listening for incoming connections and webhook calls.
-   * Uses Bun.serve() with hybrid routes (for webviews) + fetch (for API).
+   * 🚀 Initialize the App
+   * Sets up logging and checks SDK version.
+   * After calling this, use Bun.serve() with app.fetch to start the server.
    *
-   * @returns Promise that resolves when server is ready
+   * @example
+   * ```typescript
+   * const app = new MyAppServer({ ... })
+   * await app.start()
+   *
+   * Bun.serve({
+   *   port: 3333,
+   *   routes: { "/*": indexHtml },
+   *   fetch: app.fetch,
+   * })
+   * ```
+   *
+   * @returns Promise that resolves when initialization is complete
    */
   public async start(): Promise<void> {
-     
-    const routes: any = {};
+    this.logger.info(`🎯 App initialized: ${this.config.packageName}`);
+    this.logger.info(`   Use Bun.serve({ fetch: app.fetch }) to start the server`);
 
-    // If webview is configured, use Bun's native HTML bundling
-    if (this.webviewHtml) {
-      routes["/*"] = this.webviewHtml; // Catch-all for SPA
-    }
-
-    // Start server with Bun.serve()
-    this.server = Bun.serve({
-      port: this.config.port!,
-
-      // Bun handles React/HTML bundling with HMR for routes
-      routes: Object.keys(routes).length > 0 ? routes : undefined,
-
-      // Hono handles ALL API logic (this class extends Hono)
-      fetch: this.fetch.bind(this),
-
-      // Development mode with HMR
-      development:
-        process.env.NODE_ENV !== "production"
-          ? {
-              hmr: true,
-              console: true,
-            }
-          : false,
-    });
-
-    this.logger.info(`🎯 App server running at http://localhost:${this.config.port}`);
     if (this.config.publicDir) {
-      this.logger.info(`📂 Serving static files from ${this.config.publicDir}`);
-    }
-    if (this.webviewHtml) {
-      this.logger.info(`📺 Webview configured with Bun native bundling + HMR`);
+      this.logger.info(`📂 Static files configured from ${this.config.publicDir}`);
     }
 
     // 🔑 Grab SDK version
@@ -360,10 +320,6 @@ export class AppServer extends Hono<{ Variables: AuthVariables }> {
   public async stop(): Promise<void> {
     this.logger.info("\n🛑 Shutting down...");
     await this.cleanup();
-    if (this.server) {
-      this.server.stop();
-    }
-    process.exit(0);
   }
 
   /**
