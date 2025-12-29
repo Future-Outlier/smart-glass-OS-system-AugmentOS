@@ -113,7 +113,7 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
       {/* Tap area to toggle controls */}
       <TouchableOpacity activeOpacity={1} style={themed($tapArea)} onPress={() => setShowControls(!showControls)} />
 
-      {/* Error Message Overlay */}
+      {/* Error overlay */}
       {hasError && (
         <View style={themed($errorContainer)}>
           <View style={themed($errorBadge)}>
@@ -125,7 +125,7 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
         </View>
       )}
 
-      {/* Play/Pause Button */}
+      {/* Play button - positioned at true screen center + offset */}
       {showControls && !hasError && (
         <TouchableOpacity
           onPress={e => {
@@ -150,7 +150,7 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
         </TouchableOpacity>
       )}
 
-      {/* Seek Bar */}
+      {/* Seek bar */}
       {showControls && !hasError && (
         <View style={themed($seekContainer)}>
           <View style={themed($seekBarWrapper)}>
@@ -180,6 +180,7 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
  * Image component for gallery items
  */
 function ImageItem({photo, setImageDimensions}: ImageItemProps) {
+  const {themed} = useAppTheme()
   const imageUri = photo.filePath
     ? photo.filePath.startsWith("file://")
       ? photo.filePath
@@ -188,10 +189,10 @@ function ImageItem({photo, setImageDimensions}: ImageItemProps) {
 
   // Use PhotoImage for consistent handling of AVIF, loading states, etc.
   return (
-    <View style={{width: SCREEN_WIDTH, height: SCREEN_HEIGHT, justifyContent: "center", alignItems: "center"}}>
+    <View style={themed($imageContainer)}>
       <Image
         source={{uri: imageUri}}
-        style={{width: SCREEN_WIDTH, height: SCREEN_HEIGHT}}
+        style={themed($image)}
         contentFit="contain"
         onLoad={e => {
           // Report dimensions back to Gallery for proper scaling
@@ -366,6 +367,7 @@ const $videoPlayerContainer: ThemedStyle<any> = () => ({
   backgroundColor: "black",
   justifyContent: "center",
   alignItems: "center",
+  // No padding - keep video at true center for proper play button positioning
 })
 
 const $video: ThemedStyle<any> = () => ({
@@ -430,7 +432,7 @@ const $playButton: ThemedStyle<any> = () => ({
   position: "absolute",
   top: "50%",
   left: "50%",
-  transform: [{translateX: -40}, {translateY: -40}],
+  transform: [{translateX: -40}, {translateY: -40}], // Perfectly centered on video
   zIndex: 100,
 })
 
@@ -476,4 +478,18 @@ const $timeText: ThemedStyle<any> = () => ({
   fontSize: 12,
   minWidth: 45,
   textAlign: "center",
+})
+
+// Image item styles
+const $imageContainer: ThemedStyle<any> = () => ({
+  width: SCREEN_WIDTH,
+  height: SCREEN_HEIGHT,
+  justifyContent: "center",
+  alignItems: "center",
+  paddingTop: SCREEN_HEIGHT * 0.05, // Shift images 5% down for better visual balance
+})
+
+const $image: ThemedStyle<any> = () => ({
+  width: SCREEN_WIDTH,
+  height: SCREEN_HEIGHT,
 })
