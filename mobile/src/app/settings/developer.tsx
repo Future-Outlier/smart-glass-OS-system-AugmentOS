@@ -95,10 +95,18 @@ export default function DeveloperSettingsScreen() {
           />
 
           <RouteButton
-            label="Test Sentry"
-            subtitle="Send a crash to Sentry"
+            label="Throw test error"
+            subtitle="Throw a test error (crashes in prod builds)"
             onPress={() => {
-              throw new Error("Test Sentry crash")
+              throw new Error("test_throw_error")
+            }}
+          />
+
+          <RouteButton
+            label="Test console error"
+            subtitle="Send a console error"
+            onPress={() => {
+              console.error("test_console_error")
             }}
           />
 

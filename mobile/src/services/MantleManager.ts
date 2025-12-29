@@ -5,6 +5,7 @@ import * as TaskManager from "expo-task-manager"
 import {shallow} from "zustand/shallow"
 
 import bridge from "@/bridge/MantleBridge"
+import livekit from "@/services/Livekit"
 import {migrate} from "@/services/Migrations"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
@@ -107,7 +108,9 @@ class MantleManager {
     Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME)
     this.transcriptProcessor.clear()
 
+    livekit.disconnect()
     socketComms.cleanup()
+    restComms.goodbye()
   }
 
   private initServices() {
