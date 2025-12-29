@@ -124,17 +124,18 @@ configurations.all {
     }
 
     // 6. Add release signing config (from android-signing-config.js)
-    if (!buildGradle.includes("storeFile releaseKeystoreFile")) {
-      const releaseSigningConfig = `
-        release {
-            storeFile releaseKeystoreFile
-            storePassword = releaseStorePassword
-            keyAlias = releaseKeyAlias
-            keyPassword = releaseKeyPassword
-        }`
-
-      buildGradle = buildGradle.replace(/(signingConfigs\s*{\s*debug\s*{[^}]*})/, `$1${releaseSigningConfig}`)
-    }
+    // DISABLED: Manual signing config is already in place using credentials/upload-keystore.jks
+    // if (!buildGradle.includes("storeFile releaseKeystoreFile")) {
+    //   const releaseSigningConfig = `
+    //     release {
+    //         storeFile releaseKeystoreFile
+    //         storePassword = releaseStorePassword
+    //         keyAlias = releaseKeyAlias
+    //         keyPassword = releaseKeyPassword
+    //     }`
+    //
+    //   buildGradle = buildGradle.replace(/(signingConfigs\s*{\s*debug\s*{[^}]*})/, `$1${releaseSigningConfig}`)
+    // }
 
     // 7. Update release build type to use release signing conditionally (from android-signing-config.js)
     if (
