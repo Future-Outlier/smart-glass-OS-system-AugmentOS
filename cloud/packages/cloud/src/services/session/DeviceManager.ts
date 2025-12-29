@@ -28,7 +28,7 @@ import { getCapabilitiesForModel, isModelSupported } from "../../config/hardware
 import { User } from "../../models/user.model";
 import appService from "../core/app.service";
 import { PosthogService } from "../logging/posthog.service";
-import { WebSocketReadyState } from "../websocket/types";
+import { WebSocketReadyState, type IWebSocket } from "../websocket/types";
 
 import { HardwareCompatibilityService } from "./HardwareCompatibilityService";
 import type UserSession from "./UserSession";
@@ -420,10 +420,7 @@ export class DeviceManager {
    * @param state - Partial device state (only changed fields, or full snapshot)
    * @param fullSnapshot - True on initial connection or reconnection
    */
-  private broadcastDeviceStateToApps(
-    state: Partial<GlassesInfo>,
-    fullSnapshot = false,
-  ): void {
+  private broadcastDeviceStateToApps(state: Partial<GlassesInfo>, fullSnapshot = false): void {
     try {
       const message = {
         type: CloudToAppMessageType.DEVICE_STATE_UPDATE,
@@ -433,10 +430,7 @@ export class DeviceManager {
       };
 
       // Broadcast to all connected app websockets
-      for (const [
-        packageName,
-        ws,
-      ] of this.userSession.appWebsockets.entries()) {
+      for (const [packageName, ws] of this.userSession.appWebsockets.entries()) {
         if (ws && ws.readyState === WebSocket.OPEN) {
           try {
             ws.send(JSON.stringify(message));
@@ -460,10 +454,7 @@ export class DeviceManager {
         "Broadcasted DEVICE_STATE_UPDATE to apps",
       );
     } catch (error) {
-      this.logger.error(
-        { error, feature: "device-state" },
-        "Error broadcasting device state update",
-      );
+      this.logger.error({ error, feature: "device-state" }, "Error broadcasting device state update");
     }
   }
 
@@ -473,7 +464,7 @@ export class DeviceManager {
    *
    * @param ws - WebSocket connection to send snapshot to
    */
-  public sendFullStateSnapshot(ws: WebSocket): void {
+  public sendFullStateSnapshot(ws: IWebSocket): void {
     try {
       const fullState = this.getDeviceState();
 
@@ -484,7 +475,7 @@ export class DeviceManager {
         timestamp: new Date(),
       };
 
-      if (ws.readyState === WebSocket.OPEN) {
+      if (ws.readyState === WebSocketReadyState.OPEN) {
         ws.send(JSON.stringify(message));
 
         this.logger.info(
@@ -497,10 +488,7 @@ export class DeviceManager {
         );
       }
     } catch (error) {
-      this.logger.error(
-        { error, feature: "device-state" },
-        "Error sending full device state snapshot",
-      );
+      this.logger.error({ error, feature: "device-state" }, "Error sending full device state snapshot");
     }
   }
 
