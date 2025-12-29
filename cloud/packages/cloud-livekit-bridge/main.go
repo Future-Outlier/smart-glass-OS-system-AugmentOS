@@ -44,16 +44,6 @@ func main() {
 	bridgeService := NewLiveKitBridgeService(config, bsLogger)
 	pb.RegisterLiveKitBridgeServer(grpcServer, bridgeService)
 
-	// Start UDP audio listener
-	udpListener, err := NewUdpAudioListener(bridgeService, bsLogger)
-	if err != nil {
-		bsLogger.LogError("Failed to start UDP audio listener", err, nil)
-		log.Printf("Warning: UDP audio listener failed to start: %v (continuing without UDP support)", err)
-	} else {
-		bridgeService.SetUdpListener(udpListener)
-		go udpListener.Start()
-	}
-
 	// Register health check service
 	healthServer := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
@@ -64,6 +54,7 @@ func main() {
 
 	// Determine if we should use Unix socket or TCP
 	var lis net.Listener
+	var err error
 
 	socketPath := os.Getenv("LIVEKIT_GRPC_SOCKET")
 	if socketPath != "" {
@@ -83,13 +74,12 @@ func main() {
 			log.Fatalf("Failed to create socket directory: %v", err)
 		}
 
-		var lisErr error
-		lis, lisErr = net.Listen("unix", socketPath)
-		if lisErr != nil {
-			bsLogger.LogError("Failed to listen on Unix socket", lisErr, map[string]interface{}{
+		lis, err = net.Listen("unix", socketPath)
+		if err != nil {
+			bsLogger.LogError("Failed to listen on Unix socket", err, map[string]interface{}{
 				"socket_path": socketPath,
 			})
-			log.Fatalf("Failed to listen on Unix socket %s: %v", socketPath, lisErr)
+			log.Fatalf("Failed to listen on Unix socket %s: %v", socketPath, err)
 		}
 
 		// Set socket permissions to allow access
@@ -104,13 +94,12 @@ func main() {
 		})
 	} else {
 		// Use TCP port (backward compatibility)
-		var lisErr error
-		lis, lisErr = net.Listen("tcp", ":"+config.Port)
-		if lisErr != nil {
-			bsLogger.LogError("Failed to listen on TCP", lisErr, map[string]interface{}{
+		lis, err = net.Listen("tcp", ":"+config.Port)
+		if err != nil {
+			bsLogger.LogError("Failed to listen on TCP", err, map[string]interface{}{
 				"port": config.Port,
 			})
-			log.Fatalf("Failed to listen on port %s: %v", config.Port, lisErr)
+			log.Fatalf("Failed to listen on port %s: %v", config.Port, err)
 		}
 		log.Printf("✅ LiveKit gRPC Bridge listening on TCP port: %s", config.Port)
 		bsLogger.LogInfo("Server listening on TCP", map[string]interface{}{
@@ -129,9 +118,6 @@ func main() {
 		<-sigCh
 		bsLogger.LogInfo("Received shutdown signal, gracefully stopping", nil)
 		log.Println("Received shutdown signal, gracefully stopping...")
-		if udpListener != nil {
-			udpListener.Close()
-		}
 		grpcServer.GracefulStop()
 	}()
 
