@@ -560,6 +560,7 @@ const en = {
     or: "OR",
     logOut: "Log Out",
     error: "Error",
+    success: "Success",
     notAvailable: "Not Available",
     yes: "Yes",
     delete: "Delete",

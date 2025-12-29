@@ -165,6 +165,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
           refresh_token: params.get("refresh_token"),
           token_type: params.get("token_type"),
           expires_in: params.get("expires_in"),
+          type: params.get("type"), // signup, email_change, recovery, etc.
           // Add any other parameters you might need
         }
       }
