@@ -50,18 +50,27 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
   const [isSeeking, setIsSeeking] = useState(false)
   const [hasError, setHasError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [isBuffering, setIsBuffering] = useState(true)
+  const [showThumbnail, setShowThumbnail] = useState(true)
 
-  // Auto-play when this video becomes active
+  // Auto-play when this video becomes active, pause when inactive
   useEffect(() => {
     if (isActive) {
-      console.log("🎥 [VideoPlayerItem] Video became active, starting playback:", photo.name)
-      setIsPlaying(true)
+      console.log("🎥 [VideoPlayerItem] Video became active:", photo.name)
+      // Only auto-play if video hasn't finished
+      if (!(duration > 0 && currentTime >= duration - 0.5)) {
+        console.log("🎥 [VideoPlayerItem] Starting playback (video not finished)")
+        setIsPlaying(true)
+      } else {
+        console.log("🎥 [VideoPlayerItem] Video already finished, not auto-playing")
+        setShowControls(true)
+      }
     } else {
       console.log("🎥 [VideoPlayerItem] Video became inactive, pausing:", photo.name)
       setIsPlaying(false)
-      setCurrentTime(0)
+      // Don't reset time/position - preserve where user left off
     }
-  }, [isActive, photo.name])
+  }, [isActive, photo.name, duration, currentTime])
 
   // Hide controls after 3 seconds
   useEffect(() => {
@@ -74,6 +83,15 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
 
   const videoUrl = photo.download || photo.url
 
+  // Use thumbnail for poster to show something while loading
+  const posterUrl = photo.thumbnailPath
+    ? photo.thumbnailPath
+    : photo.thumbnail_data
+      ? photo.thumbnail_data.startsWith("data:")
+        ? photo.thumbnail_data
+        : `data:image/jpeg;base64,${photo.thumbnail_data}`
+      : undefined
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
@@ -85,18 +103,41 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
       <Video
         ref={videoRef}
         source={{uri: videoUrl}}
+        poster={posterUrl}
+        posterResizeMode="contain"
         style={themed($video)}
         resizeMode="contain"
         paused={!isPlaying}
         controls={false}
+        repeat={false}
+        playInBackground={false}
+        playWhenInactive={false}
+        ignoreSilentSwitch="ignore"
+        progressUpdateInterval={250}
+        bufferConfig={{
+          minBufferMs: 1500,
+          maxBufferMs: 5000,
+          bufferForPlaybackMs: 500,
+          bufferForPlaybackAfterRebufferMs: 1000,
+        }}
         onProgress={({currentTime: time}) => {
           if (!isSeeking) {
             setCurrentTime(time)
           }
         }}
         onLoad={({duration: dur}) => {
+          console.log("🎥 [VideoPlayerItem] Video loaded, duration:", dur)
           setDuration(dur)
           setHasError(false)
+        }}
+        onBuffer={({isBuffering: buffering}) => {
+          console.log("🎥 [VideoPlayerItem] Buffering state:", buffering)
+          setIsBuffering(buffering)
+        }}
+        onReadyForDisplay={() => {
+          console.log("🎥 [VideoPlayerItem] Video ready for display, hiding thumbnail:", photo.name)
+          setIsBuffering(false)
+          setShowThumbnail(false)
         }}
         onError={error => {
           console.error("🎥 [VideoPlayerItem] Video error:", error)
@@ -105,17 +146,46 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
           setHasError(true)
           setErrorMessage(isCorrupted ? "Video file corrupted or unsupported format" : "Failed to play video")
           setIsPlaying(false)
+          setIsBuffering(false)
         }}
-        onEnd={() => setIsPlaying(false)}
+        onEnd={() => {
+          console.log("🎥 [VideoPlayerItem] Video playback ended:", photo.name)
+          setIsPlaying(false)
+          setShowControls(true)
+          // Keep video at end position (don't auto-restart)
+        }}
         onSeek={() => setIsSeeking(false)}
       />
+
+      {/* Buffering indicator */}
+      {isBuffering && !hasError && (
+        <View style={themed($bufferingOverlay)} pointerEvents="none">
+          <View style={themed($bufferingSpinner)}>
+            <Text style={themed($bufferingText)}>Loading...</Text>
+          </View>
+        </View>
+      )}
 
       {/* Tap area to toggle controls */}
       <TouchableOpacity activeOpacity={1} style={themed($tapArea)} onPress={() => setShowControls(!showControls)} />
 
+      {/* Thumbnail placeholder while video loads - instant display */}
+      {showThumbnail && posterUrl && !hasError && (
+        <View style={themed($thumbnailOverlay)} pointerEvents="none">
+          <Image source={{uri: posterUrl}} style={themed($video)} contentFit="contain" />
+          {isBuffering && (
+            <View style={themed($bufferingOverlay)} pointerEvents="none">
+              <View style={themed($bufferingSpinner)}>
+                <Text style={themed($bufferingText)}>Loading video...</Text>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* Error Message Overlay */}
       {hasError && (
-        <View style={themed($errorContainer)}>
+        <View style={themed($errorContainer)} pointerEvents="none">
           <View style={themed($errorBadge)}>
             <MaterialCommunityIcons name="alert-circle" size={60} color="#FF6B6B" />
             <Text style={themed($errorTitle)}>Playback Error</Text>
@@ -127,8 +197,8 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
 
       {/* Unified video controls - elegant bottom bar */}
       {showControls && !hasError && (
-        <View style={themed($videoControlsContainer)}>
-          <View style={themed($unifiedControlBar)}>
+        <View style={themed($videoControlsContainer)} pointerEvents="box-none">
+          <View style={themed($unifiedControlBar)} pointerEvents="auto">
             {/* Play/Pause button on left */}
             <TouchableOpacity
               onPress={e => {
@@ -182,6 +252,8 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
  */
 function ImageItem({photo, setImageDimensions}: ImageItemProps) {
   const {themed} = useAppTheme()
+  const [isLoading, setIsLoading] = useState(true)
+
   const imageUri = photo.filePath
     ? photo.filePath.startsWith("file://")
       ? photo.filePath
@@ -191,10 +263,18 @@ function ImageItem({photo, setImageDimensions}: ImageItemProps) {
   // Use PhotoImage for consistent handling of AVIF, loading states, etc.
   return (
     <View style={themed($imageContainer)}>
+      {/* Show thumbnail immediately while full image loads */}
+      {isLoading && photo.thumbnailPath && (
+        <Image source={{uri: photo.thumbnailPath}} style={themed($image)} contentFit="contain" transition={0} />
+      )}
+
       <Image
         source={{uri: imageUri}}
-        style={themed($image)}
+        style={[themed($image), isLoading && themed($imageLoading)]}
         contentFit="contain"
+        priority="high"
+        cachePolicy="memory-disk"
+        transition={200}
         onLoad={e => {
           // Report dimensions back to Gallery for proper scaling
           if (e.source?.width && e.source?.height) {
@@ -203,7 +283,15 @@ function ImageItem({photo, setImageDimensions}: ImageItemProps) {
               width: e.source.width,
               height: e.source.height,
             })
+            setIsLoading(false)
           }
+        }}
+        onLoadStart={() => {
+          console.log("📸 [ImageItem] Image loading started:", photo.name)
+        }}
+        onError={error => {
+          console.error("📸 [ImageItem] Image load error:", photo.name, error)
+          setIsLoading(false)
         }}
       />
     </View>
@@ -264,6 +352,10 @@ export function AwesomeGalleryViewer({visible, photos, initialIndex, onClose, on
     if (visible) {
       console.log("🎨 [AwesomeGalleryViewer] Modal opened, setting index to:", initialIndex)
       setCurrentIndex(initialIndex)
+      // Reset gallery to initial position
+      setTimeout(() => {
+        galleryRef.current?.setIndex(initialIndex, false)
+      }, 50)
     }
   }, [visible, initialIndex])
 
@@ -308,7 +400,7 @@ export function AwesomeGalleryViewer({visible, photos, initialIndex, onClose, on
           return <ImageItem photo={item} setImageDimensions={setImageDimensions} />
         }}
         keyExtractor={(item, index) => `${item.name}-${index}`}
-        numToRender={3}
+        numToRender={5}
         emptySpaceWidth={24}
         maxScale={4}
         doubleTapScale={2.5}
@@ -316,6 +408,7 @@ export function AwesomeGalleryViewer({visible, photos, initialIndex, onClose, on
         swipeEnabled={true}
         doubleTapEnabled={true}
         disableVerticalSwipe={false}
+        disableTransitionOnScaledImage={true}
         loop={false}
         onTap={() => {
           console.log("🎨 [AwesomeGalleryViewer] Gallery tapped")
@@ -380,7 +473,7 @@ const $tapArea: ThemedStyle<any> = () => ({
   position: "absolute",
   top: 0,
   left: 0,
-  bottom: 0,
+  bottom: 120, // Don't cover bottom controls area - allows swipes near controls
   right: 0,
   zIndex: 1,
 })
@@ -482,4 +575,45 @@ const $imageContainer: ThemedStyle<any> = () => ({
 const $image: ThemedStyle<any> = () => ({
   width: SCREEN_WIDTH,
   height: SCREEN_HEIGHT,
+})
+
+const $imageLoading: ThemedStyle<any> = () => ({
+  opacity: 0,
+})
+
+const $thumbnailOverlay: ThemedStyle<any> = () => ({
+  position: "absolute",
+  top: 0,
+  left: 0,
+  bottom: 0,
+  right: 0,
+  backgroundColor: "black",
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 5,
+})
+
+const $bufferingOverlay: ThemedStyle<any> = () => ({
+  position: "absolute",
+  top: 0,
+  left: 0,
+  bottom: 0,
+  right: 0,
+  backgroundColor: "rgba(0,0,0,0.3)",
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 10,
+})
+
+const $bufferingSpinner: ThemedStyle<any> = ({spacing}) => ({
+  backgroundColor: "rgba(0,0,0,0.7)",
+  borderRadius: 12,
+  paddingVertical: spacing.s4,
+  paddingHorizontal: spacing.s6,
+})
+
+const $bufferingText: ThemedStyle<any> = () => ({
+  color: "white",
+  fontSize: 14,
+  fontWeight: "500",
 })
