@@ -116,6 +116,7 @@
     "react-native-svg": "15.12.1",
     "react-native-tab-view": "^4.2.0",
     "react-native-toast-message": "^2.3.3",
+    "react-native-udp": "^4.1.7",
     "react-native-url-polyfill": "^3.0.0",
     "react-native-video": "^6.17.0",
     "react-native-view-shot": "^4.0.3",

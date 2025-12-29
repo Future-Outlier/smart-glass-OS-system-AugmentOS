@@ -9,7 +9,6 @@ package com.mentra.core
 
 import android.util.Base64
 import android.util.Log
-import com.mentra.core.services.UdpAudioSender
 import java.util.HashMap
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Synchronized
@@ -118,76 +117,17 @@ public class Bridge private constructor() {
             sendTypedMessage("audio_disconnected", data as Map<String, Any>)
         }
 
-        /** Send microphone data - routes to UDP if available, otherwise WebSocket */
+        /**
+         * Send microphone data to React Native.
+         * React Native handles the decision of whether to send via UDP or WebSocket.
+         * This keeps the native layer simple and UDP logic centralized in React Native.
+         */
         @JvmStatic
         fun sendMicData(data: ByteArray) {
-            // Try UDP first if available
-            if (UdpAudioSender.getInstance().isReady()) {
-                UdpAudioSender.getInstance().sendAudio(data)
-                return
-            }
-
-            // Fallback to WebSocket via React Native
             val base64String = Base64.encodeToString(data, Base64.NO_WRAP)
             val body = HashMap<String, Any>()
             body["base64"] = base64String
             sendTypedMessage("mic_data", body as Map<String, Any>)
-        }
-
-        // MARK: - UDP Audio Methods
-
-        /** Configure UDP audio sender */
-        @JvmStatic
-        fun configureUdpAudio(host: String, port: Int, userId: String) {
-            UdpAudioSender.getInstance().configure(host, port, userId)
-        }
-
-        /** Start UDP audio sender */
-        @JvmStatic
-        fun startUdpAudio(): Boolean {
-            return UdpAudioSender.getInstance().start()
-        }
-
-        /** Stop UDP audio sender */
-        @JvmStatic
-        fun stopUdpAudio() {
-            UdpAudioSender.getInstance().stop()
-        }
-
-        /** Send audio via UDP */
-        @JvmStatic
-        fun sendUdpAudio(data: ByteArray) {
-            UdpAudioSender.getInstance().sendAudio(data)
-        }
-
-        /** Send UDP ping to test connectivity */
-        @JvmStatic
-        fun sendUdpPing(): Boolean {
-            return UdpAudioSender.getInstance().sendPing()
-        }
-
-        /** Notify UDP sender that ping response was received */
-        @JvmStatic
-        fun onUdpPingResponse() {
-            UdpAudioSender.getInstance().onPingResponse()
-        }
-
-        /** Get user ID hash for UDP registration */
-        @JvmStatic
-        fun getUdpUserIdHash(): Int {
-            return UdpAudioSender.getInstance().getUserIdHash()
-        }
-
-        /** Check if UDP is ready */
-        @JvmStatic
-        fun isUdpReady(): Boolean {
-            return UdpAudioSender.getInstance().isReady()
-        }
-
-        /** Compute FNV-1a hash of a string */
-        @JvmStatic
-        fun fnv1aHash(str: String): Int {
-            return UdpAudioSender.fnv1aHash(str)
         }
 
         /** Save a setting */

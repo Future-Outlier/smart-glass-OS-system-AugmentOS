@@ -43,65 +43,13 @@ class Bridge {
         Bridge.sendTypedMessage("pair_failure", body: data)
     }
 
-    /// Send microphone data - routes to UDP if available, otherwise WebSocket
+    /// Send microphone data to React Native.
+    /// React Native handles the decision of whether to send via UDP or WebSocket.
+    /// This keeps the native layer simple and UDP logic centralized in React Native.
     static func sendMicData(_ data: Data) {
-        // Try UDP first if available
-        if UdpAudioSender.shared.isReady() {
-            UdpAudioSender.shared.sendAudio(data)
-            return
-        }
-
-        // Fallback to WebSocket via React Native
         let base64String = data.base64EncodedString()
         let body = ["base64": base64String]
         Bridge.sendTypedMessage("mic_data", body: body)
-    }
-
-    // MARK: - UDP Audio Methods
-
-    /// Configure UDP audio sender
-    static func configureUdpAudio(host: String, port: Int, userId: String) {
-        UdpAudioSender.shared.configure(host: host, port: port, userId: userId)
-    }
-
-    /// Start UDP audio sender
-    static func startUdpAudio() -> Bool {
-        return UdpAudioSender.shared.start()
-    }
-
-    /// Stop UDP audio sender
-    static func stopUdpAudio() {
-        UdpAudioSender.shared.stop()
-    }
-
-    /// Send audio via UDP
-    static func sendUdpAudio(_ data: Data) {
-        UdpAudioSender.shared.sendAudio(data)
-    }
-
-    /// Send UDP ping to test connectivity
-    static func sendUdpPing() -> Bool {
-        return UdpAudioSender.shared.sendPing()
-    }
-
-    /// Notify UDP sender that ping response was received
-    static func onUdpPingResponse() {
-        UdpAudioSender.shared.onPingResponse()
-    }
-
-    /// Get user ID hash for UDP registration
-    static func getUdpUserIdHash() -> UInt32 {
-        return UdpAudioSender.shared.getUserIdHash()
-    }
-
-    /// Check if UDP is ready
-    static func isUdpReady() -> Bool {
-        return UdpAudioSender.shared.isReady()
-    }
-
-    /// Compute FNV-1a hash of a string
-    static func fnv1aHash(_ str: String) -> UInt32 {
-        return UdpAudioSender.fnv1aHash(str)
     }
 
     static func saveSetting(_ key: String, _ value: Any) {
