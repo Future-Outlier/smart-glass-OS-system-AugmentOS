@@ -98,7 +98,7 @@ class MantleManager {
     this.setupSubscriptions()
   }
 
-  public cleanup() {
+  public async cleanup() {
     // Stop timers
     if (this.calendarSyncTimer) {
       clearInterval(this.calendarSyncTimer)
@@ -106,6 +106,8 @@ class MantleManager {
     }
     Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME)
     this.transcriptProcessor.clear()
+
+    socketComms.cleanup()
   }
 
   private initServices() {

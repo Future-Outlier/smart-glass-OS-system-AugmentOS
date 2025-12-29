@@ -97,7 +97,6 @@ class Livekit {
       }
       this.room = null
     }
-    this.isReconnecting = false
   }
 }
 
