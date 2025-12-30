@@ -1684,7 +1684,7 @@ class MentraLive: NSObject, SGCManager {
         }
 
         guard let type = json["type"] as? String else {
-            Bridge.log("⚠️ JSON has no 'type' field and no 'C' field - ignoring")
+            // Bridge.log("⚠️ JSON has no 'type' field and no 'C' field - ignoring")
             return
         }
 
@@ -1903,9 +1903,9 @@ class MentraLive: NSObject, SGCManager {
                     updateBatteryStatus(level: percentage, charging: charging)
                     if voltage > 0 {
                         let voltageVolts = Double(voltage) / 1000.0
-                        Bridge.log(
-                            "🔋 Battery from heartbeat - \(percentage)%, \(voltageVolts)V, charging: \(charging)"
-                        )
+                        // Bridge.log(
+                        //     "LIVE: Battery from heartbeat - \(percentage)%, \(voltageVolts)V, charging: \(charging)"
+                        // )
                     }
                 }
 

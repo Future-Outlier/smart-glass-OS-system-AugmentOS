@@ -35,7 +35,7 @@ export default function InitScreen() {
   // Hooks
   const {theme, themed} = useAppTheme()
   const {user, session, loading: authLoading} = useAuth()
-  const {replace, getPendingRoute, setPendingRoute} = useNavigationHistory()
+  const {replace, replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome} = useNavigationHistory()
   const {processUrl} = useDeeplink()
   const rootNavigationState = useRootNavigationState()
   const isNavigationReady = rootNavigationState?.key != null
@@ -73,13 +73,13 @@ export default function InitScreen() {
 
   const navigateToDestination = async () => {
     if (!user?.email) {
-      replace("/auth/login")
+      replaceAll("/auth/login")
       return
     }
 
     // Check onboarding status
     if (!onboardingCompleted && !defaultWearable) {
-      replace("/onboarding/welcome")
+      replaceAll("/onboarding/welcome")
       return
     }
 
@@ -91,13 +91,13 @@ export default function InitScreen() {
     }
 
     setTimeout(() => {
-      replace("/(tabs)/home")
+      clearHistoryAndGoHome()
     }, NAVIGATION_DELAY)
   }
 
   const checkLoggedIn = async (): Promise<void> => {
     if (!user) {
-      replace("/auth/login")
+      replaceAll("/auth/login")
       return
     }
     handleTokenExchange()

@@ -15,6 +15,9 @@ import {useGlassesStore, GlassesInfo, getGlasesInfoPartial} from "@/stores/glass
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
+import {BackgroundTimer} from "@/utils/timers"
+import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
+import {showAlert} from "@/utils/AlertUtils"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -86,11 +89,6 @@ class MantleManager {
     }
 
     await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
-
-    setTimeout(async () => {
-      await CoreModule.connectDefault()
-    }, 3000)
-
     // send initial status request:
     await CoreModule.getStatus()
 
@@ -134,6 +132,21 @@ class MantleManager {
       })
     } catch (error) {
       console.error("Mantle: Error starting location updates", error)
+    }
+
+    // check for requirements immediately:
+    try {
+      const requirementsCheck = await checkConnectivityRequirementsUI()
+      if (!requirementsCheck) {
+        return
+      }
+      // give some time for the glasses to be fully ready:
+      BackgroundTimer.setTimeout(async () => {
+        await CoreModule.connectDefault()
+      }, 3000)
+    } catch (error) {
+      console.error("connect to glasses error:", error)
+      showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
     }
   }
 

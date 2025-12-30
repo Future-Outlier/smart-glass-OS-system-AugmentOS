@@ -14,6 +14,7 @@ import {ConsoleLogger} from "@/utils/debug/console"
 import {loadDateFnsLocale} from "@/utils/formatDate"
 import {AllEffects} from "@/utils/structure/AllEffects"
 import {AllProviders} from "@/utils/structure/AllProviders"
+import {navigationRef} from "@/contexts/NavigationRef"
 import "@/global.css"
 
 // prevent the annoying warning box at the bottom of the screen from getting in the way:
@@ -80,7 +81,7 @@ function Root() {
       <Stack
         screenOptions={{
           headerShown: false,
-          gestureEnabled: true,
+          gestureEnabled: !navigationRef.current?.getPreventBack(),
           gestureDirection: "horizontal",
           animation: "simple_push",
         }}

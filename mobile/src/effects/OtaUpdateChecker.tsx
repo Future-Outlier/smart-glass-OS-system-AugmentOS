@@ -154,7 +154,7 @@ export function OtaUpdateChecker() {
               {
                 text: "Setup WiFi",
                 onPress: () => {
-                  push("/wifi/setup")
+                  push("/wifi/scan")
                 },
               },
             ],

@@ -1,19 +1,23 @@
 import {router, usePathname, useSegments} from "expo-router"
-import {createContext, useContext, useEffect, useRef} from "react"
+import {createContext, useContext, useEffect, useRef, useCallback} from "react"
+import {Alert, BackHandler} from "react-native"
 
 import {navigationRef} from "@/contexts/NavigationRef"
 
 export type NavigationHistoryPush = (path: string, params?: any) => void
 export type NavigationHistoryReplace = (path: string, params?: any) => void
+export type NavigationHistoryReplaceAll = (path: string, params?: any) => void
 export type NavigationHistoryGoBack = () => void
 
 export type NavObject = {
   push: NavigationHistoryPush
   replace: NavigationHistoryReplace
+  replaceAll: NavigationHistoryReplaceAll
   goBack: NavigationHistoryGoBack
   setPendingRoute: (route: string) => void
   getPendingRoute: () => string | null
   navigate: (path: string, params?: any) => void
+  getPreventBack: () => boolean
 }
 
 interface NavigationHistoryContextType {
@@ -28,6 +32,9 @@ interface NavigationHistoryContextType {
   clearHistoryAndGoHome: () => void
   replaceAll: (path: string, params?: any) => void
   goHomeAndPush: (path: string, params?: any) => void
+  setPreventBack: (prevent: boolean) => void
+  getPreventBack: () => boolean
+  pushPrevious: () => void
 }
 
 const NavigationHistoryContext = createContext<NavigationHistoryContextType | undefined>(undefined)
@@ -40,6 +47,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const _segments = useSegments()
   // const [pendingRoute, setPendingRouteNonClashingName] = useState<string | null>(null)
   const pendingRoute = useRef<string | null>(null)
+  const preventBack = useRef(false)
 
   useEffect(() => {
     // Add current path to history if it's different from the last entry
@@ -75,7 +83,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   // )
 
   const goBack = () => {
-    console.info("NavHistory: goBack()")
+    console.info("NAV: goBack()")
     const history = historyRef.current
 
     // Remove current path
@@ -86,7 +94,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     const previousPath = history[history.length - 1]
     const _previousParams = historyParamsRef.current[historyParamsRef.current.length - 1]
 
-    console.info(`NavHistory: going back to: ${previousPath}`)
+    console.info(`NAV: going back to: ${previousPath}`)
     // if (previousPath) {
     //   // Fallback to direct navigation if router.back() fails
     //   // router.replace({pathname: previousPath as any, params: previousParams as any})
@@ -102,7 +110,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   }
 
   const push = (path: string, params?: any): void => {
-    console.info("NavHistory: push()", path)
+    console.info("NAV: push()", path)
     // if the path is the same as the last path, don't add it to the history
     if (historyRef.current[historyRef.current.length - 1] === path) {
       return
@@ -115,7 +123,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   }
 
   const replace = (path: string, params?: any): void => {
-    console.info("NavHistory: replace()", path)
+    console.info("NAV: replace()", path)
     historyRef.current.pop()
     historyParamsRef.current.pop()
     historyRef.current.push(path)
@@ -128,13 +136,25 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   }
 
   const clearHistory = () => {
-    console.info("NavHistory: clearHistory()")
+    console.info("NAV: clearHistory()")
     historyRef.current = []
     historyParamsRef.current = []
+    try {
+      router.dismissAll()
+    } catch (_e) {}
+    try {
+      router.dismissTo("/(tabs)/home")
+      // router.dismissTo("/")
+      // router.replace("/")
+      // router.
+    } catch (_e) {}
+    // try {
+    //   router.dismissTo("/")
+    // } catch (_e) {}
   }
 
   const setPendingRoute = (route: string | null) => {
-    console.info("NavHistory: setPendingRoute()", route)
+    console.info("NAV: setPendingRoute()", route)
     // setPendingRouteNonClashingName(route)
     pendingRoute.current = route
   }
@@ -143,36 +163,63 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     return pendingRoute.current
   }
 
+  const setPreventBack = (prevent: boolean) => {
+    preventBack.current = prevent
+  }
+
+  const getPreventBack = () => {
+    return preventBack.current
+  }
+
   const navigate = (path: string, params?: any) => {
-    console.info("NavHistory: navigate()", path)
+    console.info("NAV: navigate()", path)
     router.navigate({pathname: path as any, params: params as any})
   }
 
   const clearHistoryAndGoHome = () => {
-    console.info("NavHistory: clearHistoryAndGoHome()")
-    historyRef.current = []
-    historyParamsRef.current = []
+    console.info("NAV: clearHistoryAndGoHome()")
+    clearHistory()
     try {
-      router.dismissAll()
+      // router.dismissAll()
+      // router.dismissTo("/")
+      // router.navigate("/")
       router.replace("/(tabs)/home")
     } catch (error) {
-      console.error("NavHistory: clearHistoryAndGoHome() error", error)
+      console.error("NAV: clearHistoryAndGoHome() error", error)
     }
   }
 
   // whatever route we pass, will be the only route in the entire stack:
   // dismiss all and push the new route:
   const replaceAll = (path: string, params?: any) => {
-    console.info("NavHistory: replaceAll()", path)
-    historyRef.current = []
-    historyParamsRef.current = []
-    router.dismissAll()
-    push(path, params)
+    console.info("NAV: replaceAll()", path)
+    clearHistory()
+    // try {
+    //   // router.dismissAll()
+    //   // router.dismissTo("/")
+    //   // router.navigate("/")
+    //   // router.dismissAll()
+    //   // router.replace("/")
+    // } catch (_e) {
+    // }
+    // replace(path, params)
+    // push(path, params)
+    router.replace({pathname: path as any, params: params as any})
+  }
+
+  // when you want to go back, but animate it like a push:
+  const pushPrevious = () => {
+    console.info("NAV: pushPrevious()")
+    const prevIndex = historyRef.current.length - 1
+    const previousPath = historyRef.current[prevIndex]
+    const previousParams = historyParamsRef.current[prevIndex]
+    clearHistory()
+    push(previousPath as any, previousParams as any)
   }
 
   // the only routes in the stack will be home and the one we pass:
   const goHomeAndPush = (path: string, params?: any) => {
-    console.info("NavHistory: goHomeAndPush()", path)
+    console.info("NAV: goHomeAndPush()", path)
     clearHistoryAndGoHome()
     push(path, params)
   }
@@ -180,10 +227,12 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const navObject: NavObject = {
     push,
     replace,
+    replaceAll,
     goBack,
     setPendingRoute,
     getPendingRoute,
     navigate,
+    getPreventBack,
   }
 
   // Set the ref so we can use it from outside the context:
@@ -205,6 +254,9 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
         clearHistoryAndGoHome,
         replaceAll,
         goHomeAndPush,
+        setPreventBack,
+        getPreventBack,
+        pushPrevious,
       }}>
       {children}
     </NavigationHistoryContext.Provider>
@@ -218,3 +270,95 @@ export function useNavigationHistory() {
   }
   return context
 }
+
+// import {useCallback} from "react"
+// import {Alert} from "react-native"
+// import {useNavigation} from "expo-router"
+
+// interface UsePreventBackOptions {
+//   customTitle: string
+//   customMessage?: string
+//   yesAction?: () => void
+//   debug?: boolean
+// }
+
+// export const usePreventBack = ({
+//   customTitle,
+//   customMessage = "Are you sure you want to leave?",
+//   yesAction,
+//   debug = false,
+// }: UsePreventBackOptions) => {
+//   const navigation = useNavigation()
+
+//   const logDebug = useCallback(
+//     (message: string) => {
+//       if (debug) {
+//         console.log(`[usePreventBack] ${message}`)
+//       }
+//     },
+//     [debug],
+//   )
+
+//   useEffect(() => {
+//     if (!navigation) {
+//       console.error("[usePreventBack] Navigation object is undefined")
+//       return
+//     }
+
+//     logDebug("Setting up navigation options and listeners")
+
+//     try {
+//       // Disable back button and gesture
+//       let parent = navigation.getParent()
+//       while (parent) {
+//         parent.setOptions({gestureEnabled: false})
+//         parent = parent.getParent()
+//       }
+
+//       // listener for back action
+//       const beforeRemoveListener = navigation.addListener("beforeRemove", (e: any) => {
+//         logDebug(`Intercepted navigation action: ${e.data.action.type}`)
+
+//         if (e.data.action.type === "GO_BACK" || e.data.action.type === "POP") {
+//           e.preventDefault()
+
+//           Alert.alert(customTitle, customMessage, [
+//             {
+//               text: "Cancel",
+//               style: "cancel",
+//               onPress: () => {
+//                 logDebug("User cancelled navigation")
+//               },
+//             },
+//             {
+//               text: "Yes",
+//               style: "destructive",
+//               onPress: () => {
+//                 logDebug("User confirmed navigation")
+//                 if (yesAction) {
+//                   logDebug("Executing custom action")
+//                   yesAction()
+//                 }
+//                 navigation.dispatch(e.data.action)
+//               },
+//             },
+//           ])
+//         }
+//       })
+
+//       // Cleanup function
+//       return () => {
+//         logDebug("Cleaning up navigation listeners and options")
+//         beforeRemoveListener()
+
+//         let parent = navigation.getParent()
+//         while (parent) {
+//           parent.setOptions({gestureEnabled: true})
+//           parent = parent.getParent()
+//         }
+//       }
+//     } catch (error) {
+//       console.error("[usePreventBack] Error in setup:", error)
+//     }
+//   }, [navigation, customTitle, customMessage, yesAction, logDebug])
+// }

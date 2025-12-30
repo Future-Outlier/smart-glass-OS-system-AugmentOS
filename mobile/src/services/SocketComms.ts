@@ -366,9 +366,10 @@ class SocketComms {
   }
 
   private handle_microphone_state_change(msg: any) {
-    const bypassVad = msg.bypassVad ?? true
+    // const bypassVad = msg.bypassVad ?? true
+    const bypassVad = true
     const requiredDataStrings = msg.requiredData || []
-    // console.log(`SOCKET: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
+    console.log(`SOCKET: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
     let shouldSendPcmData = false
     let shouldSendTranscript = false
     if (requiredDataStrings.includes("pcm")) {
@@ -523,7 +524,6 @@ class SocketComms {
 
   private handle_show_wifi_setup(msg: any) {
     const reason = msg.reason || "This operation requires your glasses to be connected to WiFi."
-    const currentRoute = router.pathname || "/"
 
     showAlert(
       "WiFi Setup Required",
@@ -533,8 +533,7 @@ class SocketComms {
         {
           text: "Setup WiFi",
           onPress: () => {
-            const returnTo = encodeURIComponent(currentRoute)
-            push(`/wifi/setup?returnTo=${returnTo}`)
+            push("/wifi/scan")
           },
         },
       ],
@@ -549,7 +548,7 @@ class SocketComms {
   private handle_message(msg: any) {
     const type = msg.type
 
-    console.log(`SOCKET: msg: ${type}`)
+    // console.log(`SOCKET: msg: ${type}`)
 
     switch (type) {
       case "connection_ack":

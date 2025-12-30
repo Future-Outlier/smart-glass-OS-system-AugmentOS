@@ -963,7 +963,7 @@ class CoreManager {
         val currentState = viewStates[stateIndex]
 
         if (!statesEqual(currentState, newViewState)) {
-            Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
+            // Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
             viewStates[stateIndex] = newViewState
             if (stateIndex == 0 && !isHeadUp) {
                 sendCurrentState()

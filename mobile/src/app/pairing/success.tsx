@@ -1,5 +1,4 @@
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
-import {useLocalSearchParams} from "expo-router"
 import {View, ViewStyle, Image, ImageStyle, TextStyle} from "react-native"
 
 import {EvenRealitiesLogo} from "@/components/brands/EvenRealitiesLogo"
@@ -12,13 +11,13 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
 import {getGlassesImage} from "@/utils/getGlassesImage"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {useGlassesStore} from "@/stores/glasses"
+import {useGlassesStore, waitForGlassesState} from "@/stores/glasses"
 
 export default function PairingSuccessScreen() {
   const {theme, themed} = useAppTheme()
-  const {clearHistoryAndGoHome} = useNavigationHistory()
-  const {glassesModelName} = useLocalSearchParams<{glassesModelName: string}>()
-  const {replaceAll} = useNavigationHistory()
+  const {clearHistoryAndGoHome, setPreventBack} = useNavigationHistory()
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const {replaceAll, push} = useNavigationHistory()
   const [onboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
 
   // Get manufacturer logo component
@@ -36,22 +35,29 @@ export default function PairingSuccessScreen() {
     }
   }
 
-  const glassesImage = getGlassesImage(glassesModelName)
+  const glassesImage = getGlassesImage(defaultWearable)
 
-  const handleContinue = () => {
-    if (glassesModelName === DeviceTypes.LIVE) {
+  const handleContinue = async () => {
+    if (defaultWearable === DeviceTypes.LIVE) {
       // check if the glasses are already connected:
 
-      // give some time for the glasses to be connected:
-      setTimeout(async () => {
-        replaceAll("/onboarding/live")
-        const glassesConnected = await useGlassesStore.getState().wifiConnected
-        
-      }, 1000)
+      // wait for the glasses to be connected to wifi for up to 1 second:
+      let glassesConnected = await waitForGlassesState("wifiConnected", value => value === true, 1000)
+
+      console.log("PAIR_SUCCESS: glassesConnected", glassesConnected)
+
+      replaceAll("/onboarding/live")
+      if (glassesConnected) {
+        setPreventBack(true)
+        push("/ota/check-for-updates")
+      } else {
+        setPreventBack(true)
+        push("/wifi/scan")
+      }
       return
     }
 
-    if (glassesModelName === DeviceTypes.G1) {
+    if (defaultWearable === DeviceTypes.G1) {
       if (!onboardingOsCompleted) {
         replaceAll("/onboarding/os")
         return
@@ -68,7 +74,7 @@ export default function PairingSuccessScreen() {
       {/* Glasses Image with Logo on top */}
       <View style={themed($imageContainer)}>
         {/* Manufacturer Logo */}
-        <View style={themed($logoContainer)}>{getManufacturerLogo(glassesModelName)}</View>
+        <View style={themed($logoContainer)}>{getManufacturerLogo(defaultWearable)}</View>
 
         <Spacer height={theme.spacing.s4} />
 

@@ -34,7 +34,7 @@ export default function AppSettings() {
   const {packageName, appName: appNameParam} = useLocalSearchParams()
   const [isUninstalling, setIsUninstalling] = useState(false)
   const {theme, themed} = useAppTheme()
-  const {goBack, replace} = useNavigationHistory()
+  const {goBack, replaceAll} = useNavigationHistory()
   const insets = useSafeAreaInsets()
   const hasLoadedData = useRef(false)
 
@@ -159,7 +159,7 @@ export default function AppSettings() {
               showAlert(
                 translate("common:success"),
                 translate("appSettings:uninstalledSuccess", {appName: appInfo?.name || appName}),
-                [{text: translate("common:ok"), onPress: () => replace("/(tabs)/home")}],
+                [{text: translate("common:ok"), onPress: () => replaceAll("/(tabs)/home")}],
               )
             } catch (error: any) {
               console.error("Error uninstalling app:", error)

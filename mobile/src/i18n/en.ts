@@ -203,6 +203,10 @@ const en = {
     osMentraAiBullet2: "TODO2",
     learnAboutOs: "Learn about Mentra OS",
   },
+  ota: {
+    checkingForUpdates: "Checking for updates",
+    checkingForUpdatesMessage: "Connected devices will perform automatic updates. Automatic updates can be disabled in Device Settings",
+  },
   home: {
     title: "MentraOS",
     pairGlasses: "Pair glasses",

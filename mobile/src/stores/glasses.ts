@@ -128,3 +128,32 @@ export const useGlassesStore = create<GlassesState>()(
     reset: () => set(initialState),
   })),
 )
+
+export const waitForGlassesState = <K extends keyof GlassesInfo>(
+  key: K,
+  predicate: (value: GlassesInfo[K]) => boolean,
+  timeoutMs = 1000
+): Promise<boolean> => {
+  return new Promise(resolve => {
+    const state = useGlassesStore.getState()
+    if (predicate(state[key])) {
+      resolve(true)
+      return
+    }
+
+    const unsubscribe = useGlassesStore.subscribe(
+      s => s[key],
+      value => {
+        if (predicate(value)) {
+          unsubscribe()
+          resolve(true)
+        }
+      }
+    )
+
+    setTimeout(() => {
+      unsubscribe()
+      resolve(predicate(useGlassesStore.getState()[key]))
+    }, timeoutMs)
+  })
+}
