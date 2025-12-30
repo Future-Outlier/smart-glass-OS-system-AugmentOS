@@ -454,7 +454,7 @@ public class MediaCaptureService {
         }
 
         Log.d(TAG, "📸 Flashing privacy LED synchronized with shutter sound");
-        hardwareManager.flashRecordingLed(300); // 300ms flash duration
+        hardwareManager.flashRecordingLed(1000); // 1000ms flash duration
     }
     
     /**
