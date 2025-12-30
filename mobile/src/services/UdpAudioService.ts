@@ -17,7 +17,8 @@ import dgram from "react-native-udp"
 const UDP_PORT = 8000
 const HEADER_SIZE = 6 // 4 bytes userIdHash + 2 bytes sequence
 const MAX_PACKET_SIZE = 1024 // Max UDP payload size (server limit is 1040, leave margin)
-const MAX_AUDIO_CHUNK_SIZE = MAX_PACKET_SIZE - HEADER_SIZE // 1018 bytes of audio per packet
+// Must be even number for 16-bit PCM (2 bytes per sample) to avoid splitting samples
+const MAX_AUDIO_CHUNK_SIZE = (MAX_PACKET_SIZE - HEADER_SIZE) & ~1 // 1016 bytes (508 samples)
 const PING_MAGIC = "PING"
 const PING_RETRY_COUNT = 3
 const PING_RETRY_INTERVAL_MS = 200
@@ -420,6 +421,16 @@ class UdpAudioService {
    */
   public isConfigured(): boolean {
     return this.config !== null
+  }
+
+  /**
+   * Get the current UDP endpoint (host:port) or null if not configured
+   */
+  public getEndpoint(): string | null {
+    if (!this.config) {
+      return null
+    }
+    return `${this.config.host}:${this.config.port}`
   }
 
   /**
