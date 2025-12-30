@@ -16,6 +16,8 @@ import dgram from "react-native-udp"
 
 const UDP_PORT = 8000
 const HEADER_SIZE = 6 // 4 bytes userIdHash + 2 bytes sequence
+const MAX_PACKET_SIZE = 1024 // Max UDP payload size (server limit is 1040, leave margin)
+const MAX_AUDIO_CHUNK_SIZE = MAX_PACKET_SIZE - HEADER_SIZE // 1018 bytes of audio per packet
 const PING_MAGIC = "PING"
 const PING_RETRY_COUNT = 3
 const PING_RETRY_INTERVAL_MS = 200
@@ -189,26 +191,40 @@ class UdpAudioService {
       // Decode base64 to bytes
       const audioBytes = Buffer.from(pcmData, "base64")
 
-      // Create packet: header + audio data
-      const packet = Buffer.alloc(HEADER_SIZE + audioBytes.length)
+      // Debug log every 100 packets to confirm audio is flowing
+      const numChunks = Math.ceil(audioBytes.length / MAX_AUDIO_CHUNK_SIZE)
+      if (this.sequenceNumber % 100 === 0) {
+        console.log(
+          `UDP: Sending audio #${this.sequenceNumber}, total=${audioBytes.length}bytes, chunks=${numChunks}, maxChunk=${MAX_AUDIO_CHUNK_SIZE} to ${this.config.host}:${this.config.port}`,
+        )
+      }
 
-      // Write userIdHash (big-endian, 4 bytes)
-      packet.writeUInt32BE(this.userIdHash, 0)
+      // Chunk audio data if it exceeds max packet size
+      let offset = 0
+      while (offset < audioBytes.length) {
+        const chunkSize = Math.min(MAX_AUDIO_CHUNK_SIZE, audioBytes.length - offset)
+        const packet = Buffer.alloc(HEADER_SIZE + chunkSize)
 
-      // Write sequence number (big-endian, 2 bytes)
-      const seq = this.sequenceNumber & 0xffff
-      packet.writeUInt16BE(seq, 4)
-      this.sequenceNumber++
+        // Write userIdHash (big-endian, 4 bytes)
+        packet.writeUInt32BE(this.userIdHash, 0)
 
-      // Write audio data
-      audioBytes.copy(packet, HEADER_SIZE)
+        // Write sequence number (big-endian, 2 bytes)
+        const seq = this.sequenceNumber & 0xffff
+        packet.writeUInt16BE(seq, 4)
+        this.sequenceNumber++
 
-      // Send packet
-      this.socket.send(packet, 0, packet.length, this.config.port, this.config.host, err => {
-        if (err && this.sequenceNumber % 1000 === 0) {
-          console.log(`UDP: Send error (sampled): ${err.message}`)
-        }
-      })
+        // Write audio chunk
+        audioBytes.copy(packet, HEADER_SIZE, offset, offset + chunkSize)
+
+        // Send packet
+        this.socket.send(packet, 0, packet.length, this.config.port, this.config.host, err => {
+          if (err && this.sequenceNumber % 1000 === 0) {
+            console.log(`UDP: Send error (sampled): ${err.message}`)
+          }
+        })
+
+        offset += chunkSize
+      }
     } catch (error) {
       if (this.sequenceNumber % 1000 === 0) {
         console.log(`UDP: Send error (sampled): ${error}`)
@@ -226,26 +242,32 @@ class UdpAudioService {
     }
 
     try {
-      // Create packet: header + audio data
-      const packet = Buffer.alloc(HEADER_SIZE + pcmData.length)
+      // Chunk audio data if it exceeds max packet size
+      let offset = 0
+      while (offset < pcmData.length) {
+        const chunkSize = Math.min(MAX_AUDIO_CHUNK_SIZE, pcmData.length - offset)
+        const packet = Buffer.alloc(HEADER_SIZE + chunkSize)
 
-      // Write userIdHash (big-endian, 4 bytes)
-      packet.writeUInt32BE(this.userIdHash, 0)
+        // Write userIdHash (big-endian, 4 bytes)
+        packet.writeUInt32BE(this.userIdHash, 0)
 
-      // Write sequence number (big-endian, 2 bytes)
-      const seq = this.sequenceNumber & 0xffff
-      packet.writeUInt16BE(seq, 4)
-      this.sequenceNumber++
+        // Write sequence number (big-endian, 2 bytes)
+        const seq = this.sequenceNumber & 0xffff
+        packet.writeUInt16BE(seq, 4)
+        this.sequenceNumber++
 
-      // Write audio data
-      pcmData.copy(packet, HEADER_SIZE)
+        // Write audio chunk
+        pcmData.copy(packet, HEADER_SIZE, offset, offset + chunkSize)
 
-      // Send packet
-      this.socket.send(packet, 0, packet.length, this.config.port, this.config.host, err => {
-        if (err && this.sequenceNumber % 1000 === 0) {
-          console.log(`UDP: Send error (sampled): ${err.message}`)
-        }
-      })
+        // Send packet
+        this.socket.send(packet, 0, packet.length, this.config.port, this.config.host, err => {
+          if (err && this.sequenceNumber % 1000 === 0) {
+            console.log(`UDP: Send error (sampled): ${err.message}`)
+          }
+        })
+
+        offset += chunkSize
+      }
     } catch (error) {
       if (this.sequenceNumber % 1000 === 0) {
         console.log(`UDP: Send error (sampled): ${error}`)

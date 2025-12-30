@@ -348,29 +348,21 @@ class SocketComms {
   /**
    * Register this user for UDP audio with the server and probe availability.
    * Uses the React Native UDP service (react-native-udp) instead of native modules.
-   * Derives UDP host from backend_url - same server, port 8000.
+   * UDP endpoint is provided by server in the connection_ack message.
    *
    * Flow:
-   * 1. Configure UDP service with host, port, userId
+   * 1. Configure UDP service with host, port, userId (from connection_ack)
    * 2. Send registration to server via WebSocket (so server knows our hash for routing)
    * 3. Probe UDP with multiple pings (UDP is lossy, single ping unreliable)
    * 4. Wait for WebSocket ack from server
    * 5. If ack received, enable UDP audio; otherwise fallback to WebSocket/LiveKit
+   *
+   * @param udpHost UDP server host (provided by server in connection_ack)
+   * @param udpPort UDP server port (default 8000)
    */
-  public async registerUdpAudio(): Promise<boolean> {
+  public async registerUdpAudio(udpHost: string, udpPort: number = 8000): Promise<boolean> {
     try {
-      // Derive UDP host from backend_url (same host, port 8000)
-      const backendUrl = useSettingsStore.getState().getSetting(SETTINGS.backend_url.key)
-      if (!backendUrl) {
-        console.log("UDP: No backend_url configured")
-        return false
-      }
-
-      const url = new URL(backendUrl)
-      const udpHost = url.hostname
-      const udpPort = 8000
-
-      console.log(`UDP: Using endpoint ${udpHost}:${udpPort} (derived from backend_url)`)
+      console.log(`UDP: Using server-provided endpoint ${udpHost}:${udpPort}`)
 
       // Configure the React Native UDP service
       udpAudioService.configure(udpHost, udpPort, this.userid)
@@ -459,10 +451,17 @@ class SocketComms {
     }
 
     // Try to register for UDP audio (non-blocking)
-    // UDP host is derived from backend_url, no server response needed
-    this.registerUdpAudio().catch(err => {
-      console.log("SOCKET: UDP registration failed (will use WebSocket fallback):", err)
-    })
+    // UDP endpoint is provided by server in connection_ack message
+    const udpHost = msg.udpHost || msg.udp_host
+    const udpPort = msg.udpPort || msg.udp_port || 8000
+
+    if (udpHost) {
+      this.registerUdpAudio(udpHost, udpPort).catch(err => {
+        console.log("SOCKET: UDP registration failed (will use WebSocket fallback):", err)
+      })
+    } else {
+      console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio")
+    }
 
     GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
   }
