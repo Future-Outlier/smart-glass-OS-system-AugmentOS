@@ -42,7 +42,7 @@ export async function fetchVersionInfo(url: string): Promise<VersionJson | null>
   }
 }
 
-export function isUpdateAvailable(currentBuildNumber: string | undefined, versionJson: VersionJson | null): boolean {
+export function checkVersionUpdateAvailable(currentBuildNumber: string | undefined, versionJson: VersionJson | null): boolean {
   if (!currentBuildNumber || !versionJson) {
     return false
   }
@@ -94,10 +94,38 @@ export function getLatestVersionInfo(versionJson: VersionJson | null): VersionIn
   return null
 }
 
+interface OtaUpdateAvailable {
+  hasCheckCompleted: boolean
+  updateAvailable: boolean
+  latestVersionInfo: VersionInfo | null
+}
+
+export async function checkForOtaUpdate(otaVersionUrl: string, currentBuildNumber: string): Promise<OtaUpdateAvailable> {
+
+  let checkCompleted = false
+  try {
+    const versionJson = await fetchVersionInfo(otaVersionUrl)
+    checkCompleted = true
+    const latestVersionInfo = getLatestVersionInfo(versionJson)
+    const updateAvailable = checkVersionUpdateAvailable(currentBuildNumber, versionJson)
+    return {
+      hasCheckCompleted: true,
+      updateAvailable: updateAvailable,
+      latestVersionInfo: latestVersionInfo,
+    }
+  } catch (error) {
+    console.error("Error checking for OTA update:", error)
+    return {
+      hasCheckCompleted: false,
+      updateAvailable: false,
+      latestVersionInfo: null,
+    }
+  }
+}
+
 export function OtaUpdateChecker() {
   const [isChecking, setIsChecking] = useState(false)
   const [hasChecked, setHasChecked] = useState(false)
-  const [_latestVersion, setLatestVersion] = useState<string | null>(null)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const {push} = useNavigationHistory()
 
@@ -108,70 +136,49 @@ export function OtaUpdateChecker() {
   const glassesWifiConnected = useGlassesStore(state => state.wifiConnected)
 
   useEffect(() => {
-    const checkForOtaUpdate = async () => {
-      // Only check for glasses that support WiFi self OTA updates
-      if (!glassesModel || hasChecked || isChecking) {
-        return
-      }
-
-      const features: Capabilities = getModelCapabilities(defaultWearable)
-      if (!features || !features.hasWifi) {
-        // Remove console log to reduce spam
-        return
-      }
-
-      // Skip if already connected to WiFi
-      if (glassesWifiConnected) {
-        // Remove console log to reduce spam
-        return
-      }
-
-      if (!otaVersionUrl || !currentBuildNumber) {
-        // Remove console log to reduce spam
-        return
-      }
-
-      // Check for updates
-      setIsChecking(true)
-      let checkCompleted = false
-      try {
-        const versionJson = await fetchVersionInfo(otaVersionUrl)
-        checkCompleted = true
-        if (isUpdateAvailable(currentBuildNumber, versionJson)) {
-          const latestVersionInfo = getLatestVersionInfo(versionJson)
-          setLatestVersion(latestVersionInfo?.versionName || null)
-
-          showAlert(
-            "Update Available",
-            `An update for your glasses is available (v${
-              latestVersionInfo?.versionCode || "Unknown"
-            }).\n\nConnect your glasses to WiFi to automatically install the update.`,
-            [
-              {
-                text: "Later",
-                style: "cancel",
-              },
-              {
-                text: "Setup WiFi",
-                onPress: () => {
-                  push("/wifi/scan")
-                },
-              },
-            ],
-          )
-          setHasChecked(true)
-        }
-      } catch (error) {
-        console.error("Error checking for OTA update:", error)
-        checkCompleted = true
-      } finally {
-        setIsChecking(false)
-        if (checkCompleted) {
-          setHasChecked(true)
-        }
-      }
+    // Only check for glasses that support WiFi self OTA updates
+    if (!glassesModel) {
+      return
     }
-    checkForOtaUpdate()
+    const features: Capabilities = getModelCapabilities(defaultWearable)
+    if (!features || !features.hasWifi) {
+      return
+    }
+
+    if (!otaVersionUrl || !currentBuildNumber) {
+      return
+    }
+
+    const asyncCheckForOtaUpdate = async () => {
+      setIsChecking(true)
+      let {hasCheckCompleted, updateAvailable, latestVersionInfo} = await checkForOtaUpdate(otaVersionUrl, currentBuildNumber)
+      if (hasCheckCompleted) {
+        setHasChecked(true)
+      }
+      if (updateAvailable) {
+        showAlert(
+          "Update Available",
+          `An update for your glasses is available (v${
+            latestVersionInfo?.versionCode || "Unknown"
+          }).\n\nConnect your glasses to WiFi to automatically install the update.`,
+          [
+            {
+              text: "Later",
+              style: "cancel",
+            },
+            {
+              text: "Setup WiFi",
+              onPress: () => {
+                push("/wifi/scan")
+              },
+            },
+          ],
+        )
+      }
+      setHasChecked(true)
+    }
+
+    asyncCheckForOtaUpdate()
   }, [glassesModel, otaVersionUrl, currentBuildNumber, glassesWifiConnected, hasChecked, isChecking])
 
   return null

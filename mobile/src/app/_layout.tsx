@@ -4,7 +4,7 @@ import {registerGlobals} from "@livekit/react-native-webrtc"
 import * as Sentry from "@sentry/react-native"
 import {Stack, SplashScreen, useNavigationContainerRef} from "expo-router"
 import {useEffect, useState} from "react"
-import {LogBox} from "react-native"
+import {LogBox, View} from "react-native"
 
 import {SentryNavigationIntegration, SentrySetup} from "@/effects/SentrySetup"
 import {initI18n} from "@/i18n"
@@ -15,6 +15,7 @@ import {loadDateFnsLocale} from "@/utils/formatDate"
 import {AllEffects} from "@/utils/structure/AllEffects"
 import {AllProviders} from "@/utils/structure/AllProviders"
 import {navigationRef} from "@/contexts/NavigationRef"
+import {Text} from "@/components/ignite"
 import "@/global.css"
 
 // prevent the annoying warning box at the bottom of the screen from getting in the way:
@@ -78,6 +79,10 @@ function Root() {
   return (
     <AllProviders>
       <AllEffects />
+      {/* small banner to show the state of getPreventBack() */}
+      <View className="h-24 items-center justify-end bg-red-500">
+        <Text className="text-white text-sm">{navigationRef.current?.getPreventBack() ? "true" : "false"}</Text>
+      </View>
       <Stack
         screenOptions={{
           headerShown: false,

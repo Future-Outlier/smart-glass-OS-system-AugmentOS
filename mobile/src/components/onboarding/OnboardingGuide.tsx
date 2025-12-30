@@ -1,13 +1,14 @@
 import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
-import {useState, useCallback, useEffect, useMemo} from "react"
+import {useState, useCallback, useEffect, useMemo, useRef} from "react"
 import {View, ViewStyle} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text} from "@/components/ignite"
 import {Button, Header, Icon} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import { useFocusEffect } from "expo-router"
 
 interface BaseStep {
   name: string
@@ -78,6 +79,7 @@ export function OnboardingGuide({
   const [transitionCount, setTransitionCount] = useState(0)
   const [uiIndex, setUiIndex] = useState(1)
   const [activePlayer, setActivePlayer] = useState<1 | 2>(1)
+  focusEffectPreventBack()
 
   // Initialize players with first video sources found
   const initialSource1 = useMemo(() => findNextVideoSource(steps, 0), [steps])

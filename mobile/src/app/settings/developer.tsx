@@ -16,7 +16,7 @@ import {ThemedStyle} from "@/theme"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
-  const {goBack, push, replaceAll} = useNavigationHistory()
+  const {goBack, push, replaceAll, setPreventBack} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
   const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS.power_saving_mode.key)
@@ -78,6 +78,18 @@ export default function DeveloperSettingsScreen() {
               label="Pairing Success"
               subtitle="Open the pairing success screen"
               onPress={() => replaceAll("/pairing/success")}
+            />
+
+            <RouteButton
+              label="OTA Check for Updates"
+              subtitle="Open the OTA check for updates screen"
+              onPress={() => {
+                // replaceAll("/ota/check-for-updates")
+                setPreventBack(true)
+                setTimeout(() => {
+                  push("/ota/check-for-updates")
+                }, 1000)
+              }}
             />
 
             <RouteButton

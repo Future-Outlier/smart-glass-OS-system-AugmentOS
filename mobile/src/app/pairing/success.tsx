@@ -49,7 +49,9 @@ export default function PairingSuccessScreen() {
       replaceAll("/onboarding/live")
       if (glassesConnected) {
         setPreventBack(true)
-        push("/ota/check-for-updates")
+        setTimeout(() => {
+          push("/ota/check-for-updates")
+        }, 1000)
       } else {
         setPreventBack(true)
         push("/wifi/scan")

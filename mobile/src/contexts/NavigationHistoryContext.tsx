@@ -1,4 +1,4 @@
-import {router, usePathname, useSegments} from "expo-router"
+import {router, useFocusEffect, usePathname, useSegments} from "expo-router"
 import {createContext, useContext, useEffect, useRef, useCallback} from "react"
 import {Alert, BackHandler} from "react-native"
 
@@ -210,7 +210,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   // when you want to go back, but animate it like a push:
   const pushPrevious = () => {
     console.info("NAV: pushPrevious()")
-    const prevIndex = historyRef.current.length - 1
+    const prevIndex = historyRef.current.length - 2
     const previousPath = historyRef.current[prevIndex]
     const previousParams = historyParamsRef.current[prevIndex]
     clearHistory()
@@ -271,6 +271,21 @@ export function useNavigationHistory() {
   return context
 }
 
+export const focusEffectPreventBack = () => {
+  const {setPreventBack, getPreventBack} = useNavigationHistory()
+  const wasPreventBackSet = useRef(getPreventBack())
+
+  useFocusEffect(
+    useCallback(() => {
+      setPreventBack(true)
+      return () => {
+        if (wasPreventBackSet.current) {
+          setPreventBack(wasPreventBackSet.current)
+        }
+      }
+    }, []),
+  )
+}
 // import {useCallback} from "react"
 // import {Alert} from "react-native"
 // import {useNavigation} from "expo-router"
