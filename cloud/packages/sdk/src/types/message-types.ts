@@ -140,6 +140,9 @@ export enum AppToCloudMessageType {
   APP_USER_DISCOVERY = "app_user_discovery",
   APP_ROOM_JOIN = "app_room_join",
   APP_ROOM_LEAVE = "app_room_leave",
+
+  // Session lifecycle
+  OWNERSHIP_RELEASE = "ownership_release",
 }
 
 /**
@@ -154,6 +157,7 @@ export enum CloudToAppMessageType {
   APP_STOPPED = "app_stopped",
   SETTINGS_UPDATE = "settings_update",
   CAPABILITIES_UPDATE = "capabilities_update",
+  DEVICE_STATE_UPDATE = "device_state_update",
 
   // Dashboard updates
   DASHBOARD_MODE_CHANGED = "dashboard_mode_changed",

@@ -56,6 +56,8 @@ export const SETTINGS: Record<string, Setting> = {
       }
       return "https://api.mentra.glass"
     },
+    // If env var is set, always use it (on every boot)
+    override: () => process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE,
     writable: true,
     saveOnServer: false,
     persist: true,
@@ -71,6 +73,8 @@ export const SETTINGS: Record<string, Setting> = {
       }
       return "https://apps.mentra.glass"
     },
+    // If env var is set, always use it (on every boot)
+    override: () => process.env.EXPO_PUBLIC_STORE_URL_OVERRIDE,
     writable: true,
     saveOnServer: false,
     persist: true,
@@ -133,6 +137,20 @@ export const SETTINGS: Record<string, Setting> = {
   },
   onboarding_completed: {
     key: "onboarding_completed",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  onboarding_live_completed: {
+    key: "onboarding_live_completed",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  onboarding_os_completed: {
+    key: "onboarding_os_completed",
     defaultValue: () => false,
     writable: true,
     saveOnServer: true,

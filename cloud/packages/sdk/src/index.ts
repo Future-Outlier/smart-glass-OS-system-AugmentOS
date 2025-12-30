@@ -73,14 +73,7 @@ export * from "./types/dashboard";
 export * from "./types/rtmp-stream";
 
 // Other system enums
-export {
-  AppType,
-  LayoutType,
-  ViewType,
-  AppSettingType,
-  HardwareType,
-  HardwareRequirementLevel,
-} from "./types/enums";
+export { AppType, LayoutType, ViewType, AppSettingType, HardwareType, HardwareRequirementLevel } from "./types/enums";
 
 // Core model interfaces
 export * from "./types/models";
@@ -205,6 +198,7 @@ export {
   isRtmpStreamStopRequest,
   isPhotoRequest as isPhotoRequestFromApp,
   isRgbLedControlRequest,
+  isOwnershipRelease,
 } from "./types/messages/app-to-cloud";
 
 // Export setting-related types
@@ -220,18 +214,20 @@ export {
 } from "./types/models";
 
 // Export RTMP streaming types
-export {
-  VideoConfig,
-  AudioConfig,
-  StreamConfig,
-  StreamStatusHandler,
-} from "./types/rtmp-stream";
+export { VideoConfig, AudioConfig, StreamConfig, StreamStatusHandler } from "./types/rtmp-stream";
 
 // Export app session modules
 export * from "./app/session/modules";
 
 // Export photo data types
 export { PhotoData } from "./types/photo-data";
+
+// Export device state types (WebSocket-based observables)
+export { DeviceState } from "./app/session/device-state";
+export { Observable } from "./utils/Observable";
+
+// Re-export types from @mentra/types so SDK users don't need to install it separately
+export type { GlassesInfo } from "@mentra/types";
 
 /**
  * WebSocket error information

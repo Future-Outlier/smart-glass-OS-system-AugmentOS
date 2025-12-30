@@ -410,6 +410,7 @@ struct ViewState {
                 sgc?.setMicEnabled(false)
             }
         }
+        getStatus() // to update the UI
     }
 
     func setOnboardMicEnabled(_ isEnabled: Bool) {
@@ -1018,9 +1019,9 @@ struct ViewState {
         sgc?.saveBufferVideo(requestId: requestId, durationSeconds: durationSeconds)
     }
 
-    func startVideoRecording(_ requestId: String, _ save: Bool) {
-        Bridge.log("MAN: onStartVideoRecording: requestId=\(requestId), save=\(save)")
-        sgc?.startVideoRecording(requestId: requestId, save: save)
+    func startVideoRecording(_ requestId: String, _ save: Bool, _ silent: Bool) {
+        Bridge.log("MAN: onStartVideoRecording: requestId=\(requestId), save=\(save), silent=\(silent)")
+        sgc?.startVideoRecording(requestId: requestId, save: save, silent: silent)
     }
 
     func stopVideoRecording(_ requestId: String) {
@@ -1069,14 +1070,15 @@ struct ViewState {
         _ size: String,
         _ webhookUrl: String?,
         _ authToken: String?,
-        _ compress: String?
+        _ compress: String?,
+        _ silent: Bool
     ) {
         Bridge.log(
-            "MAN: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size), compress=\(compress ?? "none")"
+            "MAN: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size), compress=\(compress ?? "none"), silent=\(silent)"
         )
         sgc?.requestPhoto(
             requestId, appId: appId, size: size, webhookUrl: webhookUrl, authToken: authToken,
-            compress: compress
+            compress: compress, silent: silent
         )
     }
 

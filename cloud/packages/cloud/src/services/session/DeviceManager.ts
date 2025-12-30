@@ -19,23 +19,19 @@
  *  - Stopping incompatible Apps is logged as a TODO; the legacy implementation lives on UserSession as a private method.
  */
 
-import WebSocket from "ws";
 import type { Logger } from "pino";
-import type UserSession from "./UserSession";
-import {
-  Capabilities,
-  CloudToAppMessageType,
-  GlassesToCloudMessageType,
-} from "@mentra/sdk";
+
+import { Capabilities, CloudToAppMessageType, GlassesToCloudMessageType } from "@mentra/sdk";
 import { GlassesInfo } from "@mentra/types";
-import {
-  getCapabilitiesForModel,
-  isModelSupported,
-} from "../../config/hardware-capabilities";
+
+import { getCapabilitiesForModel, isModelSupported } from "../../config/hardware-capabilities";
 import { User } from "../../models/user.model";
-import { PosthogService } from "../logging/posthog.service";
 import appService from "../core/app.service";
+import { PosthogService } from "../logging/posthog.service";
+import { WebSocketReadyState, type IWebSocket } from "../websocket/types";
+
 import { HardwareCompatibilityService } from "./HardwareCompatibilityService";
+import type UserSession from "./UserSession";
 
 const SERVICE_NAME = "DeviceManager";
 const FALLBACK_MODEL = "Even Realities G1";
@@ -49,10 +45,7 @@ export class DeviceManager {
   constructor(userSession: UserSession) {
     this.userSession = userSession;
     this.logger = userSession.logger.child({ service: SERVICE_NAME });
-    this.logger.info(
-      { userId: userSession.userId },
-      "DeviceManager initialized",
-    );
+    this.logger.info({ userId: userSession.userId }, "DeviceManager initialized");
   }
 
   // ===== Public API =====
@@ -68,7 +61,7 @@ export class DeviceManager {
    * Check if phone is connected to cloud (WebSocket state)
    */
   get isPhoneConnected(): boolean {
-    return this.userSession.websocket?.readyState === 1; // WebSocket.OPEN
+    return this.userSession.websocket?.readyState === 1; // WebSocketReadyState.OPEN
   }
 
   /**
@@ -116,10 +109,7 @@ export class DeviceManager {
    * - setCurrentModel(modelName)
    */
   async updateDeviceState(payload: Partial<GlassesInfo>): Promise<void> {
-    this.logger.info(
-      { userId: this.userSession.userId, payload, feature: "device-state" },
-      "Updating device state",
-    );
+    this.logger.info({ userId: this.userSession.userId, payload, feature: "device-state" }, "Updating device state");
 
     // Infer connection state from modelName if not explicitly provided
     // If modelName is provided and not empty, glasses are connected
@@ -134,10 +124,7 @@ export class DeviceManager {
         },
         "Inferred connected=true from modelName",
       );
-    } else if (
-      (payload.modelName === null || payload.modelName === "") &&
-      payload.connected === undefined
-    ) {
+    } else if ((payload.modelName === null || payload.modelName === "") && payload.connected === undefined) {
       payload.connected = false;
       this.logger.debug(
         { userId: this.userSession.userId, feature: "device-state" },
@@ -146,8 +133,7 @@ export class DeviceManager {
     }
 
     // Check if model is changing BEFORE merging
-    const modelChanged =
-      payload.modelName && payload.modelName !== this.deviceState.modelName;
+    const modelChanged = payload.modelName && payload.modelName !== this.deviceState.modelName;
 
     // Merge partial updates into device state
     this.deviceState = {
@@ -169,10 +155,7 @@ export class DeviceManager {
           payload.connected ? "CONNECTED" : "DISCONNECTED",
         );
       } catch (error) {
-        this.logger.warn(
-          { error, feature: "device-state" },
-          "MicrophoneManager handler error",
-        );
+        this.logger.warn({ error, feature: "device-state" }, "MicrophoneManager handler error");
       }
     } else if (modelChanged && payload.modelName) {
       // Model changed without connection state change - just update capabilities
@@ -189,6 +172,9 @@ export class DeviceManager {
       },
       "Device state updated successfully",
     );
+
+    // Broadcast device state changes to all connected apps
+    this.broadcastDeviceStateToApps(payload);
   }
 
   /**
@@ -202,17 +188,11 @@ export class DeviceManager {
   async setCurrentModel(modelName: string): Promise<void> {
     const model = String(modelName || "").trim();
     if (!model) {
-      this.logger.warn(
-        { userId: this.userSession.userId },
-        "Ignored empty default_wearable model",
-      );
+      this.logger.warn({ userId: this.userSession.userId }, "Ignored empty default_wearable model");
       return;
     }
 
-    this.logger.info(
-      { userId: this.userSession.userId, model },
-      "Applying default_wearable model preference",
-    );
+    this.logger.info({ userId: this.userSession.userId, model }, "Applying default_wearable model preference");
 
     // Update via updateDeviceState (single path)
     await this.updateDeviceState({ modelName: model });
@@ -237,20 +217,13 @@ export class DeviceManager {
         glasses_preference_last_changed: new Date().toISOString(),
       });
 
-      await PosthogService.trackEvent(
-        "preference_model_changed",
-        this.userSession.userId,
-        {
-          sessionId: (this.userSession as any).sessionId,
-          modelName: model,
-          timestamp: new Date().toISOString(),
-        },
-      );
+      await PosthogService.trackEvent("preference_model_changed", this.userSession.userId, {
+        sessionId: (this.userSession as any).sessionId,
+        modelName: model,
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
-      this.logger.error(
-        error,
-        "Error updating user model history or PostHog for default_wearable",
-      );
+      this.logger.error(error, "Error updating user model history or PostHog for default_wearable");
     }
   }
 
@@ -259,10 +232,7 @@ export class DeviceManager {
    * - status: "CONNECTED" | "DISCONNECTED" | string
    * - modelName: the physical device model when connected
    */
-  async handleGlassesConnectionState(
-    modelName: string | null,
-    status: string,
-  ): Promise<void> {
+  async handleGlassesConnectionState(modelName: string | null, status: string): Promise<void> {
     const isConnected = status === "CONNECTED";
     const model = modelName ? String(modelName).trim() : null;
 
@@ -311,16 +281,12 @@ export class DeviceManager {
         });
 
         if (isNewModel) {
-          await PosthogService.trackEvent(
-            "glasses_model_first_connect",
-            this.userSession.userId,
-            {
-              sessionId: (this.userSession as any).sessionId,
-              modelName: model,
-              totalModelsUsed: user.getGlassesModels().length,
-              timestamp: new Date().toISOString(),
-            },
-          );
+          await PosthogService.trackEvent("glasses_model_first_connect", this.userSession.userId, {
+            sessionId: (this.userSession as any).sessionId,
+            modelName: model,
+            totalModelsUsed: user.getGlassesModels().length,
+            timestamp: new Date().toISOString(),
+          });
         }
       } catch (error) {
         this.logger.error(
@@ -344,23 +310,16 @@ export class DeviceManager {
 
     // Track the connection state event (legacy event naming)
     try {
-      await PosthogService.trackEvent(
-        GlassesToCloudMessageType.GLASSES_CONNECTION_STATE,
-        this.userSession.userId,
-        {
-          sessionId: (this.userSession as any).sessionId,
-          eventType: GlassesToCloudMessageType.GLASSES_CONNECTION_STATE,
-          timestamp: new Date().toISOString(),
-          connectionState: { modelName: model, status },
-          modelName: model,
-          isConnected,
-        },
-      );
+      await PosthogService.trackEvent(GlassesToCloudMessageType.GLASSES_CONNECTION_STATE, this.userSession.userId, {
+        sessionId: (this.userSession as any).sessionId,
+        eventType: GlassesToCloudMessageType.GLASSES_CONNECTION_STATE,
+        timestamp: new Date().toISOString(),
+        connectionState: { modelName: model, status },
+        modelName: model,
+        isConnected,
+      });
     } catch (error) {
-      this.logger.error(
-        { error, feature: "device-state" },
-        "Error tracking GLASSES_CONNECTION_STATE event in PostHog",
-      );
+      this.logger.error({ error, feature: "device-state" }, "Error tracking GLASSES_CONNECTION_STATE event in PostHog");
     }
   }
 
@@ -382,10 +341,7 @@ export class DeviceManager {
     if (!model) return;
 
     if (this.deviceState.modelName === model) {
-      this.logger.debug(
-        { model, feature: "device-state" },
-        "Model unchanged; skipping capability refresh",
-      );
+      this.logger.debug({ model, feature: "device-state" }, "Model unchanged; skipping capability refresh");
       return;
     }
 
@@ -405,19 +361,11 @@ export class DeviceManager {
     // Derive capabilities
     let caps: Capabilities | null = getCapabilitiesForModel(model);
     if (!caps) {
-      this.logger.warn(
-        { model, feature: "device-state" },
-        "No capabilities found for model; applying fallback",
-      );
-      const fallback = isModelSupported(FALLBACK_MODEL)
-        ? getCapabilitiesForModel(FALLBACK_MODEL)
-        : null;
+      this.logger.warn({ model, feature: "device-state" }, "No capabilities found for model; applying fallback");
+      const fallback = isModelSupported(FALLBACK_MODEL) ? getCapabilitiesForModel(FALLBACK_MODEL) : null;
       if (fallback) {
         caps = fallback;
-        this.logger.info(
-          { model, fallback: FALLBACK_MODEL },
-          "Applied fallback capabilities for unknown model",
-        );
+        this.logger.info({ model, fallback: FALLBACK_MODEL }, "Applied fallback capabilities for unknown model");
       }
     }
 
@@ -440,19 +388,13 @@ export class DeviceManager {
       };
 
       // Broadcast to all connected App websockets
-      for (const [
-        packageName,
-        ws,
-      ] of this.userSession.appWebsockets.entries()) {
-        if (ws && ws.readyState === WebSocket.OPEN) {
+      for (const [packageName, ws] of this.userSession.appWebsockets.entries()) {
+        if (ws && ws.readyState === WebSocketReadyState.OPEN) {
           try {
             ws.send(JSON.stringify(message));
           } catch (sendError) {
             const _logger = this.logger.child({ packageName, message });
-            this.logger.error(
-              sendError,
-              "Error sending CAPABILITIES_UPDATE to App",
-            );
+            this.logger.error(sendError, "Error sending CAPABILITIES_UPDATE to App");
           }
         }
       }
@@ -472,13 +414,90 @@ export class DeviceManager {
   }
 
   /**
+   * Broadcast device state update to all connected apps
+   * Similar to sendCapabilitiesUpdateToApps(), but for reactive device state
+   *
+   * @param state - Partial device state (only changed fields, or full snapshot)
+   * @param fullSnapshot - True on initial connection or reconnection
+   */
+  private broadcastDeviceStateToApps(state: Partial<GlassesInfo>, fullSnapshot = false): void {
+    try {
+      const message = {
+        type: CloudToAppMessageType.DEVICE_STATE_UPDATE,
+        state,
+        fullSnapshot,
+        timestamp: new Date(),
+      };
+
+      // Broadcast to all connected app websockets
+      for (const [packageName, ws] of this.userSession.appWebsockets.entries()) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.send(JSON.stringify(message));
+          } catch (sendError) {
+            this.logger.error(
+              { error: sendError, packageName, feature: "device-state" },
+              "Error sending DEVICE_STATE_UPDATE to app",
+            );
+          }
+        }
+      }
+
+      this.logger.debug(
+        {
+          userId: this.userSession.userId,
+          changedFields: Object.keys(state),
+          appCount: this.userSession.appWebsockets.size,
+          fullSnapshot,
+          feature: "device-state",
+        },
+        "Broadcasted DEVICE_STATE_UPDATE to apps",
+      );
+    } catch (error) {
+      this.logger.error({ error, feature: "device-state" }, "Error broadcasting device state update");
+    }
+  }
+
+  /**
+   * Send full device state snapshot to a specific app
+   * Called when app first connects or reconnects
+   *
+   * @param ws - WebSocket connection to send snapshot to
+   */
+  public sendFullStateSnapshot(ws: IWebSocket): void {
+    try {
+      const fullState = this.getDeviceState();
+
+      const message = {
+        type: CloudToAppMessageType.DEVICE_STATE_UPDATE,
+        state: fullState,
+        fullSnapshot: true,
+        timestamp: new Date(),
+      };
+
+      if (ws.readyState === WebSocketReadyState.OPEN) {
+        ws.send(JSON.stringify(message));
+
+        this.logger.info(
+          {
+            userId: this.userSession.userId,
+            stateFields: Object.keys(fullState),
+            feature: "device-state",
+          },
+          "Sent full device state snapshot to app",
+        );
+      }
+    } catch (error) {
+      this.logger.error({ error, feature: "device-state" }, "Error sending full device state snapshot");
+    }
+  }
+
+  /**
    * Stop any running apps that are incompatible with the current capabilities.
    * Fully implemented here using HardwareCompatibilityService and appService.
    * Preserves legacy logging semantics and uses AppManager to stop apps.
    */
-  public async stopIncompatibleApps(
-    reason: string = "capabilities_changed",
-  ): Promise<void> {
+  public async stopIncompatibleApps(reason: string = "capabilities_changed"): Promise<void> {
     try {
       const capabilities = this.getCapabilities();
       if (!capabilities) {
@@ -490,9 +509,7 @@ export class DeviceManager {
 
       const runningAppPackages = Array.from(this.userSession.runningApps);
       if (runningAppPackages.length === 0) {
-        this.logger.debug(
-          "[DeviceManager:stopIncompatibleApps] No running apps to check for compatibility",
-        );
+        this.logger.debug("[DeviceManager:stopIncompatibleApps] No running apps to check for compatibility");
         return;
       }
 
@@ -512,8 +529,7 @@ export class DeviceManager {
             continue;
           }
 
-          const compatibilityResult =
-            HardwareCompatibilityService.checkCompatibility(app, capabilities);
+          const compatibilityResult = HardwareCompatibilityService.checkCompatibility(app, capabilities);
 
           if (!compatibilityResult.isCompatible) {
             incompatibleApps.push(packageName);
@@ -572,10 +588,7 @@ export class DeviceManager {
         );
       }
     } catch (error) {
-      this.logger.error(
-        error as Error,
-        "[DeviceManager:stopIncompatibleApps] Error during incompatible app cleanup",
-      );
+      this.logger.error(error as Error, "[DeviceManager:stopIncompatibleApps] Error during incompatible app cleanup");
     }
   }
 }
