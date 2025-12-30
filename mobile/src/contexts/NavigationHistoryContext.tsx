@@ -1,5 +1,5 @@
 import {router, useFocusEffect, usePathname, useSegments} from "expo-router"
-import {createContext, useContext, useEffect, useRef, useCallback} from "react"
+import {createContext, useContext, useEffect, useRef, useCallback, useState} from "react"
 import {Alert, BackHandler} from "react-native"
 
 import {navigationRef} from "@/contexts/NavigationRef"
@@ -17,7 +17,7 @@ export type NavObject = {
   setPendingRoute: (route: string) => void
   getPendingRoute: () => string | null
   navigate: (path: string, params?: any) => void
-  getPreventBack: () => boolean
+  preventBack: boolean
 }
 
 interface NavigationHistoryContextType {
@@ -32,8 +32,8 @@ interface NavigationHistoryContextType {
   clearHistoryAndGoHome: () => void
   replaceAll: (path: string, params?: any) => void
   goHomeAndPush: (path: string, params?: any) => void
-  setPreventBack: (prevent: boolean) => void
-  getPreventBack: () => boolean
+  preventBack: boolean
+  setPreventBack: (value: boolean) => void
   pushPrevious: () => void
 }
 
@@ -47,7 +47,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const _segments = useSegments()
   // const [pendingRoute, setPendingRouteNonClashingName] = useState<string | null>(null)
   const pendingRoute = useRef<string | null>(null)
-  const preventBack = useRef(false)
+  const [preventBack, setPreventBack] = useState(false)
 
   useEffect(() => {
     // Add current path to history if it's different from the last entry
@@ -163,14 +163,6 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     return pendingRoute.current
   }
 
-  const setPreventBack = (prevent: boolean) => {
-    preventBack.current = prevent
-  }
-
-  const getPreventBack = () => {
-    return preventBack.current
-  }
-
   const navigate = (path: string, params?: any) => {
     console.info("NAV: navigate()", path)
     router.navigate({pathname: path as any, params: params as any})
@@ -232,13 +224,13 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     setPendingRoute,
     getPendingRoute,
     navigate,
-    getPreventBack,
+    preventBack,
   }
 
   // Set the ref so we can use it from outside the context:
   useEffect(() => {
     navigationRef.current = navObject
-  }, [])
+  }, [preventBack])
 
   return (
     <NavigationHistoryContext.Provider
@@ -255,7 +247,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
         replaceAll,
         goHomeAndPush,
         setPreventBack,
-        getPreventBack,
+        preventBack,
         pushPrevious,
       }}>
       {children}
@@ -272,8 +264,8 @@ export function useNavigationHistory() {
 }
 
 export const focusEffectPreventBack = () => {
-  const {setPreventBack, getPreventBack} = useNavigationHistory()
-  const wasPreventBackSet = useRef(getPreventBack())
+  const {setPreventBack, preventBack} = useNavigationHistory()
+  const wasPreventBackSet = useRef(preventBack)
 
   useFocusEffect(
     useCallback(() => {

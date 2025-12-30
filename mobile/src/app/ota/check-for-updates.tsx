@@ -1,12 +1,12 @@
 import {View, ActivityIndicator} from "react-native"
 
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 
-export default function WifiPasswordScreen() {
+export default function OtaCheckForUpdatesScreen() {
 
   const {theme} = useAppTheme()
   const {pushPrevious, setPreventBack} = useNavigationHistory()
@@ -17,7 +17,7 @@ export default function WifiPasswordScreen() {
     pushPrevious()
   }
 
-  
+  focusEffectPreventBack()
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>

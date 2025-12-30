@@ -7,7 +7,7 @@ import {Platform} from "react-native"
 // import {useAuth} from "@/contexts/AuthContext"
 import {NavObject, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import mentraAuth from "@/utils/auth/authClient"
-import { BackgroundTimer } from "@/utils/timers"
+import {BackgroundTimer} from "@/utils/timers"
 
 export interface DeepLinkRoute {
   pattern: string
@@ -363,7 +363,7 @@ const DeeplinkContext = createContext<DeeplinkContextType>({} as DeeplinkContext
 export const useDeeplink = () => useContext(DeeplinkContext)
 
 export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
-  const {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, getPreventBack} =
+  const {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, preventBack} =
     useNavigationHistory()
   const config = {
     scheme: "com.mentra",
@@ -387,7 +387,7 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
         replaceAll("/auth/login")
       }, 100)
     },
-    navObject: {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, getPreventBack},
+    navObject: {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, preventBack},
   }
 
   const handleUrlRaw = async ({url}: {url: string}) => {
@@ -520,7 +520,6 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
           getPendingRoute,
           navigate,
           replaceAll,
-          getPreventBack,
         }
         await matchedRoute.handler(url, params, navObject)
       } catch (error) {

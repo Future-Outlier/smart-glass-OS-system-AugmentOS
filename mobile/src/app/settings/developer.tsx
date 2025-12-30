@@ -84,11 +84,9 @@ export default function DeveloperSettingsScreen() {
               label="OTA Check for Updates"
               subtitle="Open the OTA check for updates screen"
               onPress={() => {
-                // replaceAll("/ota/check-for-updates")
-                setPreventBack(true)
-                setTimeout(() => {
-                  push("/ota/check-for-updates")
-                }, 1000)
+                push("/ota/check-for-updates")
+                // setPreventBack(true)
+                // push("/ota/check-for-updates")
               }}
             />
 
