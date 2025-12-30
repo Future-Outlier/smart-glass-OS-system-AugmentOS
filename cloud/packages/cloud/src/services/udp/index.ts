@@ -3,3 +3,4 @@
  */
 
 export { UdpAudioServer, udpAudioServer } from "./UdpAudioServer";
+export { UdpReorderBuffer } from "./UdpReorderBuffer";
