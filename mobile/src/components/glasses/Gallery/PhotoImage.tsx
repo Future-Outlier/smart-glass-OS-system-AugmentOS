@@ -11,7 +11,7 @@ import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 import {Text} from "@/components/ignite"
 import {ThemedStyle} from "@/theme"
 import {PhotoInfo} from "@/types/asg"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 // @ts-ignore
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient)
