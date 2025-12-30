@@ -153,20 +153,21 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     historyRef.current = []
     historyParamsRef.current = []
     try {
-      // router.navigate("/(tabs)/home")
-      router.dismissTo("/")
+      router.dismissAll()
       router.replace("/(tabs)/home")
     } catch (error) {
       console.error("NavHistory: clearHistoryAndGoHome() error", error)
     }
-    // router.replace("/(tabs)/home")
   }
 
   // whatever route we pass, will be the only route in the entire stack:
+  // dismiss all and push the new route:
   const replaceAll = (path: string, params?: any) => {
     console.info("NavHistory: replaceAll()", path)
-    clearHistoryAndGoHome()
-    replace(path, params)
+    historyRef.current = []
+    historyParamsRef.current = []
+    router.dismissAll()
+    push(path, params)
   }
 
   // the only routes in the stack will be home and the one we pass:
