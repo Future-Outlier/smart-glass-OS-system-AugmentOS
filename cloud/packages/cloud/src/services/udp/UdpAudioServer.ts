@@ -235,6 +235,13 @@ export class UdpAudioServer {
   }
 
   /**
+   * Check if the UDP server is running
+   */
+  isRunning(): boolean {
+    return this.socket !== null;
+  }
+
+  /**
    * Get current statistics
    */
   getStats(): {
@@ -248,6 +255,26 @@ export class UdpAudioServer {
       dropped: this.packetsDropped,
       pings: this.pingsReceived,
       sessions: this.sessionMap.size,
+    };
+  }
+
+  /**
+   * Get full status for health checks
+   */
+  getStatus(): {
+    running: boolean;
+    port: number;
+    stats: {
+      received: number;
+      dropped: number;
+      pings: number;
+      sessions: number;
+    };
+  } {
+    return {
+      running: this.isRunning(),
+      port: UDP_PORT,
+      stats: this.getStats(),
     };
   }
 
