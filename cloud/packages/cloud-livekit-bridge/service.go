@@ -37,26 +37,14 @@ type LiveKitBridgeService struct {
 	config   *Config
 	bsLogger *logger.BetterStackLogger
 	mu       sync.RWMutex
-
-	// UDP audio support
-	udpListener    *UdpAudioListener
-	udpPingChans   map[string]chan struct{} // userId -> ping notification channel
-	udpPingStreams []chan string            // broadcast channels for SubscribeUdpPings
 }
 
 // NewLiveKitBridgeService creates a new service instance
 func NewLiveKitBridgeService(config *Config, bsLogger *logger.BetterStackLogger) *LiveKitBridgeService {
 	return &LiveKitBridgeService{
-		config:         config,
-		bsLogger:       bsLogger,
-		udpPingChans:   make(map[string]chan struct{}),
-		udpPingStreams: make([]chan string, 0),
+		config:   config,
+		bsLogger: bsLogger,
 	}
-}
-
-// SetUdpListener sets the UDP listener for this service
-func (s *LiveKitBridgeService) SetUdpListener(listener *UdpAudioListener) {
-	s.udpListener = listener
 }
 
 // createLogger creates a context logger for a user
@@ -144,7 +132,7 @@ func (s *LiveKitBridgeService) JoinRoom(
 					return
 				}
 
-					receivedPackets++
+				receivedPackets++
 				now := time.Now()
 				gapMs := now.Sub(lastPacketTime).Milliseconds()
 				lastPacketTime = now
@@ -321,19 +309,12 @@ func (s *LiveKitBridgeService) StreamAudio(
 
 	// Start goroutine to send audio FROM LiveKit TO client
 	go func() {
-		var sentChunks int64
 		for {
 			select {
 			case pcmData, ok := <-session.audioFromLiveKit:
 				if !ok {
 					lg.Debug("StreamAudio: audio channel closed", logger.LogEntry{})
 					return
-				}
-				sentChunks++
-				// Log first 10 chunks and then every 100 to track gRPC send rate
-				if sentChunks <= 10 || sentChunks%100 == 0 {
-					log.Printf("StreamAudio sending chunk #%d for %s: size=%d bytes, channelLen=%d",
-						sentChunks, userId, len(pcmData), len(session.audioFromLiveKit))
 				}
 				if err := stream.Send(&pb.AudioChunk{
 					PcmData:     pcmData,

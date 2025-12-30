@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { AccessToken, VideoGrant, RoomServiceClient } from "livekit-server-sdk";
+import { AccessToken, RoomServiceClient, VideoGrant } from "livekit-server-sdk";
 import { Logger } from "pino";
 
 import { logger as rootLogger } from "../../logging/pino-logger";
@@ -19,7 +19,6 @@ export class LiveKitManager {
   // private micEnabled = false;
   private healthTimer: NodeJS.Timeout | null = null;
   private lastRejoinAttemptAt: number | null = null;
-  private udpPingUnsubscribe: (() => void) | null = null;
 
   constructor(session: UserSession) {
     this.session = session;
@@ -215,10 +214,6 @@ export class LiveKitManager {
     });
     this.logger.info({ feature: "livekit", room: info.roomName }, "Bridge subscriber connected");
 
-    // Subscribe to UDP ping notifications from Go bridge
-    // When mobile sends a UDP ping, Go notifies us and we send a WebSocket ack
-    this.setupUdpPingSubscription();
-
     // Health monitoring interval - no logging, just keeps internal state fresh
     // Logging every 10 seconds creates too much noise in production
     if (!this.healthTimer) {
@@ -229,45 +224,6 @@ export class LiveKitManager {
         // Health state available via getBridgeClient().isConnected() if needed
       }, 10000);
     }
-  }
-
-  /**
-   * Set up subscription to UDP ping notifications from Go bridge.
-   * When mobile sends a UDP ping and Go receives it, this sends a WebSocket ack
-   * back to the mobile so it knows UDP is working.
-   */
-  private setupUdpPingSubscription(): void {
-    if (!this.bridgeClient) {
-      return;
-    }
-
-    // Clean up existing subscription if any
-    if (this.udpPingUnsubscribe) {
-      this.udpPingUnsubscribe();
-      this.udpPingUnsubscribe = null;
-    }
-
-    // Subscribe to ping notifications
-    this.udpPingUnsubscribe = this.bridgeClient.subscribeUdpPings((userId: string) => {
-      // Only send ack if this ping is for our user
-      if (userId === this.session.userId) {
-        this.logger.info({ feature: "udp-audio", userId }, "UDP ping received, sending WebSocket ack");
-
-        // Send udp_ping_ack message to mobile via WebSocket
-        try {
-          this.session.websocket?.send(
-            JSON.stringify({
-              type: "udp_ping_ack",
-              timestamp: new Date(),
-            }),
-          );
-        } catch (error) {
-          this.logger.warn({ error, feature: "udp-audio" }, "Failed to send UDP ping ack");
-        }
-      }
-    });
-
-    this.logger.info({ feature: "udp-audio" }, "UDP ping subscription established");
   }
 
   /** Expose the current bridge client for server playback control. */
@@ -318,10 +274,6 @@ export class LiveKitManager {
       clearInterval(this.healthTimer);
       this.healthTimer = null;
     }
-    if (this.udpPingUnsubscribe) {
-      this.udpPingUnsubscribe();
-      this.udpPingUnsubscribe = null;
-    }
     if (this.bridgeClient) {
       this.logger.info({ feature: "livekit" }, "Disposing bridge client");
       this.bridgeClient.dispose();
@@ -353,6 +305,52 @@ export class LiveKitManager {
     } catch (err) {
       this.logger.warn({ feature: "livekit", err }, "Failed to fetch bridge status");
       return null;
+    }
+  }
+
+  /**
+   * Rejoin the LiveKit room when the bridge was kicked/disconnected.
+   * Applies a small backoff window to avoid rejoin storms.
+   */
+  public async rejoinBridge(): Promise<void> {
+    const now = Date.now();
+    const backoffMs = parseInt(process.env.LIVEKIT_REJOIN_BACKOFF_MS || "2000", 10) || 2000;
+
+    if (this.lastRejoinAttemptAt && now - this.lastRejoinAttemptAt < backoffMs) {
+      this.logger.warn(
+        {
+          feature: "livekit",
+          backoffMs,
+          sinceLast: now - this.lastRejoinAttemptAt,
+        },
+        "Skipping rejoin due to backoff window",
+      );
+      return;
+    }
+    this.lastRejoinAttemptAt = now;
+
+    if (!this.bridgeClient) {
+      this.bridgeClient = new LiveKitGrpcClient(this.session);
+    }
+
+    const token = await this.mintAgentBridgeToken();
+    if (!token) {
+      this.logger.warn({ feature: "livekit" }, "Failed to mint bridge token for rejoin");
+      return;
+    }
+
+    const params = {
+      url: this.getUrl(),
+      roomName: this.getRoomName(),
+      token,
+      targetIdentity: this.session.userId,
+    };
+
+    try {
+      await (this.bridgeClient as any).rejoin(params);
+      this.logger.info({ feature: "livekit", room: params.roomName }, "Bridge rejoined LiveKit room");
+    } catch (err) {
+      this.logger.error({ feature: "livekit", err }, "Bridge rejoin failed");
     }
   }
 
@@ -441,95 +439,6 @@ export class LiveKitManager {
 
     this.logger.info({ feature: "livekit", ...status }, "Room status");
     return status;
-  }
-
-  /**
-   * Rejoin the LiveKit room when the bridge was kicked/disconnected.
-   * Applies a small backoff window to avoid rejoin storms.
-   */
-  public async rejoinBridge(): Promise<void> {
-    const now = Date.now();
-    const backoffMs = parseInt(process.env.LIVEKIT_REJOIN_BACKOFF_MS || "2000", 10) || 2000;
-
-    if (this.lastRejoinAttemptAt && now - this.lastRejoinAttemptAt < backoffMs) {
-      this.logger.warn(
-        {
-          feature: "livekit",
-          backoffMs,
-          sinceLast: now - this.lastRejoinAttemptAt,
-        },
-        "Skipping rejoin due to backoff window",
-      );
-      return;
-    }
-    this.lastRejoinAttemptAt = now;
-
-    if (!this.bridgeClient) {
-      this.bridgeClient = new LiveKitGrpcClient(this.session);
-    }
-
-    const token = await this.mintAgentBridgeToken();
-    if (!token) {
-      this.logger.warn({ feature: "livekit" }, "Failed to mint bridge token for rejoin");
-      return;
-    }
-
-    const params = {
-      url: this.getUrl(),
-      roomName: this.getRoomName(),
-      token,
-      targetIdentity: this.session.userId,
-    };
-
-    try {
-      await (this.bridgeClient as any).rejoin(params);
-      this.logger.info({ feature: "livekit", room: params.roomName }, "Bridge rejoined LiveKit room");
-    } catch (err) {
-      this.logger.error({ feature: "livekit", err }, "Bridge rejoin failed");
-    }
-  }
-
-  // MARK: - UDP Audio Support
-
-  /**
-   * Register a user for UDP audio reception.
-   * Called when mobile sends a UDP_REGISTER message with userIdHash.
-   *
-   * @param userIdHash FNV-1a hash of userId (32-bit, computed by mobile)
-   * @returns Promise that resolves to success status
-   */
-  public async registerUdpUser(userIdHash: number): Promise<boolean> {
-    if (!this.bridgeClient) {
-      this.logger.warn({ feature: "livekit" }, "Cannot register UDP user: no bridge client");
-      return false;
-    }
-
-    // Ensure bridge is connected
-    await this.ensureBridgeConnected();
-
-    // Store the hash in the session for later verification
-    this.session.userIdHash = userIdHash;
-
-    const success = await this.bridgeClient.registerUdpUser(userIdHash);
-    if (success) {
-      this.session.udpAudioEnabled = true;
-      this.logger.info({ feature: "livekit", userIdHash }, "UDP audio enabled for user");
-    }
-    return success;
-  }
-
-  /**
-   * Unregister a user from UDP audio reception.
-   * Called when mobile sends a UDP_UNREGISTER message or on disconnect.
-   */
-  public async unregisterUdpUser(): Promise<void> {
-    if (!this.bridgeClient || !this.session.userIdHash) {
-      return;
-    }
-
-    await this.bridgeClient.unregisterUdpUser(this.session.userIdHash);
-    this.session.udpAudioEnabled = false;
-    this.logger.info({ feature: "livekit", userIdHash: this.session.userIdHash }, "UDP audio disabled for user");
   }
 }
 

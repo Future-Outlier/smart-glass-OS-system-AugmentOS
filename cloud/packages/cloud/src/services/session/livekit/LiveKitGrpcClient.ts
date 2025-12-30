@@ -239,6 +239,17 @@ export class LiveKitGrpcClient {
 
     this.audioStream = this.client.streamAudio();
 
+    // Send initial chunk with user_id to establish stream
+    const initialChunk = {
+      user_id: this.userSession.userId,
+      pcm_data: Buffer.alloc(0), // Empty initial frame
+      sample_rate: 16000,
+      channels: 1,
+      timestamp_ms: Date.now(),
+    };
+
+    this.audioStream?.write(initialChunk);
+
     // Handle incoming audio from LiveKit → TypeScript
     let receivedChunks = 0;
     const dataHandler = (chunk: any) => {
@@ -252,14 +263,13 @@ export class LiveKitGrpcClient {
         }
 
         receivedChunks++;
-        // Log first 10 chunks and then every 100 to catch early flow issues
-        if (receivedChunks <= 10 || receivedChunks % 100 === 0) {
+        if (receivedChunks % 100 === 0) {
           // Log sample values to verify endianness
           const sampleCount = Math.min(8, Math.floor(pcmData.length / 2));
           const i16 = new Int16Array(pcmData.buffer, pcmData.byteOffset, Math.floor(pcmData.byteLength / 2));
           const headSamples: number[] = Array.from(i16.slice(0, sampleCount));
 
-          this.logger.info(
+          this.logger.debug(
             {
               receivedChunks,
               chunkSize: pcmData.length,
@@ -268,7 +278,7 @@ export class LiveKitGrpcClient {
               headSamples,
               feature: "livekit-grpc",
             },
-            `gRPC received chunk #${receivedChunks} from bridge`,
+            "Received audio chunks from gRPC bridge",
           );
         }
 
@@ -334,22 +344,10 @@ export class LiveKitGrpcClient {
       this.audioStream = null;
     };
 
-    // Attach handlers BEFORE sending initial chunk to avoid race condition
-    // where Go bridge sends audio before handlers are attached
+    // Attach handlers
     this.audioStream?.on("data", dataHandler);
     this.audioStream?.on("error", errorHandler);
     this.audioStream?.on("end", endHandler);
-
-    // Send initial chunk with user_id to establish stream
-    const initialChunk = {
-      user_id: this.userSession.userId,
-      pcm_data: Buffer.alloc(0), // Empty initial frame
-      sample_rate: 16000,
-      channels: 1,
-      timestamp_ms: Date.now(),
-    };
-
-    this.audioStream?.write(initialChunk);
 
     // Track handlers for cleanup
     this.resources.track(() => {
@@ -836,115 +834,6 @@ export class LiveKitGrpcClient {
    */
   public stopPlayback(requestId?: string): void {
     this.stopAudio(requestId);
-  }
-
-  // MARK: - UDP Audio Support
-
-  /**
-   * Register a user for UDP audio reception
-   * Must be called before mobile can send audio via UDP
-   *
-   * @param userIdHash FNV-1a hash of userId (computed by mobile client)
-   * @returns Promise that resolves to success status
-   */
-  public async registerUdpUser(userIdHash: number): Promise<boolean> {
-    if (!this.client || this.disposed) {
-      this.logger.warn({ feature: "livekit-grpc" }, "Cannot register UDP user: client not initialized");
-      return false;
-    }
-
-    return new Promise((resolve) => {
-      const request = {
-        user_id: this.userSession.userId,
-        user_id_hash: userIdHash,
-      };
-
-      this.logger.info({ request, feature: "livekit-grpc" }, "Calling RegisterUdpUser RPC");
-
-      this.client.registerUdpUser(request, (error: grpc.ServiceError | null, response: any) => {
-        if (error) {
-          this.logger.error({ error, feature: "livekit-grpc" }, "RegisterUdpUser RPC failed");
-          resolve(false);
-          return;
-        }
-
-        if (!response.success) {
-          this.logger.error({ response, feature: "livekit-grpc" }, "RegisterUdpUser returned failure");
-          resolve(false);
-          return;
-        }
-
-        this.logger.info({ userIdHash, feature: "livekit-grpc" }, "UDP user registered successfully");
-        resolve(true);
-      });
-    });
-  }
-
-  /**
-   * Unregister a user from UDP audio reception
-   *
-   * @param userIdHash FNV-1a hash of userId
-   */
-  public async unregisterUdpUser(userIdHash: number): Promise<void> {
-    if (!this.client || this.disposed) {
-      return;
-    }
-
-    return new Promise((resolve) => {
-      const request = {
-        user_id: this.userSession.userId,
-        user_id_hash: userIdHash,
-      };
-
-      this.client.unregisterUdpUser(request, (error: grpc.ServiceError | null, _response: any) => {
-        if (error) {
-          this.logger.error({ error, feature: "livekit-grpc" }, "UnregisterUdpUser RPC failed");
-        } else {
-          this.logger.info({ userIdHash, feature: "livekit-grpc" }, "UDP user unregistered");
-        }
-        resolve();
-      });
-    });
-  }
-
-  /**
-   * Subscribe to UDP ping notifications from Go bridge
-   * When mobile sends a UDP ping and Go receives it, this stream will emit the userId
-   *
-   * @param onPing Callback invoked when a UDP ping is received for any user
-   * @returns Cleanup function to stop the subscription
-   */
-  public subscribeUdpPings(onPing: (userId: string) => void): () => void {
-    if (!this.client || this.disposed) {
-      this.logger.warn({ feature: "livekit-grpc" }, "Cannot subscribe to UDP pings: client not initialized");
-      return () => {};
-    }
-
-    const stream = this.client.subscribeUdpPings({});
-    let ended = false;
-
-    stream.on("data", (notification: any) => {
-      if (this.disposed || ended) return;
-      const userId = notification.user_id;
-      this.logger.debug({ userId, feature: "livekit-grpc" }, "UDP ping notification received");
-      onPing(userId);
-    });
-
-    stream.on("error", (error: Error) => {
-      if (this.disposed || ended) return;
-      this.logger.error({ error, feature: "livekit-grpc" }, "UDP ping subscription error");
-    });
-
-    stream.on("end", () => {
-      ended = true;
-      this.logger.debug({ feature: "livekit-grpc" }, "UDP ping subscription ended");
-    });
-
-    // Return cleanup function
-    return () => {
-      ended = true;
-      stream.cancel();
-    };
   }
 }
 

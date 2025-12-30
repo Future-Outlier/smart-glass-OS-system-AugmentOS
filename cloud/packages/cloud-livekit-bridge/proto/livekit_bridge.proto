@@ -31,15 +31,6 @@ service LiveKitBridge {
 
   // Bridge status (room connectivity for a specific user session)
   rpc GetStatus(BridgeStatusRequest) returns (BridgeStatusResponse);
-
-  // UDP audio registration
-  // Registers a user's hash for UDP audio packet routing
-  rpc RegisterUdpUser(RegisterUdpUserRequest) returns (RegisterUdpUserResponse);
-  rpc UnregisterUdpUser(UnregisterUdpUserRequest) returns (UnregisterUdpUserResponse);
-
-  // Subscribe to UDP ping notifications (server-streaming)
-  // When a UDP ping is received from a mobile client, this stream notifies TypeScript
-  rpc SubscribeUdpPings(SubscribeUdpPingsRequest) returns (stream UdpPingNotification);
 }
 
 // Audio chunk (PCM16 mono)
@@ -269,41 +260,4 @@ message SessionStats {
   int64 session_duration_ms = 6;
   string room_name = 7;
   int32 participant_count = 8;
-}
-
-// UDP audio registration messages
-//
-// Mobile clients send audio via UDP for lower latency.
-// The userIdHash is an FNV-1a hash of the userId, used to identify packets.
-message RegisterUdpUserRequest {
-  // User ID (same as used in JoinRoom)
-  string user_id = 1;
-
-  // FNV-1a hash of user_id (32-bit)
-  // Mobile computes this and includes it in each UDP packet header
-  uint32 user_id_hash = 2;
-}
-
-message RegisterUdpUserResponse {
-  bool success = 1;
-  string error = 2;
-}
-
-message UnregisterUdpUserRequest {
-  string user_id = 1;
-  uint32 user_id_hash = 2;
-}
-
-message UnregisterUdpUserResponse {
-  bool success = 1;
-}
-
-// UDP ping subscription messages
-message SubscribeUdpPingsRequest {
-  // Empty - subscribes to all ping notifications
-}
-
-message UdpPingNotification {
-  // User ID that sent the ping
-  string user_id = 1;
 }
