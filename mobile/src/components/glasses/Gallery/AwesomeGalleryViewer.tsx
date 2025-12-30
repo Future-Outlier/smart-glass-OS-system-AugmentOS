@@ -13,9 +13,9 @@ import {useSafeAreaInsets} from "react-native-safe-area-context"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 import Video from "react-native-video"
 
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
 import {PhotoInfo} from "@/types/asg"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
 
