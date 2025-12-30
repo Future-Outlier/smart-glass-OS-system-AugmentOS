@@ -104,7 +104,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         "prep": "/pairing/prep",
         "bluetooth": "/pairing/bluetooth",
         "select-glasses": "/pairing/select-glasses-model",
-        "wifi-setup": "/pairing/glasseswifisetup",
+        "wifi-setup": "/wifi/setup",
       }
 
       const route = pairingRoutes[step]

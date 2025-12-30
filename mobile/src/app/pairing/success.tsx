@@ -12,6 +12,7 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
 import {getGlassesImage} from "@/utils/getGlassesImage"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
 
 export default function PairingSuccessScreen() {
   const {theme, themed} = useAppTheme()
@@ -39,7 +40,14 @@ export default function PairingSuccessScreen() {
 
   const handleContinue = () => {
     if (glassesModelName === DeviceTypes.LIVE) {
-      replaceAll("/onboarding/live")
+      // check if the glasses are already connected:
+
+      // give some time for the glasses to be connected:
+      setTimeout(async () => {
+        replaceAll("/onboarding/live")
+        const glassesConnected = await useGlassesStore.getState().wifiConnected
+        
+      }, 1000)
       return
     }
 

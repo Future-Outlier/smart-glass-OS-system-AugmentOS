@@ -532,7 +532,7 @@ class SocketComms {
           text: "Setup WiFi",
           onPress: () => {
             const returnTo = encodeURIComponent(currentRoute)
-            push(`/pairing/glasseswifisetup?returnTo=${returnTo}`)
+            push(`/wifi/setup?returnTo=${returnTo}`)
           },
         },
       ],

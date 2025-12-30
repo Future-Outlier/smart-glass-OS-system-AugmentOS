@@ -160,7 +160,7 @@ export default function DeviceSettings() {
           icon={<Icon name="wifi" size={24} color={theme.colors.secondary_foreground} />}
           label={translate("settings:glassesWifiSettings")}
           onPress={() => {
-            push("/pairing/glasseswifisetup", {deviceModel: defaultWearable || "Glasses"})
+            push("/wifi/setup", {deviceModel: defaultWearable || "Glasses"})
           }}
         />
       )}
