@@ -35,8 +35,9 @@ export default function WifiPasswordScreen() {
     <Screen preset="fixed">
       <Header leftIcon="chevron-left" onLeftPress={goBack} RightActionComponent={<MentraLogoStandalone />} />
       
-      <View className="flex">
-        <Icon name="wifi" size={24} />
+      <View className="flex items-center justify-center">
+        <Icon name="wifi" size={48} color={theme.colors.primary} />
+        
       </View>
 
       <View className="flex-1 justify-center items-center">
