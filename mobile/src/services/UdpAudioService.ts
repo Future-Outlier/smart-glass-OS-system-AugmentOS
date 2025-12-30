@@ -10,6 +10,8 @@
  * - Bytes 6+: PCM audio data (or "PING" for probe packets)
  */
 
+import {Buffer} from "buffer"
+
 import dgram from "react-native-udp"
 
 const UDP_PORT = 8000
