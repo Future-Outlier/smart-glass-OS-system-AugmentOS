@@ -14,6 +14,7 @@ interface PlaybackState {
   appId?: string
   startTime: number
   completed: boolean // Guard against double callbacks
+  onComplete: (requestId: string, success: boolean, error: string | null, duration: number | null) => void
 }
 
 class AudioPlaybackService {
@@ -84,6 +85,7 @@ class AudioPlaybackService {
         appId,
         startTime: Date.now(),
         completed: false,
+        onComplete,
       }
 
       console.log(`AUDIO: Started playback for ${requestId}`)
@@ -159,7 +161,7 @@ class AudioPlaybackService {
   private async stopCurrentPlayback(): Promise<void> {
     if (!this.currentPlayback) return
 
-    const {sound, requestId} = this.currentPlayback
+    const {sound, requestId, startTime, onComplete} = this.currentPlayback
     this.currentPlayback.completed = true // Mark as completed to prevent callback
 
     try {
@@ -169,6 +171,10 @@ class AudioPlaybackService {
     } catch (error) {
       console.error(`AUDIO: Error stopping playback ${requestId}:`, error)
     }
+
+    // Notify that playback was interrupted so cloud can clear the request mapping
+    const elapsedSeconds = (Date.now() - startTime) / 1000
+    onComplete(requestId, true, null, elapsedSeconds)
 
     this.currentPlayback = null
   }
