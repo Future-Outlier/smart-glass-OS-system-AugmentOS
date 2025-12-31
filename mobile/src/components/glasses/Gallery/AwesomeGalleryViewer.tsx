@@ -53,6 +53,7 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
   const [isBuffering, setIsBuffering] = useState(true)
   const [showThumbnail, setShowThumbnail] = useState(true)
   const wasInactiveRef = useRef(false)
+  const userPausedRef = useRef(false) // Track if user manually paused
 
   // Auto-play when this video becomes active, restart from beginning if returning
   useEffect(() => {
@@ -64,10 +65,12 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
         console.log("🎥 [VideoPlayerItem] Returning to video - restarting from beginning")
         videoRef.current?.seek(0)
         setCurrentTime(0)
+        userPausedRef.current = false // Reset user pause flag when returning
         setIsPlaying(true)
         setShowControls(true)
         wasInactiveRef.current = false
-      } else {
+      } else if (!userPausedRef.current) {
+        // Only auto-play if user hasn't manually paused
         // First time activation - auto-play unless video is at the end
         if (!(duration > 0 && currentTime >= duration - 0.5)) {
           console.log("🎥 [VideoPlayerItem] Starting playback (video not finished)")
@@ -76,10 +79,13 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
           console.log("🎥 [VideoPlayerItem] Video already finished, not auto-playing")
           setShowControls(true)
         }
+      } else {
+        console.log("🎥 [VideoPlayerItem] User paused - respecting pause state")
       }
     } else {
       console.log("🎥 [VideoPlayerItem] Video became inactive, pausing:", photo.name)
       setIsPlaying(false)
+      userPausedRef.current = false // Reset user pause when leaving
       wasInactiveRef.current = true // Mark that this video was deactivated
     }
   }, [isActive, photo.name, duration, currentTime])
@@ -179,7 +185,14 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
       )}
 
       {/* Tap area to toggle controls */}
-      <TouchableOpacity activeOpacity={1} style={themed($tapArea)} onPress={() => setShowControls(!showControls)} />
+      <TouchableOpacity
+        activeOpacity={1}
+        style={themed($tapArea)}
+        onPress={() => {
+          console.log("🎮 [TapArea] Toggling controls, current state:", showControls)
+          setShowControls(!showControls)
+        }}
+      />
 
       {/* Thumbnail placeholder while video loads - instant display */}
       {showThumbnail && posterUrl && !hasError && (
@@ -202,50 +215,69 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
 
       {/* Unified video controls - elegant bottom bar */}
       {showControls && !hasError && (
-        <View style={themed($videoControlsContainer)} pointerEvents="box-none">
-          <View style={themed($unifiedControlBar)} pointerEvents="auto">
-            {/* Play/Pause button on left */}
-            <TouchableOpacity
-              onPress={e => {
-                e.stopPropagation()
-                if (!isPlaying && duration > 0 && currentTime >= duration - 0.5) {
-                  videoRef.current?.seek(0)
-                  setCurrentTime(0)
-                  setIsPlaying(true)
-                } else {
-                  setIsPlaying(!isPlaying)
-                }
-              }}
-              style={themed($playButtonInline)}
-              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-              <MaterialCommunityIcons
-                name={isPlaying ? "pause" : duration > 0 && currentTime >= duration - 0.5 ? "replay" : "play"}
-                size={28}
-                color="white"
+        <View style={themed($videoControlsContainer)} pointerEvents="auto">
+          <TouchableOpacity
+            style={themed($controlBarWrapper)}
+            activeOpacity={1}
+            onPress={() => {
+              // Intercept taps on control bar area to prevent tap area from toggling controls
+              console.log("🎮 [ControlBarWrapper] Tap intercepted, preventing toggle")
+            }}>
+            <View style={themed($unifiedControlBar)}>
+              {/* Play/Pause button on left */}
+              <TouchableOpacity
+                onPress={() => {
+                  console.log("🎮 [VideoControls] Play/Pause button pressed, current state:", isPlaying)
+                  if (!isPlaying && duration > 0 && currentTime >= duration - 0.5) {
+                    // Replay from beginning
+                    console.log("🎮 [VideoControls] Replaying video from start")
+                    videoRef.current?.seek(0)
+                    setCurrentTime(0)
+                    userPausedRef.current = false // User is resuming
+                    setIsPlaying(true)
+                  } else {
+                    // Toggle play/pause
+                    const newPlayingState = !isPlaying
+                    console.log("🎮 [VideoControls] Toggling playback to:", newPlayingState)
+                    userPausedRef.current = !newPlayingState // Set pause flag when pausing
+                    setIsPlaying(newPlayingState)
+                    // Keep controls visible when pausing so user can see the state
+                    if (!newPlayingState) {
+                      setShowControls(true)
+                    }
+                  }
+                }}
+                style={themed($playButtonInline)}
+                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                <MaterialCommunityIcons
+                  name={isPlaying ? "pause" : duration > 0 && currentTime >= duration - 0.5 ? "replay" : "play"}
+                  size={28}
+                  color="white"
+                />
+              </TouchableOpacity>
+
+              {/* Time display */}
+              <Text style={themed($timeText)}>{formatTime(currentTime)}</Text>
+
+              {/* Seek slider */}
+              <Slider
+                style={themed($seekBar)}
+                value={currentTime}
+                minimumValue={0}
+                maximumValue={duration}
+                minimumTrackTintColor="#FFFFFF"
+                maximumTrackTintColor="rgba(255,255,255,0.3)"
+                thumbTintColor="#FFFFFF"
+                onSlidingStart={() => setIsSeeking(true)}
+                onSlidingComplete={value => {
+                  videoRef.current?.seek(value)
+                }}
               />
-            </TouchableOpacity>
 
-            {/* Time display */}
-            <Text style={themed($timeText)}>{formatTime(currentTime)}</Text>
-
-            {/* Seek slider */}
-            <Slider
-              style={themed($seekBar)}
-              value={currentTime}
-              minimumValue={0}
-              maximumValue={duration}
-              minimumTrackTintColor="#FFFFFF"
-              maximumTrackTintColor="rgba(255,255,255,0.3)"
-              thumbTintColor="#FFFFFF"
-              onSlidingStart={() => setIsSeeking(true)}
-              onSlidingComplete={value => {
-                videoRef.current?.seek(value)
-              }}
-            />
-
-            {/* Duration display */}
-            <Text style={themed($timeText)}>{formatTime(duration)}</Text>
-          </View>
+              {/* Duration display */}
+              <Text style={themed($timeText)}>{formatTime(duration)}</Text>
+            </View>
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -534,6 +566,10 @@ const $videoControlsContainer: ThemedStyle<any> = ({spacing}) => ({
   right: 0,
   paddingHorizontal: spacing.s6,
   zIndex: 100,
+})
+
+const $controlBarWrapper: ThemedStyle<any> = () => ({
+  width: "100%",
 })
 
 const $unifiedControlBar: ThemedStyle<any> = ({spacing}) => ({
