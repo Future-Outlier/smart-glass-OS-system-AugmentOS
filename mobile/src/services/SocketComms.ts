@@ -2,6 +2,7 @@ import CoreModule from "core"
 import {router} from "expo-router"
 
 import {push} from "@/contexts/NavigationRef"
+import audioPlaybackService from "@/services/AudioPlaybackService"
 import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
 import udpAudioService, {fnv1aHash} from "@/services/UdpAudioService"
@@ -553,15 +554,16 @@ class SocketComms {
     const size = msg.size ?? "medium"
     const authToken = msg.authToken ?? ""
     const compress = msg.compress ?? "none"
+    const silent = msg.silent ?? false
     console.log(
-      `Received photo_request, requestId: ${requestId}, appId: ${appId}, webhookUrl: ${webhookUrl}, size: ${size} authToken: ${authToken} compress: ${compress}`,
+      `Received photo_request, requestId: ${requestId}, appId: ${appId}, webhookUrl: ${webhookUrl}, size: ${size} authToken: ${authToken} compress: ${compress} silent: ${silent}`,
     )
     if (!requestId || !appId) {
       console.log("Invalid photo request: missing requestId or appId")
       return
     }
-    // Parameter order: requestId, appId, size, webhookUrl, authToken, compress
-    CoreModule.photoRequest(requestId, appId, size, webhookUrl, authToken, compress)
+    // Parameter order: requestId, appId, size, webhookUrl, authToken, compress, silent
+    CoreModule.photoRequest(requestId, appId, size, webhookUrl, authToken, compress, silent)
   }
 
   private handle_start_rtmp_stream(msg: any) {
@@ -603,7 +605,8 @@ class SocketComms {
     console.log(`SOCKET: Received START_VIDEO_RECORDING: ${JSON.stringify(msg)}`)
     const videoRequestId = msg.requestId || `video_${Date.now()}`
     const save = msg.save !== false
-    CoreModule.startVideoRecording(videoRequestId, save)
+    const silent = msg.silent ?? false
+    CoreModule.startVideoRecording(videoRequestId, save, silent)
   }
 
   private handle_stop_video_recording(msg: any) {
@@ -667,6 +670,46 @@ class SocketComms {
 
     // Notify the React Native UDP service that ping was acknowledged
     udpAudioService.onPingAckReceived()
+  }
+
+  /**
+   * Handle audio play request from cloud.
+   * Downloads and plays audio from the provided URL using expo-av.
+   */
+  private handle_audio_play_request(msg: any) {
+    const requestId = msg.requestId
+    const audioUrl = msg.audioUrl
+    const appId = msg.appId || msg.packageName // Optional - may be undefined
+    const volume = msg.volume ?? 1.0
+    const stopOtherAudio = msg.stopOtherAudio ?? true
+
+    if (!requestId || !audioUrl) {
+      console.log("SOCKET: Invalid audio_play_request - missing requestId or audioUrl")
+      if (requestId) {
+        this.sendAudioPlayResponse(requestId, false, "Missing audioUrl", null)
+      }
+      return
+    }
+
+    console.log(`SOCKET: Received audio_play_request: ${requestId}${appId ? ` from ${appId}` : ""}, url: ${audioUrl}`)
+
+    // Play audio and send response when complete
+    audioPlaybackService.play(
+      {requestId, audioUrl, appId, volume, stopOtherAudio},
+      (respRequestId, success, error, duration) => {
+        this.sendAudioPlayResponse(respRequestId, success, error, duration)
+      },
+    )
+  }
+
+  /**
+   * Handle audio stop request from cloud.
+   * Stops audio playback for the specified app.
+   */
+  private handle_audio_stop_request(msg: any) {
+    const appId = msg.appId || msg.packageName // Optional - may be undefined
+    console.log(`SOCKET: Received audio_stop_request${appId ? ` for app: ${appId}` : ""}`)
+    audioPlaybackService.stopForApp(appId)
   }
 
   // Message Handling
@@ -758,6 +801,14 @@ class SocketComms {
 
       case "show_wifi_setup":
         this.handle_show_wifi_setup(msg)
+        break
+
+      case "audio_play_request":
+        this.handle_audio_play_request(msg)
+        break
+
+      case "audio_stop_request":
+        this.handle_audio_stop_request(msg)
         break
 
       case "udp_ping_ack":
