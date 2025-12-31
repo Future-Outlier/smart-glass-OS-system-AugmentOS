@@ -11,6 +11,7 @@ import {Divider} from "@/components/ui/Divider"
 import {Spacer} from "@/components/ui/Spacer"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
@@ -23,7 +24,6 @@ import {
   getGlassesImage,
   getGlassesOpenImage,
 } from "@/utils/getGlassesImage"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 import MicIcon from "assets/icons/component/MicIcon"
 

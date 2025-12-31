@@ -74,9 +74,17 @@ struct ViewState {
     private var alwaysOnStatusBar: Bool = false
     private var bypassVad: Bool = true
     private var enforceLocalTranscription: Bool = false
-    private var bypassAudioEncoding: Bool = false
     private var offlineMode: Bool = false
     private var metricSystem: Bool = false
+
+    // LC3 Audio Encoding
+    // Audio output format enum
+    enum AudioOutputFormat { case lc3, pcm }
+    // Persistent LC3 converter for encoding/decoding
+    private var lc3Converter: PcmConverter?
+    private let LC3_FRAME_SIZE = 20 // bytes per LC3 frame (canonical config)
+    // Audio output format - defaults to LC3 for bandwidth savings
+    private var audioOutputFormat: AudioOutputFormat = .lc3
 
     // mic:
     private var useOnboardMic = false
@@ -151,6 +159,10 @@ struct ViewState {
                 speechTriggerDurationMs: 50
             )
         }
+
+        // Initialize persistent LC3 converter for unified audio encoding
+        lc3Converter = PcmConverter()
+        Bridge.log("LC3 converter initialized for unified audio encoding")
     }
 
     // MARK: - AUX Voice Data Handling
@@ -162,11 +174,34 @@ struct ViewState {
         }
     }
 
+    /**
+     * Send audio data to cloud via Bridge.
+     * Encodes to LC3 if audioOutputFormat is .lc3, otherwise sends raw PCM.
+     * All audio destined for cloud should go through this function.
+     */
+    private func sendMicData(_ pcmData: Data) {
+        switch audioOutputFormat {
+        case .lc3:
+            guard let lc3Converter = lc3Converter else {
+                Bridge.log("MAN: ERROR - LC3 converter not initialized but format is LC3")
+                return
+            }
+            let lc3Data = lc3Converter.encode(pcmData) as Data
+            guard lc3Data.count > 0 else {
+                Bridge.log("MAN: ERROR - LC3 encoding returned empty data")
+                return
+            }
+            Bridge.sendMicData(lc3Data)
+        case .pcm:
+            Bridge.sendMicData(pcmData)
+        }
+    }
+
     private func emptyVadBuffer() {
         // go through the buffer, popping from the first element in the array (FIFO):
         while !vadBuffer.isEmpty {
             let chunk = vadBuffer.removeFirst()
-            Bridge.sendMicData(chunk)
+            sendMicData(chunk) // Uses our encoder, not Bridge directly
         }
     }
 
@@ -179,74 +214,30 @@ struct ViewState {
         }
     }
 
+    /**
+     * Handle raw LC3 audio data from glasses.
+     * Decodes the glasses LC3 to PCM, then forwards to handlePcm for processing.
+     * This matches Android behavior - glasses forward raw LC3, CoreManager handles encoding.
+     */
     func handleGlassesMicData(_ lc3Data: Data, _ frameSize: Int = 20) {
-        // decode the g1 audio data to PCM and feed to the VAD:
+        guard let lc3Converter = lc3Converter else {
+            Bridge.log("MAN: LC3 converter not initialized")
+            return
+        }
 
-        // Ensure we have enough data to process
         guard lc3Data.count > 2 else {
-            Bridge.log("Received invalid PCM data size: \(lc3Data.count)")
+            Bridge.log("MAN: Received invalid LC3 data size: \(lc3Data.count)")
             return
         }
 
-        // Ensure we have valid PCM data
-        guard lc3Data.count > 0 else {
-            Bridge.log("No LC3 data after removing command bytes")
-            return
-        }
-
-        if bypassVad {
-            // Bridge.log("MAN: Glasses mic VAD bypassed - bypassVad=\(bypassVad)")
-            checkSetVadStatus(speaking: true)
-            // first send out whatever's in the vadBuffer (if there is anything):
-            emptyVadBuffer()
-            let pcmConverter = PcmConverter()
-            let pcmData = pcmConverter.decode(lc3Data, frameSize: frameSize) as Data
-            //        self.serverComms.sendAudioChunk(lc3Data)
-            Bridge.sendMicData(pcmData)
-            return
-        }
-
-        let pcmConverter = PcmConverter()
-        let pcmData = pcmConverter.decode(lc3Data, frameSize: frameSize) as Data
-
+        let pcmData = lc3Converter.decode(lc3Data, frameSize: frameSize) as Data
         guard pcmData.count > 0 else {
-            Bridge.log("PCM conversion resulted in empty data")
+            Bridge.log("MAN: Failed to decode glasses LC3 audio")
             return
         }
 
-        // feed PCM to the VAD:
-        guard let vad = vad else {
-            Bridge.log("VAD not initialized")
-            return
-        }
-
-        // convert audioData to Int16 array:
-        let pcmDataArray = pcmData.withUnsafeBytes { pointer -> [Int16] in
-            Array(
-                UnsafeBufferPointer(
-                    start: pointer.bindMemory(to: Int16.self).baseAddress,
-                    count: pointer.count / MemoryLayout<Int16>.stride
-                ))
-        }
-
-        vad.checkVAD(pcm: pcmDataArray) { [weak self] state in
-            guard let self = self else { return }
-            Bridge.log("VAD State: \(state)")
-        }
-
-        let vadState = vad.currentState()
-        if vadState == .speeching {
-            checkSetVadStatus(speaking: true)
-            // first send out whatever's in the vadBuffer (if there is anything):
-            emptyVadBuffer()
-            //        self.serverComms.sendAudioChunk(lc3Data)
-            Bridge.sendMicData(pcmData)
-        } else {
-            checkSetVadStatus(speaking: false)
-            // add to the vadBuffer:
-            //        addToVadBuffer(lc3Data)
-            addToVadBuffer(pcmData)
-        }
+        // Forward to handlePcm which handles VAD and encoding
+        handlePcm(pcmData)
     }
 
     func handlePcm(_ pcmData: Data) {
@@ -259,25 +250,19 @@ struct ViewState {
         }
 
         if bypassVad {
-            //          let pcmConverter = PcmConverter()
-            //          let lc3Data = pcmConverter.encode(pcmData) as Data
-            //          checkSetVadStatus(speaking: true)
-            //          // first send out whatever's in the vadBuffer (if there is anything):
-            //          emptyVadBuffer()
-            //          self.serverComms.sendAudioChunk(lc3Data)
+            // Send audio to cloud (encoding handled by sendMicData)
             if shouldSendPcmData {
-                // Bridge.log("MAN: Sending PCM data to server")
-                Bridge.sendMicData(pcmData)
+                sendMicData(pcmData)
             }
 
-            // Also send to local transcriber when bypassing VAD
+            // Send PCM to local transcriber (always needs raw PCM)
             if shouldSendTranscript {
                 transcriber?.acceptAudio(pcm16le: pcmData)
             }
             return
         }
 
-        // convert audioData to Int16 array:
+        // convert audioData to Int16 array for VAD:
         let pcmDataArray = pcmData.withUnsafeBytes { pointer -> [Int16] in
             Array(
                 UnsafeBufferPointer(
@@ -288,32 +273,27 @@ struct ViewState {
 
         vad.checkVAD(pcm: pcmDataArray) { [weak self] state in
             guard let self = self else { return }
-            //            self.handler?(state)
             Bridge.log("VAD State: \(state)")
         }
-
-        // encode the pcmData as LC3:
-        //        let pcmConverter = PcmConverter()
-        //        let lc3Data = pcmConverter.encode(pcmData) as Data
 
         let vadState = vad.currentState()
         if vadState == .speeching {
             checkSetVadStatus(speaking: true)
             // first send out whatever's in the vadBuffer (if there is anything):
             emptyVadBuffer()
-            //          self.serverComms.sendAudioChunk(lc3Data)
+
+            // Send audio to cloud (encoding handled by sendMicData)
             if shouldSendPcmData {
-                Bridge.sendMicData(pcmData)
+                sendMicData(pcmData)
             }
 
-            // Send to local transcriber when speech is detected
+            // Send PCM to local transcriber (always needs raw PCM)
             if shouldSendTranscript {
                 transcriber?.acceptAudio(pcm16le: pcmData)
             }
         } else {
             checkSetVadStatus(speaking: false)
-            // add to the vadBuffer:
-            //          addToVadBuffer(lc3Data)
+            // add to the vadBuffer (stores PCM for potential later sending):
             addToVadBuffer(pcmData)
         }
     }
@@ -563,8 +543,9 @@ struct ViewState {
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
     }
 
-    func updateBypassAudioEncoding(_ enabled: Bool) {
-        bypassAudioEncoding = enabled
+    func updateAudioOutputFormat(_ format: AudioOutputFormat) {
+        audioOutputFormat = format
+        Bridge.log("Audio output format set to: \(format)")
     }
 
     func updateMetricSystem(_ enabled: Bool) {
@@ -1457,6 +1438,9 @@ struct ViewState {
         // Clean up transcriber resources
         transcriber?.shutdown()
         transcriber = nil
+
+        // Clean up LC3 converter
+        lc3Converter = nil
 
         cancellables.removeAll()
     }

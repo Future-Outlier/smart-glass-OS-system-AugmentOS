@@ -14,11 +14,18 @@
     void* _decMem;
     unsigned char* _outBuf;
     BOOL _decoderInitialized;
-    
+
     // Decoder parameters
     unsigned _decodeSize;
     uint16_t _sampleOfFrames;
     uint16_t _bytesOfFrames;
+
+    // Instance variables for persistent encoder
+    lc3_encoder_t _lc3_encoder;
+    void* _encMem;
+    unsigned char* _encOutBuf;
+    BOOL _encoderInitialized;
+    unsigned _encodeSize;
 }
 
 // Frame length 10ms
@@ -34,6 +41,9 @@ static const uint16_t outputByteCount = 20;
         _decoderInitialized = NO;
         _decMem = NULL;
         _outBuf = NULL;
+        _encoderInitialized = NO;
+        _encMem = NULL;
+        _encOutBuf = NULL;
     }
     return self;
 }
@@ -108,6 +118,72 @@ static const uint16_t outputByteCount = 20;
     }
 }
 
+- (void)setupEncoder {
+    if (_encoderInitialized) {
+        return; // Already initialized
+    }
+
+    _encodeSize = lc3_encoder_size(dtUs, srHz);
+
+    _encMem = malloc(_encodeSize);
+    if (_encMem == NULL) {
+        printf("Failed to allocate memory for encoder\n");
+        return;
+    }
+
+    _lc3_encoder = lc3_setup_encoder(dtUs, srHz, 0, _encMem);
+
+    _encOutBuf = malloc(outputByteCount);
+    if (_encOutBuf == NULL) {
+        printf("Failed to allocate memory for encoder output buffer\n");
+        free(_encMem);
+        _encMem = NULL;
+        return;
+    }
+
+    _encoderInitialized = YES;
+}
+
+- (NSMutableData *)encode:(NSData *)pcmdata {
+    if (pcmdata == nil || pcmdata.length == 0) {
+        return [[NSMutableData alloc] init];
+    }
+
+    // Setup encoder on first use
+    [self setupEncoder];
+
+    if (!_encoderInitialized) {
+        printf("Encoder not initialized\n");
+        return [[NSMutableData alloc] init];
+    }
+
+    // _bytesOfFrames is set by decoder setup, but we need it for encoding too
+    // If decoder hasn't been set up, compute it ourselves
+    uint16_t bytesPerFrame = lc3_frame_samples(dtUs, srHz) * 2; // samples * 2 bytes per sample
+
+    NSMutableData *lc3Data = [[NSMutableData alloc] init];
+    const int16_t *pcmSamples = (const int16_t *)pcmdata.bytes;
+    int totalBytes = (int)pcmdata.length;
+    int bytesRead = 0;
+
+    while (bytesRead < totalBytes) {
+        // Check if we have enough data for a full frame
+        if (totalBytes - bytesRead < bytesPerFrame) {
+            break;
+        }
+
+        const int16_t *currentSamples = pcmSamples + (bytesRead / 2);
+        int result = lc3_encode(_lc3_encoder, LC3_PCM_FORMAT_S16, currentSamples, 1, outputByteCount, _encOutBuf);
+
+        if (result == 0) {
+            [lc3Data appendBytes:_encOutBuf length:outputByteCount];
+        }
+        bytesRead += bytesPerFrame;
+    }
+
+    return lc3Data;
+}
+
 - (void)dealloc {
     if (_decMem) {
         free(_decMem);
@@ -118,5 +194,15 @@ static const uint16_t outputByteCount = 20;
         _outBuf = NULL;
     }
     _decoderInitialized = NO;
+
+    if (_encMem) {
+        free(_encMem);
+        _encMem = NULL;
+    }
+    if (_encOutBuf) {
+        free(_encOutBuf);
+        _encOutBuf = NULL;
+    }
+    _encoderInitialized = NO;
 }
 @end

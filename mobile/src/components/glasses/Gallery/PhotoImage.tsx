@@ -5,14 +5,13 @@
 
 import LinearGradient from "expo-linear-gradient"
 import {useState, useEffect} from "react"
-import {View, Image} from "react-native"
-import {ViewStyle, ImageStyle, TextStyle} from "react-native"
+import {View, Image, ViewStyle, ImageStyle, TextStyle} from "react-native"
 import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 
 import {Text} from "@/components/ignite"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
 import {PhotoInfo} from "@/types/asg"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 // @ts-ignore
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient)

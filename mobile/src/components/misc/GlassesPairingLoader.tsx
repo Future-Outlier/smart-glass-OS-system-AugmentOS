@@ -2,9 +2,9 @@ import {useEffect, useRef, useState} from "react"
 import {View, Animated, Easing, ViewStyle, TextStyle, Image, ImageStyle} from "react-native"
 
 import {Button, Text} from "@/components/ignite"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
 import {getGlassesImage, getEvenRealitiesG1Image} from "@/utils/getGlassesImage"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 import {getModelSpecificTips} from "./GlassesTroubleshootingModal"
 

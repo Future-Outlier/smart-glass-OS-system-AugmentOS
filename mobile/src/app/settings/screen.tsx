@@ -7,8 +7,8 @@ import {Header, Screen} from "@/components/ignite"
 import SliderSetting from "@/components/settings/SliderSetting"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS, useSetting} from "@/stores/settings"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 export default function ScreenSettingsScreen() {
   const {theme} = useAppTheme()
