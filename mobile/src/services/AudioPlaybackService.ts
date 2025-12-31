@@ -123,10 +123,9 @@ class AudioPlaybackService {
     // Check if playback finished
     if (status.didJustFinish) {
       const durationMs = status.durationMillis || 0
-      const durationSeconds = durationMs / 1000
-      console.log(`AUDIO: Playback finished for ${requestId}, duration: ${durationSeconds}s`)
+      console.log(`AUDIO: Playback finished for ${requestId}, duration: ${durationMs}ms`)
       this.currentPlayback.completed = true
-      onComplete(requestId, true, null, durationSeconds)
+      onComplete(requestId, true, null, durationMs)
       this.cleanupCurrentPlayback(requestId)
     }
   }
@@ -173,8 +172,8 @@ class AudioPlaybackService {
     }
 
     // Notify that playback was interrupted so cloud can clear the request mapping
-    const elapsedSeconds = (Date.now() - startTime) / 1000
-    onComplete(requestId, true, null, elapsedSeconds)
+    const elapsedMs = Date.now() - startTime
+    onComplete(requestId, true, null, elapsedMs)
 
     this.currentPlayback = null
   }
