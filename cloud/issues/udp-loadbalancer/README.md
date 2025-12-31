@@ -7,6 +7,7 @@ Expose UDP port 8000 for direct audio streaming from mobile to cloud.
 - **udp-loadbalancer-spec.md** - Problem, goals, constraints
 - **udp-loadbalancer-architecture.md** - Technical design
 - **udp-client-improvements.md** - Dynamic host discovery, packet reordering
+- **setup-udp-service-script.md** - Setup script usage and enhancements
 
 ## Quick Context
 
