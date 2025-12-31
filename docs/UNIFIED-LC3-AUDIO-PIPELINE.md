@@ -940,6 +940,19 @@ For new clients:
 
 **IMPORTANT: After implementing this feature, follow this verification protocol before considering the work complete.**
 
+### ⛔ FORBIDDEN COMMANDS - DO NOT RUN
+
+**NEVER run these commands** - they make thousands of unrelated changes and pollute the diff:
+
+```bash
+# DO NOT RUN:
+bun lint --fix           # ESLint auto-fix - changes everything
+npm run lint -- --fix    # ESLint auto-fix - changes everything
+npx prettier --write .   # Prettier - reformats entire codebase
+```
+
+Only run `bun lint` (without `--fix`) to CHECK for errors, then fix manually if needed.
+
 ### Self-Review Checklist
 
 After completing each phase, perform the following:
