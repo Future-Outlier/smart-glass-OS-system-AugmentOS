@@ -484,7 +484,11 @@ export class AudioManager {
           incomingBuf = Buffer.from(audioData as ArrayBuffer);
         } else if (ArrayBuffer.isView(audioData)) {
           const view = audioData as ArrayBufferView;
-          incomingBuf = Buffer.from(view.buffer, (view as any).byteOffset || 0, (view as any).byteLength || view.byteLength);
+          incomingBuf = Buffer.from(
+            view.buffer,
+            (view as any).byteOffset || 0,
+            (view as any).byteLength || view.byteLength,
+          );
         }
 
         if (!incomingBuf) {
@@ -495,7 +499,14 @@ export class AudioManager {
         let buf: Buffer;
         if (this.audioFormat === "lc3" && this.lc3Service) {
           try {
-            const pcmArrayBuffer = await this.lc3Service.decodeAudioChunk(incomingBuf.buffer);
+            // IMPORTANT: Buffer.buffer returns the ENTIRE underlying ArrayBuffer, not just the slice.
+            // For UDP audio, the buffer is sliced (buf.slice(6) to skip header), so byteOffset > 0.
+            // We must extract only the relevant portion using slice() to avoid reading header bytes.
+            const lc3ArrayBuffer = incomingBuf.buffer.slice(
+              incomingBuf.byteOffset,
+              incomingBuf.byteOffset + incomingBuf.byteLength,
+            );
+            const pcmArrayBuffer = await this.lc3Service.decodeAudioChunk(lc3ArrayBuffer);
             if (!pcmArrayBuffer || pcmArrayBuffer.byteLength === 0) {
               // LC3 decode failed or returned empty - skip this chunk
               if (this.processedFrameCount % 100 === 0) {
