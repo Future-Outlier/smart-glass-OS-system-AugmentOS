@@ -52,23 +52,35 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
   const [errorMessage, setErrorMessage] = useState("")
   const [isBuffering, setIsBuffering] = useState(true)
   const [showThumbnail, setShowThumbnail] = useState(true)
+  const wasInactiveRef = useRef(false)
 
-  // Auto-play when this video becomes active, pause when inactive
+  // Auto-play when this video becomes active, restart from beginning if returning
   useEffect(() => {
     if (isActive) {
       console.log("🎥 [VideoPlayerItem] Video became active:", photo.name)
-      // Only auto-play if video hasn't finished
-      if (!(duration > 0 && currentTime >= duration - 0.5)) {
-        console.log("🎥 [VideoPlayerItem] Starting playback (video not finished)")
+
+      // If video was previously inactive (user swiped away and came back), restart from beginning
+      if (wasInactiveRef.current) {
+        console.log("🎥 [VideoPlayerItem] Returning to video - restarting from beginning")
+        videoRef.current?.seek(0)
+        setCurrentTime(0)
         setIsPlaying(true)
-      } else {
-        console.log("🎥 [VideoPlayerItem] Video already finished, not auto-playing")
         setShowControls(true)
+        wasInactiveRef.current = false
+      } else {
+        // First time activation - auto-play unless video is at the end
+        if (!(duration > 0 && currentTime >= duration - 0.5)) {
+          console.log("🎥 [VideoPlayerItem] Starting playback (video not finished)")
+          setIsPlaying(true)
+        } else {
+          console.log("🎥 [VideoPlayerItem] Video already finished, not auto-playing")
+          setShowControls(true)
+        }
       }
     } else {
       console.log("🎥 [VideoPlayerItem] Video became inactive, pausing:", photo.name)
       setIsPlaying(false)
-      // Don't reset time/position - preserve where user left off
+      wasInactiveRef.current = true // Mark that this video was deactivated
     }
   }, [isActive, photo.name, duration, currentTime])
 
@@ -173,13 +185,6 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
       {showThumbnail && posterUrl && !hasError && (
         <View style={themed($thumbnailOverlay)} pointerEvents="none">
           <Image source={{uri: posterUrl}} style={themed($video)} contentFit="contain" />
-          {isBuffering && (
-            <View style={themed($bufferingOverlay)} pointerEvents="none">
-              <View style={themed($bufferingSpinner)}>
-                <Text style={themed($bufferingText)}>Loading video...</Text>
-              </View>
-            </View>
-          )}
         </View>
       )}
 
@@ -473,7 +478,7 @@ const $tapArea: ThemedStyle<any> = () => ({
   position: "absolute",
   top: 0,
   left: 0,
-  bottom: 120, // Don't cover bottom controls area - allows swipes near controls
+  bottom: SCREEN_HEIGHT * 0.15, // Don't cover bottom controls area - allows swipes near controls
   right: 0,
   zIndex: 1,
 })
@@ -524,7 +529,7 @@ const $errorSubtext: ThemedStyle<any> = () => ({
 
 const $videoControlsContainer: ThemedStyle<any> = ({spacing}) => ({
   position: "absolute",
-  bottom: spacing.s8,
+  bottom: SCREEN_HEIGHT * 0.1, // 10% from bottom - scales with screen size
   left: 0,
   right: 0,
   paddingHorizontal: spacing.s6,
