@@ -19,7 +19,7 @@ interface PlaybackState {
 
 class AudioPlaybackService {
   private static instance: AudioPlaybackService | null = null
-  private currentPlayback: PlaybackState | null = null
+  private activePlaybacks: Map<string, PlaybackState> = new Map()
   private isInitialized = false
 
   private constructor() {}
@@ -63,10 +63,10 @@ class AudioPlaybackService {
     try {
       await this.ensureInitialized()
 
-      // Stop current playback if requested
-      if (stopOtherAudio && this.currentPlayback) {
-        console.log(`AUDIO: Stopping current playback for ${this.currentPlayback.requestId}`)
-        await this.stopCurrentPlayback()
+      // Stop all other playback if requested
+      if (stopOtherAudio && this.activePlaybacks.size > 0) {
+        console.log(`AUDIO: Stopping ${this.activePlaybacks.size} active playback(s)`)
+        await this.stopAllPlaybacks()
       }
 
       // Create and load the sound
@@ -76,10 +76,10 @@ class AudioPlaybackService {
           shouldPlay: true,
           volume: Math.max(0, Math.min(1, volume)),
         },
-        (status: AVPlaybackStatus) => this.onPlaybackStatusUpdate(status, requestId, onComplete),
+        (status: AVPlaybackStatus) => this.onPlaybackStatusUpdate(status, requestId),
       )
 
-      this.currentPlayback = {
+      const playbackState: PlaybackState = {
         sound,
         requestId,
         appId,
@@ -88,7 +88,8 @@ class AudioPlaybackService {
         onComplete,
       }
 
-      console.log(`AUDIO: Started playback for ${requestId}`)
+      this.activePlaybacks.set(requestId, playbackState)
+      console.log(`AUDIO: Started playback for ${requestId}, active count: ${this.activePlaybacks.size}`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error loading audio"
       console.error(`AUDIO: Failed to play ${requestId}:`, errorMessage)
@@ -99,13 +100,11 @@ class AudioPlaybackService {
   /**
    * Handle playback status updates from expo-av
    */
-  private onPlaybackStatusUpdate(
-    status: AVPlaybackStatus,
-    requestId: string,
-    onComplete: (requestId: string, success: boolean, error: string | null, duration: number | null) => void,
-  ): void {
-    // Guard against double callbacks - check if this playback is still current and not completed
-    if (!this.currentPlayback || this.currentPlayback.requestId !== requestId || this.currentPlayback.completed) {
+  private onPlaybackStatusUpdate(status: AVPlaybackStatus, requestId: string): void {
+    const playback = this.activePlaybacks.get(requestId)
+
+    // Guard against callbacks for unknown or completed playbacks
+    if (!playback || playback.completed) {
       return
     }
 
@@ -113,9 +112,9 @@ class AudioPlaybackService {
       // Handle error state
       if (status.error) {
         console.error(`AUDIO: Playback error for ${requestId}:`, status.error)
-        this.currentPlayback.completed = true
-        onComplete(requestId, false, status.error, null)
-        this.cleanupCurrentPlayback(requestId)
+        playback.completed = true
+        playback.onComplete(requestId, false, status.error, null)
+        this.cleanupPlayback(requestId)
       }
       return
     }
@@ -124,23 +123,37 @@ class AudioPlaybackService {
     if (status.didJustFinish) {
       const durationMs = status.durationMillis || 0
       console.log(`AUDIO: Playback finished for ${requestId}, duration: ${durationMs}ms`)
-      this.currentPlayback.completed = true
-      onComplete(requestId, true, null, durationMs)
-      this.cleanupCurrentPlayback(requestId)
+      playback.completed = true
+      playback.onComplete(requestId, true, null, durationMs)
+      this.cleanupPlayback(requestId)
     }
   }
 
   /**
    * Stop playback for a specific app.
-   * If appId is not provided or current playback has no appId, stops all playback.
+   * If appId is not provided, stops all playback.
    */
   public async stopForApp(appId?: string): Promise<void> {
-    if (!this.currentPlayback) return
+    if (this.activePlaybacks.size === 0) return
 
-    // If no appId provided, or current playback has no appId, or they match - stop
-    if (!appId || !this.currentPlayback.appId || this.currentPlayback.appId === appId) {
-      console.log(`AUDIO: Stopping playback${appId ? ` for app ${appId}` : ""}`)
-      await this.stopCurrentPlayback()
+    if (!appId) {
+      // No appId provided - stop all
+      console.log("AUDIO: Stopping all playback (no appId specified)")
+      await this.stopAllPlaybacks()
+      return
+    }
+
+    // Find and stop all playbacks for this app
+    const toStop: string[] = []
+    for (const [reqId, playback] of this.activePlaybacks) {
+      if (playback.appId === appId) {
+        toStop.push(reqId)
+      }
+    }
+
+    if (toStop.length > 0) {
+      console.log(`AUDIO: Stopping ${toStop.length} playback(s) for app ${appId}`)
+      await Promise.all(toStop.map(reqId => this.stopPlayback(reqId)))
     }
   }
 
@@ -148,62 +161,90 @@ class AudioPlaybackService {
    * Stop all audio playback
    */
   public async stopAll(): Promise<void> {
-    if (this.currentPlayback) {
-      console.log("AUDIO: Stopping all playback")
-      await this.stopCurrentPlayback()
+    if (this.activePlaybacks.size > 0) {
+      console.log(`AUDIO: Stopping all ${this.activePlaybacks.size} playback(s)`)
+      await this.stopAllPlaybacks()
     }
   }
 
   /**
-   * Internal method to stop current playback
+   * Internal method to stop all playbacks
    */
-  private async stopCurrentPlayback(): Promise<void> {
-    if (!this.currentPlayback) return
+  private async stopAllPlaybacks(): Promise<void> {
+    const requestIds = Array.from(this.activePlaybacks.keys())
+    await Promise.all(requestIds.map(reqId => this.stopPlayback(reqId)))
+  }
 
-    const {sound, requestId, startTime, onComplete} = this.currentPlayback
-    this.currentPlayback.completed = true // Mark as completed to prevent callback
+  /**
+   * Internal method to stop a specific playback by requestId
+   */
+  private async stopPlayback(requestId: string): Promise<void> {
+    const playback = this.activePlaybacks.get(requestId)
+    if (!playback) return
+
+    playback.completed = true // Mark as completed to prevent callback
 
     try {
-      await sound.stopAsync()
-      await sound.unloadAsync()
+      await playback.sound.stopAsync()
+      await playback.sound.unloadAsync()
       console.log(`AUDIO: Stopped and unloaded ${requestId}`)
     } catch (error) {
       console.error(`AUDIO: Error stopping playback ${requestId}:`, error)
     }
 
     // Notify that playback was interrupted so cloud can clear the request mapping
-    const elapsedMs = Date.now() - startTime
-    onComplete(requestId, true, null, elapsedMs)
+    const elapsedMs = Date.now() - playback.startTime
+    playback.onComplete(requestId, true, null, elapsedMs)
 
-    this.currentPlayback = null
+    this.activePlaybacks.delete(requestId)
   }
 
   /**
-   * Cleanup after playback completes
+   * Cleanup after playback completes naturally
    */
-  private async cleanupCurrentPlayback(requestId: string): Promise<void> {
-    if (this.currentPlayback && this.currentPlayback.requestId === requestId) {
-      try {
-        await this.currentPlayback.sound.unloadAsync()
-      } catch (error) {
-        console.error(`AUDIO: Error unloading sound ${requestId}:`, error)
-      }
-      this.currentPlayback = null
+  private async cleanupPlayback(requestId: string): Promise<void> {
+    const playback = this.activePlaybacks.get(requestId)
+    if (!playback) return
+
+    try {
+      await playback.sound.unloadAsync()
+    } catch (error) {
+      console.error(`AUDIO: Error unloading sound ${requestId}:`, error)
     }
+    this.activePlaybacks.delete(requestId)
+    console.log(`AUDIO: Cleaned up ${requestId}, active count: ${this.activePlaybacks.size}`)
   }
 
   /**
    * Check if audio is currently playing
    */
   public isPlaying(): boolean {
-    return this.currentPlayback !== null && !this.currentPlayback.completed
+    for (const playback of this.activePlaybacks.values()) {
+      if (!playback.completed) {
+        return true
+      }
+    }
+    return false
   }
 
   /**
-   * Get current playback app ID
+   * Get current playback app IDs (all active)
    */
-  public getCurrentAppId(): string | null {
-    return this.currentPlayback?.appId || null
+  public getActiveAppIds(): string[] {
+    const appIds: string[] = []
+    for (const playback of this.activePlaybacks.values()) {
+      if (!playback.completed && playback.appId) {
+        appIds.push(playback.appId)
+      }
+    }
+    return appIds
+  }
+
+  /**
+   * Get number of active playbacks
+   */
+  public getActiveCount(): number {
+    return this.activePlaybacks.size
   }
 }
 
