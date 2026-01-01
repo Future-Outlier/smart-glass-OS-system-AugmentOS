@@ -613,6 +613,10 @@ public class OtaHelper {
                 // Download new version
                 boolean downloadOk = downloadApk(apkUrl, appInfo, context, filename);
                 if (downloadOk) {
+                    // Notify phone that install is starting
+                    currentUpdateStage = "install";
+                    sendProgressToPhone("install", 0, 0, 0, "STARTED", null);
+
                     // Install
                     installApk(context, apkFile.getAbsolutePath());
                     

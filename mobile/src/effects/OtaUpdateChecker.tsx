@@ -6,7 +6,7 @@ import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 
-interface VersionInfo {
+export interface VersionInfo {
   versionCode: number
   versionName: string
   downloadUrl: string
@@ -42,7 +42,10 @@ export async function fetchVersionInfo(url: string): Promise<VersionJson | null>
   }
 }
 
-export function checkVersionUpdateAvailable(currentBuildNumber: string | undefined, versionJson: VersionJson | null): boolean {
+export function checkVersionUpdateAvailable(
+  currentBuildNumber: string | undefined,
+  versionJson: VersionJson | null,
+): boolean {
   if (!currentBuildNumber || !versionJson) {
     return false
   }
@@ -100,8 +103,10 @@ interface OtaUpdateAvailable {
   latestVersionInfo: VersionInfo | null
 }
 
-export async function checkForOtaUpdate(otaVersionUrl: string, currentBuildNumber: string): Promise<OtaUpdateAvailable> {
-
+export async function checkForOtaUpdate(
+  otaVersionUrl: string,
+  currentBuildNumber: string,
+): Promise<OtaUpdateAvailable> {
   let checkCompleted = false
   try {
     const versionJson = await fetchVersionInfo(otaVersionUrl)
@@ -151,7 +156,10 @@ export function OtaUpdateChecker() {
 
     const asyncCheckForOtaUpdate = async () => {
       setIsChecking(true)
-      let {hasCheckCompleted, updateAvailable, latestVersionInfo} = await checkForOtaUpdate(otaVersionUrl, currentBuildNumber)
+      let {hasCheckCompleted, updateAvailable, latestVersionInfo} = await checkForOtaUpdate(
+        otaVersionUrl,
+        currentBuildNumber,
+      )
       if (hasCheckCompleted) {
         setHasChecked(true)
       }
