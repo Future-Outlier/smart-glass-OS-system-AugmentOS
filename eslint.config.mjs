@@ -131,7 +131,7 @@ export default defineConfig([
             },
           ],
           "pathGroupsExcludedImportTypes": ["builtin"],
-          "newlines-between": "always",
+          // "newlines-between": "always",
           "alphabetize": {
             order: "asc",
           },
