@@ -1,5 +1,6 @@
 import {BottomSheetModalProvider} from "@gorhom/bottom-sheet"
 import * as Sentry from "@sentry/react-native"
+import {Stack} from "expo-router"
 import {PostHogProvider} from "posthog-react-native"
 import {Suspense} from "react"
 import {View} from "react-native"
@@ -21,7 +22,6 @@ import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {KonamiCodeProvider} from "@/utils/debug/konami"
 import {withWrappers} from "@/utils/structure/with-wrappers"
-import {Stack} from "expo-router"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
@@ -121,9 +121,9 @@ export const AllProviders = withWrappers(
     return (
       <>
         {props.children}
-        <View className="h-24 items-center justify-end bg-red-500">
+        {/* <View className="h-24 items-center justify-end bg-red-500">
           <Text className="text-white text-sm">{preventBack ? "true" : "false"}</Text>
-        </View>
+        </View> */}
         <Stack
           screenOptions={{
             headerShown: false,
