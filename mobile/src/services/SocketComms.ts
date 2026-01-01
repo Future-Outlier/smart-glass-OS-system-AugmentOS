@@ -1,5 +1,4 @@
 import CoreModule from "core"
-import {router} from "expo-router"
 
 import {push} from "@/contexts/NavigationRef"
 import audioPlaybackService from "@/services/AudioPlaybackService"
@@ -378,11 +377,7 @@ class SocketComms {
    * @param udpPort UDP server port (default 8000)
    * @param isRetry Whether this is a retry attempt (skip initial delay)
    */
-  public async registerUdpAudio(
-    udpHost: string,
-    udpPort: number = 8000,
-    isRetry: boolean = false,
-  ): Promise<boolean> {
+  public async registerUdpAudio(udpHost: string, udpPort: number = 8000, isRetry: boolean = false): Promise<boolean> {
     // Prevent overlapping probes
     if (this.udpProbeInProgress) {
       console.log("UDP: Probe already in progress, skipping")
