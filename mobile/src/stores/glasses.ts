@@ -3,6 +3,28 @@ import {subscribeWithSelector} from "zustand/middleware"
 
 export type GlassesConnectionState = "disconnected" | "connected" | "connecting"
 
+// OTA update status types
+export type OtaStage = "download" | "install"
+export type OtaStatus = "STARTED" | "PROGRESS" | "FINISHED" | "FAILED"
+
+export interface OtaUpdateInfo {
+  available: boolean
+  versionCode: number
+  versionName: string
+  updates: string[] // ["apk", "mtk", "bes"]
+  totalSize: number
+}
+
+export interface OtaProgress {
+  stage: OtaStage
+  status: OtaStatus
+  progress: number
+  bytesDownloaded: number
+  totalBytes: number
+  currentUpdate: string
+  errorMessage?: string
+}
+
 export interface GlassesInfo {
   // state:
   connected: boolean
@@ -36,6 +58,10 @@ export interface GlassesInfo {
   hotspotSsid: string
   hotspotPassword: string
   hotspotGatewayIp: string
+  // OTA update info
+  otaUpdateAvailable: OtaUpdateInfo | null
+  otaProgress: OtaProgress | null
+  otaInProgress: boolean
 }
 
 interface GlassesState extends GlassesInfo {
@@ -44,6 +70,11 @@ interface GlassesState extends GlassesInfo {
   setBatteryInfo: (batteryLevel: number, charging: boolean, caseBatteryLevel: number, caseCharging: boolean) => void
   setWifiInfo: (connected: boolean, ssid: string) => void
   setHotspotInfo: (enabled: boolean, ssid: string, password: string, ip: string) => void
+  // OTA methods
+  setOtaUpdateAvailable: (info: OtaUpdateInfo | null) => void
+  setOtaProgress: (progress: OtaProgress | null) => void
+  setOtaInProgress: (inProgress: boolean) => void
+  clearOtaState: () => void
   reset: () => void
 }
 
@@ -80,6 +111,10 @@ const initialState: GlassesInfo = {
   hotspotSsid: "",
   hotspotPassword: "",
   hotspotGatewayIp: "",
+  // OTA update info
+  otaUpdateAvailable: null,
+  otaProgress: null,
+  otaInProgress: false,
 }
 
 export const getGlasesInfoPartial = (state: GlassesInfo) => {
@@ -123,6 +158,25 @@ export const useGlassesStore = create<GlassesState>()(
         hotspotSsid: ssid,
         hotspotPassword: password,
         hotspotGatewayIp: ip,
+      }),
+
+    // OTA methods
+    setOtaUpdateAvailable: (info: OtaUpdateInfo | null) => set({otaUpdateAvailable: info}),
+
+    setOtaProgress: (progress: OtaProgress | null) =>
+      set(_state => {
+        // Auto-detect otaInProgress from status
+        const otaInProgress = progress !== null && progress.status !== "FINISHED" && progress.status !== "FAILED"
+        return {otaProgress: progress, otaInProgress}
+      }),
+
+    setOtaInProgress: (inProgress: boolean) => set({otaInProgress: inProgress}),
+
+    clearOtaState: () =>
+      set({
+        otaUpdateAvailable: null,
+        otaProgress: null,
+        otaInProgress: false,
       }),
 
     reset: () => set(initialState),

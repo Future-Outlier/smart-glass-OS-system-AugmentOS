@@ -119,6 +119,14 @@ public class CoreModule: Module {
             }
         }
 
+        // MARK: - OTA Commands
+
+        AsyncFunction("sendOtaStart") {
+            await MainActor.run {
+                CoreManager.shared.sendOtaStart()
+            }
+        }
+
         // MARK: - Video Recording Commands
 
         AsyncFunction("startBufferRecording") {

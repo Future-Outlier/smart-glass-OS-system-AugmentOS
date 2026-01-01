@@ -36,6 +36,9 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
     silent: boolean,
   ): Promise<void>
 
+  // OTA Commands
+  sendOtaStart(): Promise<void>
+
   // Video Recording Commands
   startBufferRecording(): Promise<void>
   stopBufferRecording(): Promise<void>

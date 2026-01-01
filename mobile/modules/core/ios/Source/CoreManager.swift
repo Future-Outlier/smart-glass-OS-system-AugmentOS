@@ -1003,6 +1003,14 @@ struct ViewState {
         sgc?.queryGalleryStatus()
     }
 
+    /// Send OTA start command to glasses.
+    /// Called when user approves an update (onboarding or background mode).
+    /// Triggers glasses to begin download and installation.
+    func sendOtaStart() {
+        Bridge.log("MAN: 📱 Sending OTA start command to glasses")
+        (sgc as? MentraLive)?.sendOtaStart()
+    }
+
     func startBufferRecording() {
         Bridge.log("MAN: onStartBufferRecording")
         sgc?.startBufferRecording()
