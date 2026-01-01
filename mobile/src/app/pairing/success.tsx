@@ -15,7 +15,7 @@ import {useGlassesStore, waitForGlassesState} from "@/stores/glasses"
 
 export default function PairingSuccessScreen() {
   const {theme, themed} = useAppTheme()
-  const {clearHistoryAndGoHome, setPreventBack} = useNavigationHistory()
+  const {clearHistoryAndGoHome, pushUnder} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const {replaceAll, push} = useNavigationHistory()
   const [onboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
@@ -46,16 +46,13 @@ export default function PairingSuccessScreen() {
 
       console.log("PAIR_SUCCESS: glassesConnected", glassesConnected)
 
-      replaceAll("/onboarding/live")
       if (glassesConnected) {
-        setPreventBack(true)
-        setTimeout(() => {
-          push("/ota/check-for-updates")
-        }, 1000)
+        push("/ota/check-for-updates")
       } else {
-        setPreventBack(true)
         push("/wifi/scan")
       }
+      // push the onboarding screen under the current screen so that when we go back, we go to the onboarding screen:
+      pushUnder("/onboarding/live")
       return
     }
 

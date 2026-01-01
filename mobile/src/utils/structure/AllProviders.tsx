@@ -121,9 +121,9 @@ export const AllProviders = withWrappers(
     return (
       <>
         {props.children}
-        {/* <View className="h-24 items-center justify-end bg-red-500">
+        <View className="h-24 items-center justify-end bg-red-500">
           <Text className="text-white text-sm">{preventBack ? "true" : "false"}</Text>
-        </View> */}
+        </View>
         <Stack
           screenOptions={{
             headerShown: false,

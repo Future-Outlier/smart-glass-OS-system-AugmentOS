@@ -8,7 +8,6 @@ import {Text} from "@/components/ignite"
 import {Button, Header, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import { useFocusEffect } from "expo-router"
 
 interface BaseStep {
   name: string

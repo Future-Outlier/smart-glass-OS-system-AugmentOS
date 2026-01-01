@@ -34,7 +34,7 @@ export default function DeveloperSettingsScreen() {
           marginHorizontal: -theme.spacing.s4,
           paddingHorizontal: theme.spacing.s4,
         }}>
-        <View className="flex gap-4">
+        <View className="flex gap-6">
           <View style={themed($warningContainer)}>
             <View style={themed($warningContent)}>
               <Icon name="alert" size={16} color={theme.colors.text} />

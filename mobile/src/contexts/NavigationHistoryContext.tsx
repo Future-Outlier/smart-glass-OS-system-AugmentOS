@@ -1,6 +1,8 @@
 import {router, useFocusEffect, usePathname, useSegments} from "expo-router"
 import {createContext, useContext, useEffect, useRef, useCallback, useState} from "react"
 import {Alert, BackHandler} from "react-native"
+import {useNavigation} from "expo-router"
+import {CommonActions} from "@react-navigation/native"
 
 import {navigationRef} from "@/contexts/NavigationRef"
 
@@ -34,7 +36,10 @@ interface NavigationHistoryContextType {
   goHomeAndPush: (path: string, params?: any) => void
   preventBack: boolean
   setPreventBack: (value: boolean) => void
-  pushPrevious: () => void
+  pushPrevious: (index?: number) => void
+  pushUnder: (path: string, params?: any) => void
+  incPreventBack: () => void
+  decPreventBack: () => void
 }
 
 const NavigationHistoryContext = createContext<NavigationHistoryContextType | undefined>(undefined)
@@ -45,9 +50,10 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
   const pathname = usePathname()
   const _segments = useSegments()
-  // const [pendingRoute, setPendingRouteNonClashingName] = useState<string | null>(null)
   const pendingRoute = useRef<string | null>(null)
+  const navigation = useNavigation()
   const [preventBack, setPreventBack] = useState(false)
+  const preventBackCountRef = useRef(0)
 
   useEffect(() => {
     // Add current path to history if it's different from the last entry
@@ -62,25 +68,18 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     }
   }, [pathname])
 
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     const onBackPress = () => {
-  //       // Skip for app settings and webview - they handle their own back navigation
-  //       if (pathname === "/applet/settings" || pathname === "/applet/webview") {
-  //         return false // Let the screen's handler execute
-  //       }
+  const incPreventBack = useCallback(() => {
+    preventBackCountRef.current++
+    setPreventBack(true)
+  }, [])
 
-  //       if (segments.length > 0 && segments[0] != "(tabs)") {
-  //         goBack()
-  //       }
-  //       return true
-  //     }
-
-  //     BackHandler.addEventListener("hardwareBackPress", onBackPress)
-
-  //     return () => BackHandler.removeEventListener("hardwareBackPress", onBackPress)
-  //   }, [pathname, segments]),
-  // )
+  const decPreventBack = useCallback(() => {
+    preventBackCountRef.current--
+    if (preventBackCountRef.current <= 0) {
+      preventBackCountRef.current = 0
+      setPreventBack(false)
+    }
+  }, [])
 
   const goBack = () => {
     console.info("NAV: goBack()")
@@ -199,10 +198,45 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     router.replace({pathname: path as any, params: params as any})
   }
 
+  const pushUnder = (path: string, params?: any) => {
+    console.info("NAV: pushUnder()", path)
+    // historyRef.current.push(path)
+    // historyParamsRef.current.push(params)
+    // router.push({pathname: path as any, params: params as any})
+
+    // get current path:
+    const currentIndex = historyRef.current.length - 1
+    const currentPath = historyRef.current[currentIndex]
+    const currentParams = historyParamsRef.current[currentIndex]
+
+    // Build routes WITHOUT the current one
+    const previousRoutes = historyRef.current.slice(0, -1).map((path, index) => ({
+      name: path,
+      params: historyParamsRef.current[index],
+    }))
+
+    const newRoutes = [
+      ...previousRoutes,
+      {name: path, params: params}, // New "under" route
+      {name: currentPath, params: currentParams}, // Current screen stays on top
+    ]
+
+    navigation.dispatch(
+      CommonActions.reset({
+        index: newRoutes.length - 1, // Point to current screen (last)
+        routes: newRoutes,
+      }),
+    )
+
+    // Insert new path right before current in history
+    historyRef.current.splice(currentIndex, 0, path)
+    historyParamsRef.current.splice(currentIndex, 0, params)
+  }
+
   // when you want to go back, but animate it like a push:
-  const pushPrevious = () => {
+  const pushPrevious = (index: number = 0) => {
     console.info("NAV: pushPrevious()")
-    const prevIndex = historyRef.current.length - 2
+    const prevIndex = historyRef.current.length - (2 + index)
     const previousPath = historyRef.current[prevIndex]
     const previousParams = historyParamsRef.current[prevIndex]
     clearHistory()
@@ -249,6 +283,9 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
         setPreventBack,
         preventBack,
         pushPrevious,
+        pushUnder,
+        incPreventBack,
+        decPreventBack,
       }}>
       {children}
     </NavigationHistoryContext.Provider>
@@ -263,109 +300,29 @@ export function useNavigationHistory() {
   return context
 }
 
+// export const focusEffectPreventBack = () => {
+//   const {setPreventBack} = useNavigationHistory()
+
+//   useFocusEffect(
+//     useCallback(() => {
+//       setPreventBack(true)
+//       return () => {
+//         setPreventBack(false)
+//       }
+//     }, []),
+//   )
+// }
+
+// screens that call this function will prevent the back button from being pressed:
 export const focusEffectPreventBack = () => {
-  const {setPreventBack, preventBack} = useNavigationHistory()
-  const wasPreventBackSet = useRef(preventBack)
+  const {incPreventBack, decPreventBack} = useNavigationHistory()
 
   useFocusEffect(
     useCallback(() => {
-      setPreventBack(true)
+      incPreventBack()
       return () => {
-        if (wasPreventBackSet.current) {
-          setPreventBack(wasPreventBackSet.current)
-        }
+        decPreventBack()
       }
-    }, []),
+    }, [incPreventBack, decPreventBack]),
   )
 }
-// import {useCallback} from "react"
-// import {Alert} from "react-native"
-// import {useNavigation} from "expo-router"
-
-// interface UsePreventBackOptions {
-//   customTitle: string
-//   customMessage?: string
-//   yesAction?: () => void
-//   debug?: boolean
-// }
-
-// export const usePreventBack = ({
-//   customTitle,
-//   customMessage = "Are you sure you want to leave?",
-//   yesAction,
-//   debug = false,
-// }: UsePreventBackOptions) => {
-//   const navigation = useNavigation()
-
-//   const logDebug = useCallback(
-//     (message: string) => {
-//       if (debug) {
-//         console.log(`[usePreventBack] ${message}`)
-//       }
-//     },
-//     [debug],
-//   )
-
-//   useEffect(() => {
-//     if (!navigation) {
-//       console.error("[usePreventBack] Navigation object is undefined")
-//       return
-//     }
-
-//     logDebug("Setting up navigation options and listeners")
-
-//     try {
-//       // Disable back button and gesture
-//       let parent = navigation.getParent()
-//       while (parent) {
-//         parent.setOptions({gestureEnabled: false})
-//         parent = parent.getParent()
-//       }
-
-//       // listener for back action
-//       const beforeRemoveListener = navigation.addListener("beforeRemove", (e: any) => {
-//         logDebug(`Intercepted navigation action: ${e.data.action.type}`)
-
-//         if (e.data.action.type === "GO_BACK" || e.data.action.type === "POP") {
-//           e.preventDefault()
-
-//           Alert.alert(customTitle, customMessage, [
-//             {
-//               text: "Cancel",
-//               style: "cancel",
-//               onPress: () => {
-//                 logDebug("User cancelled navigation")
-//               },
-//             },
-//             {
-//               text: "Yes",
-//               style: "destructive",
-//               onPress: () => {
-//                 logDebug("User confirmed navigation")
-//                 if (yesAction) {
-//                   logDebug("Executing custom action")
-//                   yesAction()
-//                 }
-//                 navigation.dispatch(e.data.action)
-//               },
-//             },
-//           ])
-//         }
-//       })
-
-//       // Cleanup function
-//       return () => {
-//         logDebug("Cleaning up navigation listeners and options")
-//         beforeRemoveListener()
-
-//         let parent = navigation.getParent()
-//         while (parent) {
-//           parent.setOptions({gestureEnabled: true})
-//           parent = parent.getParent()
-//         }
-//       }
-//     } catch (error) {
-//       console.error("[usePreventBack] Error in setup:", error)
-//     }
-//   }, [navigation, customTitle, customMessage, yesAction, logDebug])
-// }

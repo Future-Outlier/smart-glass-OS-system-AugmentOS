@@ -21,6 +21,8 @@ LogBox.ignoreLogs([
   "Require cycle:",
   "is missing the required default export.",
   "Attempted to import the module",
+  "The action 'RESET' with payload",
+  "The action 'POP_TO_TOP' was not handled",
 ])
 
 SentrySetup()

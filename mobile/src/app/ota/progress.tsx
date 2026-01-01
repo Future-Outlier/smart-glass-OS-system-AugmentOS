@@ -15,7 +15,7 @@ const RETRY_INTERVAL_MS = 5000 // 5 seconds between retries
 
 export default function OtaProgressScreen() {
   const {theme} = useAppTheme()
-  const {pushPrevious, setPreventBack, replace} = useNavigationHistory()
+  const {pushPrevious} = useNavigationHistory()
   const otaProgress = useGlassesStore(state => state.otaProgress)
   const glassesConnected = useGlassesStore(state => state.connected)
   const buildNumber = useGlassesStore(state => state.buildNumber)
@@ -147,19 +147,16 @@ export default function OtaProgressScreen() {
   }, [otaProgress])
 
   const handleContinue = () => {
-    setPreventBack(false)
     // Go directly back to onboarding, skipping check-for-updates
-    replace("/onboarding/live")
+    pushPrevious(1)
   }
 
   const progress = otaProgress?.progress ?? 0
 
-  // Starting state - waiting for glasses to respond
-  if (progressState === "starting") {
-    return (
-      <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-        <Header RightActionComponent={<MentraLogoStandalone />} />
-
+  const renderContent = () => {
+    // Starting state - waiting for glasses to respond
+    if (progressState === "starting") {
+      return (
         <View className="flex-1 items-center justify-center px-6">
           <Icon name="world-download" size={64} color={theme.colors.primary} />
           <View className="h-6" />
@@ -167,18 +164,14 @@ export default function OtaProgressScreen() {
           <View className="h-4" />
           <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
           <View className="h-4" />
-          <Text tx="ota:doNotDisconnect" className="text-sm text-center" style={{color: theme.colors.textDim}} />
+          <Text tx="ota:doNotDisconnect" className="text-sm text-center text-secondary-foreground" />
         </View>
-      </Screen>
-    )
-  }
+      )
+    }
 
-  // Downloading state
-  if (progressState === "downloading") {
-    return (
-      <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-        <Header RightActionComponent={<MentraLogoStandalone />} />
-
+    // Downloading state
+    if (progressState === "downloading") {
+      return (
         <View className="flex-1 items-center justify-center px-6">
           <Icon name="world-download" size={64} color={theme.colors.primary} />
           <View className="h-6" />
@@ -190,16 +183,12 @@ export default function OtaProgressScreen() {
           <View className="h-4" />
           <Text tx="ota:doNotDisconnect" className="text-sm text-center" style={{color: theme.colors.textDim}} />
         </View>
-      </Screen>
-    )
-  }
+      )
+    }
 
-  // Installing state
-  if (progressState === "installing") {
-    return (
-      <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-        <Header RightActionComponent={<MentraLogoStandalone />} />
-
+    // Installing state
+    if (progressState === "installing") {
+      return (
         <View className="flex-1 items-center justify-center px-6">
           <Icon name="settings" size={64} color={theme.colors.primary} />
           <View className="h-6" />
@@ -211,78 +200,80 @@ export default function OtaProgressScreen() {
           <View className="h-4" />
           <Text tx="ota:doNotDisconnect" className="text-sm text-center" style={{color: theme.colors.textDim}} />
         </View>
-      </Screen>
-    )
-  }
+      )
+    }
 
-  // Completed state
-  if (progressState === "completed") {
+    // Completed state
+    if (progressState === "completed") {
+      return (
+        <>
+          <View className="flex-1 items-center justify-center px-6">
+            <Icon name="check" size={64} color={theme.colors.primary} />
+            <View className="h-6" />
+            <Text tx="ota:updateComplete" className="font-semibold text-xl text-center" />
+            <View className="h-2" />
+            <Text
+              tx="ota:updateCompleteMessage"
+              className="text-sm text-center"
+              style={{color: theme.colors.textDim}}
+            />
+          </View>
+
+          <View className="justify-center items-center">
+            <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
+          </View>
+        </>
+      )
+    }
+
+    // Disconnected state
+    if (progressState === "disconnected") {
+      return (
+        <>
+          <View className="flex-1 items-center justify-center px-6">
+            <Icon name="bluetooth-off" size={64} color={theme.colors.error} />
+            <View className="h-6" />
+            <Text tx="ota:glassesDisconnected" className="font-semibold text-xl text-center" />
+            <View className="h-2" />
+            <Text tx="ota:glassesDisconnectedMessage" className="text-sm text-center text-secondary-foreground" />
+          </View>
+
+          <View className="justify-center items-center">
+            <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
+          </View>
+        </>
+      )
+    }
+
+    // Failed state
     return (
-      <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-        <Header RightActionComponent={<MentraLogoStandalone />} />
-
+      <>
         <View className="flex-1 items-center justify-center px-6">
-          <Icon name="check" size={64} color={theme.colors.primary} />
+          <Icon name="warning" size={64} color={theme.colors.error} />
           <View className="h-6" />
-          <Text tx="ota:updateComplete" className="font-semibold text-xl text-center" />
+          <Text tx="ota:updateFailed" className="font-semibold text-xl text-center" />
+          {errorMessage ? (
+            <>
+              <View className="h-2" />
+              <Text text={errorMessage} className="text-sm text-center text-secondary-foreground" />
+            </>
+          ) : null}
           <View className="h-2" />
-          <Text tx="ota:updateCompleteMessage" className="text-sm text-center" style={{color: theme.colors.textDim}} />
+          <Text tx="ota:updateFailedMessage" className="text-sm text-center text-secondary-foreground" />
         </View>
 
         <View className="justify-center items-center">
           <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
         </View>
-      </Screen>
+      </>
     )
   }
 
-  // Disconnected state
-  if (progressState === "disconnected") {
-    return (
-      <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-        <Header RightActionComponent={<MentraLogoStandalone />} />
-
-        <View className="flex-1 items-center justify-center px-6">
-          <Icon name="bluetooth-off" size={64} color={theme.colors.error} />
-          <View className="h-6" />
-          <Text tx="ota:glassesDisconnected" className="font-semibold text-xl text-center" />
-          <View className="h-2" />
-          <Text
-            tx="ota:glassesDisconnectedMessage"
-            className="text-sm text-center"
-            style={{color: theme.colors.textDim}}
-          />
-        </View>
-
-        <View className="justify-center items-center">
-          <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
-        </View>
-      </Screen>
-    )
-  }
-
-  // Failed state
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header RightActionComponent={<MentraLogoStandalone />} />
 
-      <View className="flex-1 items-center justify-center px-6">
-        <Icon name="warning" size={64} color={theme.colors.error} />
-        <View className="h-6" />
-        <Text tx="ota:updateFailed" className="font-semibold text-xl text-center" />
-        {errorMessage ? (
-          <>
-            <View className="h-2" />
-            <Text text={errorMessage} className="text-sm text-center" style={{color: theme.colors.textDim}} />
-          </>
-        ) : null}
-        <View className="h-2" />
-        <Text tx="ota:updateFailedMessage" className="text-sm text-center" style={{color: theme.colors.textDim}} />
-      </View>
-
-      <View className="justify-center items-center">
-        <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
-      </View>
+      {renderContent()}
     </Screen>
   )
 }
