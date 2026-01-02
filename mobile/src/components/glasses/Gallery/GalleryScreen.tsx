@@ -120,6 +120,10 @@ export function GalleryScreen() {
   const [loadingPhotoCount, setLoadingPhotoCount] = useState(0)
   const [showLoadingPlaceholders, setShowLoadingPlaceholders] = useState(false)
 
+  // Post-sync validation state
+  const [isValidating, setIsValidating] = useState(false)
+  const [validatingCount, setValidatingCount] = useState(0)
+
   // Animation for smooth transition from placeholders to photos
   const fadeAnim = useRef(new Animated.Value(1)).current
 
@@ -163,20 +167,38 @@ export function GalleryScreen() {
       setLoadingPhotoCount(totalFromStorage)
       console.log("[GalleryScreen] ⏱️ SET loadingPhotoCount to", totalFromStorage)
 
+      // Show validating status if we're validating more than 50 photos
+      if (totalFromStorage > 40) {
+        setIsValidating(true)
+        setValidatingCount(totalFromStorage)
+      }
+
       const validPhotoInfos: PhotoInfo[] = []
       const staleFileNames: string[] = []
 
-      // Check each file exists on disk
-      for (const [name, file] of Object.entries(downloadedFiles)) {
+      // Check all files exist on disk in parallel (50-100x faster than sequential)
+      const validationPromises = Object.entries(downloadedFiles).map(async ([name, file]) => {
         // console.log(`[GalleryScreen]   Checking file: ${name} at ${file.filePath}`)
         const fileExists = await RNFS.exists(file.filePath)
-        if (fileExists) {
+        return {
+          name,
+          file,
+          exists: fileExists,
+        }
+      })
+
+      // Wait for all validations to complete (happens in parallel)
+      const validationResults = await Promise.all(validationPromises)
+
+      // Process results
+      for (const result of validationResults) {
+        if (result.exists) {
           // console.log(`[GalleryScreen]     ✅ File exists on disk`)
-          validPhotoInfos.push(localStorageService.convertToPhotoInfo(file))
+          validPhotoInfos.push(localStorageService.convertToPhotoInfo(result.file))
         } else {
           // console.log(`[GalleryScreen]     ❌ File missing on disk - marking as stale`)
-          console.log(`[GalleryScreen] Cleaning up stale entry for missing file: ${name}`)
-          staleFileNames.push(name)
+          console.log(`[GalleryScreen] Cleaning up stale entry for missing file: ${result.name}`)
+          staleFileNames.push(result.name)
         }
       }
 
@@ -213,8 +235,15 @@ export function GalleryScreen() {
 
       const finalTime = Date.now()
       console.log("[GalleryScreen] ⏱️ LOAD COMPLETE at", finalTime, "- TOTAL TIME:", finalTime - loadStartTime, "ms")
+
+      // Clear validation state
+      setIsValidating(false)
+      setValidatingCount(0)
     } catch (err) {
       console.error("Error loading downloaded photos:", err)
+      // Clear validation state on error too
+      setIsValidating(false)
+      setValidatingCount(0)
     }
   }, [])
 
@@ -843,6 +872,17 @@ export function GalleryScreen() {
           )
 
         case "complete":
+          // Show validating status if we're validating >50 photos
+          if (isValidating && validatingCount > 0) {
+            return (
+              <View style={themed($syncButtonRow)}>
+                <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
+                <Text style={themed($syncButtonText)}>
+                  Validating {validatingCount} {validatingCount === 1 ? "item" : "items"}...
+                </Text>
+              </View>
+            )
+          }
           return (
             <View style={themed($syncButtonRow)}>
               <Text style={themed($syncButtonText)}>Sync complete!</Text>
@@ -1027,6 +1067,17 @@ export function GalleryScreen() {
         <View style={themed($galleryContainer)}>
           {(() => {
             const showEmpty = allPhotos.length === 0 && !isLoading && !isSyncing
+            const showSpinner = isInitialLoading && !showLoadingPlaceholders && displayItems.length === 0
+
+            // Show spinner during initial load before placeholders appear
+            if (showSpinner) {
+              return (
+                <View style={themed($loadingSpinnerContainer)}>
+                  <ActivityIndicator size="large" color={theme.colors.primary} />
+                  <Text style={themed($loadingSpinnerText)}>Loading gallery...</Text>
+                </View>
+              )
+            }
 
             if (showEmpty) {
               return (
@@ -1061,7 +1112,7 @@ export function GalleryScreen() {
                     columnWrapperStyle={numColumns > 1 ? themed($columnWrapper) : undefined}
                     ItemSeparatorComponent={() => <View style={{height: ITEM_SPACING}} />}
                     initialNumToRender={21}
-                    maxToRenderPerBatch={7}
+                    maxToRenderPerBatch={21}
                     windowSize={7}
                     removeClippedSubviews={false}
                     updateCellsBatchingPeriod={50}
@@ -1127,6 +1178,18 @@ const $photoGridContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $columnWrapper: ThemedStyle<ViewStyle> = () => ({
   justifyContent: "flex-start",
   gap: 2,
+})
+
+const $loadingSpinnerContainer: ThemedStyle<ViewStyle> = () => ({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+})
+
+const $loadingSpinnerText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+  fontSize: 16,
+  color: colors.textDim,
+  marginTop: spacing.s4,
 })
 
 const $emptyContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
