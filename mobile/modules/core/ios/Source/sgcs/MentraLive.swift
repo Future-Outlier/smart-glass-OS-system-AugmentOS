@@ -604,7 +604,7 @@ extension MentraLive: CBCentralManagerDelegate {
     func centralManager(
         _: CBCentralManager, didDisconnectPeripheral _: CBPeripheral, error _: Error?
     ) {
-        Bridge.log("Disconnected from GATT server")
+        Bridge.log("LIVE: Disconnected from GATT server")
 
         isConnecting = false
 
@@ -1138,7 +1138,7 @@ class MentraLive: NSObject, SGCManager {
     }
 
     @objc func disconnect() {
-        Bridge.log("Disconnecting from Mentra Live glasses")
+        Bridge.log("LIVE: disconnect() -Disconnecting from Mentra Live glasses")
 
         if rgbLedAuthorityClaimed {
             sendRgbLedControlAuthority(false)
@@ -1522,6 +1522,11 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func handleReconnection() {
+        if isKilled {
+            Bridge.log("LIVE: Reconnection aborted - device has been killed")
+            return
+        }
+        
         // Check if we've exceeded max attempts
         if reconnectAttempts >= MAX_RECONNECT_ATTEMPTS {
             Bridge.log("LIVE: Maximum reconnection attempts reached (\(MAX_RECONNECT_ATTEMPTS))")

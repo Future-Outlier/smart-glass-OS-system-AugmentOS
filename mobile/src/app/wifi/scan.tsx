@@ -17,6 +17,7 @@ import showAlert from "@/utils/AlertUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {translate} from "@/i18n"
+import { ConnectionOverlay } from "@/components/glasses/ConnectionOverlay"
 
 interface NetworkInfo {
   ssid: string
@@ -40,20 +41,6 @@ export default function WifiScanScreen() {
   const {push, goBack, replace, pushPrevious} = useNavigationHistory()
 
   focusEffectPreventBack()
-
-  useEffect(() => {
-    if (!glassesConnected) {
-      console.log("CONNECTING: Glasses disconnected - navigating away")
-      showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [
-        {
-          text: "OK",
-          onPress() {
-            pushPrevious()
-          },
-        },
-      ])
-    }
-  }, [glassesConnected])
 
   useEffect(() => {
     const loadSavedNetworks = () => {
@@ -278,6 +265,7 @@ export default function WifiScanScreen() {
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header title="Wi-Fi" leftIcon="chevron-left" onLeftPress={goBack} rightIcon="repeat" onRightPress={startScan} />
+      <ConnectionOverlay />
 
       <View className="flex-1">
         {/* Header */}

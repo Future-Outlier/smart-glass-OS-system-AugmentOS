@@ -125,31 +125,15 @@ export default function WifiConnectingScreen() {
   }
 
   const handleSuccess = useCallback(() => {
-    // if (nextRoute && typeof nextRoute === "string") {
-    //   replace(decodeURIComponent(nextRoute))
-    // } else if (returnTo && typeof returnTo === "string") {
-    //   replace(decodeURIComponent(returnTo))
-    // } else {
-    //   navigate("/")
-    // }
     pushPrevious(1)
   }, [nextRoute, returnTo, navigate])
 
   const handleCancel = useCallback(() => {
-    // if (returnTo && typeof returnTo === "string") {
-    //   replace(decodeURIComponent(returnTo))
-    // } else {
-    //   goBack()
-    // }
     goBack()
   }, [returnTo, goBack])
 
   const handleHeaderBack = useCallback(() => {
-    if (returnTo && typeof returnTo === "string") {
-      replace(decodeURIComponent(returnTo))
-    } else {
-      goBack()
-    }
+    goBack()
   }, [returnTo, goBack])
 
   const renderContent = () => {
@@ -193,7 +177,7 @@ export default function WifiConnectingScreen() {
                 <Icon name="x-circle" size={80} color={theme.colors.destructive} />
               </View>
 
-              <Text style={themed($failureTitle)}>Connection Failed</Text>
+              <Text style={themed($failureTitle)} tx="wifi:connectionFailed" />
 
               <Text style={themed($failureDescription)}>{errorMessage}</Text>
 

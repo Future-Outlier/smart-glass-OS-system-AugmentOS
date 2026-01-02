@@ -148,6 +148,7 @@ const tablerIcons = {
   "trash-x": 1,
   "check": 1,
   "world-download": 1,
+  "repeat": 1,
 }
 
 /**

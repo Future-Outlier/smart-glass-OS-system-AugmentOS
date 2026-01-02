@@ -71,19 +71,3 @@ function CheckboxInput(props: CheckboxInputProps) {
     </View>
   )
 }
-
-const $toggleInner: ViewStyle = {
-  width: "100%",
-  height: "100%",
-  alignItems: "center",
-  justifyContent: "center",
-  overflow: "hidden"
-}
-
-const $checkboxDetail: ImageStyle = {
-  width: 20,
-  height: 20,
-  resizeMode: "contain",
-}
-
-const $inputOuter: StyleProp<ViewStyle> = [$inputOuterBase, {borderRadius: 4}]

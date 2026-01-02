@@ -214,6 +214,7 @@ const en = {
     pleaseEnterNetworkName: "Please enter a network name",
     passwordLoadedFromSavedCredentials: "✓ Password loaded from saved credentials",
     wifi: "Wi-Fi",
+    connectionFailed: "Connection failed",
   },
   ota: {
     checkingForUpdates: "Checking for updates",
@@ -338,6 +339,8 @@ const en = {
     photosOnGlasses: "Photos on Glasses",
     videosOnGlasses: "Videos on Glasses",
     storageUsed: "Storage Used",
+    glassesAreReconnecting: "Glasses are reconnecting...",
+    glassesAreReconnectingMessage: "Make sure your glasses are turned on.",
   },
   store: {
     title: "Store",

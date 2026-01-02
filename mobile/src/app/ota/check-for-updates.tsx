@@ -7,6 +7,7 @@ import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/Navigatio
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {checkForOtaUpdate, VersionInfo} from "@/effects/OtaUpdateChecker"
 import {useGlassesStore} from "@/stores/glasses"
+import { ConnectionOverlay } from "@/components/glasses/ConnectionOverlay"
 
 type CheckState = "checking" | "update_available" | "no_update" | "error"
 
@@ -157,6 +158,7 @@ export default function OtaCheckForUpdatesScreen() {
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header RightActionComponent={<MentraLogoStandalone />} />
+      <ConnectionOverlay />
 
       {renderContent()}
     </Screen>

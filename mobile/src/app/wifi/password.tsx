@@ -12,6 +12,7 @@ import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
 import showAlert from "@/utils/AlertUtils"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
+import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 
 export default function WifiPasswordScreen() {
   const params = useLocalSearchParams()
@@ -30,20 +31,6 @@ export default function WifiPasswordScreen() {
   const [hasSavedPassword, setHasSavedPassword] = useState(false)
 
   focusEffectPreventBack()
-
-  useEffect(() => {
-    if (!glassesConnected) {
-      console.log("CONNECTING: Glasses disconnected - navigating away")
-      showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [
-        {
-          text: "OK",
-          onPress() {
-            pushPrevious(1)
-          },
-        },
-      ])
-    }
-  }, [glassesConnected])
 
   useEffect(() => {
     if (initialSsid) {
@@ -87,6 +74,7 @@ export default function WifiPasswordScreen() {
   return (
     <Screen preset="fixed">
       <Header title={translate("wifi:wifi")} leftIcon="chevron-left" onLeftPress={goBack} />
+      <ConnectionOverlay />
 
       <View className="bg-primary-foreground rounded-3xl p-6 w-full items-center mt-12">
         {/* WiFi Icon */}
@@ -100,10 +88,10 @@ export default function WifiPasswordScreen() {
 
           {/* Manual entry shows SSID input */}
           {!initialSsid && (
-            <View className="mb-4">
+            <View className="">
               <Text className="text-base text-text mb-2" tx="wifi:networkName" />
               <TextInput
-                className="h-[50px] rounded-xl p-4 text-base text-text bg-background"
+                className="h-[50px] rounded-xl p-4 text-base text-foreground bg-background"
                 value={ssid}
                 onChangeText={setSsid}
                 placeholder={translate("wifi:enterNetworkName")}
@@ -115,11 +103,11 @@ export default function WifiPasswordScreen() {
           )}
 
           {/* Password input */}
-          <View className="mb-4">
+          <View className="">
             <Text className="text-base text-text mb-2" tx="wifi:wifiPassword" />
             <View className="flex-row items-center relative">
               <TextInput
-                className="flex-1 h-[50px] rounded-xl p-4 pr-[50px] text-base text-text bg-background"
+                className="flex-1 h-[50px] rounded-xl p-4 pr-[50px] text-base text-foreground bg-background"
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Enter password"
@@ -145,23 +133,11 @@ export default function WifiPasswordScreen() {
 
           {/* Remember password checkbox */}
           <TouchableOpacity
-            className="flex-row items-center w-full"
+            className="flex-row items-center w-full gap-2"
             onPress={() => setRememberPassword(!rememberPassword)}
             activeOpacity={0.7}
             hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-            <Checkbox
-              value={rememberPassword}
-              onValueChange={setRememberPassword}
-              containerStyle={{padding: 8, marginTop: -8}}
-              inputOuterStyle={{
-                // backgroundColor: rememberPassword ? theme.colors.palette.success500 : theme.colors.background,
-                // borderColor: rememberPassword ? theme.colors.palette.success500 : theme.colors.border,
-                // borderWidth: 2,
-              }}
-              inputDetailStyle={{
-                // tintColor: theme.colors.palette.white,
-              }}
-            />
+            <Checkbox value={rememberPassword} onValueChange={setRememberPassword} />
             <View className="flex-1">
               <Text className="text-base font-medium text-text" tx="wifi:rememberPassword" />
               <Text className="text-sm text-text-dim mt-0.5" tx="wifi:rememberPasswordDescription" />
@@ -169,10 +145,8 @@ export default function WifiPasswordScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Divider */}
         <View className="w-full h-px bg-border mt-6 mb-6" />
 
-        {/* Buttons */}
         <View className="flex-row gap-3 w-full justify-end">
           <Button tx="common:cancel" onPress={goBack} preset="alternate" className="min-w-[100px]" />
           <Button tx="common:connect" onPress={handleConnect} className="min-w-[100px]" />
