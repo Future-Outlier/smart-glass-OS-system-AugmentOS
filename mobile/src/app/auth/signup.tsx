@@ -15,12 +15,12 @@ import {
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {spacing, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import mentraAuth from "@/utils/auth/authClient"
 import {isDuplicateSignupError, mapAuthError} from "@/utils/auth/authErrors"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function SignupScreen() {
   const [step, setStep] = useState<1 | 2>(1)

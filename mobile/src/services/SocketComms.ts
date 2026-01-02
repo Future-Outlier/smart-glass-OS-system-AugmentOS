@@ -557,6 +557,12 @@ class SocketComms {
       await livekit.connect()
     }
 
+    // Configure audio format (LC3) for bandwidth savings
+    // This tells the cloud that we're sending LC3-encoded audio
+    this.configureAudioFormat().catch(err => {
+      console.log("SOCKET: Audio format configuration failed (cloud will expect PCM):", err)
+    })
+
     // Try to register for UDP audio (non-blocking)
     // UDP endpoint is provided by server in connection_ack message
     const udpHost = msg.udpHost || msg.udp_host
@@ -571,6 +577,51 @@ class SocketComms {
     }
 
     GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
+  }
+
+  /**
+   * Configure audio format with the cloud server.
+   * Tells the server we're sending LC3-encoded audio (16x bandwidth savings).
+   * Uses canonical LC3 config: 16kHz, 10ms frame duration, 20-byte frame size.
+   */
+  private async configureAudioFormat(): Promise<void> {
+    const backendUrl = useSettingsStore.getState().getSetting(SETTINGS.backend_url.key)
+    const coreToken = useSettingsStore.getState().getSetting(SETTINGS.core_token.key)
+
+    if (!backendUrl || !coreToken) {
+      console.log("SOCKET: Cannot configure audio format - missing backend URL or token")
+      return
+    }
+
+    try {
+      const response = await fetch(`${backendUrl}/api/client/audio/configure`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${coreToken}`,
+        },
+        body: JSON.stringify({
+          format: "lc3",
+          lc3Config: {
+            sampleRate: 16000,
+            frameDurationMs: 10,
+            frameSizeBytes: 20,
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        const text = await response.text()
+        console.error("SOCKET: Failed to configure audio format:", response.status, text)
+        return
+      }
+
+      const result = await response.json()
+      console.log("SOCKET: Audio format configured successfully:", result.format)
+    } catch (error) {
+      console.error("SOCKET: Error configuring audio format:", error)
+      throw error
+    }
   }
 
   private handle_app_state_change(msg: any) {

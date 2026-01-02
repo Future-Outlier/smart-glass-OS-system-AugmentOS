@@ -2,8 +2,8 @@ import {View, ViewStyle, TextStyle, TouchableOpacity} from "react-native"
 
 import {Text} from "@/components/ignite"
 import CheckBox from "@/components/misc/CheckBox"
-import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {ThemedStyle} from "@/theme"
 
 type Option = {
   label: string

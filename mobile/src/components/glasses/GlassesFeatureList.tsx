@@ -2,8 +2,8 @@ import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/sr
 import {View, ViewStyle, TextStyle, ImageStyle} from "react-native"
 
 import {Icon, Text} from "@/components/ignite"
-import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {ThemedStyle} from "@/theme"
 
 interface GlassesFeatureListProps {
   glassesModel: string

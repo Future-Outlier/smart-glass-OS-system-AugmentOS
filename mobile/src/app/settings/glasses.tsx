@@ -6,10 +6,10 @@ import {NotConnectedInfo} from "@/components/glasses/info/NotConnectedInfo"
 import {Header, Screen} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n/translate"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function Glasses() {
   const {theme} = useAppTheme()

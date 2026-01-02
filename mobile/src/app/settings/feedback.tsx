@@ -15,6 +15,7 @@ import {
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {RadioGroup, RatingButtons, StarRating} from "@/components/ui"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {useAppletStatusStore} from "@/stores/applets"
@@ -23,7 +24,6 @@ import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import mentraAuth from "@/utils/auth/authClient"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function FeedbackPage() {
   const [email, setEmail] = useState("")
