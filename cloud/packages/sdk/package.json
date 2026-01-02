@@ -1,6 +1,6 @@
 {
   "name": "@mentra/sdk",
-  "version": "3.0.0-beta.0",
+  "version": "3.0.0-hono.0",
   "description": "Build apps for MentraOS smartglasses. This SDK provides everything you need to create real-time smartglasses applications.",
   "source": "src/index.ts",
   "main": "dist/index.js",
@@ -43,6 +43,7 @@
     "link-pkg": "bun link"
   },
   "dependencies": {
+    "@mentra/types": "workspace:*",
     "@logtail/pino": "^0.5.4",
     "axios": "^1.8.1",
     "boxen": "^8.0.1",
@@ -58,7 +59,6 @@
     "ws": "^8.18.2"
   },
   "devDependencies": {
-    "@mentra/types": "workspace:*",
     "@types/babel__core": "^7.20.5",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/jsrsasign": "^10.5.15",
