@@ -4,8 +4,7 @@ import {useState, useCallback, useEffect, useMemo, useRef} from "react"
 import {View, ViewStyle} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {Text} from "@/components/ignite"
-import {Button, Header, Icon} from "@/components/ignite"
+import {Text, Button, Header, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 

@@ -9,9 +9,9 @@ import {
   View,
 } from "react-native"
 
+import {useAppTheme} from "@/contexts/ThemeContext"
 import type {ThemedStyle, ThemedStyleArray} from "@/theme"
 import {$styles, spacing} from "@/theme"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 import {Text, TextProps} from "./Text"
 

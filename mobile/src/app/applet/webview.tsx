@@ -7,10 +7,10 @@ import {Header, Screen, Text} from "@/components/ignite"
 import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
 import LoadingOverlay from "@/components/misc/LoadingOverlay"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import restComms from "@/services/RestComms"
 import {useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function AppWebView() {
   const {theme, themed} = useAppTheme()

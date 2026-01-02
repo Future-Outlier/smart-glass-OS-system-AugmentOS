@@ -1,7 +1,7 @@
 import "@/utils/polyfills/event" // Must be before any livekit imports
-import {useFonts} from "expo-font"
 import {registerGlobals} from "@livekit/react-native-webrtc"
 import * as Sentry from "@sentry/react-native"
+import {useFonts} from "expo-font"
 import {SplashScreen, useNavigationContainerRef} from "expo-router"
 import {useEffect, useState} from "react"
 import {LogBox} from "react-native"

@@ -8,10 +8,10 @@ import {Screen, Text, Button} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {ThemedStyle} from "@/theme"
-import {getGlassesImage} from "@/utils/getGlassesImage"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {ThemedStyle} from "@/theme"
 import {useGlassesStore, waitForGlassesState} from "@/stores/glasses"
+import {getGlassesImage} from "@/utils/getGlassesImage"
 
 export default function PairingSuccessScreen() {
   const {theme, themed} = useAppTheme()

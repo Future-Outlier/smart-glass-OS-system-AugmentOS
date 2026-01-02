@@ -5413,27 +5413,9 @@ public class MentraLive extends SGCManager {
 
             // Bridge.log("LIVE: Received LC3 audio packet seq=" + sequenceNumber + ", size=" + lc3Data.length);
 
-            // Decode LC3 to PCM and forward to audio processing system
-            // if (audioProcessingCallback != null) {
-            if (lc3DecoderPtr != 0) {
-                // Decode LC3 to PCM using the native decoder with Mentra Live frame size
-                byte[] pcmData = Lc3Cpp.decodeLC3(lc3DecoderPtr, lc3Data, LC3_FRAME_SIZE);
-
-                if (pcmData != null && pcmData.length > 0) {
-                    // Forward PCM data to CoreManager which handles:
-                    // 1. Sending to server (if shouldSendPcmData = true)
-                    // 2. Local transcription (if shouldSendTranscript = true)
-                    // See CoreManager.handlePcm() for routing logic
-                    var m = CoreManager.getInstance();
-                    m.handlePcm(pcmData);
-                    // Bridge.log("LIVE: 🎤 Decoded LC3→PCM: " + lc3Data.length + "→" + pcmData.length + " bytes, forwarded to CoreManager");
-                } else {
-                    // Log.e(TAG, "❌ Failed to decode LC3 data to PCM - got null or empty result");
-                }
-            } else {
-                Log.e(TAG, "❌ LC3 decoder not initialized - cannot decode to PCM");
-
-            }
+            // Forward raw LC3 to CoreManager (matches iOS behavior)
+            // MentraLive uses 40-byte LC3 frames
+            CoreManager.getInstance().handleGlassesMicData(lc3Data, LC3_FRAME_SIZE);
 
             // Bridge.log("LIVE: 🔊 Audio playback enabled: " + audioPlaybackEnabled);
         // } else {

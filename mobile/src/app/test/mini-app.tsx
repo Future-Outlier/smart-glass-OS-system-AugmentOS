@@ -4,9 +4,9 @@ import {WebView} from "react-native-webview"
 
 import {Screen, Header, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import miniComms, {SuperWebViewMessage} from "@/services/MiniComms"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function MiniApp() {
   const {theme, themed} = useAppTheme()

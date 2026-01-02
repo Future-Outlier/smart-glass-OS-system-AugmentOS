@@ -41,7 +41,6 @@ import {PhotoInfo} from "@/types/asg"
 import showAlert from "@/utils/AlertUtils"
 // import {shareFile} from "@/utils/FileUtils"
 import {MediaLibraryPermissions} from "@/utils/permissions/MediaLibraryPermissions"
-import {TEST_GALLERY_ITEMS, ENABLE_TEST_GALLERY_DATA} from "@/utils/testGalleryData"
 
 // @ts-ignore
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient)

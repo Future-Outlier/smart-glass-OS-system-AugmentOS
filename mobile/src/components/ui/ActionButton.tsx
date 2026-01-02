@@ -1,8 +1,8 @@
 import {TouchableOpacity, View} from "react-native"
 
 import {Text} from "@/components/ignite"
-import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {ThemedStyle} from "@/theme"
 
 export type ActionButtonVariant = "default" | "warning" | "destructive" | "secondary"
 
