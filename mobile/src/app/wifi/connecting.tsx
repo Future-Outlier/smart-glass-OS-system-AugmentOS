@@ -28,9 +28,9 @@ export default function WifiConnectingScreen() {
   const connectionTimeoutRef = useRef<number | null>(null)
   const failureGracePeriodRef = useRef<number | null>(null)
   const {goBack, navigate, replace, pushPrevious} = useNavigationHistory()
-  const wifiConnected = useGlassesStore(state => state.wifiConnected)
-  const wifiSsid = useGlassesStore(state => state.wifiSsid)
-  const glassesConnected = useGlassesStore(state => state.connected)
+  const wifiConnected = useGlassesStore((state) => state.wifiConnected)
+  const wifiSsid = useGlassesStore((state) => state.wifiSsid)
+  const glassesConnected = useGlassesStore((state) => state.connected)
 
   // Navigate away if glasses disconnect (but not on initial mount)
   useEffect(() => {
@@ -206,18 +206,6 @@ export default function WifiConnectingScreen() {
                     containerStyle={{marginRight: theme.spacing.s3}}
                   />
                   <Text style={themed($failureTipText)}>Make sure the password was entered correctly</Text>
-                </View>
-
-                <View style={themed($failureTipItem)}>
-                  <Icon
-                    name="wifi"
-                    size={20}
-                    color={theme.colors.textDim}
-                    containerStyle={{marginRight: theme.spacing.s3}}
-                  />
-                  <Text style={themed($failureTipText)}>
-                    Mentra Live Beta can only connect to pure 2.4GHz WiFi networks (not 5GHz or dual-band 2.4/5GHz)
-                  </Text>
                 </View>
               </View>
             </View>
