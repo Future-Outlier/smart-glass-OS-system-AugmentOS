@@ -4501,6 +4501,24 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    /**
+     * Forget a WiFi network on the glasses - removes cached credentials
+     * This sends the SSID so the K900 SystemUI can properly clear the cached credentials
+     */
+    @Override
+    public void forgetWifiNetwork(String ssid) {
+        Bridge.log("LIVE: 📶 Sending WiFi forget command for SSID: " + ssid);
+
+        try {
+            JSONObject wifiCommand = new JSONObject();
+            wifiCommand.put("type", "forget_wifi");
+            wifiCommand.put("ssid", ssid);
+            sendJson(wifiCommand, true);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating WiFi forget JSON", e);
+        }
+    }
+
     public void sendHotspotState(boolean enabled) {
         Bridge.log("LIVE: 🔥 Sending hotspot state to glasses - enabled: " + enabled);
         try {

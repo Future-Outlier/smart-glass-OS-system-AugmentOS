@@ -165,10 +165,34 @@ export default function WifiScanScreen() {
 
   const handleNetworkSelect = (selectedNetwork: NetworkInfo) => {
     if (wifiConnected && wifiSsid === selectedNetwork.ssid) {
-      Toast.show({
-        type: "info",
-        text1: `Already connected to ${selectedNetwork.ssid}`,
-      })
+      showAlert("Forget Network", `Would you like to forget "${selectedNetwork.ssid}"? You will need to re-enter the password to connect again.`, [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Forget",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              console.log(`🗑️ Forgetting network: ${selectedNetwork.ssid}`)
+              await CoreModule.forgetWifiNetwork(selectedNetwork.ssid)
+              // Also remove from local saved credentials
+              WifiCredentialsService.removeCredentials(selectedNetwork.ssid)
+              Toast.show({
+                type: "success",
+                text1: `Forgot "${selectedNetwork.ssid}"`,
+              })
+            } catch (error) {
+              console.error("Error forgetting network:", error)
+              Toast.show({
+                type: "error",
+                text1: "Failed to forget network",
+              })
+            }
+          },
+        },
+      ])
       return
     }
 

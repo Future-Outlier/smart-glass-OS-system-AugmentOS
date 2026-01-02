@@ -22,6 +22,7 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   // WiFi Commands
   requestWifiScan(): Promise<void>
   sendWifiCredentials(ssid: string, password: string): Promise<void>
+  forgetWifiNetwork(ssid: string): Promise<void>
   setHotspotState(enabled: boolean): Promise<void>
 
   // Gallery Commands

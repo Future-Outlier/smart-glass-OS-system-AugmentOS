@@ -1064,6 +1064,11 @@ class CoreManager {
         sgc?.sendWifiCredentials(ssid, password)
     }
 
+    fun forgetWifiNetwork(ssid: String) {
+        Bridge.log("MAN: Forgetting wifi network: $ssid")
+        sgc?.forgetWifiNetwork(ssid)
+    }
+
     fun setHotspotState(enabled: Boolean) {
         Bridge.log("MAN: Setting glasses hotspot state: $enabled")
         sgc?.sendHotspotState(enabled)

@@ -563,12 +563,23 @@ class SocketComms {
     const udpHost = msg.udpHost || msg.udp_host
     const udpPort = msg.udpPort || msg.udp_port || 8000
 
+    console.log("SOCKET: connection_ack UDP fields:", {
+      udpHost: msg.udpHost,
+      udp_host: msg.udp_host,
+      udpPort: msg.udpPort,
+      udp_port: msg.udp_port,
+      resolvedHost: udpHost,
+      resolvedPort: udpPort,
+      allKeys: Object.keys(msg),
+    })
+
     if (udpHost) {
+      console.log(`SOCKET: UDP endpoint found, registering with ${udpHost}:${udpPort}`)
       this.registerUdpAudio(udpHost, udpPort).catch(err => {
         console.log("SOCKET: UDP registration failed (will use WebSocket fallback):", err)
       })
     } else {
-      console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio")
+      console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:", JSON.stringify(msg, null, 2))
     }
 
     GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)

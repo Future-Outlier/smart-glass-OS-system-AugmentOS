@@ -974,6 +974,11 @@ struct ViewState {
         sgc?.sendWifiCredentials(ssid, password)
     }
 
+    func forgetWifiNetwork(_ ssid: String) {
+        Bridge.log("MAN: Forgetting wifi network: \(ssid)")
+        sgc?.forgetWifiNetwork(ssid)
+    }
+
     func setHotspotState(_ enabled: Bool) {
         Bridge.log("MAN: 🔥 Setting glasses hotspot state: \(enabled)")
         sgc?.sendHotspotState(enabled)

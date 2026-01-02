@@ -182,12 +182,28 @@ export default function FeedbackPage() {
 
     // Get location if permission is granted
     let locationInfo: string | null = null
+    let locationPlace: string | null = null
     try {
       const {status} = await Location.getForegroundPermissionsAsync()
       if (status === "granted") {
         const location = await Location.getLastKnownPositionAsync()
         if (location) {
           locationInfo = `${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)}`
+          // Try to get human-readable location
+          try {
+            const [place] = await Location.reverseGeocodeAsync({
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            })
+            if (place) {
+              const parts = [place.city, place.region, place.country].filter(Boolean)
+              if (parts.length > 0) {
+                locationPlace = parts.join(", ")
+              }
+            }
+          } catch (e) {
+            console.log("Failed to reverse geocode:", e)
+          }
         }
       }
     } catch (e) {
@@ -233,7 +249,7 @@ export default function FeedbackPage() {
       <tr><th>Network Type</th><td>${networkInfo.type}</td></tr>
       <tr><th>Network Connected</th><td>${networkInfo.isConnected ? "Yes" : "No"}</td></tr>
       <tr><th>Internet Reachable</th><td>${networkInfo.isInternetReachable ? "Yes" : "No"}</td></tr>
-      ${locationInfo ? `<tr><th>Location</th><td>${locationInfo}</td></tr>` : ""}
+      ${locationInfo ? `<tr><th>Location</th><td>${locationInfo}${locationPlace ? ` (${locationPlace})` : ""}</td></tr>` : ""}
       ${isBetaBuild ? `<tr><th>Beta Build</th><td>Yes</td></tr>` : ""}
       ${isBetaBuild ? `<tr><th>Backend URL</th><td>${customBackendUrl}</td></tr>` : ""}
       <tr><th>Build Commit</th><td>${buildCommit}</td></tr>

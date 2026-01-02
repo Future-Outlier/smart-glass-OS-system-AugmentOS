@@ -2041,6 +2041,22 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
+    func forgetWifiNetwork(_ ssid: String) {
+        Bridge.log("LIVE: 📶 Sending WiFi forget command for SSID: \(ssid)")
+
+        guard !ssid.isEmpty else {
+            Bridge.log("LIVE: Cannot forget WiFi network - SSID is empty")
+            return
+        }
+
+        let json: [String: Any] = [
+            "type": "forget_wifi",
+            "ssid": ssid,
+        ]
+
+        sendJson(json, wakeUp: true)
+    }
+
     func queryGalleryStatus() {
         Bridge.log("LIVE: 📸 Querying gallery status from glasses")
 

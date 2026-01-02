@@ -108,6 +108,7 @@ protocol SGCManager {
 
     func requestWifiScan()
     func sendWifiCredentials(_ ssid: String, _ password: String)
+    func forgetWifiNetwork(_ ssid: String)
     func sendHotspotState(_ enabled: Bool)
 
     // MARK: - Gallery

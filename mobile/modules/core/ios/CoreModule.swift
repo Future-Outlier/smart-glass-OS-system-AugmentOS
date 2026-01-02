@@ -93,6 +93,12 @@ public class CoreModule: Module {
             }
         }
 
+        AsyncFunction("forgetWifiNetwork") { (ssid: String) in
+            await MainActor.run {
+                CoreManager.shared.forgetWifiNetwork(ssid)
+            }
+        }
+
         AsyncFunction("setHotspotState") { (enabled: Bool) in
             await MainActor.run {
                 CoreManager.shared.setHotspotState(enabled)

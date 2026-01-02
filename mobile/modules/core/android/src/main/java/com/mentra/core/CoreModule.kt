@@ -66,6 +66,10 @@ class CoreModule : Module() {
             coreManager?.sendWifiCredentials(ssid, password)
         }
 
+        AsyncFunction("forgetWifiNetwork") { ssid: String ->
+            coreManager?.forgetWifiNetwork(ssid)
+        }
+
         AsyncFunction("setHotspotState") { enabled: Boolean ->
             coreManager?.setHotspotState(enabled)
         }
