@@ -8,7 +8,7 @@ import {Button, Header, Icon, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
-import {$styles, ThemedStyle} from "@/theme"
+import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 
@@ -27,7 +27,7 @@ export default function WifiConnectingScreen() {
   const [errorMessage, setErrorMessage] = useState("")
   const connectionTimeoutRef = useRef<number | null>(null)
   const failureGracePeriodRef = useRef<number | null>(null)
-  const {goBack, navigate, replace} = useNavigationHistory()
+  const {goBack, navigate, replace, pushPrevious} = useNavigationHistory()
   const wifiConnected = useGlassesStore(state => state.wifiConnected)
   const wifiSsid = useGlassesStore(state => state.wifiSsid)
   const glassesConnected = useGlassesStore(state => state.connected)
@@ -40,7 +40,7 @@ export default function WifiConnectingScreen() {
         {
           text: "OK",
           onPress() {
-            goBack()
+            pushPrevious(1)
           },
         },
       ])
@@ -125,21 +125,23 @@ export default function WifiConnectingScreen() {
   }
 
   const handleSuccess = useCallback(() => {
-    if (nextRoute && typeof nextRoute === "string") {
-      replace(decodeURIComponent(nextRoute))
-    } else if (returnTo && typeof returnTo === "string") {
-      replace(decodeURIComponent(returnTo))
-    } else {
-      navigate("/")
-    }
+    // if (nextRoute && typeof nextRoute === "string") {
+    //   replace(decodeURIComponent(nextRoute))
+    // } else if (returnTo && typeof returnTo === "string") {
+    //   replace(decodeURIComponent(returnTo))
+    // } else {
+    //   navigate("/")
+    // }
+    pushPrevious(1)
   }, [nextRoute, returnTo, navigate])
 
   const handleCancel = useCallback(() => {
-    if (returnTo && typeof returnTo === "string") {
-      replace(decodeURIComponent(returnTo))
-    } else {
-      goBack()
-    }
+    // if (returnTo && typeof returnTo === "string") {
+    //   replace(decodeURIComponent(returnTo))
+    // } else {
+    //   goBack()
+    // }
+    goBack()
   }, [returnTo, goBack])
 
   const handleHeaderBack = useCallback(() => {

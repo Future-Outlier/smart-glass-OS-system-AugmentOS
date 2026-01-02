@@ -1,16 +1,15 @@
-import {useLocalSearchParams, useFocusEffect} from "expo-router"
-import {useState, useEffect, useCallback, useRef} from "react"
-import {View, TextInput, TouchableOpacity, BackHandler, ViewStyle, TextStyle, ScrollView} from "react-native"
+import {useLocalSearchParams} from "expo-router"
+import {useState, useEffect} from "react"
+import {View, TextInput, TouchableOpacity} from "react-native"
 
 import {EyeIcon} from "@/components/icons/EyeIcon"
 import {EyeOffIcon} from "@/components/icons/EyeOffIcon"
 import {WifiIcon} from "@/components/icons/WifiIcon"
 import {Screen, Header, Checkbox, Button, Text} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
-import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 
@@ -21,16 +20,17 @@ export default function WifiPasswordScreen() {
   const returnTo = params.returnTo as string | undefined
   const nextRoute = params.nextRoute as string | undefined
 
-  const {theme, themed} = useAppTheme()
-  const {push, goBack, replace} = useNavigationHistory()
-  const glassesConnected = useGlassesStore(state => state.connected)
+  const {theme} = useAppTheme()
+  const {push, goBack, pushPrevious} = useNavigationHistory()
+  const glassesConnected = useGlassesStore((state) => state.connected)
   const [ssid, setSsid] = useState(initialSsid)
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [rememberPassword, setRememberPassword] = useState(true)
   const [hasSavedPassword, setHasSavedPassword] = useState(false)
 
-  // Navigate away if glasses disconnect (but not on initial mount)
+  focusEffectPreventBack()
+
   useEffect(() => {
     if (!glassesConnected) {
       console.log("CONNECTING: Glasses disconnected - navigating away")
@@ -38,48 +38,26 @@ export default function WifiPasswordScreen() {
         {
           text: "OK",
           onPress() {
-            goBack()
+            pushPrevious(1)
           },
         },
       ])
     }
   }, [glassesConnected])
 
-  const handleGoBack = useCallback(() => {
-    if (returnTo && typeof returnTo === "string") {
-      replace(decodeURIComponent(returnTo))
-    } else {
-      goBack()
-    }
-    return true // Prevent default back behavior
-  }, [returnTo])
-
-  // Handle Android back button
-  useFocusEffect(
-    useCallback(() => {
-      const backHandler = BackHandler.addEventListener("hardwareBackPress", handleGoBack)
-      return () => backHandler.remove()
-    }, [handleGoBack]),
-  )
-
-  // Load saved password when component mounts
   useEffect(() => {
     if (initialSsid) {
       const savedPassword = WifiCredentialsService.getPassword(initialSsid)
       if (savedPassword) {
         setPassword(savedPassword)
         setHasSavedPassword(true)
-        setRememberPassword(true) // Check the box if there's a saved password
+        setRememberPassword(true)
       }
     }
   }, [initialSsid])
 
-  // Handle checkbox state changes - immediately remove saved password when unchecked
   useEffect(() => {
-    console.log("321321 rememberPassword", rememberPassword)
-    console.log("321321 initialSsid", initialSsid)
     if (!rememberPassword && initialSsid) {
-      // Remove saved credentials immediately when checkbox is unchecked
       WifiCredentialsService.removeCredentials(initialSsid)
       setHasSavedPassword(false)
       console.log("$%^&*()_321321 removed credentials")
@@ -88,19 +66,14 @@ export default function WifiPasswordScreen() {
 
   const handleConnect = async () => {
     if (!ssid) {
-      showAlert(translate("common:error"), translate("wifiSetup:pleaseEnterNetworkName"), [
-        {text: translate("common:ok")},
-      ])
+      showAlert(translate("common:error"), translate("wifi:pleaseEnterNetworkName"), [{text: translate("common:ok")}])
       return
     }
 
-    // Don't save credentials here - only save after successful connection
-    // If user unchecked "Remember Password", remove any existing saved credentials
     if (!rememberPassword) {
       await WifiCredentialsService.removeCredentials(ssid)
     }
 
-    // Navigate to connecting screen with credentials
     push("/wifi/connecting", {
       deviceModel,
       ssid,
@@ -113,221 +86,96 @@ export default function WifiPasswordScreen() {
 
   return (
     <Screen preset="fixed">
-      <Header title="Wi-Fi" leftIcon="chevron-left" onLeftPress={handleGoBack} />
-      <ScrollView contentContainerStyle={themed($scrollContent)} style={{flex: 1}}>
-        {/* Centered card container */}
-        <View style={themed($card)}>
-          {/* WiFi Icon and SSID Header */}
-          <View style={themed($iconContainer)}>
-            <WifiIcon size={48} color={theme.colors.palette.success500} />
-          </View>
+      <Header title={translate("wifi:wifi")} leftIcon="chevron-left" onLeftPress={goBack} />
 
-          <Text style={themed($ssidTitle)}>{ssid || "Enter Network Details"}</Text>
-
-          {/* Manual entry shows SSID input */}
-          {!initialSsid && (
-            <View style={themed($inputContainer)}>
-              <Text style={themed($label)}>Network Name (SSID)</Text>
-              <TextInput
-                style={themed($input)}
-                value={ssid}
-                onChangeText={setSsid}
-                placeholder="Enter network name"
-                placeholderTextColor={theme.colors.textDim}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-          )}
-
-          <View style={themed($inputContainer)}>
-            <Text style={themed($label)}>Wi-Fi password</Text>
-            <View style={themed($passwordContainer)}>
-              <TextInput
-                style={themed($passwordInput)}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Enter password"
-                placeholderTextColor={theme.colors.textDim}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={themed($eyeButton)}>
-                {showPassword ? (
-                  <EyeIcon size={24} color={theme.colors.textDim} />
-                ) : (
-                  <EyeOffIcon size={24} color={theme.colors.textDim} />
-                )}
-              </TouchableOpacity>
-            </View>
-            {hasSavedPassword && (
-              <Text style={themed($savedPasswordText)}>✓ Password loaded from saved credentials</Text>
-            )}
-          </View>
-
-          <TouchableOpacity
-            style={themed($checkboxContainer)}
-            onPress={() => setRememberPassword(!rememberPassword)}
-            activeOpacity={0.7}
-            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-            <Checkbox
-              value={rememberPassword}
-              onValueChange={setRememberPassword}
-              containerStyle={{padding: 8, marginTop: -8}}
-              inputOuterStyle={{
-                backgroundColor: rememberPassword ? theme.colors.palette.success500 : theme.colors.background,
-                borderColor: rememberPassword ? theme.colors.palette.success500 : theme.colors.border,
-                borderWidth: 2,
-              }}
-              inputDetailStyle={{
-                tintColor: theme.colors.palette.white,
-              }}
-            />
-            <View style={themed($checkboxContent)}>
-              <Text style={themed($checkboxLabel)}>Remember Password</Text>
-              <Text style={themed($checkboxDescription)}>Save this password for future connections.</Text>
-            </View>
-          </TouchableOpacity>
-
-          <View style={themed($divider)} />
-
-          <View style={themed($buttonContainer)}>
-            <Button text="Cancel" onPress={handleGoBack} preset="alternate" style={themed($cancelButton)} />
-            <Button text="Connect" onPress={handleConnect} style={themed($connectButton)} />
-          </View>
+      <View className="bg-primary-foreground rounded-3xl border border-border p-6 w-full items-center">
+        {/* WiFi Icon */}
+        <View className="mb-3">
+          <WifiIcon size={48} color={theme.colors.palette.success500} />
         </View>
-      </ScrollView>
+
+        {/* SSID Title */}
+        <Text className="text-xl font-semibold text-text text-center mb-4">{ssid || "Enter Network Details"}</Text>
+
+        {/* Manual entry shows SSID input */}
+        {!initialSsid && (
+          <View className="mb-4 w-full">
+            <Text className="text-base text-text mb-2" tx="wifi:networkName" />
+            <TextInput
+              className="h-[50px] rounded-xl p-4 text-base text-text bg-background"
+              value={ssid}
+              onChangeText={setSsid}
+              placeholder={translate("wifi:enterNetworkName")}
+              placeholderTextColor={theme.colors.textDim}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+        )}
+
+        {/* Password input */}
+        <View className="mb-4 w-full">
+          <Text className="text-base text-text mb-2" tx="wifi:wifiPassword" />
+          <View className="flex-row items-center relative">
+            <TextInput
+              className="flex-1 h-[50px] rounded-xl p-4 pr-[50px] text-base text-text bg-background"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter password"
+              placeholderTextColor={theme.colors.textDim}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              className="absolute right-3 h-[50px] w-10 justify-center items-center">
+              {showPassword ? (
+                <EyeIcon size={24} color={theme.colors.textDim} />
+              ) : (
+                <EyeOffIcon size={24} color={theme.colors.textDim} />
+              )}
+            </TouchableOpacity>
+          </View>
+          {hasSavedPassword && (
+            <Text className="text-xs text-tint mt-2 italic" tx="wifi:passwordLoadedFromSavedCredentials" />
+          )}
+        </View>
+
+        {/* Remember password checkbox */}
+        <TouchableOpacity
+          className="flex-row items-start mb-6 w-full"
+          onPress={() => setRememberPassword(!rememberPassword)}
+          activeOpacity={0.7}
+          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+          <Checkbox
+            value={rememberPassword}
+            onValueChange={setRememberPassword}
+            containerStyle={{padding: 8, marginTop: -8}}
+            inputOuterStyle={{
+              backgroundColor: rememberPassword ? theme.colors.palette.success500 : theme.colors.background,
+              borderColor: rememberPassword ? theme.colors.palette.success500 : theme.colors.border,
+              borderWidth: 2,
+            }}
+            inputDetailStyle={{
+              tintColor: theme.colors.palette.white,
+            }}
+          />
+          <View className="flex-1">
+            <Text className="text-base font-medium text-text" tx="wifi:rememberPassword" />
+            <Text className="text-sm text-text-dim mt-0.5" tx="wifi:rememberPasswordDescription" />
+          </View>
+        </TouchableOpacity>
+
+        {/* Divider */}
+        <View className="w-full h-px bg-border mt-2 mb-6" />
+
+        {/* Buttons */}
+        <View className="flex-row gap-3 w-full justify-end">
+          <Button tx="common:cancel" onPress={goBack} preset="alternate" className="min-w-[100px]" />
+          <Button tx="common:connect" onPress={handleConnect} className="min-w-[100px]" />
+        </View>
+      </View>
     </Screen>
   )
 }
-
-const $scrollContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexGrow: 1,
-  justifyContent: "center",
-  paddingVertical: spacing.s6,
-})
-
-const $card: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.primary_foreground,
-  borderRadius: spacing.s6,
-  borderWidth: 1,
-  borderColor: colors.border,
-  padding: spacing.s6,
-  width: "100%",
-  alignItems: "center",
-})
-
-const $iconContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.s3,
-})
-
-const $ssidTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 20,
-  fontWeight: "600",
-  color: colors.text,
-  textAlign: "center",
-  marginBottom: spacing.s4,
-})
-
-const $inputContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.s4,
-  width: "100%",
-})
-
-const $label: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 16,
-  fontWeight: "400",
-  color: colors.text,
-  marginBottom: spacing.s2,
-})
-
-const $input: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  height: 50,
-  borderRadius: spacing.s3,
-  padding: spacing.s4,
-  fontSize: 16,
-  color: colors.text,
-  backgroundColor: colors.background,
-})
-
-const $passwordContainer: ThemedStyle<ViewStyle> = () => ({
-  flexDirection: "row",
-  alignItems: "center",
-  position: "relative",
-})
-
-const $passwordInput: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  flex: 1,
-  height: 50,
-  borderRadius: spacing.s3,
-  padding: spacing.s4,
-  paddingRight: 50,
-  fontSize: 16,
-  color: colors.text,
-  backgroundColor: colors.background,
-})
-
-const $eyeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  position: "absolute",
-  right: spacing.s3,
-  height: 50,
-  width: 40,
-  justifyContent: "center",
-  alignItems: "center",
-})
-
-const $savedPasswordText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 12,
-  color: colors.tint,
-  marginTop: spacing.s2,
-  fontStyle: "italic",
-})
-
-const $checkboxContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  alignItems: "flex-start",
-  marginBottom: spacing.s6,
-  width: "100%",
-})
-
-const $checkboxContent: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-})
-
-const $checkboxLabel: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 16,
-  fontWeight: "500",
-  color: colors.text,
-})
-
-const $checkboxDescription: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 14,
-  color: colors.textDim,
-  marginTop: 2,
-})
-
-const $divider: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  width: "100%",
-  height: 1,
-  backgroundColor: colors.border,
-  marginTop: spacing.s2,
-  marginBottom: spacing.s6,
-})
-
-const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  gap: spacing.s3,
-  width: "100%",
-  justifyContent: "flex-end",
-})
-
-const $cancelButton: ThemedStyle<ViewStyle> = () => ({
-  flex: 0,
-  minWidth: 100,
-})
-
-const $connectButton: ThemedStyle<ViewStyle> = () => ({
-  flex: 0,
-  minWidth: 100,
-})

@@ -46,15 +46,14 @@ export default function PairingSuccessScreen() {
 
       console.log("PAIR_SUCCESS: glassesConnected", glassesConnected)
 
-      // push the onboarding screen under the current screen so that when we go back, we go to the onboarding screen:
-      pushUnder("/onboarding/live")
-
       if (glassesConnected) {
         push("/ota/check-for-updates")
       } else {
-        // After WiFi setup completes, go to OTA check
-        push("/wifi/scan", {nextRoute: encodeURIComponent("/ota/check-for-updates")})
+        push("/wifi/scan")
       }
+      
+      // push the onboarding screen under the current screen so that when we go back, we go to the onboarding screen:
+      pushUnder("/onboarding/live")
       return
     }
 

@@ -12,7 +12,7 @@ type CheckState = "checking" | "update_available" | "no_update" | "error"
 
 export default function OtaCheckForUpdatesScreen() {
   const {theme} = useAppTheme()
-  const {goBack} = useNavigationHistory()
+  const {pushPrevious, push} = useNavigationHistory()
   const otaVersionUrl = useGlassesStore(state => state.otaVersionUrl)
   const currentBuildNumber = useGlassesStore(state => state.buildNumber)
 
@@ -58,13 +58,13 @@ export default function OtaCheckForUpdatesScreen() {
 
   const handleSkip = () => {
     console.log("OTA: handleSkip()")
-    goBack()
+    pushPrevious()
   }
 
   const handleUpdateNow = () => {
     console.log("OTA: handleUpdateNow()")
     // Push to progress screen - it will send the OTA start command
-    // push("/ota/progress")
+    push("/ota/progress")
   }
 
   const renderContent = () => {
