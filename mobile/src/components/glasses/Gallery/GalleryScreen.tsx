@@ -73,18 +73,18 @@ export function GalleryScreen() {
   const itemWidth = (screenWidth - ITEM_SPACING * (numColumns - 1)) / numColumns
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const features = getModelCapabilities(defaultWearable)
-  const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesConnected = useGlassesStore((state) => state.connected)
 
   // Subscribe to sync store
-  const syncState = useGallerySyncStore(state => state.syncState)
-  const currentFile = useGallerySyncStore(state => state.currentFile)
-  const currentFileProgress = useGallerySyncStore(state => state.currentFileProgress)
-  const completedFiles = useGallerySyncStore(state => state.completedFiles)
-  const totalFiles = useGallerySyncStore(state => state.totalFiles)
-  const failedFiles = useGallerySyncStore(state => state.failedFiles)
-  const syncQueue = useGallerySyncStore(state => state.queue)
+  const syncState = useGallerySyncStore((state) => state.syncState)
+  const currentFile = useGallerySyncStore((state) => state.currentFile)
+  const currentFileProgress = useGallerySyncStore((state) => state.currentFileProgress)
+  const completedFiles = useGallerySyncStore((state) => state.completedFiles)
+  const totalFiles = useGallerySyncStore((state) => state.totalFiles)
+  const failedFiles = useGallerySyncStore((state) => state.failedFiles)
+  const syncQueue = useGallerySyncStore((state) => state.queue)
   const glassesGalleryStatus = useGallerySyncStore(
-    useShallow(state => ({
+    useShallow((state) => ({
       photos: state.glassesPhotoCount,
       videos: state.glassesVideoCount,
       total: state.glassesTotalCount,
@@ -221,11 +221,11 @@ export function GalleryScreen() {
   useEffect(() => {
     if (syncState === "syncing" && syncQueue.length > 0) {
       // On first render of syncing state, initialize all files as pending
-      setPhotoSyncStates(prev => {
+      setPhotoSyncStates((prev) => {
         // Only initialize if we don't have states yet (avoid overwriting progress)
         if (prev.size === 0) {
           const initialStates = new Map()
-          syncQueue.forEach(file => {
+          syncQueue.forEach((file) => {
             initialStates.set(file.name, {
               status: "pending" as const,
               progress: 0,
@@ -253,7 +253,7 @@ export function GalleryScreen() {
 
     // Update the current file's progress
     if (currentFile) {
-      setPhotoSyncStates(prev => {
+      setPhotoSyncStates((prev) => {
         const newStates = new Map(prev)
 
         // If current file is at 100%, remove it immediately (no green ring)
@@ -308,7 +308,7 @@ export function GalleryScreen() {
   // Memoized for stable reference in handlePhotoPress
   const togglePhotoSelection = useCallback(
     (photoName: string) => {
-      setSelectedPhotos(prev => {
+      setSelectedPhotos((prev) => {
         const newSet = new Set(prev)
         if (newSet.has(photoName)) {
           newSet.delete(photoName)
@@ -501,7 +501,7 @@ export function GalleryScreen() {
     console.log("[GalleryScreen] Component mounted - initializing gallery")
 
     // Check permission status in background (for state tracking, not blocking)
-    MediaLibraryPermissions.checkPermission().then(hasPermission => {
+    MediaLibraryPermissions.checkPermission().then((hasPermission) => {
       setHasMediaLibraryPermission(hasPermission)
       console.log("[GalleryScreen] Media library permission status:", hasPermission)
     })
@@ -620,7 +620,7 @@ export function GalleryScreen() {
     }
 
     // Downloaded photos (exclude any that are in the sync queue or are AVIF artifacts)
-    const syncQueueNames = new Set(syncQueue.map(p => p.name))
+    const syncQueueNames = new Set(syncQueue.map((p) => p.name))
     // console.log(
     //   `[GalleryScreen] 🚫 Will exclude these names from downloadedPhotos: ${Array.from(syncQueueNames).join(", ")}`,
     // )
@@ -645,7 +645,7 @@ export function GalleryScreen() {
     // })
 
     const downloadedOnly = downloadedPhotos
-      .filter(p => !syncQueueNames.has(p.name) && !isAvifArtifact(p.name))
+      .filter((p) => !syncQueueNames.has(p.name) && !isAvifArtifact(p.name))
       .sort((a, b) => {
         const aTime = typeof a.modified === "string" ? new Date(a.modified).getTime() : a.modified
         const bTime = typeof b.modified === "string" ? new Date(b.modified).getTime() : b.modified
@@ -1048,7 +1048,7 @@ export function GalleryScreen() {
                     numColumns={numColumns}
                     key={numColumns}
                     renderItem={renderPhotoItem}
-                    keyExtractor={item => item.id}
+                    keyExtractor={(item) => item.id}
                     contentContainerStyle={[
                       themed($photoGridContent),
                       {
@@ -1082,8 +1082,8 @@ export function GalleryScreen() {
           (() => {
             // Calculate the actual index in the flattened photos array
             // GalleryItem.index includes sync queue offsets, so we need to find the real position
-            const flatPhotos = allPhotos.map(item => item.photo).filter((p): p is PhotoInfo => p !== undefined)
-            const actualIndex = flatPhotos.findIndex(p => p?.name === selectedPhoto.name)
+            const flatPhotos = allPhotos.map((item) => item.photo).filter((p): p is PhotoInfo => p !== undefined)
+            const actualIndex = flatPhotos.findIndex((p) => p?.name === selectedPhoto.name)
 
             if (actualIndex === -1) {
               console.error("[GalleryScreen] ❌ Selected photo not found in photos array:", selectedPhoto.name)
@@ -1155,7 +1155,7 @@ const $photoItem: ThemedStyle<ViewStyle> = () => ({
   borderRadius: 0,
   overflow: "hidden",
   backgroundColor: "rgba(0,0,0,0.05)",
-  marginBottom: 2, // Vertical spacing between rows (matches ITEM_SPACING)
+  // No marginBottom needed - ItemSeparatorComponent handles vertical spacing to match horizontal gap
 })
 
 const $photoImage: ThemedStyle<ImageStyle> = () => ({
