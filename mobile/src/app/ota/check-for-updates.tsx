@@ -21,8 +21,10 @@ export default function OtaCheckForUpdatesScreen() {
 
   focusEffectPreventBack()
 
-  // Perform OTA check on mount
+  // Perform OTA check on mount with minimum display time
   useEffect(() => {
+    const MIN_DISPLAY_TIME_MS = 4000
+
     const performCheck = async () => {
       if (!otaVersionUrl || !currentBuildNumber) {
         console.log("OTA: No version URL or build number, skipping check")
@@ -30,12 +32,20 @@ export default function OtaCheckForUpdatesScreen() {
         return
       }
 
+      const startTime = Date.now()
+
       try {
         const result = await checkForOtaUpdate(otaVersionUrl, currentBuildNumber)
 
+        // Calculate remaining time to meet minimum display duration
+        const elapsed = Date.now() - startTime
+        const remainingDelay = Math.max(0, MIN_DISPLAY_TIME_MS - elapsed)
+
+        // Wait for minimum display time before showing result
+        await new Promise(resolve => setTimeout(resolve, remainingDelay))
+
         if (!result.hasCheckCompleted) {
           setCheckState("error")
-          // setTimeout(() => handleSkip(), 2000)
           return
         }
 
@@ -44,12 +54,14 @@ export default function OtaCheckForUpdatesScreen() {
           setCheckState("update_available")
         } else {
           setCheckState("no_update")
-          // setTimeout(() => handleSkip(), 2000)
         }
       } catch (error) {
         console.error("OTA check failed:", error)
+        // Still respect minimum display time on error
+        const elapsed = Date.now() - startTime
+        const remainingDelay = Math.max(0, MIN_DISPLAY_TIME_MS - elapsed)
+        await new Promise(resolve => setTimeout(resolve, remainingDelay))
         setCheckState("error")
-        // setTimeout(() => handleSkip(), 2000)
       }
     }
 
