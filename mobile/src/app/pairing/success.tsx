@@ -46,6 +46,10 @@ export default function PairingSuccessScreen() {
 
       console.log("PAIR_SUCCESS: glassesConnected", glassesConnected)
 
+      // clear the history and go home so that we don't navigate back here:
+      clearHistoryAndGoHome()
+
+      // push the next screen:
       if (glassesConnected) {
         push("/ota/check-for-updates")
       } else {

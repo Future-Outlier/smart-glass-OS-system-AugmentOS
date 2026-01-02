@@ -38,7 +38,7 @@ export default function WifiScanScreen() {
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const glassesConnected = useGlassesStore((state) => state.connected)
   const {push, goBack, replace, pushPrevious} = useNavigationHistory()
-  
+
   focusEffectPreventBack()
 
   useEffect(() => {
@@ -165,34 +165,38 @@ export default function WifiScanScreen() {
 
   const handleNetworkSelect = (selectedNetwork: NetworkInfo) => {
     if (wifiConnected && wifiSsid === selectedNetwork.ssid) {
-      showAlert("Forget Network", `Would you like to forget "${selectedNetwork.ssid}"? You will need to re-enter the password to connect again.`, [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Forget",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              console.log(`🗑️ Forgetting network: ${selectedNetwork.ssid}`)
-              await CoreModule.forgetWifiNetwork(selectedNetwork.ssid)
-              // Also remove from local saved credentials
-              WifiCredentialsService.removeCredentials(selectedNetwork.ssid)
-              Toast.show({
-                type: "success",
-                text1: `Forgot "${selectedNetwork.ssid}"`,
-              })
-            } catch (error) {
-              console.error("Error forgetting network:", error)
-              Toast.show({
-                type: "error",
-                text1: "Failed to forget network",
-              })
-            }
+      showAlert(
+        "Forget Network",
+        `Would you like to forget "${selectedNetwork.ssid}"? You will need to re-enter the password to connect again.`,
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
           },
-        },
-      ])
+          {
+            text: "Forget",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                console.log(`🗑️ Forgetting network: ${selectedNetwork.ssid}`)
+                await CoreModule.forgetWifiNetwork(selectedNetwork.ssid)
+                // Also remove from local saved credentials
+                WifiCredentialsService.removeCredentials(selectedNetwork.ssid)
+                Toast.show({
+                  type: "success",
+                  text1: `Forgot "${selectedNetwork.ssid}"`,
+                })
+              } catch (error) {
+                console.error("Error forgetting network:", error)
+                Toast.show({
+                  type: "error",
+                  text1: "Failed to forget network",
+                })
+              }
+            },
+          },
+        ],
+      )
       return
     }
 
@@ -272,7 +276,7 @@ export default function WifiScanScreen() {
   const showSkip = true
 
   return (
-    <Screen preset="fixed">
+    <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header title="Wi-Fi" leftIcon="chevron-left" onLeftPress={goBack} rightIcon="repeat" onRightPress={startScan} />
 
       <View className="flex-1">
@@ -286,7 +290,7 @@ export default function WifiScanScreen() {
         </View>
 
         {/* Content - flex-1 makes it take remaining space, flex-shrink allows it to shrink */}
-        <View className="flex-1 flex-shrink min-h-0">
+        <View className="flex-1 flex-shrink min-h-0 pb-4">
           {isScanning ? (
             <View className="flex-1 justify-center items-center py-12">
               <ActivityIndicator size="large" color={theme.colors.text} />
@@ -304,15 +308,12 @@ export default function WifiScanScreen() {
           )}
         </View>
 
-        {/* Bottom buttons - fixed at bottom */}
-        <View className="pb-6">
-          <Button
-            tx="wifi:enterNetworkManually"
-            preset={showSkip ? "primary" : "secondary"}
-            onPress={handleManualEntry}
-          />
-          {showSkip && <Button tx="common:skip" preset="secondary" onPress={handleSkip} className="mt-3" />}
-        </View>
+        <Button
+          tx="wifi:enterNetworkManually"
+          preset={showSkip ? "primary" : "secondary"}
+          onPress={handleManualEntry}
+        />
+        {showSkip && <Button tx="common:skip" preset="secondary" onPress={handleSkip} className="mt-3" />}
       </View>
     </Screen>
   )

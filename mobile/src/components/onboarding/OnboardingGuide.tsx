@@ -45,6 +45,7 @@ interface OnboardingGuideProps {
   mainSubtitle?: string
   endButtonText?: string
   endButtonFn?: () => void
+  exitFn?: () => void
 }
 
 // Find next video step's source for preloading
@@ -65,6 +66,7 @@ export function OnboardingGuide({
   mainSubtitle,
   endButtonText = "Done",
   endButtonFn,
+  exitFn,
 }: OnboardingGuideProps) {
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const {theme} = useAppTheme()
@@ -123,12 +125,20 @@ export function OnboardingGuide({
     return () => {}
   }, [currentIndex, hasStarted, isCurrentStepImage])
 
+  const handleExit = useCallback(() => {
+    if (exitFn) {
+      exitFn()
+    } else {
+      clearHistoryAndGoHome()
+    }
+  }, [exitFn, clearHistoryAndGoHome])
+
   const handleNext = useCallback(
     (manual: boolean = false) => {
       console.log(`ONBOARD: handleNext(${manual})`)
 
       if (currentIndex === steps.length - 1) {
-        clearHistoryAndGoHome()
+        handleExit()
         return
       }
 
@@ -333,6 +343,14 @@ export function OnboardingGuide({
     }
   }, [currentPlayer, isCurrentStepVideo])
 
+  const handleSkip = useCallback(() => {
+    if (exitFn) {
+      exitFn()
+    } else {
+      clearHistoryAndGoHome()
+    }
+  }, [exitFn, clearHistoryAndGoHome])
+
   const renderBullets = useCallback((bullets: string[]) => {
     return (
       <View className="flex flex-col gap-2 flex-1 px-2 mt-6">
@@ -348,6 +366,7 @@ export function OnboardingGuide({
   }, [])
 
   const isLastStep = currentIndex === steps.length - 1
+  const isFirstStep = currentIndex === 0
 
   return (
     <>
@@ -359,7 +378,7 @@ export function OnboardingGuide({
             <MentraLogoStandalone />
           </View>
         }
-        onLeftPress={() => clearHistoryAndGoHome()}
+        onLeftPress={handleExit}
       />
       <View id="main" className="flex flex-1">
         <View id="top" className="flex">
@@ -463,7 +482,7 @@ export function OnboardingGuide({
             <View className="flex flex-col gap-4 mt-8">
               <Button flexContainer tx="onboarding:continueOnboarding" onPress={handleStart} />
               {showSkipButton && (
-                <Button flexContainer preset="secondary" tx="common:skip" onPress={clearHistoryAndGoHome} />
+                <Button flexContainer preset="secondary" tx="common:skip" onPress={handleSkip} />
               )}
             </View>
           )}
@@ -481,7 +500,9 @@ export function OnboardingGuide({
               ) : (
                 <Button flexContainer text={endButtonText} onPress={endButtonFn} />
               )}
-              <Button flexContainer preset="secondary" text="Back" onPress={handleBack} />
+              {!isFirstStep && (
+                <Button flexContainer preset="secondary" text="Back" onPress={handleBack} />
+              )}
             </View>
           )}
         </View>

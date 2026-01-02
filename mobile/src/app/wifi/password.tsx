@@ -88,87 +88,89 @@ export default function WifiPasswordScreen() {
     <Screen preset="fixed">
       <Header title={translate("wifi:wifi")} leftIcon="chevron-left" onLeftPress={goBack} />
 
-      <View className="bg-primary-foreground rounded-3xl border border-border p-6 w-full items-center">
+      <View className="bg-primary-foreground rounded-3xl p-6 w-full items-center mt-12">
         {/* WiFi Icon */}
         <View className="mb-3">
-          <WifiIcon size={48} color={theme.colors.palette.success500} />
+          <WifiIcon size={48} color={theme.colors.primary} />
         </View>
 
-        {/* SSID Title */}
-        <Text className="text-xl font-semibold text-text text-center mb-4">{ssid || "Enter Network Details"}</Text>
+        <View className="gap-4 mt-6">
+          {/* SSID Title */}
+          <Text className="text-xl font-semibold text-text text-center mb-4">{ssid || "Enter Network Details"}</Text>
 
-        {/* Manual entry shows SSID input */}
-        {!initialSsid && (
-          <View className="mb-4 w-full">
-            <Text className="text-base text-text mb-2" tx="wifi:networkName" />
-            <TextInput
-              className="h-[50px] rounded-xl p-4 text-base text-text bg-background"
-              value={ssid}
-              onChangeText={setSsid}
-              placeholder={translate("wifi:enterNetworkName")}
-              placeholderTextColor={theme.colors.textDim}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-        )}
-
-        {/* Password input */}
-        <View className="mb-4 w-full">
-          <Text className="text-base text-text mb-2" tx="wifi:wifiPassword" />
-          <View className="flex-row items-center relative">
-            <TextInput
-              className="flex-1 h-[50px] rounded-xl p-4 pr-[50px] text-base text-text bg-background"
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter password"
-              placeholderTextColor={theme.colors.textDim}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              className="absolute right-3 h-[50px] w-10 justify-center items-center">
-              {showPassword ? (
-                <EyeIcon size={24} color={theme.colors.textDim} />
-              ) : (
-                <EyeOffIcon size={24} color={theme.colors.textDim} />
-              )}
-            </TouchableOpacity>
-          </View>
-          {hasSavedPassword && (
-            <Text className="text-xs text-tint mt-2 italic" tx="wifi:passwordLoadedFromSavedCredentials" />
+          {/* Manual entry shows SSID input */}
+          {!initialSsid && (
+            <View className="mb-4">
+              <Text className="text-base text-text mb-2" tx="wifi:networkName" />
+              <TextInput
+                className="h-[50px] rounded-xl p-4 text-base text-text bg-background"
+                value={ssid}
+                onChangeText={setSsid}
+                placeholder={translate("wifi:enterNetworkName")}
+                placeholderTextColor={theme.colors.textDim}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
           )}
-        </View>
 
-        {/* Remember password checkbox */}
-        <TouchableOpacity
-          className="flex-row items-start mb-6 w-full"
-          onPress={() => setRememberPassword(!rememberPassword)}
-          activeOpacity={0.7}
-          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-          <Checkbox
-            value={rememberPassword}
-            onValueChange={setRememberPassword}
-            containerStyle={{padding: 8, marginTop: -8}}
-            inputOuterStyle={{
-              backgroundColor: rememberPassword ? theme.colors.palette.success500 : theme.colors.background,
-              borderColor: rememberPassword ? theme.colors.palette.success500 : theme.colors.border,
-              borderWidth: 2,
-            }}
-            inputDetailStyle={{
-              tintColor: theme.colors.palette.white,
-            }}
-          />
-          <View className="flex-1">
-            <Text className="text-base font-medium text-text" tx="wifi:rememberPassword" />
-            <Text className="text-sm text-text-dim mt-0.5" tx="wifi:rememberPasswordDescription" />
+          {/* Password input */}
+          <View className="mb-4">
+            <Text className="text-base text-text mb-2" tx="wifi:wifiPassword" />
+            <View className="flex-row items-center relative">
+              <TextInput
+                className="flex-1 h-[50px] rounded-xl p-4 pr-[50px] text-base text-text bg-background"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter password"
+                placeholderTextColor={theme.colors.textDim}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                className="absolute right-3 h-[50px] w-10 justify-center items-center">
+                {showPassword ? (
+                  <EyeIcon size={24} color={theme.colors.textDim} />
+                ) : (
+                  <EyeOffIcon size={24} color={theme.colors.textDim} />
+                )}
+              </TouchableOpacity>
+            </View>
+            {hasSavedPassword && (
+              <Text className="text-xs text-tint mt-2 italic" tx="wifi:passwordLoadedFromSavedCredentials" />
+            )}
           </View>
-        </TouchableOpacity>
+
+          {/* Remember password checkbox */}
+          <TouchableOpacity
+            className="flex-row items-center w-full"
+            onPress={() => setRememberPassword(!rememberPassword)}
+            activeOpacity={0.7}
+            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+            <Checkbox
+              value={rememberPassword}
+              onValueChange={setRememberPassword}
+              containerStyle={{padding: 8, marginTop: -8}}
+              inputOuterStyle={{
+                // backgroundColor: rememberPassword ? theme.colors.palette.success500 : theme.colors.background,
+                // borderColor: rememberPassword ? theme.colors.palette.success500 : theme.colors.border,
+                // borderWidth: 2,
+              }}
+              inputDetailStyle={{
+                // tintColor: theme.colors.palette.white,
+              }}
+            />
+            <View className="flex-1">
+              <Text className="text-base font-medium text-text" tx="wifi:rememberPassword" />
+              <Text className="text-sm text-text-dim mt-0.5" tx="wifi:rememberPasswordDescription" />
+            </View>
+          </TouchableOpacity>
+        </View>
 
         {/* Divider */}
-        <View className="w-full h-px bg-border mt-2 mb-6" />
+        <View className="w-full h-px bg-border mt-6 mb-6" />
 
         {/* Buttons */}
         <View className="flex-row gap-3 w-full justify-end">

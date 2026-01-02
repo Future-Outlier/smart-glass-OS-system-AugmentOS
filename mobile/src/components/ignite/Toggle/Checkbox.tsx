@@ -1,7 +1,7 @@
 import {useEffect, useRef, useCallback} from "react"
 import {Image, ImageStyle, Animated, StyleProp, View, ViewStyle} from "react-native"
 
-import {iconRegistry, IconTypes} from "@/components/ignite/Icon"
+import {Icon, iconRegistry, IconTypes} from "@/components/ignite/Icon"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {$styles} from "@/theme"
 
@@ -40,7 +40,6 @@ function CheckboxInput(props: CheckboxInputProps) {
     on,
     status,
     disabled,
-    icon = "check",
     outerStyle: $outerStyleOverride,
     innerStyle: $innerStyleOverride,
     detailStyle: $detailStyleOverride,
@@ -60,48 +59,25 @@ function CheckboxInput(props: CheckboxInputProps) {
     }).start()
   }, [on])
 
-  const offBackgroundColor = [
-    disabled && colors.palette.neutral400,
-    status === "error" && colors.errorBackground,
-    colors.background,
-  ].filter(Boolean)[0]
-
-  const outerBorderColor = [
-    disabled && colors.palette.neutral400,
-    status === "error" && colors.error,
-    !on && colors.border,
-    colors.tint,
-  ].filter(Boolean)[0]
-
-  const onBackgroundColor = [
-    disabled && colors.palette.transparent,
-    status === "error" && colors.errorBackground,
-    colors.tint,
-  ].filter(Boolean)[0]
-
-  const iconTintColor = [
-    disabled && colors.palette.neutral600,
-    status === "error" && colors.error,
-    colors.background,
-  ].filter(Boolean)[0]
-
   return (
     <View
-      style={[$inputOuter, {backgroundColor: offBackgroundColor, borderColor: outerBorderColor}, $outerStyleOverride]}>
+      className="bg-background rounded-md"
+      style={[$outerStyleOverride]}>
       <Animated.View
-        style={[
-          $styles.toggleInner,
-          {backgroundColor: onBackgroundColor},
-          $innerStyleOverride,
-          {opacity: opacity.current},
-        ]}>
-        <Image
-          source={icon ? iconRegistry[icon] : iconRegistry.check}
-          style={[$checkboxDetail, !!iconTintColor && {tintColor: iconTintColor}, $detailStyleOverride]}
-        />
+        className={`bg-background rounded-md ${on ? "bg-primary" : "bg-background"}`}
+        style={[$innerStyleOverride, {opacity: opacity.current}]}>
+        <Icon name="check" size={20} color={colors.background} />
       </Animated.View>
     </View>
   )
+}
+
+const $toggleInner: ViewStyle = {
+  width: "100%",
+  height: "100%",
+  alignItems: "center",
+  justifyContent: "center",
+  overflow: "hidden"
 }
 
 const $checkboxDetail: ImageStyle = {

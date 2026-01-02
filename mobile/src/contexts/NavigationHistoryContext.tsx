@@ -175,6 +175,8 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       // router.dismissTo("/")
       // router.navigate("/")
       router.replace("/(tabs)/home")
+      historyRef.current = ["/(tabs)/home"]
+      historyParamsRef.current = [undefined]
     } catch (error) {
       console.error("NAV: clearHistoryAndGoHome() error", error)
     }
@@ -236,11 +238,61 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   // when you want to go back, but animate it like a push:
   const pushPrevious = (index: number = 0) => {
     console.info("NAV: pushPrevious()")
-    const prevIndex = historyRef.current.length - (2 + index)
-    const previousPath = historyRef.current[prevIndex]
-    const previousParams = historyParamsRef.current[prevIndex]
-    clearHistory()
-    push(previousPath as any, previousParams as any)
+    console.log("NAV: historyRef.current", historyRef.current)
+    // const prevIndex = historyRef.current.length - (2 + index)
+    // const previousPath = historyRef.current[prevIndex]
+    // const previousParams = historyParamsRef.current[prevIndex]
+    // clearHistory()
+    // push(previousPath as any, previousParams as any)
+
+
+    const last = index + 2
+    const lastRouteIndex = historyRef.current.length - last
+    // the route we want to later "push" onto the stack:
+    const lastRoute = historyRef.current[lastRouteIndex]
+    console.log("NAV: lastRoute", lastRoute)
+    const lastRouteParams = historyParamsRef.current[lastRouteIndex]
+    
+    // Build routes WITHOUT n routes (removing current and last n routes)
+    const n = index + 2
+    let updatedRoutes = historyRef.current.slice(0, -n)
+    let updatedRoutesParams = historyParamsRef.current.slice(0, -n)
+    // // add ghost route:
+    // updatedRoutes.push("/")
+    // updatedRoutesParams.push(undefined)
+    
+    const newRouteState = updatedRoutes.map((path, index) => ({
+      name: path,
+      params: historyParamsRef.current[index],
+    }))
+
+
+
+    console.log("NAV: newRouteState", newRouteState.map(route => route.name))
+
+    navigation.dispatch(
+      CommonActions.reset({
+        index: newRouteState.length - 1, // Point to current screen (last)
+        routes: newRouteState,
+      }),
+    )
+
+    // update our history ref popping the last n elements:
+    historyRef.current = updatedRoutes
+    historyParamsRef.current = updatedRoutesParams
+
+    console.log("NAV: updated historyRef.current", historyRef.current)
+    console.log("NAV: updated historyParamsRef.current", historyParamsRef.current)
+    
+    // push the last route onto the stack:
+    // dumb edge case, if the route is home, we need to clearHistoryAndGoHome()
+    if (lastRoute === "/(tabs)/home" || lastRoute === "/home") {
+      clearHistoryAndGoHome()
+    } else {
+      push(lastRoute, lastRouteParams)
+    }
+    // push(lastRoute, lastRouteParams)
+    // push(lastRoute, lastRouteParams)
   }
 
   // the only routes in the stack will be home and the one we pass:

@@ -1,6 +1,6 @@
 import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 
 
@@ -8,7 +8,7 @@ export default function MentraLiveOnboarding() {
   const {pushPrevious} = useNavigationHistory()
 
   // NOTE: you can't have 2 transition videos in a row or things will break:
-  const steps: OnboardingStep[] = [
+  let steps: OnboardingStep[] = [
     {
       type: "video",
       source: require("@assets/onboarding/live/ONB0_start_onboarding.mp4"),
@@ -127,6 +127,11 @@ export default function MentraLiveOnboarding() {
       subtitle2: translate("onboarding:liveEndMessage"),
     },
   ]
+  
+  // reduce down to 2 steps if __DEV__
+  if (__DEV__) {
+    steps = steps.slice(0, 2)
+  }
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
@@ -135,6 +140,9 @@ export default function MentraLiveOnboarding() {
         autoStart={false}
         mainTitle={translate("onboarding:liveWelcomeTitle")}
         mainSubtitle={translate("onboarding:liveWelcomeSubtitle")}
+        exitFn={() => {
+          pushPrevious()
+        }}
         endButtonFn={() => {
           // if (onboardingOsCompleted) {
           //   clearHistoryAndGoHome()
@@ -146,6 +154,7 @@ export default function MentraLiveOnboarding() {
         // endButtonText={
         //   onboardingOsCompleted ? translate("onboarding:liveEndTitle") : translate("onboarding:learnAboutOs")
         // }
+        
         endButtonText={translate("common:continue")}
       />
     </Screen>
