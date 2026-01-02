@@ -546,11 +546,11 @@ class SocketComms {
 
   // message handlers, these should only ever be called from handle_message / the server:
   private async handle_connection_ack(msg: any) {
-    console.log("SOCKET: connection ack, connecting to livekit")
-    const isChina = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
-    if (!isChina) {
-      await livekit.connect()
-    }
+    // LiveKit connection disabled - using WebSocket/UDP audio instead
+    // const isChina = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
+    // if (!isChina) {
+    //   await livekit.connect()
+    // }
 
     // Configure audio format (LC3) for bandwidth savings
     // This tells the cloud that we're sending LC3-encoded audio

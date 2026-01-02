@@ -101,7 +101,7 @@ export default function WifiPasswordScreen() {
     }
 
     // Navigate to connecting screen with credentials
-    push("/pairing/glasseswifisetup/connecting", {
+    push("/wifi/connecting", {
       deviceModel,
       ssid,
       password,

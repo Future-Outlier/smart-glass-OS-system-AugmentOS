@@ -214,7 +214,7 @@ export default function WifiScanScreen() {
     // Skip password screen for open networks and connect directly
     if (!selectedNetwork.requiresPassword) {
       console.log(`🔓 Open network selected: ${selectedNetwork.ssid} - connecting directly`)
-      push("/pairing/glasseswifisetup/connecting", {
+      push("/wifi/connecting", {
         deviceModel,
         ssid: selectedNetwork.ssid,
         password: "", // Empty password for open networks
@@ -223,7 +223,7 @@ export default function WifiScanScreen() {
       })
     } else {
       console.log(`🔒 Secured network selected: ${selectedNetwork.ssid} - going to password screen`)
-      push("/pairing/glasseswifisetup/password", {
+      push("/wifi/password", {
         deviceModel,
         ssid: selectedNetwork.ssid,
         requiresPassword: selectedNetwork.requiresPassword.toString(),
@@ -234,7 +234,7 @@ export default function WifiScanScreen() {
   }
 
   const handleManualEntry = () => {
-    push("/pairing/glasseswifisetup/password", {
+    push("/wifi/password", {
       deviceModel,
       ssid: "",
       returnTo,
@@ -364,6 +364,7 @@ const $content: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderRadius: spacing.s6,
   borderWidth: 1,
   borderColor: colors.border,
+  overflow: "hidden",
 })
 
 const $loadingContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
