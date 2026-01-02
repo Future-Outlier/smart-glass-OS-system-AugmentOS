@@ -52,10 +52,10 @@ public class K900NetworkManager extends BaseNetworkManager {
         this.notificationManager = new DebugNotificationManager(context);
         
         notificationManager.showDebugNotification(
-                "K900 Network Manager", 
+                "K900 Network Manager",
                 "Using K900-specific network APIs");
 
-        enableScan5GWifi(context, false);
+        enableScan5GWifi(context, true);
     }
     
     @Override

@@ -2010,7 +2010,7 @@ class MentraLive: NSObject, SGCManager {
     func requestWifiScan() {
         Bridge.log("LIVE: Requesting WiFi scan from glasses")
         let json: [String: Any] = ["type": "request_wifi_scan"]
-        sendJson(json)
+        sendJson(json, wakeUp: true)
     }
 
     func sendWifiCredentials(_ ssid: String, _ password: String) {
@@ -2721,7 +2721,7 @@ class MentraLive: NSObject, SGCManager {
 
     private func requestWifiStatus() {
         let json: [String: Any] = ["type": "request_wifi_status"]
-        sendJson(json)
+        sendJson(json, wakeUp: true)
     }
 
     private func requestVersionInfo() {

@@ -1,4 +1,6 @@
+import NetInfo from "@react-native-community/netinfo"
 import Constants from "expo-constants"
+import * as Location from "expo-location"
 import {useState, useEffect} from "react"
 import {
   KeyboardAvoidingView,
@@ -20,7 +22,7 @@ import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import {useAppletStatusStore} from "@/stores/applets"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS, useSetting} from "@/stores/settings"
+import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import mentraAuth from "@/utils/auth/authClient"
@@ -162,6 +164,36 @@ export default function FeedbackPage() {
     const buildTime = process.env.EXPO_PUBLIC_BUILD_TIME || "time"
     const buildUser = process.env.EXPO_PUBLIC_BUILD_USER || "user"
 
+    // Get offline mode status
+    const offlineMode = await useSettingsStore.getState().getSetting(SETTINGS.offline_mode.key)
+
+    // Get network connectivity info
+    let networkInfo = {type: "unknown", isConnected: false, isInternetReachable: false}
+    try {
+      const netState = await NetInfo.fetch()
+      networkInfo = {
+        type: netState.type,
+        isConnected: netState.isConnected ?? false,
+        isInternetReachable: netState.isInternetReachable ?? false,
+      }
+    } catch (e) {
+      console.log("Failed to get network info:", e)
+    }
+
+    // Get location if permission is granted
+    let locationInfo: string | null = null
+    try {
+      const {status} = await Location.getForegroundPermissionsAsync()
+      if (status === "granted") {
+        const location = await Location.getLastKnownPositionAsync()
+        if (location) {
+          locationInfo = `${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)}`
+        }
+      }
+    } catch (e) {
+      console.log("Failed to get location:", e)
+    }
+
     // Running apps
     const runningApps = apps.filter(app => app.running).map(app => app.packageName)
     const runningAppsText = runningApps.length > 0 ? runningApps.join(", ") : "None"
@@ -197,6 +229,11 @@ export default function FeedbackPage() {
       <tr><th>Glasses Connected</th><td>${glassesConnected ? "Yes" : "No"}</td></tr>
       <tr><th>Default Wearable</th><td>${defaultWearable}</td></tr>
       <tr><th>Running Apps</th><td>${runningAppsText}</td></tr>
+      <tr><th>Offline Mode</th><td>${offlineMode ? "Yes" : "No"}</td></tr>
+      <tr><th>Network Type</th><td>${networkInfo.type}</td></tr>
+      <tr><th>Network Connected</th><td>${networkInfo.isConnected ? "Yes" : "No"}</td></tr>
+      <tr><th>Internet Reachable</th><td>${networkInfo.isInternetReachable ? "Yes" : "No"}</td></tr>
+      ${locationInfo ? `<tr><th>Location</th><td>${locationInfo}</td></tr>` : ""}
       ${isBetaBuild ? `<tr><th>Beta Build</th><td>Yes</td></tr>` : ""}
       ${isBetaBuild ? `<tr><th>Backend URL</th><td>${customBackendUrl}</td></tr>` : ""}
       <tr><th>Build Commit</th><td>${buildCommit}</td></tr>
