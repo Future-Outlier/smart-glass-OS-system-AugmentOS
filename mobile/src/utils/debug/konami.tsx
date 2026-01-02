@@ -1,5 +1,5 @@
 import {useEffect, useState, useRef} from "react"
-import {View} from "react-native"
+import {Platform, View} from "react-native"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
 
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -50,29 +50,53 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
     }, 3000)
   }
 
-  const flingUp = Gesture.Fling()
-    .numberOfPointers(2)
-    .direction(1)
-    .onEnd(() => addDirection("right"))
-    .runOnJS(true)
+  let flingUp, flingDown, flingLeft, flingRight
 
-  const flingDown = Gesture.Fling()
-    .numberOfPointers(2)
-    .direction(2)
-    .onEnd(() => addDirection("left"))
-    .runOnJS(true)
+  if (Platform.OS === "android") {
+    flingUp = Gesture.Fling()
+      .numberOfPointers(2)
+      .direction(1)
+      .onEnd(() => addDirection("right"))
+      .runOnJS(true)
 
-  const flingLeft = Gesture.Fling()
-    .numberOfPointers(2)
-    .direction(4)
-    .onEnd(() => addDirection("up"))
-    .runOnJS(true)
+    flingDown = Gesture.Fling()
+      .numberOfPointers(2)
+      .direction(2)
+      .onEnd(() => addDirection("left"))
+      .runOnJS(true)
 
-  const flingRight = Gesture.Fling()
-    .numberOfPointers(2)
-    .direction(8)
-    .onEnd(() => addDirection("down"))
-    .runOnJS(true)
+    flingLeft = Gesture.Fling()
+      .numberOfPointers(2)
+      .direction(4)
+      .onEnd(() => addDirection("up"))
+      .runOnJS(true)
+
+    flingRight = Gesture.Fling()
+      .numberOfPointers(2)
+      .direction(8)
+      .onEnd(() => addDirection("down"))
+      .runOnJS(true)
+  } else {
+    flingUp = Gesture.Fling()
+      .direction(1)
+      .onEnd(() => addDirection("right"))
+      .runOnJS(true)
+
+    flingDown = Gesture.Fling()
+      .direction(2)
+      .onEnd(() => addDirection("left"))
+      .runOnJS(true)
+
+    flingLeft = Gesture.Fling()
+      .direction(4)
+      .onEnd(() => addDirection("up"))
+      .runOnJS(true)
+
+    flingRight = Gesture.Fling()
+      .direction(8)
+      .onEnd(() => addDirection("down"))
+      .runOnJS(true)
+  }
 
   const composedGesture = Gesture.Simultaneous(Gesture.Race(flingUp, flingDown, flingLeft, flingRight))
 
