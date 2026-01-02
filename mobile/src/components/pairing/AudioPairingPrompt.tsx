@@ -2,8 +2,8 @@ import {View, ViewStyle, TextStyle, Platform} from "react-native"
 
 import {Button, Icon, Text} from "@/components/ignite"
 import Divider from "@/components/ui/Divider"
-import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {ThemedStyle} from "@/theme"
 import {SettingsNavigationUtils} from "@/utils/SettingsNavigationUtils"
 
 interface AudioPairingPromptProps {

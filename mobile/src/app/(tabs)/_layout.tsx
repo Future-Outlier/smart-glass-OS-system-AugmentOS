@@ -3,9 +3,9 @@ import {Pressable, TextStyle, View, ViewStyle} from "react-native"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 import {Icon, IconTypes, Text} from "@/components/ignite"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 type TabButtonProps = TabTriggerSlotProps & {
   iconName: IconTypes

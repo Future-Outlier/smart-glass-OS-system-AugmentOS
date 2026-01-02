@@ -1,15 +1,14 @@
 import {Image} from "expo-image"
 import {SquircleView} from "expo-squircle-view"
 import {memo} from "react"
-import {ActivityIndicator, ImageStyle, StyleProp, TouchableOpacity, View, ViewStyle} from "react-native"
+import {ActivityIndicator, ImageStyle, StyleProp, TouchableOpacity, View, ViewStyle, StyleSheet} from "react-native"
+import {withUniwind} from "uniwind"
 
 import {Icon} from "@/components/ignite"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {ClientAppletInterface, getMoreAppsApplet} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/contexts/ThemeContext"
-import {withUniwind} from "uniwind"
-import {StyleSheet} from "react-native"
 
 interface AppIconProps {
   app: ClientAppletInterface

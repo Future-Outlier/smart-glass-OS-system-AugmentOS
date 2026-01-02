@@ -6,10 +6,10 @@ import {ActivityIndicator, TextStyle, View, ViewStyle} from "react-native"
 import {WifiIcon} from "@/components/icons/WifiIcon"
 import {Button, Header, Icon, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
 import {$styles, ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/contexts/ThemeContext"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 
 export default function WifiConnectingScreen() {

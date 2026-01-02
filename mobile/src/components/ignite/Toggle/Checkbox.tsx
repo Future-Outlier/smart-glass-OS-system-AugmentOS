@@ -2,8 +2,8 @@ import {useEffect, useRef, useCallback} from "react"
 import {Image, ImageStyle, Animated, StyleProp, View, ViewStyle} from "react-native"
 
 import {iconRegistry, IconTypes} from "@/components/ignite/Icon"
-import {$styles} from "@/theme"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {$styles} from "@/theme"
 
 import {$inputOuterBase, BaseToggleInputProps, ToggleProps, Toggle} from "./Toggle"
 

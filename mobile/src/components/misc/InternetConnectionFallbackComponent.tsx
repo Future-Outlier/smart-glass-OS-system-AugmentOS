@@ -2,8 +2,8 @@ import {View, TouchableOpacity, ViewStyle, TextStyle} from "react-native"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
 import {Text} from "@/components/ignite"
-import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {ThemedStyle} from "@/theme"
 
 interface InternetConnectionFallbackComponentProps {
   retry: () => void
