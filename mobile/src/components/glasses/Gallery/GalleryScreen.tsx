@@ -69,8 +69,9 @@ export function GalleryScreen() {
   // Column calculation - 3 per row like Google Photos / Apple Photos
   const screenWidth = Dimensions.get("window").width
   const ITEM_SPACING = 2 // Minimal spacing between items (1-2px hairline)
+  const HORIZONTAL_PADDING = spacing.s3 * 2 // Padding on left and right edges (12px * 2 = 24px)
   const numColumns = screenWidth < 320 ? 2 : 3 // 2 columns for very small screens, otherwise 3
-  const itemWidth = (screenWidth - ITEM_SPACING * (numColumns - 1)) / numColumns
+  const itemWidth = (screenWidth - HORIZONTAL_PADDING - ITEM_SPACING * (numColumns - 1)) / numColumns
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const features = getModelCapabilities(defaultWearable)
   const glassesConnected = useGlassesStore((state) => state.connected)
@@ -1118,8 +1119,8 @@ const $screenContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   marginHorizontal: -spacing.s6,
 })
 
-const $photoGridContent: ThemedStyle<ViewStyle> = () => ({
-  paddingHorizontal: 0,
+const $photoGridContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  paddingHorizontal: spacing.s3, // Add padding on left and right edges
   paddingTop: 0,
 })
 
