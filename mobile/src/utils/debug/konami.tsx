@@ -34,7 +34,7 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
   }, [])
 
   const addDirection = (direction: Direction) => {
-    // console.log("KONAMI: Swipe detected:", direction)
+    console.log("KONAMI: Swipe detected:", direction)
 
     setSequence(prev => {
       const newSequence = [...prev, direction]
@@ -51,22 +51,26 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
   }
 
   const flingUp = Gesture.Fling()
-    .direction(1) // Up
+    .numberOfPointers(2)
+    .direction(1)
     .onEnd(() => addDirection("right"))
     .runOnJS(true)
 
   const flingDown = Gesture.Fling()
-    .direction(2) // Down
+    .numberOfPointers(2)
+    .direction(2)
     .onEnd(() => addDirection("left"))
     .runOnJS(true)
 
   const flingLeft = Gesture.Fling()
-    .direction(4) // Left
+    .numberOfPointers(2)
+    .direction(4)
     .onEnd(() => addDirection("up"))
     .runOnJS(true)
 
   const flingRight = Gesture.Fling()
-    .direction(8) // Right
+    .numberOfPointers(2)
+    .direction(8)
     .onEnd(() => addDirection("down"))
     .runOnJS(true)
 
