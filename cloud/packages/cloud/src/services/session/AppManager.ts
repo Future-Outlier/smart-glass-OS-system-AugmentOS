@@ -9,7 +9,6 @@
 import axios, { AxiosError } from "axios";
 import { Logger } from "pino";
 
-
 import {
   CloudToAppMessageType,
   CloudToGlassesMessageType,
@@ -1027,6 +1026,9 @@ export class AppManager {
       };
 
       ws.send(JSON.stringify(ackMessage));
+
+      // Send full device state snapshot immediately after CONNECTION_ACK
+      this.userSession.deviceManager.sendFullStateSnapshot(ws);
 
       // update user.runningApps in database.
       try {

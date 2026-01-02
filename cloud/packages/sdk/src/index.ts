@@ -222,6 +222,13 @@ export * from "./app/session/modules";
 // Export photo data types
 export { PhotoData } from "./types/photo-data";
 
+// Export device state types (WebSocket-based observables)
+export { DeviceState } from "./app/session/device-state";
+export { Observable } from "./utils/Observable";
+
+// Re-export types from @mentra/types so SDK users don't need to install it separately
+export type { GlassesInfo } from "@mentra/types";
+
 /**
  * WebSocket error information
  */

@@ -6,8 +6,11 @@ import android.util.Log;
 
 import android.content.Context;
 
+import com.mentra.asg_client.audio.AudioAssets;
 import com.mentra.asg_client.io.bes.BesOtaManager;
 import com.mentra.asg_client.io.bluetooth.managers.K900BluetoothManager;
+import com.mentra.asg_client.io.hardware.core.HardwareManagerFactory;
+import com.mentra.asg_client.io.hardware.interfaces.IHardwareManager;
 import com.mentra.asg_client.io.media.core.MediaCaptureService;
 import com.mentra.asg_client.settings.VideoSettings;
 import com.mentra.asg_client.service.legacy.managers.AsgClientServiceManager;
@@ -30,6 +33,7 @@ public class K900CommandHandler {
     private final AsgClientServiceManager serviceManager;
     private final IStateManager stateManager;
     private final ICommunicationManager communicationManager;
+    private final IHardwareManager hardwareManager;
     private final Handler mainHandler;
 
     public K900CommandHandler(AsgClientServiceManager serviceManager,
@@ -39,6 +43,7 @@ public class K900CommandHandler {
         this.serviceManager = serviceManager;
         this.stateManager = stateManager;
         this.communicationManager = communicationManager;
+        this.hardwareManager = HardwareManagerFactory.getInstance(serviceManager.getContext());
     }
 
     /**
@@ -117,6 +122,11 @@ public class K900CommandHandler {
                 case "sr_btaddr":
                     // BT MAC address response from BES chip
                     handleBtAddrResponse(bData);
+                    break;
+
+                case "sr_keyevt":
+                    // Power button short press - announce battery level
+                    handleKeyEventReport(bData);
                     break;
 
                 default:
@@ -251,6 +261,34 @@ public class K900CommandHandler {
             }
         } else {
             Log.d(TAG, "📋 BT MAC Address response received but no B field data");
+        }
+    }
+
+    /**
+     * Handle key event report (sr_keyevt) - power button short press
+     * Announces current battery level via audio
+     */
+    private void handleKeyEventReport(JSONObject bData) {
+        int button = bData != null ? bData.optInt("button", -1) : -1;
+        int type = bData != null ? bData.optInt("type", -1) : -1;
+
+        Log.d(TAG, "🔘 Key event - button: " + button + ", type: " + type);
+
+        // button=0, type=0 = power button short press
+        if (button == 0 && type == 0) {
+            if (!hardwareManager.supportsAudioPlayback()) {
+                Log.w(TAG, "⚠️ Hardware does not support audio playback");
+                return;
+            }
+
+            int batteryLevel = stateManager.getBatteryLevel();
+            if (batteryLevel >= 0) {
+                String asset = AudioAssets.getBatteryLevelAsset(batteryLevel);
+                Log.i(TAG, "🔋 Announcing battery level: " + batteryLevel + "% -> " + asset);
+                hardwareManager.playAudioAsset(asset);
+            } else {
+                Log.w(TAG, "🔋 Battery level unknown, cannot announce");
+            }
         }
     }
 
@@ -579,12 +617,18 @@ public class K900CommandHandler {
      * Send battery status over BLE
      */
     private void sendBatteryStatusOverBle(int batteryPercentage, int batteryVoltage) {
+        // Calculate charging status based on voltage
+        boolean isCharging = batteryVoltage > 3900;
+
+        // Always update local state, regardless of BLE connection
+        if (stateManager != null) {
+            stateManager.updateBatteryStatus(batteryPercentage, isCharging, System.currentTimeMillis());
+        }
+
+        // Send to phone only if BLE is connected
         if (serviceManager != null && serviceManager.getBluetoothManager() != null &&
                 serviceManager.getBluetoothManager().isConnected()) {
             try {
-                // Calculate charging status based on voltage
-                boolean isCharging = batteryVoltage > 3900;
-
                 JSONObject obj = new JSONObject();
                 obj.put("type", "battery_status");
                 obj.put("charging", isCharging);
@@ -593,11 +637,6 @@ public class K900CommandHandler {
                 Log.d(TAG, "Formatted battery status message: " + jsonString);
                 serviceManager.getBluetoothManager().sendData(jsonString.getBytes());
                 Log.d(TAG, "Sent battery status via BLE");
-
-                // Update the main service with battery status
-                if (stateManager != null) {
-                    stateManager.updateBatteryStatus(batteryPercentage, isCharging, System.currentTimeMillis());
-                }
             } catch (JSONException e) {
                 Log.e(TAG, "Error creating battery status JSON", e);
             }

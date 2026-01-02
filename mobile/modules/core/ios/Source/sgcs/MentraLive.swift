@@ -370,13 +370,18 @@ private enum K900ProtocolUtils {
 
 private struct FileTransferSession {
     let fileName: String
-    let fileSize: Int
+    let fileSize: Int // NOTE: May be "fake" (inflated) due to BES firmware workaround
+    var actualPackSize: Int = 0 // Actual pack size from first received packet
     var totalPackets: Int
     var expectedNextPacket: Int = 0
     var receivedPackets: [Int: Data] = [:]
     let startTime: Date
     var isComplete: Bool = false
     var isAnnounced: Bool = false
+
+    // BES2700 firmware hardcodes FILE_PACK_SIZE=400 when calculating totalPack.
+    // Android glasses "lie" about fileSize to make BES expect correct packet count.
+    private static let BES_HARDCODED_PACK_SIZE = 400
 
     init(fileName: String, fileSize: Int, announcedPackets: Int? = nil) {
         self.fileName = fileName
@@ -402,8 +407,39 @@ private struct FileTransferSession {
         }
     }
 
+    /// Recalculate total packets based on actual pack size from received packet.
+    /// Detects BES lie: if fileSize is multiple of 400 but actual pack size differs.
+    mutating func recalculateTotalPackets(actualPackSize: Int) {
+        guard actualPackSize > 0, actualPackSize <= K900ProtocolUtils.FILE_PACK_SIZE else { return }
+
+        self.actualPackSize = actualPackSize
+
+        // Detect BES lie: if fileSize is exact multiple of 400, glasses used the lie strategy
+        let isBesLie = (fileSize % Self.BES_HARDCODED_PACK_SIZE == 0) && (actualPackSize != Self.BES_HARDCODED_PACK_SIZE)
+
+        let newTotalPackets: Int
+        if isBesLie {
+            // BES lie detected: totalPackets = fileSize / 400
+            newTotalPackets = fileSize / Self.BES_HARDCODED_PACK_SIZE
+            print("📦 BES Lie detected! fakeFileSize=\(fileSize), totalPackets=\(newTotalPackets), actualPackSize=\(actualPackSize)")
+        } else {
+            // Normal case: calculate based on actual pack size
+            newTotalPackets = (fileSize + actualPackSize - 1) / actualPackSize
+        }
+
+        if newTotalPackets != totalPackets {
+            print("📦 Recalculating totalPackets: \(totalPackets) -> \(newTotalPackets) (packSize=\(actualPackSize), fileSize=\(fileSize))")
+            totalPackets = newTotalPackets
+        }
+    }
+
     mutating func addPacket(_ index: Int, data: Data) -> Bool {
         guard index >= 0 else { return false }
+
+        // On first packet, recalculate total packets based on actual pack size
+        if receivedPackets.isEmpty && !data.isEmpty {
+            recalculateTotalPackets(actualPackSize: data.count)
+        }
 
         if index >= totalPackets {
             totalPackets = index + 1
@@ -432,10 +468,18 @@ private struct FileTransferSession {
         return (0 ..< totalPackets).compactMap { receivedPackets[$0] == nil ? $0 : nil }
     }
 
+    /// Assemble file from received packets.
+    /// NOTE: Calculates actual file size from received data, NOT from header fileSize,
+    /// because fileSize may be "fake" (inflated) due to BES firmware workaround.
     func assembleFile() -> Data? {
         guard isComplete else { return nil }
 
-        var fileData = Data(capacity: fileSize)
+        // Calculate actual file size by summing all received packet sizes
+        let actualFileSize = receivedPackets.values.reduce(0) { $0 + $1.count }
+
+        print("📦 Assembling file: headerFileSize=\(fileSize), actualFileSize=\(actualFileSize), totalPackets=\(totalPackets)")
+
+        var fileData = Data(capacity: actualFileSize)
 
         for i in 0 ..< totalPackets {
             if let packet = receivedPackets[i] {
@@ -443,7 +487,7 @@ private struct FileTransferSession {
             }
         }
 
-        return fileData.prefix(fileSize)
+        return fileData
     }
 }
 
@@ -1194,9 +1238,9 @@ class MentraLive: NSObject, SGCManager {
 
     func requestPhoto(
         _ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?,
-        compress: String?
+        compress: String?, silent: Bool
     ) {
-        Bridge.log("Requesting photo: \(requestId) for app: \(appId)")
+        Bridge.log("Requesting photo: \(requestId) for app: \(appId), silent: \(silent)")
 
         var json: [String: Any] = [
             "type": "take_photo",
@@ -1239,6 +1283,9 @@ class MentraLive: NSObject, SGCManager {
 
         // Add compress parameter
         json["compress"] = compress ?? "none"
+
+        // silent mode: disables shutter sound and privacy LED
+        json["silent"] = silent
 
         Bridge.log("Using auto transfer mode with BLE fallback ID: \(bleImgId)")
 
@@ -3774,8 +3821,8 @@ extension MentraLive {
         sendJson(json, wakeUp: true)
     }
 
-    func startVideoRecording(requestId: String, save: Bool) {
-        startVideoRecording(requestId: requestId, save: save, width: 0, height: 0, fps: 0)
+    func startVideoRecording(requestId: String, save: Bool, silent: Bool) {
+        startVideoRecording(requestId: requestId, save: save, silent: silent, width: 0, height: 0, fps: 0)
     }
 
     // MARK: - SGCManager Protocol Compliance
@@ -3797,9 +3844,9 @@ extension MentraLive {
         sendJson(json, wakeUp: true)
     }
 
-    func startVideoRecording(requestId: String, save: Bool, width: Int, height: Int, fps: Int) {
+    func startVideoRecording(requestId: String, save: Bool, silent: Bool, width: Int, height: Int, fps: Int) {
         Bridge.log(
-            "Starting video recording on glasses: requestId=\(requestId), save=\(save), resolution=\(width)x\(height)@\(fps)fps"
+            "Starting video recording on glasses: requestId=\(requestId), save=\(save), silent=\(silent), resolution=\(width)x\(height)@\(fps)fps"
         )
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -3811,6 +3858,7 @@ extension MentraLive {
             "type": "start_video_recording",
             "request_id": requestId,
             "save": save,
+            "silent": silent,
         ]
 
         // Add video settings if provided

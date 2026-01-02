@@ -2,8 +2,8 @@ import {router as _router} from "expo-router"
 import {View, TouchableOpacity, TextStyle, ViewStyle} from "react-native"
 
 import {Icon, Text} from "@/components/ignite"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 interface StatusCardProps {
   label: string

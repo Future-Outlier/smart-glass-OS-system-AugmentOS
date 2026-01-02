@@ -1,14 +1,15 @@
 import {BottomSheetBackdrop, BottomSheetModal, BottomSheetView} from "@gorhom/bottom-sheet"
 import {useCallback, useMemo, useRef} from "react"
 import {FlatList, TouchableOpacity, View} from "react-native"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/misc/AppIcon"
 import {Badge} from "@/components/ui"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {ClientAppletInterface, DUMMY_APPLET, useIncompatibleApps} from "@/stores/applets"
 import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 const GRID_COLUMNS = 4
 
@@ -16,6 +17,7 @@ export const IncompatibleApps: React.FC = () => {
   const {theme} = useAppTheme()
   const incompatibleApps = useIncompatibleApps()
   const bottomSheetRef = useRef<BottomSheetModal>(null)
+  const {bottom} = useSafeAreaInsets()
 
   const snapPoints = useMemo(() => ["50%", "75%"], [])
 
@@ -133,7 +135,7 @@ export const IncompatibleApps: React.FC = () => {
         backdropComponent={renderBackdrop}
         enablePanDownToClose
         backgroundStyle={{backgroundColor: theme.colors.primary_foreground}}
-        handleIndicatorStyle={{backgroundColor: theme.colors.textDim}}>
+        handleIndicatorStyle={{backgroundColor: theme.colors.muted_foreground}}>
         <BottomSheetView className="px-6">
           <View className="gap-4 px-4 my-6">
             <Text className="text-lg font-bold text-foreground text-center" tx="home:incompatibleApps" />
@@ -145,7 +147,7 @@ export const IncompatibleApps: React.FC = () => {
             keyExtractor={item => item.packageName}
             numColumns={GRID_COLUMNS}
             showsVerticalScrollIndicator={false}
-            contentContainerClassName="pb-6"
+            contentContainerStyle={{paddingBottom: bottom}}
           />
         </BottomSheetView>
       </BottomSheetModal>

@@ -1,19 +1,17 @@
 import {useLocalSearchParams, useFocusEffect} from "expo-router"
 import {useState, useEffect, useCallback, useRef} from "react"
-import {View, TextInput, TouchableOpacity, BackHandler} from "react-native"
-import {ViewStyle, TextStyle} from "react-native"
-import {ScrollView} from "react-native"
+import {View, TextInput, TouchableOpacity, BackHandler, ViewStyle, TextStyle, ScrollView} from "react-native"
 
 import {EyeIcon} from "@/components/icons/EyeIcon"
 import {EyeOffIcon} from "@/components/icons/EyeOffIcon"
 import {WifiIcon} from "@/components/icons/WifiIcon"
 import {Screen, Header, Checkbox, Button, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 
 export default function WifiPasswordScreen() {
@@ -33,19 +31,19 @@ export default function WifiPasswordScreen() {
   const [hasSavedPassword, setHasSavedPassword] = useState(false)
 
   // Navigate away if glasses disconnect (but not on initial mount)
-  const prevGlassesConnectedRef = useRef(glassesConnected)
   useEffect(() => {
-    if (prevGlassesConnectedRef.current && !glassesConnected) {
-      console.log("[WifiPasswordScreen] Glasses disconnected - navigating away")
-      showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [{text: "OK"}])
-      if (returnTo && typeof returnTo === "string") {
-        replace(decodeURIComponent(returnTo))
-      } else {
-        replace("/")
-      }
+    if (!glassesConnected) {
+      console.log("CONNECTING: Glasses disconnected - navigating away")
+      showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [
+        {
+          text: "OK",
+          onPress() {
+            goBack()
+          },
+        },
+      ])
     }
-    prevGlassesConnectedRef.current = glassesConnected
-  }, [glassesConnected, returnTo])
+  }, [glassesConnected])
 
   const handleGoBack = useCallback(() => {
     if (returnTo && typeof returnTo === "string") {

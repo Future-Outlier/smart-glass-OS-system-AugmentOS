@@ -5,6 +5,7 @@
 
 // Client APIs (mobile app and glasses client)
 export {
+  audioConfigApi,
   calendarApi,
   clientAppsApi,
   deviceStateApi,
