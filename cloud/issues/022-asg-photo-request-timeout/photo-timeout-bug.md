@@ -123,7 +123,7 @@ if (sInstance.shotState == ShotState.IDLE) {
 
 ## Testing
 
-1. Run book-scanner app with streaming enabled
+1. Run an app that takes consecutive photos (e.g., capturing once previous response completes)
 2. Observe photo capture logs
 3. Verify no more "Camera keep-alive timer expired" mid-capture
 4. Verify all photo requests complete successfully

@@ -447,6 +447,8 @@ public class CameraNeo extends LifecycleService {
                 // Fast path - camera is ready, check if idle
                 if (sInstance.shotState == ShotState.IDLE) {
                     Log.d(TAG, "Camera ready and idle - processing request immediately");
+                    // Cancel any pending keep-alive timer to prevent it from closing camera mid-capture
+                    sInstance.cancelKeepAliveTimer();
                     // Don't call processNextPhotoRequest as it might try to reopen camera
                     // Instead, directly process the request we just queued
                     PhotoRequest queuedRequest = globalRequestQueue.poll();
