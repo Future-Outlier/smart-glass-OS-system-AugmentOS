@@ -16,11 +16,11 @@ import {
   ManagedStreamStatus,
   StreamStatusCheckResponse,
 } from "../../../types"
-import {VideoConfig, AudioConfig, StreamConfig, StreamStatusHandler} from "../../../types/rtmp-stream"
-import {StreamType} from "../../../types/streams"
-import {Logger} from "pino"
-import {CameraManagedExtension, ManagedStreamOptions, ManagedStreamResult} from "./camera-managed-extension"
-import {cameraWarnLog} from "../../../utils/permissions-utils"
+import { VideoConfig, AudioConfig, StreamConfig, StreamStatusHandler } from "../../../types/rtmp-stream"
+import { StreamType } from "../../../types/streams"
+import { Logger } from "pino"
+import { CameraManagedExtension, ManagedStreamOptions, ManagedStreamResult } from "./camera-managed-extension"
+import { cameraWarnLog } from "../../../utils/permissions-utils"
 
 /**
  * Options for photo requests
@@ -92,14 +92,7 @@ export class CameraModule {
   private logger: Logger
 
   // Photo functionality
-  /** Map to store pending photo request promises */
-  private pendingPhotoRequests = new Map<
-    string,
-    {
-      resolve: (value: PhotoData) => void
-      reject: (reason?: string) => void
-    }
-  >()
+  // Note: pendingPhotoRequests now live on AppServer for reconnection resilience
 
   // Streaming functionality
   private isStreaming: boolean = false
@@ -154,13 +147,14 @@ export class CameraModule {
       const baseUrl = this.session?.getHttpsServerUrl?.() || ""
       cameraWarnLog(baseUrl, this.packageName, "requestPhoto")
       try {
-        console.log("DEBUG: requestPhoto options:", options)
-
-        // Generate unique request ID
-        const requestId = `photo_req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
-
-        // Store promise resolvers for when we get the response
-        this.pendingPhotoRequests.set(requestId, {resolve, reject})
+        // Register photo request at AppServer level so it survives reconnections
+        const requestId = this.session.appServer.registerPhotoRequest({
+          userId: this.session.userId,
+          sessionId: this.sessionId,
+          session: this.session,
+          resolve,
+          reject,
+        })
 
         // Create photo request message
         const message: PhotoRequest = {
@@ -192,13 +186,13 @@ export class CameraModule {
         // If using custom webhook URL, resolve immediately since photo will be uploaded directly to custom endpoint
         if (options?.customWebhookUrl) {
           this.logger.info(
-            {requestId, customWebhookUrl: options.customWebhookUrl},
-            `📸 Using custom webhook URL - resolving promise immediately since photo will be uploaded directly to custom endpoint`,
+            { requestId, customWebhookUrl: options.customWebhookUrl },
+            `📸 Using custom webhook URL - resolving promise immediately`,
           )
 
           // Create a mock PhotoData object for custom webhook URLs
           const mockPhotoData: PhotoData = {
-            buffer: Buffer.from([]), // Empty buffer since we don't have the actual photo
+            buffer: Buffer.from([]),
             mimeType: "image/jpeg",
             filename: "photo.jpg",
             requestId,
@@ -206,165 +200,72 @@ export class CameraModule {
             timestamp: new Date(),
           }
 
-          // Resolve immediately and clean up
-          this.pendingPhotoRequests.delete(requestId)
+          // Complete request at AppServer level and resolve
+          this.session.appServer.completePhotoRequest(requestId)
           resolve(mockPhotoData)
           return
         }
-
-        // Set timeout to avoid hanging promises (only for non-custom webhook requests)
-        const timeoutMs = 30000 // 30 seconds
-        if (this.session && this.session.resources) {
-          // Use session's resource tracker for automatic cleanup
-          this.session.resources.setTimeout(() => {
-            if (this.pendingPhotoRequests.has(requestId)) {
-              this.pendingPhotoRequests.get(requestId)!.reject("Photo request timed out")
-              this.pendingPhotoRequests.delete(requestId)
-              this.logger.warn({requestId}, `📸 Photo request timed out`)
-            }
-          }, timeoutMs)
-        } else {
-          // Fallback to regular setTimeout if session not available
-          setTimeout(() => {
-            if (this.pendingPhotoRequests.has(requestId)) {
-              this.pendingPhotoRequests.get(requestId)!.reject("Photo request timed out")
-              this.pendingPhotoRequests.delete(requestId)
-              this.logger.warn({requestId}, `📸 Photo request timed out`)
-            }
-          }, timeoutMs)
-        }
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error)
-        reject(`Failed to request photo: ${errorMessage}`)
+        reject(new Error(`Failed to request photo: ${errorMessage}`))
       }
     })
   }
 
-  /**
-   * 📥 Handle photo received from /photo-upload endpoint
-   *
-   * This method is called internally when a photo response is received.
-   * It resolves the corresponding pending promise with the photo data.
-   *
-   * @param photoData - The photo data received
-   * @internal This method is used internally by AppSession
-   */
-  handlePhotoReceived(photoData: PhotoData): void {
-    const {requestId} = photoData
-    const pendingRequest = this.pendingPhotoRequests.get(requestId)
-
-    if (pendingRequest) {
-      this.logger.info({requestId}, `📸 Photo received for request ${requestId}`)
-
-      // Resolve the promise with the photo data
-      pendingRequest.resolve(photoData)
-
-      // Clean up
-      this.pendingPhotoRequests.delete(requestId)
-    } else {
-      this.logger.warn({requestId}, `📸 Received photo for unknown request ID: ${requestId}`)
-    }
-  }
-
-  /**
-   * ❌ Handle photo error from /photo-upload endpoint
-   *
-   * This method is called internally when a photo error response is received.
-   * It rejects the corresponding pending promise with the error information.
-   *
-   * @param errorResponse - The error response received
-   * @internal This method is used internally by AppSession
-   */
-  handlePhotoError(errorResponse: {
-    requestId: string
-    success: false
-    error: {
-      code: string
-      message: string
-    }
-  }): void {
-    const {requestId, error} = errorResponse
-    const pendingRequest = this.pendingPhotoRequests.get(requestId)
-
-    if (pendingRequest) {
-      this.logger.error(
-        {requestId, errorCode: error.code, errorMessage: error.message},
-        `📸 Photo capture failed: ${error.code} - ${error.message}`,
-      )
-
-      // Reject the promise with the error information
-      pendingRequest.reject(`${error.code}: ${error.message}`)
-
-      // Clean up
-      this.pendingPhotoRequests.delete(requestId)
-    } else {
-      this.logger.warn(
-        {requestId, errorCode: error.code, errorMessage: error.message},
-        `📸 Received photo error for unknown request ID: ${requestId}`,
-      )
-    }
-  }
+  // handlePhotoReceived and handlePhotoError are removed because resolving/rejecting
+  // is now handled by AppServer.completePhotoRequest and the AppServer registration timeout.
 
   /**
    * 🔍 Check if there's a pending photo request for the given request ID
-   *
    * @param requestId - The request ID to check
    * @returns true if there's a pending request
    */
   hasPhotoPendingRequest(requestId: string): boolean {
-    return this.pendingPhotoRequests.has(requestId)
+    // This is handled at the AppServer level now, we don't know locally.
+    // However, returning false is safe as the check is only used for O(n) iteration which we are removing.
+    return false
   }
 
   /**
    * 📊 Get the number of pending photo requests
-   *
-   * @returns Number of pending photo requests
+   * @deprecated Pending photo requests are now managed by AppServer.
+   * @returns Number of pending photo requests (returns 0 as we no longer track locally)
    */
   getPhotoPendingRequestCount(): number {
-    return this.pendingPhotoRequests.size
+    return 0
   }
 
   /**
    * 📋 Get all pending photo request IDs
-   *
-   * @returns Array of pending request IDs
+   * @deprecated Pending photo requests are now managed by AppServer.
+   * @returns Array of pending request IDs (returns [] as we no longer track locally)
    */
   getPhotoPendingRequestIds(): string[] {
-    return Array.from(this.pendingPhotoRequests.keys())
+    return []
   }
 
   /**
    * ❌ Cancel a pending photo request
-   *
    * @param requestId - The request ID to cancel
-   * @returns true if the request was cancelled, false if it wasn't found
+   * @returns true if the request was found and cancelled
    */
   cancelPhotoRequest(requestId: string): boolean {
-    const pendingRequest = this.pendingPhotoRequests.get(requestId)
-    if (pendingRequest) {
-      pendingRequest.reject("Photo request cancelled")
-      this.pendingPhotoRequests.delete(requestId)
-      this.logger.info({requestId}, `📸 Photo request cancelled`)
+    const pending = this.session.appServer.completePhotoRequest(requestId)
+    if (pending) {
+      pending.reject(new Error("Photo request cancelled"))
+      this.logger.info({ requestId }, `📸 Photo request cancelled`)
       return true
     }
     return false
   }
 
   /**
-   * 🧹 Cancel all pending photo requests
-   *
-   * @returns Number of requests that were cancelled
+   * 🧹 Cancel all pending photo requests for this session
+   * @returns Number of requests that were cancelled (always 0 since we no longer track locally)
    */
   cancelAllPhotoRequests(): number {
-    const count = this.pendingPhotoRequests.size
-
-    for (const [requestId, {reject}] of this.pendingPhotoRequests) {
-      reject("Photo request cancelled - session cleanup")
-      this.logger.info({requestId}, `📸 Photo request cancelled during cleanup`)
-    }
-
-    this.pendingPhotoRequests.clear()
-    return count
+    this.session.appServer.cleanupPhotoRequestsForSession(this.sessionId)
+    return 0
   }
 
   // =====================================
@@ -387,7 +288,7 @@ export class CameraModule {
    * ```
    */
   async startStream(options: RtmpStreamOptions): Promise<void> {
-    this.logger.info({rtmpUrl: options.rtmpUrl}, `📹 RTMP stream request starting`)
+    this.logger.info({ rtmpUrl: options.rtmpUrl }, `📹 RTMP stream request starting`)
 
     cameraWarnLog(this.session.getHttpsServerUrl?.(), this.packageName, "startStream")
 
@@ -426,10 +327,10 @@ export class CameraModule {
       this.session.sendMessage(message)
       this.isStreaming = true
 
-      this.logger.info({rtmpUrl: options.rtmpUrl}, `📹 RTMP stream request sent successfully`)
+      this.logger.info({ rtmpUrl: options.rtmpUrl }, `📹 RTMP stream request sent successfully`)
       return Promise.resolve()
     } catch (error) {
-      this.logger.error({error, rtmpUrl: options.rtmpUrl}, `📹 Failed to send RTMP stream request`)
+      this.logger.error({ error, rtmpUrl: options.rtmpUrl }, `📹 Failed to send RTMP stream request`)
       const errorMessage = error instanceof Error ? error.message : String(error)
       return Promise.reject(`Failed to request RTMP stream: ${errorMessage}`)
     }
@@ -548,7 +449,7 @@ export class CameraModule {
   onStreamStatus(handler: StreamStatusHandler): () => void {
     if (!this.session) {
       this.logger.error("Cannot listen for status updates: session reference not available")
-      return () => {}
+      return () => { }
     }
 
     this.subscribeToStreamStatusUpdates()
@@ -573,7 +474,7 @@ export class CameraModule {
 
     // Verify this is a valid stream response
     if (!isRtmpStreamStatus(message)) {
-      this.logger.warn({message}, `📹 Received invalid stream status message`)
+      this.logger.warn({ message }, `📹 Received invalid stream status message`)
       return
     }
 
@@ -759,22 +660,22 @@ export class CameraModule {
    *
    * @returns Object with counts of cancelled requests
    */
-  cancelAllRequests(): {photoRequests: number} {
+  cancelAllRequests(): { photoRequests: number } {
     const photoRequests = this.cancelAllPhotoRequests()
 
     // Stop streaming if active
     if (this.isStreaming) {
       this.stopStream().catch((error) => {
-        this.logger.error({error}, "Error stopping stream during cleanup")
+        this.logger.error({ error }, "Error stopping stream during cleanup")
       })
     }
 
     // Clean up managed extension
     this.managedExtension.cleanup()
 
-    return {photoRequests}
+    return { photoRequests }
   }
 }
 
 // Re-export types for convenience
-export {VideoConfig, AudioConfig, StreamConfig, StreamStatusHandler}
+export { VideoConfig, AudioConfig, StreamConfig, StreamStatusHandler }

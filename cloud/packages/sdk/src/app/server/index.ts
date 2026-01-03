@@ -10,13 +10,13 @@ import fs from "fs"
 import path from "path"
 
 import axios from "axios"
-import {Hono} from "hono"
-import type {Context, MiddlewareHandler} from "hono"
-import {serveStatic} from "hono/bun"
-import {Logger} from "pino"
+import { Hono } from "hono"
+import type { Context, MiddlewareHandler } from "hono"
+import { serveStatic } from "hono/bun"
+import { Logger } from "pino"
 
-import {newSDKUpdate} from "../../constants/log-messages/updates"
-import {logger as rootLogger} from "../../logging/logger"
+import { newSDKUpdate } from "../../constants/log-messages/updates"
+import { logger as rootLogger } from "../../logging/logger"
 import {
   WebhookRequest,
   WebhookResponse,
@@ -26,8 +26,8 @@ import {
   WebhookRequestType,
   AuthVariables,
 } from "../../types"
-import {AppSession} from "../session/index"
-import {createAuthMiddleware} from "../webview"
+import { AppSession } from "../session/index"
+import { createAuthMiddleware } from "../webview"
 
 export const GIVE_APP_CONTROL_OF_TOOL_RESPONSE: string = "GIVE_APP_CONTROL_OF_TOOL_RESPONSE"
 
@@ -75,7 +75,24 @@ export interface AppServerConfig {
 }
 
 // Type for Hono app with auth variables
-type AppHono = Hono<{Variables: AuthVariables}>
+type AppHono = Hono<{ Variables: AuthVariables }>
+
+/**
+ * Pending photo request stored at AppServer level for reconnection resilience.
+ * Photo requests are registered here so they survive WebSocket disconnection/reconnection.
+ */
+interface PendingPhotoRequest {
+  userId: string
+  sessionId: string
+  session: AppSession
+  resolve: (photo: PhotoData) => void
+  reject: (error: Error) => void
+  timestamp: number
+  timeoutId?: ReturnType<typeof setTimeout>
+}
+
+// Import PhotoData type for pending photo requests
+import type { PhotoData } from "../../types/photo-data"
 
 /**
  * 🎯 App Server Implementation
@@ -114,13 +131,15 @@ type AppHono = Hono<{Variables: AuthVariables}>
  * await server.start();
  * ```
  */
-export class AppServer extends Hono<{Variables: AuthVariables}> {
+export class AppServer extends Hono<{ Variables: AuthVariables }> {
   /** Server configuration */
   protected config: AppServerConfig
   /** Map of active user sessions by sessionId */
   private activeSessions = new Map<string, AppSession>()
   /** Map of active user sessions by userId */
   private activeSessionsByUserId = new Map<string, AppSession>()
+  /** Pending photo requests by requestId - owned by AppServer for HTTP endpoint access */
+  private pendingPhotoRequests = new Map<string, PendingPhotoRequest>()
   /** Array of cleanup handlers to run on shutdown */
   private cleanupHandlers: Array<() => void> = []
   /** App instructions string shown to the user */
@@ -285,14 +304,14 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
         const sdkPkg = JSON.parse(fs.readFileSync(sdkPkgPath, "utf-8"))
         currentVersion = sdkPkg.version || "not-found"
       } else {
-        this.logger.debug({sdkPkgPath}, "No @mentra/sdk package.json found at path")
+        this.logger.debug({ sdkPkgPath }, "No @mentra/sdk package.json found at path")
       }
 
       // Fetch latest SDK version from the API endpoint
       let latest: string | null = null
       try {
         const cloudHost = "api.mentra.glass"
-        const response = await axios.get(`https://${cloudHost}/api/sdk/version`, {timeout: 3000})
+        const response = await axios.get(`https://${cloudHost}/api/sdk/version`, { timeout: 3000 })
         if (response.data && response.data.success && response.data.data) {
           latest = response.data.data.latest
         }
@@ -331,14 +350,14 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * @returns JWT token string
    */
   protected generateToken(userId: string, sessionId: string, secretKey: string): string {
-    const {createToken} = require("../token/utils")
+    const { createToken } = require("../token/utils")
     return createToken(
       {
         userId,
         packageName: this.config.packageName,
         sessionId,
       },
-      {secretKey},
+      { secretKey },
     )
   }
 
@@ -350,6 +369,63 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    */
   protected addCleanupHandler(handler: () => void): void {
     this.cleanupHandlers.push(handler)
+  }
+
+  /**
+   * 📸 Register a pending photo request at the AppServer level.
+   * This ensures the request survives WebSocket disconnections during the 30s timeout window.
+   */
+  public registerPhotoRequest(params: Omit<PendingPhotoRequest, "timestamp">): string {
+    const requestId = `photo_req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+
+    // Create a timeout to automatically clean up the request if no response arrives
+    const timeoutId = setTimeout(() => {
+      const pending = this.pendingPhotoRequests.get(requestId)
+      if (pending) {
+        this.logger.warn({ requestId, userId: pending.userId }, "📸 Photo request timed out at AppServer level")
+        pending.reject(new Error("Photo request timed out"))
+        this.pendingPhotoRequests.delete(requestId)
+      }
+    }, 30000)
+
+    this.pendingPhotoRequests.set(requestId, {
+      ...params,
+      timestamp: Date.now(),
+      timeoutId,
+    })
+
+    return requestId
+  }
+
+  /**
+   * 📸 Complete a photo request and remove it from the pending map.
+   * Called by the /photo-upload HTTP endpoint when a response (success or error) arrives.
+   */
+  public completePhotoRequest(requestId: string): PendingPhotoRequest | undefined {
+    const pending = this.pendingPhotoRequests.get(requestId)
+    if (pending) {
+      if (pending.timeoutId) {
+        clearTimeout(pending.timeoutId)
+      }
+      this.pendingPhotoRequests.delete(requestId)
+    }
+    return pending
+  }
+
+  /**
+   * 🧹 Clean up all pending photo requests for a specific session.
+   * Called when a session is permanently ended.
+   */
+  private cleanupPhotoRequestsForSession(sessionId: string): void {
+    for (const [requestId, pending] of this.pendingPhotoRequests.entries()) {
+      if (pending.sessionId === sessionId) {
+        if (pending.timeoutId) {
+          clearTimeout(pending.timeoutId)
+        }
+        pending.reject(new Error("Session ended while photo request was pending"))
+        this.pendingPhotoRequests.delete(requestId)
+      }
+    }
   }
 
   /**
@@ -408,16 +484,16 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
         } else {
           toolCall.activeSession = null
         }
-        this.logger.info({body: toolCall}, `🔧 Received tool call: ${toolCall.toolId}`)
+        this.logger.info({ body: toolCall }, `🔧 Received tool call: ${toolCall.toolId}`)
 
         // Call the onToolCall handler and get the response
         const response = await this.onToolCall(toolCall)
 
         // Send back the response if one was provided
         if (response !== undefined) {
-          return c.json({status: "success", reply: response})
+          return c.json({ status: "success", reply: response })
         } else {
-          return c.json({status: "success", reply: null})
+          return c.json({ status: "success", reply: null })
         }
       } catch (error) {
         this.logger.error(error, "❌ Error handling tool call:")
@@ -432,7 +508,7 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
     })
 
     this.get("/tool", async (c) => {
-      return c.json({status: "success", reply: "Hello, world!"})
+      return c.json({ status: "success", reply: "Hello, world!" })
     })
   }
 
@@ -441,10 +517,10 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    */
   private async handleSessionRequest(
     request: SessionWebhookRequest,
-    c: Context<{Variables: AuthVariables}>,
+    c: Context<{ Variables: AuthVariables }>,
   ): Promise<Response> {
-    const {sessionId, userId, mentraOSWebsocketUrl, augmentOSWebsocketUrl} = request
-    this.logger.info({userId}, `🗣️ Received session request for user ${userId}, session ${sessionId}\n\n`)
+    const { sessionId, userId, mentraOSWebsocketUrl, augmentOSWebsocketUrl } = request
+    this.logger.info({ userId }, `🗣️ Received session request for user ${userId}, session ${sessionId}\n\n`)
 
     // Create new App session
     const session = new AppSession({
@@ -457,6 +533,9 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
 
     // Setup session event handlers
     const cleanupDisconnect = session.events.onDisconnected((info) => {
+      // Determine if this is a permanent disconnect
+      const isPermanent = typeof info === "object" && (info.permanent === true || info.sessionEnded === true)
+
       if (typeof info === "string") {
         this.logger.info(`👋 Session ${sessionId} disconnected: ${info}`)
       } else {
@@ -477,8 +556,21 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
         }
       }
 
-      this.activeSessions.delete(sessionId)
-      this.activeSessionsByUserId.delete(userId)
+      // Only remove session and clean up photo requests on permanent disconnect
+      if (isPermanent) {
+        if (this.activeSessions.get(sessionId) === session) {
+          this.activeSessions.delete(sessionId)
+        }
+        if (this.activeSessionsByUserId.get(userId) === session) {
+          this.activeSessionsByUserId.delete(userId)
+        }
+
+        // Clean up pending photo requests for this session
+        this.cleanupPhotoRequestsForSession(sessionId)
+      } else {
+        // Temporary disconnect - session stays in maps for reconnection
+        this.logger.debug({ sessionId }, "🔄 Temporary disconnect, session stays in maps for reconnection")
+      }
     })
 
     const cleanupError = session.events.onError((error) => {
@@ -491,7 +583,7 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
       this.activeSessions.set(sessionId, session)
       this.activeSessionsByUserId.set(userId, session)
       await this.onSession(session, sessionId, userId)
-      return c.json({status: "success"} as WebhookResponse)
+      return c.json({ status: "success" } as WebhookResponse)
     } catch (error) {
       this.logger.error(error, "❌ Failed to connect:")
       cleanupDisconnect()
@@ -511,14 +603,14 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    */
   private async handleStopRequest(
     request: StopWebhookRequest,
-    c: Context<{Variables: AuthVariables}>,
+    c: Context<{ Variables: AuthVariables }>,
   ): Promise<Response> {
-    const {sessionId, userId, reason} = request
+    const { sessionId, userId, reason } = request
     this.logger.info(`\n\n🛑 Received stop request for user ${userId}, session ${sessionId}, reason: ${reason}\n\n`)
 
     try {
       await this.onStop(sessionId, userId, reason)
-      return c.json({status: "success"} as WebhookResponse)
+      return c.json({ status: "success" } as WebhookResponse)
     } catch (error) {
       this.logger.error(error, "❌ Error handling stop request:")
       return c.json(
@@ -554,7 +646,7 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
   private setupSettingsEndpoint(): void {
     this.post("/settings", async (c) => {
       try {
-        const {userIdForSettings, settings} = await c.req.json()
+        const { userIdForSettings, settings } = await c.req.json()
 
         if (!userIdForSettings || !Array.isArray(settings)) {
           return c.json(
@@ -618,7 +710,7 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
   private setupPublicDir(): void {
     if (this.config.publicDir) {
       const publicPath = path.resolve(this.config.publicDir)
-      this.use("/*", serveStatic({root: publicPath}))
+      this.use("/*", serveStatic({ root: publicPath }))
       this.logger.info(`📂 Serving static files from ${publicPath}`)
     }
   }
@@ -679,37 +771,30 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
         const errorMessage = body.errorMessage as string
         const photoFile = body.photo as File | undefined
 
-        console.log("Received photo response:", {requestId, type, success, errorCode})
-
         this.logger.info(
-          {requestId, type, success, errorCode},
+          { requestId, type, success, errorCode },
           `📸 Received photo response: ${requestId} (type: ${type})`,
         )
 
         if (!requestId) {
           this.logger.error("No requestId in photo response")
-          return c.json({success: false, error: "No requestId provided"}, 400)
+          return c.json({ success: false, error: "No requestId provided" }, 400)
         }
 
-        // Find the corresponding session that made this photo request
-        const session = this.findSessionByPhotoRequestId(requestId)
-        if (!session) {
-          this.logger.warn({requestId}, "No active session found for photo request")
-          return c.json({success: false, error: "No active session found for this photo request"}, 404)
+        // Complete the request (O(1) lookup and cleanup)
+        const pending = this.completePhotoRequest(requestId)
+        if (!pending) {
+          this.logger.warn({ requestId }, "📸 No pending request found for photo (possibly timed out or already handled)")
+          return c.json({ success: false, error: "No pending request found" }, 404)
         }
 
         // Handle error response (no photo file, but has error info)
         if (type === "photo_error" || success === false) {
-          const errorResponse = {
-            requestId,
-            success: false as const,
-            error: {
-              code: errorCode || "UNKNOWN_ERROR",
-              message: errorMessage || "Unknown error occurred",
-            },
-          }
-
-          session.camera.handlePhotoError(errorResponse)
+          this.logger.error(
+            { requestId, errorCode, errorMessage },
+            `📸 Photo capture failed: ${errorCode} - ${errorMessage}`,
+          )
+          pending.reject(new Error(`${errorCode || "UNKNOWN_ERROR"}: ${errorMessage || "Unknown error"}`))
 
           return c.json({
             success: true,
@@ -720,25 +805,24 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
 
         // Handle successful photo upload
         if (!photoFile) {
-          this.logger.error({requestId}, "No photo file in successful upload")
-          return c.json({success: false, error: "No photo file provided for successful upload"}, 400)
+          const errorMsg = "No photo file in successful upload"
+          this.logger.error({ requestId }, errorMsg)
+          pending.reject(new Error(errorMsg))
+          return c.json({ success: false, error: errorMsg }, 400)
         }
 
         // Read file buffer
         const buffer = Buffer.from(await photoFile.arrayBuffer())
 
-        // Create photo data object
-        const photoData = {
+        // Deliver photo data to the original requester
+        pending.resolve({
           buffer,
           mimeType: photoFile.type,
           filename: photoFile.name || "photo.jpg",
           requestId,
           size: photoFile.size,
           timestamp: new Date(),
-        }
-
-        // Deliver photo to the session
-        session.camera.handlePhotoReceived(photoData)
+        })
 
         return c.json({
           success: true,
@@ -747,7 +831,7 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
         })
       } catch (error) {
         this.logger.error(error, "❌ Error handling photo response")
-        return c.json({success: false, error: "Internal server error processing photo response"}, 500)
+        return c.json({ success: false, error: "Internal server error processing photo response" }, 500)
       }
     })
   }
@@ -764,17 +848,6 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
     })
   }
 
-  /**
-   * Find session that has a pending photo request for the given requestId
-   */
-  private findSessionByPhotoRequestId(requestId: string): AppSession | undefined {
-    for (const [_sessionId, session] of this.activeSessions) {
-      if (session.camera.hasPhotoPendingRequest(requestId)) {
-        return session
-      }
-    }
-    return undefined
-  }
 }
 
 /**
@@ -792,8 +865,8 @@ export class TpaServer extends AppServer {
     super(config)
     console.warn(
       "⚠️  DEPRECATION WARNING: TpaServer is deprecated and will be removed in a future version. " +
-        "Please use AppServer instead. " +
-        'Simply replace "TpaServer" with "AppServer" in your code.',
+      "Please use AppServer instead. " +
+      'Simply replace "TpaServer" with "AppServer" in your code.',
     )
   }
 }
