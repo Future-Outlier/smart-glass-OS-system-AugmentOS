@@ -2776,15 +2776,14 @@ public class MentraLive extends SGCManager {
 
             case "sr_shut":
                 Bridge.log("LIVE: K900 shutdown command received - glasses shutting down");
-                // Mark as killed to prevent reconnection attempts
-                isKilled = true;
-                // Clean disconnect without reconnection
-                if (bluetoothGatt != null) {
-                    Bridge.log("LIVE: Disconnecting from glasses due to shutdown");
-                    bluetoothGatt.disconnect();
-                }
+                // // Mark as killed to prevent reconnection attempts
+                // isKilled = true;
+                // // Clean disconnect without reconnection
+                // if (bluetoothGatt != null) {
+                //     Bridge.log("LIVE: Disconnecting from glasses due to shutdown");
+                //     bluetoothGatt.disconnect();
+                // }
                 // Notify the system that glasses are intentionally disconnected
-                // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
                 updateConnectionState(ConnTypes.DISCONNECTED);
                 break;
 

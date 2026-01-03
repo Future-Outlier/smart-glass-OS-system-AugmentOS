@@ -1140,22 +1140,23 @@ class MentraLive: NSObject, SGCManager {
     @objc func disconnect() {
         Bridge.log("LIVE: disconnect() -Disconnecting from Mentra Live glasses")
 
-        if rgbLedAuthorityClaimed {
-            sendRgbLedControlAuthority(false)
-        }
+        // if rgbLedAuthorityClaimed {
+        //     sendRgbLedControlAuthority(false)
+        // }
 
-        // Clear any pending messages
-        pending = nil
-        pendingMessageTimer?.invalidate()
-        pendingMessageTimer = nil
+        // // Clear any pending messages
+        // pending = nil
+        // pendingMessageTimer?.invalidate()
+        // pendingMessageTimer = nil
 
-        if let peripheral = connectedPeripheral {
-            centralManager?.cancelPeripheralConnection(peripheral)
-        }
+        // if let peripheral = connectedPeripheral {
+        //     centralManager?.cancelPeripheralConnection(peripheral)
+        // }
 
-        stopAllTimers()
-        connectionState = ConnTypes.DISCONNECTED
-        rgbLedAuthorityClaimed = false
+        // stopAllTimers()
+        // connectionState = ConnTypes.DISCONNECTED
+        // rgbLedAuthorityClaimed = false
+        destroy()
     }
 
     // MARK: - Micbeat System (LC3 Audio Keepalive)
@@ -1526,7 +1527,7 @@ class MentraLive: NSObject, SGCManager {
             Bridge.log("LIVE: Reconnection aborted - device has been killed")
             return
         }
-        
+
         // Check if we've exceeded max attempts
         if reconnectAttempts >= MAX_RECONNECT_ATTEMPTS {
             Bridge.log("LIVE: Maximum reconnection attempts reached (\(MAX_RECONNECT_ATTEMPTS))")
@@ -1995,12 +1996,12 @@ class MentraLive: NSObject, SGCManager {
         case "sr_shut":
             Bridge.log("K900 shutdown command received - glasses shutting down")
             // Mark as killed to prevent reconnection attempts
-            isKilled = true
-            // Clean disconnect without reconnection
-            if let peripheral = connectedPeripheral {
-                Bridge.log("Disconnecting from glasses due to shutdown")
-                centralManager?.cancelPeripheralConnection(peripheral)
-            }
+            // isKilled = true
+            // // Clean disconnect without reconnection
+            // if let peripheral = connectedPeripheral {
+            //     Bridge.log("Disconnecting from glasses due to shutdown")
+            //     centralManager?.cancelPeripheralConnection(peripheral)
+            // }
             // Notify the system that glasses are intentionally disconnected
             connectionState = ConnTypes.DISCONNECTED
 
