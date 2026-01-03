@@ -21,7 +21,7 @@ export function ConnectionOverlay() {
 
   const handleCancel = () => {
     setShowOverlay(false)
-    // replaceAll("/pairing/select-glasses-model")
+    replaceAll("/pairing/select-glasses-model")
   }
 
   if (!showOverlay) return null
