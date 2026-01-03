@@ -267,6 +267,9 @@ export default function AppWebView() {
               // Show loading overlay while WebView itself loads
               <LoadingOverlay message={`Loading ${appName}...`} />
             )}
+            // allow inline media playback:
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
             // Disable zooming and scaling
             scalesPageToFit={false}
             scrollEnabled={true}

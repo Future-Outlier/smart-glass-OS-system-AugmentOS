@@ -5,6 +5,7 @@ import * as TaskManager from "expo-task-manager"
 import {shallow} from "zustand/shallow"
 
 import bridge from "@/bridge/MantleBridge"
+import livekit from "@/services/Livekit"
 import {migrate} from "@/services/Migrations"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
@@ -14,6 +15,9 @@ import {useGlassesStore, GlassesInfo, getGlasesInfoPartial} from "@/stores/glass
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
+import {BackgroundTimer} from "@/utils/timers"
+import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
+import {showAlert} from "@/utils/AlertUtils"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -85,11 +89,6 @@ class MantleManager {
     }
 
     await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
-
-    setTimeout(async () => {
-      await CoreModule.connectDefault()
-    }, 3000)
-
     // send initial status request:
     await CoreModule.getStatus()
 
@@ -98,7 +97,7 @@ class MantleManager {
     this.setupSubscriptions()
   }
 
-  public cleanup() {
+  public async cleanup() {
     // Stop timers
     if (this.calendarSyncTimer) {
       clearInterval(this.calendarSyncTimer)
@@ -106,6 +105,10 @@ class MantleManager {
     }
     Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME)
     this.transcriptProcessor.clear()
+
+    livekit.disconnect()
+    socketComms.cleanup()
+    restComms.goodbye()
   }
 
   private initServices() {
@@ -129,6 +132,21 @@ class MantleManager {
       })
     } catch (error) {
       console.error("Mantle: Error starting location updates", error)
+    }
+
+    // check for requirements immediately:
+    try {
+      const requirementsCheck = await checkConnectivityRequirementsUI()
+      if (!requirementsCheck) {
+        return
+      }
+      // give some time for the glasses to be fully ready:
+      BackgroundTimer.setTimeout(async () => {
+        await CoreModule.connectDefault()
+      }, 3000)
+    } catch (error) {
+      console.error("connect to glasses error:", error)
+      showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
     }
   }
 

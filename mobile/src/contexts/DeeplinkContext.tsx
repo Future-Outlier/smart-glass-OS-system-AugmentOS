@@ -7,6 +7,7 @@ import {Platform} from "react-native"
 // import {useAuth} from "@/contexts/AuthContext"
 import {NavObject, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import mentraAuth from "@/utils/auth/authClient"
+import {BackgroundTimer} from "@/utils/timers"
 
 export interface DeepLinkRoute {
   pattern: string
@@ -31,7 +32,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/home",
     handler: (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.replace("/(tabs)/home")
+      navObject.replaceAll("/(tabs)/home")
     },
     requiresAuth: true, // Require auth for explicit /home navigation
   },
@@ -104,7 +105,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         "prep": "/pairing/prep",
         "bluetooth": "/pairing/bluetooth",
         "select-glasses": "/pairing/select-glasses-model",
-        "wifi-setup": "/pairing/glasseswifisetup",
+        "wifi-setup": "/wifi/scan",
       }
 
       const route = pairingRoutes[step]
@@ -146,7 +147,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/auth/login",
     handler: (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.replace("/auth/login")
+      navObject.replaceAll("/auth/login")
     },
   },
   {
@@ -202,10 +203,10 @@ const deepLinkRoutes: DeepLinkRoute[] = [
 
         // Small delay to ensure auth state propagates
         console.log("[LOGIN DEBUG] About to set timeout for navigation")
-        setTimeout(() => {
+        BackgroundTimer.setTimeout(() => {
           console.log("[LOGIN DEBUG] Inside setTimeout, about to call router.replace('/')")
           try {
-            navObject.replace("/")
+            navObject.replaceAll("/")
             console.log("[LOGIN DEBUG] router.replace called successfully")
           } catch (navError) {
             console.error("[LOGIN DEBUG] Error calling router.replace:", navError)
@@ -362,7 +363,8 @@ const DeeplinkContext = createContext<DeeplinkContextType>({} as DeeplinkContext
 export const useDeeplink = () => useContext(DeeplinkContext)
 
 export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
-  const {push, replace, goBack, setPendingRoute, getPendingRoute, navigate} = useNavigationHistory()
+  const {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, preventBack} =
+    useNavigationHistory()
   const config = {
     scheme: "com.mentra",
     host: "apps.mentra.glass",
@@ -382,10 +384,10 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
     fallbackHandler: (url: string) => {
       console.warn("Fallback handler called for URL:", url)
       setTimeout(() => {
-        push("/auth/login")
+        replaceAll("/auth/login")
       }, 100)
     },
-    navObject: {push, replace, goBack, setPendingRoute, getPendingRoute},
+    navObject: {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, preventBack},
   }
 
   const handleUrlRaw = async ({url}: {url: string}) => {
@@ -510,7 +512,16 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
         console.log("@@@@@@@@@@@@@ MATCHED ROUTE @@@@@@@@@@@@@@@", matchedRoute)
         console.log("@@@@@@@@@@@@@ PARAMS @@@@@@@@@@@@@@@", params)
         console.log("@@@@@@@@@@@@@ URL @@@@@@@@@@@@@@@", url)
-        await matchedRoute.handler(url, params, {push, replace, goBack, setPendingRoute, getPendingRoute, navigate})
+        const navObject: NavObject = {
+          push,
+          replace,
+          goBack,
+          setPendingRoute,
+          getPendingRoute,
+          navigate,
+          replaceAll,
+        }
+        await matchedRoute.handler(url, params, navObject)
       } catch (error) {
         console.warn("Route handler failed, router may not be ready:", error)
       }
