@@ -3,15 +3,18 @@
  * Orchestrates gallery sync independently of UI lifecycle
  */
 
+import NetInfo from "@react-native-community/netinfo"
 import CoreModule from "core"
-import {Platform} from "react-native"
+import {AppState, AppStateStatus, Platform} from "react-native"
 import WifiManager from "react-native-wifi-reborn"
 
 import {useGallerySyncStore, HotspotInfo} from "@/stores/gallerySync"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {PhotoInfo} from "@/types/asg"
+import {showAlert} from "@/utils/AlertUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {SettingsNavigationUtils} from "@/utils/SettingsNavigationUtils"
 import {MediaLibraryPermissions} from "@/utils/permissions/MediaLibraryPermissions"
 
 import {asgCameraApi} from "./asgCameraApi"
@@ -29,6 +32,8 @@ const TIMING = {
   // iOS WiFi connection timing - the system shows a dialog that user must accept
   IOS_WIFI_RETRY_DELAY_MS: 3000, // Wait for user to interact with iOS dialog
   IOS_WIFI_MAX_RETRIES: 5, // Retry multiple times to give user time to accept
+  // WiFi initialization cooldown - prevents repeated "enable WiFi" alerts while WiFi is initializing
+  WIFI_COOLDOWN_MS: 3000, // Wait 3 seconds after user visits WiFi settings before showing alert again
 } as const
 
 class GallerySyncService {
@@ -39,6 +44,9 @@ class GallerySyncService {
   private abortController: AbortController | null = null
   private isInitialized = false
   private glassesStoreUnsubscribe: (() => void) | null = null
+  private appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null
+  private waitingForWifiRetry = false
+  private wifiSettingsOpenedAt: number | null = null // Timestamp when user was sent to WiFi settings
 
   private constructor() {}
 
@@ -71,6 +79,9 @@ class GallerySyncService {
       },
     )
 
+    // Listen for app state changes to auto-retry sync after user enables WiFi
+    this.appStateSubscription = AppState.addEventListener("change", this.handleAppStateChange)
+
     this.hotspotListenerRegistered = true
     this.isInitialized = true
 
@@ -94,6 +105,11 @@ class GallerySyncService {
     if (this.glassesStoreUnsubscribe) {
       this.glassesStoreUnsubscribe()
       this.glassesStoreUnsubscribe = null
+    }
+
+    if (this.appStateSubscription) {
+      this.appStateSubscription.remove()
+      this.appStateSubscription = null
     }
 
     if (this.hotspotConnectionTimeout) {
@@ -141,6 +157,76 @@ class GallerySyncService {
     }
 
     gallerySyncNotifications.showSyncError("Glasses disconnected")
+  }
+
+  /**
+   * Handle app state changes to auto-retry sync when user returns from settings
+   */
+  private handleAppStateChange = async (nextAppState: AppStateStatus): Promise<void> => {
+    // Only handle when app comes to foreground
+    if (nextAppState !== "active") {
+      return
+    }
+
+    // Only auto-retry if we were waiting for WiFi
+    if (!this.waitingForWifiRetry) {
+      return
+    }
+
+    console.log("[GallerySyncService] App returned to foreground - checking if WiFi is enabled")
+
+    const store = useGallerySyncStore.getState()
+    const glassesStore = useGlassesStore.getState()
+
+    // Check if glasses are still connected
+    if (!glassesStore.connected) {
+      console.log("[GallerySyncService] Glasses disconnected - not retrying sync")
+      this.waitingForWifiRetry = false
+      return
+    }
+
+    // Check if WiFi is now enabled (Android only)
+    // Use retry logic because WiFi status takes time to propagate after user enables it
+    if (Platform.OS === "android") {
+      const MAX_RETRIES = 5
+      const RETRY_DELAY_MS = 1000 // Wait 500ms between checks
+
+      console.log("[GallerySyncService] Waiting for WiFi to initialize (may take a moment after enabling)...")
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS))
+
+          const netState = await NetInfo.fetch()
+          console.log(
+            `[GallerySyncService] WiFi check attempt ${attempt}/${MAX_RETRIES}: enabled=${netState.isWifiEnabled}`,
+          )
+
+          if (netState.isWifiEnabled === true) {
+            console.log("[GallerySyncService] ✅ WiFi is now enabled - auto-retrying sync")
+            this.waitingForWifiRetry = false
+            this.wifiSettingsOpenedAt = null // Clear cooldown timestamp
+            // Clear previous error state
+            store.setSyncState("idle")
+            // Auto-retry sync
+            await this.startSync()
+            return
+          }
+
+          // If this was the last attempt, log and give up
+          if (attempt === MAX_RETRIES) {
+            console.log(
+              "[GallerySyncService] ❌ WiFi still disabled after all retries - user may need to tap sync manually",
+            )
+            this.waitingForWifiRetry = false
+            this.wifiSettingsOpenedAt = null // Clear cooldown timestamp
+          }
+        } catch (error) {
+          console.warn(`[GallerySyncService] Failed to check WiFi status on attempt ${attempt}:`, error)
+          // Continue to next retry
+        }
+      }
+    }
   }
 
   /**
@@ -259,6 +345,82 @@ class GallerySyncService {
     // Reset abort controller
     this.abortController = new AbortController()
 
+    // COOLDOWN CHECK: If user just went to WiFi settings, show a "please wait" message
+    // This prevents showing "enable WiFi" alert repeatedly while WiFi is initializing
+    if (Platform.OS === "android" && this.wifiSettingsOpenedAt) {
+      const timeSinceSettingsOpened = Date.now() - this.wifiSettingsOpenedAt
+      const cooldownRemaining = TIMING.WIFI_COOLDOWN_MS - timeSinceSettingsOpened
+
+      if (cooldownRemaining > 0) {
+        console.log(
+          `[GallerySyncService] WiFi cooldown active (${Math.round(cooldownRemaining / 1000)}s remaining) - showing wait message`,
+        )
+
+        showAlert("Please Wait", "WiFi is initializing. Please wait a moment before trying to sync again.", [
+          {text: "OK"},
+        ])
+
+        return
+      } else {
+        // Cooldown expired, clear the timestamp
+        console.log("[GallerySyncService] WiFi cooldown expired - resuming normal behavior")
+        this.wifiSettingsOpenedAt = null
+      }
+    }
+
+    // CRITICAL: Pre-flight WiFi check on Android BEFORE any connection attempts
+    // This prevents sync failures even when we think we're already connected
+    // (cached connection state can be stale if WiFi was disabled)
+    if (Platform.OS === "android") {
+      try {
+        const netState = await NetInfo.fetch()
+        console.log(`[GallerySyncService] WiFi enabled status:`, netState.isWifiEnabled)
+
+        if (netState.isWifiEnabled === false) {
+          console.error("[GallerySyncService] WiFi is disabled - cannot sync")
+
+          // Mark that we're waiting for WiFi so we can auto-retry when user returns
+          this.waitingForWifiRetry = true
+
+          // Show styled alert with option to open settings
+          showAlert(
+            "WiFi is Disabled",
+            "Please enable WiFi to sync photos from your glasses. Would you like to open WiFi settings?",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+                onPress: () => {
+                  this.waitingForWifiRetry = false
+                  this.wifiSettingsOpenedAt = null
+                  store.setSyncError("WiFi disabled - enable WiFi and try again")
+                },
+              },
+              {
+                text: "Open Settings",
+                onPress: async () => {
+                  // Set timestamp so we can enforce cooldown on next sync attempt
+                  this.wifiSettingsOpenedAt = Date.now()
+                  await SettingsNavigationUtils.openWifiSettings()
+                  store.setSyncError("Enable WiFi and try sync again")
+                },
+              },
+            ],
+            {cancelable: false},
+          )
+
+          // Return early - do NOT proceed with sync
+          return
+        } else {
+          // WiFi is enabled - clear any cooldown timestamp
+          this.wifiSettingsOpenedAt = null
+        }
+      } catch (error) {
+        console.warn("[GallerySyncService] Failed to check WiFi status:", error)
+        // Continue with sync attempt - don't block if check fails
+      }
+    }
+
     // Check if already connected to hotspot
     const isAlreadyConnected = glassesStore.hotspotEnabled && glassesStore.hotspotGatewayIp
 
@@ -353,6 +515,42 @@ class GallerySyncService {
           if (store.syncServiceOpenedHotspot) {
             await this.closeHotspot()
           }
+          return
+        }
+
+        // Check if WiFi was disabled during connection attempt (Android 10+ specific error)
+        if (Platform.OS === "android" && error?.message?.includes("enable wifi manually")) {
+          console.error("[GallerySyncService] WiFi was disabled during connection")
+
+          // Mark that we're waiting for WiFi so we can auto-retry when user returns
+          this.waitingForWifiRetry = true
+
+          showAlert("WiFi Required", "WiFi must be enabled to sync photos. Please enable WiFi and try again.", [
+            {
+              text: "Cancel",
+              style: "cancel",
+              onPress: () => {
+                this.waitingForWifiRetry = false
+                this.wifiSettingsOpenedAt = null
+                store.setSyncError("WiFi disabled - enable WiFi and try again")
+                if (store.syncServiceOpenedHotspot) {
+                  this.closeHotspot()
+                }
+              },
+            },
+            {
+              text: "Open Settings",
+              onPress: async () => {
+                // Set timestamp so we can enforce cooldown on next sync attempt
+                this.wifiSettingsOpenedAt = Date.now()
+                await SettingsNavigationUtils.openWifiSettings()
+                store.setSyncError("Enable WiFi and try sync again")
+                if (store.syncServiceOpenedHotspot) {
+                  await this.closeHotspot()
+                }
+              },
+            },
+          ])
           return
         }
 

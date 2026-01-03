@@ -7,13 +7,13 @@ import {Button, Icon, Screen, Text} from "@/components/ignite"
 import {useAuth} from "@/contexts/AuthContext"
 import {useDeeplink} from "@/contexts/DeeplinkContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 // Types
 type ScreenState = "loading" | "connection" | "auth" | "outdated" | "success"
@@ -35,7 +35,7 @@ export default function InitScreen() {
   // Hooks
   const {theme, themed} = useAppTheme()
   const {user, session, loading: authLoading} = useAuth()
-  const {replace, getPendingRoute, setPendingRoute} = useNavigationHistory()
+  const {replace, replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome} = useNavigationHistory()
   const {processUrl} = useDeeplink()
   const rootNavigationState = useRootNavigationState()
   const isNavigationReady = rootNavigationState?.key != null
@@ -73,13 +73,13 @@ export default function InitScreen() {
 
   const navigateToDestination = async () => {
     if (!user?.email) {
-      replace("/auth/login")
+      replaceAll("/auth/login")
       return
     }
 
     // Check onboarding status
     if (!onboardingCompleted && !defaultWearable) {
-      replace("/onboarding/welcome")
+      replaceAll("/onboarding/welcome")
       return
     }
 
@@ -91,13 +91,13 @@ export default function InitScreen() {
     }
 
     setTimeout(() => {
-      replace("/(tabs)/home")
+      clearHistoryAndGoHome()
     }, NAVIGATION_DELAY)
   }
 
   const checkLoggedIn = async (): Promise<void> => {
     if (!user) {
-      replace("/auth/login")
+      replaceAll("/auth/login")
       return
     }
     handleTokenExchange()

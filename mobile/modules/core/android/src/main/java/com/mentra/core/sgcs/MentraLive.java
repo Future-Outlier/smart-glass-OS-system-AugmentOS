@@ -2134,6 +2134,52 @@ public class MentraLive extends SGCManager {
                 Bridge.log("LIVE: Received token status from ASG client: " + (success ? "SUCCESS" : "FAILED"));
                 break;
 
+            case "ota_update_available":
+                // Process OTA update available notification from glasses (background mode)
+                Bridge.log("LIVE: 📱 Received ota_update_available from glasses");
+                try {
+                    long otaVersionCode = json.optLong("version_code", 0);
+                    String otaVersionName = json.optString("version_name", "");
+                    long otaTotalSize = json.optLong("total_size", 0);
+
+                    // Parse updates array
+                    List<String> updates = new ArrayList<>();
+                    if (json.has("updates")) {
+                        JSONArray updatesArray = json.getJSONArray("updates");
+                        for (int i = 0; i < updatesArray.length(); i++) {
+                            updates.add(updatesArray.getString(i));
+                        }
+                    }
+
+                    Bridge.log("LIVE: 📱 OTA available - version: " + otaVersionName +
+                          " (" + otaVersionCode + "), updates: " + updates +
+                          ", size: " + otaTotalSize + " bytes");
+
+                    // Send to React Native
+                    Bridge.sendOtaUpdateAvailable(otaVersionCode, otaVersionName, updates, otaTotalSize);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error parsing ota_update_available", e);
+                }
+                break;
+
+            case "ota_progress":
+                // Process OTA progress update from glasses
+                String otaStage = json.optString("stage", "download");
+                String otaStatus = json.optString("status", "PROGRESS");
+                int otaProgress = json.optInt("progress", 0);
+                long otaBytesDownloaded = json.optLong("bytes_downloaded", 0);
+                long otaTotalBytes = json.optLong("total_bytes", 0);
+                String otaCurrentUpdate = json.optString("current_update", "apk");
+                String otaErrorMessage = json.optString("error_message", null);
+
+                Bridge.log("LIVE: 📱 OTA progress - " + otaStage + " " + otaStatus +
+                      " " + otaProgress + "% (" + otaCurrentUpdate + ")");
+
+                // Send to React Native
+                Bridge.sendOtaProgress(otaStage, otaStatus, otaProgress,
+                    otaBytesDownloaded, otaTotalBytes, otaCurrentUpdate, otaErrorMessage);
+                break;
+
             case "button_press":
                 // Process button press event
                 String buttonId = json.optString("buttonId", "unknown");
@@ -2730,15 +2776,14 @@ public class MentraLive extends SGCManager {
 
             case "sr_shut":
                 Bridge.log("LIVE: K900 shutdown command received - glasses shutting down");
-                // Mark as killed to prevent reconnection attempts
-                isKilled = true;
-                // Clean disconnect without reconnection
-                if (bluetoothGatt != null) {
-                    Bridge.log("LIVE: Disconnecting from glasses due to shutdown");
-                    bluetoothGatt.disconnect();
-                }
+                // // Mark as killed to prevent reconnection attempts
+                // isKilled = true;
+                // // Clean disconnect without reconnection
+                // if (bluetoothGatt != null) {
+                //     Bridge.log("LIVE: Disconnecting from glasses due to shutdown");
+                //     bluetoothGatt.disconnect();
+                // }
                 // Notify the system that glasses are intentionally disconnected
-                // connectionEvent(SmartGlassesConnectionState.DISCONNECTED);
                 updateConnectionState(ConnTypes.DISCONNECTED);
                 break;
 
@@ -2953,6 +2998,23 @@ public class MentraLive extends SGCManager {
             Bridge.log("LIVE: 📸 Sending gallery status query to glasses");
         } catch (JSONException e) {
             Log.e(TAG, "📸 Error creating gallery status query", e);
+        }
+    }
+
+    /**
+     * Send OTA start command to glasses.
+     * Called when user approves an update (onboarding or background mode).
+     * Triggers glasses to begin download and installation.
+     */
+    public void sendOtaStart() {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "ota_start");
+            json.put("timestamp", System.currentTimeMillis());
+            sendJson(json, true);
+            Bridge.log("LIVE: 📱 Sending ota_start command to glasses");
+        } catch (JSONException e) {
+            Log.e(TAG, "📱 Error creating ota_start command", e);
         }
     }
 
@@ -4438,6 +4500,24 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    /**
+     * Forget a WiFi network on the glasses - removes cached credentials
+     * This sends the SSID so the K900 SystemUI can properly clear the cached credentials
+     */
+    @Override
+    public void forgetWifiNetwork(String ssid) {
+        Bridge.log("LIVE: 📶 Sending WiFi forget command for SSID: " + ssid);
+
+        try {
+            JSONObject wifiCommand = new JSONObject();
+            wifiCommand.put("type", "forget_wifi");
+            wifiCommand.put("ssid", ssid);
+            sendJson(wifiCommand, true);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating WiFi forget JSON", e);
+        }
+    }
+
     public void sendHotspotState(boolean enabled) {
         Bridge.log("LIVE: 🔥 Sending hotspot state to glasses - enabled: " + enabled);
         try {
@@ -5350,27 +5430,9 @@ public class MentraLive extends SGCManager {
 
             // Bridge.log("LIVE: Received LC3 audio packet seq=" + sequenceNumber + ", size=" + lc3Data.length);
 
-            // Decode LC3 to PCM and forward to audio processing system
-            // if (audioProcessingCallback != null) {
-            if (lc3DecoderPtr != 0) {
-                // Decode LC3 to PCM using the native decoder with Mentra Live frame size
-                byte[] pcmData = Lc3Cpp.decodeLC3(lc3DecoderPtr, lc3Data, LC3_FRAME_SIZE);
-
-                if (pcmData != null && pcmData.length > 0) {
-                    // Forward PCM data to CoreManager which handles:
-                    // 1. Sending to server (if shouldSendPcmData = true)
-                    // 2. Local transcription (if shouldSendTranscript = true)
-                    // See CoreManager.handlePcm() for routing logic
-                    var m = CoreManager.getInstance();
-                    m.handlePcm(pcmData);
-                    // Bridge.log("LIVE: 🎤 Decoded LC3→PCM: " + lc3Data.length + "→" + pcmData.length + " bytes, forwarded to CoreManager");
-                } else {
-                    // Log.e(TAG, "❌ Failed to decode LC3 data to PCM - got null or empty result");
-                }
-            } else {
-                Log.e(TAG, "❌ LC3 decoder not initialized - cannot decode to PCM");
-
-            }
+            // Forward raw LC3 to CoreManager (matches iOS behavior)
+            // MentraLive uses 40-byte LC3 frames
+            CoreManager.getInstance().handleGlassesMicData(lc3Data, LC3_FRAME_SIZE);
 
             // Bridge.log("LIVE: 🔊 Audio playback enabled: " + audioPlaybackEnabled);
         // } else {

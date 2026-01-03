@@ -20,6 +20,7 @@ import type { AppEnv } from "./types/hono";
 // Hono API routes - organized by category
 import {
   // Client APIs (mobile app and glasses client)
+  audioConfigApi,
   livekitApi,
   minVersionApi,
   clientAppsApi,
@@ -221,6 +222,7 @@ app.route("/api/client/calendar", calendarApi);
 app.route("/api/client/location", locationApi);
 app.route("/api/client/notifications", notificationsApi);
 app.route("/api/client/device/state", deviceStateApi);
+app.route("/api/client/audio/configure", audioConfigApi);
 
 // ============================================================================
 // SDK API Routes (Hono native)
@@ -346,7 +348,7 @@ app.get("/uploads/*", async (c) => {
       return new Response(file);
     }
     return c.json({ error: "File not found" }, 404);
-  } catch (error) {
+  } catch (_error) {
     return c.json({ error: "Error serving file" }, 500);
   }
 });
