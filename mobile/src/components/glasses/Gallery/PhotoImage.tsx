@@ -278,6 +278,6 @@ const $loadingOverlay: ThemedStyle<ViewStyle> = ({colors}) => ({
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: colors.palette.neutral300, // Darker, less jarring than neutral100
+  backgroundColor: colors.border, // Match shimmer placeholder grey
   zIndex: 1,
 })

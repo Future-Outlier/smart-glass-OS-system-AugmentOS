@@ -1,14 +1,24 @@
 import {Image} from "expo-image"
 import {SquircleView} from "expo-squircle-view"
 import {memo} from "react"
-import {ActivityIndicator, ImageStyle, StyleProp, TouchableOpacity, View, ViewStyle, StyleSheet} from "react-native"
+import {ActivityIndicator, ImageStyle, StyleProp, TouchableOpacity, View, ViewStyle} from "react-native"
 import {withUniwind} from "uniwind"
 
 import {Icon} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {ClientAppletInterface, getMoreAppsApplet} from "@/stores/applets"
+import {ClientAppletInterface, cameraPackageName, getMoreAppsApplet} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
+
+// Helper to extract style properties without using StyleSheet
+const extractStyleProps = (style: StyleProp<ViewStyle>): Partial<ViewStyle> => {
+  if (!style) return {}
+  if (typeof style === "number") return {}
+  if (Array.isArray(style)) {
+    return Object.assign({}, ...style.filter((s) => s && typeof s === "object"))
+  }
+  return style as ViewStyle
+}
 
 interface AppIconProps {
   app: ClientAppletInterface
@@ -20,7 +30,7 @@ const AppIcon = ({app, onClick, style}: AppIconProps) => {
   const {themed, theme} = useAppTheme()
   const [enableSquircles] = useSetting(SETTINGS.enable_squircles.key)
   const WrapperComponent = onClick ? TouchableOpacity : View
-  const flatStyle = StyleSheet.flatten(style)
+  const flatStyle = extractStyleProps(style)
 
   return (
     <View style={{alignItems: "center"}}>
@@ -80,8 +90,8 @@ const AppIcon = ({app, onClick, style}: AppIconProps) => {
           <Icon name="alert" size={theme.spacing.s4} color={theme.colors.error} />
         </View>
       )}
-      {/* Show wifi-off badge for offline apps */}
-      {app.offline && app.packageName !== getMoreAppsApplet().packageName && (
+      {/* Show wifi-off badge for offline apps (excluding camera app) */}
+      {app.offline && app.packageName !== getMoreAppsApplet().packageName && app.packageName !== cameraPackageName && (
         <View style={themed($offlineBadge)}>
           <Icon name="wifi-off" size={theme.spacing.s4} color={theme.colors.text} />
         </View>
