@@ -450,6 +450,19 @@ class RestComms {
     const res = this.authenticatedRequest<Response>(config)
     return res.map(() => undefined)
   }
+
+  public goodbye(): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/client/goodbye",
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
+  }
 }
 
 const restComms = RestComms.getInstance()

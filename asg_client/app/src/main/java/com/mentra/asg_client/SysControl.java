@@ -216,6 +216,46 @@ public class SysControl {
         context.sendBroadcast(nn);
     }
 
+    public static void disconnectFromWifi(Context context, String ssid) {
+        Log.d(TAG, "📶 Disconnecting from WiFi SSID: " + ssid);
+        Intent nn = new Intent("com.xy.xsetting.action");
+        nn.setPackage("com.android.systemui");
+        nn.putExtra("cmd", "disconnectwifi");
+        nn.putExtra("ssid", ssid);
+        context.sendBroadcast(nn);
+    }
+
+    /**
+     * Connect to WiFi with credential refresh - clears cached credentials first.
+     * This fixes the K900 bug where wrong passwords get cached and reused.
+     *
+     * The K900 SystemUI only removes cached credentials when disconnecting from
+     * an active connection attempt. So we: start connect -> disconnect -> reconnect.
+     */
+    public static void connectToWifiWithRefresh(Context context, String ssid, String password) {
+        if (ssid == null || ssid.isEmpty()) {
+            Log.e(TAG, "Cannot connect to WiFi with empty SSID");
+            return;
+        }
+
+        Log.d(TAG, "🔧 Connecting to WiFi with credential refresh: " + ssid);
+
+        // Step 1: Start a connection attempt (this makes the SSID "active")
+        connectToWifi(context, ssid, password);
+
+        // Step 2: After a short delay, disconnect to clear any cached wrong credentials
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            Log.d(TAG, "🔧 Clearing cached credentials for: " + ssid);
+            disconnectFromWifi(context, ssid);
+
+            // Step 3: After disconnect clears the cache, connect with fresh credentials
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                Log.d(TAG, "🔧 Reconnecting with fresh credentials: " + ssid);
+                connectToWifi(context, ssid, password);
+            }, 500);
+        }, 300);
+    }
+
     public static void scanWifi(Context context) {
         // Use the exact same pattern that works
         Intent nn = new Intent("com.xy.xsetting.action");

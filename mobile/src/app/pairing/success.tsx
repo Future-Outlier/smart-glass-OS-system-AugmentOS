@@ -1,5 +1,4 @@
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
-import {useLocalSearchParams} from "expo-router"
 import {View, ViewStyle, Image, ImageStyle, TextStyle} from "react-native"
 
 import {EvenRealitiesLogo} from "@/components/brands/EvenRealitiesLogo"
@@ -11,13 +10,14 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
+import {useGlassesStore, waitForGlassesState} from "@/stores/glasses"
 import {getGlassesImage} from "@/utils/getGlassesImage"
 
 export default function PairingSuccessScreen() {
   const {theme, themed} = useAppTheme()
-  const {clearHistoryAndGoHome} = useNavigationHistory()
-  const {glassesModelName} = useLocalSearchParams<{glassesModelName: string}>()
-  const {replaceAll} = useNavigationHistory()
+  const {clearHistoryAndGoHome, pushUnder} = useNavigationHistory()
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const {replaceAll, push} = useNavigationHistory()
   const [onboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
 
   // Get manufacturer logo component
@@ -35,15 +35,38 @@ export default function PairingSuccessScreen() {
     }
   }
 
-  const glassesImage = getGlassesImage(glassesModelName)
+  const glassesImage = getGlassesImage(defaultWearable)
 
-  const handleContinue = () => {
-    if (glassesModelName === DeviceTypes.LIVE) {
-      replaceAll("/onboarding/live")
+  const handleContinue = async () => {
+    if (defaultWearable === DeviceTypes.LIVE) {
+      // check if the glasses are already connected:
+
+      // wait for the glasses to be connected to wifi for up to 1 second:
+      let glassesConnected = await waitForGlassesState("wifiConnected", value => value === true, 1000)
+
+      console.log("PAIR_SUCCESS: glassesConnected", glassesConnected)
+
+      // clear the history and go home so that we don't navigate back here:
+      clearHistoryAndGoHome()
+
+      // push the next screen:
+      if (glassesConnected) {
+        push("/ota/check-for-updates")
+      } else {
+        push("/wifi/scan")
+      }
+
+      // add the onboarding screen under the current screen so that when we go back, we go to the onboarding screen:
+      if (!onboardingOsCompleted) {
+        pushUnder("/onboarding/os")
+      }
+      
+      // push the onboarding screen under the current screen so that when we go back, we go to the onboarding screen:
+      pushUnder("/onboarding/live")
       return
     }
 
-    if (glassesModelName === DeviceTypes.G1) {
+    if (defaultWearable === DeviceTypes.G1) {
       if (!onboardingOsCompleted) {
         replaceAll("/onboarding/os")
         return
@@ -60,7 +83,7 @@ export default function PairingSuccessScreen() {
       {/* Glasses Image with Logo on top */}
       <View style={themed($imageContainer)}>
         {/* Manufacturer Logo */}
-        <View style={themed($logoContainer)}>{getManufacturerLogo(glassesModelName)}</View>
+        <View style={themed($logoContainer)}>{getManufacturerLogo(defaultWearable)}</View>
 
         <Spacer height={theme.spacing.s4} />
 
