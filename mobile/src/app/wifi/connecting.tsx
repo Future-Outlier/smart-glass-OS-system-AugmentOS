@@ -9,8 +9,8 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
 import {ThemedStyle} from "@/theme"
-import showAlert from "@/utils/AlertUtils"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
+import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 
 export default function WifiConnectingScreen() {
   const params = useLocalSearchParams()
@@ -27,25 +27,9 @@ export default function WifiConnectingScreen() {
   const [errorMessage, setErrorMessage] = useState("")
   const connectionTimeoutRef = useRef<number | null>(null)
   const failureGracePeriodRef = useRef<number | null>(null)
-  const {goBack, navigate, replace, pushPrevious} = useNavigationHistory()
+  const {goBack, navigate, pushPrevious} = useNavigationHistory()
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
-  const glassesConnected = useGlassesStore((state) => state.connected)
-
-  // Navigate away if glasses disconnect (but not on initial mount)
-  useEffect(() => {
-    if (!glassesConnected) {
-      console.log("CONNECTING: Glasses disconnected - navigating away")
-      showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [
-        {
-          text: "OK",
-          onPress() {
-            pushPrevious(1)
-          },
-        },
-      ])
-    }
-  }, [glassesConnected])
 
   useEffect(() => {
     // Start connection attempt
@@ -125,7 +109,7 @@ export default function WifiConnectingScreen() {
   }
 
   const handleSuccess = useCallback(() => {
-    pushPrevious(1)
+    pushPrevious(2) // pop the entire stack
   }, [nextRoute, returnTo, navigate])
 
   const handleCancel = useCallback(() => {
@@ -164,7 +148,7 @@ export default function WifiConnectingScreen() {
             </View>
 
             <View style={themed($successButtonContainer)}>
-              <Button text="Continue" onPress={handleSuccess} />
+              <Button tx="common:continue" onPress={handleSuccess} />
             </View>
           </View>
         )
@@ -196,10 +180,10 @@ export default function WifiConnectingScreen() {
 
             <View style={themed($failureButtonsContainer)}>
               <Button onPress={handleTryAgain}>
-                <Text>Try Again</Text>
+                <Text tx="common:tryAgain" />
               </Button>
               <Button onPress={handleCancel} preset="alternate" style={{marginTop: theme.spacing.s3}}>
-                <Text>Cancel</Text>
+                <Text tx="common:cancel" />
               </Button>
             </View>
           </View>
@@ -208,10 +192,11 @@ export default function WifiConnectingScreen() {
   }
 
   return (
-    <Screen preset="fixed" contentContainerStyle={connectionStatus === "connecting" ? undefined : undefined}>
+    <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       {connectionStatus === "connecting" && (
         <Header title="Connecting" leftIcon="chevron-left" onLeftPress={handleHeaderBack} />
       )}
+      <ConnectionOverlay />
       <View style={themed(connectionStatus === "connecting" ? $content : $contentNoPadding)}>{renderContent()}</View>
     </Screen>
   )
