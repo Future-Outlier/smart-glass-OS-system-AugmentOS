@@ -348,7 +348,7 @@ app.get("/uploads/*", async (c) => {
       return new Response(file);
     }
     return c.json({ error: "File not found" }, 404);
-  } catch (error) {
+  } catch (_error) {
     return c.json({ error: "Error serving file" }, 500);
   }
 });
