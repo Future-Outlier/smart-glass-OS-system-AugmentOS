@@ -402,6 +402,18 @@ export class AudioManager {
         timestamp: new Date(),
       };
 
+      // Include UDP endpoint if configured
+      const udpHost = process.env.UDP_HOST;
+      const udpPort = process.env.UDP_PORT ? parseInt(process.env.UDP_PORT, 10) : 8000;
+      if (udpHost) {
+        (ackMessage as any).udpHost = udpHost;
+        (ackMessage as any).udpPort = udpPort;
+        this.logger.info(
+          { udpHost, udpPort, feature: "udp-audio" },
+          "[livekit reconnect] Included UDP endpoint in CONNECTION_ACK",
+        );
+      }
+
       // Include LiveKit info if available (this triggers client to reconnect LiveKit)
       if (livekitInfo) {
         ackMessage.livekit = {

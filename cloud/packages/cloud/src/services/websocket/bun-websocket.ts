@@ -326,7 +326,7 @@ async function handleGlassesConnectionInit(
     })
   }
 
-  // Handle reconnection - check LiveKit bridge status
+  // Handle reconnection - check LiveKit bridge status and resurrect dormant apps
   if (reconnection) {
     try {
       const hadBridge =
@@ -346,6 +346,21 @@ async function handleGlassesConnectionInit(
       }
     } catch (err) {
       userSession.logger.warn({feature: "livekit", err}, "Reconnect: bridge status check failed")
+    }
+
+    // Resurrect any apps that went dormant while user was disconnected
+    // See AppManager.resurrectDormantApps() for detailed explanation of why
+    // we wait for user reconnection before resurrecting
+    try {
+      const resurrected = await userSession.appManager.resurrectDormantApps()
+      if (resurrected.length > 0) {
+        userSession.logger.info(
+          {resurrected, count: resurrected.length},
+          "Resurrected dormant apps after user reconnect",
+        )
+      }
+    } catch (err) {
+      userSession.logger.error({err}, "Error resurrecting dormant apps after reconnect")
     }
   }
   // Testing client livekit reconnection logic.
@@ -611,12 +626,32 @@ async function handleAppMessage(ws: AppServerWebSocket, message: string | Buffer
 
 /**
  * Handle app WebSocket close
+ *
+ * This is called by Bun when the mini app's WebSocket connection closes.
+ * We need to notify the AppSession so it can start the grace period and
+ * potentially trigger resurrection.
+ *
+ * Note: For the `ws` package, AppSession sets up its own close handler via
+ * ws.on("close", ...). But Bun's ServerWebSocket doesn't support EventEmitter,
+ * so we must explicitly call handleDisconnect here.
  */
 function handleAppClose(ws: AppServerWebSocket, code: number, reason: string): void {
   const {userId, packageName} = ws.data
 
   logger.info({userId, packageName, code, reason}, "App WebSocket closed")
 
-  // App disconnect is handled by AppSession's own close handler
-  // which is set up when the WebSocket is passed to AppSession
+  if (!packageName) {
+    logger.warn({userId, code, reason}, "App WebSocket closed but no packageName - ignoring")
+    return
+  }
+
+  const userSession = UserSession.getById(userId)
+  if (!userSession) {
+    logger.warn({userId, packageName, code, reason}, "App WebSocket closed but no UserSession found - ignoring")
+    return
+  }
+
+  // Delegate to AppManager which owns the AppSession
+  // This will trigger grace period -> resurrection flow
+  userSession.appManager.handleAppConnectionClosed(packageName, code, reason)
 }

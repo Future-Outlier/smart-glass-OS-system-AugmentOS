@@ -409,6 +409,40 @@ export class AppServer {
     const {sessionId, userId, mentraOSWebsocketUrl, augmentOSWebsocketUrl} = request
     this.logger.info({userId}, `🗣️ Received session request for user ${userId}, session ${sessionId}\n\n`)
 
+    // Check for existing session (user might be switching clouds)
+    // If an existing session exists, we need to clean it up properly to avoid:
+    // 1. Orphaned sessions with open WebSockets
+    // 2. Cleanup handlers that corrupt the new session's map entries
+    // See: cloud/issues/018-app-disconnect-resurrection
+    const existingSession = this.activeSessions.get(sessionId)
+    if (existingSession) {
+      this.logger.info(
+        {sessionId, userId},
+        `🔄 Existing session found for ${sessionId} - sending OWNERSHIP_RELEASE and disconnecting before new connection`,
+      )
+
+      try {
+        // Send OWNERSHIP_RELEASE to tell the old cloud not to resurrect this app
+        // The old cloud will mark the app as DORMANT instead of trying to restart it
+        await existingSession.releaseOwnership("switching_clouds")
+      } catch (error) {
+        this.logger.warn({error, sessionId}, `⚠️ Failed to send OWNERSHIP_RELEASE to old session - continuing anyway`)
+      }
+
+      try {
+        // Disconnect the old session explicitly
+        existingSession.disconnect()
+      } catch (error) {
+        this.logger.warn({error, sessionId}, `⚠️ Failed to disconnect old session - continuing anyway`)
+      }
+
+      // Remove from maps immediately (don't wait for cleanup handler)
+      this.activeSessions.delete(sessionId)
+      this.activeSessionsByUserId.delete(userId)
+
+      this.logger.info({sessionId, userId}, `✅ Old session cleaned up, proceeding with new connection`)
+    }
+
     // Create new App session
     const session = new AppSession({
       packageName: this.config.packageName,
@@ -455,9 +489,22 @@ export class AppServer {
         }
       }
 
-      // Remove the session from active sessions in all cases
-      this.activeSessions.delete(sessionId)
-      this.activeSessionsByUserId.delete(userId)
+      // Remove the session from active sessions ONLY if this session is still the active one.
+      // This prevents a bug where an old session's cleanup handler deletes a newer session:
+      // 1. User switches from Cloud A to Cloud B
+      // 2. SDK creates sessionB, overwrites activeSessions[sessionId]
+      // 3. sessionA is orphaned but its cleanup handler still references sessionId
+      // 4. When Cloud A disposes, sessionA's cleanup fires and would delete sessionB
+      // By checking identity (===), we only delete if we're still the current session.
+      // See: cloud/issues/018-app-disconnect-resurrection
+      if (this.activeSessions.get(sessionId) === session) {
+        this.activeSessions.delete(sessionId)
+      } else {
+        this.logger.debug({sessionId}, `🔄 Session ${sessionId} cleanup skipped - a newer session has taken over`)
+      }
+      if (this.activeSessionsByUserId.get(userId) === session) {
+        this.activeSessionsByUserId.delete(userId)
+      }
     })
 
     const cleanupError = session.events.onError((error) => {
