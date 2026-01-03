@@ -1,4 +1,4 @@
-import {createAudioPlayer, AudioPlayer, AudioStatus} from "expo-audio"
+import {createAudioPlayer, AudioPlayer, AudioStatus, setAudioModeAsync} from "expo-audio"
 
 interface AudioPlayRequest {
   requestId: string
@@ -20,8 +20,29 @@ interface PlaybackState {
 class AudioPlaybackService {
   private static instance: AudioPlaybackService | null = null
   private activePlaybacks: Map<string, PlaybackState> = new Map()
+  private audioModeConfigured: boolean = false
 
   private constructor() {}
+
+  /**
+   * Configure audio mode for background playback.
+   * Must be called before playing audio to ensure playback continues when app is backgrounded.
+   */
+  private async ensureAudioModeConfigured(): Promise<void> {
+    if (this.audioModeConfigured) return
+
+    try {
+      await setAudioModeAsync({
+        shouldPlayInBackground: true,
+        playsInSilentMode: true,
+      })
+      this.audioModeConfigured = true
+      console.log("AUDIO: Audio mode configured for background playback")
+    } catch (error) {
+      console.error("AUDIO: Failed to configure audio mode:", error)
+      // Don't block playback if audio mode config fails
+    }
+  }
 
   public static getInstance(): AudioPlaybackService {
     if (!AudioPlaybackService.instance) {
@@ -43,6 +64,9 @@ class AudioPlaybackService {
     console.log(`AUDIO: Play request ${requestId}${appId ? ` from ${appId}` : ""}: ${audioUrl}`)
 
     try {
+      // Ensure audio mode is configured for background playback
+      await this.ensureAudioModeConfigured()
+
       // Stop all other playback if requested
       if (stopOtherAudio && this.activePlaybacks.size > 0) {
         console.log(`AUDIO: Stopping ${this.activePlaybacks.size} active playback(s)`)
