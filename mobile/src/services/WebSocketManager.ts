@@ -5,8 +5,6 @@ import {useConnectionStore} from "@/stores/connection"
 import {getGlasesInfoPartial, useGlassesStore} from "@/stores/glasses"
 import {BackgroundTimer} from "@/utils/timers"
 
-// import mantle from "@/services/MantleManager"
-
 export enum WebSocketStatus {
   DISCONNECTED = "disconnected",
   CONNECTING = "connecting",

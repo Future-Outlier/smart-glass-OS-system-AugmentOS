@@ -10,13 +10,12 @@ import {PairingGuide, PairingOptions} from "@/components/pairing/GlassesPairingG
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
-import {$styles} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {PermissionFeatures, checkConnectivityRequirementsUI, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 
 export default function PairingPrepScreen() {
   const route = useRoute()
-  const {themed, theme} = useAppTheme()
+  const {theme} = useAppTheme()
   const {glassesModelName} = route.params as {glassesModelName: string}
   const {goBack, replace, clearHistoryAndGoHome} = useNavigationHistory()
 

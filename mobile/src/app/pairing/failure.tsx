@@ -59,7 +59,7 @@ export default function PairingFailureScreen() {
         />
 
         <View style={themed($buttonContainer)}>
-          <Button tx="pairing:tryAgain" preset="primary" onPress={handleRetry} style={themed($button)} />
+          <Button tx="common:tryAgain" preset="primary" onPress={handleRetry} style={themed($button)} />
 
           <Button tx="pairing:goHome" preset="alternate" onPress={handleGoHome} style={themed($button)} />
         </View>

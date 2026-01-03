@@ -1,5 +1,6 @@
 import {BottomSheetModalProvider} from "@gorhom/bottom-sheet"
 import * as Sentry from "@sentry/react-native"
+import {Stack} from "expo-router"
 import {PostHogProvider} from "posthog-react-native"
 import {Suspense} from "react"
 import {View} from "react-native"
@@ -11,12 +12,11 @@ import Toast from "react-native-toast-message"
 
 // import {ErrorBoundary} from "@/components/error"
 import {Text} from "@/components/ignite"
-import BackgroundGradient from "@/components/ui/BackgroundGradient"
 import {AppStoreProvider} from "@/contexts/AppStoreContext"
 import {AuthProvider} from "@/contexts/AuthContext"
 import {CoreStatusProvider} from "@/contexts/CoreStatusProvider"
 import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
-import {NavigationHistoryProvider} from "@/contexts/NavigationHistoryContext"
+import {NavigationHistoryProvider, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useThemeProvider} from "@/contexts/ThemeContext"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
@@ -99,13 +99,13 @@ export const AllProviders = withWrappers(
       </PostHogProvider>
     )
   },
-  props => {
-    return (
-      <View style={{flex: 1}}>
-        <BackgroundGradient>{props.children}</BackgroundGradient>
-      </View>
-    )
-  },
+  // props => {
+  //   return (
+  //     <View style={{flex: 1}}>
+  //       <BackgroundGradient>{props.children}</BackgroundGradient>
+  //     </View>
+  //   )
+  // },
   props => {
     return (
       <>
@@ -115,4 +115,24 @@ export const AllProviders = withWrappers(
     )
   },
   KonamiCodeProvider,
+  props => {
+    const {preventBack} = useNavigationHistory()
+
+    return (
+      <>
+        {props.children}
+        {/* <View className="h-24 items-center justify-end bg-red-500">
+          <Text className="text-white text-sm">{preventBack ? "true" : "false"}</Text>
+        </View> */}
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: !preventBack,
+            gestureDirection: "horizontal",
+            animation: "simple_push",
+          }}
+        />
+      </>
+    )
+  },
 )

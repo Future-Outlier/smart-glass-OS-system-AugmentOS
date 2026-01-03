@@ -346,6 +346,11 @@ public class Mach1 extends SGCManager {
     }
 
     @Override
+    public void forgetWifiNetwork(String ssid) {
+        // Mach1 doesn't support WiFi
+    }
+
+    @Override
     public void sendHotspotState(boolean enabled) {
 
     }
