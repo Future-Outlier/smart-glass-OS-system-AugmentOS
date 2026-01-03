@@ -219,7 +219,6 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
         },
       ],
       "expo-audio",
-      "expo-av",
       [
         "expo-video",
         {
