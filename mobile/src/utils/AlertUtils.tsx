@@ -303,7 +303,7 @@ export interface ConnectivityAlertOptions extends AlertOptions {
 /**
  * Shows a standard alert with custom buttons
  */
-const showAlert = (title: string, message: string, buttons: AlertButton[], options?: AlertOptions) => {
+const showAlert = (title: string, message: string, buttons: AlertButton[] = [], options?: AlertOptions) => {
   if (modalRef) {
     // because a previous modal might be still fading out
     setTimeout(() => {

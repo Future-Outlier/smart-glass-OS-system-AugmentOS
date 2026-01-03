@@ -16,7 +16,7 @@ import {ThemedStyle} from "@/theme"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
-  const {goBack, push, replaceAll} = useNavigationHistory()
+  const {goBack, push, replaceAll, setPreventBack} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
   const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS.power_saving_mode.key)
@@ -34,7 +34,7 @@ export default function DeveloperSettingsScreen() {
           marginHorizontal: -theme.spacing.s4,
           paddingHorizontal: theme.spacing.s4,
         }}>
-        <View className="flex gap-4">
+        <View className="flex gap-6">
           <View style={themed($warningContainer)}>
             <View style={themed($warningContent)}>
               <Icon name="alert" size={16} color={theme.colors.text} />
@@ -43,7 +43,7 @@ export default function DeveloperSettingsScreen() {
             <Text tx="warning:developerSettingsWarning" style={themed($warningSubtitle)} />
           </View>
 
-          <Group>
+          <Group title="Settings">
             <ToggleSetting
               label="Developer Mode"
               subtitle="Enable developer mode"
@@ -72,35 +72,64 @@ export default function DeveloperSettingsScreen() {
             />
           </Group>
 
-          <RouteButton
-            label="Mentra Live Onboarding"
-            subtitle="Start the Mentra Live onboarding"
-            onPress={() => replaceAll("/onboarding/live")}
-          />
+          <Group title="Quick Links">
+            <RouteButton label="Sitemap" subtitle="View the app's route map" onPress={() => push("/_sitemap")} />
+            <RouteButton
+              label="Pairing Success"
+              subtitle="Open the pairing success screen"
+              onPress={() => replaceAll("/pairing/success")}
+            />
 
-          <RouteButton
-            label="Mentra OS Onboarding"
-            subtitle="Start the Mentra Live onboarding"
-            onPress={() => replaceAll("/onboarding/os")}
-          />
+            <RouteButton
+              label="OTA Check for Updates"
+              subtitle="Open the OTA check for updates screen"
+              onPress={() => {
+                push("/ota/check-for-updates")
+                // setPreventBack(true)
+                // push("/ota/check-for-updates")
+              }}
+            />
 
-          <RouteButton label="Sitemap" subtitle="View the app's route map" onPress={() => push("/_sitemap")} />
+            <RouteButton
+              label="Mentra Live Onboarding"
+              subtitle="Start the Mentra Live onboarding"
+              onPress={() => replaceAll("/onboarding/live")}
+            />
 
-          <RouteButton label="Test Mini App" subtitle="Test the Mini App" onPress={() => push("/test/mini-app")} />
+            <RouteButton
+              label="Mentra OS Onboarding"
+              subtitle="Start the Mentra Live onboarding"
+              onPress={() => replaceAll("/onboarding/os")}
+            />
+          </Group>
 
-          <RouteButton
-            label="Buffer Recording Debug"
-            subtitle="Control 30-second video buffer on glasses"
-            onPress={() => push("/settings/buffer-debug")}
-          />
+          <Group title="Misc">
+            <RouteButton label="Test Mini App" subtitle="Test the Mini App" onPress={() => push("/test/mini-app")} />
 
-          <RouteButton
-            label="Test Sentry"
-            subtitle="Send a crash to Sentry"
-            onPress={() => {
-              throw new Error("Test Sentry crash")
-            }}
-          />
+            <RouteButton
+              label="Buffer Recording Debug"
+              subtitle="Control 30-second video buffer on glasses"
+              onPress={() => push("/settings/buffer-debug")}
+            />
+          </Group>
+
+          <Group title="Test Errors">
+            <RouteButton
+              label="Throw test error"
+              subtitle="Throw a test error (crashes in prod builds)"
+              onPress={() => {
+                throw new Error("test_throw_error")
+              }}
+            />
+
+            <RouteButton
+              label="Test console error"
+              subtitle="Send a console error"
+              onPress={() => {
+                console.error("test_console_error")
+              }}
+            />
+          </Group>
 
           {/* G1 Specific Settings - Only show when connected to Even Realities G1 */}
           {defaultWearable?.includes(DeviceTypes.G1) && (

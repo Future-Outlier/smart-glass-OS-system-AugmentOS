@@ -185,6 +185,10 @@ class Simulated : SGCManager() {
         Bridge.log("sendWifiCredentials")
     }
 
+    override fun forgetWifiNetwork(ssid: String) {
+        Bridge.log("forgetWifiNetwork: $ssid")
+    }
+
     override fun sendHotspotState(enabled: Boolean) {
         Bridge.log("sendHotspotState")
     }

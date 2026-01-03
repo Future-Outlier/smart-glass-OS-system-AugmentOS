@@ -1,5 +1,4 @@
 import CoreModule from "core"
-import {router} from "expo-router"
 
 import {push} from "@/contexts/NavigationRef"
 import audioPlaybackService from "@/services/AudioPlaybackService"
@@ -378,11 +377,7 @@ class SocketComms {
    * @param udpPort UDP server port (default 8000)
    * @param isRetry Whether this is a retry attempt (skip initial delay)
    */
-  public async registerUdpAudio(
-    udpHost: string,
-    udpPort: number = 8000,
-    isRetry: boolean = false,
-  ): Promise<boolean> {
+  public async registerUdpAudio(udpHost: string, udpPort: number = 8000, isRetry: boolean = false): Promise<boolean> {
     // Prevent overlapping probes
     if (this.udpProbeInProgress) {
       console.log("UDP: Probe already in progress, skipping")
@@ -551,11 +546,11 @@ class SocketComms {
 
   // message handlers, these should only ever be called from handle_message / the server:
   private async handle_connection_ack(msg: any) {
-    console.log("SOCKET: connection ack, connecting to livekit")
-    const isChina = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
-    if (!isChina) {
-      await livekit.connect()
-    }
+    // LiveKit connection disabled - using WebSocket/UDP audio instead
+    // const isChina = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
+    // if (!isChina) {
+    //   await livekit.connect()
+    // }
 
     // Configure audio format (LC3) for bandwidth savings
     // This tells the cloud that we're sending LC3-encoded audio
@@ -568,12 +563,23 @@ class SocketComms {
     const udpHost = msg.udpHost || msg.udp_host
     const udpPort = msg.udpPort || msg.udp_port || 8000
 
+    console.log("SOCKET: connection_ack UDP fields:", {
+      udpHost: msg.udpHost,
+      udp_host: msg.udp_host,
+      udpPort: msg.udpPort,
+      udp_port: msg.udp_port,
+      resolvedHost: udpHost,
+      resolvedPort: udpPort,
+      allKeys: Object.keys(msg),
+    })
+
     if (udpHost) {
+      console.log(`SOCKET: UDP endpoint found, registering with ${udpHost}:${udpPort}`)
       this.registerUdpAudio(udpHost, udpPort).catch(err => {
         console.log("SOCKET: UDP registration failed (will use WebSocket fallback):", err)
       })
     } else {
-      console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio")
+      console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:", JSON.stringify(msg, null, 2))
     }
 
     GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
@@ -639,9 +645,10 @@ class SocketComms {
   }
 
   private handle_microphone_state_change(msg: any) {
-    const bypassVad = msg.bypassVad ?? true
+    // const bypassVad = msg.bypassVad ?? true
+    const bypassVad = true
     const requiredDataStrings = msg.requiredData || []
-    // console.log(`SOCKET: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
+    console.log(`SOCKET: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
     let shouldSendPcmData = false
     let shouldSendTranscript = false
     if (requiredDataStrings.includes("pcm")) {
@@ -796,7 +803,6 @@ class SocketComms {
 
   private handle_show_wifi_setup(msg: any) {
     const reason = msg.reason || "This operation requires your glasses to be connected to WiFi."
-    const currentRoute = router.pathname || "/"
 
     showAlert(
       "WiFi Setup Required",
@@ -806,8 +812,7 @@ class SocketComms {
         {
           text: "Setup WiFi",
           onPress: () => {
-            const returnTo = encodeURIComponent(currentRoute)
-            push(`/pairing/glasseswifisetup?returnTo=${returnTo}`)
+            push("/wifi/scan")
           },
         },
       ],
@@ -873,7 +878,7 @@ class SocketComms {
   private handle_message(msg: any) {
     const type = msg.type
 
-    console.log(`SOCKET: msg: ${type}`)
+    // console.log(`SOCKET: msg: ${type}`)
 
     switch (type) {
       case "connection_ack":

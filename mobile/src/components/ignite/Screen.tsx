@@ -252,11 +252,12 @@ export function Screen(props: ScreenProps) {
   } = props
 
   const $containerInsets = useSafeAreaInsetsStyle(safeAreaEdges)
-
+  const {theme} = useAppTheme()
+  
   return (
     <View
       style={[
-        $styles.screen,
+        {paddingHorizontal: theme.spacing.s6},
         $containerStyle,
         {backgroundColor: backgroundColor || colors.background} /*, $containerInsets*/,
       ]}>

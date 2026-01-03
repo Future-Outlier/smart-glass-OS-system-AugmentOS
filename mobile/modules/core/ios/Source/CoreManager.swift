@@ -136,8 +136,8 @@ struct ViewState {
 
         // Initialize SherpaOnnx Transcriber
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first,
-           let rootViewController = window.rootViewController
+            let window = windowScene.windows.first,
+            let rootViewController = window.rootViewController
         {
             transcriber = SherpaOnnxTranscriber(context: rootViewController)
         } else {
@@ -386,11 +386,12 @@ struct ViewState {
                 PhoneMic.shared.stopMode(micMode)
             }
 
-            if micMode == MicTypes.GLASSES_CUSTOM && sgc?.hasMic == true && sgc?.micEnabled == true {
+            if micMode == MicTypes.GLASSES_CUSTOM && sgc?.hasMic == true && sgc?.micEnabled == true
+            {
                 sgc?.setMicEnabled(false)
             }
         }
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func setOnboardMicEnabled(_ isEnabled: Bool) {
@@ -426,26 +427,26 @@ struct ViewState {
 
     func updateContextualDashboard(_ enabled: Bool) {
         contextualDashboard = enabled
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updatePreferredMic(_ mic: String) {
         preferredMic = mic
         micRanking = MicMap.map[preferredMic] ?? MicMap.map["auto"]!
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateButtonMode(_ mode: String) {
         buttonPressMode = mode
         sgc?.sendButtonModeSetting()
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateButtonPhotoSize(_ size: String) {
         buttonPhotoSize = size
         sgc?.sendButtonPhotoSettings()
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateButtonVideoSettings(width: Int, height: Int, fps: Int) {
@@ -453,31 +454,31 @@ struct ViewState {
         buttonVideoHeight = height
         buttonVideoFps = fps
         sgc?.sendButtonVideoRecordingSettings()
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateButtonCameraLed(_ enabled: Bool) {
         buttonCameraLed = enabled
         sgc?.sendButtonCameraLedSetting()
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateGalleryMode(_ enabled: Bool) {
         galleryMode = enabled
         sgc?.sendGalleryMode()
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateButtonMaxRecordingTime(_ value: Int) {
         buttonMaxRecordingTime = value
         sgc?.sendButtonMaxRecordingTime()
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateGlassesHeadUpAngle(_ value: Int) {
         headUpAngle = value
         sgc?.setHeadUpAngle(value)
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateGlassesBrightness(_ value: Int, autoBrightness: Bool) {
@@ -492,10 +493,10 @@ struct ViewState {
             } else {
                 sgc?.sendTextWall("Set brightness to \(value)%")
             }
-            try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
-            sgc?.clearDisplay() // clear screen
+            try? await Task.sleep(nanoseconds: 800_000_000)  // 0.8 seconds
+            sgc?.clearDisplay()  // clear screen
         }
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateGlassesDepth(_ value: Int) {
@@ -504,7 +505,7 @@ struct ViewState {
             await sgc?.setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
             Bridge.log("MAN: Set dashboard depth to \(value)")
         }
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateGlassesHeight(_ value: Int) {
@@ -513,28 +514,28 @@ struct ViewState {
             await sgc?.setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
             Bridge.log("MAN: Set dashboard height to \(value)")
         }
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updatePowerSavingMode(_ enabled: Bool) {
         powerSavingMode = enabled
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateAlwaysOnStatusBar(_ enabled: Bool) {
         alwaysOnStatusBar = enabled
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateBypassVad(_ enabled: Bool) {
         bypassVad = enabled
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateEnforceLocalTranscription(_ enabled: Bool) {
         enforceLocalTranscription = enabled
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
-        getStatus() // to update the UI
+        getStatus()  // to update the UI
     }
 
     func updateOfflineMode(_ enabled: Bool) {
@@ -570,8 +571,8 @@ struct ViewState {
         // Arrow frames for the animation
         let arrowFrames = ["↑", "↗", "↑", "↖"]
 
-        let delay = 0.25 // Frame delay in seconds
-        let totalCycles = 2 // Number of animation cycles
+        let delay = 0.25  // Frame delay in seconds
+        let totalCycles = 2  // Number of animation cycles
 
         // Variables to track animation state
         var frameIndex = 0
@@ -641,8 +642,8 @@ struct ViewState {
         } else if wearable.contains(DeviceTypes.MACH1) {
             sgc = Mach1()
         } else if wearable.contains(DeviceTypes.Z100) {
-            sgc = Mach1() // Z100 uses same hardware/SDK as Mach1
-            sgc?.type = DeviceTypes.Z100 // Override type to Z100
+            sgc = Mach1()  // Z100 uses same hardware/SDK as Mach1
+            sgc?.type = DeviceTypes.Z100  // Override type to Z100
         } else if wearable.contains(DeviceTypes.FRAME) {
             // sgc = FrameManager()
         }
@@ -797,7 +798,7 @@ struct ViewState {
         if shouldSendBootingMessage {
             Task {
                 sgc.sendTextWall("// MentraOS Connected")
-                try? await Task.sleep(nanoseconds: 3_000_000_000) // 1 second
+                try? await Task.sleep(nanoseconds: 3_000_000_000)  // 1 second
                 sgc.clearDisplay()
             }
             shouldSendBootingMessage = false
@@ -809,7 +810,7 @@ struct ViewState {
         } else if defaultWearable.contains(DeviceTypes.MACH1) {
             handleMach1Ready()
         } else if defaultWearable.contains(DeviceTypes.Z100) {
-            handleMach1Ready() // Z100 uses same initialization as Mach1
+            handleMach1Ready()  // Z100 uses same initialization as Mach1
         }
 
         // send to the server our battery status:
@@ -826,7 +827,7 @@ struct ViewState {
         Task {
             // give the glasses some extra time to finish booting:
             try? await Task.sleep(nanoseconds: 1_000_000_000)
-            await sgc?.setSilentMode(false) // turn off silent mode
+            await sgc?.setSilentMode(false)  // turn off silent mode
             await sgc?.getBatteryStatus()
 
             // send loaded settings to glasses:
@@ -903,7 +904,7 @@ struct ViewState {
 
         if layoutType == "bitmap_animation" {
             if let frames = layout["frames"] as? [String],
-               let interval = layout["interval"] as? Double
+                let interval = layout["interval"] as? Double
             {
                 let animationData: [String: Any] = [
                     "frames": frames,
@@ -931,8 +932,7 @@ struct ViewState {
             return
         }
 
-        Bridge.log(
-            "Updating view state \(stateIndex) with \(layoutType) \(text) \(topText) \(bottomText)")
+        // Bridge.log("MAN: Updating view state \(stateIndex) with \(layoutType) \(text) \(topText) \(bottomText)")
 
         viewStates[stateIndex] = newViewState
 
@@ -974,6 +974,11 @@ struct ViewState {
         sgc?.sendWifiCredentials(ssid, password)
     }
 
+    func forgetWifiNetwork(_ ssid: String) {
+        Bridge.log("MAN: Forgetting wifi network: \(ssid)")
+        sgc?.forgetWifiNetwork(ssid)
+    }
+
     func setHotspotState(_ enabled: Bool) {
         Bridge.log("MAN: 🔥 Setting glasses hotspot state: \(enabled)")
         sgc?.sendHotspotState(enabled)
@@ -982,6 +987,14 @@ struct ViewState {
     func queryGalleryStatus() {
         Bridge.log("MAN: 📸 Querying gallery status from glasses")
         sgc?.queryGalleryStatus()
+    }
+
+    /// Send OTA start command to glasses.
+    /// Called when user approves an update (onboarding or background mode).
+    /// Triggers glasses to begin download and installation.
+    func sendOtaStart() {
+        Bridge.log("MAN: 📱 Sending OTA start command to glasses")
+        (sgc as? MentraLive)?.sendOtaStart()
     }
 
     func startBufferRecording() {
@@ -1001,7 +1014,8 @@ struct ViewState {
     }
 
     func startVideoRecording(_ requestId: String, _ save: Bool, _ silent: Bool) {
-        Bridge.log("MAN: onStartVideoRecording: requestId=\(requestId), save=\(save), silent=\(silent)")
+        Bridge.log(
+            "MAN: onStartVideoRecording: requestId=\(requestId), save=\(save), silent=\(silent)")
         sgc?.startVideoRecording(requestId: requestId, save: save, silent: silent)
     }
 
@@ -1093,7 +1107,7 @@ struct ViewState {
 
         Task {
             disconnect()
-            try? await Task.sleep(nanoseconds: 100 * 1_000_000) // 100ms
+            try? await Task.sleep(nanoseconds: 100 * 1_000_000)  // 100ms
             self.isSearching = true
             self.deviceName = dName
 
@@ -1111,14 +1125,14 @@ struct ViewState {
     }
 
     func disconnect() {
-        sgc?.clearDisplay() // clear the screen
+        sgc?.clearDisplay()  // clear the screen
         sgc?.disconnect()
-        sgc = nil // Clear the SGC reference after disconnect
+        sgc = nil  // Clear the SGC reference after disconnect
         isSearching = false
         shouldSendPcmData = false
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
-        shouldSendBootingMessage = true // Reset for next first connect
+        shouldSendBootingMessage = true  // Reset for next first connect
         getStatus()
     }
 
@@ -1239,8 +1253,8 @@ struct ViewState {
             var apps: [[String: Any]] = []
 
             let authObj: [String: Any] = [
-                "core_token_owner": coreTokenOwner,
-                //      "core_token_status":
+                "core_token_owner": coreTokenOwner
+                    //      "core_token_status":
             ]
 
             let statusObj: [String: Any] = [
@@ -1262,7 +1276,7 @@ struct ViewState {
 
         // update our settings with the new values:
         if let newPreferredMic = settings["preferred_mic"] as? String,
-           newPreferredMic != preferredMic
+            newPreferredMic != preferredMic
         {
             updatePreferredMic(newPreferredMic)
         }
@@ -1276,72 +1290,73 @@ struct ViewState {
         }
 
         if let newDashboardHeight = settings["dashboard_height"] as? Int,
-           newDashboardHeight != dashboardHeight
+            newDashboardHeight != dashboardHeight
         {
             updateGlassesHeight(newDashboardHeight)
         }
 
         if let newDashboardDepth = settings["dashboard_depth"] as? Int,
-           newDashboardDepth != dashboardDepth
+            newDashboardDepth != dashboardDepth
         {
             updateGlassesDepth(newDashboardDepth)
         }
 
         if let newScreenDisabled = settings["screen_disabled"] as? Bool,
-           newScreenDisabled != screenDisabled
+            newScreenDisabled != screenDisabled
         {
             updateScreenDisabled(newScreenDisabled)
         }
 
         if let newAutoBrightness = settings["auto_brightness"] as? Bool,
-           newAutoBrightness != autoBrightness
+            newAutoBrightness != autoBrightness
         {
             updateGlassesBrightness(brightness, autoBrightness: newAutoBrightness)
         }
 
         if let powerSavingMode = settings["power_saving_mode"] as? Bool,
-           powerSavingMode != self.powerSavingMode
+            powerSavingMode != self.powerSavingMode
         {
             updatePowerSavingMode(powerSavingMode)
         }
 
         if let newAlwaysOnStatusBar = settings["always_on_status_bar"] as? Bool,
-           newAlwaysOnStatusBar != alwaysOnStatusBar
+            newAlwaysOnStatusBar != alwaysOnStatusBar
         {
             updateAlwaysOnStatusBar(newAlwaysOnStatusBar)
         }
 
         if let newBypassVad = settings["bypass_vad_for_debugging"] as? Bool,
-           newBypassVad != bypassVad
+            newBypassVad != bypassVad
         {
             updateBypassVad(newBypassVad)
         }
 
         if let newEnforceLocalTranscription = settings["enforce_local_transcription"] as? Bool,
-           newEnforceLocalTranscription != enforceLocalTranscription
+            newEnforceLocalTranscription != enforceLocalTranscription
         {
             updateEnforceLocalTranscription(newEnforceLocalTranscription)
         }
 
         if let newOfflineMode = settings["offline_captions_running"] as? Bool,
-           newOfflineMode != offlineMode
+            newOfflineMode != offlineMode
         {
             updateOfflineMode(newOfflineMode)
         }
 
         if let newMetricSystem = settings["metric_system"] as? Bool,
-           newMetricSystem != metricSystem
+            newMetricSystem != metricSystem
         {
             updateMetricSystem(newMetricSystem)
         }
 
         if let newContextualDashboard = settings["contextual_dashboard"] as? Bool,
-           newContextualDashboard != contextualDashboard
+            newContextualDashboard != contextualDashboard
         {
             updateContextualDashboard(newContextualDashboard)
         }
 
-        if let newButtonMode = settings["button_mode"] as? String, newButtonMode != buttonPressMode {
+        if let newButtonMode = settings["button_mode"] as? String, newButtonMode != buttonPressMode
+        {
             updateButtonMode(newButtonMode)
         }
 
@@ -1391,19 +1406,19 @@ struct ViewState {
         }
 
         if let newPhotoSize = settings["button_photo_size"] as? String,
-           newPhotoSize != buttonPhotoSize
+            newPhotoSize != buttonPhotoSize
         {
             updateButtonPhotoSize(newPhotoSize)
         }
 
         if let newButtonMaxRecordingTime = settings["button_max_recording_time"] as? Int,
-           newButtonMaxRecordingTime != buttonMaxRecordingTime
+            newButtonMaxRecordingTime != buttonMaxRecordingTime
         {
             updateButtonMaxRecordingTime(newButtonMaxRecordingTime)
         }
 
         if let newButtonCameraLed = settings["button_camera_led"] as? Bool,
-           newButtonCameraLed != buttonCameraLed
+            newButtonCameraLed != buttonCameraLed
         {
             updateButtonCameraLed(newButtonCameraLed)
         }
@@ -1414,20 +1429,20 @@ struct ViewState {
 
         // get default wearable from core_info:
         if let newDefaultWearable = settings["default_wearable"] as? String,
-           newDefaultWearable != defaultWearable
+            newDefaultWearable != defaultWearable
         {
             defaultWearable = newDefaultWearable
             Bridge.saveSetting("default_wearable", newDefaultWearable)
         }
 
         if let newDeviceName = settings["device_name"] as? String,
-           newDeviceName != deviceName
+            newDeviceName != deviceName
         {
             deviceName = newDeviceName
         }
 
         if let newDeviceAddress = settings["device_address"] as? String,
-           newDeviceAddress != deviceAddress
+            newDeviceAddress != deviceAddress
         {
             deviceAddress = newDeviceAddress
         }

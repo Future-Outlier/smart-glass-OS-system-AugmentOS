@@ -1714,6 +1714,11 @@ public class G1 extends SGCManager {
     }
 
     @Override
+    public void forgetWifiNetwork(String ssid) {
+        // G1 doesn't support WiFi
+    }
+
+    @Override
     public void sendHotspotState(boolean enabled) {
 
     }

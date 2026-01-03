@@ -1025,7 +1025,7 @@ class CoreManager {
         val currentState = viewStates[stateIndex]
 
         if (!statesEqual(currentState, newViewState)) {
-            Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
+            // Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
             viewStates[stateIndex] = newViewState
             if (stateIndex == 0 && !isHeadUp) {
                 sendCurrentState()
@@ -1064,6 +1064,11 @@ class CoreManager {
         sgc?.sendWifiCredentials(ssid, password)
     }
 
+    fun forgetWifiNetwork(ssid: String) {
+        Bridge.log("MAN: Forgetting wifi network: $ssid")
+        sgc?.forgetWifiNetwork(ssid)
+    }
+
     fun setHotspotState(enabled: Boolean) {
         Bridge.log("MAN: Setting glasses hotspot state: $enabled")
         sgc?.sendHotspotState(enabled)
@@ -1072,6 +1077,16 @@ class CoreManager {
     fun queryGalleryStatus() {
         Bridge.log("MAN: Querying gallery status from glasses")
         sgc?.queryGalleryStatus()
+    }
+
+    /**
+     * Send OTA start command to glasses.
+     * Called when user approves an update (onboarding or background mode).
+     * Triggers glasses to begin download and installation.
+     */
+    fun sendOtaStart() {
+        Bridge.log("MAN: 📱 Sending OTA start command to glasses")
+        (sgc as? MentraLive)?.sendOtaStart()
     }
 
     fun startBufferRecording() {
