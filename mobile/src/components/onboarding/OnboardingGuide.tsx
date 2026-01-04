@@ -1,7 +1,7 @@
 import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
 import {useState, useCallback, useEffect, useMemo, useRef} from "react"
-import {View, ViewStyle} from "react-native"
+import {View, ViewStyle, ActivityIndicator} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Button, Header, Icon} from "@/components/ignite"
@@ -16,6 +16,8 @@ interface BaseStep {
   subtitle2?: string
   info?: string
   bullets?: string[]
+  /** Optional poster/thumbnail image shown while video loads */
+  poster?: ImageSource
 }
 
 interface VideoStep extends BaseStep {
@@ -79,6 +81,8 @@ export function OnboardingGuide({
   const [transitionCount, setTransitionCount] = useState(0)
   const [uiIndex, setUiIndex] = useState(1)
   const [activePlayer, setActivePlayer] = useState<1 | 2>(1)
+  const [isVideoLoading, setIsVideoLoading] = useState(true)
+  const [showPoster, setShowPoster] = useState(true)
   focusEffectPreventBack()
 
   // Initialize players with first video sources found
@@ -155,6 +159,8 @@ export function OnboardingGuide({
       setShowReplayButton(false)
       setCurrentIndex(nextIndex)
       setPlayCount(0)
+      setIsVideoLoading(true)
+      setShowPoster(true)
 
       if (nextStep.transition) {
         setTransitionCount(transitionCount + 1)
@@ -291,6 +297,14 @@ export function OnboardingGuide({
 
     const subscription = currentPlayer.addListener("statusChange", (status: any) => {
       console.log("statusChange", status)
+
+      // Track loading state
+      if (status.status === "loading") {
+        setIsVideoLoading(true)
+      } else if (status.status === "readyToPlay") {
+        setIsVideoLoading(false)
+      }
+
       if (currentIndex === 0 && !autoStart) {
         return
       }
@@ -417,6 +431,11 @@ export function OnboardingGuide({
                         height: "100%",
                       }}
                       nativeControls={false}
+                      onFirstFrameRender={() => {
+                        if (activePlayer === 1) {
+                          setShowPoster(false)
+                        }
+                      }}
                     />
                   </View>
                   <View
@@ -437,8 +456,53 @@ export function OnboardingGuide({
                         height: "100%",
                       }}
                       nativeControls={false}
+                      onFirstFrameRender={() => {
+                        if (activePlayer === 2) {
+                          setShowPoster(false)
+                        }
+                      }}
                     />
                   </View>
+
+                  {/* Poster image overlay - shown until first frame renders */}
+                  {showPoster && step.poster && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 10,
+                      }}>
+                      <Image
+                        source={step.poster}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                        }}
+                        contentFit="contain"
+                      />
+                    </View>
+                  )}
+
+                  {/* Loading indicator - shown while video is loading and no poster */}
+                  {isVideoLoading && !step.poster && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 10,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        backgroundColor: theme.colors.background,
+                      }}>
+                      <ActivityIndicator size="large" color={theme.colors.primary} />
+                    </View>
+                  )}
                 </>
               )}
             </View>
