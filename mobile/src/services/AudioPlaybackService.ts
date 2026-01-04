@@ -1,4 +1,5 @@
 import {createAudioPlayer, AudioPlayer, AudioStatus, setAudioModeAsync} from "expo-audio"
+import {BackgroundTimer} from "@/utils/timers"
 
 interface AudioPlayRequest {
   requestId: string
@@ -71,6 +72,10 @@ class AudioPlaybackService {
       if (stopOtherAudio && this.activePlaybacks.size > 0) {
         console.log(`AUDIO: Stopping ${this.activePlaybacks.size} active playback(s)`)
         await this.stopAllPlaybacks()
+      } else {
+        // Even if no active playbacks, add a small delay to ensure any recently
+        // completed AudioTrack resources are fully released by Android
+        await this.delay(50)
       }
 
       // Create the player with the audio URL
@@ -171,6 +176,16 @@ class AudioPlaybackService {
   private async stopAllPlaybacks(): Promise<void> {
     const requestIds = Array.from(this.activePlaybacks.keys())
     await Promise.all(requestIds.map(reqId => this.stopPlayback(reqId)))
+    // Add delay to allow Android AudioTrack resources to be fully released
+    // This prevents "AudioFlinger could not create track, status: -12" errors
+    await this.delay(100)
+  }
+
+  /**
+   * Helper to add a delay using BackgroundTimer for Android compatibility
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => BackgroundTimer.setTimeout(resolve, ms))
   }
 
   /**
@@ -205,6 +220,8 @@ class AudioPlaybackService {
     if (!playback) return
 
     try {
+      // Pause before removing to ensure AudioTrack stops properly
+      playback.player.pause()
       playback.player.remove()
     } catch (error) {
       console.error(`AUDIO: Error releasing player ${requestId}:`, error)
