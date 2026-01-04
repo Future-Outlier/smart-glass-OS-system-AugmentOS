@@ -488,7 +488,8 @@ export class AppServer {
       // Permanent disconnects happen when:
       // 1. User session ends (sessionEnded === true)
       // 2. Reconnection attempts exhausted (permanent === true)
-      // Temporary disconnects (WebSocket drops, network blips) should NOT remove session from maps
+      // 3. Clean WebSocket closure (1000/1001) - no reconnection will be attempted
+      // Temporary disconnects (abnormal closures like 1006 that trigger reconnection) should NOT remove session from maps
       // See: cloud/issues/019-sdk-photo-request-architecture
       let isPermanent = false;
       let reason = "unknown";
@@ -526,6 +527,21 @@ export class AppServer {
           // Call onStop with a reconnection failure reason
           this.onStop(sessionId, userId, `Connection permanently lost: ${info.reason}`).catch((error) => {
             this.logger.error(error, `❌ Error in onStop handler for permanent disconnection:`);
+          });
+        }
+        // Check if this is a clean WebSocket closure (1000/1001) that won't trigger reconnection
+        // These are intentional disconnects (app shutdown, manual stop, etc.)
+        // AppSession skips reconnection for these codes, so we must treat them as permanent
+        // to avoid zombie sessions in activeSessions map
+        else if (info.wasClean === true || info.code === 1000 || info.code === 1001) {
+          this.logger.info(
+            `🛑 Clean WebSocket closure for session ${sessionId} (code: ${info.code}), treating as permanent`,
+          );
+          isPermanent = true;
+
+          // Call onStop for clean disconnects too
+          this.onStop(sessionId, userId, `Clean disconnect: ${reason}`).catch((error) => {
+            this.logger.error(error, `❌ Error in onStop handler for clean disconnect:`);
           });
         }
       }
