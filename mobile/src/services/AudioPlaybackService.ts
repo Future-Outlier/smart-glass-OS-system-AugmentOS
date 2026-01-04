@@ -1,4 +1,5 @@
-import {createAudioPlayer, AudioPlayer, AudioStatus} from "expo-audio"
+import {createAudioPlayer, AudioPlayer, AudioStatus, setAudioModeAsync} from "expo-audio"
+import {BackgroundTimer} from "@/utils/timers"
 
 interface AudioPlayRequest {
   requestId: string
@@ -20,8 +21,29 @@ interface PlaybackState {
 class AudioPlaybackService {
   private static instance: AudioPlaybackService | null = null
   private activePlaybacks: Map<string, PlaybackState> = new Map()
+  private audioModeConfigured: boolean = false
 
   private constructor() {}
+
+  /**
+   * Configure audio mode for background playback.
+   * Must be called before playing audio to ensure playback continues when app is backgrounded.
+   */
+  private async ensureAudioModeConfigured(): Promise<void> {
+    if (this.audioModeConfigured) return
+
+    try {
+      await setAudioModeAsync({
+        shouldPlayInBackground: true,
+        playsInSilentMode: true,
+      })
+      this.audioModeConfigured = true
+      console.log("AUDIO: Audio mode configured for background playback")
+    } catch (error) {
+      console.error("AUDIO: Failed to configure audio mode:", error)
+      // Don't block playback if audio mode config fails
+    }
+  }
 
   public static getInstance(): AudioPlaybackService {
     if (!AudioPlaybackService.instance) {
@@ -43,10 +65,17 @@ class AudioPlaybackService {
     console.log(`AUDIO: Play request ${requestId}${appId ? ` from ${appId}` : ""}: ${audioUrl}`)
 
     try {
+      // Ensure audio mode is configured for background playback
+      await this.ensureAudioModeConfigured()
+
       // Stop all other playback if requested
       if (stopOtherAudio && this.activePlaybacks.size > 0) {
         console.log(`AUDIO: Stopping ${this.activePlaybacks.size} active playback(s)`)
         await this.stopAllPlaybacks()
+      } else {
+        // Even if no active playbacks, add a small delay to ensure any recently
+        // completed AudioTrack resources are fully released by Android
+        await this.delay(50)
       }
 
       // Create the player with the audio URL
@@ -147,6 +176,16 @@ class AudioPlaybackService {
   private async stopAllPlaybacks(): Promise<void> {
     const requestIds = Array.from(this.activePlaybacks.keys())
     await Promise.all(requestIds.map(reqId => this.stopPlayback(reqId)))
+    // Add delay to allow Android AudioTrack resources to be fully released
+    // This prevents "AudioFlinger could not create track, status: -12" errors
+    await this.delay(100)
+  }
+
+  /**
+   * Helper to add a delay using BackgroundTimer for Android compatibility
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => BackgroundTimer.setTimeout(resolve, ms))
   }
 
   /**
@@ -181,6 +220,8 @@ class AudioPlaybackService {
     if (!playback) return
 
     try {
+      // Pause before removing to ensure AudioTrack stops properly
+      playback.player.pause()
       playback.player.remove()
     } catch (error) {
       console.error(`AUDIO: Error releasing player ${requestId}:`, error)
