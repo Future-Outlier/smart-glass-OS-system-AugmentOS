@@ -219,7 +219,10 @@ public class CameraNeo extends LifecycleService {
     
     // Feature flag: Toggle between immediate capture on convergence vs waiting for lock confirmation
     // true = capture immediately on AE_CONVERGED (~650ms), false = wait for AE_LOCKED confirmation (~1085ms)
-    private static final boolean USE_IMMEDIATE_CAPTURE_ON_CONVERGENCE = false;
+    private static final boolean USE_IMMEDIATE_CAPTURE_ON_CONVERGENCE = true;
+
+    // Delay after AE convergence before capturing photo (allows exposure to stabilize)
+    private static final int EXPOSURE_STABILIZATION_DELAY_MS = 475;
 
     // Simple AE callback - autofocus handled automatically
     private final SimplifiedAeCallback aeCallback = new SimplifiedAeCallback();
@@ -2672,12 +2675,17 @@ public class CameraNeo extends LifecycleService {
                 long elapsedMs = (System.nanoTime() - aeStartTimeNs) / 1_000_000;
                 
                 if (USE_IMMEDIATE_CAPTURE_ON_CONVERGENCE) {
-                    // OPTIMIZED PATH: Capture immediately on convergence (~650ms)
-                    Log.i(TAG, "🔍 ✅ AE CONVERGED in " + elapsedMs + "ms! State: " + getAeStateName(aeState) + ", capturing immediately [FAST MODE]");
+                    // OPTIMIZED PATH: Capture after AE convergence + exposure stabilization delay
+                    Log.i(TAG, "🔍 ✅ AE CONVERGED in " + elapsedMs + "ms! State: " + getAeStateName(aeState) + ", waiting " + EXPOSURE_STABILIZATION_DELAY_MS + "ms for exposure stabilization [FAST MODE]");
                     mWaitingForAeConvergence = false;
                     mAeLockRequested = false;
-                    shotState = ShotState.SHOOTING;
-                    capturePhoto();
+                    // NOTE: Don't set shotState = SHOOTING yet - that would cause ImageReader to save frames during the delay
+                    // Add delay to allow exposure to stabilize before capture
+                    backgroundHandler.postDelayed(() -> {
+                        Log.i(TAG, "🔍 Exposure stabilization complete, capturing photo");
+                        shotState = ShotState.SHOOTING;
+                        capturePhoto();
+                    }, EXPOSURE_STABILIZATION_DELAY_MS);
                 } else {
                     // LEGACY PATH: Request lock and wait for confirmation (~1085ms)
                     Log.i(TAG, "🔍 ✅ AE CONVERGED in " + elapsedMs + "ms! State: " + getAeStateName(aeState) + ", requesting AE lock [LEGACY MODE]");
