@@ -76,10 +76,10 @@ export const ConnectDeviceButton = () => {
     )
   }
 
-  if (isSearching) {
+  if (isSearching || true) {
     return (
       <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
-        <Button compactIcon flexContainer={false} preset="alternate" onPress={handleConnectOrDisconnect}>
+        <Button compactIcon preset="alternate" onPress={handleConnectOrDisconnect}>
           <Icon name="x" size={20} color={theme.colors.foreground} />
         </Button>
         <Button

@@ -1,17 +1,15 @@
 import CoreModule from "core"
 import {useFocusEffect} from "expo-router"
 import {useCallback} from "react"
-import {ScrollView} from "react-native"
+import {ScrollView, View} from "react-native"
 
 import {Header, Screen} from "@/components/ignite"
 import SliderSetting from "@/components/settings/SliderSetting"
-import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
 export default function ScreenSettingsScreen() {
-  const {theme} = useAppTheme()
   const {goBack} = useNavigationHistory()
   const [dashboardDepth, setDashboardDepth] = useSetting(SETTINGS.dashboard_depth.key)
   const [dashboardHeight, setDashboardHeight] = useSetting(SETTINGS.dashboard_height.key)
@@ -27,30 +25,30 @@ export default function ScreenSettingsScreen() {
 
   return (
     <Screen preset="fixed">
-      <Header titleTx="screenSettings:title" leftIcon="chevron-left" onLeftPress={goBack} />
+      <Header titleTx="positionSettings:title" leftIcon="chevron-left" onLeftPress={goBack} />
 
       <ScrollView>
-        <SliderSetting
-          label="Display Depth"
-          subtitle="Adjust how far the content appears from you."
-          value={dashboardDepth ?? 5}
-          min={1}
-          max={5}
-          onValueChange={_value => {}}
-          onValueSet={setDashboardDepth}
-        />
+        <View className="gap-6 pt-6">
+          <SliderSetting
+            label="Display Depth"
+            subtitle="Adjust how far the content appears from you."
+            value={dashboardDepth ?? 5}
+            min={1}
+            max={5}
+            onValueChange={(_value) => {}}
+            onValueSet={setDashboardDepth}
+          />
 
-        <Spacer height={theme.spacing.s4} />
-
-        <SliderSetting
-          label="Display Height"
-          subtitle="Adjust the vertical position of the content."
-          value={dashboardHeight ?? 4}
-          min={1}
-          max={8}
-          onValueChange={_value => {}}
-          onValueSet={setDashboardHeight}
-        />
+          <SliderSetting
+            label="Display Height"
+            subtitle="Adjust the vertical position of the content."
+            value={dashboardHeight ?? 4}
+            min={1}
+            max={8}
+            onValueChange={(_value) => {}}
+            onValueSet={setDashboardHeight}
+          />
+        </View>
       </ScrollView>
     </Screen>
   )

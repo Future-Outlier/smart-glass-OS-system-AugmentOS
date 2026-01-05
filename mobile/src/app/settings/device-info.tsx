@@ -30,8 +30,8 @@ export default function DeviceInfoScreen() {
   return (
     <Screen preset="fixed">
       <Header titleTx="deviceInfo:title" leftIcon="chevron-left" onLeftPress={goBack} />
-      <ScrollView style={{flex: 1}}>
-        <View className="flex flex-col gap-6 mt-6">
+      <ScrollView>
+        <View className="flex flex-col gap-6 pt-6">
           {/* Device Identity */}
           <Group title={translate("deviceInfo:deviceIdentity")}>
             <RouteButton label={translate("deviceInfo:model")} text={modelName || defaultWearable || "Unknown"} />

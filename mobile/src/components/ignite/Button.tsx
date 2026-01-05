@@ -243,11 +243,12 @@ const $compactViewStyle: StyleProp<ViewStyle> = {
   minHeight: 0,
   maxHeight: 36,
   paddingVertical: spacing.s2,
-  paddingHorizontal: spacing.s2,
+  paddingHorizontal: spacing.s4,
 } as ViewStyle
 
 const $compactIconStyle: StyleProp<ViewStyle> = {
   maxWidth: 36,
+  paddingHorizontal: spacing.s2,
 } as ViewStyle
 
 const $baseTextStyle: ThemedStyle<TextStyle> = ({colors}) => ({

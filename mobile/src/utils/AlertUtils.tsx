@@ -232,7 +232,7 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
           zIndex: 10,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: theme.colors.background + "B3",
+          backgroundColor: theme.colors.secondary_foreground + "C3",
           paddingHorizontal: 24,
           opacity: fadeAnim,
         }}>
