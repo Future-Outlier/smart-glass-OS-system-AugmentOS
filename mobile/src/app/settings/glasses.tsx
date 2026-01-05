@@ -12,7 +12,6 @@ import {translate} from "@/i18n/translate"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {getGlassesImage} from "@/utils/getGlassesImage"
-import {get} from "react-native/Libraries/TurboModule/TurboModuleRegistry"
 
 export default function Glasses() {
   const {theme} = useAppTheme()
@@ -38,16 +37,11 @@ export default function Glasses() {
         subtitle={pageSubtitle}
         leftIcon="chevron-left"
         onLeftPress={() => goBack()}
-        // RightActionComponent={<Image source={glassesComponent} style={{width: 24, height: 24}} />}
         RightActionComponent={glassesComponent}
       />
       <ScrollView
         style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}
         contentInsetAdjustmentBehavior="automatic">
-        {/* <CloudConnection /> */}
-        {/* {glassesConnected && features?.hasDisplay && <ConnectedSimulatedGlassesInfo />} */}
-        {/* {glassesConnected && features?.hasDisplay && <ConnectedGlasses showTitle={false} />} */}
-        {/* <Spacer height={theme.spacing.s6} /> */}
         {!glassesConnected && <Spacer height={theme.spacing.s6} />}
         {!glassesConnected && <ConnectDeviceButton />}
         {/* Show helper text if glasses are paired but not connected */}

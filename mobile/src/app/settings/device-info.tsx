@@ -8,10 +8,8 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {$styles} from "@/theme"
 
 export default function DeviceInfoScreen() {
-  const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
 
   // Get all available device info from the glasses store
