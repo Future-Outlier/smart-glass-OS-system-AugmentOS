@@ -1197,43 +1197,26 @@ class MentraLive: NSObject, SGCManager {
     @objc func sendEnableCustomAudioTxMessage(_ enabled: Bool) {
         Bridge.log("LIVE: Setting microphone state to: \(enabled)")
 
-        // cs_batv is a K900 protocol command handled directly by BES2700
-        // It doesn't go through MTK Android, so it doesn't use ACK system
-        guard let peripheral = connectedPeripheral,
-              let txChar = txCharacteristic
-        else {
-            Bridge.log("LIVE: Cannot send enable_custom_audio_tx request - not connected")
-            return
-        }
-
-        let enableObj: [String: Any] = [
-            "enable": enabled,
-        ]
-
         do {
-            let enableData = try JSONSerialization.data(withJSONObject: enableObj)
+            let enableData = try JSONSerialization.data(withJSONObject: ["enable": enabled])
             let enableString = String(data: enableData, encoding: .utf8) ?? ""
 
-            let json: [String: Any] = [
+            let command: [String: Any] = [
                 "C": "enable_custom_audio_tx",
                 "B": enableString,
             ]
 
-            let jsonData = try JSONSerialization.data(withJSONObject: json)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.log("LIVE: Sending enable_custom_audio_tx request: \(jsonString)")
-                if let packedData = packDataToK900(
-                    jsonData, cmdType: K900ProtocolUtils.CMD_TYPE_STRING
-                ) {
-                    // Send directly without ACK tracking (like Android's queueData)
-                    peripheral.writeValue(packedData, for: txChar, type: .withResponse)
-                    Bridge.log(
-                        "LIVE: Sent enable_custom_audio_tx without ACK tracking (BES-handled command)"
-                    )
-                }
+            // Send this 3 times to ensure this gets through, since we don't get ACK from BES.
+            // Kind of hacky but works for now.
+            sendRawK900Command(command)
+            sendRawK900Command(command)
+            if sendRawK900Command(command) {
+                Bridge.log("LIVE: Sent enable_custom_audio_tx via queue (BES-handled command)")
+            } else {
+                Bridge.log("LIVE: Failed to send enable_custom_audio_tx")
             }
         } catch {
-            Bridge.log("Error creating K900 enable_custom_audio_tx request: \(error)")
+            Bridge.log("Error creating enable_custom_audio_tx request: \(error)")
         }
     }
 
@@ -2727,34 +2710,16 @@ class MentraLive: NSObject, SGCManager {
     private func requestBatteryStatus() {
         // cs_batv is a K900 protocol command handled directly by BES2700
         // It doesn't go through MTK Android, so it doesn't use ACK system
-        guard let peripheral = connectedPeripheral,
-              let txChar = txCharacteristic
-        else {
-            Bridge.log("LIVE: Cannot send battery request - not connected")
-            return
-        }
-
-        let json: [String: Any] = [
+        let command: [String: Any] = [
             "C": "cs_batv",
             "V": 1,
             "B": "",
         ]
 
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: json)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.log("LIVE: Sending battery request: \(jsonString)")
-                if let packedData = packDataToK900(
-                    jsonData, cmdType: K900ProtocolUtils.CMD_TYPE_STRING
-                ) {
-                    // Send directly without ACK tracking (like Android's queueData)
-                    // BES will respond with sr_batv, not msg_ack
-                    peripheral.writeValue(packedData, for: txChar, type: .withResponse)
-                    Bridge.log("LIVE: Sent cs_batv without ACK tracking (BES-handled command)")
-                }
-            }
-        } catch {
-            Bridge.log("Error creating K900 battery request: \(error)")
+        if sendRawK900Command(command) {
+            Bridge.log("LIVE: Sent cs_batv via queue (BES-handled command)")
+        } else {
+            Bridge.log("LIVE: Failed to send battery request")
         }
     }
 
@@ -3125,34 +3090,15 @@ class MentraLive: NSObject, SGCManager {
     private func requestReadyK900() {
         // cs_hrt is a K900 protocol command handled directly by BES2700
         // It doesn't go through MTK Android, so it doesn't use ACK system
-        guard let peripheral = connectedPeripheral,
-              let txChar = txCharacteristic
-        else {
-            Bridge.log("LIVE: Cannot send readiness check - not connected")
-            return
-        }
-
-        let cmdObject: [String: Any] = [
+        let command: [String: Any] = [
             "C": "cs_hrt", // Heartbeat command for BES2700
             "B": "", // Empty body
         ]
 
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: cmdObject)
-            if let jsonStr = String(data: jsonData, encoding: .utf8) {
-                Bridge.log("LIVE: Sending hrt command: \(jsonStr)")
-
-                if let packedData = packDataToK900(
-                    jsonData, cmdType: K900ProtocolUtils.CMD_TYPE_STRING
-                ) {
-                    // Send directly without ACK tracking (like Android's queueData)
-                    // BES will respond with sr_hrt, not msg_ack
-                    peripheral.writeValue(packedData, for: txChar, type: .withResponse)
-                    Bridge.log("LIVE: Sent cs_hrt without ACK tracking (BES-handled command)")
-                }
-            }
-        } catch {
-            Bridge.log("Error creating readiness check command: \(error)")
+        if sendRawK900Command(command) {
+            Bridge.log("LIVE: Sent cs_hrt via queue (BES-handled command)")
+        } else {
+            Bridge.log("LIVE: Failed to send readiness check")
         }
     }
 

@@ -4139,6 +4139,11 @@ public class MentraLive extends SGCManager {
             String jsonStr = cmd.toString();
             Bridge.log("LIVE: Sending hrt command: " + jsonStr);
             byte[] packedData = K900ProtocolUtils.packDataToK900(jsonStr.getBytes(StandardCharsets.UTF_8), K900ProtocolUtils.CMD_TYPE_STRING);
+            
+            // Send this 3 times to ensure this gets through, since we don't get ACK from BES.
+            // Kind of hacky but works for now.
+            queueData(packedData);
+            queueData(packedData);
             queueData(packedData);
         } catch (JSONException e) {
             Log.e(TAG, "Error creating enable_custom_audio_tx command", e);
