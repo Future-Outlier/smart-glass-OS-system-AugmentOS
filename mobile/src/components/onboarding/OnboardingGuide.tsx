@@ -1,12 +1,13 @@
 import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
-import {useState, useCallback, useEffect, useMemo, useRef} from "react"
+import {useState, useCallback, useEffect, useMemo} from "react"
 import {View, ViewStyle, ActivityIndicator} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Button, Header, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 interface BaseStep {
   name: string
@@ -72,6 +73,7 @@ export function OnboardingGuide({
 }: OnboardingGuideProps) {
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const {theme} = useAppTheme()
+  const [devMode] = useSetting(SETTINGS.dev_mode.key)
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showNextButton, setShowNextButton] = useState(false)
@@ -326,12 +328,12 @@ export function OnboardingGuide({
 
   useEffect(() => {
     const sub1 = player1.addListener("sourceLoad", (status: any) => {
-      console.log("ONBOARD: player1 sourceLoad", status)
+      // console.log("ONBOARD: player1 sourceLoad", status)
       setPlayer1Loading(false)
     })
 
     const sub2 = player2.addListener("sourceLoad", (status: any) => {
-      console.log("ONBOARD: player2 sourceLoad", status)
+      // console.log("ONBOARD: player2 sourceLoad", status)
       setPlayer2Loading(false)
     })
 
@@ -561,56 +563,11 @@ export function OnboardingGuide({
       )
     }
 
-    return (
-      <>
-        {/* <View className="relative" style={{width: "100%"}}> */}
-        {/* {renderComposedVideo()} */}
-        {/* </View> */}
+    if (devMode) {
+      return renderDebugVideos()
+    }
 
-        {__DEV__ ? renderDebugVideos() : renderComposedVideo()}
-        {/* {renderComposedVideo()} */}
-
-        {/* Poster image overlay - shown until first frame renders */}
-        {/* {showPoster && step.poster && (
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 10,
-            }}>
-            <Image
-              source={step.poster}
-              style={{
-                width: "100%",
-                height: "100%",
-              }}
-              contentFit="contain"
-            />
-          </View>
-        )} */}
-
-        {/* Loading indicator - shown while video is loading and no poster */}
-        {/* {isVideoLoading && !step.poster && (
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 10,
-              justifyContent: "center",
-              alignItems: "center",
-              backgroundColor: theme.colors.background,
-            }}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          </View>
-        )} */}
-      </>
-    )
+    return renderComposedVideo()
   }
 
   return (
