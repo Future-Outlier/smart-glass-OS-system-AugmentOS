@@ -62,7 +62,7 @@ class CoreManager {
     // MARK: - Properties
     var coreToken = ""
     var coreTokenOwner = ""
-    var userEmail = ""
+    var storedUserEmail = ""
     var sgc: SGCManager? = null
 
     // state
@@ -1067,7 +1067,7 @@ class CoreManager {
 
     fun setUserEmail(email: String) {
         Bridge.log("MAN: Setting user email for crash reporting")
-        userEmail = email
+        storedUserEmail = email
         sgc?.sendUserEmailToGlasses(email)
     }
 
