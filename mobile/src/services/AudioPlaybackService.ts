@@ -9,7 +9,6 @@ interface AudioPlayRequest {
 }
 
 interface PlaybackState {
-  player: AudioPlayer
   requestId: string
   appId?: string
   startTime: number
@@ -19,7 +18,10 @@ interface PlaybackState {
 
 class AudioPlaybackService {
   private static instance: AudioPlaybackService | null = null
-  private activePlaybacks: Map<string, PlaybackState> = new Map()
+  // Reuse a single AudioPlayer to avoid AudioTrack exhaustion
+  // Creating new ExoPlayer instances per request leads to -12 ENOMEM errors
+  private player: AudioPlayer | null = null
+  private currentPlayback: PlaybackState | null = null
   private audioModeConfigured: boolean = false
 
   private constructor() {}
@@ -52,6 +54,22 @@ class AudioPlaybackService {
   }
 
   /**
+   * Ensure we have a reusable player instance
+   */
+  private ensurePlayer(): AudioPlayer {
+    if (!this.player) {
+      console.log("AUDIO: Creating reusable AudioPlayer instance")
+      this.player = createAudioPlayer(null)
+
+      // Add status listener once - it will handle all playback completions
+      this.player.addListener("playbackStatusUpdate", (status: AudioStatus) => {
+        this.onPlaybackStatusUpdate(status)
+      })
+    }
+    return this.player
+  }
+
+  /**
    * Play audio from a URL.
    * Returns a promise that resolves with playback result when audio finishes or errors.
    */
@@ -67,20 +85,20 @@ class AudioPlaybackService {
       // Ensure audio mode is configured for background playback
       await this.ensureAudioModeConfigured()
 
-      // Stop all other playback if requested
-      if (stopOtherAudio && this.activePlaybacks.size > 0) {
-        console.log(`AUDIO: Stopping ${this.activePlaybacks.size} active playback(s)`)
-        await this.stopAllPlaybacks()
+      // Stop current playback if any (notify previous callback)
+      if (stopOtherAudio && this.currentPlayback && !this.currentPlayback.completed) {
+        console.log(`AUDIO: Interrupting current playback for new request`)
+        this.interruptCurrentPlayback()
       }
 
-      // Create the player with the audio URL
-      const player = createAudioPlayer({uri: audioUrl})
+      // Get or create the reusable player
+      const player = this.ensurePlayer()
 
       // Set volume
       player.volume = Math.max(0, Math.min(1, volume))
 
-      const playbackState: PlaybackState = {
-        player,
+      // Store the new playback state
+      this.currentPlayback = {
         requestId,
         appId,
         startTime: Date.now(),
@@ -88,17 +106,12 @@ class AudioPlaybackService {
         onComplete,
       }
 
-      this.activePlaybacks.set(requestId, playbackState)
-
-      // Add status listener for completion/error handling
-      player.addListener("playbackStatusUpdate", (status: AudioStatus) => {
-        this.onPlaybackStatusUpdate(status, requestId)
-      })
-
-      // Start playback
+      // Replace the source and play
+      // Using replace() reuses the existing ExoPlayer/AudioTrack instead of creating new ones
+      player.replace({uri: audioUrl})
       player.play()
 
-      console.log(`AUDIO: Started playback for ${requestId}, active count: ${this.activePlaybacks.size}`)
+      console.log(`AUDIO: Started playback for ${requestId}`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error loading audio"
       console.error(`AUDIO: Failed to play ${requestId}:`, errorMessage)
@@ -107,10 +120,35 @@ class AudioPlaybackService {
   }
 
   /**
+   * Interrupt current playback and notify its callback
+   */
+  private interruptCurrentPlayback(): void {
+    if (!this.currentPlayback || this.currentPlayback.completed) return
+
+    const playback = this.currentPlayback
+    playback.completed = true
+    this.currentPlayback = null
+
+    // Stop the player
+    if (this.player) {
+      try {
+        this.player.pause()
+      } catch (error) {
+        console.error("AUDIO: Error pausing player:", error)
+      }
+    }
+
+    // Notify that playback was interrupted
+    const elapsedMs = Date.now() - playback.startTime
+    playback.onComplete(playback.requestId, true, null, elapsedMs)
+    console.log(`AUDIO: Interrupted ${playback.requestId} after ${elapsedMs}ms`)
+  }
+
+  /**
    * Handle playback status updates from expo-audio
    */
-  private onPlaybackStatusUpdate(status: AudioStatus, requestId: string): void {
-    const playback = this.activePlaybacks.get(requestId)
+  private onPlaybackStatusUpdate(status: AudioStatus): void {
+    const playback = this.currentPlayback
 
     // Guard against callbacks for unknown or completed playbacks
     if (!playback || playback.completed) {
@@ -120,10 +158,10 @@ class AudioPlaybackService {
     // Check if playback finished
     if (status.didJustFinish) {
       const durationMs = (status.duration || 0) * 1000 // expo-audio uses seconds
-      console.log(`AUDIO: Playback finished for ${requestId}, duration: ${durationMs}ms`)
+      console.log(`AUDIO: Playback finished for ${playback.requestId}, duration: ${durationMs}ms`)
       playback.completed = true
-      playback.onComplete(requestId, true, null, durationMs)
-      this.cleanupPlayback(requestId)
+      playback.onComplete(playback.requestId, true, null, durationMs)
+      this.currentPlayback = null
     }
   }
 
@@ -132,26 +170,11 @@ class AudioPlaybackService {
    * If appId is not provided, stops all playback.
    */
   public async stopForApp(appId?: string): Promise<void> {
-    if (this.activePlaybacks.size === 0) return
+    if (!this.currentPlayback || this.currentPlayback.completed) return
 
-    if (!appId) {
-      // No appId provided - stop all
-      console.log("AUDIO: Stopping all playback (no appId specified)")
-      await this.stopAllPlaybacks()
-      return
-    }
-
-    // Find and stop all playbacks for this app
-    const toStop: string[] = []
-    this.activePlaybacks.forEach((playback, reqId) => {
-      if (playback.appId === appId) {
-        toStop.push(reqId)
-      }
-    })
-
-    if (toStop.length > 0) {
-      console.log(`AUDIO: Stopping ${toStop.length} playback(s) for app ${appId}`)
-      await Promise.all(toStop.map(reqId => this.stopPlayback(reqId)))
+    if (!appId || this.currentPlayback.appId === appId) {
+      console.log(`AUDIO: Stopping playback for app ${appId || "(all)"}`)
+      this.interruptCurrentPlayback()
     }
   }
 
@@ -159,91 +182,53 @@ class AudioPlaybackService {
    * Stop all audio playback
    */
   public async stopAll(): Promise<void> {
-    if (this.activePlaybacks.size > 0) {
-      console.log(`AUDIO: Stopping all ${this.activePlaybacks.size} playback(s)`)
-      await this.stopAllPlaybacks()
+    if (this.currentPlayback && !this.currentPlayback.completed) {
+      console.log("AUDIO: Stopping all playback")
+      this.interruptCurrentPlayback()
     }
-  }
-
-  /**
-   * Internal method to stop all playbacks
-   */
-  private async stopAllPlaybacks(): Promise<void> {
-    const requestIds = Array.from(this.activePlaybacks.keys())
-    await Promise.all(requestIds.map(reqId => this.stopPlayback(reqId)))
-  }
-
-  /**
-   * Internal method to stop a specific playback by requestId
-   */
-  private async stopPlayback(requestId: string): Promise<void> {
-    const playback = this.activePlaybacks.get(requestId)
-    if (!playback) return
-
-    playback.completed = true // Mark as completed to prevent callback
-
-    try {
-      playback.player.pause()
-      playback.player.remove()
-      console.log(`AUDIO: Stopped and released ${requestId}`)
-    } catch (error) {
-      console.error(`AUDIO: Error stopping playback ${requestId}:`, error)
-    }
-
-    // Notify that playback was interrupted so cloud can clear the request mapping
-    const elapsedMs = Date.now() - playback.startTime
-    playback.onComplete(requestId, true, null, elapsedMs)
-
-    this.activePlaybacks.delete(requestId)
-  }
-
-  /**
-   * Cleanup after playback completes naturally
-   */
-  private cleanupPlayback(requestId: string): void {
-    const playback = this.activePlaybacks.get(requestId)
-    if (!playback) return
-
-    try {
-      playback.player.remove()
-    } catch (error) {
-      console.error(`AUDIO: Error releasing player ${requestId}:`, error)
-    }
-    this.activePlaybacks.delete(requestId)
-    console.log(`AUDIO: Cleaned up ${requestId}, active count: ${this.activePlaybacks.size}`)
   }
 
   /**
    * Check if audio is currently playing
    */
   public isPlaying(): boolean {
-    let playing = false
-    this.activePlaybacks.forEach(playback => {
-      if (!playback.completed) {
-        playing = true
-      }
-    })
-    return playing
+    return this.currentPlayback !== null && !this.currentPlayback.completed
   }
 
   /**
    * Get current playback app IDs (all active)
    */
   public getActiveAppIds(): string[] {
-    const appIds: string[] = []
-    this.activePlaybacks.forEach(playback => {
-      if (!playback.completed && playback.appId) {
-        appIds.push(playback.appId)
-      }
-    })
-    return appIds
+    if (this.currentPlayback && !this.currentPlayback.completed && this.currentPlayback.appId) {
+      return [this.currentPlayback.appId]
+    }
+    return []
   }
 
   /**
    * Get number of active playbacks
    */
   public getActiveCount(): number {
-    return this.activePlaybacks.size
+    return this.currentPlayback && !this.currentPlayback.completed ? 1 : 0
+  }
+
+  /**
+   * Release the player entirely (call when app is shutting down)
+   */
+  public release(): void {
+    if (this.currentPlayback && !this.currentPlayback.completed) {
+      this.interruptCurrentPlayback()
+    }
+
+    if (this.player) {
+      try {
+        this.player.remove()
+        console.log("AUDIO: Released AudioPlayer")
+      } catch (error) {
+        console.error("AUDIO: Error releasing player:", error)
+      }
+      this.player = null
+    }
   }
 }
 

@@ -2161,16 +2161,29 @@ public class CameraNeo extends LifecycleService {
         cameraKeepAliveTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                Log.d(TAG, "Camera keep-alive timer expired, closing camera");
                 // Run on background handler to ensure proper thread
                 if (backgroundHandler != null) {
                     backgroundHandler.post(() -> {
+                        // Don't close camera if capture is in progress - extend the timer instead
+                        if (shotState != ShotState.IDLE) {
+                            Log.w(TAG, "⚠️ Keep-alive expired but capture in progress (state: " + shotState +
+                                  ") - extending timer");
+                            startKeepAliveTimer();
+                            return;
+                        }
+                        Log.d(TAG, "Camera keep-alive timer expired, closing camera");
                         isCameraKeptAlive = false;
                         closeCamera();
                         stopSelf();
                     });
                 } else {
                     // Fallback if handler is not available
+                    if (shotState != ShotState.IDLE) {
+                        Log.w(TAG, "⚠️ Keep-alive expired but capture in progress (state: " + shotState +
+                              ") - cannot extend (no handler)");
+                        return;
+                    }
+                    Log.d(TAG, "Camera keep-alive timer expired, closing camera");
                     isCameraKeptAlive = false;
                     closeCamera();
                     stopSelf();

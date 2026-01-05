@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.bluetooth.BluetoothA2dp;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
@@ -196,6 +197,10 @@ public class MentraLive extends SGCManager {
     private boolean isBondingReceiverRegistered = false;
     private boolean isBtClassicConnected = false;
     private BroadcastReceiver bondingReceiver;
+
+    // A2DP profile connection for already-bonded devices
+    private BluetoothA2dp a2dpProfile = null;
+    private boolean isA2dpProxyRegistered = false;
 
     private ConcurrentLinkedQueue<byte[]> sendQueue = new ConcurrentLinkedQueue<>();
     private Runnable connectionTimeoutRunnable;
@@ -925,10 +930,11 @@ public class MentraLive extends SGCManager {
 
                     // Check if device is already bonded before attempting to create bond
                     if (connectedDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
-                        Bridge.log("LIVE: CTKD: Device is already bonded - marking audio as connected immediately");
-                        isBtClassicConnected = true;
-                        audioConnected = true;
-                        // Note: We'll mark as CONNECTED after glasses_ready is received
+                        Bridge.log("LIVE: CTKD: Device is already bonded - connecting A2DP audio profile");
+                        // Device is bonded but we need to explicitly connect the A2DP audio profile
+                        // Just being bonded doesn't mean the audio profile is connected
+                        connectA2dpProfile(connectedDevice);
+                        // Note: audioConnected will be set to true once A2DP profile connects
                     } else {
                         createBond(connectedDevice);
                     }
@@ -3724,6 +3730,144 @@ public class MentraLive extends SGCManager {
         return isBtClassicConnected;
     }
 
+    /**
+     * A2DP profile service listener for connecting to already-bonded devices
+     */
+    private final BluetoothProfile.ServiceListener a2dpServiceListener = new BluetoothProfile.ServiceListener() {
+        @Override
+        public void onServiceConnected(int profile, BluetoothProfile proxy) {
+            if (profile == BluetoothProfile.A2DP) {
+                a2dpProfile = (BluetoothA2dp) proxy;
+                Bridge.log("LIVE: A2DP: Profile proxy obtained");
+
+                // Now connect to the device if we have one pending
+                if (connectedDevice != null && connectedDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
+                    connectA2dpWithProxy(connectedDevice);
+                }
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(int profile) {
+            if (profile == BluetoothProfile.A2DP) {
+                Bridge.log("LIVE: A2DP: Profile proxy disconnected");
+                a2dpProfile = null;
+                isA2dpProxyRegistered = false;  // Reset so we can request a new proxy
+            }
+        }
+    };
+
+    /**
+     * Helper to connect A2DP using the proxy - called from service listener or directly
+     */
+    private void connectA2dpWithProxy(BluetoothDevice device) {
+        if (a2dpProfile == null || device == null) {
+            Bridge.log("LIVE: A2DP: Cannot connect - proxy or device is null");
+            return;
+        }
+
+        try {
+            int state = a2dpProfile.getConnectionState(device);
+            Bridge.log("LIVE: A2DP: Current connection state: " + state);
+
+            if (state == BluetoothProfile.STATE_CONNECTED) {
+                Bridge.log("LIVE: A2DP: Already connected to " + device.getName());
+                markAudioConnected(device.getName());
+            } else if (state == BluetoothProfile.STATE_DISCONNECTED) {
+                Bridge.log("LIVE: A2DP: Connecting to " + device.getName());
+                // Use reflection to call connect() as it's a hidden API
+                Method connectMethod = BluetoothA2dp.class.getMethod("connect", BluetoothDevice.class);
+                boolean result = (Boolean) connectMethod.invoke(a2dpProfile, device);
+                Bridge.log("LIVE: A2DP: Connect initiated, result: " + result);
+
+                // Note: connect() is async. We mark as connected optimistically because:
+                // 1. The device is already bonded, so connection should succeed
+                // 2. Android will handle the actual A2DP connection in the background
+                // 3. If it fails, the user can still use BLE audio (LC3)
+                markAudioConnected(device.getName());
+            } else if (state == BluetoothProfile.STATE_CONNECTING) {
+                Bridge.log("LIVE: A2DP: Already connecting, marking audio as connected");
+                markAudioConnected(device.getName());
+            } else {
+                // STATE_DISCONNECTING - wait and retry
+                Bridge.log("LIVE: A2DP: Device disconnecting, will retry in 500ms");
+                handler.postDelayed(() -> {
+                    if (connectedDevice != null && a2dpProfile != null) {
+                        connectA2dpWithProxy(connectedDevice);
+                    }
+                }, 500);
+            }
+        } catch (Exception e) {
+            Bridge.log("LIVE: A2DP: Error connecting: " + e.getMessage());
+            // Still mark as connected - device is bonded and BLE audio (LC3) will work
+            markAudioConnected(device.getName());
+        }
+    }
+
+    /**
+     * Helper to mark audio as connected and notify
+     */
+    private void markAudioConnected(String deviceName) {
+        isBtClassicConnected = true;
+        audioConnected = true;
+        Bridge.sendAudioConnected(deviceName);
+        if (glassesReadyReceived) {
+            Bridge.log("LIVE: A2DP: Both audio and glasses_ready confirmed - marking as fully connected");
+            updateConnectionState(ConnTypes.CONNECTED);
+        }
+    }
+
+    /**
+     * Connect to A2DP audio profile for an already-bonded device
+     * This is needed because being bonded doesn't automatically connect the audio profile
+     */
+    private void connectA2dpProfile(BluetoothDevice device) {
+        if (device == null) {
+            Bridge.log("LIVE: A2DP: Cannot connect - device is null");
+            return;
+        }
+
+        if (bluetoothAdapter == null) {
+            Bridge.log("LIVE: A2DP: Cannot connect - BluetoothAdapter is null");
+            return;
+        }
+
+        Bridge.log("LIVE: A2DP: Requesting A2DP profile proxy for " + device.getName());
+
+        // If we already have the proxy, try to connect directly
+        if (a2dpProfile != null) {
+            connectA2dpWithProxy(device);
+            return;
+        }
+
+        // Get the A2DP profile proxy
+        if (!isA2dpProxyRegistered) {
+            boolean result = bluetoothAdapter.getProfileProxy(context, a2dpServiceListener, BluetoothProfile.A2DP);
+            if (result) {
+                isA2dpProxyRegistered = true;
+                Bridge.log("LIVE: A2DP: Profile proxy request successful, waiting for callback");
+            } else {
+                Bridge.log("LIVE: A2DP: Failed to get profile proxy, marking audio connected anyway");
+                // Still mark as connected - device is bonded and BLE audio (LC3) will work
+                markAudioConnected(device.getName());
+            }
+        } else {
+            Bridge.log("LIVE: A2DP: Proxy already registered, waiting for callback");
+        }
+    }
+
+    /**
+     * Close the A2DP profile proxy
+     */
+    private void closeA2dpProxy() {
+        if (a2dpProfile != null && bluetoothAdapter != null) {
+            Bridge.log("LIVE: A2DP: Closing profile proxy");
+            bluetoothAdapter.closeProfileProxy(BluetoothProfile.A2DP, a2dpProfile);
+            a2dpProfile = null;
+        }
+        isA2dpProxyRegistered = false;
+    }
+
     public void destroy() {
         Bridge.log("LIVE: Destroying MentraLiveSGC");
 
@@ -3738,6 +3882,9 @@ public class MentraLive extends SGCManager {
 
         // CTKD Implementation: Unregister bonding receiver
         unregisterBondingReceiver();
+
+        // Close A2DP profile proxy
+        closeA2dpProxy();
 
         // CTKD Implementation: Disconnect BT per documentation
         if (connectedDevice != null) {

@@ -687,10 +687,10 @@ export const askPermissionsUI = async (app: AppletInterface, theme: Theme): Prom
           },
         },
       ],
-      {
-        iconName: "information-outline",
-        iconColor: theme.colors.textDim,
-      },
+      // {
+      //   iconName: "info",
+      //   iconColor: theme.colors.textDim,
+      // },
     )
   })
 }
