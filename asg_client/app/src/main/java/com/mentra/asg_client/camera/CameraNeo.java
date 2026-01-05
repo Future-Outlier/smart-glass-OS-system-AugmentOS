@@ -666,6 +666,7 @@ public class CameraNeo extends LifecycleService {
 
     private String pendingRequestedSize;
     private boolean pendingIsFromSdk;  // true = SDK photo (optimized sizes), false = button photo
+    private long photoRequestStartTimeMs;  // Timestamp when photo request started (for e2e timing)
 
     /**
      * Get the appropriate JPEG quality based on the requested size tier and source.
@@ -775,6 +776,10 @@ public class CameraNeo extends LifecycleService {
      */
     private void setupCameraForPhotoRequest(PhotoRequest request) {
         if (request == null) return;
+
+        // Record start time for e2e timing
+        photoRequestStartTimeMs = request.timestamp;
+        Log.i(TAG, "📸 PHOTO E2E: Starting photo request " + request.requestId);
 
         // Check if size or SDK flag has changed BEFORE updating pending values
         // This is critical for detecting when camera needs to be reopened
@@ -2066,6 +2071,10 @@ public class CameraNeo extends LifecycleService {
     }
 
     private void notifyPhotoCaptured(String filePath) {
+        // Log e2e timing
+        long e2eTimeMs = System.currentTimeMillis() - photoRequestStartTimeMs;
+        Log.i(TAG, "📸 PHOTO E2E: Photo captured and saved in " + e2eTimeMs + "ms (e2e) | Path: " + filePath);
+
         if (sPhotoCallback != null) {
             executor.execute(() -> sPhotoCallback.onPhotoCaptured(filePath));
         }
@@ -2214,6 +2223,10 @@ public class CameraNeo extends LifecycleService {
                     // Cancel any pending keep-alive timer
                     cancelKeepAliveTimer();
 
+                    // Record start time for e2e timing
+                    photoRequestStartTimeMs = nextRequest.timestamp;
+                    Log.i(TAG, "📸 PHOTO E2E: Starting queued photo request " + nextRequest.requestId);
+
                     // Process the queued request
                     pendingPhotoPath = nextRequest.filePath;
                     pendingRequestedSize = nextRequest.size;
@@ -2223,7 +2236,7 @@ public class CameraNeo extends LifecycleService {
                     if (nextRequest.enableLed) {
                         pendingLedEnabled = true;
                     }
-                    
+
                     // IMPORTANT: Only start capture if camera is ready
                     // Don't try to open camera again if it's already open
                     if (cameraDevice != null && cameraCaptureSession != null) {
@@ -2249,12 +2262,16 @@ public class CameraNeo extends LifecycleService {
             PhotoRequest nextRequest = photoRequestQueue.poll();
             if (nextRequest != null) {
                 Log.d(TAG, "Processing queued photo from INSTANCE queue: " + nextRequest.filePath);
-                
+
                 // Update the callback for this request
                 sPhotoCallback = nextRequest.callback;
 
                 // Cancel any pending keep-alive timer
                 cancelKeepAliveTimer();
+
+                // Record start time for e2e timing
+                photoRequestStartTimeMs = nextRequest.timestamp;
+                Log.i(TAG, "📸 PHOTO E2E: Starting queued photo request (legacy) " + nextRequest.requestId);
 
                 // Process the queued request
                 pendingPhotoPath = nextRequest.filePath;

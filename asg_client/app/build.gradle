@@ -89,28 +89,12 @@ gradle.taskGraph.whenReady { taskGraph ->
         println "╚════════════════════════════════════════════════════════════════╝"
         println ""
 
-        // Check Sentry configuration status
-        def sentryDsn = System.getenv("SENTRY_DSN") ?: envProperties['SENTRY_DSN'] ?: null
-        def sentryEnabled = System.getenv("SENTRY_ENABLED") ?: envProperties['SENTRY_ENABLED'] ?: "false"
-        def sentryPropsFile = rootProject.file("app/src/main/resources/sentry.properties.development")
+        // Check Sentry configuration status (from .env file)
+        def sentryDsn = envProperties['SENTRY_DSN'] ?: ""
         def sentryAuthToken = System.getenv("SENTRY_AUTH_TOKEN") ?:
                              (project.hasProperty("sentryAuthToken") ? project.property("sentryAuthToken") : null)
 
-        // Check if sentry.properties.development has DSN configured
-        def sentryPropsConfigured = false
-        if (sentryPropsFile.exists()) {
-            def sentryProps = new Properties()
-            sentryProps.load(new FileInputStream(sentryPropsFile))
-            def propDsn = sentryProps.getProperty("sentry.dsn")
-            def propEnabled = sentryProps.getProperty("sentry.enabled")
-            if (propDsn && !propDsn.isEmpty() && propEnabled == "true") {
-                sentryPropsConfigured = true
-                sentryDsn = propDsn
-                sentryEnabled = "true"
-            }
-        }
-
-        def isSentryConfigured = (sentryDsn && !sentryDsn.isEmpty() && sentryEnabled == "true") || sentryPropsConfigured
+        def isSentryConfigured = sentryDsn && !sentryDsn.isEmpty() && sentryDsn.contains("sentry.io")
 
         println "╔════════════════════════════════════════════════════════════════╗"
         println "║                    SENTRY ERROR REPORTING                      ║"
@@ -118,11 +102,7 @@ gradle.taskGraph.whenReady { taskGraph ->
 
         if (isSentryConfigured) {
             println "║  ✅ SENTRY: ENABLED - Crashes will be reported                 ║"
-            if (sentryPropsConfigured) {
-                println "║     Config: sentry.properties.development                     ║"
-            } else {
-                println "║     Config: Environment variable SENTRY_DSN                   ║"
-            }
+            println "║     Config: .env file                                         ║"
             if (sentryAuthToken) {
                 println "║     Source Maps: ✅ Will be uploaded                          ║"
             } else {
@@ -134,14 +114,9 @@ gradle.taskGraph.whenReady { taskGraph ->
             println "║  Local file logging is still enabled at:                      ║"
             println "║     /sdcard/mentra_crash_logs/                                ║"
             println "║                                                               ║"
-            println "║  To enable Sentry, either:                                    ║"
-            println "║  1. Create app/src/main/resources/sentry.properties.development║"
-            println "║     with: sentry.enabled=true                                 ║"
-            println "║           sentry.dsn=https://xxx@sentry.io/xxx                ║"
-            println "║                                                               ║"
-            println "║  2. Or set environment variables:                             ║"
-            println "║     SENTRY_ENABLED=true                                       ║"
-            println "║     SENTRY_DSN=https://xxx@sentry.io/xxx                      ║"
+            println "║  To enable Sentry:                                            ║"
+            println "║  1. Copy .env.example to .env                                 ║"
+            println "║  2. Set SENTRY_DSN=https://xxx@sentry.io/xxx                  ║"
         }
 
         println "╚════════════════════════════════════════════════════════════════╝"
@@ -228,6 +203,9 @@ android {
         buildConfigField "String", "MENTRAOS_HOST", "\"${envProperties['MENTRAOS_HOST'] ?: ""}\""
         buildConfigField "String", "MENTRAOS_PORT", "\"${envProperties['MENTRAOS_PORT'] ?: ""}\""
         buildConfigField "String", "MENTRAOS_SECURE", "\"${envProperties['MENTRAOS_SECURE'] ?: ""}\""
+
+        // Sentry configuration
+        buildConfigField "String", "SENTRY_DSN", "\"${envProperties['SENTRY_DSN'] ?: ""}\""
     }
 
     packagingOptions {
@@ -352,8 +330,8 @@ def sentryAuthToken = System.getenv("SENTRY_AUTH_TOKEN") ?:
                      project.hasProperty("sentryAuthToken") ? project.property("sentryAuthToken") : null
 
 sentry {
-    org = "ahmad-wv"
-    projectName = "asg"
+    org = "mentra-labs"
+    projectName = "mentra-asg-client"
 
     // Only enable Sentry features if auth token is present
     if (sentryAuthToken) {
