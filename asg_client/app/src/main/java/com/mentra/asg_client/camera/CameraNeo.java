@@ -219,7 +219,7 @@ public class CameraNeo extends LifecycleService {
     
     // Feature flag: Toggle between immediate capture on convergence vs waiting for lock confirmation
     // true = capture immediately on AE_CONVERGED (~650ms), false = wait for AE_LOCKED confirmation (~1085ms)
-    private static final boolean USE_IMMEDIATE_CAPTURE_ON_CONVERGENCE = true;
+    private static final boolean USE_IMMEDIATE_CAPTURE_ON_CONVERGENCE = false;
 
     // Simple AE callback - autofocus handled automatically
     private final SimplifiedAeCallback aeCallback = new SimplifiedAeCallback();
@@ -1938,7 +1938,7 @@ public class CameraNeo extends LifecycleService {
                     notifyVideoError(currentVideoId, "Failed to start recording: " + e.getMessage());
                     isRecording = false;
                 }
-            }, 100); // 100ms delay to ensure surface is ready
+            }, 400); // 400ms delay to ensure surface is ready
         } catch (CameraAccessException | IllegalStateException e) {
             Log.e(TAG, "Failed to start video recording", e);
             notifyVideoError(currentVideoId, "Failed to start recording: " + e.getMessage());

@@ -88,6 +88,64 @@ gradle.taskGraph.whenReady { taskGraph ->
 
         println "╚════════════════════════════════════════════════════════════════╝"
         println ""
+
+        // Check Sentry configuration status
+        def sentryDsn = System.getenv("SENTRY_DSN") ?: envProperties['SENTRY_DSN'] ?: null
+        def sentryEnabled = System.getenv("SENTRY_ENABLED") ?: envProperties['SENTRY_ENABLED'] ?: "false"
+        def sentryPropsFile = rootProject.file("app/src/main/resources/sentry.properties.development")
+        def sentryAuthToken = System.getenv("SENTRY_AUTH_TOKEN") ?:
+                             (project.hasProperty("sentryAuthToken") ? project.property("sentryAuthToken") : null)
+
+        // Check if sentry.properties.development has DSN configured
+        def sentryPropsConfigured = false
+        if (sentryPropsFile.exists()) {
+            def sentryProps = new Properties()
+            sentryProps.load(new FileInputStream(sentryPropsFile))
+            def propDsn = sentryProps.getProperty("sentry.dsn")
+            def propEnabled = sentryProps.getProperty("sentry.enabled")
+            if (propDsn && !propDsn.isEmpty() && propEnabled == "true") {
+                sentryPropsConfigured = true
+                sentryDsn = propDsn
+                sentryEnabled = "true"
+            }
+        }
+
+        def isSentryConfigured = (sentryDsn && !sentryDsn.isEmpty() && sentryEnabled == "true") || sentryPropsConfigured
+
+        println "╔════════════════════════════════════════════════════════════════╗"
+        println "║                    SENTRY ERROR REPORTING                      ║"
+        println "╠════════════════════════════════════════════════════════════════╣"
+
+        if (isSentryConfigured) {
+            println "║  ✅ SENTRY: ENABLED - Crashes will be reported                 ║"
+            if (sentryPropsConfigured) {
+                println "║     Config: sentry.properties.development                     ║"
+            } else {
+                println "║     Config: Environment variable SENTRY_DSN                   ║"
+            }
+            if (sentryAuthToken) {
+                println "║     Source Maps: ✅ Will be uploaded                          ║"
+            } else {
+                println "║     Source Maps: ❌ SENTRY_AUTH_TOKEN not set                 ║"
+            }
+        } else {
+            println "║  ⚠️  SENTRY: DISABLED - Crashes will NOT be reported to cloud  ║"
+            println "║                                                               ║"
+            println "║  Local file logging is still enabled at:                      ║"
+            println "║     /sdcard/mentra_crash_logs/                                ║"
+            println "║                                                               ║"
+            println "║  To enable Sentry, either:                                    ║"
+            println "║  1. Create app/src/main/resources/sentry.properties.development║"
+            println "║     with: sentry.enabled=true                                 ║"
+            println "║           sentry.dsn=https://xxx@sentry.io/xxx                ║"
+            println "║                                                               ║"
+            println "║  2. Or set environment variables:                             ║"
+            println "║     SENTRY_ENABLED=true                                       ║"
+            println "║     SENTRY_DSN=https://xxx@sentry.io/xxx                      ║"
+        }
+
+        println "╚════════════════════════════════════════════════════════════════╝"
+        println ""
     }
 }
 
