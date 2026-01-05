@@ -1,5 +1,6 @@
 package com.mentra.core.sgcs
 
+import android.os.Message
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -28,6 +29,7 @@ import com.mentra.core.sgcs.SGCManager
 import com.mentra.core.Bridge
 
 import com.mentra.core.utils.DeviceTypes
+import com.mentra.core.utils.ProtobufUtils
 import com.mentra.core.utils.BitmapJavaUtils
 import com.mentra.core.utils.G1FontLoaderKt
 import com.mentra.core.utils.G1Text
@@ -119,10 +121,6 @@ class MentraNex : SGCManager() {
 
     private var bleScanCallback: ScanCallback? = null
 
-    private val findCompatibleDevicesHandler: Handler? = null
-
-    private final BluetoothGattCallback mainGattCallback = createGattCallback();
-
     init {
         type = DeviceTypes.NEX
         hasMic = true
@@ -130,50 +128,16 @@ class MentraNex : SGCManager() {
         preferredMainDeviceId = CoreManager.getInstance().getDeviceName()
     }
 
-    private val mainTaskHandler = Handler(Looper.getMainLooper(), Handler.Callback { msg ->
-        val msgCode = msg.what
-        Bridge.log("Nex: handleMessage msgCode: $msgCode")
-        Bridge.log("Nex: handleMessage obj: ${msg.obj}")
-        
-        when (msgCode) {
-            MAIN_TASK_HANDLER_CODE_GATT_STATUS_CHANGED -> { }
+    private val mainGattCallback: BluetoothGattCallback = createGattCallback()
 
-            MAIN_TASK_HANDLER_CODE_DISCOVER_SERVICES -> {
-                val statusBool = msg.obj as? Boolean ?: false
-                if (statusBool) {
-                    mainGlassGatt?.let { initNexGlasses(it) }
-                }
-            }
+    private val mainTaskHandler: Handler = Handler(Looper.getMainLooper(), Handler.Callback(::handleMainTaskMessage))
+    private val whiteListHandler: Handler = Handler()
+    private val micEnableHandler: Handler = Handler()
+    private val notificationHandler: Handler = Handler()
+    private val textWallHandler: Handler = Handler()
+    private val findCompatibleDevicesHandler: Handler? = null
 
-            MAIN_TASK_HANDLER_CODE_CHARACTERISTIC_VALUE_NOTIFIED -> {
-                val characteristic = msg.obj as? BluetoothGattCharacteristic
-                characteristic?.let { onCharacteristicChangedHandler(it) }
-            }
-
-            MAIN_TASK_HANDLER_CODE_CONNECT_DEVICE -> {}
-            MAIN_TASK_HANDLER_CODE_DISCONNECT_DEVICE -> {}
-
-            MAIN_TASK_HANDLER_CODE_RECONNECT_DEVICE -> {
-                mainDevice?.let { attemptGattConnection(it) }
-            }
-
-            MAIN_TASK_HANDLER_CODE_CANCEL_RECONNECT_DEVICE -> {}
-            MAIN_TASK_HANDLER_CODE_RECONNECT_GATT -> {}
-            MAIN_TASK_HANDLER_CODE_SCAN_START -> {}
-            MAIN_TASK_HANDLER_CODE_SCAN_END -> {}
-
-            MAIN_TASK_HANDLER_CODE_BATTERY_QUERY -> {
-                queryBatteryStatus()
-            }
-
-            MAIN_TASK_HANDLER_CODE_HEART_BEAT -> {
-                // Note: Heartbeat is now handled by receiving ping from glasses
-                // This case is kept for backward compatibility but no longer used
-                Bridge.log("Nex: Heartbeat handler called - no longer sending periodic pings")
-            }
-        }
-        true
-    })
+    private var currentImageChunks: List<ByteArray> = emptyList()
 
     // Data class to represent a send request
     private data class SendRequest( val data: ByteArray, var waitTime: Int = -1) {
@@ -342,13 +306,7 @@ class MentraNex : SGCManager() {
         val validatedAngle = angle.coerceIn(0, 60)
         Bridge.log("Nex: === SENDING HEAD UP ANGLE COMMAND TO GLASSES ===")
         Bridge.log("Nex: Head Up Angle: $validatedAngle degrees (validated range: 0-60)")
-        val headUpAngleConfig = HeadUpAngleConfig.newBuilder().setAngle(validatedAngle).build()
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setHeadUpAngle(headUpAngleConfig)
-            .build()
-        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
-        sendDataSequentially(cmdBytes, 10)
-        Bridge.log("Nex: Sent headUp angle command => Angle: $validatedAngle")
+        sendHeadUpAngle(validatedAngle)
     }
 
     override fun getBatteryStatus() {
@@ -446,701 +404,6 @@ class MentraNex : SGCManager() {
     }
 
     //==================== HELPER FUNCTIONS =================================================
-    private fun connectToSmartGlasses() {
-        // Register bonding receiver
-        Bridge.log("connectToSmartGlasses start")
-        Bridge.log("try to ConnectToSmartGlassesing deviceModelName: ${device.deviceModelName} deviceAddress: ${device.deviceAddress}")
-        preferredMainDeviceId = CoreManager.getInstance().getDeviceName()
-        if (!bluetoothAdapter.isEnabled) {
-            return
-        }
-        when {
-            !device.deviceModelName.isNullOrEmpty() && !device.deviceAddress.isNullOrEmpty() -> {
-                stopScan()
-                mainDevice = bluetoothAdapter.getRemoteDevice(device.deviceAddress)
-                mainTaskHandler?.sendEmptyMessageDelayed(MAIN_TASK_HANDLER_CODE_RECONNECT_DEVICE, 0)
-            }
-            savedNexMainAddress != null -> {
-                mainDevice = bluetoothAdapter.getRemoteDevice(savedNexMainAddress)
-                mainTaskHandler?.sendEmptyMessageDelayed(MAIN_TASK_HANDLER_CODE_RECONNECT_DEVICE, 0)
-            }
-            else -> {
-                // Start scanning for devices
-                stopScan()
-                connectionState = SmartGlassesConnectionState.SCANNING
-                connectionEvent(connectionState) // TODO: Figure out where is connection event defined????
-                startScan()
-            }
-        }
-    }
-
-    private fun destroy() {
-        Bridge.log("Nex: MentraNexSGC ONDESTROY")
-        showHomeScreen()
-        isKilled = true
-        // stop BLE scanning
-        stopScan()
-        // Save current microphone state before destroying
-        microphoneStateBeforeDisconnection = isMicrophoneEnabled
-        Bridge.log("Nex: Saved microphone state during destroy: $microphoneStateBeforeDisconnection")
-        // disable the microphone and stop sending micbeat
-        stopMicBeat()
-        // Stop periodic notifications
-        stopPeriodicNotifications()
-        mainGlassGatt?.let { gatt ->
-            gatt.disconnect()
-            gatt.close()
-            mainGlassGatt = null
-        }
-        lc3AudioPlayer?.let { player ->
-            try {
-                player.stopPlay()
-                Bridge.log("Nex: LC3 audio player stopped and cleaned up")
-            } catch (e: Exception) {
-                Bridge.log("Nex: Error stopping LC3 audio player during destroy: ${e.message}", Log.ERROR)
-            } finally {
-                lc3AudioPlayer = null
-            }
-        }
-        // Clean up handlers
-        mainTaskHandler?.removeCallbacksAndMessages(null)
-        whiteListHandler?.removeCallbacksAndMessages(null)
-        micEnableHandler?.removeCallbacksAndMessages(null)
-        notificationHandler?.removeCallbacks(notificationRunnable)
-        textWallHandler?.removeCallbacks(textWallRunnable)
-        findCompatibleDevicesHandler?.removeCallbacksAndMessages(null)
-        // Free LC3 decoder
-        if (lc3DecoderPtr != 0L) {
-            L3cCpp.freeDecoder(lc3DecoderPtr)
-            lc3DecoderPtr = 0L
-        }
-        currentImageChunks.clear()
-        isImageSendProgressing = false
-        sendQueue.clear()
-        // Add a dummy element to unblock the take() call if needed
-        sendQueue.offer(emptyArray()) // is this needed?
-        isWorkerRunning = false
-        isMainConnected = false
-        Bridge.log("Nex: MentraNexSGC cleanup complete")
-    }
-
-    private fun startScan() {
-        val scanner = bluetoothAdapter.bluetoothLeScanner
-        if (scanner == null) {
-            Bridge.log("BluetoothLeScanner not available.", Log.ERROR)
-            return
-        }
-
-        // Optionally, define filters if needed
-        val filters = mutableListOf<ScanFilter>()
-        // For example, to filter by device name:
-        // filters.add(ScanFilter.Builder().setDeviceName("Even G1_").build())
-
-        // Set desired scan settings
-        val settings = ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            .build()
-
-        // Start scanning
-        isScanning = true
-        scanner.startScan(filters, settings, modernScanCallback)
-        scanner.flushPendingScanResults(modernScanCallback)
-        Bridge.log("CALL START SCAN - Started scanning for devices...")
-
-        // Ensure scanning state is immediately communicated to UI
-        connectionState = SmartGlassesConnectionState.SCANNING
-        connectionEvent(connectionState)
-
-        // Stop the scan after some time (e.g., 10-15s instead of 60 to avoid
-        // throttling)
-        // handler.postDelayed({ stopScan() }, 10000)
-    }
-
-    private fun stopScan() {
-        val scanner = bluetoothAdapter.bluetoothLeScanner
-        scanner?.stopScan(modernScanCallback)
-        isScanning = false
-        Bridge.log("Stopped scanning for devices")
-        
-        if (bleScanCallback != null && isScanningForCompatibleDevices) {
-            scanner?.stopScan(bleScanCallback)
-            isScanningForCompatibleDevices = false
-        }
-    }
-
-    private fun displayBitmapImageForNexGlasses(bmpData: ByteArray, width: Int, height: Int) {
-        Bridge.log("Starting BMP display process for ${width}x$height image")
-
-        try {
-            if (bmpData.isEmpty()) {
-                Bridge.log("Invalid BMP data provided", Log.ERROR)
-                return
-            }
-
-            Bridge.log("Processing BMP data, size: ${bmpData.size} bytes")
-
-            // Generate proper 2-byte hex stream ID (e.g., "002A") as per protobuf specification
-            val totalChunks = (bmpData.size + BMP_CHUNK_SIZE - 1) / BMP_CHUNK_SIZE
-            val streamId = "%04X".format(random.nextInt(0x10000)) // 4-digit hex format
-            
-            val startImageSendingBytes = createStartSendingImageChunksCommand(streamId, totalChunks, width, height)
-            sendDataSequentially(startImageSendingBytes)
-
-            // Send all chunks with proper stream ID parsing
-            val chunks = createBmpChunksForNexGlasses(streamId, bmpData, totalChunks)
-            currentImageChunks = chunks
-            sendDataSequentially(chunks)
-
-            // Note: The following are commented out in the original
-            // sendBmpEndCommand()
-            // sendBmpCRC(bmpData)
-            // lastThingDisplayedWasAnImage = true
-
-        } catch (e: Exception) {
-            Bridge.log("Error in displayBitmapImage: ${e.message}", Log.ERROR)
-        }
-    }
-
-    private fun createBmpChunksForNexGlasses(streamId: String, bmpData: ByteArray, totalChunks: Int): List<ByteArray> {
-        val chunks = mutableListOf<ByteArray>()
-        Bridge.log("Creating $totalChunks chunks from ${bmpData.size} bytes")
-        
-        // Parse hex stream ID to bytes (e.g., "002A" -> 0x00, 0x2A)
-        val streamIdInt = streamId.toInt(16)
-        
-        repeat(totalChunks) { i ->
-            val start = i * BMP_CHUNK_SIZE
-            val end = minOf(start + BMP_CHUNK_SIZE, bmpData.size)
-            val chunk = bmpData.copyOfRange(start, end)
-            
-            val header = ByteArray(4 + chunk.size).apply {
-                this[0] = PACKET_TYPE_IMAGE // 0xB0
-                this[1] = (streamIdInt shr 8).toByte() // Stream ID high byte
-                this[2] = streamIdInt.toByte()         // Stream ID low byte
-                this[3] = i.toByte()                   // Chunk index
-                System.arraycopy(chunk, 0, this, 4, chunk.size)
-            }
-            chunks.add(header)
-        }
-        return chunks
-    }
-
-    private fun createStartSendingImageChunksCommand(streamId: String, totalChunks: Int, width: Int, height: Int): ByteArray {
-        Bridge.log("=== SENDING IMAGE DISPLAY COMMAND TO GLASSES ===")
-        Bridge.log("Image Stream ID: $streamId")
-        Bridge.log("Total Chunks: $totalChunks")
-        Bridge.log("Image Position: X=0, Y=0")
-        Bridge.log("Image Dimensions: ${width}x$height")
-        Bridge.log("Image Encoding: raw")
-        
-        val displayImage = DisplayImage.newBuilder()
-            .setStreamId(streamId)
-            .setTotalChunks(totalChunks)
-            .setX(0)
-            .setY(0)
-            .setWidth(width)
-            .setHeight(height)
-            .setEncoding("raw")
-            .build()
-
-        // Create the PhoneToGlasses using its builder and set the DisplayImage with msg_id
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setMsgId("img_start_1")
-            .setDisplayImage(displayImage)
-            .build()
-
-        return generateProtobufCommandBytes(phoneToGlasses)
-    }
-
-    private fun sendDashboardPositionCommand(height: Int, depth: Int) {
-        // clamp height to 0-8 and depth to 1-9
-        val clampedHeight = height.coerceIn(0, 8)
-        val clampedDepth = depth.coerceIn(1, 9)
-        Bridge.log("Nex: === SENDING DASHBOARD POSITION COMMAND TO GLASSES ===")
-        Bridge.log("Nex: Dashboard Position - Height: $clampedHeight (0-8), Depth: $clampedDepth (1-9)")
-        val displayHeightConfig = DisplayHeightConfig.newBuilder()
-            .setHeight(clampedHeight)
-            .build()
-        
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setDisplayHeight(displayHeightConfig)
-            .build()
-        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
-        sendDataSequentially(cmdBytes, 10)
-        Bridge.log("Nex: Sent dashboard height/depth command => Height: $clampedHeight, Depth: $clampedDepth")
-    }
-
-    private fun sendBrightnessCommand(brightness: Int) {
-        // Validate brightness range
-        val validBrightness = if (brightness != -1) {
-            (brightness * 63) / 100
-        } else {
-            (30 * 63) / 100 // Default to 30% if brightness is -1
-        }
-
-        Bridge.log("Nex: === SENDING BRIGHTNESS COMMAND TO GLASSES ===")
-        Bridge.log("Nex: Brightness Value: $brightness (validated: $validBrightness)")
-
-        val brightnessConfig = BrightnessConfig.newBuilder()
-            .setValue(brightness)
-            .build()
-
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setBrightness(brightnessConfig)
-            .build()
-
-        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
-        sendDataSequentially(cmdBytes, 10)
-
-        Bridge.log("Nex: Sent auto light brightness command => Brightness: $brightness")
-    }
-
-    private fun sendAutoBrightnessCommand(autoLight: Boolean) {
-        Bridge.log("Nex: === SENDING AUTO BRIGHTNESS COMMAND TO GLASSES ===")
-        Bridge.log("Nex: Auto Brightness Enabled: $autoLight")
-
-        val autoBrightnessConfig = AutoBrightnessConfig.newBuilder()
-            .setEnabled(autoLight)
-            .build()
-            
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setAutoBrightness(autoBrightnessConfig)
-            .build()
-
-        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
-        sendDataSequentially(cmdBytes, 10)
-
-        Bridge.log("Nex: Sent auto light sendAutoBrightnessCommand => $autoLight")
-    }
-
-    private fun queryBatteryStatus() {
-        Bridge.log("Nex: === SENDING BATTERY STATUS QUERY TO GLASSES ===")
-        val batteryQueryPacket = constructBatteryLevelQuery()
-        sendDataSequentially(batteryQueryPacket, 250)
-    }
-
-    private fun constructBatteryLevelQuery(): ByteArray {
-        val batteryStateRequest = BatteryStateRequest.newBuilder().build()
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setBatteryState(batteryStateRequest)
-            .build()
-        return generateProtobufCommandBytes(phoneToGlasses)
-    }
-
-    private fun createTextWallChunksForNex(text: String): ByteArray {
-        val textNewBuilder = DisplayText.newBuilder()
-            .setColor(10000)
-            .setText(text)
-            .setSize(48)
-            .setX(20)
-            .setY(260)
-            .build()
-
-        Bridge.log("Nex: === SENDING TEXT TO GLASSES ===")
-        Bridge.log("Nex: Text: \"$text\"")
-        Bridge.log("Nex: Text Length: ${text.length} characters")
-        Bridge.log("Nex: DisplayText Builder: $textNewBuilder")
-
-        // Create the PhoneToGlasses using its builder and set the DisplayText
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setDisplayText(textNewBuilder)
-            .build()
-
-        return generateProtobufCommandBytes(phoneToGlasses)
-    }
-
-    private fun generateProtobufCommandBytes(phoneToGlasses: PhoneToGlasses): ByteArray {
-        val contentBytes = phoneToGlasses.toByteArray()
-        val chunk = ByteBuffer.allocate(contentBytes.size + 1)
-
-        chunk.put(PACKET_TYPE_PROTOBUF)
-        chunk.put(contentBytes)
-
-        // Enhanced logging for protobuf messages
-        val result = chunk.array()
-        logProtobufMessage(phoneToGlasses, result)
-
-        return result
-    }
-
-    // Enhanced logging method for protobuf messages
-    private fun logProtobufMessage(phoneToGlasses: PhoneToGlasses, fullMessage: ByteArray) {
-        val logMessage = buildString {
-            appendLine("=== PROTOBUF MESSAGE TO GLASSES ===")
-            appendLine("Message Type: ${phoneToGlasses.payloadCase}")
-
-            // Extract and log text content if present
-            when {
-                phoneToGlasses.hasDisplayText() -> {
-                    val text = phoneToGlasses.displayText.text
-                    appendLine("Text Content: \"$text\"")
-                    appendLine("Text Length: ${text.length} characters")
-                }
-                phoneToGlasses.hasDisplayScrollingText() -> {
-                    val text = phoneToGlasses.displayScrollingText.text
-                    appendLine("Scrolling Text Content: \"$text\"")
-                    appendLine("Text Length: ${text.length} characters")
-                }
-            }
-
-            // Log message size information
-            appendLine("Protobuf Payload Size: ${phoneToGlasses.toByteArray().size} bytes")
-            appendLine("Total Message Size: ${fullMessage.size} bytes")
-            appendLine("Packet Type: 0x${PACKET_TYPE_PROTOBUF.toString(16).padStart(2, '0').uppercase()}")
-            append("=====================================")
-        }
-
-        Bridge.log("Nex: $logMessage")
-    }
-
-    // Non-blocking function to add new send request
-    private fun sendDataSequentially(data: ByteArray) {
-        val chunks = arrayOf(SendRequest(data))
-        sendQueue.offer(chunks)
-        startWorkerIfNeeded()
-    }
-
-    // Non-blocking function to add new send request with wait time
-    private fun sendDataSequentially(data: ByteArray, waitTime: Int) {
-        val chunks = arrayOf(SendRequest(data, waitTime))
-        sendQueue.offer(chunks)
-        startWorkerIfNeeded()
-    }
-
-    private fun sendDataSequentially(data: List<ByteArray>) {
-        val chunks = Array(data.size) { i -> SendRequest(data[i]) }
-        sendQueue.offer(chunks)
-        startWorkerIfNeeded()
-    }
-
-    // Start the worker thread if it's not already running
-    @Synchronized
-    private fun startWorkerIfNeeded() {
-        if (!isWorkerRunning) {
-            isWorkerRunning = true
-            Thread({ processQueue() }, "MentraNexSGCProcessQueue").start()
-        }
-    }
-
-    private fun processQueue() {
-        // First wait until the services are ready to receive data
-        Bridge.log("Nex: PROC_QUEUE - waiting on services waiters")
-        try {
-            mainServicesWaiter.waitWhileTrue()
-        } catch (e: InterruptedException) {
-            Bridge.log("Nex: Interrupted waiting for descriptor writes: $e", Log.ERROR)
-        }
-        Bridge.log("Nex: PROC_QUEUE - DONE waiting on services waiters")
-
-        while (!isKilled) {
-            try {
-                // Make sure services are ready before processing requests
-                mainServicesWaiter.waitWhileTrue()
-
-                // This will block until data is available
-                val requests = sendQueue.take()
-
-                for (request in requests) {
-                    if (isKilled) {
-                        isWorkerRunning = false
-                        break
-                    }
-
-                    try {
-                        // Force an initial delay so BLE gets all setup
-                        val timeSinceConnection = System.currentTimeMillis() - lastConnectionTimestamp
-                        if (timeSinceConnection < INITIAL_CONNECTION_DELAY_MS) {
-                            Thread.sleep(INITIAL_CONNECTION_DELAY_MS - timeSinceConnection)
-                        }
-
-                        // Send to main glass
-                        if (mainGlassGatt != null && mainWriteChar != null && isMainConnected) {
-                            mainWaiter.setTrue()
-                            mainWriteChar?.value = request.data
-                            mainGlassGatt?.writeCharacteristic(mainWriteChar)
-                            lastSendTimestamp = System.currentTimeMillis()
-                        }
-
-                        mainWaiter.waitWhileTrue()
-
-                        Thread.sleep(DELAY_BETWEEN_CHUNKS_SEND)
-
-                        // If the packet asked us to do a delay, then do it
-                        if (request.waitTime != -1) {
-                            Thread.sleep(request.waitTime.toLong())
-                        }
-                    } catch (e: InterruptedException) {
-                        Bridge.log("Nex: Error sending data: ${e.message}", Log.ERROR)
-                        if (isKilled) break
-                    }
-                }
-            } catch (e: InterruptedException) {
-                if (isKilled) {
-                    Bridge.log("Nex: Process queue thread interrupted - shutting down")
-                    break
-                }
-                Bridge.log("Nex: Error in queue processing: ${e.message}", Log.ERROR)
-            }
-        }
-
-        Bridge.log("Nex: Process queue thread exiting")
-        isWorkerRunning = false
-    }
-
-    private fun sendSetMicEnabled(enable: Boolean, delay: Long) {
-        Bridge.log("Nex: setMicEnabled called with enable: $enable and delay: $delay")
-        Bridge.log("Nex: Running set mic enabled: $enable")
-        isMicrophoneEnabled = enable // Update the state tracker
-        micEnabled = enable
-        
-        micEnableHandler?.postDelayed({
-            if (!isConnected()) {
-                Bridge.log("Nex: Tryna start mic: Not connected to glasses")
-                return@postDelayed
-            }
-            Bridge.log("Nex: === SENDING MICROPHONE STATE COMMAND TO GLASSES ===")
-            Bridge.log("Nex: Microphone Enabled: $enable")
-            val micStateConfig = MicStateConfig.newBuilder()
-                .setEnabled(enable)
-                .build()
-            val phoneToGlasses = PhoneToGlasses.newBuilder()
-                .setMicState(micStateConfig)
-                .build()
-            val micConfigBytes = generateProtobufCommandBytes(phoneToGlasses)
-            sendDataSequentially(micConfigBytes, 10) // wait some time to setup the mic
-            Bridge.log("Nex: Sent MIC command: ${micConfigBytes.joinToString("") { "%02x".format(it) }}")
-        }, delay)
-    }
-
-    private fun initNexGlasses(gatt: BluetoothGatt) {
-        // Start MTU discovery with our maximum target
-        Bridge.log("Nex: 🔍 MTU Discovery: Requesting maximum MTU size: $MTU_517")
-        Bridge.log("Nex: 🎯 Target: Use $MTU_517 bytes max, or $MTU_DEFAULT bytes default")
-        Bridge.log("Nex: 📤 Requesting MTU: $MTU_517 bytes")
-        gatt.requestMtu(MTU_517) // Request our maximum MTU
-
-        val uartService = gatt.getService(MAIN_SERVICE_UUID)
-
-        if (uartService != null) {
-            val writeChar = uartService.getCharacteristic(WRITE_CHAR_UUID)
-            val notifyChar = uartService.getCharacteristic(NOTIFY_CHAR_UUID)
-
-            writeChar?.let { 
-                mainWriteChar = it
-                Bridge.log("Nex: glass TX characteristic found")
-            }
-
-            notifyChar?.let {
-                mainNotifyChar = it
-                enableNotification(gatt, it)
-                Bridge.log("Nex: glass RX characteristic found")
-            }
-
-            // Mark as connected but wait for setup below to update connection state
-            isMainConnected = true
-            Bridge.log("Nex: PROC_QUEUE - left side setup complete")
-
-            if (isMainConnected) {
-                // Do first battery status query
-                mainTaskHandler.sendEmptyMessageDelayed(MAIN_TASK_HANDLER_CODE_BATTERY_QUERY, 10)
-
-                // Restore previous microphone state or disable if this is the first connection
-                val shouldRestoreMic = microphoneStateBeforeDisconnection
-                Bridge.log("Nex: `Restoring microphone state to: $shouldRestoreMic (previous state: $microphoneStateBeforeDisconnection)")
-                
-                if (shouldRestoreMic) {
-                    startMicBeat(MICBEAT_INTERVAL_MS.toInt())
-                } else {
-                    stopMicBeat()
-                }
-
-                // Enable our AugmentOS notification key
-                sendWhiteListCommand(10)
-
-                showHomeScreen() // Turn on the NexGlasses display
-                updateConnectionState()
-
-                // Post protobuf schema version information (only once)
-                if (!protobufVersionPosted) {
-                    postProtobufSchemaVersionInfo()
-                    protobufVersionPosted = true
-                }
-
-                // Query glasses protobuf version from firmware
-                queryGlassesProtobufVersionFromFirmware()
-            }
-        } else {
-            Log.e(TAG, " glass UART service not found")
-        }
-    }
-
-    private fun stopPeriodicNotifications() {
-        notificationHandler?.removeCallbacks(notificationRunnable)
-        Bridge.log("Stopped periodic notifications")
-    }
-
-    private fun startMicBeat(delay: Int) {
-        Bridge.log("Nex: Starting micbeat")
-        if (micBeatCount > 0) {
-            stopMicBeat()
-        }
-        sendSetMicEnabled(true, 10)
-        micBeatRunnable = Runnable {
-            Bridge.log("Nex: SENDING MIC BEAT")
-            setMicEnabled(shouldUseGlassesMic, 1)
-            micBeatHandler.postDelayed(micBeatRunnable, MICBEAT_INTERVAL_MS)
-        }
-        micBeatHandler.postDelayed(micBeatRunnable, delay.toLong())
-    }
-
-    private fun stopMicBeat() {
-        sendSetMicEnabled(false, 10)
-        if (micBeatHandler != null) {
-            micBeatHandler.removeCallbacksAndMessages(null);
-            micBeatHandler.removeCallbacksAndMessages(micBeatRunnable);
-            micBeatRunnable = null;
-            micBeatCount = 0;
-        }
-    }
-
-    private fun enableNotification(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-        Bridge.log("Nex: PROC_QUEUE - Starting notification setup")
-        
-        // Enable notifications
-        val result = gatt.setCharacteristicNotification(characteristic, true)
-        Bridge.log("Nex: PROC_QUEUE - setCharacteristicNotification result: $result")
-
-        // Set write type for the characteristic
-        characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-        Bridge.log("Nex: PROC_QUEUE - write type set")
-
-        // Add delay
-        Bridge.log("Nex: PROC_QUEUE - waiting to enable notification...")
-        try {
-            Thread.sleep(100)
-        } catch (e: InterruptedException) {
-            Log.e(TAG, "Error sending data: " + e.getMessage());
-        }
-
-        // Get and configure descriptor
-        val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG_UUID)
-        descriptor?.let {
-            Bridge.log
-            it.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-            val writeResult = gatt.writeDescriptor(it)
-            Bridge.log("Nex: PROC_QUEUE - set descriptor with result: $writeResult")
-        }
-    }
-
-    private fun sendWhiteListCommand(delay: Int) {
-        if (whiteListedAlready) return
-        
-        whiteListedAlready = true
-        Bridge.log("Nex: Sending whitelist command")
-        
-        whiteListHandler.postDelayed({
-            val chunks = getWhitelistChunks()
-            sendDataSequentially(chunks)
-            
-            // Uncomment if needed for debugging:
-            // chunks.forEach { chunk ->
-            //     Bridge.log("Nex: Sending this chunk for white list: ${bytesToUtf8(chunk)}")
-            //     sendDataSequentially(chunk)
-            //     // Thread.sleep(150) // Uncomment if delay between chunks is needed
-            // }
-        }, delay.toLong())
-    }
-
-    fun getWhitelistChunks(): List<ByteArray> {
-        // Define the hardcoded whitelist
-        val apps = listOf(AppInfo("com.augment.os", "AugmentOS"))
-        val whitelistJson = createWhitelistJson(apps)
-
-        Bridge.log("Creating chunks for hardcoded whitelist: $whitelistJson")
-
-        // Convert JSON to bytes and split into chunks
-        return createWhitelistChunks(whitelistJson)
-    }
-
-    private fun createWhitelistJson(apps: List<AppInfo>): String {
-        return try {
-            val appList = JSONArray().apply {
-                apps.forEach { app ->
-                    put(JSONObject().apply {
-                        put("id", app.id)
-                        put("name", app.name)
-                    })
-                }
-            }
-
-            JSONObject().apply {
-                put("calendar_enable", false)
-                put("call_enable", false)
-                put("msg_enable", false)
-                put("ios_mail_enable", false)
-                put("app", JSONObject().apply {
-                    put("list", appList)
-                    put("enable", true)
-                })
-            }.toString()
-        } catch (e: JSONException) {
-            Bridge.log("Error creating whitelist JSON: ${e.message}", Log.ERROR)
-            "{}"
-        }
-    }
-
-    // Data class to hold app info
-    data class AppInfo(
-        val id: String,
-        val name: String
-    )
-
-    // Helper function to split JSON into chunks
-    private fun createWhitelistChunks(json: String): List<ByteArray> {
-        val jsonBytes = json.toByteArray(Charsets.UTF_8)
-        val totalChunks = (jsonBytes.size + MAX_CHUNK_SIZE - 1) / MAX_CHUNK_SIZE
-
-        return List(totalChunks) { chunkIndex ->
-            val start = chunkIndex * MAX_CHUNK_SIZE
-            val end = (start + MAX_CHUNK_SIZE).coerceAtMost(jsonBytes.size)
-            val payloadChunk = jsonBytes.copyOfRange(start, end)
-
-            // Create the header: [WHITELIST_CMD, total_chunks, chunk_index]
-            val header = byteArrayOf(
-                WHITELIST_CMD.toByte(),
-                totalChunks.toByte(),
-                chunkIndex.toByte()
-            )
-
-            header + payloadChunk
-        }
-    }
-
-    private fun showHomeScreen() {
-        Bridge.log("Nex: showHomeScreen")
-        
-        if (lastThingDisplayedWasAnImage) {
-            // clearNexScreen()
-            lastThingDisplayedWasAnImage = false
-        }
-    }
-
-    private fun updateConnectionState() {
-        connectionState = if (isMainConnected) {
-            SmartGlassesConnectionState.CONNECTED.also {
-                Bridge.log("Nex: Main glasses connected")
-                lastConnectionTimestamp = System.currentTimeMillis()
-                // Removed commented sleep code as it's not needed
-                connectionEvent(it)
-            }
-        } else {
-            SmartGlassesConnectionState.DISCONNECTED.also {
-                Bridge.log("Nex: No Main glasses connected")
-                connectionEvent(it)
-            }
-        }
-    }
-
     private fun createGattCallback(): BluetoothGattCallback {
         return object : BluetoothGattCallback() {
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
@@ -1376,6 +639,138 @@ class MentraNex : SGCManager() {
         }
     }
 
+    private fun handleMainTaskMessage(msg: Message): Boolean {
+        val msgCode = msg.what
+        Bridge.log("Nex: handleMessage msgCode: $msgCode")
+        Bridge.log("Nex: handleMessage obj: ${msg.obj}")
+        
+        return when (msgCode) {
+            MAIN_TASK_HANDLER_CODE_GATT_STATUS_CHANGED -> {}
+            MAIN_TASK_HANDLER_CODE_DISCOVER_SERVICES -> {
+                val statusBool = msg.obj as? Boolean ?: false
+                if (statusBool) {
+                    mainGlassGatt?.let { initNexGlasses(it) }
+                }
+            }
+            MAIN_TASK_HANDLER_CODE_CHARACTERISTIC_VALUE_NOTIFIED -> {
+                val characteristic = msg.obj as? BluetoothGattCharacteristic
+                characteristic?.let { onCharacteristicChangedHandler(it) }
+            }
+            MAIN_TASK_HANDLER_CODE_CONNECT_DEVICE -> {}
+            MAIN_TASK_HANDLER_CODE_DISCONNECT_DEVICE -> {}
+            MAIN_TASK_HANDLER_CODE_RECONNECT_DEVICE -> {
+                mainDevice?.let { attemptGattConnection(it) }
+            }
+            MAIN_TASK_HANDLER_CODE_CANCEL_RECONNECT_DEVICE -> {}
+            MAIN_TASK_HANDLER_CODE_RECONNECT_GATT -> {}
+            MAIN_TASK_HANDLER_CODE_SCAN_START -> {}
+            MAIN_TASK_HANDLER_CODE_SCAN_END -> {}
+            MAIN_TASK_HANDLER_CODE_BATTERY_QUERY -> {
+                queryBatteryStatus()
+            }
+            MAIN_TASK_HANDLER_CODE_HEART_BEAT -> {
+                // Note: Heartbeat is now handled by receiving ping from glasses
+                // This case is kept for backward compatibility but no longer used
+                Bridge.log("Nex: Heartbeat handler called - no longer sending periodic pings")
+            }
+        }
+
+        return true
+    }
+
+    private fun initNexGlasses(gatt: BluetoothGatt) {
+        // Start MTU discovery with our maximum target
+        Bridge.log("Nex: 🔍 MTU Discovery: Requesting maximum MTU size: $MTU_517")
+        Bridge.log("Nex: 🎯 Target: Use $MTU_517 bytes max, or $MTU_DEFAULT bytes default")
+        Bridge.log("Nex: 📤 Requesting MTU: $MTU_517 bytes")
+        gatt.requestMtu(MTU_517) // Request our maximum MTU
+
+        val uartService = gatt.getService(MAIN_SERVICE_UUID)
+
+        if (uartService != null) {
+            val writeChar = uartService.getCharacteristic(WRITE_CHAR_UUID)
+            val notifyChar = uartService.getCharacteristic(NOTIFY_CHAR_UUID)
+
+            writeChar?.let { 
+                mainWriteChar = it
+                Bridge.log("Nex: glass TX characteristic found")
+            }
+
+            notifyChar?.let {
+                mainNotifyChar = it
+                enableNotification(gatt, it)
+                Bridge.log("Nex: glass RX characteristic found")
+            }
+
+            // Mark as connected but wait for setup below to update connection state
+            isMainConnected = true
+            Bridge.log("Nex: PROC_QUEUE - left side setup complete")
+
+            if (isMainConnected) {
+                // Do first battery status query
+                mainTaskHandler.sendEmptyMessageDelayed(MAIN_TASK_HANDLER_CODE_BATTERY_QUERY, 10)
+
+                // Restore previous microphone state or disable if this is the first connection
+                val shouldRestoreMic = microphoneStateBeforeDisconnection
+                Bridge.log("Nex: `Restoring microphone state to: $shouldRestoreMic (previous state: $microphoneStateBeforeDisconnection)")
+                
+                if (shouldRestoreMic) {
+                    startMicBeat(MICBEAT_INTERVAL_MS.toInt())
+                } else {
+                    stopMicBeat()
+                }
+
+                // Enable our AugmentOS notification key
+                sendWhiteListCommand(10)
+
+                showHomeScreen() // Turn on the NexGlasses display
+                updateConnectionState()
+
+                // Post protobuf schema version information (only once)
+                if (!protobufVersionPosted) {
+                    postProtobufSchemaVersionInfo()
+                    protobufVersionPosted = true
+                }
+
+                // Query glasses protobuf version from firmware
+                Bridge.log("=== SENDING GLASSES PROTOBUF VERSION REQUEST ===")
+                val versionQueryPacket = ProtobufUtils.generateVersionRequestCommandBytes()
+                Bridge.log("Sent glasses protobuf version request with msg_id: $msgId")
+            }
+        } else {
+            Log.e(TAG, " glass UART service not found")
+        }
+    }
+
+    private fun enableNotification(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+        Bridge.log("Nex: PROC_QUEUE - Starting notification setup")
+        
+        // Enable notifications
+        val result = gatt.setCharacteristicNotification(characteristic, true)
+        Bridge.log("Nex: PROC_QUEUE - setCharacteristicNotification result: $result")
+
+        // Set write type for the characteristic
+        characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+        Bridge.log("Nex: PROC_QUEUE - write type set")
+
+        // Add delay
+        Bridge.log("Nex: PROC_QUEUE - waiting to enable notification...")
+        try {
+            Thread.sleep(100)
+        } catch (e: InterruptedException) {
+            Log.e(TAG, "Error sending data: " + e.getMessage());
+        }
+
+        // Get and configure descriptor
+        val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG_UUID)
+        descriptor?.let {
+            Bridge.log
+            it.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+            val writeResult = gatt.writeDescriptor(it)
+            Bridge.log("Nex: PROC_QUEUE - set descriptor with result: $writeResult")
+        }
+    }
+
     private fun onCharacteristicChangedHandler(characteristic: BluetoothGattCharacteristic) {
         if (characteristic.uuid == NOTIFY_CHAR_UUID) {
             val data = characteristic.value
@@ -1446,6 +841,284 @@ class MentraNex : SGCManager() {
                 else -> {
                     Bridge.log("unknown packetType: ${String.format("%02X ", packetType)}")
                 }
+            }
+        }
+    }
+
+    private fun attemptGattConnection(device: BluetoothDevice) {
+        if (device == null) {
+            Bridge.log("Cannot connect to GATT: Device is null", Log.WARN)
+            return
+        }
+
+        val deviceName = device.name
+        if (deviceName.isNullOrEmpty()) {
+            Bridge.log("Skipping null/empty device name: ${device.address}... this means something horrific has occurred. Look into this.", Log.ERROR)
+            return
+        }
+
+        Bridge.log("attemptGattConnection called for device: $deviceName (${device.address})")
+
+        connectionState = SmartGlassesConnectionState.CONNECTING
+        Bridge.log("Setting connectionState to CONNECTING. Notifying connectionEvent.")
+        connectionEvent(connectionState)
+
+        if (mainGlassGatt == null) {
+            Bridge.log("Attempting GATT connection for Main Glass...")
+            mainGlassGatt = device.connectGatt(context, false, mainGattCallback)
+            isMainConnected = false
+            Bridge.log("Main GATT connection initiated. isMainConnected set to false.")
+        } else {
+            Bridge.log("Main Glass GATT already exists")
+        }
+    }
+
+    private fun postProtobufSchemaVersionInfo() {
+        try {
+            // Call the version method only once
+            val schemaVersion = ProtobufUtils.getProtoVersion(context)
+            
+            // Build the info string directly instead of calling getProtobufBuildInfo()
+            val fileDescriptorName = mentraos.ble.MentraosBle.getDescriptor().file.name
+            val buildInfo = "Schema v$schemaVersion | $fileDescriptorName"
+            
+            val event = ProtobufSchemaVersionEvent(
+                schemaVersion, 
+                buildInfo, 
+                smartGlassesDevice?.deviceModelName ?: "Unknown"
+            )
+            
+            EventBus.getDefault().post(event)
+            Bridge.log("Posted protobuf schema version event: $buildInfo")
+        } catch (e: Exception) {
+            Bridge.log("Error posting protobuf schema version event: ${e.message}", Log.ERROR, e)
+        }
+    }
+
+    private fun connectToSmartGlasses() {
+        // Register bonding receiver
+        Bridge.log("connectToSmartGlasses start")
+        Bridge.log("try to ConnectToSmartGlassesing deviceModelName: ${device.deviceModelName} deviceAddress: ${device.deviceAddress}")
+        preferredMainDeviceId = CoreManager.getInstance().getDeviceName()
+        if (!bluetoothAdapter.isEnabled) {
+            return
+        }
+        when {
+            !device.deviceModelName.isNullOrEmpty() && !device.deviceAddress.isNullOrEmpty() -> {
+                stopScan()
+                mainDevice = bluetoothAdapter.getRemoteDevice(device.deviceAddress)
+                mainTaskHandler?.sendEmptyMessageDelayed(MAIN_TASK_HANDLER_CODE_RECONNECT_DEVICE, 0)
+            }
+            savedNexMainAddress != null -> {
+                mainDevice = bluetoothAdapter.getRemoteDevice(savedNexMainAddress)
+                mainTaskHandler?.sendEmptyMessageDelayed(MAIN_TASK_HANDLER_CODE_RECONNECT_DEVICE, 0)
+            }
+            else -> {
+                // Start scanning for devices
+                stopScan()
+                connectionState = SmartGlassesConnectionState.SCANNING
+                connectionEvent(connectionState) // TODO: Figure out where is connection event defined????
+                startScan()
+            }
+        }
+    }
+
+    private fun destroy() {
+        Bridge.log("Nex: MentraNexSGC ONDESTROY")
+        showHomeScreen()
+        isKilled = true
+        // stop BLE scanning
+        stopScan()
+        // Save current microphone state before destroying
+        microphoneStateBeforeDisconnection = isMicrophoneEnabled
+        Bridge.log("Nex: Saved microphone state during destroy: $microphoneStateBeforeDisconnection")
+        // disable the microphone and stop sending micbeat
+        stopMicBeat()
+        // Stop periodic notifications
+        stopPeriodicNotifications()
+        mainGlassGatt?.let { gatt ->
+            gatt.disconnect()
+            gatt.close()
+            mainGlassGatt = null
+        }
+        lc3AudioPlayer?.let { player ->
+            try {
+                player.stopPlay()
+                Bridge.log("Nex: LC3 audio player stopped and cleaned up")
+            } catch (e: Exception) {
+                Bridge.log("Nex: Error stopping LC3 audio player during destroy: ${e.message}", Log.ERROR)
+            } finally {
+                lc3AudioPlayer = null
+            }
+        }
+        // Clean up handlers
+        mainTaskHandler?.removeCallbacksAndMessages(null)
+        whiteListHandler?.removeCallbacksAndMessages(null)
+        micEnableHandler?.removeCallbacksAndMessages(null)
+        notificationHandler?.removeCallbacks(notificationRunnable)
+        textWallHandler?.removeCallbacks(textWallRunnable)
+        findCompatibleDevicesHandler?.removeCallbacksAndMessages(null)
+        // Free LC3 decoder
+        if (lc3DecoderPtr != 0L) {
+            L3cCpp.freeDecoder(lc3DecoderPtr)
+            lc3DecoderPtr = 0L
+        }
+        currentImageChunks.clear()
+        isImageSendProgressing = false
+        sendQueue.clear()
+        // Add a dummy element to unblock the take() call if needed
+        sendQueue.offer(emptyArray()) // is this needed?
+        isWorkerRunning = false
+        isMainConnected = false
+        Bridge.log("Nex: MentraNexSGC cleanup complete")
+    }
+
+    private fun startScan() {
+        val scanner = bluetoothAdapter.bluetoothLeScanner
+        if (scanner == null) {
+            Bridge.log("BluetoothLeScanner not available.", Log.ERROR)
+            return
+        }
+
+        // Optionally, define filters if needed
+        val filters = mutableListOf<ScanFilter>()
+        // For example, to filter by device name:
+        // filters.add(ScanFilter.Builder().setDeviceName("Even G1_").build())
+
+        // Set desired scan settings
+        val settings = ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .build()
+
+        // Start scanning
+        isScanning = true
+        scanner.startScan(filters, settings, modernScanCallback)
+        scanner.flushPendingScanResults(modernScanCallback)
+        Bridge.log("CALL START SCAN - Started scanning for devices...")
+
+        // Ensure scanning state is immediately communicated to UI
+        connectionState = SmartGlassesConnectionState.SCANNING
+        connectionEvent(connectionState)
+
+        // Stop the scan after some time (e.g., 10-15s instead of 60 to avoid
+        // throttling)
+        // handler.postDelayed({ stopScan() }, 10000)
+    }
+
+    private fun stopScan() {
+        val scanner = bluetoothAdapter.bluetoothLeScanner
+        scanner?.stopScan(modernScanCallback)
+        isScanning = false
+        Bridge.log("Stopped scanning for devices")
+        
+        if (bleScanCallback != null && isScanningForCompatibleDevices) {
+            scanner?.stopScan(bleScanCallback)
+            isScanningForCompatibleDevices = false
+        }
+    }
+
+    private fun displayBitmapImageForNexGlasses(bmpData: ByteArray, width: Int, height: Int) {
+        Bridge.log("Starting BMP display process for ${width}x$height image")
+
+        try {
+            if (bmpData.isEmpty()) {
+                Bridge.log("Invalid BMP data provided", Log.ERROR)
+                return
+            }
+
+            Bridge.log("Processing BMP data, size: ${bmpData.size} bytes")
+
+            // Generate proper 2-byte hex stream ID (e.g., "002A") as per protobuf specification
+            val totalChunks = (bmpData.size + BMP_CHUNK_SIZE - 1) / BMP_CHUNK_SIZE
+            val streamId = "%04X".format(random.nextInt(0x10000)) // 4-digit hex format
+            
+            val startImageSendingBytes = createStartSendingImageChunksCommand(streamId, totalChunks, width, height)
+            sendDataSequentially(startImageSendingBytes)
+
+            // Send all chunks with proper stream ID parsing
+            val chunks = createBmpChunksForNexGlasses(streamId, bmpData, totalChunks)
+            currentImageChunks = chunks
+            sendDataSequentially(chunks)
+
+            // Note: The following are commented out in the original
+            // sendBmpEndCommand()
+            // sendBmpCRC(bmpData)
+            // lastThingDisplayedWasAnImage = true
+
+        } catch (e: Exception) {
+            Bridge.log("Error in displayBitmapImage: ${e.message}", Log.ERROR)
+        }
+    }
+
+    private fun stopPeriodicNotifications() {
+        notificationHandler?.removeCallbacks(notificationRunnable)
+        Bridge.log("Stopped periodic notifications")
+    }
+
+    private fun startMicBeat(delay: Int) {
+        Bridge.log("Nex: Starting micbeat")
+        if (micBeatCount > 0) {
+            stopMicBeat()
+        }
+        sendSetMicEnabled(true, 10)
+        micBeatRunnable = Runnable {
+            Bridge.log("Nex: SENDING MIC BEAT")
+            setMicEnabled(shouldUseGlassesMic, 1)
+            micBeatHandler.postDelayed(micBeatRunnable, MICBEAT_INTERVAL_MS)
+        }
+        micBeatHandler.postDelayed(micBeatRunnable, delay.toLong())
+    }
+
+    private fun stopMicBeat() {
+        sendSetMicEnabled(false, 10)
+        if (micBeatHandler != null) {
+            micBeatHandler.removeCallbacksAndMessages(null);
+            micBeatHandler.removeCallbacksAndMessages(micBeatRunnable);
+            micBeatRunnable = null;
+            micBeatCount = 0;
+        }
+    }
+
+    private fun sendWhiteListCommand(delay: Int) {
+        if (whiteListedAlready) return
+        
+        whiteListedAlready = true
+        Bridge.log("Nex: Sending whitelist command")
+        
+        whiteListHandler.postDelayed({
+            val chunks = getWhitelistChunks()
+            sendDataSequentially(chunks)
+            
+            // Uncomment if needed for debugging:
+            // chunks.forEach { chunk ->
+            //     Bridge.log("Nex: Sending this chunk for white list: ${bytesToUtf8(chunk)}")
+            //     sendDataSequentially(chunk)
+            //     // Thread.sleep(150) // Uncomment if delay between chunks is needed
+            // }
+        }, delay.toLong())
+    }
+
+    private fun showHomeScreen() {
+        Bridge.log("Nex: showHomeScreen")
+        
+        if (lastThingDisplayedWasAnImage) {
+            // clearNexScreen()
+            lastThingDisplayedWasAnImage = false
+        }
+    }
+
+    private fun updateConnectionState() {
+        connectionState = if (isMainConnected) {
+            SmartGlassesConnectionState.CONNECTED.also {
+                Bridge.log("Nex: Main glasses connected")
+                lastConnectionTimestamp = System.currentTimeMillis()
+                // Removed commented sleep code as it's not needed
+                connectionEvent(it)
+            }
+        } else {
+            SmartGlassesConnectionState.DISCONNECTED.also {
+                Bridge.log("Nex: No Main glasses connected")
+                connectionEvent(it)
             }
         }
     }
@@ -1682,202 +1355,397 @@ class MentraNex : SGCManager() {
         EventBus.getDefault().post(HeartbeatReceivedEvent(timestamp))
     }
 
-    private fun attemptGattConnection(device: BluetoothDevice) {
-        if (device == null) {
-            Bridge.log("Cannot connect to GATT: Device is null", Log.WARN)
-            return
-        }
+    /////// PROTOBUF COMMUNICATION
 
-        val deviceName = device.name
-        if (deviceName.isNullOrEmpty()) {
-            Bridge.log("Skipping null/empty device name: ${device.address}... this means something horrific has occurred. Look into this.", Log.ERROR)
-            return
-        }
-
-        Bridge.log("attemptGattConnection called for device: $deviceName (${device.address})")
-
-        connectionState = SmartGlassesConnectionState.CONNECTING
-        Bridge.log("Setting connectionState to CONNECTING. Notifying connectionEvent.")
-        connectionEvent(connectionState)
-
-        connectLeftDevice(device)
+    private fun constructPongResponse(): ByteArray {
+        Bridge.log("Nex: Constructing pong response to glasses ping")
+        
+        // Create the PongResponse message
+        val pongResponse = PongResponse.newBuilder().build()
+        // Create the PhoneToGlasses message with the pong response
+        val phoneToGlasses = PhoneToGlasses.newBuilder().setPong(pongResponse).build()
+        return generateProtobufCommandBytes(phoneToGlasses)
     }
 
-    private fun connectLeftDevice(device: BluetoothDevice) {
-        if (mainGlassGatt == null) {
-            Bridge.log("Attempting GATT connection for Main Glass...")
-            mainGlassGatt = device.connectGatt(context, false, mainGattCallback)
-            isMainConnected = false
-            Bridge.log("Main GATT connection initiated. isMainConnected set to false.")
-        } else {
-            Bridge.log("Main Glass GATT already exists")
-        }
+    fun getWhitelistChunks(): List<ByteArray> {
+        // Define the hardcoded whitelist
+        val apps = listOf(AppInfo("com.augment.os", "AugmentOS"))
+        val whitelistJson = createWhitelistJson(apps)
+
+        Bridge.log("Creating chunks for hardcoded whitelist: $whitelistJson")
+
+        // Convert JSON to bytes and split into chunks
+        return createWhitelistChunks(whitelistJson)
     }
 
-    private fun getProtobufSchemaVersion(): Int {
+    private fun createWhitelistJson(apps: List<AppInfo>): String {
         return try {
-            // Get the protobuf descriptor and extract the schema version
-            val fileDescriptor = mentraos.ble.MentraosBle.getDescriptor().file
-            
-            Bridge.log("Proto file descriptor: ${fileDescriptor.name}")
-            
-            // Method 1: Try to access the custom mentra_schema_version option
-            try {
-                // Get the file options from the descriptor
-                val options = fileDescriptor.options
-                Bridge.log("Got file options: $options")
-                
-                // Try to access the custom option using the extension registry
-                // First, check if the extension is available in the generated code
-                try {
-                    // Look for the generated extension in the MentraosBle class
-                    val fields = mentraos.ble.MentraosBle::class.java.declaredFields
-                    for (field in fields) {
-                        if (field.name.contains("schema", ignoreCase = true) || 
-                            field.name.contains("version", ignoreCase = true)) {
-                            Bridge.log("Found potential version field: ${field.name}")
-                            field.isAccessible = true
-                            try {
-                                val value = field.get(null)
-                                if (value is com.google.protobuf.Extension<*, *>) {
-                                    @Suppress("UNCHECKED_CAST")
-                                    val ext = value as com.google.protobuf.Extension<com.google.protobuf.DescriptorProtos.FileOptions, Int>
-                                    if (options.hasExtension(ext)) {
-                                        val version = options.getExtension(ext)
-                                        Bridge.log("Found schema version via extension: $version")
-                                        return version
-                                    }
-                                }
-                            } catch (fieldException: Exception) {
-                                Bridge.log("Field access failed for ${field.name}: ${fieldException.message}")
-                            }
-                        }
-                    }
-                } catch (extensionException: Exception) {
-                    Bridge.log("Extension search failed: ${extensionException.message}")
+            val appList = JSONArray().apply {
+                apps.forEach { app ->
+                    put(JSONObject().apply {
+                        put("id", app.id)
+                        put("name", app.name)
+                    })
                 }
-            } catch (optionsException: Exception) {
-                Bridge.log("Options access failed: ${optionsException.message}")
             }
-            
-            // Method 2: Try to read from the actual proto file content
-            try {
-                val protoVersion = readProtoVersionFromProject()
-                if (protoVersion != null) {
-                    Bridge.log("Read proto version from project: $protoVersion")
-                    return protoVersion.toInt()
-                }
-            } catch (projectException: Exception) {
-                Bridge.log("Project file reading failed: ${projectException.message}")
-            }
-            
-            Bridge.log("Could not extract protobuf schema version dynamically, using fallback", Log.WARN)
-            1 // Fallback to version 1
-        } catch (e: Exception) {
-            Bridge.log("Error getting protobuf schema version: ${e.message}", Log.ERROR, e)
-            1 // Fallback to version 1
+
+            JSONObject().apply {
+                put("calendar_enable", false)
+                put("call_enable", false)
+                put("msg_enable", false)
+                put("ios_mail_enable", false)
+                put("app", JSONObject().apply {
+                    put("list", appList)
+                    put("enable", true)
+                })
+            }.toString()
+        } catch (e: JSONException) {
+            Bridge.log("Error creating whitelist JSON: ${e.message}", Log.ERROR)
+            "{}"
         }
     }
 
-    /**
-     * Attempts to read the protobuf schema version from the proto file in the project
-     */
-    private fun readProtoVersionFromProject(): String? {
-        // Try to read from assets first
-        try {
-            context.assets.open("mentraos_ble.proto").use { inputStream ->
-                val content = inputStream.bufferedReader().use { it.readText() }
-                return extractVersionFromProtoContent(content)
-            }
-        } catch (e: Exception) {
-            Bridge.log("Could not read from assets: ${e.message}")
-        }
+    // Data class to hold app info
+    data class AppInfo(
+        val id: String,
+        val name: String
+    )
 
-        // Try to read from resources
-        try {
-            val resId = context.resources.getIdentifier("mentraos_ble", "raw", context.packageName)
-            if (resId != 0) {
-                context.resources.openRawResource(resId).use { inputStream ->
-                    val content = inputStream.bufferedReader().use { it.readText() }
-                    return extractVersionFromProtoContent(content)
-                }
-            }
-        } catch (e: Exception) {
-            Bridge.log("Could not read from resources: ${e.message}")
-        }
+    // Helper function to split JSON into chunks
+    private fun createWhitelistChunks(json: String): List<ByteArray> {
+        val jsonBytes = json.toByteArray(Charsets.UTF_8)
+        val totalChunks = (jsonBytes.size + MAX_CHUNK_SIZE - 1) / MAX_CHUNK_SIZE
 
-        // Try to read from the project directory structure
-        try {
-            val projectPaths = arrayOf(
-                // Relative to Android project root
-                "../../mcu_client/mentraos_ble.proto",
-                "../../../mcu_client/mentraos_ble.proto",
-                "../../../../mcu_client/mentraos_ble.proto",
-                // Absolute paths from common Android locations
-                "/data/data/${context.packageName}/../../mcu_client/mentraos_ble.proto",
-                // Try external storage
-                "${android.os.Environment.getExternalStorageDirectory()}/MentraOS/mcu_client/mentraos_ble.proto"
+        return List(totalChunks) { chunkIndex ->
+            val start = chunkIndex * MAX_CHUNK_SIZE
+            val end = (start + MAX_CHUNK_SIZE).coerceAtMost(jsonBytes.size)
+            val payloadChunk = jsonBytes.copyOfRange(start, end)
+
+            // Create the header: [WHITELIST_CMD, total_chunks, chunk_index]
+            val header = byteArrayOf(
+                WHITELIST_CMD.toByte(),
+                totalChunks.toByte(),
+                chunkIndex.toByte()
             )
 
-            for (path in projectPaths) {
-                try {
-                    val protoFile = java.io.File(path)
-                    Bridge.log("Checking path: ${protoFile.absolutePath}")
-                    if (protoFile.exists() && protoFile.canRead()) {
-                        Bridge.log("Found proto file at: ${protoFile.absolutePath}")
-                        val content = protoFile.readText(Charsets.UTF_8)
-                        return extractVersionFromProtoContent(content)
-                    }
-                } catch (e: Exception) {
-                    Bridge.log("Path check failed for $path: ${e.message}")
+            header + payloadChunk
+        }
+    }
+
+    private fun createBmpChunksForNexGlasses(streamId: String, bmpData: ByteArray, totalChunks: Int): List<ByteArray> {
+        val chunks = mutableListOf<ByteArray>()
+        Bridge.log("Creating $totalChunks chunks from ${bmpData.size} bytes")
+        
+        // Parse hex stream ID to bytes (e.g., "002A" -> 0x00, 0x2A)
+        val streamIdInt = streamId.toInt(16)
+        
+        repeat(totalChunks) { i ->
+            val start = i * BMP_CHUNK_SIZE
+            val end = minOf(start + BMP_CHUNK_SIZE, bmpData.size)
+            val chunk = bmpData.copyOfRange(start, end)
+            
+            val header = ByteArray(4 + chunk.size).apply {
+                this[0] = PACKET_TYPE_IMAGE // 0xB0
+                this[1] = (streamIdInt shr 8).toByte() // Stream ID high byte
+                this[2] = streamIdInt.toByte()         // Stream ID low byte
+                this[3] = i.toByte()                   // Chunk index
+                System.arraycopy(chunk, 0, this, 4, chunk.size)
+            }
+            chunks.add(header)
+        }
+        return chunks
+    }
+
+    private fun createStartSendingImageChunksCommand(streamId: String, totalChunks: Int, width: Int, height: Int): ByteArray {
+        Bridge.log("=== SENDING IMAGE DISPLAY COMMAND TO GLASSES ===")
+        Bridge.log("Image Stream ID: $streamId")
+        Bridge.log("Total Chunks: $totalChunks")
+        Bridge.log("Image Position: X=0, Y=0")
+        Bridge.log("Image Dimensions: ${width}x$height")
+        Bridge.log("Image Encoding: raw")
+        
+        val displayImage = DisplayImage.newBuilder()
+            .setStreamId(streamId)
+            .setTotalChunks(totalChunks)
+            .setX(0)
+            .setY(0)
+            .setWidth(width)
+            .setHeight(height)
+            .setEncoding("raw")
+            .build()
+
+        // Create the PhoneToGlasses using its builder and set the DisplayImage with msg_id
+        val phoneToGlasses = PhoneToGlasses.newBuilder()
+            .setMsgId("img_start_1")
+            .setDisplayImage(displayImage)
+            .build()
+
+        return generateProtobufCommandBytes(phoneToGlasses)
+    }
+
+    private fun createTextWallChunksForNex(text: String): ByteArray {
+        val textNewBuilder = DisplayText.newBuilder()
+            .setColor(10000)
+            .setText(text)
+            .setSize(48)
+            .setX(20)
+            .setY(260)
+            .build()
+
+        Bridge.log("Nex: === SENDING TEXT TO GLASSES ===")
+        Bridge.log("Nex: Text: \"$text\"")
+        Bridge.log("Nex: Text Length: ${text.length} characters")
+        Bridge.log("Nex: DisplayText Builder: $textNewBuilder")
+
+        // Create the PhoneToGlasses using its builder and set the DisplayText
+        val phoneToGlasses = PhoneToGlasses.newBuilder()
+            .setDisplayText(textNewBuilder)
+            .build()
+
+        return generateProtobufCommandBytes(phoneToGlasses)
+    }
+
+    private fun sendHeadUpAngle(angle: Int) {
+        val headUpAngleConfig = HeadUpAngleConfig.newBuilder().setAngle(angle).build()
+        val phoneToGlasses = PhoneToGlasses.newBuilder()
+            .setHeadUpAngle(headUpAngleConfig)
+            .build()
+        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
+        sendDataSequentially(cmdBytes, 10)
+        Bridge.log("Nex: Sent headUp angle command => Angle: $angle")
+    }
+
+    private fun sendDashboardPositionCommand(height: Int, depth: Int) {
+        // clamp height to 0-8 and depth to 1-9
+        val clampedHeight = height.coerceIn(0, 8)
+        val clampedDepth = depth.coerceIn(1, 9)
+        Bridge.log("Nex: === SENDING DASHBOARD POSITION COMMAND TO GLASSES ===")
+        Bridge.log("Nex: Dashboard Position - Height: $clampedHeight (0-8), Depth: $clampedDepth (1-9)")
+        val displayHeightConfig = DisplayHeightConfig.newBuilder()
+            .setHeight(clampedHeight)
+            .build()
+        
+        val phoneToGlasses = PhoneToGlasses.newBuilder()
+            .setDisplayHeight(displayHeightConfig)
+            .build()
+        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
+        sendDataSequentially(cmdBytes, 10)
+        Bridge.log("Nex: Sent dashboard height/depth command => Height: $clampedHeight, Depth: $clampedDepth")
+    }
+
+    private fun sendBrightnessCommand(brightness: Int) {
+        // Validate brightness range
+        val validBrightness = if (brightness != -1) {
+            (brightness * 63) / 100
+        } else {
+            (30 * 63) / 100 // Default to 30% if brightness is -1
+        }
+
+        Bridge.log("Nex: === SENDING BRIGHTNESS COMMAND TO GLASSES ===")
+        Bridge.log("Nex: Brightness Value: $brightness (validated: $validBrightness)")
+
+        val brightnessConfig = BrightnessConfig.newBuilder()
+            .setValue(brightness)
+            .build()
+
+        val phoneToGlasses = PhoneToGlasses.newBuilder()
+            .setBrightness(brightnessConfig)
+            .build()
+
+        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
+        sendDataSequentially(cmdBytes, 10)
+
+        Bridge.log("Nex: Sent auto light brightness command => Brightness: $brightness")
+    }
+
+    private fun sendAutoBrightnessCommand(autoLight: Boolean) {
+        Bridge.log("Nex: === SENDING AUTO BRIGHTNESS COMMAND TO GLASSES ===")
+        Bridge.log("Nex: Auto Brightness Enabled: $autoLight")
+
+        val autoBrightnessConfig = AutoBrightnessConfig.newBuilder()
+            .setEnabled(autoLight)
+            .build()
+            
+        val phoneToGlasses = PhoneToGlasses.newBuilder()
+            .setAutoBrightness(autoBrightnessConfig)
+            .build()
+
+        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
+        sendDataSequentially(cmdBytes, 10)
+
+        Bridge.log("Nex: Sent auto light sendAutoBrightnessCommand => $autoLight")
+    }
+
+    private fun sendSetMicEnabled(enable: Boolean, delay: Long) {
+        Bridge.log("Nex: setMicEnabled called with enable: $enable and delay: $delay")
+        Bridge.log("Nex: Running set mic enabled: $enable")
+        isMicrophoneEnabled = enable // Update the state tracker
+        micEnabled = enable
+        
+        micEnableHandler?.postDelayed({
+            if (!isConnected()) {
+                Bridge.log("Nex: Tryna start mic: Not connected to glasses")
+                return@postDelayed
+            }
+            Bridge.log("Nex: === SENDING MICROPHONE STATE COMMAND TO GLASSES ===")
+            Bridge.log("Nex: Microphone Enabled: $enable")
+            val micStateConfig = MicStateConfig.newBuilder()
+                .setEnabled(enable)
+                .build()
+            val phoneToGlasses = PhoneToGlasses.newBuilder()
+                .setMicState(micStateConfig)
+                .build()
+            val micConfigBytes = generateProtobufCommandBytes(phoneToGlasses)
+            sendDataSequentially(micConfigBytes, 10) // wait some time to setup the mic
+            Bridge.log("Nex: Sent MIC command: ${micConfigBytes.joinToString("") { "%02x".format(it) }}")
+        }, delay)
+    }
+
+    private fun queryBatteryStatus() {
+        Bridge.log("Nex: === SENDING BATTERY STATUS QUERY TO GLASSES ===")
+        val batteryQueryPacket = ProtobufUtils.generateBatteryStateRequestCommandBytes()
+        sendDataSequentially(batteryQueryPacket, 250)
+    }
+
+
+    private fun generateProtobufCommandBytes(phoneToGlasses: PhoneToGlasses): ByteArray {
+        val contentBytes = phoneToGlasses.toByteArray()
+        val chunk = ByteBuffer.allocate(contentBytes.size + 1)
+
+        chunk.put(PACKET_TYPE_PROTOBUF)
+        chunk.put(contentBytes)
+
+        // Enhanced logging for protobuf messages
+        val result = chunk.array()
+        logProtobufMessage(phoneToGlasses, result)
+
+        return result
+    }
+
+    // Enhanced logging method for protobuf messages
+    private fun logProtobufMessage(phoneToGlasses: PhoneToGlasses, fullMessage: ByteArray) {
+        val logMessage = buildString {
+            appendLine("=== PROTOBUF MESSAGE TO GLASSES ===")
+            appendLine("Message Type: ${phoneToGlasses.payloadCase}")
+
+            // Extract and log text content if present
+            when {
+                phoneToGlasses.hasDisplayText() -> {
+                    val text = phoneToGlasses.displayText.text
+                    appendLine("Text Content: \"$text\"")
+                    appendLine("Text Length: ${text.length} characters")
+                }
+                phoneToGlasses.hasDisplayScrollingText() -> {
+                    val text = phoneToGlasses.displayScrollingText.text
+                    appendLine("Scrolling Text Content: \"$text\"")
+                    appendLine("Text Length: ${text.length} characters")
                 }
             }
-        } catch (e: Exception) {
-            Bridge.log("Project file reading failed: ${e.message}")
+
+            // Log message size information
+            appendLine("Protobuf Payload Size: ${phoneToGlasses.toByteArray().size} bytes")
+            appendLine("Total Message Size: ${fullMessage.size} bytes")
+            appendLine("Packet Type: 0x${PACKET_TYPE_PROTOBUF.toString(16).padStart(2, '0').uppercase()}")
+            append("=====================================")
         }
 
-        return null
+        Bridge.log("Nex: $logMessage")
     }
 
-    /**
-     * Extracts version number from proto file content
-     */
-    private fun extractVersionFromProtoContent(content: String): String? {
-        return try {
-            // Look for the mentra_schema_version option
-            val pattern = Regex("""option\s*\(\s*mentra_schema_version\s*\)\s*=\s*(\d+)\s*;""")
-            val matchResult = pattern.find(content)
-            
-            matchResult?.let {
-                val version = it.groupValues[1]
-                Bridge.log("Extracted version from proto content: $version")
-                version
-            } ?: run {
-                Bridge.log("No mentra_schema_version found in proto content")
-                null
+
+    ///// PROCESSING THREAD /////////////////
+
+    // Start the worker thread if it's not already running
+    @Synchronized
+    private fun startWorkerIfNeeded() {
+        if (!isWorkerRunning) {
+            isWorkerRunning = true
+            Thread({ processQueue() }, "MentraNexSGCProcessQueue").start()
+        }
+    }
+
+    // Non-blocking function to add new send request
+    private fun sendDataSequentially(data: ByteArray) {
+        val chunks = arrayOf(SendRequest(data))
+        sendQueue.offer(chunks)
+        startWorkerIfNeeded()
+    }
+
+    // Non-blocking function to add new send request with wait time
+    private fun sendDataSequentially(data: ByteArray, waitTime: Int) {
+        val chunks = arrayOf(SendRequest(data, waitTime))
+        sendQueue.offer(chunks)
+        startWorkerIfNeeded()
+    }
+
+    private fun sendDataSequentially(data: List<ByteArray>) {
+        val chunks = Array(data.size) { i -> SendRequest(data[i]) }
+        sendQueue.offer(chunks)
+        startWorkerIfNeeded()
+    }
+
+    private fun processQueue() {
+        // First wait until the services are ready to receive data
+        Bridge.log("Nex: PROC_QUEUE - waiting on services waiters")
+        try {
+            mainServicesWaiter.waitWhileTrue()
+        } catch (e: InterruptedException) {
+            Bridge.log("Nex: Interrupted waiting for descriptor writes: $e", Log.ERROR)
+        }
+        Bridge.log("Nex: PROC_QUEUE - DONE waiting on services waiters")
+
+        while (!isKilled) {
+            try {
+                // Make sure services are ready before processing requests
+                mainServicesWaiter.waitWhileTrue()
+
+                // This will block until data is available
+                val requests = sendQueue.take()
+
+                for (request in requests) {
+                    if (isKilled) {
+                        isWorkerRunning = false
+                        break
+                    }
+
+                    try {
+                        // Force an initial delay so BLE gets all setup
+                        val timeSinceConnection = System.currentTimeMillis() - lastConnectionTimestamp
+                        if (timeSinceConnection < INITIAL_CONNECTION_DELAY_MS) {
+                            Thread.sleep(INITIAL_CONNECTION_DELAY_MS - timeSinceConnection)
+                        }
+
+                        // Send to main glass
+                        if (mainGlassGatt != null && mainWriteChar != null && isMainConnected) {
+                            mainWaiter.setTrue()
+                            mainWriteChar?.value = request.data
+                            mainGlassGatt?.writeCharacteristic(mainWriteChar)
+                            lastSendTimestamp = System.currentTimeMillis()
+                        }
+
+                        mainWaiter.waitWhileTrue()
+
+                        Thread.sleep(DELAY_BETWEEN_CHUNKS_SEND)
+
+                        // If the packet asked us to do a delay, then do it
+                        if (request.waitTime != -1) {
+                            Thread.sleep(request.waitTime.toLong())
+                        }
+                    } catch (e: InterruptedException) {
+                        Bridge.log("Nex: Error sending data: ${e.message}", Log.ERROR)
+                        if (isKilled) break
+                    }
+                }
+            } catch (e: InterruptedException) {
+                if (isKilled) {
+                    Bridge.log("Nex: Process queue thread interrupted - shutting down")
+                    break
+                }
+                Bridge.log("Nex: Error in queue processing: ${e.message}", Log.ERROR)
             }
-        } catch (e: Exception) {
-            Bridge.log("Error extracting version from proto content: ${e.message}", Log.ERROR)
-            null
         }
-    }
 
-    private fun queryGlassesProtobufVersionFromFirmware() {
-        Bridge.log("=== SENDING GLASSES PROTOBUF VERSION REQUEST ===")
-        
-        // Generate unique message ID for this request
-        val msgId = "ver_req_${System.currentTimeMillis()}"
-        
-        val versionRequest = VersionRequest.newBuilder()
-            .setMsgId(msgId)
-            .build()
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setMsgId(msgId)
-            .setVersionRequest(versionRequest)
-            .build()
-        val versionQueryPacket = generateProtobufCommandBytes(phoneToGlasses)
-        sendDataSequentially(versionQueryPacket, 100)
-        
-        Bridge.log("Sent glasses protobuf version request with msg_id: $msgId")
+        Bridge.log("Nex: Process queue thread exiting")
+        isWorkerRunning = false
     }
 }
