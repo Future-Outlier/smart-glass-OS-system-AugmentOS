@@ -13,7 +13,7 @@ const en = {
     caseCharging: "Case (Charging)",
     emptyState: "Glasses settings will appear here.\nPair glasses to adjust settings.",
     notConnectedInfo: "Changes to glasses settings will take effect when glasses are connected.",
-    advancedSettings: "Advanced Settings",
+    advancedSettings: "Advanced settings",
     recommended: "Recommended",
     autoBrightness: "Auto brightness",
     brightness: "Brightness",
