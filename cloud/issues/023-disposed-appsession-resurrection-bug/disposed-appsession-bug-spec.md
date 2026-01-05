@@ -29,7 +29,7 @@ Later, when resurrection is triggered:
 01:58:42.652 | Cleaning up AppSession          <-- ResourceTracker disposed here
 
 02:00:14.730 | Cannot track resources on a disposed ResourceTracker
-02:00:27.965 | Cannot track resources on a disposed ResourceTracker  
+02:00:27.965 | Cannot track resources on a disposed ResourceTracker
 02:00:47.355 | Cannot track resources on a disposed ResourceTracker
 ```
 
@@ -56,6 +56,7 @@ getOrCreateAppSession(packageName: string): AppSession | undefined {
 The DORMANT state is designed to allow late SDK reconnections after grace period expires. The session stays in the map so we can accept reconnections. However, `cleanup()` is also called to free resources, which disposes the ResourceTracker.
 
 This creates a contradiction:
+
 - DORMANT means "keep session for potential reconnection"
 - `cleanup()` means "release all resources permanently"
 
@@ -86,15 +87,15 @@ Check for disposed sessions in `getOrCreateAppSession()`:
 ```typescript
 getOrCreateAppSession(packageName: string): AppSession | undefined {
   let session = this.apps.get(packageName);
-  
+
   // If session is disposed, remove it and create fresh
   if (session?.isDisposed) {
-    this.logger.info({packageName}, 
+    this.logger.info({packageName},
       `Existing AppSession is disposed, creating fresh session`);
     this.apps.delete(packageName);
     session = undefined;
   }
-  
+
   if (!session) {
     session = new AppSession({...});
     this.apps.set(packageName, session);
@@ -151,12 +152,13 @@ The bug is triggered when the **SDK mini-app server shuts down gracefully** (red
 
 - SDK server restarts/redeploys (most common)
 - SDK process termination with SIGTERM (graceful shutdown handler)
-- SDK calling `session.stop()` or `session.disconnect()` 
+- SDK calling `session.stop()` or `session.disconnect()`
 - Any graceful SDK shutdown that sends `OWNERSHIP_RELEASE`
 
 ### Why It Doesn't Happen on Abnormal Disconnects
 
 If the SDK crashes or loses connection without sending `OWNERSHIP_RELEASE`:
+
 - `handleDisconnect()` doesn't see `_ownershipReleased` set
 - Goes into grace period instead of calling `cleanup()`
 - ResourceTracker stays alive
@@ -181,6 +183,7 @@ The disposed AppSession issue is a **symptom**. The **root cause** is that the S
 ### Why `clean_shutdown` Is Wrong
 
 When the SDK server shuts down (redeploy/restart):
+
 - It's going to come back up
 - The cloud SHOULD resurrect the app (trigger webhook)
 - The user expects their app to keep running
@@ -255,11 +258,66 @@ private async cleanup(): Promise<void> {
 
 ### When OWNERSHIP_RELEASE Should Be Sent
 
-| Reason | Send OWNERSHIP_RELEASE? | Why |
-|--------|------------------------|-----|
-| `switching_clouds` | ✅ Yes | User moved to another cloud, don't compete |
-| `user_logout` | ✅ Yes | User explicitly logged out |
-| `clean_shutdown` | ❌ No | Server restarting, cloud should resurrect |
+| Reason             | Send OWNERSHIP_RELEASE? | Why                                        |
+| ------------------ | ----------------------- | ------------------------------------------ |
+| `switching_clouds` | ✅ Yes                  | User moved to another cloud, don't compete |
+| `user_logout`      | ⚠️ Maybe                | Mobile WS disconnects anyway on logout     |
+| `clean_shutdown`   | ❌ No                   | Server restarting, cloud should resurrect  |
+
+## Analysis: Do We Still Need OWNERSHIP_RELEASE?
+
+### The Question
+
+The cloud already checks if mobile-to-cloud WebSocket is connected before resurrecting:
+
+```typescript
+const userConnected = this.userSession.websocket && this.userSession.websocket.readyState === WebSocketReadyState.OPEN
+
+if (!userConnected) {
+  // Don't resurrect, go to DORMANT
+}
+```
+
+Can we just use mobile WS connection as the source of truth and remove OWNERSHIP_RELEASE entirely?
+
+### Why `switching_clouds` OWNERSHIP_RELEASE Is Still Needed
+
+**The race condition during cloud transitions:**
+
+Without OWNERSHIP_RELEASE:
+
+1. User connected to Cloud A, app running
+2. User switches to Cloud B, starts same app
+3. Cloud A's mini-app WS breaks (SDK now talking to Cloud B)
+4. Cloud A starts 5-second grace period
+5. Cloud A checks: is mobile WS open? **YES** (still connected during transition!)
+6. Cloud A resurrects! Now BOTH clouds are fighting for the app.
+
+With OWNERSHIP_RELEASE:
+
+1. User connected to Cloud A, app running
+2. User switches to Cloud B, webhook triggers SDK
+3. SDK sees existing session for Cloud A, sends `OWNERSHIP_RELEASE: switching_clouds`
+4. Cloud A receives OWNERSHIP_RELEASE → goes to DORMANT
+5. Cloud A won't resurrect even if mobile WS is still briefly connected
+6. Clean handoff to Cloud B
+
+**Key insight:** During cloud transitions, the user may be briefly connected to BOTH clouds. OWNERSHIP_RELEASE tells the old cloud to stand down before the race condition occurs.
+
+### Summary: What to Keep vs Remove
+
+| Scenario             | OWNERSHIP_RELEASE | Mobile WS Check       | Recommendation                           |
+| -------------------- | ----------------- | --------------------- | ---------------------------------------- |
+| SDK restart/redeploy | ❌ Don't send     | Cloud resurrects      | **Fixed** - removed                      |
+| SDK crash            | N/A (can't send)  | Cloud resurrects      | Works correctly                          |
+| User switches clouds | ✅ Send           | Race condition!       | **Keep** - prevents both clouds fighting |
+| User logs out        | ⚠️ Optional       | Mobile WS disconnects | Could remove, but harmless               |
+
+### Conclusion
+
+**Keep OWNERSHIP_RELEASE for `switching_clouds` only.** It solves a real race condition that the mobile WS check cannot handle alone.
+
+The mobile WS check is necessary but not sufficient - it handles the "user disconnected" case but not the "user moved to another cloud while still briefly connected to both" case.
 
 ## Open Questions
 
@@ -276,4 +334,9 @@ private async cleanup(): Promise<void> {
 3. **Should we fix the SDK cleanup() as well?**
    - Yes, this is the root cause fix
    - The getOrCreateAppSession fix is a safety net
-   - **Decision**: Implement both fixes
+   - **Decision**: Implement both fixes ✅
+
+4. **Can we remove OWNERSHIP_RELEASE entirely?**
+   - No - still needed for `switching_clouds` to prevent race condition
+   - Mobile WS check is necessary but not sufficient
+   - **Decision**: Keep for `switching_clouds`, remove for `clean_shutdown` ✅
