@@ -2864,7 +2864,7 @@ public class MentraLive extends SGCManager {
      * Send stored user email to the ASG client for Sentry crash reporting
      */
     private void sendStoredUserEmailToAsgClient() {
-        String storedEmail = CoreManager.Companion.getShared().getStoredUserEmail();
+        String storedEmail = CoreManager.Companion.getInstance().getStoredUserEmail();
 
         if (storedEmail == null || storedEmail.isEmpty()) {
             Bridge.log("LIVE: No stored user email to send to ASG client");
