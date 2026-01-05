@@ -2290,6 +2290,9 @@ public class MentraLive extends SGCManager {
                 Bridge.log("LIVE: 🔄 Sending coreToken to ASG client");
                 sendCoreTokenToAsgClient();
 
+                // Send stored user email for crash reporting
+                sendStoredUserEmailToAsgClient();
+
                 //startDebugVideoCommandLoop();
 
                 // Start the heartbeat mechanism now that glasses are ready
@@ -2855,6 +2858,21 @@ public class MentraLive extends SGCManager {
         } catch (JSONException e) {
             Log.e(TAG, "Error creating coreToken JSON message", e);
         }
+    }
+
+    /**
+     * Send stored user email to the ASG client for Sentry crash reporting
+     */
+    private void sendStoredUserEmailToAsgClient() {
+        String storedEmail = CoreManager.Companion.getShared().getStoredUserEmail();
+
+        if (storedEmail == null || storedEmail.isEmpty()) {
+            Bridge.log("LIVE: No stored user email to send to ASG client");
+            return;
+        }
+
+        Bridge.log("LIVE: Sending stored user email to ASG client");
+        sendUserEmailToGlasses(storedEmail);
     }
 
     /**

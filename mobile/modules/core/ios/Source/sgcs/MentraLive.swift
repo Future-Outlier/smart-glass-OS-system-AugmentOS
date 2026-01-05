@@ -2129,6 +2129,7 @@ class MentraLive: NSObject, SGCManager {
         requestWifiStatus()
         requestVersionInfo()
         sendCoreTokenToAsgClient()
+        sendStoredUserEmailToAsgClient()
 
         // Send user settings to glasses
         sendUserSettings()
@@ -2783,6 +2784,19 @@ class MentraLive: NSObject, SGCManager {
         ]
 
         sendJson(json)
+    }
+
+    /// Send stored user email to the ASG client for Sentry crash reporting
+    private func sendStoredUserEmailToAsgClient() {
+        let storedEmail = CoreManager.shared.userEmail
+
+        guard !storedEmail.isEmpty else {
+            Bridge.log("LIVE: No stored user email to send to ASG client")
+            return
+        }
+
+        Bridge.log("LIVE: Sending stored user email to ASG client")
+        sendUserEmailToGlasses(storedEmail)
     }
 
     // MARK: - IMU Methods
