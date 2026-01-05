@@ -110,6 +110,9 @@ abstract class SGCManager {
     abstract fun forgetWifiNetwork(ssid: String)
     abstract fun sendHotspotState(enabled: Boolean)
 
+    // User Context (for crash reporting)
+    abstract fun sendUserEmailToGlasses(email: String)
+
     // Gallery
     abstract fun queryGalleryStatus()
     abstract fun sendGalleryMode()

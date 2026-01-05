@@ -111,6 +111,10 @@ protocol SGCManager {
     func forgetWifiNetwork(_ ssid: String)
     func sendHotspotState(_ enabled: Bool)
 
+    // MARK: - User Context (for crash reporting)
+
+    func sendUserEmailToGlasses(_ email: String)
+
     // MARK: - Gallery
 
     func queryGalleryStatus()

@@ -42,6 +42,7 @@ struct ViewState {
 
     var coreToken: String = ""
     var coreTokenOwner: String = ""
+    var userEmail: String = ""
     var sgc: SGCManager?
 
     // state
@@ -982,6 +983,12 @@ struct ViewState {
     func setHotspotState(_ enabled: Bool) {
         Bridge.log("MAN: 🔥 Setting glasses hotspot state: \(enabled)")
         sgc?.sendHotspotState(enabled)
+    }
+
+    func setUserEmail(_ email: String) {
+        Bridge.log("MAN: Setting user email for crash reporting")
+        userEmail = email
+        sgc?.sendUserEmailToGlasses(email)
     }
 
     func queryGalleryStatus() {
