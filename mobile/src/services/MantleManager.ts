@@ -134,20 +134,23 @@ class MantleManager {
       console.error("Mantle: Error starting location updates", error)
     }
 
-    // check for requirements immediately:
-    try {
-      const requirementsCheck = await checkConnectivityRequirementsUI()
-      if (!requirementsCheck) {
-        return
-      }
-      // give some time for the glasses to be fully ready:
-      BackgroundTimer.setTimeout(async () => {
-        await CoreModule.connectDefault()
-      }, 3000)
-    } catch (error) {
-      console.error("connect to glasses error:", error)
-      showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
-    }
+    // check for requirements immediately, but only if we've passed through onboarding:
+    // const onboardingCompleted = await useSettingsStore.getState().getSetting(SETTINGS.onboarding_completed.key) 
+    // if (onboardingCompleted) {
+    //   try {
+    //     const requirementsCheck = await checkConnectivityRequirementsUI()
+    //     if (!requirementsCheck) {
+    //       return
+    //     }
+    //     // give some time for the glasses to be fully ready:
+    //     BackgroundTimer.setTimeout(async () => {
+    //       await CoreModule.connectDefault()
+    //     }, 3000)
+    //   } catch (error) {
+    //     console.error("connect to glasses error:", error)
+    //     showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
+    //   }
+    // }
   }
 
   private setupSubscriptions() {
@@ -169,7 +172,7 @@ class MantleManager {
 
     // subscribe to core settings changes and update the core:
     useSettingsStore.subscribe(
-      state => state.getCoreSettings(),
+      (state) => state.getCoreSettings(),
       (state: Record<string, any>, previousState: Record<string, any>) => {
         const coreSettingsObj: Record<string, any> = {}
 
