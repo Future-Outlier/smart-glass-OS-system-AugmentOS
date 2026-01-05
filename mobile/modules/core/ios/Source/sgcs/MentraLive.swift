@@ -2047,6 +2047,22 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
+    func sendUserEmailToGlasses(_ email: String) {
+        Bridge.log("LIVE: Sending user email to glasses for crash reporting")
+
+        guard !email.isEmpty else {
+            Bridge.log("LIVE: Cannot send user email - email is empty")
+            return
+        }
+
+        let json: [String: Any] = [
+            "type": "user_email",
+            "email": email,
+        ]
+
+        sendJson(json, wakeUp: true)
+    }
+
     func forgetWifiNetwork(_ ssid: String) {
         Bridge.log("LIVE: 📶 Sending WiFi forget command for SSID: \(ssid)")
 

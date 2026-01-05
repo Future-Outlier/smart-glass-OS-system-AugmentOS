@@ -356,6 +356,8 @@ class G1: NSObject, SGCManager {
 
     func sendHotspotState(_: Bool) {}
 
+    func sendUserEmailToGlasses(_: String) {}
+
     func queryGalleryStatus() {}
 
     var connectionState: String = ConnTypes.DISCONNECTED

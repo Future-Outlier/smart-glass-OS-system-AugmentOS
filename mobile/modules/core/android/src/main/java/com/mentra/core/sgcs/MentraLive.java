@@ -4679,6 +4679,31 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    /**
+     * Sends user email to glasses for crash reporting identification
+     *
+     * @param email The user's email address
+     */
+    @Override
+    public void sendUserEmailToGlasses(String email) {
+        Bridge.log("LIVE: Sending user email to glasses for crash reporting");
+
+        if (email == null || email.isEmpty()) {
+            Log.w(TAG, "Cannot send user email - email is empty");
+            return;
+        }
+
+        try {
+            JSONObject emailCommand = new JSONObject();
+            emailCommand.put("type", "user_email");
+            emailCommand.put("email", email);
+            sendJson(emailCommand, true);
+            Log.d(TAG, "User email sent to glasses successfully");
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating user email JSON", e);
+        }
+    }
+
     public void sendCustomCommand(String commandJson) {
         Bridge.log("LIVE: Received custom command: " + commandJson);
 
