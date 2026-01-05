@@ -1,5 +1,6 @@
 const en = {
   deviceSettings: {
+    title: "Device Settings",
     microphone: "Microphone",
     deviceInformation: "Device info",
     microphoneSelection: "Microphone Selection",

@@ -1,4 +1,5 @@
 import {ScrollView} from "react-native"
+import {Image} from "react-native"
 
 import {ConnectDeviceButton} from "@/components/glasses/ConnectDeviceButton"
 import DeviceSettings from "@/components/glasses/DeviceSettings"
@@ -10,25 +11,36 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n/translate"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {getGlassesImage} from "@/utils/getGlassesImage"
+import {get} from "react-native/Libraries/TurboModule/TurboModuleRegistry"
 
 export default function Glasses() {
   const {theme} = useAppTheme()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const {goBack} = useNavigationHistory()
-  const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesConnected = useGlassesStore((state) => state.connected)
 
-  const formatGlassesTitle = (title: string) => title.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase())
-  let pageTitle
+  const formatGlassesTitle = (title: string) => title.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+  let pageSubtitle
+  let glassesComponent
 
   if (defaultWearable) {
-    pageTitle = formatGlassesTitle(defaultWearable)
-  } else {
-    pageTitle = translate("glasses:title")
+    pageSubtitle = formatGlassesTitle(defaultWearable)
+    glassesComponent = (
+      <Image source={getGlassesImage(defaultWearable)} style={{width: 110, maxHeight: 32}} resizeMode="contain" />
+    )
   }
 
   return (
     <Screen preset="fixed">
-      <Header title={pageTitle} leftIcon="chevron-left" onLeftPress={() => goBack()} />
+      <Header
+        title={translate("deviceSettings:title")}
+        subtitle={pageSubtitle}
+        leftIcon="chevron-left"
+        onLeftPress={() => goBack()}
+        // RightActionComponent={<Image source={glassesComponent} style={{width: 24, height: 24}} />}
+        RightActionComponent={glassesComponent}
+      />
       <ScrollView
         style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}
         contentInsetAdjustmentBehavior="automatic">
