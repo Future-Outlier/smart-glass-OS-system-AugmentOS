@@ -16,13 +16,13 @@ interface BaseStep {
   subtitle2?: string
   info?: string
   bullets?: string[]
-  /** Optional poster/thumbnail image shown while video loads */
-  poster?: ImageSource
 }
 
 interface VideoStep extends BaseStep {
   type: "video"
   source: VideoSource
+  /** Optional poster/thumbnail image shown while video loads */
+  poster?: ImageSource
   playCount: number
   containerStyle?: ViewStyle
   containerClassName?: string
@@ -81,8 +81,11 @@ export function OnboardingGuide({
   const [transitionCount, setTransitionCount] = useState(0)
   const [uiIndex, setUiIndex] = useState(1)
   const [activePlayer, setActivePlayer] = useState<1 | 2>(1)
-  const [isVideoLoading, setIsVideoLoading] = useState(true)
-  const [showPoster, setShowPoster] = useState(true)
+  // const [isVideoLoading, setIsVideoLoading] = useState(true)
+  // const [showPoster, setShowPoster] = useState(true)
+  const [player1Loading, setPlayer1Loading] = useState(true)
+  const [player2Loading, setPlayer2Loading] = useState(true)
+  const [showPoster, setShowPoster] = useState(false)
   focusEffectPreventBack()
 
   // Initialize players with first video sources found
@@ -100,7 +103,7 @@ export function OnboardingGuide({
 
   const currentPlayer = activePlayer === 1 ? player1 : player2
 
-  const nonTransitionVideoFiles = steps.filter(step => !step.transition)
+  const nonTransitionVideoFiles = steps.filter((step) => !step.transition)
   const counter = `${uiIndex} / ${nonTransitionVideoFiles.length}`
   const step = steps[currentIndex]
   const isCurrentStepImage = step.type === "image"
@@ -137,6 +140,16 @@ export function OnboardingGuide({
     }
   }, [exitFn, clearHistoryAndGoHome])
 
+  useEffect(() => {
+    if (player1Loading && activePlayer === 1) {
+      setShowPoster(true)
+    } else if (player2Loading && activePlayer === 2) {
+      setShowPoster(true)
+    } else {
+      setShowPoster(false)
+    }
+  }, [player1Loading, player2Loading, activePlayer])
+
   const handleNext = useCallback(
     (manual: boolean = false) => {
       console.log(`ONBOARD: handleNext(${manual})`)
@@ -159,8 +172,6 @@ export function OnboardingGuide({
       setShowReplayButton(false)
       setCurrentIndex(nextIndex)
       setPlayCount(0)
-      setIsVideoLoading(true)
-      setShowPoster(true)
 
       if (nextStep.transition) {
         setTransitionCount(transitionCount + 1)
@@ -176,8 +187,10 @@ export function OnboardingGuide({
         if (nextVideoSource) {
           if (activePlayer === 1) {
             player2.replace(nextVideoSource)
+            setPlayer2Loading(true)
           } else {
             player1.replace(nextVideoSource)
+            setPlayer1Loading(true)
           }
         }
         return
@@ -192,6 +205,7 @@ export function OnboardingGuide({
         player2.play()
         if (nextNextVideoSource) {
           player1.replace(nextNextVideoSource)
+          setPlayer1Loading(true)
         }
         player1.pause()
       } else {
@@ -200,6 +214,7 @@ export function OnboardingGuide({
         player1.play()
         if (nextNextVideoSource) {
           player2.replace(nextNextVideoSource)
+          setPlayer2Loading(true)
         }
         player2.pause()
       }
@@ -296,14 +311,7 @@ export function OnboardingGuide({
     if (isCurrentStepImage) return
 
     const subscription = currentPlayer.addListener("statusChange", (status: any) => {
-      console.log("statusChange", status)
-
-      // Track loading state
-      if (status.status === "loading") {
-        setIsVideoLoading(true)
-      } else if (status.status === "readyToPlay") {
-        setIsVideoLoading(false)
-      }
+      console.log("ONBOARD: statusChange", status)
 
       if (currentIndex === 0 && !autoStart) {
         return
@@ -315,6 +323,23 @@ export function OnboardingGuide({
 
     return () => subscription.remove()
   }, [currentPlayer, currentIndex, autoStart, isCurrentStepImage])
+
+  useEffect(() => {
+    const sub1 = player1.addListener("sourceLoad", (status: any) => {
+      // console.log("ONBOARD: player1 statusChange", status)
+      setPlayer1Loading(false)
+    })
+
+    const sub2 = player2.addListener("sourceLoad", (status: any) => {
+      // console.log("ONBOARD: player2 statusChange", status)
+      setPlayer2Loading(false)
+    })
+
+    return () => {
+      sub1.remove()
+      sub2.remove()
+    }
+  }, [player1])
 
   // Video playing change listener
   useEffect(() => {
@@ -328,7 +353,7 @@ export function OnboardingGuide({
         }
         if (step.type === "video" && playCount < step.playCount - 1) {
           setShowNextButton(true)
-          setPlayCount(prev => prev + 1)
+          setPlayCount((prev) => prev + 1)
           currentPlayer.currentTime = 0
           currentPlayer.play()
         } else {
@@ -382,6 +407,179 @@ export function OnboardingGuide({
   const isLastStep = currentIndex === steps.length - 1
   const isFirstStep = currentIndex === 0
 
+  const renderComposedVideo = () => {
+    let s = step as VideoStep
+    return (
+      <>
+        <View
+          className={`absolute top-0 left-0 right-0 bottom-0 z-${activePlayer === 1 ? 1 : 0} ${s.containerClassName}`}>
+          <VideoView
+            player={player1}
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+            nativeControls={false}
+            onFirstFrameRender={() => {}}
+          />
+        </View>
+        <View
+          className={`absolute top-0 left-0 right-0 bottom-0 z-${activePlayer === 1 ? 0 : 1} ${s.containerClassName}`}>
+          <VideoView
+            player={player2}
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+            nativeControls={false}
+            onFirstFrameRender={() => {}}
+          />
+        </View>
+        {/* Poster image overlay - shown until a video is loaded on a slow connection: */}
+        {s.poster && showPoster && (
+          <View className="absolute top-0 left-0 right-0 bottom-0 z-10">
+            <Image source={s.poster} style={{width: "100%", height: "100%"}} contentFit="contain" />
+          </View>
+        )}
+        {/* no poster, but still loading - show a loading indicator: */}
+        {showPoster && !s.poster && (
+          <View className="absolute top-0 left-0 right-0 bottom-0 z-10 items-center justify-center bg-background">
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        )}
+      </>
+    )
+  }
+
+  const renderDebugVideos = () => {
+    let s = step as VideoStep
+    let showPoster = false
+
+    console.log("ONBOARD: player1Loading", player1Loading)
+    console.log("ONBOARD: player2Loading", player2Loading)
+    // console.log("ONBOARD: activePlayer", activePlayer)
+    console.log("ONBOARD: showPoster", showPoster)
+    return (
+      <>
+        <View className="relative flex-col w-full">
+          <View className="relative w-full h-1/2">{renderComposedVideo()}</View>
+          <View className="relative flex flex-row w-full">
+            <VideoView
+              player={player1}
+              style={{
+                width: s.poster ? "33%" : "50%",
+                aspectRatio: 1,
+                borderWidth: activePlayer === 1 && !showPoster ? 2 : 0,
+                borderColor: "green",
+              }}
+              nativeControls={false}
+              onFirstFrameRender={() => {
+                console.log("ONBOARD: player1 first frame render")
+              }}
+            />
+            <VideoView
+              player={player2}
+              style={{
+                width: s.poster ? "33%" : "50%",
+                aspectRatio: 1,
+                borderWidth: activePlayer === 2 && !showPoster ? 2 : 0,
+                borderColor: "green",
+              }}
+              nativeControls={false}
+              onFirstFrameRender={() => {
+                console.log("ONBOARD: player2 first frame render")
+              }}
+            />
+            {s.poster && (
+              <Image
+                source={s.poster}
+                style={{
+                  width: "33%",
+                  height: "100%",
+                  borderWidth: showPoster ? 2 : 0,
+                  borderColor: "green",
+                }}
+                contentFit="contain"
+              />
+            )}
+            {!s.poster && (
+              <View className="w-1/3 items-center justify-center bg-background">
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+              </View>
+            )}
+          </View>
+        </View>
+      </>
+    )
+  }
+
+  const renderContent = () => {
+    if (isCurrentStepImage) {
+      return (
+        <View style={step.containerStyle} className={step.containerClassName}>
+          <Image
+            source={step.source}
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+            contentFit="contain"
+          />
+        </View>
+      )
+    }
+
+    return (
+      <>
+        {/* <View className="relative" style={{width: "100%"}}> */}
+        {/* {renderComposedVideo()} */}
+        {/* </View> */}
+
+        {__DEV__ ? renderDebugVideos() : renderComposedVideo()}
+
+        {/* Poster image overlay - shown until first frame renders */}
+        {/* {showPoster && step.poster && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 10,
+            }}>
+            <Image
+              source={step.poster}
+              style={{
+                width: "100%",
+                height: "100%",
+              }}
+              contentFit="contain"
+            />
+          </View>
+        )} */}
+
+        {/* Loading indicator - shown while video is loading and no poster */}
+        {/* {isVideoLoading && !step.poster && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 10,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: theme.colors.background,
+            }}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        )} */}
+      </>
+    )
+  }
+
   return (
     <>
       <Header
@@ -400,111 +598,7 @@ export function OnboardingGuide({
 
           <View className="-mx-6">
             <View className="relative" style={{width: "100%", aspectRatio: 1}}>
-              {isCurrentStepImage ? (
-                <View style={step.containerStyle} className={step.containerClassName}>
-                  <Image
-                    source={step.source}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                    }}
-                    contentFit="contain"
-                  />
-                </View>
-              ) : (
-                <>
-                  <View
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      zIndex: activePlayer === 1 ? 1 : 0,
-                      ...step.containerStyle,
-                    }}
-                    className={step.containerClassName}>
-                    <VideoView
-                      player={player1}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                      }}
-                      nativeControls={false}
-                      onFirstFrameRender={() => {
-                        if (activePlayer === 1) {
-                          setShowPoster(false)
-                        }
-                      }}
-                    />
-                  </View>
-                  <View
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      zIndex: activePlayer === 1 ? 0 : 1,
-                      ...step.containerStyle,
-                    }}
-                    className={step.containerClassName}>
-                    <VideoView
-                      player={player2}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                      }}
-                      nativeControls={false}
-                      onFirstFrameRender={() => {
-                        if (activePlayer === 2) {
-                          setShowPoster(false)
-                        }
-                      }}
-                    />
-                  </View>
-
-                  {/* Poster image overlay - shown until first frame renders */}
-                  {showPoster && step.poster && (
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        zIndex: 10,
-                      }}>
-                      <Image
-                        source={step.poster}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                        }}
-                        contentFit="contain"
-                      />
-                    </View>
-                  )}
-
-                  {/* Loading indicator - shown while video is loading and no poster */}
-                  {isVideoLoading && !step.poster && (
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        zIndex: 10,
-                        justifyContent: "center",
-                        alignItems: "center",
-                        backgroundColor: theme.colors.background,
-                      }}>
-                      <ActivityIndicator size="large" color={theme.colors.primary} />
-                    </View>
-                  )}
-                </>
-              )}
+              {renderContent()}
             </View>
 
             {showReplayButton && isCurrentStepVideo && (
@@ -545,13 +639,11 @@ export function OnboardingGuide({
           {!hasStarted && (
             <View className="flex flex-col gap-4 mt-8">
               <Button flexContainer tx="onboarding:continueOnboarding" onPress={handleStart} />
-              {showSkipButton && (
-                <Button flexContainer preset="secondary" tx="common:skip" onPress={handleSkip} />
-              )}
+              {showSkipButton && <Button flexContainer preset="secondary" tx="common:skip" onPress={handleSkip} />}
             </View>
           )}
 
-          {hasStarted && showNextButton && (
+          {hasStarted && (showNextButton || showPoster) && (
             <View className="flex flex-col gap-4">
               {!isLastStep ? (
                 <Button
@@ -564,9 +656,7 @@ export function OnboardingGuide({
               ) : (
                 <Button flexContainer text={endButtonText} onPress={endButtonFn} />
               )}
-              {!isFirstStep && (
-                <Button flexContainer preset="secondary" text="Back" onPress={handleBack} />
-              )}
+              {!isFirstStep && <Button flexContainer preset="secondary" text="Back" onPress={handleBack} />}
             </View>
           )}
         </View>
