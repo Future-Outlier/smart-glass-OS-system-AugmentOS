@@ -16,7 +16,7 @@ import {ThemedStyle} from "@/theme"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
-  const {goBack, push, replaceAll, setPreventBack} = useNavigationHistory()
+  const {goBack, push, replaceAll, clearHistoryAndGoHome} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
   const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS.power_saving_mode.key)
@@ -48,27 +48,27 @@ export default function DeveloperSettingsScreen() {
               label="Developer Mode"
               subtitle="Enable developer mode"
               value={devMode}
-              onValueChange={value => setDevMode(value)}
+              onValueChange={(value) => setDevMode(value)}
             />
             <ToggleSetting
               label={translate("settings:reconnectOnAppForeground")}
               subtitle={translate("settings:reconnectOnAppForegroundSubtitle")}
               value={reconnectOnAppForeground}
-              onValueChange={value => setReconnectOnAppForeground(value)}
+              onValueChange={(value) => setReconnectOnAppForeground(value)}
             />
 
             <ToggleSetting
               label={translate("devSettings:debugConsole")}
               subtitle={translate("devSettings:debugConsoleSubtitle")}
               value={debugConsole}
-              onValueChange={value => setDebugConsole(value)}
+              onValueChange={(value) => setDebugConsole(value)}
             />
 
             <ToggleSetting
               label="Enable Squircles"
               subtitle="Use iOS-style squircle app icons instead of circles"
               value={enableSquircles}
-              onValueChange={value => setEnableSquircles(value)}
+              onValueChange={(value) => setEnableSquircles(value)}
             />
           </Group>
 
@@ -85,21 +85,25 @@ export default function DeveloperSettingsScreen() {
               subtitle="Open the OTA check for updates screen"
               onPress={() => {
                 push("/ota/check-for-updates")
-                // setPreventBack(true)
-                // push("/ota/check-for-updates")
               }}
             />
 
             <RouteButton
               label="Mentra Live Onboarding"
               subtitle="Start the Mentra Live onboarding"
-              onPress={() => replaceAll("/onboarding/live")}
+              onPress={() => {
+                clearHistoryAndGoHome()
+                replaceAll("/onboarding/live")
+              }}
             />
 
             <RouteButton
               label="Mentra OS Onboarding"
               subtitle="Start the Mentra Live onboarding"
-              onPress={() => replaceAll("/onboarding/os")}
+              onPress={() => {
+                clearHistoryAndGoHome()
+                replaceAll("/onboarding/os")
+              }}
             />
           </Group>
 
@@ -138,7 +142,7 @@ export default function DeveloperSettingsScreen() {
                 label={translate("settings:powerSavingMode")}
                 subtitle={translate("settings:powerSavingModeSubtitle")}
                 value={powerSavingMode}
-                onValueChange={async value => {
+                onValueChange={async (value) => {
                   await setPowerSavingMode(value)
                 }}
               />

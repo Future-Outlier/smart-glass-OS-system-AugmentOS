@@ -68,6 +68,15 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     }
   }, [pathname])
 
+  // block the back button on android when preventBack is true:
+  useEffect(() => {
+    if (!preventBack) return
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      return true
+    })
+    return () => backHandler.remove()
+  }, [preventBack])
+
   const incPreventBack = useCallback(() => {
     preventBackCountRef.current++
     setPreventBack(true)
@@ -245,14 +254,13 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     // clearHistory()
     // push(previousPath as any, previousParams as any)
 
-
     const last = index + 2
     const lastRouteIndex = historyRef.current.length - last
     // the route we want to later "push" onto the stack:
     const lastRoute = historyRef.current[lastRouteIndex]
     console.log("NAV: lastRoute", lastRoute)
     const lastRouteParams = historyParamsRef.current[lastRouteIndex]
-    
+
     // Build routes WITHOUT n routes (removing current and last n routes)
     const n = index + 2
     let updatedRoutes = historyRef.current.slice(0, -n)
@@ -260,15 +268,16 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     // // add ghost route:
     // updatedRoutes.push("/")
     // updatedRoutesParams.push(undefined)
-    
+
     const newRouteState = updatedRoutes.map((path, index) => ({
       name: path,
       params: historyParamsRef.current[index],
     }))
 
-
-
-    console.log("NAV: newRouteState", newRouteState.map(route => route.name))
+    console.log(
+      "NAV: newRouteState",
+      newRouteState.map((route) => route.name),
+    )
 
     navigation.dispatch(
       CommonActions.reset({
@@ -283,7 +292,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
     console.log("NAV: updated historyRef.current", historyRef.current)
     console.log("NAV: updated historyParamsRef.current", historyParamsRef.current)
-    
+
     // push the last route onto the stack:
     // dumb edge case, if the route is home, we need to clearHistoryAndGoHome()
     if (lastRoute === "/(tabs)/home" || lastRoute === "/home") {

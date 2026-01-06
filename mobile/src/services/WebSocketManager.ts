@@ -210,6 +210,7 @@ class WebSocketManager extends EventEmitter {
   }
 
   public cleanup() {
+    console.log("WSM: cleanup()")
     this.disconnect()
     this.removeAllListeners()
     WebSocketManager.instance = null

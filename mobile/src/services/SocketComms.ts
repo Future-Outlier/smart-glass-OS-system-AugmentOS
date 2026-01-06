@@ -44,6 +44,7 @@ class SocketComms {
   }
 
   public cleanup() {
+    console.log("SOCKET: cleanup()")
     // Stop UDP retry interval and reset state
     this.stopUdpRetryInterval()
     this.udpConfig = null
@@ -878,7 +879,7 @@ class SocketComms {
   private handle_message(msg: any) {
     const type = msg.type
 
-    // console.log(`SOCKET: msg: ${type}`)
+    console.log(`SOCKET: msg: ${type}`)
 
     switch (type) {
       case "connection_ack":

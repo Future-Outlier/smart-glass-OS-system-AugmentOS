@@ -155,17 +155,11 @@ export default function MentraLiveOnboarding() {
           pushPrevious()
         }}
         endButtonFn={() => {
-          // if (onboardingOsCompleted) {
-          //   clearHistoryAndGoHome()
-          //   return
-          // }
-          // replaceAll("/onboarding/os")
           pushPrevious()
         }}
         // endButtonText={
         //   onboardingOsCompleted ? translate("onboarding:liveEndTitle") : translate("onboarding:learnAboutOs")
-        // }
-        
+        // }        
         endButtonText={translate("common:continue")}
       />
     </Screen>

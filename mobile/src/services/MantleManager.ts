@@ -30,7 +30,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, ({data: {locations}, error}) => {
   }
   const locs = locations as Location.LocationObject[]
   if (locs.length === 0) {
-    console.log("Mantle: LOCATION: No locations received")
+    console.log("MAN: LOCATION: No locations received")
     return
   }
 
@@ -85,7 +85,7 @@ class MantleManager {
       const loadedSettings = res.value
       await useSettingsStore.getState().setManyLocally(loadedSettings) // write settings to local storage
     } else {
-      console.error("Mantle: No settings received from server")
+      console.error("MAN: No settings received from server")
     }
 
     await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
@@ -131,7 +131,7 @@ class MantleManager {
         accuracy: properAccuracy,
       })
     } catch (error) {
-      console.error("Mantle: Error starting location updates", error)
+      console.error("MAN: Error starting location updates", error)
     }
 
     // check for requirements immediately, but only if we've passed through onboarding:
@@ -232,7 +232,7 @@ class MantleManager {
   }
 
   public async setLocationTier(tier: string) {
-    console.log("Mantle: setLocationTier()", tier)
+    console.log("MAN: setLocationTier()", tier)
     // restComms.sendLocationData({tier})
     try {
       const accuracy = this.getLocationAccuracy(tier)
@@ -242,12 +242,12 @@ class MantleManager {
         pausesUpdatesAutomatically: false,
       })
     } catch (error) {
-      console.log("Mantle: Error setting location tier", error)
+      console.log("MAN: Error setting location tier", error)
     }
   }
 
   public async requestSingleLocation(accuracy: string, correlationId: string) {
-    console.log("Mantle: requestSingleLocation()")
+    console.log("MAN: requestSingleLocation()")
     // restComms.sendLocationData({tier})
     try {
       const location = await Location.getCurrentPositionAsync({accuracy: this.getLocationAccuracy(accuracy)})
@@ -258,7 +258,7 @@ class MantleManager {
         correlationId,
       )
     } catch (error) {
-      console.log("Mantle: Error requesting single location", error)
+      console.log("MAN: Error requesting single location", error)
     }
   }
 
@@ -282,11 +282,11 @@ class MantleManager {
 
   public async resetDisplayTimeout() {
     if (this.clearTextTimeout) {
-      console.log("Mantle: canceling pending timeout")
+      console.log("MAN: canceling pending timeout")
       clearTimeout(this.clearTextTimeout)
     }
     this.clearTextTimeout = setTimeout(() => {
-      console.log("Mantle: clearing text from wall")
+      console.log("MAN: clearing text from wall")
     }, 10000) // 10 seconds
   }
 
