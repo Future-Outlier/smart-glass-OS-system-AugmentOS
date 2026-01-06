@@ -38,7 +38,7 @@ export const ConsoleLogger = () => {
       panStartX.value = panX.value
       panStartY.value = panY.value
     })
-    .onUpdate(event => {
+    .onUpdate((event) => {
       panX.value = panStartX.value + event.translationX
       panY.value = panStartY.value + event.translationY
     })
@@ -56,7 +56,7 @@ export const ConsoleLogger = () => {
       toggleStartX.value = toggleX.value
       toggleStartY.value = toggleY.value
     })
-    .onUpdate(event => {
+    .onUpdate((event) => {
       toggleX.value = toggleStartX.value + event.translationX
       toggleY.value = toggleStartY.value + event.translationY
     })
@@ -87,11 +87,11 @@ export const ConsoleLogger = () => {
 
       const addLog = (type: any, args: any[]) => {
         const message = args
-          .map(arg => (typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)))
+          .map((arg) => (typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)))
           .join(" ")
 
         setTimeout(() => {
-          setLogs(prev => {
+          setLogs((prev) => {
             const newLogs = [
               ...prev,
               {
@@ -189,6 +189,7 @@ export const ConsoleLogger = () => {
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   zIndex: 1,
   position: "absolute",
+  zIndex: 1,
   left: 0,
   right: 0,
   height: 300,
