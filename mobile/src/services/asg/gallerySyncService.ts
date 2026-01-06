@@ -422,7 +422,27 @@ class GallerySyncService {
     }
 
     // Check if already connected to hotspot
-    const isAlreadyConnected = glassesStore.hotspotEnabled && glassesStore.hotspotGatewayIp
+    // IMPORTANT: We must verify the phone's WiFi is actually connected to the hotspot SSID,
+    // not just that the glasses reported hotspot is enabled (which persists across app restarts)
+    let isAlreadyConnected = false
+    if (glassesStore.hotspotEnabled && glassesStore.hotspotGatewayIp && glassesStore.hotspotSsid) {
+      try {
+        const currentSSID = await WifiManager.getCurrentWifiSSID()
+        console.log(
+          `[GallerySyncService] Checking hotspot connection - current SSID: "${currentSSID}", hotspot SSID: "${glassesStore.hotspotSsid}"`,
+        )
+        isAlreadyConnected = currentSSID === glassesStore.hotspotSsid
+        if (!isAlreadyConnected && currentSSID) {
+          console.log(
+            `[GallerySyncService] Phone is on different network (${currentSSID}), will request hotspot connection`,
+          )
+        }
+      } catch (error) {
+        console.log("[GallerySyncService] Could not verify current WiFi SSID:", error)
+        // If we can't verify, don't assume we're connected - request hotspot
+        isAlreadyConnected = false
+      }
+    }
 
     if (isAlreadyConnected) {
       console.log("[GallerySyncService] Already connected to hotspot, starting download directly")

@@ -352,7 +352,12 @@ public class Mach1 extends SGCManager {
 
     @Override
     public void sendHotspotState(boolean enabled) {
+        // Mach1 doesn't support hotspot
+    }
 
+    @Override
+    public void sendUserEmailToGlasses(String email) {
+        // Mach1 doesn't support user email (no ASG client)
     }
 
     @Override

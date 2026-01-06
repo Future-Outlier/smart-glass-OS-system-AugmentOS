@@ -84,6 +84,8 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func sendHotspotState(_: Bool) {}
 
+    func sendUserEmailToGlasses(_: String) {}
+
     func queryGalleryStatus() {}
 
     func showDashboard() {}

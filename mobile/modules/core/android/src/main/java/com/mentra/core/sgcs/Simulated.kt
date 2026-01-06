@@ -193,6 +193,10 @@ class Simulated : SGCManager() {
         Bridge.log("sendHotspotState")
     }
 
+    override fun sendUserEmailToGlasses(email: String) {
+        Bridge.log("sendUserEmailToGlasses: $email")
+    }
+
     // Gallery
     override fun queryGalleryStatus() {
         Bridge.log("queryGalleryStatus")

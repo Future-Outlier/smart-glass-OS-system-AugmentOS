@@ -221,6 +221,10 @@ class Simulated: SGCManager {
         Bridge.log("sendHotspotState")
     }
 
+    func sendUserEmailToGlasses(_ email: String) {
+        Bridge.log("sendUserEmailToGlasses: \(email)")
+    }
+
     // MARK: - Gallery
 
     func queryGalleryStatus() {
