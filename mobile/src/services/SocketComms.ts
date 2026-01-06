@@ -3,7 +3,7 @@ import CoreModule from "core"
 import {push} from "@/contexts/NavigationRef"
 import audioPlaybackService from "@/services/AudioPlaybackService"
 import mantle from "@/services/MantleManager"
-import udp from "@/services/UdpAudioService"
+import udp from "@/services/UdpManager"
 import ws from "@/services/WebSocketManager"
 import {useAppletStatusStore} from "@/stores/applets"
 import {useDisplayStore} from "@/stores/display"
@@ -11,6 +11,7 @@ import {useGlassesStore} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import restComms from "@/services/RestComms"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -362,6 +363,9 @@ class SocketComms {
     // if (!isChina) {
     //   await livekit.connect()
     // }
+
+    // refresh the mini app list:
+    restComms.getApplets()
 
     // Configure audio format (LC3) for bandwidth savings
     // This tells the cloud that we're sending LC3-encoded audio
