@@ -309,10 +309,7 @@ class MantleManager {
       return
     }
 
-    if (socketComms.isWebSocketConnected()) {
-      socketComms.sendLocalTranscription(data)
-      return
-    }
+    socketComms.sendLocalTranscription(data)
   }
 
   public async handle_button_press(id: string, type: string, timestamp: string) {

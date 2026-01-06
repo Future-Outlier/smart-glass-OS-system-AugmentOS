@@ -283,7 +283,7 @@ export class MantleBridge {
           break
         case "mic_data":
           // Route audio to: UDP (if enabled) -> WebSocket (fallback)
-          if (socketComms.isUdpAudioEnabled() && udpAudioService.isConfiguredAndReady()) {
+          if (socketComms.udpReady()) {
             // UDP audio is enabled and ready - send directly via UDP
             udpAudioService.sendAudio(data.base64)
           } else {
