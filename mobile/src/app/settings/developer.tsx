@@ -13,6 +13,8 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
+import wsManager from "@/services/WebSocketManager"
+import socketComms from "@/services/SocketComms"
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
@@ -114,6 +116,19 @@ export default function DeveloperSettingsScreen() {
               label="Buffer Recording Debug"
               subtitle="Control 30-second video buffer on glasses"
               onPress={() => push("/settings/buffer-debug")}
+            />
+
+            <RouteButton
+              label="Clear Websocket"
+              subtitle="Clear the Websocket"
+              onPress={async () => {
+                wsManager.cleanup()
+                socketComms.cleanup()
+                console.log("SOCKET: CLEANED")
+                await new Promise((resolve) => setTimeout(resolve, 3000))
+                socketComms.restartConnection()
+                console.log("SOCKET: RESTARTED")
+              }}
             />
           </Group>
 

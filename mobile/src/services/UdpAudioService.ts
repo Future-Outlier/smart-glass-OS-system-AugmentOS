@@ -80,13 +80,13 @@ class UdpAudioService {
    * This is synchronous - socket creation happens on start()
    */
   public configure(host: string, port: number = UDP_PORT, userId: string): void {
-    console.log(`UDP: Configuring for ${host}:${port}, userId=${userId}`)
+    // console.log(`UDP: Configuring for ${host}:${port}, userId=${userId}`)
 
     this.config = {host, port, userId}
     this.userIdHash = fnv1aHash(userId)
     this.sequenceNumber = 0
 
-    console.log(`UDP: Configured with userIdHash=${this.userIdHash}`)
+    // console.log(`UDP: Configured with userIdHash=${this.userIdHash}`)
   }
 
   /**
@@ -95,17 +95,17 @@ class UdpAudioService {
    */
   public async start(): Promise<boolean> {
     if (this.isReady) {
-      console.log("UDP: Already started")
+      // console.log("UDP: Already started")
       return true
     }
 
     if (this.isConnecting) {
-      console.log("UDP: Connection already in progress")
+      // console.log("UDP: Connection already in progress")
       return false
     }
 
     if (!this.config) {
-      console.log("UDP: Cannot start - not configured")
+      // console.log("UDP: Cannot start - not configured")
       return false
     }
 
@@ -140,10 +140,10 @@ class UdpAudioService {
 
       this.isReady = true
       this.isConnecting = false
-      console.log("UDP: Socket started and bound")
+      // console.log("UDP: Socket started and bound")
       return true
     } catch (error) {
-      console.log(`UDP: Failed to start socket: ${error}`)
+      // console.log(`UDP: Failed to start socket: ${error}`)
       this.isConnecting = false
       this.socket?.close()
       this.socket = null
@@ -315,14 +315,14 @@ class UdpAudioService {
       // Write "PING" magic
       pingMagicBytes.copy(packet, HEADER_SIZE)
 
-      console.log(`UDP: Sending ping to ${this.config!.host}:${this.config!.port}`)
+      // console.log(`UDP: Sending ping to ${this.config!.host}:${this.config!.port}`)
 
       this.socket!.send(packet, 0, packet.length, this.config!.port, this.config!.host, err => {
         if (err) {
           console.log(`UDP: Failed to send ping: ${err.message}`)
           resolve(false)
         } else {
-          console.log("UDP: Ping sent successfully")
+          // console.log("UDP: Ping sent successfully")
           resolve(true)
         }
       })
@@ -362,7 +362,7 @@ class UdpAudioService {
     }
 
     this.pingRetryCount++
-    console.log(`UDP: Sending ping attempt ${this.pingRetryCount}/${PING_RETRY_COUNT}`)
+    // console.log(`UDP: Sending ping attempt ${this.pingRetryCount}/${PING_RETRY_COUNT}`)
 
     this.sendPing()
       .then(sent => {

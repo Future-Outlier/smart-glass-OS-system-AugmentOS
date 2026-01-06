@@ -2,7 +2,6 @@ import CoreModule from "core"
 
 import {push} from "@/contexts/NavigationRef"
 import audioPlaybackService from "@/services/AudioPlaybackService"
-import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
 import udpAudioService, {fnv1aHash} from "@/services/UdpAudioService"
 import wsManager from "@/services/WebSocketManager"
@@ -29,7 +28,10 @@ class SocketComms {
   private udpConfig: {host: string; port: number} | null = null
 
   private constructor() {
-    // Subscribe to WebSocket messages
+  }
+
+  private setupListeners() {
+    this.ws.removeAllListeners("message")
     this.ws.on("message", message => {
       this.handle_message(message)
     })
@@ -54,15 +56,13 @@ class SocketComms {
 
     // Cleanup WebSocket
     this.ws.cleanup()
-
-    // Reset instance
-    SocketComms.instance = null
   }
 
   // Connection Management
 
   private async connectWebsocket() {
     console.log("SOCKET: connectWebsocket()")
+    this.setupListeners()
     const url = useSettingsStore.getState().getWsUrl()
     if (!url) {
       console.error(`SOCKET: Invalid server URL`)
@@ -75,10 +75,12 @@ class SocketComms {
     return this.ws.isConnected()
   }
 
-  public prestartConnection() {
-    console.log(`SOCKET: restartConnection`)
+  public restartConnection() {
+    console.log(`SOCKET: restartConnection()`)
     if (this.ws.isConnected()) {
       this.ws.disconnect()
+      this.connectWebsocket()
+    } else {
       this.connectWebsocket()
     }
   }
@@ -381,13 +383,13 @@ class SocketComms {
   public async registerUdpAudio(udpHost: string, udpPort: number = 8000, isRetry: boolean = false): Promise<boolean> {
     // Prevent overlapping probes
     if (this.udpProbeInProgress) {
-      console.log("UDP: Probe already in progress, skipping")
+      // console.log("UDP: Probe already in progress, skipping")
       return false
     }
 
     // Skip if WebSocket disconnected
     if (!this.ws.isConnected()) {
-      console.log("UDP: WebSocket disconnected, skipping probe")
+      // console.log("UDP: WebSocket disconnected, skipping probe")
       return false
     }
 
@@ -399,7 +401,7 @@ class SocketComms {
 
       // Wait initial delay on first attempt to let server register user
       if (!isRetry) {
-        console.log(`UDP: Waiting ${UDP_INITIAL_DELAY_MS}ms before first probe...`)
+        // console.log(`UDP: Waiting ${UDP_INITIAL_DELAY_MS}ms before first probe...`)
         await new Promise(resolve => BackgroundTimer.setTimeout(resolve, UDP_INITIAL_DELAY_MS))
 
         // Re-check WebSocket after delay
@@ -410,7 +412,7 @@ class SocketComms {
         }
       }
 
-      console.log(`UDP: ${isRetry ? "Retry" : "Initial"} probe for ${udpHost}:${udpPort}`)
+      // console.log(`UDP: ${isRetry ? "Retry" : "Initial"} probe for ${udpHost}:${udpPort}`)
 
       // Configure the React Native UDP service
       udpAudioService.configure(udpHost, udpPort, this.userid)
@@ -424,7 +426,7 @@ class SocketComms {
         userIdHash: userIdHash,
       }
       this.ws.sendText(JSON.stringify(msg))
-      console.log(`UDP: Sent registration with hash ${userIdHash}`)
+      // console.log(`UDP: Sent registration with hash ${userIdHash}`)
 
       // Probe UDP with multiple retries (UDP is lossy, single ping unreliable)
       // probeWithRetries sends 3 pings at 200ms intervals, times out at 2000ms
@@ -433,12 +435,12 @@ class SocketComms {
       this.udpProbeInProgress = false
 
       if (udpAvailable) {
-        console.log("UDP: Probe successful - UDP audio enabled")
+        // console.log("UDP: Probe successful - UDP audio enabled")
         this.udpAudioEnabled = true
         this.stopUdpRetryInterval() // Stop retrying, we're connected
         return true
       } else {
-        console.log("UDP: Probe failed - using WebSocket fallback, will retry in background")
+        // console.log("UDP: Probe failed - using WebSocket fallback, will retry in background")
         // Stop the UDP service when probe fails to prevent audio loss
         udpAudioService.stop()
         this.udpAudioEnabled = false
@@ -448,7 +450,7 @@ class SocketComms {
         return false
       }
     } catch (error) {
-      console.log(`UDP: Registration error: ${error}`)
+      // console.log(`UDP: Registration error: ${error}`)
       this.udpProbeInProgress = false
       // Ensure UDP is stopped on any error
       udpAudioService.stop()
@@ -469,7 +471,7 @@ class SocketComms {
       return
     }
 
-    console.log(`UDP: Starting periodic retry every ${UDP_RETRY_INTERVAL_MS / 1000}s`)
+    // console.log(`UDP: Starting periodic retry every ${UDP_RETRY_INTERVAL_MS / 1000}s`)
     this.udpRetryIntervalId = BackgroundTimer.setInterval(() => {
       // Skip if already connected or no config
       if (this.udpAudioEnabled || !this.udpConfig) {
@@ -479,13 +481,13 @@ class SocketComms {
 
       // Skip if WebSocket is disconnected
       if (!this.ws.isConnected()) {
-        console.log("UDP: Skipping retry - WebSocket disconnected")
+        // console.log("UDP: Skipping retry - WebSocket disconnected")
         return
       }
 
-      console.log("UDP: Periodic retry attempt...")
+      // console.log("UDP: Periodic retry attempt...")
       this.registerUdpAudio(this.udpConfig.host, this.udpConfig.port, true).catch(err => {
-        console.log("UDP: Periodic retry failed:", err)
+        // console.log("UDP: Periodic retry failed:", err)
       })
     }, UDP_RETRY_INTERVAL_MS)
   }
@@ -495,7 +497,7 @@ class SocketComms {
    */
   private stopUdpRetryInterval(): void {
     if (this.udpRetryIntervalId !== null) {
-      console.log("UDP: Stopping periodic retry")
+      // console.log("UDP: Stopping periodic retry")
       BackgroundTimer.clearInterval(this.udpRetryIntervalId)
       this.udpRetryIntervalId = null
     }
@@ -829,7 +831,7 @@ class SocketComms {
    * This is sent via WebSocket when the Go bridge receives our UDP ping.
    */
   private handle_udp_ping_ack(_msg: any) {
-    console.log("UDP: Received ping ack from server")
+    // console.log("UDP: Received ping ack from server")
 
     // Notify the React Native UDP service that ping was acknowledged
     udpAudioService.onPingAckReceived()

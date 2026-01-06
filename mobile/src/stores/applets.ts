@@ -188,7 +188,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     let onlineApps: ClientAppletInterface[] = []
     let res = await restComms.getApplets()
     if (res.is_error()) {
-      console.error(`Failed to get applets: ${res.error}`)
+      console.error(`APPLETS: Failed to get applets: ${res.error}`)
       // continue anyway in case we're just offline:
     } else {
       // convert to the client applet interface:
@@ -198,11 +198,6 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
         offline: false,
         offlineRoute: "",
       }))
-      console.log(`APPLETS: Fetched ${onlineApps.length} online apps from backend`)
-      const runningOnline = onlineApps.filter((app) => app.running)
-      console.log(
-        `APPLETS: Running online apps: ${runningOnline.map((a) => `${a.name} (${a.packageName})`).join(", ") || "NONE"}`,
-      )
     }
 
     // merge in the offline apps:
@@ -227,11 +222,6 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
       applet.compatibility = result
     }
-
-    const finalRunning = applets.filter((app) => app.running)
-    console.log(
-      `APPLETS: Setting state with ${applets.length} total apps, ${finalRunning.length} running: ${finalRunning.map((a) => `${a.name} (${a.packageName})`).join(", ") || "NONE"}`,
-    )
     set({apps: applets})
   },
 

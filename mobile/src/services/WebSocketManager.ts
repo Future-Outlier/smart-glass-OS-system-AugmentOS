@@ -213,7 +213,7 @@ class WebSocketManager extends EventEmitter {
     console.log("WSM: cleanup()")
     this.disconnect()
     this.removeAllListeners()
-    WebSocketManager.instance = null
+    this.webSocket = null
     const store = useConnectionStore.getState()
     store.reset()
   }
