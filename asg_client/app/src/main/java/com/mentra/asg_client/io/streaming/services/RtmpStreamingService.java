@@ -618,16 +618,16 @@ public class RtmpStreamingService extends Service {
             mStreamer.configure(audioConfig);
 
             // Apply EIS (Electronic Image Stabilization) for smooth livestreaming
-            try {
-                if (eisEnabled) {
-                    mStreamer.getSettings().getCamera().getEis().setEnable(true);
-                    Log.i(TAG, "📹 EIS enabled for RTMP livestream");
-                } else {
-                    Log.d(TAG, "📹 EIS disabled for livestream");
-                }
-            } catch (Exception e) {
-                Log.w(TAG, "📹 Failed to configure EIS (may not be supported on this device): " + e.getMessage());
-            }
+//            try {
+//                if (eisEnabled) {
+//                    mStreamer.getSettings().getCamera().getEis().setEnable(true);
+//                    Log.i(TAG, "📹 EIS enabled for RTMP livestream");
+//                } else {
+//                    Log.d(TAG, "📹 EIS disabled for livestream");
+//                }
+//            } catch (Exception e) {
+//                Log.w(TAG, "📹 Failed to configure EIS (may not be supported on this device): " + e.getMessage());
+//            }
 
             // Remember this streamer so stop flows can clean up even if mStreamer gets swapped/null
             mLastStreamerForCleanup = mStreamer;
