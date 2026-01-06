@@ -822,11 +822,16 @@ class GallerySyncService {
     let downloadedCount = 0
     let failedCount = 0
 
+    // Check if auto-save to camera roll is enabled (we'll save each file immediately after download)
+    const shouldAutoSave = await gallerySettingsService.getAutoSaveToCameraRoll()
+    let cameraRollSavedCount = 0
+    let cameraRollFailedCount = 0
+
     try {
       const downloadResult = await asgCameraApi.batchSyncFiles(
         files,
         true,
-        (current, total, fileName, fileProgress, downloadedFile) => {
+        async (current, total, fileName, fileProgress, downloadedFile) => {
           // Check if cancelled
           if (this.abortController?.signal.aborted) {
             throw new Error("Sync cancelled")
@@ -880,6 +885,43 @@ class GallerySyncService {
               thumbnailPath: localThumbnailUrl,
             }
             currentStore.updateFileInQueue(fileName, updatedFile)
+
+            // 🎯 IMMEDIATELY save to camera roll if auto-save is enabled
+            if (shouldAutoSave && downloadedFile.filePath) {
+              // Parse the capture timestamp from the photo metadata
+              let captureTime: number | undefined
+              if (downloadedFile.modified) {
+                captureTime =
+                  typeof downloadedFile.modified === "string"
+                    ? parseInt(downloadedFile.modified, 10)
+                    : downloadedFile.modified
+                if (isNaN(captureTime)) {
+                  console.warn(
+                    `[GallerySyncService] Invalid modified timestamp for ${downloadedFile.name}:`,
+                    downloadedFile.modified,
+                  )
+                  captureTime = undefined
+                }
+              }
+
+              // Save to camera roll immediately (non-blocking)
+              MediaLibraryPermissions.saveToLibrary(downloadedFile.filePath, captureTime)
+                .then((success) => {
+                  if (success) {
+                    cameraRollSavedCount++
+                    console.log(
+                      `[GallerySyncService] ✅ Saved to camera roll immediately: ${downloadedFile.name} (${cameraRollSavedCount} total)`,
+                    )
+                  } else {
+                    cameraRollFailedCount++
+                    console.warn(`[GallerySyncService] ❌ Failed to save to camera roll: ${downloadedFile.name}`)
+                  }
+                })
+                .catch((error) => {
+                  cameraRollFailedCount++
+                  console.error(`[GallerySyncService] ❌ Error saving to camera roll: ${downloadedFile.name}`, error)
+                })
+            }
           }
 
           // Update notification
@@ -924,8 +966,12 @@ class GallerySyncService {
         currentStore.onFileFailed(failedFileName)
       }
 
-      // Auto-save to camera roll if enabled
-      await this.autoSaveToCameraRoll(downloadResult.downloaded)
+      // Camera roll saves already happened immediately after each download (if enabled)
+      if (shouldAutoSave) {
+        console.log(
+          `[GallerySyncService] 📸 Camera roll immediate save summary: ${cameraRollSavedCount} saved, ${cameraRollFailedCount} failed`,
+        )
+      }
 
       // Update sync state
       const currentSyncState = await localStorageService.getSyncState()
@@ -957,8 +1003,14 @@ class GallerySyncService {
 
   /**
    * Auto-save downloaded files to camera roll
-   * Files are sorted chronologically (oldest first) before saving so gallery apps
-   * display them in correct capture order (gallery apps sort by "date added" to MediaStore)
+   *
+   * ⚠️ DEPRECATED: This method is no longer used. Photos are now saved to camera roll
+   * immediately after each download completes (see executeDownload method).
+   *
+   * NOTE: The old batch approach sorted files chronologically before saving, which ensured
+   * gallery apps displayed them in capture order. The new immediate-save approach saves
+   * files in download order (small photos first, then videos), so they may appear out of
+   * chronological sequence in system gallery apps.
    */
   private async autoSaveToCameraRoll(downloadedFiles: PhotoInfo[]): Promise<void> {
     const shouldAutoSave = await gallerySettingsService.getAutoSaveToCameraRoll()
