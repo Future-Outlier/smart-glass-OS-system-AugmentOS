@@ -111,7 +111,7 @@ export class AudioManager {
     this.logger.info("AudioManager initialized");
 
     // Start audio gap monitoring
-    this.startAudioGapMonitoring();
+    // this.startAudioGapMonitoring(); // Disable audio gap detection. (we no longer use livekit, and VAD breaks / ruin this)
   }
 
   // ============================================================================
