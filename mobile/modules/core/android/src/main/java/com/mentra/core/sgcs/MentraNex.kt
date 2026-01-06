@@ -30,6 +30,9 @@ import com.mentra.core.Bridge
 
 import com.mentra.core.utils.DeviceTypes
 import com.mentra.core.utils.ProtobufUtils
+import com.mentra.core.utils.NexBluetoothConstants
+import com.mentra.core.utils.NexDisplayConstants
+import com.mentra.core.utils.NexBluetoothPacketTypes
 import com.mentra.core.utils.BitmapJavaUtils
 import com.mentra.core.utils.G1FontLoaderKt
 import com.mentra.core.utils.G1Text
@@ -43,7 +46,9 @@ class MentraNex : SGCManager() {
 
         private const val MTU_517: Int = 517
         private const val MTU_DEFAULT: Int = 23
+        
         private const val MAX_CHUNK_SIZE_DEFAULT: Int = 176 // Maximum chunk size for BLE packets
+        private const val DELAY_BETWEEN_CHUNKS_SEND: Long = 10 // Adjust this value as needed
 
         private const val INITIAL_CONNECTION_DELAY_MS = 350L // Adjust this value as needed
         private const val MICBEAT_INTERVAL_MS: Long = (1000 * 60) * 30; // micbeat every 30 minutes
@@ -64,28 +69,6 @@ class MentraNex : SGCManager() {
         // actions of NEX Glasses
         private const val MAIN_TASK_HANDLER_CODE_BATTERY_QUERY: Int = 620
         private const val MAIN_TASK_HANDLER_CODE_HEART_BEAT: Int = 630
-
-
-        // TODO: Move all them to protobufutils
-        private val MAIN_SERVICE_UUID: UUID = UUID.fromString("00004860-0000-1000-8000-00805f9b34fb")
-        private val WRITE_CHAR_UUID: UUID = UUID.fromString("000071FF-0000-1000-8000-00805f9b34fb")
-        private val NOTIFY_CHAR_UUID: UUID = UUID.fromString("000070FF-0000-1000-8000-00805f9b34fb")
-        private val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-
-        private const val PACKET_TYPE_JSON: Byte = 0x01.toByte()
-        private const val PACKET_TYPE_PROTOBUF: Byte = 0x02.toByte()
-        private const val PACKET_TYPE_AUDIO: Byte = 0xA0.toByte()
-        private const val PACKET_TYPE_IMAGE: Byte = 0xB0.toByte()
-
-        // Constants for text wall display
-        private const val TEXT_COMMAND: Int = 0x4E // Text command
-        private const val DISPLAY_WIDTH: Int = 488
-        private const val DISPLAY_USE_WIDTH: Int = 488 // How much of the display to use
-        private const val FONT_MULTIPLIER: Float = 1.0f / 50.0f
-        private const val OLD_FONT_SIZE: Int = 21 // Font size
-        private const val FONT_DIVIDER: Float = 2.0f
-        private const val LINES_PER_SCREEN: Int = 5 // Lines per screen
-
     }
 
     private var mainDevice: BluetoothDevice? = null
@@ -97,7 +80,6 @@ class MentraNex : SGCManager() {
     private var isKilled: Boolean = false
     private var lastConnectionTimestamp: Long = 0
     private var lastSendTimestamp: Long = 0
-    private const val DELAY_BETWEEN_CHUNKS_SEND: Long = 10 // Adjust this value as needed
 
     private val fontLoader: G1FontLoaderKt = G1FontLoaderKt()
     private val textRenderer: G1Text = G1Text()
@@ -122,6 +104,8 @@ class MentraNex : SGCManager() {
     private var microphoneStateBeforeDisconnection: Boolean = false
 
     private var bleScanCallback: ScanCallback? = null
+
+    private var batteryMain: Int = -1
 
     init {
         type = DeviceTypes.NEX
@@ -567,7 +551,7 @@ class MentraNex : SGCManager() {
                         val packetType = values[0]
                         val protobufData = values.copyOfRange(1, values.size)
                         
-                        if (packetType.toInt() == PACKET_TYPE_PROTOBUF) {
+                        if (packetType.toInt() == NexBluetoothPacketTypes.PACKET_TYPE_PROTOBUF) {
                             // just for test
                             decodeProtobufsByWrite(protobufData, packetHex)
                         }
@@ -692,11 +676,11 @@ class MentraNex : SGCManager() {
         Bridge.log("Nex: 📤 Requesting MTU: $MTU_517 bytes")
         gatt.requestMtu(MTU_517) // Request our maximum MTU
 
-        val uartService = gatt.getService(MAIN_SERVICE_UUID)
+        val uartService = gatt.getService(NexBluetoothConstants.MAIN_SERVICE_UUID)
 
         if (uartService != null) {
-            val writeChar = uartService.getCharacteristic(WRITE_CHAR_UUID)
-            val notifyChar = uartService.getCharacteristic(NOTIFY_CHAR_UUID)
+            val writeChar = uartService.getCharacteristic(NexBluetoothConstants.WRITE_CHAR_UUID)
+            val notifyChar = uartService.getCharacteristic(NexBluetoothConstants.NOTIFY_CHAR_UUID)
 
             writeChar?.let { 
                 mainWriteChar = it
@@ -769,7 +753,7 @@ class MentraNex : SGCManager() {
         }
 
         // Get and configure descriptor
-        val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG_UUID)
+        val descriptor = characteristic.getDescriptor(NexBluetoothConstants.CLIENT_CHARACTERISTIC_CONFIG_UUID)
         descriptor?.let {
             Bridge.log
             it.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
@@ -779,7 +763,7 @@ class MentraNex : SGCManager() {
     }
 
     private fun onCharacteristicChangedHandler(characteristic: BluetoothGattCharacteristic) {
-        if (characteristic.uuid == NOTIFY_CHAR_UUID) {
+        if (characteristic.uuid == NexBluetoothConstants.NOTIFY_CHAR_UUID) {
             val data = characteristic.value
             val deviceName = mainGlassGatt?.device?.name ?: return
             val packetHex = bytesToHex(data)
@@ -792,15 +776,15 @@ class MentraNex : SGCManager() {
             Bridge.log("onCharacteristicChangedHandler packetType: ${String.format("%02X ", packetType)}")
             
             when (packetType) {
-                PACKET_TYPE_JSON -> {
+                NexBluetoothPacketTypes.PACKET_TYPE_JSON -> {
                     val jsonData = data.copyOfRange(1, data.size)
                     decodeJsons(jsonData)
                 }
-                PACKET_TYPE_PROTOBUF -> {
+                NexBluetoothPacketTypes.PACKET_TYPE_PROTOBUF -> {
                     val protobufData = data.copyOfRange(1, data.size)
                     decodeProtobufs(protobufData, packetHex)
                 }
-                PACKET_TYPE_AUDIO -> {
+                NexBluetoothPacketTypes.PACKET_TYPE_AUDIO -> {
                     // Check for audio packet header
                     if (data[0] == 0xA0.toByte()) {
                         val sequenceNumber = data[1]
@@ -842,7 +826,7 @@ class MentraNex : SGCManager() {
                         }
                     }
                 }
-                PACKET_TYPE_IMAGE -> {
+                NexBluetoothPacketTypes.PACKET_TYPE_IMAGE -> {
                     // Handle image packet if needed
                 }
                 else -> {

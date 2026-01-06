@@ -9,26 +9,31 @@ import android.util.Log
 
 import com.mentra.core.Bridge
 
+object NexBluetoothConstants {
+    const val MAIN_SERVICE_UUID: UUID = UUID.fromString("00004860-0000-1000-8000-00805f9b34fb")
+    const val WRITE_CHAR_UUID: UUID = UUID.fromString("000071FF-0000-1000-8000-00805f9b34fb")
+    const val NOTIFY_CHAR_UUID: UUID = UUID.fromString("000070FF-0000-1000-8000-00805f9b34fb")
+    const val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+}
+
+object NexDisplayConstants {
+    const val DISPLAY_WIDTH: Int = 488
+    const val DISPLAY_USE_WIDTH: Int = 488 // How much of the display to use
+    const val FONT_MULTIPLIER: Float = 1.0f / 50.0f
+    const val OLD_FONT_SIZE: Int = 21 // Font size
+    const val FONT_DIVIDER: Float = 2.0f
+    const val LINES_PER_SCREEN: Int = 5 // Lines per screen
+}
+
+object NexBluetoothPacketTypes {
+    const val PACKET_TYPE_JSON: Byte = 0x01.toByte()
+    const val PACKET_TYPE_PROTOBUF: Byte = 0x02.toByte()
+    const val PACKET_TYPE_AUDIO: Byte = 0xA0.toByte()
+    const val PACKET_TYPE_IMAGE: Byte = 0xB0.toByte()
+}
+
 object ProtobufUtils {
     private const val TAG = "ProtobufUtils"
-
-    // private val MAIN_SERVICE_UUID: UUID = UUID.fromString("00004860-0000-1000-8000-00805f9b34fb")
-    // private val WRITE_CHAR_UUID: UUID = UUID.fromString("000071FF-0000-1000-8000-00805f9b34fb")
-    // private val NOTIFY_CHAR_UUID: UUID = UUID.fromString("000070FF-0000-1000-8000-00805f9b34fb")
-    // private val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-
-    // private const val TEXT_COMMAND: Int = 0x4E // Text command
-    // private const val DISPLAY_WIDTH: Int = 488
-    // private const val DISPLAY_USE_WIDTH: Int = 488 // How much of the display to use
-    // private const val FONT_MULTIPLIER: Float = 1.0f / 50.0f
-    // private const val OLD_FONT_SIZE: Int = 21 // Font size
-    // private const val FONT_DIVIDER: Float = 2.0f
-    // private const val LINES_PER_SCREEN: Int = 5 // Lines per screen
-
-    private const val PACKET_TYPE_JSON: Byte = 0x01.toByte()
-    private const val PACKET_TYPE_PROTOBUF: Byte = 0x02.toByte()
-    private const val PACKET_TYPE_AUDIO: Byte = 0xA0.toByte()
-    private const val PACKET_TYPE_IMAGE: Byte = 0xB0.toByte()
 
     data class AppInfo(
         val id: String,
