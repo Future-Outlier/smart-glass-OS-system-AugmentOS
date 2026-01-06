@@ -82,9 +82,6 @@ public class RtmpStreamingService extends Service {
     private static final int SURFACE_HEIGHT = 720;  // HD resolution (720p)
 
     private static final int START_BITRATE = 2000000; //2,000,000 => 800,000
-    
-    // Electronic Image Stabilization (EIS) state
-    private boolean eisEnabled = true; // Enabled by default for smooth livestreams
     // Reconnection logic parameters
     private int mReconnectAttempts = 0;
     private static final int MAX_RECONNECT_ATTEMPTS = 10;
@@ -616,18 +613,6 @@ public class RtmpStreamingService extends Service {
             // Apply configurations
             mStreamer.configure(videoConfig);
             mStreamer.configure(audioConfig);
-
-            // Apply EIS (Electronic Image Stabilization) for smooth livestreaming
-//            try {
-//                if (eisEnabled) {
-//                    mStreamer.getSettings().getCamera().getEis().setEnable(true);
-//                    Log.i(TAG, "📹 EIS enabled for RTMP livestream");
-//                } else {
-//                    Log.d(TAG, "📹 EIS disabled for livestream");
-//                }
-//            } catch (Exception e) {
-//                Log.w(TAG, "📹 Failed to configure EIS (may not be supported on this device): " + e.getMessage());
-//            }
 
             // Remember this streamer so stop flows can clean up even if mStreamer gets swapped/null
             mLastStreamerForCleanup = mStreamer;
