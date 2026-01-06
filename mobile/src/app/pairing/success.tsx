@@ -57,12 +57,16 @@ export default function PairingSuccessScreen() {
       }
 
       // add the onboarding screen under the current screen so that when we go back, we go to the onboarding screen:
-      if (!onboardingOsCompleted) {
+      // if (!onboardingOsCompleted) {
         pushUnder("/onboarding/os")
-      }
+      // }
       
       // push the onboarding screen under the current screen so that when we go back, we go to the onboarding screen:
       pushUnder("/onboarding/live")
+
+      if (!glassesConnected) {
+        pushUnder("/ota/check-for-updates")
+      }
       return
     }
 

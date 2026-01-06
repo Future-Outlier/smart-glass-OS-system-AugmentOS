@@ -216,6 +216,11 @@ const en = {
     passwordLoadedFromSavedCredentials: "✓ Password loaded from saved credentials",
     wifi: "Wi-Fi",
     connectionFailed: "Connection failed",
+    networkAdded: "Network added",
+    networkAddedDescription: "Connected devices will perform automatic updates and media imports while charging through the Mentra app. Automatic updates can be disabled in Device settings at any time.",
+    failedDescription: "Make sure the password was entered correctly",
+    connectingDescription: "This may take up to 20 seconds",
+    connectingToNetwork: "Connecting to {{network}}...",
   },
   ota: {
     checkingForUpdates: "Checking for updates",
