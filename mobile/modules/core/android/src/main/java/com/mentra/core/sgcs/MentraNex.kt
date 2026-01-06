@@ -41,15 +41,12 @@ class MentraNex : SGCManager() {
     companion object {
         private const val TAG = "MentraNex";
 
-        private val MAIN_SERVICE_UUID: UUID = UUID.fromString("00004860-0000-1000-8000-00805f9b34fb")
-        private val WRITE_CHAR_UUID: UUID = UUID.fromString("000071FF-0000-1000-8000-00805f9b34fb")
-        private val NOTIFY_CHAR_UUID: UUID = UUID.fromString("000070FF-0000-1000-8000-00805f9b34fb")
-        private val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+        private const val MTU_517: Int = 517
+        private const val MTU_DEFAULT: Int = 23
+        private const val MAX_CHUNK_SIZE_DEFAULT: Int = 176 // Maximum chunk size for BLE packets
 
-        private const val PACKET_TYPE_JSON: Byte = 0x01.toByte()
-        private const val PACKET_TYPE_PROTOBUF: Byte = 0x02.toByte()
-        private const val PACKET_TYPE_AUDIO: Byte = 0xA0.toByte()
-        private const val PACKET_TYPE_IMAGE: Byte = 0xB0.toByte()
+        private const val INITIAL_CONNECTION_DELAY_MS = 350L // Adjust this value as needed
+        private const val MICBEAT_INTERVAL_MS: Long = (1000 * 60) * 30; // micbeat every 30 minutes
 
         private const val MAIN_TASK_HANDLER_CODE_GATT_STATUS_CHANGED: Int = 110
         private const val MAIN_TASK_HANDLER_CODE_DISCOVER_SERVICES: Int = 120
@@ -68,8 +65,17 @@ class MentraNex : SGCManager() {
         private const val MAIN_TASK_HANDLER_CODE_BATTERY_QUERY: Int = 620
         private const val MAIN_TASK_HANDLER_CODE_HEART_BEAT: Int = 630
 
-        private const val MTU_517: Int = 517
-        private const val MTU_DEFAULT: Int = 23
+
+        // TODO: Move all them to protobufutils
+        private val MAIN_SERVICE_UUID: UUID = UUID.fromString("00004860-0000-1000-8000-00805f9b34fb")
+        private val WRITE_CHAR_UUID: UUID = UUID.fromString("000071FF-0000-1000-8000-00805f9b34fb")
+        private val NOTIFY_CHAR_UUID: UUID = UUID.fromString("000070FF-0000-1000-8000-00805f9b34fb")
+        private val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+
+        private const val PACKET_TYPE_JSON: Byte = 0x01.toByte()
+        private const val PACKET_TYPE_PROTOBUF: Byte = 0x02.toByte()
+        private const val PACKET_TYPE_AUDIO: Byte = 0xA0.toByte()
+        private const val PACKET_TYPE_IMAGE: Byte = 0xB0.toByte()
 
         // Constants for text wall display
         private const val TEXT_COMMAND: Int = 0x4E // Text command
@@ -79,11 +85,7 @@ class MentraNex : SGCManager() {
         private const val OLD_FONT_SIZE: Int = 21 // Font size
         private const val FONT_DIVIDER: Float = 2.0f
         private const val LINES_PER_SCREEN: Int = 5 // Lines per screen
-        private const val MAX_CHUNK_SIZE_DEFAULT: Int = 176 // Maximum chunk size for BLE packets
 
-        private const val INITIAL_CONNECTION_DELAY_MS = 350L // Adjust this value as needed
-
-        private const MICBEAT_INTERVAL_MS: Long = (1000 * 60) * 30; // micbeat every 30 minutes
     }
 
     private var mainDevice: BluetoothDevice? = null
@@ -306,7 +308,8 @@ class MentraNex : SGCManager() {
         val validatedAngle = angle.coerceIn(0, 60)
         Bridge.log("Nex: === SENDING HEAD UP ANGLE COMMAND TO GLASSES ===")
         Bridge.log("Nex: Head Up Angle: $validatedAngle degrees (validated range: 0-60)")
-        sendHeadUpAngle(validatedAngle)
+        val cmdBytes = ProtobufUtils.generateHeadUpAngleConfigCommandBytes(angle)
+        sendDataSequentially(cmdBytes, 10)
     }
 
     override fun getBatteryStatus() {
@@ -330,8 +333,11 @@ class MentraNex : SGCManager() {
     override fun setBrightness(level: Int, autoMode: Boolean) {
         // TODO: test this logic. Is it correct? Should we send both or just one?
         Bridge.log("Nex: setBrightness() - level: " + level + "%, autoMode: " + autoMode);
-        sendBrightnessCommand(level);
-        sendAutoBrightnessCommand(autoMode);
+        val brightnessCmdBytes = ProtobufUtils.generateBrightnessConfigCommandBytes(brightness)
+        sendDataSequentially(brightnessCmdBytes, 10)
+
+        val autoBrightnessCmdBytes = ProtobufUtils.generateAutoBrightnessConfigCommandBytes(autoMode)
+        sendDataSequentially(autoBrightnessCmdBytes, 10)
     }
 
     override fun clearDisplay() { 
@@ -378,7 +384,8 @@ class MentraNex : SGCManager() {
 
     override fun setDashboardPosition(height: Int, depth: Int) {
         Bridge.log("Nex: setDashboardPosition() - height: " + height + ", depth: " + depth);
-        sendDashboardPositionCommand(height, depth);
+        val cmdBytes = ProtobufUtils.generateDisplayHeightCommandBytes(height, depth)
+        sendDataSequentially(cmdBytes, 10)
     }
 
     // Audio Control
@@ -1032,11 +1039,11 @@ class MentraNex : SGCManager() {
             val totalChunks = (bmpData.size + BMP_CHUNK_SIZE - 1) / BMP_CHUNK_SIZE
             val streamId = "%04X".format(random.nextInt(0x10000)) // 4-digit hex format
             
-            val startImageSendingBytes = createStartSendingImageChunksCommand(streamId, totalChunks, width, height)
+            val startImageSendingBytes = ProtobufUtils.generateDisplayImageCommandBytes(streamId, totalChunks, width, height)
             sendDataSequentially(startImageSendingBytes)
 
             // Send all chunks with proper stream ID parsing
-            val chunks = createBmpChunksForNexGlasses(streamId, bmpData, totalChunks)
+            val chunks = ProtobufUtils.createBmpChunksForNexGlasses(streamId, bmpData, totalChunks)
             currentImageChunks = chunks
             sendDataSequentially(chunks)
 
@@ -1086,7 +1093,7 @@ class MentraNex : SGCManager() {
         Bridge.log("Nex: Sending whitelist command")
         
         whiteListHandler.postDelayed({
-            val chunks = getWhitelistChunks()
+            val chunks = ProtobufUtils.getWhitelistChunks()
             sendDataSequentially(chunks)
             
             // Uncomment if needed for debugging:
@@ -1318,7 +1325,7 @@ class MentraNex : SGCManager() {
         lastHeartbeatReceivedTime = System.currentTimeMillis()
         Bridge.log("=== SENDING PONG RESPONSE TO GLASSES === (Time: $lastHeartbeatReceivedTime)")
         
-        val pongPacket = constructPongResponse()
+        val pongPacket = ProtobufUtils.constructPongResponse()
 
         // Send the pong response
         if (pongPacket != null) {
@@ -1356,224 +1363,9 @@ class MentraNex : SGCManager() {
     }
 
     /////// PROTOBUF COMMUNICATION
-
-    private fun constructPongResponse(): ByteArray {
-        Bridge.log("Nex: Constructing pong response to glasses ping")
-        
-        // Create the PongResponse message
-        val pongResponse = PongResponse.newBuilder().build()
-        // Create the PhoneToGlasses message with the pong response
-        val phoneToGlasses = PhoneToGlasses.newBuilder().setPong(pongResponse).build()
-        return generateProtobufCommandBytes(phoneToGlasses)
-    }
-
-    fun getWhitelistChunks(): List<ByteArray> {
-        // Define the hardcoded whitelist
-        val apps = listOf(AppInfo("com.augment.os", "AugmentOS"))
-        val whitelistJson = createWhitelistJson(apps)
-
-        Bridge.log("Creating chunks for hardcoded whitelist: $whitelistJson")
-
-        // Convert JSON to bytes and split into chunks
-        return createWhitelistChunks(whitelistJson)
-    }
-
-    private fun createWhitelistJson(apps: List<AppInfo>): String {
-        return try {
-            val appList = JSONArray().apply {
-                apps.forEach { app ->
-                    put(JSONObject().apply {
-                        put("id", app.id)
-                        put("name", app.name)
-                    })
-                }
-            }
-
-            JSONObject().apply {
-                put("calendar_enable", false)
-                put("call_enable", false)
-                put("msg_enable", false)
-                put("ios_mail_enable", false)
-                put("app", JSONObject().apply {
-                    put("list", appList)
-                    put("enable", true)
-                })
-            }.toString()
-        } catch (e: JSONException) {
-            Bridge.log("Error creating whitelist JSON: ${e.message}", Log.ERROR)
-            "{}"
-        }
-    }
-
-    // Data class to hold app info
-    data class AppInfo(
-        val id: String,
-        val name: String
-    )
-
-    // Helper function to split JSON into chunks
-    private fun createWhitelistChunks(json: String): List<ByteArray> {
-        val jsonBytes = json.toByteArray(Charsets.UTF_8)
-        val totalChunks = (jsonBytes.size + MAX_CHUNK_SIZE - 1) / MAX_CHUNK_SIZE
-
-        return List(totalChunks) { chunkIndex ->
-            val start = chunkIndex * MAX_CHUNK_SIZE
-            val end = (start + MAX_CHUNK_SIZE).coerceAtMost(jsonBytes.size)
-            val payloadChunk = jsonBytes.copyOfRange(start, end)
-
-            // Create the header: [WHITELIST_CMD, total_chunks, chunk_index]
-            val header = byteArrayOf(
-                WHITELIST_CMD.toByte(),
-                totalChunks.toByte(),
-                chunkIndex.toByte()
-            )
-
-            header + payloadChunk
-        }
-    }
-
-    private fun createBmpChunksForNexGlasses(streamId: String, bmpData: ByteArray, totalChunks: Int): List<ByteArray> {
-        val chunks = mutableListOf<ByteArray>()
-        Bridge.log("Creating $totalChunks chunks from ${bmpData.size} bytes")
-        
-        // Parse hex stream ID to bytes (e.g., "002A" -> 0x00, 0x2A)
-        val streamIdInt = streamId.toInt(16)
-        
-        repeat(totalChunks) { i ->
-            val start = i * BMP_CHUNK_SIZE
-            val end = minOf(start + BMP_CHUNK_SIZE, bmpData.size)
-            val chunk = bmpData.copyOfRange(start, end)
-            
-            val header = ByteArray(4 + chunk.size).apply {
-                this[0] = PACKET_TYPE_IMAGE // 0xB0
-                this[1] = (streamIdInt shr 8).toByte() // Stream ID high byte
-                this[2] = streamIdInt.toByte()         // Stream ID low byte
-                this[3] = i.toByte()                   // Chunk index
-                System.arraycopy(chunk, 0, this, 4, chunk.size)
-            }
-            chunks.add(header)
-        }
-        return chunks
-    }
-
-    private fun createStartSendingImageChunksCommand(streamId: String, totalChunks: Int, width: Int, height: Int): ByteArray {
-        Bridge.log("=== SENDING IMAGE DISPLAY COMMAND TO GLASSES ===")
-        Bridge.log("Image Stream ID: $streamId")
-        Bridge.log("Total Chunks: $totalChunks")
-        Bridge.log("Image Position: X=0, Y=0")
-        Bridge.log("Image Dimensions: ${width}x$height")
-        Bridge.log("Image Encoding: raw")
-        
-        val displayImage = DisplayImage.newBuilder()
-            .setStreamId(streamId)
-            .setTotalChunks(totalChunks)
-            .setX(0)
-            .setY(0)
-            .setWidth(width)
-            .setHeight(height)
-            .setEncoding("raw")
-            .build()
-
-        // Create the PhoneToGlasses using its builder and set the DisplayImage with msg_id
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setMsgId("img_start_1")
-            .setDisplayImage(displayImage)
-            .build()
-
-        return generateProtobufCommandBytes(phoneToGlasses)
-    }
-
     private fun createTextWallChunksForNex(text: String): ByteArray {
-        val textNewBuilder = DisplayText.newBuilder()
-            .setColor(10000)
-            .setText(text)
-            .setSize(48)
-            .setX(20)
-            .setY(260)
-            .build()
-
-        Bridge.log("Nex: === SENDING TEXT TO GLASSES ===")
-        Bridge.log("Nex: Text: \"$text\"")
-        Bridge.log("Nex: Text Length: ${text.length} characters")
-        Bridge.log("Nex: DisplayText Builder: $textNewBuilder")
-
         // Create the PhoneToGlasses using its builder and set the DisplayText
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setDisplayText(textNewBuilder)
-            .build()
-
-        return generateProtobufCommandBytes(phoneToGlasses)
-    }
-
-    private fun sendHeadUpAngle(angle: Int) {
-        val headUpAngleConfig = HeadUpAngleConfig.newBuilder().setAngle(angle).build()
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setHeadUpAngle(headUpAngleConfig)
-            .build()
-        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
-        sendDataSequentially(cmdBytes, 10)
-        Bridge.log("Nex: Sent headUp angle command => Angle: $angle")
-    }
-
-    private fun sendDashboardPositionCommand(height: Int, depth: Int) {
-        // clamp height to 0-8 and depth to 1-9
-        val clampedHeight = height.coerceIn(0, 8)
-        val clampedDepth = depth.coerceIn(1, 9)
-        Bridge.log("Nex: === SENDING DASHBOARD POSITION COMMAND TO GLASSES ===")
-        Bridge.log("Nex: Dashboard Position - Height: $clampedHeight (0-8), Depth: $clampedDepth (1-9)")
-        val displayHeightConfig = DisplayHeightConfig.newBuilder()
-            .setHeight(clampedHeight)
-            .build()
-        
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setDisplayHeight(displayHeightConfig)
-            .build()
-        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
-        sendDataSequentially(cmdBytes, 10)
-        Bridge.log("Nex: Sent dashboard height/depth command => Height: $clampedHeight, Depth: $clampedDepth")
-    }
-
-    private fun sendBrightnessCommand(brightness: Int) {
-        // Validate brightness range
-        val validBrightness = if (brightness != -1) {
-            (brightness * 63) / 100
-        } else {
-            (30 * 63) / 100 // Default to 30% if brightness is -1
-        }
-
-        Bridge.log("Nex: === SENDING BRIGHTNESS COMMAND TO GLASSES ===")
-        Bridge.log("Nex: Brightness Value: $brightness (validated: $validBrightness)")
-
-        val brightnessConfig = BrightnessConfig.newBuilder()
-            .setValue(brightness)
-            .build()
-
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setBrightness(brightnessConfig)
-            .build()
-
-        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
-        sendDataSequentially(cmdBytes, 10)
-
-        Bridge.log("Nex: Sent auto light brightness command => Brightness: $brightness")
-    }
-
-    private fun sendAutoBrightnessCommand(autoLight: Boolean) {
-        Bridge.log("Nex: === SENDING AUTO BRIGHTNESS COMMAND TO GLASSES ===")
-        Bridge.log("Nex: Auto Brightness Enabled: $autoLight")
-
-        val autoBrightnessConfig = AutoBrightnessConfig.newBuilder()
-            .setEnabled(autoLight)
-            .build()
-            
-        val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setAutoBrightness(autoBrightnessConfig)
-            .build()
-
-        val cmdBytes = generateProtobufCommandBytes(phoneToGlasses)
-        sendDataSequentially(cmdBytes, 10)
-
-        Bridge.log("Nex: Sent auto light sendAutoBrightnessCommand => $autoLight")
+        return ProtobufUtils.generateDisplayTextCommandBytes(text)
     }
 
     private fun sendSetMicEnabled(enable: Boolean, delay: Long) {
@@ -1588,70 +1380,16 @@ class MentraNex : SGCManager() {
                 return@postDelayed
             }
             Bridge.log("Nex: === SENDING MICROPHONE STATE COMMAND TO GLASSES ===")
-            Bridge.log("Nex: Microphone Enabled: $enable")
-            val micStateConfig = MicStateConfig.newBuilder()
-                .setEnabled(enable)
-                .build()
-            val phoneToGlasses = PhoneToGlasses.newBuilder()
-                .setMicState(micStateConfig)
-                .build()
-            val micConfigBytes = generateProtobufCommandBytes(phoneToGlasses)
+            val micConfigBytes = ProtobufUtils.generateMicStateConfigCommandBytes(enable)
             sendDataSequentially(micConfigBytes, 10) // wait some time to setup the mic
             Bridge.log("Nex: Sent MIC command: ${micConfigBytes.joinToString("") { "%02x".format(it) }}")
         }, delay)
     }
 
     private fun queryBatteryStatus() {
-        Bridge.log("Nex: === SENDING BATTERY STATUS QUERY TO GLASSES ===")
         val batteryQueryPacket = ProtobufUtils.generateBatteryStateRequestCommandBytes()
         sendDataSequentially(batteryQueryPacket, 250)
     }
-
-
-    private fun generateProtobufCommandBytes(phoneToGlasses: PhoneToGlasses): ByteArray {
-        val contentBytes = phoneToGlasses.toByteArray()
-        val chunk = ByteBuffer.allocate(contentBytes.size + 1)
-
-        chunk.put(PACKET_TYPE_PROTOBUF)
-        chunk.put(contentBytes)
-
-        // Enhanced logging for protobuf messages
-        val result = chunk.array()
-        logProtobufMessage(phoneToGlasses, result)
-
-        return result
-    }
-
-    // Enhanced logging method for protobuf messages
-    private fun logProtobufMessage(phoneToGlasses: PhoneToGlasses, fullMessage: ByteArray) {
-        val logMessage = buildString {
-            appendLine("=== PROTOBUF MESSAGE TO GLASSES ===")
-            appendLine("Message Type: ${phoneToGlasses.payloadCase}")
-
-            // Extract and log text content if present
-            when {
-                phoneToGlasses.hasDisplayText() -> {
-                    val text = phoneToGlasses.displayText.text
-                    appendLine("Text Content: \"$text\"")
-                    appendLine("Text Length: ${text.length} characters")
-                }
-                phoneToGlasses.hasDisplayScrollingText() -> {
-                    val text = phoneToGlasses.displayScrollingText.text
-                    appendLine("Scrolling Text Content: \"$text\"")
-                    appendLine("Text Length: ${text.length} characters")
-                }
-            }
-
-            // Log message size information
-            appendLine("Protobuf Payload Size: ${phoneToGlasses.toByteArray().size} bytes")
-            appendLine("Total Message Size: ${fullMessage.size} bytes")
-            appendLine("Packet Type: 0x${PACKET_TYPE_PROTOBUF.toString(16).padStart(2, '0').uppercase()}")
-            append("=====================================")
-        }
-
-        Bridge.log("Nex: $logMessage")
-    }
-
 
     ///// PROCESSING THREAD /////////////////
 
