@@ -187,7 +187,6 @@ export const ConsoleLogger = () => {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  zIndex: 1,
   position: "absolute",
   zIndex: 1,
   left: 0,
