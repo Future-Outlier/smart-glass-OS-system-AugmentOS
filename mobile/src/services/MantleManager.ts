@@ -15,9 +15,6 @@ import {useGlassesStore, GlassesInfo, getGlasesInfoPartial} from "@/stores/glass
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
-import {BackgroundTimer} from "@/utils/timers"
-import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
-import {showAlert} from "@/utils/AlertUtils"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -135,7 +132,7 @@ class MantleManager {
     }
 
     // check for requirements immediately, but only if we've passed through onboarding:
-    // const onboardingCompleted = await useSettingsStore.getState().getSetting(SETTINGS.onboarding_completed.key) 
+    // const onboardingCompleted = await useSettingsStore.getState().getSetting(SETTINGS.onboarding_completed.key)
     // if (onboardingCompleted) {
     //   try {
     //     const requirementsCheck = await checkConnectivityRequirementsUI()
