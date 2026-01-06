@@ -25,7 +25,7 @@ export const VersionInfo = () => {
     if (!devMode) return
 
     const updateAudioTransport = () => {
-      if (socketComms.udpAudioEnabled) {
+      if (socketComms.udpEnabledAndReady()) {
         const endpoint = udp.getEndpoint()
         setAudioTransport(endpoint ? `udp @ ${endpoint}` : "udp")
       } else {
