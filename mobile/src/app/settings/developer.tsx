@@ -25,6 +25,7 @@ export default function DeveloperSettingsScreen() {
   const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS.reconnect_on_app_foreground.key)
   const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS.enable_squircles.key)
   const [debugConsole, setDebugConsole] = useSetting(SETTINGS.debug_console.key)
+  const [_onboardingOsCompleted, setOnboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
 
   return (
     <Screen preset="fixed">
@@ -79,7 +80,10 @@ export default function DeveloperSettingsScreen() {
             <RouteButton
               label="Pairing Success"
               subtitle="Open the pairing success screen"
-              onPress={() => replaceAll("/pairing/success")}
+              onPress={() => {
+                setOnboardingOsCompleted(false)
+                replaceAll("/pairing/success")
+              }}
             />
 
             <RouteButton
