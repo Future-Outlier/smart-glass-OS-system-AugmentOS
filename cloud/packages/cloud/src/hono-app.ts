@@ -131,6 +131,10 @@ app.use(async (c, next) => {
   const status = c.res.status;
   const responseContentType = c.res.headers.get("content-type");
 
+  // Capture userId from auth middleware (populated during next())
+  // This enables filtering by user in Better Stack
+  const userId = c.get("email") || c.get("console")?.email || undefined;
+
   // Build comprehensive log data for Better Stack
   const logData = {
     // Request identification
@@ -154,9 +158,10 @@ app.use(async (c, next) => {
     referer,
     origin,
 
-    // Auth info (safe)
+    // Auth info (safe) - userId enables user-centric debugging in Better Stack
     hasAuth,
     authType,
+    userId,
 
     // Categorization for Better Stack filtering
     service: "hono-http",
