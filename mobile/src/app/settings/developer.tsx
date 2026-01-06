@@ -99,7 +99,7 @@ export default function DeveloperSettingsScreen() {
               subtitle="Start the Mentra Live onboarding"
               onPress={() => {
                 clearHistoryAndGoHome()
-                replaceAll("/onboarding/live")
+                push("/onboarding/live")
               }}
             />
 
@@ -108,7 +108,7 @@ export default function DeveloperSettingsScreen() {
               subtitle="Start the Mentra Live onboarding"
               onPress={() => {
                 clearHistoryAndGoHome()
-                replaceAll("/onboarding/os")
+                push("/onboarding/os")
               }}
             />
           </Group>
