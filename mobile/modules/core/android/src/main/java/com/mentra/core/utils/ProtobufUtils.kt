@@ -1,32 +1,36 @@
 package com.mentra.core.utils
-import com.mentra.core.protobuf.PhoneToGlasses
 
 import java.nio.ByteBuffer
 import java.io.IOException
+import java.util.UUID
 
 import android.content.Context
 import android.util.Log
 
 import com.mentra.core.Bridge
 
-import mentraos.ble.MentraosBle.DisplayText;
-import mentraos.ble.MentraosBle.PhoneToGlasses;
-import mentraos.ble.MentraosBle.DisplayImage;
-import mentraos.ble.MentraosBle.PongResponse;
-import mentraos.ble.MentraosBle.BatteryStateRequest;
-import mentraos.ble.MentraosBle.MicStateConfig;
-import mentraos.ble.MentraosBle.BrightnessConfig;
-import mentraos.ble.MentraosBle.AutoBrightnessConfig;
-import mentraos.ble.MentraosBle.HeadUpAngleConfig;
-import mentraos.ble.MentraosBle.DisplayHeightConfig;
-import mentraos.ble.MentraosBle.VersionRequest;
+import mentraos.ble.MentraosBle.DisplayText
+import mentraos.ble.MentraosBle.PhoneToGlasses
+import mentraos.ble.MentraosBle.DisplayImage
+import mentraos.ble.MentraosBle.PongResponse
+import mentraos.ble.MentraosBle.BatteryStateRequest
+import mentraos.ble.MentraosBle.MicStateConfig
+import mentraos.ble.MentraosBle.BrightnessConfig
+import mentraos.ble.MentraosBle.AutoBrightnessConfig
+import mentraos.ble.MentraosBle.HeadUpAngleConfig
+import mentraos.ble.MentraosBle.DisplayHeightConfig
+import mentraos.ble.MentraosBle.VersionRequest
+
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 
 
 object NexBluetoothConstants {
-    const val MAIN_SERVICE_UUID: UUID = UUID.fromString("00004860-0000-1000-8000-00805f9b34fb")
-    const val WRITE_CHAR_UUID: UUID = UUID.fromString("000071FF-0000-1000-8000-00805f9b34fb")
-    const val NOTIFY_CHAR_UUID: UUID = UUID.fromString("000070FF-0000-1000-8000-00805f9b34fb")
-    const val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+    val MAIN_SERVICE_UUID: UUID = UUID.fromString("00004860-0000-1000-8000-00805f9b34fb")
+    val WRITE_CHAR_UUID: UUID = UUID.fromString("000071FF-0000-1000-8000-00805f9b34fb")
+    val NOTIFY_CHAR_UUID: UUID = UUID.fromString("000070FF-0000-1000-8000-00805f9b34fb")
+    val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 }
 
 object NexDisplayConstants {
@@ -48,12 +52,14 @@ object NexBluetoothPacketTypes {
 object ProtobufUtils {
     private const val TAG = "ProtobufUtils"
 
+    private const val WHITELIST_CMD: Int = 0x04
+
     data class AppInfo(
         val id: String,
         val name: String
     )
 
-    fun getWhitelistChunks(): List<ByteArray> {
+    fun getWhitelistChunks(maxChunkSize: Int): List<ByteArray> {
         // Define the hardcoded whitelist
         val apps = listOf(AppInfo("com.augment.os", "AugmentOS"))
         val whitelistJson = createWhitelistJson(apps)
@@ -61,10 +67,10 @@ object ProtobufUtils {
         Bridge.log("Creating chunks for hardcoded whitelist: $whitelistJson")
 
         // Convert JSON to bytes and split into chunks
-        return createWhitelistChunks(whitelistJson)
+        return createWhitelistChunks(whitelistJson, maxChunkSize)
     }
 
-    fun createBmpChunksForNexGlasses(streamId: String, bmpData: ByteArray, totalChunks: Int): List<ByteArray> {
+    fun createBmpChunksForNexGlasses(streamId: String, bmpData: ByteArray, totalChunks: Int, bmpChunkSize: Int): List<ByteArray> {
         val chunks = mutableListOf<ByteArray>()
         Bridge.log("Creating $totalChunks chunks from ${bmpData.size} bytes")
         
@@ -72,12 +78,12 @@ object ProtobufUtils {
         val streamIdInt = streamId.toInt(16)
         
         repeat(totalChunks) { i ->
-            val start = i * BMP_CHUNK_SIZE
-            val end = minOf(start + BMP_CHUNK_SIZE, bmpData.size)
+            val start = i * bmpChunkSize
+            val end = minOf(start + bmpChunkSize, bmpData.size)
             val chunk = bmpData.copyOfRange(start, end)
             
             val header = ByteArray(4 + chunk.size).apply {
-                this[0] = PACKET_TYPE_IMAGE // 0xB0
+                this[0] = NexBluetoothPacketTypes.PACKET_TYPE_IMAGE // 0xB0
                 this[1] = (streamIdInt shr 8).toByte() // Stream ID high byte
                 this[2] = streamIdInt.toByte()         // Stream ID low byte
                 this[3] = i.toByte()                   // Chunk index
@@ -99,17 +105,69 @@ object ProtobufUtils {
     }
     
     /**
-     * Extracts the protobuf schema version from the proto file
+     * Gets the current protobuf schema version from the compiled protobuf descriptor
      */
-    fun getProtoVersion(context: Context): Int {
+    fun getProtobufSchemaVersion(context: Context): Int {
         return try {
-            // Try to read from assets first
-            readProtoVersionFromAssets(context)?.toIntOrNull() 
-                ?: readProtoVersionFromResources(context)?.toIntOrNull()
-                ?: readProtoVersionFromProject(context)?.toIntOrNull()
-                ?: 1 // Default version
+            // Get the protobuf descriptor and extract the schema version
+            val fileDescriptor = mentraos.ble.MentraosBle.getDescriptor().file
+            
+            Log.d(TAG, "Proto file descriptor: ${fileDescriptor.name}")
+            
+            // Method 1: Try to access the custom mentra_schema_version option
+            try {
+                // Get the file options from the descriptor
+                val options = fileDescriptor.options
+                Log.d(TAG, "Got file options: $options")
+                
+                // Try to access the custom option using the extension registry
+                try {
+                    // Look for the generated extension in the MentraosBle class
+                    mentraos.ble.MentraosBle::class.java.declaredFields.forEach { field ->
+                        if (field.name.contains("schema", ignoreCase = true) || 
+                            field.name.contains("version", ignoreCase = true)) {
+                            Log.d(TAG, "Found potential version field: ${field.name}")
+                            field.isAccessible = true
+                            try {
+                                val value = field.get(null)
+                                if (value is com.google.protobuf.Extension<*, *>) {
+                                    @Suppress("UNCHECKED_CAST")
+                                    val ext = value as com.google.protobuf.Extension<com.google.protobuf.DescriptorProtos.FileOptions, Int>
+                                    if (options.hasExtension(ext)) {
+                                        val version = options.getExtension(ext)
+                                        Log.d(TAG, "Found schema version via extension: $version")
+                                        return version
+                                    }
+                                }
+                            } catch (fieldException: Exception) {
+                                Log.d(TAG, "Field access failed for ${field.name}: ${fieldException.message}")
+                            }
+                        }
+                    }
+                } catch (extensionException: Exception) {
+                    Log.d(TAG, "Extension search failed: ${extensionException.message}")
+                }
+                
+            } catch (optionsException: Exception) {
+                Log.d(TAG, "Options access failed: ${optionsException.message}")
+            }
+            
+            // Method 2: Try to read from the actual proto file content
+            try {
+                val protoVersion = readProtoVersionFromProject(context)
+                if (protoVersion != null) {
+                    Log.d(TAG, "Read proto version from project: $protoVersion")
+                    return protoVersion.toInt()
+                }
+            } catch (projectException: Exception) {
+                Log.d(TAG, "Project file reading failed: ${projectException.message}")
+            }
+            
+            Log.w(TAG, "Could not extract protobuf schema version dynamically, using fallback")
+            1 // Fallback to version 1
+            
         } catch (e: Exception) {
-            Bridge.log("Error getting protobuf version: ${e.message}", Log.ERROR, e)
+            Log.e(TAG, "Error getting protobuf schema version: ${e.message}", e)
             1 // Fallback to version 1
         }
     }
@@ -286,18 +344,18 @@ object ProtobufUtils {
                 })
             }.toString()
         } catch (e: JSONException) {
-            Bridge.log("Error creating whitelist JSON: ${e.message}", Log.ERROR)
+            Log.e(TAG, "Error creating whitelist JSON: ${e.message}", e)
             "{}"
         }
     }
 
-    private fun createWhitelistChunks(json: String): List<ByteArray> {
+    private fun createWhitelistChunks(json: String, maxChunkSize: Int): List<ByteArray> {
         val jsonBytes = json.toByteArray(Charsets.UTF_8)
-        val totalChunks = (jsonBytes.size + MAX_CHUNK_SIZE - 1) / MAX_CHUNK_SIZE
+        val totalChunks = (jsonBytes.size + maxChunkSize - 1) / maxChunkSize
 
         return List(totalChunks) { chunkIndex ->
-            val start = chunkIndex * MAX_CHUNK_SIZE
-            val end = (start + MAX_CHUNK_SIZE).coerceAtMost(jsonBytes.size)
+            val start = chunkIndex * maxChunkSize
+            val end = (start + maxChunkSize).coerceAtMost(jsonBytes.size)
             val payloadChunk = jsonBytes.copyOfRange(start, end)
 
             // Create the header: [WHITELIST_CMD, total_chunks, chunk_index]
@@ -315,7 +373,7 @@ object ProtobufUtils {
         val contentBytes = phoneToGlasses.toByteArray()
         val chunk = ByteBuffer.allocate(contentBytes.size + 1)
 
-        chunk.put(PACKET_TYPE_PROTOBUF)
+        chunk.put(NexBluetoothPacketTypes.PACKET_TYPE_PROTOBUF)
         chunk.put(contentBytes)
 
         // Enhanced logging for protobuf messages
@@ -347,7 +405,7 @@ object ProtobufUtils {
             // Log message size information
             appendLine("Protobuf Payload Size: ${phoneToGlasses.toByteArray().size} bytes")
             appendLine("Total Message Size: ${fullMessage.size} bytes")
-            appendLine("Packet Type: 0x${PACKET_TYPE_PROTOBUF.toString(16).padStart(2, '0').uppercase()}")
+            appendLine("Packet Type: 0x${NexBluetoothPacketTypes.PACKET_TYPE_PROTOBUF.toString(16).padStart(2, '0').uppercase()}")
             append("=====================================")
         }
 
@@ -412,7 +470,7 @@ object ProtobufUtils {
             val pattern = Regex("""option\s*\(\s*mentra_schema_version\s*\)\s*=\s*(\d+)\s*;""")
             pattern.find(content)?.groupValues?.get(1)
         } catch (e: Exception) {
-            Bridge.log("Error extracting version from proto content: ${e.message}", Log.ERROR)
+            Log.e(TAG, "Error extracting version from proto content: ${e.message}", e)
             null
         }
     }
