@@ -2,6 +2,7 @@ package com.mentra.core.sgcs
 
 import com.mentra.core.CoreManager
 
+import android.graphics.BitmapFactory
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
@@ -44,13 +45,16 @@ import com.mentra.core.utils.NexBluetoothPacketTypes
 import com.mentra.core.utils.BitmapJavaUtils
 import com.mentra.core.utils.G1FontLoaderKt
 import com.mentra.core.utils.G1Text
-import com.mentra.core.utils.SmartGlassesConnectionState
+import com.mentra.core.utils.ConnTypes
 import com.mentra.lc3Lib.Lc3Cpp
 import com.mentra.core.utils.audio.Lc3Player
 
 import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 import java.nio.charset.Charset
+import java.util.Random
+
+
 import org.json.JSONObject
 
 import com.google.protobuf.InvalidProtocolBufferException
@@ -200,6 +204,8 @@ class MentraNex : SGCManager() {
         }
     }
 
+    private val random: Random = Random()
+
     private val mainGattCallback: BluetoothGattCallback = createGattCallback()
 
     private var mainTaskHandler: Handler = Handler(Looper.getMainLooper(), Handler.Callback(::handleMainTaskMessage))
@@ -265,6 +271,7 @@ class MentraNex : SGCManager() {
     // Network Management
     override fun requestWifiScan () { Bridge.log("Nex: requestWifiScan operation not supported") }
     override fun sendWifiCredentials(ssid: String, password: String) { Bridge.log("Nex: sendWifiCredentials operation not supported") }
+    override fun forgetWifiNetwork(ssid: String) { }
     override fun sendHotspotState(enabled: Boolean) { Bridge.log("Nex: sendHotspotState operation not supported") }
 
     // Gallery: Not supported on Nex (No camera)
@@ -443,16 +450,17 @@ class MentraNex : SGCManager() {
     override fun displayBitmap(base64ImageData: String): Boolean {
         try {
             val bmpData: ByteArray? = android.util.Base64.decode(base64ImageData, android.util.Base64.DEFAULT)
-            if (bmpData == null || bmpData.length == 0) {
+            if (bmpData == null || bmpData.isEmpty()) {
                 Log.e(TAG, "Failed to decode base64 image data");
                 return false;
             }
+            val bmp = BitmapFactory.decodeByteArray(bmpData, 0, bmpData.size)
 
-            displayBitmapImageForNexGlasses(bmpData)
+            displayBitmapImageForNexGlasses(bmpData, bmp.height, bmp.width)
             return true
 
         } catch (e: Exception) {
-            Log.e(TAG, e.message);
+            Log.e(TAG, "Error in displaying bitmap: " + e.message);
             return false
         }
 
@@ -646,7 +654,7 @@ class MentraNex : SGCManager() {
                         val packetType = values[0]
                         val protobufData = values.copyOfRange(1, values.size)
                         
-                        if (packetType.toInt() == NexBluetoothPacketTypes.PACKET_TYPE_PROTOBUF) {
+                        if (packetType == NexBluetoothPacketTypes.PACKET_TYPE_PROTOBUF) {
                             // just for test
                             decodeProtobufsByWrite(protobufData, packetHex)
                         }
@@ -730,7 +738,7 @@ class MentraNex : SGCManager() {
         Bridge.log("Nex: handleMessage msgCode: $msgCode")
         Bridge.log("Nex: handleMessage obj: ${msg.obj}")
         
-        return when (msgCode) {
+        when (msgCode) {
             MAIN_TASK_HANDLER_CODE_GATT_STATUS_CHANGED -> {}
             MAIN_TASK_HANDLER_CODE_DISCOVER_SERVICES -> {
                 val statusBool = msg.obj as? Boolean ?: false
@@ -759,6 +767,7 @@ class MentraNex : SGCManager() {
                 // This case is kept for backward compatibility but no longer used
                 Bridge.log("Nex: Heartbeat handler called - no longer sending periodic pings")
             }
+            else -> { }
         }
 
         return true
@@ -906,18 +915,19 @@ class MentraNex : SGCManager() {
                         }
 
                         // Still decode for callback compatibility
-                        if (lc3DecoderPtr != 0L) {
-                            val pcmData = L3cCpp.decodeLC3(lc3DecoderPtr, lc3Data)
-                            Bridge.log("pcmData size:${pcmData?.size ?: 0}")
-                            audioProcessingCallback?.let { callback ->
-                                if (!pcmData.isNullOrEmpty()) {
-                                    callback.onAudioDataAvailable(pcmData)
-                                }
-                            } ?: run {
-                                // If we get here, it means the callback wasn't properly registered
-                                Log.e(TAG,"Audio processing callback is null - callback registration failed!")
-                            }
-                        }
+                        // TODO: (Verify) Commenting because commented in G1
+                        // if (lc3DecoderPtr != 0L) {
+                        //     val pcmData = Lc3Cpp.decodeLC3(lc3DecoderPtr, lc3Data)
+                        //     Bridge.log("pcmData size:${pcmData?.size ?: 0}")
+                        //     audioProcessingCallback?.let { callback ->
+                        //         if (!pcmData.isNullOrEmpty()) {
+                        //             callback.onAudioDataAvailable(pcmData)
+                        //         }
+                        //     } ?: run {
+                        //         // If we get here, it means the callback wasn't properly registered
+                        //         Log.e(TAG,"Audio processing callback is null - callback registration failed!")
+                        //     }
+                        // }
                     }
                 }
                 NexBluetoothPacketTypes.PACKET_TYPE_IMAGE -> {
@@ -944,7 +954,7 @@ class MentraNex : SGCManager() {
 
         Bridge.log("attemptGattConnection called for device: $deviceName (${device.address})")
 
-        connectionState = SmartGlassesConnectionState.CONNECTING
+        connectionState = ConnTypes.CONNECTING
         Bridge.log("Setting connectionState to CONNECTING. Notifying connectionEvent.")
         // connectionEvent(connectionState)
 
@@ -961,7 +971,7 @@ class MentraNex : SGCManager() {
     private fun postProtobufSchemaVersionInfo() {
         try {
             // Call the version method only once
-            val schemaVersion = ProtobufUtils.getProtobufSchemaVersion(context)
+            val schemaVersion = ProtobufUtils.getProtobufSchemaVersion(context!!)
             
             // Build the info string directly instead of calling getProtobufBuildInfo()
             val fileDescriptorName = mentraos.ble.MentraosBle.getDescriptor().file.name
@@ -981,18 +991,20 @@ class MentraNex : SGCManager() {
     }
 
     private fun connectToSmartGlasses() {
+        val deviceModelName = CoreManager.getInstance().deviceName
+        val deviceAddress = CoreManager.getInstance().deviceAddress
 
         // Register bonding receiver
         Bridge.log("connectToSmartGlasses start")
-        Bridge.log("try to ConnectToSmartGlassesing deviceModelName: ${device.deviceModelName} deviceAddress: ${device.deviceAddress}")
+        Bridge.log("try to ConnectToSmartGlassesing deviceModelName: ${deviceModelName} deviceAddress: ${deviceAddress}")
         preferredMainDeviceId = CoreManager.getInstance().deviceName
         if (!bluetoothAdapter.isEnabled) {
             return
         }
         when {
-            !device.deviceModelName.isNullOrEmpty() && !device.deviceAddress.isNullOrEmpty() -> {
+            !deviceModelName.isNullOrEmpty() && !deviceAddress.isNullOrEmpty() -> {
                 stopScan()
-                mainDevice = bluetoothAdapter.getRemoteDevice(device.deviceAddress)
+                mainDevice = bluetoothAdapter.getRemoteDevice(deviceAddress)
                 mainTaskHandler?.sendEmptyMessageDelayed(MAIN_TASK_HANDLER_CODE_RECONNECT_DEVICE, 0)
             }
             savedNexMainAddress != null -> {
@@ -1002,7 +1014,7 @@ class MentraNex : SGCManager() {
             else -> {
                 // Start scanning for devices
                 stopScan()
-                connectionState = SmartGlassesConnectionState.SCANNING
+                connectionState = ConnTypes.SCANNING
                 // connectionEvent(connectionState) // TODO: Figure out where is connection event defined????
                 startScan()
             }
@@ -1041,12 +1053,12 @@ class MentraNex : SGCManager() {
         mainTaskHandler?.removeCallbacksAndMessages(null)
         whiteListHandler?.removeCallbacksAndMessages(null)
         micEnableHandler?.removeCallbacksAndMessages(null)
-        notificationHandler?.removeCallbacks(notificationRunnable)
-        textWallHandler?.removeCallbacks(textWallRunnable)
+        notificationHandler?.removeCallbacks(notificationRunnable!!)
+        textWallHandler?.removeCallbacks(textWallRunnable!!)
         findCompatibleDevicesHandler?.removeCallbacksAndMessages(null)
         // Free LC3 decoder
         if (lc3DecoderPtr != 0L) {
-            L3cCpp.freeDecoder(lc3DecoderPtr)
+            Lc3Cpp.freeDecoder(lc3DecoderPtr)
             lc3DecoderPtr = 0L
         }
         currentImageChunks.clear()
@@ -1083,7 +1095,7 @@ class MentraNex : SGCManager() {
         Bridge.log("CALL START SCAN - Started scanning for devices...")
 
         // Ensure scanning state is immediately communicated to UI
-        connectionState = SmartGlassesConnectionState.SCANNING
+        connectionState = ConnTypes.SCANNING
         // connectionEvent(connectionState)
 
         // Stop the scan after some time (e.g., 10-15s instead of 60 to avoid
@@ -1123,7 +1135,8 @@ class MentraNex : SGCManager() {
 
             // Send all chunks with proper stream ID parsing
             val chunks = ProtobufUtils.createBmpChunksForNexGlasses(streamId, bmpData, totalChunks, bmpChunkSize)
-            currentImageChunks = chunks
+            currentImageChunks.clear()
+            currentImageChunks.addAll(chunks)
             sendDataSequentially(chunks)
 
             // Note: The following are commented out in the original
@@ -1137,7 +1150,7 @@ class MentraNex : SGCManager() {
     }
 
     private fun stopPeriodicNotifications() {
-        notificationHandler?.removeCallbacks(notificationRunnable)
+        notificationHandler?.removeCallbacks(notificationRunnable!!)
         Bridge.log("Stopped periodic notifications")
     }
 
@@ -1195,14 +1208,14 @@ class MentraNex : SGCManager() {
 
     private fun updateConnectionState() {
         connectionState = if (isMainConnected) {
-            SmartGlassesConnectionState.CONNECTED.also {
+            ConnTypes.CONNECTED.also {
                 Bridge.log("Nex: Main glasses connected")
                 lastConnectionTimestamp = System.currentTimeMillis()
                 // Removed commented sleep code as it's not needed
                 // connectionEvent(it)
             }
         } else {
-            SmartGlassesConnectionState.DISCONNECTED.also {
+            ConnTypes.DISCONNECTED.also {
                 Bridge.log("Nex: No Main glasses connected")
                 // connectionEvent(it)
             }
@@ -1368,6 +1381,9 @@ class MentraNex : SGCManager() {
                 null -> {
                     // Do nothing
                 }
+                else -> {
+
+                }
             }
         } catch (e: InvalidProtocolBufferException) {
             Log.e(TAG,"Error decoding protobuf: ${e.message}")
@@ -1441,7 +1457,7 @@ class MentraNex : SGCManager() {
         micEnabled = enable
         
         micEnableHandler?.postDelayed({
-            if (connectionState != SmartGlassesConnectionState.CONNECTED) {
+            if (connectionState != ConnTypes.CONNECTED) {
                 Bridge.log("Nex: Tryna start mic: Not connected to glasses")
                 return@postDelayed
             }

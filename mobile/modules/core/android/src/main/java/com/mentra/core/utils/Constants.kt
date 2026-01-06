@@ -8,13 +8,15 @@ object DeviceTypes {
     const val LIVE = "Mentra Live"
     const val Z100 = "Vuzix Z100"
     const val FRAME = "Brilliant Frame"
-    val ALL = arrayOf(SIMULATED, G1, MACH1, LIVE, Z100, FRAME)
+    val ALL = arrayOf(SIMULATED, G1, MACH1, LIVE, Z100, FRAME, NEX)
 }
 
 object ConnTypes {
     const val CONNECTING = "CONNECTING"
     const val CONNECTED = "CONNECTED"
     const val DISCONNECTED = "DISCONNECTED"
+    const val SCANNING = "SCANNING"
+    const val BONDING = "BONDING"
 }
 
 object MicTypes {
