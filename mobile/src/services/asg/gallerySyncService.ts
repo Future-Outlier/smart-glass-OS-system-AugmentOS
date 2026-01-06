@@ -760,6 +760,9 @@ class GallerySyncService {
       asgCameraApi.setServer(hotspotInfo.ip, 8089)
 
       // Get sync state and files to download
+      // IMPORTANT: This creates a SNAPSHOT of files at this moment based on last_sync_time.
+      // Any photos taken AFTER this call (during the sync) will NOT be included in this sync.
+      // They will be detected in the next sync when we query gallery status again.
       const syncState = await localStorageService.getSyncState()
       const syncResponse = await asgCameraApi.syncWithServer(syncState.client_id, syncState.last_sync_time, true)
 
@@ -831,7 +834,11 @@ class GallerySyncService {
       const downloadResult = await asgCameraApi.batchSyncFiles(
         files,
         true,
-        async (current, total, fileName, fileProgress, downloadedFile) => {
+        (current, total, fileName, fileProgress, downloadedFile) => {
+          // CRITICAL: This callback MUST NOT be async!
+          // RNFS progress callbacks cannot handle async errors properly and will crash with null error codes.
+          // All async operations inside must be wrapped in try-catch and not propagate errors.
+
           // Check if cancelled
           if (this.abortController?.signal.aborted) {
             throw new Error("Sync cancelled")
@@ -1150,8 +1157,12 @@ class GallerySyncService {
       }
     }, 4000)
 
-    // Clear glasses gallery status since files are now synced
-    store.clearGlassesGalleryStatus()
+    // Query glasses for updated gallery status after sync completes
+    // This will detect any photos taken DURING the sync that weren't included
+    console.log(
+      "[GallerySyncService] 🔍 Querying glasses for post-sync gallery status (detecting new photos taken during sync)",
+    )
+    await this.queryGlassesGalleryStatus()
   }
 
   /**
