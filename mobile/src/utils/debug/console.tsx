@@ -143,7 +143,7 @@ export const ConsoleLogger = () => {
   if (!isVisible) {
     return (
       <GestureDetector gesture={toggleGesture}>
-        <Animated.View className="absolute bottom-28 right-2" style={toggleAnimatedStyle}>
+        <Animated.View className="absolute bottom-28 right-2 z-1" style={toggleAnimatedStyle}>
           <Button text="Show Console" preset="primary" compact onPress={() => setIsVisible(true)} />
         </Animated.View>
       </GestureDetector>
@@ -187,6 +187,7 @@ export const ConsoleLogger = () => {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  zIndex: 1,
   position: "absolute",
   left: 0,
   right: 0,
