@@ -4,6 +4,7 @@ import android.os.Message
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.content.Context;
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothGatt
@@ -16,14 +17,18 @@ import android.bluetooth.le.ScanSettings
 import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 
-
+import mentraos.ble.MentraosBle.GlassesToPhone
 import mentraos.ble.MentraosBle.PhoneToGlasses
-import mentraos.ble.MentraosBle.DisplayText
-import mentraos.ble.MentraosBle.HeadUpAngleConfig
-import mentraos.ble.MentraosBle.DisplayHeightConfig
-import mentraos.ble.MentraosBle.BrightnessConfig
-import mentraos.ble.MentraosBle.AutoBrightnessConfig
-import mentraos.ble.MentraosBle.MicStateConfig
+import mentraos.ble.MentraosBle.ChargingState
+import mentraos.ble.MentraosBle.BatteryStatus
+import mentraos.ble.MentraosBle.VersionResponse
+import mentraos.ble.MentraosBle.HeadGesture
+import mentraos.ble.MentraosBle.ButtonEvent
+import mentraos.ble.MentraosBle.ImuData
+import mentraos.ble.MentraosBle.ImageTransferComplete
+import mentraos.ble.MentraosBle.HeadUpAngleResponse
+import mentraos.ble.MentraosBle.HeadPosition
+import mentraos.ble.MentraosBle.DeviceInfo
 
 import com.mentra.core.sgcs.SGCManager
 import com.mentra.core.Bridge
@@ -71,6 +76,15 @@ class MentraNex : SGCManager() {
         private const val MAIN_TASK_HANDLER_CODE_HEART_BEAT: Int = 630
     }
 
+    private var heartbeatCount: Int = 0;
+    private var micBeatCount: Int = 0;
+
+    private var context: Context? = null
+    // private var isDebug: Boolean = true
+
+    private var isLc3AudioEnabled: Boolean = true
+    private var lc3AudioPlayer: Lc3Player? = null
+
     private var mainDevice: BluetoothDevice? = null
     private var bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
 
@@ -100,7 +114,7 @@ class MentraNex : SGCManager() {
     private val mainWaiter = BooleanWaiter()
     private val mainServicesWaiter = BooleanWaiter()
 
-    private var shouldUseGlassesMic: Boolean = true
+    private var shouldUseGlassesMic: Boolean = false
     private var microphoneStateBeforeDisconnection: Boolean = false
 
     private var bleScanCallback: ScanCallback? = null
@@ -108,10 +122,19 @@ class MentraNex : SGCManager() {
     private var batteryMain: Int = -1
 
     init {
+        context = Bridge.getContext()
+        // isDebug = isDebug(context)
         type = DeviceTypes.NEX
         hasMic = true
         micEnabled = false
         preferredMainDeviceId = CoreManager.getInstance().getDeviceName()
+        
+        // Initialize LC3 audio player
+        lc3AudioPlayer = Lc3Player(context)
+        lc3AudioPlayer.init()
+        if (isLc3AudioEnabled) {
+            lc3AudioPlayer.startPlay()
+        }
     }
 
     private val mainGattCallback: BluetoothGattCallback = createGattCallback()
@@ -873,13 +896,13 @@ class MentraNex : SGCManager() {
             val fileDescriptorName = mentraos.ble.MentraosBle.getDescriptor().file.name
             val buildInfo = "Schema v$schemaVersion | $fileDescriptorName"
             
-            val event = ProtobufSchemaVersionEvent(
-                schemaVersion, 
-                buildInfo, 
-                smartGlassesDevice?.deviceModelName ?: "Unknown"
-            )
+            // val event = ProtobufSchemaVersionEvent(
+            //     schemaVersion, 
+            //     buildInfo, 
+            //     smartGlassesDevice?.deviceModelName ?: "Unknown"
+            // )
             
-            EventBus.getDefault().post(event)
+            // EventBus.getDefault().post(event)
             Bridge.log("Posted protobuf schema version event: $buildInfo")
         } catch (e: Exception) {
             Bridge.log("Error posting protobuf schema version event: ${e.message}", Log.ERROR, e)
@@ -1172,33 +1195,33 @@ class MentraNex : SGCManager() {
             Bridge.log("decodeProtobufs glassesToPhone: $glassesToPhone")
             Bridge.log("decodeProtobufs glassesToPhone payloadCase: $payloadCase")
             
-            if (isDebugMode) {
-                EventBus.getDefault().post(BleCommandReceiver(payloadCase, packetHex))
-            }
+            // if (isDebugMode) {
+            //     EventBus.getDefault().post(BleCommandReceiver(payloadCase, packetHex))
+            // }
 
             when (glassesToPhone.payloadCase) {
                 GlassesToPhone.PayloadCase.BATTERY_STATUS -> {
-                    val batteryStatus = glassesToPhone.batteryStatus
+                    val batteryStatus: BatteryStatus = glassesToPhone.batteryStatus
                     batteryMain = batteryStatus.level
                     EventBus.getDefault().post(BatteryLevelEvent(batteryStatus.level, batteryStatus.charging))
                     Bridge.log("batteryStatus: $batteryStatus")
                 }
                 GlassesToPhone.PayloadCase.CHARGING_STATE -> {
-                    val chargingState = glassesToPhone.chargingState
+                    val chargingState: ChargingState = glassesToPhone.chargingState
                     EventBus.getDefault().post(BatteryLevelEvent(batteryMain, chargingState.state == State.CHARGING))
                     Bridge.log("chargingState: $chargingState")
                 }
                 GlassesToPhone.PayloadCase.DEVICE_INFO -> {
-                    val deviceInfo = glassesToPhone.deviceInfo
+                    val deviceInfo: DeviceInfo = glassesToPhone.deviceInfo
                     Bridge.log("deviceInfo: $deviceInfo")
                 }
                 GlassesToPhone.PayloadCase.HEAD_POSITION -> {
-                    val headPosition = glassesToPhone.headPosition
+                    val headPosition: HeadPosition = glassesToPhone.headPosition
                     EventBus.getDefault().post(HeadUpAngleEvent(headPosition.angle))
                     Bridge.log("headPosition: $headPosition")
                 }
                 GlassesToPhone.PayloadCase.HEAD_UP_ANGLE_SET -> {
-                    val headUpAngleResponse = glassesToPhone.headUpAngleSet
+                    val headUpAngleResponse: HeadUpAngleResponse = glassesToPhone.headUpAngleSet
                     Bridge.log("headUpAngleResponse: $headUpAngleResponse")
                 }
                 GlassesToPhone.PayloadCase.PING -> {
@@ -1211,7 +1234,7 @@ class MentraNex : SGCManager() {
                     // EventBus.getDefault().post(VadEvent(vadEvent.vad))
                 }
                 GlassesToPhone.PayloadCase.IMAGE_TRANSFER_COMPLETE -> {
-                    val transferComplete = glassesToPhone.imageTransferComplete
+                    val transferComplete: ImageTransferComplete = glassesToPhone.imageTransferComplete
                     Bridge.log("transferComplete: $transferComplete")
                     
                     when (transferComplete.status) {
@@ -1227,11 +1250,11 @@ class MentraNex : SGCManager() {
                     }
                 }
                 GlassesToPhone.PayloadCase.IMU_DATA -> {
-                    val imuData = glassesToPhone.imuData
+                    val imuData: ImuData = glassesToPhone.imuData
                     Bridge.log("imuData: $imuData")
                 }
                 GlassesToPhone.PayloadCase.BUTTON_EVENT -> {
-                    val buttonEvent = glassesToPhone.buttonEvent
+                    val buttonEvent: ButtonEvent = glassesToPhone.buttonEvent
                     Bridge.log("buttonEvent: $buttonEvent")
                     // buttonEvent.button.number
                     // EventBus.getDefault().post(ButtonPressEvent(
@@ -1242,14 +1265,14 @@ class MentraNex : SGCManager() {
                     // ))
                 }
                 GlassesToPhone.PayloadCase.HEAD_GESTURE -> {
-                    val headGesture = glassesToPhone.headGesture
+                    val headGesture: HeadGesture = glassesToPhone.headGesture
                     Bridge.log("headGesture: $headGesture")
                     // EventBus.getDefault().post(GlassesHeadUpEvent())
                     // EventBus.getDefault().post(GlassesHeadDownEvent())
                     // EventBus.getDefault().post(GlassesTapOutputEvent(2, isRight, System.currentTimeMillis()))
                 }
                 GlassesToPhone.PayloadCase.VERSION_RESPONSE -> {
-                    val versionResponse = glassesToPhone.versionResponse
+                    val versionResponse: VersionResponse = glassesToPhone.versionResponse
                     Bridge.log("=== RECEIVED GLASSES PROTOBUF VERSION RESPONSE ===")
                     Bridge.log("Glasses Protobuf Version: ${versionResponse.version}")
                     Bridge.log("Message ID: ${versionResponse.msgId}")
@@ -1285,9 +1308,9 @@ class MentraNex : SGCManager() {
             Bridge.log("decodeProtobufsByWrite phoneToGlasses: $phoneToGlasses")
             Bridge.log("decodeProtobufsByWrite phoneToGlasses payloadCase: ${phoneToGlasses.payloadCase}")
             val payloadCase = phoneToGlasses.payloadCase.toString()
-            if (isDebugMode) {
-                EventBus.getDefault().post(BleCommandSender(payloadCase, packetHex))
-            }
+            // if (isDebugMode) {
+            //     EventBus.getDefault().post(BleCommandSender(payloadCase, packetHex))
+            // }
         } catch (e: Exception) {
             Bridge.log("Error in decodeProtobufsByWrite: ${e.message}", Log.ERROR)
         }
@@ -1317,7 +1340,8 @@ class MentraNex : SGCManager() {
             Bridge.log("Pong response sent successfully")
             
             // Notify mobile app about pong sent
-            notifyHeartbeatSent(System.currentTimeMillis())
+            lastHeartbeatSentTime = System.currentTimeMillis()
+            // EventBus.getDefault().post(HeartbeatSentEvent(timestamp))
         } else {
             Bridge.log("Failed to construct pong response packet", Log.ERROR)
         }
@@ -1330,23 +1354,9 @@ class MentraNex : SGCManager() {
         heartbeatCount++
         
         // Notify mobile app about heartbeat received
-        notifyHeartbeatReceived(lastHeartbeatReceivedTime)
+        // EventBus.getDefault().post(HeartbeatReceivedEvent(lastHeartbeatReceivedTime))
     }
 
-    private fun notifyHeartbeatSent(timestamp: Long) {
-        lastHeartbeatSentTime = timestamp
-        // Send heartbeat event to mobile app via EventBus
-        EventBus.getDefault().post(HeartbeatSentEvent(timestamp))
-    }
-    /**
-     * Notify mobile app about heartbeat received
-     */
-    private fun notifyHeartbeatReceived(timestamp: Long) {
-        // Send heartbeat event to mobile app via EventBus
-        EventBus.getDefault().post(HeartbeatReceivedEvent(timestamp))
-    }
-
-    /////// PROTOBUF COMMUNICATION
     private fun createTextWallChunksForNex(text: String): ByteArray {
         // Create the PhoneToGlasses using its builder and set the DisplayText
         return ProtobufUtils.generateDisplayTextCommandBytes(text)

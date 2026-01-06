@@ -9,6 +9,19 @@ import android.util.Log
 
 import com.mentra.core.Bridge
 
+import mentraos.ble.MentraosBle.DisplayText;
+import mentraos.ble.MentraosBle.PhoneToGlasses;
+import mentraos.ble.MentraosBle.DisplayImage;
+import mentraos.ble.MentraosBle.PongResponse;
+import mentraos.ble.MentraosBle.BatteryStateRequest;
+import mentraos.ble.MentraosBle.MicStateConfig;
+import mentraos.ble.MentraosBle.BrightnessConfig;
+import mentraos.ble.MentraosBle.AutoBrightnessConfig;
+import mentraos.ble.MentraosBle.HeadUpAngleConfig;
+import mentraos.ble.MentraosBle.DisplayHeightConfig;
+import mentraos.ble.MentraosBle.VersionRequest;
+
+
 object NexBluetoothConstants {
     const val MAIN_SERVICE_UUID: UUID = UUID.fromString("00004860-0000-1000-8000-00805f9b34fb")
     const val WRITE_CHAR_UUID: UUID = UUID.fromString("000071FF-0000-1000-8000-00805f9b34fb")
