@@ -1,8 +1,10 @@
 import * as React from "react";
-import { X, Upload, Image as ImageIcon, ZoomIn } from "lucide-react";
+import { X, Upload, Image as ImageIcon, ZoomIn, Loader2 } from "lucide-react";
 import { cn } from "@/libs/utils";
 import { Button } from "./button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./dialog";
+import api from "@/services/api.service";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,15 +20,19 @@ export type PhotoOrientation = "landscape" | "portrait";
 
 export interface PhotoUploadItem {
   id: string;
-  file?: File;
-  url: string;
-  preview: string;
+  file?: File; // Only present during initial selection, before upload
+  url: string; // Cloudflare delivery URL (populated after upload)
+  imageId?: string; // Cloudflare image ID (for deletion)
+  preview: string; // Blob URL for local files, or url for remote images
   orientation?: PhotoOrientation;
+  uploading?: boolean; // Track upload state
+  error?: string; // Track upload errors
 }
 
 interface MultiPhotoUploadProps {
   photos: PhotoUploadItem[];
   onChange: (photos: PhotoUploadItem[]) => void;
+  packageName?: string; // App package name for metadata
   maxPhotos?: number;
   disabled?: boolean;
   className?: string;
@@ -35,6 +41,7 @@ interface MultiPhotoUploadProps {
 export function MultiPhotoUpload({
   photos,
   onChange,
+  packageName,
   maxPhotos = 8,
   disabled = false,
   className,
@@ -48,7 +55,7 @@ export function MultiPhotoUpload({
   const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null);
   const [photoToDelete, setPhotoToDelete] = React.useState<string | null>(null);
 
-  const handleFiles = (files: FileList | null, orientation: PhotoOrientation) => {
+  const handleFiles = async (files: FileList | null, orientation: PhotoOrientation) => {
     if (!files || disabled) return;
 
     if (files.length === 0) return;
@@ -58,15 +65,70 @@ export function MultiPhotoUpload({
 
     if (filesToAdd.length === 0) return;
 
+    // Create initial photo items with blob URLs for immediate preview
     const newPhotos: PhotoUploadItem[] = filesToAdd.map((file) => ({
       id: `${Date.now()}-${Math.random()}`,
       file,
       url: "",
       preview: URL.createObjectURL(file),
       orientation,
+      uploading: true,
     }));
 
-    onChange([...photos, ...newPhotos]);
+    // Add photos to state immediately to show preview
+    const allPhotos = [...photos, ...newPhotos];
+    onChange(allPhotos);
+
+    // Upload each photo to R2
+    for (let i = 0; i < newPhotos.length; i++) {
+      const photo = newPhotos[i];
+      try {
+        const result = await api.images.upload(photo.file!, {
+          appPackageName: packageName,
+        });
+
+        // Update the photo with R2 URL and imageId
+        const updatedPhoto: PhotoUploadItem = {
+          ...photo,
+          url: result.url,
+          imageId: result.imageId,
+          preview: result.url, // Use R2 URL for preview
+          uploading: false,
+          file: undefined, // Clear the File object
+        };
+
+        // Find current photos and update the specific photo
+        const currentPhotos = [...allPhotos];
+        const photoIndex = currentPhotos.findIndex((p) => p.id === photo.id);
+        if (photoIndex !== -1) {
+          currentPhotos[photoIndex] = updatedPhoto;
+          onChange(currentPhotos);
+        }
+
+        // Revoke blob URL since we now have R2 URL
+        if (photo.preview) {
+          URL.revokeObjectURL(photo.preview);
+        }
+      } catch (error) {
+        console.error("Failed to upload image:", error);
+        toast.error("Failed to upload image. Please try again.");
+
+        // Mark photo with error state
+        const errorPhoto: PhotoUploadItem = {
+          ...photo,
+          uploading: false,
+          error: "Upload failed",
+        };
+
+        // Find current photos and update the specific photo with error
+        const currentPhotos = [...allPhotos];
+        const photoIndex = currentPhotos.findIndex((p) => p.id === photo.id);
+        if (photoIndex !== -1) {
+          currentPhotos[photoIndex] = errorPhoto;
+          onChange(currentPhotos);
+        }
+      }
+    }
   };
 
   const openOrientationDialog = () => {
@@ -123,11 +185,19 @@ export function MultiPhotoUpload({
     if (!photoToDelete) return;
 
     const photoToRemove = photos.find((p) => p.id === photoToDelete);
-    if (photoToRemove?.preview) {
+    if (!photoToRemove) return;
+
+    // Just remove from UI state - actual R2 deletion will happen on form save
+    // Revoke blob URL if it exists
+    if (photoToRemove.preview && photoToRemove.file) {
       URL.revokeObjectURL(photoToRemove.preview);
     }
+
+    // Remove from state
     onChange(photos.filter((p) => p.id !== photoToDelete));
     setPhotoToDelete(null);
+
+    toast.info("Image will be removed when you save changes");
   };
 
   const handleDragStart = (index: number) => {
@@ -145,6 +215,9 @@ export function MultiPhotoUpload({
       const [draggedPhoto] = newPhotos.splice(draggedIndex, 1);
       newPhotos.splice(dragOverIndex, 0, draggedPhoto);
       onChange(newPhotos);
+
+      // Remind user to save changes after reordering
+      toast.info("Image order changed. Remember to save your changes!");
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -167,7 +240,7 @@ export function MultiPhotoUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
         multiple
         onChange={handleFileInput}
         className="hidden"
@@ -195,8 +268,10 @@ export function MultiPhotoUpload({
                 isDragging && "opacity-50 scale-95",
                 isDragOver && "ring-2 ring-primary",
                 disabled && "cursor-not-allowed",
+                photo.uploading && "opacity-75",
+                photo.error && "border-destructive border-2",
               )}
-              onClick={() => setSelectedPhoto(photo)}>
+              onClick={() => !photo.uploading && setSelectedPhoto(photo)}>
               <div className="w-full h-full rounded-lg overflow-hidden">
                 <img
                   src={photo.preview || photo.url}
@@ -204,6 +279,25 @@ export function MultiPhotoUpload({
                   className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 />
               </div>
+
+              {/* Upload Progress Overlay */}
+              {photo.uploading && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 text-white animate-spin" />
+                    <span className="text-white text-sm">Uploading...</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Overlay */}
+              {photo.error && (
+                <div className="absolute inset-0 bg-destructive/20 flex items-center justify-center">
+                  <div className="bg-destructive text-destructive-foreground px-3 py-1 rounded text-sm">
+                    {photo.error}
+                  </div>
+                </div>
+              )}
 
               {/* Order Badge */}
               <div className="absolute top-2 left-2 flex items-center gap-2">
@@ -226,7 +320,7 @@ export function MultiPhotoUpload({
                   e.stopPropagation();
                   confirmRemovePhoto(photo.id);
                 }}
-                disabled={disabled}
+                disabled={disabled || photo.uploading}
                 className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80 disabled:opacity-50 z-10"
                 aria-label="Remove photo">
                 <X className="w-4 h-4" />

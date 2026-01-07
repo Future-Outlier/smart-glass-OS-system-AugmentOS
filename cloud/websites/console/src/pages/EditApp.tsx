@@ -25,7 +25,7 @@ import DashboardLayout from "../components/DashboardLayout";
 import { useAppStore } from "@/stores/apps.store";
 import { useOrgStore } from "@/stores/orgs.store";
 import { App, Permission, Setting, Tool } from "@/types/app";
-import { HardwareRequirement } from "@mentra/sdk";
+import { HardwareRequirement, PreviewImage, PhotoOrientation } from "@mentra/sdk";
 import { toast } from "sonner";
 import ApiKeyDialog from "../components/dialogs/ApiKeyDialog";
 import SharingDialog from "../components/dialogs/SharingDialog";
@@ -67,6 +67,11 @@ interface ImportConfigData {
   settings?: Setting[];
   tools?: Tool[];
   version?: string;
+  previewImages?: Array<{
+    url: string;
+    orientation: "landscape" | "portrait";
+    order: number;
+  }>;
 }
 
 export default function EditApp() {
@@ -108,6 +113,7 @@ export default function EditApp() {
   const [isSharingDialogOpen, setIsSharingDialogOpen] = useState(false);
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
   const [previewPhotos, setPreviewPhotos] = useState<PhotoUploadItem[]>([]);
+  const [originalPreviewPhotos, setOriginalPreviewPhotos] = useState<PhotoUploadItem[]>([]); // Track original images for deletion
   const [apiKey, setApiKey] = useState("");
   const [shareLink, setShareLink] = useState("");
   const [isRegeneratingKey, setIsRegeneratingKey] = useState(false);
@@ -174,6 +180,25 @@ export default function EditApp() {
         };
 
         setFormData(app);
+
+        // Load preview images if they exist
+        if (appData.previewImages && Array.isArray(appData.previewImages)) {
+          const loadedPhotos: PhotoUploadItem[] = appData.previewImages
+            .sort((a: PreviewImage, b: PreviewImage) => a.order - b.order) // Sort by order
+            .map((img: PreviewImage) => ({
+              id: img.imageId || `${Date.now()}-${Math.random()}`,
+              url: img.url,
+              imageId: img.imageId,
+              preview: img.url, // Use R2 URL as preview
+              orientation: img.orientation,
+              uploading: false,
+            }));
+          setPreviewPhotos(loadedPhotos);
+          setOriginalPreviewPhotos(loadedPhotos); // Store original for comparison
+        } else {
+          setPreviewPhotos([]);
+          setOriginalPreviewPhotos([]);
+        }
 
         // Fetch all orgs where the user has admin access
         try {
@@ -360,6 +385,17 @@ export default function EditApp() {
       config.webviewURL = formData.webviewURL;
     }
 
+    // Include preview images if they exist
+    if (previewPhotos.length > 0) {
+      config.previewImages = previewPhotos
+        .filter((photo) => photo.url && photo.imageId) // Only include uploaded photos
+        .map((photo, index) => ({
+          url: photo.url,
+          orientation: photo.orientation || "landscape",
+          order: index,
+        }));
+    }
+
     const blob = new Blob([JSON.stringify(config, null, 2)], {
       type: "application/json",
     });
@@ -385,7 +421,26 @@ export default function EditApp() {
       if (!currentOrg) throw new Error("No organization selected");
       if (sameValueWarning) throw new Error("Please resolve duplicate option values in settings before saving.");
 
-      // Normalize URLs before submission
+      // Step 1: Determine which images to delete from R2
+      // Images that were in originalPreviewPhotos but are NOT in previewPhotos
+      const imagesToDelete = originalPreviewPhotos.filter(
+        (originalPhoto) => !previewPhotos.some((currentPhoto) => currentPhoto.imageId === originalPhoto.imageId),
+      );
+
+      // Step 2: Delete removed images from R2
+      for (const photoToDelete of imagesToDelete) {
+        if (photoToDelete.imageId) {
+          try {
+            console.log("Deleting image from R2:", photoToDelete.imageId);
+            await api.images.delete(photoToDelete.imageId);
+          } catch (deleteError) {
+            console.error("Failed to delete image from R2:", deleteError);
+            // Continue even if deletion fails - image might already be deleted
+          }
+        }
+      }
+
+      // Step 3: Normalize URLs before submission
       const normalizedData = {
         name: formData.name,
         description: formData.description,
@@ -398,10 +453,21 @@ export default function EditApp() {
         tools: formData.tools || [],
         hardwareRequirements: formData.hardwareRequirements || [],
         permissions: formData.permissions || [],
+        previewImages: previewPhotos
+          .filter((photo) => photo.url && photo.imageId) // Only include uploaded photos
+          .map((photo, index) => ({
+            url: photo.url,
+            imageId: photo.imageId || "",
+            orientation: photo.orientation || "landscape",
+            order: index,
+          })),
       };
 
-      // Update App data via store action (server resolves org/admin)
+      // Step 4: Update App data via store action (server resolves org/admin)
       await updateApp(packageName, normalizedData);
+
+      // Step 5: Update originalPreviewPhotos to match current state
+      setOriginalPreviewPhotos([...previewPhotos]);
 
       // Show success message
       setIsSaved(true);
@@ -963,6 +1029,21 @@ export default function EditApp() {
         return newData;
       });
 
+      // Import preview images if provided
+      if (importConfigData.previewImages && Array.isArray(importConfigData.previewImages)) {
+        const importedPhotos: PhotoUploadItem[] = importConfigData.previewImages
+          .sort((a, b) => a.order - b.order) // Sort by order
+          .map((img) => ({
+            id: `imported-${Date.now()}-${Math.random()}`,
+            url: img.url,
+            imageId: "", // imageId not in exported config
+            preview: img.url, // Use URL as preview
+            orientation: img.orientation,
+            uploading: false,
+          }));
+        setPreviewPhotos(importedPhotos);
+      }
+
       // Close dialog and show success message
       setIsImportDialogOpen(false);
       setImportConfigData(null);
@@ -1135,6 +1216,7 @@ export default function EditApp() {
                   <MultiPhotoUpload
                     photos={previewPhotos}
                     onChange={setPreviewPhotos}
+                    packageName={formData.packageName}
                     maxPhotos={8}
                     disabled={isSaving}
                   />
