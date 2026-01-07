@@ -26,7 +26,7 @@ import showAlert from "@/utils/AlertUtils"
 
 export default function Homepage() {
   const {theme} = useAppTheme()
-  const {push} = useNavigationHistory()
+  const {push, pushUnder} = useNavigationHistory()
   const refreshApplets = useRefreshApplets()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
@@ -85,7 +85,13 @@ export default function Homepage() {
               style: "cancel",
               onPress: () => setDismissedVersion(latestVersionInfo.versionCode?.toString() ?? ""),
             },
-            {text: translate("ota:setupWifi"), onPress: () => push("/wifi/scan")},
+            {
+              text: translate("ota:setupWifi"),
+              onPress: () => {
+                push("/wifi/scan")
+                pushUnder("/ota/check-for-updates")
+              },
+            },
           ])
         }
       })
@@ -97,6 +103,7 @@ export default function Homepage() {
       dismissedVersion,
       defaultWearable,
       push,
+      pushUnder,
       refreshApplets,
       setDismissedVersion,
     ]),
