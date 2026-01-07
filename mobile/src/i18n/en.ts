@@ -229,8 +229,11 @@ const en = {
     checkingForUpdatesMessage:
       "Connected devices will perform automatic updates. Automatic updates can be disabled in Device Settings",
     updateAvailable: "Update Available",
+    updateAvailableWithDevice: "{{deviceName}} Update Available",
     updateReadyToInstall: "Version {{version}} is ready to install.",
+    updateReadyToInstallWithDevice: "Version {{version}} for {{deviceName}} is ready to install.",
     updateConnectWifi: "Connect your glasses to WiFi to install the update.",
+    updateConnectWifiWithDevice: "Connect your {{deviceName}} to WiFi to install the update.",
     updateDescription: "A new update is available for your glasses. We recommend updating now for the best experience.",
     updateNow: "Update Now",
     install: "Install",

@@ -26,7 +26,7 @@ import showAlert from "@/utils/AlertUtils"
 
 export default function Homepage() {
   const {theme} = useAppTheme()
-  const {push, pushUnder} = useNavigationHistory()
+  const {push} = useNavigationHistory()
   const refreshApplets = useRefreshApplets()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
@@ -63,11 +63,13 @@ export default function Homepage() {
 
         hasCheckedOta.current = true
 
+        const deviceName = defaultWearable || "Glasses"
+
         if (glassesWifiConnected) {
           // WiFi connected - go straight to OTA check screen
           showAlert(
-            translate("ota:updateAvailable"),
-            translate("ota:updateReadyToInstall", {version: latestVersionInfo.versionCode}),
+            translate("ota:updateAvailableWithDevice", {deviceName}),
+            translate("ota:updateReadyToInstallWithDevice", {version: latestVersionInfo.versionCode, deviceName}),
             [
               {
                 text: translate("ota:updateLater"),
@@ -79,20 +81,18 @@ export default function Homepage() {
           )
         } else {
           // No WiFi - prompt to connect
-          showAlert(translate("ota:updateAvailable"), translate("ota:updateConnectWifi"), [
-            {
-              text: translate("ota:updateLater"),
-              style: "cancel",
-              onPress: () => setDismissedVersion(latestVersionInfo.versionCode?.toString() ?? ""),
-            },
-            {
-              text: translate("ota:setupWifi"),
-              onPress: () => {
-                push("/wifi/scan")
-                pushUnder("/ota/check-for-updates")
+          showAlert(
+            translate("ota:updateAvailableWithDevice", {deviceName}),
+            translate("ota:updateConnectWifiWithDevice", {deviceName}),
+            [
+              {
+                text: translate("ota:updateLater"),
+                style: "cancel",
+                onPress: () => setDismissedVersion(latestVersionInfo.versionCode?.toString() ?? ""),
               },
-            },
-          ])
+              {text: translate("ota:setupWifi"), onPress: () => push("/wifi/scan")},
+            ],
+          )
         }
       })
     }, [
@@ -103,7 +103,6 @@ export default function Homepage() {
       dismissedVersion,
       defaultWearable,
       push,
-      pushUnder,
       refreshApplets,
       setDismissedVersion,
     ]),
