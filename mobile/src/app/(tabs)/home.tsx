@@ -1,6 +1,5 @@
-import {Capabilities, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {useFocusEffect} from "@react-navigation/native"
-import {useCallback, useRef} from "react"
+import {useCallback} from "react"
 import {ScrollView, View} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
@@ -15,93 +14,20 @@ import CloudConnection from "@/components/misc/CloudConnection"
 import NonProdWarning from "@/components/misc/NonProdWarning"
 import {Group} from "@/components/ui"
 import {Spacer} from "@/components/ui/Spacer"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {checkForOtaUpdate} from "@/effects/OtaUpdateChecker"
-import {translate} from "@/i18n/translate"
 import {useRefreshApplets} from "@/stores/applets"
-import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import showAlert from "@/utils/AlertUtils"
 
 export default function Homepage() {
   const {theme} = useAppTheme()
-  const {push} = useNavigationHistory()
   const refreshApplets = useRefreshApplets()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
-  const [dismissedVersion, setDismissedVersion] = useSetting<string>(SETTINGS.dismissed_ota_version.key)
-
-  // OTA check state from glasses store
-  const glassesConnected = useGlassesStore((state) => state.connected)
-  const otaVersionUrl = useGlassesStore((state) => state.otaVersionUrl)
-  const buildNumber = useGlassesStore((state) => state.buildNumber)
-  const glassesWifiConnected = useGlassesStore((state) => state.wifiConnected)
-
-  // Track if we've already checked this session to avoid repeated prompts
-  const hasCheckedOta = useRef(false)
 
   useFocusEffect(
     useCallback(() => {
-      // Refresh applets
-      setTimeout(() => {
-        refreshApplets()
-      }, 1000)
-
-      // OTA check (only for WiFi-capable glasses)
-      if (hasCheckedOta.current) return
-      if (!glassesConnected || !otaVersionUrl || !buildNumber) return
-
-      const features: Capabilities = getModelCapabilities(defaultWearable)
-      if (!features?.hasWifi) return
-
-      checkForOtaUpdate(otaVersionUrl, buildNumber).then(({updateAvailable, latestVersionInfo}) => {
-        if (!updateAvailable || !latestVersionInfo) return
-
-        // Skip if user already dismissed this version
-        if (dismissedVersion === latestVersionInfo.versionCode?.toString()) return
-
-        hasCheckedOta.current = true
-
-        const deviceName = defaultWearable || "Glasses"
-
-        if (glassesWifiConnected) {
-          // WiFi connected - go straight to OTA check screen
-          showAlert(
-            translate("ota:updateAvailable", {deviceName}),
-            translate("ota:updateReadyToInstall", {version: latestVersionInfo.versionCode, deviceName}),
-            [
-              {
-                text: translate("ota:updateLater"),
-                style: "cancel",
-                onPress: () => setDismissedVersion(latestVersionInfo.versionCode?.toString() ?? ""),
-              },
-              {text: translate("ota:install"), onPress: () => push("/ota/check-for-updates")},
-            ],
-          )
-        } else {
-          // No WiFi - prompt to connect
-          showAlert(translate("ota:updateAvailable", {deviceName}), translate("ota:updateConnectWifi", {deviceName}), [
-            {
-              text: translate("ota:updateLater"),
-              style: "cancel",
-              onPress: () => setDismissedVersion(latestVersionInfo.versionCode?.toString() ?? ""),
-            },
-            {text: translate("ota:setupWifi"), onPress: () => push("/wifi/scan")},
-          ])
-        }
-      })
-    }, [
-      glassesConnected,
-      otaVersionUrl,
-      buildNumber,
-      glassesWifiConnected,
-      dismissedVersion,
-      defaultWearable,
-      push,
-      refreshApplets,
-      setDismissedVersion,
-    ]),
+      refreshApplets()
+    }, [refreshApplets]),
   )
 
   return (

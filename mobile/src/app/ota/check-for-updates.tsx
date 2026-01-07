@@ -47,7 +47,7 @@ export default function OtaCheckForUpdatesScreen() {
         const remainingDelay = Math.max(0, MIN_DISPLAY_TIME_MS - elapsed)
 
         // Wait for minimum display time before showing result
-        await new Promise(resolve => setTimeout(resolve, remainingDelay))
+        await new Promise((resolve) => setTimeout(resolve, remainingDelay))
 
         if (!result.hasCheckCompleted) {
           setCheckState("error")
@@ -65,7 +65,7 @@ export default function OtaCheckForUpdatesScreen() {
         // Still respect minimum display time on error
         const elapsed = Date.now() - startTime
         const remainingDelay = Math.max(0, MIN_DISPLAY_TIME_MS - elapsed)
-        await new Promise(resolve => setTimeout(resolve, remainingDelay))
+        await new Promise((resolve) => setTimeout(resolve, remainingDelay))
         setCheckState("error")
       }
     }
@@ -115,10 +115,7 @@ export default function OtaCheckForUpdatesScreen() {
           <View className="flex-1 items-center justify-center px-6">
             <Icon name="world-download" size={64} color={theme.colors.primary} />
             <View className="h-6" />
-            <Text
-              text={translate("ota:updateAvailable", {deviceName})}
-              className="font-semibold text-xl text-center"
-            />
+            <Text text={translate("ota:updateAvailable", {deviceName})} className="font-semibold text-xl text-center" />
             <View className="h-2" />
             <Text
               text={`Version ${versionInfo?.versionName || versionInfo?.versionCode || "Unknown"}`}
@@ -129,9 +126,9 @@ export default function OtaCheckForUpdatesScreen() {
             <Text tx="ota:updateDescription" className="text-sm text-center" style={{color: theme.colors.textDim}} />
           </View>
 
-          <View className="gap-3 px-4 pb-2">
+          <View className="gap-3 pb-2">
             <Button preset="primary" tx="ota:updateNow" onPress={handleUpdateNow} />
-            <Button preset="default" tx="ota:updateLater" onPress={handleSkip} />
+            <Button preset="secondary" tx="ota:updateLater" onPress={handleSkip} />
           </View>
         </>
       )

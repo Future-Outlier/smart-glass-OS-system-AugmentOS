@@ -279,7 +279,7 @@ class MantleManager {
 
   public async resetDisplayTimeout() {
     if (this.clearTextTimeout) {
-      console.log("MANTLE: canceling pending timeout")
+      // console.log("MANTLE: canceling pending timeout")
       clearTimeout(this.clearTextTimeout)
     }
     this.clearTextTimeout = setTimeout(() => {

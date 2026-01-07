@@ -4,12 +4,14 @@ import {MtkUpdateAlert} from "@/effects/MtkUpdateAlert"
 import {NetworkMonitoring} from "@/effects/NetworkMonitoring"
 import {Reconnect} from "@/effects/Reconnect"
 import {ConsoleLogger} from "@/utils/debug/console"
+import {OtaUpdateChecker} from "@/effects/OtaUpdateChecker"
 
 export const AllEffects = () => {
   return (
     <>
       <Reconnect />
       <MtkUpdateAlert />
+      <OtaUpdateChecker />
       <NetworkMonitoring />
       <ButtonActions />
       <GalleryModeSync />
