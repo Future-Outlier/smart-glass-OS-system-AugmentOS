@@ -2290,6 +2290,9 @@ public class MentraLive extends SGCManager {
                 Bridge.log("LIVE: 🔄 Sending coreToken to ASG client");
                 sendCoreTokenToAsgClient();
 
+                // Send stored user email for crash reporting
+                sendStoredUserEmailToAsgClient();
+
                 //startDebugVideoCommandLoop();
 
                 // Start the heartbeat mechanism now that glasses are ready
@@ -2855,6 +2858,21 @@ public class MentraLive extends SGCManager {
         } catch (JSONException e) {
             Log.e(TAG, "Error creating coreToken JSON message", e);
         }
+    }
+
+    /**
+     * Send stored user email to the ASG client for Sentry crash reporting
+     */
+    private void sendStoredUserEmailToAsgClient() {
+        String storedEmail = CoreManager.Companion.getInstance().getStoredUserEmail();
+
+        if (storedEmail == null || storedEmail.isEmpty()) {
+            Bridge.log("LIVE: No stored user email to send to ASG client");
+            return;
+        }
+
+        Bridge.log("LIVE: Sending stored user email to ASG client");
+        sendUserEmailToGlasses(storedEmail);
     }
 
     /**
@@ -4121,6 +4139,11 @@ public class MentraLive extends SGCManager {
             String jsonStr = cmd.toString();
             Bridge.log("LIVE: Sending hrt command: " + jsonStr);
             byte[] packedData = K900ProtocolUtils.packDataToK900(jsonStr.getBytes(StandardCharsets.UTF_8), K900ProtocolUtils.CMD_TYPE_STRING);
+            
+            // Send this 3 times to ensure this gets through, since we don't get ACK from BES.
+            // Kind of hacky but works for now.
+            queueData(packedData);
+            queueData(packedData);
             queueData(packedData);
         } catch (JSONException e) {
             Log.e(TAG, "Error creating enable_custom_audio_tx command", e);
@@ -4676,6 +4699,31 @@ public class MentraLive extends SGCManager {
             Bridge.log("LIVE: 🔥 ✅ Hotspot state command sent successfully");
         } catch (JSONException e) {
             Log.e(TAG, "🔥 💥 Error creating hotspot state JSON", e);
+        }
+    }
+
+    /**
+     * Sends user email to glasses for crash reporting identification
+     *
+     * @param email The user's email address
+     */
+    @Override
+    public void sendUserEmailToGlasses(String email) {
+        Bridge.log("LIVE: Sending user email to glasses for crash reporting");
+
+        if (email == null || email.isEmpty()) {
+            Log.w(TAG, "Cannot send user email - email is empty");
+            return;
+        }
+
+        try {
+            JSONObject emailCommand = new JSONObject();
+            emailCommand.put("type", "user_email");
+            emailCommand.put("email", email);
+            sendJson(emailCommand, true);
+            Log.d(TAG, "User email sent to glasses successfully");
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating user email JSON", e);
         }
     }
 
