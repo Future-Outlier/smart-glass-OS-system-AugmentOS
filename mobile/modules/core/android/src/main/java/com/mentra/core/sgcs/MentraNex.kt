@@ -151,8 +151,8 @@ class MentraNex : SGCManager() {
 
     private val modernScanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            val device = result.device
-            val name = device.name
+            val device = result.getDevice()
+            val name = device.getName()
 
             // Now you can reference the bluetoothAdapter field if needed:
             if (!bluetoothAdapter.isEnabled) {
@@ -170,9 +170,13 @@ class MentraNex : SGCManager() {
             Bridge.log("Device Class: ${device.bluetoothClass}")
             Bridge.log("Bond State: ${device.bondState}")
 
+            if (name == null) {
+                return
+            }
+
             // If we already have saved device names for main...
-            if (name != null && savedNexMainName != null) {
-                if (!name.contains(savedNexMainName!!)) {
+            if (name != null && preferredMainDeviceId != null) {
+                if (!name.contains(preferredMainDeviceId!!)) {
                     return // Not a matching device
                 }
             }
@@ -334,6 +338,7 @@ class MentraNex : SGCManager() {
                         if (!foundDeviceNames.contains(it)) {
                             foundDeviceNames.add(it)
                             Bridge.log("Found smart glasses: $name")
+                            Bridge.sendDiscoveredDevice(DeviceTypes.NEX, it);
                         }
                     }
                 }
@@ -1053,8 +1058,13 @@ class MentraNex : SGCManager() {
         mainTaskHandler?.removeCallbacksAndMessages(null)
         whiteListHandler?.removeCallbacksAndMessages(null)
         micEnableHandler?.removeCallbacksAndMessages(null)
-        notificationHandler?.removeCallbacks(notificationRunnable!!)
-        textWallHandler?.removeCallbacks(textWallRunnable!!)
+        notificationRunnable?.let {
+            notificationHandler?.removeCallbacks(it)
+        }
+
+        textWallRunnable?.let {
+            textWallHandler?.removeCallbacks(it)
+        }
         findCompatibleDevicesHandler?.removeCallbacksAndMessages(null)
         // Free LC3 decoder
         if (lc3DecoderPtr != 0L) {
@@ -1150,10 +1160,11 @@ class MentraNex : SGCManager() {
     }
 
     private fun stopPeriodicNotifications() {
-        notificationHandler?.removeCallbacks(notificationRunnable!!)
-        Bridge.log("Stopped periodic notifications")
+        notificationRunnable?.let { runnable ->
+            notificationHandler?.removeCallbacks(runnable)
+            Bridge.log("Stopped periodic notifications")
+        }
     }
-
     private fun startMicBeat(delay: Int) {
         Bridge.log("Nex: Starting micbeat")
         if (micBeatCount > 0) {
@@ -1207,18 +1218,25 @@ class MentraNex : SGCManager() {
     }
 
     private fun updateConnectionState() {
+        val previousReady: Boolean = ready
         connectionState = if (isMainConnected) {
             ConnTypes.CONNECTED.also {
                 Bridge.log("Nex: Main glasses connected")
                 lastConnectionTimestamp = System.currentTimeMillis()
+                ready = true
                 // Removed commented sleep code as it's not needed
                 // connectionEvent(it)
             }
         } else {
             ConnTypes.DISCONNECTED.also {
                 Bridge.log("Nex: No Main glasses connected")
+                ready = false
                 // connectionEvent(it)
             }
+        }
+
+        if (previousReady != ready) {
+            CoreManager.getInstance().handleConnectionStateChanged();
         }
     }
 
