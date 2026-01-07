@@ -138,11 +138,11 @@ export default function MentraLiveOnboarding() {
       subtitle2: translate("onboarding:liveEndMessage"),
     },
   ]
-  
+
   // reduce down to 2 steps if __DEV__
-  // if (__DEV__) {
-  //   steps = steps.slice(0, 2)
-  // }
+  if (__DEV__) {
+    steps = steps.slice(0, 2)
+  }
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
@@ -159,7 +159,7 @@ export default function MentraLiveOnboarding() {
         }}
         // endButtonText={
         //   onboardingOsCompleted ? translate("onboarding:liveEndTitle") : translate("onboarding:learnAboutOs")
-        // }        
+        // }
         endButtonText={translate("common:continue")}
       />
     </Screen>

@@ -26,7 +26,7 @@ export default function WifiConnectingScreen() {
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const failureGracePeriodRef = useRef<NodeJS.Timeout | null>(null)
 
-  const {goBack, navigate, pushPrevious, getPreviousRoute} = useNavigationHistory()
+  const {goBack, navigate, pushPrevious} = useNavigationHistory()
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
 
@@ -108,13 +108,8 @@ export default function WifiConnectingScreen() {
   }
 
   const handleSuccess = useCallback(() => {
-    // if (getPreviousRoute()?.includes("password")) {
     pushPrevious(2) // pop the entire stack
   }, [nextRoute, returnTo, navigate])
-
-  const handleCancel = useCallback(() => {
-    goBack()
-  }, [returnTo, goBack])
 
   const handleHeaderBack = useCallback(() => {
     goBack()
@@ -155,7 +150,7 @@ export default function WifiConnectingScreen() {
           <View className="flex-1 w-full justify-between">
             <View className="flex-1 justify-center">
               <View className="items-center mt-12 mb-6">
-                <Icon name="wifi-off" size={64} color={theme.colors.chart_5} />
+                <Icon name="wifi-off" size={64} color={theme.colors.destructive} />
               </View>
               <Text className="text-2xl font-semibold text-text text-center mb-6">{errorMessage}</Text>
               <Text className="text-base text-muted-foreground text-center mb-8 px-8" tx="wifi:failedDescription" />
