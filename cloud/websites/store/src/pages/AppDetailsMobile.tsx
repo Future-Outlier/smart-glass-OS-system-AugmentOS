@@ -1,4 +1,4 @@
-import { ChevronLeft, Info, Share2 } from "lucide-react";
+import { ChevronLeft, Info, Share2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -570,9 +570,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
           {/* Get MentraOS - Hide in React Native WebView */}
           {!isWebView && (
             <div className="text-center mb-8 mt-12">
-              <div className="flex justify-center">
-                <GetMentraOSButton size="small" />
-              </div>
+              <div className="flex justify-center">{/* <GetMentraOSButton size="small" /> */}</div>
             </div>
           )}
         </div>
@@ -586,6 +584,14 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setSelectedImage(null)}>
+          {/* Close Button */}
+          <button
+            onClick={() => setSelectedImage(null)}
+            className="absolute top-4 right-4 z-50 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+            aria-label="Close">
+            <X className="w-6 h-6 text-white" />
+          </button>
+
           <motion.div
             className="relative flex items-center justify-center w-full h-full"
             drag="x"
@@ -631,7 +637,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
           </motion.div>
 
           {/* Page Indicator Dots */}
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-2">
             {app.previewImages.map((_, index) => (
               <div
                 key={index}

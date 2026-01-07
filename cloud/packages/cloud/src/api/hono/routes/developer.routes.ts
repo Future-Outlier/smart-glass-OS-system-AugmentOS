@@ -698,11 +698,16 @@ async function deleteImage(c: AppContext) {
   try {
     const email = c.get("email");
     const orgId = (c as any).currentOrgId;
-    const imageId = c.req.param("imageId");
+    const encodedImageId = c.req.param("imageId");
 
-    if (!imageId) {
+    if (!encodedImageId) {
       return c.json({ error: "Image ID is required" }, 400);
     }
+
+    // Decode the imageId since it may contain slashes (e.g., R2 object keys like "mini_app_assets/orgs/.../file.png")
+    const imageId = decodeURIComponent(encodedImageId);
+
+    logger.info({ imageId, encodedImageId }, "Deleting image");
 
     // Get storage service dynamically
     let StorageServiceClass;

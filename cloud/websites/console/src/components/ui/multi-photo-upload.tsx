@@ -3,7 +3,6 @@ import { X, Upload, Image as ImageIcon, ZoomIn, Loader2 } from "lucide-react";
 import { cn } from "@/libs/utils";
 import { Button } from "./button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./dialog";
-import api from "@/services/api.service";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -21,8 +20,8 @@ export type PhotoOrientation = "landscape" | "portrait";
 export interface PhotoUploadItem {
   id: string;
   file?: File; // Only present during initial selection, before upload
-  url: string; // Cloudflare delivery URL (populated after upload)
-  imageId?: string; // Cloudflare image ID (for deletion)
+  url: string; // Cloud storage delivery URL (populated after upload)
+  imageId?: string; // Cloud storage image ID (for deletion)
   preview: string; // Blob URL for local files, or url for remote images
   orientation?: PhotoOrientation;
   uploading?: boolean; // Track upload state
@@ -55,7 +54,7 @@ export function MultiPhotoUpload({
   const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null);
   const [photoToDelete, setPhotoToDelete] = React.useState<string | null>(null);
 
-  const handleFiles = async (files: FileList | null, orientation: PhotoOrientation) => {
+  const handleFiles = (files: FileList | null, orientation: PhotoOrientation) => {
     if (!files || disabled) return;
 
     if (files.length === 0) return;
@@ -65,70 +64,19 @@ export function MultiPhotoUpload({
 
     if (filesToAdd.length === 0) return;
 
-    // Create initial photo items with blob URLs for immediate preview
+    // Create photo items with blob URLs for preview - will upload on save
     const newPhotos: PhotoUploadItem[] = filesToAdd.map((file) => ({
       id: `${Date.now()}-${Math.random()}`,
       file,
       url: "",
       preview: URL.createObjectURL(file),
       orientation,
-      uploading: true,
+      uploading: false,
     }));
 
     // Add photos to state immediately to show preview
     const allPhotos = [...photos, ...newPhotos];
     onChange(allPhotos);
-
-    // Upload each photo to R2
-    for (let i = 0; i < newPhotos.length; i++) {
-      const photo = newPhotos[i];
-      try {
-        const result = await api.images.upload(photo.file!, {
-          appPackageName: packageName,
-        });
-
-        // Update the photo with R2 URL and imageId
-        const updatedPhoto: PhotoUploadItem = {
-          ...photo,
-          url: result.url,
-          imageId: result.imageId,
-          preview: result.url, // Use R2 URL for preview
-          uploading: false,
-          file: undefined, // Clear the File object
-        };
-
-        // Find current photos and update the specific photo
-        const currentPhotos = [...allPhotos];
-        const photoIndex = currentPhotos.findIndex((p) => p.id === photo.id);
-        if (photoIndex !== -1) {
-          currentPhotos[photoIndex] = updatedPhoto;
-          onChange(currentPhotos);
-        }
-
-        // Revoke blob URL since we now have R2 URL
-        if (photo.preview) {
-          URL.revokeObjectURL(photo.preview);
-        }
-      } catch (error) {
-        console.error("Failed to upload image:", error);
-        toast.error("Failed to upload image. Please try again.");
-
-        // Mark photo with error state
-        const errorPhoto: PhotoUploadItem = {
-          ...photo,
-          uploading: false,
-          error: "Upload failed",
-        };
-
-        // Find current photos and update the specific photo with error
-        const currentPhotos = [...allPhotos];
-        const photoIndex = currentPhotos.findIndex((p) => p.id === photo.id);
-        if (photoIndex !== -1) {
-          currentPhotos[photoIndex] = errorPhoto;
-          onChange(currentPhotos);
-        }
-      }
-    }
   };
 
   const openOrientationDialog = () => {
@@ -187,7 +135,7 @@ export function MultiPhotoUpload({
     const photoToRemove = photos.find((p) => p.id === photoToDelete);
     if (!photoToRemove) return;
 
-    // Just remove from UI state - actual R2 deletion will happen on form save
+    // Just remove from UI state - actual deletion will happen on form save
     // Revoke blob URL if it exists
     if (photoToRemove.preview && photoToRemove.file) {
       URL.revokeObjectURL(photoToRemove.preview);

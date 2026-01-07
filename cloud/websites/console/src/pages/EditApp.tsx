@@ -421,13 +421,41 @@ export default function EditApp() {
       if (!currentOrg) throw new Error("No organization selected");
       if (sameValueWarning) throw new Error("Please resolve duplicate option values in settings before saving.");
 
-      // Step 1: Determine which images to delete from R2
-      // Images that were in originalPreviewPhotos but are NOT in previewPhotos
+      // Step 1: Upload new images (those with file but no url)
+      const uploadedPhotos = [...previewPhotos];
+      for (let i = 0; i < uploadedPhotos.length; i++) {
+        const photo = uploadedPhotos[i];
+        if (photo.file && !photo.url) {
+          try {
+            console.log("Uploading new image to R2:", photo.preview);
+            const result = await api.images.upload(photo.file, {
+              appPackageName: packageName,
+            });
+
+            // Update the photo with cloud storage URL and imageId
+            uploadedPhotos[i] = {
+              ...photo,
+              url: result.url,
+              imageId: result.imageId,
+              file: undefined,
+            };
+          } catch (uploadError) {
+            console.error("Failed to upload image:", uploadError);
+            throw new Error("Failed to upload one or more images. Please try again.");
+          }
+        }
+      }
+
+      // Update state with uploaded photos
+      setPreviewPhotos(uploadedPhotos);
+
+      // Step 2: Determine which images to delete from R2
+      // Images that were in originalPreviewPhotos but are NOT in uploadedPhotos
       const imagesToDelete = originalPreviewPhotos.filter(
-        (originalPhoto) => !previewPhotos.some((currentPhoto) => currentPhoto.imageId === originalPhoto.imageId),
+        (originalPhoto) => !uploadedPhotos.some((currentPhoto) => currentPhoto.imageId === originalPhoto.imageId),
       );
 
-      // Step 2: Delete removed images from R2
+      // Step 3: Delete removed images from R2
       for (const photoToDelete of imagesToDelete) {
         if (photoToDelete.imageId) {
           try {
@@ -440,7 +468,7 @@ export default function EditApp() {
         }
       }
 
-      // Step 3: Normalize URLs before submission
+      // Step 4: Normalize URLs before submission
       const normalizedData = {
         name: formData.name,
         description: formData.description,
@@ -453,7 +481,7 @@ export default function EditApp() {
         tools: formData.tools || [],
         hardwareRequirements: formData.hardwareRequirements || [],
         permissions: formData.permissions || [],
-        previewImages: previewPhotos
+        previewImages: uploadedPhotos
           .filter((photo) => photo.url && photo.imageId) // Only include uploaded photos
           .map((photo, index) => ({
             url: photo.url,
@@ -463,11 +491,11 @@ export default function EditApp() {
           })),
       };
 
-      // Step 4: Update App data via store action (server resolves org/admin)
+      // Step 5: Update App data via store action (server resolves org/admin)
       await updateApp(packageName, normalizedData);
 
-      // Step 5: Update originalPreviewPhotos to match current state
-      setOriginalPreviewPhotos([...previewPhotos]);
+      // Step 6: Update originalPreviewPhotos to match current state
+      setOriginalPreviewPhotos([...uploadedPhotos]);
 
       // Show success message
       setIsSaved(true);
