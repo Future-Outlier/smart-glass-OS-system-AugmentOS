@@ -1,3 +1,4 @@
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {CameraType, CameraView, useCameraPermissions} from "expo-camera"
 import {useFocusEffect} from "expo-router"
 import {useCallback, useEffect, useRef, useState} from "react"
@@ -19,13 +20,11 @@ import {Text} from "@/components/ignite"
 import GlassesDisplayMirror from "@/components/mirror/GlassesDisplayMirror"
 import {SimulatedGlassesControls} from "@/components/mirror/SimulatedGlassesControls"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
-import {useAppTheme} from "@/contexts/ThemeContext"
-
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 // Request microphone permission for recording
 const requestMicrophonePermission = async () => {

@@ -66,8 +66,18 @@ class CoreModule : Module() {
             coreManager?.sendWifiCredentials(ssid, password)
         }
 
+        AsyncFunction("forgetWifiNetwork") { ssid: String ->
+            coreManager?.forgetWifiNetwork(ssid)
+        }
+
         AsyncFunction("setHotspotState") { enabled: Boolean ->
             coreManager?.setHotspotState(enabled)
+        }
+
+        // MARK: - User Context Commands
+
+        AsyncFunction("setUserEmail") { email: String ->
+            coreManager?.setUserEmail(email)
         }
 
         // MARK: - Gallery Commands
@@ -84,6 +94,10 @@ class CoreModule : Module() {
                 silent: Boolean ->
             coreManager?.photoRequest(requestId, appId, size, webhookUrl, authToken, compress, silent)
         }
+
+        // MARK: - OTA Commands
+
+        AsyncFunction("sendOtaStart") { coreManager?.sendOtaStart() }
 
         // MARK: - Video Recording Commands
 

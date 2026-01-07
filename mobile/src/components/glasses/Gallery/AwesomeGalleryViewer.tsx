@@ -5,7 +5,7 @@
 
 import Slider from "@react-native-community/slider"
 import {Image} from "expo-image"
-import {useState, useRef, useEffect, type ElementRef} from "react"
+import {useState, useRef, useEffect, useCallback, useMemo, memo, type ElementRef} from "react"
 // eslint-disable-next-line no-restricted-imports
 import {View, TouchableOpacity, Modal, StatusBar, Text, Dimensions} from "react-native"
 import Gallery, {GalleryRef} from "react-native-awesome-gallery"
@@ -40,7 +40,7 @@ interface ImageItemProps {
 /**
  * Video player component for gallery items
  */
-function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
+const VideoPlayerItem = memo(function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
   const {themed} = useAppTheme()
   const videoRef = useRef<ElementRef<typeof Video>>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -282,14 +282,15 @@ function VideoPlayerItem({photo, isActive}: VideoPlayerItemProps) {
       )}
     </View>
   )
-}
+})
 
 /**
  * Image component for gallery items
  */
-function ImageItem({photo, setImageDimensions}: ImageItemProps) {
+const ImageItem = memo(function ImageItem({photo, setImageDimensions}: ImageItemProps) {
   const {themed} = useAppTheme()
   const [isLoading, setIsLoading] = useState(true)
+  const hasReportedDimensions = useRef(false)
 
   const imageUri = photo.filePath
     ? photo.filePath.startsWith("file://")
@@ -297,24 +298,28 @@ function ImageItem({photo, setImageDimensions}: ImageItemProps) {
       : `file://${photo.filePath}`
     : photo.url
 
-  // Use PhotoImage for consistent handling of AVIF, loading states, etc.
+  // Memoize styles to prevent expo-image from restarting loads on iOS
+  const imageStyle = useMemo(() => themed($image), [themed])
+  const imageLoadingStyle = useMemo(() => [themed($image), themed($imageLoading)], [themed])
+
   return (
     <View style={themed($imageContainer)}>
       {/* Show thumbnail immediately while full image loads */}
       {isLoading && photo.thumbnailPath && (
-        <Image source={{uri: photo.thumbnailPath}} style={themed($image)} contentFit="contain" transition={0} />
+        <Image source={{uri: photo.thumbnailPath}} style={imageStyle} contentFit="contain" transition={0} />
       )}
 
       <Image
         source={{uri: imageUri}}
-        style={[themed($image), isLoading && themed($imageLoading)]}
+        style={isLoading ? imageLoadingStyle : imageStyle}
         contentFit="contain"
         priority="high"
         cachePolicy="memory-disk"
         transition={200}
         onLoad={e => {
-          // Report dimensions back to Gallery for proper scaling
-          if (e.source?.width && e.source?.height) {
+          // Report dimensions back to Gallery for proper scaling - only once
+          if (e.source?.width && e.source?.height && !hasReportedDimensions.current) {
+            hasReportedDimensions.current = true
             console.log("📸 [ImageItem] Image loaded:", photo.name, "dimensions:", e.source.width, "x", e.source.height)
             setImageDimensions({
               width: e.source.width,
@@ -327,13 +332,13 @@ function ImageItem({photo, setImageDimensions}: ImageItemProps) {
           console.log("📸 [ImageItem] Image loading started:", photo.name)
         }}
         onError={error => {
-          console.error("📸 [ImageItem] Image load error:", photo.name, error)
+          console.warn("📸 [ImageItem] Image load warning:", photo.name, error.error)
           setIsLoading(false)
         }}
       />
     </View>
   )
-}
+})
 
 /**
  * Custom overlay with header, counter, and controls
@@ -396,6 +401,36 @@ export function AwesomeGalleryViewer({visible, photos, initialIndex, onClose, on
     }
   }, [visible, initialIndex])
 
+  // Memoized renderItem to prevent unnecessary re-renders of gallery items
+  // Only videos need currentIndex (for play/pause), images don't care
+  const renderItem = useCallback(
+    ({item, index, setImageDimensions}: {item: PhotoInfo; index: number; setImageDimensions: (dims: {width: number; height: number}) => void}) => {
+      const isVideo =
+        item.is_video || item.mime_type?.startsWith("video/") || item.name.match(/\.(mp4|mov|avi|webm|mkv)$/i)
+
+      const isActiveItem = index === currentIndex
+
+      console.log(
+        "🎨 [AwesomeGalleryViewer] Rendering item:",
+        item.name,
+        "isVideo:",
+        isVideo,
+        "isActive:",
+        isActiveItem,
+      )
+
+      if (isVideo) {
+        return <VideoPlayerItem photo={item} isActive={isActiveItem} />
+      }
+
+      return <ImageItem photo={item} setImageDimensions={setImageDimensions} />
+    },
+    [currentIndex],
+  )
+
+  // Memoized keyExtractor
+  const keyExtractor = useCallback((item: PhotoInfo, index: number) => `${item.name}-${index}`, [])
+
   if (!visible || photos.length === 0) {
     return null
   }
@@ -415,28 +450,8 @@ export function AwesomeGalleryViewer({visible, photos, initialIndex, onClose, on
           console.log("🎨 [AwesomeGalleryViewer] Swipe to close triggered")
           onClose()
         }}
-        renderItem={({item, index, setImageDimensions}) => {
-          const isVideo =
-            item.is_video || item.mime_type?.startsWith("video/") || item.name.match(/\.(mp4|mov|avi|webm|mkv)$/i)
-
-          const isActiveItem = index === currentIndex
-
-          console.log(
-            "🎨 [AwesomeGalleryViewer] Rendering item:",
-            item.name,
-            "isVideo:",
-            isVideo,
-            "isActive:",
-            isActiveItem,
-          )
-
-          if (isVideo) {
-            return <VideoPlayerItem photo={item} isActive={isActiveItem} />
-          }
-
-          return <ImageItem photo={item} setImageDimensions={setImageDimensions} />
-        }}
-        keyExtractor={(item, index) => `${item.name}-${index}`}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
         numToRender={5}
         emptySpaceWidth={24}
         maxScale={4}

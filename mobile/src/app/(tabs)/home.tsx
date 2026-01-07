@@ -14,9 +14,9 @@ import CloudConnection from "@/components/misc/CloudConnection"
 import NonProdWarning from "@/components/misc/NonProdWarning"
 import {Group} from "@/components/ui"
 import {Spacer} from "@/components/ui/Spacer"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {useRefreshApplets} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function Homepage() {
   const {theme} = useAppTheme()

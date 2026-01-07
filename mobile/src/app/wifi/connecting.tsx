@@ -6,11 +6,11 @@ import {ActivityIndicator, TextStyle, View, ViewStyle} from "react-native"
 import {WifiIcon} from "@/components/icons/WifiIcon"
 import {Button, Header, Icon, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useGlassesStore} from "@/stores/glasses"
-import {$styles, ThemedStyle} from "@/theme"
-import showAlert from "@/utils/AlertUtils"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {useGlassesStore} from "@/stores/glasses"
+import {ThemedStyle} from "@/theme"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
+import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 
 export default function WifiConnectingScreen() {
   const params = useLocalSearchParams()
@@ -27,25 +27,9 @@ export default function WifiConnectingScreen() {
   const [errorMessage, setErrorMessage] = useState("")
   const connectionTimeoutRef = useRef<number | null>(null)
   const failureGracePeriodRef = useRef<number | null>(null)
-  const {goBack, navigate, replace} = useNavigationHistory()
-  const wifiConnected = useGlassesStore(state => state.wifiConnected)
-  const wifiSsid = useGlassesStore(state => state.wifiSsid)
-  const glassesConnected = useGlassesStore(state => state.connected)
-
-  // Navigate away if glasses disconnect (but not on initial mount)
-  useEffect(() => {
-    if (!glassesConnected) {
-      console.log("CONNECTING: Glasses disconnected - navigating away")
-      showAlert("Glasses Disconnected", "Please reconnect your glasses to set up WiFi.", [
-        {
-          text: "OK",
-          onPress() {
-            goBack()
-          },
-        },
-      ])
-    }
-  }, [glassesConnected])
+  const {goBack, navigate, pushPrevious} = useNavigationHistory()
+  const wifiConnected = useGlassesStore((state) => state.wifiConnected)
+  const wifiSsid = useGlassesStore((state) => state.wifiSsid)
 
   useEffect(() => {
     // Start connection attempt
@@ -125,29 +109,15 @@ export default function WifiConnectingScreen() {
   }
 
   const handleSuccess = useCallback(() => {
-    if (nextRoute && typeof nextRoute === "string") {
-      replace(decodeURIComponent(nextRoute))
-    } else if (returnTo && typeof returnTo === "string") {
-      replace(decodeURIComponent(returnTo))
-    } else {
-      navigate("/")
-    }
+    pushPrevious(2) // pop the entire stack
   }, [nextRoute, returnTo, navigate])
 
   const handleCancel = useCallback(() => {
-    if (returnTo && typeof returnTo === "string") {
-      replace(decodeURIComponent(returnTo))
-    } else {
-      goBack()
-    }
+    goBack()
   }, [returnTo, goBack])
 
   const handleHeaderBack = useCallback(() => {
-    if (returnTo && typeof returnTo === "string") {
-      replace(decodeURIComponent(returnTo))
-    } else {
-      goBack()
-    }
+    goBack()
   }, [returnTo, goBack])
 
   const renderContent = () => {
@@ -178,7 +148,7 @@ export default function WifiConnectingScreen() {
             </View>
 
             <View style={themed($successButtonContainer)}>
-              <Button text="Continue" onPress={handleSuccess} />
+              <Button tx="common:continue" onPress={handleSuccess} />
             </View>
           </View>
         )
@@ -191,7 +161,7 @@ export default function WifiConnectingScreen() {
                 <Icon name="x-circle" size={80} color={theme.colors.destructive} />
               </View>
 
-              <Text style={themed($failureTitle)}>Connection Failed</Text>
+              <Text style={themed($failureTitle)} tx="wifi:connectionFailed" />
 
               <Text style={themed($failureDescription)}>{errorMessage}</Text>
 
@@ -205,27 +175,15 @@ export default function WifiConnectingScreen() {
                   />
                   <Text style={themed($failureTipText)}>Make sure the password was entered correctly</Text>
                 </View>
-
-                <View style={themed($failureTipItem)}>
-                  <Icon
-                    name="wifi"
-                    size={20}
-                    color={theme.colors.textDim}
-                    containerStyle={{marginRight: theme.spacing.s3}}
-                  />
-                  <Text style={themed($failureTipText)}>
-                    Mentra Live Beta can only connect to pure 2.4GHz WiFi networks (not 5GHz or dual-band 2.4/5GHz)
-                  </Text>
-                </View>
               </View>
             </View>
 
             <View style={themed($failureButtonsContainer)}>
               <Button onPress={handleTryAgain}>
-                <Text>Try Again</Text>
+                <Text tx="common:tryAgain" />
               </Button>
               <Button onPress={handleCancel} preset="alternate" style={{marginTop: theme.spacing.s3}}>
-                <Text>Cancel</Text>
+                <Text tx="common:cancel" />
               </Button>
             </View>
           </View>
@@ -234,10 +192,11 @@ export default function WifiConnectingScreen() {
   }
 
   return (
-    <Screen preset="fixed" contentContainerStyle={connectionStatus === "connecting" ? undefined : undefined}>
+    <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       {connectionStatus === "connecting" && (
         <Header title="Connecting" leftIcon="chevron-left" onLeftPress={handleHeaderBack} />
       )}
+      <ConnectionOverlay />
       <View style={themed(connectionStatus === "connecting" ? $content : $contentNoPadding)}>{renderContent()}</View>
     </Screen>
   )

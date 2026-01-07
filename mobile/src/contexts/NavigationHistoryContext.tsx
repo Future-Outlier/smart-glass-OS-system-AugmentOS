@@ -1,19 +1,25 @@
-import {router, usePathname, useSegments} from "expo-router"
-import {createContext, useContext, useEffect, useRef} from "react"
+import {router, useFocusEffect, usePathname, useSegments} from "expo-router"
+import {createContext, useContext, useEffect, useRef, useCallback, useState} from "react"
+import {Alert, BackHandler} from "react-native"
+import {useNavigation} from "expo-router"
+import {CommonActions} from "@react-navigation/native"
 
 import {navigationRef} from "@/contexts/NavigationRef"
 
 export type NavigationHistoryPush = (path: string, params?: any) => void
 export type NavigationHistoryReplace = (path: string, params?: any) => void
+export type NavigationHistoryReplaceAll = (path: string, params?: any) => void
 export type NavigationHistoryGoBack = () => void
 
 export type NavObject = {
   push: NavigationHistoryPush
   replace: NavigationHistoryReplace
+  replaceAll: NavigationHistoryReplaceAll
   goBack: NavigationHistoryGoBack
   setPendingRoute: (route: string) => void
   getPendingRoute: () => string | null
   navigate: (path: string, params?: any) => void
+  preventBack: boolean
 }
 
 interface NavigationHistoryContextType {
@@ -28,6 +34,12 @@ interface NavigationHistoryContextType {
   clearHistoryAndGoHome: () => void
   replaceAll: (path: string, params?: any) => void
   goHomeAndPush: (path: string, params?: any) => void
+  preventBack: boolean
+  setPreventBack: (value: boolean) => void
+  pushPrevious: (index?: number) => void
+  pushUnder: (path: string, params?: any) => void
+  incPreventBack: () => void
+  decPreventBack: () => void
 }
 
 const NavigationHistoryContext = createContext<NavigationHistoryContextType | undefined>(undefined)
@@ -38,8 +50,10 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
   const pathname = usePathname()
   const _segments = useSegments()
-  // const [pendingRoute, setPendingRouteNonClashingName] = useState<string | null>(null)
   const pendingRoute = useRef<string | null>(null)
+  const navigation = useNavigation()
+  const [preventBack, setPreventBack] = useState(false)
+  const preventBackCountRef = useRef(0)
 
   useEffect(() => {
     // Add current path to history if it's different from the last entry
@@ -54,28 +68,21 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     }
   }, [pathname])
 
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     const onBackPress = () => {
-  //       // Skip for app settings and webview - they handle their own back navigation
-  //       if (pathname === "/applet/settings" || pathname === "/applet/webview") {
-  //         return false // Let the screen's handler execute
-  //       }
+  const incPreventBack = useCallback(() => {
+    preventBackCountRef.current++
+    setPreventBack(true)
+  }, [])
 
-  //       if (segments.length > 0 && segments[0] != "(tabs)") {
-  //         goBack()
-  //       }
-  //       return true
-  //     }
-
-  //     BackHandler.addEventListener("hardwareBackPress", onBackPress)
-
-  //     return () => BackHandler.removeEventListener("hardwareBackPress", onBackPress)
-  //   }, [pathname, segments]),
-  // )
+  const decPreventBack = useCallback(() => {
+    preventBackCountRef.current--
+    if (preventBackCountRef.current <= 0) {
+      preventBackCountRef.current = 0
+      setPreventBack(false)
+    }
+  }, [])
 
   const goBack = () => {
-    console.info("NavHistory: goBack()")
+    console.info("NAV: goBack()")
     const history = historyRef.current
 
     // Remove current path
@@ -86,7 +93,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     const previousPath = history[history.length - 1]
     const _previousParams = historyParamsRef.current[historyParamsRef.current.length - 1]
 
-    console.info(`NavHistory: going back to: ${previousPath}`)
+    console.info(`NAV: going back to: ${previousPath}`)
     // if (previousPath) {
     //   // Fallback to direct navigation if router.back() fails
     //   // router.replace({pathname: previousPath as any, params: previousParams as any})
@@ -102,7 +109,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   }
 
   const push = (path: string, params?: any): void => {
-    console.info("NavHistory: push()", path)
+    console.info("NAV: push()", path)
     // if the path is the same as the last path, don't add it to the history
     if (historyRef.current[historyRef.current.length - 1] === path) {
       return
@@ -115,7 +122,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   }
 
   const replace = (path: string, params?: any): void => {
-    console.info("NavHistory: replace()", path)
+    console.info("NAV: replace()", path)
     historyRef.current.pop()
     historyParamsRef.current.pop()
     historyRef.current.push(path)
@@ -128,13 +135,25 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   }
 
   const clearHistory = () => {
-    console.info("NavHistory: clearHistory()")
+    console.info("NAV: clearHistory()")
     historyRef.current = []
     historyParamsRef.current = []
+    try {
+      router.dismissAll()
+    } catch (_e) {}
+    try {
+      router.dismissTo("/(tabs)/home")
+      // router.dismissTo("/")
+      // router.replace("/")
+      // router.
+    } catch (_e) {}
+    // try {
+    //   router.dismissTo("/")
+    // } catch (_e) {}
   }
 
   const setPendingRoute = (route: string | null) => {
-    console.info("NavHistory: setPendingRoute()", route)
+    console.info("NAV: setPendingRoute()", route)
     // setPendingRouteNonClashingName(route)
     pendingRoute.current = route
   }
@@ -144,34 +163,141 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   }
 
   const navigate = (path: string, params?: any) => {
-    console.info("NavHistory: navigate()", path)
+    console.info("NAV: navigate()", path)
     router.navigate({pathname: path as any, params: params as any})
   }
 
   const clearHistoryAndGoHome = () => {
-    console.info("NavHistory: clearHistoryAndGoHome()")
-    historyRef.current = []
-    historyParamsRef.current = []
+    console.info("NAV: clearHistoryAndGoHome()")
+    clearHistory()
     try {
-      // router.navigate("/(tabs)/home")
-      router.dismissTo("/")
+      // router.dismissAll()
+      // router.dismissTo("/")
+      // router.navigate("/")
       router.replace("/(tabs)/home")
+      historyRef.current = ["/(tabs)/home"]
+      historyParamsRef.current = [undefined]
     } catch (error) {
-      console.error("NavHistory: clearHistoryAndGoHome() error", error)
+      console.error("NAV: clearHistoryAndGoHome() error", error)
     }
-    // router.replace("/(tabs)/home")
   }
 
   // whatever route we pass, will be the only route in the entire stack:
+  // dismiss all and push the new route:
   const replaceAll = (path: string, params?: any) => {
-    console.info("NavHistory: replaceAll()", path)
-    clearHistoryAndGoHome()
-    replace(path, params)
+    console.info("NAV: replaceAll()", path)
+    clearHistory()
+    // try {
+    //   // router.dismissAll()
+    //   // router.dismissTo("/")
+    //   // router.navigate("/")
+    //   // router.dismissAll()
+    //   // router.replace("/")
+    // } catch (_e) {
+    // }
+    // replace(path, params)
+    // push(path, params)
+    router.replace({pathname: path as any, params: params as any})
+  }
+
+  const pushUnder = (path: string, params?: any) => {
+    console.info("NAV: pushUnder()", path)
+    // historyRef.current.push(path)
+    // historyParamsRef.current.push(params)
+    // router.push({pathname: path as any, params: params as any})
+
+    // get current path:
+    const currentIndex = historyRef.current.length - 1
+    const currentPath = historyRef.current[currentIndex]
+    const currentParams = historyParamsRef.current[currentIndex]
+
+    // Build routes WITHOUT the current one
+    const previousRoutes = historyRef.current.slice(0, -1).map((path, index) => ({
+      name: path,
+      params: historyParamsRef.current[index],
+    }))
+
+    const newRoutes = [
+      ...previousRoutes,
+      {name: path, params: params}, // New "under" route
+      {name: currentPath, params: currentParams}, // Current screen stays on top
+    ]
+
+    navigation.dispatch(
+      CommonActions.reset({
+        index: newRoutes.length - 1, // Point to current screen (last)
+        routes: newRoutes,
+      }),
+    )
+
+    // Insert new path right before current in history
+    historyRef.current.splice(currentIndex, 0, path)
+    historyParamsRef.current.splice(currentIndex, 0, params)
+  }
+
+  // when you want to go back, but animate it like a push:
+  const pushPrevious = (index: number = 0) => {
+    console.info("NAV: pushPrevious()")
+    console.log("NAV: historyRef.current", historyRef.current)
+    // const prevIndex = historyRef.current.length - (2 + index)
+    // const previousPath = historyRef.current[prevIndex]
+    // const previousParams = historyParamsRef.current[prevIndex]
+    // clearHistory()
+    // push(previousPath as any, previousParams as any)
+
+
+    const last = index + 2
+    const lastRouteIndex = historyRef.current.length - last
+    // the route we want to later "push" onto the stack:
+    const lastRoute = historyRef.current[lastRouteIndex]
+    console.log("NAV: lastRoute", lastRoute)
+    const lastRouteParams = historyParamsRef.current[lastRouteIndex]
+    
+    // Build routes WITHOUT n routes (removing current and last n routes)
+    const n = index + 2
+    let updatedRoutes = historyRef.current.slice(0, -n)
+    let updatedRoutesParams = historyParamsRef.current.slice(0, -n)
+    // // add ghost route:
+    // updatedRoutes.push("/")
+    // updatedRoutesParams.push(undefined)
+    
+    const newRouteState = updatedRoutes.map((path, index) => ({
+      name: path,
+      params: historyParamsRef.current[index],
+    }))
+
+
+
+    console.log("NAV: newRouteState", newRouteState.map(route => route.name))
+
+    navigation.dispatch(
+      CommonActions.reset({
+        index: newRouteState.length - 1, // Point to current screen (last)
+        routes: newRouteState,
+      }),
+    )
+
+    // update our history ref popping the last n elements:
+    historyRef.current = updatedRoutes
+    historyParamsRef.current = updatedRoutesParams
+
+    console.log("NAV: updated historyRef.current", historyRef.current)
+    console.log("NAV: updated historyParamsRef.current", historyParamsRef.current)
+    
+    // push the last route onto the stack:
+    // dumb edge case, if the route is home, we need to clearHistoryAndGoHome()
+    if (lastRoute === "/(tabs)/home" || lastRoute === "/home") {
+      clearHistoryAndGoHome()
+    } else {
+      push(lastRoute, lastRouteParams)
+    }
+    // push(lastRoute, lastRouteParams)
+    // push(lastRoute, lastRouteParams)
   }
 
   // the only routes in the stack will be home and the one we pass:
   const goHomeAndPush = (path: string, params?: any) => {
-    console.info("NavHistory: goHomeAndPush()", path)
+    console.info("NAV: goHomeAndPush()", path)
     clearHistoryAndGoHome()
     push(path, params)
   }
@@ -179,16 +305,18 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const navObject: NavObject = {
     push,
     replace,
+    replaceAll,
     goBack,
     setPendingRoute,
     getPendingRoute,
     navigate,
+    preventBack,
   }
 
   // Set the ref so we can use it from outside the context:
   useEffect(() => {
     navigationRef.current = navObject
-  }, [])
+  }, [preventBack])
 
   return (
     <NavigationHistoryContext.Provider
@@ -204,6 +332,12 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
         clearHistoryAndGoHome,
         replaceAll,
         goHomeAndPush,
+        setPreventBack,
+        preventBack,
+        pushPrevious,
+        pushUnder,
+        incPreventBack,
+        decPreventBack,
       }}>
       {children}
     </NavigationHistoryContext.Provider>
@@ -216,4 +350,31 @@ export function useNavigationHistory() {
     throw new Error("useNavigationHistory must be used within a NavigationHistoryProvider")
   }
   return context
+}
+
+// export const focusEffectPreventBack = () => {
+//   const {setPreventBack} = useNavigationHistory()
+
+//   useFocusEffect(
+//     useCallback(() => {
+//       setPreventBack(true)
+//       return () => {
+//         setPreventBack(false)
+//       }
+//     }, []),
+//   )
+// }
+
+// screens that call this function will prevent the back button from being pressed:
+export const focusEffectPreventBack = () => {
+  const {incPreventBack, decPreventBack} = useNavigationHistory()
+
+  useFocusEffect(
+    useCallback(() => {
+      incPreventBack()
+      return () => {
+        decPreventBack()
+      }
+    }, [incPreventBack, decPreventBack]),
+  )
 }

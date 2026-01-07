@@ -6,8 +6,9 @@ import {Alert, BackHandler, Platform, Animated} from "react-native"
 import {Icon, IconTypes} from "@/components/ignite"
 import BasicDialog from "@/components/ui/BasicDialog"
 
-import {SettingsNavigationUtils} from "./SettingsNavigationUtils"
 import {useAppTheme} from "../contexts/ThemeContext"
+
+import {SettingsNavigationUtils} from "./SettingsNavigationUtils"
 
 // eslint-disable-next-line
 import {StyleSheet} from "react-native"
@@ -302,7 +303,7 @@ export interface ConnectivityAlertOptions extends AlertOptions {
 /**
  * Shows a standard alert with custom buttons
  */
-const showAlert = (title: string, message: string, buttons: AlertButton[], options?: AlertOptions) => {
+const showAlert = (title: string, message: string, buttons: AlertButton[] = [], options?: AlertOptions) => {
   if (modalRef) {
     // because a previous modal might be still fading out
     setTimeout(() => {

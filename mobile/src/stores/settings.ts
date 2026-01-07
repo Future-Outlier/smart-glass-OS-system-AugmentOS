@@ -336,6 +336,13 @@ export const SETTINGS: Record<string, Setting> = {
     persist: true,
   },
   gallery_mode: {key: "gallery_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
+  offline_camera_running: {
+    key: "offline_camera_running",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: false,
+    persist: true,
+  },
   // button action settings
   default_button_action_enabled: {
     key: "default_button_action_enabled",
@@ -467,7 +474,7 @@ export const useSettingsStore = create<SettingsState>()(
 
         // Update store immediately for optimistic UI
         console.log(`SETTINGS: SET: ${key} = ${value}`)
-        set(state => ({
+        set((state) => ({
           settings: {...state.settings, [key]: value},
         }))
 
@@ -535,7 +542,7 @@ export const useSettingsStore = create<SettingsState>()(
           settingsToLoad[key.toLowerCase()] = value
         }
 
-        set(state => ({
+        set((state) => ({
           settings: {...state.settings, ...settingsToLoad},
         }))
 
@@ -593,7 +600,7 @@ export const useSettingsStore = create<SettingsState>()(
         // console.log(loadedSettings)
         // console.log("##############################################")
 
-        set(state => ({
+        set((state) => ({
           isInitialized: true,
           settings: {...state.settings, ...loadedSettings},
         }))
@@ -616,7 +623,7 @@ export const useSettingsStore = create<SettingsState>()(
     getCoreSettings: () => {
       const state = get()
       const coreSettings: Record<string, any> = {}
-      Object.values(SETTINGS).forEach(setting => {
+      Object.values(SETTINGS).forEach((setting) => {
         if (CORE_SETTINGS_KEYS.includes(setting.key)) {
           coreSettings[setting.key] = state.getSetting(setting.key)
         }
@@ -627,7 +634,7 @@ export const useSettingsStore = create<SettingsState>()(
 )
 
 export const useSetting = <T = any>(key: string): [T, (value: T) => AsyncResult<void, Error>] => {
-  const value = useSettingsStore(state => state.getSetting(key))
-  const setSetting = useSettingsStore(state => state.setSetting)
+  const value = useSettingsStore((state) => state.getSetting(key))
+  const setSetting = useSettingsStore((state) => state.setSetting)
   return [value, (newValue: T) => setSetting(key, newValue)]
 }

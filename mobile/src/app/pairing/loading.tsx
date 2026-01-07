@@ -11,10 +11,10 @@ import GlassesPairingLoader from "@/components/misc/GlassesPairingLoader"
 import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
 import {AudioPairingPrompt} from "@/components/pairing/AudioPairingPrompt"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
 import {$styles, ThemedStyle} from "@/theme"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function GlassesPairingGuideScreen() {
   const {replace, goBack} = useNavigationHistory()

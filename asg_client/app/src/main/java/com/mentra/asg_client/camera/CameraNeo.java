@@ -221,6 +221,9 @@ public class CameraNeo extends LifecycleService {
     // true = capture immediately on AE_CONVERGED (~650ms), false = wait for AE_LOCKED confirmation (~1085ms)
     private static final boolean USE_IMMEDIATE_CAPTURE_ON_CONVERGENCE = true;
 
+    // Delay after AE convergence before capturing photo (allows exposure to stabilize)
+    private static final int EXPOSURE_STABILIZATION_DELAY_MS = 475;
+
     // Simple AE callback - autofocus handled automatically
     private final SimplifiedAeCallback aeCallback = new SimplifiedAeCallback();
 
@@ -447,6 +450,8 @@ public class CameraNeo extends LifecycleService {
                 // Fast path - camera is ready, check if idle
                 if (sInstance.shotState == ShotState.IDLE) {
                     Log.d(TAG, "Camera ready and idle - processing request immediately");
+                    // Cancel any pending keep-alive timer to prevent it from closing camera mid-capture
+                    sInstance.cancelKeepAliveTimer();
                     // Don't call processNextPhotoRequest as it might try to reopen camera
                     // Instead, directly process the request we just queued
                     PhotoRequest queuedRequest = globalRequestQueue.poll();
@@ -664,6 +669,7 @@ public class CameraNeo extends LifecycleService {
 
     private String pendingRequestedSize;
     private boolean pendingIsFromSdk;  // true = SDK photo (optimized sizes), false = button photo
+    private long photoRequestStartTimeMs;  // Timestamp when photo request started (for e2e timing)
 
     /**
      * Get the appropriate JPEG quality based on the requested size tier and source.
@@ -773,6 +779,10 @@ public class CameraNeo extends LifecycleService {
      */
     private void setupCameraForPhotoRequest(PhotoRequest request) {
         if (request == null) return;
+
+        // Record start time for e2e timing
+        photoRequestStartTimeMs = request.timestamp;
+        Log.i(TAG, "📸 PHOTO E2E: Starting photo request " + request.requestId);
 
         // Check if size or SDK flag has changed BEFORE updating pending values
         // This is critical for detecting when camera needs to be reopened
@@ -1936,7 +1946,7 @@ public class CameraNeo extends LifecycleService {
                     notifyVideoError(currentVideoId, "Failed to start recording: " + e.getMessage());
                     isRecording = false;
                 }
-            }, 100); // 100ms delay to ensure surface is ready
+            }, 400); // 400ms delay to ensure surface is ready
         } catch (CameraAccessException | IllegalStateException e) {
             Log.e(TAG, "Failed to start video recording", e);
             notifyVideoError(currentVideoId, "Failed to start recording: " + e.getMessage());
@@ -2064,6 +2074,10 @@ public class CameraNeo extends LifecycleService {
     }
 
     private void notifyPhotoCaptured(String filePath) {
+        // Log e2e timing
+        long e2eTimeMs = System.currentTimeMillis() - photoRequestStartTimeMs;
+        Log.i(TAG, "📸 PHOTO E2E: Photo captured and saved in " + e2eTimeMs + "ms (e2e) | Path: " + filePath);
+
         if (sPhotoCallback != null) {
             executor.execute(() -> sPhotoCallback.onPhotoCaptured(filePath));
         }
@@ -2159,16 +2173,29 @@ public class CameraNeo extends LifecycleService {
         cameraKeepAliveTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                Log.d(TAG, "Camera keep-alive timer expired, closing camera");
                 // Run on background handler to ensure proper thread
                 if (backgroundHandler != null) {
                     backgroundHandler.post(() -> {
+                        // Don't close camera if capture is in progress - extend the timer instead
+                        if (shotState != ShotState.IDLE) {
+                            Log.w(TAG, "⚠️ Keep-alive expired but capture in progress (state: " + shotState +
+                                  ") - extending timer");
+                            startKeepAliveTimer();
+                            return;
+                        }
+                        Log.d(TAG, "Camera keep-alive timer expired, closing camera");
                         isCameraKeptAlive = false;
                         closeCamera();
                         stopSelf();
                     });
                 } else {
                     // Fallback if handler is not available
+                    if (shotState != ShotState.IDLE) {
+                        Log.w(TAG, "⚠️ Keep-alive expired but capture in progress (state: " + shotState +
+                              ") - cannot extend (no handler)");
+                        return;
+                    }
+                    Log.d(TAG, "Camera keep-alive timer expired, closing camera");
                     isCameraKeptAlive = false;
                     closeCamera();
                     stopSelf();
@@ -2199,6 +2226,10 @@ public class CameraNeo extends LifecycleService {
                     // Cancel any pending keep-alive timer
                     cancelKeepAliveTimer();
 
+                    // Record start time for e2e timing
+                    photoRequestStartTimeMs = nextRequest.timestamp;
+                    Log.i(TAG, "📸 PHOTO E2E: Starting queued photo request " + nextRequest.requestId);
+
                     // Process the queued request
                     pendingPhotoPath = nextRequest.filePath;
                     pendingRequestedSize = nextRequest.size;
@@ -2208,7 +2239,7 @@ public class CameraNeo extends LifecycleService {
                     if (nextRequest.enableLed) {
                         pendingLedEnabled = true;
                     }
-                    
+
                     // IMPORTANT: Only start capture if camera is ready
                     // Don't try to open camera again if it's already open
                     if (cameraDevice != null && cameraCaptureSession != null) {
@@ -2234,12 +2265,16 @@ public class CameraNeo extends LifecycleService {
             PhotoRequest nextRequest = photoRequestQueue.poll();
             if (nextRequest != null) {
                 Log.d(TAG, "Processing queued photo from INSTANCE queue: " + nextRequest.filePath);
-                
+
                 // Update the callback for this request
                 sPhotoCallback = nextRequest.callback;
 
                 // Cancel any pending keep-alive timer
                 cancelKeepAliveTimer();
+
+                // Record start time for e2e timing
+                photoRequestStartTimeMs = nextRequest.timestamp;
+                Log.i(TAG, "📸 PHOTO E2E: Starting queued photo request (legacy) " + nextRequest.requestId);
 
                 // Process the queued request
                 pendingPhotoPath = nextRequest.filePath;
@@ -2640,12 +2675,17 @@ public class CameraNeo extends LifecycleService {
                 long elapsedMs = (System.nanoTime() - aeStartTimeNs) / 1_000_000;
                 
                 if (USE_IMMEDIATE_CAPTURE_ON_CONVERGENCE) {
-                    // OPTIMIZED PATH: Capture immediately on convergence (~650ms)
-                    Log.i(TAG, "🔍 ✅ AE CONVERGED in " + elapsedMs + "ms! State: " + getAeStateName(aeState) + ", capturing immediately [FAST MODE]");
+                    // OPTIMIZED PATH: Capture after AE convergence + exposure stabilization delay
+                    Log.i(TAG, "🔍 ✅ AE CONVERGED in " + elapsedMs + "ms! State: " + getAeStateName(aeState) + ", waiting " + EXPOSURE_STABILIZATION_DELAY_MS + "ms for exposure stabilization [FAST MODE]");
                     mWaitingForAeConvergence = false;
                     mAeLockRequested = false;
-                    shotState = ShotState.SHOOTING;
-                    capturePhoto();
+                    // NOTE: Don't set shotState = SHOOTING yet - that would cause ImageReader to save frames during the delay
+                    // Add delay to allow exposure to stabilize before capture
+                    backgroundHandler.postDelayed(() -> {
+                        Log.i(TAG, "🔍 Exposure stabilization complete, capturing photo");
+                        shotState = ShotState.SHOOTING;
+                        capturePhoto();
+                    }, EXPOSURE_STABILIZATION_DELAY_MS);
                 } else {
                     // LEGACY PATH: Request lock and wait for confirmation (~1085ms)
                     Log.i(TAG, "🔍 ✅ AE CONVERGED in " + elapsedMs + "ms! State: " + getAeStateName(aeState) + ", requesting AE lock [LEGACY MODE]");

@@ -1,5 +1,4 @@
 import CoreModule from "core"
-import {router} from "expo-router"
 
 import {push} from "@/contexts/NavigationRef"
 import audioPlaybackService from "@/services/AudioPlaybackService"
@@ -13,6 +12,11 @@ import {useGlassesStore} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {BackgroundTimer} from "@/utils/timers"
+
+// UDP probe configuration
+const UDP_INITIAL_DELAY_MS = 500 // Wait before first probe to let server register user
+const UDP_RETRY_INTERVAL_MS = 5000 // Retry probe every 5s if not connected
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -20,6 +24,9 @@ class SocketComms {
   private coreToken: string = ""
   public userid: string = ""
   private udpAudioEnabled = false
+  private udpRetryIntervalId: number | null = null
+  private udpProbeInProgress = false
+  private udpConfig: {host: string; port: number} | null = null
 
   private constructor() {
     // Subscribe to WebSocket messages
@@ -37,6 +44,13 @@ class SocketComms {
   }
 
   public cleanup() {
+    // Stop UDP retry interval and reset state
+    this.stopUdpRetryInterval()
+    this.udpConfig = null
+    this.udpProbeInProgress = false
+    udpAudioService.stop()
+    this.udpAudioEnabled = false
+
     // Cleanup WebSocket
     this.ws.cleanup()
 
@@ -352,18 +366,50 @@ class SocketComms {
    * UDP endpoint is provided by server in the connection_ack message.
    *
    * Flow:
-   * 1. Configure UDP service with host, port, userId (from connection_ack)
-   * 2. Send registration to server via WebSocket (so server knows our hash for routing)
-   * 3. Probe UDP with multiple pings (UDP is lossy, single ping unreliable)
-   * 4. Wait for WebSocket ack from server
-   * 5. If ack received, enable UDP audio; otherwise fallback to WebSocket/LiveKit
+   * 1. Wait initial delay to let server register user
+   * 2. Configure UDP service with host, port, userId (from connection_ack)
+   * 3. Send registration to server via WebSocket (so server knows our hash for routing)
+   * 4. Probe UDP with multiple pings (UDP is lossy, single ping unreliable)
+   * 5. Wait for WebSocket ack from server
+   * 6. If ack received, enable UDP audio; otherwise start periodic retry
    *
    * @param udpHost UDP server host (provided by server in connection_ack)
    * @param udpPort UDP server port (default 8000)
+   * @param isRetry Whether this is a retry attempt (skip initial delay)
    */
-  public async registerUdpAudio(udpHost: string, udpPort: number = 8000): Promise<boolean> {
+  public async registerUdpAudio(udpHost: string, udpPort: number = 8000, isRetry: boolean = false): Promise<boolean> {
+    // Prevent overlapping probes
+    if (this.udpProbeInProgress) {
+      console.log("UDP: Probe already in progress, skipping")
+      return false
+    }
+
+    // Skip if WebSocket disconnected
+    if (!this.ws.isConnected()) {
+      console.log("UDP: WebSocket disconnected, skipping probe")
+      return false
+    }
+
+    this.udpProbeInProgress = true
+
     try {
-      console.log(`UDP: Using server-provided endpoint ${udpHost}:${udpPort}`)
+      // Store config for retries
+      this.udpConfig = {host: udpHost, port: udpPort}
+
+      // Wait initial delay on first attempt to let server register user
+      if (!isRetry) {
+        console.log(`UDP: Waiting ${UDP_INITIAL_DELAY_MS}ms before first probe...`)
+        await new Promise(resolve => BackgroundTimer.setTimeout(resolve, UDP_INITIAL_DELAY_MS))
+
+        // Re-check WebSocket after delay
+        if (!this.ws.isConnected()) {
+          console.log("UDP: WebSocket disconnected during delay, aborting probe")
+          this.udpProbeInProgress = false
+          return false
+        }
+      }
+
+      console.log(`UDP: ${isRetry ? "Retry" : "Initial"} probe for ${udpHost}:${udpPort}`)
 
       // Configure the React Native UDP service
       udpAudioService.configure(udpHost, udpPort, this.userid)
@@ -383,24 +429,74 @@ class SocketComms {
       // probeWithRetries sends 3 pings at 200ms intervals, times out at 2000ms
       const udpAvailable = await udpAudioService.probeWithRetries(2000)
 
+      this.udpProbeInProgress = false
+
       if (udpAvailable) {
         console.log("UDP: Probe successful - UDP audio enabled")
         this.udpAudioEnabled = true
+        this.stopUdpRetryInterval() // Stop retrying, we're connected
         return true
       } else {
-        console.log("UDP: Probe failed - stopping UDP service, using WebSocket fallback")
-        // CRITICAL: Stop the UDP service when probe fails to prevent audio loss
-        // This fixes issue #1: native sender not stopped on probe failure
+        console.log("UDP: Probe failed - using WebSocket fallback, will retry in background")
+        // Stop the UDP service when probe fails to prevent audio loss
         udpAudioService.stop()
         this.udpAudioEnabled = false
+
+        // Start periodic retry if not already running
+        this.startUdpRetryInterval()
         return false
       }
     } catch (error) {
       console.log(`UDP: Registration error: ${error}`)
+      this.udpProbeInProgress = false
       // Ensure UDP is stopped on any error
       udpAudioService.stop()
       this.udpAudioEnabled = false
+
+      // Start periodic retry if not already running
+      this.startUdpRetryInterval()
       return false
+    }
+  }
+
+  /**
+   * Start periodic UDP retry interval (uses BackgroundTimer for Android background support)
+   */
+  private startUdpRetryInterval(): void {
+    // Don't start if already running or no config
+    if (this.udpRetryIntervalId !== null || !this.udpConfig) {
+      return
+    }
+
+    console.log(`UDP: Starting periodic retry every ${UDP_RETRY_INTERVAL_MS / 1000}s`)
+    this.udpRetryIntervalId = BackgroundTimer.setInterval(() => {
+      // Skip if already connected or no config
+      if (this.udpAudioEnabled || !this.udpConfig) {
+        this.stopUdpRetryInterval()
+        return
+      }
+
+      // Skip if WebSocket is disconnected
+      if (!this.ws.isConnected()) {
+        console.log("UDP: Skipping retry - WebSocket disconnected")
+        return
+      }
+
+      console.log("UDP: Periodic retry attempt...")
+      this.registerUdpAudio(this.udpConfig.host, this.udpConfig.port, true).catch(err => {
+        console.log("UDP: Periodic retry failed:", err)
+      })
+    }, UDP_RETRY_INTERVAL_MS)
+  }
+
+  /**
+   * Stop periodic UDP retry interval
+   */
+  private stopUdpRetryInterval(): void {
+    if (this.udpRetryIntervalId !== null) {
+      console.log("UDP: Stopping periodic retry")
+      BackgroundTimer.clearInterval(this.udpRetryIntervalId)
+      this.udpRetryIntervalId = null
     }
   }
 
@@ -409,6 +505,11 @@ class SocketComms {
    */
   public async unregisterUdpAudio(): Promise<void> {
     try {
+      // Stop retry interval and reset state
+      this.stopUdpRetryInterval()
+      this.udpConfig = null
+      this.udpProbeInProgress = false
+
       if (this.udpAudioEnabled) {
         // Send unregister message
         const userIdHash = fnv1aHash(this.userid)
@@ -445,26 +546,88 @@ class SocketComms {
 
   // message handlers, these should only ever be called from handle_message / the server:
   private async handle_connection_ack(msg: any) {
-    console.log("SOCKET: connection ack, connecting to livekit")
-    const isChina = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
-    if (!isChina) {
-      await livekit.connect()
-    }
+    // LiveKit connection disabled - using WebSocket/UDP audio instead
+    // const isChina = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
+    // if (!isChina) {
+    //   await livekit.connect()
+    // }
+
+    // Configure audio format (LC3) for bandwidth savings
+    // This tells the cloud that we're sending LC3-encoded audio
+    this.configureAudioFormat().catch(err => {
+      console.log("SOCKET: Audio format configuration failed (cloud will expect PCM):", err)
+    })
 
     // Try to register for UDP audio (non-blocking)
     // UDP endpoint is provided by server in connection_ack message
     const udpHost = msg.udpHost || msg.udp_host
     const udpPort = msg.udpPort || msg.udp_port || 8000
 
+    console.log("SOCKET: connection_ack UDP fields:", {
+      udpHost: msg.udpHost,
+      udp_host: msg.udp_host,
+      udpPort: msg.udpPort,
+      udp_port: msg.udp_port,
+      resolvedHost: udpHost,
+      resolvedPort: udpPort,
+      allKeys: Object.keys(msg),
+    })
+
     if (udpHost) {
+      console.log(`SOCKET: UDP endpoint found, registering with ${udpHost}:${udpPort}`)
       this.registerUdpAudio(udpHost, udpPort).catch(err => {
         console.log("SOCKET: UDP registration failed (will use WebSocket fallback):", err)
       })
     } else {
-      console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio")
+      console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:", JSON.stringify(msg, null, 2))
     }
 
     GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
+  }
+
+  /**
+   * Configure audio format with the cloud server.
+   * Tells the server we're sending LC3-encoded audio (16x bandwidth savings).
+   * Uses canonical LC3 config: 16kHz, 10ms frame duration, 20-byte frame size.
+   */
+  private async configureAudioFormat(): Promise<void> {
+    const backendUrl = useSettingsStore.getState().getSetting(SETTINGS.backend_url.key)
+    const coreToken = useSettingsStore.getState().getSetting(SETTINGS.core_token.key)
+
+    if (!backendUrl || !coreToken) {
+      console.log("SOCKET: Cannot configure audio format - missing backend URL or token")
+      return
+    }
+
+    try {
+      const response = await fetch(`${backendUrl}/api/client/audio/configure`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${coreToken}`,
+        },
+        body: JSON.stringify({
+          format: "lc3",
+          lc3Config: {
+            sampleRate: 16000,
+            frameDurationMs: 10,
+            frameSizeBytes: 20,
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        const text = await response.text()
+        console.error("SOCKET: Failed to configure audio format:", response.status, text)
+        return
+      }
+
+      const result = await response.json()
+      console.log("SOCKET: Audio format configured successfully:", result.format)
+    } catch (error) {
+      console.error("SOCKET: Error configuring audio format:", error)
+      throw error
+    }
   }
 
   private handle_app_state_change(msg: any) {
@@ -482,9 +645,10 @@ class SocketComms {
   }
 
   private handle_microphone_state_change(msg: any) {
-    const bypassVad = msg.bypassVad ?? true
+    // const bypassVad = msg.bypassVad ?? true
+    const bypassVad = true
     const requiredDataStrings = msg.requiredData || []
-    // console.log(`SOCKET: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
+    console.log(`SOCKET: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
     let shouldSendPcmData = false
     let shouldSendTranscript = false
     if (requiredDataStrings.includes("pcm")) {
@@ -554,7 +718,7 @@ class SocketComms {
     const size = msg.size ?? "medium"
     const authToken = msg.authToken ?? ""
     const compress = msg.compress ?? "none"
-    const silent = msg.silent ?? false
+    const silent = msg.silent ?? true
     console.log(
       `Received photo_request, requestId: ${requestId}, appId: ${appId}, webhookUrl: ${webhookUrl}, size: ${size} authToken: ${authToken} compress: ${compress} silent: ${silent}`,
     )
@@ -639,7 +803,6 @@ class SocketComms {
 
   private handle_show_wifi_setup(msg: any) {
     const reason = msg.reason || "This operation requires your glasses to be connected to WiFi."
-    const currentRoute = router.pathname || "/"
 
     showAlert(
       "WiFi Setup Required",
@@ -649,8 +812,7 @@ class SocketComms {
         {
           text: "Setup WiFi",
           onPress: () => {
-            const returnTo = encodeURIComponent(currentRoute)
-            push(`/pairing/glasseswifisetup?returnTo=${returnTo}`)
+            push("/wifi/scan")
           },
         },
       ],
@@ -716,7 +878,7 @@ class SocketComms {
   private handle_message(msg: any) {
     const type = msg.type
 
-    console.log(`SOCKET: msg: ${type}`)
+    // console.log(`SOCKET: msg: ${type}`)
 
     switch (type) {
       case "connection_ack":

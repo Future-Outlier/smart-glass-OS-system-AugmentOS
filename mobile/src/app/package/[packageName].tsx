@@ -3,8 +3,8 @@
 import {View, ViewStyle} from "react-native"
 
 import {Screen} from "@/components/ignite"
-import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {ThemedStyle} from "@/theme"
 
 export default function LoadingScreen() {
   const {themed} = useAppTheme()
