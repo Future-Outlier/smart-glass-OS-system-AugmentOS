@@ -366,7 +366,7 @@ export function MultiPhotoUpload({
       {/* Info Text */}
       <div className="flex items-center justify-between text-xs text-gray-500">
         <p>
-          {photos.length} / {maxPhotos} photos (recommended: 16:9 aspect ratio)
+          {photos.length} / {maxPhotos} photos (Landscape: 16:9 • Portrait: 195:422)
         </p>
         {canAddMore && (
           <Button type="button" variant="outline" size="sm" onClick={openOrientationDialog} disabled={disabled}>
@@ -398,7 +398,7 @@ export function MultiPhotoUpload({
               onClick={() => selectOrientation("portrait")}
               className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 hover:border-primary hover:bg-accent transition-colors">
               <div className="w-16 h-24 border-2 border-muted-foreground rounded flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">9:16</span>
+                <span className="text-xs text-muted-foreground">195:422</span>
               </div>
               <span className="font-medium">Portrait</span>
             </button>
