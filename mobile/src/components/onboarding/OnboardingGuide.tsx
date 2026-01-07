@@ -327,12 +327,12 @@ export function OnboardingGuide({
   }, [currentPlayer, currentIndex, autoStart, isCurrentStepImage])
 
   useEffect(() => {
-    const sub1 = player1.addListener("sourceLoad", (status: any) => {
+    const sub1 = player1.addListener("sourceLoad", (_status: any) => {
       // console.log("ONBOARD: player1 sourceLoad", status)
       setPlayer1Loading(false)
     })
 
-    const sub2 = player2.addListener("sourceLoad", (status: any) => {
+    const sub2 = player2.addListener("sourceLoad", (_status: any) => {
       // console.log("ONBOARD: player2 sourceLoad", status)
       setPlayer2Loading(false)
     })
@@ -570,6 +570,9 @@ export function OnboardingGuide({
     return renderComposedVideo()
   }
 
+  const wouldShowContinue = hasStarted && (showNextButton || showPoster)
+  const actuallyShowContinue = hasStarted && (showNextButton || showPoster || devMode)
+
   return (
     <>
       <Header
@@ -633,11 +636,13 @@ export function OnboardingGuide({
             </View>
           )}
 
-          {hasStarted && (showNextButton || showPoster) && (
+          {actuallyShowContinue && (
             <View className="flex flex-col gap-4">
               {!isLastStep ? (
                 <Button
                   flexContainer
+                  // highlight when the button would actually show:
+                  style={!wouldShowContinue && {backgroundColor: theme.colors.warning}}
                   tx="common:continue"
                   onPress={() => {
                     handleNext(true)

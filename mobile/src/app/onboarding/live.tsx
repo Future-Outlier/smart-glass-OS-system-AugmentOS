@@ -140,9 +140,9 @@ export default function MentraLiveOnboarding() {
   ]
 
   // reduce down to 2 steps if __DEV__
-  if (__DEV__) {
-    steps = steps.slice(0, 2)
-  }
+  // if (__DEV__) {
+  //   steps = steps.slice(0, 2)
+  // }
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>

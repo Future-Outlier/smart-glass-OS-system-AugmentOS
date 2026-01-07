@@ -163,10 +163,10 @@ function OriginalButton(props: ButtonProps) {
       themed($viewPresets[preset]),
       !!pressed && themed([$pressedViewPresets[preset], $pressedViewStyleOverride]),
       !!flex && {flex: 1},
-      (!!compact || !!compactIcon) && $compactViewStyle,
-      !!compactIcon && $compactIconStyle,
-      !!disabled && $disabledViewStyleOverride,
-      $viewStyleOverride,
+      (!!compact || !!compactIcon) && themed($compactViewStyle),
+      !!compactIcon && themed($compactIconStyle),
+      !!disabled && themed($disabledViewStyleOverride),
+      themed($viewStyleOverride),
     ]
   }
   /**
