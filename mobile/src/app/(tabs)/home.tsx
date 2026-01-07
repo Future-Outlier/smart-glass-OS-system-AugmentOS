@@ -68,8 +68,8 @@ export default function Homepage() {
         if (glassesWifiConnected) {
           // WiFi connected - go straight to OTA check screen
           showAlert(
-            translate("ota:updateAvailableWithDevice", {deviceName}),
-            translate("ota:updateReadyToInstallWithDevice", {version: latestVersionInfo.versionCode, deviceName}),
+            translate("ota:updateAvailable", {deviceName}),
+            translate("ota:updateReadyToInstall", {version: latestVersionInfo.versionCode, deviceName}),
             [
               {
                 text: translate("ota:updateLater"),
@@ -81,18 +81,14 @@ export default function Homepage() {
           )
         } else {
           // No WiFi - prompt to connect
-          showAlert(
-            translate("ota:updateAvailableWithDevice", {deviceName}),
-            translate("ota:updateConnectWifiWithDevice", {deviceName}),
-            [
-              {
-                text: translate("ota:updateLater"),
-                style: "cancel",
-                onPress: () => setDismissedVersion(latestVersionInfo.versionCode?.toString() ?? ""),
-              },
-              {text: translate("ota:setupWifi"), onPress: () => push("/wifi/scan")},
-            ],
-          )
+          showAlert(translate("ota:updateAvailable", {deviceName}), translate("ota:updateConnectWifi", {deviceName}), [
+            {
+              text: translate("ota:updateLater"),
+              style: "cancel",
+              onPress: () => setDismissedVersion(latestVersionInfo.versionCode?.toString() ?? ""),
+            },
+            {text: translate("ota:setupWifi"), onPress: () => push("/wifi/scan")},
+          ])
         }
       })
     }, [

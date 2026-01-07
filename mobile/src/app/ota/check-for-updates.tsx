@@ -2,20 +2,24 @@ import {useEffect, useState} from "react"
 import {View, ActivityIndicator} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
+import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {checkForOtaUpdate, VersionInfo} from "@/effects/OtaUpdateChecker"
+import {translate} from "@/i18n/translate"
 import {useGlassesStore} from "@/stores/glasses"
-import { ConnectionOverlay } from "@/components/glasses/ConnectionOverlay"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 type CheckState = "checking" | "update_available" | "no_update" | "error"
 
 export default function OtaCheckForUpdatesScreen() {
   const {theme} = useAppTheme()
   const {pushPrevious, push} = useNavigationHistory()
-  const otaVersionUrl = useGlassesStore(state => state.otaVersionUrl)
-  const currentBuildNumber = useGlassesStore(state => state.buildNumber)
+  const otaVersionUrl = useGlassesStore((state) => state.otaVersionUrl)
+  const currentBuildNumber = useGlassesStore((state) => state.buildNumber)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const deviceName = defaultWearable || "Glasses"
 
   const [checkState, setCheckState] = useState<CheckState>("checking")
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null)
@@ -111,7 +115,10 @@ export default function OtaCheckForUpdatesScreen() {
           <View className="flex-1 items-center justify-center px-6">
             <Icon name="world-download" size={64} color={theme.colors.primary} />
             <View className="h-6" />
-            <Text tx="ota:updateAvailable" className="font-semibold text-xl text-center" />
+            <Text
+              text={translate("ota:updateAvailable", {deviceName})}
+              className="font-semibold text-xl text-center"
+            />
             <View className="h-2" />
             <Text
               text={`Version ${versionInfo?.versionName || versionInfo?.versionCode || "Unknown"}`}
