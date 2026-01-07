@@ -21,6 +21,7 @@ import {asgCameraApi} from "./asgCameraApi"
 import {gallerySettingsService} from "./gallerySettingsService"
 import {gallerySyncNotifications} from "./gallerySyncNotifications"
 import {localStorageService} from "./localStorageService"
+import {checkFeaturePermissions, requestFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
 
 // Timing constants
 const TIMING = {
@@ -327,7 +328,18 @@ class GallerySyncService {
     // 1. Notification permission (for background sync progress)
     await gallerySyncNotifications.requestPermissions()
 
-    // 2. Camera roll permission (if auto-save is enabled)
+    // 2. Location permission (required to read WiFi SSID for hotspot verification)
+    const hasLocationPermission = await checkFeaturePermissions(PermissionFeatures.LOCATION)
+    if (!hasLocationPermission) {
+      console.log("[GallerySyncService] Requesting location permission upfront...")
+      const granted = await requestFeaturePermissions(PermissionFeatures.LOCATION)
+      if (!granted) {
+        console.log("[GallerySyncService] Location permission denied - WiFi SSID verification may fail")
+        // Don't block sync - we'll try anyway and fall back to IP-based verification if needed
+      }
+    }
+
+    // 3. Camera roll permission (if auto-save is enabled)
     const shouldAutoSave = await gallerySettingsService.getAutoSaveToCameraRoll()
     if (shouldAutoSave) {
       const hasPermission = await MediaLibraryPermissions.checkPermission()
