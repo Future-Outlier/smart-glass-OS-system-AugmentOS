@@ -636,8 +636,7 @@ class MentraNex : SGCManager() {
                 val statusBool = status == BluetoothGatt.GATT_SUCCESS
                 mainTaskHandler?.obtainMessage(
                     MAIN_TASK_HANDLER_CODE_DISCOVER_SERVICES,
-                    if (statusBool) 1 else 0,
-                    0
+                    statusBool
                 )?.sendToTarget()
             }
 
@@ -1298,6 +1297,7 @@ class MentraNex : SGCManager() {
             Bridge.log("decodeProtobufs glassesToPhone: $glassesToPhone")
             Bridge.log("decodeProtobufs glassesToPhone payloadCase: $payloadCase")
             
+            Bridge.sendBleCommandReceivedEvent(payloadCase, packetHex, System.currentTimeMillis())
             // if (isDebugMode) {
             //     EventBus.getDefault().post(BleCommandReceiver(payloadCase, packetHex))
             // }
@@ -1414,6 +1414,7 @@ class MentraNex : SGCManager() {
             Bridge.log("decodeProtobufsByWrite phoneToGlasses: $phoneToGlasses")
             Bridge.log("decodeProtobufsByWrite phoneToGlasses payloadCase: ${phoneToGlasses.payloadCase}")
             val payloadCase = phoneToGlasses.payloadCase.toString()
+            Bridge.sendBleCommandSentEvent(payloadCase, packetHex, System.currentTimeMillis())
             // if (isDebugMode) {
             //     EventBus.getDefault().post(BleCommandSender(payloadCase, packetHex))
             // }
@@ -1447,6 +1448,7 @@ class MentraNex : SGCManager() {
             
             // Notify mobile app about pong sent
             lastHeartbeatSentTime = System.currentTimeMillis()
+            Bridge.sendHeartbeatSentEvent(lastHeartbeatSentTime)
             // EventBus.getDefault().post(HeartbeatSentEvent(timestamp))
         } else {
             Log.e(TAG,"Failed to construct pong response packet")
@@ -1460,6 +1462,7 @@ class MentraNex : SGCManager() {
         heartbeatCount++
         
         // Notify mobile app about heartbeat received
+        Bridge.sendHeartbeatReceivedEvent(lastHeartbeatReceivedTime)
         // EventBus.getDefault().post(HeartbeatReceivedEvent(lastHeartbeatReceivedTime))
     }
 
