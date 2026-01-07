@@ -206,7 +206,8 @@ const en = {
     noNetworksFound: "No networks found",
     enterNetworkManually: "Enter network manually",
     addNetwork: "Add your Wi-Fi network",
-    addNetworkDescription: "Add a network to import media and install device updates automatically while your device is charging.",
+    addNetworkDescription:
+      "Add a network to import media and install device updates automatically while your device is charging.",
     rememberPassword: "Remember password",
     rememberPasswordDescription: "Save this password for future connections.",
     wifiPassword: "Wi-Fi password",
@@ -217,7 +218,8 @@ const en = {
     wifi: "Wi-Fi",
     connectionFailed: "Connection failed",
     networkAdded: "Network added",
-    networkAddedDescription: "Connected devices will perform automatic updates and media imports while charging through the Mentra app. Automatic updates can be disabled in Device settings at any time.",
+    networkAddedDescription:
+      "Connected devices will perform automatic updates and media imports while charging through the Mentra app. Automatic updates can be disabled in Device settings at any time.",
     failedDescription: "Make sure the password was entered correctly",
     connectingDescription: "This may take up to 20 seconds",
     connectingToNetwork: "Connecting to {{network}}...",
@@ -227,8 +229,12 @@ const en = {
     checkingForUpdatesMessage:
       "Connected devices will perform automatic updates. Automatic updates can be disabled in Device Settings",
     updateAvailable: "Update Available",
+    updateReadyToInstall: "Version {{version}} is ready to install.",
+    updateConnectWifi: "Connect your glasses to WiFi to install the update.",
     updateDescription: "A new update is available for your glasses. We recommend updating now for the best experience.",
     updateNow: "Update Now",
+    install: "Install",
+    setupWifi: "Setup WiFi",
     updateLater: "Later",
     upToDate: "Up to Date",
     noUpdatesAvailable: "Your glasses are running the latest version.",
