@@ -591,7 +591,7 @@ extension MentraLive: CBCentralManagerDelegate {
         // Audio Pairing: Setup Bluetooth audio after BLE connection
         if let deviceName = peripheral.name {
             Bridge.log("BLE connection established, setting up audio...")
-            setupAudioPairing(deviceName: deviceName)
+            setupAudioPairing(dName: deviceName)
         }
 
         // Discover services
@@ -613,8 +613,7 @@ extension MentraLive: CBCentralManagerDelegate {
         monitor.stopMonitoring()
 
         // Reset audio pairing flags
-        glassesReadyReceived = false
-        audioConnected = false
+        btcConnected = false
 
         connectedPeripheral = nil
         ready = false
@@ -1018,10 +1017,6 @@ class MentraLive: NSObject, SGCManager {
             }
         }
     }
-
-    // Audio Pairing: Track readiness separately for BLE and audio
-    private var glassesReadyReceived = false
-    private var audioConnected = false
 
     // Data Properties
     @Published var batteryLevel: Int = -1
@@ -1469,6 +1464,8 @@ class MentraLive: NSObject, SGCManager {
             Bridge.log("LIVE: (Already discovered) peripheral: \(peripheral.name ?? "Unknown")")
             emitDiscoveredDevice(peripheral.name!)
         }
+
+        start
 
         //    // Set scan timeout
         //    DispatchQueue.main.asyncAfter(deadline: .now() + 60.0) { [weak self] in
@@ -2105,7 +2102,6 @@ class MentraLive: NSObject, SGCManager {
     private func handleGlassesReady() {
         Bridge.log("LIVE: 🎉 Received glasses_ready message - SOC is booted and ready!")
 
-        // glassesReadyReceived = true
         stopReadinessCheckLoop()
 
         // Perform SOC-dependent initialization
@@ -2128,16 +2124,7 @@ class MentraLive: NSObject, SGCManager {
 
         ready = true
         connectionState = ConnTypes.CONNECTED
-
-        // Audio Pairing: Only mark as fully ready if audio is also connected
-        // This prevents the app from thinking pairing is complete before audio is ready
-        // if audioConnected {
-        //     Bridge.log("Audio: Both glasses_ready and audio connected - marking as fully ready")
-        //     ready = true
-        //     connectionState = ConnTypes.CONNECTED
-        // } else {
-        //     Bridge.log("Audio: Waiting for audio connection before marking as fully ready")
-        // }
+        // maybe add audio monitoring here?
     }
 
     private func handleWifiScanResult(_ json: [String: Any]) {
@@ -3268,7 +3255,15 @@ class MentraLive: NSObject, SGCManager {
      * Attempts to automatically activate Mentra Live as the system audio device
      * If not paired yet, prompts user to pair in Settings
      */
-    private func setupAudioPairing(deviceName: String) {
+    private func setupAudioPairing(dName: String) {
+        var deviceName = dName
+        if deviceName.isEmpty {
+            deviceName = CoreManager.shared.deviceName
+        }
+        if deviceName.isEmpty {
+            deviceName = "MENTRA_LIVE"
+        }
+        
         let monitor = AudioSessionMonitor.getInstance()
 
         // Don't configure audio session - PhoneMic.swift handles that
@@ -3304,31 +3299,12 @@ class MentraLive: NSObject, SGCManager {
         if isPaired {
             // Device is paired! Don't activate it - let PhoneMic.swift activate when recording starts
             Bridge.log("Audio: ✅ Mentra Live is paired (preserving A2DP for music)")
-            audioConnected = true
-
-            // // If glasses_ready was already received, now we're fully ready
-            // if glassesReadyReceived {
-            //     Bridge.log("Audio: Both audio and glasses_ready confirmed - marking as fully ready")
-            //     ready = true
-            //     connectionState = ConnTypes.CONNECTED
-
-            //     Bridge.sendTypedMessage(
-            //         "audio_connected",
-            //         body: [
-            //             "device_name": deviceName,
-            //         ]
-            //     )
-            // }
-
+            btcConnected = true
+            CoreManager.shared.getStatus()
         } else {
+            btcConnected = false
+            CoreManager.shared.getStatus()
             // Not found in availableInputs - not paired yet
-            Bridge.log("Audio: Device not paired, prompting user to pair")
-            Bridge.sendTypedMessage(
-                "audio_pairing_needed",
-                body: [
-                    "device_name": deviceName,
-                ]
-            )
 
             // Start monitoring for when user pairs manually
             monitor.startMonitoring(devicePattern: audioDevicePattern) {
@@ -3338,28 +3314,12 @@ class MentraLive: NSObject, SGCManager {
                 if connected {
                     Bridge.log("Audio: ✅ Device paired and connected")
                     // Don't activate - let PhoneMic.swift handle that when recording starts
-
-                    self.audioConnected = true
-
-                    // If glasses_ready was already received, now we're fully ready
-                    if self.glassesReadyReceived {
-                        Bridge.log(
-                            "LIVE: Audio: Both audio and glasses_ready confirmed - marking as fully ready"
-                        )
-                        self.ready = true
-                        self.connectionState = ConnTypes.CONNECTED
-                    }
-
-                    Bridge.sendTypedMessage(
-                        "audio_connected",
-                        body: [
-                            "device_name": deviceName ?? "Mentra Live",
-                        ]
-                    )
+                    self.btcConnected = true
+                    CoreManager.shared.getStatus()
                 } else {
                     Bridge.log("Audio: Device disconnected")
-                    self.audioConnected = false
-                    Bridge.sendTypedMessage("audio_disconnected", body: [:])
+                    self.btcConnected = false
+                    CoreManager.shared.getStatus()
                 }
             }
         }

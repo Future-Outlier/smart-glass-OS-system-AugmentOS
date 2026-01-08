@@ -1,46 +1,31 @@
 import {useRoute} from "@react-navigation/native"
-import CoreModule from "core"
-import {useEffect, useRef, useState} from "react"
-import {BackHandler, Platform, ScrollView, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
-
-import {Button, Icon, Text} from "@/components/ignite"
-import {Header} from "@/components/ignite/Header"
-import {PillButton} from "@/components/ignite/PillButton"
-import {Screen} from "@/components/ignite/Screen"
-import GlassesPairingLoader from "@/components/misc/GlassesPairingLoader"
-import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
-import {AudioPairingPrompt} from "@/components/pairing/AudioPairingPrompt"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/contexts/ThemeContext"
-import {useGlassesStore} from "@/stores/glasses"
-import {$styles, ThemedStyle} from "@/theme"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {useEffect, useState} from "react"
+import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {translate} from "@/i18n"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useGlassesStore} from "@/stores/glasses"
+import {Text} from "@/components/ignite"
+import {View} from "react-native"
+import showAlert from "@/utils/AlertUtils"
+import CoreModule from "core"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
 
 export default function BtClassicPairingScreen() {
   const {pushPrevious} = useNavigationHistory()
-  const route = useRoute()
-  const {glassesModelName, deviceName} = route.params as {glassesModelName: string; deviceName?: string}
-  const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
-  const [pairingInProgress, setPairingInProgress] = useState(true)
   const btcConnected = useGlassesStore((state) => state.btcConnected)
 
   // useEffect(() => {
   //   if (Platform.OS !== "android") return
-
   //   const onBackPress = () => {
   //     goBack()
   //     return true
   //   }
-
   //   const timeout = setTimeout(() => {
   //     const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress)
   //     backHandlerRef.current = backHandler
   //   }, 100)
-
   //   return () => {
   //     clearTimeout(timeout)
   //     if (backHandlerRef.current) {
@@ -170,11 +155,21 @@ export default function BtClassicPairingScreen() {
   //   )
   // }
 
+  focusEffectPreventBack()
+
+  const handleSuccess = () => {
+    // showAlert(translate("common:success"), translate("pairing:btClassicConnected"), [
+    //   {text: translate("common:ok"), onPress: () => pushPrevious()},
+    // ])
+    // we should have a device name saved in the core:
+    CoreModule.connectByName("")
+    pushPrevious()
+  }
+
   useEffect(() => {
-    console.log("BT_CLASSIC: useEffect()", btcConnected)
+    console.log("BTCLASSIC: useEffect()", btcConnected)
     if (btcConnected) {
-      // replace("/pairing/success", {glassesModelName: glassesModelName})
-      pushPrevious()
+      handleSuccess()
     }
   }, [btcConnected])
 
@@ -216,7 +211,7 @@ export default function BtClassicPairingScreen() {
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-      <OnboardingGuide
+      {/* <OnboardingGuide
         steps={steps}
         autoStart={false}
         mainTitle={translate("onboarding:liveWelcomeTitle")}
@@ -234,51 +229,11 @@ export default function BtClassicPairingScreen() {
         // endButtonText={
         //   onboardingOsCompleted ? translate("onboarding:liveEndTitle") : translate("onboarding:learnAboutOs")
         // }
-      />
+      /> */}
+      <View className="flex-1 justify-center items-center">
+        <Text>BT Classic Pairing</Text>
+        <Text>Waiting for BT Classic to connect...</Text>
+      </View>
     </Screen>
   )
 }
-
-const $pillButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginRight: spacing.s4,
-})
-
-const $scrollView: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-})
-
-const $contentContainer: ThemedStyle<ViewStyle> = () => ({
-  alignItems: "center",
-  justifyContent: "flex-start",
-})
-
-const $helpButton: ThemedStyle<ViewStyle> = ({isDark}) => ({
-  alignItems: "center",
-  borderRadius: 8,
-  flexDirection: "row",
-  justifyContent: "center",
-  marginBottom: 30,
-  marginTop: 20,
-  paddingHorizontal: 20,
-  paddingVertical: 12,
-  backgroundColor: isDark ? "#3b82f6" : "#007BFF",
-})
-
-const $helpButtonText: ThemedStyle<TextStyle> = () => ({
-  color: "#FFFFFF",
-  fontSize: 16,
-})
-
-const $pairingContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  paddingBottom: spacing.s6,
-})
-
-const $centerWrapper: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-  justifyContent: "center",
-})
-
-const $helpButtonBottom: ThemedStyle<ViewStyle> = () => ({
-  width: "100%",
-})

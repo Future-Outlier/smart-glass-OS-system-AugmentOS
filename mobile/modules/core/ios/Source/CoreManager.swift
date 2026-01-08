@@ -1101,6 +1101,12 @@ struct ViewState {
 
     func connectByName(_ dName: String) {
         Bridge.log("MAN: Connecting to wearable: \(dName)")
+        var name = dName
+        
+        // use stored device name if available:
+        if dName.isEmpty && !deviceName.isEmpty {
+            name = deviceName
+        }
 
         if pendingWearable.isEmpty, defaultWearable.isEmpty {
             Bridge.log("MAN: No pending or default wearable, returning")
@@ -1116,7 +1122,7 @@ struct ViewState {
             disconnect()
             try? await Task.sleep(nanoseconds: 100 * 1_000_000)  // 100ms
             self.isSearching = true
-            self.deviceName = dName
+            self.deviceName = name
 
             initSGC(self.pendingWearable)
             sgc?.connectById(self.deviceName)
@@ -1253,8 +1259,6 @@ struct ViewState {
             let coreInfo: [String: Any] = [
                 // "is_searching": self.isSearching && !self.defaultWearable.isEmpty,
                 "is_searching": isSearching,
-                // only on if recording from glasses:
-                "core_token": coreToken,
             ]
 
             // hardcoded list of apps:
@@ -1278,6 +1282,14 @@ struct ViewState {
             Bridge.sendStatus(statusObj)
         }
     }
+
+    // func getGlassesSettings() -> [String: Any] {
+    //     // TODO:
+    // }
+
+    // func getGlassesInfo() -> [String: Any] {
+    //     // TODO:
+    // }
 
     func updateSettings(_ settings: [String: Any]) {
         Bridge.log("MAN: Received update settings: \(settings)")

@@ -6,11 +6,11 @@ import {MentraLogo} from "@/components/brands/MentraLogo"
 import {VuzixLogo} from "@/components/brands/VuzixLogo"
 import {Screen, Text, Button} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import {useGlassesStore, waitForGlassesState} from "@/stores/glasses"
+import {waitForGlassesState} from "@/stores/glasses"
 import {getGlassesImage} from "@/utils/getGlassesImage"
 
 export default function PairingSuccessScreen() {
@@ -19,6 +19,8 @@ export default function PairingSuccessScreen() {
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const {replaceAll, push} = useNavigationHistory()
   const [onboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
+  
+  focusEffectPreventBack()
 
   // Get manufacturer logo component
   const getManufacturerLogo = (modelName: string) => {
@@ -43,7 +45,7 @@ export default function PairingSuccessScreen() {
       const order = ["/pairing/btclassic", "/wifi/scan", "/ota/check-for-updates", "/onboarding/live", "/onboarding/os"]
 
       let btcConnected = await waitForGlassesState("btcConnected", (value) => value === true, 1000)
-      // console.log("PAIR_SUCCESS: btcConnected", btcConnected)
+      console.log("PAIR_SUCCESS: btcConnected", btcConnected)
       
       if (!btcConnected) {
         stack.push("/pairing/btclassic")

@@ -195,6 +195,15 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     router.navigate({pathname: path as any, params: params as any})
   }
 
+  const pushList = (list: string[]) => {
+    console.info("NAV: pushList()", list)
+    // list.forEach((path) => {
+    //   push(path)
+    // })
+
+    
+  }
+
   const clearHistoryAndGoHome = () => {
     console.info("NAV: clearHistoryAndGoHome()")
     clearHistory()

@@ -108,6 +108,7 @@ const en = {
     success: "Success",
     glassesConnected: "Your glasses are connected.",
     needHelpPairing: "Need help pairing?",
+    btClassicConnected: "Glasses audio connected successfully",
   },
   pairingGuide: {
     mentraLivePreorder: "Get Mentra Live and experience computer vision on your smart glasses.",

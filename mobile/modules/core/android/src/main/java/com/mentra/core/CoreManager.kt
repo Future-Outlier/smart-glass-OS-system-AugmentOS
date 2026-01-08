@@ -1182,6 +1182,13 @@ class CoreManager {
     fun connectByName(dName: String) {
         Bridge.log("MAN: Connecting to wearable: $dName")
 
+        var name = dName
+        
+        // use stored device name if available:
+        if (dName.isEmpty() && !deviceName.isEmpty()) {
+            name = deviceName
+        }
+
         if (pendingWearable.isEmpty() && defaultWearable.isEmpty()) {
             Bridge.log("MAN: No pending or default wearable, returning")
             return
@@ -1195,7 +1202,7 @@ class CoreManager {
         disconnect()
         Thread.sleep(100)
         isSearching = true
-        deviceName = dName
+        deviceName = name
 
         initSGC(pendingWearable)
         sgc?.connectById(deviceName)
@@ -1327,10 +1334,7 @@ class CoreManager {
 
         val coreInfo =
                 mapOf(
-                        "default_wearable" to defaultWearable,
-                        "preferred_mic" to preferredMic,
                         "is_searching" to isSearching,
-                        "core_token" to coreToken,
                 )
 
         val apps = emptyList<Any>()
