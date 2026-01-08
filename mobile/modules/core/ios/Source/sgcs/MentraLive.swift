@@ -608,10 +608,6 @@ extension MentraLive: CBCentralManagerDelegate {
 
         isConnecting = false
 
-        // Audio Pairing: Stop monitoring when disconnecting
-        let monitor = AudioSessionMonitor.getInstance()
-        monitor.stopMonitoring()
-
         // Reset audio pairing flags
         // btcConnected = false
 
@@ -1471,7 +1467,7 @@ class MentraLive: NSObject, SGCManager {
         // }
 
         // setupAudioPairing(deviceName: dName)
-        
+
         //    // Set scan timeout
         //    DispatchQueue.main.asyncAfter(deadline: .now() + 60.0) { [weak self] in
         //      if self?.isScanning == true {
@@ -3236,10 +3232,6 @@ class MentraLive: NSObject, SGCManager {
 
         // Stop all timers
         stopAllTimers()
-
-        // Audio Pairing: Stop monitoring when destroying
-        let monitor = AudioSessionMonitor.getInstance()
-        monitor.stopMonitoring()
 
         // Disconnect BLE
         if let peripheral = connectedPeripheral {

@@ -178,9 +178,7 @@ class AudioSessionMonitor {
             Bridge.log("AudioMonitor: New device available, attempting to activate '\(pattern)'")
 
             // Add small delay to let iOS populate availableInputs
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                guard let self = self else { return }
-
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 if AudioSessionMonitor.isDevicePaired(devicePattern: pattern) {
                     let session = AVAudioSession.sharedInstance()
                     let deviceName = session.availableInputs?.first(where: {
@@ -214,7 +212,7 @@ class AudioSessionMonitor {
         // Just wait a bit for iOS to update availableInputs after returning from background
         // iOS needs time to populate availableInputs after app foreground
         // Use retry with progressive delays: 100ms, 400ms, 500ms = 1s total
-        attemptActivateDevice(pattern: pattern, attempt: 0, maxAttempts: 3)
+        AudioSessionMonitor.attemptActivateDevice(pattern: pattern, attempt: 0, maxAttempts: 3)
     }
 
     /// Try to detect if the audio device is paired with retry logic
@@ -230,9 +228,7 @@ class AudioSessionMonitor {
 
         let delay = attempt < delays.count ? delays[attempt] : 0.5
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self = self else { return }
-
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             Bridge.log("AudioMonitor: Attempt \(attempt + 1)/\(maxAttempts) to detect '\(pattern)'...")
 
             if AudioSessionMonitor.isDevicePaired(devicePattern: pattern) {
