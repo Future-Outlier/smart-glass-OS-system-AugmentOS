@@ -41,7 +41,7 @@ protocol SGCManager {
     var hotspotSsid: String { get }
     var hotspotPassword: String { get }
     var hotspotGatewayIp: String { get }
-    var btcConnected: Bool { get }
+    // var btcConnected: Bool { get }
 
     // MARK: - Audio Control
 

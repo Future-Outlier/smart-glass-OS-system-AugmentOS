@@ -313,7 +313,7 @@ class G1: NSObject, SGCManager {
 
     var hotspotGatewayIp: String = ""
     
-    var btcConnected: Bool = false
+    // var btcConnected: Bool = false
 
     func requestPhoto(
         _: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?,

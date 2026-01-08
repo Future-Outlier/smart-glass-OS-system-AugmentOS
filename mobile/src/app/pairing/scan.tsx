@@ -19,6 +19,7 @@ import {MOCK_CONNECTION} from "@/utils/Constants"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {getGlassesOpenImage} from "@/utils/getGlassesImage"
+import { SETTINGS, useSetting } from "@/stores/settings"
 
 class SearchResultDevice {
   deviceMode: string
@@ -38,9 +39,9 @@ export default function SelectGlassesBluetoothScreen() {
   const {goBack, replace, clearHistoryAndGoHome, push, pushUnder} = useNavigationHistory()
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   const searchResultsRef = useRef<SearchResultDevice[]>(searchResults)
-  const glassesConnected = useGlassesStore((state) => state.connected)
   const btcConnected = useGlassesStore((state) => state.btcConnected)
   const backHandlerRef = useRef<any>(null)
+  const [_deviceName, setDeviceName] = useSetting(SETTINGS.device_name.key)
 
   useEffect(() => {
     searchResultsRef.current = searchResults
@@ -205,7 +206,8 @@ export default function SelectGlassesBluetoothScreen() {
       return
     }
 
-    CoreModule.updateSettings({"device_name": deviceName})
+    // CoreModule.updateSettings({"device_name": deviceName})
+    setDeviceName(deviceName)
     // pair bt classic first:
     push("/pairing/btclassic")
     pushUnder("/pairing/loading", {glassesModelName: glassesModelName, deviceName: deviceName})

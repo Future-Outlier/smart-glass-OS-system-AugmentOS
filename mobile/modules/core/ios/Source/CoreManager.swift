@@ -36,6 +36,74 @@ struct ViewState {
     var sendStateWorkItem: DispatchWorkItem?
     let sendStateQueue = DispatchQueue(label: "sendStateQueue", qos: .userInitiated)
 
+    /**
+     * Setup Bluetooth audio pairing after BLE connection is established
+     * Attempts to automatically activate Mentra Live as the system audio device
+     * If not paired yet, prompts user to pair in Settings
+     */
+    private func setupAudioPairing(deviceName: String) {
+
+        let monitor = AudioSessionMonitor.getInstance()
+
+        // Don't configure audio session - PhoneMic.swift handles that
+        // Just check if audio session supports Bluetooth (informational only)
+        if !monitor.isAudioSessionConfigured() {
+            Bridge.log(
+                "Audio: Audio session not configured for Bluetooth yet - mic system will configure it when recording"
+            )
+        }
+
+        // Extract device ID pattern to match the specific device
+        // BLE name: "MENTRA_LIVE_BLE_ABC123"
+        // BT Classic could be: "MENTRA_LIVE_BLE_ABC123" or "MENTRA_LIVE_BT_ABC123"
+        // We need to match on the unique device ID part (e.g., "ABC123")
+        let audioDevicePattern: String
+        if let idRange = deviceName.range(of: "_BLE_", options: .caseInsensitive) {
+            // Extract the ID after "_BLE_" (e.g., "ABC123")
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
+        } else if let idRange = deviceName.range(of: "_BT_", options: .caseInsensitive) {
+            // Extract the ID after "_BT_"
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
+        } else {
+            // Fallback: use the full device name
+            audioDevicePattern = deviceName
+            Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
+        }
+
+        // Check if device is paired (don't activate to preserve A2DP music playback)
+        let isPaired = monitor.isDevicePaired(devicePattern: audioDevicePattern)
+
+        if isPaired {
+            // Device is paired! Don't activate it - let PhoneMic.swift activate when recording starts
+            Bridge.log("Audio: ✅ Mentra Live is paired (preserving A2DP for music)")
+            btcConnected = true
+            getStatus()
+        } else {
+            btcConnected = false
+            getStatus()
+            // Not found in availableInputs - not paired yet
+
+            // Start monitoring for when user pairs manually
+            monitor.startMonitoring(devicePattern: audioDevicePattern) {
+                [weak self] (connected: Bool, deviceName: String?) in
+                guard let self = self else { return }
+
+                if connected {
+                    Bridge.log("Audio: ✅ Device paired and connected")
+                    // Don't activate - let PhoneMic.swift handle that when recording starts
+                    self.btcConnected = true
+                    CoreManager.shared.getStatus()
+                } else {
+                    Bridge.log("Audio: Device disconnected")
+                    self.btcConnected = false
+                    CoreManager.shared.getStatus()
+                }
+            }
+        }
+    }
+
     // MARK: - End Unique
 
     // MARK: - Properties
@@ -50,10 +118,11 @@ struct ViewState {
     private var lastStatusObj: [String: Any] = [:]
     private var defaultWearable: String = ""
     private var pendingWearable: String = ""
-    private var deviceName: String = ""
+    public var deviceName: String = ""
     var deviceAddress: String = ""
     private var screenDisabled: Bool = false
     private var isSearching: Bool = false
+    private var btcConnected: Bool = false
     private var systemMicUnavailable: Bool = false
     var micRanking: [String] = MicMap.map["auto"]!
 
@@ -83,7 +152,7 @@ struct ViewState {
     enum AudioOutputFormat { case lc3, pcm }
     // Persistent LC3 converter for encoding/decoding
     private var lc3Converter: PcmConverter?
-    private let LC3_FRAME_SIZE = 20 // bytes per LC3 frame (canonical config)
+    private let LC3_FRAME_SIZE = 20  // bytes per LC3 frame (canonical config)
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = .lc3
 
@@ -202,7 +271,7 @@ struct ViewState {
         // go through the buffer, popping from the first element in the array (FIFO):
         while !vadBuffer.isEmpty {
             let chunk = vadBuffer.removeFirst()
-            sendMicData(chunk) // Uses our encoder, not Bridge directly
+            sendMicData(chunk)  // Uses our encoder, not Bridge directly
         }
     }
 
@@ -751,11 +820,127 @@ struct ViewState {
         return result
     }
 
+    /// Check if a Bluetooth audio device matching the pattern is currently the active audio route
+    /// Returns true if device is actively routing audio
+    func isAudioDeviceConnected(devicePattern: String) -> Bool {
+        let session = AVAudioSession.sharedInstance()
+        let outputs = session.currentRoute.outputs
+
+        Bridge.log("AudioMonitor: Checking active route, output count: \(outputs.count)")
+        for output in outputs {
+            Bridge.log("AudioMonitor:   - \(output.portName) (type: \(output.portType.rawValue))")
+            if output.portType == .bluetoothHFP || output.portType == .bluetoothA2DP {
+                if output.portName.localizedCaseInsensitiveContains(devicePattern) {
+                    Bridge.log("AudioMonitor: ✅ Found active audio device: \(output.portName)")
+                    return true
+                }
+            }
+        }
+
+        Bridge.log("AudioMonitor: No active audio device matching '\(devicePattern)'")
+        return false
+    }
+
+    /// Check if a Bluetooth device matching the pattern is paired (appears in availableInputs)
+    /// Returns true if device is found (paired), WITHOUT activating it
+    /// This avoids switching A2DP music playback to HFP microphone mode
+    func isDevicePaired(devicePattern: String) -> Bool {
+        let session = AVAudioSession.sharedInstance()
+
+        // Check if already active (using A2DP for music or HFP for calls)
+        if isAudioDeviceConnected(devicePattern: devicePattern) {
+            Bridge.log("MAN: Device '\(devicePattern)' already active")
+            return true
+        }
+
+        // Try to find in availableInputs (includes paired devices)
+        guard let availableInputs = session.availableInputs else {
+            Bridge.log("MAN: ❌ availableInputs is nil")
+            return false
+        }
+
+        Bridge.log("MAN: availableInputs count: \(availableInputs.count)")
+        for input in availableInputs {
+            Bridge.log("MAN:   - \(input.portName) (type: \(input.portType.rawValue))")
+        }
+
+        let bluetoothInput = availableInputs.first { input in
+            input.portType == .bluetoothHFP
+                && input.portName.localizedCaseInsensitiveContains(devicePattern)
+        }
+
+        if let btInput = bluetoothInput {
+            Bridge.log(
+                "MAN: ✅ Found paired device '\(btInput.portName)' (not activating to preserve A2DP)"
+            )
+            return true
+        } else {
+            Bridge.log(
+                "MAN: ❌ Bluetooth HFP device '\(devicePattern)' not found in availableInputs")
+            return false
+        }
+    }
+
     func onRouteChange(
         reason: AVAudioSession.RouteChangeReason, availableInputs: [AVAudioSessionPortDescription]
     ) {
         Bridge.log("MAN: onRouteChange: reason: \(reason)")
         Bridge.log("MAN: onRouteChange: inputs: \(availableInputs)")
+
+        // check if our deviceName is connected:
+        // (return if deviceName is empty):
+        if deviceName.isEmpty {
+            Bridge.log("MAN: Device name is empty, returning")
+            return
+        }
+
+        let audioDevicePattern: String
+        if let idRange = deviceName.range(of: "_BLE_", options: .caseInsensitive) {
+            // Extract the ID after "_BLE_" (e.g., "ABC123")
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
+        } else if let idRange = deviceName.range(of: "_BT_", options: .caseInsensitive) {
+            // Extract the ID after "_BT_"
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
+        } else {
+            // Fallback: use the full device name
+            audioDevicePattern = deviceName
+            Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
+        }
+
+        switch reason {
+        case .newDeviceAvailable:
+            // When a new device becomes available, try to set it as preferred
+            // This handles the case where user pairs in Settings and returns to app
+            Bridge.log("MAN: New device available, attempting to activate '\(deviceName)'")
+
+            // Add small delay to let iOS populate availableInputs
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                guard let self = self else { return }
+
+                if self.isDevicePaired(devicePattern: audioDevicePattern) {
+                    let session = AVAudioSession.sharedInstance()
+                    let deviceName = session.availableInputs?.first(where: {
+                        $0.portName.localizedCaseInsensitiveContains(audioDevicePattern)
+                    })?.portName
+                    Bridge.log("MAN: ✅ Successfully detected newly paired device '\(deviceName)'")
+                    self.btcConnected = true
+                } else {
+                    Bridge.log("MAN: New device available but not matching '\(deviceName)'")
+                }
+            }
+
+        case .oldDeviceUnavailable:
+            // Check if our device disconnected
+            if !isAudioDeviceConnected(devicePattern: audioDevicePattern) {
+                Bridge.log("MAN: Device '\(deviceName)' disconnected")
+                self.btcConnected = false
+            }
+        default:
+            break
+        }
+
         updateMicState()
     }
 
@@ -1102,7 +1287,7 @@ struct ViewState {
     func connectByName(_ dName: String) {
         Bridge.log("MAN: Connecting to wearable: \(dName)")
         var name = dName
-        
+
         // use stored device name if available:
         if dName.isEmpty && !deviceName.isEmpty {
             name = deviceName
@@ -1206,6 +1391,7 @@ struct ViewState {
                 "connected": glassesConnected,
                 "micEnabled": sgc?.micEnabled ?? false,
                 "connectionState": sgc?.connectionState ?? "disconnected",
+                "btcConnected": btcConnected,
             ]
 
             if sgc is G1 {
@@ -1227,7 +1413,6 @@ struct ViewState {
                 glassesInfo["hotspotSsid"] = sgc?.hotspotSsid ?? ""
                 glassesInfo["hotspotPassword"] = sgc?.hotspotPassword ?? ""
                 glassesInfo["hotspotGatewayIp"] = sgc?.hotspotGatewayIp ?? ""
-                glassesInfo["btcConnected"] = sgc?.btcConnected ?? false
             }
 
             // Add Bluetooth device name if available
@@ -1258,7 +1443,7 @@ struct ViewState {
             // TODO: config: remove
             let coreInfo: [String: Any] = [
                 // "is_searching": self.isSearching && !self.defaultWearable.isEmpty,
-                "is_searching": isSearching,
+                "is_searching": isSearching
             ]
 
             // hardcoded list of apps:

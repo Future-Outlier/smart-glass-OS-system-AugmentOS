@@ -60,7 +60,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     var hotspotGatewayIp: String = ""
 
-    var btcConnected: Bool = false
+    // var btcConnected: Bool = false
 
     func sendButtonPhotoSettings() {}
 

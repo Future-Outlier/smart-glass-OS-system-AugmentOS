@@ -1,20 +1,23 @@
-import {useRoute} from "@react-navigation/native"
 import {useEffect, useState} from "react"
 import {Screen} from "@/components/ignite"
-import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
+import {OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {translate} from "@/i18n"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
-import {Text} from "@/components/ignite"
-import {View} from "react-native"
 import showAlert from "@/utils/AlertUtils"
 import CoreModule from "core"
+import {AudioPairingPrompt} from "@/components/pairing/AudioPairingPrompt"
+import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
 
 export default function BtClassicPairingScreen() {
   const {pushPrevious} = useNavigationHistory()
   const btcConnected = useGlassesStore((state) => state.btcConnected)
+  const [deviceName] = useSetting(SETTINGS.device_name.key)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
 
   // useEffect(() => {
   //   if (Platform.OS !== "android") return
@@ -159,9 +162,16 @@ export default function BtClassicPairingScreen() {
 
   const handleSuccess = () => {
     // showAlert(translate("common:success"), translate("pairing:btClassicConnected"), [
-    //   {text: translate("common:ok"), onPress: () => pushPrevious()},
+    //   {
+    //     text: translate("common:ok"),
+    //     onPress: () => {
+    //       CoreModule.connectByName(deviceName)
+    //       pushPrevious()
+    //     },
+    //   },
     // ])
     // we should have a device name saved in the core:
+
     CoreModule.connectByName("")
     pushPrevious()
   }
@@ -230,10 +240,22 @@ export default function BtClassicPairingScreen() {
         //   onboardingOsCompleted ? translate("onboarding:liveEndTitle") : translate("onboarding:learnAboutOs")
         // }
       /> */}
-      <View className="flex-1 justify-center items-center">
+      <AudioPairingPrompt
+        deviceName={deviceName}
+        // onSkip={() => {
+        //   // Navigate first - don't update state which could cause race conditions
+        //   // replace("/pairing/success", {glassesModelName: glassesModelName})
+        // }}
+      />
+      <GlassesTroubleshootingModal
+        isVisible={showTroubleshootingModal}
+        onClose={() => setShowTroubleshootingModal(false)}
+        glassesModelName={defaultWearable}
+      />
+      {/* <View className="flex-1 justify-center items-center">
         <Text>BT Classic Pairing</Text>
         <Text>Waiting for BT Classic to connect...</Text>
-      </View>
+      </View> */}
     </Screen>
   )
 }

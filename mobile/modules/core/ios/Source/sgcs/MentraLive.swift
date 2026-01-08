@@ -591,7 +591,7 @@ extension MentraLive: CBCentralManagerDelegate {
         // Audio Pairing: Setup Bluetooth audio after BLE connection
         if let deviceName = peripheral.name {
             Bridge.log("BLE connection established, setting up audio...")
-            setupAudioPairing(dName: deviceName)
+            // setupAudioPairing(deviceName: deviceName)
         }
 
         // Discover services
@@ -613,7 +613,7 @@ extension MentraLive: CBCentralManagerDelegate {
         monitor.stopMonitoring()
 
         // Reset audio pairing flags
-        btcConnected = false
+        // btcConnected = false
 
         connectedPeripheral = nil
         ready = false
@@ -1465,8 +1465,13 @@ class MentraLive: NSObject, SGCManager {
             emitDiscoveredDevice(peripheral.name!)
         }
 
-        start
+        // var dName = CoreManager.shared.deviceName
+        // if dName.isEmpty {
+        //     dName = "MENTRA_LIVE"
+        // }
 
+        // setupAudioPairing(deviceName: dName)
+        
         //    // Set scan timeout
         //    DispatchQueue.main.asyncAfter(deadline: .now() + 60.0) { [weak self] in
         //      if self?.isScanning == true {
@@ -3246,83 +3251,6 @@ class MentraLive: NSObject, SGCManager {
         centralManager = nil
 
         connectionState = ConnTypes.DISCONNECTED
-    }
-
-    // MARK: - Audio Pairing Implementation for iOS
-
-    /**
-     * Setup Bluetooth audio pairing after BLE connection is established
-     * Attempts to automatically activate Mentra Live as the system audio device
-     * If not paired yet, prompts user to pair in Settings
-     */
-    private func setupAudioPairing(dName: String) {
-        var deviceName = dName
-        if deviceName.isEmpty {
-            deviceName = CoreManager.shared.deviceName
-        }
-        if deviceName.isEmpty {
-            deviceName = "MENTRA_LIVE"
-        }
-        
-        let monitor = AudioSessionMonitor.getInstance()
-
-        // Don't configure audio session - PhoneMic.swift handles that
-        // Just check if audio session supports Bluetooth (informational only)
-        if !monitor.isAudioSessionConfigured() {
-            Bridge.log(
-                "Audio: Audio session not configured for Bluetooth yet - mic system will configure it when recording"
-            )
-        }
-
-        // Extract device ID pattern to match the specific device
-        // BLE name: "MENTRA_LIVE_BLE_ABC123"
-        // BT Classic could be: "MENTRA_LIVE_BLE_ABC123" or "MENTRA_LIVE_BT_ABC123"
-        // We need to match on the unique device ID part (e.g., "ABC123")
-        let audioDevicePattern: String
-        if let idRange = deviceName.range(of: "_BLE_", options: .caseInsensitive) {
-            // Extract the ID after "_BLE_" (e.g., "ABC123")
-            audioDevicePattern = String(deviceName[idRange.upperBound...])
-            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
-        } else if let idRange = deviceName.range(of: "_BT_", options: .caseInsensitive) {
-            // Extract the ID after "_BT_"
-            audioDevicePattern = String(deviceName[idRange.upperBound...])
-            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
-        } else {
-            // Fallback: use the full device name
-            audioDevicePattern = deviceName
-            Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
-        }
-
-        // Check if device is paired (don't activate to preserve A2DP music playback)
-        let isPaired = monitor.isDevicePaired(devicePattern: audioDevicePattern)
-
-        if isPaired {
-            // Device is paired! Don't activate it - let PhoneMic.swift activate when recording starts
-            Bridge.log("Audio: ✅ Mentra Live is paired (preserving A2DP for music)")
-            btcConnected = true
-            CoreManager.shared.getStatus()
-        } else {
-            btcConnected = false
-            CoreManager.shared.getStatus()
-            // Not found in availableInputs - not paired yet
-
-            // Start monitoring for when user pairs manually
-            monitor.startMonitoring(devicePattern: audioDevicePattern) {
-                [weak self] (connected: Bool, deviceName: String?) in
-                guard let self = self else { return }
-
-                if connected {
-                    Bridge.log("Audio: ✅ Device paired and connected")
-                    // Don't activate - let PhoneMic.swift handle that when recording starts
-                    self.btcConnected = true
-                    CoreManager.shared.getStatus()
-                } else {
-                    Bridge.log("Audio: Device disconnected")
-                    self.btcConnected = false
-                    CoreManager.shared.getStatus()
-                }
-            }
-        }
     }
 }
 

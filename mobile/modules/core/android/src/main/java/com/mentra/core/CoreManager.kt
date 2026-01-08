@@ -1285,6 +1285,7 @@ class CoreManager {
             glassesInfo["connected"] = glassesConnected
             glassesInfo["connectionState"] = sgc.connectionState
             glassesInfo["micEnabled"] = sgc.micEnabled
+            glassesInfo["btcConnected"] = true
         }
 
         if (sgc is G1) {
@@ -1306,7 +1307,6 @@ class CoreManager {
             glassesInfo["hotspotSsid"] = sgc!!.hotspotSsid
             glassesInfo["hotspotPassword"] = sgc!!.hotspotPassword
             glassesInfo["hotspotGatewayIp"] = sgc!!.hotspotGatewayIp
-            glassesInfo["btcConnected"] = sgc!!.btcConnected
         }
 
         // Bluetooth device name
