@@ -63,6 +63,7 @@ class CoreManager {
     // MARK: - Properties
     var coreToken = ""
     var coreTokenOwner = ""
+    var storedUserEmail = ""
     var sgc: SGCManager? = null
 
     // state
@@ -1065,6 +1066,12 @@ class CoreManager {
     fun sendWifiCredentials(ssid: String, password: String) {
         Bridge.log("MAN: Sending wifi credentials: $ssid")
         sgc?.sendWifiCredentials(ssid, password)
+    }
+
+    fun setUserEmail(email: String) {
+        Bridge.log("MAN: Setting user email for crash reporting")
+        storedUserEmail = email
+        sgc?.sendUserEmailToGlasses(email)
     }
 
     fun forgetWifiNetwork(ssid: String) {
