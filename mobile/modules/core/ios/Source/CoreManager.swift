@@ -1221,6 +1221,7 @@ struct ViewState {
                 glassesInfo["hotspotSsid"] = sgc?.hotspotSsid ?? ""
                 glassesInfo["hotspotPassword"] = sgc?.hotspotPassword ?? ""
                 glassesInfo["hotspotGatewayIp"] = sgc?.hotspotGatewayIp ?? ""
+                glassesInfo["btcConnected"] = sgc?.btcConnected ?? false
             }
 
             // Add Bluetooth device name if available

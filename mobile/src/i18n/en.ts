@@ -107,6 +107,7 @@ const en = {
     g1NotReady: "Orange LED is blinking",
     success: "Success",
     glassesConnected: "Your glasses are connected.",
+    needHelpPairing: "Need help pairing?",
   },
   pairingGuide: {
     mentraLivePreorder: "Get Mentra Live and experience computer vision on your smart glasses.",

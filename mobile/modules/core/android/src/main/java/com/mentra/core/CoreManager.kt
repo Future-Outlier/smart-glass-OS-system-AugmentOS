@@ -1299,6 +1299,7 @@ class CoreManager {
             glassesInfo["hotspotSsid"] = sgc!!.hotspotSsid
             glassesInfo["hotspotPassword"] = sgc!!.hotspotPassword
             glassesInfo["hotspotGatewayIp"] = sgc!!.hotspotGatewayIp
+            glassesInfo["btcConnected"] = sgc!!.btcConnected
         }
 
         // Bluetooth device name

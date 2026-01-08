@@ -492,6 +492,7 @@ public class MentraLive extends SGCManager {
 
         // Initialize connection state
         connectionState = ConnTypes.DISCONNECTED;
+        btcConnected = true;// we can force connection to the BLE so the front end doesn't have to worry about it
 
         // Initialize CTKD bonding receiver
         initializeBondingReceiver();

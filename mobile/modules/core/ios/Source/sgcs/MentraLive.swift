@@ -1033,6 +1033,7 @@ class MentraLive: NSObject, SGCManager {
     @Published var hotspotSsid: String = ""
     @Published var hotspotPassword: String = ""
     @Published var hotspotGatewayIp: String = "" // The gateway IP to connect to when on hotspot
+    @Published var btcConnected: Bool = false
 
     // Queue Management
     private let commandQueue = CommandQueue()
@@ -2104,7 +2105,7 @@ class MentraLive: NSObject, SGCManager {
     private func handleGlassesReady() {
         Bridge.log("LIVE: 🎉 Received glasses_ready message - SOC is booted and ready!")
 
-        glassesReadyReceived = true
+        // glassesReadyReceived = true
         stopReadinessCheckLoop()
 
         // Perform SOC-dependent initialization
@@ -3305,19 +3306,19 @@ class MentraLive: NSObject, SGCManager {
             Bridge.log("Audio: ✅ Mentra Live is paired (preserving A2DP for music)")
             audioConnected = true
 
-            // If glasses_ready was already received, now we're fully ready
-            if glassesReadyReceived {
-                Bridge.log("Audio: Both audio and glasses_ready confirmed - marking as fully ready")
-                ready = true
-                connectionState = ConnTypes.CONNECTED
+            // // If glasses_ready was already received, now we're fully ready
+            // if glassesReadyReceived {
+            //     Bridge.log("Audio: Both audio and glasses_ready confirmed - marking as fully ready")
+            //     ready = true
+            //     connectionState = ConnTypes.CONNECTED
 
-                Bridge.sendTypedMessage(
-                    "audio_connected",
-                    body: [
-                        "device_name": deviceName,
-                    ]
-                )
-            }
+            //     Bridge.sendTypedMessage(
+            //         "audio_connected",
+            //         body: [
+            //             "device_name": deviceName,
+            //         ]
+            //     )
+            // }
 
         } else {
             // Not found in availableInputs - not paired yet
