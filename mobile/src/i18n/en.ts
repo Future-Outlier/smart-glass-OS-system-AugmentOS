@@ -633,6 +633,7 @@ const en = {
     saved: "Saved",
     tryAgain: "Try again",
     connect: "Connect",
+    ignore: "Ignore",
   },
   developer: {
     dev: "Dev",
