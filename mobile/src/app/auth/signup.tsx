@@ -84,9 +84,9 @@ export default function SignupScreen() {
     if (res.is_error()) {
       console.error("Error during sign-up:", res.error)
 
-      // Handle duplicate signup specially - show as info, not error
+      // Handle duplicate signup - email already registered
       if (isDuplicateSignupError(res.error)) {
-        showAlert(translate("login:success"), translate("login:errors.alreadySentEmail"), [
+        showAlert(translate("common:error"), translate("login:errors.emailAlreadyRegistered"), [
           {text: translate("common:ok")},
         ])
       } else {
