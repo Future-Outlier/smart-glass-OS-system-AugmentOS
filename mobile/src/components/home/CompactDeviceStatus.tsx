@@ -44,13 +44,14 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [brightness, setBrightness] = useSetting(SETTINGS.brightness.key)
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
-  const glassesConnected = useGlassesStore(state => state.connected)
-  const glassesStyle = useGlassesStore(state => state.style)
-  const glassesColor = useGlassesStore(state => state.color)
-  const caseRemoved = useGlassesStore(state => state.caseRemoved)
-  const caseBatteryLevel = useGlassesStore(state => state.caseBatteryLevel)
-  const caseOpen = useGlassesStore(state => state.caseOpen)
-  const batteryLevel = useGlassesStore(state => state.batteryLevel)
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const glassesStyle = useGlassesStore((state) => state.style)
+  const glassesColor = useGlassesStore((state) => state.color)
+  const caseRemoved = useGlassesStore((state) => state.caseRemoved)
+  const caseBatteryLevel = useGlassesStore((state) => state.caseBatteryLevel)
+  const caseOpen = useGlassesStore((state) => state.caseOpen)
+  const batteryLevel = useGlassesStore((state) => state.batteryLevel)
+  const wifiConnected = useGlassesStore((state) => state.wifiConnected)
 
   if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
     return <ConnectedSimulatedGlassesInfo style={style} mirrorStyle={{backgroundColor: theme.colors.background}} />
@@ -215,7 +216,12 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           )}
           <MicIcon width={18} height={18} />
           <Icon name="bluetooth-connected" size={18} color={theme.colors.foreground} />
-          {features?.hasWifi && <Icon name="wifi" size={18} color={theme.colors.foreground} />}
+          {features?.hasWifi &&
+            (wifiConnected ? (
+              <Icon name="wifi" size={18} color={theme.colors.foreground} />
+            ) : (
+              <Icon name="wifi-off" size={18} color={theme.colors.destructive} />
+            ))}
         </View>
       </View>
 
