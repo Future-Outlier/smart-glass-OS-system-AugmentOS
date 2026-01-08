@@ -377,17 +377,16 @@ export default function LoginScreen() {
             <View style={themed($signInOptions)}>
               <Button
                 flexContainer
-                tx="login:continueWithEmail"
+                tx="login:signUpWithEmail"
                 style={themed($primaryButton)}
                 pressedStyle={themed($pressedButton)}
                 textStyle={themed($emailButtonText)}
-                onPress={() => setIsSigningUp(true)}
+                onPress={() => push("/auth/signup")}
                 LeftAccessory={() => (
                   <FontAwesome
                     name="envelope"
                     size={16}
                     color={theme.colors.textAlt}
-                    // style={themed($emailIcon)}
                   />
                 )}
               />
@@ -408,6 +407,14 @@ export default function LoginScreen() {
                   <Text style={[themed($socialButtonText), themed($appleButtonText)]} tx="login:continueWithApple" />
                 </TouchableOpacity>
               )}
+
+              {/* Already have an account? Log in */}
+              <View style={themed($loginLinkContainer)}>
+                <Text style={themed($loginLinkText)}>{translate("login:alreadyHaveAccount")}</Text>
+                <TouchableOpacity onPress={() => setIsSigningUp(true)}>
+                  <Text style={themed($loginLink)}>{translate("login:logIn")}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </Animated.View>
@@ -657,6 +664,25 @@ const $createAccountText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $createAccountLink: ThemedStyle<TextStyle> = ({colors}) => ({
+  fontSize: 14,
+  color: colors.tint,
+  fontWeight: "600",
+})
+
+const $loginLinkContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  gap: spacing.s1,
+  marginTop: spacing.s2,
+})
+
+const $loginLinkText: ThemedStyle<TextStyle> = ({colors}) => ({
+  fontSize: 14,
+  color: colors.textDim,
+})
+
+const $loginLink: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 14,
   color: colors.tint,
   fontWeight: "600",
