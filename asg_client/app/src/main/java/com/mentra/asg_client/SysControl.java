@@ -53,6 +53,18 @@ public class SysControl {
         nn.putExtra("cmd", "reboot");
         sendBroadcast(context, nn);
     }
+
+    /**
+     * Perform a graceful shutdown of the device.
+     * Sends a broadcast to the system to initiate power off.
+     * @param context Application context
+     */
+    public static void shut(Context context) {
+        Log.i(TAG, "🔌 Initiating device shutdown");
+        Intent nn = new Intent();
+        nn.putExtra("cmd", "shutdown");
+        sendBroadcast(context, nn);
+    }
     
     // NEW METHODS - Key Events & Interaction
     public static void clickPosition(Context context, int x, int y) {
