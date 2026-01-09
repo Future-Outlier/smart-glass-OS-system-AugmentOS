@@ -9,24 +9,20 @@ import {
   Animated,
   AppState,
   BackHandler,
-  Keyboard,
   Modal,
   Platform,
-  TextInput,
   TextStyle,
   TouchableOpacity,
   View,
   ViewStyle,
 } from "react-native"
-import {Pressable} from "react-native-gesture-handler"
 
 import {Button, Screen, Text} from "@/components/ignite"
-import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {spacing, ThemedStyle} from "@/theme"
+import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import mentraAuth from "@/utils/auth/authClient"
 import {mapAuthError} from "@/utils/auth/authErrors"
@@ -36,47 +32,16 @@ import AppleIcon from "assets/icons/component/AppleIcon"
 import GoogleIcon from "assets/icons/component/GoogleIcon"
 
 export default function LoginScreen() {
-  const [isSigningUp, setIsSigningUp] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isFormLoading, setIsFormLoading] = useState(false)
   const [isAuthLoading, setIsAuthLoading] = useState(false)
-  const [formAction, setFormAction] = useState<"signin" | null>(null)
   const [backPressCount, setBackPressCount] = useState(0)
-  const {push, replace} = useNavigationHistory()
+  const {push} = useNavigationHistory()
   const [isChina] = useSetting(SETTINGS.china_deployment.key)
   const {authError} = useLocalSearchParams<{authError?: string}>()
 
-  // Get theme and safe area insets
   const {theme, themed} = useAppTheme()
   const $bottomContainerInsets = useSafeAreaInsetsStyle(["bottom"])
 
-  // Animation values
-  const opacity = useRef(new Animated.Value(0)).current
-  const translateY = useRef(new Animated.Value(20)).current
-  const formScale = useRef(new Animated.Value(0)).current
   const authOverlayOpacity = useRef(new Animated.Value(0)).current
-
-  // Password visibility
-  const [showPassword, setShowPassword] = useState(false)
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword)
-  }
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start()
-  }, [opacity, translateY])
 
   // Handle auth errors passed via URL params (e.g., from expired reset links)
   useEffect(() => {
@@ -86,24 +51,10 @@ export default function LoginScreen() {
     }
   }, [authError])
 
-  useEffect(() => {
-    if (isSigningUp) {
-      Animated.spring(formScale, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }).start()
-    } else {
-      formScale.setValue(0)
-    }
-  }, [formScale, isSigningUp])
-
   // Add a listener for app state changes to detect when the app comes back from background
   useEffect(() => {
     const handleAppStateChange = (nextAppState: any) => {
       console.log("App state changed to:", nextAppState)
-      // If app comes back to foreground, hide the loading overlay
       if (nextAppState === "active" && isAuthLoading) {
         console.log("App became active, hiding auth overlay")
         setIsAuthLoading(false)
@@ -111,7 +62,6 @@ export default function LoginScreen() {
       }
     }
 
-    // Subscribe to app state changes
     const appStateSubscription = AppState.addEventListener("change", handleAppStateChange)
 
     return () => {
@@ -120,18 +70,14 @@ export default function LoginScreen() {
   }, [])
 
   const handleGoogleSignIn = async () => {
-    // Start auth flow
     setIsAuthLoading(true)
 
-    // Show the auth loading overlay
     Animated.timing(authOverlayOpacity, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start()
 
-    // Automatically hide the overlay after 5 seconds regardless of what happens
-    // This is a failsafe in case the auth flow is interrupted
     setTimeout(() => {
       console.log("Auth flow failsafe timeout - hiding loading overlay")
       setIsAuthLoading(false)
@@ -140,23 +86,16 @@ export default function LoginScreen() {
 
     const res = await mentraAuth.googleSignIn()
 
-    // 2) If there's an error, handle it
     if (res.is_error()) {
-      // showAlert(translate('loginScreen.errors.authError'), error.message);
       setIsAuthLoading(false)
       authOverlayOpacity.setValue(0)
       return
     }
     const url = res.value
 
-    // 3) If we get a `url` back, we must open it ourselves in RN
     console.log("Opening browser with:", url)
-    // await Linking.openURL(data.url)
-
     await WebBrowser.openBrowserAsync(url)
 
-    // Directly hide the loading overlay when we leave the app
-    // This ensures it won't be shown when user returns without completing auth
     setIsAuthLoading(false)
     authOverlayOpacity.setValue(0)
   }
@@ -164,7 +103,6 @@ export default function LoginScreen() {
   const handleAppleSignIn = async () => {
     setIsAuthLoading(true)
 
-    // Show the auth loading overlay
     Animated.timing(authOverlayOpacity, {
       toValue: 1,
       duration: 300,
@@ -180,71 +118,18 @@ export default function LoginScreen() {
     }
     const url = res.value
 
-    // If we get a `url` back, we must open it ourselves in React Native
     console.log("Opening browser with:", url)
     await WebBrowser.openBrowserAsync(url)
 
-    // Directly hide the loading overlay when we leave the app
-    // This ensures it won't be shown when user returns without completing auth
     setIsAuthLoading(false)
     authOverlayOpacity.setValue(0)
   }
 
-  // Validation helper for login
-  const validateInputs = (): boolean => {
-    if (!email.trim()) {
-      showAlert(translate("common:error"), translate("login:errors.emailRequired"), [{text: translate("common:ok")}])
-      return false
-    }
-    if (!email.includes("@") || !email.includes(".")) {
-      showAlert(translate("common:error"), translate("login:invalidEmail"), [{text: translate("common:ok")}])
-      return false
-    }
-    if (!password) {
-      showAlert(translate("common:error"), translate("login:errors.passwordRequired"), [{text: translate("common:ok")}])
-      return false
-    }
-    return true
-  }
-
-  const handleEmailSignIn = async (emailInput: string, passwordInput: string) => {
-    Keyboard.dismiss()
-
-    // Validate inputs before calling API
-    if (!validateInputs()) {
-      return
-    }
-
-    setIsFormLoading(true)
-    setFormAction("signin")
-
-    const res = await mentraAuth.signInWithPassword({email: emailInput, password: passwordInput})
-    if (res.is_error()) {
-      console.error("Error during sign-in:", res.error)
-      showAlert(translate("common:error"), mapAuthError(res.error), [{text: translate("common:ok")}])
-      setIsFormLoading(false)
-      setFormAction(null)
-      return
-    }
-
-    setIsFormLoading(false)
-    setFormAction(null)
-    replace("/")
-  }
-
   useEffect(() => {
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
-      // If email form is shown, close it instead of exiting
-      if (isSigningUp) {
-        setIsSigningUp(false)
-        return true
-      }
-
-      // Otherwise, use the double-press to exit behavior
       if (backPressCount === 0) {
         setBackPressCount(1)
         setTimeout(() => setBackPressCount(0), 2000)
-        // showAlert(translate('loginScreen.leavingAlready'), translate('loginScreen.pressBackToExit'));
         return true
       } else {
         BackHandler.exitApp()
@@ -253,7 +138,7 @@ export default function LoginScreen() {
     })
 
     return () => backHandler.remove()
-  }, [backPressCount, isSigningUp])
+  }, [backPressCount])
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top", "bottom"]} contentContainerStyle={themed($container)}>
@@ -270,155 +155,59 @@ export default function LoginScreen() {
             </View>
           </Animated.View>
         )}
-        <Animated.View style={{opacity, transform: [{translateY}]}}>
-          <View style={themed($logoContainer)}>
-            <LogoSvg width={108} height={58} />
-          </View>
-          <Text preset="heading" tx="login:title" style={themed($title)} />
-          <Text preset="subheading" tx="login:subtitle" style={themed($subtitle)} />
-        </Animated.View>
 
-        <Animated.View style={[themed($content), {opacity, transform: [{translateY}]}]}>
-          {isSigningUp ? (
-            <Animated.View style={[themed($form), {transform: [{scale: formScale}]}]}>
-              <View style={themed($inputGroup)}>
-                <Text tx="login:email" style={themed($inputLabel)} />
-                <View style={themed($enhancedInputContainer)}>
-                  <FontAwesome
-                    name="envelope"
-                    size={16}
-                    color={theme.colors.textDim}
-                    // style={themed($inputIcon)}
-                  />
-                  <Spacer width={spacing.s3} />
-                  <TextInput
-                    hitSlop={{top: 16, bottom: 16}}
-                    style={themed($enhancedInput)}
-                    placeholder={translate("login:emailPlaceholder")}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholderTextColor={theme.colors.textDim}
-                  />
+        <View style={themed($logoContainer)}>
+          <LogoSvg width={108} height={58} />
+        </View>
+        <Text preset="heading" tx="login:title" style={themed($title)} />
+        <Text preset="subheading" tx="login:subtitle" style={themed($subtitle)} />
+
+        <View style={themed($content)}>
+          <View style={themed($signInOptions)}>
+            <Button
+              flexContainer
+              tx="login:signUpWithEmail"
+              style={themed($primaryButton)}
+              pressedStyle={themed($pressedButton)}
+              textStyle={themed($emailButtonText)}
+              onPress={() => push("/auth/signup")}
+              LeftAccessory={() => <FontAwesome name="envelope" size={16} color={theme.colors.textAlt} />}
+            />
+            {!isChina && (
+              <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
+                <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
+                  <GoogleIcon />
                 </View>
-              </View>
-
-              <View style={themed($inputGroup)}>
-                <Text tx="login:password" style={themed($inputLabel)} />
-                <View style={themed($enhancedInputContainer)}>
-                  <FontAwesome
-                    name="lock"
-                    size={16}
-                    color={theme.colors.textDim}
-                    // style={themed($inputIcon)}
-                  />
-                  <Spacer width={spacing.s3} />
-                  <TextInput
-                    hitSlop={{top: 16, bottom: 16}}
-                    style={themed($enhancedInput)}
-                    placeholder={translate("login:passwordPlaceholder")}
-                    value={password}
-                    autoCapitalize="none"
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    placeholderTextColor={theme.colors.textDim}
-                  />
-                  <TouchableOpacity
-                    hitSlop={{top: 16, bottom: 16, left: 16, right: 16}}
-                    onPress={togglePasswordVisibility}>
-                    <FontAwesome name={showPassword ? "eye" : "eye-slash"} size={18} color={theme.colors.textDim} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <TouchableOpacity onPress={() => push("/auth/forgot-password")} style={themed($forgotPasswordContainer)}>
-                <Text tx="login:forgotPassword" style={themed($forgotPasswordText)} />
+                <Text style={themed($socialButtonText)} tx="login:continueWithGoogle" />
               </TouchableOpacity>
+            )}
 
-              <Spacer height={spacing.s3} />
-
-              <Button
-                tx="login:login"
-                style={themed($primaryButton)}
-                pressedStyle={themed($pressedButton)}
-                textStyle={themed($buttonText)}
-                onPress={() => handleEmailSignIn(email, password)}
-                disabled={isFormLoading}
-                {...(isFormLoading &&
-                  formAction === "signin" && {
-                    LeftAccessory: () => (
-                      <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
-                    ),
-                  })}
-              />
-
-              <Spacer height={spacing.s4} />
-
-              {/* New to MentraOS? Create an Account link */}
-              <View style={themed($createAccountContainer)}>
-                <Text style={themed($createAccountText)}>{translate("login:signup.newToMentra")}</Text>
-                <TouchableOpacity onPress={() => push("/auth/signup")}>
-                  <Text style={themed($createAccountLink)}>{translate("login:signup.createAccount")}</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Spacer height={spacing.s3} />
-
-              <Pressable onPress={() => setIsSigningUp(false)}>
-                <View style={{flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
-                  <FontAwesome name="arrow-left" size={16} color={theme.colors.textDim} />
-                  <Text style={{marginLeft: 8, color: theme.colors.textDim}}>Back</Text>
+            {Platform.OS === "ios" && !isChina && (
+              <TouchableOpacity style={[themed($socialButton), themed($appleButton)]} onPress={handleAppleSignIn}>
+                <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
+                  <AppleIcon color={theme.colors.text} />
                 </View>
-              </Pressable>
-            </Animated.View>
-          ) : (
-            <View style={themed($signInOptions)}>
-              <Button
-                flexContainer
-                tx="login:continueWithEmail"
-                style={themed($primaryButton)}
-                pressedStyle={themed($pressedButton)}
-                textStyle={themed($emailButtonText)}
-                onPress={() => setIsSigningUp(true)}
-                LeftAccessory={() => (
-                  <FontAwesome
-                    name="envelope"
-                    size={16}
-                    color={theme.colors.textAlt}
-                    // style={themed($emailIcon)}
-                  />
-                )}
-              />
-              {!isChina && (
-                <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
-                  <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
-                    <GoogleIcon />
-                  </View>
-                  <Text style={themed($socialButtonText)} tx="login:continueWithGoogle" />
-                </TouchableOpacity>
-              )}
+                <Text style={[themed($socialButtonText), themed($appleButtonText)]} tx="login:continueWithApple" />
+              </TouchableOpacity>
+            )}
 
-              {Platform.OS === "ios" && !isChina && (
-                <TouchableOpacity style={[themed($socialButton), themed($appleButton)]} onPress={handleAppleSignIn}>
-                  <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
-                    <AppleIcon color={theme.colors.text} />
-                  </View>
-                  <Text style={[themed($socialButtonText), themed($appleButtonText)]} tx="login:continueWithApple" />
-                </TouchableOpacity>
-              )}
+            {/* Already have an account? Log in */}
+            <View style={themed($loginLinkContainer)}>
+              <Text style={themed($loginLinkText)}>{translate("login:alreadyHaveAccount")}</Text>
+              <TouchableOpacity onPress={() => push("/auth/email-login")}>
+                <Text style={themed($loginLink)}>{translate("login:logIn")}</Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </Animated.View>
+          </View>
+        </View>
 
-        <Animated.View style={[{opacity}, $bottomContainerInsets]}>
+        <View style={$bottomContainerInsets}>
           <Text tx="login:termsText" size="xs" style={themed($termsText)} />
-        </Animated.View>
+        </View>
       </View>
 
       {/* Loading Modal */}
-      <Modal visible={isFormLoading} transparent={true} animationType="fade">
+      <Modal visible={isAuthLoading} transparent={true} animationType="fade">
         <View
           style={{
             flex: 1,
@@ -462,7 +251,7 @@ const $authLoadingOverlay: ThemedStyle<ViewStyle> = ({colors}) => ({
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: colors.background + "E6", // 90% opacity
+  backgroundColor: colors.background + "E6",
   zIndex: 10,
   justifyContent: "center",
   alignItems: "center",
@@ -514,50 +303,6 @@ const $content: ThemedStyle<ViewStyle> = ({spacing}) => ({
   marginBottom: spacing.s4,
 })
 
-const $form: ThemedStyle<ViewStyle> = () => ({
-  width: "100%",
-})
-
-const $inputGroup: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.s3,
-})
-
-const $inputLabel: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 14,
-  fontWeight: "500",
-  color: colors.text,
-  marginBottom: 8,
-})
-
-const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  height: 48,
-  borderWidth: 1,
-  borderColor: colors.border,
-  borderRadius: 8,
-  paddingHorizontal: spacing.s3,
-  backgroundColor: isDark ? colors.palette.transparent : colors.background,
-  // Remove shadows for light theme
-  ...(isDark
-    ? {
-        shadowOffset: {
-          width: 0,
-          height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-      }
-    : {}),
-})
-
-const $enhancedInput: ThemedStyle<TextStyle> = ({colors}) => ({
-  flex: 1,
-  fontSize: 16,
-  color: colors.text,
-})
-
 const $signInOptions: ThemedStyle<ViewStyle> = ({spacing}) => ({
   gap: spacing.s4,
 })
@@ -571,7 +316,6 @@ const $socialButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   borderRadius: spacing.s6,
   paddingHorizontal: spacing.s3,
   backgroundColor: colors.background,
-  // Remove shadows for light theme to avoid thick border appearance
   shadowOffset: {
     width: 0,
     height: 1,
@@ -605,7 +349,7 @@ const $socialButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $appleButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.text, // Same as Google button text
+  color: colors.text,
 })
 
 const $primaryButton: ThemedStyle<ViewStyle> = () => ({})
@@ -613,12 +357,6 @@ const $primaryButton: ThemedStyle<ViewStyle> = () => ({})
 const $pressedButton: ThemedStyle<ViewStyle> = ({colors}) => ({
   backgroundColor: colors.background,
   opacity: 0.9,
-})
-
-const $buttonText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.textAlt,
-  fontSize: 16,
-  fontWeight: "bold",
 })
 
 const $emailButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
@@ -633,30 +371,20 @@ const $termsText: ThemedStyle<TextStyle> = ({colors}) => ({
   marginTop: 8,
 })
 
-const $forgotPasswordContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  alignSelf: "flex-end",
-  marginTop: spacing.s2,
-})
-
-const $forgotPasswordText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 14,
-  color: colors.tint,
-  textDecorationLine: "underline",
-})
-
-const $createAccountContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $loginLinkContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   justifyContent: "center",
   alignItems: "center",
   gap: spacing.s1,
+  marginTop: spacing.s2,
 })
 
-const $createAccountText: ThemedStyle<TextStyle> = ({colors}) => ({
+const $loginLinkText: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 14,
   color: colors.textDim,
 })
 
-const $createAccountLink: ThemedStyle<TextStyle> = ({colors}) => ({
+const $loginLink: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 14,
   color: colors.tint,
   fontWeight: "600",

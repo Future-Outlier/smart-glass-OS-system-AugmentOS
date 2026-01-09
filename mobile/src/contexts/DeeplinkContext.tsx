@@ -167,11 +167,22 @@ const deepLinkRoutes: DeepLinkRoute[] = [
           token_type: params.get("token_type"),
           expires_in: params.get("expires_in"),
           type: params.get("type"), // signup, email_change, recovery, etc.
-          // Add any other parameters you might need
+          // Error params (when link is expired/invalid)
+          error: params.get("error"),
+          error_code: params.get("error_code"),
+          error_description: params.get("error_description"),
         }
       }
 
       const authParams = parseAuthParams(url)
+
+      // Check if there's an error in the URL (e.g., expired verification link)
+      if (authParams?.error || authParams?.error_code) {
+        console.log("[LOGIN DEBUG] Error in auth callback:", authParams.error_code, authParams.error_description)
+        // Navigate to login with the error code so login screen can show the message
+        navObject.replace(`/auth/login?authError=${authParams.error_code || authParams.error}`)
+        return
+      }
 
       if (authParams && authParams.access_token && authParams.refresh_token) {
         // Update the Supabase session manually
