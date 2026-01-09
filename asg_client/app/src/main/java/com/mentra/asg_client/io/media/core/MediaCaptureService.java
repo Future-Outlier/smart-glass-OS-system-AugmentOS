@@ -467,28 +467,44 @@ public class MediaCaptureService {
     }
     
     /**
-     * Trigger white LED flash for photo capture (synchronized with shutter sound)
+     * Trigger white LED flash for photo capture (synchronized with shutter sound, default brightness)
      */
     private void triggerPhotoFlashLed() {
-        Log.i(TAG, "📸 triggerPhotoFlashLed() called");
+        triggerPhotoFlashLed(255); // Default to full brightness
+    }
+
+    /**
+     * Trigger white LED flash for photo capture with specified brightness
+     * @param brightness Brightness level (0-255, where 255 is maximum brightness)
+     */
+    private void triggerPhotoFlashLed(int brightness) {
+        Log.i(TAG, "📸 triggerPhotoFlashLed() called with brightness: " + brightness);
 
         if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
-            hardwareManager.flashRgbLedWhite(2200); // 5 second flash
-            Log.i(TAG, "📸 Photo flash LED (white) triggered via hardware manager");
+            hardwareManager.flashRgbLedWhite(2200, brightness); // 2.2 second flash
+            Log.i(TAG, "📸 Photo flash LED (white) triggered via hardware manager at brightness " + brightness);
         } else {
             Log.w(TAG, "⚠️ RGB LED not supported on this device");
         }
     }
     
     /**
-     * Trigger solid white LED for video recording duration
+     * Trigger solid white LED for video recording duration (default brightness)
      */
     private void triggerVideoRecordingLed() {
-        Log.i(TAG, "🎥 triggerVideoRecordingLed() called");
+        triggerVideoRecordingLed(255); // Default to full brightness
+    }
+
+    /**
+     * Trigger solid white LED for video recording duration with specified brightness
+     * @param brightness Brightness level (0-255, where 255 is maximum brightness)
+     */
+    private void triggerVideoRecordingLed(int brightness) {
+        Log.i(TAG, "🎥 triggerVideoRecordingLed() called with brightness: " + brightness);
 
         if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
-            hardwareManager.setRgbLedSolidWhite(1800000); // 30 minute solid white LED
-            Log.i(TAG, "🎥 Video recording LED (solid white) triggered via hardware manager");
+            hardwareManager.setRgbLedSolidWhite(1800000, 1); // 30 minute solid white LED
+            Log.i(TAG, "🎥 Video recording LED (solid white) triggered via hardware manager at brightness " + brightness);
         } else {
             Log.w(TAG, "⚠️ RGB LED not supported on this device");
         }
