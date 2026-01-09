@@ -40,6 +40,10 @@ import {
   consoleOrgsApi,
   consoleAppsApi,
   cliKeysApi,
+  // Store APIs (MentraOS Store website)
+  storeAppsApi,
+  storeAuthApi,
+  storeUserApi,
 } from "./api/hono";
 
 // Hono Legacy routes (migrated from Express)
@@ -261,6 +265,15 @@ cliRouter.use("*", transformCLIToConsole);
 cliRouter.route("/apps", consoleAppsApi);
 cliRouter.route("/orgs", consoleOrgsApi);
 app.route("/api/cli", cliRouter);
+
+// ============================================================================
+// Store API Routes (MentraOS Store website)
+// ============================================================================
+
+// Store routes handle their own auth internally (mixed public/authenticated)
+app.route("/api/store", storeAppsApi);
+app.route("/api/store/auth", storeAuthApi);
+app.route("/api/store/user", storeUserApi);
 
 // ============================================================================
 // Legacy Routes (migrated from Express)
