@@ -633,6 +633,8 @@ async function uploadImage(c: AppContext) {
     const body = await c.req.parseBody();
     const file = body["file"] as File | undefined;
     const metadataRaw = body["metadata"] as string | undefined;
+    // Console client sends replaceImageId as a separate multipart field
+    const replaceImageIdField = body["replaceImageId"] as string | undefined;
 
     if (!file) {
       return c.json({ error: "No file provided" }, 400);
@@ -670,13 +672,16 @@ async function uploadImage(c: AppContext) {
     const buffer = Buffer.from(arrayBuffer);
 
     // Upload the image using uploadImageAndReplace
+    // Priority: replaceImageId from multipart field > replaceImageId from metadata > empty string
+    const replaceImageId = replaceImageIdField || metadata?.replaceImageId || "";
+
     const result = await storageService.uploadImageAndReplace({
       image: buffer,
       filename: file.name,
       mimetype: file.type,
       email: email || "",
       orgId: orgId,
-      replaceImageId: metadata?.replaceImageId || "",
+      replaceImageId,
       appPackageName: metadata?.appPackageName,
     });
 
