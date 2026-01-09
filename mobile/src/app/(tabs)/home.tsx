@@ -17,6 +17,7 @@ import {Spacer} from "@/components/ui/Spacer"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useRefreshApplets} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import WebsocketStatus from "@/components/error/WebsocketStatus"
 
 export default function Homepage() {
   const {theme} = useAppTheme()
@@ -35,7 +36,8 @@ export default function Homepage() {
       <Header
         leftTx="home:title"
         RightActionComponent={
-          <View style={{flexDirection: "row", alignItems: "center"}}>
+          <View className="flex-row items-center flex-1 justify-end">
+            <WebsocketStatus />
             <NonProdWarning />
             <MentraLogoStandalone />
           </View>
@@ -44,7 +46,6 @@ export default function Homepage() {
 
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
         <Spacer height={theme.spacing.s4} />
-        <CloudConnection />
         <Group>
           {!defaultWearable && <PairGlassesCard />}
           {defaultWearable && <CompactDeviceStatus />}

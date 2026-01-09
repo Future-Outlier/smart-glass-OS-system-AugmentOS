@@ -150,6 +150,8 @@ const tablerIcons = {
   "world-download": 1,
   "repeat": 1,
   "mail": 1,
+  "chevron-down": 1,
+  "chevron-up": 1,
 }
 
 /**
