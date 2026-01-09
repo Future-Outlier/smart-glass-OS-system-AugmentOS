@@ -1005,6 +1005,11 @@ class CoreManager {
         }
     }
 
+    fun clearDisplay() {
+        Bridge.log("MAN: Clearing Display")
+        sgc?.clearDisplay()
+    }
+
     fun displayEvent(event: Map<String, Any>) {
         val view = event["view"] as? String
         if (view == null) {

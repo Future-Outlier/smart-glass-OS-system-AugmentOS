@@ -170,7 +170,7 @@ class MentraNex : SGCManager() {
             Bridge.log("Device Class: ${device.bluetoothClass}")
             Bridge.log("Bond State: ${device.bondState}")
 
-            if (name == null) {
+            if (name == null || !name.contains("Nex1-")) {
                 return
             }
 
@@ -335,12 +335,14 @@ class MentraNex : SGCManager() {
                 val address = device.address
                 
                 name?.let {
-                    Bridge.log("bleScanCallback onScanResult: $name address $address")
-                    synchronized(foundDeviceNames) {
-                        if (!foundDeviceNames.contains(it)) {
-                            foundDeviceNames.add(it)
-                            Bridge.log("Found smart glasses: $name")
-                            Bridge.sendDiscoveredDevice(DeviceTypes.NEX, it);
+                    if (it.startsWith("Nex1-")) {
+                        Bridge.log("bleScanCallback onScanResult: $name address $address")
+                        synchronized(foundDeviceNames) {
+                            if (!foundDeviceNames.contains(it)) {
+                                foundDeviceNames.add(it)
+                                Bridge.log("Found smart glasses: $name")
+                                Bridge.sendDiscoveredDevice(DeviceTypes.NEX, it);
+                            }
                         }
                     }
                 }
