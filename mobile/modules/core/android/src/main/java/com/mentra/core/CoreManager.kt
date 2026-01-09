@@ -1333,12 +1333,17 @@ class CoreManager {
         glassesSettings["button_camera_led"] = buttonCameraLed
 
         val coreInfo =
-                mapOf(
+                mutableMapOf(
                         "default_wearable" to defaultWearable,
                         "preferred_mic" to preferredMic,
                         "is_searching" to isSearching,
                         "core_token" to coreToken,
                 )
+
+        sgc?.let {
+            coreInfo["glasses_protobuf_version"] = it.glassesProtobufVersion
+            coreInfo["protobuf_schema_version"] = it.protobufSchemaVersion
+        }
 
         val apps = emptyList<Any>()
 

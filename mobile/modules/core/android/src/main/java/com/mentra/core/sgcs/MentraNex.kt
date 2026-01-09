@@ -984,6 +984,8 @@ class MentraNex : SGCManager() {
             // Build the info string directly instead of calling getProtobufBuildInfo()
             val fileDescriptorName = mentraos.ble.MentraosBle.getDescriptor().file.name
             val buildInfo = "Schema v$schemaVersion | $fileDescriptorName"
+
+            protobufSchemaVersion = schemaVersion.toString()
             
             // val event = ProtobufSchemaVersionEvent(
             //     schemaVersion, 
@@ -1383,6 +1385,7 @@ class MentraNex : SGCManager() {
                     Bridge.log("=== RECEIVED GLASSES PROTOBUF VERSION RESPONSE ===")
                     Bridge.log("Glasses Protobuf Version: ${versionResponse.version}")
                     Bridge.log("Message ID: ${versionResponse.msgId}")
+                    glassesProtobufVersion = versionResponse.version.toString()
                     
                     if (versionResponse.commit.isNotEmpty()) {
                         Bridge.log("Commit: ${versionResponse.commit}")
