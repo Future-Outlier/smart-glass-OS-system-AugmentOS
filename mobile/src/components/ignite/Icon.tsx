@@ -149,6 +149,7 @@ const tablerIcons = {
   "check": 1,
   "world-download": 1,
   "repeat": 1,
+  "mail": 1,
 }
 
 /**

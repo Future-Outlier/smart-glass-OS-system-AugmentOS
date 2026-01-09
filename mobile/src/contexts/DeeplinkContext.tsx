@@ -145,9 +145,9 @@ const deepLinkRoutes: DeepLinkRoute[] = [
 
   // Authentication routes
   {
-    pattern: "/auth/login",
+    pattern: "/auth/start",
     handler: (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.replaceAll("/auth/login")
+      navObject.replaceAll("/auth/start")
     },
   },
   {
@@ -180,7 +180,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
       if (authParams?.error || authParams?.error_code) {
         console.log("[LOGIN DEBUG] Error in auth callback:", authParams.error_code, authParams.error_description)
         // Navigate to login with the error code so login screen can show the message
-        navObject.replace(`/auth/login?authError=${authParams.error_code || authParams.error}`)
+        navObject.replace(`/auth/start?authError=${authParams.error_code || authParams.error}`)
         return
       }
 
@@ -270,7 +270,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
       if (authParams?.error || authParams?.error_code) {
         console.log("[RESET PASSWORD DEBUG] Error in reset link:", authParams.error_code, authParams.error_description)
         // Navigate to login with the error code so login screen can show the message
-        navObject.replace(`/auth/login?authError=${authParams.error_code || authParams.error}`)
+        navObject.replace(`/auth/start?authError=${authParams.error_code || authParams.error}`)
         return
       }
 
@@ -282,7 +282,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         })
         if (res.is_error()) {
           console.error("[RESET PASSWORD DEBUG] Error setting recovery session:", res.error)
-          navObject.replace("/auth/login?authError=invalid_reset_link")
+          navObject.replace("/auth/start?authError=invalid_reset_link")
           return
         }
 
@@ -291,7 +291,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         navObject.replace("/auth/reset-password")
       } else {
         console.log("[RESET PASSWORD DEBUG] Missing required auth parameters for password reset")
-        navObject.replace("/auth/login?authError=invalid_reset_link")
+        navObject.replace("/auth/start?authError=invalid_reset_link")
       }
     },
   },
@@ -395,7 +395,7 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
     fallbackHandler: (url: string) => {
       console.warn("Fallback handler called for URL:", url)
       setTimeout(() => {
-        replaceAll("/auth/login")
+        replaceAll("/auth/start")
       }, 100)
     },
     navObject: {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, preventBack},
@@ -503,7 +503,7 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
         setPendingRoute(url)
         setTimeout(() => {
           try {
-            replace("/auth/login")
+            replace("/auth/start")
           } catch (error) {
             console.warn("Navigation failed, router may not be ready:", error)
           }
