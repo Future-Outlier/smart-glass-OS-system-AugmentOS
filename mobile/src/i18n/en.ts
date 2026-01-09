@@ -483,11 +483,12 @@ const en = {
   login: {
     title: "MentraOS",
     subtitle: "The future of smart glasses starts here",
+    loginToMentra: "Log in to MentraOS",
     email: "Email",
     password: "Password",
     signIn: "Sign In",
     signUp: "Sign Up",
-    forgotPassword: "Forgot Password?",
+    forgotPassword: "Forgot your password?",
     continueWithGoogle: "Continue with Google",
     continueWithApple: "Continue with Apple",
     continueWithEmail: "Continue with Email",
@@ -495,6 +496,7 @@ const en = {
     alreadyHaveAccount: "Already have an account?",
     logIn: "Log in",
     termsText: "By signing in, you agree to our terms of service and privacy policy.",
+    termsTextSignIn: "By signing in, you agree to our terms of service and privacy policy.",
     emailPlaceholder: "Email address",
     passwordPlaceholder: "Password",
     createAccount: "Create Account",
@@ -589,7 +591,8 @@ const en = {
     verification: {
       title: "Sign Up",
       heading: "Verification email sent",
-      subtitle: "We have sent you a verification email. Please check your inbox and spam folder. Once verified, you will be redirected to the app.",
+      subtitle:
+        "We have sent you a verification email. Please check your inbox and spam folder. Once verified, you will be redirected to the app.",
       continue: "Continue",
       resendEmail: "Resend verification email",
       resending: "Resending...",
