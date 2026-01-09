@@ -48,6 +48,7 @@ export default function WebsocketStatus() {
 
     if (connectionStatus === WebSocketStatus.CONNECTED) {
       setDisplayStatus("connected")
+      refreshApplets()
       return
     }
 
@@ -61,6 +62,7 @@ export default function WebsocketStatus() {
       }
       disconnectionTimerRef.current = BackgroundTimer.setTimeout(() => {
         setDisplayStatus("disconnected")
+        refreshApplets()
       }, DISCONNECTION_DELAY)
       return
     }
