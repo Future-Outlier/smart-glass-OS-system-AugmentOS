@@ -8,6 +8,7 @@ import {useRefreshApplets} from "@/stores/applets"
 import {useConnectionStore} from "@/stores/connection"
 import {BackgroundTimer} from "@/utils/timers"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 type DisplayStatus = "connected" | "warning" | "disconnected"
 
@@ -39,6 +40,7 @@ export default function WebsocketStatus() {
   const {theme} = useAppTheme()
   const disconnectionTimerRef = useRef<number | null>(null)
   const DISCONNECTION_DELAY = 3000
+  const [devMode] = useSetting(SETTINGS.dev_mode.key)
 
   const prevConnectionStatusRef = useRef(connectionStatus)
 
@@ -47,6 +49,10 @@ export default function WebsocketStatus() {
     prevConnectionStatusRef.current = connectionStatus
 
     if (connectionStatus === WebSocketStatus.CONNECTED) {
+      if (disconnectionTimerRef.current) {
+        BackgroundTimer.clearTimeout(disconnectionTimerRef.current)
+        disconnectionTimerRef.current = null
+      }
       setDisplayStatus("connected")
       refreshApplets()
       return
@@ -76,6 +82,10 @@ export default function WebsocketStatus() {
   }, [connectionStatus])
 
   const config = STATUS_CONFIG[displayStatus]
+
+  if (!devMode && displayStatus == "connected") {
+    return null
+  }
 
   return (
     <View
