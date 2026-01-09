@@ -179,12 +179,12 @@ export async function submitFeedback(
   // Submit feedback to admin emails using mail service
   await emailService.sendFeedback(email, emailHtml, admins);
 
-  // Send feedback to Slack channel
+  // Send feedback to Slack channel (fire-and-forget to not delay API response)
   if (isStructured) {
-    await slackService.notifyUserFeedback(email, feedback);
+    slackService.notifyUserFeedback(email, feedback).catch(() => {});
   } else {
     // Legacy format - just send as plain text
-    await slackService.notifyUserFeedbackLegacy(email, feedback);
+    slackService.notifyUserFeedbackLegacy(email, feedback).catch(() => {});
   }
 
   return newFeedback;

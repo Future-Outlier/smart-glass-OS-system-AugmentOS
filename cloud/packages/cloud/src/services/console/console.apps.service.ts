@@ -205,8 +205,8 @@ export async function createApp(
     const created = await App.create(doc);
     const leanCreated = (await App.findById(created._id).lean()) || doc;
 
-    // Notify Slack about the new mini app submission
-    await slackService.notifyMiniAppSubmission(
+    // Notify Slack about the new mini app submission (fire-and-forget)
+    slackService.notifyMiniAppSubmission(
       {
         name: leanCreated.name,
         packageName: leanCreated.packageName,
@@ -214,7 +214,7 @@ export async function createApp(
         description: leanCreated.description,
       },
       email,
-    );
+    ).catch(() => {});
 
     return {
       app: sanitizeApp(leanCreated),
