@@ -608,9 +608,6 @@ extension MentraLive: CBCentralManagerDelegate {
 
         isConnecting = false
 
-        // Reset audio pairing flags
-        // btcConnected = false
-
         connectedPeripheral = nil
         ready = false
         connectionState = ConnTypes.DISCONNECTED
@@ -1024,7 +1021,6 @@ class MentraLive: NSObject, SGCManager {
     @Published var hotspotSsid: String = ""
     @Published var hotspotPassword: String = ""
     @Published var hotspotGatewayIp: String = "" // The gateway IP to connect to when on hotspot
-    @Published var btcConnected: Bool = false
 
     // Queue Management
     private let commandQueue = CommandQueue()

@@ -47,7 +47,6 @@ class Simulated: SGCManager {
     var hotspotSsid: String = ""
     var hotspotPassword: String = ""
     var hotspotGatewayIp: String = ""
-    // var btcConnected: Bool = false
 
     // MARK: - Audio Control
 
