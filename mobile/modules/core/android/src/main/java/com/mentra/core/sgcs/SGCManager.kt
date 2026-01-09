@@ -41,7 +41,6 @@ abstract class SGCManager {
     @JvmField var hotspotSsid: String = ""
     @JvmField var hotspotPassword: String = ""
     @JvmField var hotspotGatewayIp: String = ""
-    @JvmField var btcConnected: Boolean = false
 
     // Audio Control
     abstract fun setMicEnabled(enabled: Boolean)
