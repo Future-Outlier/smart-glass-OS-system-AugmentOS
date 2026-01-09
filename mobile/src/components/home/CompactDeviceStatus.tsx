@@ -157,17 +157,6 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             </>
           )}
         </View>
-        {/* <View style={[themed($disconnectedImageContainer)]}> */}
-        {/* </View> */}
-        {/* <Button
-          textStyle={[{marginLeft: theme.spacing.s12}]}
-          textAlignment="left"
-          LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
-          RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
-          onPress={handleConnectOrDisconnect}
-          tx="home:connectGlasses"
-          disabled={isCheckingConnectivity}
-        /> */}
       </View>
     )
   }
@@ -182,7 +171,6 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             <Image source={getCurrentGlassesImage()} style={[themed($glassesImage), {width: 54, maxHeight: 24}]} />
             <Text style={themed($headerText)}>{defaultWearable}</Text>
           </View>
-          {/* <Icon icon="bluetooth-connected" size={18} color={theme.colors.textDim} /> */}
         </View>
         <View style={{marginHorizontal: -theme.spacing.s6}}>
           <ConnectedSimulatedGlassesInfo showHeader={false} mirrorStyle={{backgroundColor: theme.colors.background}} />
@@ -218,9 +206,13 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           <Icon name="bluetooth-connected" size={18} color={theme.colors.foreground} />
           {features?.hasWifi &&
             (wifiConnected ? (
-              <Icon name="wifi" size={18} color={theme.colors.foreground} />
+              <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
+                <Icon name="wifi" size={18} color={theme.colors.foreground} />
+              </Button>
             ) : (
-              <Icon name="wifi-off" size={18} color={theme.colors.destructive} />
+              <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
+                <Icon name="wifi-off" size={18} color={theme.colors.destructive} />
+              </Button>
             ))}
         </View>
       </View>

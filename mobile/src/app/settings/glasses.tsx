@@ -12,6 +12,7 @@ import {translate} from "@/i18n/translate"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {getGlassesImage} from "@/utils/getGlassesImage"
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export default function Glasses() {
   const {theme} = useAppTheme()
@@ -25,9 +26,11 @@ export default function Glasses() {
 
   if (defaultWearable) {
     pageSubtitle = formatGlassesTitle(defaultWearable)
-    glassesComponent = (
-      <Image source={getGlassesImage(defaultWearable)} style={{width: 110, maxHeight: 32}} resizeMode="contain" />
-    )
+    if (defaultWearable !== DeviceTypes.SIMULATED) {
+      glassesComponent = (
+        <Image source={getGlassesImage(defaultWearable)} style={{width: 110, maxHeight: 32}} resizeMode="contain" />
+      )
+    }
   }
 
   return (

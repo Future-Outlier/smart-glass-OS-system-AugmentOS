@@ -39,7 +39,10 @@ export default function WifiScanScreen() {
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const {push, goBack, pushPrevious, getPreviousRoute} = useNavigationHistory()
 
-  const showBack = getPreviousRoute()?.includes("/settings/glasses")
+  // if the previous route is in this list, show / allow the back button:
+  const backableRoutes = ["/settings/glasses", "/home", "/(tabs)/home"]
+
+  const showBack = backableRoutes.includes(getPreviousRoute() || "")
   const showSkip = !showBack
 
   const handleBack = () => {
