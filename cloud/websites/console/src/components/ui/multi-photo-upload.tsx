@@ -1,5 +1,5 @@
 import * as React from "react";
-import { X, Upload, Image as ImageIcon, ZoomIn, Loader2 } from "lucide-react";
+import { X, Upload, Image as ImageIcon, ZoomIn, Loader2, Info } from "lucide-react";
 import { cn } from "@/libs/utils";
 import { Button } from "./button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./dialog";
@@ -16,6 +16,9 @@ import {
 } from "./alert-dialog";
 
 export type PhotoOrientation = "landscape" | "portrait";
+
+// Max file size for preview images (5MB)
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export interface PhotoUploadItem {
   id: string;
@@ -60,7 +63,31 @@ export function MultiPhotoUpload({
     if (files.length === 0) return;
 
     const remainingSlots = maxPhotos - photos.length;
-    const filesToAdd = Array.from(files).slice(0, remainingSlots);
+    const filesArray = Array.from(files);
+
+    // Validate file sizes before processing
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+
+    for (const file of filesArray) {
+      if (file.size > MAX_FILE_SIZE) {
+        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+        errors.push(`${file.name}: ${sizeMB}MB (max 5MB)`);
+      } else {
+        validFiles.push(file);
+      }
+    }
+
+    // Show errors if any files were rejected
+    if (errors.length > 0) {
+      toast.error(
+        `${errors.length} ${errors.length === 1 ? "file" : "files"} too large:\n${errors.join("\n")}\n\nTip: Compress or resize images before uploading.`,
+        { duration: 5000 },
+      );
+    }
+
+    // Continue with valid files only
+    const filesToAdd = validFiles.slice(0, remainingSlots);
 
     if (filesToAdd.length === 0) return;
 
@@ -77,6 +104,11 @@ export function MultiPhotoUpload({
     // Add photos to state immediately to show preview
     const allPhotos = [...photos, ...newPhotos];
     onChange(allPhotos);
+
+    // Show success message if files were added
+    if (filesToAdd.length > 0) {
+      toast.success(`${filesToAdd.length} ${filesToAdd.length === 1 ? "image" : "images"} added`);
+    }
   };
 
   const openOrientationDialog = () => {
@@ -194,6 +226,30 @@ export function MultiPhotoUpload({
         className="hidden"
         disabled={disabled}
       />
+
+      {/* Image Guidelines */}
+      <div className="rounded-lg border bg-muted/50 p-4">
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+          <div className="space-y-2 text-sm">
+            <p className="font-medium">Preview Image Guidelines</p>
+            <ul className="space-y-1 text-muted-foreground">
+              <li>
+                • <strong>File size:</strong> Max 5MB per image
+              </li>
+              <li>
+                • <strong>Recommended dimensions:</strong> 1920x1080px (landscape) or 1080x1920px (portrait)
+              </li>
+              <li>
+                • <strong>Formats:</strong> PNG, JPEG, GIF, or WebP
+              </li>
+              <li>
+                • <strong>Best practices:</strong> Use clear screenshots that showcase your app's features
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
 
       {/* Horizontal Photo Carousel */}
       <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory pt-4">
@@ -314,7 +370,7 @@ export function MultiPhotoUpload({
       {/* Info Text */}
       <div className="flex items-center justify-between text-xs text-gray-500">
         <p>
-          {photos.length} / {maxPhotos} photos (Landscape: 16:9 • Portrait: 195:422)
+          {photos.length} / {maxPhotos} photos
         </p>
         {canAddMore && (
           <Button type="button" variant="outline" size="sm" onClick={openOrientationDialog} disabled={disabled}>

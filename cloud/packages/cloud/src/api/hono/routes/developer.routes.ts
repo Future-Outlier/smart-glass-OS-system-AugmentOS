@@ -643,7 +643,24 @@ async function uploadImage(c: AppContext) {
     // Validate file type
     const allowedMimeTypes = ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"];
     if (!allowedMimeTypes.includes(file.type)) {
-      return c.json({ error: "Invalid file type. Only PNG, JPEG, GIF, and WebP images are allowed." }, 400);
+      return c.json(
+        {
+          error:
+            "Invalid file type. Only PNG, JPEG, GIF, and WebP images are allowed. Please convert your image and try again.",
+        },
+        400,
+      );
+    }
+
+    // Validate file size
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB backend limit
+    if (file.size > MAX_SIZE) {
+      return c.json(
+        {
+          error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB. Please compress your image or use a smaller file.`,
+        },
+        400,
+      );
     }
 
     // Parse metadata
