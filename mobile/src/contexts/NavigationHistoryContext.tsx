@@ -1,8 +1,8 @@
-import {router, useFocusEffect, usePathname, useSegments} from "expo-router"
+import {router, useFocusEffect, useNavigationContainerRef, usePathname, useSegments} from "expo-router"
 import {createContext, useContext, useEffect, useRef, useCallback, useState} from "react"
 import {Alert, BackHandler} from "react-native"
 import {useNavigation} from "expo-router"
-import {CommonActions} from "@react-navigation/native"
+import {CommonActions, StackActions} from "@react-navigation/native"
 
 import {navigationRef} from "@/contexts/NavigationRef"
 
@@ -60,6 +60,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const setAndroidBackFn = (fn: () => void) => {
     androidBackFnRef.current = fn
   }
+  const rootNavigation = useNavigationContainerRef();
 
   useEffect(() => {
     // Add current path to history if it's different from the last entry
@@ -293,6 +294,15 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     const n = index + 2
     let updatedRoutes = historyRef.current.slice(0, -n)
     let updatedRoutesParams = historyParamsRef.current.slice(0, -n)
+
+    // // remove any /home routes (remove the same index from updatedRoutesParams):
+    // updatedRoutes.forEach((path, index) => {
+    //   if (path === "/home") {
+    //     updatedRoutes.splice(index, 1)
+    //     updatedRoutesParams.splice(index, 1)
+    //   }
+    // })
+    // remov
     // // add ghost route:
     // updatedRoutes.push("/")
     // updatedRoutesParams.push(undefined)
@@ -307,7 +317,8 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       newRouteState.map((route) => route.name),
     )
 
-    navigation.dispatch(
+    rootNavigation.dispatch(StackActions.popToTop());
+    rootNavigation.dispatch(
       CommonActions.reset({
         index: newRouteState.length - 1, // Point to current screen (last)
         routes: newRouteState,
@@ -323,13 +334,12 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
     // push the last route onto the stack:
     // dumb edge case, if the route is home, we need to clearHistoryAndGoHome()
+    // TODO: may no longer be needed:
     if (lastRoute === "/(tabs)/home" || lastRoute === "/home") {
       clearHistoryAndGoHome()
     } else {
       push(lastRoute, lastRouteParams)
     }
-    // push(lastRoute, lastRouteParams)
-    // push(lastRoute, lastRouteParams)
   }
 
   // the only routes in the stack will be home and the one we pass:
