@@ -49,6 +49,7 @@ interface OnboardingGuideProps {
   endButtonText?: string
   endButtonFn?: () => void
   exitFn?: () => void
+  showCloseButton?: boolean
 }
 
 // Find next video step's source for preloading
@@ -64,6 +65,7 @@ const findNextVideoSource = (steps: OnboardingStep[], fromIndex: number): VideoS
 export function OnboardingGuide({
   steps,
   showSkipButton = true,
+  showCloseButton = true,
   autoStart = false,
   mainTitle,
   mainSubtitle,
@@ -576,7 +578,7 @@ export function OnboardingGuide({
   return (
     <>
       <Header
-        leftIcon="x"
+        leftIcon={showCloseButton ? "x" : undefined}
         RightActionComponent={
           <View className="flex flex-row gap-2">
             {hasStarted && <Text className="text-center text-sm font-medium" text={counter} />}

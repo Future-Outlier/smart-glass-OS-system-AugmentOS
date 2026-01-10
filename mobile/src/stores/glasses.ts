@@ -30,6 +30,7 @@ export interface GlassesInfo {
   connected: boolean
   micEnabled: boolean
   connectionState: GlassesConnectionState
+  btcConnected: boolean
   // device info
   modelName: string
   androidVersion: string
@@ -83,6 +84,7 @@ const initialState: GlassesInfo = {
   connected: false,
   micEnabled: false,
   connectionState: "disconnected",
+  btcConnected: false,
   // device info
   modelName: "",
   androidVersion: "",

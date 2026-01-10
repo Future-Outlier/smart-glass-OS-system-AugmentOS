@@ -73,7 +73,7 @@ export default function InitScreen() {
 
   const navigateToDestination = async () => {
     if (!user?.email) {
-      replaceAll("/auth/login")
+      replaceAll("/auth/start")
       return
     }
 
@@ -97,7 +97,7 @@ export default function InitScreen() {
 
   const checkLoggedIn = async (): Promise<void> => {
     if (!user) {
-      replaceAll("/auth/login")
+      replaceAll("/auth/start")
       return
     }
     handleTokenExchange()

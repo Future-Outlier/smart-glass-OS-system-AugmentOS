@@ -73,7 +73,7 @@ export const ProfileCard = () => {
   if (loading) {
     return (
       <View style={{height: 234, justifyContent: "center"}}>
-        <ActivityIndicator size="large" color={theme.colors.palette.primary500} />
+        <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
       </View>
     )
   }

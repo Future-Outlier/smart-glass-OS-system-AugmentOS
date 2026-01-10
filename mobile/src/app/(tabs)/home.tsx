@@ -10,13 +10,13 @@ import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
 import {IncompatibleApps} from "@/components/home/IncompatibleApps"
 import {PairGlassesCard} from "@/components/home/PairGlassesCard"
 import {Header, Screen} from "@/components/ignite"
-import CloudConnection from "@/components/misc/CloudConnection"
 import NonProdWarning from "@/components/misc/NonProdWarning"
 import {Group} from "@/components/ui"
 import {Spacer} from "@/components/ui/Spacer"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useRefreshApplets} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import WebsocketStatus from "@/components/error/WebsocketStatus"
 
 export default function Homepage() {
   const {theme} = useAppTheme()
@@ -35,7 +35,8 @@ export default function Homepage() {
       <Header
         leftTx="home:title"
         RightActionComponent={
-          <View style={{flexDirection: "row", alignItems: "center"}}>
+          <View className="flex-row items-center flex-1 justify-end">
+            <WebsocketStatus />
             <NonProdWarning />
             <MentraLogoStandalone />
           </View>
@@ -44,7 +45,6 @@ export default function Homepage() {
 
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
         <Spacer height={theme.spacing.s4} />
-        <CloudConnection />
         <Group>
           {!defaultWearable && <PairGlassesCard />}
           {defaultWearable && <CompactDeviceStatus />}
