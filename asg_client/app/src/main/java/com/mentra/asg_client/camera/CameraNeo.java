@@ -1962,7 +1962,7 @@ public class CameraNeo extends LifecycleService {
                     notifyVideoError(currentVideoId, "Failed to start recording: " + e.getMessage());
                     isRecording = false;
                 }
-            }, 400); // 400ms delay to ensure surface is ready
+            }, 600); // 600ms delay to ensure surface is ready
         } catch (CameraAccessException | IllegalStateException e) {
             Log.e(TAG, "Failed to start video recording", e);
             notifyVideoError(currentVideoId, "Failed to start recording: " + e.getMessage());
