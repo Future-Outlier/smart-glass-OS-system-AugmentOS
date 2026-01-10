@@ -28,7 +28,7 @@ const STATUS_CONFIG: Record<DisplayStatus, {icon: string; label: () => string; b
   disconnected: {
     icon: "wifi-off",
     label: () => translate("connection:disconnected"),
-    bgClass: "bg-red-500",
+    bgClass: "bg-destructive",
     iconColor: "#fff",
   },
 }

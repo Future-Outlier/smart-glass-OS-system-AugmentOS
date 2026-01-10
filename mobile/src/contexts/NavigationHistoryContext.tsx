@@ -60,7 +60,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const setAndroidBackFn = (fn: () => void) => {
     androidBackFnRef.current = fn
   }
-  const rootNavigation = useNavigationContainerRef();
+  const rootNavigation = useNavigationContainerRef()
 
   useEffect(() => {
     // Add current path to history if it's different from the last entry
@@ -77,10 +77,10 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
   // block the back button on android when preventBack is true:
   useEffect(() => {
-    if (!preventBack) return
-    console.log("REGISTERING BACK HANDLER =========================")
+    // if (!preventBack) return
+    console.log("NAV: REGISTERING BACK HANDLER =========================")
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
-      console.log("BACK HANDLER CALLED =========================")
+      console.log("NAV: BACK HANDLER CALLED =========================")
       if (androidBackFnRef.current) {
         androidBackFnRef.current()
       }
@@ -102,6 +102,49 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       androidBackFnRef.current = undefined
     }
   }, [])
+
+  useEffect(() => {
+    let sub = navigation.addListener("state", (state) => {
+      // console.log("NAV: iOS: state", state)
+      // console.log("NAV: iOS: state.routeNames", state.data.state.routeNames)
+      // console.log("NAV: iOS: state.routes", state.data.state.routes)
+      // let a = state.data.state.routes
+      // console.log("NAV: iOS: a", a[0].state?.routes)
+      // if (a.length > 1) {
+      //   console.log("NAV: iOS: b", a[1])
+      // }
+      // console.log("NAV: iOS: BBB", state.data.state)
+    })
+  }, [navigation])
+
+  // useEffect(() => {
+  //   let currentRoute = rootNavigation.getCurrentRoute()
+  //   console.log("NAV: iOS: currentRoute", currentRoute)
+  //   let currentRouteOptions = rootNavigation.getCurrentOptions()
+  //   console.log("NAV: iOS: currentRouteOptions", currentRouteOptions)
+  // }, [pathname])
+
+
+  // const unsubscribe = rootNavigation..addListener("beforeRemove", (e) => {
+  //   // Triggered on back swipe, back button, or programmatic goBack()
+  //   console.log("NAV: iOS: User is leaving the screen")
+
+  //   // Optionally prevent navigation:
+  //   // e.preventDefault()
+  // })
+  
+  // useEffect(() => {
+  //   console.log("NAV: iOS: useEffect()")
+  //   const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+  //     // Triggered on back swipe, back button, or programmatic goBack()
+  //     console.log("NAV: iOS: User is leaving the screen")
+
+  //     // Optionally prevent navigation:
+  //     // e.preventDefault()
+  //   })
+
+  //   return unsubscribe
+  // }, [navigation])
 
   const goBack = () => {
     console.info("NAV: goBack()")
@@ -201,8 +244,6 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     // list.forEach((path) => {
     //   push(path)
     // })
-
-    
   }
 
   const clearHistoryAndGoHome = () => {
@@ -317,7 +358,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       newRouteState.map((route) => route.name),
     )
 
-    rootNavigation.dispatch(StackActions.popToTop());
+    rootNavigation.dispatch(StackActions.popToTop())
     rootNavigation.dispatch(
       CommonActions.reset({
         index: newRouteState.length - 1, // Point to current screen (last)
