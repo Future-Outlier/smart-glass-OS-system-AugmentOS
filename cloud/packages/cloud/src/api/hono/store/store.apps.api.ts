@@ -28,7 +28,7 @@ app.get("/published-apps", getPublicApps);
 app.get("/search", searchApps);
 
 // Authenticated endpoints (require user auth)
-app.get("/published-apps-loggedin", clientAuth, requireUser, getAvailableApps);
+app.get("/published-apps-loggedin", clientAuth, requireUser, getPublishedAppsForUser);
 app.get("/installed", clientAuth, requireUser, getInstalledApps);
 app.post("/install/:packageName", clientAuth, requireUser, installApp);
 app.post("/uninstall/:packageName", clientAuth, requireUser, uninstallApp);
@@ -66,20 +66,22 @@ async function getPublicApps(c: AppContext) {
 
 /**
  * GET /api/store/published-apps-loggedin
- * Get available apps for authenticated user (filters by organization if provided).
+ * Get available apps for authenticated user with installation status.
  * Requires authentication.
  */
-async function getAvailableApps(c: AppContext) {
+async function getPublishedAppsForUser(c: AppContext) {
   try {
     const email = c.get("email");
+    const user = c.get("user");
 
     if (!email) {
       return c.json({ error: "Authentication required" }, 401);
     }
+    if (!user) {
+      return c.json({ error: "User not found" }, 401);
+    }
 
-    const organizationId = c.req.query("organizationId");
-
-    const appsWithStatus = await storeService.getPublishedAppsForUser(email, organizationId);
+    const appsWithStatus = await storeService.getPublishedAppsForUser(user);
 
     return c.json({ success: true, data: appsWithStatus });
   } catch (e: unknown) {
@@ -102,12 +104,16 @@ async function getAvailableApps(c: AppContext) {
 async function getInstalledApps(c: AppContext) {
   try {
     const email = c.get("email");
+    const user = c.get("user");
 
     if (!email) {
       return c.json({ error: "Authentication required" }, 401);
     }
+    if (!user) {
+      return c.json({ error: "User not found" }, 401);
+    }
 
-    const installedApps = await storeService.getInstalledAppsForUser(email);
+    const installedApps = await storeService.getInstalledAppsForUser(user);
 
     return c.json({ success: true, data: installedApps });
   } catch (e: unknown) {
@@ -157,19 +163,17 @@ async function getAppDetails(c: AppContext) {
 /**
  * GET /api/store/search
  * Search for apps by query string.
- * Optional organizationId filter.
  * No authentication required.
  */
 async function searchApps(c: AppContext) {
   try {
     const query = c.req.query("q");
-    const organizationId = c.req.query("organizationId");
 
     if (!query) {
       return c.json({ error: "Missing search query parameter 'q'" }, 400);
     }
 
-    const filteredApps = await storeService.searchApps(query, organizationId);
+    const filteredApps = await storeService.searchApps(query);
 
     return c.json({ success: true, data: filteredApps });
   } catch (e: unknown) {
@@ -192,9 +196,13 @@ async function searchApps(c: AppContext) {
 async function installApp(c: AppContext) {
   try {
     const email = c.get("email");
+    const user = c.get("user");
 
     if (!email) {
       return c.json({ error: "Authentication required" }, 401);
+    }
+    if (!user) {
+      return c.json({ error: "User not found" }, 401);
     }
 
     const packageName = c.req.param("packageName");
@@ -203,7 +211,7 @@ async function installApp(c: AppContext) {
       return c.json({ error: "Missing packageName" }, 400);
     }
 
-    const result = await storeService.installAppForUser(email, packageName);
+    const result = await storeService.installAppForUser(user, packageName);
 
     if (result.alreadyInstalled) {
       return c.json({ success: true, message: "App already installed" });
@@ -236,9 +244,13 @@ async function installApp(c: AppContext) {
 async function uninstallApp(c: AppContext) {
   try {
     const email = c.get("email");
+    const user = c.get("user");
 
     if (!email) {
       return c.json({ error: "Authentication required" }, 401);
+    }
+    if (!user) {
+      return c.json({ error: "User not found" }, 401);
     }
 
     const packageName = c.req.param("packageName");
@@ -258,7 +270,7 @@ async function uninstallApp(c: AppContext) {
     }
 
     // Uninstall app using service
-    await storeService.uninstallAppForUser(email, packageName);
+    await storeService.uninstallAppForUser(user, packageName);
 
     return c.json({ success: true, message: "App uninstalled successfully" });
   } catch (e: unknown) {

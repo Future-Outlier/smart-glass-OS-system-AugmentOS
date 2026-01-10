@@ -225,48 +225,7 @@ const AppStoreMobile: React.FC = () => {
    */
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!searchQuery.trim()) {
-      fetchApps();
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const filterOptions: AppFilterOptions = {};
-      if (orgId) {
-        filterOptions.organizationId = orgId;
-      }
-
-      const results = await api.app.searchApps(searchQuery, orgId ? filterOptions : undefined);
-
-      if (isAuthenticated && isAuthTokenReady()) {
-        try {
-          const installedApps = await api.app.getInstalledApps();
-
-          const installedMap = new Map<string, boolean>();
-          installedApps.forEach((app) => {
-            installedMap.set(app.packageName, true);
-          });
-
-          results.forEach((app) => {
-            app.isInstalled = installedMap.has(app.packageName);
-          });
-        } catch (err) {
-          console.error("Error updating search results with install status:", err);
-        }
-      }
-
-      setApps(results);
-    } catch (err) {
-      console.error("Error searching apps:", err);
-      toast.error("Failed to search apps");
-      setError("Failed to search apps. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    // Do nothing on Enter - search is handled by handleSearchChange as you type
   };
 
   /**

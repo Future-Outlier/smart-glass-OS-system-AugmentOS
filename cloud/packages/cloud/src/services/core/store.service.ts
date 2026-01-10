@@ -4,9 +4,9 @@
  * installation status, and user-specific app data.
  */
 
-import { User } from "../../models/user.model";
-import appService from "./app.service";
+import { User, UserI } from "../../models/user.model";
 import { logger as rootLogger } from "../logging/pino-logger";
+import App, { AppI } from "../../models/app.model";
 
 const logger = rootLogger.child({ service: "store.service" });
 
@@ -16,16 +16,7 @@ export interface AppWithInstallStatus {
   description?: string;
   organizationId?: unknown;
   isInstalled: boolean;
-   
-  [key: string]: any; // Allow other app properties
-}
 
-export interface InstalledAppWithDate {
-  packageName: string;
-  name?: string;
-  description?: string;
-  installedDate: Date;
-   
   [key: string]: any; // Allow other app properties
 }
 
@@ -34,31 +25,21 @@ export interface InstalledAppWithDate {
  * No authentication required.
  */
 export async function getPublishedApps() {
-  return await appService.getAvailableApps();
+  return App.find({ appStoreStatus: "PUBLISHED" });
 }
 
 /**
  * Get all published apps with installation status for a specific user.
  * Requires user email for checking installation status.
  *
- * @param userEmail - Email of the authenticated user
- * @param organizationId - Optional organization filter
+ * @param user - Email of the authenticated user
  * @returns Apps with isInstalled flag added
  */
-export async function getPublishedAppsForUser(
-  userEmail: string,
-  organizationId?: string,
-): Promise<AppWithInstallStatus[]> {
+export async function getPublishedAppsForUser(user: UserI): Promise<AppWithInstallStatus[]> {
   // Get all available apps
-  let apps = await appService.getAvailableApps();
-
-  // Filter by organization if specified
-  if (organizationId) {
-    apps = apps.filter((app) => app.organizationId?.toString() === organizationId);
-  }
+  const apps = await getPublishedApps();
 
   // Get user to check which apps are installed
-  const user = await User.findOrCreateUser(userEmail);
   const installedPackageNames = user.installedApps?.map((ia) => ia.packageName) || [];
 
   // Add installation status
@@ -72,29 +53,24 @@ export async function getPublishedAppsForUser(
 
 /**
  * Get only the apps that a user has installed.
- * Includes installation date for each app.
  *
- * @param userEmail - Email of the authenticated user
- * @returns User's installed apps with installation dates
+ * @param user - User object of the authenticated user
+ * @returns User's installed apps
  */
-export async function getInstalledAppsForUser(userEmail: string): Promise<InstalledAppWithDate[]> {
-  const user = await User.findOrCreateUser(userEmail);
+export async function getInstalledAppsForUser(user: UserI): Promise<AppI[]> {
+  // Get package names from user's installed apps
+  const installedPackageNames = (user.installedApps || []).map((ia) => ia.packageName);
 
-  // Get full app details for each installed app
-  const installedApps = await Promise.all(
-    (user.installedApps || []).map(async (installedApp) => {
-      const appDetails = await appService.getApp(installedApp.packageName);
-      return {
-        ...appDetails,
-        installedDate: installedApp.installedDate,
-      };
-    }),
-  );
+  if (installedPackageNames.length === 0) {
+    return [];
+  }
 
-  // Filter out any apps that no longer exist
-  const validApps = installedApps.filter((app) => app && app.packageName) as InstalledAppWithDate[];
+  // Find all apps where packageName is in the user's installed apps list
+  const apps = await App.find({
+    packageName: { $in: installedPackageNames },
+  }).lean();
 
-  return validApps;
+  return apps as AppI[];
 }
 
 /**
@@ -104,7 +80,10 @@ export async function getInstalledAppsForUser(userEmail: string): Promise<Instal
  * @returns App details or null if not found
  */
 export async function getAppByPackageName(packageName: string) {
-  return await appService.getApp(packageName);
+  const app = (await App.findOne({
+    packageName: packageName,
+  }).lean()) as AppI;
+  return app;
 }
 
 /**
@@ -112,45 +91,33 @@ export async function getAppByPackageName(packageName: string) {
  * Searches in app name, description, and package name.
  *
  * @param query - Search query string
- * @param organizationId - Optional organization filter
  * @returns Filtered apps matching the search query
  */
-export async function searchApps(query: string, organizationId?: string) {
-  let apps = await appService.getAvailableApps();
+export async function searchApps(query: string) {
+  // Use MongoDB $regex for case-insensitive search across multiple fields
+  const apps = await App.find({
+    appStoreStatus: "PUBLISHED",
+    $or: [{ name: { $regex: query, $options: "i" } }, { packageName: { $regex: query, $options: "i" } }],
+  }).lean();
 
-  // Filter by organization if specified
-  if (organizationId) {
-    apps = apps.filter((app) => app.organizationId?.toString() === organizationId);
-  }
-
-  // Search by name, description, or packageName (case-insensitive)
-  const searchQuery = query.toLowerCase();
-  const filteredApps = apps.filter(
-    (app) =>
-      app.name?.toLowerCase().includes(searchQuery) ||
-      app.description?.toLowerCase().includes(searchQuery) ||
-      app.packageName?.toLowerCase().includes(searchQuery),
-  );
-
-  return filteredApps;
+  return apps as AppI[];
 }
 
 /**
  * Install an app for a user.
  *
- * @param userEmail - Email of the authenticated user
+ * @param user - User object of the authenticated user
  * @param packageName - Package name of the app to install
  * @returns Success status and message
  */
-export async function installAppForUser(userEmail: string, packageName: string) {
+export async function installAppForUser(user: UserI, packageName: string) {
   // Verify app exists
-  const app = await appService.getApp(packageName);
+  const app = await getAppByPackageName(packageName);
   if (!app) {
     throw new Error("App not found");
   }
 
   // Install app for user
-  const user = await User.findOrCreateUser(userEmail);
 
   // Check if already installed
   if (user.isAppInstalled(packageName)) {
@@ -158,7 +125,7 @@ export async function installAppForUser(userEmail: string, packageName: string) 
   }
 
   await user.installApp(packageName);
-  logger.info({ userEmail, packageName }, "App installed successfully");
+  logger.info({ userId: user.email, packageName }, "App installed successfully");
 
   return { alreadyInstalled: false };
 }
@@ -167,12 +134,10 @@ export async function installAppForUser(userEmail: string, packageName: string) 
  * Uninstall an app for a user.
  * Automatically stops the app if it's running.
  *
- * @param userEmail - Email of the authenticated user
+ * @param user - User object of the authenticated user
  * @param packageName - Package name of the app to uninstall
  */
-export async function uninstallAppForUser(userEmail: string, packageName: string) {
-  const user = await User.findOrCreateUser(userEmail);
-
+export async function uninstallAppForUser(user: UserI, packageName: string) {
   // Check if app is installed
   if (!user.isAppInstalled(packageName)) {
     throw new Error("App is not installed");
@@ -183,7 +148,7 @@ export async function uninstallAppForUser(userEmail: string, packageName: string
 
   // Uninstall app
   await user.uninstallApp(packageName);
-  logger.info({ userEmail, packageName }, "App uninstalled successfully");
+  logger.info({ userId: user.email, packageName }, "App uninstalled successfully");
 }
 
 export default {
