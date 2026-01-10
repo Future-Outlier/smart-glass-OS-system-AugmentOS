@@ -147,9 +147,11 @@ struct ViewState {
     // LC3 Audio Encoding
     // Audio output format enum
     enum AudioOutputFormat { case lc3, pcm }
+    // Canonical LC3 config: 16kHz sample rate, 10ms frame duration
+    // Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps)
     // Persistent LC3 converter for encoding/decoding
     private var lc3Converter: PcmConverter?
-    private let LC3_FRAME_SIZE = 20 // bytes per LC3 frame (canonical config)
+    private var lc3FrameSize = 20 // bytes per LC3 frame (default: 20 = 16kbps)
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = .lc3
 
@@ -616,6 +618,20 @@ struct ViewState {
     func updateAudioOutputFormat(_ format: AudioOutputFormat) {
         audioOutputFormat = format
         Bridge.log("Audio output format set to: \(format)")
+    }
+
+    /// Set the LC3 frame size for phone→cloud encoding.
+    /// Valid values: 20 (16kbps), 40 (32kbps), 60 (48kbps).
+    func setLC3FrameSize(_ frameSize: Int) {
+        if frameSize != 20 && frameSize != 40 && frameSize != 60 {
+            Bridge.log("MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 20.")
+            lc3FrameSize = 20
+            lc3Converter?.setOutputFrameSize(20)
+            return
+        }
+        lc3FrameSize = frameSize
+        lc3Converter?.setOutputFrameSize(frameSize)
+        Bridge.log("MAN: LC3 frame size set to \(frameSize) bytes (\(frameSize * 800 / 1000)kbps)")
     }
 
     func updateMetricSystem(_ enabled: Bool) {

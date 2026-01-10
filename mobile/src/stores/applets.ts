@@ -112,7 +112,6 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
                 },
               },
             ],
-            {iconName: "alert-circle-outline"},
           )
 
           throw new Error("No model available")

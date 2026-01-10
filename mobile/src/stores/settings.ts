@@ -214,6 +214,15 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  // LC3 audio quality setting (frame size in bytes)
+  // 20 = 16kbps (low bandwidth), 40 = 32kbps (balanced), 60 = 48kbps (high quality)
+  lc3_frame_size: {
+    key: "lc3_frame_size",
+    defaultValue: () => 40,
+    writable: true,
+    saveOnServer: false,
+    persist: true,
+  },
   preferred_mic: {
     key: "preferred_mic",
     defaultValue: () => "auto",
@@ -394,6 +403,7 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.bypass_audio_encoding_for_debugging.key,
   SETTINGS.metric_system.key,
   SETTINGS.enforce_local_transcription.key,
+  SETTINGS.lc3_frame_size.key,
   SETTINGS.preferred_mic.key,
   SETTINGS.screen_disabled.key,
   // glasses settings:

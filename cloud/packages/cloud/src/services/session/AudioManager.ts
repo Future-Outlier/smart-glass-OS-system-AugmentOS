@@ -172,14 +172,18 @@ export class AudioManager {
         this.lc3Service = undefined;
       }
 
-      // Create new LC3 service for this session
-      this.lc3Service = createLC3Service(this.userSession.sessionId);
+      // Get frame size from config, default to 20 bytes (16kbps)
+      const frameSizeBytes = this.lc3Config?.frameSizeBytes ?? 20;
+
+      // Create new LC3 service for this session with the configured frame size
+      this.lc3Service = createLC3Service(this.userSession.sessionId, frameSizeBytes);
       await this.lc3Service.initialize();
 
       this.logger.info(
         {
           sessionId: this.userSession.sessionId,
           lc3Config: this.lc3Config,
+          frameSizeBytes,
         },
         "LC3 decoder initialized successfully",
       );
