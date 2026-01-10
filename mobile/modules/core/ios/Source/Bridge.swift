@@ -17,15 +17,28 @@ class Bridge {
         eventCallback = callback
     }
 
+    /// Thread-safe event dispatch - ensures callback is invoked on main thread
+    /// to avoid React Native bridge threading issues that can cause EXC_BREAKPOINT
+    private static func dispatchEvent(_ eventName: String, _ data: [String: Any]) {
+        guard let callback = eventCallback else { return }
+        if Thread.isMainThread {
+            callback(eventName, data)
+        } else {
+            DispatchQueue.main.async {
+                callback(eventName, data)
+            }
+        }
+    }
+
     static func log(_ message: String) {
         let msg = "CORE:\(message)"
         let data: [String: Any] = ["body": msg]
-        eventCallback?("CoreMessageEvent", data)
+        dispatchEvent("CoreMessageEvent", data)
     }
 
     static func sendEvent(withName: String, body: String) {
         let data: [String: Any] = ["body": body]
-        eventCallback?(withName, data)
+        dispatchEvent(withName, data)
     }
 
     static func showBanner(type: String, message: String) {
@@ -328,6 +341,6 @@ class Bridge {
         let jsonData = try! JSONSerialization.data(withJSONObject: body)
         let jsonString = String(data: jsonData, encoding: .utf8)
         let data: [String: Any] = ["body": jsonString!]
-        eventCallback?("CoreMessageEvent", data)
+        dispatchEvent("CoreMessageEvent", data)
     }
 }

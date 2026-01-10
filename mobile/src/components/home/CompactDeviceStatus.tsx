@@ -8,6 +8,7 @@ import {Button, Icon, Text} from "@/components/ignite"
 import ConnectedSimulatedGlassesInfo from "@/components/mirror/ConnectedSimulatedGlassesInfo"
 import BrightnessSetting from "@/components/settings/BrightnessSetting"
 import {Divider} from "@/components/ui/Divider"
+import {StatusCard} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -52,6 +53,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const caseOpen = useGlassesStore((state) => state.caseOpen)
   const batteryLevel = useGlassesStore((state) => state.batteryLevel)
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
+  const wifiSsid = useGlassesStore((state) => state.wifiSsid)
 
   if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
     return <ConnectedSimulatedGlassesInfo style={style} mirrorStyle={{backgroundColor: theme.colors.background}} />
@@ -204,16 +206,11 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           )}
           <MicIcon width={18} height={18} />
           <Icon name="bluetooth-connected" size={18} color={theme.colors.foreground} />
-          {features?.hasWifi &&
-            (wifiConnected ? (
-              <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
-                <Icon name="wifi" size={18} color={theme.colors.foreground} />
-              </Button>
-            ) : (
-              <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
-                <Icon name="wifi-off" size={18} color={theme.colors.destructive} />
-              </Button>
-            ))}
+          {features?.hasWifi && (
+            <TouchableOpacity onPress={() => push("/wifi/scan")}>
+              <Icon name={wifiConnected ? "wifi" : "wifi-off"} size={18} color={theme.colors.foreground} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -256,12 +253,36 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           <BatteryStatus compact={true} />
 
           <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2}}>
-            <Button
-              flex
-              tx="home:glassesMirror"
-              preset="alternate"
-              onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}
-            />
+            {/* Glasses Mirror - only show for devices with display */}
+            {features?.display && (
+              <Button
+                flex
+                tx="home:glassesMirror"
+                preset="alternate"
+                onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}
+              />
+            )}
+            {/* WiFi Status - show for devices with WiFi but no display */}
+            {features?.hasWifi && !features?.display && (
+              <StatusCard
+                style={{
+                  backgroundColor: theme.colors.background,
+                  flex: 1,
+                  paddingHorizontal: theme.spacing.s4,
+                }}
+                label={translate("wifi:wifi")}
+                textStyle={{fontSize: 14, fontWeight: "600"}}
+                onPress={() => push("/wifi/scan")}
+                iconEnd={
+                  <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s1}}>
+                    <Icon name={wifiConnected ? "wifi" : "wifi-off"} size={16} color={theme.colors.text} />
+                    <Text style={{fontSize: 14, fontWeight: "600", color: theme.colors.text}} numberOfLines={1}>
+                      {wifiConnected ? wifiSsid || "Connected" : "Disconnected"}
+                    </Text>
+                  </View>
+                }
+              />
+            )}
             <Button flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
               <Icon name="settings" size={18} color={theme.colors.foreground} />
             </Button>
