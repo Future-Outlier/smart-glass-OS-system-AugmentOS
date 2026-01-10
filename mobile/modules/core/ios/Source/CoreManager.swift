@@ -201,6 +201,9 @@ struct ViewState {
         vad = SileroVADStrategy()
         super.init()
 
+        // Start memory monitoring (logs every 30s to help detect leaks)
+        // MemoryMonitor.start()
+
         // Initialize SherpaOnnx Transcriber
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let window = windowScene.windows.first,

@@ -20,7 +20,7 @@ import {
   View,
   ViewStyle,
 } from "react-native"
-import RNFS from "react-native-fs"
+import * as RNFS from "@dr.pogodin/react-native-fs"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 import {useShallow} from "zustand/react/shallow"
