@@ -1036,10 +1036,8 @@ class GallerySyncService {
    * ⚠️ DEPRECATED: This method is no longer used. Photos are now saved to camera roll
    * immediately after each download completes (see executeDownload method).
    *
-   * NOTE: The old batch approach sorted files chronologically before saving, which ensured
-   * gallery apps displayed them in capture order. The new immediate-save approach saves
-   * files in download order (small photos first, then videos), so they may appear out of
-   * chronological sequence in system gallery apps.
+   * NOTE: Files now download in chronological order (oldest first), so the immediate-save
+   * approach will also save them in chronological order to the system gallery.
    */
   private async autoSaveToCameraRoll(downloadedFiles: PhotoInfo[]): Promise<void> {
     const shouldAutoSave = await gallerySettingsService.getAutoSaveToCameraRoll()
