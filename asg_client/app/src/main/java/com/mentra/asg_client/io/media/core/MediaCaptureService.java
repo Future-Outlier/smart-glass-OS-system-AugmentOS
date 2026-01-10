@@ -505,7 +505,7 @@ public class MediaCaptureService {
         Log.i(TAG, "🎥 triggerVideoRecordingLed() called with brightness: " + brightness);
 
         if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
-            hardwareManager.setRgbLedSolidWhite(1800000, 1); // 30 minute solid white LED
+            hardwareManager.setRgbLedSolidWhite(1800000, brightness); // 30 minute solid white LED
             Log.i(TAG, "🎥 Video recording LED (solid white) triggered via hardware manager at brightness " + brightness);
         } else {
             Log.w(TAG, "⚠️ RGB LED not supported on this device");
