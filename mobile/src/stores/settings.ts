@@ -107,8 +107,8 @@ export const SETTINGS: Record<string, Setting> = {
   // ui state:
   theme_preference: {
     key: "theme_preference",
-    defaultValue: () => "light",
-    // Force light mode - dark mode is not complete yet
+    defaultValue: () => (__DEV__ ? "system" : "light"),
+    // Force light mode - i mode is not complete yet
     // override: () => "light",
     writable: true,
     saveOnServer: true,

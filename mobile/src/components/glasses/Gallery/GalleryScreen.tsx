@@ -1325,7 +1325,7 @@ const $syncButtonProgressBar: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 
 const $syncButtonProgressFill: ThemedStyle<ViewStyle> = ({colors}) => ({
   height: "100%",
-  backgroundColor: colors.palette.primary500,
+  backgroundColor: colors.primary,
   borderRadius: 2,
 })
 

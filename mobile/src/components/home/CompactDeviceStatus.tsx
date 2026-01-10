@@ -44,13 +44,14 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [brightness, setBrightness] = useSetting(SETTINGS.brightness.key)
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
-  const glassesConnected = useGlassesStore(state => state.connected)
-  const glassesStyle = useGlassesStore(state => state.style)
-  const glassesColor = useGlassesStore(state => state.color)
-  const caseRemoved = useGlassesStore(state => state.caseRemoved)
-  const caseBatteryLevel = useGlassesStore(state => state.caseBatteryLevel)
-  const caseOpen = useGlassesStore(state => state.caseOpen)
-  const batteryLevel = useGlassesStore(state => state.batteryLevel)
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const glassesStyle = useGlassesStore((state) => state.style)
+  const glassesColor = useGlassesStore((state) => state.color)
+  const caseRemoved = useGlassesStore((state) => state.caseRemoved)
+  const caseBatteryLevel = useGlassesStore((state) => state.caseBatteryLevel)
+  const caseOpen = useGlassesStore((state) => state.caseOpen)
+  const batteryLevel = useGlassesStore((state) => state.batteryLevel)
+  const wifiConnected = useGlassesStore((state) => state.wifiConnected)
 
   if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
     return <ConnectedSimulatedGlassesInfo style={style} mirrorStyle={{backgroundColor: theme.colors.background}} />
@@ -156,17 +157,6 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             </>
           )}
         </View>
-        {/* <View style={[themed($disconnectedImageContainer)]}> */}
-        {/* </View> */}
-        {/* <Button
-          textStyle={[{marginLeft: theme.spacing.s12}]}
-          textAlignment="left"
-          LeftAccessory={() => <SolarLineIconsSet4 color={theme.colors.textAlt} />}
-          RightAccessory={() => <ChevronRight color={theme.colors.textAlt} />}
-          onPress={handleConnectOrDisconnect}
-          tx="home:connectGlasses"
-          disabled={isCheckingConnectivity}
-        /> */}
       </View>
     )
   }
@@ -181,7 +171,6 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             <Image source={getCurrentGlassesImage()} style={[themed($glassesImage), {width: 54, maxHeight: 24}]} />
             <Text style={themed($headerText)}>{defaultWearable}</Text>
           </View>
-          {/* <Icon icon="bluetooth-connected" size={18} color={theme.colors.textDim} /> */}
         </View>
         <View style={{marginHorizontal: -theme.spacing.s6}}>
           <ConnectedSimulatedGlassesInfo showHeader={false} mirrorStyle={{backgroundColor: theme.colors.background}} />
@@ -215,7 +204,16 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           )}
           <MicIcon width={18} height={18} />
           <Icon name="bluetooth-connected" size={18} color={theme.colors.foreground} />
-          {features?.hasWifi && <Icon name="wifi" size={18} color={theme.colors.foreground} />}
+          {features?.hasWifi &&
+            (wifiConnected ? (
+              <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
+                <Icon name="wifi" size={18} color={theme.colors.foreground} />
+              </Button>
+            ) : (
+              <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
+                <Icon name="wifi-off" size={18} color={theme.colors.destructive} />
+              </Button>
+            ))}
         </View>
       </View>
 
