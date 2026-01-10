@@ -463,7 +463,9 @@ public class MediaCaptureService {
         }
 
         Log.d(TAG, "📸 Flashing privacy LED synchronized with shutter sound at 50% brightness");
-        hardwareManager.setRecordingLedBrightness(50, 1000); // 50% brightness, 1000ms flash duration
+        // TODO: RESTORE LOWER LED BRIGHTNESS LATER
+        // hardwareManager.setRecordingLedBrightness(50, 1000); // 50% brightness, 1000ms flash duration
+        hardwareManager.flashRecordingLed(1000);
     }
     
     /**
@@ -707,7 +709,8 @@ public class MediaCaptureService {
 
                     // Turn on recording flash LED if enabled with controlled brightness
                     if (enableLed && hardwareManager.supportsLedBrightness()) {
-                        hardwareManager.setRecordingLedBrightness(50); // 50% brightness for video
+                        // TODO: RESTORE LOWER LED BRIGHTNESS LATER
+                        //hardwareManager.setRecordingLedBrightness(50); // 50% brightness for video
                         hardwareManager.setRecordingLedOn();
                         Log.d(TAG, "Recording flash LED turned ON at 50% brightness");
                     } else if (enableLed && hardwareManager.supportsRecordingLed()) {
