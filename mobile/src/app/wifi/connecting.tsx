@@ -23,8 +23,8 @@ export default function WifiConnectingScreen() {
   const {theme} = useAppTheme()
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "success" | "failed">("connecting")
   const [errorMessage, setErrorMessage] = useState("")
-  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const failureGracePeriodRef = useRef<NodeJS.Timeout | null>(null)
+  const connectionTimeoutRef = useRef<number | null>(null)
+  const failureGracePeriodRef = useRef<number | null>(null)
 
   const {goBack, navigate, pushPrevious} = useNavigationHistory()
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)

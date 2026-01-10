@@ -1,26 +1,15 @@
 import {FontAwesome} from "@expo/vector-icons"
 import * as WebBrowser from "expo-web-browser"
 import {useState} from "react"
-import {
-  ActivityIndicator,
-  Keyboard,
-  Modal,
-  Platform,
-  ScrollView,
-  TextInput,
-  TextStyle,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from "react-native"
+import {ActivityIndicator, Keyboard, Modal, Platform, ScrollView, TextInput, TouchableOpacity, View} from "react-native"
 
-import {Button, Header, Screen, Text} from "@/components/ignite"
+import {Button, Header, Icon, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {spacing, ThemedStyle} from "@/theme"
+import {spacing} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import mentraAuth from "@/utils/auth/authClient"
 import {mapAuthError} from "@/utils/auth/authErrors"
@@ -36,7 +25,7 @@ export default function EmailLoginScreen() {
   const [isAuthLoading, setIsAuthLoading] = useState(false)
 
   const {goBack, replace, push} = useNavigationHistory()
-  const {theme, themed} = useAppTheme()
+  const {theme} = useAppTheme()
   const [isChina] = useSetting(SETTINGS.china_deployment.key)
 
   const validateInputs = (): boolean => {
@@ -115,24 +104,25 @@ export default function EmailLoginScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($container)}>
-      <Header title={translate("login:logIn")} leftIcon="chevron-left" onLeftPress={goBack} />
+    <Screen preset="fixed">
+      <Header title={translate("login:login")} leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView
-        contentContainerStyle={themed($scrollContent)}
+        contentContainerClassName="flex-grow"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
-        <View style={themed($card)}>
-          <Text preset="heading" style={themed($heading)}>
+        <View className="flex-1 p-4">
+          <Text preset="heading" className="text-2xl font-bold text-foreground mb-4">
             {translate("login:loginToMentra")}
           </Text>
 
-          <View style={themed($form)}>
-            <View style={themed($inputGroup)}>
-              <Text tx="login:email" style={themed($inputLabel)} />
-              <View style={themed($enhancedInputContainer)}>
+          <View className="w-full">
+            {/* Email Input */}
+            <View className="mb-3">
+              <Text tx="login:email" className="text-sm font-medium text-foreground mb-2" />
+              <View className="flex-row items-center h-12 border border-border rounded-lg px-3 bg-background">
                 <TextInput
                   hitSlop={{top: 16, bottom: 16}}
-                  style={themed($enhancedInput)}
+                  className="flex-1 text-base text-foreground"
                   placeholder={translate("login:emailPlaceholder")}
                   value={email}
                   autoCapitalize="none"
@@ -145,12 +135,13 @@ export default function EmailLoginScreen() {
               </View>
             </View>
 
-            <View style={themed($inputGroup)}>
-              <Text tx="login:password" style={themed($inputLabel)} />
-              <View style={themed($enhancedInputContainer)}>
+            {/* Password Input */}
+            <View className="mb-3">
+              <Text tx="login:password" className="text-sm font-medium text-foreground mb-2" />
+              <View className="flex-row items-center h-12 border border-border rounded-lg px-3 bg-background dark:bg-transparent dark:shadow-sm">
                 <TextInput
                   hitSlop={{top: 16, bottom: 16}}
-                  style={themed($enhancedInput)}
+                  className="flex-1 text-base text-foreground"
                   placeholder={translate("login:passwordPlaceholder")}
                   value={password}
                   autoCapitalize="none"
@@ -172,55 +163,53 @@ export default function EmailLoginScreen() {
 
             <Button
               tx="login:logIn"
-              style={themed($primaryButton)}
-              pressedStyle={themed($pressedButton)}
-              textStyle={themed($buttonText)}
               onPress={handleEmailSignIn}
               disabled={isLoading}
-              LeftAccessory={() => (
-                <FontAwesome name="envelope" size={16} color={theme.colors.textAlt} style={{marginRight: 8}} />
-              )}
+              LeftAccessory={() => <Icon name="mail" size={20} color={theme.colors.background} />}
             />
 
-            <Text style={themed($termsText)}>{translate("login:termsTextSignIn")}</Text>
+            <Text className="text-xs text-muted-foreground text-center mt-3">{translate("login:termsTextSignIn")}</Text>
 
-            <TouchableOpacity onPress={() => push("/auth/forgot-password")} style={themed($forgotPasswordContainer)}>
-              <Text tx="login:forgotPassword" style={themed($forgotPasswordText)} />
+            <TouchableOpacity onPress={() => push("/auth/forgot-password")} className="self-center mt-4">
+              <Text tx="login:forgotPassword" className="text-sm text-primary" />
             </TouchableOpacity>
 
-            <View style={themed($dividerContainer)}>
-              <View style={themed($dividerLine)} />
-              <Text style={themed($dividerText)}>OR</Text>
-              <View style={themed($dividerLine)} />
+            {/* Divider */}
+            <View className="flex-row items-center my-6">
+              <View className="flex-1 h-px bg-border" />
+              <Text className="mx-3 text-sm text-muted-foreground">OR</Text>
+              <View className="flex-1 h-px bg-border" />
             </View>
 
-            {!isChina && (
-              <TouchableOpacity style={[themed($socialButton), themed($googleButton)]} onPress={handleGoogleSignIn}>
-                <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
-                  <GoogleIcon />
-                </View>
-                <Text style={themed($socialButtonText)} tx="login:continueWithGoogle" />
-              </TouchableOpacity>
-            )}
+            <View className="gap-4">
+              {!isChina && (
+                <Button
+                  preset="secondary"
+                  text={translate("login:continueWithGoogle")}
+                  onPress={handleGoogleSignIn}
+                  LeftAccessory={() => <GoogleIcon />}
+                />
+              )}
 
-            {Platform.OS === "ios" && !isChina && (
-              <TouchableOpacity style={[themed($socialButton), themed($appleButton)]} onPress={handleAppleSignIn}>
-                <View style={[themed($socialIconContainer), {position: "absolute", left: 12}]}>
-                  <AppleIcon color={theme.colors.text} />
-                </View>
-                <Text style={[themed($socialButtonText), themed($appleButtonText)]} tx="login:continueWithApple" />
-              </TouchableOpacity>
-            )}
+              {Platform.OS === "ios" && !isChina && (
+                <Button
+                  preset="secondary"
+                  text={translate("login:continueWithApple")}
+                  onPress={handleAppleSignIn}
+                  LeftAccessory={() => <AppleIcon color={theme.colors.foreground} />}
+                />
+              )}
+            </View>
           </View>
         </View>
       </ScrollView>
 
       {/* Loading Modal */}
       <Modal visible={isLoading || isAuthLoading} transparent={true} animationType="fade">
-        <View style={themed($modalOverlay)}>
-          <View style={themed($modalContent)}>
-            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.s4}} />
-            <Text preset="bold" style={{color: theme.colors.text}}>
+        <View className="flex-1 bg-black/70 justify-center items-center">
+          <View className="bg-background p-8 rounded-2xl items-center min-w-[200px]">
+            <ActivityIndicator size="large" color={theme.colors.tint} className="mb-4" />
+            <Text preset="bold" className="text-foreground">
               {translate("login:connectingToServer")}
             </Text>
           </View>
@@ -229,177 +218,3 @@ export default function EmailLoginScreen() {
     </Screen>
   )
 }
-
-// Themed Styles
-const $container: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-})
-
-const $scrollContent: ThemedStyle<ViewStyle> = () => ({
-  flexGrow: 1,
-})
-
-const $card: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  padding: spacing.s4,
-})
-
-const $heading: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 24,
-  fontWeight: "bold",
-  color: colors.text,
-  marginBottom: spacing.s4,
-})
-
-const $form: ThemedStyle<ViewStyle> = () => ({
-  width: "100%",
-})
-
-const $inputGroup: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.s3,
-})
-
-const $inputLabel: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 14,
-  fontWeight: "500",
-  color: colors.text,
-  marginBottom: 8,
-})
-
-const $enhancedInputContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  height: 48,
-  borderWidth: 1,
-  borderColor: colors.border,
-  borderRadius: 8,
-  paddingHorizontal: spacing.s3,
-  backgroundColor: isDark ? colors.palette.transparent : colors.background,
-  ...(isDark
-    ? {
-        shadowOffset: {
-          width: 0,
-          height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-      }
-    : {}),
-})
-
-const $enhancedInput: ThemedStyle<TextStyle> = ({colors}) => ({
-  flex: 1,
-  fontSize: 16,
-  color: colors.text,
-})
-
-const $primaryButton: ThemedStyle<ViewStyle> = () => ({})
-
-const $pressedButton: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.background,
-  opacity: 0.9,
-})
-
-const $buttonText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.textAlt,
-  fontSize: 16,
-  fontWeight: "500",
-})
-
-const $termsText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 12,
-  color: colors.textDim,
-  textAlign: "center",
-  marginTop: spacing.s3,
-})
-
-const $forgotPasswordContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  alignSelf: "center",
-  marginTop: spacing.s4,
-})
-
-const $forgotPasswordText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 14,
-  color: colors.tint,
-  textDecorationLine: "underline",
-})
-
-const $dividerContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  marginVertical: spacing.s6,
-})
-
-const $dividerLine: ThemedStyle<ViewStyle> = ({colors}) => ({
-  flex: 1,
-  height: 1,
-  backgroundColor: colors.border,
-})
-
-const $dividerText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  marginHorizontal: spacing.s3,
-  fontSize: 14,
-  color: colors.textDim,
-})
-
-const $socialButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  height: 44,
-  borderWidth: 1,
-  borderColor: colors.border,
-  borderRadius: spacing.s6,
-  paddingHorizontal: spacing.s3,
-  backgroundColor: colors.background,
-  marginBottom: spacing.s3,
-  shadowOffset: {
-    width: 0,
-    height: 1,
-  },
-  shadowOpacity: 0.1,
-  shadowRadius: 1,
-  elevation: 1,
-})
-
-const $googleButton: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.background,
-})
-
-const $appleButton: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.background,
-  borderColor: colors.border,
-})
-
-const $socialIconContainer: ThemedStyle<ViewStyle> = () => ({
-  width: 24,
-  height: 24,
-  justifyContent: "center",
-  alignItems: "center",
-})
-
-const $socialButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 15,
-  color: colors.text,
-  flex: 1,
-  textAlign: "center",
-})
-
-const $appleButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.text,
-})
-
-const $modalOverlay: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-  backgroundColor: "rgba(0, 0, 0, 0.7)",
-  justifyContent: "center",
-  alignItems: "center",
-})
-
-const $modalContent: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.background,
-  padding: spacing.s8,
-  borderRadius: spacing.s4,
-  alignItems: "center",
-  minWidth: 200,
-})

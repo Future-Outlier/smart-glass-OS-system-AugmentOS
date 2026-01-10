@@ -23,7 +23,6 @@ export default function WifiPasswordScreen() {
 
   const {theme} = useAppTheme()
   const {push, goBack, pushPrevious} = useNavigationHistory()
-  const glassesConnected = useGlassesStore((state) => state.connected)
   const [ssid, setSsid] = useState(initialSsid)
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
