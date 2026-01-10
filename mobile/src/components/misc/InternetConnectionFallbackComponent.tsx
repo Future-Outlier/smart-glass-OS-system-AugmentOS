@@ -45,7 +45,7 @@ const $retryButton: ThemedStyle<ViewStyle> = ({colors}) => ({
   borderRadius: 8,
   paddingHorizontal: 20,
   paddingVertical: 10,
-  backgroundColor: colors.palette.primary500,
+  backgroundColor: colors.primary,
 })
 
 const $retryButtonText: ThemedStyle<TextStyle> = ({colors}) => ({

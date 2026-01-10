@@ -14,6 +14,7 @@ import SkeletonSlider from "../components/SkeletonSlider";
 import { toast } from "sonner";
 import { formatCompatibilityError } from "../utils/errorHandling";
 import { CaptionsSlide, MergeSlide, StreamSlide, XSlide } from "../components/ui/slides";
+import AppStorePromotionBanner from "@/ui/AppStorePromotionBanner";
 
 /**
  * Desktop-optimized AppStore component
@@ -541,7 +542,7 @@ const AppStoreDesktop: React.FC = () => {
             Top Apps
           </div>
         )}
-
+        {/* <AppStorePromotionBanner /> */}
         {/* App grid with loading skeletons */}
         <div className="">
           {isLoading ? (

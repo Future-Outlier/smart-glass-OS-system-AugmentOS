@@ -1,8 +1,8 @@
-import {router, useFocusEffect, usePathname, useSegments} from "expo-router"
+import {router, useFocusEffect, useNavigationContainerRef, usePathname, useSegments} from "expo-router"
 import {createContext, useContext, useEffect, useRef, useCallback, useState} from "react"
 import {Alert, BackHandler} from "react-native"
 import {useNavigation} from "expo-router"
-import {CommonActions} from "@react-navigation/native"
+import {CommonActions, StackActions} from "@react-navigation/native"
 
 import {navigationRef} from "@/contexts/NavigationRef"
 
@@ -60,6 +60,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const setAndroidBackFn = (fn: () => void) => {
     androidBackFnRef.current = fn
   }
+  const rootNavigation = useNavigationContainerRef()
 
   useEffect(() => {
     // Add current path to history if it's different from the last entry
@@ -76,10 +77,10 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
   // block the back button on android when preventBack is true:
   useEffect(() => {
-    if (!preventBack) return
-    console.log("REGISTERING BACK HANDLER =========================")
+    // if (!preventBack) return
+    console.log("NAV: REGISTERING BACK HANDLER =========================")
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
-      console.log("BACK HANDLER CALLED =========================")
+      console.log("NAV: BACK HANDLER CALLED =========================")
       if (androidBackFnRef.current) {
         androidBackFnRef.current()
       }
@@ -101,6 +102,49 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       androidBackFnRef.current = undefined
     }
   }, [])
+
+  useEffect(() => {
+    let sub = navigation.addListener("state", (state) => {
+      // console.log("NAV: iOS: state", state)
+      // console.log("NAV: iOS: state.routeNames", state.data.state.routeNames)
+      // console.log("NAV: iOS: state.routes", state.data.state.routes)
+      // let a = state.data.state.routes
+      // console.log("NAV: iOS: a", a[0].state?.routes)
+      // if (a.length > 1) {
+      //   console.log("NAV: iOS: b", a[1])
+      // }
+      // console.log("NAV: iOS: BBB", state.data.state)
+    })
+  }, [navigation])
+
+  // useEffect(() => {
+  //   let currentRoute = rootNavigation.getCurrentRoute()
+  //   console.log("NAV: iOS: currentRoute", currentRoute)
+  //   let currentRouteOptions = rootNavigation.getCurrentOptions()
+  //   console.log("NAV: iOS: currentRouteOptions", currentRouteOptions)
+  // }, [pathname])
+
+
+  // const unsubscribe = rootNavigation..addListener("beforeRemove", (e) => {
+  //   // Triggered on back swipe, back button, or programmatic goBack()
+  //   console.log("NAV: iOS: User is leaving the screen")
+
+  //   // Optionally prevent navigation:
+  //   // e.preventDefault()
+  // })
+  
+  // useEffect(() => {
+  //   console.log("NAV: iOS: useEffect()")
+  //   const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+  //     // Triggered on back swipe, back button, or programmatic goBack()
+  //     console.log("NAV: iOS: User is leaving the screen")
+
+  //     // Optionally prevent navigation:
+  //     // e.preventDefault()
+  //   })
+
+  //   return unsubscribe
+  // }, [navigation])
 
   const goBack = () => {
     console.info("NAV: goBack()")
@@ -195,6 +239,13 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     router.navigate({pathname: path as any, params: params as any})
   }
 
+  const pushList = (list: string[]) => {
+    console.info("NAV: pushList()", list)
+    // list.forEach((path) => {
+    //   push(path)
+    // })
+  }
+
   const clearHistoryAndGoHome = () => {
     console.info("NAV: clearHistoryAndGoHome()")
     clearHistory()
@@ -284,6 +335,15 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     const n = index + 2
     let updatedRoutes = historyRef.current.slice(0, -n)
     let updatedRoutesParams = historyParamsRef.current.slice(0, -n)
+
+    // // remove any /home routes (remove the same index from updatedRoutesParams):
+    // updatedRoutes.forEach((path, index) => {
+    //   if (path === "/home") {
+    //     updatedRoutes.splice(index, 1)
+    //     updatedRoutesParams.splice(index, 1)
+    //   }
+    // })
+    // remov
     // // add ghost route:
     // updatedRoutes.push("/")
     // updatedRoutesParams.push(undefined)
@@ -298,7 +358,8 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       newRouteState.map((route) => route.name),
     )
 
-    navigation.dispatch(
+    rootNavigation.dispatch(StackActions.popToTop())
+    rootNavigation.dispatch(
       CommonActions.reset({
         index: newRouteState.length - 1, // Point to current screen (last)
         routes: newRouteState,
@@ -314,13 +375,12 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
     // push the last route onto the stack:
     // dumb edge case, if the route is home, we need to clearHistoryAndGoHome()
+    // TODO: may no longer be needed:
     if (lastRoute === "/(tabs)/home" || lastRoute === "/home") {
       clearHistoryAndGoHome()
     } else {
       push(lastRoute, lastRouteParams)
     }
-    // push(lastRoute, lastRouteParams)
-    // push(lastRoute, lastRouteParams)
   }
 
   // the only routes in the stack will be home and the one we pass:

@@ -149,6 +149,7 @@ export default function MentraLiveOnboarding() {
       <OnboardingGuide
         steps={steps}
         autoStart={false}
+        showCloseButton={false}
         mainTitle={translate("onboarding:liveWelcomeTitle")}
         mainSubtitle={translate("onboarding:liveWelcomeSubtitle")}
         exitFn={() => {

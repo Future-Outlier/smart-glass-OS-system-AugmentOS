@@ -87,7 +87,6 @@ const $centerWrapper: ThemedStyle<ViewStyle> = () => ({
 const $contentContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.primary_foreground,
   borderRadius: spacing.s6,
-  borderWidth: 1,
   borderColor: colors.border,
   padding: spacing.s6,
   gap: spacing.s4,

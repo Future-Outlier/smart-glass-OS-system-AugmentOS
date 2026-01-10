@@ -26,7 +26,6 @@ interface NetworkInfo {
 }
 
 export default function WifiScanScreen() {
-  const {deviceModel = "Glasses", returnTo, nextRoute} = useLocalSearchParams()
   const {theme} = useAppTheme()
 
   const [networks, setNetworks] = useState<NetworkInfo[]>([])
@@ -39,7 +38,10 @@ export default function WifiScanScreen() {
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const {push, goBack, pushPrevious, getPreviousRoute} = useNavigationHistory()
 
-  const showBack = getPreviousRoute()?.includes("/settings/glasses")
+  // if the previous route is in this list, show / allow the back button:
+  const backableRoutes = ["/settings/glasses", "/home", "/(tabs)/home"]
+
+  const showBack = backableRoutes.includes(getPreviousRoute() || "")
   const showSkip = !showBack
 
   const handleBack = () => {
@@ -50,20 +52,26 @@ export default function WifiScanScreen() {
     }
   }
 
-  if (Platform.OS === "android") {
-    focusEffectPreventBack(() => {
-      if (showBack) {
-        goBack()
-      } else {
-        // do nothing
-      }
-    })
-  } else if (Platform.OS === "ios") {
-    // only prevent back if the showBack flag is false:
-    if (!showBack) {
-      focusEffectPreventBack()
+  focusEffectPreventBack(() => {
+    if (showBack) {
+      goBack()
     }
-  }
+  })
+
+  // if (Platform.OS === "android") {
+  //   focusEffectPreventBack(() => {
+  //     if (showBack) {
+  //       goBack()
+  //     } else {
+  //       // do nothing
+  //     }
+  //   })
+  // } else if (Platform.OS === "ios") {
+  //   // only prevent back if the showBack flag is false:
+  //   if (!showBack) {
+  //     focusEffectPreventBack()
+  //   }
+  // }
 
   useEffect(() => {
     const loadSavedNetworks = () => {
@@ -213,30 +221,21 @@ export default function WifiScanScreen() {
     if (!selectedNetwork.requiresPassword) {
       console.log(`🔓 Open network selected: ${selectedNetwork.ssid} - connecting directly`)
       push("/wifi/connecting", {
-        deviceModel,
         ssid: selectedNetwork.ssid,
         password: "",
-        returnTo,
-        nextRoute,
       })
     } else {
       console.log(`🔒 Secured network selected: ${selectedNetwork.ssid} - going to password screen`)
       push("/wifi/password", {
-        deviceModel,
         ssid: selectedNetwork.ssid,
         requiresPassword: selectedNetwork.requiresPassword.toString(),
-        returnTo,
-        nextRoute,
       })
     }
   }
 
   const handleManualEntry = () => {
     push("/wifi/password", {
-      deviceModel,
       ssid: "",
-      returnTo,
-      nextRoute,
     })
   }
 
