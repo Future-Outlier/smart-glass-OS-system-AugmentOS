@@ -191,6 +191,10 @@ class PhotoCaptureTestFramework {
 public class MediaCaptureService {
     private static final String TAG = "MediaCaptureService";
 
+    // Debug flag: Enable detailed end-to-end photo capture timing logs
+    // true = log timing from request to capture, false = suppress timing logs
+    private static final boolean ENABLE_PHOTO_TIMING_LOGS = false;
+
     private final Context mContext;
     private final MediaUploadQueueManager mMediaQueueManager;
     private MediaCaptureListener mMediaCaptureListener;
@@ -458,8 +462,10 @@ public class MediaCaptureService {
             return;
         }
 
-        Log.d(TAG, "📸 Flashing privacy LED synchronized with shutter sound");
-        hardwareManager.flashRecordingLed(2200); // 300ms flash duration
+        Log.d(TAG, "📸 Flashing privacy LED synchronized with shutter sound at 50% brightness");
+        // TODO: RESTORE LOWER LED BRIGHTNESS LATER
+        // hardwareManager.setRecordingLedBrightness(50, 1000); // 50% brightness, 1000ms flash duration
+        hardwareManager.flashRecordingLed(1000);
     }
     
     /**
@@ -701,10 +707,15 @@ public class MediaCaptureService {
                     // Start battery monitoring on main thread (callback runs on background thread)
                     new Handler(Looper.getMainLooper()).post(() -> startBatteryMonitoring());
 
-                    // Turn on recording LED if enabled
-                    if (enableLed && hardwareManager.supportsRecordingLed()) {
+                    // Turn on recording flash LED if enabled with controlled brightness
+                    if (enableLed && hardwareManager.supportsLedBrightness()) {
+                        // TODO: RESTORE LOWER LED BRIGHTNESS LATER
+                        //hardwareManager.setRecordingLedBrightness(50); // 50% brightness for video
                         hardwareManager.setRecordingLedOn();
-                        Log.d(TAG, "Recording LED turned ON");
+                        Log.d(TAG, "Recording flash LED turned ON at 50% brightness");
+                    } else if (enableLed && hardwareManager.supportsRecordingLed()) {
+                        hardwareManager.setRecordingLedOn();
+                        Log.d(TAG, "Recording flash LED turned ON (full brightness)");
                     }
 
                     // Notify listener
@@ -1060,6 +1071,12 @@ public class MediaCaptureService {
      * @param enableLed Whether to enable camera LED flash
      */
     public void takePhotoLocally(String size, boolean enableLed) {
+        // Start timing for end-to-end photo capture performance measurement
+        final long requestStartTimeMs = System.currentTimeMillis();
+        if (ENABLE_PHOTO_TIMING_LOGS) {
+            Log.i(TAG, "⏱️ [TIMING] LOCAL Photo request START");
+        }
+        
         // Check if RTMP streaming is active - photos cannot interrupt streams
         if (RtmpStreamingService.isStreaming()) {
             Log.e(TAG, "Cannot take photo - RTMP streaming active");
@@ -1129,9 +1146,12 @@ public class MediaCaptureService {
         // TESTING: Add fake delay for camera init
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_INIT");
 
-        playShutterSound();
+        // RGB LED always flashes for photos (user visibility indicator)
+        triggerPhotoFlashLed();
+
+        // enableLed (from silent param) controls sound and privacy LED only
         if (enableLed) {
-            triggerPhotoFlashLed(); // Trigger white RGB LED flash synchronized with shutter sound
+            playShutterSound();
             flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
         }
 
@@ -1157,6 +1177,12 @@ public class MediaCaptureService {
                 new CameraNeo.PhotoCaptureCallback() {
                     @Override
                     public void onPhotoCaptured(String filePath) {
+                        // Calculate end-to-end timing from request to capture
+                        long totalElapsedMs = System.currentTimeMillis() - requestStartTimeMs;
+                        if (ENABLE_PHOTO_TIMING_LOGS) {
+                            Log.i(TAG, "⏱️ [TIMING] LOCAL Photo CAPTURED in " + totalElapsedMs + "ms");
+                        }
+                        
                         Log.d(TAG, "Local photo captured successfully at: " + filePath);
                         
                         // LED is now managed by CameraNeo and will turn off when camera closes
@@ -1197,6 +1223,12 @@ public class MediaCaptureService {
      * @param compress Compression level (none, medium, heavy)
      */
     public void takePhotoAndUpload(String photoFilePath, String requestId, String webhookUrl, String authToken, boolean save, String size, boolean enableLed, String compress) {
+        // Start timing for end-to-end photo capture performance measurement
+        final long requestStartTimeMs = System.currentTimeMillis();
+        if (ENABLE_PHOTO_TIMING_LOGS) {
+            Log.i(TAG, "⏱️ [TIMING] Photo request START - ID: " + requestId);
+        }
+        
         Log.d(TAG, "Taking photo and uploading to " + webhookUrl + " with compression: " + compress);
 
         // Check if RTMP streaming is active - photos cannot interrupt streams
@@ -1266,9 +1298,12 @@ public class MediaCaptureService {
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_CAPTURE");
 
         try {
-            playShutterSound();
+            // RGB LED always flashes for photos (user visibility indicator)
+            triggerPhotoFlashLed();
+
+            // enableLed (from silent param) controls sound and privacy LED only
             if (enableLed) {
-                triggerPhotoFlashLed(); // Trigger white RGB LED flash synchronized with shutter sound
+                playShutterSound();
                 flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
             }
 
@@ -1283,6 +1318,12 @@ public class MediaCaptureService {
                     new CameraNeo.PhotoCaptureCallback() {
                         @Override
                         public void onPhotoCaptured(String filePath) {
+                            // Calculate end-to-end timing from request to capture
+                            long totalElapsedMs = System.currentTimeMillis() - requestStartTimeMs;
+                            if (ENABLE_PHOTO_TIMING_LOGS) {
+                                Log.i(TAG, "⏱️ [TIMING] Photo CAPTURED in " + totalElapsedMs + "ms - ID: " + requestId);
+                            }
+                            
                             Log.d(TAG, "Photo captured successfully at: " + filePath);
 
                             // LED is now managed by CameraNeo and will turn off when camera closes
@@ -2035,6 +2076,12 @@ public class MediaCaptureService {
      * @param save Whether to keep the original photo on device
      */
     public void takePhotoForBleTransfer(String photoFilePath, String requestId, String bleImgId, boolean save, String size, boolean enableLed) {
+        // Start timing for end-to-end photo capture performance measurement
+        final long requestStartTimeMs = System.currentTimeMillis();
+        if (ENABLE_PHOTO_TIMING_LOGS) {
+            Log.i(TAG, "⏱️ [TIMING] BLE Photo request START - ID: " + requestId);
+        }
+        
         // Check if RTMP streaming is active - photos cannot interrupt streams
         if (RtmpStreamingService.isStreaming()) {
             Log.e(TAG, "Cannot take photo - RTMP streaming active");
@@ -2078,9 +2125,12 @@ public class MediaCaptureService {
         // TESTING: Add fake delay for camera capture
         PhotoCaptureTestFramework.addFakeDelay("CAMERA_CAPTURE");
 
-        playShutterSound();
+        // RGB LED always flashes for photos (user visibility indicator)
+        triggerPhotoFlashLed();
+
+        // enableLed (from silent param) controls sound and privacy LED only
         if (enableLed) {
-            triggerPhotoFlashLed(); // Trigger white RGB LED flash synchronized with shutter sound
+            playShutterSound();
             flashPrivacyLedForPhoto(); // Flash privacy LED synchronized with shutter sound
         }
 
@@ -2092,6 +2142,12 @@ public class MediaCaptureService {
                     new CameraNeo.PhotoCaptureCallback() {
                         @Override
                         public void onPhotoCaptured(String filePath) {
+                            // Calculate end-to-end timing from request to capture
+                            long totalElapsedMs = System.currentTimeMillis() - requestStartTimeMs;
+                            if (ENABLE_PHOTO_TIMING_LOGS) {
+                                Log.i(TAG, "⏱️ [TIMING] BLE Photo CAPTURED in " + totalElapsedMs + "ms - ID: " + requestId);
+                            }
+                            
                             Log.d(TAG, "Photo captured successfully for BLE transfer: " + filePath);
 
                             // LED is now managed by CameraNeo and will turn off when camera closes

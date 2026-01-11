@@ -16,6 +16,8 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
 import {getGlassesImage} from "@/utils/getGlassesImage"
 
+// import {useLocalSearchParams} from "expo-router"
+
 export default function SelectGlassesModelScreen() {
   const {theme, themed} = useAppTheme()
   const {push, goBack} = useNavigationHistory()

@@ -2,12 +2,14 @@ import CoreModule from "core"
 import Toast from "react-native-toast-message"
 
 import {translate} from "@/i18n"
-import livekit from "@/services/Livekit"
+// NOTE: LiveKit audio path disabled - using UDP or WebSocket instead
+// import livekit from "@/services/Livekit"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
+import udp from "@/services/UdpManager"
 import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import {useSettingsStore} from "@/stores/settings"
 import {INTENSE_LOGGING} from "@/utils/Constants"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
@@ -280,19 +282,27 @@ export class MantleBridge {
           socketComms.sendBinary(bytes)
           break
         case "mic_data":
-          binaryString = atob(data.base64)
-          bytes = new Uint8Array(binaryString.length)
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i)
-          }
-
-          if (__DEV__ && Math.random() < 0.03) {
-            console.log("MantleBridge: Received mic data:", bytes.length, "bytes")
-          }
-          const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
-          if (!isChinaDeployment && livekit.isRoomConnected()) {
-            livekit.addPcm(bytes)
+          // Route audio to: UDP (if enabled) -> WebSocket (fallback)
+          if (socketComms.udpEnabledAndReady()) {
+            // UDP audio is enabled and ready - send directly via UDP
+            udp.sendAudio(data.base64)
           } else {
+            // Fallback to WebSocket
+            binaryString = atob(data.base64)
+            bytes = new Uint8Array(binaryString.length)
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i)
+            }
+            if (__DEV__ && Math.random() < 0.03) {
+              console.log("MantleBridge: Received mic data:", bytes.length, "bytes")
+            }
+            // NOTE: LiveKit audio path disabled - using UDP or WebSocket instead
+            // const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
+            // if (!isChinaDeployment && livekit.isRoomConnected()) {
+            //   livekit.addPcm(bytes)
+            // } else {
+            //   socketComms.sendBinary(bytes)
+            // }
             socketComms.sendBinary(bytes)
           }
           break
@@ -310,6 +320,47 @@ export class MantleBridge {
             message: data.message,
             timestamp: data.timestamp,
           })
+          break
+        case "ota_update_available":
+          console.log("📱 MantleBridge: OTA update available from glasses:", data)
+          useGlassesStore.getState().setOtaUpdateAvailable({
+            available: true,
+            versionCode: data.version_code ?? 0,
+            versionName: data.version_name ?? "",
+            updates: data.updates ?? [],
+            totalSize: data.total_size ?? 0,
+          })
+          GlobalEventEmitter.emit("ota_update_available", {
+            versionCode: data.version_code,
+            versionName: data.version_name,
+            updates: data.updates,
+            totalSize: data.total_size,
+          })
+          break
+        case "ota_progress":
+          console.log("📱 MantleBridge: OTA progress:", data.stage, data.status, data.progress + "%")
+          useGlassesStore.getState().setOtaProgress({
+            stage: data.stage ?? "download",
+            status: data.status ?? "PROGRESS",
+            progress: data.progress ?? 0,
+            bytesDownloaded: data.bytes_downloaded ?? 0,
+            totalBytes: data.total_bytes ?? 0,
+            currentUpdate: data.current_update ?? "apk",
+            errorMessage: data.error_message,
+          })
+          GlobalEventEmitter.emit("ota_progress", {
+            stage: data.stage,
+            status: data.status,
+            progress: data.progress,
+            bytesDownloaded: data.bytes_downloaded,
+            totalBytes: data.total_bytes,
+            currentUpdate: data.current_update,
+            errorMessage: data.error_message,
+          })
+          // Clear OTA update available when finished or failed
+          if (data.status === "FINISHED" || data.status === "FAILED") {
+            useGlassesStore.getState().setOtaUpdateAvailable(null)
+          }
           break
         case "version_info":
           console.log("MantleBridge: Received version_info:", data)

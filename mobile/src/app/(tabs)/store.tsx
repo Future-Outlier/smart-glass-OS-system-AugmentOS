@@ -9,9 +9,9 @@ import {Text, Screen, Header} from "@/components/ignite"
 import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
 import {useAppStoreWebviewPrefetch} from "@/contexts/AppStoreContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {useRefreshApplets} from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function AppStoreWeb() {
   const [_webviewLoading, setWebviewLoading] = useState(true)

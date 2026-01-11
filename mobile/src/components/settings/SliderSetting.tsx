@@ -2,8 +2,8 @@ import {View, ViewStyle, TextStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
 import {ThemedSlider} from "@/components/misc/ThemedSlider"
-import {ThemedStyle} from "@/theme"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {ThemedStyle} from "@/theme"
 
 type SliderSettingProps = {
   label: string
