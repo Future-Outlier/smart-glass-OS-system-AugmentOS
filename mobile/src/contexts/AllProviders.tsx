@@ -9,6 +9,7 @@ import {GestureHandlerRootView} from "react-native-gesture-handler"
 import {KeyboardProvider} from "react-native-keyboard-controller"
 import {SafeAreaProvider} from "react-native-safe-area-context"
 import Toast from "react-native-toast-message"
+import {FunctionComponent, PropsWithChildren} from "react"
 
 // import {ErrorBoundary} from "@/components/error"
 import {Text} from "@/components/ignite"
@@ -21,7 +22,6 @@ import {useThemeProvider} from "@/contexts/ThemeContext"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {KonamiCodeProvider} from "@/utils/debug/konami"
-import {withWrappers} from "@/utils/structure/with-wrappers"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
@@ -136,3 +136,15 @@ export const AllProviders = withWrappers(
     )
   },
 )
+
+
+
+type WrapperComponent = FunctionComponent<{children: React.ReactNode}>
+
+export function withWrappers(...wrappers: Array<WrapperComponent>) {
+  return function (props: PropsWithChildren) {
+    return wrappers.reduceRight((acc, Wrapper) => {
+      return <Wrapper>{acc}</Wrapper>
+    }, props.children)
+  }
+}
