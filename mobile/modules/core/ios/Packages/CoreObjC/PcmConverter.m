@@ -31,14 +31,18 @@
     // LC3 requires exactly 160 samples (320 bytes) per frame at 16kHz/10ms
     // iOS audio callbacks may not align with frame boundaries, so we accumulate samples
     NSMutableData* _encAccumulationBuffer;
+
+    // Configurable output frame size (determines bitrate)
+    // 20 bytes = 16kbps, 40 bytes = 32kbps, 60 bytes = 48kbps
+    uint16_t _outputFrameSize;
 }
 
 // Frame length 10ms
 static const int dtUs = 10000;
-// Sampling rate 48K
+// Sampling rate 16kHz
 static const int srHz = 16000;
-// Output bytes after encoding a single frame
-static const uint16_t outputByteCount = 20;
+// Default output bytes after encoding a single frame (can be changed via setOutputFrameSize)
+static const uint16_t defaultOutputByteCount = 20;
 
 - (instancetype)init {
     self = [super init];
@@ -50,8 +54,37 @@ static const uint16_t outputByteCount = 20;
         _encMem = NULL;
         _encOutBuf = NULL;
         _encAccumulationBuffer = [[NSMutableData alloc] init];
+        _outputFrameSize = defaultOutputByteCount;
     }
     return self;
+}
+
+- (void)setOutputFrameSize:(NSInteger)frameSize {
+    // Validate frame size (20, 40, or 60 bytes)
+    if (frameSize != 20 && frameSize != 40 && frameSize != 60) {
+        printf("Invalid frame size %ld, must be 20, 40, or 60. Using default.\n", (long)frameSize);
+        _outputFrameSize = defaultOutputByteCount;
+        return;
+    }
+
+    // If encoder is already initialized and frame size is changing, we need to reallocate output buffer
+    if (_encoderInitialized && _outputFrameSize != frameSize) {
+        if (_encOutBuf) {
+            free(_encOutBuf);
+        }
+        _encOutBuf = malloc(frameSize);
+        if (_encOutBuf == NULL) {
+            printf("Failed to reallocate encoder output buffer for new frame size\n");
+            _encoderInitialized = NO;
+            return;
+        }
+    }
+
+    _outputFrameSize = (uint16_t)frameSize;
+}
+
+- (NSInteger)getOutputFrameSize {
+    return (NSInteger)_outputFrameSize;
 }
 
 - (void)setupDecoder {
@@ -148,7 +181,7 @@ static const uint16_t outputByteCount = 20;
 
     _lc3_encoder = lc3_setup_encoder(dtUs, srHz, 0, _encMem);
 
-    _encOutBuf = malloc(outputByteCount);
+    _encOutBuf = malloc(_outputFrameSize);
     if (_encOutBuf == NULL) {
         printf("Failed to allocate memory for encoder output buffer\n");
         free(_encMem);
@@ -186,10 +219,10 @@ static const uint16_t outputByteCount = 20;
     // Encode complete frames from the accumulation buffer
     while (totalBytes - bytesRead >= bytesPerFrame) {
         const int16_t *currentSamples = pcmSamples + (bytesRead / 2);
-        int result = lc3_encode(_lc3_encoder, LC3_PCM_FORMAT_S16, currentSamples, 1, outputByteCount, _encOutBuf);
+        int result = lc3_encode(_lc3_encoder, LC3_PCM_FORMAT_S16, currentSamples, 1, _outputFrameSize, _encOutBuf);
 
         if (result == 0) {
-            [lc3Data appendBytes:_encOutBuf length:outputByteCount];
+            [lc3Data appendBytes:_encOutBuf length:_outputFrameSize];
         }
         bytesRead += bytesPerFrame;
     }

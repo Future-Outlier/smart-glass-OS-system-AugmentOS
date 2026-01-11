@@ -59,6 +59,9 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   setMicState(sendPcmData: boolean, sendTranscript: boolean, bypassVad: boolean): Promise<void>
   restartTranscriber(): Promise<void>
 
+  // Audio Encoding Commands
+  setLC3FrameSize(frameSize: number): Promise<void>
+
   // RGB LED Control
   rgbLedControl(
     requestId: string,
