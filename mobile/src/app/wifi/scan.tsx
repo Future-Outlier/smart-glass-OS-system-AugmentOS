@@ -1,7 +1,7 @@
 import CoreModule from "core"
 import {useLocalSearchParams} from "expo-router"
 import {useEffect, useRef, useState} from "react"
-import {ActivityIndicator, ScrollView, TouchableOpacity, View} from "react-native"
+import {ActivityIndicator, Platform, ScrollView, TouchableOpacity, View} from "react-native"
 import Toast from "react-native-toast-message"
 
 import {WifiIcon} from "@/components/icons/WifiIcon"
@@ -17,7 +17,7 @@ import showAlert from "@/utils/AlertUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {translate} from "@/i18n"
-import { ConnectionOverlay } from "@/components/glasses/ConnectionOverlay"
+import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 
 interface NetworkInfo {
   ssid: string
@@ -26,7 +26,6 @@ interface NetworkInfo {
 }
 
 export default function WifiScanScreen() {
-  const {deviceModel = "Glasses", returnTo, nextRoute} = useLocalSearchParams()
   const {theme} = useAppTheme()
 
   const [networks, setNetworks] = useState<NetworkInfo[]>([])
@@ -37,10 +36,42 @@ export default function WifiScanScreen() {
   const receivedResultsForSessionRef = useRef<boolean>(false)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
-  const glassesConnected = useGlassesStore((state) => state.connected)
-  const {push, goBack, replace, pushPrevious} = useNavigationHistory()
+  const {push, goBack, pushPrevious, getPreviousRoute} = useNavigationHistory()
 
-  focusEffectPreventBack()
+  // if the previous route is in this list, show / allow the back button:
+  const backableRoutes = ["/settings/glasses", "/home", "/(tabs)/home"]
+
+  const showBack = backableRoutes.includes(getPreviousRoute() || "")
+  const showSkip = !showBack
+
+  const handleBack = () => {
+    if (showBack) {
+      goBack()
+    } else {
+      pushPrevious()
+    }
+  }
+
+  focusEffectPreventBack(() => {
+    if (showBack) {
+      goBack()
+    }
+  })
+
+  // if (Platform.OS === "android") {
+  //   focusEffectPreventBack(() => {
+  //     if (showBack) {
+  //       goBack()
+  //     } else {
+  //       // do nothing
+  //     }
+  //   })
+  // } else if (Platform.OS === "ios") {
+  //   // only prevent back if the showBack flag is false:
+  //   if (!showBack) {
+  //     focusEffectPreventBack()
+  //   }
+  // }
 
   useEffect(() => {
     const loadSavedNetworks = () => {
@@ -190,37 +221,22 @@ export default function WifiScanScreen() {
     if (!selectedNetwork.requiresPassword) {
       console.log(`🔓 Open network selected: ${selectedNetwork.ssid} - connecting directly`)
       push("/wifi/connecting", {
-        deviceModel,
         ssid: selectedNetwork.ssid,
         password: "",
-        returnTo,
-        nextRoute,
       })
     } else {
       console.log(`🔒 Secured network selected: ${selectedNetwork.ssid} - going to password screen`)
       push("/wifi/password", {
-        deviceModel,
         ssid: selectedNetwork.ssid,
         requiresPassword: selectedNetwork.requiresPassword.toString(),
-        returnTo,
-        nextRoute,
       })
     }
   }
 
   const handleManualEntry = () => {
     push("/wifi/password", {
-      deviceModel,
       ssid: "",
-      returnTo,
-      nextRoute,
     })
-  }
-
-  const handleSkip = () => {
-    if (nextRoute && typeof nextRoute === "string") {
-      replace(decodeURIComponent(nextRoute))
-    }
   }
 
   const renderNetworkItem = (item: NetworkInfo) => {
@@ -260,11 +276,20 @@ export default function WifiScanScreen() {
     )
   }
 
-  const showSkip = true
-
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-      <Header title="Wi-Fi" leftIcon="chevron-left" onLeftPress={goBack} rightIcon="repeat" onRightPress={startScan} />
+      {showBack ? (
+        <Header
+          title="Wi-Fi"
+          leftIcon="chevron-left"
+          onLeftPress={handleBack}
+          rightIcon="repeat"
+          onRightPress={startScan}
+        />
+      ) : (
+        <Header title="Wi-Fi" rightIcon="repeat" onRightPress={startScan} />
+      )}
+
       <ConnectionOverlay />
 
       <View className="flex-1">
@@ -285,9 +310,12 @@ export default function WifiScanScreen() {
               <Text className="mt-4 text-base text-text-dim" tx="wifi:scanningForNetworks" />
             </View>
           ) : networks.length > 0 ? (
-            <ScrollView className="flex-1" contentContainerClassName="pb-4">
-              <Group title={translate("wifi:networks")}>{networks.map(renderNetworkItem)}</Group>
-            </ScrollView>
+            <>
+              {/* <Text className="text-sm font-semibold text-text mb-2" tx="wifi:networks" /> */}
+              <ScrollView className="flex-1 px-5 -mx-5" contentContainerClassName="pb-4">
+                <Group>{networks.map(renderNetworkItem)}</Group>
+              </ScrollView>
+            </>
           ) : (
             <View className="flex-1 justify-center items-center py-12">
               <Text className="text-base text-text-dim mb-6 text-center" tx="wifi:noNetworksFound" />
@@ -301,7 +329,7 @@ export default function WifiScanScreen() {
           preset={showSkip ? "primary" : "secondary"}
           onPress={handleManualEntry}
         />
-        {showSkip && <Button tx="common:skip" preset="secondary" onPress={handleSkip} className="mt-3" />}
+        {showSkip && <Button tx="common:skip" preset="secondary" onPress={handleBack} className="mt-3" />}
       </View>
     </Screen>
   )

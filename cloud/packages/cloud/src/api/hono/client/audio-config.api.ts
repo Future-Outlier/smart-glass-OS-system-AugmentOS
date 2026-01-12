@@ -91,16 +91,25 @@ async function configureAudio(c: AppContext) {
       } else {
         // Validate provided config
         const { sampleRate, frameDurationMs, frameSizeBytes } = body.lc3Config;
-        if (sampleRate !== 16000 || frameDurationMs !== 10 || frameSizeBytes !== 20) {
+
+        // Validate sample rate and frame duration (must be canonical)
+        if (sampleRate !== 16000 || frameDurationMs !== 10) {
           reqLogger.warn(
             { lc3Config: body.lc3Config },
-            "Non-canonical LC3 config provided, using defaults",
+            "Non-canonical LC3 sampleRate/frameDurationMs, using defaults",
           );
-          body.lc3Config = {
-            sampleRate: 16000,
-            frameDurationMs: 10,
-            frameSizeBytes: 20,
-          };
+          body.lc3Config.sampleRate = 16000;
+          body.lc3Config.frameDurationMs = 10;
+        }
+
+        // Validate frame size (20, 40, or 60 bytes allowed)
+        const validFrameSizes = [20, 40, 60];
+        if (!validFrameSizes.includes(frameSizeBytes)) {
+          reqLogger.warn(
+            { frameSizeBytes, validFrameSizes },
+            "Invalid LC3 frameSizeBytes, using default 20",
+          );
+          body.lc3Config.frameSizeBytes = 20;
         }
       }
     }

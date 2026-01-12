@@ -4,6 +4,7 @@ import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
 import BackendUrl from "@/components/dev/BackendUrl"
 import StoreUrl from "@/components/dev/StoreUrl"
 import {Header, Icon, Screen, Text} from "@/components/ignite"
+import SelectSetting from "@/components/settings/SelectSetting"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
@@ -13,16 +14,28 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
+import wsManager from "@/services/WebSocketManager"
+import socketComms from "@/services/SocketComms"
+
+// LC3 frame size options - maps to bitrates
+// Frame size = bytes per 10ms frame, bitrate = frameSize * 800 bps
+const LC3_FRAME_SIZE_OPTIONS = [
+  {label: "16 kbps", value: "20"},
+  {label: "32 kbps", value: "40"},
+  {label: "48 kbps", value: "60"},
+]
 
 export default function DeveloperSettingsScreen() {
   const {theme, themed} = useAppTheme()
-  const {goBack, push, replaceAll, setPreventBack} = useNavigationHistory()
+  const {goBack, push, replaceAll, clearHistoryAndGoHome} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
   const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS.power_saving_mode.key)
   const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS.reconnect_on_app_foreground.key)
   const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS.enable_squircles.key)
   const [debugConsole, setDebugConsole] = useSetting(SETTINGS.debug_console.key)
+  const [_onboardingOsCompleted, setOnboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
+  const [lc3FrameSize, setLc3FrameSize] = useSetting(SETTINGS.lc3_frame_size.key)
 
   return (
     <Screen preset="fixed">
@@ -48,27 +61,27 @@ export default function DeveloperSettingsScreen() {
               label="Developer Mode"
               subtitle="Enable developer mode"
               value={devMode}
-              onValueChange={value => setDevMode(value)}
+              onValueChange={(value) => setDevMode(value)}
             />
             <ToggleSetting
               label={translate("settings:reconnectOnAppForeground")}
               subtitle={translate("settings:reconnectOnAppForegroundSubtitle")}
               value={reconnectOnAppForeground}
-              onValueChange={value => setReconnectOnAppForeground(value)}
+              onValueChange={(value) => setReconnectOnAppForeground(value)}
             />
 
             <ToggleSetting
               label={translate("devSettings:debugConsole")}
               subtitle={translate("devSettings:debugConsoleSubtitle")}
               value={debugConsole}
-              onValueChange={value => setDebugConsole(value)}
+              onValueChange={(value) => setDebugConsole(value)}
             />
 
             <ToggleSetting
               label="Enable Squircles"
               subtitle="Use iOS-style squircle app icons instead of circles"
               value={enableSquircles}
-              onValueChange={value => setEnableSquircles(value)}
+              onValueChange={(value) => setEnableSquircles(value)}
             />
           </Group>
 
@@ -77,7 +90,10 @@ export default function DeveloperSettingsScreen() {
             <RouteButton
               label="Pairing Success"
               subtitle="Open the pairing success screen"
-              onPress={() => replaceAll("/pairing/success")}
+              onPress={() => {
+                setOnboardingOsCompleted(false)
+                replaceAll("/pairing/success")
+              }}
             />
 
             <RouteButton
@@ -85,21 +101,25 @@ export default function DeveloperSettingsScreen() {
               subtitle="Open the OTA check for updates screen"
               onPress={() => {
                 push("/ota/check-for-updates")
-                // setPreventBack(true)
-                // push("/ota/check-for-updates")
               }}
             />
 
             <RouteButton
               label="Mentra Live Onboarding"
               subtitle="Start the Mentra Live onboarding"
-              onPress={() => replaceAll("/onboarding/live")}
+              onPress={() => {
+                clearHistoryAndGoHome()
+                push("/onboarding/live")
+              }}
             />
 
             <RouteButton
               label="Mentra OS Onboarding"
               subtitle="Start the Mentra Live onboarding"
-              onPress={() => replaceAll("/onboarding/os")}
+              onPress={() => {
+                clearHistoryAndGoHome()
+                push("/onboarding/os")
+              }}
             />
           </Group>
 
@@ -110,6 +130,19 @@ export default function DeveloperSettingsScreen() {
               label="Buffer Recording Debug"
               subtitle="Control 30-second video buffer on glasses"
               onPress={() => push("/settings/buffer-debug")}
+            />
+
+            <RouteButton
+              label="Clear Websocket"
+              subtitle="Clear the Websocket"
+              onPress={async () => {
+                wsManager.cleanup()
+                socketComms.cleanup()
+                console.log("SOCKET: CLEANED")
+                await new Promise((resolve) => setTimeout(resolve, 3000))
+                socketComms.restartConnection()
+                console.log("SOCKET: RESTARTED")
+              }}
             />
           </Group>
 
@@ -138,12 +171,32 @@ export default function DeveloperSettingsScreen() {
                 label={translate("settings:powerSavingMode")}
                 subtitle={translate("settings:powerSavingModeSubtitle")}
                 value={powerSavingMode}
-                onValueChange={async value => {
+                onValueChange={async (value) => {
                   await setPowerSavingMode(value)
                 }}
               />
             </Group>
           )}
+
+          <Group title="Audio Settings">
+            <SelectSetting
+              label="LC3 Bitrate"
+              value={String(lc3FrameSize || 20)}
+              options={LC3_FRAME_SIZE_OPTIONS}
+              defaultValue="20"
+              onValueChange={async (value) => {
+                const frameSize = parseInt(value, 10)
+                setLc3FrameSize(frameSize)
+                // Apply immediately to native encoder and cloud
+                try {
+                  await socketComms.reconfigureAudioFormat()
+                } catch (err) {
+                  console.error("Failed to apply LC3 frame size:", err)
+                }
+              }}
+              description="Higher bitrates improve transcription quality but use more bandwidth."
+            />
+          </Group>
 
           <BackendUrl />
 

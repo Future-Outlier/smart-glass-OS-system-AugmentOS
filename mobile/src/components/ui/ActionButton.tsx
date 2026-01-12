@@ -61,7 +61,7 @@ export default function ActionButton({
       case "secondary":
         return theme.colors.textDim
       default:
-        return theme.colors.palette.primary500
+        return theme.colors.primary
     }
   }
 

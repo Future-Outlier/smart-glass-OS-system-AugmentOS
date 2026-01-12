@@ -462,8 +462,10 @@ public class MediaCaptureService {
             return;
         }
 
-        Log.d(TAG, "📸 Flashing privacy LED synchronized with shutter sound");
-        hardwareManager.flashRecordingLed(1000); // 1000ms flash duration
+        Log.d(TAG, "📸 Flashing privacy LED synchronized with shutter sound at 50% brightness");
+        // TODO: RESTORE LOWER LED BRIGHTNESS LATER
+        // hardwareManager.setRecordingLedBrightness(50, 1000); // 50% brightness, 1000ms flash duration
+        hardwareManager.flashRecordingLed(1000);
     }
     
     /**
@@ -473,7 +475,7 @@ public class MediaCaptureService {
         Log.i(TAG, "📸 triggerPhotoFlashLed() called");
 
         if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
-            hardwareManager.flashRgbLedWhite(2200); // 5 second flash
+            hardwareManager.flashRgbLedWhite(1000); // 5 second flash
             Log.i(TAG, "📸 Photo flash LED (white) triggered via hardware manager");
         } else {
             Log.w(TAG, "⚠️ RGB LED not supported on this device");
@@ -705,10 +707,15 @@ public class MediaCaptureService {
                     // Start battery monitoring on main thread (callback runs on background thread)
                     new Handler(Looper.getMainLooper()).post(() -> startBatteryMonitoring());
 
-                    // Turn on recording LED if enabled
-                    if (enableLed && hardwareManager.supportsRecordingLed()) {
+                    // Turn on recording flash LED if enabled with controlled brightness
+                    if (enableLed && hardwareManager.supportsLedBrightness()) {
+                        // TODO: RESTORE LOWER LED BRIGHTNESS LATER
+                        //hardwareManager.setRecordingLedBrightness(50); // 50% brightness for video
                         hardwareManager.setRecordingLedOn();
-                        Log.d(TAG, "Recording LED turned ON");
+                        Log.d(TAG, "Recording flash LED turned ON at 50% brightness");
+                    } else if (enableLed && hardwareManager.supportsRecordingLed()) {
+                        hardwareManager.setRecordingLedOn();
+                        Log.d(TAG, "Recording flash LED turned ON (full brightness)");
                     }
 
                     // Notify listener

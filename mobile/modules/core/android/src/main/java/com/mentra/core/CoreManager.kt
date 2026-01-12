@@ -100,10 +100,11 @@ class CoreManager {
     // LC3 Audio Encoding
     // Audio output format enum
     enum class AudioOutputFormat { LC3, PCM }
-    // Canonical LC3 config: 16kHz sample rate, 10ms frame duration, 20-byte frame size
+    // Canonical LC3 config: 16kHz sample rate, 10ms frame duration
+    // Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps)
     private var lc3EncoderPtr: Long = 0
     private var lc3DecoderPtr: Long = 0
-    private val LC3_FRAME_SIZE = 20 // bytes per LC3 frame (canonical config)
+    private var lc3FrameSize = 20 // bytes per LC3 frame (default: 20 = 16kbps)
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = AudioOutputFormat.LC3
 
@@ -402,7 +403,7 @@ class CoreManager {
                     Bridge.log("MAN: ERROR - LC3 encoder not initialized but format is LC3")
                     return
                 }
-                val lc3Data = Lc3Cpp.encodeLC3(lc3EncoderPtr, pcmData, LC3_FRAME_SIZE)
+                val lc3Data = Lc3Cpp.encodeLC3(lc3EncoderPtr, pcmData, lc3FrameSize)
                 if (lc3Data == null || lc3Data.isEmpty()) {
                     Bridge.log("MAN: ERROR - LC3 encoding returned empty data")
                     return
@@ -433,8 +434,9 @@ class CoreManager {
     /**
      * Handle raw LC3 audio data from glasses.
      * Decodes the glasses LC3, then passes to handlePcm for canonical LC3 encoding.
+     * Note: frameSize here is for glasses→phone decoding, NOT for phone→cloud encoding.
      */
-    fun handleGlassesMicData(rawLC3Data: ByteArray, frameSize: Int = LC3_FRAME_SIZE) {
+    fun handleGlassesMicData(rawLC3Data: ByteArray, frameSize: Int = 40) {
         if (lc3DecoderPtr == 0L) {
             Bridge.log("MAN: LC3 decoder not initialized, cannot process glasses audio")
             return
@@ -863,6 +865,20 @@ class CoreManager {
         Bridge.log("Audio output format set to: $format")
     }
 
+    /**
+     * Set the LC3 frame size for phone→cloud encoding.
+     * Valid values: 20 (16kbps), 40 (32kbps), 60 (48kbps).
+     */
+    fun setLC3FrameSize(frameSize: Int) {
+        if (frameSize != 20 && frameSize != 40 && frameSize != 60) {
+            Bridge.log("MAN: Invalid LC3 frame size $frameSize, must be 20, 40, or 60. Using default 20.")
+            lc3FrameSize = 20
+            return
+        }
+        lc3FrameSize = frameSize
+        Bridge.log("MAN: LC3 frame size set to $frameSize bytes (${frameSize * 800 / 1000}kbps)")
+    }
+
     fun updateMetricSystem(enabled: Boolean) {
         metricSystem = enabled
         getStatus()
@@ -1182,6 +1198,13 @@ class CoreManager {
     fun connectByName(dName: String) {
         Bridge.log("MAN: Connecting to wearable: $dName")
 
+        var name = dName
+        
+        // use stored device name if available:
+        if (dName.isEmpty() && !deviceName.isEmpty()) {
+            name = deviceName
+        }
+
         if (pendingWearable.isEmpty() && defaultWearable.isEmpty()) {
             Bridge.log("MAN: No pending or default wearable, returning")
             return
@@ -1195,7 +1218,7 @@ class CoreManager {
         disconnect()
         Thread.sleep(100)
         isSearching = true
-        deviceName = dName
+        deviceName = name
 
         initSGC(pendingWearable)
         sgc?.connectById(deviceName)
@@ -1278,6 +1301,7 @@ class CoreManager {
             glassesInfo["connected"] = glassesConnected
             glassesInfo["connectionState"] = sgc.connectionState
             glassesInfo["micEnabled"] = sgc.micEnabled
+            glassesInfo["btcConnected"] = true
         }
 
         if (sgc is G1) {
@@ -1326,10 +1350,7 @@ class CoreManager {
 
         val coreInfo =
                 mapOf(
-                        "default_wearable" to defaultWearable,
-                        "preferred_mic" to preferredMic,
                         "is_searching" to isSearching,
-                        "core_token" to coreToken,
                 )
 
         val apps = emptyList<Any>()

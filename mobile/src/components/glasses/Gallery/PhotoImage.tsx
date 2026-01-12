@@ -232,7 +232,7 @@ const $avifBadge: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   position: "absolute",
   top: spacing.s2,
   right: spacing.s2,
-  backgroundColor: colors.palette.primary500,
+  backgroundColor: colors.primary,
   paddingHorizontal: spacing.s2,
   paddingVertical: 2,
   borderRadius: 4,

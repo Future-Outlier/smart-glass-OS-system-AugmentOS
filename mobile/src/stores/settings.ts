@@ -107,8 +107,8 @@ export const SETTINGS: Record<string, Setting> = {
   // ui state:
   theme_preference: {
     key: "theme_preference",
-    defaultValue: () => "light",
-    // Force light mode - dark mode is not complete yet
+    defaultValue: () => (__DEV__ ? "system" : "light"),
+    // Force light mode - i mode is not complete yet
     // override: () => "light",
     writable: true,
     saveOnServer: true,
@@ -212,6 +212,15 @@ export const SETTINGS: Record<string, Setting> = {
     defaultValue: () => false,
     writable: true,
     saveOnServer: true,
+    persist: true,
+  },
+  // LC3 audio quality setting (frame size in bytes)
+  // 20 = 16kbps (low bandwidth), 40 = 32kbps (balanced), 60 = 48kbps (high quality)
+  lc3_frame_size: {
+    key: "lc3_frame_size",
+    defaultValue: () => 40,
+    writable: true,
+    saveOnServer: false,
     persist: true,
   },
   preferred_mic: {
@@ -373,6 +382,14 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  // OTA update dismissal - stores the version code user dismissed (not persisted so resets on app restart)
+  dismissed_ota_version: {
+    key: "dismissed_ota_version",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: false,
+  },
 } as const
 
 export const OFFLINE_APPLETS: string[] = ["com.mentra.livecaptions", "com.mentra.camera"]
@@ -386,6 +403,7 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.bypass_audio_encoding_for_debugging.key,
   SETTINGS.metric_system.key,
   SETTINGS.enforce_local_transcription.key,
+  SETTINGS.lc3_frame_size.key,
   SETTINGS.preferred_mic.key,
   SETTINGS.screen_disabled.key,
   // glasses settings:

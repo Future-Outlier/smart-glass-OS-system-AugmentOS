@@ -53,6 +53,18 @@ public class SysControl {
         nn.putExtra("cmd", "reboot");
         sendBroadcast(context, nn);
     }
+
+    /**
+     * Perform a graceful shutdown of the device.
+     * Sends a broadcast to the system to initiate power off.
+     * @param context Application context
+     */
+    public static void shut(Context context) {
+        Log.i(TAG, "🔌 Initiating device shutdown");
+        Intent nn = new Intent();
+        nn.putExtra("cmd", "shutdown");
+        sendBroadcast(context, nn);
+    }
     
     // NEW METHODS - Key Events & Interaction
     public static void clickPosition(Context context, int x, int y) {
@@ -424,6 +436,22 @@ public class SysControl {
         } catch (Exception e) {
             Log.e(TAG, "Failed to flash recording LED", e);
         }
+    }
+    
+    /**
+     * Enable or disable EIS (Electronic Image Stabilization) via vendor debug property.
+     * Sets vendor.debug.pixsmart.vs to "1" (enabled) or "0" (disabled).
+     * @param context Application context
+     * @param enable true to enable EIS, false to disable
+     */
+    public static void setEisEnable(Context context, boolean enable) {
+        Log.d(TAG, "🎥 Setting EIS (vendor.debug.pixsmart.vs) to: " + (enable ? "1" : "0"));
+        Intent nn = new Intent();
+        nn.putExtra("cmd", "setProperty");
+        nn.putExtra("name", "vendor.debug.pixsmart.vs");
+        nn.putExtra("value", enable ? "1": "0");
+        sendBroadcast(context, nn);
+        Log.d(TAG, "✅ EIS property broadcast sent");
     }
     
     /**

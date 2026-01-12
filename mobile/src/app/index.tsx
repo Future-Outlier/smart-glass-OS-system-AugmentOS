@@ -35,7 +35,7 @@ export default function InitScreen() {
   // Hooks
   const {theme, themed} = useAppTheme()
   const {user, session, loading: authLoading} = useAuth()
-  const {replace, replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome} = useNavigationHistory()
+  const {replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome} = useNavigationHistory()
   const {processUrl} = useDeeplink()
   const rootNavigationState = useRootNavigationState()
   const isNavigationReady = rootNavigationState?.key != null
@@ -73,7 +73,7 @@ export default function InitScreen() {
 
   const navigateToDestination = async () => {
     if (!user?.email) {
-      replaceAll("/auth/login")
+      replaceAll("/auth/start")
       return
     }
 
@@ -97,7 +97,7 @@ export default function InitScreen() {
 
   const checkLoggedIn = async (): Promise<void> => {
     if (!user) {
-      replaceAll("/auth/login")
+      replaceAll("/auth/start")
       return
     }
     handleTokenExchange()
@@ -202,7 +202,7 @@ export default function InitScreen() {
       case "auth":
         return {
           icon: "account-alert",
-          iconColor: theme.colors.error,
+          iconColor: theme.colors.destructive,
           title: "Authentication Error",
           description: "Unable to authenticate. Please sign in again.",
         }
@@ -220,7 +220,7 @@ export default function InitScreen() {
       case "outdated":
         return {
           icon: "update",
-          iconColor: theme.colors.tint,
+          iconColor: theme.colors.destructive,
           title: "Update Required",
           description: "MentraOS is outdated. Please update to continue using the application.",
         }
@@ -228,7 +228,7 @@ export default function InitScreen() {
       default:
         return {
           icon: "check-circle",
-          iconColor: theme.colors.palette.primary500,
+          iconColor: theme.colors.primary,
           title: "Up to Date",
           description: "MentraOS is up to date. Returning to home...",
         }
@@ -255,7 +255,7 @@ export default function InitScreen() {
     return (
       <Screen preset="fixed" safeAreaEdges={["bottom"]}>
         <View style={themed($centerContainer)}>
-          <ActivityIndicator size="large" color={theme.colors.tint} />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <Text style={themed($loadingText)}>{loadingStatus}</Text>
         </View>
       </Screen>
