@@ -654,6 +654,7 @@ const en = {
   },
   developer: {
     dev: "Dev",
+    beta: "Beta",
     usCentral: "US Central",
     france: "France",
     asiaEast: "Asia East",
