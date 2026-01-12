@@ -475,7 +475,7 @@ public class MediaCaptureService {
         Log.i(TAG, "📸 triggerPhotoFlashLed() called");
 
         if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
-            hardwareManager.flashRgbLedWhite(2200); // 5 second flash
+            hardwareManager.flashRgbLedWhite(1000); // 5 second flash
             Log.i(TAG, "📸 Photo flash LED (white) triggered via hardware manager");
         } else {
             Log.w(TAG, "⚠️ RGB LED not supported on this device");
