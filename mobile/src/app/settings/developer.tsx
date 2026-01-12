@@ -94,6 +94,15 @@ export default function DeveloperSettingsScreen() {
 
           <Group title="Quick Links">
             <RouteButton label="Sitemap" subtitle="View the app's route map" onPress={() => push("/_sitemap")} />
+
+            <RouteButton
+              label="Reset onboarding flags"
+              onPress={() => {
+                setOnboardingLiveCompleted(false)
+                setOnboardingOsCompleted(false)
+              }}
+            />
+
             <RouteButton
               label="Pairing Success"
               subtitle="Open the pairing success screen"

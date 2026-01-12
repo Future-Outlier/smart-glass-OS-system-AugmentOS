@@ -332,6 +332,8 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     // }
     // replace(path, params)
     // push(path, params)
+    historyRef.current = [path]
+    historyParamsRef.current = [params]
     router.replace({pathname: path as any, params: params as any})
   }
 
@@ -384,7 +386,8 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const pushList = (routes: string[], params: any[]) => {
     console.info("NAV: pushList()", routes)
     const first = routes.shift()
-    push(first!)
+    const firstParams = params.shift()
+    push(first!, firstParams)
     // go bottom to top and pushUnder the rest (in reverse order):
     for (let i = routes.length - 1; i >= 0; i--) {
       pushUnder(routes[i], params[i])
@@ -395,6 +398,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const pushPrevious = (index: number = 0) => {
     console.info("NAV: pushPrevious()")
     console.log("NAV: historyRef.current", historyRef.current)
+    console.log("NAV: historyParamsRef.current", historyParamsRef.current)
     // const prevIndex = historyRef.current.length - (2 + index)
     // const previousPath = historyRef.current[prevIndex]
     // const previousParams = historyParamsRef.current[prevIndex]
