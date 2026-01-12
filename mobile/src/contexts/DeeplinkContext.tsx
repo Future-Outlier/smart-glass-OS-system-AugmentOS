@@ -32,7 +32,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/home",
     handler: (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.replaceAll("/(tabs)/home")
+      navObject.replaceAll("/home")
     },
     requiresAuth: true, // Require auth for explicit /home navigation
   },
@@ -41,7 +41,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/settings",
     handler: (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.push("/(tabs)/settings")
+      navObject.push("/settings")
     },
     requiresAuth: true,
   },
@@ -65,7 +65,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
       if (route) {
         navObject.push(route as any)
       } else {
-        navObject.push("/(tabs)/settings")
+        navObject.push("/settings")
       }
     },
     requiresAuth: true,
@@ -75,7 +75,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/glasses",
     handler: async (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.push("/(tabs)/glasses")
+      navObject.push("/glasses")
     },
     requiresAuth: true,
   },
@@ -343,7 +343,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
     pattern: "/package/:packageName",
     handler: async (url: string, params: Record<string, string>, navObject: NavObject) => {
       const {packageName} = params
-      navObject.push(`/(tabs)/store?packageName=${packageName}`)
+      navObject.push(`/store?packageName=${packageName}`)
     },
     requiresAuth: true,
   },
