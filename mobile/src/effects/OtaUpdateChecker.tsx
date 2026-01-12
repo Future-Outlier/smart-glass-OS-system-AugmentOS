@@ -204,7 +204,7 @@ export function OtaUpdateChecker() {
 
   useEffect(() => {
     // only check if we're on the home screen:
-    if (pathname !== "/(tabs)/home" && pathname !== "/home") return
+    if (pathname !== "/home") return
 
     // OTA check (only for WiFi-capable glasses)
     if (hasCheckedOta.current) return

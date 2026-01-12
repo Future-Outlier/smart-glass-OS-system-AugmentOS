@@ -1902,7 +1902,7 @@ class MentraLive: NSObject, SGCManager {
     private func processK900JsonMessage(_ json: [String: Any]) {
         guard let command = json["C"] as? String else { return }
 
-        Bridge.log("Processing K900 command: \(command)")
+        // Bridge.log("LIVE: Processing K900 command: \(command)")
 
         // convert command string (which is a json string) to a json object:
         let commandJson =
@@ -2130,9 +2130,9 @@ class MentraLive: NSObject, SGCManager {
         // First, check for enhanced format (networks_neo)
         if let networksNeoArray = json["networks_neo"] as? [[String: Any]] {
             networks = networksNeoArray
-            Bridge.log(
-                "Received enhanced WiFi scan results: \(networks.count) networks with security info"
-            )
+            // Bridge.log(
+            //     "Received enhanced WiFi scan results: \(networks.count) networks with security info"
+            // )
         }
 
         Bridge.sendWifiScanResults(networks)
