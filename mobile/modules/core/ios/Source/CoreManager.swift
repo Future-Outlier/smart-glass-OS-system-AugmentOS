@@ -747,7 +747,7 @@ struct ViewState {
                 currentViewState = self.viewStates[0]
             }
             if isHeadUp && !self.contextualDashboard {
-                return
+                currentViewState = self.viewStates[0] // fallback to non-headup view
             }
 
             if sgc?.type.contains(DeviceTypes.SIMULATED) ?? true {
