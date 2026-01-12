@@ -52,11 +52,11 @@ export default function WifiScanScreen() {
     }
   }
 
-  focusEffectPreventBack(() => {
-    if (showBack) {
-      goBack()
-    }
-  })
+  // focusEffectPreventBack(() => {
+  //   if (showBack) {
+  //     goBack()
+  //   }
+  // })
 
   // if (Platform.OS === "android") {
   //   focusEffectPreventBack(() => {

@@ -49,6 +49,7 @@ const NavigationHistoryContext = createContext<NavigationHistoryContextType | un
 export function NavigationHistoryProvider({children}: {children: React.ReactNode}) {
   const historyRef = useRef<string[]>([])
   const historyParamsRef = useRef<any[]>([])
+  const [history, setDebugHistory] = useState<string[]>([])// for debugging only!
 
   const pathname = usePathname()
   const _segments = useSegments()
@@ -67,12 +68,14 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
     if (historyRef.current.length < 1) {
       historyRef.current.push(newPath)
+      setDebugHistory([...historyRef.current])
       return
     }
 
     // Keep history limited to prevent memory issues (keep last 20 entries)
     if (historyRef.current.length > 20) {
       historyRef.current = historyRef.current.slice(-20)
+      setDebugHistory([...historyRef.current])
     }
 
     // Add current path to history if it's different from the last entry and not the previous path:
@@ -88,6 +91,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       return
     }
     historyRef.current.push(newPath)
+    setDebugHistory([...historyRef.current])
     // if (prevPath !== null) {
     //   if (prevPath !== curPath && curPath !== newPath) {
     //     historyRef.current.push(newPath)
@@ -202,6 +206,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
         // we need to update the historyRef and historyParamsRef to pop the last route:
         historyRef.current.pop()
         historyParamsRef.current.pop()
+        setDebugHistory([...historyRef.current])
       }
     }
 
@@ -216,6 +221,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     // Remove current path
     history.pop()
     historyParamsRef.current.pop()
+    setDebugHistory([...historyRef.current])
 
     // Get previous path
     const previousPath = history[history.length - 1]
@@ -245,6 +251,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
     historyRef.current.push(path)
     historyParamsRef.current.push(params)
+    setDebugHistory([...historyRef.current])
 
     router.push({pathname: path as any, params: params as any})
   }
@@ -255,11 +262,12 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     historyParamsRef.current.pop()
     historyRef.current.push(path)
     historyParamsRef.current.push(params)
+    setDebugHistory([...historyRef.current])
     router.replace({pathname: path as any, params: params as any})
   }
 
   const getHistory = () => {
-    return [...historyRef.current]
+    return history
   }
 
   const getPreviousRoute = () => {
@@ -273,6 +281,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     console.info("NAV: clearHistory()")
     historyRef.current = []
     historyParamsRef.current = []
+    setDebugHistory([...historyRef.current])
     try {
       router.dismissAll()
     } catch (_e) {}
@@ -312,6 +321,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       router.replace("/home")
       historyRef.current = ["/home"]
       historyParamsRef.current = [undefined]
+      setDebugHistory([...historyRef.current])
     } catch (error) {
       console.error("NAV: clearHistoryAndGoHome() error", error)
     }
@@ -334,6 +344,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     // push(path, params)
     historyRef.current = [path]
     historyParamsRef.current = [params]
+    setDebugHistory([...historyRef.current])
     router.replace({pathname: path as any, params: params as any})
   }
 
@@ -381,6 +392,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     // Insert new path right before current in history
     historyRef.current.splice(currentIndex, 0, path)
     historyParamsRef.current.splice(currentIndex, 0, params)
+    setDebugHistory([...historyRef.current])
   }
 
   const pushList = (routes: string[], params: any[]) => {
