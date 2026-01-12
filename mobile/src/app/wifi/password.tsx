@@ -29,7 +29,7 @@ export default function WifiPasswordScreen() {
   const [rememberPassword, setRememberPassword] = useState(true)
   const [hasSavedPassword, setHasSavedPassword] = useState(false)
 
-  focusEffectPreventBack()
+  // focusEffectPreventBack()
 
   useEffect(() => {
     if (initialSsid) {
