@@ -225,7 +225,7 @@ export const SETTINGS: Record<string, Setting> = {
   // 20 = 16kbps (low bandwidth), 40 = 32kbps (balanced), 60 = 48kbps (high quality)
   lc3_frame_size: {
     key: "lc3_frame_size",
-    defaultValue: () => 40,
+    defaultValue: () => 60,
     writable: true,
     saveOnServer: false,
     persist: true,
