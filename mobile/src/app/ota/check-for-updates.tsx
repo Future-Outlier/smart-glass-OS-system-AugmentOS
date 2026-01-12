@@ -30,7 +30,7 @@ export default function OtaCheckForUpdatesScreen() {
 
   // Perform OTA check on mount with minimum display time
   useEffect(() => {
-    const MIN_DISPLAY_TIME_MS = 4000
+    const MIN_DISPLAY_TIME_MS = 1100
 
     const performCheck = async () => {
       if (!otaVersionUrl || !currentBuildNumber || !glassesConnected || !wifiConnected) {

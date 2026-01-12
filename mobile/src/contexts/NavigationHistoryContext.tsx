@@ -447,7 +447,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
     const newRouteState = updatedRoutes.map((path, index) => ({
       name: path,
-      params: historyParamsRef.current[index],
+      params: updatedRoutesParams[index],
     }))
 
     console.log("NAV: updatedRoutes", updatedRoutes)
@@ -468,8 +468,10 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       updatedRoutes.shift()
       updatedRoutesParams.shift()
     }
-    updatedRoutes.reverse() // revers for the pushList function:
+    updatedRoutes.reverse() // reverse for the pushList function
+    updatedRoutesParams.reverse() // must also reverse params to keep them aligned!
     console.log("NAV: updatedRoutes", updatedRoutes)
+    console.log("NAV: updatedRoutesParams", updatedRoutesParams)
     pushList(updatedRoutes, updatedRoutesParams)
 
     // rootNavigation.dispatch(StackActions.popToTop())
