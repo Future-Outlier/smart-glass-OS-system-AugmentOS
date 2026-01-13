@@ -98,17 +98,12 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     setDebugHistory([...historyRef.current])
   }, [pathname])
 
-  // block the back button on android when preventBack is true:
+  // always block the android back button, but allow the behavior to be overridden by the androidBackFnRef:
+  // when preventBack is false, goBack() will be called:
   useEffect(() => {
-    // if (!preventBack) {
-    //   console.log("NAV: GOING BACK TO PREVIOUS ROUTE")
-    //   goBack()
-    //   return
-    // }
-    // if (!preventBack) return
-    console.log("NAV: REGISTERING BACK HANDLER =========================")
+    console.log("NAV: ======== REGISTERING BACK HANDLER ===========")
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
-      console.log("NAV: BACK HANDLER CALLED =========================")
+      console.log("NAV: ======== BACK HANDLER CALLED ===========")
       if (!preventBack) {
         goBack()
         return true
