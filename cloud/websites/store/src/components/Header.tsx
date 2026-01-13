@@ -69,9 +69,9 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear }) => {
             {/* Buttons container - only visible on mobile/tablet in top row */}
             <div className="flex items-center gap-3 lg:hidden">
               {/* Get MentraOS Button - Only visible on small screens and up */}
-              <div className="hidden sm:block">
+              {/* <div className="hidden sm:block">
                 <GetMentraOSButton size="small" />
-              </div>
+              </div> */}
 
               {/* Authentication */}
               {isAuthenticated ? (

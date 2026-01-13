@@ -573,9 +573,9 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
         {/* Get MentraOS - Hide in React Native WebView */}
         {!isWebView && (
           <div className="text-center mb-8 mt-12">
-            <div className="flex justify-center">
+            {/* <div className="flex justify-center">
               <GetMentraOSButton size="small" />
-            </div>
+            </div> */}
           </div>
         )}
       </div>
