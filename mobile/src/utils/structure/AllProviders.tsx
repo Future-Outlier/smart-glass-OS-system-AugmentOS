@@ -1,33 +1,34 @@
 import {BottomSheetModalProvider} from "@gorhom/bottom-sheet"
 import * as Sentry from "@sentry/react-native"
+import {Stack} from "expo-router"
 import {PostHogProvider} from "posthog-react-native"
 import {Suspense} from "react"
 import {View} from "react-native"
 import ErrorBoundary from "react-native-error-boundary"
 import {GestureHandlerRootView} from "react-native-gesture-handler"
 import {KeyboardProvider} from "react-native-keyboard-controller"
-import {SafeAreaProvider} from "react-native-safe-area-context"
+import {SafeAreaProvider, useSafeAreaInsets} from "react-native-safe-area-context"
 import Toast from "react-native-toast-message"
 
 // import {ErrorBoundary} from "@/components/error"
 import {Text} from "@/components/ignite"
-import BackgroundGradient from "@/components/ui/BackgroundGradient"
-import {AppStoreWebviewPrefetchProvider} from "@/contexts/AppStoreWebviewPrefetchProvider"
+import {AppStoreProvider} from "@/contexts/AppStoreContext"
 import {AuthProvider} from "@/contexts/AuthContext"
 import {CoreStatusProvider} from "@/contexts/CoreStatusProvider"
 import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
-import {NavigationHistoryProvider} from "@/contexts/NavigationHistoryContext"
-import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import {NavigationHistoryProvider, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useThemeProvider} from "@/contexts/ThemeContext"
+import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
+import {KonamiCodeProvider} from "@/utils/debug/konami"
 import {withWrappers} from "@/utils/structure/with-wrappers"
-import {useThemeProvider} from "@/utils/useAppTheme"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
   // props => {
   //   return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
   // },
-  props => {
+  (props) => {
     return (
       <ErrorBoundary
         onError={(error, stackTrace) => {
@@ -60,7 +61,7 @@ export const AllProviders = withWrappers(
   //     </Sentry.ErrorBoundary>
   //   )
   // },
-  props => {
+  (props) => {
     const {themeScheme, setThemeContextOverride, ThemeProvider} = useThemeProvider()
     return <ThemeProvider value={{themeScheme, setThemeContextOverride}}>{props.children}</ThemeProvider>
   },
@@ -69,15 +70,15 @@ export const AllProviders = withWrappers(
   KeyboardProvider,
   CoreStatusProvider,
   AuthProvider,
-  AppStoreWebviewPrefetchProvider,
+  AppStoreProvider,
   NavigationHistoryProvider,
   DeeplinkProvider,
-  props => {
+  (props) => {
     return <GestureHandlerRootView style={{flex: 1}}>{props.children}</GestureHandlerRootView>
   },
   ModalProvider,
   BottomSheetModalProvider,
-  props => {
+  (props) => {
     const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY
     const isChina = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
 
@@ -98,18 +99,59 @@ export const AllProviders = withWrappers(
       </PostHogProvider>
     )
   },
-  props => {
-    return (
-      <View style={{flex: 1}}>
-        <BackgroundGradient>{props.children}</BackgroundGradient>
-      </View>
-    )
-  },
-  props => {
+  // props => {
+  //   return (
+  //     <View style={{flex: 1}}>
+  //       <BackgroundGradient>{props.children}</BackgroundGradient>
+  //     </View>
+  //   )
+  // },
+  (props) => {
     return (
       <>
         {props.children}
         <Toast />
+      </>
+    )
+  },
+  KonamiCodeProvider,
+  (props) => {
+    const {preventBack, getHistory} = useNavigationHistory()
+    const [debugNavigationHistory] = useSetting(SETTINGS.debug_navigation_history.key)
+    const history = getHistory()
+    const top = useSafeAreaInsets().top
+    if (!debugNavigationHistory) {
+      return <>{props.children}</>
+    }
+
+    // render the history as list at the top of the screen:
+
+    return (
+      <>
+        <View style={{height: top}} />
+        <View className="h-12 items-center justify-center bg-red-800">
+          <Text className="text-white text-sm">{history.join(" -> ")}</Text>
+        </View>
+        <View className={`h-6 items-center justify-center ${!preventBack ? "bg-green-800" : "bg-red-600"}`}>
+          <Text className="text-white text-sm">preventBack: {preventBack ? "true" : "false"}</Text>
+        </View>
+        {props.children}
+      </>
+    )
+  },
+  (props) => {
+    const {preventBack} = useNavigationHistory()
+    return (
+      <>
+        {props.children}
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: !preventBack,
+            gestureDirection: "horizontal",
+            animation: "simple_push",
+          }}
+        />
       </>
     )
   },
