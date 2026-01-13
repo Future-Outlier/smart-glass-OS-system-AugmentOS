@@ -7,7 +7,7 @@ import {View} from "react-native"
 import ErrorBoundary from "react-native-error-boundary"
 import {GestureHandlerRootView} from "react-native-gesture-handler"
 import {KeyboardProvider} from "react-native-keyboard-controller"
-import {SafeAreaProvider} from "react-native-safe-area-context"
+import {SafeAreaProvider, useSafeAreaInsets} from "react-native-safe-area-context"
 import Toast from "react-native-toast-message"
 import {FunctionComponent, PropsWithChildren} from "react"
 
@@ -19,7 +19,7 @@ import {CoreStatusProvider} from "@/contexts/CoreStatusProvider"
 import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
 import {NavigationHistoryProvider, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useThemeProvider} from "@/contexts/ThemeContext"
-import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {KonamiCodeProvider} from "@/utils/debug/konami"
 
@@ -28,7 +28,7 @@ export const AllProviders = withWrappers(
   // props => {
   //   return <ErrorBoundary catchErrors="always">{props.children}</ErrorBoundary>
   // },
-  props => {
+  (props) => {
     return (
       <ErrorBoundary
         onError={(error, stackTrace) => {
@@ -61,7 +61,7 @@ export const AllProviders = withWrappers(
   //     </Sentry.ErrorBoundary>
   //   )
   // },
-  props => {
+  (props) => {
     const {themeScheme, setThemeContextOverride, ThemeProvider} = useThemeProvider()
     return <ThemeProvider value={{themeScheme, setThemeContextOverride}}>{props.children}</ThemeProvider>
   },
@@ -73,12 +73,12 @@ export const AllProviders = withWrappers(
   AppStoreProvider,
   NavigationHistoryProvider,
   DeeplinkProvider,
-  props => {
+  (props) => {
     return <GestureHandlerRootView style={{flex: 1}}>{props.children}</GestureHandlerRootView>
   },
   ModalProvider,
   BottomSheetModalProvider,
-  props => {
+  (props) => {
     const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY
     const isChina = useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
 
@@ -106,7 +106,7 @@ export const AllProviders = withWrappers(
   //     </View>
   //   )
   // },
-  props => {
+  (props) => {
     return (
       <>
         {props.children}
@@ -115,15 +115,35 @@ export const AllProviders = withWrappers(
     )
   },
   KonamiCodeProvider,
-  props => {
-    const {preventBack} = useNavigationHistory()
+  (props) => {
+    const {preventBack, getHistory} = useNavigationHistory()
+    const [debugNavigationHistory] = useSetting(SETTINGS.debug_navigation_history.key)
+    const history = getHistory()
+    const top = useSafeAreaInsets().top
+    if (!debugNavigationHistory) {
+      return <>{props.children}</>
+    }
+
+    // render the history as list at the top of the screen:
 
     return (
       <>
+        <View style={{height: top}} />
+        <View className="h-12 items-center justify-center bg-red-800">
+          <Text className="text-white text-sm">{history.join(" -> ")}</Text>
+        </View>
+        <View className={`h-6 items-center justify-center ${!preventBack ? "bg-green-800" : "bg-red-600"}`}>
+          <Text className="text-white text-sm">preventBack: {preventBack ? "true" : "false"}</Text>
+        </View>
         {props.children}
-        {/* <View className="h-24 items-center justify-end bg-red-500">
-          <Text className="text-white text-sm">{preventBack ? "true" : "false"}</Text>
-        </View> */}
+      </>
+    )
+  },
+  (props) => {
+    const {preventBack} = useNavigationHistory()
+    return (
+      <>
+        {props.children}
         <Stack
           screenOptions={{
             headerShown: false,

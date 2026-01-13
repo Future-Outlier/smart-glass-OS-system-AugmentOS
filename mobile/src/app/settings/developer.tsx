@@ -34,7 +34,9 @@ export default function DeveloperSettingsScreen() {
   const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS.reconnect_on_app_foreground.key)
   const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS.enable_squircles.key)
   const [debugConsole, setDebugConsole] = useSetting(SETTINGS.debug_console.key)
+  const [debugNavigationHistoryEnabled, setDebugNavigationHistoryEnabled] = useSetting(SETTINGS.debug_navigation_history.key)
   const [_onboardingOsCompleted, setOnboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
+  const [_onboardingLiveCompleted, setOnboardingLiveCompleted] = useSetting(SETTINGS.onboarding_live_completed.key)
   const [lc3FrameSize, setLc3FrameSize] = useSetting(SETTINGS.lc3_frame_size.key)
 
   return (
@@ -83,14 +85,29 @@ export default function DeveloperSettingsScreen() {
               value={enableSquircles}
               onValueChange={(value) => setEnableSquircles(value)}
             />
+            <ToggleSetting
+              label="Debug Navigation History"
+              value={debugNavigationHistoryEnabled}
+              onValueChange={(value) => setDebugNavigationHistoryEnabled(value)}
+            />
           </Group>
 
           <Group title="Quick Links">
             <RouteButton label="Sitemap" subtitle="View the app's route map" onPress={() => push("/_sitemap")} />
+
+            <RouteButton
+              label="Reset onboarding flags"
+              onPress={() => {
+                setOnboardingLiveCompleted(false)
+                setOnboardingOsCompleted(false)
+              }}
+            />
+
             <RouteButton
               label="Pairing Success"
               subtitle="Open the pairing success screen"
               onPress={() => {
+                setOnboardingLiveCompleted(false)
                 setOnboardingOsCompleted(false)
                 replaceAll("/pairing/success")
               }}
@@ -108,6 +125,7 @@ export default function DeveloperSettingsScreen() {
               label="Mentra Live Onboarding"
               subtitle="Start the Mentra Live onboarding"
               onPress={() => {
+                setOnboardingLiveCompleted(false)
                 clearHistoryAndGoHome()
                 push("/onboarding/live")
               }}

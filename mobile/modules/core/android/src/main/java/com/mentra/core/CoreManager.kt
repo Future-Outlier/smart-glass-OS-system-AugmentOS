@@ -571,15 +571,15 @@ class CoreManager {
         }
 
         // executor.execute {
-        val currentViewState =
-                if (isHeadUp) {
-                    viewStates[1]
-                } else {
-                    viewStates[0]
-                }
+        var currentViewState: ViewState
+        if (isHeadUp) {
+            currentViewState = viewStates[1]
+        } else {
+            currentViewState = viewStates[0]
+        }
 
         if (isHeadUp && !contextualDashboard) {
-            return
+            currentViewState = viewStates[0]
         }
 
         if (sgc?.type?.contains(DeviceTypes.SIMULATED) == true) {

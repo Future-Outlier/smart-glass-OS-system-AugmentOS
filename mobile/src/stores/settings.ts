@@ -37,6 +37,13 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  debug_navigation_history: {
+    key: "debug_navigation_history",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   china_deployment: {
     key: "china_deployment",
     defaultValue: () => (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china" ? true : false),
@@ -218,7 +225,7 @@ export const SETTINGS: Record<string, Setting> = {
   // 20 = 16kbps (low bandwidth), 40 = 32kbps (balanced), 60 = 48kbps (high quality)
   lc3_frame_size: {
     key: "lc3_frame_size",
-    defaultValue: () => 40,
+    defaultValue: () => 60,
     writable: true,
     saveOnServer: false,
     persist: true,

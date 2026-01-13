@@ -29,7 +29,7 @@ export default function WifiPasswordScreen() {
   const [rememberPassword, setRememberPassword] = useState(true)
   const [hasSavedPassword, setHasSavedPassword] = useState(false)
 
-  focusEffectPreventBack()
+  // focusEffectPreventBack()
 
   useEffect(() => {
     if (initialSsid) {
@@ -131,17 +131,16 @@ export default function WifiPasswordScreen() {
           </View>
 
           {/* Remember password checkbox */}
-          <TouchableOpacity
-            className="flex-row items-center w-full gap-2"
-            onPress={() => setRememberPassword(!rememberPassword)}
-            activeOpacity={0.7}
-            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-            <Checkbox value={rememberPassword} onValueChange={setRememberPassword} />
-            <View className="flex-1">
-              <Text className="text-base font-medium text-text" tx="wifi:rememberPassword" />
-              <Text className="text-sm text-text-dim mt-0.5" tx="wifi:rememberPasswordDescription" />
-            </View>
-          </TouchableOpacity>
+          <Checkbox
+            value={rememberPassword}
+            onValueChange={setRememberPassword}
+            containerStyle={{width: "100%"}}
+            labelPosition="right"
+            label="Remember password"
+            labelTx="wifi:rememberPassword"
+            helper="Save password for future connections"
+            helperTx="wifi:rememberPasswordDescription"
+          />
         </View>
 
         <View className="w-full h-px bg-border mt-6 mb-6" />
