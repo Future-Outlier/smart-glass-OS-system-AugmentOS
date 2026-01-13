@@ -185,7 +185,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
                         className="h-[16px] sm:h-7 w-auto object-contain"
                       />
                       <span
-                        className="text-[20px] sm:text-[20px] font-semibold  mb-[-0px]"
+                        className="text-[14px] sm:text-[20px] font-semibold  mb-[-0px]"
                         style={{
                           fontFamily: "Red Hat Display, sans-serif",
                           letterSpacing: "0.06em",
