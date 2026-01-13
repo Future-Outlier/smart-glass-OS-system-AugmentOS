@@ -212,7 +212,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
                           : { color: "var(--text-primary)" }
                       }
                       onClick={() => setSelectedTab("apps")}>
-                      Apps
+                      MiniApps
                     </button>
 
                     <button
