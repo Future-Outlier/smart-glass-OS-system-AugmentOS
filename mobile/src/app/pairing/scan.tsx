@@ -19,7 +19,7 @@ import {MOCK_CONNECTION} from "@/utils/Constants"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {PermissionFeatures, requestFeaturePermissions} from "@/utils/PermissionsUtils"
 import {getGlassesOpenImage} from "@/utils/getGlassesImage"
-import { SETTINGS, useSetting } from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 class SearchResultDevice {
   deviceMode: string
@@ -36,7 +36,7 @@ export default function SelectGlassesBluetoothScreen() {
   const [searchResults, setSearchResults] = useState<SearchResultDevice[]>([])
   const {glassesModelName}: {glassesModelName: string} = useLocalSearchParams()
   const {theme} = useAppTheme()
-  const {goBack, replace, clearHistoryAndGoHome, push, pushUnder} = useNavigationHistory()
+  const {goBack, replace, push, pushUnder} = useNavigationHistory()
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   const searchResultsRef = useRef<SearchResultDevice[]>(searchResults)
   const btcConnected = useGlassesStore((state) => state.btcConnected)
@@ -192,7 +192,6 @@ export default function SelectGlassesBluetoothScreen() {
   }
 
   const startPairing = async (glassesModelName: string, deviceName: string) => {
-    
     const deviceTypesWithBtClassic = [DeviceTypes.LIVE]
     if (
       Platform.OS === "android" ||
@@ -221,62 +220,65 @@ export default function SelectGlassesBluetoothScreen() {
     return newName
   }
 
+  // remember the search results to ensure consistent ordering:
+  const rememberedSearchResults = useRef<SearchResultDevice[]>(searchResults)
+  useEffect(() => {
+    // ensure remembered search results is a set:
+    for (const result of searchResults) {
+      if (!rememberedSearchResults.current.includes(result)) {
+        rememberedSearchResults.current.push(result)
+      }
+    }
+  }, [searchResults])
+
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header leftIcon="chevron-left" onLeftPress={goBack} RightActionComponent={<MentraLogoStandalone />} />
-      <View className="flex-1 pb-6">
-        <View className="flex-1 justify-center">
-          <View className="gap-6 rounded-3xl bg-primary-foreground p-6">
-            <Image source={getGlassesOpenImage(glassesModelName)} className="h-[90px] w-full" resizeMode="contain" />
-            <Text
-              className="text-center text-xl font-semibold text-text-dim"
-              text={translate("pairing:scanningForGlassesModel", {model: glassesModelName})}
-            />
+      <View className="flex-1 pt-[35%]">
+        <View className="gap-6 rounded-3xl bg-primary-foreground p-6">
+          <Image source={getGlassesOpenImage(glassesModelName)} className="h-[90px] w-full" resizeMode="contain" />
+          <Text
+            className="text-center text-xl font-semibold text-text-dim"
+            text={translate("pairing:scanningForGlassesModel", {model: glassesModelName})}
+          />
 
-            {!searchResults || searchResults.length === 0 ? (
-              <View className="flex-1 justify-center py-4">
-                <ActivityIndicator size="large" color={theme.colors.text} />
-              </View>
-            ) : (
-              <ScrollView className="-mr-6 max-h-[300px] pr-6">
-                <Group>
-                  {searchResults.map((device, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      className="h-[50px] flex-row items-center justify-between bg-background px-4 py-3"
-                      onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
-                      <View className="flex-1 px-2.5">
-                        <Text
-                          text={`${glassesModelName} - ${filterDeviceName(device.deviceName)}`}
-                          className="flex-wrap text-sm font-semibold"
-                          numberOfLines={2}
-                        />
-                      </View>
-                      <Icon name="chevron-right" size={24} color={theme.colors.text} />
-                    </TouchableOpacity>
-                  ))}
-                </Group>
-              </ScrollView>
-            )}
-            <Divider />
-            <View className="flex-row justify-end">
-              <Button
-                preset="alternate"
-                compact
-                tx="common:cancel"
-                onPress={() => goBack()}
-                className="min-w-[100px]"
-              />
+          {!rememberedSearchResults.current || rememberedSearchResults.current.length === 0 ? (
+            <View className="flex-1 justify-center py-4">
+              <ActivityIndicator size="large" color={theme.colors.text} />
             </View>
+          ) : (
+            <ScrollView className="max-h-[300px] -mr-4 pr-4">
+              <Group>
+                {searchResults.map((device, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    className="h-[50px] flex-row items-center justify-between bg-background px-4 py-3"
+                    onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
+                    <View className="flex-1 px-2.5">
+                      <Text
+                        text={`${glassesModelName} - ${filterDeviceName(device.deviceName)}`}
+                        className="flex-wrap text-sm font-semibold"
+                        numberOfLines={2}
+                      />
+                    </View>
+                    <Icon name="chevron-right" size={24} color={theme.colors.text} />
+                  </TouchableOpacity>
+                ))}
+              </Group>
+            </ScrollView>
+          )}
+          <Divider />
+          <View className="flex-row justify-end">
+            <Button preset="alternate" compact tx="common:cancel" onPress={() => goBack()} className="min-w-[100px]" />
           </View>
         </View>
-        <Button
-          preset="secondary"
-          tx="pairing:needMoreHelp"
-          onPress={() => setShowTroubleshootingModal(true)}
-          className="w-full"
-        />
       </View>
+      <Button
+        preset="secondary"
+        tx="pairing:needMoreHelp"
+        onPress={() => setShowTroubleshootingModal(true)}
+        className="w-full"
+      />
       <GlassesTroubleshootingModal
         isVisible={showTroubleshootingModal}
         onClose={() => setShowTroubleshootingModal(false)}

@@ -359,8 +359,6 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   // when you want to go back, but animate it like a push:
   const pushPrevious = (index: number = 0) => {
     console.info("NAV: pushPrevious()")
-    console.log("NAV: historyRef.current", historyRef.current)
-    console.log("NAV: historyParamsRef.current", historyParamsRef.current)
     // const prevIndex = historyRef.current.length - (2 + index)
     // const previousPath = historyRef.current[prevIndex]
     // const previousParams = historyParamsRef.current[prevIndex]
@@ -371,41 +369,16 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     const lastRouteIndex = historyRef.current.length - last
     // the route we want to later "push" onto the stack:
     const lastRoute = historyRef.current[lastRouteIndex]
-    console.log("NAV: lastRoute", lastRoute)
     const lastRouteParams = historyParamsRef.current[lastRouteIndex]
 
     // Build routes WITHOUT n routes (removing current and last n routes)
     const n = index + 2
     let updatedRoutes = historyRef.current.slice(0, -n)
     let updatedRoutesParams = historyParamsRef.current.slice(0, -n)
-
-    // // remove any /home routes (remove the same index from updatedRoutesParams):
-    // updatedRoutes.forEach((path, index) => {
-    //   if (path === "/home") {
-    //     updatedRoutes.splice(index, 1)
-    //     updatedRoutesParams.splice(index, 1)
-    //   }
-    // })
-    // remov
-    // // add ghost route:
-    // updatedRoutes.push("/")
-    // updatedRoutesParams.push(undefined)
-
+    
     // re-add the last (soon to be new current) route:
     updatedRoutes.push(lastRoute)
     updatedRoutesParams.push(lastRouteParams)
-
-    const newRouteState = updatedRoutes.map((path, index) => ({
-      name: path,
-      params: updatedRoutesParams[index],
-    }))
-
-    console.log("NAV: updatedRoutes", updatedRoutes)
-
-    console.log(
-      "NAV: newRouteState",
-      newRouteState.map((route) => route.name),
-    )
 
     clearHistoryAndGoHome()
 
@@ -501,19 +474,6 @@ export function useNavigationHistory() {
   }
   return context
 }
-
-// export const focusEffectPreventBack = () => {
-//   const {setPreventBack} = useNavigationHistory()
-
-//   useFocusEffect(
-//     useCallback(() => {
-//       setPreventBack(true)
-//       return () => {
-//         setPreventBack(false)
-//       }
-//     }, []),
-//   )
-// }
 
 // screens that call this function will prevent the back button from being pressed:
 export const focusEffectPreventBack = (androidBackFn?: () => void) => {

@@ -1,7 +1,7 @@
 import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
 import {useState, useCallback, useEffect, useMemo} from "react"
-import {View, ViewStyle, ActivityIndicator} from "react-native"
+import {View, ViewStyle, ActivityIndicator, Platform} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Button, Header, Icon} from "@/components/ignite"
@@ -425,6 +425,7 @@ export function OnboardingGuide({
             style={{
               width: "100%",
               height: "100%",
+              marginLeft: activePlayer === 1 ? 0 : "100%",
             }}
             nativeControls={false}
             allowsVideoFrameAnalysis={false}
@@ -441,6 +442,7 @@ export function OnboardingGuide({
             style={{
               width: "100%",
               height: "100%",
+              marginLeft: activePlayer === 2 ? 0 : "100%",
             }}
             nativeControls={false}
             allowsVideoFrameAnalysis={false}
@@ -565,7 +567,7 @@ export function OnboardingGuide({
       )
     }
 
-    if (devMode) {
+    if (devMode && Platform.OS === "ios") {
       return renderDebugVideos()
     }
 
