@@ -24,7 +24,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
   const [selectedImage, setSelectedImage] = useState<{ url: string; index: number } | null>(null);
 
   return (
-    <div className="min-h-screen flex justify-center">
+    <div className="min-h-screen flex justify-center relative z-0">
       {/* Desktop Close Button */}
       {/* <button
         onClick={handleBackNavigation}
@@ -96,7 +96,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
               )}
 
               {/* Buttons Section - Desktop only */}
-              <div className="flex items-center gap-[24px]">
+              <div className="flex items-center gap-[24px] relative z-0">
                 {/* Install Button */}
                 {isAuthenticated ? (
                   app.isInstalled ? (

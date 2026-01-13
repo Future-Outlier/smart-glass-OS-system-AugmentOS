@@ -585,6 +585,12 @@ const AppStoreDesktop: React.FC = () => {
           ) : null}
         </div>
 
+        {!searchQuery && (
+          <div className="hidden lg:block">
+            <AppStorePromotionBanner />
+          </div>
+        )}
+
         {/* Empty state */}
         {!isLoading && !error && filteredApps.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 px-4">
