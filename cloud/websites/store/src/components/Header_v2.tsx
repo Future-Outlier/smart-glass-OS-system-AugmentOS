@@ -18,7 +18,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, refreshUser } = useAuth();
   const { isWebView } = usePlatform();
   const { theme } = useTheme();
   const { searchQuery, setSearchQuery } = useSearch();
@@ -94,6 +94,13 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
     return user.avatarUrl || null;
   };
 
+  // Refresh user data on mount to ensure avatar is loaded
+  useEffect(() => {
+    if (isAuthenticated && !user?.avatarUrl) {
+      refreshUser();
+    }
+  }, [isAuthenticated, user?.avatarUrl, refreshUser]);
+
   // Debug: log user data
   useEffect(() => {
     if (user) {
@@ -117,17 +124,27 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
 
-      // Don't close if clicking on an app card or any clickable app element
+      // Don't close if clicking inside the search input itself
+      if (searchRef.current && searchRef.current.contains(event.target as Node)) {
+        return;
+      }
+
+      // Don't close if clicking on the main content area or any of these elements:
+      // - App cards
+      // - Links
+      // - Buttons (except if they're in the header)
+      // - Main content/app grid area
       if (
         target.closest("[data-app-card]") ||
-        target.closest(".cursor-pointer") ||
+        target.closest("main") ||
         target.closest("a") ||
-        target.closest("button")
+        (target.closest("button") && !target.closest("header"))
       ) {
         return;
       }
 
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      // Only close if clicking outside the header and main content
+      if (!target.closest("header") && !target.closest("main")) {
         setsearchMode(false);
         setSearchQuery(""); // Clear search query when closing
         if (onSearchClear) {
@@ -229,13 +246,19 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
                 }}>
                 {getUserAvatar() ? (
                   <img
-                    key={getUserAvatar()}
                     src={getUserAvatar()!}
                     alt="Profile"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       console.error("Failed to load avatar:", getUserAvatar());
-                      e.currentTarget.style.display = "none";
+                      // Hide the broken image and show the fallback icon
+                      const parent = e.currentTarget.parentElement;
+                      e.currentTarget.remove();
+                      if (parent) {
+                        const fallbackIcon = document.createElement("div");
+                        fallbackIcon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+                        parent.appendChild(fallbackIcon);
+                      }
                     }}
                   />
                 ) : (
@@ -329,13 +352,19 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
                         }}>
                         {getUserAvatar() ? (
                           <img
-                            key={getUserAvatar()}
                             src={getUserAvatar()!}
                             alt="Profile"
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               console.error("Failed to load avatar:", getUserAvatar());
-                              e.currentTarget.style.display = "none";
+                              // Hide the broken image and show the fallback icon
+                              const parent = e.currentTarget.parentElement;
+                              e.currentTarget.remove();
+                              if (parent) {
+                                const fallbackIcon = document.createElement("div");
+                                fallbackIcon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+                                parent.appendChild(fallbackIcon);
+                              }
                             }}
                           />
                         ) : (

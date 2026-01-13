@@ -22,6 +22,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
   navigateToLogin,
 }) => {
   const [selectedImage, setSelectedImage] = useState<{ url: string; index: number } | null>(null);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
   return (
     <div className="min-h-screen flex justify-center relative z-0">
@@ -238,10 +239,13 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                     .sort((a, b) => a.order - b.order)
                     .map((image, index) => {
                       const isPortrait = image.orientation === "portrait";
+                      const imageKey = image.imageId || `${image.url}-${index}`;
+                      const isLoaded = loadedImages.has(imageKey);
+
                       return (
                         <div
-                          key={image.imageId || index}
-                          className=" flex-shrink-0 rounded-lg overflow-hidden snap-start cursor-pointer transition-opacity "
+                          key={imageKey}
+                          className=" flex-shrink-0 rounded-lg overflow-hidden snap-start cursor-pointer transition-opacity relative"
                           style={{
                             maxHeight: "422px",
                             height: "422px",
@@ -249,15 +253,40 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                             backgroundColor: "var(--bg-secondary)",
                           }}
                           onClick={() => setSelectedImage({ url: image.url, index })}>
+                          {/* Skeleton Loader */}
+                          {!isLoaded && (
+                            <div
+                              className="absolute inset-0 animate-pulse"
+                              style={{
+                                backgroundColor: "var(--bg-secondary)",
+                              }}>
+                              <div
+                                className="w-full h-full"
+                                style={{
+                                  background:
+                                    "linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)",
+                                  backgroundSize: "200% 100%",
+                                  animation: "shimmer 1.5s infinite",
+                                }}
+                              />
+                            </div>
+                          )}
+
                           <img
                             src={image.url}
                             alt={`${app.name} preview ${index + 1}`}
                             className="w-full h-full object-cover"
                             style={{
                               objectPosition: "center",
+                              opacity: isLoaded ? 1 : 0,
+                              transition: "opacity 0.3s ease-in-out",
+                            }}
+                            onLoad={() => {
+                              setLoadedImages((prev) => new Set(prev).add(imageKey));
                             }}
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display = "none";
+                              setLoadedImages((prev) => new Set(prev).add(imageKey));
                             }}
                           />
                         </div>
@@ -269,6 +298,14 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                     __html: `
                     .overflow-x-auto::-webkit-scrollbar {
                       display: none;
+                    }
+                    @keyframes shimmer {
+                      0% {
+                        background-position: -200% 0;
+                      }
+                      100% {
+                        background-position: 200% 0;
+                      }
                     }
                   `,
                   }}

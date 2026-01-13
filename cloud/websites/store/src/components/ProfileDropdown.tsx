@@ -1,34 +1,34 @@
-import {User} from "lucide-react"
-import {useAuth} from "@mentra/shared"
-import {useTheme} from "../hooks/useTheme"
-import {useNavigate} from "react-router-dom"
-import {useProfileDropdown} from "../contexts/ProfileDropdownContext"
+import { User } from "lucide-react";
+import { useAuth } from "@mentra/shared";
+import { useTheme } from "../hooks/useTheme";
+import { useNavigate } from "react-router-dom";
+import { useProfileDropdown } from "../contexts/ProfileDropdownContext";
 
 interface ProfileDropdownProps {
-  variant?: "mobile" | "desktop"
-  className?: string
+  variant?: "mobile" | "desktop";
+  className?: string;
 }
 
-export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({variant = "desktop", className = ""}) => {
-  const {signOut, user} = useAuth()
-  const {theme} = useTheme()
-  const navigate = useNavigate()
-  const profileDropdown = useProfileDropdown()
+export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ variant = "desktop", className = "" }) => {
+  const { signOut, user } = useAuth();
+  const { theme } = useTheme();
+  const navigate = useNavigate();
+  const profileDropdown = useProfileDropdown();
 
   const getUserAvatar = () => {
-    if (!user) return null
-    return (user as any).avatarUrl || null
-  }
+    if (!user) return null;
+    return (user as any).avatarUrl || null;
+  };
 
   const handleSignOut = async () => {
     try {
-      await signOut()
-      profileDropdown.setIsOpen(false)
-      navigate("/")
+      await signOut();
+      profileDropdown.setIsOpen(false);
+      navigate("/");
     } catch (error) {
-      console.error("Error signing out:", error)
+      console.error("Error signing out:", error);
     }
-  }
+  };
 
   if (variant === "mobile") {
     return (
@@ -47,13 +47,19 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({variant = "desk
             }}>
             {getUserAvatar() ? (
               <img
-                key={getUserAvatar()}
                 src={getUserAvatar()!}
                 alt="Profile"
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  console.error("Failed to load avatar:", getUserAvatar())
-                  e.currentTarget.style.display = "none"
+                  console.error("Failed to load avatar:", getUserAvatar());
+                  // Hide the broken image and show the fallback icon
+                  const parent = e.currentTarget.parentElement;
+                  e.currentTarget.remove();
+                  if (parent) {
+                    const fallbackIcon = document.createElement("div");
+                    fallbackIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+                    parent.appendChild(fallbackIcon);
+                  }
                 }}
               />
             ) : (
@@ -95,7 +101,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({variant = "desk
           Sign Out
         </button>
       </div>
-    )
+    );
   }
 
   // Desktop variant
@@ -119,13 +125,19 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({variant = "desk
           }}>
           {getUserAvatar() ? (
             <img
-              key={getUserAvatar()}
               src={getUserAvatar()!}
               alt="Profile"
               className="w-full h-full object-cover"
               onError={(e) => {
-                console.error("Failed to load avatar in dropdown:", getUserAvatar())
-                e.currentTarget.style.display = "none"
+                console.error("Failed to load avatar in dropdown:", getUserAvatar());
+                // Hide the broken image and show the fallback icon
+                const parent = e.currentTarget.parentElement;
+                e.currentTarget.remove();
+                if (parent) {
+                  const fallbackIcon = document.createElement("div");
+                  fallbackIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+                  parent.appendChild(fallbackIcon);
+                }
               }}
             />
           ) : (
@@ -167,5 +179,5 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({variant = "desk
         Sign Out
       </button>
     </div>
-  )
-}
+  );
+};
