@@ -1,8 +1,8 @@
 import {router, useFocusEffect, useNavigationContainerRef, usePathname, useSegments} from "expo-router"
 import {createContext, useContext, useEffect, useRef, useCallback, useState} from "react"
-import {Alert, BackHandler} from "react-native"
+import {BackHandler} from "react-native"
 import {useNavigation} from "expo-router"
-import {CommonActions, StackActions} from "@react-navigation/native"
+import {CommonActions} from "@react-navigation/native"
 
 import {navigationRef} from "@/contexts/NavigationRef"
 
@@ -49,7 +49,7 @@ const NavigationHistoryContext = createContext<NavigationHistoryContextType | un
 export function NavigationHistoryProvider({children}: {children: React.ReactNode}) {
   const historyRef = useRef<string[]>([])
   const historyParamsRef = useRef<any[]>([])
-  const [history, setDebugHistory] = useState<string[]>([])// for debugging only!
+  const [history, setDebugHistory] = useState<string[]>([]) // for debugging only!
 
   const pathname = usePathname()
   const _segments = useSegments()
@@ -78,37 +78,41 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       setDebugHistory([...historyRef.current])
     }
 
-    // Add current path to history if it's different from the last entry and not the previous path:
-    const curPath = historyRef.current[historyRef.current.length - 1]
-    const prevPath = historyRef.current[historyRef.current.length - 2]
-    console.log("NAV: prevPath", prevPath)
-    console.log("NAV: curPath", curPath)
-    console.log("NAV: newPath", newPath)
-    if (newPath === prevPath) {
+    let currentPath = historyRef.current[historyRef.current.length - 1]
+    if (newPath === currentPath) {
       return
     }
-    if (newPath == curPath) {
-      return
+
+    // add the new path to the history:
+    // but only if it's not already in the history:
+    if (historyRef.current.includes(newPath)) {
+      // this was actually a back navigation, so we should pop until we get to the last instance of the path:
+      console.log("NAV: BACK NAVIGATION DETECTED")
+      while (historyRef.current[historyRef.current.length - 1] !== newPath) {
+        historyRef.current.pop()
+        historyParamsRef.current.pop()
+      }
+    } else {
+      historyRef.current.push(newPath)
     }
-    historyRef.current.push(newPath)
     setDebugHistory([...historyRef.current])
-    // if (prevPath !== null) {
-    //   if (prevPath !== curPath && curPath !== newPath) {
-    //     historyRef.current.push(newPath)
-    //   }
-    // } else {
-    //   if (newPath !== curPath) {
-    //     historyRef.current.push(newPath)
-    //   }
-    // }
   }, [pathname])
 
   // block the back button on android when preventBack is true:
   useEffect(() => {
+    // if (!preventBack) {
+    //   console.log("NAV: GOING BACK TO PREVIOUS ROUTE")
+    //   goBack()
+    //   return
+    // }
     // if (!preventBack) return
     console.log("NAV: REGISTERING BACK HANDLER =========================")
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
       console.log("NAV: BACK HANDLER CALLED =========================")
+      if (!preventBack) {
+        goBack()
+        return true
+      }
       if (androidBackFnRef.current) {
         androidBackFnRef.current()
       }
@@ -131,103 +135,53 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     }
   }, [])
 
-  useEffect(() => {
-    let sub = navigation.addListener("state", (state) => {
-      // console.log("NAV: iOS: state", state)
-      // console.log("NAV: iOS: state.routeNames", state.data.state.routeNames)
-      // console.log("NAV: iOS: state.routes", state.data.state.routes)
-      // let a = state.data.state.routes
-      // console.log("NAV: iOS: a", a[0].state?.routes)
-      // if (a.length > 1) {
-      //   console.log("NAV: iOS: b", a[1])
-      // }
-      // console.log("NAV: iOS: BBB", state.data.state)
-    })
-  }, [navigation])
-
-  // useEffect(() => {
-  //   let currentRoute = rootNavigation.getCurrentRoute()
-  //   console.log("NAV: iOS: currentRoute", currentRoute)
-  //   let currentRouteOptions = rootNavigation.getCurrentOptions()
-  //   console.log("NAV: iOS: currentRouteOptions", currentRouteOptions)
-  // }, [pathname])
-
-  // const unsubscribe = rootNavigation..addListener("beforeRemove", (e) => {
-  //   // Triggered on back swipe, back button, or programmatic goBack()
-  //   console.log("NAV: iOS: User is leaving the screen")
-
-  //   // Optionally prevent navigation:
-  //   // e.preventDefault()
-  // })
-
-  // useEffect(() => {
-  //   console.log("NAV: iOS: useEffect()")
-  //   const unsubscribe = navigation.addListener("beforeRemove", (e) => {
-  //     // Triggered on back swipe, back button, or programmatic goBack()
-  //     console.log("NAV: iOS: User is leaving the screen")
-
-  //     // Optionally prevent navigation:
-  //     // e.preventDefault()
-  //   })
-
-  //   return unsubscribe
-  // }, [navigation])
-
   // subscribe to route changes and check if a back button was used:
-  const oldPathRef = useRef<string | null>(null)
-  useEffect(() => {
-    // let sub = navigation.addListener("state", (state) => {
-    //   console.log("NAV: iOS: state", state)
-    // })
-    // return () => sub.remove()
-
-    const oldPath = oldPathRef.current
-    const newPath = pathname
-
-    if (historyRef.current.length < 2) {
-      oldPathRef.current = pathname
-      return
-    }
-
-    if (oldPath !== null && oldPath !== newPath) {
-      console.log("Previous:", oldPath)
-      console.log("Current:", newPath)
-
-      console.log("NAV: historyRef.current", historyRef.current)
-
-      // if our previous pathname is the current pathname, and the current pathname is n-1, then we have navigated back:
-      const curHistoryIndex = historyRef.current.length - 1
-      const prevHistoryIndex = curHistoryIndex - 1
-      const prevHistoryPath = historyRef.current[prevHistoryIndex]
-      const curHistoryPath = historyRef.current[curHistoryIndex]
-
-      if (newPath === prevHistoryPath && oldPath === curHistoryPath) {
-        console.log("NAV: SILENT_BACK_DETECTED")
-        // we need to update the historyRef and historyParamsRef to pop the last route:
-        historyRef.current.pop()
-        historyParamsRef.current.pop()
-        setDebugHistory([...historyRef.current])
-      }
-    }
-
-    // update ref *after* comparison
-    oldPathRef.current = pathname
-  }, [pathname])
+  // const oldPathRef = useRef<string | null>(null)
+  // useEffect(() => {
+  //   const oldPath = oldPathRef.current
+  //   const newPath = pathname
+  //   if (historyRef.current.length < 2) {
+  //     oldPathRef.current = pathname
+  //     return
+  //   }
+  //   if (oldPath !== null && oldPath !== newPath) {
+  //     // if our previous pathname is the current pathname, and the current pathname is n-1, then we have navigated back:
+  //     const curHistoryIndex = historyRef.current.length - 1
+  //     const prevHistoryIndex = curHistoryIndex - 1
+  //     const prevHistoryPath = historyRef.current[prevHistoryIndex]
+  //     const curHistoryPath = historyRef.current[curHistoryIndex]
+  //     if (newPath === prevHistoryPath && oldPath === curHistoryPath) {
+  //       console.log("NAV: SILENT_BACK_DETECTED")
+  //       // we need to update the historyRef and historyParamsRef to pop the last route:
+  //       historyRef.current.pop()
+  //       historyParamsRef.current.pop()
+  //       setDebugHistory([...historyRef.current])
+  //     }
+  //   }
+  //   // update ref *after* comparison
+  //   oldPathRef.current = pathname
+  // }, [pathname])
 
   const goBack = () => {
     console.info("NAV: goBack()")
-    const history = historyRef.current
+    const currentPath = historyRef.current[historyRef.current.length - 1]
+    // const currentParams = historyParamsRef.current[historyParamsRef.current.length - 1]
 
-    // Remove current path
-    history.pop()
+    if (currentPath === "/home" || currentPath === "/") {
+      // can't go back from home or root, do nothing
+      console.info("NAV: can't go back from home or root, doing nothing")
+      return
+    }
+
+    // remove current path:
+    historyRef.current.pop()
     historyParamsRef.current.pop()
     setDebugHistory([...historyRef.current])
 
     // Get previous path
-    const previousPath = history[history.length - 1]
-    const _previousParams = historyParamsRef.current[historyParamsRef.current.length - 1]
-
-    console.info(`NAV: going back to: ${previousPath}`)
+    // const previousPath = historyRef.current[historyRef.current.length - 2]
+    // const previousParams = historyParamsRef.current[historyParamsRef.current.length - 2]
+    // console.info(`NAV: going back from: ${currentPath}`)
     // if (previousPath) {
     //   // Fallback to direct navigation if router.back() fails
     //   // router.replace({pathname: previousPath as any, params: previousParams as any})
@@ -237,6 +191,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     //   // Ultimate fallback to home tab
     //   router.replace("/home")
     // }
+
     if (router.canGoBack()) {
       router.back()
     }

@@ -118,7 +118,7 @@ export const AllProviders = withWrappers(
   (props) => {
     const {preventBack, getHistory} = useNavigationHistory()
     const [debugNavigationHistory] = useSetting(SETTINGS.debug_navigation_history.key)
-    const history = getHistory()
+    const history = getHistory().map((item) => item.replaceAll("/", "\\"))
     const top = useSafeAreaInsets().top
     if (!debugNavigationHistory) {
       return <>{props.children}</>
