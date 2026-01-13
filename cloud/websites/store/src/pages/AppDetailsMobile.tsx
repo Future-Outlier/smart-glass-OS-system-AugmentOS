@@ -1,6 +1,6 @@
 import { ChevronLeft, Info, Share2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { useToast } from "../components/ui/MuiToast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProfileDropdown } from "../contexts/ProfileDropdownContext";
 import GetMentraOSButton from "../components/GetMentraOSButton";
@@ -26,6 +26,7 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
   navigateToLogin,
 }) => {
   const profileDropdown = useProfileDropdown();
+  const { showToast } = useToast();
   const [selectedImage, setSelectedImage] = useState<{ url: string; index: number } | null>(null);
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
@@ -178,9 +179,9 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(window.location.href);
-                    toast.success("Copied link");
+                    showToast("Copied link", "success");
                   } catch {
-                    toast.error("Failed to copy link");
+                    showToast("Failed to copy link", "error");
                   }
                 }}>
                 <Share2 className="w-[14px] h-[14px] bg-[var(--share-button)] border-[var(--border-btn)]" />

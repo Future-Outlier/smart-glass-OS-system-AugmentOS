@@ -84,7 +84,7 @@ function AppStorePromotionBanner() {
           want, removing what you don't. They're your glasses, and it's your data.
         </div>
         <a
-          href="https://github.com/Mentra-Community/MentraOS"
+          href="https://docs.mentraglass.com/"
           target="_blank"
           rel="noopener noreferrer"
           className="px-4 sm:px-6 py-2 sm:py-3 mt-6 sm:mt-8 bg-white rounded-full font-medium text-sm sm:text-base z-10 relative hover:opacity-90 transition-opacity cursor-pointer text-black inline-block">

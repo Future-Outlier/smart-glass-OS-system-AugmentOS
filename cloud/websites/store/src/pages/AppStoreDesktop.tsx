@@ -11,7 +11,7 @@ import Header from "../components/Header_v2";
 import AppCard from "../components/AppCard";
 import SkeletonAppCard from "../components/SkeletonAppCard";
 import SkeletonSlider from "../components/SkeletonSlider";
-import { toast } from "sonner";
+import { useToast } from "../components/ui/MuiToast";
 import { formatCompatibilityError } from "../utils/errorHandling";
 import { CaptionsSlide, MergeSlide, StreamSlide, XSlide } from "../components/ui/slides";
 import AppStorePromotionBanner from "@/ui/AppStorePromotionBanner";
@@ -23,6 +23,7 @@ const AppStoreDesktop: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, supabaseToken, coreToken, isLoading: authLoading } = useAuth();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Get organization ID from URL query parameter
@@ -250,7 +251,7 @@ const AppStoreDesktop: React.FC = () => {
         const success = await api.app.installApp(packageName);
 
         if (success) {
-          toast.success("App installed successfully");
+          showToast("App installed successfully", "success");
 
           setApps((prevApps) =>
             prevApps.map((app) =>
@@ -264,26 +265,24 @@ const AppStoreDesktop: React.FC = () => {
             ),
           );
         } else {
-          toast.error("Failed to install app");
+          showToast("Failed to install app", "error");
         }
       } catch (err) {
         console.error("Error installing app:", err);
 
         const compatibilityError = formatCompatibilityError(err);
         if (compatibilityError) {
-          toast.error(compatibilityError, {
-            duration: 6000,
-          });
+          showToast(compatibilityError, "error");
         } else {
           const errorMessage =
             (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to install app";
-          toast.error(errorMessage);
+          showToast(errorMessage, "error");
         }
       } finally {
         setInstallingApp(null);
       }
     },
-    [isAuthenticated, navigate],
+    [isAuthenticated, navigate, showToast],
   );
 
   // Handle app uninstallation
@@ -301,7 +300,7 @@ const AppStoreDesktop: React.FC = () => {
         const success = await api.app.uninstallApp(packageName);
 
         if (success) {
-          toast.success("App uninstalled successfully");
+          showToast("App uninstalled successfully", "success");
 
           setApps((prevApps) =>
             prevApps.map((app) =>
@@ -309,16 +308,16 @@ const AppStoreDesktop: React.FC = () => {
             ),
           );
         } else {
-          toast.error("Failed to uninstall app");
+          showToast("Failed to uninstall app", "error");
         }
       } catch (err) {
         console.error("Error uninstalling app:", err);
-        toast.error("Failed to uninstall app");
+        showToast("Failed to uninstall app", "error");
       } finally {
         setInstallingApp(null);
       }
     },
-    [isAuthenticated, navigate],
+    [isAuthenticated, navigate, showToast],
   );
 
   const handleCardClick = useCallback(

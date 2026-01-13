@@ -23,7 +23,7 @@ import { useIsDesktop } from "../hooks/useMediaQuery";
 import { usePlatform } from "../hooks/usePlatform";
 import api from "../api";
 import { AppI, HardwareType, HardwareRequirementLevel } from "../types";
-import { toast } from "sonner";
+import { useToast } from "../components/ui/MuiToast";
 import { formatCompatibilityError } from "../utils/errorHandling";
 import { Button } from "@/components/ui/button";
 import Header from "../components/Header";
@@ -59,6 +59,7 @@ const AppDetails: React.FC = () => {
   const { theme } = useTheme();
   const isDesktop = useIsDesktop();
   const { isWebView } = usePlatform();
+  const { showToast } = useToast();
 
   // Smart navigation function
   const handleBackNavigation = () => {
@@ -207,7 +208,7 @@ const AppDetails: React.FC = () => {
       const success = await api.app.installApp(app.packageName);
 
       if (success) {
-        toast.success("App installed successfully");
+        showToast("App installed successfully", "success");
         setApp((prev) =>
           prev
             ? {
@@ -218,7 +219,7 @@ const AppDetails: React.FC = () => {
             : null,
         );
       } else {
-        toast.error("Failed to install app");
+        showToast("Failed to install app", "error");
       }
     } catch (err) {
       console.error("Error installing app:", err);
@@ -226,14 +227,12 @@ const AppDetails: React.FC = () => {
       // Try to get a more informative error message for compatibility issues
       const compatibilityError = formatCompatibilityError(err);
       if (compatibilityError) {
-        toast.error(compatibilityError, {
-          duration: 6000, // Show longer for detailed messages
-        });
+        showToast(compatibilityError, "error");
       } else {
         // Fallback to generic error message
         const errorMessage =
           (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to install app";
-        toast.error(errorMessage);
+        showToast(errorMessage, "error");
       }
     } finally {
       setInstallingApp(false);
@@ -276,14 +275,14 @@ const AppDetails: React.FC = () => {
       const uninstallSuccess = await api.app.uninstallApp(app.packageName);
 
       if (uninstallSuccess) {
-        toast.success("App uninstalled successfully");
+        showToast("App uninstalled successfully", "success");
         setApp((prev) => (prev ? { ...prev, isInstalled: false, installedDate: undefined } : null));
       } else {
-        toast.error("Failed to uninstall app");
+        showToast("Failed to uninstall app", "error");
       }
     } catch (err) {
       console.error("Error uninstalling app:", err);
-      toast.error("Failed to uninstall app. Please try again.");
+      showToast("Failed to uninstall app. Please try again.", "error");
     } finally {
       setInstallingApp(false);
     }
