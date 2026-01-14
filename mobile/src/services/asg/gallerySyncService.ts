@@ -14,7 +14,7 @@ import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {PhotoInfo} from "@/types/asg"
 import {showAlert} from "@/utils/AlertUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-// import {SettingsNavigationUtils} from "@/utils/SettingsNavigationUtils" // Disabled - WiFi alerts removed
+import {SettingsNavigationUtils} from "@/utils/SettingsNavigationUtils"
 import {MediaLibraryPermissions} from "@/utils/permissions/MediaLibraryPermissions"
 
 import {asgCameraApi} from "./asgCameraApi"
@@ -380,58 +380,58 @@ class GallerySyncService {
       }
     }
 
-    // DISABLED: Pre-flight WiFi check on Android BEFORE any connection attempts
+    // Pre-flight WiFi check on Android BEFORE any connection attempts
     // This prevents sync failures even when we think we're already connected
     // (cached connection state can be stale if WiFi was disabled)
-    // if (Platform.OS === "android") {
-    //   try {
-    //     const netState = await NetInfo.fetch()
-    //     console.log(`[GallerySyncService] WiFi enabled status:`, netState.isWifiEnabled)
-    //
-    //     if (netState.isWifiEnabled === false) {
-    //       console.error("[GallerySyncService] WiFi is disabled - cannot sync")
-    //
-    //       // Mark that we're waiting for WiFi so we can auto-retry when user returns
-    //       this.waitingForWifiRetry = true
-    //
-    //       // Show styled alert with option to open settings
-    //       showAlert(
-    //         "WiFi is Disabled",
-    //         "Please enable WiFi to sync photos from your glasses. Would you like to open WiFi settings?",
-    //         [
-    //           {
-    //             text: "Cancel",
-    //             style: "cancel",
-    //             onPress: () => {
-    //               this.waitingForWifiRetry = false
-    //               this.wifiSettingsOpenedAt = null
-    //               store.setSyncError("WiFi disabled - enable WiFi and try again")
-    //             },
-    //           },
-    //           {
-    //             text: "Open Settings",
-    //             onPress: async () => {
-    //               // Set timestamp so we can enforce cooldown on next sync attempt
-    //               this.wifiSettingsOpenedAt = Date.now()
-    //               await SettingsNavigationUtils.openWifiSettings()
-    //               store.setSyncError("Enable WiFi and try sync again")
-    //             },
-    //           },
-    //         ],
-    //         {cancelable: false},
-    //       )
-    //
-    //       // Return early - do NOT proceed with sync
-    //       return
-    //     } else {
-    //       // WiFi is enabled - clear any cooldown timestamp
-    //       this.wifiSettingsOpenedAt = null
-    //     }
-    //   } catch (error) {
-    //     console.warn("[GallerySyncService] Failed to check WiFi status:", error)
-    //     // Continue with sync attempt - don't block if check fails
-    //   }
-    // }
+    if (Platform.OS === "android") {
+      try {
+        const netState = await NetInfo.fetch()
+        console.log(`[GallerySyncService] WiFi enabled status:`, netState.isWifiEnabled)
+
+        if (netState.isWifiEnabled === false) {
+          console.error("[GallerySyncService] WiFi is disabled - cannot sync")
+
+          // Mark that we're waiting for WiFi so we can auto-retry when user returns
+          this.waitingForWifiRetry = true
+
+          // Show styled alert with option to open settings
+          showAlert(
+            "WiFi is Disabled",
+            "Please enable WiFi to sync photos from your glasses. Would you like to open WiFi settings?",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+                onPress: () => {
+                  this.waitingForWifiRetry = false
+                  this.wifiSettingsOpenedAt = null
+                  store.setSyncError("WiFi disabled - enable WiFi and try again")
+                },
+              },
+              {
+                text: "Open Settings",
+                onPress: async () => {
+                  // Set timestamp so we can enforce cooldown on next sync attempt
+                  this.wifiSettingsOpenedAt = Date.now()
+                  await SettingsNavigationUtils.openWifiSettings()
+                  store.setSyncError("Enable WiFi and try sync again")
+                },
+              },
+            ],
+            {cancelable: false},
+          )
+
+          // Return early - do NOT proceed with sync
+          return
+        } else {
+          // WiFi is enabled - clear any cooldown timestamp
+          this.wifiSettingsOpenedAt = null
+        }
+      } catch (error) {
+        console.warn("[GallerySyncService] Failed to check WiFi status:", error)
+        // Continue with sync attempt - don't block if check fails
+      }
+    }
 
     // Check if already connected to hotspot
     // IMPORTANT: We must verify the phone's WiFi is actually connected to the hotspot SSID,
