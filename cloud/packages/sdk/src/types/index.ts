@@ -1,20 +1,40 @@
 // src/index.ts
 
-export * from "./token";
+export * from "./token"
 
 // Message type enums
-export * from "./message-types";
+export * from "./message-types"
 
 // Base message type
-export * from "./messages/base";
+export * from "./messages/base"
 
 // Messages by direction - export everything except the conflicting type guards
-export * from "./messages/glasses-to-cloud";
-export * from "./messages/cloud-to-glasses";
+export * from "./messages/glasses-to-cloud"
+export * from "./messages/cloud-to-glasses"
 
 // Export from app-to-cloud excluding isPhotoRequest which conflicts with cloud-to-glasses
 export {
-  // Types
+  // Type guards - all except isPhotoRequest
+  isAppConnectionInit,
+  isAppSubscriptionUpdate,
+  isDisplayRequest,
+  isRgbLedControlRequest,
+  isAudioPlayRequest,
+  isAudioStopRequest,
+  isDashboardContentUpdate,
+  isDashboardModeChange,
+  isDashboardSystemUpdate,
+  isManagedStreamRequest,
+  isManagedStreamStopRequest,
+  isRtmpStreamRequest,
+  isRtmpStreamStopRequest,
+  isOwnershipRelease,
+  // Export with alias to avoid conflict
+  isPhotoRequest as isPhotoRequestFromApp,
+} from "./messages/app-to-cloud"
+
+// Type-only exports from app-to-cloud (all interfaces)
+export type {
   SubscriptionRequest,
   AppConnectionInit,
   AppSubscriptionUpdate,
@@ -37,28 +57,32 @@ export {
   AppRoomLeave,
   RequestWifiSetup,
   OwnershipReleaseMessage,
-  // Type guards - all except isPhotoRequest
-  isAppConnectionInit,
-  isAppSubscriptionUpdate,
-  isDisplayRequest,
-  isRgbLedControlRequest,
-  isAudioPlayRequest,
-  isAudioStopRequest,
-  isDashboardContentUpdate,
-  isDashboardModeChange,
-  isDashboardSystemUpdate,
-  isManagedStreamRequest,
-  isManagedStreamStopRequest,
-  isRtmpStreamRequest,
-  isRtmpStreamStopRequest,
-  isOwnershipRelease,
-  // Export with alias to avoid conflict
-  isPhotoRequest as isPhotoRequestFromApp,
-} from "./messages/app-to-cloud";
+} from "./messages/app-to-cloud"
 
 // Export cloud-to-app but exclude the conflicting type guards
 export {
-  // Types
+  // Type guards (excluding isPhotoResponse and isRtmpStreamStatus which conflict)
+  isAppConnectionAck,
+  isAppConnectionError,
+  isAppStopped,
+  isSettingsUpdate,
+  isCapabilitiesUpdate,
+  isDataStream,
+  isAudioChunk,
+  isAudioPlayResponse,
+  isDashboardModeChanged,
+  isDashboardAlwaysOnChanged,
+  isManagedStreamStatus,
+  isStreamStatusCheckResponse,
+  // Re-export the cloud-to-app versions of these type guards since they're the ones
+  // that should be used when dealing with CloudToAppMessage types
+  isPhotoResponse as isPhotoResponseFromCloud,
+  isRtmpStreamStatus as isRtmpStreamStatusFromCloud,
+  isRgbLedControlResponse as isRgbLedControlResponseFromCloud,
+} from "./messages/cloud-to-app"
+
+// Type-only exports from cloud-to-app (all interfaces)
+export type {
   AppConnectionAck,
   AppConnectionError,
   AppStopped,
@@ -81,71 +105,53 @@ export {
   AudioChunk,
   PermissionError,
   PermissionErrorDetail,
-  // Type guards (excluding isPhotoResponse and isRtmpStreamStatus which conflict)
-  isAppConnectionAck,
-  isAppConnectionError,
-  isAppStopped,
-  isSettingsUpdate,
-  isCapabilitiesUpdate,
-  isDataStream,
-  isAudioChunk,
-  isAudioPlayResponse,
-  isDashboardModeChanged,
-  isDashboardAlwaysOnChanged,
-  isManagedStreamStatus,
-  isStreamStatusCheckResponse,
-  // Re-export the cloud-to-app versions of these type guards since they're the ones
-  // that should be used when dealing with CloudToAppMessage types
-  isPhotoResponse as isPhotoResponseFromCloud,
-  isRtmpStreamStatus as isRtmpStreamStatusFromCloud,
-  isRgbLedControlResponse as isRgbLedControlResponseFromCloud,
-} from "./messages/cloud-to-app";
+} from "./messages/cloud-to-app"
 
 // Stream types
-export * from "./streams";
+export * from "./streams"
 
 // Layout types
-export * from "./layouts";
+export * from "./layouts"
 
 // Dashboard types
-export * from "./dashboard";
+export * from "./dashboard"
 
 // RTMP streaming types
-export * from "./rtmp-stream";
+export * from "./rtmp-stream"
 
 // Other system enums
-export * from "./enums";
+export * from "./enums"
 
 // Core model interfaces
-export * from "./models";
+export * from "./models"
 
 // Webhook interfaces
-export * from "./webhooks";
+export * from "./webhooks"
 
 // Capability Discovery types
-export * from "./capabilities";
+export * from "./capabilities"
 
 // Photo data types
-export * from "./photo-data";
+export * from "./photo-data"
 
 /**
  * WebSocket error information
  */
 export interface WebSocketError {
-  code: string;
-  message: string;
-  details?: unknown;
+  code: string
+  message: string
+  details?: unknown
 }
 
-import type { AppSession } from "../app/session";
+import type {AppSession} from "../app/session"
 
 /**
  * Hono Context variables for authenticated requests
  * Access via c.get("authUserId") and c.get("activeSession")
  */
 export interface AuthVariables {
-  authUserId?: string;
-  activeSession: AppSession | null;
+  authUserId?: string
+  activeSession: AppSession | null
 }
 
 /**
@@ -153,10 +159,10 @@ export interface AuthVariables {
  * This type is kept for backward compatibility during migration
  */
 export interface AuthenticatedRequest {
-  authUserId?: string;
-  activeSession: AppSession | null;
-  query: Record<string, string | undefined>;
-  headers: Record<string, string | undefined>;
-  cookies?: Record<string, string>;
-  body?: unknown;
+  authUserId?: string
+  activeSession: AppSession | null
+  query: Record<string, string | undefined>
+  headers: Record<string, string | undefined>
+  cookies?: Record<string, string>
+  body?: unknown
 }

@@ -16,11 +16,11 @@ import {
   ManagedStreamStatus,
   StreamStatusCheckResponse,
 } from "../../../types"
-import { VideoConfig, AudioConfig, StreamConfig, StreamStatusHandler } from "../../../types/rtmp-stream"
-import { StreamType } from "../../../types/streams"
-import { Logger } from "pino"
-import { CameraManagedExtension, ManagedStreamOptions, ManagedStreamResult } from "./camera-managed-extension"
-import { cameraWarnLog } from "../../../utils/permissions-utils"
+import {VideoConfig, AudioConfig, StreamConfig, StreamStatusHandler} from "../../../types/rtmp-stream"
+import {StreamType} from "../../../types/streams"
+import {Logger} from "pino"
+import {CameraManagedExtension, ManagedStreamOptions, ManagedStreamResult} from "./camera-managed-extension"
+import {cameraWarnLog} from "../../../utils/permissions-utils"
 
 /**
  * Options for photo requests
@@ -186,7 +186,7 @@ export class CameraModule {
         // If using custom webhook URL, resolve immediately since photo will be uploaded directly to custom endpoint
         if (options?.customWebhookUrl) {
           this.logger.info(
-            { requestId, customWebhookUrl: options.customWebhookUrl },
+            {requestId, customWebhookUrl: options.customWebhookUrl},
             `📸 Using custom webhook URL - resolving promise immediately`,
           )
 
@@ -253,7 +253,7 @@ export class CameraModule {
     const pending = this.session.appServer.completePhotoRequest(requestId)
     if (pending) {
       pending.reject(new Error("Photo request cancelled"))
-      this.logger.info({ requestId }, `📸 Photo request cancelled`)
+      this.logger.info({requestId}, `📸 Photo request cancelled`)
       return true
     }
     return false
@@ -288,7 +288,7 @@ export class CameraModule {
    * ```
    */
   async startStream(options: RtmpStreamOptions): Promise<void> {
-    this.logger.info({ rtmpUrl: options.rtmpUrl }, `📹 RTMP stream request starting`)
+    this.logger.info({rtmpUrl: options.rtmpUrl}, `📹 RTMP stream request starting`)
 
     cameraWarnLog(this.session.getHttpsServerUrl?.(), this.packageName, "startStream")
 
@@ -327,10 +327,10 @@ export class CameraModule {
       this.session.sendMessage(message)
       this.isStreaming = true
 
-      this.logger.info({ rtmpUrl: options.rtmpUrl }, `📹 RTMP stream request sent successfully`)
+      this.logger.info({rtmpUrl: options.rtmpUrl}, `📹 RTMP stream request sent successfully`)
       return Promise.resolve()
     } catch (error) {
-      this.logger.error({ error, rtmpUrl: options.rtmpUrl }, `📹 Failed to send RTMP stream request`)
+      this.logger.error({error, rtmpUrl: options.rtmpUrl}, `📹 Failed to send RTMP stream request`)
       const errorMessage = error instanceof Error ? error.message : String(error)
       return Promise.reject(`Failed to request RTMP stream: ${errorMessage}`)
     }
@@ -449,7 +449,7 @@ export class CameraModule {
   onStreamStatus(handler: StreamStatusHandler): () => void {
     if (!this.session) {
       this.logger.error("Cannot listen for status updates: session reference not available")
-      return () => { }
+      return () => {}
     }
 
     this.subscribeToStreamStatusUpdates()
@@ -474,7 +474,7 @@ export class CameraModule {
 
     // Verify this is a valid stream response
     if (!isRtmpStreamStatus(message)) {
-      this.logger.warn({ message }, `📹 Received invalid stream status message`)
+      this.logger.warn({message}, `📹 Received invalid stream status message`)
       return
     }
 
@@ -660,22 +660,22 @@ export class CameraModule {
    *
    * @returns Object with counts of cancelled requests
    */
-  cancelAllRequests(): { photoRequests: number } {
+  cancelAllRequests(): {photoRequests: number} {
     const photoRequests = this.cancelAllPhotoRequests()
 
     // Stop streaming if active
     if (this.isStreaming) {
       this.stopStream().catch((error) => {
-        this.logger.error({ error }, "Error stopping stream during cleanup")
+        this.logger.error({error}, "Error stopping stream during cleanup")
       })
     }
 
     // Clean up managed extension
     this.managedExtension.cleanup()
 
-    return { photoRequests }
+    return {photoRequests}
   }
 }
 
 // Re-export types for convenience
-export { VideoConfig, AudioConfig, StreamConfig, StreamStatusHandler }
+export type {VideoConfig, AudioConfig, StreamConfig, StreamStatusHandler}
