@@ -1,9 +1,7 @@
 import {useEffect} from "react"
 
-import {useApplets} from "@/stores/applets"
+import {useApplets, cameraPackageName} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
-
-const cameraPackageName = "com.mentra.camera"
 
 /**
  * Syncs gallery mode state to glasses based on foreground app status.
