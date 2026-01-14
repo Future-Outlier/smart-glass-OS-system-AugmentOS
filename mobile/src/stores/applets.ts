@@ -16,13 +16,16 @@ import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
 import {BackgroundTimer} from "@/utils/timers"
+import {storage} from "@/utils/storage"
 
 export interface ClientAppletInterface extends AppletInterface {
   offline: boolean
   offlineRoute: string
   compatibility?: CompatibilityResult
   loading: boolean
+  local: boolean
   onStart?: () => AsyncResult<void, Error>
+  onStop?: () => AsyncResult<void, Error>
 }
 
 interface AppStatusState {
@@ -46,6 +49,7 @@ export const DUMMY_APPLET: ClientAppletInterface = {
   hardwareRequirements: [],
   offline: true,
   offlineRoute: "",
+  local: false,
 }
 
 /**
@@ -60,9 +64,10 @@ export const captionsPackageName = "com.mentra.captions"
 
 // get offline applets:
 const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
-  const offlineCameraRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_camera_running.key)
-  const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_captions_running.key)
-  return [
+  // const offlineCameraRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_camera_running.key)
+  // const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_captions_running.key)
+
+  let miniApps: ClientAppletInterface[] = [
     {
       packageName: cameraPackageName,
       name: "Camera",
@@ -74,10 +79,23 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       // version: "0.0.1",
       permissions: [],
       offlineRoute: "/asg/gallery",
-      running: offlineCameraRunning,
+      local: false,
+      running: false,
       loading: false,
       healthy: true,
       hardwareRequirements: [{type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED}],
+      onStart: (): AsyncResult<void, Error> => {
+        return Res.try_async(async () => {
+          await storage.save(cameraPackageName, true)
+          return undefined
+        })
+      },
+      onStop: (): AsyncResult<void, Error> => {
+        return Res.try_async(async () => {
+          await storage.save(cameraPackageName, false)
+          return undefined
+        })
+      },
     },
     {
       packageName: captionsPackageName,
@@ -91,13 +109,15 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       healthy: true,
       permissions: [],
       offlineRoute: "",
-      running: offlineCaptionsRunning,
+      running: false,
       loading: false,
+      local: false,
       hardwareRequirements: [{type: HardwareType.DISPLAY, level: HardwareRequirementLevel.REQUIRED}],
       onStart: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
           const modelAvailable = await STTModelManager.isModelAvailable()
           if (modelAvailable) {
+            await storage.save(captionsPackageName, true)
             return undefined
           }
 
@@ -114,8 +134,23 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
           throw new Error("No model available")
         })
       },
+      onStop: (): AsyncResult<void, Error> => {
+        return Res.try_async(async () => {
+          await storage.save(captionsPackageName, false)
+          return undefined
+        })
+      },
     },
   ]
+
+  // check the storage for the running state of the applets and update them:
+  for (const mapp of miniApps) {
+    let res = await storage.load(mapp.packageName)
+    if (res.is_ok() && res.value) {
+      mapp.running = true
+    }
+  }
+  return miniApps as ClientAppletInterface[]
 }
 
 export const getMoreAppsApplet = (): ClientAppletInterface => {
@@ -132,6 +167,7 @@ export const getMoreAppsApplet = (): ClientAppletInterface => {
     hardwareRequirements: [],
     type: "standard",
     logoUrl: require("@assets/applet-icons/store.png"),
+    local: false,
   }
 }
 
@@ -199,6 +235,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
         loading: false,
         offline: false,
         offlineRoute: "",
+        local: false,
       }))
     }
 
@@ -290,6 +327,14 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       return
     }
 
+    if (applet.offline && applet.onStop) {
+      const result = await applet.onStop()
+      if (result.is_error()) {
+        console.error(`Failed to stop applet ${applet.packageName}: ${result.error}`)
+        return
+      }
+    }
+
     set((state) => ({
       apps: state.apps.map((a) => (a.packageName === packageName ? {...a, running: false, loading: true} : a)),
     }))
@@ -349,6 +394,10 @@ export const useActiveBackgroundAppsCount = () => {
 export const useIncompatibleApps = () => {
   const apps = useApplets()
   return useMemo(() => apps.filter((app) => !app.compatibility?.isCompatible), [apps])
+}
+
+export const useLocalMiniApps = () => {
+  return useAppletStatusStore.getState().apps.filter((app) => app.local)
 }
 
 // export const useIncompatibleApps = async () => {
