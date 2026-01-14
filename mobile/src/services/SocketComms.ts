@@ -38,14 +38,13 @@ class SocketComms {
 
   public cleanup() {
     console.log("SOCKET: cleanup()")
-    udp.stop()
     udp.cleanup()
     ws.cleanup()
   }
 
   // Connection Management
 
-  private async connectWebsocket() {
+  public async connectWebsocket() {
     console.log("SOCKET: connectWebsocket()")
     this.setupListeners()
     const url = useSettingsStore.getState().getWsUrl()
@@ -75,7 +74,7 @@ class SocketComms {
     this.coreToken = coreToken
     this.userid = userid
     useSettingsStore.getState().setSetting(SETTINGS.core_token.key, coreToken)
-    this.connectWebsocket()
+    // this.connectWebsocket()
   }
 
   public sendAudioPlayResponse(requestId: string, success: boolean, error: string | null, duration: number | null) {
