@@ -65,7 +65,7 @@ export default function PairingSuccessScreen() {
       // sort the stack by the order:
       stack.sort((a, b) => order.indexOf(a) - order.indexOf(b))
 
-      // console.log("PAIR_SUCCESS: stack", stack)
+      console.log("PAIR_SUCCESS: stack", stack)
 
       // clear the history and go home so that we don't navigate back here:
       clearHistoryAndGoHome()
@@ -82,7 +82,8 @@ export default function PairingSuccessScreen() {
 
     if (defaultWearable === DeviceTypes.G1) {
       if (!onboardingOsCompleted) {
-        replaceAll("/onboarding/os")
+        clearHistoryAndGoHome()
+        push("/onboarding/os")
         return
       }
     }

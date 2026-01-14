@@ -39,7 +39,7 @@ export default function WifiScanScreen() {
   const {push, goBack, pushPrevious, getPreviousRoute} = useNavigationHistory()
 
   // if the previous route is in this list, show / allow the back button:
-  const backableRoutes = ["/settings/glasses", "/home", "/(tabs)/home"]
+  const backableRoutes = ["/settings/glasses", "/home"]
 
   const showBack = backableRoutes.includes(getPreviousRoute() || "")
   const showSkip = !showBack
@@ -48,15 +48,15 @@ export default function WifiScanScreen() {
     if (showBack) {
       goBack()
     } else {
-      pushPrevious()
+      pushPrevious(2)
     }
   }
 
-  focusEffectPreventBack(() => {
-    if (showBack) {
-      goBack()
-    }
-  })
+  // focusEffectPreventBack(() => {
+  //   if (showBack) {
+  //     goBack()
+  //   }
+  // })
 
   // if (Platform.OS === "android") {
   //   focusEffectPreventBack(() => {
@@ -83,37 +83,37 @@ export default function WifiScanScreen() {
     startScan()
 
     const handleWifiScanResults = (data: {networks: string[]; networksEnhanced?: any[]}) => {
-      console.log("🎯 ========= SCAN.TSX RECEIVED WIFI RESULTS =========")
-      console.log("🎯 Data received:", data)
+      // console.log("WIFI_SCAN: ========= SCAN.TSX RECEIVED WIFI RESULTS =========")
+      // console.log("WIFI_SCAN: Data received:", data)
 
       let processedNetworks: NetworkInfo[]
       if (data.networks && data.networks.length > 0) {
-        console.log("🎯 Processing enhanced networks:", data.networks)
+        // console.log("WIFI_SCAN: Processing enhanced networks:", data.networks)
         processedNetworks = data.networks.map((network: any) => ({
           ssid: network.ssid || "",
           requiresPassword: network.requiresPassword !== false,
           signalStrength: network.signalStrength || -100,
         }))
-        console.log("🎯 Enhanced networks count:", processedNetworks.length)
+        // console.log("WIFI_SCAN: Enhanced networks count:", processedNetworks.length)
       }
 
       if (scanTimeoutRef.current) {
-        console.log("🎯 Clearing scan timeout - results received")
+        // console.log("WIFI_SCAN: Clearing scan timeout - results received")
         clearTimeout(scanTimeoutRef.current)
         scanTimeoutRef.current = null
       }
 
       setNetworks((prevNetworks) => {
-        console.log("🎯 Current scan session ID:", currentScanSessionRef.current)
-        console.log("🎯 Previous networks count:", prevNetworks.length)
-        console.log("🎯 Is first result of this scan session?", !receivedResultsForSessionRef.current)
+        // console.log("WIFI_SCAN: Current scan session ID:", currentScanSessionRef.current)
+        // console.log("WIFI_SCAN: Previous networks count:", prevNetworks.length)
+        // console.log("WIFI_SCAN: Is first result of this scan session?", !receivedResultsForSessionRef.current)
 
         let baseNetworks: NetworkInfo[]
         if (receivedResultsForSessionRef.current) {
-          console.log("🎯 APPENDING: Adding to existing networks from current scan session")
+          // console.log("WIFI_SCAN: APPENDING: Adding to existing networks from current scan session")
           baseNetworks = prevNetworks
         } else {
-          console.log("🎯 REPLACING: Starting fresh with new scan session results")
+          console.log("WIFI_SCAN: REPLACING: Starting fresh with new scan session results")
           baseNetworks = []
         }
 
@@ -125,13 +125,13 @@ export default function WifiScanScreen() {
           }
         })
         const newNetworks = Array.from(existingMap.values())
-        console.log("🎯 Final networks count:", newNetworks.length)
+        // console.log("WIFI_SCAN: Final networks count:", newNetworks.length)
         return newNetworks
       })
 
       receivedResultsForSessionRef.current = true
       setIsScanning(false)
-      console.log("🎯 ========= END SCAN.TSX WIFI RESULTS =========")
+      // console.log("WIFI_SCAN: ========= END SCAN.TSX WIFI RESULTS =========")
     }
 
     GlobalEventEmitter.on("wifi_scan_results", handleWifiScanResults)
@@ -146,7 +146,7 @@ export default function WifiScanScreen() {
   }, [])
 
   const startScan = async () => {
-    console.log("🔄 ========= STARTING NEW WIFI SCAN =========")
+    // console.log("WIFI_SCAN: ========= STARTING NEW WIFI SCAN =========")
     setIsScanning(true)
     currentScanSessionRef.current = Date.now()
     receivedResultsForSessionRef.current = false
@@ -157,18 +157,15 @@ export default function WifiScanScreen() {
     }
 
     scanTimeoutRef.current = setTimeout(() => {
-      console.log("⏱️ WIFI SCAN TIMEOUT - RETRYING...")
-      CoreModule.requestWifiScan().catch((error) => {
-        console.error("⏱️ RETRY FAILED:", error)
-      })
+      console.log("WIFI_SCAN: SCAN TIMEOUT - RETRYING...")
       scanTimeoutRef.current = null
     }, 15000)
 
     try {
       await CoreModule.requestWifiScan()
-      console.log("🔄 WiFi scan request sent successfully")
+      // console.log("WIFI_SCAN: WiFi scan request sent successfully")
     } catch (error) {
-      console.error("Error scanning for WiFi networks:", error)
+      console.error("WIFI_SCAN: Error scanning for WiFi networks:", error)
       if (scanTimeoutRef.current) {
         clearTimeout(scanTimeoutRef.current)
         scanTimeoutRef.current = null
@@ -196,7 +193,7 @@ export default function WifiScanScreen() {
             style: "destructive",
             onPress: async () => {
               try {
-                console.log(`🗑️ Forgetting network: ${selectedNetwork.ssid}`)
+                console.log(`WIFI_SCAN: Forgetting network: ${selectedNetwork.ssid}`)
                 await CoreModule.forgetWifiNetwork(selectedNetwork.ssid)
                 // Also remove from local saved credentials
                 WifiCredentialsService.removeCredentials(selectedNetwork.ssid)
@@ -205,7 +202,7 @@ export default function WifiScanScreen() {
                   text1: `Forgot "${selectedNetwork.ssid}"`,
                 })
               } catch (error) {
-                console.error("Error forgetting network:", error)
+                console.error("WIFI_SCAN: Error forgetting network:", error)
                 Toast.show({
                   type: "error",
                   text1: "Failed to forget network",
@@ -219,13 +216,13 @@ export default function WifiScanScreen() {
     }
 
     if (!selectedNetwork.requiresPassword) {
-      console.log(`🔓 Open network selected: ${selectedNetwork.ssid} - connecting directly`)
+      console.log(`WIFI_SCAN: Open network selected: ${selectedNetwork.ssid} - connecting directly`)
       push("/wifi/connecting", {
         ssid: selectedNetwork.ssid,
         password: "",
       })
     } else {
-      console.log(`🔒 Secured network selected: ${selectedNetwork.ssid} - going to password screen`)
+      console.log(`WIFI_SCAN: Secured network selected: ${selectedNetwork.ssid} - going to password screen`)
       push("/wifi/password", {
         ssid: selectedNetwork.ssid,
         requiresPassword: selectedNetwork.requiresPassword.toString(),

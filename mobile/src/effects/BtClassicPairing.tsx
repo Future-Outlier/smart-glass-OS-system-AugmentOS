@@ -28,7 +28,7 @@ export function BtClassicPairing() {
       return
     }
 
-    if (pathname !== "/home" && pathname !== "/(tabs)/home") {
+    if (pathname !== "/home") {
       return
     }
 

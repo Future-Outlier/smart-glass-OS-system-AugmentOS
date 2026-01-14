@@ -466,7 +466,7 @@ class SocketComms {
   private handle_app_state_change(msg: any) {
     // console.log("SOCKET: app state change", msg)
     // this.parse_app_list(msg)
-    GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
+    GlobalEventEmitter.emit("app_state_change", msg)
   }
 
   private handle_connection_error(msg: any) {
@@ -711,7 +711,7 @@ class SocketComms {
   private handle_message(msg: any) {
     const type = msg.type
 
-    console.log(`SOCKET: msg: ${type}`)
+    // console.log(`SOCKET: msg: ${type}`)
 
     switch (type) {
       case "connection_ack":
