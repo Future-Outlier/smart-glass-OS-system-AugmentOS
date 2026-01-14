@@ -30,6 +30,23 @@ export default function Homepage() {
     }, [refreshApplets]),
   )
 
+  const renderContent = () => {
+    if (!defaultWearable) {
+      return (
+        <Group>
+          <PairGlassesCard />
+        </Group>
+      )
+    }
+
+    return (
+      <Group>
+        <CompactDeviceStatus />
+        {!offlineMode && <BackgroundAppsLink />}
+      </Group>
+    )
+  }
+
   return (
     <Screen preset="fixed">
       <Header
@@ -45,15 +62,18 @@ export default function Homepage() {
 
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
         <Spacer height={theme.spacing.s4} />
-        <Group>
+        {/* <Group>
           {!defaultWearable && <PairGlassesCard />}
           {defaultWearable && <CompactDeviceStatus />}
           {!offlineMode && <BackgroundAppsLink />}
-        </Group>
-        <Spacer height={theme.spacing.s2} />
-        <ActiveForegroundApp />
-        <Spacer height={theme.spacing.s2} />
-        <ForegroundAppsGrid />
+        </Group> */}
+        {renderContent()}
+        {/* <>
+          <Spacer height={theme.spacing.s2} />
+          <ActiveForegroundApp />
+          <ForegroundAppsGrid />
+          </> */}
+        <Spacer height={theme.spacing.s4} />
         <IncompatibleApps />
       </ScrollView>
     </Screen>

@@ -393,6 +393,13 @@ export const useActiveBackgroundAppsCount = () => {
 
 export const useIncompatibleApps = () => {
   const apps = useApplets()
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  // if no default wearable, return all apps:
+  if (!defaultWearable) {
+    return apps
+  }
+
+  // otherwise, return only incompatible apps:
   return useMemo(() => apps.filter((app) => !app.compatibility?.isCompatible), [apps])
 }
 
