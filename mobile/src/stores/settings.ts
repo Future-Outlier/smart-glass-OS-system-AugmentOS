@@ -466,15 +466,6 @@ const getDefaultSettings = () =>
     {} as Record<string, any>,
   )
 
-const migrateSettings = () => {
-  useSettingsStore.getState().setSetting(SETTINGS.enable_squircles.key, true, true)
-  // Force light mode - dark mode is not complete yet
-  // const devMode = useSettingsStore.getState().getSetting(SETTINGS.dev_mode.key)
-  // if (!devMode) {
-  // useSettingsStore.getState().setSetting(SETTINGS.theme_preference.key, "light", true)
-  // }
-}
-
 export const useSettingsStore = create<SettingsState>()(
   subscribeWithSelector((set, get) => ({
     settings: getDefaultSettings(),
@@ -583,7 +574,6 @@ export const useSettingsStore = create<SettingsState>()(
         let loadedSettings: Record<string, any> = {}
 
         if (state.isInitialized) {
-          migrateSettings()
           return undefined
         }
 
@@ -629,7 +619,6 @@ export const useSettingsStore = create<SettingsState>()(
           isInitialized: true,
           settings: {...state.settings, ...loadedSettings},
         }))
-        migrateSettings()
       })
     },
     getRestUrl: () => {

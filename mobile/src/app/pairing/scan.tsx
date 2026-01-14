@@ -34,7 +34,7 @@ class SearchResultDevice {
 
 export default function SelectGlassesBluetoothScreen() {
   const [searchResults, setSearchResults] = useState<SearchResultDevice[]>([])
-  const {glassesModelName}: {glassesModelName: string} = useLocalSearchParams()
+  const {modelName}: {modelName: string} = useLocalSearchParams()
   const {theme} = useAppTheme()
   const {goBack, replace, push, pushUnder} = useNavigationHistory()
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
@@ -88,7 +88,7 @@ export default function SelectGlassesBluetoothScreen() {
       if (deviceName === "NOTREQUIREDSKIP") {
         console.log("SKIPPING")
         GlobalEventEmitter.removeListener("compatible_glasses_search_result", handleSearchResult)
-        triggerGlassesPairingGuide(glassesModelName as string, deviceName)
+        triggerGlassesPairingGuide(modelName as string, deviceName)
         return
       }
 
@@ -120,7 +120,7 @@ export default function SelectGlassesBluetoothScreen() {
             },
             {
               text: "Yes",
-              onPress: () => CoreModule.findCompatibleDevices(glassesModelName),
+              onPress: () => CoreModule.findCompatibleDevices(modelName),
             },
           ],
           {cancelable: false},
@@ -143,9 +143,9 @@ export default function SelectGlassesBluetoothScreen() {
 
   useEffect(() => {
     const initializeAndSearchForDevices = async () => {
-      console.log("Searching for compatible devices for: ", glassesModelName)
+      console.log("Searching for compatible devices for: ", modelName)
       setSearchResults([])
-      CoreModule.findCompatibleDevices(glassesModelName)
+      CoreModule.findCompatibleDevices(modelName)
     }
 
     if (Platform.OS === "ios") {
@@ -163,7 +163,7 @@ export default function SelectGlassesBluetoothScreen() {
   //   }
   // }, [glassesConnected])
 
-  const triggerGlassesPairingGuide = async (glassesModelName: string, deviceName: string) => {
+  const triggerGlassesPairingGuide = async (modelName: string, deviceName: string) => {
     if (Platform.OS === "android") {
       const hasLocationPermission = await requestFeaturePermissions(PermissionFeatures.LOCATION)
 
@@ -188,28 +188,28 @@ export default function SelectGlassesBluetoothScreen() {
       return
     }
 
-    startPairing(glassesModelName, deviceName)
+    startPairing(modelName, deviceName)
   }
 
-  const startPairing = async (glassesModelName: string, deviceName: string) => {
+  const startPairing = async (modelName: string, deviceName: string) => {
     const deviceTypesWithBtClassic = [DeviceTypes.LIVE]
     if (
       Platform.OS === "android" ||
       btcConnected ||
-      !deviceTypesWithBtClassic.includes(glassesModelName as DeviceTypes)
+      !deviceTypesWithBtClassic.includes(modelName as DeviceTypes)
     ) {
       setTimeout(() => {
         CoreModule.connectByName(deviceName)
       }, 2000)
-      replace("/pairing/loading", {glassesModelName: glassesModelName, deviceName: deviceName})
+      replace("/pairing/loading", {modelName: modelName, deviceName: deviceName})
       return
     }
 
     // CoreModule.updateSettings({"device_name": deviceName})
     setDeviceName(deviceName)
     // pair bt classic first:
-    push("/pairing/btclassic")
-    pushUnder("/pairing/loading", {glassesModelName: glassesModelName, deviceName: deviceName})
+    replace("/pairing/btclassic")
+    pushUnder("/pairing/loading", {modelName: modelName, deviceName: deviceName})
   }
 
   const filterDeviceName = (deviceName: string) => {
@@ -236,10 +236,10 @@ export default function SelectGlassesBluetoothScreen() {
       <Header leftIcon="chevron-left" onLeftPress={goBack} RightActionComponent={<MentraLogoStandalone />} />
       <View className="flex-1 pt-[35%]">
         <View className="gap-6 rounded-3xl bg-primary-foreground p-6">
-          <Image source={getGlassesOpenImage(glassesModelName)} className="h-[90px] w-full" resizeMode="contain" />
+          <Image source={getGlassesOpenImage(modelName)} className="h-[90px] w-full" resizeMode="contain" />
           <Text
             className="text-center text-xl font-semibold text-text-dim"
-            text={translate("pairing:scanningForGlassesModel", {model: glassesModelName})}
+            text={translate("pairing:scanningForGlassesModel", {model: modelName})}
           />
 
           {!rememberedSearchResults.current || rememberedSearchResults.current.length === 0 ? (
@@ -256,7 +256,7 @@ export default function SelectGlassesBluetoothScreen() {
                     onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
                     <View className="flex-1 px-2.5">
                       <Text
-                        text={`${glassesModelName} - ${filterDeviceName(device.deviceName)}`}
+                        text={`${modelName} - ${filterDeviceName(device.deviceName)}`}
                         className="flex-wrap text-sm font-semibold"
                         numberOfLines={2}
                       />
@@ -282,7 +282,7 @@ export default function SelectGlassesBluetoothScreen() {
       <GlassesTroubleshootingModal
         isVisible={showTroubleshootingModal}
         onClose={() => setShowTroubleshootingModal(false)}
-        glassesModelName={glassesModelName}
+        modelName={modelName}
       />
     </Screen>
   )

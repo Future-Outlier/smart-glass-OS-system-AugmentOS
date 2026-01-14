@@ -10,7 +10,7 @@ import {getGlassesImage} from "@/utils/getGlassesImage"
 interface TroubleshootingModalProps {
   isVisible: boolean
   onClose: () => void
-  glassesModelName: string
+  modelName: string
 }
 
 export interface PairingTip {
@@ -113,9 +113,9 @@ export const getModelSpecificTips = (model: string): PairingTip[] => {
   }
 }
 
-const GlassesTroubleshootingModal: React.FC<TroubleshootingModalProps> = ({isVisible, onClose, glassesModelName}) => {
+const GlassesTroubleshootingModal: React.FC<TroubleshootingModalProps> = ({isVisible, onClose, modelName}) => {
   const {theme, themed} = useAppTheme()
-  const tips = getModelSpecificTips(glassesModelName)
+  const tips = getModelSpecificTips(modelName)
   const [currentIndex, setCurrentIndex] = useState(0)
   const fadeAnim = useRef(new Animated.Value(1)).current
 
@@ -164,7 +164,7 @@ const GlassesTroubleshootingModal: React.FC<TroubleshootingModalProps> = ({isVis
   }
 
   const currentTip = tips[currentIndex]
-  const fallbackImage = getGlassesImage(glassesModelName)
+  const fallbackImage = getGlassesImage(modelName)
 
   return (
     <Modal visible={isVisible} animationType="fade" transparent onRequestClose={onClose}>

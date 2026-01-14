@@ -66,11 +66,11 @@ export function MentraNextGlassesPairingGuide() {
 
       finalImageOpacity.value = withDelay(
         1000,
-        withTiming(1, {duration: 600}, finished => {
+        withTiming(1, {duration: 600}, (finished) => {
           if (finished) {
             finalImageOpacity.value = withDelay(
               1000,
-              withTiming(0, {duration: 400}, finished => {
+              withTiming(0, {duration: 400}, (finished) => {
                 if (finished) {
                   runOnJS(startAnimation)()
                 }
@@ -505,7 +505,7 @@ export const PairingOptions = ({model, continueFn}: {model: string; continueFn?:
           <GlassesTroubleshootingModal
             isVisible={showTroubleshootingModal}
             onClose={() => setShowTroubleshootingModal(false)}
-            glassesModelName={model}
+            modelName={model}
           />
         </>
       )

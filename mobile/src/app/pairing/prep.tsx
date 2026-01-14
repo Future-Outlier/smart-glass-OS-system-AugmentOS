@@ -16,11 +16,11 @@ import {PermissionFeatures, checkConnectivityRequirementsUI, requestFeaturePermi
 export default function PairingPrepScreen() {
   const route = useRoute()
   const {theme} = useAppTheme()
-  const {glassesModelName} = route.params as {glassesModelName: string}
-  const {goBack, replace, clearHistoryAndGoHome} = useNavigationHistory()
+  const {modelName} = route.params as {modelName: string}
+  const {goBack, push, clearHistoryAndGoHome} = useNavigationHistory()
 
   const advanceToPairing = async () => {
-    if (glassesModelName == null || glassesModelName == "") {
+    if (modelName == null || modelName == "") {
       console.log("SOME WEIRD ERROR HERE")
       return
     }
@@ -28,7 +28,7 @@ export default function PairingPrepScreen() {
     // Always request Bluetooth permissions - required for Android 14+ foreground service
     let needsBluetoothPermissions = true
     // we don't need bluetooth permissions for simulated glasses
-    if (glassesModelName.startsWith(DeviceTypes.SIMULATED) && Platform.OS === "ios") {
+    if (modelName.startsWith(DeviceTypes.SIMULATED) && Platform.OS === "ios") {
       needsBluetoothPermissions = false
     }
 
@@ -204,27 +204,27 @@ export default function PairingPrepScreen() {
     console.log("needsBluetoothPermissions", needsBluetoothPermissions)
 
     // skip pairing for simulated glasses:
-    if (glassesModelName.startsWith(DeviceTypes.SIMULATED)) {
+    if (modelName.startsWith(DeviceTypes.SIMULATED)) {
       await CoreModule.connectSimulated()
       clearHistoryAndGoHome()
       return
     }
 
-    replace("/pairing/scan", {glassesModelName})
+    push("/pairing/scan", {modelName})
   }
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header
-        title={glassesModelName}
+        title={modelName}
         leftIcon="chevron-left"
         onLeftPress={goBack}
         RightActionComponent={<MentraLogoStandalone />}
       />
       <ScrollView style={{marginRight: -theme.spacing.s6, paddingRight: theme.spacing.s6}}>
-        <PairingGuide model={glassesModelName} />
+        <PairingGuide model={modelName} />
       </ScrollView>
-      <PairingOptions model={glassesModelName} continueFn={advanceToPairing} />
+      <PairingOptions model={modelName} continueFn={advanceToPairing} />
     </Screen>
   )
 }
