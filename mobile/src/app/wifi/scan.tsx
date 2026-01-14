@@ -1,6 +1,6 @@
 import CoreModule from "core"
-import {useLocalSearchParams} from "expo-router"
-import {useEffect, useRef, useState} from "react"
+import {useFocusEffect, useLocalSearchParams} from "expo-router"
+import {useCallback, useEffect, useRef, useState} from "react"
 import {ActivityIndicator, Platform, ScrollView, TouchableOpacity, View} from "react-native"
 import Toast from "react-native-toast-message"
 
@@ -36,12 +36,15 @@ export default function WifiScanScreen() {
   const receivedResultsForSessionRef = useRef<boolean>(false)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
-  const {push, goBack, pushPrevious, getPreviousRoute} = useNavigationHistory()
+  const {push, goBack, pushPrevious, getPreviousRoute, incPreventBack, decPreventBack, setAndroidBackFn, getHistory} =
+    useNavigationHistory()
 
-  // if the previous route is in this list, show / allow the back button:
+  // if the previous route is in this list, or the second to last route is in this list
+  // show / allow the back button:
   const backableRoutes = ["/settings/glasses", "/home"]
 
-  const showBack = backableRoutes.includes(getPreviousRoute() || "")
+  const secondLastRoute = getPreviousRoute(1)
+  const showBack = backableRoutes.includes(getPreviousRoute() || "") || backableRoutes.includes(secondLastRoute || "")
   const showSkip = !showBack
 
   const handleBack = () => {
@@ -52,26 +55,23 @@ export default function WifiScanScreen() {
     }
   }
 
-  focusEffectPreventBack(() => {
-    if (showBack) {
-      goBack()
-    }
-  })
+  // only prevent back if the showBack flag is false:
+  useFocusEffect(
+    useCallback(() => {
+      if (!showBack) {
+        incPreventBack()
+      }
+      setAndroidBackFn(() => {
+        if (showBack) {
+          goBack()
+        }
+      })
 
-  // if (Platform.OS === "android") {
-  //   focusEffectPreventBack(() => {
-  //     if (showBack) {
-  //       goBack()
-  //     } else {
-  //       // do nothing
-  //     }
-  //   })
-  // } else if (Platform.OS === "ios") {
-  //   // only prevent back if the showBack flag is false:
-  //   if (!showBack) {
-  //     focusEffectPreventBack()
-  //   }
-  // }
+      return () => {
+        decPreventBack()
+      }
+    }, [incPreventBack, decPreventBack, showBack]),
+  )
 
   useEffect(() => {
     const loadSavedNetworks = () => {

@@ -25,7 +25,7 @@ export type NavObject = {
 interface NavigationHistoryContextType {
   goBack: () => void
   getHistory: () => string[]
-  getPreviousRoute: () => string | null
+  getPreviousRoute: (index?: number) => string | null
   clearHistory: () => void
   push: (path: string, params?: any) => void
   replace: (path: string, params?: any) => void
@@ -220,11 +220,11 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     return history
   }
 
-  const getPreviousRoute = () => {
-    if (historyRef.current.length < 2) {
+  const getPreviousRoute = (index: number = 0) => {
+    if (historyRef.current.length < (2 + index)) {
       return null
     }
-    return historyRef.current[historyRef.current.length - 2]
+    return historyRef.current[historyRef.current.length - (2 + index)]
   }
 
   const clearHistory = () => {
