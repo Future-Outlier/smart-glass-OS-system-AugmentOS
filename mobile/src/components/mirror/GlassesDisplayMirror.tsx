@@ -26,7 +26,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
   const containerRef = useRef<View | null>(null)
   const [containerWidth, setContainerWidth] = useState<number | null>(null)
   const {currentEvent} = useDisplayStore()
-  const batteryLevel = useGlassesStore(state => state.batteryLevel)
+  const batteryLevel = useGlassesStore((state) => state.batteryLevel)
 
   // Use demo layout if in demo mode, otherwise use real layout
   const layout = demoText !== "" ? {layoutType: "text_wall", text: demoText} : currentEvent.layout
@@ -148,8 +148,17 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
       case "text_line": {
         let {text} = layout
         text = parseText(text)
-        text = text.replace(/\n/g, " ")
-        return <Text style={[styles.cardContent, textStyle]}>{text || text === "" ? text : ""}</Text>
+        // Render each line separately to match glasses display exactly
+        const lines = text.split("\n")
+        return (
+          <View style={{gap: 2}}>
+            {lines.map((line: string, index: number) => (
+              <Text key={index} style={[styles.cardContent, textStyle]} numberOfLines={1}>
+                {line || "\u00A0"} {/* Non-breaking space for empty lines */}
+              </Text>
+            ))}
+          </View>
+        )
       }
       case "double_text_wall": {
         let {topText, bottomText} = layout
@@ -179,7 +188,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
           <View
             ref={containerRef}
             style={{flex: 1, width: "100%", height: "100%", justifyContent: "center"}}
-            onLayout={event => {
+            onLayout={(event) => {
               const {width} = event.nativeEvent.layout
               if (setContainerWidth) {
                 setContainerWidth(width)
