@@ -1,7 +1,7 @@
 import {useEffect} from "react"
 
 import {useApplets} from "@/stores/applets"
-import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 const cameraPackageName = "com.mentra.camera"
 
@@ -17,12 +17,13 @@ const cameraPackageName = "com.mentra.camera"
  */
 export function GalleryModeSync() {
   const applets = useApplets()
+  const [galleryMode, setGalleryMode] = useSetting(SETTINGS.gallery_mode.key)
 
   useEffect(() => {
     // console.log(`📸 [GalleryModeSync] Effect triggered, ${applets.length} applets loaded`)
 
     // Debug: log all running apps
-    const runningApps = applets.filter((app) => app.running)
+    // const runningApps = applets.filter((app) => app.running)
     // console.log(
     //   `[GalleryModeSync] Running apps (${runningApps.length}):`,
     //   runningApps.map((app) => `${app.name} (${app.type}, ${app.packageName})`).join(", ") || "NONE",
@@ -49,7 +50,9 @@ export function GalleryModeSync() {
     //     `(Setting gallery_mode to ${shouldEnableCapture})`,
     // )
 
-    useSettingsStore.getState().setSetting(SETTINGS.gallery_mode.key, shouldEnableCapture)
+    if (galleryMode !== shouldEnableCapture) {
+      setGalleryMode(shouldEnableCapture)
+    }
   }, [applets])
 
   return null
