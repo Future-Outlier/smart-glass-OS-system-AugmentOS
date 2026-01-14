@@ -40,10 +40,15 @@ export default function Homepage() {
     }
 
     return (
-      <Group>
-        <CompactDeviceStatus />
-        {!offlineMode && <BackgroundAppsLink />}
-      </Group>
+      <>
+        <Group>
+          <CompactDeviceStatus />
+          {!offlineMode && <BackgroundAppsLink />}
+        </Group>
+        <Spacer height={theme.spacing.s2} />
+        <ActiveForegroundApp />
+        <ForegroundAppsGrid />
+      </>
     )
   }
 
