@@ -22,6 +22,7 @@ export interface ClientAppletInterface extends AppletInterface {
   offlineRoute: string
   compatibility?: CompatibilityResult
   loading: boolean
+  local: boolean
   onStart?: () => AsyncResult<void, Error>
   onStop?: () => AsyncResult<void, Error>
 }
@@ -47,6 +48,7 @@ export const DUMMY_APPLET: ClientAppletInterface = {
   hardwareRequirements: [],
   offline: true,
   offlineRoute: "",
+  local: false,
 }
 
 /**
@@ -76,6 +78,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       // version: "0.0.1",
       permissions: [],
       offlineRoute: "/asg/gallery",
+      local: false,
       running: false,
       loading: false,
       healthy: true,
@@ -107,6 +110,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       offlineRoute: "",
       running: false,
       loading: false,
+      local: false,
       hardwareRequirements: [{type: HardwareType.DISPLAY, level: HardwareRequirementLevel.REQUIRED}],
       onStart: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
@@ -162,6 +166,7 @@ export const getMoreAppsApplet = (): ClientAppletInterface => {
     hardwareRequirements: [],
     type: "standard",
     logoUrl: require("@assets/applet-icons/store.png"),
+    local: false,
   }
 }
 
@@ -223,6 +228,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
         loading: false,
         offline: false,
         offlineRoute: "",
+        local: false,
       }))
     }
 
@@ -384,7 +390,7 @@ export const useIncompatibleApps = () => {
 }
 
 export const useLocalMiniApps = () => {
-  return useAppletStatusStore.getState().apps.filter((app) => app.offline && app.webviewUrl !== "")
+  return useAppletStatusStore.getState().apps.filter((app) => app.local)
 }
 
 // export const useIncompatibleApps = async () => {
