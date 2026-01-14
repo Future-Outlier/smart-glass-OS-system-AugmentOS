@@ -15,7 +15,7 @@ import STTModelManager from "@/services/STTModelManager"
 import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
-import { BackgroundTimer } from "@/utils/timers"
+import {BackgroundTimer} from "@/utils/timers"
 
 export interface ClientAppletInterface extends AppletInterface {
   offline: boolean
@@ -101,19 +101,15 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
             return undefined
           }
 
-          showAlert(
-            translate("transcription:noModelInstalled"),
-            translate("transcription:noModelInstalledMessage"),
-            [
-              {text: translate("common:cancel"), style: "cancel"},
-              {
-                text: translate("transcription:goToSettings"),
-                onPress: () => {
-                  push("/settings/transcription")
-                },
+          showAlert(translate("transcription:noModelInstalled"), translate("transcription:noModelInstalledMessage"), [
+            {text: translate("common:cancel"), style: "cancel"},
+            {
+              text: translate("transcription:goToSettings"),
+              onPress: () => {
+                push("/settings/transcription")
               },
-            ],
-          )
+            },
+          ])
 
           throw new Error("No model available")
         })
