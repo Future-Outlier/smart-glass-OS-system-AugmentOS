@@ -15,6 +15,7 @@ import STTModelManager from "@/services/STTModelManager"
 import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
+import { BackgroundTimer } from "@/utils/timers"
 
 export interface ClientAppletInterface extends AppletInterface {
   offline: boolean
@@ -161,10 +162,10 @@ let refreshTimeout: ReturnType<typeof setTimeout> | null = null
 const startStopApplet = (applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> => {
   // TODO: not the best way to handle this, but it works reliably:
   if (refreshTimeout) {
-    clearTimeout(refreshTimeout)
+    BackgroundTimer.clearTimeout(refreshTimeout)
     refreshTimeout = null
   }
-  refreshTimeout = setTimeout(() => {
+  refreshTimeout = BackgroundTimer.setTimeout(() => {
     useAppletStatusStore.getState().refreshApplets()
   }, 2000)
 
@@ -184,6 +185,12 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
 
   refreshApplets: async () => {
     console.log(`APPLETS: refreshApplets()`)
+    // cancel any pending refresh timeouts:
+    if (refreshTimeout) {
+      BackgroundTimer.clearTimeout(refreshTimeout)
+      refreshTimeout = null
+    }
+
     let onlineApps: ClientAppletInterface[] = []
     let res = await restComms.getApplets()
     if (res.is_error()) {

@@ -395,7 +395,6 @@ class SocketComms {
       console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:", JSON.stringify(msg, null, 2))
     }
 
-    GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
   }
 
   /**
@@ -463,9 +462,8 @@ class SocketComms {
   }
 
   private handle_app_state_change(msg: any) {
-    // console.log("SOCKET: app state change", msg)
-    // this.parse_app_list(msg)
-    GlobalEventEmitter.emit("app_state_change", msg)
+    console.log("SOCKET: app_state_change", msg)
+    useAppletStatusStore.getState().refreshApplets()
   }
 
   private handle_connection_error(msg: any) {
@@ -480,7 +478,7 @@ class SocketComms {
     // const bypassVad = msg.bypassVad ?? true
     const bypassVad = true
     const requiredDataStrings = msg.requiredData || []
-    console.log(`SOCKET: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
+    console.log(`SOCKET: mic_state_change: requiredData = [${requiredDataStrings}], bypassVad = ${bypassVad}`)
     let shouldSendPcmData = false
     let shouldSendTranscript = false
     if (requiredDataStrings.includes("pcm")) {

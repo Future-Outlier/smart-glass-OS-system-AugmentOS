@@ -565,7 +565,7 @@ class CoreManager {
     }
 
     private fun sendCurrentState() {
-        Bridge.log("MAN: sendCurrentState(): $isHeadUp")
+        // Bridge.log("MAN: sendCurrentState(): $isHeadUp")
         if (screenDisabled) {
             return
         }
@@ -596,7 +596,7 @@ class CoreManager {
         // Cancel any pending clear display work item
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
 
-        Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
+        // Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
 
         when (currentViewState.layoutType) {
             "text_wall" -> sgc?.sendTextWall(currentViewState.text)
