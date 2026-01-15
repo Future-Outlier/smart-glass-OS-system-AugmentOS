@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { User } from "lucide-react";
 import { useAuth } from "@mentra/shared";
 import { useTheme } from "../hooks/useTheme";
@@ -14,6 +15,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ variant = "des
   const { theme } = useTheme();
   const navigate = useNavigate();
   const profileDropdown = useProfileDropdown();
+  const [avatarError, setAvatarError] = useState(false);
 
   const getUserAvatar = () => {
     if (!user) return null;
@@ -45,21 +47,14 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ variant = "des
             style={{
               backgroundColor: theme === "light" ? "#F2F2F2" : "var(--bg-tertiary)",
             }}>
-            {getUserAvatar() ? (
+            {getUserAvatar() && !avatarError ? (
               <img
                 src={getUserAvatar()!}
                 alt="Profile"
                 className="w-full h-full object-cover"
-                onError={(e) => {
+                onError={() => {
                   console.error("Failed to load avatar:", getUserAvatar());
-                  // Hide the broken image and show the fallback icon
-                  const parent = e.currentTarget.parentElement;
-                  e.currentTarget.remove();
-                  if (parent) {
-                    const fallbackIcon = document.createElement("div");
-                    fallbackIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-                    parent.appendChild(fallbackIcon);
-                  }
+                  setAvatarError(true);
                 }}
               />
             ) : (
@@ -123,21 +118,14 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ variant = "des
           style={{
             backgroundColor: theme === "light" ? "#F2F2F2" : "var(--bg-tertiary)",
           }}>
-          {getUserAvatar() ? (
+          {getUserAvatar() && !avatarError ? (
             <img
               src={getUserAvatar()!}
               alt="Profile"
               className="w-full h-full object-cover"
-              onError={(e) => {
+              onError={() => {
                 console.error("Failed to load avatar in dropdown:", getUserAvatar());
-                // Hide the broken image and show the fallback icon
-                const parent = e.currentTarget.parentElement;
-                e.currentTarget.remove();
-                if (parent) {
-                  const fallbackIcon = document.createElement("div");
-                  fallbackIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-                  parent.appendChild(fallbackIcon);
-                }
+                setAvatarError(true);
               }}
             />
           ) : (
