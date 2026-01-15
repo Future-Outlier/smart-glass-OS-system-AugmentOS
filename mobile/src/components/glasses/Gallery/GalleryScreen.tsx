@@ -991,7 +991,6 @@ export function GalleryScreen() {
                     progress={Math.max(0, Math.min(100, syncStateForItem.progress || 0))}
                     size={50}
                     strokeWidth={4}
-                    showPercentage={!isFailed}
                     progressColor={isFailed ? theme.colors.error : theme.colors.primary}
                   />
                   {isFailed && (
