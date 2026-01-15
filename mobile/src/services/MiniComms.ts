@@ -73,16 +73,6 @@ class MiniComms {
     mantle.displayTextMain(`count: ${message.payload.count}`)
   }
 
-  // Subscribe to messages from WebView
-  public on(event: string, listener: (message: SuperWebViewMessage) => void) {
-    this.eventEmitter.on(event, listener)
-  }
-
-  // Unsubscribe from messages
-  public off(event: string, listener: (message: SuperWebViewMessage) => void) {
-    this.eventEmitter.off(event, listener)
-  }
-
   private handleCoreFn(message: SuperWebViewMessage) {
     const {fn, args} = message.payload
     console.log(`SUPERCOMMS: Core function:`, fn, args)

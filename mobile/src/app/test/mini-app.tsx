@@ -1,57 +1,25 @@
-import {useRef, useEffect} from "react"
-import {View, ViewStyle, TextStyle, ActivityIndicator} from "react-native"
-import {WebView} from "react-native-webview"
+import {useState, useEffect} from "react"
+import {View} from "react-native"
+import {Asset} from "expo-asset"
 
-import {Screen, Header, Text} from "@/components/ignite"
+import {Screen, Header} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/contexts/ThemeContext"
-import miniComms, {SuperWebViewMessage} from "@/services/MiniComms"
 import LocalMiniApp from "@/components/home/LocalMiniApp"
 
 export default function MiniApp() {
-  const {theme} = useAppTheme()
   const {goBack} = useNavigationHistory()
-  const webViewRef = useRef<WebView>(null)
+  const [htmlContent, setHtmlContent] = useState<string | null>(null)
 
-  // Set up SuperComms message handler to send messages to WebView
   useEffect(() => {
-    const sendToWebView = (message: string) => {
-      if (webViewRef.current) {
-        webViewRef.current.injectJavaScript(`
-          window.receiveNativeMessage(${message});
-          true;
-        `)
-      }
+    const loadHtml = async () => {
+      const asset = Asset.fromModule(require("../../../lma_example/index.html"))
+      await asset.downloadAsync()
+      const response = await fetch(asset.localUri!)
+      const html = await response.text()
+      setHtmlContent(html)
     }
-
-    miniComms.setWebViewMessageHandler(sendToWebView)
-
-    // Listen for messages from SuperComms
-    const handleMessage = (message: SuperWebViewMessage) => {
-      console.log(`SUPERAPP: Native received: ${message.type}`)
-    }
-
-
-    setInterval(() => {
-      console.log("KEEPING ALIVE")
-      webViewRef.current?.injectJavaScript(`
-        typeof keepAlive === 'function' && keepAlive();
-        true;
-      `);
-    }, 1000);
-
-    miniComms.on("message", handleMessage)
-
-    return () => {
-      miniComms.off("message", handleMessage)
-    }
+    loadHtml()
   }, [])
-
-  // Handle messages from WebView
-  const handleWebViewMessage = (event: any) => {
-    const data = event.nativeEvent.data
-    miniComms.handleWebViewMessage(data)
-  }
 
   return (
     <Screen preset="fixed" safeAreaEdges={[]}>
@@ -61,10 +29,9 @@ export default function MiniApp() {
         leftIcon="chevron-left"
         onLeftPress={() => goBack()}
         style={{height: 44}}
-        // containerStyle={{paddingTop: 0}}
       />
       <View className="flex-1">
-        <LocalMiniApp url="https://lma-example.com" />
+        {htmlContent && <LocalMiniApp html={htmlContent} />}
       </View>
     </Screen>
   )

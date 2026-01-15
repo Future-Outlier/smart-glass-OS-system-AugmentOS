@@ -1,19 +1,20 @@
 import {useRef, useEffect} from "react"
-import {View, ViewStyle, TextStyle, ActivityIndicator} from "react-native"
+import {View, ActivityIndicator} from "react-native"
 import {WebView} from "react-native-webview"
 
-import {Screen, Header, Text} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {Text} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import miniComms, {SuperWebViewMessage} from "@/services/MiniComms"
 
 interface LocalMiniAppProps {
-  url: string
+  url?: string | null
+  html?: string | null
 }
 
 export default function LocalMiniApp(props: LocalMiniAppProps) {
   const {theme} = useAppTheme()
   const webViewRef = useRef<WebView>(null)
+  const keepAliveIntervalRef = useRef<number | null>(null)
 
   // Set up SuperComms message handler to send messages to WebView
   useEffect(() => {
@@ -21,7 +22,6 @@ export default function LocalMiniApp(props: LocalMiniAppProps) {
       if (webViewRef.current) {
         webViewRef.current.injectJavaScript(`
           window.receiveNativeMessage(${message});
-          true;
         `)
       }
     }
@@ -33,18 +33,18 @@ export default function LocalMiniApp(props: LocalMiniAppProps) {
       console.log(`SUPERAPP: Native received: ${message.type}`)
     }
 
-    setInterval(() => {
-      console.log("KEEPING ALIVE")
-      webViewRef.current?.injectJavaScript(`
-        typeof keepAlive === 'function' && keepAlive();
-        true;
-      `)
+    keepAliveIntervalRef.current = setInterval(() => {
+      console.log("KEEPING ALIVE", Math.random())
+      webViewRef.current?.injectJavaScript(`true;`)
     }, 1000)
 
     miniComms.on("message", handleMessage)
 
     return () => {
       miniComms.off("message", handleMessage)
+      if (keepAliveIntervalRef.current) {
+        clearInterval(keepAliveIntervalRef.current)
+      }
     }
   }, [])
 
@@ -54,10 +54,17 @@ export default function LocalMiniApp(props: LocalMiniAppProps) {
     miniComms.handleWebViewMessage(data)
   }
 
+  let source: any = null
+  if (props.html) {
+    source = {html: props.html}
+  } else if (props.url) {
+    source = {uri: props.url}
+  }
+
   return (
     <WebView
       ref={webViewRef}
-      source={{uri: "https://lma-example.com"}}
+      source={source}
       style={{flex: 1}}
       onMessage={handleWebViewMessage}
       javaScriptEnabled={true}
