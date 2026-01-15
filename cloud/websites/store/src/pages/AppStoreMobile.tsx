@@ -14,7 +14,7 @@ import Header from "../components/Header_v2";
 import AppCard from "../components/AppCard";
 import SkeletonAppCard from "../components/SkeletonAppCard";
 import SkeletonSlider from "../components/SkeletonSlider";
-import { toast } from "sonner";
+import { useToast } from "../components/ui/MuiToast";
 import { formatCompatibilityError } from "../utils/errorHandling";
 import { CaptionsSlideMobile, MergeSlideMobile, StreamSlideMobile, XSlideMobile } from "../components/ui/slides";
 import { ProfileDropdown } from "../components/ProfileDropdown";
@@ -28,6 +28,7 @@ const AppStoreMobile: React.FC = () => {
   const { theme } = useTheme();
   const { isWebView } = usePlatform();
   const profileDropdown = useProfileDropdown();
+  const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Get organization ID from URL query parameter
@@ -255,7 +256,7 @@ const AppStoreMobile: React.FC = () => {
         const success = await api.app.installApp(packageName);
 
         if (success) {
-          toast.success("App installed successfully");
+          showToast("App installed successfully", "success");
 
           setApps((prevApps) =>
             prevApps.map((app) =>
@@ -269,26 +270,24 @@ const AppStoreMobile: React.FC = () => {
             ),
           );
         } else {
-          toast.error("Failed to install app");
+          showToast("Failed to install app", "error");
         }
       } catch (err) {
         console.error("Error installing app:", err);
 
         const compatibilityError = formatCompatibilityError(err);
         if (compatibilityError) {
-          toast.error(compatibilityError, {
-            duration: 6000,
-          });
+          showToast(compatibilityError, "error");
         } else {
           const errorMessage =
             (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to install app";
-          toast.error(errorMessage);
+          showToast(errorMessage, "error");
         }
       } finally {
         setInstallingApp(null);
       }
     },
-    [isAuthenticated, navigate],
+    [isAuthenticated, navigate, showToast],
   );
 
   // Handle app uninstallation
@@ -306,7 +305,7 @@ const AppStoreMobile: React.FC = () => {
         const success = await api.app.uninstallApp(packageName);
 
         if (success) {
-          toast.success("App uninstalled successfully");
+          showToast("App uninstalled successfully", "success");
 
           setApps((prevApps) =>
             prevApps.map((app) =>
@@ -314,16 +313,16 @@ const AppStoreMobile: React.FC = () => {
             ),
           );
         } else {
-          toast.error("Failed to uninstall app");
+          showToast("Failed to uninstall app", "error");
         }
       } catch (err) {
         console.error("Error uninstalling app:", err);
-        toast.error("Failed to uninstall app");
+        showToast("Failed to uninstall app", "error");
       } finally {
         setInstallingApp(null);
       }
     },
-    [isAuthenticated, navigate],
+    [isAuthenticated, navigate, showToast],
   );
 
   const handleCardClick = useCallback(
@@ -619,25 +618,11 @@ const AppStoreMobile: React.FC = () => {
 
         {/* Empty state */}
         {!isLoading && !error && filteredApps.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 px-4">
+          <div className="flex flex-col min-h-[calc(100vh-200px)] items-center justify-center py-16 px-4">
             {searchQuery ? (
               <>
-                <div
-                  className="mb-6 w-20 h-20 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: "var(--bg-secondary)" }}>
-                  <svg
-                    className="w-10 h-10"
-                    style={{ color: "var(--text-muted)" }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
+                <div className="mb-6 flex items-center justify-center">
+                  <img src="/app-icons/figma_icons/not_found.svg" alt="No apps found" className="w-32 h-auto" />
                 </div>
 
                 <h3 className="text-xl font-semibold mb-2" style={{ color: "var(--text-primary)" }}>
@@ -649,19 +634,19 @@ const AppStoreMobile: React.FC = () => {
                 </p>
 
                 <motion.button
-                  className="px-6 py-3 font-medium rounded-xl shadow-md transition-colors"
+                  className="px-6 py-2.5 font-medium rounded-full transition-all"
                   style={{
-                    backgroundColor: "var(--accent-primary)",
-                    color: "#ffffff",
+                    backgroundColor: "var(--button-bg)",
+                    color: "var(--button-text)",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-hover)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-primary)")}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--button-hover)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--button-bg)")}
                   onClick={() => {
                     setSearchQuery("");
                     fetchApps();
                   }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}>
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}>
                   Clear Search
                 </motion.button>
               </>
