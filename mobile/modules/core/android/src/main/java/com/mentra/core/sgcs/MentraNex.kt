@@ -838,6 +838,7 @@ class MentraNex : SGCManager() {
                 // Query glasses protobuf version from firmware
                 Bridge.log("=== SENDING GLASSES PROTOBUF VERSION REQUEST ===")
                 val versionQueryPacket = ProtobufUtils.generateVersionRequestCommandBytes()
+                sendDataSequentially(versionQueryPacket, 100)
                 Bridge.log("Sent glasses protobuf version request")
             }
         } else {
