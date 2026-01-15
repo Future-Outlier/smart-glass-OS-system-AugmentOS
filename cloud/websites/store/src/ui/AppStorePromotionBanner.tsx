@@ -62,7 +62,7 @@ function AppStorePromotionBanner() {
               />
             </a>
             <a
-              href="https://mentra-store-cdn.mentraglass.com/mentra_store_assets/download_github.svg"
+              href="https://github.com/Mentra-Community/MentraOS"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-fit max-w-[180px] sm:max-w-none cursor-pointer">
