@@ -20,6 +20,8 @@ export default function OtaCheckForUpdatesScreen() {
   const currentBuildNumber = useGlassesStore((state) => state.buildNumber)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const deviceName = defaultWearable || "Glasses"
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const wifiConnected = useGlassesStore((state) => state.wifiConnected)
 
   const [checkState, setCheckState] = useState<CheckState>("checking")
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null)
@@ -28,11 +30,11 @@ export default function OtaCheckForUpdatesScreen() {
 
   // Perform OTA check on mount with minimum display time
   useEffect(() => {
-    const MIN_DISPLAY_TIME_MS = 4000
+    const MIN_DISPLAY_TIME_MS = 1100
 
     const performCheck = async () => {
-      if (!otaVersionUrl || !currentBuildNumber) {
-        console.log("OTA: No version URL or build number, skipping check")
+      if (!otaVersionUrl || !currentBuildNumber || !glassesConnected || !wifiConnected) {
+        console.log("OTA: No version URL or build number, glasses connected, or wifi connected, skipping check")
         handleSkip()
         return
       }

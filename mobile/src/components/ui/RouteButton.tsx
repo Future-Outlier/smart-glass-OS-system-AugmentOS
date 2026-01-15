@@ -13,13 +13,17 @@ interface StatusCardProps {
   iconStart?: React.ReactNode
   iconEnd?: React.ReactNode
   subtitle?: string
+  onPress?: () => void
 }
 
-export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitle}: StatusCardProps) {
+export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitle, onPress}: StatusCardProps) {
   const {theme, themed} = useAppTheme()
 
-  return (
-    <View style={[themed($settingsGroup), themed($statusCardContainer), style]}>
+  // Extract flex from style to apply to TouchableOpacity wrapper
+  const {flex, ...restStyle} = (style || {}) as ViewStyle & {flex?: number}
+
+  const content = (
+    <View style={[themed($settingsGroup), themed($statusCardContainer), restStyle]}>
       <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s4}}>
         {iconStart && <View style={themed($icon)}>{iconStart}</View>}
         <View
@@ -33,6 +37,20 @@ export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitl
       {iconEnd && iconEnd}
     </View>
   )
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} style={flex !== undefined ? {flex} : undefined}>
+        {content}
+      </TouchableOpacity>
+    )
+  }
+
+  if (flex !== undefined) {
+    return <View style={{flex}}>{content}</View>
+  }
+
+  return content
 }
 
 const $statusCardContainer: ThemedStyle<ViewStyle> = () => ({

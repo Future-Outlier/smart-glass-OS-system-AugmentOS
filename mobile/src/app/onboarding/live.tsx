@@ -2,12 +2,13 @@ import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
+import { SETTINGS, useSetting } from "@/stores/settings"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
 
 export default function MentraLiveOnboarding() {
   const {pushPrevious} = useNavigationHistory()
-
+  const [_onboardingLiveCompleted, setOnboardingLiveCompleted] = useSetting(SETTINGS.onboarding_live_completed.key)
   // NOTE: you can't have 2 transition videos in a row or things will break:
   let steps: OnboardingStep[] = [
     {
@@ -149,12 +150,14 @@ export default function MentraLiveOnboarding() {
       <OnboardingGuide
         steps={steps}
         autoStart={false}
+        showCloseButton={false}
         mainTitle={translate("onboarding:liveWelcomeTitle")}
         mainSubtitle={translate("onboarding:liveWelcomeSubtitle")}
         exitFn={() => {
           pushPrevious()
         }}
         endButtonFn={() => {
+          setOnboardingLiveCompleted(true)
           pushPrevious()
         }}
         // endButtonText={

@@ -20,7 +20,7 @@ import {
   View,
   ViewStyle,
 } from "react-native"
-import RNFS from "react-native-fs"
+import * as RNFS from "@dr.pogodin/react-native-fs"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 import {useShallow} from "zustand/react/shallow"
@@ -621,8 +621,8 @@ export function GalleryScreen() {
 
     const items: GalleryItem[] = []
 
-    // Show photos from the sync queue in chronological order
-    // Files download in size order (performance), but display chronologically (UX)
+    // Show photos from the sync queue in chronological order (newest first for UX)
+    // Files download in chronological order (oldest first), but we re-sort for display
     // Keep showing queue even when state transitions to idle after sync
     if (syncQueue.length > 0) {
       console.log(`[GalleryScreen] 📋 syncQueue contains:`)
@@ -991,7 +991,6 @@ export function GalleryScreen() {
                     progress={Math.max(0, Math.min(100, syncStateForItem.progress || 0))}
                     size={50}
                     strokeWidth={4}
-                    showPercentage={!isFailed}
                     progressColor={isFailed ? theme.colors.error : theme.colors.primary}
                   />
                   {isFailed && (
@@ -1325,7 +1324,7 @@ const $syncButtonProgressBar: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 
 const $syncButtonProgressFill: ThemedStyle<ViewStyle> = ({colors}) => ({
   height: "100%",
-  backgroundColor: colors.palette.primary500,
+  backgroundColor: colors.primary,
   borderRadius: 2,
 })
 

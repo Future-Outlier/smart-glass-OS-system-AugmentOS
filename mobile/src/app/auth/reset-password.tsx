@@ -37,7 +37,7 @@ export default function ResetPasswordScreen() {
     if (res.is_error()) {
       // No valid session, redirect back to login
       showAlert(translate("common:error"), translate("login:invalidResetLink"))
-      replaceAll("/auth/login")
+      replaceAll("/auth/start")
       return
     }
     const session = res.value
@@ -75,7 +75,7 @@ export default function ResetPasswordScreen() {
       setIsLoading(false)
       await mentraAuth.signOut()
       showAlert(translate("login:passwordResetSuccess"), translate("login:redirectingToLogin"), [
-        {text: translate("common:ok"), onPress: () => replaceAll("/auth/login")},
+        {text: translate("common:ok"), onPress: () => replaceAll("/auth/start")},
       ])
       return
     }
@@ -89,7 +89,7 @@ export default function ResetPasswordScreen() {
       console.error("Error auto-logging in after password reset:", res2.error)
       await mentraAuth.signOut()
       showAlert(translate("login:passwordResetSuccess"), translate("login:redirectingToLogin"), [
-        {text: translate("common:ok"), onPress: () => replaceAll("/auth/login")},
+        {text: translate("common:ok"), onPress: () => replaceAll("/auth/start")},
       ])
       return
     }

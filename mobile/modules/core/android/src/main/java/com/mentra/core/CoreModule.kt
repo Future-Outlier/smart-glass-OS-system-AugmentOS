@@ -142,6 +142,12 @@ class CoreModule : Module() {
 
         AsyncFunction("restartTranscriber") { coreManager?.restartTranscriber() }
 
+        // MARK: - Audio Encoding Commands
+
+        AsyncFunction("setLC3FrameSize") { frameSize: Int ->
+            coreManager?.setLC3FrameSize(frameSize)
+        }
+
         // MARK: - RGB LED Control
 
         AsyncFunction("rgbLedControl") {

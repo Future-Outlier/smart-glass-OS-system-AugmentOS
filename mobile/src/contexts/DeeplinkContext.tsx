@@ -32,7 +32,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/home",
     handler: (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.replaceAll("/(tabs)/home")
+      navObject.replaceAll("/home")
     },
     requiresAuth: true, // Require auth for explicit /home navigation
   },
@@ -41,7 +41,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/settings",
     handler: (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.push("/(tabs)/settings")
+      navObject.push("/settings")
     },
     requiresAuth: true,
   },
@@ -65,7 +65,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
       if (route) {
         navObject.push(route as any)
       } else {
-        navObject.push("/(tabs)/settings")
+        navObject.push("/settings")
       }
     },
     requiresAuth: true,
@@ -75,7 +75,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/glasses",
     handler: async (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.push("/(tabs)/glasses")
+      navObject.push("/glasses")
     },
     requiresAuth: true,
   },
@@ -145,9 +145,9 @@ const deepLinkRoutes: DeepLinkRoute[] = [
 
   // Authentication routes
   {
-    pattern: "/auth/login",
+    pattern: "/auth/start",
     handler: (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.replaceAll("/auth/login")
+      navObject.replaceAll("/auth/start")
     },
   },
   {
@@ -167,11 +167,22 @@ const deepLinkRoutes: DeepLinkRoute[] = [
           token_type: params.get("token_type"),
           expires_in: params.get("expires_in"),
           type: params.get("type"), // signup, email_change, recovery, etc.
-          // Add any other parameters you might need
+          // Error params (when link is expired/invalid)
+          error: params.get("error"),
+          error_code: params.get("error_code"),
+          error_description: params.get("error_description"),
         }
       }
 
       const authParams = parseAuthParams(url)
+
+      // Check if there's an error in the URL (e.g., expired verification link)
+      if (authParams?.error || authParams?.error_code) {
+        console.log("[LOGIN DEBUG] Error in auth callback:", authParams.error_code, authParams.error_description)
+        // Navigate to login with the error code so login screen can show the message
+        navObject.replace(`/auth/start?authError=${authParams.error_code || authParams.error}`)
+        return
+      }
 
       if (authParams && authParams.access_token && authParams.refresh_token) {
         // Update the Supabase session manually
@@ -259,7 +270,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
       if (authParams?.error || authParams?.error_code) {
         console.log("[RESET PASSWORD DEBUG] Error in reset link:", authParams.error_code, authParams.error_description)
         // Navigate to login with the error code so login screen can show the message
-        navObject.replace(`/auth/login?authError=${authParams.error_code || authParams.error}`)
+        navObject.replace(`/auth/start?authError=${authParams.error_code || authParams.error}`)
         return
       }
 
@@ -271,7 +282,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         })
         if (res.is_error()) {
           console.error("[RESET PASSWORD DEBUG] Error setting recovery session:", res.error)
-          navObject.replace("/auth/login?authError=invalid_reset_link")
+          navObject.replace("/auth/start?authError=invalid_reset_link")
           return
         }
 
@@ -280,7 +291,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         navObject.replace("/auth/reset-password")
       } else {
         console.log("[RESET PASSWORD DEBUG] Missing required auth parameters for password reset")
-        navObject.replace("/auth/login?authError=invalid_reset_link")
+        navObject.replace("/auth/start?authError=invalid_reset_link")
       }
     },
   },
@@ -332,7 +343,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
     pattern: "/package/:packageName",
     handler: async (url: string, params: Record<string, string>, navObject: NavObject) => {
       const {packageName} = params
-      navObject.push(`/(tabs)/store?packageName=${packageName}`)
+      navObject.push(`/store?packageName=${packageName}`)
     },
     requiresAuth: true,
   },
@@ -384,7 +395,7 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
     fallbackHandler: (url: string) => {
       console.warn("Fallback handler called for URL:", url)
       setTimeout(() => {
-        replaceAll("/auth/login")
+        replaceAll("/auth/start")
       }, 100)
     },
     navObject: {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, preventBack},
@@ -492,7 +503,7 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
         setPendingRoute(url)
         setTimeout(() => {
           try {
-            replace("/auth/login")
+            replace("/auth/start")
           } catch (error) {
             console.warn("Navigation failed, router may not be ready:", error)
           }

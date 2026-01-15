@@ -159,7 +159,7 @@ export default function AppSettings() {
               showAlert(
                 translate("common:success"),
                 translate("appSettings:uninstalledSuccess", {appName: appInfo?.name || appName}),
-                [{text: translate("common:ok"), onPress: () => replaceAll("/(tabs)/home")}],
+                [{text: translate("common:ok"), onPress: () => replaceAll("/home")}],
               )
             } catch (error: any) {
               console.error("Error uninstalling app:", error)

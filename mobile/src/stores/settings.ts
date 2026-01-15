@@ -37,6 +37,13 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  debug_navigation_history: {
+    key: "debug_navigation_history",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   china_deployment: {
     key: "china_deployment",
     defaultValue: () => (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china" ? true : false),
@@ -107,8 +114,8 @@ export const SETTINGS: Record<string, Setting> = {
   // ui state:
   theme_preference: {
     key: "theme_preference",
-    defaultValue: () => "light",
-    // Force light mode - dark mode is not complete yet
+    defaultValue: () => (__DEV__ ? "system" : "light"),
+    // Force light mode - i mode is not complete yet
     // override: () => "light",
     writable: true,
     saveOnServer: true,
@@ -212,6 +219,15 @@ export const SETTINGS: Record<string, Setting> = {
     defaultValue: () => false,
     writable: true,
     saveOnServer: true,
+    persist: true,
+  },
+  // LC3 audio quality setting (frame size in bytes)
+  // 20 = 16kbps (low bandwidth), 40 = 32kbps (balanced), 60 = 48kbps (high quality)
+  lc3_frame_size: {
+    key: "lc3_frame_size",
+    defaultValue: () => 60,
+    writable: true,
+    saveOnServer: false,
     persist: true,
   },
   preferred_mic: {
@@ -394,6 +410,7 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.bypass_audio_encoding_for_debugging.key,
   SETTINGS.metric_system.key,
   SETTINGS.enforce_local_transcription.key,
+  SETTINGS.lc3_frame_size.key,
   SETTINGS.preferred_mic.key,
   SETTINGS.screen_disabled.key,
   // glasses settings:

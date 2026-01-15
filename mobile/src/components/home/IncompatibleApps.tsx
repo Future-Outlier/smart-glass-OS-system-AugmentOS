@@ -46,7 +46,7 @@ export const IncompatibleApps: React.FC = () => {
   const handleAppPress = useCallback(
     (app: ClientAppletInterface) => {
       const missingHardware =
-        app.compatibility?.missingRequired?.map(req => req.type.toLowerCase()).join(", ") || "required features"
+        app.compatibility?.missingRequired?.map((req) => req.type.toLowerCase()).join(", ") || "required features"
 
       showAlert(
         translate("home:hardwareIncompatible"),
@@ -56,10 +56,6 @@ export const IncompatibleApps: React.FC = () => {
             missing: missingHardware,
           }),
         [{text: translate("common:ok")}],
-        {
-          iconName: "alert-circle-outline",
-          iconColor: theme.colors.error,
-        },
       )
     },
     [theme],
@@ -144,7 +140,7 @@ export const IncompatibleApps: React.FC = () => {
           <FlatList
             data={gridData}
             renderItem={renderItem}
-            keyExtractor={item => item.packageName}
+            keyExtractor={(item) => item.packageName}
             numColumns={GRID_COLUMNS}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{paddingBottom: bottom}}

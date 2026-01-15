@@ -40,6 +40,10 @@ import {
   consoleOrgsApi,
   consoleAppsApi,
   cliKeysApi,
+  // Store APIs (MentraOS Store website)
+  storeAppsApi,
+  storeAuthApi,
+  storeUserApi,
 } from "./api/hono";
 
 // Hono Legacy routes (migrated from Express)
@@ -131,6 +135,10 @@ app.use(async (c, next) => {
   const status = c.res.status;
   const responseContentType = c.res.headers.get("content-type");
 
+  // Capture userId from auth middleware (populated during next())
+  // This enables filtering by user in Better Stack
+  const userId = c.get("email") || c.get("console")?.email || undefined;
+
   // Build comprehensive log data for Better Stack
   const logData = {
     // Request identification
@@ -154,9 +162,10 @@ app.use(async (c, next) => {
     referer,
     origin,
 
-    // Auth info (safe)
+    // Auth info (safe) - userId enables user-centric debugging in Better Stack
     hasAuth,
     authType,
+    userId,
 
     // Categorization for Better Stack filtering
     service: "hono-http",
@@ -261,6 +270,15 @@ cliRouter.use("*", transformCLIToConsole);
 cliRouter.route("/apps", consoleAppsApi);
 cliRouter.route("/orgs", consoleOrgsApi);
 app.route("/api/cli", cliRouter);
+
+// ============================================================================
+// Store API Routes (MentraOS Store website)
+// ============================================================================
+
+// Store routes handle their own auth internally (mixed public/authenticated)
+app.route("/api/store", storeAppsApi);
+app.route("/api/store/auth", storeAuthApi);
+app.route("/api/store/user", storeUserApi);
 
 // ============================================================================
 // Legacy Routes (migrated from Express)

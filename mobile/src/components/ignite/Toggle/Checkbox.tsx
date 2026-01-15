@@ -61,12 +61,20 @@ function CheckboxInput(props: CheckboxInputProps) {
 
   return (
     <View
-      className="bg-background rounded-md"
-      style={[$outerStyleOverride]}>
+      className="rounded-md"
+      style={[{
+        width: 24,
+        height: 24,
+        borderWidth: 2,
+        borderColor: on ? colors.primary : colors.border,
+        backgroundColor: on ? colors.primary : colors.background,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 6,
+      }, $outerStyleOverride]}>
       <Animated.View
-        className={`bg-background rounded-md ${on ? "bg-primary" : "bg-background"}`}
-        style={[$innerStyleOverride, {opacity: opacity.current}]}>
-        <Icon name="check" size={20} color={colors.background} />
+        style={[{opacity: opacity.current}]}>
+        <Icon name="check" size={16} color={colors.background} />
       </Animated.View>
     </View>
   )

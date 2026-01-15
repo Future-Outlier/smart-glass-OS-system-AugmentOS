@@ -400,17 +400,36 @@ class SocketComms {
   }
 
   /**
+   * Public method to reconfigure audio format.
+   * Called when user changes LC3 bitrate setting to apply immediately.
+   */
+  async reconfigureAudioFormat(): Promise<void> {
+    return this.configureAudioFormat()
+  }
+
+  /**
    * Configure audio format with the cloud server.
-   * Tells the server we're sending LC3-encoded audio (16x bandwidth savings).
-   * Uses canonical LC3 config: 16kHz, 10ms frame duration, 20-byte frame size.
+   * Tells the server we're sending LC3-encoded audio.
+   * Uses canonical LC3 config: 16kHz, 10ms frame duration.
+   * Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps).
    */
   private async configureAudioFormat(): Promise<void> {
     const backendUrl = useSettingsStore.getState().getSetting(SETTINGS.backend_url.key)
     const coreToken = useSettingsStore.getState().getSetting(SETTINGS.core_token.key)
+    const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key) || 20
 
     if (!backendUrl || !coreToken) {
       console.log("SOCKET: Cannot configure audio format - missing backend URL or token")
       return
+    }
+
+    // Configure the native encoder frame size first
+    try {
+      await CoreModule.setLC3FrameSize(frameSizeBytes)
+      console.log(`SOCKET: Native LC3 encoder configured to ${frameSizeBytes} bytes/frame`)
+    } catch (err) {
+      console.error("SOCKET: Failed to configure native LC3 encoder:", err)
+      // Continue anyway - cloud config is more important
     }
 
     try {
@@ -425,7 +444,7 @@ class SocketComms {
           lc3Config: {
             sampleRate: 16000,
             frameDurationMs: 10,
-            frameSizeBytes: 20,
+            frameSizeBytes: frameSizeBytes,
           },
         }),
       })
@@ -437,7 +456,7 @@ class SocketComms {
       }
 
       const result = await response.json()
-      console.log("SOCKET: Audio format configured successfully:", result.format)
+      console.log(`SOCKET: Audio format configured successfully: ${result.format}, ${frameSizeBytes} bytes/frame`)
     } catch (error) {
       console.error("SOCKET: Error configuring audio format:", error)
       throw error
@@ -447,7 +466,7 @@ class SocketComms {
   private handle_app_state_change(msg: any) {
     // console.log("SOCKET: app state change", msg)
     // this.parse_app_list(msg)
-    GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
+    GlobalEventEmitter.emit("app_state_change", msg)
   }
 
   private handle_connection_error(msg: any) {
@@ -692,7 +711,7 @@ class SocketComms {
   private handle_message(msg: any) {
     const type = msg.type
 
-    console.log(`SOCKET: msg: ${type}`)
+    // console.log(`SOCKET: msg: ${type}`)
 
     switch (type) {
       case "connection_ack":
