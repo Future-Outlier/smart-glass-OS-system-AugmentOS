@@ -1357,7 +1357,7 @@ class CoreManager {
         glassesSettings["button_camera_led"] = buttonCameraLed
 
         val coreInfo =
-                mutableMapOf(
+                mutableMapOf<String, Any>(
                     "is_searching" to isSearching,
                 )
 

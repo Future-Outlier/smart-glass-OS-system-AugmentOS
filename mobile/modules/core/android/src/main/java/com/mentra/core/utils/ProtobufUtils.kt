@@ -224,9 +224,12 @@ object ProtobufUtils {
         Bridge.log("Nex: Text: \"$text\"")
         Bridge.log("Nex: Text Length: ${text.length} characters")
 
+        // Replace all m-dashes with normal dash
+        val textWithNormalDash = text.replace("—", "-")
+
         val textNewBuilder = DisplayText.newBuilder()
             .setColor(10000)
-            .setText(text)
+            .setText(textWithNormalDash)
             .setSize(48)
             .setX(20)
             .setY(260)
