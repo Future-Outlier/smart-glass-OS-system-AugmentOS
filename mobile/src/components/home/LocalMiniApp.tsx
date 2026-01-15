@@ -6,11 +6,13 @@ import {Screen, Header, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import miniComms, {SuperWebViewMessage} from "@/services/MiniComms"
-import LocalMiniApp from "@/components/home/LocalMiniApp"
 
-export default function MiniApp() {
+interface LocalMiniAppProps {
+  url: string
+}
+
+export default function LocalMiniApp(props: LocalMiniAppProps) {
   const {theme} = useAppTheme()
-  const {goBack} = useNavigationHistory()
   const webViewRef = useRef<WebView>(null)
 
   // Set up SuperComms message handler to send messages to WebView
@@ -31,14 +33,13 @@ export default function MiniApp() {
       console.log(`SUPERAPP: Native received: ${message.type}`)
     }
 
-
     setInterval(() => {
       console.log("KEEPING ALIVE")
       webViewRef.current?.injectJavaScript(`
         typeof keepAlive === 'function' && keepAlive();
         true;
-      `);
-    }, 1000);
+      `)
+    }, 1000)
 
     miniComms.on("message", handleMessage)
 
@@ -54,18 +55,20 @@ export default function MiniApp() {
   }
 
   return (
-    <Screen preset="fixed" safeAreaEdges={[]}>
-      <Header
-        title="MiniApp"
-        titleMode="center"
-        leftIcon="chevron-left"
-        onLeftPress={() => goBack()}
-        style={{height: 44}}
-        // containerStyle={{paddingTop: 0}}
-      />
-      <View className="flex-1">
-        <LocalMiniApp url="https://lma-example.com" />
-      </View>
-    </Screen>
+    <WebView
+      ref={webViewRef}
+      source={{uri: "https://lma-example.com"}}
+      style={{flex: 1}}
+      onMessage={handleWebViewMessage}
+      javaScriptEnabled={true}
+      domStorageEnabled={true}
+      startInLoadingState={true}
+      renderLoading={() => (
+        <View className="absolute inset-0 items-center bg-background justify-center">
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text text="Loading Local Mini App..." className="text-foreground text-sm mt-2" />
+        </View>
+      )}
+    />
   )
 }

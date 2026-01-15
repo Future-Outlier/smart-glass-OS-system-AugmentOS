@@ -108,12 +108,20 @@
           window.receiveNativeMessage = (messageStr) => {
             try {
               const message = JSON.parse(messageStr)
-              addLog("Received from Native: " + message.type)
+              // addLog("Received from Native: " + message.type)
               handleNativeMessage(message)
             } catch (error) {
-              addLog("Error parsing native message: " + error.message)
-              addLog("Message: " + messageStr)
+              // addLog("Error parsing native message: " + error.message)
+              // addLog("Message: " + messageStr)
             }
+          }
+        }
+
+        handleNativeMessage(message) {
+          switch (message.type) {
+            case "transcription":
+              // addLog(" " + message.payload.message)
+              break
           }
         }
 
@@ -128,6 +136,14 @@
 
       window.bridge = new Bridge()
 
+      // Notify native that page is ready
+      window.addEventListener("load", function () {
+        window.bridge.send({
+          type: "page_ready",
+          timestamp: Date.now(),
+        })
+      })
+
       window.CoreModule = {
         displayText: (text) => {
           window.bridge.send({
@@ -137,105 +153,64 @@
         },
       }
 
-      window.SDK = {
-        
-      }
+      window.SDK = {}
     </script>
     <script>
-      // Function to receive messages from React Native
-      window.receiveNativeMessage = function (messageStr) {
-        try {
-          const message = JSON.parse(messageStr)
-          addLog("Received from Native: " + message.type)
-          handleNativeMessage(message)
-        } catch (error) {
-          addLog("Error parsing native message: " + error.message)
-          addLog("Message: " + messageStr)
-        }
-      }
+      
+      // // Button click handlers
+      // function sendMessage(buttonId) {
+      //   sendToNative({
+      //     type: "button_click",
+      //     payload: {buttonId: buttonId},
+      //     timestamp: Date.now(),
+      //   })
+      // }
 
-      // Handle messages from native side
-      function handleNativeMessage(message) {
-        switch (message.type) {
-          case "button_click_response":
-            addLog(" " + message.payload.message)
-            break
-          case "init_data":
-            addLog("=� Init: " + message.payload.message)
-            break
-          case "notification":
-            addLog("= " + message.payload.title + ": " + message.payload.message)
-            break
-          case "data_update":
-            addLog("= Data updated: " + JSON.stringify(message.payload))
-            break
-          default:
-            addLog("Unknown message type: " + message.type)
-        }
-      }
+      // function requestData() {
+      //   sendToNative({
+      //     type: "custom_action",
+      //     payload: {action: "request_data"},
+      //     timestamp: Date.now(),
+      //   })
+      // }
 
-      // Button click handlers
-      function sendMessage(buttonId) {
-        sendToNative({
-          type: "button_click",
-          payload: {buttonId: buttonId},
-          timestamp: Date.now(),
-        })
-      }
+      // function sendCustomAction() {
+      //   sendToNative({
+      //     type: "custom_action",
+      //     payload: {
+      //       action: "custom",
+      //       data: {example: "test data", value: Math.random()},
+      //     },
+      //     timestamp: Date.now(),
+      //   })
+      // }
 
-      function requestData() {
-        sendToNative({
-          type: "custom_action",
-          payload: {action: "request_data"},
-          timestamp: Date.now(),
-        })
-      }
+      // // Logging function
+      // function addLog(message) {
+      //   const logDiv = document.getElementById("log")
+      //   const entry = document.createElement("div")
+      //   entry.className = "log-entry"
 
-      function sendCustomAction() {
-        sendToNative({
-          type: "custom_action",
-          payload: {
-            action: "custom",
-            data: {example: "test data", value: Math.random()},
-          },
-          timestamp: Date.now(),
-        })
-      }
+      //   const timestamp = new Date().toLocaleTimeString()
+      //   entry.innerHTML = '<span class="timestamp">' + timestamp + "</span>" + message
 
-      // Logging function
-      function addLog(message) {
-        const logDiv = document.getElementById("log")
-        const entry = document.createElement("div")
-        entry.className = "log-entry"
+      //   logDiv.insertBefore(entry, logDiv.firstChild)
 
-        const timestamp = new Date().toLocaleTimeString()
-        entry.innerHTML = '<span class="timestamp">' + timestamp + "</span>" + message
+      //   // Keep only last 20 messages
+      //   while (logDiv.children.length > 20) {
+      //     logDiv.removeChild(logDiv.lastChild)
+      //   }
+      // }
 
-        logDiv.insertBefore(entry, logDiv.firstChild)
-
-        // Keep only last 20 messages
-        while (logDiv.children.length > 20) {
-          logDiv.removeChild(logDiv.lastChild)
-        }
-      }
-
-      // Notify native that page is ready
-      window.addEventListener("load", function () {
-        sendToNative({
-          type: "page_ready",
-          timestamp: Date.now(),
-        })
-      })
-
-      let count = 0
-      setInterval(function () {
-        count++
-        sendToNative({
-          type: "data_update",
-          payload: {count: count},
-          timestamp: Date.now(),
-        })
-      }, 1000)
+      // let count = 0
+      // setInterval(function () {
+      //   count++
+      //   sendToNative({
+      //     type: "data_update",
+      //     payload: {count: count},
+      //     timestamp: Date.now(),
+      //   })
+      // }, 1000)
     </script>
   </body>
 </html>

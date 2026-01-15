@@ -6,7 +6,7 @@ import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/Navigatio
 import {useGlassesStore} from "@/stores/glasses"
 import CoreModule from "core"
 import {AudioPairingPrompt} from "@/components/pairing/AudioPairingPrompt"
-import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
+import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"

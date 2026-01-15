@@ -7,7 +7,7 @@ import {ActivityIndicator, BackHandler, Image, Platform, ScrollView, TouchableOp
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Icon, Button, Header, Screen, Text} from "@/components/ignite"
-import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
+import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
 import Divider from "@/components/ui/Divider"
 import {Group} from "@/components/ui/Group"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"

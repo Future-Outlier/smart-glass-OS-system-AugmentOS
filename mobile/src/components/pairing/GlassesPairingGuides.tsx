@@ -16,7 +16,7 @@ import Animated, {
 import {GlassesFeatureList} from "@/components/glasses/GlassesFeatureList"
 import {Button, Text} from "@/components/ignite"
 import GlassesDisplayMirror from "@/components/mirror/GlassesDisplayMirror"
-import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
+import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
 import {Spacer} from "@/components/ui/Spacer"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"

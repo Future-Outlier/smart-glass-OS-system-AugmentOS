@@ -6,7 +6,7 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
 import {getGlassesImage, getEvenRealitiesG1Image} from "@/utils/getGlassesImage"
 
-import {getModelSpecificTips} from "./GlassesTroubleshootingModal"
+import {getModelSpecificTips} from "@/components/glasses/GlassesTroubleshootingModal"
 
 interface GlassesPairingLoaderProps {
   modelName: string
