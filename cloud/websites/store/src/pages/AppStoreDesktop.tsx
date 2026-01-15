@@ -29,7 +29,7 @@ const AppStoreDesktop: React.FC = () => {
   // Get organization ID from URL query parameter
   const orgId = searchParams.get("orgId");
 
-  const { searchQuery, setSearchQuery } = useSearch();
+  const { searchQuery, setSearchQuery, focusSearchInput } = useSearch();
   const [isLoading, setIsLoading] = useState(true);
   const [slidesLoaded, setSlidesLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -618,6 +618,13 @@ const AppStoreDesktop: React.FC = () => {
                   onClick={() => {
                     setSearchQuery("");
                     fetchApps();
+                    // Scroll to top and focus the search input
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    // Navigate to trigger search mode and focus input
+                    navigate("/?search=true");
+                    setTimeout(() => {
+                      focusSearchInput();
+                    }, 400);
                   }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}>

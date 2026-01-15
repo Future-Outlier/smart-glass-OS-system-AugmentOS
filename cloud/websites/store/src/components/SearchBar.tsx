@@ -1,18 +1,32 @@
 import { forwardRef, useRef, useEffect } from "react";
 import { X } from "lucide-react";
+import { useSearch } from "../contexts/SearchContext";
 
 interface SearchBarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onSearchSubmit: (e: React.FormEvent) => void;
   onClear: () => void;
+  onBlurWhenEmpty?: () => void;
   className?: string;
   autoFocus?: boolean;
 }
 
 const SearchBar = forwardRef<HTMLFormElement, SearchBarProps>(
-  ({ searchQuery, onSearchChange, onSearchSubmit, onClear, className = "", autoFocus = false }, ref) => {
+  (
+    { searchQuery, onSearchChange, onSearchSubmit, onClear, onBlurWhenEmpty, className = "", autoFocus = false },
+    ref,
+  ) => {
     const inputRef = useRef<HTMLInputElement>(null);
+    const { registerSearchInput } = useSearch();
+
+    // Register the input ref with the context
+    useEffect(() => {
+      registerSearchInput(inputRef.current);
+      return () => {
+        registerSearchInput(null);
+      };
+    }, [registerSearchInput]);
 
     // Handle autoFocus with useEffect for more reliable focusing
     useEffect(() => {
@@ -62,13 +76,33 @@ const SearchBar = forwardRef<HTMLFormElement, SearchBarProps>(
             placeholder="Search..."
             value={searchQuery}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => onSearchChange(e.target.value)}
+            onBlur={(e) => {
+              // Check if the click target is an app card - if so, don't trigger blur behavior
+              const relatedTarget = e.relatedTarget as HTMLElement | null;
+              const isAppCardClick = relatedTarget?.closest?.("[data-app-card]");
+
+              if (!searchQuery && onBlurWhenEmpty && !isAppCardClick) {
+                // Small delay to allow navigation clicks to process first
+                setTimeout(() => {
+                  onBlurWhenEmpty();
+                }, 100);
+              }
+            }}
             autoFocus={autoFocus}
           />
           {searchQuery && (
             <button
               type="button"
               className="absolute inset-y-0 right-0 flex items-center pr-3 hover:opacity-70 transition-opacity"
-              onClick={onClear}>
+              onMouseDown={(e) => {
+                // Prevent blur from firing
+                e.preventDefault();
+              }}
+              onClick={() => {
+                onClear();
+                // Re-focus the input after clearing
+                inputRef.current?.focus();
+              }}>
               <X className="h-5 w-5 text-[var(--text-secondary)]" />
             </button>
           )}

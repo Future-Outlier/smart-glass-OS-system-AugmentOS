@@ -291,6 +291,12 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
                   onSearchChange={onSearchChange || setSearchQuery}
                   onSearchSubmit={onSearch || ((e) => e.preventDefault())}
                   onClear={onSearchClear || (() => setSearchQuery(""))}
+                  onBlurWhenEmpty={() => {
+                    setsearchMode(false);
+                    if (onSearchClear) {
+                      onSearchClear();
+                    }
+                  }}
                   autoFocus={true}
                 />
               </div>
@@ -328,9 +334,23 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
                       (e.currentTarget.style.backgroundColor = theme === "light" ? "#F2F2F2" : "#27272a")
                     }
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    onClick={() => {
-                      // If not on store page, redirect to it with search param
-                      if (!isStorePage) {
+                    onMouseDown={(e) => {
+                      // Prevent blur event from firing on the search input
+                      if (searchMode) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (searchMode) {
+                        // If in search mode, clear and exit
+                        setsearchMode(false);
+                        setSearchQuery("");
+                        if (onSearchClear) {
+                          onSearchClear();
+                        }
+                      } else if (!isStorePage) {
+                        // If not on store page, redirect to it with search param
                         navigate("/?search=true");
                       } else {
                         setsearchMode(true);
@@ -392,9 +412,23 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
                       (e.currentTarget.style.backgroundColor = theme === "light" ? "#F2F2F2" : "#27272a")
                     }
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    onClick={() => {
-                      // If not on store page, redirect to it with search param
-                      if (!isStorePage) {
+                    onMouseDown={(e) => {
+                      // Prevent blur event from firing on the search input
+                      if (searchMode) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (searchMode) {
+                        // If in search mode, clear and exit
+                        setsearchMode(false);
+                        setSearchQuery("");
+                        if (onSearchClear) {
+                          onSearchClear();
+                        }
+                      } else if (!isStorePage) {
+                        // If not on store page, redirect to it with search param
                         navigate("/?search=true");
                       } else {
                         setsearchMode(true);
