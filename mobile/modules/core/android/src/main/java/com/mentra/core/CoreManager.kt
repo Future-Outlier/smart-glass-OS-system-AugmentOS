@@ -491,6 +491,7 @@ class CoreManager {
                     }
 
                     if (systemMicUnavailable) {
+                        Bridge.log("MAN: systemMicUnavailable, continuing to next mic")
                         continue
                     }
 
