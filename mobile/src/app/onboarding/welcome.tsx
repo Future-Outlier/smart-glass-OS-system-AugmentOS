@@ -84,7 +84,7 @@ export default function OnboardingWelcome() {
     // analytics.track('onboarding_no_glasses_selected')
     setOnboardingCompleted(true)
     // Go directly to simulated glasses pairing screen
-    push("/pairing/prep", {glassesModelName: DeviceTypes.SIMULATED})
+    push("/pairing/prep", {modelName: DeviceTypes.SIMULATED})
   }
 
   return (

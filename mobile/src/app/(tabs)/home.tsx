@@ -10,16 +10,13 @@ import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
 import {IncompatibleApps} from "@/components/home/IncompatibleApps"
 import {PairGlassesCard} from "@/components/home/PairGlassesCard"
 import {Header, Screen} from "@/components/ignite"
-import NonProdWarning from "@/components/misc/NonProdWarning"
+import NonProdWarning from "@/components/home/NonProdWarning"
 import {Group} from "@/components/ui"
-import {Spacer} from "@/components/ui/Spacer"
-import {useAppTheme} from "@/contexts/ThemeContext"
 import {useRefreshApplets} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import WebsocketStatus from "@/components/error/WebsocketStatus"
 
 export default function Homepage() {
-  const {theme} = useAppTheme()
   const refreshApplets = useRefreshApplets()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
@@ -29,6 +26,28 @@ export default function Homepage() {
       refreshApplets()
     }, [refreshApplets]),
   )
+
+  const renderContent = () => {
+    if (!defaultWearable) {
+      return (
+        <Group>
+          <PairGlassesCard />
+        </Group>
+      )
+    }
+
+    return (
+      <>
+        <Group>
+          <CompactDeviceStatus />
+          {!offlineMode && <BackgroundAppsLink />}
+        </Group>
+        <View className="h-2" />
+        <ActiveForegroundApp />
+        <ForegroundAppsGrid />
+      </>
+    )
+  }
 
   return (
     <Screen preset="fixed">
@@ -44,16 +63,9 @@ export default function Homepage() {
       />
 
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
-        <Spacer height={theme.spacing.s4} />
-        <Group>
-          {!defaultWearable && <PairGlassesCard />}
-          {defaultWearable && <CompactDeviceStatus />}
-          {!offlineMode && <BackgroundAppsLink />}
-        </Group>
-        <Spacer height={theme.spacing.s2} />
-        <ActiveForegroundApp />
-        <Spacer height={theme.spacing.s2} />
-        <ForegroundAppsGrid />
+        <View className="h-4" />
+        {renderContent()}
+        <View className="h-4" />
         <IncompatibleApps />
       </ScrollView>
     </Screen>

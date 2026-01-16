@@ -1602,7 +1602,7 @@ public class G1 extends SGCManager {
 
     @Override
     public void sendTextWall(String text) {
-        Bridge.log("G1: sendTextWall() - text: " + text);
+        // Bridge.log("G1: sendTextWall() - text: " + text);
         displayTextWall(text);
     }
 

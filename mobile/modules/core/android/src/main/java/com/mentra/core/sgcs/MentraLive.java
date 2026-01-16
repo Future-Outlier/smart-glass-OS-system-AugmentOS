@@ -2027,7 +2027,7 @@ public class MentraLive extends SGCManager {
 
             case "pong":
                 // Process heartbeat pong response
-                Bridge.log("LIVE: 💓 Received pong response - connection healthy");
+                Bridge.log("LIVE: Received pong response - connection healthy");
                 break;
 
             case "imu_response":

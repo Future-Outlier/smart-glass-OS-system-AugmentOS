@@ -121,12 +121,8 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
         <View style={[themed($sideBySideContainer)]}>
           <Image source={getCurrentGlassesImage()} style={[themed($glassesImage)]} />
-          <Button
-            style={{width: 48, height: 48}}
-            flexContainer={false}
-            preset="alternate"
-            onPress={() => push("/settings/glasses")}>
-            <Icon name="settings" size={20} color={theme.colors.foreground} />
+          <Button compactIcon preset="alternate" onPress={() => push("/settings/glasses")}>
+            <Icon name="settings" size={24} color={theme.colors.foreground} />
           </Button>
         </View>
 
@@ -219,16 +215,17 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
         style={[
           themed($imageContainer),
           {paddingVertical: isExpanded ? theme.spacing.s6 : theme.spacing.s4},
-          !isExpanded && {alignItems: "flex-start", justifyContent: "flex-start", paddingLeft: 0},
+          !isExpanded && {
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexDirection: "row",
+            paddingHorizontal: 0,
+          },
         ]}>
         <Image source={getCurrentGlassesImage()} style={themed(isExpanded ? $glassesImageExpanded : $glassesImage)} />
         {!isExpanded && (
-          <Button
-            flexContainer={false}
-            preset="alternate"
-            style={{position: "absolute", right: 0, top: 37}}
-            onPress={() => push("/settings/glasses")}>
-            <Icon name="settings" size={20} color={theme.colors.foreground} />
+          <Button preset="alternate" onPress={() => push("/settings/glasses")}>
+            <Icon name="settings" size={24} color={theme.colors.foreground} />
           </Button>
         )}
       </View>
@@ -266,25 +263,24 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
             {features?.hasWifi && !features?.display && (
               <StatusCard
                 style={{
-                  backgroundColor: theme.colors.background,
                   flex: 1,
+                  backgroundColor: theme.colors.background,
                   paddingHorizontal: theme.spacing.s4,
                 }}
                 label={translate("wifi:wifi")}
-                textStyle={{fontSize: 14, fontWeight: "600"}}
                 onPress={() => push("/wifi/scan")}
                 iconEnd={
-                  <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s1}}>
+                  <View className="flex-row items-center gap-1">
                     <Icon name={wifiConnected ? "wifi" : "wifi-off"} size={16} color={theme.colors.text} />
-                    <Text style={{fontSize: 14, fontWeight: "600", color: theme.colors.text}} numberOfLines={1}>
+                    <Text className="text-sm font-semibold text-secondary-foreground" numberOfLines={1}>
                       {wifiConnected ? wifiSsid || "Connected" : "Disconnected"}
                     </Text>
                   </View>
                 }
               />
             )}
-            <Button flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
-              <Icon name="settings" size={18} color={theme.colors.foreground} />
+            <Button compactIcon preset="alternate" onPress={() => push("/settings/glasses")}>
+              <Icon name="settings" size={24} color={theme.colors.foreground} />
             </Button>
           </View>
           <Spacer height={theme.spacing.s3} />
