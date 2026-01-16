@@ -1,6 +1,6 @@
 import { ChevronLeft, Info, Share2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { useToast } from "../components/ui/MuiToast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProfileDropdown } from "../contexts/ProfileDropdownContext";
 import GetMentraOSButton from "../components/GetMentraOSButton";
@@ -26,7 +26,9 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
   navigateToLogin,
 }) => {
   const profileDropdown = useProfileDropdown();
+  const { showToast } = useToast();
   const [selectedImage, setSelectedImage] = useState<{ url: string; index: number } | null>(null);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
   return (
     <>
@@ -177,9 +179,9 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(window.location.href);
-                    toast.success("Copied link");
+                    showToast("Copied link", "success");
                   } catch {
-                    toast.error("Failed to copy link");
+                    showToast("Failed to copy link", "error");
                   }
                 }}>
                 <Share2 className="w-[14px] h-[14px] bg-[var(--share-button)] border-[var(--border-btn)]" />
@@ -211,10 +213,13 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                       .sort((a, b) => a.order - b.order)
                       .map((image, index) => {
                         const isPortrait = image.orientation === "portrait";
+                        const imageKey = image.imageId || `${image.url}-${index}`;
+                        const isLoaded = loadedImages.has(imageKey);
+
                         return (
                           <div
-                            key={image.imageId || index}
-                            className="flex-shrink-0 rounded-lg overflow-hidden snap-start cursor-pointer transition-opacity active:opacity-70"
+                            key={imageKey}
+                            className="flex-shrink-0 rounded-lg overflow-hidden snap-start cursor-pointer transition-opacity active:opacity-70 relative"
                             style={{
                               maxHeight: "280px",
                               height: "280px",
@@ -222,15 +227,40 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                               backgroundColor: "var(--bg-secondary)",
                             }}
                             onClick={() => setSelectedImage({ url: image.url, index })}>
+                            {/* Skeleton Loader */}
+                            {!isLoaded && (
+                              <div
+                                className="absolute inset-0 animate-pulse"
+                                style={{
+                                  backgroundColor: "var(--bg-secondary)",
+                                }}>
+                                <div
+                                  className="w-full h-full"
+                                  style={{
+                                    background:
+                                      "linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)",
+                                    backgroundSize: "200% 100%",
+                                    animation: "shimmer 1.5s infinite",
+                                  }}
+                                />
+                              </div>
+                            )}
+
                             <img
                               src={image.url}
                               alt={`${app.name} preview ${index + 1}`}
                               className="w-full h-full object-cover"
                               style={{
                                 objectPosition: "center",
+                                opacity: isLoaded ? 1 : 0,
+                                transition: "opacity 0.3s ease-in-out",
+                              }}
+                              onLoad={() => {
+                                setLoadedImages((prev) => new Set(prev).add(imageKey));
                               }}
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = "none";
+                                setLoadedImages((prev) => new Set(prev).add(imageKey));
                               }}
                             />
                           </div>
@@ -242,6 +272,14 @@ const AppDetailsMobile: React.FC<AppDetailsMobileProps> = ({
                       __html: `
                       .overflow-x-auto::-webkit-scrollbar {
                         display: none;
+                      }
+                      @keyframes shimmer {
+                        0% {
+                          background-position: -200% 0;
+                        }
+                        100% {
+                          background-position: 200% 0;
+                        }
                       }
                     `,
                     }}
