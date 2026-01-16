@@ -7,6 +7,7 @@ import {
 import {useMemo} from "react"
 import {AsyncResult, result as Res} from "typesafe-ts"
 import {create} from "zustand"
+import * as Sentry from "@sentry/react-native"
 
 import {push} from "@/contexts/NavigationRef"
 import {translate} from "@/i18n"
@@ -224,10 +225,12 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     }
 
     let onlineApps: ClientAppletInterface[] = []
-    let res = await restComms.getApplets()
+    // let res = await restComms.getApplets()
+    let res = await restComms.retry(() => restComms.getApplets(), 3, 1000)
     if (res.is_error()) {
       console.error(`APPLETS: Failed to get applets: ${res.error}`)
       // continue anyway in case we're just offline:
+      Sentry.captureException(res.error)
     } else {
       // convert to the client applet interface:
       onlineApps = res.value.map((app) => ({

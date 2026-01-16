@@ -733,6 +733,7 @@ const en = {
     goOnlineMessage: "Switching to online mode will close all offline-only apps and allow you to use all online apps.",
     goOfflineMessage:
       "Enabling offline mode will close all running online apps. You'll only be able to use apps that work without an internet connection, and all other apps will be shut down.",
+    offlineMode: "Offline mode",
   },
   account: {
     accountSettings: "Account settings",
