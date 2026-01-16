@@ -96,6 +96,20 @@ export const SETTINGS: Record<string, Setting> = {
   location_tier: {key: "location_tier", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
   // state:
   core_token: {key: "core_token", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
+  pending_wearable: {
+    key: "pending_wearable",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: false,
+  },
+  pending_device_name: {
+    key: "pending_device_name",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: false,
+  },
   default_wearable: {
     key: "default_wearable",
     defaultValue: () => "",
@@ -426,6 +440,8 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.button_video_settings.key,
   SETTINGS.button_camera_led.key,
   SETTINGS.button_max_recording_time.key,
+  SETTINGS.pending_wearable.key,
+  SETTINGS.pending_device_name.key,
   SETTINGS.default_wearable.key,
   SETTINGS.device_name.key,
   SETTINGS.device_address.key,

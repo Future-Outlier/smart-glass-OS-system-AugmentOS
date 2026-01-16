@@ -166,9 +166,7 @@ export default function MentraLiveOnboarding() {
           setOnboardingLiveCompleted(true)
           pushPrevious()
         }}
-        // endButtonText={
-        //   onboardingOsCompleted ? translate("onboarding:liveEndTitle") : translate("onboarding:learnAboutOs")
-        // }
+        startButtonText={translate("onboarding:continueOnboarding")}
         endButtonText={translate("common:continue")}
       />
     </Screen>
