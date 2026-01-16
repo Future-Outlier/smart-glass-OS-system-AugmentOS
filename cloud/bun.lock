@@ -261,7 +261,7 @@
     },
     "packages/sdk": {
       "name": "@mentra/sdk",
-      "version": "3.0.0-hono.1",
+      "version": "3.0.0-hono.2",
       "dependencies": {
         "@logtail/pino": "^0.5.4",
         "@mentra/types": "^1.0.0-beta.1",
