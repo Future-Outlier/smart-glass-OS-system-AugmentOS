@@ -1497,7 +1497,7 @@ public class CameraNeo extends LifecycleService {
     private void setupMediaRecorder(String filePath) {
         try {
             // Check storage space before setting up recorder
-            StorageManager storageManager = new StorageManager(this);
+            StorageManager storageManager = StorageManager.getInstance(this);
             if (!storageManager.canRecordVideo()) {
                 throw new IOException("Insufficient storage space for video recording");
             }
