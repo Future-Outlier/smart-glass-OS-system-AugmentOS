@@ -307,7 +307,7 @@ public class K900CommandHandler {
                 Log.i(TAG, "🔋 Announcing battery level: " + batteryLevel + "% -> " + asset);
                 
                 // TODO: implement this at a later time
-                //hardwareManager.playAudioAsset(asset);
+                hardwareManager.playAudioAsset(asset);
             } else {
                 Log.w(TAG, "🔋 Battery level unknown, cannot announce");
             }

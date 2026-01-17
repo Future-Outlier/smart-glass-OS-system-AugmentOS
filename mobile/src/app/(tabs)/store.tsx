@@ -6,7 +6,7 @@ import {WebView} from "react-native-webview"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Screen, Header} from "@/components/ignite"
-import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
+import InternetConnectionFallbackComponent from "@/components/ui/InternetConnectionFallbackComponent"
 import {useAppStoreWebviewPrefetch} from "@/contexts/AppStoreContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"

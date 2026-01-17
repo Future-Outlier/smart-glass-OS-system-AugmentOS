@@ -3,7 +3,7 @@ import {View, TouchableOpacity, ViewStyle, TextStyle, Modal, ScrollView, TextInp
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons"
 
 import {Text} from "@/components/ignite"
-import AppIcon from "@/components/misc/AppIcon"
+import AppIcon from "@/components/home/AppIcon"
 import {Group} from "@/components/ui/Group"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"

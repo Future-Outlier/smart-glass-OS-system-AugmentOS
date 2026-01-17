@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from "react"
-import {View} from "react-native"
+import {TouchableOpacity, View} from "react-native"
 
 import {Icon, Text} from "@/components/ignite"
 import {translate} from "@/i18n"
@@ -9,6 +9,7 @@ import {useConnectionStore} from "@/stores/connection"
 import {BackgroundTimer} from "@/utils/timers"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 type DisplayStatus = "connected" | "warning" | "disconnected"
 
@@ -36,13 +37,14 @@ const STATUS_CONFIG: Record<DisplayStatus, {icon: string; label: () => string; b
 export default function WebsocketStatus() {
   const connectionStatus = useConnectionStore((state) => state.status)
   const [displayStatus, setDisplayStatus] = useState<DisplayStatus>("connected")
+  const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
+  const [devMode] = useSetting(SETTINGS.dev_mode.key)
   const refreshApplets = useRefreshApplets()
   const {theme} = useAppTheme()
   const disconnectionTimerRef = useRef<number | null>(null)
   const DISCONNECTION_DELAY = 3000
-  const [devMode] = useSetting(SETTINGS.dev_mode.key)
-
   const prevConnectionStatusRef = useRef(connectionStatus)
+  const {push} = useNavigationHistory()
 
   useEffect(() => {
     const prevStatus = prevConnectionStatusRef.current
@@ -85,6 +87,23 @@ export default function WebsocketStatus() {
 
   if (!devMode && displayStatus == "connected") {
     return null
+  }
+
+  if (offlineMode) {
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          push("/settings/transcription")
+        }}>
+        <View
+          className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-destructive`}>
+          <Icon name="wifi-off" size={14} color={theme.colors.secondary_foreground} />
+          <Text className="text-secondary-foreground text-sm font-medium ml-2">
+            {translate("offlineMode:offlineMode")}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    )
   }
 
   return (
