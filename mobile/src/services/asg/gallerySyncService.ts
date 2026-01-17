@@ -624,9 +624,18 @@ class GallerySyncService {
 
           // Check if already connected (shouldn't happen, but good to verify)
           if (preConnectSSID === hotspotInfo.ssid) {
-            console.log("[GallerySyncService] ✅ Already connected to target SSID! Skipping connection attempt.")
+            console.log("[GallerySyncService] ✅ Already connected to target SSID! Proceeding to download.")
             appStateSubscription.remove()
-            break
+
+            const totalWifiDuration = Date.now() - wifiConnectStartTime
+            console.log("[GallerySyncService] ========================================")
+            console.log("[GallerySyncService] ✅ WIFI CONNECTION COMPLETE (already connected)")
+            console.log("[GallerySyncService] ========================================")
+            console.log(`[GallerySyncService] ⏱️ Total WiFi phase duration: ${totalWifiDuration}ms`)
+            console.log(`[GallerySyncService] 🚀 Proceeding to file download from ${hotspotInfo.ip}:8089`)
+
+            await this.startFileDownload(hotspotInfo)
+            return // Exit function successfully
           }
         } catch (preError: any) {
           console.warn(`[GallerySyncService] ⚠️ Could not get current SSID: ${preError?.message}`)
