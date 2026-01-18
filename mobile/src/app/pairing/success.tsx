@@ -17,7 +17,7 @@ export default function PairingSuccessScreen() {
   const {theme, themed} = useAppTheme()
   const {clearHistoryAndGoHome, pushUnder} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
-  const {replaceAll, push} = useNavigationHistory()
+  const {push} = useNavigationHistory()
   const [onboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
   
   focusEffectPreventBack()

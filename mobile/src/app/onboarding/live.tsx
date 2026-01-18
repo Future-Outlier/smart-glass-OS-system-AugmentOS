@@ -2,7 +2,8 @@ import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import { SETTINGS, useSetting } from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import {Platform} from "react-native"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
 
@@ -140,6 +141,11 @@ export default function MentraLiveOnboarding() {
     },
   ]
 
+  // remove JUST index 4 on android because transitions are broken:
+  if (Platform.OS === "android") {
+    steps.splice(4, 1)
+  }
+
   // reduce down to 2 steps if __DEV__
   // if (__DEV__) {
   //   steps = steps.slice(0, 2)
@@ -160,9 +166,7 @@ export default function MentraLiveOnboarding() {
           setOnboardingLiveCompleted(true)
           pushPrevious()
         }}
-        // endButtonText={
-        //   onboardingOsCompleted ? translate("onboarding:liveEndTitle") : translate("onboarding:learnAboutOs")
-        // }
+        startButtonText={translate("onboarding:continueOnboarding")}
         endButtonText={translate("common:continue")}
       />
     </Screen>

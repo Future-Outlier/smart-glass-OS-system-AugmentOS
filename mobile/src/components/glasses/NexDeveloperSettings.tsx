@@ -260,7 +260,7 @@ export default function NexDeveloperSettings() {
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const glassesConnected = useGlassesStore(state => state.connected)
-  const glassesModelName = useGlassesStore(state => state.modelName)
+  const modelName = useGlassesStore(state => state.modelName)
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
   // Mentra Nex BLE test state variables
@@ -436,7 +436,7 @@ export default function NexDeveloperSettings() {
         )}
 
         {/* Mentra Nex BLE Test Section - Only show when connected to Mentra Nex */}
-        {glassesModelName === "Mentra Nex" ? (
+        {modelName === "Mentra Nex" ? (
           <>
             {/* Custom Display Text Settings */}
             <View style={themed($settingsGroup)}>
