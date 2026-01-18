@@ -21,7 +21,7 @@ import {asgCameraApi} from "./asgCameraApi"
 import {gallerySettingsService} from "./gallerySettingsService"
 import {gallerySyncNotifications} from "./gallerySyncNotifications"
 import {localStorageService} from "./localStorageService"
-import {checkFeaturePermissions, requestFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
+import {checkFeaturePermissions, requestFeaturePermissions, PermissionFeatures, isLocationServicesEnabled} from "@/utils/PermissionsUtils"
 
 // Timing constants
 const TIMING = {
@@ -467,6 +467,53 @@ class GallerySyncService {
       }
     } else {
       console.log("[GallerySyncService]   ℹ️ iOS - WiFi check not required")
+    }
+
+    // Check if Location Services is enabled (Android only - required for WiFi operations)
+    // This must be checked BEFORE attempting any WiFi connection to avoid cryptic errors
+    if (Platform.OS === "android") {
+      console.log("[GallerySyncService]   📍 Checking Location Services status...")
+      try {
+        const locationServicesEnabled = await isLocationServicesEnabled()
+        console.log("[GallerySyncService]   📍 Location Services enabled:", locationServicesEnabled)
+
+        if (!locationServicesEnabled) {
+          console.error("[GallerySyncService]   ❌ Location Services is OFF - cannot sync")
+          console.error("[GallerySyncService]   ❌ Android requires Location Services for WiFi operations")
+
+          // Show styled alert with option to enable location services
+          showAlert(
+            "Location Services Required",
+            "Android requires Location Services to be enabled to connect to your glasses WiFi hotspot. Would you like to enable it?",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+                onPress: () => {
+                  store.setSyncError("Location Services disabled - enable in Settings and try again")
+                },
+              },
+              {
+                text: "Enable",
+                onPress: async () => {
+                  // Use the native dialog for better UX (shows in-app prompt on supported devices)
+                  await SettingsNavigationUtils.showLocationServicesDialog()
+                  store.setSyncError("Enable Location Services and try sync again")
+                },
+              },
+            ],
+            {cancelable: false},
+          )
+
+          // Return early - do NOT proceed with sync
+          return
+        } else {
+          console.log("[GallerySyncService]   ✅ Location Services is enabled - proceeding")
+        }
+      } catch (error) {
+        console.warn("[GallerySyncService]   ⚠️ Failed to check Location Services status:", error)
+        // Continue with sync attempt - don't block if check fails
+      }
     }
 
     // Check if already connected to hotspot
