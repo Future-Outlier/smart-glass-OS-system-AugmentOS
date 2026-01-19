@@ -139,8 +139,8 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
         const {title, text} = layout
         return (
           <>
-            <Text style={[styles.cardTitle, textStyle]}>{title}</Text>
-            <Text style={[styles.cardContent, textStyle]}>{text}</Text>
+            <Text style={[textStyle, styles.cardTitle]}>{title}</Text>
+            <Text style={[textStyle, styles.cardContent]}>{text}</Text>
           </>
         )
       }
@@ -166,10 +166,10 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
         bottomText = parseText(bottomText)
         return (
           <View style={{flexDirection: "row", gap: 2}}>
-            <Text style={[styles.cardContent, textStyle, {width: "50%"}]} numberOfLines={4}>
+            <Text style={[textStyle, styles.cardContent, {width: "50%"}]} numberOfLines={4}>
               {topText || topText === "" ? topText : ""}
             </Text>
-            <Text style={[styles.cardContent, textStyle, {width: "50%"}]} numberOfLines={4}>
+            <Text style={[textStyle, styles.cardContent, {width: "50%"}]} numberOfLines={4}>
               {bottomText || bottomText === "" ? bottomText : ""}
             </Text>
           </View>
@@ -178,7 +178,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
       case "text_rows": {
         const rows = layout.text || []
         return rows.map((row: string, index: number) => (
-          <Text key={index} style={[styles.cardContent, textStyle]}>
+          <Text key={index} style={[textStyle, styles.cardContent]}>
             {parseText(row)}
           </Text>
         ))
