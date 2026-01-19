@@ -153,7 +153,7 @@ const GlassesDisplayMirror: React.FC<GlassesDisplayMirrorProps> = ({
         return (
           <View style={{gap: 2}}>
             {lines.map((line: string, index: number) => (
-              <Text key={index} style={[styles.cardContent, textStyle]} numberOfLines={1}>
+              <Text key={index} style={[textStyle, styles.cardContent]} numberOfLines={1}>
                 {line || "\u00A0"} {/* Non-breaking space for empty lines */}
               </Text>
             ))}
@@ -240,7 +240,7 @@ const $glassesScreen: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   maxHeight: 170,
   backgroundColor: colors.primary_foreground,
   borderRadius: spacing.s4,
-  paddingHorizontal: spacing.s4,
+  paddingHorizontal: spacing.s2,
   paddingVertical: spacing.s3,
 })
 
@@ -281,12 +281,11 @@ const $emptyText: ThemedStyle<TextStyle> = ({colors}) => ({
 const styles = {
   cardContent: {
     fontFamily: "glassesMirror",
-    fontSize: 16,
+    fontSize: 10,
   },
   cardTitle: {
     fontFamily: "glassesMirror",
-    fontSize: 18,
-    // marginBottom: 5,
+    fontSize: 10,
   },
 }
 
