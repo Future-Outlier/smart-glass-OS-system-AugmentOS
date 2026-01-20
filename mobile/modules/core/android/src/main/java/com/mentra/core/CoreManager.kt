@@ -1042,14 +1042,17 @@ class CoreManager {
 
         val currentState = viewStates[stateIndex]
 
-        if (!statesEqual(currentState, newViewState)) {
-            // Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
-            viewStates[stateIndex] = newViewState
-            if (stateIndex == 0 && !isHeadUp) {
-                sendCurrentState()
-            } else if (stateIndex == 1 && isHeadUp) {
-                sendCurrentState()
-            }
+        if (statesEqual(currentState, newViewState)) {
+            return
+        }
+
+        viewStates[stateIndex] = newViewState
+        val headUp = isHeadUp && contextualDashboard
+        // send the state we just received if the user is currently in that state:
+        if (stateIndex == 0 && !headUp) {
+            sendCurrentState()
+        } else if (stateIndex == 1 && headUp) {
+            sendCurrentState()
         }
     }
 
