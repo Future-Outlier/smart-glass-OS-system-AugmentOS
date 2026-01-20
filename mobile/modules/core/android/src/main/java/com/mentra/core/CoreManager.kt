@@ -1046,9 +1046,10 @@ class CoreManager {
         if (!statesEqual(currentState, newViewState)) {
             // Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
             viewStates[stateIndex] = newViewState
-            if (stateIndex == 0 && !isHeadUp) {
+            var headUp = isHeadUp && contextualDashboard
+            if (stateIndex == 0 && !headUp) {
                 sendCurrentState()
-            } else if (stateIndex == 1 && isHeadUp) {
+            } else if (stateIndex == 1 && headUp) {
                 sendCurrentState()
             }
         }
