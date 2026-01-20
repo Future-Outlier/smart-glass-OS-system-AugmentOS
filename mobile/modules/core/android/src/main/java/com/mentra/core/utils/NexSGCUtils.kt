@@ -49,8 +49,8 @@ object NexBluetoothPacketTypes {
     const val PACKET_TYPE_IMAGE: Byte = 0xB0.toByte()
 }
 
-object ProtobufUtils {
-    private const val TAG = "ProtobufUtils"
+object NexProtobufUtils {
+    private const val TAG = "NexProtobufUtils"
 
     private const val WHITELIST_CMD: Int = 0x04
 
@@ -475,6 +475,62 @@ object ProtobufUtils {
         } catch (e: Exception) {
             Log.e(TAG, "Error extracting version from proto content: ${e.message}", e)
             null
+        }
+    }
+}
+
+object NexEventUtils {
+    private const val TAG = "NexEventUtils"
+    
+    fun sendHeartbeatSentEvent(timestamp: Long) {
+        try {
+            val data = HashMap<String, Any>()
+            data["timestamp"] = timestamp
+
+            Bridge.sendTypedMessage("heartbeat_sent", data as Map<String, Any>)
+            Bridge.log("NOTIF: Successfully queued heartbeat sent event")
+        } catch (e: Exception) {
+            Log.e(TAG, "NOTIF: Error sending heartbeat sent event", e)
+        }
+    }
+
+    fun sendHeartbeatReceivedEvent(timestamp: Long) {
+        try {
+            val data = HashMap<String, Any>()
+            data["timestamp"] = timestamp
+
+            Bridge.sendTypedMessage("heartbeat_received", data as Map<String, Any>)
+            Bridge.log("NOTIF: Successfully queued heartbeat received event")
+        } catch (e: Exception) {
+            Log.e(TAG, "NOTIF: Error sending heartbeat received event", e)
+        }
+    }
+
+    fun sendBleCommandSentEvent(payloadCase: String, packetHex: String, timestamp: Long) {
+        try {
+            val data = HashMap<String, Any>()
+            data["command"] = payloadCase
+            data["commandText"] = packetHex
+            data["timestamp"] = timestamp
+
+            Bridge.sendTypedMessage("send_command_to_ble", data as Map<String, Any>)
+            Bridge.log("NOTIF: Successfully queued ble command sent event")
+        } catch (e: Exception) {
+            Log.e(TAG, "NOTIF: Error sending ble command sent event", e)
+        }
+    }
+
+    fun sendBleCommandReceivedEvent(payloadCase: String, packetHex: String, timestamp: Long) {
+        try {
+            val data = HashMap<String, Any>()
+            data["command"] = payloadCase
+            data["commandText"] = packetHex
+            data["timestamp"] = timestamp
+
+            Bridge.sendTypedMessage("receive_command_from_ble", data as Map<String, Any>)
+            Bridge.log("NOTIF: Successfully queued ble command received event")
+        } catch (e: Exception) {
+            Log.e(TAG, "NOTIF: Error sending ble command received event", e)
         }
     }
 }

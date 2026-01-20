@@ -38,7 +38,8 @@ import mentraos.ble.MentraosBle.DeviceInfo
 import com.mentra.core.sgcs.SGCManager
 import com.mentra.core.Bridge
 import com.mentra.core.utils.DeviceTypes
-import com.mentra.core.utils.ProtobufUtils
+import com.mentra.core.utils.NexProtobufUtils
+import com.mentra.core.utils.NexEventUtils
 import com.mentra.core.utils.NexBluetoothConstants
 import com.mentra.core.utils.NexDisplayConstants
 import com.mentra.core.utils.NexBluetoothPacketTypes
@@ -402,7 +403,7 @@ class MentraNex : SGCManager() {
         val validatedAngle = angle.coerceIn(0, 60)
         Bridge.log("Nex: === SENDING HEAD UP ANGLE COMMAND TO GLASSES ===")
         Bridge.log("Nex: Head Up Angle: $validatedAngle degrees (validated range: 0-60)")
-        val cmdBytes = ProtobufUtils.generateHeadUpAngleConfigCommandBytes(angle)
+        val cmdBytes = NexProtobufUtils.generateHeadUpAngleConfigCommandBytes(angle)
         sendDataSequentially(cmdBytes, 10)
     }
 
@@ -427,10 +428,10 @@ class MentraNex : SGCManager() {
     override fun setBrightness(level: Int, autoMode: Boolean) {
         // TODO: test this logic. Is it correct? Should we send both or just one?
         Bridge.log("Nex: setBrightness() - level: " + level + "%, autoMode: " + autoMode);
-        val brightnessCmdBytes = ProtobufUtils.generateBrightnessConfigCommandBytes(level)
+        val brightnessCmdBytes = NexProtobufUtils.generateBrightnessConfigCommandBytes(level)
         sendDataSequentially(brightnessCmdBytes, 10)
 
-        val autoBrightnessCmdBytes = ProtobufUtils.generateAutoBrightnessConfigCommandBytes(autoMode)
+        val autoBrightnessCmdBytes = NexProtobufUtils.generateAutoBrightnessConfigCommandBytes(autoMode)
         sendDataSequentially(autoBrightnessCmdBytes, 10)
     }
 
@@ -480,7 +481,7 @@ class MentraNex : SGCManager() {
 
     override fun setDashboardPosition(height: Int, depth: Int) {
         Bridge.log("Nex: setDashboardPosition() - height: " + height + ", depth: " + depth);
-        val cmdBytes = ProtobufUtils.generateDisplayHeightCommandBytes(height, depth)
+        val cmdBytes = NexProtobufUtils.generateDisplayHeightCommandBytes(height, depth)
         sendDataSequentially(cmdBytes, 10)
     }
 
@@ -837,7 +838,7 @@ class MentraNex : SGCManager() {
 
                 // Query glasses protobuf version from firmware
                 Bridge.log("=== SENDING GLASSES PROTOBUF VERSION REQUEST ===")
-                val versionQueryPacket = ProtobufUtils.generateVersionRequestCommandBytes()
+                val versionQueryPacket = NexProtobufUtils.generateVersionRequestCommandBytes()
                 sendDataSequentially(versionQueryPacket, 100)
                 Bridge.log("Sent glasses protobuf version request")
             }
@@ -980,7 +981,7 @@ class MentraNex : SGCManager() {
     private fun postProtobufSchemaVersionInfo() {
         try {
             // Call the version method only once
-            val schemaVersion = ProtobufUtils.getProtobufSchemaVersion(context!!)
+            val schemaVersion = NexProtobufUtils.getProtobufSchemaVersion(context!!)
             
             // Build the info string directly instead of calling getProtobufBuildInfo()
             val fileDescriptorName = mentraos.ble.MentraosBle.getDescriptor().file.name
@@ -1146,11 +1147,11 @@ class MentraNex : SGCManager() {
             val totalChunks = (bmpData.size + bmpChunkSize - 1) / bmpChunkSize
             val streamId = "%04X".format(random.nextInt(0x10000)) // 4-digit hex format
             
-            val startImageSendingBytes = ProtobufUtils.generateDisplayImageCommandBytes(streamId, totalChunks, width, height)
+            val startImageSendingBytes = NexProtobufUtils.generateDisplayImageCommandBytes(streamId, totalChunks, width, height)
             sendDataSequentially(startImageSendingBytes)
 
             // Send all chunks with proper stream ID parsing
-            val chunks = ProtobufUtils.createBmpChunksForNexGlasses(streamId, bmpData, totalChunks, bmpChunkSize)
+            val chunks = NexProtobufUtils.createBmpChunksForNexGlasses(streamId, bmpData, totalChunks, bmpChunkSize)
             currentImageChunks.clear()
             currentImageChunks.addAll(chunks)
             sendDataSequentially(chunks)
@@ -1202,7 +1203,7 @@ class MentraNex : SGCManager() {
         Bridge.log("Nex: Sending whitelist command")
         
         whiteListHandler.postDelayed({
-            val chunks = ProtobufUtils.getWhitelistChunks(maxChunkSize)
+            val chunks = NexProtobufUtils.getWhitelistChunks(maxChunkSize)
             sendDataSequentially(chunks)
             
             // Uncomment if needed for debugging:
@@ -1304,7 +1305,7 @@ class MentraNex : SGCManager() {
             Bridge.log("decodeProtobufs glassesToPhone: $glassesToPhone")
             Bridge.log("decodeProtobufs glassesToPhone payloadCase: $payloadCase")
             
-            Bridge.sendBleCommandReceivedEvent(payloadCase, packetHex, System.currentTimeMillis())
+            NexEventUtils.sendBleCommandReceivedEvent(payloadCase, packetHex, System.currentTimeMillis())
             // if (isDebugMode) {
             //     EventBus.getDefault().post(BleCommandReceiver(payloadCase, packetHex))
             // }
@@ -1422,7 +1423,7 @@ class MentraNex : SGCManager() {
             Bridge.log("decodeProtobufsByWrite phoneToGlasses: $phoneToGlasses")
             Bridge.log("decodeProtobufsByWrite phoneToGlasses payloadCase: ${phoneToGlasses.payloadCase}")
             val payloadCase = phoneToGlasses.payloadCase.toString()
-            Bridge.sendBleCommandSentEvent(payloadCase, packetHex, System.currentTimeMillis())
+            NexEventUtils.sendBleCommandSentEvent(payloadCase, packetHex, System.currentTimeMillis())
             // if (isDebugMode) {
             //     EventBus.getDefault().post(BleCommandSender(payloadCase, packetHex))
             // }
@@ -1447,7 +1448,7 @@ class MentraNex : SGCManager() {
         lastHeartbeatReceivedTime = System.currentTimeMillis()
         Bridge.log("=== SENDING PONG RESPONSE TO GLASSES === (Time: $lastHeartbeatReceivedTime)")
         
-        val pongPacket = ProtobufUtils.constructPongResponse()
+        val pongPacket = NexProtobufUtils.constructPongResponse()
 
         // Send the pong response
         if (pongPacket != null) {
@@ -1456,7 +1457,7 @@ class MentraNex : SGCManager() {
             
             // Notify mobile app about pong sent
             lastHeartbeatSentTime = System.currentTimeMillis()
-            Bridge.sendHeartbeatSentEvent(lastHeartbeatSentTime)
+            NexEventUtils.sendHeartbeatSentEvent(lastHeartbeatSentTime)
             // EventBus.getDefault().post(HeartbeatSentEvent(timestamp))
         } else {
             Log.e(TAG,"Failed to construct pong response packet")
@@ -1470,13 +1471,13 @@ class MentraNex : SGCManager() {
         heartbeatCount++
         
         // Notify mobile app about heartbeat received
-        Bridge.sendHeartbeatReceivedEvent(lastHeartbeatReceivedTime)
+        NexEventUtils.sendHeartbeatReceivedEvent(lastHeartbeatReceivedTime)
         // EventBus.getDefault().post(HeartbeatReceivedEvent(lastHeartbeatReceivedTime))
     }
 
     private fun createTextWallChunksForNex(text: String): ByteArray {
         // Create the PhoneToGlasses using its builder and set the DisplayText
-        return ProtobufUtils.generateDisplayTextCommandBytes(text)
+        return NexProtobufUtils.generateDisplayTextCommandBytes(text)
     }
 
     private fun sendSetMicEnabled(enable: Boolean, delay: Long) {
@@ -1491,14 +1492,14 @@ class MentraNex : SGCManager() {
                 return@postDelayed
             }
             Bridge.log("Nex: === SENDING MICROPHONE STATE COMMAND TO GLASSES ===")
-            val micConfigBytes = ProtobufUtils.generateMicStateConfigCommandBytes(enable)
+            val micConfigBytes = NexProtobufUtils.generateMicStateConfigCommandBytes(enable)
             sendDataSequentially(micConfigBytes, 10) // wait some time to setup the mic
             Bridge.log("Nex: Sent MIC command: ${micConfigBytes.joinToString("") { "%02x".format(it) }}")
         }, delay)
     }
 
     private fun queryBatteryStatus() {
-        val batteryQueryPacket = ProtobufUtils.generateBatteryStateRequestCommandBytes()
+        val batteryQueryPacket = NexProtobufUtils.generateBatteryStateRequestCommandBytes()
         sendDataSequentially(batteryQueryPacket, 250)
     }
 

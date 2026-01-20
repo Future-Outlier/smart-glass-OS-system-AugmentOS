@@ -629,58 +629,6 @@ public class Bridge private constructor() {
             }
         }
 
-        fun sendHeartbeatSentEvent(timestamp: Long) {
-            try {
-                val data = HashMap<String, Any>()
-                data["timestamp"] = timestamp
-
-                sendTypedMessage("heartbeat_sent", data as Map<String, Any>)
-                log("NOTIF: Successfully queued heartbeat sent event")
-            } catch (e: Exception) {
-                Log.e(TAG, "NOTIF: Error sending heartbeat sent event", e)
-            }
-        }
-
-        fun sendHeartbeatReceivedEvent(timestamp: Long) {
-            try {
-                val data = HashMap<String, Any>()
-                data["timestamp"] = timestamp
-
-                sendTypedMessage("heartbeat_received", data as Map<String, Any>)
-                log("NOTIF: Successfully queued heartbeat received event")
-            } catch (e: Exception) {
-                Log.e(TAG, "NOTIF: Error sending heartbeat received event", e)
-            }
-        }
-
-        fun sendBleCommandSentEvent(payloadCase: String, packetHex: String, timestamp: Long) {
-            try {
-                val data = HashMap<String, Any>()
-                data["command"] = payloadCase
-                data["commandText"] = packetHex
-                data["timestamp"] = timestamp
-
-                sendTypedMessage("send_command_to_ble", data as Map<String, Any>)
-                log("NOTIF: Successfully queued ble command sent event")
-            } catch (e: Exception) {
-                Log.e(TAG, "NOTIF: Error sending ble command sent event", e)
-            }
-        }
-
-        fun sendBleCommandReceivedEvent(payloadCase: String, packetHex: String, timestamp: Long) {
-            try {
-                val data = HashMap<String, Any>()
-                data["command"] = payloadCase
-                data["commandText"] = packetHex
-                data["timestamp"] = timestamp
-
-                sendTypedMessage("receive_command_from_ble", data as Map<String, Any>)
-                log("NOTIF: Successfully queued ble command received event")
-            } catch (e: Exception) {
-                Log.e(TAG, "NOTIF: Error sending ble command received event", e)
-            }
-        }
-
         /** Get supported events Don't add to this list, use a typed message instead */
         @JvmStatic
         fun getSupportedEvents(): Array<String> {
@@ -711,7 +659,7 @@ public class Bridge private constructor() {
          * function above that calls this function
          */
         @JvmStatic
-        private fun sendTypedMessage(type: String, body: Map<String, Any>) {
+        fun sendTypedMessage(type: String, body: Map<String, Any>) {
             var mutableBody = body
             if (body !is HashMap) {
                 mutableBody = HashMap(body)
