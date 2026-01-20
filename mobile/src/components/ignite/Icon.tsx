@@ -5,6 +5,7 @@ import {
   FileType2,
   Fullscreen,
   Glasses,
+  Info,
   LayoutDashboard,
   Locate,
   Unlink,
@@ -25,8 +26,8 @@ import {
   ViewStyle,
 } from "react-native"
 
-import {HomeIcon, ShoppingBagIcon, UserIcon} from "@/components/icons"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {ShoppingBagIcon, HomeIcon} from "@/components/icons"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 export type IconTypes = keyof typeof iconRegistry
 
@@ -102,136 +103,23 @@ const lucideIcons = {
   "bell": Bell,
   "file-type-2": FileType2,
   "user-round": UserRound,
+  "user-round-filled": UserRound,
   "wifi": Wifi,
   "unplug": Unplug,
   "unlink": Unlink,
   "locate": Locate,
   "layout-dashboard": LayoutDashboard,
   "wifi-off": WifiOff,
+  "info": Info,
+  // "house": House,
+  // custom icons:
+  "shopping-bag": ShoppingBagIcon,
+  "shopping-bag-filled": ShoppingBagIcon,
+  "house": HomeIcon,
+  "house-filled": HomeIcon,
 }
 
-/**
- * A component to render a registered icon.
- * It is wrapped in a <View />, use `PressableIcon` if you want to react to input
- * @see [Documentation and Examples]{@link https://docs.infinite.red/ignite-cli/boilerplate/app/components/Icon/}
- * @param {IconProps} props - The props for the `Icon` component.
- * @returns {JSX.Element} The rendered `Icon` component.
- */
-export function Icon(props: IconProps) {
-  const {name, color, size, style: $imageStyleOverride, containerStyle: $containerStyleOverride, ...viewProps} = props
-
-  const {theme} = useAppTheme()
-
-  const $imageStyle: StyleProp<ImageStyle> = [
-    $imageStyleBase,
-    {tintColor: color ?? theme.colors.text},
-    size !== undefined && {width: size, height: size},
-    $imageStyleOverride,
-  ]
-
-  const $textStyle: StyleProp<TextStyle> = [
-    size !== undefined && {fontSize: size, lineHeight: size, width: size, height: size},
-  ]
-
-  // Special handling for custom icons
-  if (name === "shopping-bag") {
-    return (
-      <ShoppingBagIcon
-        size={size}
-        color={color}
-        theme={theme}
-        containerStyle={$containerStyleOverride}
-        {...viewProps}
-      />
-    )
-  }
-
-  if (name === "shopping-bag-filled") {
-    return (
-      <ShoppingBagIcon
-        size={size}
-        color={color}
-        theme={theme}
-        containerStyle={$containerStyleOverride}
-        variant="filled"
-        {...viewProps}
-      />
-    )
-  }
-
-  if (name === "home") {
-    return <HomeIcon size={size} color={color} theme={theme} containerStyle={$containerStyleOverride} {...viewProps} />
-  }
-
-  if (name === "home-filled") {
-    return (
-      <HomeIcon
-        size={size}
-        color={color}
-        theme={theme}
-        containerStyle={$containerStyleOverride}
-        variant="filled"
-        {...viewProps}
-      />
-    )
-  }
-
-  if (name === "user") {
-    return <UserIcon size={size} color={color} theme={theme} containerStyle={$containerStyleOverride} {...viewProps} />
-  }
-
-  if (name === "user-filled") {
-    return (
-      <UserIcon
-        size={size}
-        color={color}
-        theme={theme}
-        containerStyle={$containerStyleOverride}
-        variant="filled"
-        {...viewProps}
-      />
-    )
-  }
-
-  // @ts-ignore
-  if (lucideIcons[name]) {
-    // @ts-ignore
-    const IconComponent = lucideIcons[name] as any
-    const fill = name.includes("filled") ? color : "transparent"
-    // const fill = color
-    // const fill = undefined
-
-    return (
-      <View {...viewProps} style={$containerStyleOverride}>
-        <IconComponent style={$imageStyle} size={size} color={color} fill={fill} />
-      </View>
-    )
-  }
-
-  if (TablerIcon.glyphMap[name]) {
-    return (
-      <View {...viewProps} style={$containerStyleOverride}>
-        <TablerIcon style={$textStyle} name={name} size={size} color={color} />
-      </View>
-    )
-  }
-
-  return (
-    <View {...viewProps} style={$containerStyleOverride}>
-      <Image style={$imageStyle} source={iconRegistry[name]} />
-    </View>
-  )
-}
-
-export const iconRegistry = {
-  // included in other font sets (imported automatically):
-  // included here mostly for ide/type hinting purposes:
-  // Custom SVG icons:
-  "home": 1,
-  "home-filled": 1,
-  "shopping-bag": 1,
-  "shopping-bag-filled": 1,
-  // tabler icons:
+const tablerIcons = {
   "settings": 1,
   "bluetooth-connected": 1,
   "bluetooth-off": 1,
@@ -255,8 +143,80 @@ export const iconRegistry = {
   "battery-charging": 1,
   "alert": 1,
   "chevron-left": 1,
+  "chevron-right": 1,
   "trash": 1,
   "trash-x": 1,
+  "check": 1,
+  "world-download": 1,
+  "repeat": 1,
+  "mail": 1,
+  "chevron-down": 1,
+  "chevron-up": 1,
+}
+
+/**
+ * A component to render a registered icon.
+ * It is wrapped in a <View />, use `PressableIcon` if you want to react to input
+ * @see [Documentation and Examples]{@link https://docs.infinite.red/ignite-cli/boilerplate/app/components/Icon/}
+ * @param {IconProps} props - The props for the `Icon` component.
+ * @returns {JSX.Element} The rendered `Icon` component.
+ */
+export function Icon(props: IconProps) {
+  const {
+    name,
+    color,
+    backgroundColor,
+    size,
+    style: $imageStyleOverride,
+    containerStyle: $containerStyleOverride,
+    ...viewProps
+  } = props
+
+  const {theme} = useAppTheme()
+
+  const $imageStyle: StyleProp<ImageStyle> = [
+    $imageStyleBase,
+    {tintColor: color ?? theme.colors.text},
+    size !== undefined && {width: size, height: size},
+    $imageStyleOverride,
+  ]
+
+  const $textStyle: StyleProp<TextStyle> = [
+    size !== undefined && {fontSize: size, lineHeight: size, width: size, height: size},
+  ]
+
+  // @ts-ignore
+  if (lucideIcons[name]) {
+    // @ts-ignore
+    const IconComponent = lucideIcons[name] as any
+
+    return (
+      <View {...viewProps} style={$containerStyleOverride}>
+        <IconComponent style={$imageStyle} size={size} color={color} fill={backgroundColor ?? "transparent"} />
+      </View>
+    )
+  }
+
+  if (TablerIcon.glyphMap[name]) {
+    return (
+      <View {...viewProps} style={$containerStyleOverride}>
+        <TablerIcon style={$textStyle} name={name} size={size} color={color} />
+      </View>
+    )
+  }
+
+  return (
+    <View {...viewProps} style={$containerStyleOverride}>
+      <Image style={$imageStyle} source={iconRegistry[name] as any} />
+    </View>
+  )
+}
+
+export const iconRegistry = {
+  // included in other font sets (imported automatically):
+  // included here mostly for ide/type hinting purposes:
+  // tabler icons:
+  ...tablerIcons,
   // lucide-react-native icons:
   ...lucideIcons,
 }

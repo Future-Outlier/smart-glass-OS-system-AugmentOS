@@ -2,8 +2,8 @@ import {router as _router} from "expo-router"
 import {View, TouchableOpacity, TextStyle, ViewStyle} from "react-native"
 
 import {Icon, Text} from "@/components/ignite"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 interface StatusCardProps {
   label: string
@@ -13,26 +13,44 @@ interface StatusCardProps {
   iconStart?: React.ReactNode
   iconEnd?: React.ReactNode
   subtitle?: string
+  onPress?: () => void
 }
 
-export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitle}: StatusCardProps) {
+export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitle, onPress}: StatusCardProps) {
   const {theme, themed} = useAppTheme()
 
-  return (
-    <View style={[themed($settingsGroup), themed($statusCardContainer), style]}>
+  // Extract flex from style to apply to TouchableOpacity wrapper
+  const {flex, ...restStyle} = (style || {}) as ViewStyle & {flex?: number}
+
+  const content = (
+    <View style={[themed($settingsGroup), themed($statusCardContainer), restStyle]}>
       <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s4}}>
         {iconStart && <View style={themed($icon)}>{iconStart}</View>}
         <View
           style={{
             gap: theme.spacing.s1,
           }}>
-          <Text style={[themed($label), textStyle]}>{label}</Text>
-          {subtitle && <Text style={themed($subtitle)}>{subtitle}</Text>}
+          <Text style={[themed($label), textStyle]} weight="semibold" text={label} />
+          {subtitle && <Text style={themed($subtitle)} text={subtitle} />}
         </View>
       </View>
       {iconEnd && iconEnd}
     </View>
   )
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} style={flex !== undefined ? {flex} : undefined}>
+        {content}
+      </TouchableOpacity>
+    )
+  }
+
+  if (flex !== undefined) {
+    return <View style={{flex}}>{content}</View>
+  }
+
+  return content
 }
 
 const $statusCardContainer: ThemedStyle<ViewStyle> = () => ({
@@ -51,7 +69,7 @@ interface RouteButtonProps {
   text?: string
   style?: ViewStyle
   icon?: React.ReactNode
-  variant?: "default" | "destructive"
+  preset?: "default" | "destructive"
   disabled?: boolean
 }
 
@@ -62,12 +80,12 @@ export function RouteButton({
   style,
   text,
   icon,
-  variant = "default",
+  preset = "default",
   disabled = false,
 }: RouteButtonProps) {
   const {theme, themed} = useAppTheme()
 
-  const isDestructive = variant === "destructive"
+  const isDestructive = preset === "destructive"
   const labelColor = disabled
     ? theme.colors.textDim
     : isDestructive
@@ -97,7 +115,11 @@ export function RouteButton({
               <Icon name="arrow-right" size={24} color={disabled ? theme.colors.textDim : theme.colors.text} />
             </View>
           )}
-          {text && <Text style={themed($text)}>{text}</Text>}
+          {text && (
+            <Text style={themed($text)} weight="light">
+              {text}
+            </Text>
+          )}
         </View>
       </TouchableOpacity>
     </View>
@@ -117,7 +139,6 @@ const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 })
 
 const $text: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontWeight: 300,
   color: colors.text,
   fontSize: 16,
 })
@@ -132,15 +153,13 @@ const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 })
 
 const $label: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontWeight: 600,
   color: colors.secondary_foreground,
   fontSize: 14,
-  lineHeight: 14,
+  lineHeight: 16,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.textDim,
   fontSize: 12,
-  lineHeight: 12,
-  fontWeight: "400",
+  lineHeight: 14,
 })

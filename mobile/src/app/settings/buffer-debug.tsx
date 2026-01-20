@@ -7,7 +7,7 @@ import {Screen, Header, Text} from "@/components/ignite"
 import ActionButton from "@/components/ui/ActionButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function BufferDebugPage() {
   const {theme} = useAppTheme()
@@ -91,7 +91,7 @@ export default function BufferDebugPage() {
   }
 
   return (
-    <Screen preset="scroll" style={{paddingHorizontal: theme.spacing.s6}}>
+    <Screen preset="scroll">
       <Header title="Camera Debug" leftIcon="chevron-left" onLeftPress={goBack} />
 
       <Spacer height={theme.spacing.s8} />

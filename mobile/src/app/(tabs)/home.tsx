@@ -1,37 +1,72 @@
 import {useFocusEffect} from "@react-navigation/native"
 import {useCallback} from "react"
-import {ScrollView} from "react-native"
+import {ScrollView, View} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {HomeContainer} from "@/components/home/HomeContainer"
+import {ActiveForegroundApp} from "@/components/home/ActiveForegroundApp"
+import {BackgroundAppsLink} from "@/components/home/BackgroundAppsLink"
+import {CompactDeviceStatus} from "@/components/home/CompactDeviceStatus"
+import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
+import {IncompatibleApps} from "@/components/home/IncompatibleApps"
+import {PairGlassesCard} from "@/components/home/PairGlassesCard"
 import {Header, Screen} from "@/components/ignite"
-import CloudConnection from "@/components/misc/CloudConnection"
-import SensingDisabledWarning from "@/components/misc/SensingDisabledWarning"
-import {Spacer} from "@/components/ui/Spacer"
+import NonProdWarning from "@/components/home/NonProdWarning"
+import {Group} from "@/components/ui"
 import {useRefreshApplets} from "@/stores/applets"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {SETTINGS, useSetting} from "@/stores/settings"
+import WebsocketStatus from "@/components/error/WebsocketStatus"
 
 export default function Homepage() {
-  const {theme} = useAppTheme()
   const refreshApplets = useRefreshApplets()
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
 
   useFocusEffect(
     useCallback(() => {
-      setTimeout(() => {
-        refreshApplets()
-      }, 1000)
-    }, []),
+      refreshApplets()
+    }, [refreshApplets]),
   )
 
+  const renderContent = () => {
+    if (!defaultWearable) {
+      return (
+        <Group>
+          <PairGlassesCard />
+        </Group>
+      )
+    }
+
+    return (
+      <>
+        <Group>
+          <CompactDeviceStatus />
+          {!offlineMode && <BackgroundAppsLink />}
+        </Group>
+        <View className="h-2" />
+        <ActiveForegroundApp />
+        <ForegroundAppsGrid />
+      </>
+    )
+  }
+
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
-      <Header leftTx="home:title" RightActionComponent={<MentraLogoStandalone />} />
+    <Screen preset="fixed">
+      <Header
+        leftTx="home:title"
+        RightActionComponent={
+          <View className="flex-row items-center flex-1 justify-end">
+            <WebsocketStatus />
+            <NonProdWarning />
+            <MentraLogoStandalone />
+          </View>
+        }
+      />
 
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
-        <Spacer height={theme.spacing.s4} />
-        <CloudConnection />
-        <SensingDisabledWarning />
-        <HomeContainer />
+        <View className="h-4" />
+        {renderContent()}
+        <View className="h-4" />
+        <IncompatibleApps />
       </ScrollView>
     </Screen>
   )

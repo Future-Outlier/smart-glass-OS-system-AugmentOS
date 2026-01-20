@@ -3,15 +3,15 @@ import {Stack} from "expo-router"
 import NexDeveloperSettings from "@/components/glasses/NexDeveloperSettings"
 import {Screen, Header} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {$styles} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 export default function NexDeveloperSettingsPage() {
   const {themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Stack.Screen
         options={{
           headerShown: false,

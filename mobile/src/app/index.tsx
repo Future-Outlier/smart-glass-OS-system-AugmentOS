@@ -1,20 +1,19 @@
+import {useRootNavigationState} from "expo-router"
 import {useState, useEffect} from "react"
-import {View, ActivityIndicator, Platform, Linking} from "react-native"
-import {TextStyle, ViewStyle} from "react-native"
+import {View, ActivityIndicator, Platform, Linking, TextStyle, ViewStyle} from "react-native"
 import semver from "semver"
 
-import {Button, Icon, Screen} from "@/components/ignite"
-import {Text} from "@/components/ignite"
+import {Button, Icon, Screen, Text} from "@/components/ignite"
 import {useAuth} from "@/contexts/AuthContext"
 import {useDeeplink} from "@/contexts/DeeplinkContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 // Types
 type ScreenState = "loading" | "connection" | "auth" | "outdated" | "success"
@@ -36,8 +35,10 @@ export default function InitScreen() {
   // Hooks
   const {theme, themed} = useAppTheme()
   const {user, session, loading: authLoading} = useAuth()
-  const {replace, getPendingRoute, setPendingRoute} = useNavigationHistory()
+  const {replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome} = useNavigationHistory()
   const {processUrl} = useDeeplink()
+  const rootNavigationState = useRootNavigationState()
+  const isNavigationReady = rootNavigationState?.key != null
 
   // State
   const [state, setState] = useState<ScreenState>("loading")
@@ -72,13 +73,13 @@ export default function InitScreen() {
 
   const navigateToDestination = async () => {
     if (!user?.email) {
-      replace("/auth/login")
+      replaceAll("/auth/start")
       return
     }
 
     // Check onboarding status
     if (!onboardingCompleted && !defaultWearable) {
-      replace("/onboarding/welcome")
+      replaceAll("/onboarding/welcome")
       return
     }
 
@@ -90,14 +91,13 @@ export default function InitScreen() {
     }
 
     setTimeout(() => {
-      // clearHistoryAndGoHome()
-      replace("/(tabs)/home")
+      clearHistoryAndGoHome()
     }, NAVIGATION_DELAY)
   }
 
   const checkLoggedIn = async (): Promise<void> => {
     if (!user) {
-      replace("/auth/login")
+      replaceAll("/auth/start")
       return
     }
     handleTokenExchange()
@@ -202,7 +202,7 @@ export default function InitScreen() {
       case "auth":
         return {
           icon: "account-alert",
-          iconColor: theme.colors.error,
+          iconColor: theme.colors.destructive,
           title: "Authentication Error",
           description: "Unable to authenticate. Please sign in again.",
         }
@@ -220,7 +220,7 @@ export default function InitScreen() {
       case "outdated":
         return {
           icon: "update",
-          iconColor: theme.colors.tint,
+          iconColor: theme.colors.destructive,
           title: "Update Required",
           description: "MentraOS is outdated. Please update to continue using the application.",
         }
@@ -228,7 +228,7 @@ export default function InitScreen() {
       default:
         return {
           icon: "check-circle",
-          iconColor: theme.colors.palette.primary500,
+          iconColor: theme.colors.primary,
           title: "Up to Date",
           description: "MentraOS is up to date. Returning to home...",
         }
@@ -237,24 +237,25 @@ export default function InitScreen() {
 
   // Effects
   useEffect(() => {
-    console.log("INIT: Auth loading:", authLoading)
+    console.log("INIT: Auth loading:", authLoading, "Navigation ready:", isNavigationReady)
     const init = async () => {
       await checkCustomUrl()
       await checkCloudVersion()
     }
-    if (!authLoading) {
-      console.log("INIT: Auth loaded, starting init")
-      // auth is loaded, so we can start:
+    // Wait for both auth to load AND navigation to be ready before initializing
+    // This prevents "navigate before mounting Root Layout" crashes (MENTRA-OS-152)
+    if (!authLoading && isNavigationReady) {
+      console.log("INIT: Auth loaded and navigation ready, starting init")
       init()
     }
-  }, [authLoading])
+  }, [authLoading, isNavigationReady])
 
   // Render
   if (state === "loading") {
     return (
       <Screen preset="fixed" safeAreaEdges={["bottom"]}>
         <View style={themed($centerContainer)}>
-          <ActivityIndicator size="large" color={theme.colors.tint} />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <Text style={themed($loadingText)}>{loadingStatus}</Text>
         </View>
       </Screen>

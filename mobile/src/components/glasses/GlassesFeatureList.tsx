@@ -1,10 +1,9 @@
+import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {View, ViewStyle, TextStyle, ImageStyle} from "react-native"
 
 import {Icon, Text} from "@/components/ignite"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
-
-import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 interface GlassesFeatureListProps {
   glassesModel: string
@@ -12,7 +11,7 @@ interface GlassesFeatureListProps {
 
 export type GlassesFeature = "camera" | "microphone" | "speakers" | "display"
 
-export const featureLabels: Record<GlassesFeature, string> = {
+const featureLabels: Record<GlassesFeature, string> = {
   camera: "Camera",
   microphone: "Microphone",
   speakers: "Speakers",
@@ -46,59 +45,23 @@ export function GlassesFeatureList({glassesModel}: GlassesFeatureListProps) {
   }
 
   return (
-    <View style={themed($container)}>
-      <View style={themed($featureRow)}>
-        {featureOrder.slice(0, 2).map(feature => (
-          <View key={feature} style={themed($featureItem)}>
-            <Icon
-              name={getFeatureValue(feature) ? "check" : "close"}
-              size={24}
-              color={theme.colors.text}
-              containerStyle={themed($icon)}
-            />
-            <Text text={featureLabels[feature]} style={themed($featureText)} />
+    <View className="my-4 w-70 self-center">
+      <View className="flex-row mb-2">
+        {featureOrder.slice(0, 2).map((feature) => (
+          <View key={feature} className="gap-2 flex-row items-center w-1/2">
+            <Icon name={getFeatureValue(feature) ? "check" : "x"} size={24} color={theme.colors.secondary_foreground} />
+            <Text text={featureLabels[feature]} className="text-sm font-medium" />
           </View>
         ))}
       </View>
-      <View style={themed($featureRow)}>
-        {featureOrder.slice(2, 4).map(feature => (
-          <View key={feature} style={themed($featureItem)}>
-            <Icon
-              name={getFeatureValue(feature) ? "check" : "close"}
-              size={24}
-              color={theme.colors.text}
-              containerStyle={themed($icon)}
-            />
-            <Text text={featureLabels[feature]} style={themed($featureText)} />
+      <View className="flex-row">
+        {featureOrder.slice(2, 4).map((feature) => (
+          <View key={feature} className="gap-2 flex-row items-center w-1/2">
+            <Icon name={getFeatureValue(feature) ? "check" : "x"} size={24} color={theme.colors.secondary_foreground} />
+            <Text text={featureLabels[feature]} className="text-sm font-medium" />
           </View>
         ))}
       </View>
     </View>
   )
 }
-
-const $container: ThemedStyle<ViewStyle> = () => ({
-  marginVertical: 20,
-})
-
-const $featureItem: ThemedStyle<ViewStyle> = () => ({
-  alignItems: "center",
-  flexDirection: "row",
-  flex: 1,
-})
-
-const $featureRow: ThemedStyle<ViewStyle> = () => ({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginVertical: 6,
-})
-
-const $featureText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 14,
-  fontWeight: "500",
-  color: colors.text,
-})
-
-const $icon: ThemedStyle<ImageStyle> = () => ({
-  marginRight: 10,
-})

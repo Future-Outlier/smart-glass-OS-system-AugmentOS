@@ -1,5 +1,6 @@
+import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
-import {Platform, View, ViewStyle} from "react-native"
+import {View} from "react-native"
 
 import OtaProgressSection from "@/components/glasses/OtaProgressSection"
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
@@ -12,18 +13,15 @@ import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n/translate"
-import {useApplets} from "@/stores/applets"
+import {useApplets, useAppletStatusStore} from "@/stores/applets"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
-
-import {Capabilities, DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export default function DeviceSettings() {
-  const {theme, themed} = useAppTheme()
+  const {theme} = useAppTheme()
   const {status} = useCoreStatus()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS.auto_brightness.key)
@@ -33,18 +31,13 @@ export default function DeviceSettings() {
   )
   const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS.default_button_action_app.key)
   const glassesConnected = useGlassesStore(state => state.connected)
-  const glassesModelName = useGlassesStore(state => state.modelName)
 
   const {push, goBack} = useNavigationHistory()
   const applets = useApplets()
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
   // Check if we have any advanced settings to show
-  const hasMicrophoneSelector =
-    glassesConnected &&
-    defaultWearable &&
-    features?.hasMicrophone &&
-    (defaultWearable !== "Mentra Live" || (Platform.OS === "android" && glassesModelName !== "K900"))
+  const hasMicrophoneSelector = glassesConnected && defaultWearable && features?.hasMicrophone
 
   const wifiLocalIp = useGlassesStore(state => state.wifiSsid)
   const bluetoothName = useGlassesStore(state => state.bluetoothName)
@@ -61,6 +54,7 @@ export default function DeviceSettings() {
         {
           text: "Unpair",
           onPress: () => {
+            useAppletStatusStore.getState().stopAllApplets()
             CoreModule.forget()
             goBack()
           },
@@ -97,7 +91,7 @@ export default function DeviceSettings() {
   }
 
   return (
-    <View style={themed($container)}>
+    <View className="gap-6">
       {/* Screen settings for binocular glasses */}
       <Group
         title={translate("deviceSettings:display")}
@@ -106,9 +100,9 @@ export default function DeviceSettings() {
         {defaultWearable && (features?.display?.count ?? 0 > 1) && (
           <RouteButton
             icon={<Icon name="locate" size={24} color={theme.colors.secondary_foreground} />}
-            label={translate("settings:screenSettings")}
+            label={translate("settings:positionSettings")}
             // subtitle={translate("settings:screenDescription")}
-            onPress={() => push("/settings/screen")}
+            onPress={() => push("/settings/position")}
           />
         )}
         {/* Only show dashboard settings if glasses have display capability */}
@@ -151,7 +145,7 @@ export default function DeviceSettings() {
       {/* Camera Settings button moved to Gallery Settings page */}
 
       {/* Button Settings - Only show for glasses with configurable buttons */}
-      {defaultWearable && features?.hasButton && (
+      {glassesConnected && defaultWearable && features?.hasButton && (
         <ButtonSettings
           enabled={defaultButtonActionEnabled}
           selectedApp={defaultButtonActionApp}
@@ -162,12 +156,12 @@ export default function DeviceSettings() {
       )}
 
       {/* Only show WiFi settings if connected glasses support WiFi */}
-      {defaultWearable && features?.hasWifi && (
+      {glassesConnected && features?.hasWifi && (
         <RouteButton
           icon={<Icon name="wifi" size={24} color={theme.colors.secondary_foreground} />}
           label={translate("settings:glassesWifiSettings")}
           onPress={() => {
-            push("/pairing/glasseswifisetup", {deviceModel: defaultWearable || "Glasses"})
+            push("/wifi/scan")
           }}
         />
       )}
@@ -175,7 +169,7 @@ export default function DeviceSettings() {
       {/* Device info is rendered within the Advanced Settings section below */}
 
       {/* OTA Progress Section - Only show for Mentra Live glasses */}
-      {defaultWearable && glassesConnected && defaultWearable.includes(DeviceTypes.LIVE) && (
+      {glassesConnected && defaultWearable.includes(DeviceTypes.LIVE) && (
         <OtaProgressSection otaProgress={status.ota_progress} />
       )}
 
@@ -229,7 +223,3 @@ export default function DeviceSettings() {
     </View>
   )
 }
-
-const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  gap: spacing.s6,
-})

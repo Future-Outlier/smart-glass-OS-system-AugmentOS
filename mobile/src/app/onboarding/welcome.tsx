@@ -1,3 +1,4 @@
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import DontHaveGlassesSvg from "@assets/glasses/dont-have.svg"
 import HaveGlassesSvg from "@assets/glasses/have.svg"
 import LogoSvg from "@assets/logo/logo.svg"
@@ -7,12 +8,10 @@ import {SvgProps} from "react-native-svg"
 import {Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {TxKeyPath} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {$styles, ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
-
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import {ThemedStyle} from "@/theme"
 
 // Import SVG components
 
@@ -46,9 +45,8 @@ const $cardButton: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
     width: 0,
     height: 2,
   },
-  shadowOpacity: 0.25,
+  shadowOpacity: 0.03,
   shadowRadius: 3.84,
-  elevation: 5,
   alignItems: "center",
   justifyContent: "center",
   gap: spacing.s4,
@@ -65,7 +63,6 @@ const $cardButtonImageContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
 const $cardButtonText: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.secondary_foreground,
   fontSize: 20,
-  fontWeight: 400,
 })
 
 export default function OnboardingWelcome() {
@@ -87,21 +84,21 @@ export default function OnboardingWelcome() {
     // analytics.track('onboarding_no_glasses_selected')
     setOnboardingCompleted(true)
     // Go directly to simulated glasses pairing screen
-    push("/pairing/prep", {glassesModelName: DeviceTypes.SIMULATED})
+    push("/pairing/prep", {modelName: DeviceTypes.SIMULATED})
   }
 
   return (
     <Screen
       preset="fixed"
       backgroundColor={theme.colors.primary_foreground}
-      style={themed($styles.screen)}
+      style={[{paddingHorizontal: theme.spacing.s2}]}
       safeAreaEdges={["top"]}>
       <View style={themed($logoContainer)}>
         <LogoSvg width={108} height={58} />
       </View>
 
       <View style={themed($infoContainer)}>
-        <Text style={themed($title)} tx="onboarding:welcome" />
+        <Text style={themed($title)} tx="onboarding:welcome" weight="semibold" />
         <Spacer height={theme.spacing.s4} />
         <Text style={themed($subtitle)} tx="onboarding:doYouHaveGlasses" />
       </View>
@@ -131,14 +128,12 @@ const $infoContainer: ThemedStyle<ViewStyle> = () => ({
 const $title: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 30,
   lineHeight: 30,
-  fontWeight: 600,
   textAlign: "center",
   color: colors.secondary_foreground,
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 20,
-  fontWeight: 400,
   textAlign: "center",
   color: colors.secondary_foreground,
 })

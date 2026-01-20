@@ -1,14 +1,15 @@
+import {Capabilities, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
 import {useEffect, useState} from "react"
 import {ScrollView, TextInput, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
 import bridge from "@/bridge/MantleBridge"
-import {Text} from "@/components/ignite"
-import {PillButton} from "@/components/ignite"
+import {Text, PillButton} from "@/components/ignite"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n/translate"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
@@ -16,9 +17,6 @@ import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {MOCK_CONNECTION} from "@/utils/Constants"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
-import {useAppTheme} from "@/utils/useAppTheme"
-
-import {Capabilities, getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 // Nex Interface Version - Single source of truth
 export const NEX_INTERFACE_VERSION = "1.0.0"
@@ -262,7 +260,7 @@ export default function NexDeveloperSettings() {
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const glassesConnected = useGlassesStore(state => state.connected)
-  const glassesModelName = useGlassesStore(state => state.modelName)
+  const modelName = useGlassesStore(state => state.modelName)
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
   // Mentra Nex BLE test state variables
@@ -432,13 +430,13 @@ export default function NexDeveloperSettings() {
             <RouteButton
               label={translate("settings:screenSettings")}
               subtitle={translate("settings:screenDescription")}
-              onPress={() => push("/settings/screen")}
+              onPress={() => push("/settings/position")}
             />
           </View>
         )}
 
         {/* Mentra Nex BLE Test Section - Only show when connected to Mentra Nex */}
-        {glassesModelName === "Mentra Nex" ? (
+        {modelName === "Mentra Nex" ? (
           <>
             {/* Custom Display Text Settings */}
             <View style={themed($settingsGroup)}>

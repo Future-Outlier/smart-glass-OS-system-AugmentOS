@@ -10,7 +10,6 @@ import expoConfig from "eslint-config-expo/flat.js"
 import {defineConfig} from "eslint/config"
 
 export default defineConfig([
-  
   // Recommended configs
   expoConfig,
   js.configs.recommended,
@@ -43,7 +42,7 @@ export default defineConfig([
       },
     },
     settings: {
-      react: {
+      "react": {
         version: "detect", // Automatically detect the React version
       },
       "import/resolver": {
@@ -120,24 +119,8 @@ export default defineConfig([
           ],
         },
       ],
-      "import/order": [
-        "error",
-        {
-          "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
-          "pathGroups": [
-            {
-              pattern: "@/**",
-              group: "internal",
-              position: "before",
-            },
-          ],
-          "pathGroupsExcludedImportTypes": ["builtin"],
-          "newlines-between": "always",
-          "alphabetize": {
-            order: "asc",
-          },
-        },
-      ],
+      // Disabled: import/order causes mass file changes across PRs
+      // "import/order": "off",
     },
   },
 

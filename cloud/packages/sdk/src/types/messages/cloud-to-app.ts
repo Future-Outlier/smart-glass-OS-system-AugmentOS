@@ -14,6 +14,7 @@ import type {
   RgbLedControlResponse,
 } from "./glasses-to-cloud"
 import type {AppSession} from "../../app/session"
+import type {GlassesInfo} from "@mentra/types"
 
 //===========================================================
 // Responses
@@ -100,6 +101,18 @@ export interface CapabilitiesUpdate extends BaseMessage {
 }
 
 /**
+ * Device state update to App
+ * Sent when any device state changes (WiFi, battery, hotspot, connection, etc.)
+ * Apps receive this automatically - no subscription needed
+ */
+export interface DeviceStateUpdate extends BaseMessage {
+  type: CloudToAppMessageType.DEVICE_STATE_UPDATE
+  state: Partial<GlassesInfo> // Only changed fields (or full snapshot)
+  fullSnapshot?: boolean // True on initial connection or reconnection
+  timestamp: Date
+}
+
+/**
  * MentraOS settings update to App
  */
 export interface MentraosSettingsUpdate extends BaseMessage {
@@ -119,10 +132,12 @@ export interface TranscriptionData extends BaseMessage {
   type: StreamType.TRANSCRIPTION
   text: string // The transcribed text
   isFinal: boolean // Whether this is a final transcription
-  transcribeLanguage?: string // Detected language code
+  utteranceId?: string // Unique ID for this speech segment - interim and final for same utterance share the same ID
+  transcribeLanguage?: string // Subscription language code (used for routing, e.g., "en-US")
+  detectedLanguage?: string // Actual detected language from speech recognition (e.g., "ja", "en")
   startTime: number // Start time in milliseconds
   endTime: number // End time in milliseconds
-  speakerId?: string // ID of the speaker if available
+  speakerId?: string // ID of the speaker if available (from diarization)
   duration?: number // Audio duration in milliseconds
   provider?: string // The transcription provider (e.g., "azure", "soniox")
   confidence?: number // Confidence score (0-1)
@@ -330,6 +345,7 @@ export type CloudToAppMessage =
   | AppStopped
   | SettingsUpdate
   | CapabilitiesUpdate
+  | DeviceStateUpdate
   | TranscriptionData
   | TranslationData
   | AudioChunk
@@ -376,6 +392,10 @@ export function isSettingsUpdate(message: CloudToAppMessage): message is Setting
 
 export function isCapabilitiesUpdate(message: CloudToAppMessage): message is CapabilitiesUpdate {
   return message.type === CloudToAppMessageType.CAPABILITIES_UPDATE
+}
+
+export function isDeviceStateUpdate(message: CloudToAppMessage): message is DeviceStateUpdate {
+  return message.type === CloudToAppMessageType.DEVICE_STATE_UPDATE
 }
 
 export function isDataStream(message: CloudToAppMessage): message is DataStream {

@@ -19,6 +19,11 @@ echo ""
 echo "📦 Step 1: Cleaning build artifacts, caches, and lock files..."
 rm -rf android/build android/.gradle node_modules .expo .bundle android/app/build android/app/src/main/assets
 
+# Clean Metro bundler cache (critical for env variable changes)
+echo "🗑️  Clearing Metro bundler cache..."
+rm -rf $TMPDIR/metro-* $TMPDIR/haste-map-* 2>/dev/null || true
+pkill -f metro 2>/dev/null || true
+
 # Clean lock files (critical for fixing dependency conflicts)
 echo "🗑️  Removing lock files..."
 rm -f bun.lock pnpm-lock.yaml package-lock.json yarn.lock
@@ -36,7 +41,8 @@ bun install
 echo ""
 echo "🔍 Step 3: Checking for dependency issues..."
 if command -v npx &> /dev/null; then
-    npx expo-doctor --fix-dependencies 2>&1 | grep -E "checks (passed|failed)|issues detected" || true
+    # Use --yes to auto-accept npx install prompts, run without piping to show full output
+    npx --yes expo-doctor || true
     echo ""
 fi
 
@@ -90,12 +96,8 @@ cd android && ./gradlew clean && cd ..
 echo ""
 echo "✅ Step 7: Final dependency verification..."
 if command -v npx &> /dev/null; then
-    EXPO_CHECK=$(npx expo-doctor 2>&1 | grep -c "checks passed" || echo "0")
-    if [ "$EXPO_CHECK" -gt "0" ]; then
-        echo "✅ Dependencies look good!"
-    else
-        echo "⚠️  Warning: There may still be dependency issues. Check output above."
-    fi
+    # Use --yes to auto-accept npx install prompts
+    npx --yes expo-doctor || echo "⚠️  Warning: There may still be dependency issues. Check output above."
 fi
 
 # Step 8: Build Android
