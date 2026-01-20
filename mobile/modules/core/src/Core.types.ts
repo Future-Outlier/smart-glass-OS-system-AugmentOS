@@ -65,10 +65,10 @@ export interface GlassesStatus {
   charging: boolean
   caseBatteryLevel: number
   caseCharging: boolean
-  caseOpen: false
+  caseOpen: boolean
   caseRemoved: boolean
   // hotspot info
-  hotspotEnabled: false
+  hotspotEnabled: boolean
   hotspotSsid: string,
   hotspotPassword: string,
   hotspotGatewayIp: string,

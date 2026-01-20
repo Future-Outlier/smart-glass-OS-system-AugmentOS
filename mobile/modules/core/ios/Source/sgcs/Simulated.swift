@@ -195,7 +195,6 @@ class Simulated: SGCManager {
     }
 
     func getConnectedBluetoothName() -> String? {
-        Bridge.log("getConnectedBluetoothName")
         return nil
     }
 

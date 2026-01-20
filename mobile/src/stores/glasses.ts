@@ -1,5 +1,4 @@
-import { GlassesStatus } from "core"
-import { OtaProgress, OtaUpdateInfo } from "modules/core/src/Core.types"
+import { GlassesStatus, OtaProgress, OtaUpdateInfo } from "core"
 import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
 
@@ -123,9 +122,9 @@ export const useGlassesStore = create<GlassesState>()(
   })),
 )
 
-export const waitForGlassesState = <K extends keyof GlassesInfo>(
+export const waitForGlassesState = <K extends keyof GlassesStatus>(
   key: K,
-  predicate: (value: GlassesInfo[K]) => boolean,
+  predicate: (value: GlassesStatus[K]) => boolean,
   timeoutMs = 1000,
 ): Promise<boolean> => {
   return new Promise(resolve => {

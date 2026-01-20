@@ -3,20 +3,6 @@ import {subscribeWithSelector} from "zustand/middleware"
 import { CoreStatus } from "core"
 
 
-
-// export interface CoreInfo {
-//   searching: boolean
-//   powerSavingMode: boolean
-//   metricSystem: boolean
-//   micRanking: string[]
-//   systemMicUnavailable: boolean
-//   bypassVad: boolean
-//   offlineMode: boolean
-//   enforceLocalTranscription: boolean
-//   alwaysOnStatusBar: boolean
-//   sensingEnabled: boolean
-// }
-
 interface CoreState extends CoreStatus {
   setCoreInfo: (info: Partial<CoreStatus>) => void
   reset: () => void
@@ -24,20 +10,10 @@ interface CoreState extends CoreStatus {
 
 const initialState: CoreStatus = {
   // state:
-  is_searching: false,
-  power_saving_mode: false,
-  metric_system: false,
-  //   system_mic_unavailable: false,
-  //   current_mic: null,
-  //   mic_ranking: [],
-}
-
-export const getCoreInfoPartial = (state: CoreStatus) => {
-  return {
-    is_searching: state.is_searching,
-    power_saving_mode: state.power_saving_mode,
-    metric_system: state.metric_system,
-  }
+  searching: false,
+  micRanking: [],
+  systemMicUnavailable: false,
+  currentMic: null,
 }
 
 export const useCoreStore = create<CoreState>()(

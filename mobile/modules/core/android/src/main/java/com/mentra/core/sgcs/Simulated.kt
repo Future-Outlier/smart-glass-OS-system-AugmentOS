@@ -168,7 +168,6 @@ class Simulated : SGCManager() {
     }
 
     override fun getConnectedBluetoothName(): String {
-        Bridge.log("getConnectedBluetoothName")
         return ""
     }
 

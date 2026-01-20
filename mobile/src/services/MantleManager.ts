@@ -1,4 +1,4 @@
-import CoreModule from "core"
+import CoreModule, { GlassesStatus } from "core"
 import * as Calendar from "expo-calendar"
 import * as Location from "expo-location"
 import * as TaskManager from "expo-task-manager"
@@ -11,11 +11,14 @@ import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {gallerySyncService} from "@/services/asg/gallerySyncService"
 import {useDisplayStore} from "@/stores/display"
-import {useGlassesStore, GlassesInfo, getGlasesInfoPartial} from "@/stores/glasses"
+import {useGlassesStore, getGlasesInfoPartial} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
 import { useCoreStore } from "@/stores/core"
+import Toast from "react-native-toast-message"
+import { translate } from "@/i18n"
+import udp from "@/services/UdpManager"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -43,6 +46,7 @@ class MantleManager {
   private calendarSyncTimer: ReturnType<typeof setInterval> | null = null
   private clearTextTimeout: ReturnType<typeof setTimeout> | null = null
   private transcriptProcessor: TranscriptProcessor
+  private coreMessageSubscription: any = null
 
   public static getInstance(): MantleManager {
     if (!MantleManager.instance) {
@@ -76,7 +80,6 @@ class MantleManager {
   // should only ever be run once
   // sets up the bridge and initializes app state
   public async init() {
-    await bridge.dummy()
     await migrate() // do any local migrations here
     const res = await restComms.loadUserSettings() // get settings from server
     if (res.is_ok()) {
@@ -110,6 +113,9 @@ class MantleManager {
     if (this.calendarSyncTimer) {
       clearInterval(this.calendarSyncTimer)
       this.calendarSyncTimer = null
+    }
+    if (this.coreMessageSubscription) {
+      this.coreMessageSubscription.remove()
     }
     Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME)
     this.transcriptProcessor.clear()
@@ -165,11 +171,11 @@ class MantleManager {
   private setupSubscriptions() {
     useGlassesStore.subscribe(
       getGlasesInfoPartial,
-      (state: Partial<GlassesInfo>, previousState: Partial<GlassesInfo>) => {
-        const statusObj: Partial<GlassesInfo> = {}
+      (state: Partial<GlassesStatus>, previousState: Partial<GlassesStatus>) => {
+        const statusObj: Partial<GlassesStatus> = {}
 
         for (const key in state) {
-          const k = key as keyof GlassesInfo
+          const k = key as keyof GlassesStatus
           if (state[k] !== previousState[k]) {
             statusObj[k] = state[k] as any
           }
@@ -196,6 +202,15 @@ class MantleManager {
       },
       {equalityFn: shallow},
     )
+
+    // subscribe to the core:
+    CoreModule.addListener("CoreMessageEvent", (event: any) => {
+      this.handleCoreMessage(event.body)
+    })
+    if (this.coreMessageSubscription) {
+      this.coreMessageSubscription.remove()
+    }
+    this.coreMessageSubscription = CoreModule.onTypedMessage(this.handleCoreMessage)
   }
 
   private async sendCalendarEvents() {
@@ -329,6 +344,296 @@ class MantleManager {
       timestamp: timestamp,
     })
     socketComms.sendButtonPress(id, type)
+  }
+
+
+  private async handleCoreMessage(data: any) {
+    if (!data) return
+
+    try {
+      if (!("type" in data)) {
+        return
+      }
+
+      let binaryString
+      let bytes
+      let res
+
+      switch (data.type) {
+        case "core_status_update":
+          useGlassesStore.getState().setGlassesInfo(data.core_status.glasses_info)
+          GlobalEventEmitter.emit("core_status_update", data)
+          return
+        case "wifi_status_change":
+          useGlassesStore.getState().setWifiInfo(data.connected, data.ssid)
+          break
+        case "hotspot_status_change":
+          useGlassesStore.getState().setHotspotInfo(data.enabled, data.ssid, data.password, data.local_ip)
+          GlobalEventEmitter.emit("hotspot_status_change", {
+            enabled: data.enabled,
+            ssid: data.ssid,
+            password: data.password,
+            local_ip: data.local_ip,
+          })
+          break
+        case "hotspot_error":
+          GlobalEventEmitter.emit("hotspot_error", {
+            error_message: data.error_message,
+            timestamp: data.timestamp,
+          })
+          break
+        case "gallery_status":
+          GlobalEventEmitter.emit("gallery_status", {
+            photos: data.photos,
+            videos: data.videos,
+            total: data.total,
+            has_content: data.has_content,
+            camera_busy: data.camera_busy, // Add camera busy state
+          })
+          break
+        case "compatible_glasses_search_result":
+          console.log("Received compatible_glasses_search_result event from Core", data)
+          GlobalEventEmitter.emit("compatible_glasses_search_result", {
+            modelName: data.model_name,
+            deviceName: data.device_name,
+            deviceAddress: data.device_address,
+          })
+          break
+        case "compatible_glasses_search_stop":
+          GlobalEventEmitter.emit("compatible_glasses_search_stop", {
+            model_name: data.model_name,
+          })
+          break
+        case "heartbeat_sent":
+          console.log("MAN: received heartbeat_sent event from Core", data.heartbeat_sent)
+          GlobalEventEmitter.emit("heartbeat_sent", {
+            timestamp: data.heartbeat_sent.timestamp,
+          })
+          break
+        case "heartbeat_received":
+          console.log("MAN: received heartbeat_received event from Core", data.heartbeat_received)
+          GlobalEventEmitter.emit("heartbeat_received", {
+            timestamp: data.heartbeat_received.timestamp,
+          })
+          break
+        case "notify_manager":
+        case "show_banner":
+          Toast.show({
+            type: data.notify_manager.type,
+            text1: translate(data.notify_manager.message),
+          })
+          break
+        case "button_press":
+          console.log("🔘 BUTTON_PRESS event received:", data)
+          this.handle_button_press(data.buttonId, data.pressType, data.timestamp)
+          break
+        case "touch_event": {
+          const deviceModel = data.device_model ?? "Mentra Live"
+          const gestureName = data.gesture_name ?? "unknown"
+          const timestamp = typeof data.timestamp === "number" ? data.timestamp : Date.now()
+          GlobalEventEmitter.emit("touch_event", {
+            deviceModel,
+            gestureName,
+            timestamp,
+          })
+          socketComms.sendTouchEvent({
+            device_model: deviceModel,
+            gesture_name: gestureName,
+            timestamp,
+          })
+          break
+        }
+        case "swipe_volume_status": {
+          const enabled = !!data.enabled
+          const timestamp = typeof data.timestamp === "number" ? data.timestamp : Date.now()
+          socketComms.sendSwipeVolumeStatus(enabled, timestamp)
+          GlobalEventEmitter.emit("SWIPE_VOLUME_STATUS", {enabled, timestamp})
+          break
+        }
+        case "switch_status": {
+          const switchType = typeof data.switch_type === "number" ? data.switch_type : (data.switchType ?? -1)
+          const switchValue = typeof data.switch_value === "number" ? data.switch_value : (data.switchValue ?? -1)
+          const timestamp = typeof data.timestamp === "number" ? data.timestamp : Date.now()
+          socketComms.sendSwitchStatus(switchType, switchValue, timestamp)
+          GlobalEventEmitter.emit("SWITCH_STATUS", {switchType, switchValue, timestamp})
+          break
+        }
+        case "rgb_led_control_response": {
+          const requestId = data.requestId ?? ""
+          const success = !!data.success
+          const errorMessage = typeof data.error === "string" ? data.error : null
+          socketComms.sendRgbLedControlResponse(requestId, success, errorMessage)
+          GlobalEventEmitter.emit("rgb_led_control_response", {requestId, success, error: errorMessage})
+          break
+        }
+        case "wifi_scan_results":
+          GlobalEventEmitter.emit("wifi_scan_results", {
+            networks: data.networks,
+          })
+          break
+        case "pair_failure":
+          GlobalEventEmitter.emit("pair_failure", data.error)
+          break
+        case "audio_pairing_needed":
+          GlobalEventEmitter.emit("audio_pairing_needed", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_connected":
+          GlobalEventEmitter.emit("audio_connected", {
+            deviceName: data.device_name,
+          })
+          break
+        case "audio_disconnected":
+          GlobalEventEmitter.emit("audio_disconnected", {})
+          break
+        case "save_setting":
+          await useSettingsStore.getState().setSetting(data.key, data.value)
+          break
+        case "head_up":
+          this.handle_head_up(data.up)
+          break
+        case "local_transcription":
+          this.handle_local_transcription(data)
+          break
+        case "phone_notification":
+          // Send phone notification via REST instead of WebSocket
+          res = await restComms.sendPhoneNotification({
+            notificationId: data.notificationId,
+            app: data.app,
+            title: data.title,
+            content: data.content,
+            priority: data.priority,
+            timestamp: data.timestamp,
+            packageName: data.packageName,
+          })
+          if (res.is_error()) {
+            console.error("Failed to send phone notification:", res.error)
+          }
+          break
+        case "phone_notification_dismissed":
+          // Send phone notification dismissal via REST
+          res = await restComms.sendPhoneNotificationDismissed({
+            notificationKey: data.notificationKey,
+            packageName: data.packageName,
+            notificationId: data.notificationId,
+          })
+          if (res.is_error()) {
+            console.error("Failed to send phone notification dismissal:", res.error)
+          }
+          break
+        // TODO: this is a bit of a hack, we should have dedicated functions for ws endpoints in the core:
+        case "ws_text":
+          socketComms.sendText(data.text)
+          break
+        case "ws_bin":
+          binaryString = atob(data.base64)
+          bytes = new Uint8Array(binaryString.length)
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i)
+          }
+          socketComms.sendBinary(bytes)
+          break
+        case "mic_data":
+          // Route audio to: UDP (if enabled) -> WebSocket (fallback)
+          if (socketComms.udpEnabledAndReady()) {
+            // UDP audio is enabled and ready - send directly via UDP
+            udp.sendAudio(data.base64)
+          } else {
+            // Fallback to WebSocket
+            binaryString = atob(data.base64)
+            bytes = new Uint8Array(binaryString.length)
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i)
+            }
+            if (__DEV__ && Math.random() < 0.03) {
+              console.log("MantleBridge: Received mic data:", bytes.length, "bytes")
+            }
+            // NOTE: LiveKit audio path disabled - using UDP or WebSocket instead
+            // const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
+            // if (!isChinaDeployment && livekit.isRoomConnected()) {
+            //   livekit.addPcm(bytes)
+            // } else {
+            //   socketComms.sendBinary(bytes)
+            // }
+            socketComms.sendBinary(bytes)
+          }
+          break
+        case "rtmp_stream_status":
+          console.log("MantleBridge: Forwarding RTMP stream status to server:", data)
+          socketComms.sendRtmpStreamStatus(data)
+          break
+        case "keep_alive_ack":
+          console.log("MantleBridge: Forwarding keep-alive ACK to server:", data)
+          socketComms.sendKeepAliveAck(data)
+          break
+        case "mtk_update_complete":
+          console.log("MantleBridge: MTK firmware update complete:", data.message)
+          GlobalEventEmitter.emit("mtk_update_complete", {
+            message: data.message,
+            timestamp: data.timestamp,
+          })
+          break
+        case "ota_update_available":
+          console.log("📱 MantleBridge: OTA update available from glasses:", data)
+          useGlassesStore.getState().setOtaUpdateAvailable({
+            available: true,
+            versionCode: data.version_code ?? 0,
+            versionName: data.version_name ?? "",
+            updates: data.updates ?? [],
+            totalSize: data.total_size ?? 0,
+          })
+          GlobalEventEmitter.emit("ota_update_available", {
+            versionCode: data.version_code,
+            versionName: data.version_name,
+            updates: data.updates,
+            totalSize: data.total_size,
+          })
+          break
+        case "ota_progress":
+          console.log("📱 MantleBridge: OTA progress:", data.stage, data.status, data.progress + "%")
+          useGlassesStore.getState().setOtaProgress({
+            stage: data.stage ?? "download",
+            status: data.status ?? "PROGRESS",
+            progress: data.progress ?? 0,
+            bytesDownloaded: data.bytes_downloaded ?? 0,
+            totalBytes: data.total_bytes ?? 0,
+            currentUpdate: data.current_update ?? "apk",
+            errorMessage: data.error_message,
+          })
+          GlobalEventEmitter.emit("ota_progress", {
+            stage: data.stage,
+            status: data.status,
+            progress: data.progress,
+            bytesDownloaded: data.bytes_downloaded,
+            totalBytes: data.total_bytes,
+            currentUpdate: data.current_update,
+            errorMessage: data.error_message,
+          })
+          // Clear OTA update available when finished or failed
+          if (data.status === "FINISHED" || data.status === "FAILED") {
+            useGlassesStore.getState().setOtaUpdateAvailable(null)
+          }
+          break
+        case "version_info":
+          console.log("MAN: Received version_info:", data)
+          useGlassesStore.getState().setGlassesInfo({
+            appVersion: data.app_version,
+            buildNumber: data.build_number,
+            modelName: data.device_model,
+            androidVersion: data.android_version,
+            otaVersionUrl: data.ota_version_url,
+            fwVersion: data.firmware_version,
+            btMacAddress: data.bt_mac_address,
+          })
+          break
+        default:
+          console.log("MAN: Unknown event type:", data.type)
+          break
+      }
+    } catch (e) {
+      console.error("MAN: Error parsing data from Core:", e)
+    }
   }
 }
 
