@@ -248,6 +248,18 @@ class CoreModule : Module() {
             true
         }
 
+        // Check if location services are enabled (required for WiFi operations on Android)
+        AsyncFunction("isLocationServicesEnabled") {
+            val context =
+                    appContext.reactContext
+                            ?: appContext.currentActivity
+                                    ?: throw IllegalStateException("No context available")
+            val locationManager = context.getSystemService(android.content.Context.LOCATION_SERVICE) as android.location.LocationManager
+            // Check if either GPS or Network location provider is enabled
+            locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
+                    locationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
+        }
+
         AsyncFunction("openLocationSettings") {
             val context =
                     appContext.reactContext

@@ -69,10 +69,8 @@ export default function SelectGlassesModelScreen() {
           // {modelName: "Brilliant Labs Frame", key: "frame"},
         ]
 
-  const triggerGlassesPairingGuide = async (glassesModelName: string) => {
-    // No need for Bluetooth permissions anymore as we're using direct communication
-    console.log("TRIGGERING SEARCH SCREEN FOR: " + glassesModelName)
-    push("/pairing/prep", {glassesModelName: glassesModelName})
+  const triggerGlassesPairingGuide = async (modelName: string) => {
+    push("/pairing/prep", {modelName: modelName})
   }
 
   return (

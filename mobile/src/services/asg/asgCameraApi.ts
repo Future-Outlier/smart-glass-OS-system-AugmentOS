@@ -77,7 +77,7 @@ export class AsgCameraApiClient {
   /**
    * Make a request to the ASG Camera Server with rate limiting and retry logic
    */
-  private async makeRequest<T>(endpoint: string, options?: RequestInit, retries: number = 2): Promise<T> {
+  private async makeRequest<T>(endpoint: string, options?: RequestInit, retries: number = 5): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
     const method = options?.method || "GET"
 
@@ -134,7 +134,7 @@ export class AsgCameraApiClient {
 
         // Handle rate limiting with retry
         if (response.status === 429 && retries > 0) {
-          const retryDelay = Math.pow(2, 3 - retries) * 1000 // Exponential backoff: 1s, 2s
+          const retryDelay = Math.pow(2, 6 - retries) * 1000 // Exponential backoff: 2s, 4s, 8s, 16s, 32s
           console.log(`[ASG Camera API] Rate limited, retrying in ${retryDelay}ms (${retries} retries left)`)
           await new Promise((resolve) => setTimeout(resolve, retryDelay))
           return this.makeRequest<T>(endpoint, options, retries - 1)
