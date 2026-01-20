@@ -6,12 +6,48 @@ public class CoreModule: Module {
         Name("Core")
 
         // Define events that can be sent to JavaScript
-        Events("CoreMessageEvent", "onChange")
+        Events("CoreMessageEvent", "onChange", "onGlassesStatus", "onCoreStatus")
 
         OnCreate {
             // Initialize Bridge with event callback
             Bridge.initialize { [weak self] eventName, data in
                 self?.sendEvent(eventName, data)
+            }
+
+            // Configure observable store event emission
+            Task { @MainActor [weak self] in
+                GlassesStore.shared.store.configure { [weak self] category, changes in
+                    switch category {
+                    case "glasses":
+                        self?.sendEvent("onGlassesStatus", changes)
+                    case "core":
+                        self?.sendEvent("onCoreStatus", changes)
+                    default:
+                        break
+                    }
+                }
+            }
+        }
+
+        // MARK: - Observable Store Functions
+
+        AsyncFunction("getGlassesStatus") {
+            return await MainActor.run {
+                GlassesStore.shared.store.getCategory("glasses")
+            }
+        }
+
+        AsyncFunction("getCoreStatus") {
+            return await MainActor.run {
+                GlassesStore.shared.store.getCategory("core")
+            }
+        }
+
+        AsyncFunction("update") { (category: String, values: [String: Any]) in
+            await MainActor.run {
+                for (key, value) in values {
+                    GlassesStore.shared.apply(category, key, value)
+                }
             }
         }
 

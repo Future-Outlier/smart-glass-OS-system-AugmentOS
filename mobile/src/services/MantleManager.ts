@@ -15,6 +15,7 @@ import {useGlassesStore, GlassesInfo, getGlasesInfoPartial} from "@/stores/glass
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
+import { useCoreStore } from "@/stores/core"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -84,6 +85,16 @@ class MantleManager {
     } else {
       console.error("MANTLE: No settings received from server")
     }
+
+    await CoreModule.onCoreStatus((changed) => {
+      console.log("MANTLE: Core status changed", changed)
+      useCoreStore.getState().setCoreInfo(changed)
+    })
+
+    await CoreModule.onGlassesStatus((changed) => {
+      console.log("MANTLE: Glasses status changed", changed)
+      useGlassesStore.getState().setGlassesInfo(changed)
+    })
 
     await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
     // send initial status request:

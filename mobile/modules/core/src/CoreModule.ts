@@ -1,10 +1,16 @@
 import {NativeModule, requireNativeModule} from "expo"
 
-import {CoreModuleEvents} from "./Core.types"
+import {CoreModuleEvents, GlassesStatus, CoreStatus} from "./Core.types"
+
+type GlassesListener = (changed: Partial<GlassesStatus>) => void
+type CoreListener = (changed: Partial<CoreStatus>) => void
 
 declare class CoreModule extends NativeModule<CoreModuleEvents> {
-  // status:
-  isConnected(): Promise<boolean>
+  // Observable Store Functions (native)
+  getGlassesStatus(): GlassesStatus
+  getCoreStatus(): CoreStatus
+  update(category: string, values: Record<string, any>): Promise<void>
+  
   // Display Commands
   displayEvent(params: Record<string, any>): Promise<void>
   displayText(params: Record<string, any>): Promise<void>
@@ -107,7 +113,35 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
     identifier?: string
     error?: string
   }>
+
+  // Helper methods for type-safe observable store access
+  updateGlasses(values: Partial<GlassesStatus>): Promise<void>
+  updateCore(values: Partial<CoreStatus>): Promise<void>
+  onGlassesStatus(callback: GlassesListener): () => void
+  onCoreStatus(callback: CoreListener): () => void
 }
 
 // This call loads the native module object from the JSI.
-export default requireNativeModule<CoreModule>("Core")
+// NativeModule<CoreModuleEvents> already extends EventEmitter<CoreModuleEvents>
+const NativeCoreModule = requireNativeModule<CoreModule>("Core")
+
+// Add helper methods to the module
+NativeCoreModule.updateGlasses = function (values: Partial<GlassesStatus>) {
+  return this.update("glasses", values)
+}
+
+NativeCoreModule.updateCore = function (values: Partial<CoreStatus>) {
+  return this.update("core", values)
+}
+
+NativeCoreModule.onGlassesStatus = function (callback: GlassesListener) {
+  const sub = NativeCoreModule.addListener("onGlassesStatus", callback)
+  return () => sub.remove()
+}
+
+NativeCoreModule.onCoreStatus = function (callback: CoreListener) {
+  const sub = NativeCoreModule.addListener("onCoreStatus", callback)
+  return () => sub.remove()
+}
+
+export default NativeCoreModule
