@@ -1,6 +1,6 @@
 import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {Platform} from "react-native"
@@ -10,6 +10,8 @@ const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-li
 export default function MentraLiveOnboarding() {
   const {pushPrevious} = useNavigationHistory()
   const [_onboardingLiveCompleted, setOnboardingLiveCompleted] = useSetting(SETTINGS.onboarding_live_completed.key)
+  focusEffectPreventBack()
+
   // NOTE: you can't have 2 transition videos in a row or things will break:
   let steps: OnboardingStep[] = [
     {

@@ -693,6 +693,7 @@ class CoreManager {
                 // Other route changes (headset plug/unplug, BT connect/disconnect, etc.)
                 // Just log for now - may want to handle these in the future
                 Bridge.log("MAN: Audio route changed: $reason")
+                systemMicUnavailable = false
             }
         }
 
