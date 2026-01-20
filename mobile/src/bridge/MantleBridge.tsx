@@ -4,6 +4,7 @@ import Toast from "react-native-toast-message"
 import {translate} from "@/i18n"
 // NOTE: LiveKit audio path disabled - using UDP or WebSocket instead
 // import livekit from "@/services/Livekit"
+import {displayProcessor} from "@/services/display"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
@@ -373,6 +374,13 @@ export class MantleBridge {
             fwVersion: data.firmware_version,
             btMacAddress: data.bt_mac_address,
           })
+          // Update DisplayProcessor with the connected glasses model
+          // This ensures text wrapping uses the correct device profile
+          try {
+            displayProcessor.setDeviceModel(data.device_model)
+          } catch (err) {
+            console.error("MantleBridge: Failed to set device model:", err)
+          }
           break
         default:
           console.log("Unknown event type:", data.type)
