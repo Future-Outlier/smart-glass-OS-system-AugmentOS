@@ -4,6 +4,7 @@ import {CoreModuleEvents, GlassesStatus, CoreStatus} from "./Core.types"
 
 type GlassesListener = (changed: Partial<GlassesStatus>) => void
 type CoreListener = (changed: Partial<CoreStatus>) => void
+type CoreMessageListener = (message: any) => void
 
 declare class CoreModule extends NativeModule<CoreModuleEvents> {
   // Observable Store Functions (native)
@@ -141,6 +142,18 @@ NativeCoreModule.onGlassesStatus = function (callback: GlassesListener) {
 
 NativeCoreModule.onCoreStatus = function (callback: CoreListener) {
   const sub = NativeCoreModule.addListener("onCoreStatus", callback)
+  return () => sub.remove()
+}
+
+NativeCoreModule.onCoreEvent = function (callback: CoreMessageListener) {
+  const sub = NativeCoreModule.addListener("onCoreEvent", (event: any) => {
+    try {
+      const data = JSON.parse(event.body)
+      callback(data)
+    } catch (error) {
+      console.error("Error parsing JSON from onCoreEvent:", error)
+    } 
+  })
   return () => sub.remove()
 }
 

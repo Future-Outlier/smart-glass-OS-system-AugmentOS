@@ -1,24 +1,24 @@
-import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
+import { DeviceTypes, getModelCapabilities } from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
-import {useState} from "react"
-import {ActivityIndicator, Image, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import { useState } from "react"
+import { ActivityIndicator, Image, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native"
 
-import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
-import {Button, Icon, Text} from "@/components/ignite"
+import { BatteryStatus } from "@/components/glasses/info/BatteryStatus"
+import { Button, Icon, Text } from "@/components/ignite"
 import ConnectedSimulatedGlassesInfo from "@/components/mirror/ConnectedSimulatedGlassesInfo"
 import BrightnessSetting from "@/components/settings/BrightnessSetting"
-import {Divider} from "@/components/ui/Divider"
-import {StatusCard} from "@/components/ui/RouteButton"
-import {Spacer} from "@/components/ui/Spacer"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/contexts/ThemeContext"
-import {translate} from "@/i18n"
-import {useGlassesStore} from "@/stores/glasses"
-import {SETTINGS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
-import {showAlert} from "@/utils/AlertUtils"
-import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
+import { Divider } from "@/components/ui/Divider"
+import { StatusCard } from "@/components/ui/RouteButton"
+import { Spacer } from "@/components/ui/Spacer"
+import { useCoreStatus } from "@/contexts/CoreStatusProvider"
+import { useNavigationHistory } from "@/contexts/NavigationHistoryContext"
+import { useAppTheme } from "@/contexts/ThemeContext"
+import { translate } from "@/i18n"
+import { useGlassesStore } from "@/stores/glasses"
+import { SETTINGS, useSetting } from "@/stores/settings"
+import { ThemedStyle } from "@/theme"
+import { showAlert } from "@/utils/AlertUtils"
+import { checkConnectivityRequirementsUI } from "@/utils/PermissionsUtils"
 import {
   getEvenRealitiesG1Image,
   getGlassesClosedImage,
@@ -35,10 +35,10 @@ const getBatteryIcon = (batteryLevel: number): string => {
   return "battery-0"
 }
 
-export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
-  const {status} = useCoreStatus()
-  const {themed, theme} = useAppTheme()
-  const {push} = useNavigationHistory()
+export const CompactDeviceStatus = ({ style }: { style?: ViewStyle }) => {
+  const { status } = useCoreStatus()
+  const { themed, theme } = useAppTheme()
+  const { push } = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [isCheckingConnectivity, setIsCheckingConnectivity] = useState(false)
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS.auto_brightness.key)
@@ -56,7 +56,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
 
   if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
-    return <ConnectedSimulatedGlassesInfo style={style} mirrorStyle={{backgroundColor: theme.colors.background}} />
+    return <ConnectedSimulatedGlassesInfo style={style} mirrorStyle={{ backgroundColor: theme.colors.background }} />
   }
 
   const connectGlasses = async () => {
@@ -75,7 +75,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
       }
     } catch (error) {
       console.error("connect to glasses error:", error)
-      showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{text: "OK"}])
+      showAlert("Connection Error", "Failed to connect to glasses. Please try again.", [{ text: "OK" }])
     } finally {
       // setIsCheckingConnectivity(false)
     }
@@ -148,7 +148,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
                 flex
                 compact
                 LeftAccessory={() => (
-                  <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginLeft: 5}} />
+                  <ActivityIndicator size="small" color={theme.colors.textAlt} style={{ marginLeft: 5 }} />
                 )}
                 tx="home:connectingGlasses"
               />
@@ -165,15 +165,15 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
     return (
       <View style={[themed($container), style]}>
         <View style={themed($header)}>
-          <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s2}}>
-            <Image source={getCurrentGlassesImage()} style={[themed($glassesImage), {width: 54, maxHeight: 24}]} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.s2 }}>
+            <Image source={getCurrentGlassesImage()} style={[themed($glassesImage), { width: 54, maxHeight: 24 }]} />
             <Text style={themed($headerText)}>{defaultWearable}</Text>
           </View>
         </View>
-        <View style={{marginHorizontal: -theme.spacing.s6}}>
-          <ConnectedSimulatedGlassesInfo showHeader={false} mirrorStyle={{backgroundColor: theme.colors.background}} />
+        <View style={{ marginHorizontal: -theme.spacing.s6 }}>
+          <ConnectedSimulatedGlassesInfo showHeader={false} mirrorStyle={{ backgroundColor: theme.colors.background }} />
         </View>
-        <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2}}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2 }}>
           <Button
             flexContainer={false}
             preset="alternate"
@@ -195,18 +195,23 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
         <Text style={themed($headerText)}>{defaultWearable}</Text>
         <View style={themed($iconRow)}>
           {!isExpanded && batteryLevel !== -1 && (
-            <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s1}}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.s1 }}>
               <Icon name={getBatteryIcon(batteryLevel)} size={18} color={theme.colors.foreground} />
               <Text style={themed($iconText)}>{batteryLevel}%</Text>
             </View>
           )}
           <MicIcon width={18} height={18} />
           <Icon name="bluetooth-connected" size={18} color={theme.colors.foreground} />
-          {features?.hasWifi && (
-            <TouchableOpacity onPress={() => push("/wifi/scan")}>
-              <Icon name={wifiConnected ? "wifi" : "wifi-off"} size={18} color={theme.colors.foreground} />
-            </TouchableOpacity>
-          )}
+          {features?.hasWifi &&
+            (wifiConnected ? (
+              <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
+                <Icon name="wifi" size={18} color={theme.colors.foreground} />
+              </Button>
+            ) : (
+              <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
+                <Icon name="wifi-off" size={18} color={theme.colors.foreground} />
+              </Button>
+            ))}
         </View>
       </View>
 
@@ -214,7 +219,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
       <View
         style={[
           themed($imageContainer),
-          {paddingVertical: isExpanded ? theme.spacing.s6 : theme.spacing.s4},
+          { paddingVertical: isExpanded ? theme.spacing.s6 : theme.spacing.s4 },
           !isExpanded && {
             alignItems: "center",
             justifyContent: "space-between",
@@ -241,15 +246,15 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
               autoBrightnessValue={autoBrightness}
               brightnessValue={brightness}
               onAutoBrightnessChange={setAutoBrightness}
-              onBrightnessChange={() => {}}
+              onBrightnessChange={() => { }}
               onBrightnessSet={setBrightness}
-              style={{backgroundColor: theme.colors.background}}
+              style={{ backgroundColor: theme.colors.background }}
             />
           )}
 
           <BatteryStatus compact={true} />
 
-          <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2}}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2 }}>
             {/* Glasses Mirror - only show for devices with display */}
             {features?.display && (
               <Button
@@ -296,12 +301,12 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
+const $container: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
   backgroundColor: colors.primary_foreground,
   padding: spacing.s6,
 })
 
-const $imageContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $imageContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 2,
   alignItems: "center",
   justifyContent: "center",
@@ -327,43 +332,43 @@ const $header: ThemedStyle<ViewStyle> = () => ({
   alignItems: "center",
 })
 
-const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
+const $headerText: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.secondary_foreground,
   fontSize: 20,
   fontWeight: 600,
 })
 
-const $iconRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $iconRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   alignItems: "center",
   gap: spacing.s3,
 })
 
-const $iconText: ThemedStyle<TextStyle> = ({colors}) => ({
+const $iconText: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.secondary_foreground,
   fontSize: 14,
   fontWeight: 500,
 })
 
-const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $sideBySideContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   paddingVertical: spacing.s6,
   alignItems: "center",
 })
 
-const $statusContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $statusContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,
   gap: spacing.s3,
 })
 
-const $expandButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
+const $expandButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   alignItems: "center",
   justifyContent: "center",
   paddingTop: spacing.s4,
 })
 
-const $disconnectedContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
+const $disconnectedContainer: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
   backgroundColor: colors.primary_foreground,
   padding: spacing.s6,
 })

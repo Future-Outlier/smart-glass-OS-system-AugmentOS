@@ -6,7 +6,7 @@ public class CoreModule: Module {
         Name("Core")
 
         // Define events that can be sent to JavaScript
-        Events("CoreMessageEvent", "onChange", "onGlassesStatus", "onCoreStatus")
+        Events("onCoreEvent", "onChange", "onGlassesStatus", "onCoreStatus")
 
         OnCreate {
             // Initialize Bridge with event callback

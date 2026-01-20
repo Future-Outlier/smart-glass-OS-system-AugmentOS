@@ -272,16 +272,6 @@ export default function TranscriptionSettingsScreen() {
     initSelectedModel()
   }, [])
 
-  useEffect(() => {
-    const subscription = CoreModule.addListener("CoreMessageEvent", (_event: any) => {
-      // console.log("CoreMessageEvent:", event)
-      // let _type = event.body.type
-      // if (type === "") {
-      // }
-    })
-    return () => subscription.remove()
-  }, [])
-
   return (
     <Screen preset="fixed">
       <Header

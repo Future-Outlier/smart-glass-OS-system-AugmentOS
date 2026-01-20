@@ -642,7 +642,6 @@ class G1: NSObject, SGCManager {
     /// Emits serial number information to React Native
     private func emitSerialNumberInfo(serialNumber: String, style: String, color: String) {
         let eventBody: [String: Any] = [
-            "type": "glasses_serial_number",
             "serialNumber": serialNumber,
             "style": style,
             "color": color,
@@ -652,7 +651,9 @@ class G1: NSObject, SGCManager {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: eventBody, options: [])
             if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendEvent(withName: "CoreMessageEvent", body: jsonString)
+
+                // Bridge.sendTypedMessage("glasses_serial_number", body: eventBody)
+
                 Bridge.log(
                     "G1: 📱 Emitted serial number info: \(serialNumber), Style: \(style), Color: \(color)"
                 )
@@ -2180,7 +2181,8 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                     glassesColor = color
 
                     // Emit the serial number information
-                    emitSerialNumberInfo(serialNumber: decodedSerial, style: style, color: color)
+                    // emitSerialNumberInfo(serialNumber: decodedSerial, style: style, color: color)
+                    CoreManager.shared.getStatus()
                 } else {
                     Bridge.log("G1: 📱 Could not decode serial number from manufacturer data")
                 }

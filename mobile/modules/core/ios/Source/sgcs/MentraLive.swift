@@ -2967,7 +2967,7 @@ class MentraLive: NSObject, SGCManager {
             "LIVE: 📸 Received gallery status - photos: \(photoCount), videos: \(videoCount), total size: \(totalSize) bytes"
         )
 
-        // Emit gallery status event as CoreMessageEvent like other status events
+        // Emit gallery status event like other status events
         let eventBody =
             [
                 "photos": photoCount,
@@ -3190,7 +3190,7 @@ class MentraLive: NSObject, SGCManager {
             "timestamp": timestamp,
         ]
 
-        // emitEvent("CoreMessageEvent", body: eventBody)
+        // emitEvent("onCoreEvent", body: eventBody)
     }
 
     private func emitVersionInfo(

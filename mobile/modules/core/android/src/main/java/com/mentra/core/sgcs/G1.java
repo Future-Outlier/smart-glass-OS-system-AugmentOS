@@ -3932,7 +3932,7 @@ public class G1 extends SGCManager {
             eventBody.put("color", color);
 
             String jsonString = eventBody.toString();
-            Bridge.sendEvent("CoreMessageEvent", jsonString);
+            Bridge.sendEvent("onCoreEvent", jsonString);
             Bridge.log("G1: 📱 Emitted serial number info: " + serialNumber + ", Style: " + style + ", Color: " + color);
 
             // Trigger status update to include serial number in status JSON

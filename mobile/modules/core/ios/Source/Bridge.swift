@@ -31,9 +31,8 @@ class Bridge {
     }
 
     static func log(_ message: String) {
-        let msg = "CORE:\(message)"
-        let data: [String: Any] = ["body": msg]
-        dispatchEvent("CoreMessageEvent", data)
+        let data = ["message": message]
+        Bridge.sendTypedMessage("log", body: data)
     }
 
     static func sendEvent(withName: String, body: String) {
@@ -341,6 +340,6 @@ class Bridge {
         let jsonData = try! JSONSerialization.data(withJSONObject: body)
         let jsonString = String(data: jsonData, encoding: .utf8)
         let data: [String: Any] = ["body": jsonString!]
-        dispatchEvent("CoreMessageEvent", data)
+        dispatchEvent("onCoreEvent", data)
     }
 }

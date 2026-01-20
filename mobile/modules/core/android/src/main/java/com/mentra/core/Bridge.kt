@@ -65,8 +65,9 @@ public class Bridge private constructor() {
         /** Log a message and send it to JavaScript */
         @JvmStatic
         fun log(message: String) {
-            val msg = "CORE:$message"
-            sendEvent("CoreMessageEvent", msg)
+            val data = HashMap<String, Any>()
+            data["message"] = message
+            sendTypedMessage("log", data as Map<String, Any>)
         }
 
         /** Send an event to JavaScript */
@@ -632,7 +633,7 @@ public class Bridge private constructor() {
         /** Get supported events Don't add to this list, use a typed message instead */
         @JvmStatic
         fun getSupportedEvents(): Array<String> {
-            return arrayOf("CoreMessageEvent")
+            return arrayOf("onCoreEvent")
         }
 
         // Arbitrary WS Comms (don't use these, make a dedicated function for your use case):
@@ -681,7 +682,7 @@ public class Bridge private constructor() {
 
                 // Additional safety: wrap the actual callback invocation
                 try {
-                    eventCallback?.invoke("CoreMessageEvent", eventData as Map<String, Any>)
+                    eventCallback?.invoke("onCoreEvent", eventData as Map<String, Any>)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error invoking eventCallback for type '$type' (React Native may be dead)", e)
                     // Don't rethrow - this prevents crashes when RN context is destroyed

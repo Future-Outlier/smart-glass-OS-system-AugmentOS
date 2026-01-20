@@ -4,7 +4,6 @@ import * as Location from "expo-location"
 import * as TaskManager from "expo-task-manager"
 import {shallow} from "zustand/shallow"
 
-import bridge from "@/bridge/MantleBridge"
 import livekit from "@/services/Livekit"
 import {migrate} from "@/services/Migrations"
 import restComms from "@/services/RestComms"
@@ -204,13 +203,10 @@ class MantleManager {
     )
 
     // subscribe to the core:
-    CoreModule.addListener("CoreMessageEvent", (event: any) => {
-      this.handleCoreMessage(event.body)
-    })
     if (this.coreMessageSubscription) {
       this.coreMessageSubscription.remove()
     }
-    this.coreMessageSubscription = CoreModule.onTypedMessage(this.handleCoreMessage)
+    this.coreMessageSubscription = CoreModule.onEvent(this.handleCoreEvent)
   }
 
   private async sendCalendarEvents() {
@@ -347,7 +343,8 @@ class MantleManager {
   }
 
 
-  private async handleCoreMessage(data: any) {
+  private async handleCoreEvent(data: any) {
+    console.log("MANTLE: received core event from Core", data)
     if (!data) return
 
     try {
@@ -360,6 +357,9 @@ class MantleManager {
       let res
 
       switch (data.type) {
+        case "log":
+          console.log("MANTLE: received log event from Core", data.message)
+          break
         case "core_status_update":
           useGlassesStore.getState().setGlassesInfo(data.core_status.glasses_info)
           GlobalEventEmitter.emit("core_status_update", data)
@@ -405,13 +405,13 @@ class MantleManager {
           })
           break
         case "heartbeat_sent":
-          console.log("MAN: received heartbeat_sent event from Core", data.heartbeat_sent)
+          console.log("MANTLE: received heartbeat_sent event from Core", data.heartbeat_sent)
           GlobalEventEmitter.emit("heartbeat_sent", {
             timestamp: data.heartbeat_sent.timestamp,
           })
           break
         case "heartbeat_received":
-          console.log("MAN: received heartbeat_received event from Core", data.heartbeat_received)
+          console.log("MANTLE: received heartbeat_received event from Core", data.heartbeat_received)
           GlobalEventEmitter.emit("heartbeat_received", {
             timestamp: data.heartbeat_received.timestamp,
           })
@@ -547,7 +547,7 @@ class MantleManager {
               bytes[i] = binaryString.charCodeAt(i)
             }
             if (__DEV__ && Math.random() < 0.03) {
-              console.log("MantleBridge: Received mic data:", bytes.length, "bytes")
+              console.log("MANTLE: Received mic data:", bytes.length, "bytes")
             }
             // NOTE: LiveKit audio path disabled - using UDP or WebSocket instead
             // const isChinaDeployment = await useSettingsStore.getState().getSetting(SETTINGS.china_deployment.key)
@@ -560,22 +560,22 @@ class MantleManager {
           }
           break
         case "rtmp_stream_status":
-          console.log("MantleBridge: Forwarding RTMP stream status to server:", data)
+          console.log("MANTLE: Forwarding RTMP stream status to server:", data)
           socketComms.sendRtmpStreamStatus(data)
           break
         case "keep_alive_ack":
-          console.log("MantleBridge: Forwarding keep-alive ACK to server:", data)
+          console.log("MANTLE: Forwarding keep-alive ACK to server:", data)
           socketComms.sendKeepAliveAck(data)
           break
         case "mtk_update_complete":
-          console.log("MantleBridge: MTK firmware update complete:", data.message)
+          console.log("MANTLE: MTK firmware update complete:", data.message)
           GlobalEventEmitter.emit("mtk_update_complete", {
             message: data.message,
             timestamp: data.timestamp,
           })
           break
         case "ota_update_available":
-          console.log("📱 MantleBridge: OTA update available from glasses:", data)
+          console.log("📱 MANTLE: OTA update available from glasses:", data)
           useGlassesStore.getState().setOtaUpdateAvailable({
             available: true,
             versionCode: data.version_code ?? 0,
@@ -591,7 +591,7 @@ class MantleManager {
           })
           break
         case "ota_progress":
-          console.log("📱 MantleBridge: OTA progress:", data.stage, data.status, data.progress + "%")
+          console.log("📱 MANTLE: OTA progress:", data.stage, data.status, data.progress + "%")
           useGlassesStore.getState().setOtaProgress({
             stage: data.stage ?? "download",
             status: data.status ?? "PROGRESS",
@@ -616,7 +616,7 @@ class MantleManager {
           }
           break
         case "version_info":
-          console.log("MAN: Received version_info:", data)
+          console.log("MANTLE: Received version_info:", data)
           useGlassesStore.getState().setGlassesInfo({
             appVersion: data.app_version,
             buildNumber: data.build_number,
@@ -628,11 +628,11 @@ class MantleManager {
           })
           break
         default:
-          console.log("MAN: Unknown event type:", data.type)
+          console.log("MANTLE: Unknown event type:", data.type)
           break
       }
     } catch (e) {
-      console.error("MAN: Error parsing data from Core:", e)
+      console.error("MANTLE: Error parsing data from Core:", e)
     }
   }
 }

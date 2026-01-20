@@ -394,7 +394,7 @@ export default function NexDeveloperSettings() {
   const onLc3AudioToggle = async (enabled: boolean) => {
     setLc3AudioEnabled(enabled)
     if (glassesConnected) {
-      await bridge.setLc3AudioEnabled(enabled)
+      await CoreModule.setLc3AudioEnabled(enabled)
     }
   }
 

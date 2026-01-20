@@ -3,8 +3,9 @@ export type CoreMessageEventPayload = {
 }
 
 export type CoreModuleEvents = {
+  onEvent: (data: any) => void
+  onCoreEvent: (data: any) => void
   onChange: (params: ChangeEventPayload) => void
-  CoreMessageEvent: (message: string) => void
   onGlassesStatus: (changed: Partial<GlassesStatus>) => void
   onCoreStatus: (changed: Partial<CoreStatus>) => void
 }
