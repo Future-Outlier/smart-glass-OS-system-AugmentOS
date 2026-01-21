@@ -80,9 +80,6 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
     count: number,
   ): Promise<void>
 
-  // Settings Commands
-  updateSettings(params: Record<string, any>): Promise<void>
-
   // STT Commands
   setSttModelDetails(path: string, languageCode: string): Promise<void>
   getSttModelPath(): Promise<string>

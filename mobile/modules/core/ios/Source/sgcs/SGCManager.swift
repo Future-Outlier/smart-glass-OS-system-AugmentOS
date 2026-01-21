@@ -110,6 +110,7 @@ protocol SGCManager {
     func sendWifiCredentials(_ ssid: String, _ password: String)
     func forgetWifiNetwork(_ ssid: String)
     func sendHotspotState(_ enabled: Bool)
+    func sendOtaStart()
 
     // MARK: - User Context (for crash reporting)
 

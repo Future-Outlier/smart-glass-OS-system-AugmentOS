@@ -271,14 +271,6 @@ public class CoreModule: Module {
             }
         }
 
-        // MARK: - Settings Commands
-
-        AsyncFunction("updateSettings") { (params: [String: Any]) in
-            await MainActor.run {
-                CoreManager.shared.updateSettings(params)
-            }
-        }
-
         // MARK: - STT Commands
 
         AsyncFunction("setSttModelDetails") { (path: String, languageCode: String) in

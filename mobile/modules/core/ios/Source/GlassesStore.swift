@@ -36,12 +36,25 @@ class GlassesStore {
         store.set("glasses", "is_connected", false)
         store.set("glasses", "device_model", "")
         store.set("glasses", "firmware_version", "")
-        store.set("glasses", "mic_enabled", false)
         store.set("glasses", "btc_connected", false)
+        store.set("glasses", "mic_enabled", false)
 
-        // Set defaults for core settings
+        // Set defaults for core state
+        store.set("core", "default_wearable", "")
+        store.set("core", "pending_wearable", "")
+        store.set("core", "device_name", "")
+        store.set("core", "device_address", "")
+        store.set("core", "offline_mode", false)
+        store.set("core", "screen_disabled", false)
         store.set("core", "is_searching", false)
+        store.set("core", "btc_connected", false)
+        store.set("core", "system_mic_unavailable", false)
+        store.set("core", "mic_ranking", MicMap.map["auto"]!)
+        store.set("core", "preferred_mic", "auto")
         store.set("core", "power_saving_mode", false)
+        store.set("core", "always_on_status_bar", false)
+        store.set("core", "enforce_local_transcription", false)
+        store.set("core", "sensing_enabled", true)
         store.set("core", "metric_system", false)
     }
 
@@ -117,43 +130,49 @@ class GlassesStore {
 
         case ("glasses", "preferred_mic"):
             if let mic = value as? String {
-                CoreManager.shared.preferredMic = mic
-                CoreManager.shared.micRanking = MicMap.map[mic] ?? MicMap.map["auto"]!
+                apply("core", "mic_ranking", MicMap.map[mic] ?? MicMap.map["auto"]!)
                 CoreManager.shared.setMicState(
-                    CoreManager.shared.shouldSendPcmData,
-                    CoreManager.shared.shouldSendTranscript,
-                    CoreManager.shared.bypassVad
+                    store.get("core", "should_send_pcm_data") as? Bool ?? false,
+                    store.get("core", "should_send_transcript") as? Bool ?? false,
+                    store.get("core", "bypass_vad") as? Bool ?? true
                 )
             }
 
-        case ("glasses", "bypass_vad"):
-            if let bypass = value as? Bool {
-                CoreManager.shared.bypassVad = bypass
-            }
-
-        case ("glasses", "offline_mode"):
+        case ("core", "offline_mode"):
             if let offline = value as? Bool {
-                CoreManager.shared.offlineMode = offline
                 CoreManager.shared.setMicState(
-                    CoreManager.shared.shouldSendPcmData,
-                    CoreManager.shared.shouldSendTranscript,
-                    CoreManager.shared.bypassVad
+                    store.get("core", "should_send_pcm_data") as? Bool ?? false,
+                    store.get("core", "should_send_transcript") as? Bool ?? false,
+                    store.get("core", "bypass_vad") as? Bool ?? true
                 )
             }
 
-        case ("glasses", "contextual_dashboard"):
+        case ("core", "enforce_local_transcription"):
             if let enabled = value as? Bool {
-                CoreManager.shared.contextualDashboard = enabled
+                CoreManager.shared.setMicState(
+                    store.get("core", "should_send_pcm_data") as? Bool ?? false,
+                    store.get("core", "should_send_transcript") as? Bool ?? false,
+                    store.get("core", "bypass_vad") as? Bool ?? true
+                )
             }
 
-        case ("core", "power_saving_mode"):
-            if let enabled = value as? Bool {
-                CoreManager.shared.powerSavingMode = enabled
+        case ("core", "default_wearable"):
+            if let wearable = value as? String {
+                Bridge.saveSetting("default_wearable", wearable)
             }
 
-        case ("core", "metric_system"):
-            if let enabled = value as? Bool {
-                CoreManager.shared.metricSystem = enabled
+        case ("core", "device_name"):
+            if let name = value as? String {
+                CoreManager.shared.checkCurrentAudioDevice()
+            }
+
+        case ("core", "screen_disabled"):
+            if let disabled = value as? Bool {
+                if disabled {
+                    CoreManager.shared.sgc?.exit()
+                } else {
+                    CoreManager.shared.sgc?.clearDisplay()
+                }
             }
 
         default:
