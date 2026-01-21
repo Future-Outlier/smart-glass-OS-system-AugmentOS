@@ -1,154 +1,218 @@
 package com.mentra.core
 
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
  * Centralized observable state store for glasses and core settings
  */
 object GlassesStore {
+    
     val store = ObservableStore()
-
+    
     init {
-        // Set defaults for glasses settings
-        store.set("glasses", "brightness", 50)
-        store.set("glasses", "auto_brightness", true)
-        store.set("glasses", "dashboard_height", 4)
-        store.set("glasses", "dashboard_depth", 5)
-        store.set("glasses", "head_up_angle", 30)
-        store.set("glasses", "contextual_dashboard", true)
-        store.set("glasses", "gallery_mode", false)
-        store.set("glasses", "screen_disabled", false)
-        store.set("glasses", "button_mode", "photo")
-        store.set("glasses", "button_photo_size", "medium")
-        store.set("glasses", "button_camera_led", true)
-        store.set("glasses", "button_max_recording_time", 10)
-        store.set("glasses", "button_video_width", 1280)
-        store.set("glasses", "button_video_height", 720)
-        store.set("glasses", "button_video_fps", 30)
-        store.set("glasses", "preferred_mic", "auto")
-        store.set("glasses", "bypass_vad", true)
-        store.set("glasses", "offline_mode", false)
-        store.set("glasses", "battery_level", -1)
-        store.set("glasses", "is_connected", false)
-        store.set("glasses", "device_model", "")
-        store.set("glasses", "firmware_version", "")
-        store.set("glasses", "mic_enabled", false)
-        store.set("glasses", "btc_connected", false)
-
-        // Set defaults for core settings
-        store.set("core", "is_searching", false)
+        // SETTINGS are snake_case
+        // CORE STATE is camelCase
+        
+        // GLASSES STATE:
+        store.set("glasses", "batteryLevel", -1)
+        store.set("glasses", "connected", false)
+        store.set("glasses", "connectionState", "disconnected")
+        store.set("glasses", "deviceModel", "")
+        store.set("glasses", "firmwareVersion", "")
+        store.set("glasses", "micEnabled", false)
+        store.set("glasses", "btcConnected", false)
+        store.set("glasses", "caseRemoved", true)
+        store.set("glasses", "caseOpen", true)
+        store.set("glasses", "caseCharging", false)
+        store.set("glasses", "caseBatteryLevel", -1)
+        store.set("glasses", "serialNumber", "")
+        store.set("glasses", "style", "")
+        store.set("glasses", "color", "")
+        store.set("glasses", "wifiSsid", "")
+        store.set("glasses", "wifiConnected", false)
+        store.set("glasses", "wifiLocalIp", "")
+        store.set("glasses", "hotspotEnabled", false)
+        store.set("glasses", "hotspotSsid", "")
+        store.set("glasses", "hotspotPassword", "")
+        store.set("glasses", "hotspotGatewayIp", "")
+        store.set("glasses", "bluetoothName", "")
+        
+        // CORE STATE:
+        store.set("core", "systemMicUnavailable", false)
+        store.set("core", "isHeadUp", false)
+        store.set("core", "searching", false)
+        
+        // CORE SETTINGS:
+        store.set("core", "default_wearable", "")
+        store.set("core", "pending_wearable", "")
+        store.set("core", "device_name", "")
+        store.set("core", "device_address", "")
+        store.set("core", "offline_mode", false)
+        store.set("core", "screen_disabled", false)
+        store.set("core", "mic_ranking", MicMap.map["auto"]!!)
+        store.set("core", "preferred_mic", "auto")
         store.set("core", "power_saving_mode", false)
+        store.set("core", "always_on_status_bar", false)
+        store.set("core", "enforce_local_transcription", false)
+        store.set("core", "sensing_enabled", true)
         store.set("core", "metric_system", false)
+        store.set("core", "brightness", 50)
+        store.set("core", "auto_brightness", true)
+        store.set("core", "dashboard_height", 4)
+        store.set("core", "dashboard_depth", 5)
+        store.set("core", "head_up_angle", 30)
+        store.set("core", "contextual_dashboard", true)
+        store.set("core", "gallery_mode", false)
+        store.set("core", "screen_disabled", false)
+        store.set("core", "button_mode", "photo")
+        store.set("core", "button_photo_size", "medium")
+        store.set("core", "button_camera_led", true)
+        store.set("core", "button_max_recording_time", 10)
+        store.set("core", "button_video_width", 1280)
+        store.set("core", "button_video_height", 720)
+        store.set("core", "button_video_fps", 30)
+        store.set("core", "preferred_mic", "auto")
     }
-
-    @OptIn(DelicateCoroutinesApi::class)
+    
+    fun get(category: String, key: String): Any? {
+        return store.get(category, key)
+    }
+    
+    fun set(category: String, key: String, value: Any) {
+        store.set(category, key, value)
+    }
+    
+    /**
+     * Apply changes with side effects
+     */
     fun apply(category: String, key: String, value: Any) {
         val oldValue = store.get(category, key)
         store.set(category, key, value)
-
+        
         // Trigger hardware updates based on setting changes
         when (category to key) {
-            "glasses" to "brightness" -> {
-                val b = value as? Int ?: 50
-                val auto = store.get("glasses", "auto_brightness") as? Boolean ?: true
-                GlobalScope.launch(Dispatchers.Main) {
-                    CoreManager.instance?.sgc?.setBrightness(b, auto)
-                    CoreManager.instance?.sgc?.sendTextWall("Set brightness to $b%")
-                    delay(800)  // 0.8 seconds
-                    CoreManager.instance?.sgc?.clearDisplay()
+            "core" to "brightness" -> {
+                val b = (value as? Int) ?: 50
+                val auto = (store.get("core", "auto_brightness") as? Boolean) ?: true
+                CoroutineScope(Dispatchers.Main).launch {
+                    CoreManager.instance.sgc?.setBrightness(b, auto)
+                    CoreManager.instance.sgc?.sendTextWall("Set brightness to $b%")
+                    delay(800) // 0.8 seconds
+                    CoreManager.instance.sgc?.clearDisplay()
                 }
             }
-
-            "glasses" to "auto_brightness" -> {
-                val b = store.get("glasses", "brightness") as? Int ?: 50
-                val auto = value as? Boolean ?: true
+            
+            "core" to "auto_brightness" -> {
+                val b = (store.get("core", "brightness") as? Int) ?: 50
+                val auto = (value as? Boolean) ?: true
                 val autoBrightnessChanged = (oldValue as? Boolean) != auto
-                GlobalScope.launch(Dispatchers.Main) {
-                    CoreManager.instance?.sgc?.setBrightness(b, auto)
+                CoroutineScope(Dispatchers.Main).launch {
+                    CoreManager.instance.sgc?.setBrightness(b, auto)
                     if (autoBrightnessChanged) {
-                        CoreManager.instance?.sgc?.sendTextWall(
+                        CoreManager.instance.sgc?.sendTextWall(
                             if (auto) "Enabled auto brightness" else "Disabled auto brightness"
                         )
-                        delay(800)  // 0.8 seconds
-                        CoreManager.instance?.sgc?.clearDisplay()
+                        delay(800) // 0.8 seconds
+                        CoreManager.instance.sgc?.clearDisplay()
                     }
                 }
             }
-
-            "glasses" to "dashboard_height",
-            "glasses" to "dashboard_depth" -> {
-                val h = store.get("glasses", "dashboard_height") as? Int ?: 4
-                val d = store.get("glasses", "dashboard_depth") as? Int ?: 5
-                GlobalScope.launch(Dispatchers.Main) {
-                    CoreManager.instance?.sgc?.setDashboardPosition(h, d)
+            
+            "core" to "dashboard_height",
+            "core" to "dashboard_depth" -> {
+                val h = (store.get("glasses", "dashboard_height") as? Int) ?: 4
+                val d = (store.get("glasses", "dashboard_depth") as? Int) ?: 5
+                CoroutineScope(Dispatchers.Main).launch {
+                    CoreManager.instance.sgc?.setDashboardPosition(h, d)
                 }
             }
-
-            "glasses" to "head_up_angle" ->
-                CoreManager.instance?.sgc?.setHeadUpAngle(value as Int)
-
-            "glasses" to "gallery_mode" ->
-                CoreManager.instance?.sgc?.sendGalleryMode()
-
-            "glasses" to "screen_disabled" -> {
-                if (value as Boolean) CoreManager.instance?.sgc?.exit()
-                else CoreManager.instance?.sgc?.clearDisplay()
+            
+            "core" to "head_up_angle" -> {
+                (value as? Int)?.let { angle ->
+                    CoreManager.instance.sgc?.setHeadUpAngle(angle)
+                }
             }
-
-            "glasses" to "button_mode" ->
-                CoreManager.instance?.sgc?.sendButtonModeSetting()
-
-            "glasses" to "button_photo_size" ->
-                CoreManager.instance?.sgc?.sendButtonPhotoSettings()
-
-            "glasses" to "button_camera_led" ->
-                CoreManager.instance?.sgc?.sendButtonCameraLedSetting()
-
-            "glasses" to "button_max_recording_time" ->
-                CoreManager.instance?.sgc?.sendButtonMaxRecordingTime()
-
-            "glasses" to "button_video_width",
-            "glasses" to "button_video_height",
-            "glasses" to "button_video_fps" ->
-                CoreManager.instance?.sgc?.sendButtonVideoRecordingSettings()
-
-            "glasses" to "preferred_mic" -> {
-                val mic = value as? String ?: "auto"
-                CoreManager.instance?.preferredMic = mic
-                CoreManager.instance?.micRanking = MicMap.map[mic] ?: MicMap.map["auto"]!!
-                CoreManager.instance?.setMicState(
-                    CoreManager.instance?.shouldSendPcmData ?: false,
-                    CoreManager.instance?.shouldSendTranscript ?: false,
-                    CoreManager.instance?.bypassVad ?: true
-                )
+            
+            "core" to "gallery_mode" -> {
+                CoreManager.instance.sgc?.sendGalleryMode()
             }
-
-            "glasses" to "bypass_vad" -> {
-                CoreManager.instance?.bypassVad = value as Boolean
+            
+            "core" to "screen_disabled" -> {
+                (value as? Boolean)?.let { disabled ->
+                    if (disabled) {
+                        CoreManager.instance.sgc?.exit()
+                    } else {
+                        CoreManager.instance.sgc?.clearDisplay()
+                    }
+                }
             }
-
-            "glasses" to "offline_mode" -> {
-                CoreManager.instance?.offlineMode = value as Boolean
-                CoreManager.instance?.setMicState(
-                    CoreManager.instance?.shouldSendPcmData ?: false,
-                    CoreManager.instance?.shouldSendTranscript ?: false,
-                    CoreManager.instance?.bypassVad ?: true
-                )
+            
+            "core" to "button_mode" -> {
+                CoreManager.instance.sgc?.sendButtonModeSetting()
             }
-
-            "glasses" to "contextual_dashboard" -> {
-                CoreManager.instance?.contextualDashboard = value as Boolean
+            
+            "core" to "button_photo_size" -> {
+                CoreManager.instance.sgc?.sendButtonPhotoSettings()
             }
-
-            "core" to "power_saving_mode" -> {
-                CoreManager.instance?.powerSavingMode = value as Boolean
+            
+            "core" to "button_camera_led" -> {
+                CoreManager.instance.sgc?.sendButtonCameraLedSetting()
             }
-
-            "core" to "metric_system" -> {
-                CoreManager.instance?.metricSystem = value as Boolean
+            
+            "core" to "button_max_recording_time" -> {
+                CoreManager.instance.sgc?.sendButtonMaxRecordingTime()
+            }
+            
+            "core" to "button_video_width",
+            "core" to "button_video_height",
+            "core" to "button_video_fps" -> {
+                CoreManager.instance.sgc?.sendButtonVideoRecordingSettings()
+            }
+            
+            "core" to "preferred_mic" -> {
+                (value as? String)?.let { mic ->
+                    apply("core", "mic_ranking", MicMap.map[mic] ?: MicMap.map["auto"]!!)
+                    CoreManager.instance.setMicState(
+                        (store.get("core", "should_send_pcm_data") as? Boolean) ?: false,
+                        (store.get("core", "should_send_transcript") as? Boolean) ?: false,
+                        (store.get("core", "bypass_vad") as? Boolean) ?: true
+                    )
+                }
+            }
+            
+            "core" to "offline_mode" -> {
+                (value as? Boolean)?.let { offline ->
+                    CoreManager.instance.setMicState(
+                        (store.get("core", "should_send_pcm_data") as? Boolean) ?: false,
+                        (store.get("core", "should_send_transcript") as? Boolean) ?: false,
+                        (store.get("core", "bypass_vad") as? Boolean) ?: true
+                    )
+                }
+            }
+            
+            "core" to "enforce_local_transcription" -> {
+                (value as? Boolean)?.let { enabled ->
+                    CoreManager.instance.setMicState(
+                        (store.get("core", "should_send_pcm_data") as? Boolean) ?: false,
+                        (store.get("core", "should_send_transcript") as? Boolean) ?: false,
+                        (store.get("core", "bypass_vad") as? Boolean) ?: true
+                    )
+                }
+            }
+            
+            "core" to "default_wearable" -> {
+                (value as? String)?.let { wearable ->
+                    Bridge.saveSetting("default_wearable", wearable)
+                }
+            }
+            
+            "core" to "device_name" -> {
+                (value as? String)?.let { name ->
+                    CoreManager.instance.checkCurrentAudioDevice()
+                }
             }
         }
     }

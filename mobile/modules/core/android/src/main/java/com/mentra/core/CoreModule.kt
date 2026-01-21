@@ -191,12 +191,6 @@ class CoreModule : Module() {
             )
         }
 
-        // MARK: - Settings Commands
-
-        AsyncFunction("updateSettings") { params: Map<String, Any> ->
-            coreManager?.updateSettings(params)
-        }
-
         // MARK: - STT Commands
 
         AsyncFunction("setSttModelDetails") { path: String, languageCode: String ->

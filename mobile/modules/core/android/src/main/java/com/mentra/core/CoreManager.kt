@@ -65,37 +65,119 @@ class CoreManager {
     var storedUserEmail = ""
     var sgc: SGCManager? = null
 
-    // state
-    private var shouldSendBootingMessage = true
-    private val lastStatusObj = ConcurrentHashMap<String, Any>()
-    private var defaultWearable = ""
-    private var pendingWearable = ""
-    public var deviceName = ""
-    public var deviceAddress = ""
-    private var screenDisabled = false
-    private var isSearching = false
-    private var systemMicUnavailable = false
-    public var micRanking = MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
+    // settings:
+    private var defaultWearable: String
+        get() = GlassesStore.store.get("core", "default_wearable") as? String ?: ""
+        set(value) = GlassesStore.apply("core", "default_wearable", value)
 
-    // glasses settings
-    private var contextualDashboard = true
-    private var headUpAngle = 30
-    public var brightness = 50
-    public var autoBrightness = true
-    public var dashboardHeight = 4
-    public var dashboardDepth = 5
-    public var galleryMode = false
+    private var pendingWearable: String
+        get() = GlassesStore.store.get("core", "pending_wearable") as? String ?: ""
+        set(value) = GlassesStore.apply("core", "pending_wearable", value)
 
-    // glasses state
-    private var isHeadUp = false
+    private var deviceName: String
+        get() = GlassesStore.store.get("core", "device_name") as? String ?: ""
+        set(value) = GlassesStore.apply("core", "device_name", value)
 
-    // core settings
-    public var powerSavingMode = false
-    private var alwaysOnStatusBar = false
-    private var bypassVad = true
-    private var enforceLocalTranscription = false
-    private var offlineMode = false
-    private var metricSystem = false
+    private var deviceAddress: String
+        get() = GlassesStore.store.get("core", "device_address") as? String ?: ""
+        set(value) = GlassesStore.apply("core", "device_address", value)
+
+    private var screenDisabled: Boolean
+        get() = GlassesStore.store.get("core", "screen_disabled") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "screen_disabled", value)
+
+    private var preferredMic: String
+        get() = GlassesStore.store.get("core", "preferred_mic") as? String ?: "auto"
+        set(value) = GlassesStore.apply("core", "preferred_mic", value)
+
+    private var autoBrightness: Boolean
+        get() = GlassesStore.store.get("core", "auto_brightness") as? Boolean ?: true
+        set(value) = GlassesStore.apply("core", "auto_brightness", value)
+
+    private var brightness: Int
+        get() = GlassesStore.store.get("core", "brightness") as? Int ?: 50
+        set(value) = GlassesStore.apply("core", "brightness", value)
+
+    private var headUpAngle: Int
+        get() = GlassesStore.store.get("core", "head_up_angle") as? Int ?: 30
+        set(value) = GlassesStore.apply("core", "head_up_angle", value)
+
+    private var sensingEnabled: Boolean
+        get() = GlassesStore.store.get("core", "sensing_enabled") as? Boolean ?: true
+        set(value) = GlassesStore.apply("core", "sensing_enabled", value)
+
+    public var powerSavingMode: Boolean
+        get() = GlassesStore.store.get("core", "power_saving_mode") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "power_saving_mode", value)
+
+    private var alwaysOnStatusBar: Boolean
+        get() = GlassesStore.store.get("core", "always_on_status_bar") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "always_on_status_bar", value)
+
+    private var bypassVad: Boolean
+        get() = GlassesStore.store.get("core", "bypass_vad") as? Boolean ?: true
+        set(value) = GlassesStore.apply("core", "bypass_vad", value)
+
+    private var enforceLocalTranscription: Boolean
+        get() = GlassesStore.store.get("core", "enforce_local_transcription") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "enforce_local_transcription", value)
+
+    private var offlineMode: Boolean
+        get() = GlassesStore.store.get("core", "offline_mode") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "offline_mode", value)
+
+    private var metricSystem: Boolean
+        get() = GlassesStore.store.get("core", "metric_system") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "metric_system", value)
+
+    private var contextualDashboard: Boolean
+        get() = GlassesStore.store.get("core", "contextual_dashboard") as? Boolean ?: true
+        set(value) = GlassesStore.apply("core", "contextual_dashboard", value)
+
+    private var dashboardHeight: Int
+        get() = GlassesStore.store.get("core", "dashboard_height") as? Int ?: 4
+        set(value) = GlassesStore.apply("core", "dashboard_height", value)
+
+    private var dashboardDepth: Int
+        get() = GlassesStore.store.get("core", "dashboard_depth") as? Int ?: 5
+        set(value) = GlassesStore.apply("core", "dashboard_depth", value)
+
+    private var galleryMode: Boolean
+        get() = GlassesStore.store.get("core", "gallery_mode") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "gallery_mode", value)
+
+    // state:
+    private var shouldSendPcmData: Boolean
+        get() = GlassesStore.store.get("core", "shouldSendPcmData") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "shouldSendPcmData", value)
+
+    private var shouldSendTranscript: Boolean
+        get() = GlassesStore.store.get("core", "shouldSendTranscript") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "shouldSendTranscript", value)
+
+    private var searching: Boolean
+        get() = GlassesStore.store.get("core", "searching") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "searching", value)
+
+    private var glassesBtcConnected: Boolean
+        get() = GlassesStore.store.get("glasses", "btcConnected") as? Boolean ?: false
+        set(value) = GlassesStore.apply("glasses", "btcConnected", value)
+
+    public var micRanking: MutableList<String>
+        get() = (GlassesStore.store.get("core", "micRanking") as? List<*>)?.mapNotNull { it as? String }?.toMutableList() ?: MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
+        set(value) = GlassesStore.apply("core", "micRanking", value)
+
+    private var shouldSendBootingMessage: Boolean
+        get() = GlassesStore.store.get("core", "shouldSendBootingMessage") as? Boolean ?: true
+        set(value) = GlassesStore.apply("core", "shouldSendBootingMessage", value)
+
+    private var systemMicUnavailable: Boolean
+        get() = GlassesStore.store.get("core", "systemMicUnavailable") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "systemMicUnavailable", value)
+
+    public var isHeadUp: Boolean
+        get() = GlassesStore.store.get("core", "isHeadUp") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "isHeadUp", value)
 
     // LC3 Audio Encoding
     // Audio output format enum
@@ -109,20 +191,38 @@ class CoreManager {
     private var audioOutputFormat: AudioOutputFormat = AudioOutputFormat.LC3
 
     // mic
-    public var useOnboardMic = false
-    public var preferredMic = "auto"
-    public var micEnabled = false
+    private var micEnabled = false
     private var lastMicState: Triple<Boolean, Boolean, String>? =
             null // (useGlassesMic, useOnboardMic, preferredMic)
 
     // button settings
-    public var buttonPressMode = "photo"
-    public var buttonPhotoSize = "medium"
-    public var buttonVideoWidth = 1280
-    public var buttonVideoHeight = 720
-    public var buttonVideoFps = 30
-    public var buttonMaxRecordingTime = 10
-    public var buttonCameraLed = true
+    private var buttonPressMode: String
+        get() = GlassesStore.store.get("core", "button_mode") as? String ?: "photo"
+        set(value) = GlassesStore.apply("core", "button_mode", value)
+
+    private var buttonPhotoSize: String
+        get() = GlassesStore.store.get("core", "button_photo_size") as? String ?: "medium"
+        set(value) = GlassesStore.apply("core", "button_photo_size", value)
+
+    private var buttonVideoWidth: Int
+        get() = GlassesStore.store.get("core", "button_video_width") as? Int ?: 1280
+        set(value) = GlassesStore.apply("core", "button_video_width", value)
+
+    private var buttonVideoHeight: Int
+        get() = GlassesStore.store.get("core", "button_video_height") as? Int ?: 720
+        set(value) = GlassesStore.apply("core", "button_video_height", value)
+
+    private var buttonVideoFps: Int
+        get() = GlassesStore.store.get("core", "button_video_fps") as? Int ?: 30
+        set(value) = GlassesStore.apply("core", "button_video_fps", value)
+
+    private var buttonMaxRecordingTime: Int
+        get() = GlassesStore.store.get("core", "button_max_recording_time") as? Int ?: 10
+        set(value) = GlassesStore.apply("core", "button_max_recording_time", value)
+
+    private var buttonCameraLed: Boolean
+        get() = GlassesStore.store.get("core", "button_camera_led") as? Boolean ?: true
+        set(value) = GlassesStore.apply("core", "button_camera_led", value)
 
     // VAD
     private val vadBuffer = mutableListOf<ByteArray>()
@@ -130,8 +230,6 @@ class CoreManager {
 
     // STT
     private var transcriber: SherpaOnnxTranscriber? = null
-    private var shouldSendPcmData = false
-    private var shouldSendTranscript = false
 
     // View states
     private val viewStates = mutableListOf<ViewState>()
@@ -958,7 +1056,7 @@ class CoreManager {
         pendingWearable = ""
         defaultWearable = sgc?.type ?: ""
 
-        isSearching = false
+        searching = false
         getStatus()
 
         // Show welcome message on first connect for all display glasses
@@ -1195,7 +1293,7 @@ class CoreManager {
             return
         }
         initSGC(defaultWearable)
-        isSearching = true
+        searching = true
         getStatus()
         sgc?.connectById(deviceName)
     }
@@ -1222,7 +1320,7 @@ class CoreManager {
 
         disconnect()
         Thread.sleep(100)
-        isSearching = true
+        searching = true
         deviceName = name
 
         initSGC(pendingWearable)
@@ -1241,7 +1339,7 @@ class CoreManager {
         sgc?.clearDisplay()
         sgc?.disconnect()
         sgc = null // Clear the SGC reference after disconnect
-        isSearching = false
+        searching = false
         shouldSendPcmData = false
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
@@ -1280,285 +1378,51 @@ class CoreManager {
     }
 
     fun getStatus() {
-        val simulatedConnected = defaultWearable == DeviceTypes.SIMULATED
-        val glassesConnected = sgc?.ready ?: false
-
-        if (glassesConnected) {
-            isSearching = false
-        }
-
-        val glassesSettings = mutableMapOf<String, Any>()
-        val glassesInfo = mutableMapOf<String, Any>()
-
-        glassesInfo["connected"] = glassesConnected
-
-        sgc?.let { sgc ->
-            glassesInfo["modelName"] = defaultWearable
-            glassesInfo["batteryLevel"] = sgc.batteryLevel
-            glassesInfo["appVersion"] = sgc.glassesAppVersion
-            glassesInfo["buildNumber"] = sgc.glassesBuildNumber
-            glassesInfo["deviceModel"] = sgc.glassesDeviceModel
-            glassesInfo["androidVersion"] = sgc.glassesAndroidVersion
-            glassesInfo["otaVersionUrl"] = sgc.glassesOtaVersionUrl
-            glassesInfo["fwVersion"] = sgc.glassesFirmwareVersion
-            glassesInfo["btMacAddress"] = sgc.glassesBtMacAddress
-            // state:
-            glassesInfo["connected"] = glassesConnected
-            glassesInfo["connectionState"] = sgc.connectionState
-            glassesInfo["micEnabled"] = sgc.micEnabled
-            glassesInfo["btcConnected"] = true
-        }
-
-        if (sgc is G1) {
-            glassesInfo["caseRemoved"] = sgc!!.caseRemoved
-            glassesInfo["caseOpen"] = sgc!!.caseOpen
-            glassesInfo["caseCharging"] = sgc!!.caseCharging
-            glassesInfo["caseBatteryLevel"] = sgc!!.caseBatteryLevel
-
-            glassesInfo["serialNumber"] = sgc!!.glassesSerialNumber
-            glassesInfo["style"] = sgc!!.glassesStyle
-            glassesInfo["color"] = sgc!!.glassesColor
-        }
-
-        if (sgc is MentraLive) {
-            glassesInfo["wifiSsid"] = sgc!!.wifiSsid
-            glassesInfo["wifiConnected"] = sgc!!.wifiConnected
-            glassesInfo["wifiLocalIp"] = sgc!!.wifiLocalIp
-            glassesInfo["hotspotEnabled"] = sgc!!.isHotspotEnabled
-            glassesInfo["hotspotSsid"] = sgc!!.hotspotSsid
-            glassesInfo["hotspotPassword"] = sgc!!.hotspotPassword
-            glassesInfo["hotspotGatewayIp"] = sgc!!.hotspotGatewayIp
-        }
-
-        // Bluetooth device name
-        sgc?.getConnectedBluetoothName()?.let { bluetoothName ->
-            glassesInfo["bluetoothName"] = bluetoothName
-        }
-
-        glassesSettings["brightness"] = brightness
-        glassesSettings["auto_brightness"] = autoBrightness
-        glassesSettings["dashboard_height"] = dashboardHeight
-        glassesSettings["dashboard_depth"] = dashboardDepth
-        glassesSettings["head_up_angle"] = headUpAngle
-        glassesSettings["button_mode"] = buttonPressMode
-        glassesSettings["button_photo_size"] = buttonPhotoSize
-
-        val buttonVideoSettings =
-                mapOf(
-                        "width" to buttonVideoWidth,
-                        "height" to buttonVideoHeight,
-                        "fps" to buttonVideoFps
-                )
-        glassesSettings["button_video_settings"] = buttonVideoSettings
-        glassesSettings["button_max_recording_time"] = buttonMaxRecordingTime
-        glassesSettings["button_camera_led"] = buttonCameraLed
-
-        val coreInfo =
-                mapOf(
-                        "is_searching" to isSearching,
-                )
-
-        val apps = emptyList<Any>()
-
-        val authObj = mapOf("core_token_owner" to coreTokenOwner)
-
-        val statusObj =
-                mapOf(
-                        "glasses_info" to glassesInfo,
-                        "glasses_settings" to glassesSettings,
-                        "apps" to apps,
-                        "core_info" to coreInfo,
-                        "auth" to authObj
-                )
-
-        Bridge.sendStatus(statusObj)
-    }
-
-    fun updateSettings(settings: Map<String, Any>) {
-        Bridge.log("MAN: Received update settings: $settings")
-
-        // Update settings with new values
-        (settings["preferred_mic"] as? String)?.let { newPreferredMic ->
-            if (preferredMic != newPreferredMic) {
-                updatePreferredMic(newPreferredMic)
+        mainHandler.post {
+            val glassesConnected = sgc?.ready ?: false
+            if (glassesConnected) {
+                searching = false
             }
-        }
 
-        (settings["notifications_enabled"] as? Boolean)?.let { newNotificationsEnabled ->
-            if (notificationsEnabled != newNotificationsEnabled) {
-                updateNotificationsEnabled(newNotificationsEnabled)
+            GlassesStore.apply("glasses", "connected", sgc?.ready ?: false)
+            GlassesStore.apply("glasses", "micEnabled", sgc?.micEnabled ?: false)
+            GlassesStore.apply("glasses", "batteryLevel", sgc?.batteryLevel ?: -1)
+            GlassesStore.apply("glasses", "appVersion", sgc?.glassesAppVersion ?: "")
+            GlassesStore.apply("glasses", "buildNumber", sgc?.glassesBuildNumber ?: "")
+            GlassesStore.apply("glasses", "deviceModel", sgc?.glassesDeviceModel ?: "")
+            GlassesStore.apply("glasses", "androidVersion", sgc?.glassesAndroidVersion ?: "")
+            GlassesStore.apply("glasses", "otaVersionUrl", sgc?.glassesOtaVersionUrl ?: "")
+            GlassesStore.apply("glasses", "fwVersion", sgc?.glassesFirmwareVersion ?: "")
+            GlassesStore.apply("glasses", "btMacAddress", sgc?.glassesBtMacAddress ?: "")
+
+            if (sgc is G1) {
+                GlassesStore.apply("glasses", "caseRemoved", sgc!!.caseRemoved)
+                GlassesStore.apply("glasses", "caseOpen", sgc!!.caseOpen)
+                GlassesStore.apply("glasses", "caseCharging", sgc!!.caseCharging)
+                GlassesStore.apply("glasses", "caseBatteryLevel", sgc!!.caseBatteryLevel)
+
+                GlassesStore.apply("glasses", "serialNumber", sgc!!.glassesSerialNumber)
+                GlassesStore.apply("glasses", "style", sgc!!.glassesStyle)
+                GlassesStore.apply("glasses", "color", sgc!!.glassesColor)
             }
-        }
 
-        // Head up angle - handle both Int and Double from JavaScript
-        (settings["head_up_angle"] as? Number)?.toInt()?.let { newHeadUpAngle ->
-            if (headUpAngle != newHeadUpAngle) {
-                updateGlassesHeadUpAngle(newHeadUpAngle)
+            if (sgc is MentraLive) {
+                GlassesStore.apply("glasses", "wifiSsid", sgc!!.wifiSsid)
+                GlassesStore.apply("glasses", "wifiConnected", sgc!!.wifiConnected)
+                GlassesStore.apply("glasses", "wifiLocalIp", sgc!!.wifiLocalIp)
+                GlassesStore.apply("glasses", "hotspotEnabled", sgc!!.isHotspotEnabled)
+                GlassesStore.apply("glasses", "hotspotSsid", sgc!!.hotspotSsid)
+                GlassesStore.apply("glasses", "hotspotPassword", sgc!!.hotspotPassword)
+                GlassesStore.apply("glasses", "hotspotGatewayIp", sgc!!.hotspotGatewayIp)
             }
-        }
 
-        // Brightness - handle both Int and Double from JavaScript
-        (settings["brightness"] as? Number)?.toInt()?.let { newBrightness ->
-            if (brightness != newBrightness) {
-                updateGlassesBrightness(newBrightness, false)
-            }
-        }
-
-        // Dashboard height - handle both Int and Double from JavaScript
-        (settings["dashboard_height"] as? Number)?.toInt()?.let { newDashboardHeight ->
-            if (dashboardHeight != newDashboardHeight) {
-                updateGlassesHeight(newDashboardHeight)
-            }
-        }
-
-        // Dashboard depth - handle both Int and Double from JavaScript
-        (settings["dashboard_depth"] as? Number)?.toInt()?.let { newDashboardDepth ->
-            if (dashboardDepth != newDashboardDepth) {
-                updateGlassesDepth(newDashboardDepth)
-            }
-        }
-
-        (settings["screen_disabled"] as? Boolean)?.let { screenDisabled ->
-            updateScreenDisabled(screenDisabled)
-        }
-
-        (settings["auto_brightness"] as? Boolean)?.let { newAutoBrightness ->
-            if (autoBrightness != newAutoBrightness) {
-                updateGlassesBrightness(brightness, newAutoBrightness)
-            }
-        }
-
-        (settings["power_saving_mode"] as? Boolean)?.let { newPowerSavingMode ->
-            if (powerSavingMode != newPowerSavingMode) {
-                updatePowerSavingMode(newPowerSavingMode)
-            }
-        }
-
-        (settings["always_on_status_bar"] as? Boolean)?.let { newAlwaysOnStatusBar ->
-            if (alwaysOnStatusBar != newAlwaysOnStatusBar) {
-                updateAlwaysOnStatusBar(newAlwaysOnStatusBar)
-            }
-        }
-
-        (settings["bypass_vad_for_debugging"] as? Boolean)?.let { newBypassVad ->
-            if (bypassVad != newBypassVad) {
-                updateBypassVad(newBypassVad)
-            }
-        }
-
-        (settings["enforce_local_transcription"] as? Boolean)?.let { newEnforceLocalTranscription ->
-            if (enforceLocalTranscription != newEnforceLocalTranscription) {
-                updateEnforceLocalTranscription(newEnforceLocalTranscription)
-            }
-        }
-
-        (settings["offline_captions_running"] as? Boolean)?.let { newOfflineMode ->
-            if (offlineMode != newOfflineMode) {
-                updateOfflineMode(newOfflineMode)
-            }
-        }
-
-        (settings["metric_system"] as? Boolean)?.let { newMetricSystem ->
-            if (metricSystem != newMetricSystem) {
-                updateMetricSystem(newMetricSystem)
-            }
-        }
-
-        (settings["contextual_dashboard"] as? Boolean)?.let { newContextualDashboard ->
-            if (contextualDashboard != newContextualDashboard) {
-                updateContextualDashboard(newContextualDashboard)
-            }
-        }
-
-        (settings["button_mode"] as? String)?.let { newButtonMode ->
-            if (buttonPressMode != newButtonMode) {
-                updateButtonMode(newButtonMode)
-            }
-        }
-
-        // Button video settings - handle both nested object and flat keys
-        // First check for nested object structure (from AsyncStorage)
-        val videoSettingsObj = settings["button_video_settings"] as? Map<*, *>
-        val newWidth =
-                if (videoSettingsObj != null) {
-                    (videoSettingsObj["width"] as? Number)?.toInt() ?: buttonVideoWidth
-                } else {
-                    // Fallback to flat key structure (backwards compatibility)
-                    (settings["button_video_width"] as? Number)?.toInt() ?: buttonVideoWidth
-                }
-        val newHeight =
-                if (videoSettingsObj != null) {
-                    (videoSettingsObj["height"] as? Number)?.toInt() ?: buttonVideoHeight
-                } else {
-                    (settings["button_video_height"] as? Number)?.toInt() ?: buttonVideoHeight
-                }
-        val newFps =
-                if (videoSettingsObj != null) {
-                    (videoSettingsObj["fps"] as? Number)?.toInt() ?: buttonVideoFps
-                } else {
-                    (settings["button_video_fps"] as? Number)?.toInt() ?: buttonVideoFps
-                }
-
-        // Only update if any value actually changed
-        if (newWidth != buttonVideoWidth ||
-                        newHeight != buttonVideoHeight ||
-                        newFps != buttonVideoFps
-        ) {
-            Bridge.log(
-                    "MAN: Updating button video settings: $newWidth x $newHeight @ ${newFps}fps (was: $buttonVideoWidth x $buttonVideoHeight @ ${buttonVideoFps}fps)"
-            )
-            updateButtonVideoSettings(newWidth, newHeight, newFps)
-        }
-
-        (settings["button_photo_size"] as? String)?.let { newPhotoSize ->
-            if (buttonPhotoSize != newPhotoSize) {
-                updateButtonPhotoSize(newPhotoSize)
-            }
-        }
-
-        (settings["button_camera_led"] as? Boolean)?.let { newButtonCameraLed ->
-            if (buttonCameraLed != newButtonCameraLed) {
-                updateButtonCameraLed(newButtonCameraLed)
-            }
-        }
-
-        (settings["gallery_mode"] as? Boolean)?.let { newGalleryMode ->
-            if (galleryMode != newGalleryMode) {
-                updateGalleryMode(newGalleryMode)
-            }
-        }
-
-        (settings["button_max_recording_time"] as? Int)?.let { newMaxTime ->
-            if (buttonMaxRecordingTime != newMaxTime) {
-                updateButtonMaxRecordingTime(newMaxTime)
-            }
-        }
-
-        (settings["notifications_blocklist"] as? List<String>)?.let { newBlocklist ->
-            if (notificationsBlocklist != newBlocklist) {
-                updateNotificationsBlocklist(newBlocklist)
-            }
-        }
-
-        (settings["default_wearable"] as? String)?.let { newDefaultWearable ->
-            if (defaultWearable != newDefaultWearable) {
-                defaultWearable = newDefaultWearable
-                Bridge.saveSetting("default_wearable", newDefaultWearable)
-            }
-        }
-
-        (settings["device_name"] as? String)?.let { newDeviceName ->
-            if (deviceName != newDeviceName) {
-                deviceName = newDeviceName
-            }
-        }
-
-        (settings["device_address"] as? String)?.let { newDeviceAddress ->
-            if (deviceAddress != newDeviceAddress) {
-                deviceAddress = newDeviceAddress
+            // Add Bluetooth device name if available
+            sgc?.getConnectedBluetoothName()?.let { bluetoothName ->
+                GlassesStore.apply("glasses", "bluetoothName", bluetoothName)
             }
         }
     }
+
 
     // MARK: Cleanup
     fun cleanup() {

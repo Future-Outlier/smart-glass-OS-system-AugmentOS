@@ -15,6 +15,8 @@ class GlassesStore {
     private init() {
         // SETTINGS are snake_case
         // CORE STATE is camelCase
+
+        // GLASSES STATE:
         store.set("glasses", "batteryLevel", -1)
         store.set("glasses", "connected", false)
         store.set("glasses", "connectionState", "disconnected")
@@ -90,18 +92,18 @@ class GlassesStore {
 
         // Trigger hardware updates based on setting changes
         switch (category, key) {
-        case ("glasses", "brightness"):
+        case ("core", "brightness"):
             let b = value as? Int ?? 50
-            let auto = store.get("glasses", "auto_brightness") as? Bool ?? true
+            let auto = store.get("core", "auto_brightness") as? Bool ?? true
             Task {
                 CoreManager.shared.sgc?.setBrightness(b, autoMode: auto)
                 CoreManager.shared.sgc?.sendTextWall("Set brightness to \(b)%")
-                try? await Task.sleep(nanoseconds: 800_000_000)  // 0.8 seconds
+                try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
                 CoreManager.shared.sgc?.clearDisplay()
             }
 
-        case ("glasses", "auto_brightness"):
-            let b = store.get("glasses", "brightness") as? Int ?? 50
+        case ("core", "auto_brightness"):
+            let b = store.get("core", "brightness") as? Int ?? 50
             let auto = value as? Bool ?? true
             let autoBrightnessChanged = (oldValue as? Bool) != auto
             Task {
@@ -110,25 +112,25 @@ class GlassesStore {
                     CoreManager.shared.sgc?.sendTextWall(
                         auto ? "Enabled auto brightness" : "Disabled auto brightness"
                     )
-                    try? await Task.sleep(nanoseconds: 800_000_000)  // 0.8 seconds
+                    try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
                     CoreManager.shared.sgc?.clearDisplay()
                 }
             }
 
-        case ("glasses", "dashboard_height"), ("glasses", "dashboard_depth"):
+        case ("core", "dashboard_height"), ("core", "dashboard_depth"):
             let h = store.get("glasses", "dashboard_height") as? Int ?? 4
             let d = store.get("glasses", "dashboard_depth") as? Int ?? 5
             Task { await CoreManager.shared.sgc?.setDashboardPosition(h, d) }
 
-        case ("glasses", "head_up_angle"):
+        case ("core", "head_up_angle"):
             if let angle = value as? Int {
                 CoreManager.shared.sgc?.setHeadUpAngle(angle)
             }
 
-        case ("glasses", "gallery_mode"):
+        case ("core", "gallery_mode"):
             CoreManager.shared.sgc?.sendGalleryMode()
 
-        case ("glasses", "screen_disabled"):
+        case ("core", "screen_disabled"):
             if let disabled = value as? Bool {
                 if disabled {
                     CoreManager.shared.sgc?.exit()
@@ -137,23 +139,23 @@ class GlassesStore {
                 }
             }
 
-        case ("glasses", "button_mode"):
+        case ("core", "button_mode"):
             CoreManager.shared.sgc?.sendButtonModeSetting()
 
-        case ("glasses", "button_photo_size"):
+        case ("core", "button_photo_size"):
             CoreManager.shared.sgc?.sendButtonPhotoSettings()
 
-        case ("glasses", "button_camera_led"):
+        case ("core", "button_camera_led"):
             CoreManager.shared.sgc?.sendButtonCameraLedSetting()
 
-        case ("glasses", "button_max_recording_time"):
+        case ("core", "button_max_recording_time"):
             CoreManager.shared.sgc?.sendButtonMaxRecordingTime()
 
-        case ("glasses", "button_video_width"), ("glasses", "button_video_height"),
-            ("glasses", "button_video_fps"):
+        case ("core", "button_video_width"), ("core", "button_video_height"),
+             ("core", "button_video_fps"):
             CoreManager.shared.sgc?.sendButtonVideoRecordingSettings()
 
-        case ("glasses", "preferred_mic"):
+        case ("core", "preferred_mic"):
             if let mic = value as? String {
                 apply("core", "mic_ranking", MicMap.map[mic] ?? MicMap.map["auto"]!)
                 CoreManager.shared.setMicState(
@@ -189,15 +191,6 @@ class GlassesStore {
         case ("core", "device_name"):
             if let name = value as? String {
                 CoreManager.shared.checkCurrentAudioDevice()
-            }
-
-        case ("core", "screen_disabled"):
-            if let disabled = value as? Bool {
-                if disabled {
-                    CoreManager.shared.sgc?.exit()
-                } else {
-                    CoreManager.shared.sgc?.clearDisplay()
-                }
             }
 
         default:
