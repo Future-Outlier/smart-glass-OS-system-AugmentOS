@@ -199,7 +199,7 @@ async function invokeTool(c: AppContext) {
       return c.json(
         {
           success: false,
-          error: `App ${targetPackageName} is not running. Start it first using /api/system-app/${targetPackageName}/start`,
+          error: `App ${targetPackageName} is not running. Start it first using /api/sdk/system-app/${targetPackageName}/start`,
         },
         400,
       );

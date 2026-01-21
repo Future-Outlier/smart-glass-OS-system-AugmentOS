@@ -286,7 +286,7 @@ app.route("/api/store/user", storeUserApi);
 // System App API Routes (app management with API key auth)
 // ============================================================================
 
-app.route("/api/system-app", systemAppApi);
+app.route("/api/sdk/system-app", systemAppApi);
 
 // ============================================================================
 // Legacy Routes (migrated from Express)

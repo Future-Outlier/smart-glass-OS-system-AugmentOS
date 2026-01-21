@@ -1,7 +1,7 @@
 /**
  * @fileoverview Hono system-app API.
  * App management endpoints for listing, starting, and stopping apps.
- * Mounted at: /api/system-app
+ * Mounted at: /api/sdk/system-app
  *
  * Authentication: API key via query params (for whitelisted packages)
  * - apiKey: The app's API key
@@ -121,7 +121,7 @@ async function apiKeyAuth(c: AppContext, next: () => Promise<void>) {
 // ============================================================================
 
 /**
- * GET /api/system-app/apps
+ * GET /api/sdk/system-app/apps
  * List all available apps with running status and tools info.
  * Requires active user session.
  */
@@ -191,13 +191,11 @@ async function listApps(c: AppContext) {
 
     // Attach latest online status for each app
     try {
-       
       const packageNames = appsWithExtras.map((a: any) => a.packageName as string);
       const latestStatuses = await AppUptimeService.getLatestStatusesForPackages(packageNames);
       const statusMap = new Map<string, boolean>(latestStatuses.map((s) => [s.packageName, Boolean(s.onlineStatus)]));
 
       for (const appData of appsWithExtras) {
-         
         (appData as any).isOnline = statusMap.get((appData as any).packageName) ?? null;
       }
     } catch (e) {
@@ -221,7 +219,7 @@ async function listApps(c: AppContext) {
 }
 
 /**
- * POST /api/system-app/:packageName/start
+ * POST /api/sdk/system-app/:packageName/start
  * Start an app for the authenticated user.
  * Requires active user session.
  */
@@ -285,7 +283,7 @@ async function startApp(c: AppContext) {
 }
 
 /**
- * POST /api/system-app/:packageName/stop
+ * POST /api/sdk/system-app/:packageName/stop
  * Stop a running app for the authenticated user.
  * Requires active user session.
  */
@@ -342,7 +340,7 @@ async function stopApp(c: AppContext) {
 // ============================================================================
 
 /**
- * GET /api/system-app/tools
+ * GET /api/sdk/system-app/tools
  * Get all tools for the user's installed apps.
  */
 async function getUserTools(c: AppContext) {
@@ -398,7 +396,7 @@ async function getUserTools(c: AppContext) {
 }
 
 /**
- * GET /api/system-app/apps/:targetPackageName/tools
+ * GET /api/sdk/system-app/apps/:targetPackageName/tools
  * Get tools for a specific app.
  */
 async function getAppTools(c: AppContext) {
@@ -435,7 +433,7 @@ async function getAppTools(c: AppContext) {
 }
 
 /**
- * POST /api/system-app/apps/:targetPackageName/tool
+ * POST /api/sdk/system-app/apps/:targetPackageName/tool
  * Trigger a tool webhook on an app.
  */
 async function triggerTool(c: AppContext) {
@@ -507,7 +505,7 @@ async function triggerTool(c: AppContext) {
 }
 
 /**
- * POST /api/system-app/invoke-tool
+ * POST /api/sdk/system-app/invoke-tool
  * Invoke a tool on a target app (app-to-app communication).
  *
  * Body:
@@ -553,7 +551,7 @@ async function invokeTool(c: AppContext) {
       return c.json(
         {
           success: false,
-          error: `App ${targetPackageName} is not running. Start it first using /api/system-app/${targetPackageName}/start`,
+          error: `App ${targetPackageName} is not running. Start it first using /api/sdk/system-app/${targetPackageName}/start`,
         },
         400,
       );
