@@ -22,6 +22,8 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     var connectionState: String = ConnTypes.DISCONNECTED
 
+    func sendOtaStart() {}
+
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
 
     var caseBatteryLevel: Int = -1

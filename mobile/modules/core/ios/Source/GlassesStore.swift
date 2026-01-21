@@ -14,41 +14,38 @@ class GlassesStore {
 
     private init() {
         // Set defaults for glasses settings
-        store.set("glasses", "brightness", 50)
-        store.set("glasses", "auto_brightness", true)
-        store.set("glasses", "dashboard_height", 4)
-        store.set("glasses", "dashboard_depth", 5)
-        store.set("glasses", "head_up_angle", 30)
-        store.set("glasses", "contextual_dashboard", true)
-        store.set("glasses", "gallery_mode", false)
-        store.set("glasses", "screen_disabled", false)
-        store.set("glasses", "button_mode", "photo")
-        store.set("glasses", "button_photo_size", "medium")
-        store.set("glasses", "button_camera_led", true)
-        store.set("glasses", "button_max_recording_time", 10)
-        store.set("glasses", "button_video_width", 1280)
-        store.set("glasses", "button_video_height", 720)
-        store.set("glasses", "button_video_fps", 30)
-        store.set("glasses", "preferred_mic", "auto")
-        store.set("glasses", "bypass_vad", true)
-        store.set("glasses", "offline_mode", false)
-        store.set("glasses", "battery_level", -1)
-        store.set("glasses", "is_connected", false)
-        store.set("glasses", "device_model", "")
-        store.set("glasses", "firmware_version", "")
-        store.set("glasses", "btc_connected", false)
-        store.set("glasses", "mic_enabled", false)
+        // settings are snake_case
+        // status:
+        store.set("glasses", "batteryLevel", -1)
+        store.set("glasses", "connected", false)
+        store.set("glasses", "connectionState", "disconnected")
+        store.set("glasses", "deviceModel", "")
+        store.set("glasses", "firmwareVersion", "")
+        store.set("glasses", "micEnabled", false)
+        store.set("glasses", "btcConnected", false)
+        store.set("glasses", "caseRemoved", true)
+        store.set("glasses", "caseOpen", true)
+        store.set("glasses", "caseCharging", false)
+        store.set("glasses", "caseBatteryLevel", -1)
+        store.set("glasses", "serialNumber", "")
+        store.set("glasses", "style", "")
+        store.set("glasses", "color", "")
+        store.set("glasses", "wifiSsid", "")
+        store.set("glasses", "wifiConnected", false)
+        store.set("glasses", "wifiLocalIp", "")
+        store.set("glasses", "hotspotEnabled", false)
+        store.set("glasses", "hotspotSsid", "")
+        store.set("glasses", "hotspotPassword", "")
+        store.set("glasses", "hotspotGatewayIp", "")
+        store.set("glasses", "bluetoothName", "")
 
-        // Set defaults for core state
+        // Set defaults for core settings
         store.set("core", "default_wearable", "")
         store.set("core", "pending_wearable", "")
         store.set("core", "device_name", "")
         store.set("core", "device_address", "")
         store.set("core", "offline_mode", false)
         store.set("core", "screen_disabled", false)
-        store.set("core", "is_searching", false)
-        store.set("core", "btc_connected", false)
-        store.set("core", "system_mic_unavailable", false)
         store.set("core", "mic_ranking", MicMap.map["auto"]!)
         store.set("core", "preferred_mic", "auto")
         store.set("core", "power_saving_mode", false)
@@ -56,6 +53,35 @@ class GlassesStore {
         store.set("core", "enforce_local_transcription", false)
         store.set("core", "sensing_enabled", true)
         store.set("core", "metric_system", false)
+        // more
+        store.set("core", "brightness", 50)
+        store.set("core", "auto_brightness", true)
+        store.set("core", "dashboard_height", 4)
+        store.set("core", "dashboard_depth", 5)
+        store.set("core", "head_up_angle", 30)
+        store.set("core", "contextual_dashboard", true)
+        store.set("core", "gallery_mode", false)
+        store.set("core", "screen_disabled", false)
+        store.set("core", "button_mode", "photo")
+        store.set("core", "button_photo_size", "medium")
+        store.set("core", "button_camera_led", true)
+        store.set("core", "button_max_recording_time", 10)
+        store.set("core", "button_video_width", 1280)
+        store.set("core", "button_video_height", 720)
+        store.set("core", "button_video_fps", 30)
+        store.set("core", "preferred_mic", "auto")
+        // core state:
+        store.set("core", "systemMicUnavailable", false)
+        store.set("core", "isHeadUp", false)
+        store.set("core", "searching", false)
+    }
+
+    func get(_ category: String, _ key: String) -> Any? {
+        return store.get(category, key)
+    }
+
+    func set(_ category: String, _ key: String, _ value: Any) {
+        store.set(category, key, value)
     }
 
     // Apply changes with side effects

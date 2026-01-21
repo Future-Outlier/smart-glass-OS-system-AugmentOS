@@ -75,9 +75,9 @@ struct ViewState {
         if isPaired {
             // Device is paired! Don't activate it - let PhoneMic.swift activate when recording starts
             Bridge.log("Audio: ✅ Mentra Live is paired (preserving A2DP for music)")
-            btcConnected = true
+            glassesBtcConnected = true
         } else {
-            btcConnected = false
+            glassesBtcConnected = false
             // Not found in availableInputs - not paired yet
 
             // Start monitoring for when user pairs manually
@@ -88,11 +88,11 @@ struct ViewState {
                 if connected {
                     Bridge.log("Audio: ✅ Device paired and connected")
                     // Don't activate - let PhoneMic.swift handle that when recording starts
-                    self.btcConnected = true
+                    self.glassesBtcConnected = true
                     CoreManager.shared.getStatus()
                 } else {
                     Bridge.log("Audio: Device disconnected")
-                    self.btcConnected = false
+                    self.glassesBtcConnected = false
                     CoreManager.shared.getStatus()
                 }
             }
@@ -109,113 +109,138 @@ struct ViewState {
     var sgc: SGCManager?
 
     // state
-    var shouldSendBootingMessage = true
-    var lastStatusObj: [String: Any] = [:]
+    // var lastStatusObj: [String: Any] = [:]
 
-    // State variables stored in GlassesStore
-    var defaultWearable: String {
-        get { GlassesStore.shared.store.get("core", "defaultWearable") as? String ?? "" }
-        set { GlassesStore.shared.apply("core", "defaultWearable", newValue) }
+    // settings:
+    private var defaultWearable: String {
+        get { GlassesStore.shared.get("core", "default_wearable") as? String ?? "" }
+        set { GlassesStore.shared.apply("core", "default_wearable", newValue) }
     }
 
-    var pendingWearable: String {
-        get { GlassesStore.shared.store.get("core", "pendingWearable") as? String ?? "" }
-        set { GlassesStore.shared.apply("core", "pendingWearable", newValue) }
+    private var pendingWearable: String {
+        get { GlassesStore.shared.get("core", "pending_wearable") as? String ?? "" }
+        set { GlassesStore.shared.apply("core", "pending_wearable", newValue) }
     }
 
-    var deviceName: String {
-        get { GlassesStore.shared.store.get("core", "deviceName") as? String ?? "" }
-        set { GlassesStore.shared.apply("core", "deviceName", newValue) }
+    private var deviceName: String {
+        get { GlassesStore.shared.get("core", "device_name") as? String ?? "" }
+        set { GlassesStore.shared.apply("core", "device_name", newValue) }
     }
 
-    var deviceAddress: String {
-        get { GlassesStore.shared.store.get("core", "deviceAddress") as? String ?? "" }
+    private var deviceAddress: String {
+        get { GlassesStore.shared.get("core", "deviceAddress") as? String ?? "" }
         set { GlassesStore.shared.apply("core", "deviceAddress", newValue) }
     }
 
-    var screenDisabled: Bool {
-        get { GlassesStore.shared.store.get("core", "screenDisabled") as? Bool ?? false }
-        set { GlassesStore.shared.apply("core", "screenDisabled", newValue) }
+    private var screenDisabled: Bool {
+        get { GlassesStore.shared.get("core", "screen_disabled") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "screen_disabled", newValue) }
     }
 
-    var searching: Bool {
-        get { GlassesStore.shared.store.get("core", "searching") as? Bool ?? false }
-        set { GlassesStore.shared.apply("core", "searching", newValue) }
+    private var preferredMic: String {
+        get { GlassesStore.shared.get("core", "preferred_mic") as? String ?? "auto" }
+        set { GlassesStore.shared.apply("core", "preferred_mic", newValue) }
     }
 
-    var btcConnected: Bool {
-        get { GlassesStore.shared.store.get("core", "btcConnected") as? Bool ?? false }
-        set { GlassesStore.shared.apply("core", "btcConnected", newValue) }
+    private var autoBrightness: Bool {
+        get { GlassesStore.shared.get("core", "auto_brightness") as? Bool ?? true }
+        set { GlassesStore.shared.apply("core", "auto_brightness", newValue) }
     }
 
-    var systemMicUnavailable: Bool {
-        get { GlassesStore.shared.store.get("core", "systemMicUnavailable") as? Bool ?? false }
-        set { GlassesStore.shared.apply("core", "systemMicUnavailable", newValue) }
+    private var brightness: Int {
+        get { GlassesStore.shared.get("core", "brightness") as? Int ?? 50 }
+        set { GlassesStore.shared.apply("core", "brightness", newValue) }
+    }
+    
+    private var headUpAngle: Int {
+        get { GlassesStore.shared.get("core", "head_up_angle") as? Int ?? 30 }
+        set { GlassesStore.shared.apply("core", "head_up_angle", newValue) }
     }
 
-    var micRanking: [String] {
-        get { GlassesStore.shared.store.get("core", "micRanking") as? [String] ?? MicMap.map["auto"]! }
-        set { GlassesStore.shared.apply("core", "micRanking", newValue) }
-    }
-
-    var preferredMic: String {
-        get { GlassesStore.shared.store.get("glasses", "preferred_mic") as? String ?? "auto" }
-        set { GlassesStore.shared.apply("glasses", "preferred_mic", newValue) }
-    }
-
-    // Settings stored in GlassesStore
-    var sensingEnabled: Bool {
-        get { GlassesStore.shared.store.get("core", "sensing_enabled") as? Bool ?? true }
+    private var sensingEnabled: Bool {
+        get { GlassesStore.shared.get("core", "sensing_enabled") as? Bool ?? true }
         set { GlassesStore.shared.apply("core", "sensing_enabled", newValue) }
     }
 
-    var powerSavingMode: Bool {
-        get { GlassesStore.shared.store.get("core", "power_saving_mode") as? Bool ?? false }
+    private var powerSavingMode: Bool {
+        get { GlassesStore.shared.get("core", "power_saving_mode") as? Bool ?? false }
         set { GlassesStore.shared.apply("core", "power_saving_mode", newValue) }
     }
 
-    var alwaysOnStatusBar: Bool {
-        get { GlassesStore.shared.store.get("core", "always_on_status_bar") as? Bool ?? false }
+    private var alwaysOnStatusBar: Bool {
+        get { GlassesStore.shared.get("core", "always_on_status_bar") as? Bool ?? false }
         set { GlassesStore.shared.apply("core", "always_on_status_bar", newValue) }
     }
 
-    var bypassVad: Bool {
-        get { GlassesStore.shared.store.get("glasses", "bypass_vad") as? Bool ?? true }
-        set { GlassesStore.shared.apply("glasses", "bypass_vad", newValue) }
+    private var bypassVad: Bool {
+        get { GlassesStore.shared.get("core", "bypass_vad") as? Bool ?? true }
+        set { GlassesStore.shared.apply("core", "bypass_vad", newValue) }
     }
 
-    var enforceLocalTranscription: Bool {
-        get { GlassesStore.shared.store.get("core", "enforce_local_transcription") as? Bool ?? false }
+    private var enforceLocalTranscription: Bool {
+        get {
+            GlassesStore.shared.get("core", "enforce_local_transcription") as? Bool ?? false
+        }
         set { GlassesStore.shared.apply("core", "enforce_local_transcription", newValue) }
     }
 
-    var offlineMode: Bool {
-        get { GlassesStore.shared.store.get("glasses", "offline_mode") as? Bool ?? false }
-        set { GlassesStore.shared.apply("glasses", "offline_mode", newValue) }
+    private var offlineMode: Bool {
+        get { GlassesStore.shared.get("core", "offline_mode") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "offline_mode", newValue) }
     }
 
-    var metricSystem: Bool {
-        get { GlassesStore.shared.store.get("core", "metric_system") as? Bool ?? false }
+    private var metricSystem: Bool {
+        get { GlassesStore.shared.get("core", "metric_system") as? Bool ?? false }
         set { GlassesStore.shared.apply("core", "metric_system", newValue) }
     }
 
-    var contextualDashboard: Bool {
-        get { GlassesStore.shared.store.get("glasses", "contextual_dashboard") as? Bool ?? true }
-        set { GlassesStore.shared.apply("glasses", "contextual_dashboard", newValue) }
+    private var contextualDashboard: Bool {
+        get { GlassesStore.shared.get("core", "contextual_dashboard") as? Bool ?? true }
+        set { GlassesStore.shared.apply("core", "contextual_dashboard", newValue) }
     }
 
+    // state:
     private var shouldSendPcmData: Bool {
-        get { GlassesStore.shared.store.get("core", "shouldSendPcmData") as? Bool ?? false }
+        get { GlassesStore.shared.get("core", "shouldSendPcmData") as? Bool ?? false }
         set { GlassesStore.shared.apply("core", "shouldSendPcmData", newValue) }
     }
 
     private var shouldSendTranscript: Bool {
-        get { GlassesStore.shared.store.get("core", "shouldSendTranscript") as? Bool ?? false }
+        get { GlassesStore.shared.get("core", "shouldSendTranscript") as? Bool ?? false }
         set { GlassesStore.shared.apply("core", "shouldSendTranscript", newValue) }
     }
 
-    // glasses state:
-    private var isHeadUp: Bool = false
+    private var searching: Bool {
+        get { GlassesStore.shared.get("core", "searching") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "searching", newValue) }
+    }
+
+    private var glassesBtcConnected: Bool {
+        get { GlassesStore.shared.get("glasses", "btcConnected") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "btcConnected", newValue) }
+    }
+
+    private var micRanking: [String] {
+        get {
+            GlassesStore.shared.get("core", "micRanking") as? [String] ?? MicMap.map["auto"]!
+        }
+        set { GlassesStore.shared.apply("core", "micRanking", newValue) }
+    }
+
+    private var shouldSendBootingMessage: Bool {
+        get { GlassesStore.shared.get("core", "shouldSendBootingMessage") as? Bool ?? true }
+        set { GlassesStore.shared.apply("core", "shouldSendBootingMessage", newValue) }
+    }
+
+    private var systemMicUnavailable: Bool {
+        get { GlassesStore.shared.get("core", "systemMicUnavailable") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "systemMicUnavailable", newValue) }
+    }
+
+    public var isHeadUp: Bool {
+        get { GlassesStore.shared.get("core", "isHeadUp") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "isHeadUp", newValue) }
+    }
 
     // LC3 Audio Encoding
     // Audio output format enum
@@ -790,7 +815,7 @@ struct ViewState {
             devicePattern: audioDevicePattern)
         if !isConnected {
             Bridge.log("MAN: Device '\(deviceName)' disconnected")
-            btcConnected = false
+            glassesBtcConnected = false
             getStatus()
             return
         }
@@ -802,10 +827,10 @@ struct ViewState {
                 $0.portName.localizedCaseInsensitiveContains(audioDevicePattern)
             })?.portName
             Bridge.log("MAN: ✅ Successfully detected newly paired device '\(deviceName)'")
-            btcConnected = true
+            glassesBtcConnected = true
             getStatus()
         } else {
-            btcConnected = false
+            glassesBtcConnected = false
             getStatus()
         }
     }
@@ -865,7 +890,7 @@ struct ViewState {
 
         pendingWearable = ""
         defaultWearable = sgc.type
-        isSearching = false
+        searching = false
         getStatus()
 
         // Show welcome message on first connect for all display glasses
@@ -1167,7 +1192,7 @@ struct ViewState {
             return
         }
         initSGC(defaultWearable)
-        isSearching = true
+        searching = true
         getStatus()
         sgc?.connectById(deviceName)
     }
@@ -1194,7 +1219,7 @@ struct ViewState {
         Task {
             disconnect()
             try? await Task.sleep(nanoseconds: 100 * 1_000_000)  // 100ms
-            self.isSearching = true
+            self.searching = true
             self.deviceName = name
 
             initSGC(self.pendingWearable)
@@ -1214,7 +1239,7 @@ struct ViewState {
         sgc?.clearDisplay()  // clear the screen
         sgc?.disconnect()
         sgc = nil  // Clear the SGC reference after disconnect
-        isSearching = false
+        searching = false
         shouldSendPcmData = false
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
@@ -1251,115 +1276,51 @@ struct ViewState {
     }
 
     func getStatus() {
-        // TODO: implement new getStatus() that reads from GlassesStore
-    }
-
-    func getStatusOld() {
-        // ensure this is on the main thread:
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            // construct the status object:
-            let simulatedConnected = defaultWearable == DeviceTypes.SIMULATED
             let glassesConnected = sgc?.ready ?? false
             if glassesConnected {
-                isSearching = false
+                searching = false
             }
 
-            // also referenced as glasses_info:
-            var glassesSettings: [String: Any] = [:]
-            var glassesInfo: [String: Any] = [:]
-
-            glassesInfo = [
-                "modelName": defaultWearable,
-                "batteryLevel": sgc?.batteryLevel ?? -1,
-                "appVersion": sgc?.glassesAppVersion ?? "",
-                "buildNumber": sgc?.glassesBuildNumber ?? "",
-                "deviceModel": sgc?.glassesDeviceModel ?? "",
-                "androidVersion": sgc?.glassesAndroidVersion ?? "",
-                "otaVersionUrl": sgc?.glassesOtaVersionUrl ?? "",
-                "fwVersion": sgc?.glassesFirmwareVersion ?? "",
-                "btMacAddress": sgc?.glassesBtMacAddress ?? "",
-                // state:
-                "connected": glassesConnected,
-                "micEnabled": sgc?.micEnabled ?? false,
-                "connectionState": sgc?.connectionState ?? "disconnected",
-                "btcConnected": btcConnected,
-            ]
+            GlassesStore.shared.set("glasses", "connected", sgc?.ready ?? false)
+            GlassesStore.shared.set("glasses", "micEnabled", sgc?.micEnabled ?? false)
+            GlassesStore.shared.set("glasses", "batteryLevel", sgc?.batteryLevel ?? -1)
+            GlassesStore.shared.set("glasses", "appVersion", sgc?.glassesAppVersion ?? "")
+            GlassesStore.shared.set("glasses", "buildNumber", sgc?.glassesBuildNumber ?? "")
+            GlassesStore.shared.set("glasses", "deviceModel", sgc?.glassesDeviceModel ?? "")
+            GlassesStore.shared.set("glasses", "androidVersion", sgc?.glassesAndroidVersion ?? "")
+            GlassesStore.shared.set("glasses", "otaVersionUrl", sgc?.glassesOtaVersionUrl ?? "")
+            GlassesStore.shared.set("glasses", "fwVersion", sgc?.glassesFirmwareVersion ?? "")
+            GlassesStore.shared.set("glasses", "btMacAddress", sgc?.glassesBtMacAddress ?? "")
 
             if sgc is G1 {
-                glassesInfo["caseRemoved"] = sgc?.caseRemoved ?? true
-                glassesInfo["caseOpen"] = sgc?.caseOpen ?? true
-                glassesInfo["caseCharging"] = sgc?.caseCharging ?? false
-                glassesInfo["caseBatteryLevel"] = sgc?.caseBatteryLevel ?? -1
+                GlassesStore.shared.set("glasses", "caseRemoved", sgc?.caseRemoved ?? true)
+                GlassesStore.shared.set("glasses", "caseOpen", sgc?.caseOpen ?? true)
+                GlassesStore.shared.set("glasses", "caseCharging", sgc?.caseCharging ?? false)
+                GlassesStore.shared.set("glasses", "caseBatteryLevel", sgc?.caseBatteryLevel ?? -1)
 
-                glassesInfo["serialNumber"] = sgc?.glassesSerialNumber ?? ""
-                glassesInfo["style"] = sgc?.glassesStyle ?? ""
-                glassesInfo["color"] = sgc?.glassesColor ?? ""
+                GlassesStore.shared.set("glasses", "serialNumber", sgc?.glassesSerialNumber ?? "")
+                GlassesStore.shared.set("glasses", "style", sgc?.glassesStyle ?? "")
+                GlassesStore.shared.set("glasses", "color", sgc?.glassesColor ?? "")
             }
 
             if sgc is MentraLive {
-                glassesInfo["wifiSsid"] = sgc?.wifiSsid ?? ""
-                glassesInfo["wifiConnected"] = sgc?.wifiConnected ?? false
-                glassesInfo["wifiLocalIp"] = sgc?.wifiLocalIp ?? ""
-                glassesInfo["hotspotEnabled"] = sgc?.isHotspotEnabled ?? false
-                glassesInfo["hotspotSsid"] = sgc?.hotspotSsid ?? ""
-                glassesInfo["hotspotPassword"] = sgc?.hotspotPassword ?? ""
-                glassesInfo["hotspotGatewayIp"] = sgc?.hotspotGatewayIp ?? ""
+                GlassesStore.shared.set("glasses", "wifiSsid", sgc?.wifiSsid ?? "")
+                GlassesStore.shared.set("glasses", "wifiConnected", sgc?.wifiConnected ?? false)
+                GlassesStore.shared.set("glasses", "wifiLocalIp", sgc?.wifiLocalIp ?? "")
+                GlassesStore.shared.set("glasses", "hotspotEnabled", sgc?.isHotspotEnabled ?? false)
+                GlassesStore.shared.set("glasses", "hotspotSsid", sgc?.hotspotSsid ?? "")
+                GlassesStore.shared.set("glasses", "hotspotPassword", sgc?.hotspotPassword ?? "")
+                GlassesStore.shared.set("glasses", "hotspotGatewayIp", sgc?.hotspotGatewayIp ?? "")
             }
 
             // Add Bluetooth device name if available
             if let bluetoothName = sgc?.getConnectedBluetoothName() {
-                glassesInfo["bluetoothName"] = bluetoothName
+                GlassesStore.shared.set("glasses", "bluetoothName", bluetoothName)
             }
-
-            glassesSettings = [
-                "brightness": brightness,
-                "auto_brightness": autoBrightness,
-                "dashboard_height": dashboardHeight,
-                "dashboard_depth": dashboardDepth,
-                "head_up_angle": headUpAngle,
-                "button_mode": buttonPressMode,
-                "button_photo_size": buttonPhotoSize,
-                "button_video_settings": [
-                    "width": buttonVideoWidth,
-                    "height": buttonVideoHeight,
-                    "fps": buttonVideoFps,
-                ],
-                "button_max_recording_time": buttonMaxRecordingTime,
-                "button_camera_led": buttonCameraLed,
-            ]
-
-            //        let cloudConnectionStatus =
-            //            WebSocketManager.shared.isConnected() ? "CONNECTED" : "DISCONNECTED"
-
-            // TODO: config: remove
-            let coreInfo: [String: Any] = [
-                // "is_searching": self.isSearching && !self.defaultWearable.isEmpty,
-                "is_searching": isSearching
-            ]
-
-            // hardcoded list of apps:
-            var apps: [[String: Any]] = []
-
-            let authObj: [String: Any] = [
-                "core_token_owner": coreTokenOwner
-                    //      "core_token_status":
-            ]
-
-            let statusObj: [String: Any] = [
-                "glasses_info": glassesInfo,
-                "glasses_settings": glassesSettings,
-                "apps": apps,
-                "core_info": coreInfo,
-                "auth": authObj,
-            ]
-
-            lastStatusObj = statusObj
-
-            Bridge.sendStatus(statusObj)
         }
     }
-
 
     func cleanup() {
         // Clean up transcriber resources

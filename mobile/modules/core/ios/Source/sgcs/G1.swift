@@ -359,6 +359,8 @@ class G1: NSObject, SGCManager {
     func sendUserEmailToGlasses(_: String) {}
 
     func queryGalleryStatus() {}
+    
+    func sendOtaStart() {}
 
     var connectionState: String = ConnTypes.DISCONNECTED
 

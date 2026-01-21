@@ -224,6 +224,10 @@ class Simulated: SGCManager {
         Bridge.log("sendUserEmailToGlasses: \(email)")
     }
 
+    func sendOtaStart() {
+        Bridge.log("sendOtaStart")
+    }
+
     // MARK: - Gallery
 
     func queryGalleryStatus() {
