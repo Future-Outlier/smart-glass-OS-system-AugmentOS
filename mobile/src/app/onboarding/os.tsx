@@ -16,7 +16,7 @@ export default function MentraOSOnboarding() {
     {
       type: "video",
       name: "Start and stop apps",
-      source: `${CDN_BASE}/start_stop_apps.mov`,
+      source: `${CDN_BASE}/start_stop_apps.mp4`,
       poster: require("@assets/onboarding/os/thumbnails/start_stop_apps.jpg"),
       containerClassName: "bg-background",
       transition: false,
@@ -30,7 +30,7 @@ export default function MentraOSOnboarding() {
     {
       type: "video",
       name: "Open an app",
-      source: `${CDN_BASE}/open_an_app.mov`,
+      source: `${CDN_BASE}/open_an_app.mp4`,
       poster: require("@assets/onboarding/os/thumbnails/open_an_app.jpg"),
       containerClassName: "bg-background",
       transition: false,
@@ -44,7 +44,7 @@ export default function MentraOSOnboarding() {
     {
       type: "video",
       name: "Background apps",
-      source: `${CDN_BASE}/background_apps.mov`,
+      source: `${CDN_BASE}/background_apps.mp4`,
       poster: require("@assets/onboarding/os/thumbnails/background_apps.jpg"),
       containerClassName: "bg-background",
       transition: false,
