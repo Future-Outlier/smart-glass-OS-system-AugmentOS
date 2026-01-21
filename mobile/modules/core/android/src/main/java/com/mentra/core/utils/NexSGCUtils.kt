@@ -10,6 +10,7 @@ import android.util.Log
 import com.mentra.core.Bridge
 
 import mentraos.ble.MentraosBle.DisplayText
+import mentraos.ble.MentraosBle.ClearDisplay
 import mentraos.ble.MentraosBle.PhoneToGlasses
 import mentraos.ble.MentraosBle.DisplayImage
 import mentraos.ble.MentraosBle.PongResponse
@@ -170,6 +171,17 @@ object NexProtobufUtils {
             Log.e(TAG, "Error getting protobuf schema version: ${e.message}", e)
             1 // Fallback to version 1
         }
+    }
+
+    fun generateClearDisplayRequestCommandBytes(): ByteArray {
+        // Create the clear display protobuf message
+        val clearDisplay = ClearDisplay.newBuilder()
+            .build()
+        val phoneToGlasses = PhoneToGlasses.newBuilder()
+            .setMsgId("clear_disp_001")
+            .setClearDisplay(clearDisplay)
+            .build();
+        return generateProtobufCommandBytes(phoneToGlasses);
     }
 
     fun generateVersionRequestCommandBytes(): ByteArray {

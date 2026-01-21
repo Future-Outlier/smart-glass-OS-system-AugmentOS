@@ -436,8 +436,10 @@ class MentraNex : SGCManager() {
     }
 
     override fun clearDisplay() { 
-        Bridge.log("Nex: clearDisplay() - sending space");
-        sendTextWall(" ")
+        Bridge.log("Nex: clearDisplay() - sending clear display request command bytes");
+        val clearDisplayPackets = NexProtobufUtils.generateClearDisplayRequestCommandBytes()
+        sendDataSequentially(clearDisplayPackets, 10)
+        Bridge.log("Nex: clearDisplay() - sent clear display request command bytes");
     }
 
     override fun sendTextWall(text: String) {
@@ -494,11 +496,9 @@ class MentraNex : SGCManager() {
         Bridge.log("Nex: Updated shouldUseGlassesMic to: $shouldUseGlassesMic")
         if (enabled) {
             Bridge.log("Nex: Microphone enabled, starting audio input handling")
-            sendSetMicEnabled(true, 10)
             startMicBeat(MICBEAT_INTERVAL_MS.toInt())
         } else {
             Bridge.log("Nex: Microphone disabled, stopping audio input handling")
-            sendSetMicEnabled(false, 10)
             stopMicBeat()
         }
     }
