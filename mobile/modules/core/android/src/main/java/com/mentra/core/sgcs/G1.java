@@ -2844,44 +2844,6 @@ public class G1 extends SGCManager {
         return Math.min(spaces, 100);
     }
 
-    private List<byte[]> chunkTextForTransmission(String text) {
-        byte[] textBytes = text.getBytes(StandardCharsets.UTF_8);
-        int totalChunks = (int) Math.ceil((double) textBytes.length / MAX_CHUNK_SIZE);
-
-        List<byte[]> allChunks = new ArrayList<>();
-        for (int i = 0; i < totalChunks; i++) {
-            int start = i * MAX_CHUNK_SIZE;
-            int end = Math.min(start + MAX_CHUNK_SIZE, textBytes.length);
-            byte[] payloadChunk = Arrays.copyOfRange(textBytes, start, end);
-
-            // Create header with protocol specifications
-            byte screenStatus = 0x71; // New content (0x01) + Text Show (0x70)
-            byte[] header = new byte[] {
-                    (byte) TEXT_COMMAND, // Command type
-                    (byte) textSeqNum, // Sequence number
-                    (byte) totalChunks, // Total packages
-                    (byte) i, // Current package number
-                    screenStatus, // Screen status
-                    (byte) 0x00, // new_char_pos0 (high)
-                    (byte) 0x00, // new_char_pos1 (low)
-                    (byte) 0x00, // Current page number (always 0 for now)
-                    (byte) 0x01 // Max page number (always 1)
-            };
-
-            // Combine header and payload
-            ByteBuffer chunk = ByteBuffer.allocate(header.length + payloadChunk.length);
-            chunk.put(header);
-            chunk.put(payloadChunk);
-
-            allChunks.add(chunk.array());
-        }
-
-        // Increment sequence number for next page
-        textSeqNum = (textSeqNum + 1) % 256;
-
-        return allChunks;
-    }
-
     private void sendPeriodicTextWall() {
         if (!isConnected()) {
             Bridge.log("G1: Cannot send text wall: Not connected to glasses");
