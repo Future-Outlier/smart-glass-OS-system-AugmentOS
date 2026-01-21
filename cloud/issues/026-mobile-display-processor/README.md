@@ -98,19 +98,19 @@ Mobile ← DisplayProcessor (display-utils) ← display_event
 ### DisplayProcessor API
 
 ```typescript
-import {displayProcessor} from "@/services/display"
+import { displayProcessor } from "@/services/display";
 
 // When glasses connect (called from MantleBridge)
-displayProcessor.setDeviceModel("Even Realities G1")
+displayProcessor.setDeviceModel("Even Realities G1");
 
 // Process display events (called from SocketComms)
-const processed = displayProcessor.processDisplayEvent(rawEvent)
+const processed = displayProcessor.processDisplayEvent(rawEvent);
 
 // Direct text wrapping
-const lines = displayProcessor.wrapText("Hello world this is a long text")
+const lines = displayProcessor.wrapText("Hello world this is a long text");
 
 // Measure text width
-const widthPx = displayProcessor.measureText("Hello")
+const widthPx = displayProcessor.measureText("Hello");
 ```
 
 ### Supported Layout Types
@@ -194,11 +194,21 @@ Added `ColumnComposer` class to `@mentra/display-utils` for pixel-precise column
 - Display events are processed through DisplayProcessor
 - Fallback to raw events works if processing fails
 
+### Phase 4: Z100 Profile Update ✅
+
+Updated Z100 profile with real font metrics extracted from Noto Sans TTF:
+
+- Extracted glyph widths from `NotoSans-Regular.ttf` at 21px using `extract-font-metrics.js`
+- Updated `displayWidthPx` to 600 (640 - 40px left buffer)
+- Updated `maxLines` to 7
+- Added real glyph widths for all ASCII characters
+- Space width: 5px, Hyphen width: 7px
+
 ### Future: Profile Updates
 
 When hardware specs become available:
 
-- [ ] Update `Z100_PROFILE` with actual Vuzix Z100 font metrics
+- [x] Update `Z100_PROFILE` with actual Vuzix Z100 font metrics ✅
 - [ ] Update `NEX_PROFILE` with actual Mentra Nex font metrics
 - [ ] Add `MACH1_PROFILE` if Mentra Mach1 has a display
 
@@ -214,7 +224,16 @@ When hardware specs become available:
   - [x] Integrate with SocketComms
   - [x] Update device model on glasses connect
   - [x] Add G1, Z100, NEX profiles
-- [x] **Phase 2: Native SGC wrapping removal** ✅ (Not needed - native already acts as dumb renderer)
+- [x] **Phase 2: Native SGC wrapping removal** ✅
+  - [x] Simplified `G1Text.swift` createTextWallChunks (no re-wrapping)
+  - [x] Simplified `G1.java` createTextWallChunks (no re-wrapping)
+  - [x] Fixed displayEvent() head-up update bug in iOS/Android CoreManager
+- [x] **Phase 2.5: ColumnComposer for double_text_wall** ✅
+  - [x] Created ColumnComposer class in display-utils
+  - [x] Updated DisplayProcessor to use ColumnComposer
+- [x] **Phase 4: Z100 Profile Update** ✅
+  - [x] Extracted real Noto Sans font metrics
+  - [x] Created extract-font-metrics.js utility script
 - [x] **Phase 3: Validation** ✅
   - [x] App builds and runs successfully
   - [x] DisplayProcessor integrated and working
