@@ -2068,7 +2068,7 @@ class MentraLive: NSObject, SGCManager {
     }
 
     func sendGalleryMode() {
-        let active = CoreManager.shared.galleryMode
+        let active = GlassesStore.shared.get("core", "gallery_mode") as! Bool
         Bridge.log("LIVE: 📸 Sending gallery mode active to glasses: \(active)")
 
         let json: [String: Any] = [
@@ -3597,7 +3597,7 @@ extension MentraLive {
     // MARK: - Button Mode Settings
 
     func sendButtonModeSetting() {
-        let mode = CoreManager.shared.buttonPressMode
+        let mode = GlassesStore.shared.get("core", "button_mode") as! String
         Bridge.log("Sending button mode setting to glasses: \(mode)")
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -3668,7 +3668,8 @@ extension MentraLive {
         sendButtonVideoRecordingSettings()
 
         // Send button max recording time
-        sendButtonMaxRecordingTime(CoreManager.shared.buttonMaxRecordingTime)
+        let maxTime = GlassesStore.shared.get("core", "button_max_recording_time") as! Int
+        sendButtonMaxRecordingTime(maxTime)
 
         // Send button photo settings
         sendButtonPhotoSettings()
@@ -3681,10 +3682,10 @@ extension MentraLive {
     }
 
     func sendButtonVideoRecordingSettings() {
-        let width = CoreManager.shared.buttonVideoWidth
-        let height = CoreManager.shared.buttonVideoHeight
-        let fps = CoreManager.shared.buttonVideoFps
-
+        let width = GlassesStore.shared.get("core", "button_video_width") as? Int ?? 1280
+        let height = GlassesStore.shared.get("core", "button_video_height") as? Int ?? 720
+        let fps = GlassesStore.shared.get("core", "button_video_fps") as? Int ?? 30
+        
         // Use defaults if not set
         let finalWidth = width > 0 ? width : 1280
         let finalHeight = height > 0 ? height : 720
@@ -3710,7 +3711,7 @@ extension MentraLive {
     }
 
     func sendButtonMaxRecordingTime() {
-        let maxTime = CoreManager.shared.buttonMaxRecordingTime
+        let maxTime = GlassesStore.shared.get("core", "button_max_recording_time") as? Int ?? 10
         Bridge.log("Sending button max recording time: \(maxTime) minutes")
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -3726,7 +3727,7 @@ extension MentraLive {
     }
 
     func sendButtonPhotoSettings() {
-        let size = CoreManager.shared.buttonPhotoSize
+        let size = GlassesStore.shared.get("core", "button_photo_size") as! String
 
         Bridge.log("Sending button photo setting: \(size)")
 
@@ -3743,7 +3744,7 @@ extension MentraLive {
     }
 
     func sendButtonCameraLedSetting() {
-        let enabled = CoreManager.shared.buttonCameraLed
+        let enabled = GlassesStore.shared.get("core", "button_camera_led") as! Bool
 
         Bridge.log("Sending button camera LED setting: \(enabled)")
 

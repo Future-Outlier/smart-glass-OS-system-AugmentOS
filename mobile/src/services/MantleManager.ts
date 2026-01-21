@@ -45,7 +45,9 @@ class MantleManager {
   private calendarSyncTimer: ReturnType<typeof setInterval> | null = null
   private clearTextTimeout: ReturnType<typeof setTimeout> | null = null
   private transcriptProcessor: TranscriptProcessor
-  private coreMessageSubscription: any = null
+  private coreEventSubscription: any = null
+  private coreStatusSubscription: any = null
+  private coreGlassesStatusSubscription: any = null
 
   public static getInstance(): MantleManager {
     if (!MantleManager.instance) {
@@ -79,6 +81,7 @@ class MantleManager {
   // should only ever be run once
   // sets up the bridge and initializes app state
   public async init() {
+    console.log("MANTLE: init()")
     await migrate() // do any local migrations here
     const res = await restComms.loadUserSettings() // get settings from server
     if (res.is_ok()) {
@@ -87,18 +90,13 @@ class MantleManager {
     } else {
       console.error("MANTLE: No settings received from server")
     }
+    console.log("MANTLE: Settings loaded")
 
-    await CoreModule.onCoreStatus((changed) => {
-      console.log("MANTLE: Core status changed", changed)
-      useCoreStore.getState().setCoreInfo(changed)
-    })
+    console.log("MANTLE: Subscribing to core events")
 
-    await CoreModule.onGlassesStatus((changed) => {
-      console.log("MANTLE: Glasses status changed", changed)
-      useGlassesStore.getState().setGlassesInfo(changed)
-    })
-
-    await CoreModule.updateSettings(useSettingsStore.getState().getCoreSettings()) // send settings to core
+    await CoreModule.updateCore(useSettingsStore.getState().getCoreSettings()) // send settings to core
+    console.log("MANTLE: Settings sent to core")
+    
     // send initial status request:
     await CoreModule.getStatus()
 
@@ -113,8 +111,14 @@ class MantleManager {
       clearInterval(this.calendarSyncTimer)
       this.calendarSyncTimer = null
     }
-    if (this.coreMessageSubscription) {
-      this.coreMessageSubscription.remove()
+    if (this.coreEventSubscription) {
+      this.coreEventSubscription.remove()
+    }
+    if (this.coreStatusSubscription) {
+      this.coreStatusSubscription.remove()
+    }
+    if (this.coreGlassesStatusSubscription) {
+      this.coreGlassesStatusSubscription.remove()
     }
     Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME)
     this.transcriptProcessor.clear()
@@ -203,10 +207,26 @@ class MantleManager {
     )
 
     // subscribe to the core:
-    if (this.coreMessageSubscription) {
-      this.coreMessageSubscription.remove()
+    if (this.coreStatusSubscription) {
+      this.coreStatusSubscription.remove()
     }
-    this.coreMessageSubscription = CoreModule.onEvent(this.handleCoreEvent)
+    if (this.coreGlassesStatusSubscription) {
+      this.coreGlassesStatusSubscription.remove()
+    }
+    if (this.coreEventSubscription) {
+      this.coreEventSubscription.remove()
+    }
+
+    this.coreEventSubscription = CoreModule.onCoreEvent(this.handleCoreEvent)
+    // forward core status changes to the zustand core store:
+    this.coreStatusSubscription = CoreModule.onCoreStatus((changed) => {
+      // console.log("MANTLE: Core status changed", changed)
+      useCoreStore.getState().setCoreInfo(changed)
+    })
+    this.coreGlassesStatusSubscription = CoreModule.onGlassesStatus((changed) => {
+      // console.log("MANTLE: Glasses status changed", changed)
+      useGlassesStore.getState().setGlassesInfo(changed)
+    })
   }
 
   private async sendCalendarEvents() {
@@ -358,7 +378,7 @@ class MantleManager {
 
       switch (data.type) {
         case "log":
-          console.log("MANTLE: received log event from Core", data.message)
+          console.log("CORE:", data.message)
           break
         case "core_status_update":
           useGlassesStore.getState().setGlassesInfo(data.core_status.glasses_info)

@@ -162,7 +162,7 @@ struct ViewState {
         set { GlassesStore.shared.apply("core", "sensing_enabled", newValue) }
     }
 
-    private var powerSavingMode: Bool {
+    public var powerSavingMode: Bool {
         get { GlassesStore.shared.get("core", "power_saving_mode") as? Bool ?? false }
         set { GlassesStore.shared.apply("core", "power_saving_mode", newValue) }
     }

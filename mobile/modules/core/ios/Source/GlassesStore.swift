@@ -13,9 +13,8 @@ class GlassesStore {
     let store = ObservableStore()
 
     private init() {
-        // Set defaults for glasses settings
-        // settings are snake_case
-        // status:
+        // SETTINGS are snake_case
+        // CORE STATE is camelCase
         store.set("glasses", "batteryLevel", -1)
         store.set("glasses", "connected", false)
         store.set("glasses", "connectionState", "disconnected")
@@ -39,7 +38,12 @@ class GlassesStore {
         store.set("glasses", "hotspotGatewayIp", "")
         store.set("glasses", "bluetoothName", "")
 
-        // Set defaults for core settings
+        // CORE STATE:
+        store.set("core", "systemMicUnavailable", false)
+        store.set("core", "isHeadUp", false)
+        store.set("core", "searching", false)
+
+        // CORE SETTINGS:
         store.set("core", "default_wearable", "")
         store.set("core", "pending_wearable", "")
         store.set("core", "device_name", "")
@@ -53,7 +57,6 @@ class GlassesStore {
         store.set("core", "enforce_local_transcription", false)
         store.set("core", "sensing_enabled", true)
         store.set("core", "metric_system", false)
-        // more
         store.set("core", "brightness", 50)
         store.set("core", "auto_brightness", true)
         store.set("core", "dashboard_height", 4)
@@ -70,10 +73,6 @@ class GlassesStore {
         store.set("core", "button_video_height", 720)
         store.set("core", "button_video_fps", 30)
         store.set("core", "preferred_mic", "auto")
-        // core state:
-        store.set("core", "systemMicUnavailable", false)
-        store.set("core", "isHeadUp", false)
-        store.set("core", "searching", false)
     }
 
     func get(_ category: String, _ key: String) -> Any? {
