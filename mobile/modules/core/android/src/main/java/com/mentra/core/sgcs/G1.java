@@ -2768,77 +2768,62 @@ public class G1 extends SGCManager {
 
     private int textSeqNum = 0; // Sequence number for text packets
 
-    // currently only a single page - 1PAGE CHANGE
+    /**
+     * Creates BLE chunks for pre-wrapped text.
+     *
+     * IMPORTANT: Text is expected to come pre-wrapped from the DisplayProcessor in React Native.
+     * This function does NOT perform any text wrapping - it only chunks the text for BLE transmission.
+     * The DisplayProcessor handles all pixel-accurate wrapping using @mentra/display-utils.
+     *
+     * @param text Pre-wrapped text with newlines already in place
+     * @return List of BLE chunks ready for transmission
+     */
     private List<byte[]> createTextWallChunks(String text) {
-        int margin = 5;
+        // Text comes pre-wrapped from DisplayProcessor - just chunk it for transmission
+        return chunkTextForTransmission(text);
+    }
 
-        // Get width of single space character
-        int spaceWidth = g1Text.calculateTextWidth(" ");
-
-        // Calculate effective display width after accounting for left and right margins
-        // in spaces
-        int marginWidth = margin * spaceWidth; // Width of left margin in pixels
-        int effectiveWidth = DISPLAY_WIDTH - (2 * marginWidth); // Subtract left and right margins
-
-        // Split text into lines based on effective display width
-        List<String> lines = g1Text.splitIntoLines(text, effectiveWidth);
-
-        // Calculate total pages
-        int totalPages = 1; // hard set to 1 since we only do 1 page - 1PAGECHANGE
+    /**
+     * Chunks text into BLE packets for transmission to glasses.
+     * This is a low-level function that handles BLE protocol framing.
+     *
+     * @param text Text to chunk (should already be formatted/wrapped)
+     * @return List of BLE chunks with headers
+     */
+    private List<byte[]> chunkTextForTransmission(String text) {
+        byte[] textBytes = text.getBytes(StandardCharsets.UTF_8);
+        int totalChunks = (int) Math.ceil((double) textBytes.length / MAX_CHUNK_SIZE);
 
         List<byte[]> allChunks = new ArrayList<>();
+        for (int i = 0; i < totalChunks; i++) {
+            int start = i * MAX_CHUNK_SIZE;
+            int end = Math.min(start + MAX_CHUNK_SIZE, textBytes.length);
+            byte[] payloadChunk = Arrays.copyOfRange(textBytes, start, end);
 
-        // Process each page
-        for (int page = 0; page < totalPages; page++) {
-            // Get lines for current page
-            int startLine = page * LINES_PER_SCREEN;
-            int endLine = Math.min(startLine + LINES_PER_SCREEN, lines.size());
-            List<String> pageLines = lines.subList(startLine, endLine);
+            // Create header with protocol specifications
+            byte screenStatus = 0x71; // New content (0x01) + Text Show (0x70)
+            byte[] header = new byte[] {
+                    (byte) TEXT_COMMAND, // Command type
+                    (byte) textSeqNum, // Sequence number
+                    (byte) totalChunks, // Total packages
+                    (byte) i, // Current package number
+                    screenStatus, // Screen status
+                    (byte) 0x00, // new_char_pos0 (high)
+                    (byte) 0x00, // new_char_pos1 (low)
+                    (byte) 0x00, // Current page number (always 0)
+                    (byte) 0x01 // Max page number (always 1)
+            };
 
-            // Combine lines for this page with proper indentation
-            StringBuilder pageText = new StringBuilder();
+            // Combine header and payload
+            ByteBuffer chunk = ByteBuffer.allocate(header.length + payloadChunk.length);
+            chunk.put(header);
+            chunk.put(payloadChunk);
 
-            for (String line : pageLines) {
-                // Add the exact number of spaces for indentation
-                String indentation = " ".repeat(margin);
-                pageText.append(indentation).append(line).append("\n");
-            }
-
-            byte[] textBytes = pageText.toString().getBytes(StandardCharsets.UTF_8);
-            int totalChunks = (int) Math.ceil((double) textBytes.length / MAX_CHUNK_SIZE);
-
-            // Create chunks for this page
-            for (int i = 0; i < totalChunks; i++) {
-                int start = i * MAX_CHUNK_SIZE;
-                int end = Math.min(start + MAX_CHUNK_SIZE, textBytes.length);
-                byte[] payloadChunk = Arrays.copyOfRange(textBytes, start, end);
-
-                // Create header with protocol specifications
-                byte screenStatus = 0x71; // New content (0x01) + Text Show (0x70)
-                byte[] header = new byte[] {
-                        (byte) TEXT_COMMAND, // Command type
-                        (byte) textSeqNum, // Sequence number
-                        (byte) totalChunks, // Total packages
-                        (byte) i, // Current package number
-                        screenStatus, // Screen status
-                        (byte) 0x00, // new_char_pos0 (high)
-                        (byte) 0x00, // new_char_pos1 (low)
-                        (byte) page, // Current page number
-                        (byte) totalPages // Max page number
-                };
-
-                // Combine header and payload
-                ByteBuffer chunk = ByteBuffer.allocate(header.length + payloadChunk.length);
-                chunk.put(header);
-                chunk.put(payloadChunk);
-
-                allChunks.add(chunk.array());
-            }
-
-            // Increment sequence number for next page
-            textSeqNum = (textSeqNum + 1) % 256;
-            break; // hard set to 1 - 1PAGECHANGE
+            allChunks.add(chunk.array());
         }
+
+        // Increment sequence number for next transmission
+        textSeqNum = (textSeqNum + 1) % 256;
 
         return allChunks;
     }

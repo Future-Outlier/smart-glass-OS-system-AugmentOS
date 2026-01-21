@@ -1,136 +1,137 @@
-import {DisplayProfile} from "./types"
+import { DisplayProfile } from "./types";
 
 /**
- * Vuzix Z100 glyph widths
+ * Vuzix Z100 glyph widths - extracted from NotoSans-Regular.ttf at 21px
  *
- * PLACEHOLDER: Currently using G1 glyph widths until actual Z100 font metrics are available.
- * TODO: Replace with actual Z100 font measurements when hardware specs are confirmed.
+ * These are pixel widths at the default font size used by the Z100 display.
+ * The Z100 uses Noto Sans as its system font.
+ *
+ * Extracted using: node scripts/extract-font-metrics.js NotoSans-Regular.ttf 21
  */
 const Z100_GLYPH_WIDTHS: Record<string, number> = {
-  // Punctuation & Symbols
-  " ": 2,
-  "!": 1,
-  '"': 2,
-  "#": 6,
-  "$": 5,
-  "%": 6,
-  "&": 7,
-  "'": 1,
-  "(": 2,
-  ")": 2,
-  "*": 3,
-  "+": 4,
-  ",": 1,
-  "-": 4,
-  ".": 1,
-  "/": 3,
+  // Space and punctuation
+  " ": 5,
+  "!": 6,
+  '"': 9,
+  "#": 14,
+  "$": 12,
+  "%": 17,
+  "&": 15,
+  "'": 5,
+  "(": 6,
+  ")": 6,
+  "*": 12,
+  "+": 12,
+  ",": 6,
+  "-": 7, // Hyphen width - important for line breaking
+  ".": 6,
+  "/": 8,
 
   // Numbers
-  "0": 5,
-  "1": 3,
-  "2": 5,
-  "3": 5,
-  "4": 5,
-  "5": 5,
-  "6": 5,
-  "7": 5,
-  "8": 5,
-  "9": 5,
+  "0": 12,
+  "1": 12,
+  "2": 12,
+  "3": 12,
+  "4": 12,
+  "5": 12,
+  "6": 12,
+  "7": 12,
+  "8": 12,
+  "9": 12,
 
   // More punctuation
-  ":": 1,
-  ";": 1,
-  "<": 4,
-  "=": 4,
-  ">": 4,
-  "?": 5,
-  "@": 7,
+  ":": 6,
+  ";": 6,
+  "<": 12,
+  "=": 12,
+  ">": 12,
+  "?": 9,
+  "@": 19,
 
   // Uppercase
-  "A": 6,
-  "B": 5,
-  "C": 5,
-  "D": 5,
-  "E": 4,
-  "F": 4,
-  "G": 5,
-  "H": 5,
-  "I": 2,
-  "J": 3,
-  "K": 5,
-  "L": 4,
-  "M": 7,
-  "N": 5,
-  "O": 5,
-  "P": 5,
-  "Q": 5,
-  "R": 5,
-  "S": 5,
-  "T": 5,
-  "U": 5,
-  "V": 6,
-  "W": 7,
-  "X": 6,
-  "Y": 6,
-  "Z": 5,
+  "A": 13,
+  "B": 14,
+  "C": 13,
+  "D": 15,
+  "E": 12,
+  "F": 11,
+  "G": 15,
+  "H": 16,
+  "I": 7,
+  "J": 6,
+  "K": 13,
+  "L": 11,
+  "M": 19,
+  "N": 16,
+  "O": 16,
+  "P": 13,
+  "Q": 16,
+  "R": 13,
+  "S": 12,
+  "T": 12,
+  "U": 15,
+  "V": 13,
+  "W": 20,
+  "X": 12,
+  "Y": 12,
+  "Z": 12,
 
   // Brackets & special
-  "[": 2,
-  "\\": 3,
-  "]": 2,
-  "^": 4,
-  "_": 3,
-  "`": 2,
+  "[": 7,
+  "\\": 8,
+  "]": 7,
+  "^": 12,
+  "_": 9,
+  "`": 6,
 
   // Lowercase
-  "a": 5,
-  "b": 4,
-  "c": 4,
-  "d": 4,
-  "e": 4,
-  "f": 4,
-  "g": 4,
-  "h": 4,
-  "i": 1,
-  "j": 2,
-  "k": 4,
-  "l": 1,
-  "m": 7,
-  "n": 4,
-  "o": 4,
-  "p": 4,
-  "q": 4,
-  "r": 3,
-  "s": 4,
-  "t": 3,
-  "u": 5,
-  "v": 5,
-  "w": 7,
-  "x": 5,
-  "y": 5,
-  "z": 4,
+  "a": 12,
+  "b": 13,
+  "c": 10,
+  "d": 13,
+  "e": 12,
+  "f": 7,
+  "g": 13,
+  "h": 13,
+  "i": 5,
+  "j": 5,
+  "k": 11,
+  "l": 5,
+  "m": 20,
+  "n": 13,
+  "o": 13,
+  "p": 13,
+  "q": 13,
+  "r": 9,
+  "s": 10,
+  "t": 8,
+  "u": 13,
+  "v": 11,
+  "w": 17,
+  "x": 11,
+  "y": 11,
+  "z": 10,
 
   // More special
-  "{": 3,
-  "|": 1,
-  "}": 3,
-  "~": 7,
-}
+  "{": 8,
+  "|": 12,
+  "}": 8,
+  "~": 12,
+};
 
 /**
  * Vuzix Z100 Smart Glasses Display Profile
  *
  * The Z100 has a green monochrome display with 640x480 resolution.
- * Max text lines: 7 (from hardware capabilities)
+ * It uses the Vuzix Ultralite SDK and Noto Sans font family.
  *
- * PLACEHOLDER VALUES: Font metrics are currently based on G1 profile.
- * TODO: Update with actual Z100 font measurements when available.
- *
- * Known Z100 specs (from capabilities):
+ * Display specs:
  * - Resolution: 640x480
+ * - Usable width: 600px (640 - 40px left buffer)
  * - Color: Green monochrome
  * - Max text lines: 7
- * - No bitmap support
+ * - Font: Noto Sans Regular at 21px
+ * - No bitmap support via text commands
  * - Adjustable brightness
  */
 export const Z100_PROFILE: DisplayProfile = {
@@ -138,35 +139,35 @@ export const Z100_PROFILE: DisplayProfile = {
   name: "Vuzix Z100",
 
   // Display dimensions
-  // PLACEHOLDER: Using estimated width based on resolution ratio
-  // TODO: Confirm actual usable text display width
-  displayWidthPx: 576,
+  // The Z100 has 640px width but uses a 40px left buffer, leaving 600px usable
+  displayWidthPx: 600,
   maxLines: 7,
 
   // BLE constraints
-  // PLACEHOLDER: Using G1 values until Z100 specs confirmed
-  maxPayloadBytes: 390,
-  bleChunkSize: 176,
+  // Z100 uses Vuzix Ultralite SDK which handles chunking internally
+  // These are conservative values for direct BLE if needed
+  maxPayloadBytes: 512,
+  bleChunkSize: 180,
 
-  // Font metrics
-  // PLACEHOLDER: Using G1 font metrics until Z100 font is measured
+  // Font metrics - Noto Sans Regular at 21px
   fontMetrics: {
     glyphWidths: new Map(Object.entries(Z100_GLYPH_WIDTHS)),
-    defaultGlyphWidth: 7,
-    renderFormula: (glyphWidth: number) => (glyphWidth + 1) * 2,
+    defaultGlyphWidth: 12, // Average width from extracted metrics
+    // Z100 uses direct pixel widths, no render formula needed
+    renderFormula: (glyphWidth: number) => glyphWidth,
 
-    // Uniform-width scripts
-    // PLACEHOLDER: Using G1 values
+    // Uniform-width scripts for CJK and other non-Latin
+    // Noto Sans CJK characters are typically wider
     uniformScripts: {
-      cjk: 18,
-      hiragana: 18,
-      katakana: 18,
-      korean: 24,
-      cyrillic: 18,
+      cjk: 21, // Full-width CJK characters
+      hiragana: 21,
+      katakana: 21,
+      korean: 21,
+      cyrillic: 14, // Cyrillic is similar to Latin in Noto Sans
     },
 
     fallback: {
-      latinMaxWidth: 16,
+      latinMaxWidth: 20, // 'W' and 'm' are the widest at 20px
       unknownBehavior: "useLatinMax",
     },
   },
@@ -176,16 +177,16 @@ export const Z100_PROFILE: DisplayProfile = {
     noStartChars: [".", ",", "!", "?", ":", ";", ")", "]", "}", "。", "，", "！", "？", "：", "；", "）", "】", "」"],
     noEndChars: ["(", "[", "{", "（", "【", "「"],
   },
-}
+};
 
 /**
- * Get the hyphen width for Z100 in rendered pixels.
- * PLACEHOLDER: Using G1 value
+ * Get the hyphen width for Z100 in pixels.
+ * Used for line breaking calculations.
  */
-export const Z100_HYPHEN_WIDTH_PX = 10
+export const Z100_HYPHEN_WIDTH_PX = 7;
 
 /**
- * Get the space width for Z100 in rendered pixels.
- * PLACEHOLDER: Using G1 value
+ * Get the space width for Z100 in pixels.
+ * Used for column alignment calculations.
  */
-export const Z100_SPACE_WIDTH_PX = 6
+export const Z100_SPACE_WIDTH_PX = 5;

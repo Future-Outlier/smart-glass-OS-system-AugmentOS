@@ -624,7 +624,9 @@ struct ViewState {
     /// Valid values: 20 (16kbps), 40 (32kbps), 60 (48kbps).
     func setLC3FrameSize(_ frameSize: Int) {
         if frameSize != 20 && frameSize != 40 && frameSize != 60 {
-            Bridge.log("MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 20.")
+            Bridge.log(
+                "MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 20."
+            )
             lc3FrameSize = 20
             lc3Converter?.setOutputFrameSize(20)
             return
@@ -1081,13 +1083,12 @@ struct ViewState {
 
         viewStates[stateIndex] = newViewState
 
-        let headUp = isHeadUp
-        // send the state we just received if the user is currently in that state:
-        if stateIndex == 0, !headUp {
-            sendCurrentState()
-        } else if stateIndex == 1, headUp {
-            sendCurrentState()
-        }
+        // Always send the current state when view state changes.
+        // sendCurrentState() already handles selecting the correct view based on isHeadUp
+        // and contextualDashboard settings, so we don't need to filter here.
+        // The previous conditional logic was causing display updates to be missed
+        // when the incoming view (main/dashboard) didn't match the current head position.
+        sendCurrentState()
     }
 
     func showDashboard() {

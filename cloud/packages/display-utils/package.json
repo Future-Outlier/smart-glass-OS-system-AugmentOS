@@ -25,6 +25,7 @@
     "prepare": "bun run build"
   },
   "devDependencies": {
+    "opentype.js": "^1.3.4",
     "typescript": "^5.0.0"
   },
   "files": [

@@ -469,10 +469,10 @@ class CoreManager {
     }
 
     // turns a single mic on and turns off all other mics:
-    private fun updateMicState() {        
+    private fun updateMicState() {
         // go through the micRanking and find the first mic that is available:
         var micUsed: String = ""
-        
+
         // allow the sgc to make changes to the micRanking:
         micRanking = sgc?.sortMicRanking(micRanking) ?: micRanking
         Bridge.log("MAN: updateMicState() micRanking: $micRanking")
@@ -566,7 +566,8 @@ class CoreManager {
     }
 
     private fun sendCurrentState() {
-        // Bridge.log("MAN: sendCurrentState(): $isHeadUp")
+        Bridge.log("MAN: sendCurrentState(): $isHeadUp")
+
         if (screenDisabled) {
             return
         }
@@ -597,7 +598,7 @@ class CoreManager {
         // Cancel any pending clear display work item
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
 
-        // Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
+        Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
 
         when (currentViewState.layoutType) {
             "text_wall" -> sgc?.sendTextWall(currentViewState.text)
@@ -1045,11 +1046,12 @@ class CoreManager {
         if (!statesEqual(currentState, newViewState)) {
             // Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
             viewStates[stateIndex] = newViewState
-            if (stateIndex == 0 && !isHeadUp) {
-                sendCurrentState()
-            } else if (stateIndex == 1 && isHeadUp) {
-                sendCurrentState()
-            }
+            // Always send the current state when view state changes.
+            // sendCurrentState() already handles selecting the correct view based on isHeadUp
+            // and contextualDashboard settings, so we don't need to filter here.
+            // The previous conditional logic was causing display updates to be missed
+            // when the incoming view (main/dashboard) didn't match the current head position.
+            sendCurrentState()
         }
     }
 
@@ -1200,7 +1202,7 @@ class CoreManager {
         Bridge.log("MAN: Connecting to wearable: $dName")
 
         var name = dName
-        
+
         // use stored device name if available:
         if (dName.isEmpty() && !deviceName.isEmpty()) {
             name = deviceName

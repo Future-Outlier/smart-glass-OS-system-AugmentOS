@@ -510,6 +510,8 @@ class SocketComms {
       processedEvent = msg
     }
 
+    console.log(processedEvent)
+
     // Send processed event to native SGC
     CoreModule.displayEvent(processedEvent)
 

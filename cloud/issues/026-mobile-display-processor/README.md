@@ -13,6 +13,7 @@ Text wrapping logic is duplicated and inconsistent across the codebase:
 3. **Mobile preview** (`GlassesDisplayMirror`) - No wrapping, just displays what it receives
 
 This causes:
+
 - Preview doesn't match actual glasses display
 - Double-wrapping when cloud and native both wrap
 - Inconsistent line breaks between cloud apps and native rendering
@@ -31,8 +32,9 @@ This causes:
 ## Key Insight
 
 The SDK's `display-utils` is pure TypeScript with no Node.js dependencies:
+
 - `TextMeasurer` - Glyph width lookups
-- `TextWrapper` - Line breaking algorithms  
+- `TextWrapper` - Line breaking algorithms
 - `G1_PROFILE`, `Z100_PROFILE`, `NEX_PROFILE` - Hardware-specific measurements
 
 This is now a shared package `@mentra/display-utils` used by both SDK and mobile.
@@ -54,6 +56,7 @@ Mobile ← DisplayProcessor (display-utils) ← display_event
 ### Files Created/Modified
 
 **New Package:**
+
 - `cloud/packages/display-utils/` - Shared `@mentra/display-utils` package
   - `src/index.ts` - Main exports and factory functions
   - `src/profiles/g1.ts` - Even Realities G1 profile
@@ -64,10 +67,12 @@ Mobile ← DisplayProcessor (display-utils) ← display_event
   - `src/helpers/` - Utility functions and ScrollView
 
 **Mobile Files:**
+
 - `mobile/src/services/display/DisplayProcessor.ts` - Main processor class
 - `mobile/src/services/display/index.ts` - Service exports
 
 **Modified Files:**
+
 - `mobile/src/services/SocketComms.ts` - Uses DisplayProcessor to process display events before sending to native
 - `mobile/src/bridge/MantleBridge.tsx` - Updates DisplayProcessor device model when glasses connect
 - `mobile/package.json` - Added `@mentra/display-utils` dependency
@@ -83,6 +88,7 @@ Mobile ← DisplayProcessor (display-utils) ← display_event
 **Decision**: Create shared `@mentra/display-utils` package (Option B from spec)
 
 **Rationale**:
+
 - Single source of truth - no code duplication
 - Both SDK and mobile import from the same package
 - Pure TypeScript with zero external dependencies
@@ -92,7 +98,7 @@ Mobile ← DisplayProcessor (display-utils) ← display_event
 ### DisplayProcessor API
 
 ```typescript
-import { displayProcessor } from '@/services/display'
+import {displayProcessor} from "@/services/display"
 
 // When glasses connect (called from MantleBridge)
 displayProcessor.setDeviceModel("Even Realities G1")
@@ -113,49 +119,73 @@ const widthPx = displayProcessor.measureText("Hello")
 - ✅ `text_line` - Same as text_wall
 - ✅ `text_rows` - Array of rows, each wrapped independently
 - ✅ `reference_card` - Title (1 line) + text (remaining lines)
-- ✅ `double_text_wall` - Two columns at half width
+- ✅ `double_text_wall` - Two columns with pixel-precise space alignment via ColumnComposer
 - ✅ `bitmap_view` - Pass through (no text processing)
 
 ### Device Profile Support
 
-| Device | Profile | Status |
-|--------|---------|--------|
-| Even Realities G1 | `G1_PROFILE` | ✅ Full support |
-| Vuzix Z100 | `Z100_PROFILE` | ✅ Placeholder (needs actual font metrics) |
-| Mentra Nex | `NEX_PROFILE` | ✅ Placeholder (needs actual font metrics) |
-| Mentra Mach1 | `G1_PROFILE` | 🔄 Uses G1 (needs own profile if has display) |
-| Mentra Live | `G1_PROFILE` | ℹ️ No display, uses G1 as fallback |
-| Simulated | `G1_PROFILE` | ✅ Full support |
+| Device            | Profile        | Status                                        |
+| ----------------- | -------------- | --------------------------------------------- |
+| Even Realities G1 | `G1_PROFILE`   | ✅ Full support                               |
+| Vuzix Z100        | `Z100_PROFILE` | ✅ Full support (Noto Sans metrics extracted) |
+| Mentra Nex        | `NEX_PROFILE`  | ✅ Placeholder (needs actual font metrics)    |
+| Mentra Mach1      | `G1_PROFILE`   | 🔄 Uses G1 (needs own profile if has display) |
+| Mentra Live       | `G1_PROFILE`   | ℹ️ No display, uses G1 as fallback            |
+| Simulated         | `G1_PROFILE`   | ✅ Full support                               |
 
 ### Device Model Normalization
 
 The `DisplayProcessor.normalizeModelName()` function maps model strings to profiles:
 
-| Input String | Maps To |
-|--------------|---------|
-| `"Even Realities G1"`, `"g1"` | `g1` → `G1_PROFILE` |
-| `"Vuzix Z100"`, `"z100"`, `"vuzix"` | `z100` → `Z100_PROFILE` |
-| `"Mentra Nex"`, `"nex"`, `"mentra display"` | `nex` → `NEX_PROFILE` |
-| `"Mentra Mach1"`, `"mach1"`, `"mach 1"` | `mach1` → `G1_PROFILE` |
-| `"Mentra Live"`, `"mentra-live"` | `mentra-live` → `G1_PROFILE` |
-| `"Simulated Glasses"`, `"simulated"` | `simulated` → `G1_PROFILE` |
+| Input String                                | Maps To                      |
+| ------------------------------------------- | ---------------------------- |
+| `"Even Realities G1"`, `"g1"`               | `g1` → `G1_PROFILE`          |
+| `"Vuzix Z100"`, `"z100"`, `"vuzix"`         | `z100` → `Z100_PROFILE`      |
+| `"Mentra Nex"`, `"nex"`, `"mentra display"` | `nex` → `NEX_PROFILE`        |
+| `"Mentra Mach1"`, `"mach1"`, `"mach 1"`     | `mach1` → `G1_PROFILE`       |
+| `"Mentra Live"`, `"mentra-live"`            | `mentra-live` → `G1_PROFILE` |
+| `"Simulated Glasses"`, `"simulated"`        | `simulated` → `G1_PROFILE`   |
 
 ## Completed
 
-### Phase 2: Native SGC Wrapping Removal ✅ (Not Needed)
+### Phase 2: Native SGC Wrapping Removal ✅
 
-After investigation, the native SGC layer already acts mostly as a "dumb renderer":
+Native wrapping logic has been removed/simplified. Text now comes pre-wrapped from DisplayProcessor.
 
 **Android:**
-- `G1.kt` - No text wrapping logic
-- `Mach1.java` - Has `addNewlineEveryNWords()` but only for Vuzix SDK compatibility
-- Other SGCs - No wrapping logic
+
+- `G1.java` - `createTextWallChunks()` simplified to just call `chunkTextForTransmission()` without re-wrapping
+- `G1Text.kt` - `splitIntoLines()` still exists for legacy `createDoubleTextWallChunks()` but is no longer used for text_wall
 
 **iOS:**
-- `G1.swift` - No text wrapping logic
-- Other SGCs - No wrapping logic
 
-**Conclusion:** No native changes required. The DisplayProcessor in RN handles all wrapping before events reach native code.
+- `G1Text.swift` - `createTextWallChunks()` simplified to just call `chunkTextForTransmission()` without re-wrapping
+- `splitIntoLines()` still exists for legacy `createDoubleTextWallChunks()` but is no longer used for text_wall
+
+**Additional fix:** Fixed `displayEvent()` in both iOS and Android to always call `sendCurrentState()` when view state changes. The previous conditional logic was causing display updates to be missed when looking up (head-up position).
+
+### Phase 2.5: ColumnComposer for double_text_wall ✅
+
+Added `ColumnComposer` class to `@mentra/display-utils` for pixel-precise column composition:
+
+- `ColumnComposer.composeDoubleTextWall(left, right)` - wraps both columns and merges with space-padding
+- `DisplayProcessor.processDoubleTextWall()` now uses ColumnComposer
+- Outputs pre-composed text as `text_wall` layout type
+- Native just chunks and sends - no column composition logic needed
+
+**Files created:**
+
+- `cloud/packages/display-utils/src/composer/ColumnComposer.ts`
+- `cloud/packages/display-utils/src/composer/index.ts`
+
+**Files modified:**
+
+- `cloud/packages/display-utils/src/index.ts` - exports ColumnComposer
+- `mobile/src/services/display/DisplayProcessor.ts` - uses ColumnComposer for double_text_wall
+- `mobile/modules/core/ios/Source/utils/G1Text.swift` - simplified createTextWallChunks
+- `mobile/modules/core/ios/Source/CoreManager.swift` - fixed displayEvent
+- `mobile/modules/core/android/src/main/java/com/mentra/core/sgcs/G1.java` - simplified createTextWallChunks
+- `mobile/modules/core/android/src/main/java/com/mentra/core/CoreManager.kt` - fixed displayEvent
 
 ### Phase 3: Validation ✅
 
@@ -167,6 +197,7 @@ After investigation, the native SGC layer already acts mostly as a "dumb rendere
 ### Future: Profile Updates
 
 When hardware specs become available:
+
 - [ ] Update `Z100_PROFILE` with actual Vuzix Z100 font metrics
 - [ ] Update `NEX_PROFILE` with actual Mentra Nex font metrics
 - [ ] Add `MACH1_PROFILE` if Mentra Mach1 has a display

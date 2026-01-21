@@ -21,6 +21,7 @@ import {
   TextMeasurer,
   TextWrapper,
   DisplayHelpers,
+  ColumnComposer,
   type DisplayProfile,
   type WrapOptions,
   type BreakMode,
@@ -78,6 +79,20 @@ export interface ProcessedDisplayEvent extends DisplayEvent {
   _profile: string
   /** Pre-split lines for text_wall/text_line (for easy rendering) */
   _lines?: string[]
+  /** Original layout type before processing (e.g., double_text_wall -> text_wall) */
+  _originalLayoutType?: DisplayLayoutType
+  /** Column composition metadata for double_text_wall */
+  _composedColumns?: {
+    leftLines: string[]
+    rightLines: string[]
+    config: {
+      leftColumnWidthPx: number
+      rightColumnStartPx: number
+      rightColumnWidthPx: number
+      maxLines: number
+      leftMarginSpaces?: number
+    }
+  }
 }
 
 /**
@@ -161,6 +176,7 @@ export class DisplayProcessor {
   private measurer: TextMeasurer
   private wrapper: TextWrapper
   private helpers: DisplayHelpers
+  private composer: ColumnComposer
   private profile: DisplayProfile
   private deviceModel: DeviceModel = "unknown"
   private options: DisplayProcessorOptions
@@ -182,6 +198,7 @@ export class DisplayProcessor {
     this.measurer = toolkit.measurer
     this.wrapper = toolkit.wrapper
     this.helpers = toolkit.helpers
+    this.composer = new ColumnComposer(toolkit.profile, this.options.breakMode)
     this.profile = toolkit.profile
   }
 
@@ -244,6 +261,7 @@ export class DisplayProcessor {
     this.measurer = toolkit.measurer
     this.wrapper = toolkit.wrapper
     this.helpers = toolkit.helpers
+    this.composer = new ColumnComposer(newProfile, this.options.breakMode)
     this.profile = toolkit.profile
 
     if (this.options.debug) {
@@ -431,38 +449,69 @@ export class DisplayProcessor {
 
   /**
    * Process double_text_wall layout
+   *
+   * Uses ColumnComposer to create a fully composed string with both columns
+   * merged line-by-line with pixel-precise space alignment. This is the single
+   * source of truth for double_text_wall composition, replacing duplicate
+   * implementations in native iOS (G1Text.swift) and Android (G1Text.kt).
+   *
+   * The composed text is sent to native as a regular text_wall - native just
+   * chunks and sends it without any re-wrapping or column composition.
    */
   private processDoubleTextWall(
     event: DisplayEvent,
     layout: DisplayEvent | NonNullable<DisplayEvent["layout"]>,
   ): ProcessedDisplayEvent {
-    const topText = layout.topText || ""
-    const bottomText = layout.bottomText || ""
+    const leftText = layout.topText || ""
+    const rightText = layout.bottomText || ""
 
-    // Double text wall splits the display in half
-    // Each side gets ~50% of the width
-    const halfWidthOptions: WrapOptions = {
-      maxWidthPx: Math.floor(this.profile.displayWidthPx / 2) - 10, // Small gap between columns
+    // Use ColumnComposer for pixel-precise column composition
+    const result = this.composer.composeDoubleTextWall(leftText, rightText)
+
+    if (this.options.debug) {
+      console.log(`[DisplayProcessor] double_text_wall composed:`)
+      console.log(`  Left lines: ${result.leftLines.length}`)
+      console.log(`  Right lines: ${result.rightLines.length}`)
+      console.log(`  Config: ${JSON.stringify(result.config)}`)
     }
 
-    const wrappedTop = this.wrapText(topText, halfWidthOptions)
-    const wrappedBottom = this.wrapText(bottomText, halfWidthOptions)
-
+    // The composed text is a single string with both columns merged
+    // Native will receive this as a text_wall and just chunk & send it
     const processedLayout = event.layout
       ? {
           ...event.layout,
-          topText: wrappedTop.join("\n"),
-          bottomText: wrappedBottom.join("\n"),
+          // Keep original topText/bottomText for reference but add composed text
+          topText: leftText,
+          bottomText: rightText,
+          // The composed text is what native should actually display
+          _composedText: result.composedText,
         }
       : undefined
 
     return {
       ...event,
-      topText: wrappedTop.join("\n"),
-      bottomText: wrappedBottom.join("\n"),
-      layout: processedLayout,
+      // Override the layout type to text_wall since we've pre-composed the columns
+      // This tells native to use sendTextWall instead of sendDoubleTextWall
+      layoutType: "text_wall" as DisplayLayoutType,
+      text: result.composedText,
+      // Keep original values for debugging/preview
+      topText: leftText,
+      bottomText: rightText,
+      layout: processedLayout
+        ? {
+            ...processedLayout,
+            layoutType: "text_wall" as DisplayLayoutType,
+            text: result.composedText,
+          }
+        : undefined,
       _processed: true,
       _profile: this.profile.id,
+      _originalLayoutType: "double_text_wall",
+      _composedColumns: {
+        leftLines: result.leftLines,
+        rightLines: result.rightLines,
+        config: result.config,
+      },
     }
   }
 
