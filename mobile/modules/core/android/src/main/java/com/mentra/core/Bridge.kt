@@ -16,6 +16,14 @@ import kotlin.jvm.Volatile
 import org.json.JSONObject
 
 /**
+ * Data class representing a discovered device during search
+ */
+data class DeviceSearchResult(
+    val modelName: String,
+    val deviceName: String
+)
+
+/**
  * Bridge class for core communication between Expo modules and native Android code This is the
  * Android equivalent of the iOS Bridge.swift
  */

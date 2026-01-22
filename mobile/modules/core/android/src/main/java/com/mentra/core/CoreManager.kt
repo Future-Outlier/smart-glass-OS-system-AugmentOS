@@ -31,7 +31,8 @@ import java.util.concurrent.Executors
 class CoreManager {
     companion object {
 
-        @Volatile private var instance: CoreManager? = null
+        @Volatile var instance: CoreManager? = null
+            private set
 
         @JvmStatic
         fun getInstance(): CoreManager {
@@ -671,7 +672,7 @@ class CoreManager {
         }
     }
 
-    private fun sendCurrentState() {
+    fun sendCurrentState() {
         // Bridge.log("MAN: sendCurrentState(): $isHeadUp")
         if (screenDisabled) {
             return

@@ -1,5 +1,6 @@
 package com.mentra.core
 
+import com.mentra.core.utils.MicMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -100,12 +101,12 @@ object GlassesStore {
         when (category to key) {
             "core" to "lc3_frame_size" -> {
                 if (value is Int) {
-                    if (frameSize != 20 && frameSize != 40 && frameSize != 60) {
-                        Bridge.log("MAN: Invalid LC3 frame size $frameSize, must be 20, 40, or 60. Using default 20.")
+                    if (value != 20 && value != 40 && value != 60) {
+                        Bridge.log("MAN: Invalid LC3 frame size $value, must be 20, 40, or 60. Using default 20.")
                         store.set("core", "lc3_frame_size", 20)
                         return
                     }
-                    Bridge.log("MAN: LC3 frame size set to $frameSize bytes (${frameSize * 800 / 1000}kbps)")
+                    Bridge.log("MAN: LC3 frame size set to $value bytes (${value * 800 / 1000}kbps)")
                 }
             }
             "core" to "isHeadUp" -> {
@@ -229,11 +230,9 @@ object GlassesStore {
                     Bridge.saveSetting("default_wearable", wearable)
                 }
             }
-            
+
             "core" to "device_name" -> {
-                (value as? String)?.let { name ->
-                    CoreManager.instance.checkCurrentAudioDevice()
-                }
+                // Device name changed - no additional action needed
             }
         }
     }
