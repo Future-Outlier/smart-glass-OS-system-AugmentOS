@@ -181,7 +181,12 @@ public class Bridge private constructor() {
             val eventBody = HashMap<String, Any>()
             eventBody["model_name"] = modelName
             eventBody["device_name"] = deviceName
-            sendTypedMessage("compatible_glasses_search_result", eventBody as Map<String, Any>)
+            // get the core searchResults and add it (ensure no duplicates)
+            val searchResults = GlassesStore.store.getCategory("core")["searchResults"] as List<DeviceSearchResult>
+            val uniqueSearchResults = searchResults.filter { it.deviceName != deviceName }
+            eventBody["search_results"] = uniqueSearchResults
+            GlassesStore.set("core", "searchResults", uniqueSearchResults)
+            // sendTypedMessage("compatible_glasses_search_result", eventBody as Map<String, Any>)
         }
 
         /** Update ASR config */

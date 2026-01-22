@@ -3138,7 +3138,8 @@ class MentraLive: NSObject, SGCManager {
             "device_name": name,
             "device_address": "",
         ]
-        Bridge.sendTypedMessage("compatible_glasses_search_result", body: body)
+        // Bridge.sendTypedMessage("compatible_glasses_search_result", body: body)
+        Bridge.sendDiscoveredDevice("Mentra Live", name)
     }
 
     private func emitStopScanEvent() {

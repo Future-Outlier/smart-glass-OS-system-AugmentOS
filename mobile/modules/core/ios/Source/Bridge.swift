@@ -101,7 +101,11 @@ class Bridge {
             "model_name": modelName,
             "device_name": deviceName,
         ]
-        sendTypedMessage("compatible_glasses_search_result", body: eventBody)
+        // sendTypedMessage("compatible_glasses_search_result", body: eventBody)
+        // get the core searchResults and add it (ensure no duplicates):
+        let searchResults = GlassesStore.shared.get("core", "searchResults") as? [[String: Any]] ?? []
+        let uniqueSearchResults = searchResults.filter { $0["device_name"] as? String != deviceName }
+        GlassesStore.shared.set("core", "searchResults", uniqueSearchResults)
     }
 
     static func updateAsrConfig(languages: [[String: Any]]) {
