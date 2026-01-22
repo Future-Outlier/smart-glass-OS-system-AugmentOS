@@ -23,7 +23,7 @@ import {DeviceSearchResult} from "core"
 export default function SelectGlassesBluetoothScreen() {
   const {modelName}: {modelName: string} = useLocalSearchParams()
   const {theme} = useAppTheme()
-  const {goBack, replace, push, pushUnder} = useNavigationHistory()
+  const {goBack, replace, pushUnder} = useNavigationHistory()
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   const btcConnected = useGlassesStore((state) => state.btcConnected)
   const [_deviceName, setDeviceName] = useSetting(SETTINGS.device_name.key)
@@ -38,7 +38,7 @@ export default function SelectGlassesBluetoothScreen() {
   focusEffectPreventBack()
 
   useEffect(() => {
-    if (searchResults.includes("NOTREQUIREDSKIP")) {
+    if (searchResults.some((result) => result.deviceName === "NOTREQUIREDSKIP")) {
       triggerGlassesPairingGuide(modelName, "NOTREQUIREDSKIP")
       return
     }
@@ -112,7 +112,7 @@ export default function SelectGlassesBluetoothScreen() {
   }
 
   // remember the search results to ensure consistent ordering:
-  const rememberedSearchResults = useRef<SearchResultDevice[]>(searchResults)
+  const rememberedSearchResults = useRef<DeviceSearchResult[]>(searchResults)
   useEffect(() => {
     // ensure remembered search results is a set:
     for (const result of searchResults) {
