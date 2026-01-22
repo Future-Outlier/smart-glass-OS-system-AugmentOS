@@ -924,6 +924,8 @@ class MentraNex : SGCManager() {
                             Bridge.log("LC3 player not available - skipping LC3 audio output")
                         }
 
+                        CoreManager.getInstance().handleGlassesMicData(lc3Data);
+
                         // Still decode for callback compatibility
                         // TODO: (Verify) Commenting because commented in G1
                         // if (lc3DecoderPtr != 0L) {
