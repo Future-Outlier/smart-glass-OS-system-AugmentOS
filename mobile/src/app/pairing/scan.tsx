@@ -215,6 +215,12 @@ export default function SelectGlassesBluetoothScreen() {
         rememberedSearchResults.current.push(result)
       }
     }
+
+    // ensure remembered search results has no duplicates:
+    rememberedSearchResults.current = rememberedSearchResults.current.filter(
+      (result, index, self) =>
+        index === self.findIndex((t) => t.deviceAddress === result.deviceAddress && t.deviceName === result.deviceName),
+    )
   }, [searchResults])
 
   return (
@@ -222,7 +228,7 @@ export default function SelectGlassesBluetoothScreen() {
       <Header leftIcon="chevron-left" onLeftPress={goBack} RightActionComponent={<MentraLogoStandalone />} />
       <View className="flex-1 pt-[35%]">
         <View className="gap-6 rounded-3xl bg-primary-foreground p-6">
-          <Image source={getGlassesOpenImage(modelName)} className="h-[90px] w-full" resizeMode="contain" />
+          <Image source={getGlassesOpenImage(modelName)} className="h-[90px] w-full px-14" resizeMode="contain" />
           <Text
             className="text-center text-xl font-semibold text-text-dim"
             text={translate("pairing:scanningForGlassesModel", {model: modelName})}
@@ -255,7 +261,7 @@ export default function SelectGlassesBluetoothScreen() {
           )}
           <Divider />
           <View className="flex-row justify-end">
-            <Button preset="alternate" compact tx="common:cancel" onPress={() => goBack()} className="min-w-[100px]" />
+            <Button preset="secondary" compact tx="common:cancel" onPress={() => goBack()} className="min-w-[100px]" />
           </View>
         </View>
       </View>

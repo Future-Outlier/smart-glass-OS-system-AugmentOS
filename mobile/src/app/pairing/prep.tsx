@@ -230,15 +230,18 @@ export default function PairingPrepScreen() {
   }
 
   const MentraLivePairingGuide = () => {
+    const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
     let steps: OnboardingStep[] = [
       {
         name: "power_on_tutorial",
-        type: "image",
-        source: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
+        type: "video",
+        source: `https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light/ONB1_power_button.mp4`,
+        poster: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
         transition: false,
         title: translate("pairing:powerOn"), // for spacing so it's consistent with the other steps
         subtitle: translate("onboarding:livePowerOnTutorial"),
         info: translate("onboarding:livePowerOnInfo"),
+        playCount: 1,
       },
     ]
 
