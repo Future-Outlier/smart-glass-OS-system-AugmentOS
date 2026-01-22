@@ -63,7 +63,7 @@ export default function CoreStatusBar() {
         <Text className="text-secondary-foreground text-sm font-medium ml-2">{micRanking.join(", ")}</Text>
       </View>
       {/* system mic unavailable */}
-      {!systemMicUnavailable && (
+      {systemMicUnavailable && (
         <View
           className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-destructive`}>
           <Icon name="unplug" size={14} color={theme.colors.secondary_foreground} />
