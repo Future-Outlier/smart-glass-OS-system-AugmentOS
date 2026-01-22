@@ -31,13 +31,15 @@ import java.util.concurrent.Executors
 class CoreManager {
     companion object {
 
-        @Volatile var instance: CoreManager? = null
-            private set
+        @Volatile private var _instance: CoreManager? = null
+
+        val instance: CoreManager?
+            get() = _instance
 
         @JvmStatic
         fun getInstance(): CoreManager {
-            return instance
-                    ?: synchronized(this) { instance ?: CoreManager().also { instance = it } }
+            return _instance
+                    ?: synchronized(this) { _instance ?: CoreManager().also { _instance = it } }
         }
     }
 

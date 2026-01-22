@@ -112,7 +112,7 @@ object GlassesStore {
             "core" to "isHeadUp" -> {
                 (value as? Boolean)?.let { isHeadUp ->
                     // sendCurrentState()
-                    CoreManager.instance.sendCurrentState()
+                    CoreManager.instance?.sendCurrentState()
                     Bridge.sendHeadUp(isHeadUp)
                 }
             }
@@ -120,104 +120,104 @@ object GlassesStore {
                 val b = (value as? Int) ?: 50
                 val auto = (store.get("core", "auto_brightness") as? Boolean) ?: true
                 CoroutineScope(Dispatchers.Main).launch {
-                    CoreManager.instance.sgc?.setBrightness(b, auto)
-                    CoreManager.instance.sgc?.sendTextWall("Set brightness to $b%")
+                    CoreManager.instance?.sgc?.setBrightness(b, auto)
+                    CoreManager.instance?.sgc?.sendTextWall("Set brightness to $b%")
                     delay(800) // 0.8 seconds
-                    CoreManager.instance.sgc?.clearDisplay()
+                    CoreManager.instance?.sgc?.clearDisplay()
                 }
             }
-            
+
             "core" to "auto_brightness" -> {
                 val b = (store.get("core", "brightness") as? Int) ?: 50
                 val auto = (value as? Boolean) ?: true
                 val autoBrightnessChanged = (oldValue as? Boolean) != auto
                 CoroutineScope(Dispatchers.Main).launch {
-                    CoreManager.instance.sgc?.setBrightness(b, auto)
+                    CoreManager.instance?.sgc?.setBrightness(b, auto)
                     if (autoBrightnessChanged) {
-                        CoreManager.instance.sgc?.sendTextWall(
+                        CoreManager.instance?.sgc?.sendTextWall(
                             if (auto) "Enabled auto brightness" else "Disabled auto brightness"
                         )
                         delay(800) // 0.8 seconds
-                        CoreManager.instance.sgc?.clearDisplay()
+                        CoreManager.instance?.sgc?.clearDisplay()
                     }
                 }
             }
-            
+
             "core" to "dashboard_height",
             "core" to "dashboard_depth" -> {
                 val h = (store.get("glasses", "dashboard_height") as? Int) ?: 4
                 val d = (store.get("glasses", "dashboard_depth") as? Int) ?: 5
                 CoroutineScope(Dispatchers.Main).launch {
-                    CoreManager.instance.sgc?.setDashboardPosition(h, d)
+                    CoreManager.instance?.sgc?.setDashboardPosition(h, d)
                 }
             }
-            
+
             "core" to "head_up_angle" -> {
                 (value as? Int)?.let { angle ->
-                    CoreManager.instance.sgc?.setHeadUpAngle(angle)
+                    CoreManager.instance?.sgc?.setHeadUpAngle(angle)
                 }
             }
-            
+
             "core" to "gallery_mode" -> {
-                CoreManager.instance.sgc?.sendGalleryMode()
+                CoreManager.instance?.sgc?.sendGalleryMode()
             }
-            
+
             "core" to "screen_disabled" -> {
                 (value as? Boolean)?.let { disabled ->
                     if (disabled) {
-                        CoreManager.instance.sgc?.exit()
+                        CoreManager.instance?.sgc?.exit()
                     } else {
-                        CoreManager.instance.sgc?.clearDisplay()
+                        CoreManager.instance?.sgc?.clearDisplay()
                     }
                 }
             }
-            
+
             "core" to "button_mode" -> {
-                CoreManager.instance.sgc?.sendButtonModeSetting()
+                CoreManager.instance?.sgc?.sendButtonModeSetting()
             }
-            
+
             "core" to "button_photo_size" -> {
-                CoreManager.instance.sgc?.sendButtonPhotoSettings()
+                CoreManager.instance?.sgc?.sendButtonPhotoSettings()
             }
-            
+
             "core" to "button_camera_led" -> {
-                CoreManager.instance.sgc?.sendButtonCameraLedSetting()
+                CoreManager.instance?.sgc?.sendButtonCameraLedSetting()
             }
-            
+
             "core" to "button_max_recording_time" -> {
-                CoreManager.instance.sgc?.sendButtonMaxRecordingTime()
+                CoreManager.instance?.sgc?.sendButtonMaxRecordingTime()
             }
-            
+
             "core" to "button_video_width",
             "core" to "button_video_height",
             "core" to "button_video_fps" -> {
-                CoreManager.instance.sgc?.sendButtonVideoRecordingSettings()
+                CoreManager.instance?.sgc?.sendButtonVideoRecordingSettings()
             }
-            
+
             "core" to "preferred_mic" -> {
                 (value as? String)?.let { mic ->
                     apply("core", "mic_ranking", MicMap.map[mic] ?: MicMap.map["auto"]!!)
-                    CoreManager.instance.setMicState(
+                    CoreManager.instance?.setMicState(
                         (store.get("core", "should_send_pcm_data") as? Boolean) ?: false,
                         (store.get("core", "should_send_transcript") as? Boolean) ?: false,
                         (store.get("core", "bypass_vad") as? Boolean) ?: true
                     )
                 }
             }
-            
+
             "core" to "offline_mode" -> {
                 (value as? Boolean)?.let { offline ->
-                    CoreManager.instance.setMicState(
+                    CoreManager.instance?.setMicState(
                         (store.get("core", "should_send_pcm_data") as? Boolean) ?: false,
                         (store.get("core", "should_send_transcript") as? Boolean) ?: false,
                         (store.get("core", "bypass_vad") as? Boolean) ?: true
                     )
                 }
             }
-            
+
             "core" to "enforce_local_transcription" -> {
                 (value as? Boolean)?.let { enabled ->
-                    CoreManager.instance.setMicState(
+                    CoreManager.instance?.setMicState(
                         (store.get("core", "should_send_pcm_data") as? Boolean) ?: false,
                         (store.get("core", "should_send_transcript") as? Boolean) ?: false,
                         (store.get("core", "bypass_vad") as? Boolean) ?: true
