@@ -17,6 +17,8 @@ import {KeyboardAwareScrollView} from "react-native-keyboard-controller"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {$styles} from "@/theme"
 import {ExtendedEdge, useSafeAreaInsetsStyle} from "@/utils/useSafeAreaInsetsStyle"
+import CoreStatusBar from "@/components/dev/CoreStatusBar"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 export const DEFAULT_BOTTOM_OFFSET = 50
 
@@ -214,7 +216,7 @@ function ScreenWithScrolling(props: ScreenProps) {
       bottomOffset={keyboardBottomOffset}
       {...{keyboardShouldPersistTaps, scrollEnabled, ref}}
       {...ScrollViewProps}
-      onLayout={e => {
+      onLayout={(e) => {
         onLayout(e)
         ScrollViewProps?.onLayout?.(e)
       }}
@@ -253,7 +255,8 @@ export function Screen(props: ScreenProps) {
 
   const $containerInsets = useSafeAreaInsetsStyle(safeAreaEdges)
   const {theme} = useAppTheme()
-  
+  const [debugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
+
   return (
     <View
       style={[
@@ -271,6 +274,7 @@ export function Screen(props: ScreenProps) {
           style={[$styles.flex1, KeyboardAvoidingViewProps?.style]}>
           {isNonScrolling(props.preset) ? <ScreenWithoutScrolling {...props} /> : <ScreenWithScrolling {...props} />}
         </KeyboardAvoidingView>
+        {debugCoreStatusBarEnabled && <CoreStatusBar />}
       </View>
       {/*</BackgroundGradient>*/}
     </View>
