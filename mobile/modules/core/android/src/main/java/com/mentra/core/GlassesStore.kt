@@ -46,7 +46,8 @@ object GlassesStore {
         store.set("core", "searching", false)
         store.set("core", "micEnabled", false)
         store.set("core", "currentMic", "")
-        
+        store.set("core", "searchResults", [])
+
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
         store.set("core", "pending_wearable", "")

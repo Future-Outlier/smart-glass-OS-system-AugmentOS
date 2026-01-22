@@ -81,18 +81,17 @@ export interface GlassesStatus {
 
 export type MicRanking = "auto" | "phone" | "glasses" | "bluetooth"
 
+export interface DeviceSearchResult {
+  modelName: string
+  deviceName: string
+  deviceAddress?: string
+}
+
 export interface CoreStatus {
   // state:
   searching: boolean
   micRanking: string[]
   systemMicUnavailable: boolean
   currentMic: MicRanking | null
-  // settings -- should not be read
-  // power_saving_mode: boolean
-  // metric_system: boolean
-  // bypass_vad: boolean
-  // offline_mode: boolean
-  // enforce_local_transcription: boolean
-  // always_on_status_bar: boolean
-  // sensing_enabled: boolean
+  searchResults: DeviceSearchResult[]
 }

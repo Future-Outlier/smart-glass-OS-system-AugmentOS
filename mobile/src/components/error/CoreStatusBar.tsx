@@ -123,6 +123,11 @@ export default function CoreStatusBar() {
         <Icon name="microphone" size={14} color={theme.colors.secondary_foreground} />
         <Text className="text-secondary-foreground text-sm font-medium ml-2">{currentMic}</Text>
       </View>
+      <View
+        className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-green-500`}>
+        <Icon name="microphone" size={14} color={theme.colors.secondary_foreground} />
+        <Text className="text-secondary-foreground text-sm font-medium ml-2">{micRanking.join(", ")}</Text>
+      </View>
     </View>
   )
 }

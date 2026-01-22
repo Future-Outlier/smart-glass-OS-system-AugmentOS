@@ -1279,11 +1279,11 @@ class G1: NSObject, SGCManager {
             case .HEAD_UP:
                 Bridge.log("G1: HEAD_UP")
                 isHeadUp = true
-                GlassesStore.shared.update("core", ["isHeadUp": isHeadUp])
+                GlassesStore.shared.set("core", "isHeadUp", isHeadUp)
             case .HEAD_UP2:
                 Bridge.log("G1: HEAD_UP2")
                 isHeadUp = true
-                GlassesStore.shared.update("core", ["isHeadUp": isHeadUp])
+                GlassesStore.shared.set("core", "isHeadUp", isHeadUp)
             // case .HEAD_DOWN:
             //   CoreCommsService.log("HEAD_DOWN")
             //   isHeadUp = false
@@ -1291,7 +1291,7 @@ class G1: NSObject, SGCManager {
             case .HEAD_DOWN2:
                 Bridge.log("G1: HEAD_DOWN2")
                 isHeadUp = false
-                GlassesStore.shared.update("core", ["isHeadUp": isHeadUp])
+                GlassesStore.shared.set("core", "isHeadUp", isHeadUp)
             case .ACTIVATED:
                 Bridge.log("G1: ACTIVATED")
             case .SILENCED:

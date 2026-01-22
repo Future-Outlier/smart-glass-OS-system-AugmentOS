@@ -14,6 +14,7 @@ const initialState: CoreStatus = {
   micRanking: [],
   systemMicUnavailable: false,
   currentMic: null,
+  searchResults: [],
 }
 
 export const useCoreStore = create<CoreState>()(
