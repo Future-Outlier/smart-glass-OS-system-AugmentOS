@@ -90,8 +90,8 @@ export interface DeviceSearchResult {
 export interface CoreStatus {
   // state:
   searching: boolean
-  micRanking: string[]
   systemMicUnavailable: boolean
+  micRanking: MicRanking[]
   currentMic: MicRanking | null
   searchResults: DeviceSearchResult[]
 }

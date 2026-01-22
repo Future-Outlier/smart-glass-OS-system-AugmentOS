@@ -44,6 +44,13 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  debug_core_status_bar: {
+    key: "debug_core_status_bar",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   china_deployment: {
     key: "china_deployment",
     defaultValue: () => (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china" ? true : false),
@@ -417,6 +424,7 @@ export const OFFLINE_APPLETS: string[] = ["com.mentra.livecaptions", "com.mentra
 
 // these settings are automatically synced to the core:
 const CORE_SETTINGS_KEYS: string[] = [
+  // core settings:
   SETTINGS.sensing_enabled.key,
   SETTINGS.power_saving_mode.key,
   SETTINGS.always_on_status_bar.key,
@@ -440,6 +448,7 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.button_video_settings.key,
   SETTINGS.button_camera_led.key,
   SETTINGS.button_max_recording_time.key,
+  // device / pairing:
   SETTINGS.pending_wearable.key,
   SETTINGS.pending_device_name.key,
   SETTINGS.default_wearable.key,
@@ -448,7 +457,6 @@ const CORE_SETTINGS_KEYS: string[] = [
   // offline applets:
   SETTINGS.offline_captions_running.key,
   SETTINGS.gallery_mode.key,
-  // SETTINGS.offline_camera_running.key,
   // notifications:
   SETTINGS.notifications_enabled.key,
   SETTINGS.notifications_blocklist.key,

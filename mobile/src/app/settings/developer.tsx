@@ -35,6 +35,7 @@ export default function DeveloperSettingsScreen() {
   const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS.enable_squircles.key)
   const [debugConsole, setDebugConsole] = useSetting(SETTINGS.debug_console.key)
   const [debugNavigationHistoryEnabled, setDebugNavigationHistoryEnabled] = useSetting(SETTINGS.debug_navigation_history.key)
+  const [debugCoreStatusBarEnabled, setDebugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
   const [_onboardingOsCompleted, setOnboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
   const [_onboardingLiveCompleted, setOnboardingLiveCompleted] = useSetting(SETTINGS.onboarding_live_completed.key)
   const [lc3FrameSize, setLc3FrameSize] = useSetting(SETTINGS.lc3_frame_size.key)
@@ -89,6 +90,12 @@ export default function DeveloperSettingsScreen() {
               label="Debug Navigation History"
               value={debugNavigationHistoryEnabled}
               onValueChange={(value) => setDebugNavigationHistoryEnabled(value)}
+            />
+
+            <ToggleSetting
+              label="Debug Core Status Bar"
+              value={debugCoreStatusBarEnabled}
+              onValueChange={(value) => setDebugCoreStatusBarEnabled(value)}
             />
           </Group>
 

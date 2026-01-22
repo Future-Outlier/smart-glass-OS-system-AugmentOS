@@ -90,9 +90,6 @@ class MantleManager {
     } else {
       console.error("MANTLE: No settings received from server")
     }
-    console.log("MANTLE: Settings loaded")
-
-    console.log("MANTLE: Subscribing to core events")
 
     await CoreModule.updateCore(useSettingsStore.getState().getCoreSettings()) // send settings to core
     console.log("MANTLE: Settings sent to core")
@@ -364,7 +361,7 @@ class MantleManager {
 
 
   private async handleCoreEvent(data: any) {
-    console.log("MANTLE: received core event from Core", data)
+    // console.log("MANTLE: received core event from Core", data)
     if (!data) return
 
     try {
