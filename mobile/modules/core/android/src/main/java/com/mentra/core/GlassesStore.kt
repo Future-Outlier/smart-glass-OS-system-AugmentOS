@@ -112,7 +112,7 @@ object GlassesStore {
             "core" to "isHeadUp" -> {
                 (value as? Boolean)?.let { isHeadUp ->
                     // sendCurrentState()
-                    CoreManager.instance?.sendCurrentState()
+                    CoreManager.getInstance().sendCurrentState()
                     Bridge.sendHeadUp(isHeadUp)
                 }
             }
@@ -120,10 +120,10 @@ object GlassesStore {
                 val b = (value as? Int) ?: 50
                 val auto = (store.get("core", "auto_brightness") as? Boolean) ?: true
                 CoroutineScope(Dispatchers.Main).launch {
-                    CoreManager.instance?.sgc?.setBrightness(b, auto)
-                    CoreManager.instance?.sgc?.sendTextWall("Set brightness to $b%")
+                    CoreManager.getInstance().sgc?.setBrightness(b, auto)
+                    CoreManager.getInstance().sgc?.sendTextWall("Set brightness to $b%")
                     delay(800) // 0.8 seconds
-                    CoreManager.instance?.sgc?.clearDisplay()
+                    CoreManager.getInstance().sgc?.clearDisplay()
                 }
             }
 
@@ -132,13 +132,13 @@ object GlassesStore {
                 val auto = (value as? Boolean) ?: true
                 val autoBrightnessChanged = (oldValue as? Boolean) != auto
                 CoroutineScope(Dispatchers.Main).launch {
-                    CoreManager.instance?.sgc?.setBrightness(b, auto)
+                    CoreManager.getInstance().sgc?.setBrightness(b, auto)
                     if (autoBrightnessChanged) {
-                        CoreManager.instance?.sgc?.sendTextWall(
+                        CoreManager.getInstance().sgc?.sendTextWall(
                             if (auto) "Enabled auto brightness" else "Disabled auto brightness"
                         )
                         delay(800) // 0.8 seconds
-                        CoreManager.instance?.sgc?.clearDisplay()
+                        CoreManager.getInstance().sgc?.clearDisplay()
                     }
                 }
             }
@@ -148,56 +148,56 @@ object GlassesStore {
                 val h = (store.get("glasses", "dashboard_height") as? Int) ?: 4
                 val d = (store.get("glasses", "dashboard_depth") as? Int) ?: 5
                 CoroutineScope(Dispatchers.Main).launch {
-                    CoreManager.instance?.sgc?.setDashboardPosition(h, d)
+                    CoreManager.getInstance().sgc?.setDashboardPosition(h, d)
                 }
             }
 
             "core" to "head_up_angle" -> {
                 (value as? Int)?.let { angle ->
-                    CoreManager.instance?.sgc?.setHeadUpAngle(angle)
+                    CoreManager.getInstance().sgc?.setHeadUpAngle(angle)
                 }
             }
 
             "core" to "gallery_mode" -> {
-                CoreManager.instance?.sgc?.sendGalleryMode()
+                CoreManager.getInstance().sgc?.sendGalleryMode()
             }
 
             "core" to "screen_disabled" -> {
                 (value as? Boolean)?.let { disabled ->
                     if (disabled) {
-                        CoreManager.instance?.sgc?.exit()
+                        CoreManager.getInstance().sgc?.exit()
                     } else {
-                        CoreManager.instance?.sgc?.clearDisplay()
+                        CoreManager.getInstance().sgc?.clearDisplay()
                     }
                 }
             }
 
             "core" to "button_mode" -> {
-                CoreManager.instance?.sgc?.sendButtonModeSetting()
+                CoreManager.getInstance().sgc?.sendButtonModeSetting()
             }
 
             "core" to "button_photo_size" -> {
-                CoreManager.instance?.sgc?.sendButtonPhotoSettings()
+                CoreManager.getInstance().sgc?.sendButtonPhotoSettings()
             }
 
             "core" to "button_camera_led" -> {
-                CoreManager.instance?.sgc?.sendButtonCameraLedSetting()
+                CoreManager.getInstance().sgc?.sendButtonCameraLedSetting()
             }
 
             "core" to "button_max_recording_time" -> {
-                CoreManager.instance?.sgc?.sendButtonMaxRecordingTime()
+                CoreManager.getInstance().sgc?.sendButtonMaxRecordingTime()
             }
 
             "core" to "button_video_width",
             "core" to "button_video_height",
             "core" to "button_video_fps" -> {
-                CoreManager.instance?.sgc?.sendButtonVideoRecordingSettings()
+                CoreManager.getInstance().sgc?.sendButtonVideoRecordingSettings()
             }
 
             "core" to "preferred_mic" -> {
                 (value as? String)?.let { mic ->
                     apply("core", "mic_ranking", MicMap.map[mic] ?: MicMap.map["auto"]!!)
-                    CoreManager.instance?.setMicState(
+                    CoreManager.getInstance().setMicState(
                         (store.get("core", "should_send_pcm_data") as? Boolean) ?: false,
                         (store.get("core", "should_send_transcript") as? Boolean) ?: false,
                         (store.get("core", "bypass_vad") as? Boolean) ?: true
@@ -207,7 +207,7 @@ object GlassesStore {
 
             "core" to "offline_mode" -> {
                 (value as? Boolean)?.let { offline ->
-                    CoreManager.instance?.setMicState(
+                    CoreManager.getInstance().setMicState(
                         (store.get("core", "should_send_pcm_data") as? Boolean) ?: false,
                         (store.get("core", "should_send_transcript") as? Boolean) ?: false,
                         (store.get("core", "bypass_vad") as? Boolean) ?: true
@@ -217,7 +217,7 @@ object GlassesStore {
 
             "core" to "enforce_local_transcription" -> {
                 (value as? Boolean)?.let { enabled ->
-                    CoreManager.instance?.setMicState(
+                    CoreManager.getInstance().setMicState(
                         (store.get("core", "should_send_pcm_data") as? Boolean) ?: false,
                         (store.get("core", "should_send_transcript") as? Boolean) ?: false,
                         (store.get("core", "bypass_vad") as? Boolean) ?: true

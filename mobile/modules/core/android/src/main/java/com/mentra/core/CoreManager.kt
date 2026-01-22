@@ -1,6 +1,7 @@
 package com.mentra.core
 
 import android.content.BroadcastReceiver
+import kotlin.jvm.JvmStatic
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -32,9 +33,6 @@ class CoreManager {
     companion object {
 
         @Volatile private var _instance: CoreManager? = null
-
-        val instance: CoreManager?
-            get() = _instance
 
         @JvmStatic
         fun getInstance(): CoreManager {
