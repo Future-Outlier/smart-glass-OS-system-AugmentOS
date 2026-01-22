@@ -140,14 +140,14 @@ export default function SelectGlassesBluetoothScreen() {
           ) : (
             <ScrollView className="max-h-[300px] -mr-4 pr-4">
               <Group>
-                {searchResults.map((device: string, index: number) => (
+                {rememberedSearchResults.current.map((res: DeviceSearchResult, index: number) => (
                   <TouchableOpacity
                     key={index}
                     className="h-[50px] flex-row items-center justify-between bg-background px-4 py-3"
-                    onPress={() => triggerGlassesPairingGuide(device.deviceMode, device.deviceName)}>
+                    onPress={() => triggerGlassesPairingGuide(res.deviceModel, res.deviceName)}>
                     <View className="flex-1 px-2.5">
                       <Text
-                        text={`${modelName} - ${filterDeviceName(device.deviceName)}`}
+                        text={`${modelName} - ${filterDeviceName(res.deviceName)}`}
                         className="flex-wrap text-sm font-semibold"
                         numberOfLines={2}
                       />
