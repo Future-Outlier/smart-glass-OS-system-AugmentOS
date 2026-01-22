@@ -67,6 +67,7 @@ import static com.mentra.core.utils.BitmapJavaUtils.convertBitmapTo1BitBmpBytes;
 import com.mentra.core.utils.G1Text;
 import com.mentra.core.utils.SmartGlassesConnectionState;
 import com.mentra.lc3Lib.Lc3Cpp;
+import com.mentra.core.GlassesStore;
 
 public class G1 extends SGCManager {
     private static final String TAG = "WearableAi_EvenRealitiesG1SGC";
@@ -219,7 +220,7 @@ public class G1 extends SGCManager {
         loadPairedDeviceNames();
         // goHomeHandler = new Handler();
         // this.smartGlassesDevice = smartGlassesDevice;
-        preferredG1DeviceId = CoreManager.getInstance().getDeviceName();
+        preferredG1DeviceId = (String) GlassesStore.INSTANCE.get("core", "device_name");
         this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         this.shouldUseGlassesMic = false;
 
@@ -531,7 +532,7 @@ public class G1 extends SGCManager {
                             if (deviceName.contains("R_")) {
                                 // Check for head down movement - initial F5 02 signal
                                 Bridge.log("G1: HEAD UP MOVEMENT DETECTED");
-                                GlassesStore.shared.set("core", "isHeadUp", true);
+                                GlassesStore.INSTANCE.set("core", "isHeadUp", true);
                             }
                         }
                         // HEAD DOWN MOVEMENTS
@@ -539,7 +540,7 @@ public class G1 extends SGCManager {
                             if (deviceName.contains("R_")) {
                             Bridge.log("G1: HEAD DOWN MOVEMENT DETECTED");
                                 // clearBmpDisplay();
-                                GlassesStore.shared.set("core", "isHeadUp", false);
+                                GlassesStore.INSTANCE.set("core", "isHeadUp", false);
                             }
                         }
                         // DOUBLE TAP
@@ -704,8 +705,8 @@ public class G1 extends SGCManager {
                 queryBatteryStatusHandler.postDelayed(() -> queryBatteryStatus(), 10);
 
                 // setup brightness
-                int brightnessValue = CoreManager.getInstance().getBrightness();
-                Boolean shouldUseAutoBrightness = CoreManager.getInstance().getAutoBrightness();
+                int brightnessValue = (Integer) GlassesStore.INSTANCE.get("core", "brightness");
+                Boolean shouldUseAutoBrightness = (Boolean) GlassesStore.INSTANCE.get("core", "auto_brightness");
                 sendBrightnessCommandHandler
                         .postDelayed(() -> sendBrightnessCommand(brightnessValue, shouldUseAutoBrightness), 10);
 
@@ -1329,7 +1330,7 @@ public class G1 extends SGCManager {
         context.registerReceiver(bondingReceiver, filter);
         isBondingReceiverRegistered = true;
 
-        preferredG1DeviceId = CoreManager.getInstance().getDeviceName();
+        preferredG1DeviceId = (String) GlassesStore.INSTANCE.get("core", "device_name");
 
         if (!bluetoothAdapter.isEnabled()) {
             return;

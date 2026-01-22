@@ -69,6 +69,7 @@ import com.mentra.core.utils.K900ProtocolUtils;
 import com.mentra.core.utils.MessageChunker;
 import com.mentra.core.utils.audio.Lc3Player;
 import com.mentra.core.utils.BlePhotoUploadService;
+import com.mentra.core.GlassesStore;
 
 // old augmentos imports:
 import com.mentra.lc3Lib.Lc3Cpp;
@@ -3044,7 +3045,7 @@ public class MentraLive extends SGCManager {
 
     @Override
     public void sendGalleryMode() {
-        boolean active = CoreManager.getInstance().getGalleryMode();
+        boolean active = (Boolean) GlassesStore.INSTANCE.get("core", "gallery_mode");
         Bridge.log("LIVE: 📸 Sending gallery mode active to glasses: " + active);
         try {
             JSONObject json = new JSONObject();
@@ -3354,7 +3355,7 @@ public class MentraLive extends SGCManager {
         // var context = Bridge.getContext();
         // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         // String lastDeviceAddress = prefs.getString(PREF_DEVICE_NAME, null);
-        String lastDeviceAddress = CoreManager.getInstance().getDeviceAddress();
+        String lastDeviceAddress = (String) GlassesStore.INSTANCE.get("core", "device_address");
 
         if (lastDeviceAddress != null && lastDeviceAddress.length() > 0) {
             // Connect to last known device if available
@@ -4005,10 +4006,9 @@ public class MentraLive extends SGCManager {
 
     @Override
     public void sendButtonVideoRecordingSettings() {
-        var m = CoreManager.getInstance();
-        int videoWidth = m.getButtonVideoWidth();
-        int videoHeight = m.getButtonVideoHeight();
-        int videoFps = m.getButtonVideoFps();
+        int videoWidth = (Integer) GlassesStore.INSTANCE.get("core", "button_video_width");
+        int videoHeight = (Integer) GlassesStore.INSTANCE.get("core", "button_video_height");
+        int videoFps = (Integer) GlassesStore.INSTANCE.get("core", "button_video_fps");
 
         Bridge.log("LIVE: 🎥 [SETTINGS_SYNC] Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
 
@@ -5343,8 +5343,7 @@ public class MentraLive extends SGCManager {
             return;
         }
 
-        var m = CoreManager.getInstance();
-        String mode = m.getButtonPressMode();
+        String mode = (String) GlassesStore.INSTANCE.get("core", "button_mode");
 
         try {
             JSONObject json = new JSONObject();
@@ -5456,8 +5455,7 @@ public class MentraLive extends SGCManager {
      * Send button photo settings to glasses
      */
     public void sendButtonPhotoSettings() {
-        var m = CoreManager.getInstance();
-        String size = m.getButtonPhotoSize();
+        String size = (String) GlassesStore.INSTANCE.get("core", "button_photo_size");
 
         Bridge.log("LIVE: Sending button photo setting: " + size);
 
@@ -5481,8 +5479,7 @@ public class MentraLive extends SGCManager {
      */
     @Override
     public void sendButtonCameraLedSetting() {
-        var m = CoreManager.getInstance();
-        boolean enabled = m.getButtonCameraLed();
+        boolean enabled = (Boolean) GlassesStore.INSTANCE.get("core", "button_camera_led");
 
         Bridge.log("LIVE: Sending button camera LED setting: " + enabled);
 
@@ -5514,7 +5511,7 @@ public class MentraLive extends SGCManager {
             return;
         }
 
-        int minutes = CoreManager.getInstance().getButtonMaxRecordingTime();
+        int minutes = (Integer) GlassesStore.INSTANCE.get("core", "button_max_recording_time");
 
         try {
             JSONObject json = new JSONObject();

@@ -26,6 +26,7 @@ import com.mentra.core.utils.K900ProtocolUtils;
 import com.mentra.core.utils.MessageChunker;
 import com.mentra.core.utils.audio.Lc3Player;
 import com.mentra.core.utils.BlePhotoUploadService;
+import com.mentra.core.GlassesStore;
 
 // import com.augmentos.augmentos_core.R;
 // import com.augmentos.augmentos_core.smarterglassesmanager.smartglassescommunicators.SmartGlassesCommunicator;
@@ -389,7 +390,7 @@ public class Mach1 extends SGCManager {
             if (tapCount >= 2) {
                 isHeadUp = !isHeadUp;
                 // Notify CoreManager of head up state change (same as G1 does with IMU)
-                GlassesStore.shared.set("core", "isHeadUp", isHeadUp);
+                GlassesStore.INSTANCE.set("core", "isHeadUp", isHeadUp);
                 Log.d(TAG, "Mach1: Dashboard toggled via tap, isHeadUp: " + isHeadUp);
 
                 // Auto turn off the dashboard after 15 seconds
@@ -397,7 +398,7 @@ public class Mach1 extends SGCManager {
                     goHomeHandler.postDelayed(() -> {
                         if (isHeadUp) {
                             isHeadUp = false;
-                            GlassesStore.shared.set("core", "isHeadUp", false);
+                            GlassesStore.INSTANCE.set("core", "isHeadUp", false);
                             Log.d(TAG, "Mach1: Auto-disabling dashboard after 15 seconds");
                         }
                     }, 15000);
