@@ -78,6 +78,7 @@ class GlassesStore {
         store.set("core", "button_video_height", 720)
         store.set("core", "button_video_fps", 30)
         store.set("core", "preferred_mic", "auto")
+        store.set("core", "lc3_frame_size", 20)
     }
 
     func get(_ category: String, _ key: String) -> Any? {
@@ -95,6 +96,19 @@ class GlassesStore {
 
         // Trigger hardware updates based on setting changes
         switch (category, key) {
+        case ("core", "lc3_frame_size"):
+            if let frameSize = value as? Int {
+                if frameSize != 20 && frameSize != 40 && frameSize != 60 {
+                    Bridge.log(
+                        "MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 20."
+                    )
+                    store.set("core", "lc3_frame_size", 20)
+                    CoreManager.shared.lc3Converter?.setOutputFrameSize(20)
+                    return
+                }
+                CoreManager.shared.lc3Converter?.setOutputFrameSize(frameSize)
+                Bridge.log("MAN: LC3 frame size set to \(frameSize) bytes (\(frameSize * 800 / 1000)kbps)")
+            }
         case ("core", "isHeadUp"):
             if let isHeadUp = value as? Bool {
                 CoreManager.shared.sendCurrentState()
@@ -107,7 +121,7 @@ class GlassesStore {
             Task {
                 CoreManager.shared.sgc?.setBrightness(b, autoMode: auto)
                 CoreManager.shared.sgc?.sendTextWall("Set brightness to \(b)%")
-                try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
+                try? await Task.sleep(nanoseconds: 800_000_000)  // 0.8 seconds
                 CoreManager.shared.sgc?.clearDisplay()
             }
 
@@ -121,7 +135,7 @@ class GlassesStore {
                     CoreManager.shared.sgc?.sendTextWall(
                         auto ? "Enabled auto brightness" : "Disabled auto brightness"
                     )
-                    try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
+                    try? await Task.sleep(nanoseconds: 800_000_000)  // 0.8 seconds
                     CoreManager.shared.sgc?.clearDisplay()
                 }
             }
@@ -161,7 +175,7 @@ class GlassesStore {
             CoreManager.shared.sgc?.sendButtonMaxRecordingTime()
 
         case ("core", "button_video_width"), ("core", "button_video_height"),
-             ("core", "button_video_fps"):
+            ("core", "button_video_fps"):
             CoreManager.shared.sgc?.sendButtonVideoRecordingSettings()
 
         case ("core", "preferred_mic"):

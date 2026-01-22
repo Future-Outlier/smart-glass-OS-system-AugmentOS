@@ -243,14 +243,6 @@ public class CoreModule: Module {
             }
         }
 
-        // MARK: - Audio Encoding Commands
-
-        AsyncFunction("setLC3FrameSize") { (frameSize: Int) in
-            await MainActor.run {
-                CoreManager.shared.setLC3FrameSize(frameSize)
-            }
-        }
-
         // MARK: - RGB LED Control
 
         AsyncFunction("rgbLedControl") {

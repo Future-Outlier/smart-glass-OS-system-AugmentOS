@@ -421,14 +421,8 @@ class SocketComms {
       return
     }
 
-    // Configure the native encoder frame size first
-    try {
-      await CoreModule.setLC3FrameSize(frameSizeBytes)
-      console.log(`SOCKET: Native LC3 encoder configured to ${frameSizeBytes} bytes/frame`)
-    } catch (err) {
-      console.error("SOCKET: Failed to configure native LC3 encoder:", err)
-      // Continue anyway - cloud config is more important
-    }
+    // set the native encoder frame size:
+    useSettingsStore.getState().setSetting(SETTINGS.lc3_frame_size.key, frameSizeBytes)
 
     try {
       const response = await fetch(`${backendUrl}/api/client/audio/configure`, {

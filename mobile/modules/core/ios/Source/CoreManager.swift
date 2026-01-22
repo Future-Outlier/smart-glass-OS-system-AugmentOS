@@ -594,22 +594,6 @@ struct ViewState {
         Bridge.log("Audio output format set to: \(format)")
     }
 
-    /// Set the LC3 frame size for phone→cloud encoding.
-    /// Valid values: 20 (16kbps), 40 (32kbps), 60 (48kbps).
-    func setLC3FrameSize(_ frameSize: Int) {
-        if frameSize != 20 && frameSize != 40 && frameSize != 60 {
-            Bridge.log(
-                "MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 20."
-            )
-            lc3FrameSize = 20
-            lc3Converter?.setOutputFrameSize(20)
-            return
-        }
-        lc3FrameSize = frameSize
-        lc3Converter?.setOutputFrameSize(frameSize)
-        Bridge.log("MAN: LC3 frame size set to \(frameSize) bytes (\(frameSize * 800 / 1000)kbps)")
-    }
-
     // MARK: - Glasses Commands
 
     private func playStartupSequence() {

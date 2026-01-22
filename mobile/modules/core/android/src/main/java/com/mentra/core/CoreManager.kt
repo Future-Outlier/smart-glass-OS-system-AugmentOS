@@ -188,20 +188,9 @@ class CoreManager {
         set(value) = GlassesStore.apply("core", "currentMic", value)
         
     private var searchResults: List<Any>
-        get() = GlassesStore.store.get("core", "searchResults") as? List<Any> ?: []
+        get() = GlassesStore.store.get("core", "searchResults") as? List<Any> ?: emptyList()
         set(value) = GlassesStore.apply("core", "searchResults", value)
-    // LC3 Audio Encoding
-    // Audio output format enum
-    enum class AudioOutputFormat { LC3, PCM }
-    // Canonical LC3 config: 16kHz sample rate, 10ms frame duration
-    // Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps)
-    private var lc3EncoderPtr: Long = 0
-    private var lc3DecoderPtr: Long = 0
-    private var lc3FrameSize = 20 // bytes per LC3 frame (default: 20 = 16kbps)
-    // Audio output format - defaults to LC3 for bandwidth savings
-    private var audioOutputFormat: AudioOutputFormat = AudioOutputFormat.LC3
     
-    // button settings
     private var buttonPressMode: String
         get() = GlassesStore.store.get("core", "button_mode") as? String ?: "photo"
         set(value) = GlassesStore.apply("core", "button_mode", value)
@@ -229,6 +218,17 @@ class CoreManager {
     private var buttonCameraLed: Boolean
         get() = GlassesStore.store.get("core", "button_camera_led") as? Boolean ?: true
         set(value) = GlassesStore.apply("core", "button_camera_led", value)
+
+    // LC3 Audio Encoding
+    // Audio output format enum
+    enum class AudioOutputFormat { LC3, PCM }
+    // Canonical LC3 config: 16kHz sample rate, 10ms frame duration
+    // Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps)
+    private var lc3EncoderPtr: Long = 0
+    private var lc3DecoderPtr: Long = 0
+    // Audio output format - defaults to LC3 for bandwidth savings
+    private var audioOutputFormat: AudioOutputFormat = AudioOutputFormat.LC3
+    private var lc3FrameSize = 20 // bytes per LC3 frame (default: 20 = 16kbps)
 
     // VAD
     private val vadBuffer = mutableListOf<ByteArray>()
@@ -1183,9 +1183,9 @@ class CoreManager {
 
     fun findCompatibleDevices(modelName: String) {
         Bridge.log("MAN: Searching for compatible device names for: $modelName")
-        
+
         // reset the search results:
-        searchResults = []
+        searchResults = emptyList()
 
         if (DeviceTypes.ALL.contains(modelName)) {
             pendingWearable = modelName

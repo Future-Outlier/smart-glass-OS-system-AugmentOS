@@ -46,7 +46,7 @@ object GlassesStore {
         store.set("core", "searching", false)
         store.set("core", "micEnabled", false)
         store.set("core", "currentMic", "")
-        store.set("core", "searchResults", [])
+        store.set("core", "searchResults", emptyList<Any>())
 
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
@@ -78,6 +78,7 @@ object GlassesStore {
         store.set("core", "button_video_height", 720)
         store.set("core", "button_video_fps", 30)
         store.set("core", "preferred_mic", "auto")
+        store.set("core", "lc3_frame_size", 20)
     }
     
     fun get(category: String, key: String): Any? {
@@ -97,6 +98,16 @@ object GlassesStore {
         
         // Trigger hardware updates based on setting changes
         when (category to key) {
+            "core" to "lc3_frame_size" -> {
+                if (value is Int) {
+                    if (frameSize != 20 && frameSize != 40 && frameSize != 60) {
+                        Bridge.log("MAN: Invalid LC3 frame size $frameSize, must be 20, 40, or 60. Using default 20.")
+                        store.set("core", "lc3_frame_size", 20)
+                        return
+                    }
+                    Bridge.log("MAN: LC3 frame size set to $frameSize bytes (${frameSize * 800 / 1000}kbps)")
+                }
+            }
             "core" to "isHeadUp" -> {
                 (value as? Boolean)?.let { isHeadUp ->
                     // sendCurrentState()
