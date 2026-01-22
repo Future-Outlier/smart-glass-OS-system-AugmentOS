@@ -112,7 +112,7 @@ export default function SelectGlassesBluetoothScreen() {
   }
 
   // remember the search results to ensure consistent ordering:
-  const rememberedSearchResults = useRef<DeviceSearchResult[]>(searchResults)
+  const rememberedSearchResults = useRef<SearchResultDevice[]>(searchResults)
   useEffect(() => {
     // ensure remembered search results is a set:
     for (const result of searchResults) {
@@ -120,6 +120,12 @@ export default function SelectGlassesBluetoothScreen() {
         rememberedSearchResults.current.push(result)
       }
     }
+
+    // ensure remembered search results has no duplicates:
+    rememberedSearchResults.current = rememberedSearchResults.current.filter(
+      (result, index, self) =>
+        index === self.findIndex((t) => t.deviceAddress === result.deviceAddress && t.deviceName === result.deviceName),
+    )
   }, [searchResults])
 
   return (
