@@ -531,7 +531,7 @@ public class G1 extends SGCManager {
                             if (deviceName.contains("R_")) {
                                 // Check for head down movement - initial F5 02 signal
                                 Bridge.log("G1: HEAD UP MOVEMENT DETECTED");
-                                CoreManager.getInstance().updateHeadUp(true);
+                                GlassesStore.shared.update("core", ["isHeadUp": true]);
                             }
                         }
                         // HEAD DOWN MOVEMENTS
@@ -539,7 +539,7 @@ public class G1 extends SGCManager {
                             if (deviceName.contains("R_")) {
                             Bridge.log("G1: HEAD DOWN MOVEMENT DETECTED");
                                 // clearBmpDisplay();
-                                CoreManager.getInstance().updateHeadUp(false);
+                                GlassesStore.shared.update("core", ["isHeadUp": false]);
                             }
                         }
                         // DOUBLE TAP

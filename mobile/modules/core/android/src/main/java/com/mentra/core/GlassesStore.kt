@@ -44,6 +44,8 @@ object GlassesStore {
         store.set("core", "systemMicUnavailable", false)
         store.set("core", "isHeadUp", false)
         store.set("core", "searching", false)
+        store.set("core", "micEnabled", false)
+        store.set("core", "currentMic", "")
         
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
@@ -94,6 +96,13 @@ object GlassesStore {
         
         // Trigger hardware updates based on setting changes
         when (category to key) {
+            "core" to "isHeadUp" -> {
+                (value as? Boolean)?.let { isHeadUp ->
+                    // sendCurrentState()
+                    CoreManager.instance.sendCurrentState()
+                    Bridge.sendHeadUp(isHeadUp)
+                }
+            }
             "core" to "brightness" -> {
                 val b = (value as? Int) ?: 50
                 val auto = (store.get("core", "auto_brightness") as? Boolean) ?: true

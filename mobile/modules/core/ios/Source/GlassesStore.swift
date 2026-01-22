@@ -44,6 +44,8 @@ class GlassesStore {
         store.set("core", "systemMicUnavailable", false)
         store.set("core", "isHeadUp", false)
         store.set("core", "searching", false)
+        store.set("core", "micEnabled", false)
+        store.set("core", "currentMic", "")
 
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
@@ -92,6 +94,12 @@ class GlassesStore {
 
         // Trigger hardware updates based on setting changes
         switch (category, key) {
+        case ("core", "isHeadUp"):
+            if let isHeadUp = value as? Bool {
+                CoreManager.shared.sendCurrentState()
+                Bridge.sendHeadUp(isHeadUp)
+            }
+
         case ("core", "brightness"):
             let b = value as? Int ?? 50
             let auto = store.get("core", "auto_brightness") as? Bool ?? true

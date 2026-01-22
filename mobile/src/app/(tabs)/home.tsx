@@ -15,12 +15,14 @@ import {Group} from "@/components/ui"
 import {useRefreshApplets} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import WebsocketStatus from "@/components/error/WebsocketStatus"
+import CoreStatusBar from "@/components/error/CoreStatusBar"
 
 export default function Homepage() {
   const refreshApplets = useRefreshApplets()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
-
+  const [devMode] = useSetting(SETTINGS.dev_mode.key)
+  
   useFocusEffect(
     useCallback(() => {
       refreshApplets()
@@ -61,6 +63,8 @@ export default function Homepage() {
           </View>
         }
       />
+
+      {devMode && <CoreStatusBar />}
 
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
         <View className="h-4" />

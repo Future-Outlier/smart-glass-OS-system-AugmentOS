@@ -10,7 +10,7 @@ import {BackgroundTimer} from "@/utils/timers"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import { useCoreStore } from "@/stores/core"
+import {useCoreStore} from "@/stores/core"
 
 type DisplayStatus = "connected" | "warning" | "disconnected"
 
@@ -39,7 +39,7 @@ export default function CoreStatusBar() {
   const searching = useCoreStore((state) => state.searching)
   const micRanking = useCoreStore((state) => state.micRanking)
   const currentMic = useCoreStore((state) => state.currentMic)
-  
+
   const connectionStatus = useConnectionStore((state) => state.status)
   const [displayStatus, setDisplayStatus] = useState<DisplayStatus>("connected")
   const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
@@ -94,28 +94,35 @@ export default function CoreStatusBar() {
     return null
   }
 
-  if (offlineMode) {
-    return (
-      <TouchableOpacity
-        onPress={() => {
-          push("/settings/transcription")
-        }}>
-        <View
-          className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-destructive`}>
-          <Icon name="wifi-off" size={14} color={theme.colors.secondary_foreground} />
-          <Text className="text-secondary-foreground text-sm font-medium ml-2">
-            {translate("offlineMode:offlineMode")}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    )
-  }
+  // if (offlineMode) {
+  //   return (
+  //     <TouchableOpacity
+  //       onPress={() => {
+  //         push("/settings/transcription")
+  //       }}>
+  //       <View
+  //         className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-destructive`}>
+  //         <Icon name="wifi-off" size={14} color={theme.colors.secondary_foreground} />
+  //         <Text className="text-secondary-foreground text-sm font-medium ml-2">
+  //           {translate("offlineMode:offlineMode")}
+  //         </Text>
+  //       </View>
+  //     </TouchableOpacity>
+  //   )
+  // }
 
   return (
-    <View
-      className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full ${config.bgClass}`}>
-      <Icon name={config.icon} size={14} color={theme.colors.secondary_foreground} />
-      <Text className="text-secondary-foreground text-sm font-medium ml-2">{config.label()}</Text>
+    <View className="flex-row items-center self-center align-middle justify-center gap-2">
+      <View
+        className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-blue-500`}>
+        <Icon name="bluetooth" size={14} color={theme.colors.secondary_foreground} />
+        <Text className="text-secondary-foreground text-sm font-medium ml-2">{searching ? "Searching" : "Not searching"}</Text>
+      </View>
+      <View
+        className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-green-500`}>
+        <Icon name="microphone" size={14} color={theme.colors.secondary_foreground} />
+        <Text className="text-secondary-foreground text-sm font-medium ml-2">{currentMic}</Text>
+      </View>
     </View>
   )
 }

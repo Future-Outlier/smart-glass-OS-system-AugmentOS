@@ -232,14 +232,14 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         if tapNumberInt >= 2 {
             isHeadUp = !isHeadUp
             // Notify CoreManager of head up state change (same as G1 does with IMU)
-            CoreManager.shared.updateHeadUp(isHeadUp)
+            GlassesStore.shared.update("core", ["isHeadUp": isHeadUp])
 
             // start a timer and auto turn off the dashboard after 15 seconds:
             if isHeadUp {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
                     if self.isHeadUp {
                         self.isHeadUp = false
-                        CoreManager.shared.updateHeadUp(false)
+                        GlassesStore.shared.update("core", ["isHeadUp": false])
                     }
                 }
             }

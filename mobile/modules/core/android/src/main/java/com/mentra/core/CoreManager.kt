@@ -178,6 +178,14 @@ class CoreManager {
     public var isHeadUp: Boolean
         get() = GlassesStore.store.get("core", "isHeadUp") as? Boolean ?: false
         set(value) = GlassesStore.apply("core", "isHeadUp", value)
+    
+    private var micEnabled: Boolean
+        get() = GlassesStore.store.get("core", "micEnabled") as? Boolean ?: false
+        set(value) = GlassesStore.apply("core", "micEnabled", value)
+
+    private var currentMic: String
+        get() = GlassesStore.store.get("core", "currentMic") as? String ?: ""
+        set(value) = GlassesStore.apply("core", "currentMic", value)
 
     // LC3 Audio Encoding
     // Audio output format enum
@@ -189,12 +197,7 @@ class CoreManager {
     private var lc3FrameSize = 20 // bytes per LC3 frame (default: 20 = 16kbps)
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = AudioOutputFormat.LC3
-
-    // mic
-    private var micEnabled = false
-    private var lastMicState: Triple<Boolean, Boolean, String>? =
-            null // (useGlassesMic, useOnboardMic, preferredMic)
-
+    
     // button settings
     private var buttonPressMode: String
         get() = GlassesStore.store.get("core", "button_mode") as? String ?: "photo"
@@ -620,6 +623,8 @@ class CoreManager {
                 }
             }
         }
+        
+        currentMic = micUsed
 
         if (micUsed == "" && micEnabled) {
             Bridge.log("MAN: No available mic found!")
@@ -1105,7 +1110,6 @@ class CoreManager {
     private fun handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         isHeadUp = false
-        lastMicState = null // Clear cache - hardware is definitely off now
         getStatus()
     }
 

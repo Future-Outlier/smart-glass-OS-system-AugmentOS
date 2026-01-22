@@ -237,9 +237,19 @@ struct ViewState {
         set { GlassesStore.shared.apply("core", "systemMicUnavailable", newValue) }
     }
 
-    public var isHeadUp: Bool {
+    private var isHeadUp: Bool {
         get { GlassesStore.shared.get("core", "isHeadUp") as? Bool ?? false }
         set { GlassesStore.shared.apply("core", "isHeadUp", newValue) }
+    }
+
+    private var micEnabled: Bool {
+        get { GlassesStore.shared.get("core", "micEnabled") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "micEnabled", newValue) }
+    }
+
+    private var currentMic: String {
+        get { GlassesStore.shared.get("core", "currentMic") as? String ?? "" }
+        set { GlassesStore.shared.apply("core", "currentMic", newValue) }
     }
 
     // LC3 Audio Encoding
@@ -253,8 +263,7 @@ struct ViewState {
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = .lc3
 
-    // mic:
-    private var micEnabled = false
+
 
     // VAD:
     private var vad: SileroVADStrategy?
@@ -517,6 +526,8 @@ struct ViewState {
             }
         }
 
+        currentMic = micUsed
+
         // log if no mic was found:
         if micUsed == "" && micEnabled {
             Bridge.log("MAN: No available mic found!")
@@ -575,12 +586,6 @@ struct ViewState {
     }
 
     // MARK: - State Management
-
-    func updateHeadUp(_ isHeadUp: Bool) {
-        self.isHeadUp = isHeadUp
-        sendCurrentState()
-        Bridge.sendHeadUp(isHeadUp)
-    }
 
     func updateAudioOutputFormat(_ format: AudioOutputFormat) {
         audioOutputFormat = format
