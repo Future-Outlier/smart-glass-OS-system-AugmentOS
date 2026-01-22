@@ -151,7 +151,7 @@ struct ViewState {
         get { GlassesStore.shared.get("core", "brightness") as? Int ?? 50 }
         set { GlassesStore.shared.apply("core", "brightness", newValue) }
     }
-    
+
     private var headUpAngle: Int {
         get { GlassesStore.shared.get("core", "head_up_angle") as? Int ?? 30 }
         set { GlassesStore.shared.apply("core", "head_up_angle", newValue) }
@@ -162,7 +162,7 @@ struct ViewState {
         set { GlassesStore.shared.apply("core", "sensing_enabled", newValue) }
     }
 
-    public var powerSavingMode: Bool {
+    var powerSavingMode: Bool {
         get { GlassesStore.shared.get("core", "power_saving_mode") as? Bool ?? false }
         set { GlassesStore.shared.apply("core", "power_saving_mode", newValue) }
     }
@@ -252,6 +252,11 @@ struct ViewState {
         set { GlassesStore.shared.apply("core", "currentMic", newValue) }
     }
 
+    private var searchResults: [[String: Any]] {
+        get { GlassesStore.shared.get("core", "searchResults") as? [[String: Any]] ?? [] }
+        set { GlassesStore.shared.apply("core", "searchResults", newValue) }
+    }
+
     // LC3 Audio Encoding
     // Audio output format enum
     enum AudioOutputFormat { case lc3, pcm }
@@ -259,11 +264,9 @@ struct ViewState {
     // Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps)
     // Persistent LC3 converter for encoding/decoding
     private var lc3Converter: PcmConverter?
-    private var lc3FrameSize = 20  // bytes per LC3 frame (default: 20 = 16kbps)
+    private var lc3FrameSize = 20 // bytes per LC3 frame (default: 20 = 16kbps)
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = .lc3
-
-
 
     // VAD:
     private var vad: SileroVADStrategy?
@@ -302,8 +305,8 @@ struct ViewState {
 
         // Initialize SherpaOnnx Transcriber
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-            let window = windowScene.windows.first,
-            let rootViewController = window.rootViewController
+           let window = windowScene.windows.first,
+           let rootViewController = window.rootViewController
         {
             transcriber = SherpaOnnxTranscriber(context: rootViewController)
         } else {
@@ -367,7 +370,7 @@ struct ViewState {
         // go through the buffer, popping from the first element in the array (FIFO):
         while !vadBuffer.isEmpty {
             let chunk = vadBuffer.removeFirst()
-            sendMicData(chunk)  // Uses our encoder, not Bridge directly
+            sendMicData(chunk) // Uses our encoder, not Bridge directly
         }
     }
 
@@ -554,12 +557,11 @@ struct ViewState {
                 PhoneMic.shared.stopMode(micMode)
             }
 
-            if micMode == MicTypes.GLASSES_CUSTOM && sgc?.hasMic == true && sgc?.micEnabled == true
-            {
+            if micMode == MicTypes.GLASSES_CUSTOM && sgc?.hasMic == true && sgc?.micEnabled == true {
                 sgc?.setMicEnabled(false)
             }
         }
-        getStatus()  // to update the UI
+        getStatus() // to update the UI
     }
 
     func setOnboardMicEnabled(_ isEnabled: Bool) {
@@ -615,8 +617,8 @@ struct ViewState {
         // Arrow frames for the animation
         let arrowFrames = ["↑", "↗", "↑", "↖"]
 
-        let delay = 0.25  // Frame delay in seconds
-        let totalCycles = 2  // Number of animation cycles
+        let delay = 0.25 // Frame delay in seconds
+        let totalCycles = 2 // Number of animation cycles
 
         // Variables to track animation state
         var frameIndex = 0
@@ -686,8 +688,8 @@ struct ViewState {
         } else if wearable.contains(DeviceTypes.MACH1) {
             sgc = Mach1()
         } else if wearable.contains(DeviceTypes.Z100) {
-            sgc = Mach1()  // Z100 uses same hardware/SDK as Mach1
-            sgc?.type = DeviceTypes.Z100  // Override type to Z100
+            sgc = Mach1() // Z100 uses same hardware/SDK as Mach1
+            sgc?.type = DeviceTypes.Z100 // Override type to Z100
         } else if wearable.contains(DeviceTypes.FRAME) {
             // sgc = FrameManager()
         }
@@ -902,7 +904,7 @@ struct ViewState {
         if shouldSendBootingMessage {
             Task {
                 sgc.sendTextWall("// MentraOS Connected")
-                try? await Task.sleep(nanoseconds: 3_000_000_000)  // 1 second
+                try? await Task.sleep(nanoseconds: 3_000_000_000) // 1 second
                 sgc.clearDisplay()
             }
             shouldSendBootingMessage = false
@@ -914,7 +916,7 @@ struct ViewState {
         } else if defaultWearable.contains(DeviceTypes.MACH1) {
             handleMach1Ready()
         } else if defaultWearable.contains(DeviceTypes.Z100) {
-            handleMach1Ready()  // Z100 uses same initialization as Mach1
+            handleMach1Ready() // Z100 uses same initialization as Mach1
         }
 
         // send to the server our battery status:
@@ -931,7 +933,7 @@ struct ViewState {
         Task {
             // give the glasses some extra time to finish booting:
             try? await Task.sleep(nanoseconds: 1_000_000_000)
-            await sgc?.setSilentMode(false)  // turn off silent mode
+            await sgc?.setSilentMode(false) // turn off silent mode
             await sgc?.getBatteryStatus()
 
             // send loaded settings to glasses:
@@ -1008,7 +1010,7 @@ struct ViewState {
 
         if layoutType == "bitmap_animation" {
             if let frames = layout["frames"] as? [String],
-                let interval = layout["interval"] as? Double
+               let interval = layout["interval"] as? Double
             {
                 let animationData: [String: Any] = [
                     "frames": frames,
@@ -1223,7 +1225,7 @@ struct ViewState {
 
         Task {
             disconnect()
-            try? await Task.sleep(nanoseconds: 100 * 1_000_000)  // 100ms
+            try? await Task.sleep(nanoseconds: 100 * 1_000_000) // 100ms
             self.searching = true
             self.deviceName = name
 
@@ -1241,14 +1243,14 @@ struct ViewState {
     }
 
     func disconnect() {
-        sgc?.clearDisplay()  // clear the screen
+        sgc?.clearDisplay() // clear the screen
         sgc?.disconnect()
-        sgc = nil  // Clear the SGC reference after disconnect
+        sgc = nil // Clear the SGC reference after disconnect
         searching = false
         shouldSendPcmData = false
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
-        shouldSendBootingMessage = true  // Reset for next first connect
+        shouldSendBootingMessage = true // Reset for next first connect
         getStatus()
     }
 
@@ -1270,6 +1272,9 @@ struct ViewState {
 
     func findCompatibleDevices(_ modelName: String) {
         Bridge.log("MAN: Searching for compatible device names for: \(modelName)")
+
+        // reset the search results:
+        searchResults = []
 
         if DeviceTypes.ALL.contains(modelName) {
             pendingWearable = modelName

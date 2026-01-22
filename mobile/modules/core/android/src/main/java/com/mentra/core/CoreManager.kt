@@ -186,7 +186,10 @@ class CoreManager {
     private var currentMic: String
         get() = GlassesStore.store.get("core", "currentMic") as? String ?: ""
         set(value) = GlassesStore.apply("core", "currentMic", value)
-
+        
+    private var searchResults: List<Any>
+        get() = GlassesStore.store.get("core", "searchResults") as? List<Any> ?: []
+        set(value) = GlassesStore.apply("core", "searchResults", value)
     // LC3 Audio Encoding
     // Audio output format enum
     enum class AudioOutputFormat { LC3, PCM }
@@ -1180,6 +1183,9 @@ class CoreManager {
 
     fun findCompatibleDevices(modelName: String) {
         Bridge.log("MAN: Searching for compatible device names for: $modelName")
+        
+        // reset the search results:
+        searchResults = []
 
         if (DeviceTypes.ALL.contains(modelName)) {
             pendingWearable = modelName
