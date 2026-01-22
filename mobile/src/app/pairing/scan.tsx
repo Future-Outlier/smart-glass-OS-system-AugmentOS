@@ -228,7 +228,7 @@ export default function SelectGlassesBluetoothScreen() {
       <Header leftIcon="chevron-left" onLeftPress={goBack} RightActionComponent={<MentraLogoStandalone />} />
       <View className="flex-1 pt-[35%]">
         <View className="gap-6 rounded-3xl bg-primary-foreground p-6">
-          <Image source={getGlassesOpenImage(modelName)} className="h-[90px] w-full" resizeMode="contain" />
+          <Image source={getGlassesOpenImage(modelName)} className="h-[90px] w-full px-14" resizeMode="contain" />
           <Text
             className="text-center text-xl font-semibold text-text-dim"
             text={translate("pairing:scanningForGlassesModel", {model: modelName})}
