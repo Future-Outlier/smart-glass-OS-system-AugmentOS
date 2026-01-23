@@ -49,13 +49,7 @@ export default function SelectGlassesBluetoothScreen() {
       CoreModule.findCompatibleDevices(deviceModel)
     }
 
-    if (Platform.OS === "ios") {
-      setTimeout(() => {
-        initializeAndSearchForDevices()
-      }, 1000)
-    } else {
-      initializeAndSearchForDevices()
-    }
+    initializeAndSearchForDevices()
   }, [])
 
   const triggerGlassesPairingGuide = async (deviceModel: string, deviceName: string) => {
