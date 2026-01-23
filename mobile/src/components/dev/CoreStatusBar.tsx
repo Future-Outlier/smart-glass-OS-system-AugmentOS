@@ -1,4 +1,4 @@
-import {View} from "react-native"
+import {ScrollView, View} from "react-native"
 
 import {Icon, Text} from "@/components/ignite"
 import {translate} from "@/i18n"
@@ -44,9 +44,15 @@ export default function CoreStatusBar() {
 
   return (
     <View className="flex-row flex-wrap bg-primary-foreground p-2 rounded-xl items-center self-center align-middle justify-center gap-2">
-      {lastLog.map((log, index) => (
-        <Text key={index} className="text-secondary-foreground text-sm font-medium ml-2">{log}</Text>
-      ))}
+      <ScrollView className="h-24">
+        {/* log the last 10 logs */}
+        {lastLog.slice(-10).map((log, index) => (
+          <Text key={index} className="text-secondary-foreground text-sm font-medium ml-2">{log}</Text>
+        ))}
+        {/* {lastLog.map((log, index) => (
+          <Text key={index} className="text-secondary-foreground text-sm font-medium ml-2">{log}</Text>
+        ))} */}
+      </ScrollView>
       <View
         className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-chart-4`}>
         <Icon name="bluetooth" size={14} color={theme.colors.secondary_foreground} />

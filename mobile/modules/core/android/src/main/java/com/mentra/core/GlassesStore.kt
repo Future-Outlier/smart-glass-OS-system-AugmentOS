@@ -236,6 +236,16 @@ object GlassesStore {
             "core" to "device_name" -> {
                 // Device name changed - no additional action needed
             }
+
+            "core" to "lastLog" -> {
+                (value as? MutableList<String>)?.let { logs ->
+                    // ensure the list is not longer than 100 items
+                    if (logs.size > 100) {
+                        logs.subList(0, 100)
+                    }
+                    GlassesStore.store.set("core", "lastLog", logs)
+                }
+            }
         }
     }
 }
