@@ -34,24 +34,18 @@ export default function CoreStatusBar() {
   const currentMic = useCoreStore((state) => state.currentMic)
   const systemMicUnavailable = useCoreStore((state) => state.systemMicUnavailable)
   const lastLog = useCoreStore((state) => state.lastLog)
-
   const {theme} = useAppTheme()
-
-  console.log("CoreStatusBar: micRanking", micRanking)
-  console.log("CoreStatusBar: currentMic", currentMic)
-  console.log("CoreStatusBar: systemMicUnavailable", systemMicUnavailable)
-  console.log("CoreStatusBar: lastLog", lastLog)
 
   return (
     <View className="flex-row flex-wrap bg-primary-foreground p-2 rounded-xl items-center self-center align-middle justify-center gap-2">
       <ScrollView className="h-24">
         {/* log the last 10 logs */}
-        {lastLog.slice(-10).map((log, index) => (
-          <Text key={index} className="text-secondary-foreground text-sm font-medium ml-2">{log}</Text>
-        ))}
-        {/* {lastLog.map((log, index) => (
+        {/* {lastLog.slice(-10).map((log, index) => (
           <Text key={index} className="text-secondary-foreground text-sm font-medium ml-2">{log}</Text>
         ))} */}
+        {lastLog.map((log, index) => (
+          <Text key={index} className="font-mono text-secondary-foreground text-[10px] font-medium">{log}</Text>
+        ))}
       </ScrollView>
       <View
         className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-chart-4`}>

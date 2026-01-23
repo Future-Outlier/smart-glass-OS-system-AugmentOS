@@ -217,7 +217,7 @@ class MantleManager {
     this.coreEventSubscription = CoreModule.onCoreEvent(this.handleCoreEvent)
     // forward core status changes to the zustand core store:
     this.coreStatusSubscription = CoreModule.onCoreStatus((changed: Partial<CoreStatus>) => {
-      // console.log("MANTLE: Core status changed", changed)
+      console.log("MANTLE: Core status changed", changed)
       useCoreStore.getState().setCoreInfo(changed)
     })
     this.coreGlassesStatusSubscription = CoreModule.onGlassesStatus((changed) => {

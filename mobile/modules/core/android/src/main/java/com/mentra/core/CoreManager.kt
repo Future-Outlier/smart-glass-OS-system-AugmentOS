@@ -770,70 +770,52 @@ class CoreManager {
             "external_app_recording" -> {
                 // Another app is using the microphone
                 systemMicUnavailable = true
-                Bridge.log(
-                        "MAN: MIC: TRUE External app took microphone - marking onboard mic as unavailable"
-                )
-                lastLog.add(
-                        "MAN: MIC: TRUE External app took microphone - marking onboard mic as unavailable"
-                )
+                Bridge.log("MAN: MIC_UNAVAILABLE: TRUE external_app_recording")
+                lastLog.add("MAN: MIC_UNAVAILABLE: TRUE external_app_recording")
             }
             "external_app_stopped", "audio_focus_available" -> {
                 // External app released the microphone
                 systemMicUnavailable = false
-                Bridge.log(
-                        "MAN: MIC: FALSE External app released microphone - marking onboard mic as available"
-                )
-                lastLog.add(
-                        "MAN: MIC: FALSE External app released microphone - marking onboard mic as available"
-                )
+                Bridge.log("MAN: MIC_AVAILABLE: FALSE external_app_stopped || audio_focus_available")
+                lastLog.add("MAN: MIC_AVAILABLE: FALSE external_app_stopped || audio_focus_available")
             }
             "phone_call_interruption" -> {
                 // Phone call started - mark mic as unavailable
                 systemMicUnavailable = true
-                Bridge.log(
-                        "MAN: MIC: TRUE Phone call interruption - marking onboard mic as unavailable"
-                )
-                lastLog.add(
-                        "MAN: MIC: TRUE Phone call interruption - marking onboard mic as unavailable"
-                )
+                Bridge.log("MAN: MIC_UNAVAILABLE: TRUE phone_call_interruption")
+                lastLog.add("MAN: MIC_UNAVAILABLE: TRUE phone_call_interruption")
             }
             "phone_call_ended" -> {
                 // Phone call ended - mark mic as available again
                 systemMicUnavailable = false
-                Bridge.log("MAN: MIC: FALSE Phone call ended - marking onboard mic as available")
-                lastLog.add("MAN: MIC: FALSE Phone call ended - marking onboard mic as available")
+                Bridge.log("MAN: MIC_UNAVAILABLE: FALSE phone_call_ended")
+                lastLog.add("MAN: MIC_UNAVAILABLE: FALSE phone_call_ended")
             }
             "phone_call_active" -> {
                 // Tried to start recording while phone call already active
                 systemMicUnavailable = true
-                Bridge.log(
-                        "MAN: MIC: TRUE Phone call already active - marking onboard mic as unavailable"
-                )
-                lastLog.add(
-                        "MAN: MIC: TRUE Phone call already active - marking onboard mic as unavailable"
-                )
+                Bridge.log("MAN: MIC_UNAVAILABLE: TRUE phone_call_active")
+                lastLog.add("MAN: MIC_UNAVAILABLE: TRUE phone_call_active")
             }
             "audio_focus_denied" -> {
                 // Another app has audio focus
                 systemMicUnavailable = true
-                Bridge.log("MAN: MIC: TRUE Audio focus denied - marking onboard mic as unavailable")
-                lastLog.add(
-                        "MAN: MIC: TRUE Audio focus denied - marking onboard mic as unavailable"
-                )
+                Bridge.log("MAN: MIC_UNAVAILABLE: TRUE audio_focus_denied")
+                lastLog.add("MAN: MIC_UNAVAILABLE: TRUE audio_focus_denied")
             }
             "permission_denied" -> {
                 // Microphone permission not granted
                 systemMicUnavailable = true
-                Bridge.log("MAN: MIC: TRUE Microphone permission denied - cannot use phone mic")
-                lastLog.add("MAN: MIC: TRUE Microphone permission denied - cannot use phone mic")
+                Bridge.log("MAN: MIC_UNAVAILABLE: TRUE permission_denied")
+                lastLog.add("MAN: MIC_UNAVAILABLE: TRUE permission_denied")
                 // Don't trigger fallback - need to request permission from user
             }
             else -> {
                 // Other route changes (headset plug/unplug, BT connect/disconnect, etc.)
                 // Just log for now - may want to handle these in the future
                 systemMicUnavailable = false
-                Bridge.log("MAN: MIC: FALSE Audio route changed: $reason")
-                lastLog.add("MAN: MIC: FALSE Audio route changed: $reason")
+                Bridge.log("MAN: MIC_UNAVAILABLE: FALSE audio_route_changed: $reason")
+                lastLog.add("MAN: MIC_UNAVAILABLE: FALSE audio_route_changed: $reason")
             }
         }
 

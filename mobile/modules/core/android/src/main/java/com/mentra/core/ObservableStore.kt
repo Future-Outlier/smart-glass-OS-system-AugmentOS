@@ -16,7 +16,7 @@ class ObservableStore {
         val oldValue = values[fullKey]
 
         // Skip if unchanged
-        if (oldValue != null && toJson(oldValue) == toJson(value)) return
+        // if (oldValue != null && toJson(oldValue) == toJson(value)) return
 
         values[fullKey] = value
 
