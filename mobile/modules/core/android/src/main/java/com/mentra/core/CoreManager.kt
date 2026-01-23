@@ -1543,6 +1543,11 @@ class CoreManager {
             if (defaultWearable != newDefaultWearable) {
                 defaultWearable = newDefaultWearable
                 Bridge.saveSetting("default_wearable", newDefaultWearable)
+                // Auto-init SGC for simulated glasses since they don't require connection
+                if (newDefaultWearable == DeviceTypes.SIMULATED) {
+                    deviceName = DeviceTypes.SIMULATED
+                    initSGC(newDefaultWearable)
+                }
             }
         }
 
