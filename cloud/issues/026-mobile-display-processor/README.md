@@ -99,19 +99,19 @@ Mobile ← DisplayProcessor (display-utils) ← display_event
 ### DisplayProcessor API
 
 ```typescript
-import {displayProcessor} from "@/services/display"
+import { displayProcessor } from "@/services/display";
 
 // When glasses connect (called from MantleBridge)
-displayProcessor.setDeviceModel("Even Realities G1")
+displayProcessor.setDeviceModel("Even Realities G1");
 
 // Process display events (called from SocketComms)
-const processed = displayProcessor.processDisplayEvent(rawEvent)
+const processed = displayProcessor.processDisplayEvent(rawEvent);
 
 // Direct text wrapping
-const lines = displayProcessor.wrapText("Hello world this is a long text")
+const lines = displayProcessor.wrapText("Hello world this is a long text");
 
 // Measure text width
-const widthPx = displayProcessor.measureText("Hello")
+const widthPx = displayProcessor.measureText("Hello");
 ```
 
 ### Supported Layout Types
@@ -129,8 +129,8 @@ const widthPx = displayProcessor.measureText("Hello")
 | ----------------- | -------------- | --------------------------------------------- |
 | Even Realities G1 | `G1_PROFILE`   | ✅ Full support                               |
 | Vuzix Z100        | `Z100_PROFILE` | ✅ Full support (Noto Sans metrics extracted) |
+| Mentra Mach1      | `Z100_PROFILE` | ✅ Full support (same hardware as Z100)       |
 | Mentra Nex        | `NEX_PROFILE`  | ✅ Placeholder (needs actual font metrics)    |
-| Mentra Mach1      | `G1_PROFILE`   | 🔄 Uses G1 (needs own profile if has display) |
 | Mentra Live       | `G1_PROFILE`   | ℹ️ No display, uses G1 as fallback            |
 | Simulated         | `G1_PROFILE`   | ✅ Full support                               |
 
@@ -142,8 +142,8 @@ The `DisplayProcessor.normalizeModelName()` function maps model strings to profi
 | ------------------------------------------- | ---------------------------- |
 | `"Even Realities G1"`, `"g1"`               | `g1` → `G1_PROFILE`          |
 | `"Vuzix Z100"`, `"z100"`, `"vuzix"`         | `z100` → `Z100_PROFILE`      |
+| `"Mentra Mach1"`, `"mach1"`, `"mach 1"`     | `mach1` → `Z100_PROFILE`     |
 | `"Mentra Nex"`, `"nex"`, `"mentra display"` | `nex` → `NEX_PROFILE`        |
-| `"Mentra Mach1"`, `"mach1"`, `"mach 1"`     | `mach1` → `G1_PROFILE`       |
 | `"Mentra Live"`, `"mentra-live"`            | `mentra-live` → `G1_PROFILE` |
 | `"Simulated Glasses"`, `"simulated"`        | `simulated` → `G1_PROFILE`   |
 

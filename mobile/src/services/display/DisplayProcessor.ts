@@ -194,7 +194,7 @@ const DEVICE_PROFILES: Record<DeviceModel, DisplayProfile> = {
   "g1": G1_PROFILE,
   "z100": Z100_PROFILE,
   "nex": NEX_PROFILE,
-  "mach1": G1_PROFILE, // TODO: Create MACH1_PROFILE when specs are available
+  "mach1": Z100_PROFILE, // Mach1 uses same hardware as Vuzix Z100
   "mentra-live": G1_PROFILE, // Mentra Live has no display, uses G1 as fallback
   "simulated": G1_PROFILE, // Simulated uses G1 profile
   "unknown": G1_PROFILE, // Default to G1
