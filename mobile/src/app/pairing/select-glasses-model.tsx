@@ -13,7 +13,7 @@ import {Screen} from "@/components/ignite/Screen"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {$styles, ThemedStyle} from "@/theme"
+import {ThemedStyle} from "@/theme"
 import {getGlassesImage} from "@/utils/getGlassesImage"
 
 // import {useLocalSearchParams} from "expo-router"
@@ -36,6 +36,7 @@ export default function SelectGlassesModelScreen() {
       case DeviceTypes.G1:
         return <EvenRealitiesLogo color={theme.colors.text} />
       case DeviceTypes.LIVE:
+      case DeviceTypes.NEX:
       case DeviceTypes.MACH1:
         return <MentraLogo color={theme.colors.text} />
       case DeviceTypes.Z100:
@@ -49,23 +50,23 @@ export default function SelectGlassesModelScreen() {
   const glassesOptions =
     Platform.OS === "ios"
       ? [
-          // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
-          {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
-          {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
-          {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
-          {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
-          // {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
-          //{deviceModel: "Brilliant Labs Frame", key: "frame"},
+          // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
+          {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
+          {modelName: DeviceTypes.LIVE, key: "mentra_live"},
+          {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
+          {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
+          {modelName: DeviceTypes.NEX, key: "mentra_nex"},
+          //{modelName: "Brilliant Labs Frame", key: "frame"},
         ]
       : [
           // Android:
-          // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
-          {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
-          {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
-          {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
-          {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
-          // {deviceModel: "Mentra Nex", key: "mentra_nex"},
-          // {deviceModel: "Brilliant Labs Frame", key: "frame"},
+          // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
+          {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
+          {modelName: DeviceTypes.LIVE, key: "mentra_live"},
+          {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
+          {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
+          {modelName: DeviceTypes.NEX, key: "mentra_nex"},
+          // {modelName: "Brilliant Labs Frame", key: "frame"},
         ]
 
   const triggerGlassesPairingGuide = async (deviceModel: string) => {

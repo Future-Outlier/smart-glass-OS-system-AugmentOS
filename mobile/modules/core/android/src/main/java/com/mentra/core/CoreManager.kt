@@ -16,6 +16,7 @@ import com.mentra.core.services.PhoneMic
 import com.mentra.core.sgcs.G1
 import com.mentra.core.sgcs.Mach1
 import com.mentra.core.sgcs.MentraLive
+import com.mentra.core.sgcs.MentraNex
 import com.mentra.core.sgcs.SGCManager
 import com.mentra.core.sgcs.Simulated
 import com.mentra.core.utils.DeviceTypes
@@ -835,6 +836,8 @@ class CoreManager {
             sgc = G1()
         } else if (wearable.contains(DeviceTypes.LIVE)) {
             sgc = MentraLive()
+        } else if (wearable.contains(DeviceTypes.NEX)) {
+            sgc = MentraNex()
         } else if (wearable.contains(DeviceTypes.MACH1)) {
             sgc = Mach1()
         } else if (wearable.contains(DeviceTypes.Z100)) {
@@ -934,6 +937,11 @@ class CoreManager {
             Bridge.log("MAN: Displaying text: $text")
             sgc?.sendTextWall(text)
         }
+    }
+
+    fun clearDisplay() {
+        Bridge.log("MAN: Clearing Display")
+        sgc?.clearDisplay()
     }
 
     fun displayEvent(event: Map<String, Any>) {
