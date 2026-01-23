@@ -48,6 +48,7 @@ class GlassesStore {
         store.set("core", "currentMic", "")
         store.set("core", "searchResults", [])
         store.set("core", "micRanking", MicMap.map["auto"]!)
+        store.set("core", "lastLog", [])
 
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
@@ -217,6 +218,13 @@ class GlassesStore {
                 CoreManager.shared.checkCurrentAudioDevice()
             }
 
+        case ("core", "lastLog"):
+            if let logs = value as? [String] {
+                // ensure the list is trimmed to 100 items (remove oldest items)
+                // if logs.count > 100 {
+                    // store.set("core", "lastLog", logs.subList(0, logs.count - 100))
+                // }
+            }
         default:
             break
         }

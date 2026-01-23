@@ -239,11 +239,11 @@ object GlassesStore {
 
             "core" to "lastLog" -> {
                 (value as? MutableList<String>)?.let { logs ->
-                    // ensure the list is not longer than 100 items
-                    if (logs.size > 100) {
-                        logs.subList(0, 100)
-                    }
-                    GlassesStore.store.set("core", "lastLog", logs)
+                    // ensure the list is trimmed to 100 items (remove oldest items)
+                    // if (logs.size > 100) {
+                    //     logs.subList(0, logs.size - 100)
+                    // }
+                    // GlassesStore.store.set("core", "lastLog", logs)
                 }
             }
         }

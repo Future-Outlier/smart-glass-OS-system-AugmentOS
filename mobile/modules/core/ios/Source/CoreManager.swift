@@ -257,6 +257,11 @@ struct ViewState {
         set { GlassesStore.shared.apply("core", "searchResults", newValue) }
     }
 
+    private var lastLog: [String] {
+        get { GlassesStore.shared.get("core", "lastLog") as? [String] ?? [] }
+        set { GlassesStore.shared.apply("core", "lastLog", newValue) }
+    }
+
     // LC3 Audio Encoding
     // Audio output format enum
     enum AudioOutputFormat { case lc3, pcm }

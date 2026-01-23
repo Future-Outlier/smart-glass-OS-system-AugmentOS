@@ -2,7 +2,7 @@
 //  ObservableStore.swift
 //  Core
 //
-//  Observable state management with debounced event emission
+//  Observable state management with immediate event emission
 //
 
 import Foundation
@@ -11,8 +11,6 @@ import Foundation
 class ObservableStore {
     private var values: [String: Any] = [:]
     private var onEmit: ((String, [String: Any]) -> Void)?
-    private var pendingChanges: [String: [String: Any]] = [:]
-    private var debounceTask: Task<Void, Never>?
 
     func configure(onEmit: @escaping (String, [String: Any]) -> Void) {
         self.onEmit = onEmit
@@ -22,26 +20,15 @@ class ObservableStore {
         let fullKey = "\(category).\(key)"
         let oldValue = values[fullKey]
 
-        // Skip if unchanged (compare primitive types)
+        // Skip if unchanged
         if let old = oldValue, areEqual(old, value) {
             return
         }
 
         values[fullKey] = value
 
-        // Accumulate changes per category
-        if pendingChanges[category] == nil {
-            pendingChanges[category] = [:]
-        }
-        pendingChanges[category]?[key] = value
-
-        // Debounce emit
-        debounceTask?.cancel()
-        debounceTask = Task {
-            try? await Task.sleep(nanoseconds: 16_000_000) // ~1 frame at 60fps
-            guard !Task.isCancelled else { return }
-            flushChanges()
-        }
+        // Emit immediately
+        onEmit?(category, [key: value])
     }
 
     func get(_ category: String, _ key: String) -> Any? {
@@ -58,20 +45,21 @@ class ObservableStore {
         return result
     }
 
-    private func flushChanges() {
-        for (category, changes) in pendingChanges where !changes.isEmpty {
-            onEmit?(category, changes)
-        }
-        pendingChanges.removeAll()
-    }
-
     // Helper to compare values
     private func areEqual(_ lhs: Any, _ rhs: Any) -> Bool {
-        // Handle primitive types
         if let l = lhs as? String, let r = rhs as? String { return l == r }
         if let l = lhs as? Int, let r = rhs as? Int { return l == r }
         if let l = lhs as? Bool, let r = rhs as? Bool { return l == r }
         if let l = lhs as? Double, let r = rhs as? Double { return l == r }
+        if let l = lhs as? [String], let r = rhs as? [String] { return l == r }
+        if let l = lhs as? [[String: Any]], let r = rhs as? [[String: Any]] {
+            return toJson(l) == toJson(r)
+        }
         return false
+    }
+
+    private func toJson(_ value: Any) -> String? {
+        guard let data = try? JSONSerialization.data(withJSONObject: value) else { return nil }
+        return String(data: data, encoding: .utf8)
     }
 }
