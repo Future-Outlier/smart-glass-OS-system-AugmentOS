@@ -94,4 +94,5 @@ export interface CoreStatus {
   micRanking: MicRanking[]
   currentMic: MicRanking | null
   searchResults: DeviceSearchResult[]
+  lastLog: string[]
 }

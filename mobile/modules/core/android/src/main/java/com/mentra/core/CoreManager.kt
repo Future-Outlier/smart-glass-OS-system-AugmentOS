@@ -1,7 +1,6 @@
 package com.mentra.core
 
 import android.content.BroadcastReceiver
-import kotlin.jvm.JvmStatic
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -9,7 +8,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.core.content.ContextCompat
 import com.mentra.core.services.ForegroundService
 import com.mentra.core.services.PhoneMic
@@ -22,13 +20,13 @@ import com.mentra.core.sgcs.Simulated
 import com.mentra.core.utils.DeviceTypes
 import com.mentra.core.utils.MicMap
 import com.mentra.core.utils.MicTypes
-import com.mentra.mentra.stt.SherpaOnnxTranscriber
 import com.mentra.lc3Lib.Lc3Cpp
+import com.mentra.mentra.stt.SherpaOnnxTranscriber
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.jvm.JvmStatic
 
 class CoreManager {
     companion object {
@@ -76,11 +74,11 @@ class CoreManager {
         get() = GlassesStore.store.get("core", "pending_wearable") as? String ?: ""
         set(value) = GlassesStore.apply("core", "pending_wearable", value)
 
-    private var deviceName: String
+    public var deviceName: String
         get() = GlassesStore.store.get("core", "device_name") as? String ?: ""
         set(value) = GlassesStore.apply("core", "device_name", value)
 
-    private var deviceAddress: String
+    public var deviceAddress: String
         get() = GlassesStore.store.get("core", "device_address") as? String ?: ""
         set(value) = GlassesStore.apply("core", "device_address", value)
 
@@ -166,7 +164,11 @@ class CoreManager {
         set(value) = GlassesStore.apply("glasses", "btcConnected", value)
 
     public var micRanking: MutableList<String>
-        get() = (GlassesStore.store.get("core", "micRanking") as? List<*>)?.mapNotNull { it as? String }?.toMutableList() ?: MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
+        get() =
+                (GlassesStore.store.get("core", "micRanking") as? List<*>)
+                        ?.mapNotNull { it as? String }
+                        ?.toMutableList()
+                        ?: MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
         set(value) = GlassesStore.apply("core", "micRanking", value)
 
     private var shouldSendBootingMessage: Boolean
@@ -180,7 +182,7 @@ class CoreManager {
     public var isHeadUp: Boolean
         get() = GlassesStore.store.get("core", "isHeadUp") as? Boolean ?: false
         set(value) = GlassesStore.apply("core", "isHeadUp", value)
-    
+
     private var micEnabled: Boolean
         get() = GlassesStore.store.get("core", "micEnabled") as? Boolean ?: false
         set(value) = GlassesStore.apply("core", "micEnabled", value)
@@ -188,11 +190,11 @@ class CoreManager {
     private var currentMic: String
         get() = GlassesStore.store.get("core", "currentMic") as? String ?: ""
         set(value) = GlassesStore.apply("core", "currentMic", value)
-        
+
     private var searchResults: List<Any>
         get() = GlassesStore.store.get("core", "searchResults") as? List<Any> ?: emptyList()
         set(value) = GlassesStore.apply("core", "searchResults", value)
-    
+
     private var buttonPressMode: String
         get() = GlassesStore.store.get("core", "button_mode") as? String ?: "photo"
         set(value) = GlassesStore.apply("core", "button_mode", value)
@@ -221,9 +223,16 @@ class CoreManager {
         get() = GlassesStore.store.get("core", "button_camera_led") as? Boolean ?: true
         set(value) = GlassesStore.apply("core", "button_camera_led", value)
 
+    private var lastLog: MutableList<String>
+        get() = GlassesStore.store.get("core", "lastLog") as? MutableList<String> ?: mutableListOf()
+        set(value) = GlassesStore.apply("core", "lastLog", value)
+
     // LC3 Audio Encoding
     // Audio output format enum
-    enum class AudioOutputFormat { LC3, PCM }
+    enum class AudioOutputFormat {
+        LC3,
+        PCM
+    }
     // Canonical LC3 config: 16kHz sample rate, 10ms frame duration
     // Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps)
     private var lc3EncoderPtr: Long = 0
@@ -498,9 +507,8 @@ class CoreManager {
     }
 
     /**
-     * Send audio data to cloud via Bridge.
-     * Encodes to LC3 if audioOutputFormat is LC3, otherwise sends raw PCM.
-     * All audio destined for cloud should go through this function.
+     * Send audio data to cloud via Bridge. Encodes to LC3 if audioOutputFormat is LC3, otherwise
+     * sends raw PCM. All audio destined for cloud should go through this function.
      */
     private fun sendMicData(pcmData: ByteArray) {
         when (audioOutputFormat) {
@@ -538,9 +546,9 @@ class CoreManager {
     }
 
     /**
-     * Handle raw LC3 audio data from glasses.
-     * Decodes the glasses LC3, then passes to handlePcm for canonical LC3 encoding.
-     * Note: frameSize here is for glasses→phone decoding, NOT for phone→cloud encoding.
+     * Handle raw LC3 audio data from glasses. Decodes the glasses LC3, then passes to handlePcm for
+     * canonical LC3 encoding. Note: frameSize here is for glasses→phone decoding, NOT for
+     * phone→cloud encoding.
      */
     fun handleGlassesMicData(rawLC3Data: ByteArray, frameSize: Int = 40) {
         if (lc3DecoderPtr == 0L) {
@@ -575,10 +583,10 @@ class CoreManager {
     }
 
     // turns a single mic on and turns off all other mics:
-    private fun updateMicState() {        
+    private fun updateMicState() {
         // go through the micRanking and find the first mic that is available:
         var micUsed: String = ""
-        
+
         // allow the sgc to make changes to the micRanking:
         micRanking = sgc?.sortMicRanking(micRanking) ?: micRanking
         Bridge.log("MAN: updateMicState() micRanking: $micRanking")
@@ -628,7 +636,7 @@ class CoreManager {
                 }
             }
         }
-        
+
         currentMic = micUsed
 
         if (micUsed == "" && micEnabled) {
@@ -761,47 +769,71 @@ class CoreManager {
         when (reason) {
             "external_app_recording" -> {
                 // Another app is using the microphone
-                Bridge.log("MAN: External app took microphone - marking onboard mic as unavailable")
                 systemMicUnavailable = true
+                Bridge.log(
+                        "MAN: MIC: TRUE External app took microphone - marking onboard mic as unavailable"
+                )
+                lastLog.add(
+                        "MAN: MIC: TRUE External app took microphone - marking onboard mic as unavailable"
+                )
             }
             "external_app_stopped", "audio_focus_available" -> {
                 // External app released the microphone
-                Bridge.log(
-                        "MAN: External app released microphone - marking onboard mic as available"
-                )
                 systemMicUnavailable = false
+                Bridge.log(
+                        "MAN: MIC: FALSE External app released microphone - marking onboard mic as available"
+                )
+                lastLog.add(
+                        "MAN: MIC: FALSE External app released microphone - marking onboard mic as available"
+                )
             }
             "phone_call_interruption" -> {
                 // Phone call started - mark mic as unavailable
-                Bridge.log("MAN: Phone call interruption - marking onboard mic as unavailable")
                 systemMicUnavailable = true
+                Bridge.log(
+                        "MAN: MIC: TRUE Phone call interruption - marking onboard mic as unavailable"
+                )
+                lastLog.add(
+                        "MAN: MIC: TRUE Phone call interruption - marking onboard mic as unavailable"
+                )
             }
             "phone_call_ended" -> {
                 // Phone call ended - mark mic as available again
-                Bridge.log("MAN: Phone call ended - marking onboard mic as available")
                 systemMicUnavailable = false
+                Bridge.log("MAN: MIC: FALSE Phone call ended - marking onboard mic as available")
+                lastLog.add("MAN: MIC: FALSE Phone call ended - marking onboard mic as available")
             }
             "phone_call_active" -> {
                 // Tried to start recording while phone call already active
-                Bridge.log("MAN: Phone call already active - marking onboard mic as unavailable")
                 systemMicUnavailable = true
+                Bridge.log(
+                        "MAN: MIC: TRUE Phone call already active - marking onboard mic as unavailable"
+                )
+                lastLog.add(
+                        "MAN: MIC: TRUE Phone call already active - marking onboard mic as unavailable"
+                )
             }
             "audio_focus_denied" -> {
                 // Another app has audio focus
-                Bridge.log("MAN: Audio focus denied - marking onboard mic as unavailable")
                 systemMicUnavailable = true
+                Bridge.log("MAN: MIC: TRUE Audio focus denied - marking onboard mic as unavailable")
+                lastLog.add(
+                        "MAN: MIC: TRUE Audio focus denied - marking onboard mic as unavailable"
+                )
             }
             "permission_denied" -> {
                 // Microphone permission not granted
-                Bridge.log("MAN: Microphone permission denied - cannot use phone mic")
                 systemMicUnavailable = true
+                Bridge.log("MAN: MIC: TRUE Microphone permission denied - cannot use phone mic")
+                lastLog.add("MAN: MIC: TRUE Microphone permission denied - cannot use phone mic")
                 // Don't trigger fallback - need to request permission from user
             }
             else -> {
                 // Other route changes (headset plug/unplug, BT connect/disconnect, etc.)
                 // Just log for now - may want to handle these in the future
-                Bridge.log("MAN: Audio route changed: $reason")
                 systemMicUnavailable = false
+                Bridge.log("MAN: MIC: FALSE Audio route changed: $reason")
+                lastLog.add("MAN: MIC: FALSE Audio route changed: $reason")
             }
         }
 
@@ -1032,9 +1064,8 @@ class CoreManager {
     }
 
     /**
-     * Send OTA start command to glasses.
-     * Called when user approves an update (onboarding or background mode).
-     * Triggers glasses to begin download and installation.
+     * Send OTA start command to glasses. Called when user approves an update (onboarding or
+     * background mode). Triggers glasses to begin download and installation.
      */
     fun sendOtaStart() {
         Bridge.log("MAN: 📱 Sending OTA start command to glasses")
@@ -1092,7 +1123,9 @@ class CoreManager {
             compress: String,
             silent: Boolean
     ) {
-        Bridge.log("MAN: onPhotoRequest: $requestId, $appId, $size, compress=$compress, silent=$silent")
+        Bridge.log(
+                "MAN: onPhotoRequest: $requestId, $appId, $size, compress=$compress, silent=$silent"
+        )
         sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken, compress, silent)
     }
 
@@ -1128,7 +1161,7 @@ class CoreManager {
         Bridge.log("MAN: Connecting to wearable: $dName")
 
         var name = dName
-        
+
         // use stored device name if available:
         if (dName.isEmpty() && !deviceName.isEmpty()) {
             name = deviceName
@@ -1251,7 +1284,6 @@ class CoreManager {
             }
         }
     }
-
 
     // MARK: Cleanup
     fun cleanup() {

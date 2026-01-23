@@ -109,7 +109,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
     return image
   }
 
-  let isSearching = status.core_info.is_searching || isCheckingConnectivity
+  let isSearching = searching || isCheckingConnectivity
 
   if (!glassesConnected || isSearching) {
     return (

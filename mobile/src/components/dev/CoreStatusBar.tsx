@@ -1,15 +1,8 @@
-import {useEffect, useRef, useState} from "react"
-import {TouchableOpacity, View} from "react-native"
+import {View} from "react-native"
 
 import {Icon, Text} from "@/components/ignite"
 import {translate} from "@/i18n"
-import {WebSocketStatus} from "@/services/WebSocketManager"
-import {useRefreshApplets} from "@/stores/applets"
-import {useConnectionStore} from "@/stores/connection"
-import {BackgroundTimer} from "@/utils/timers"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {SETTINGS, useSetting} from "@/stores/settings"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useCoreStore} from "@/stores/core"
 
 type DisplayStatus = "connected" | "warning" | "disconnected"
@@ -40,11 +33,20 @@ export default function CoreStatusBar() {
   const micRanking = useCoreStore((state) => state.micRanking)
   const currentMic = useCoreStore((state) => state.currentMic)
   const systemMicUnavailable = useCoreStore((state) => state.systemMicUnavailable)
+  const lastLog = useCoreStore((state) => state.lastLog)
 
   const {theme} = useAppTheme()
 
+  console.log("CoreStatusBar: micRanking", micRanking)
+  console.log("CoreStatusBar: currentMic", currentMic)
+  console.log("CoreStatusBar: systemMicUnavailable", systemMicUnavailable)
+  console.log("CoreStatusBar: lastLog", lastLog)
+
   return (
     <View className="flex-row flex-wrap bg-primary-foreground p-2 rounded-xl items-center self-center align-middle justify-center gap-2">
+      {lastLog.map((log, index) => (
+        <Text key={index} className="text-secondary-foreground text-sm font-medium ml-2">{log}</Text>
+      ))}
       <View
         className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-chart-4`}>
         <Icon name="bluetooth" size={14} color={theme.colors.secondary_foreground} />
@@ -70,6 +72,7 @@ export default function CoreStatusBar() {
           <Text text="System mic is unavailable!" className="text-secondary-foreground text-sm font-medium ml-2" />
         </View>
       )}
+
     </View>
   )
 }

@@ -49,6 +49,7 @@ object GlassesStore {
         store.set("core", "currentMic", "")
         store.set("core", "searchResults", emptyList<Any>())
         store.set("core", "micRanking", MicMap.map["auto"]!!)
+        store.set("core", "lastLog", mutableListOf<String>())
 
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
@@ -228,6 +229,7 @@ object GlassesStore {
             "core" to "default_wearable" -> {
                 (value as? String)?.let { wearable ->
                     Bridge.saveSetting("default_wearable", wearable)
+                    CoreManager.getInstance().getStatus()// force update status
                 }
             }
 
