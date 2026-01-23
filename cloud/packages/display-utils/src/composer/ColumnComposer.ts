@@ -83,13 +83,11 @@ export class ColumnComposer {
   private wrapper: TextWrapper;
   private spaceWidthPx: number;
 
-  constructor(profile: DisplayProfile, breakMode: BreakMode = "word") {
+  constructor(profile: DisplayProfile, breakMode: BreakMode = "character-no-hyphen") {
     this.profile = profile;
     this.measurer = new TextMeasurer(profile);
     this.wrapper = new TextWrapper(this.measurer, {
       breakMode,
-      hyphenChar: "-",
-      minCharsBeforeHyphen: 3,
     });
 
     // Cache space width for alignment calculations
@@ -156,8 +154,6 @@ export class ColumnComposer {
   public setBreakMode(breakMode: BreakMode): void {
     this.wrapper = new TextWrapper(this.measurer, {
       breakMode,
-      hyphenChar: "-",
-      minCharsBeforeHyphen: 3,
     });
   }
 

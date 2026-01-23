@@ -1,6 +1,6 @@
 # Issue 026: Mobile Display Processor
 
-**Status**: Complete ✅  
+**Status**: In Progress 🔄  
 **Priority**: Medium  
 **Related**: @mentra/display-utils, GlassesDisplayMirror
 
@@ -23,6 +23,7 @@ This causes:
 - **[display-processor-spec.md](./display-processor-spec.md)** - Problem, goals, constraints
 - **[display-processor-architecture.md](./display-processor-architecture.md)** - Implementation details, data flow, integration points
 - **[026a-head-up-dashboard-disabled-bug.md](./026a-head-up-dashboard-disabled-bug.md)** - Bug fix: head-up view not updating when dashboard disabled
+- **[026b-double-text-wall-alignment.md](./026b-double-text-wall-alignment.md)** - Investigation: double_text_wall column alignment issues
 
 ## Quick Context
 
@@ -98,19 +99,19 @@ Mobile ← DisplayProcessor (display-utils) ← display_event
 ### DisplayProcessor API
 
 ```typescript
-import { displayProcessor } from "@/services/display";
+import {displayProcessor} from "@/services/display"
 
 // When glasses connect (called from MantleBridge)
-displayProcessor.setDeviceModel("Even Realities G1");
+displayProcessor.setDeviceModel("Even Realities G1")
 
 // Process display events (called from SocketComms)
-const processed = displayProcessor.processDisplayEvent(rawEvent);
+const processed = displayProcessor.processDisplayEvent(rawEvent)
 
 // Direct text wrapping
-const lines = displayProcessor.wrapText("Hello world this is a long text");
+const lines = displayProcessor.wrapText("Hello world this is a long text")
 
 // Measure text width
-const widthPx = displayProcessor.measureText("Hello");
+const widthPx = displayProcessor.measureText("Hello")
 ```
 
 ### Supported Layout Types
@@ -204,6 +205,91 @@ Updated Z100 profile with real font metrics extracted from Noto Sans TTF:
 - Added real glyph widths for all ASCII characters
 - Space width: 5px, Hyphen width: 7px
 
+### Phase 5: Hyphen-Free Word Breaking ✅
+
+Added new break mode `character-no-hyphen` that breaks words mid-word without adding a hyphen character.
+
+**Problem**: When text wraps mid-word, the hyphen (`-`) was being added at the break point. Users reported this was confusing and unnecessary.
+
+**Solution**: Added a new break mode that breaks cleanly without adding any character.
+
+**Files modified:**
+
+- `cloud/packages/display-utils/src/wrapper/types.ts` - Added `character-no-hyphen` to `BreakMode` type, changed default
+- `cloud/packages/display-utils/src/wrapper/TextWrapper.ts` - Implemented `wrapCharacterNoHyphenMode()`
+- `cloud/packages/display-utils/src/index.ts` - Updated all toolkit factory functions
+- `cloud/packages/display-utils/src/composer/ColumnComposer.ts` - Updated default break mode
+- `mobile/src/services/display/DisplayProcessor.ts` - Updated default break mode
+
+**Break modes available:**
+
+- `character` - Break mid-word with hyphen (old default)
+- `character-no-hyphen` - Break mid-word without hyphen (new default) ✅
+- `word` - Break at word boundaries, hyphenate only if word > line width
+- `strict-word` - Break at word boundaries only, no hyphenation
+
+### Phase 6: Placeholder Replacement Migration ✅
+
+Moved placeholder replacement (`$GBATT$`, `$TIME12$`, `$DATE$`, etc.) from native layer to React Native DisplayProcessor.
+
+**Problem**: Native was replacing placeholders AFTER DisplayProcessor had already wrapped text. This caused incorrect measurements because placeholder strings like `$GBATT$` (7 chars) have different widths than their resolved values like `85%` (3 chars).
+
+**Solution**: Replace placeholders in DisplayProcessor BEFORE wrapping, so measurements are accurate.
+
+**Files modified:**
+
+- `mobile/src/services/display/DisplayProcessor.ts` - Added `replacePlaceholders()` function and `getPlaceholderValues()`
+
+**Placeholders supported:**
+| Placeholder | Example Value | Description |
+|-------------|---------------|-------------|
+| `$TIME12$` | `2:30 PM` | 12-hour time format |
+| `$TIME24$` | `14:30` | 24-hour time format |
+| `$DATE$` | `1/22` | Month/day format |
+| `$GBATT$` | `85%` or ``| Glasses battery (empty if unknown) |
+| `$CONNECTION_STATUS$` | `Connected` or`` | Connection status |
+| `$no_datetime$` | `1/22, 2:30 PM` | Combined date and time |
+
+**Note**: Native code (CoreManager.kt/CoreManager.swift) still has `parsePlaceholders()` but it's now a no-op for text that goes through DisplayProcessor since placeholders are already replaced.
+
+### Phase 7: Double Text Wall Alignment Investigation 🔄
+
+**Status**: Under Investigation
+
+**Problem**: Dashboard view showing misaligned columns in `double_text_wall` layout. The right column content appears "indented" when it wraps to multiple lines.
+
+**Investigation findings:**
+
+1. **Algorithm is correct**: The `ColumnComposer` algorithm matches the native iOS/Android implementation exactly. Each line calculates the correct number of spaces to position the right column at `rightColumnStartPx` (316px on G1).
+
+2. **Expected behavior**: When the left column has fewer lines of content than the right column, the continuation lines of the right column start from pixel 0 and get padded with spaces to reach `rightColumnStartPx`. This creates a visual "indentation" from the left edge - which is the correct behavior for a two-column layout.
+
+3. **Pixel alignment verified**: Test output shows all lines are aligned within tolerance:
+
+   ```
+   Line 0: Expected 316px, Actual 316px ✅
+   Line 1: Expected 316px, Actual 316px ✅
+   Line 2: Expected 316px, Actual 318px ✅ (2px error, within 1 space width)
+   ```
+
+4. **Potential issues to investigate**:
+   - Preview (GlassesDisplayMirror) uses different font than glasses, so space alignment looks different
+   - Native may still be processing `double_text_wall` separately in some code paths
+   - Dashboard app content structure may need adjustment
+
+**Debug tools added:**
+
+- `cloud/packages/apps/line-width` - Updated with double_text_wall testing
+  - `POST /api/send-double-text-wall` - Send two-column layout
+  - `GET /api/test-presets/dashboard` - Dashboard-like test content
+- `cloud/packages/display-utils/test-column-composer.ts` - Pixel alignment verification
+
+**Next steps:**
+
+- [ ] Test with line-width app on actual glasses to verify alignment
+- [ ] Check if native is double-processing double_text_wall events
+- [ ] Consider updating GlassesDisplayMirror to show composed text_wall instead of separate columns
+
 ### Future: Profile Updates
 
 When hardware specs become available:
@@ -231,13 +317,26 @@ When hardware specs become available:
 - [x] **Phase 2.5: ColumnComposer for double_text_wall** ✅
   - [x] Created ColumnComposer class in display-utils
   - [x] Updated DisplayProcessor to use ColumnComposer
-- [x] **Phase 4: Z100 Profile Update** ✅
-  - [x] Extracted real Noto Sans font metrics
-  - [x] Created extract-font-metrics.js utility script
 - [x] **Phase 3: Validation** ✅
   - [x] App builds and runs successfully
   - [x] DisplayProcessor integrated and working
   - [x] No runtime errors
+- [x] **Phase 4: Z100 Profile Update** ✅
+  - [x] Extracted real Noto Sans font metrics
+  - [x] Created extract-font-metrics.js utility script
+- [x] **Phase 5: Hyphen-Free Word Breaking** ✅
+  - [x] Added `character-no-hyphen` break mode
+  - [x] Changed default break mode from `character` to `character-no-hyphen`
+  - [x] Updated all toolkit factory functions
+- [x] **Phase 6: Placeholder Replacement Migration** ✅
+  - [x] Added `replacePlaceholders()` to DisplayProcessor
+  - [x] Placeholders replaced BEFORE wrapping (correct measurements)
+  - [x] Supports $TIME12$, $TIME24$, $DATE$, $GBATT$, $CONNECTION_STATUS$
+- [ ] **Phase 7: Double Text Wall Alignment** 🔄
+  - [x] Algorithm verified correct
+  - [x] Debug tools added to line-width app
+  - [ ] Test on actual glasses
+  - [ ] Verify native isn't double-processing
 
 ## References
 

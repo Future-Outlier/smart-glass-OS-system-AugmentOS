@@ -2330,19 +2330,7 @@ public class G1 extends SGCManager {
     }
 
     public void displayTextWall(String a) {
-        // if (a.trim().isEmpty()) {
-        //     if (CoreManager.getInstance().getPowerSavingMode()) {
-        //         sendExitCommand();
-        //         return;
-        //     }
-        // }
-
         List<byte[]> chunks = createTextWallChunks(a);
-        // if (a.isEmpty()) {
-        //     clearDisplay();
-        //     return;
-        // }
-        // List<byte[]> chunks = chunkTextForTransmission(a);
         sendChunks(chunks);
     }
 
@@ -2791,7 +2779,10 @@ public class G1 extends SGCManager {
      * @return List of BLE chunks with headers
      */
     private List<byte[]> chunkTextForTransmission(String text) {
-        byte[] textBytes = text.getBytes(StandardCharsets.UTF_8);
+        // Handle empty or whitespace-only text by sending at least a space
+        // This ensures the display gets updated/cleared properly
+        String textToSend = (text == null || text.trim().isEmpty()) ? " " : text;
+        byte[] textBytes = textToSend.getBytes(StandardCharsets.UTF_8);
         int totalChunks = (int) Math.ceil((double) textBytes.length / MAX_CHUNK_SIZE);
 
         List<byte[]> allChunks = new ArrayList<>();

@@ -165,9 +165,7 @@ export function createG1Toolkit(): {
   profile: DisplayProfile;
 } {
   return createDisplayToolkit(G1_PROFILE, {
-    breakMode: "character",
-    hyphenChar: "-",
-    minCharsBeforeHyphen: 3,
+    breakMode: "character-no-hyphen",
   });
 }
 
@@ -196,9 +194,7 @@ export function createG1LegacyToolkit(): {
   profile: DisplayProfile;
 } {
   return createDisplayToolkit(G1_PROFILE_LEGACY, {
-    breakMode: "character",
-    hyphenChar: "-",
-    minCharsBeforeHyphen: 3,
+    breakMode: "character-no-hyphen",
   });
 }
 
@@ -221,9 +217,7 @@ export function createZ100Toolkit(): {
   profile: DisplayProfile;
 } {
   return createDisplayToolkit(Z100_PROFILE, {
-    breakMode: "character",
-    hyphenChar: "-",
-    minCharsBeforeHyphen: 3,
+    breakMode: "character-no-hyphen",
   });
 }
 
@@ -247,8 +241,6 @@ export function createNexToolkit(): {
   profile: DisplayProfile;
 } {
   return createDisplayToolkit(NEX_PROFILE, {
-    breakMode: "character",
-    hyphenChar: "-",
-    minCharsBeforeHyphen: 3,
+    breakMode: "character-no-hyphen",
   });
 }

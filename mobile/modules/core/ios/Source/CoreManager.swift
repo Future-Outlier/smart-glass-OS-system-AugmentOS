@@ -1083,12 +1083,13 @@ struct ViewState {
 
         viewStates[stateIndex] = newViewState
 
-        // Always send the current state when view state changes.
-        // sendCurrentState() already handles selecting the correct view based on isHeadUp
-        // and contextualDashboard settings, so we don't need to filter here.
-        // The previous conditional logic was causing display updates to be missed
-        // when the incoming view (main/dashboard) didn't match the current head position.
-        sendCurrentState()
+        let headUp = isHeadUp
+        // send the state we just received if the user is currently in that state:
+        if stateIndex == 0, !headUp {
+            sendCurrentState()
+        } else if stateIndex == 1, headUp {
+            sendCurrentState()
+        }
     }
 
     func showDashboard() {

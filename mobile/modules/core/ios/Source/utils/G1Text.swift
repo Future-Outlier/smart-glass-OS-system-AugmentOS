@@ -108,7 +108,10 @@ class G1Text {
     }
 
     func chunkTextForTransmission(_ text: String) -> [[UInt8]] {
-        guard let textData = text.data(using: .utf8) else { return [] }
+        // Handle empty or whitespace-only text by sending at least a space
+        // This ensures the display gets updated/cleared properly
+        let textToSend = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? " " : text
+        guard let textData = textToSend.data(using: .utf8) else { return [] }
         let textBytes = [UInt8](textData)
         let totalChunks = Int(ceil(Double(textBytes.count) / Double(G1Text.MAX_CHUNK_SIZE)))
 

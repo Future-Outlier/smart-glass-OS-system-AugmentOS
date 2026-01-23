@@ -27,6 +27,8 @@ import {
   type BreakMode,
 } from "@mentra/display-utils"
 
+import {useGlassesStore} from "@/stores/glasses"
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -103,6 +105,82 @@ export interface DisplayProcessorOptions {
   breakMode?: BreakMode
   /** Whether to log processing details */
   debug?: boolean
+}
+
+// =============================================================================
+// Placeholder Replacement
+// =============================================================================
+
+/**
+ * Placeholder values that can be replaced in display text.
+ * These match the placeholders used in CoreManager.kt/CoreManager.swift
+ */
+interface PlaceholderValues {
+  /** Current time in 12-hour format (e.g., "2:30 PM") */
+  TIME12: string
+  /** Current time in 24-hour format (e.g., "14:30") */
+  TIME24: string
+  /** Current date (e.g., "1/22") */
+  DATE: string
+  /** Glasses battery level (e.g., "85%" or "" if unknown) */
+  GBATT: string
+  /** Connection status */
+  CONNECTION_STATUS: string
+}
+
+/**
+ * Get current placeholder values from device state
+ */
+function getPlaceholderValues(): PlaceholderValues {
+  const now = new Date()
+
+  // Format time in 12-hour format
+  const hours12 = now.getHours() % 12 || 12
+  const minutes = now.getMinutes().toString().padStart(2, "0")
+  const ampm = now.getHours() >= 12 ? "PM" : "AM"
+  const TIME12 = `${hours12}:${minutes} ${ampm}`
+
+  // Format time in 24-hour format
+  const hours24 = now.getHours().toString().padStart(2, "0")
+  const TIME24 = `${hours24}:${minutes}`
+
+  // Format date
+  const month = now.getMonth() + 1
+  const day = now.getDate()
+  const DATE = `${month}/${day}`
+
+  // Get battery level from glasses store
+  const batteryLevel = useGlassesStore.getState().batteryLevel
+  const GBATT = batteryLevel === -1 ? "" : `${batteryLevel}%`
+
+  // Connection status
+  const connected = useGlassesStore.getState().connected
+  const CONNECTION_STATUS = connected ? "Connected" : ""
+
+  return {TIME12, TIME24, DATE, GBATT, CONNECTION_STATUS}
+}
+
+/**
+ * Replace placeholders in text with actual values.
+ * Placeholders are in format $NAME$ (e.g., $GBATT$, $TIME12$)
+ *
+ * @param text - Text containing placeholders
+ * @returns Text with placeholders replaced
+ */
+function replacePlaceholders(text: string): string {
+  if (!text || !text.includes("$")) {
+    return text
+  }
+
+  const values = getPlaceholderValues()
+
+  return text
+    .replace(/\$TIME12\$/g, values.TIME12)
+    .replace(/\$TIME24\$/g, values.TIME24)
+    .replace(/\$DATE\$/g, values.DATE)
+    .replace(/\$GBATT\$/g, values.GBATT)
+    .replace(/\$CONNECTION_STATUS\$/g, values.CONNECTION_STATUS)
+    .replace(/\$no_datetime\$/g, `${values.DATE}, ${values.TIME12}`)
 }
 
 // =============================================================================
@@ -183,7 +261,7 @@ export class DisplayProcessor {
 
   private constructor(options: DisplayProcessorOptions = {}) {
     this.options = {
-      breakMode: "character",
+      breakMode: "character-no-hyphen",
       debug: false,
       ...options,
     }
@@ -191,8 +269,6 @@ export class DisplayProcessor {
     // Initialize with default G1 profile
     const toolkit = createDisplayToolkit(G1_PROFILE, {
       breakMode: this.options.breakMode,
-      hyphenChar: "-",
-      minCharsBeforeHyphen: 3,
     })
 
     this.measurer = toolkit.measurer
@@ -254,8 +330,6 @@ export class DisplayProcessor {
   private updateProfile(newProfile: DisplayProfile): void {
     const toolkit = createDisplayToolkit(newProfile, {
       breakMode: this.options.breakMode,
-      hyphenChar: "-",
-      minCharsBeforeHyphen: 3,
     })
 
     this.measurer = toolkit.measurer
@@ -358,8 +432,11 @@ export class DisplayProcessor {
     const rawText = layout.text
     const text = typeof rawText === "string" ? rawText : ""
 
+    // Replace placeholders BEFORE wrapping (so we measure actual content)
+    const textWithPlaceholders = replacePlaceholders(text)
+
     // Wrap the text
-    const lines = this.wrapText(text)
+    const lines = this.wrapText(textWithPlaceholders)
     const wrappedText = lines.join("\n")
 
     // Update both root and nested layout if present
@@ -372,6 +449,8 @@ export class DisplayProcessor {
 
     return {
       ...event,
+      // Store original text with placeholders for debugging
+      _originalText: text,
       text: wrappedText,
       layout: processedLayout,
       _processed: true,
@@ -390,9 +469,10 @@ export class DisplayProcessor {
     const textField = layout.text
     const rows: string[] = Array.isArray(textField) ? textField : []
 
-    // Wrap each row
+    // Replace placeholders and wrap each row
     const wrappedRows = rows.map((row: string) => {
-      const lines = this.wrapText(row)
+      const rowWithPlaceholders = replacePlaceholders(row)
+      const lines = this.wrapText(rowWithPlaceholders)
       return lines.join("\n")
     })
 
@@ -424,10 +504,14 @@ export class DisplayProcessor {
     const rawText = layout.text
     const text = typeof rawText === "string" ? rawText : ""
 
+    // Replace placeholders BEFORE wrapping
+    const titleWithPlaceholders = replacePlaceholders(title)
+    const textWithPlaceholders = replacePlaceholders(text)
+
     // Wrap title and text separately
     // Title typically gets 1 line, text gets remaining lines
-    const wrappedTitle = this.wrapText(title, {maxLines: 1})
-    const wrappedText = this.wrapText(text, {maxLines: this.profile.maxLines - 1})
+    const wrappedTitle = this.wrapText(titleWithPlaceholders, {maxLines: 1})
+    const wrappedText = this.wrapText(textWithPlaceholders, {maxLines: this.profile.maxLines - 1})
 
     const processedLayout = event.layout
       ? {
@@ -465,8 +549,12 @@ export class DisplayProcessor {
     const leftText = layout.topText || ""
     const rightText = layout.bottomText || ""
 
+    // Replace placeholders BEFORE composition (so we measure actual content)
+    const leftTextWithPlaceholders = replacePlaceholders(leftText)
+    const rightTextWithPlaceholders = replacePlaceholders(rightText)
+
     // Use ColumnComposer for pixel-precise column composition
-    const result = this.composer.composeDoubleTextWall(leftText, rightText)
+    const result = this.composer.composeDoubleTextWall(leftTextWithPlaceholders, rightTextWithPlaceholders)
 
     if (this.options.debug) {
       console.log(`[DisplayProcessor] double_text_wall composed:`)
@@ -481,8 +569,8 @@ export class DisplayProcessor {
       ? {
           ...event.layout,
           // Keep original topText/bottomText for reference but add composed text
-          topText: leftText,
-          bottomText: rightText,
+          topText: leftTextWithPlaceholders,
+          bottomText: rightTextWithPlaceholders,
           // The composed text is what native should actually display
           _composedText: result.composedText,
         }
@@ -494,9 +582,12 @@ export class DisplayProcessor {
       // This tells native to use sendTextWall instead of sendDoubleTextWall
       layoutType: "text_wall" as DisplayLayoutType,
       text: result.composedText,
-      // Keep original values for debugging/preview
-      topText: leftText,
-      bottomText: rightText,
+      // Keep original values for debugging/preview (with placeholders replaced)
+      topText: leftTextWithPlaceholders,
+      bottomText: rightTextWithPlaceholders,
+      // Store original values with placeholders for debugging
+      _originalTopText: leftText,
+      _originalBottomText: rightText,
       layout: processedLayout
         ? {
             ...processedLayout,

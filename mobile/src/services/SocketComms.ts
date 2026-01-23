@@ -500,6 +500,20 @@ class SocketComms {
       return
     }
 
+    // DEBUG: Log incoming event before processing
+    const deviceModel = displayProcessor.getDeviceModel()
+    const profile = displayProcessor.getProfile()
+    console.log(`[DisplayProcessor DEBUG] ========================================`)
+    console.log(`[DisplayProcessor DEBUG] Device Model: ${deviceModel}`)
+    console.log(
+      `[DisplayProcessor DEBUG] Profile: ${profile.id} (width: ${profile.displayWidthPx}px, lines: ${profile.maxLines})`,
+    )
+    console.log(`[DisplayProcessor DEBUG] Incoming layoutType: ${msg.layout?.layoutType || msg.layoutType}`)
+    console.log(`[DisplayProcessor DEBUG] Incoming text length: ${(msg.layout?.text || msg.text || "").length}`)
+    console.log(
+      `[DisplayProcessor DEBUG] Incoming text preview: "${(msg.layout?.text || msg.text || "").substring(0, 100)}..."`,
+    )
+
     // Process the display event through DisplayProcessor for pixel-accurate wrapping
     // This ensures the preview matches exactly what the glasses will show
     let processedEvent
@@ -510,7 +524,20 @@ class SocketComms {
       processedEvent = msg
     }
 
-    console.log(processedEvent)
+    // DEBUG: Log processed event
+    console.log(
+      `[DisplayProcessor DEBUG] Processed layoutType: ${processedEvent.layout?.layoutType || processedEvent.layoutType}`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] Processed text length: ${(processedEvent.layout?.text || processedEvent.text || "").length}`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] Processed text preview: "${(processedEvent.layout?.text || processedEvent.text || "").substring(0, 200)}..."`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] _processed: ${processedEvent._processed}, _profile: ${processedEvent._profile}`,
+    )
+    console.log(`[DisplayProcessor DEBUG] ========================================`)
 
     // Send processed event to native SGC
     CoreModule.displayEvent(processedEvent)

@@ -599,9 +599,13 @@ class CoreManager {
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
 
         Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
+        Bridge.log("MAN: viewState text: '${currentViewState.text}' (len=${currentViewState.text.length})")
 
         when (currentViewState.layoutType) {
-            "text_wall" -> sgc?.sendTextWall(currentViewState.text)
+            "text_wall" -> {
+                Bridge.log("MAN: sending text_wall with text: '${currentViewState.text.take(50)}...'")
+                sgc?.sendTextWall(currentViewState.text)
+            }
             "double_text_wall" -> {
                 sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
             }
@@ -1046,12 +1050,11 @@ class CoreManager {
         if (!statesEqual(currentState, newViewState)) {
             // Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
             viewStates[stateIndex] = newViewState
-            // Always send the current state when view state changes.
-            // sendCurrentState() already handles selecting the correct view based on isHeadUp
-            // and contextualDashboard settings, so we don't need to filter here.
-            // The previous conditional logic was causing display updates to be missed
-            // when the incoming view (main/dashboard) didn't match the current head position.
-            sendCurrentState()
+            if (stateIndex == 0 && !isHeadUp) {
+                sendCurrentState()
+            } else if (stateIndex == 1 && isHeadUp) {
+                sendCurrentState()
+            }
         }
     }
 
