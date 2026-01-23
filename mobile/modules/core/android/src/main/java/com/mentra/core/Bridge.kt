@@ -186,16 +186,11 @@ public class Bridge private constructor() {
         /** Send discovered device */
         @JvmStatic
         fun sendDiscoveredDevice(modelName: String, deviceName: String) {
-            val eventBody = HashMap<String, Any>()
-            eventBody["model_name"] = modelName
-            eventBody["device_name"] = deviceName
-            // get the core searchResults and add it (ensure no duplicates)
-            val searchResults = GlassesStore.store.getCategory("core")["searchResults"] as List<DeviceSearchResult>
-            val uniqueSearchResults = searchResults.filter { it.deviceName != deviceName }
-            eventBody["search_results"] = uniqueSearchResults
-            Bridge.log(uniqueSearchResults.toString())
-            GlassesStore.set("core", "searchResults", uniqueSearchResults)
-            // sendTypedMessage("compatible_glasses_search_result", eventBody as Map<String, Any>)
+            val searchResults = GlassesStore.store.getCategory("core")["searchResults"] as? List<DeviceSearchResult> ?: emptyList()
+            val newResult = DeviceSearchResult(modelName = modelName, deviceName = deviceName)
+            val allResults = searchResults + newResult
+            val uniqueResults = allResults.associateBy { it.deviceName }.values.toList()
+            GlassesStore.set("core", "searchResults", uniqueResults)
         }
 
         /** Update ASR config */

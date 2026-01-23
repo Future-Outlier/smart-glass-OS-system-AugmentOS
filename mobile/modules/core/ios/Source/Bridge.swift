@@ -99,18 +99,19 @@ class Bridge {
     static func sendDiscoveredDevice(_ modelName: String, _ deviceName: String) {
         Task {
             await MainActor.run {
-                let eventBody: [String: Any] = [
+                let searchResults =
+                    GlassesStore.shared.get("core", "searchResults") as? [[String: Any]] ?? []
+                let newResult: [String: Any] = [
                     "model_name": modelName,
                     "device_name": deviceName,
                 ]
-                // sendTypedMessage("compatible_glasses_search_result", body: eventBody)
-                // get the core searchResults and add it (ensure no duplicates):
-                let searchResults =
-                    GlassesStore.shared.get("core", "searchResults") as? [[String: Any]] ?? []
-                let uniqueSearchResults = searchResults.filter {
-                    $0["device_name"] as? String != deviceName
-                }
-                GlassesStore.shared.set("core", "searchResults", uniqueSearchResults)
+                let allResults = searchResults + [newResult]
+                var seen = Set<String>()
+                let uniqueResults = allResults.reversed().filter {
+                    guard let name = $0["device_name"] as? String else { return false }
+                    return seen.insert(name).inserted
+                }.reversed()
+                GlassesStore.shared.set("core", "searchResults", Array(uniqueResults))
             }
         }
     }
