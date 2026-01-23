@@ -6,19 +6,19 @@ import {ScrollView, View} from "react-native"
 import {Header, Screen} from "@/components/ignite"
 import SliderSetting from "@/components/settings/SliderSetting"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
 export default function ScreenSettingsScreen() {
   const {goBack} = useNavigationHistory()
   const [dashboardDepth, setDashboardDepth] = useSetting(SETTINGS.dashboard_depth.key)
   const [dashboardHeight, setDashboardHeight] = useSetting(SETTINGS.dashboard_height.key)
+  const [_screenDisabled, setScreenDisabled] = useSetting(SETTINGS.screen_disabled.key)
 
   useFocusEffect(
     useCallback(() => {
-      CoreModule.updateSettings({screen_disabled: true})
+      setScreenDisabled(true)
       return () => {
-        CoreModule.updateSettings({screen_disabled: false})
+        setScreenDisabled(false)
       }
     }, []),
   )

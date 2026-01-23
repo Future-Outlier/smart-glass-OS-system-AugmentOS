@@ -197,8 +197,8 @@ class MantleManager {
             coreSettingsObj[k] = state[k] as any
           }
         }
-        console.log("MANTLE: core settings changed", coreSettingsObj)
-        CoreModule.updateSettings(coreSettingsObj)
+        // console.log("MANTLE: core settings changed", coreSettingsObj)
+        CoreModule.updateCore(coreSettingsObj)
       },
       {equalityFn: shallow},
     )

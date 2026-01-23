@@ -90,7 +90,6 @@ export default function SelectGlassesBluetoothScreen() {
       return
     }
 
-    // CoreModule.updateSettings({"device_name": deviceName})
     setDeviceName(deviceName)
     // pair bt classic first:
     replace("/pairing/btclassic")
