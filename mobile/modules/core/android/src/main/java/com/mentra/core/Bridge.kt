@@ -193,6 +193,7 @@ public class Bridge private constructor() {
             val searchResults = GlassesStore.store.getCategory("core")["searchResults"] as List<DeviceSearchResult>
             val uniqueSearchResults = searchResults.filter { it.deviceName != deviceName }
             eventBody["search_results"] = uniqueSearchResults
+            Bridge.log(uniqueSearchResults.toString())
             GlassesStore.set("core", "searchResults", uniqueSearchResults)
             // sendTypedMessage("compatible_glasses_search_result", eventBody as Map<String, Any>)
         }

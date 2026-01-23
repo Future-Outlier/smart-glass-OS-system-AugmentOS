@@ -11,7 +11,7 @@ interface CoreState extends CoreStatus {
 const initialState: CoreStatus = {
   // state:
   searching: false,
-  micRanking: [],
+  micRanking: ["glasses", "phone", "bluetooth"],
   systemMicUnavailable: false,
   currentMic: null,
   searchResults: [],

@@ -168,7 +168,7 @@ class MantleManager {
     // }
   }
 
-  private setupSubscriptions() {
+  private async setupSubscriptions() {
     useGlassesStore.subscribe(
       getGlasesInfoPartial,
       (state: Partial<GlassesStatus>, previousState: Partial<GlassesStatus>) => {
@@ -217,13 +217,20 @@ class MantleManager {
     this.coreEventSubscription = CoreModule.onCoreEvent(this.handleCoreEvent)
     // forward core status changes to the zustand core store:
     this.coreStatusSubscription = CoreModule.onCoreStatus((changed: Partial<CoreStatus>) => {
-      // console.log("MANTLE: Core status changed", changed)
+      console.log("MANTLE: Core status changed", changed)
       useCoreStore.getState().setCoreInfo(changed)
     })
     this.coreGlassesStatusSubscription = CoreModule.onGlassesStatus((changed) => {
       // console.log("MANTLE: Glasses status changed", changed)
       useGlassesStore.getState().setGlassesInfo(changed)
     })
+
+    // one time get all:
+    const coreStatus = await CoreModule.getCoreStatus()
+    useCoreStore.getState().setCoreInfo(coreStatus)
+
+    const glassesStatus = await CoreModule.getGlassesStatus()
+    useGlassesStore.getState().setGlassesInfo(glassesStatus)
   }
 
   private async sendCalendarEvents() {
@@ -508,10 +515,10 @@ class MantleManager {
           await useSettingsStore.getState().setSetting(data.key, data.value)
           break
         case "head_up":
-          this.handle_head_up(data.up)
+          mantle.handle_head_up(data.up)
           break
         case "local_transcription":
-          this.handle_local_transcription(data)
+          mantle.handle_local_transcription(data)
           break
         case "phone_notification":
           // Send phone notification via REST instead of WebSocket

@@ -47,6 +47,7 @@ class GlassesStore {
         store.set("core", "micEnabled", false)
         store.set("core", "currentMic", "")
         store.set("core", "searchResults", [])
+        store.set("core", "micRanking", MicMap.map["auto"]!)
 
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
@@ -55,7 +56,6 @@ class GlassesStore {
         store.set("core", "device_address", "")
         store.set("core", "offline_mode", false)
         store.set("core", "screen_disabled", false)
-        store.set("core", "mic_ranking", MicMap.map["auto"]!)
         store.set("core", "preferred_mic", "auto")
         store.set("core", "power_saving_mode", false)
         store.set("core", "always_on_status_bar", false)
@@ -180,7 +180,7 @@ class GlassesStore {
 
         case ("core", "preferred_mic"):
             if let mic = value as? String {
-                apply("core", "mic_ranking", MicMap.map[mic] ?? MicMap.map["auto"]!)
+                apply("core", "micRanking", MicMap.map[mic] ?? MicMap.map["auto"]!)
                 CoreManager.shared.setMicState(
                     store.get("core", "should_send_pcm_data") as? Bool ?? false,
                     store.get("core", "should_send_transcript") as? Bool ?? false,
