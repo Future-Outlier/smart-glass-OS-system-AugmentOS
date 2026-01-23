@@ -1,4 +1,5 @@
 import {ScrollView, View} from "react-native"
+import {useRef, useEffect} from "react"
 
 import {Icon, Text} from "@/components/ignite"
 import {translate} from "@/i18n"
@@ -36,15 +37,20 @@ export default function CoreStatusBar() {
   const lastLog = useCoreStore((state) => state.lastLog)
   const {theme} = useAppTheme()
 
+  const scrollViewRef = useRef<ScrollView>(null)
+
+  useEffect(() => {
+    scrollViewRef.current?.scrollToEnd({animated: true})
+  }, [lastLog])
+
   return (
     <View className="flex-row flex-wrap bg-primary-foreground p-2 rounded-xl items-center self-center align-middle justify-center gap-2">
-      <ScrollView className="h-24">
+      <ScrollView ref={scrollViewRef} className="h-24">
         {/* log the last 10 logs */}
-        {/* {lastLog.slice(-10).map((log, index) => (
-          <Text key={index} className="text-secondary-foreground text-sm font-medium ml-2">{log}</Text>
-        ))} */}
-        {lastLog.map((log, index) => (
-          <Text key={index} className="font-mono text-secondary-foreground text-[10px] font-medium">{log}</Text>
+        {lastLog.slice(-10).map((log, index) => (
+          <Text key={index} className="text-secondary-foreground text-xs font-medium font-mono ml-2">
+            {log}
+          </Text>
         ))}
       </ScrollView>
       <View
@@ -72,7 +78,6 @@ export default function CoreStatusBar() {
           <Text text="System mic is unavailable!" className="text-secondary-foreground text-sm font-medium ml-2" />
         </View>
       )}
-
     </View>
   )
 }
