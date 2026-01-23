@@ -15,7 +15,6 @@ import {FunctionComponent, PropsWithChildren} from "react"
 import {Text} from "@/components/ignite"
 import {AppStoreProvider} from "@/contexts/AppStoreContext"
 import {AuthProvider} from "@/contexts/AuthContext"
-import {CoreStatusProvider} from "@/contexts/CoreStatusProvider"
 import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
 import {NavigationHistoryProvider, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useThemeProvider} from "@/contexts/ThemeContext"
@@ -68,7 +67,6 @@ export const AllProviders = withWrappers(
   Suspense,
   SafeAreaProvider,
   KeyboardProvider,
-  CoreStatusProvider,
   AuthProvider,
   AppStoreProvider,
   NavigationHistoryProvider,

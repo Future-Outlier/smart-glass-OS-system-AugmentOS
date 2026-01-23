@@ -96,19 +96,19 @@ class Bridge {
         }
     }
 
-    static func sendDiscoveredDevice(_ modelName: String, _ deviceName: String) {
+    static func sendDiscoveredDevice(_ deviceModel: String, _ deviceName: String) {
         Task {
             await MainActor.run {
                 let searchResults =
                     GlassesStore.shared.get("core", "searchResults") as? [[String: Any]] ?? []
                 let newResult: [String: Any] = [
-                    "model_name": modelName,
-                    "device_name": deviceName,
+                    "deviceModel": deviceModel,
+                    "deviceName": deviceName,
                 ]
                 let allResults = searchResults + [newResult]
                 var seen = Set<String>()
                 let uniqueResults = allResults.reversed().filter {
-                    guard let name = $0["device_name"] as? String else { return false }
+                    guard let name = $0["deviceName"] as? String else { return false }
                     return seen.insert(name).inserted
                 }.reversed()
                 GlassesStore.shared.set("core", "searchResults", Array(uniqueResults))

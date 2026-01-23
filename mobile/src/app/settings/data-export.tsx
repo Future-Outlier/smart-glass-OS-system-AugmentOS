@@ -16,7 +16,6 @@ import {Divider} from "@/components/ui/Divider"
 import {Group} from "@/components/ui/Group"
 import {Spacer} from "@/components/ui/Spacer"
 import {useAuth} from "@/contexts/AuthContext"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
@@ -201,7 +200,6 @@ export default function DataExportPage() {
   const [previewExpanded, setPreviewExpanded] = useState(false)
 
   const {user, session} = useAuth()
-  const {status} = useCoreStatus()
   const appStatus = useApplets()
   const {goBack} = useNavigationHistory()
   const {theme, themed} = useAppTheme()

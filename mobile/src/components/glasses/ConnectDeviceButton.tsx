@@ -3,21 +3,20 @@ import CoreModule from "core"
 import {ActivityIndicator, View} from "react-native"
 
 import {Button, Icon} from "@/components/ignite"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
 import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
+import {useCoreStore} from "@/stores/core"
 
 export const ConnectDeviceButton = () => {
-  const {status} = useCoreStatus()
   const {theme} = useAppTheme()
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const glassesConnected = useGlassesStore((state) => state.connected)
-  const isSearching = status.core_info.is_searching
+  const isSearching = useCoreStore((state) => state.searching)
 
   if (glassesConnected) {
     return null

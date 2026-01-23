@@ -9,12 +9,12 @@ import {getGlassesImage, getEvenRealitiesG1Image} from "@/utils/getGlassesImage"
 import {getModelSpecificTips} from "@/components/glasses/GlassesTroubleshootingModal"
 
 interface GlassesPairingLoaderProps {
-  modelName: string
+  deviceModel: string
   deviceName?: string
   onCancel?: () => void
 }
 
-const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({modelName, deviceName, onCancel}) => {
+const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({deviceModel, deviceName, onCancel}) => {
   const {theme, themed} = useAppTheme()
 
   // Animation values
@@ -23,7 +23,7 @@ const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({modelName, d
   const [currentTipIndex, setCurrentTipIndex] = useState(0)
   const tipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const tips = getModelSpecificTips(modelName)
+  const tips = getModelSpecificTips(deviceModel)
 
   // Set up animations
   useEffect(() => {
@@ -58,8 +58,8 @@ const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({modelName, d
   })
 
   // Use dynamic image for Even Realities G1 based on style and color
-  let glassesImage = getGlassesImage(modelName)
-  if (modelName && (modelName === "Even Realities G1" || modelName === "evenrealities_g1" || modelName === "g1")) {
+  let glassesImage = getGlassesImage(deviceModel)
+  if (deviceModel && (deviceModel === "Even Realities G1" || deviceModel === "evenrealities_g1" || deviceModel === "g1")) {
     // For pairing, we don't have style/color info yet, so use defaults
     // If battery level is available in props or context, pass it; otherwise, pass undefined
     glassesImage = getEvenRealitiesG1Image("Round", "Grey", "folded", "l", theme.isDark, undefined)
@@ -70,7 +70,7 @@ const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({modelName, d
       <View style={themed($container)}>
         {/* Title */}
         <Text style={themed($title)}>
-          {modelName}
+          {deviceModel}
           {deviceName && deviceName !== "NOTREQUIREDSKIP" ? ` - ${deviceName}` : ""}
         </Text>
 

@@ -109,13 +109,13 @@ export default function BtClassicPairingScreen() {
         deviceName={deviceName}
         // onSkip={() => {
         //   // Navigate first - don't update state which could cause race conditions
-        //   // replace("/pairing/success", {modelName: modelName})
+        //   // replace("/pairing/success", {deviceModel: deviceModel})
         // }}
       />
       <GlassesTroubleshootingModal
         isVisible={showTroubleshootingModal}
         onClose={() => setShowTroubleshootingModal(false)}
-        modelName={defaultWearable}
+        deviceModel={defaultWearable}
       />
     </Screen>
   )

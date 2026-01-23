@@ -103,9 +103,9 @@ public class CoreModule: Module {
             }
         }
 
-        AsyncFunction("findCompatibleDevices") { (modelName: String) in
+        AsyncFunction("findCompatibleDevices") { (deviceModel: String) in
             await MainActor.run {
-                CoreManager.shared.findCompatibleDevices(modelName)
+                CoreManager.shared.findCompatibleDevices(deviceModel)
             }
         }
 

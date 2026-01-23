@@ -25,7 +25,7 @@ export const getGlasesInfoPartial = (state: GlassesStatus) => {
     connected: state.connected,
     wifiConnected: state.wifiConnected,
     wifiSsid: state.wifiSsid,
-    modelName: state.modelName,
+    deviceModel: state.deviceModel,
   }
 }
 
@@ -36,7 +36,7 @@ const initialState: GlassesStatus = {
   connectionState: "disconnected",
   btcConnected: false,
   // device info
-  modelName: "",
+  deviceModel: "",
   androidVersion: "",
   fwVersion: "",
   btMacAddress: "",

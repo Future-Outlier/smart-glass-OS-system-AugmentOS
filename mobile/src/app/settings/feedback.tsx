@@ -44,7 +44,7 @@ export default function FeedbackPage() {
 
   // Glasses info for bug reports
   const glassesConnected = useGlassesStore((state) => state.connected)
-  const glassesModelName = useGlassesStore((state) => state.modelName)
+  const glassesDeviceModel = useGlassesStore((state) => state.deviceModel)
   const glassesBluetoothName = useGlassesStore((state) => state.bluetoothName)
   const glassesBuildNumber = useGlassesStore((state) => state.buildNumber)
   const glassesFwVersion = useGlassesStore((state) => state.fwVersion)
@@ -185,7 +185,7 @@ export default function FeedbackPage() {
       // Glasses information (only if connected)
       ...(glassesConnected && {
         glassesInfo: {
-          modelName: glassesModelName || undefined,
+          deviceModel: glassesDeviceModel || undefined,
           bluetoothId: glassesBluetoothId || undefined,
           serialNumber: glassesSerialNumber || undefined,
           buildNumber: glassesBuildNumber || undefined,

@@ -217,7 +217,7 @@ class MantleManager {
     this.coreEventSubscription = CoreModule.onCoreEvent(this.handleCoreEvent)
     // forward core status changes to the zustand core store:
     this.coreStatusSubscription = CoreModule.onCoreStatus((changed: Partial<CoreStatus>) => {
-      console.log("MANTLE: Core status changed", changed)
+      // console.log("MANTLE: Core status changed", changed)
       useCoreStore.getState().setCoreInfo(changed)
     })
     this.coreGlassesStatusSubscription = CoreModule.onGlassesStatus((changed) => {
@@ -418,14 +418,14 @@ class MantleManager {
         case "compatible_glasses_search_result":
           console.log("Received compatible_glasses_search_result event from Core", data)
           GlobalEventEmitter.emit("compatible_glasses_search_result", {
-            modelName: data.model_name,
+            deviceModel: data.device_model,
             deviceName: data.device_name,
             deviceAddress: data.device_address,
           })
           break
         case "compatible_glasses_search_stop":
           GlobalEventEmitter.emit("compatible_glasses_search_stop", {
-            model_name: data.model_name,
+            device_model: data.device_model,
           })
           break
         case "heartbeat_sent":
@@ -644,7 +644,7 @@ class MantleManager {
           useGlassesStore.getState().setGlassesInfo({
             appVersion: data.app_version,
             buildNumber: data.build_number,
-            modelName: data.device_model,
+            deviceModel: data.device_model,
             androidVersion: data.android_version,
             otaVersionUrl: data.ota_version_url,
             fwVersion: data.firmware_version,

@@ -1182,14 +1182,14 @@ class CoreManager {
         getStatus()
     }
 
-    fun findCompatibleDevices(modelName: String) {
-        Bridge.log("MAN: Searching for compatible device names for: $modelName")
+    fun findCompatibleDevices(deviceModel: String) {
+        Bridge.log("MAN: Searching for compatible device names for: $deviceModel")
 
         // reset the search results:
         searchResults = emptyList()
 
-        if (DeviceTypes.ALL.contains(modelName)) {
-            pendingWearable = modelName
+        if (DeviceTypes.ALL.contains(deviceModel)) {
+            pendingWearable = deviceModel
         }
 
         initSGC(pendingWearable)

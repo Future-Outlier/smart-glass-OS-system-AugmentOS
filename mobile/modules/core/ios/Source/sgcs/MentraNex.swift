@@ -2147,7 +2147,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     private func emitDeviceReady() {
         let eventBody: [String: Any] = [
             "device_ready": [
-                "model_name": "Mentra Nex",
+                "device_model": "Mentra Nex",
                 "mtu_negotiated": currentMTU,
                 "max_chunk_size": maxChunkSize,
                 "connection_state": "ready",

@@ -1254,14 +1254,14 @@ struct ViewState {
         getStatus()
     }
 
-    func findCompatibleDevices(_ modelName: String) {
-        Bridge.log("MAN: Searching for compatible device names for: \(modelName)")
+    func findCompatibleDevices(_ deviceModel: String) {
+        Bridge.log("MAN: Searching for compatible device names for: \(deviceModel)")
 
         // reset the search results:
         searchResults = []
 
-        if DeviceTypes.ALL.contains(modelName) {
-            pendingWearable = modelName
+        if DeviceTypes.ALL.contains(deviceModel) {
+            pendingWearable = deviceModel
         }
 
         initSGC(pendingWearable)

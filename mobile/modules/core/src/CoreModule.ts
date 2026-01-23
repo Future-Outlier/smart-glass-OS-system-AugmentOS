@@ -23,7 +23,7 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   connectSimulated(): Promise<void>
   disconnect(): Promise<void>
   forget(): Promise<void>
-  findCompatibleDevices(modelName: string): Promise<void>
+  findCompatibleDevices(deviceModel: string): Promise<void>
   showDashboard(): Promise<void>
 
   // WiFi Commands

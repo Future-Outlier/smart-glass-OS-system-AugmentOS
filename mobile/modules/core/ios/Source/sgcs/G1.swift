@@ -2144,9 +2144,9 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                 Bridge.log("Failed to extract ID number from device name: \(name)")
                 return
             }
-            let modelName = "Even Realities G1"
+            let deviceModel = "Even Realities G1"
             let dName = "\(deviceName)"
-            Bridge.sendDiscoveredDevice(modelName, dName)
+            Bridge.sendDiscoveredDevice(deviceModel, dName)
         } else {
             Bridge.log("Unknown device type: \(name)")
         }

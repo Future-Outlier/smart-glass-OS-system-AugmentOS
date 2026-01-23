@@ -16,7 +16,7 @@ import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 export default function GlassesPairingLoadingScreen() {
   const {replace, goBack} = useNavigationHistory()
   const route = useRoute()
-  const {modelName, deviceName} = route.params as {modelName: string; deviceName?: string}
+  const {deviceModel, deviceName} = route.params as {deviceModel: string; deviceName?: string}
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   const [pairingInProgress, setPairingInProgress] = useState(true)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -28,7 +28,7 @@ export default function GlassesPairingLoadingScreen() {
 
   const handlePairFailure = (error: string) => {
     CoreModule.forget()
-    replace("/pairing/failure", {error: error, modelName: modelName})
+    replace("/pairing/failure", {error: error, deviceModel: deviceModel})
   }
 
   useEffect(() => {
@@ -58,8 +58,8 @@ export default function GlassesPairingLoadingScreen() {
     if (!glassesConnected) return
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
-    replace("/pairing/success", {modelName: modelName})
-  }, [glassesConnected, replace, modelName])
+    replace("/pairing/success", {deviceModel: deviceModel})
+  }, [glassesConnected, replace, deviceModel])
 
   if (pairingInProgress) {
     return (
@@ -67,7 +67,7 @@ export default function GlassesPairingLoadingScreen() {
         <Header leftIcon="chevron-left" onLeftPress={goBack} />
         <View className="flex-1 pb-6">
           <View className="flex-1 justify-center">
-            <GlassesPairingLoader modelName={modelName} deviceName={deviceName} onCancel={goBack} />
+            <GlassesPairingLoader deviceModel={deviceModel} deviceName={deviceName} onCancel={goBack} />
           </View>
           <Button
             preset="secondary"
@@ -79,7 +79,7 @@ export default function GlassesPairingLoadingScreen() {
         <GlassesTroubleshootingModal
           isVisible={showTroubleshootingModal}
           onClose={() => setShowTroubleshootingModal(false)}
-          modelName={modelName}
+          deviceModel={deviceModel}
         />
       </Screen>
     )
@@ -107,7 +107,7 @@ export default function GlassesPairingLoadingScreen() {
       <GlassesTroubleshootingModal
         isVisible={showTroubleshootingModal}
         onClose={() => setShowTroubleshootingModal(false)}
-        modelName={modelName}
+        deviceModel={deviceModel}
       />
     </Screen>
   )

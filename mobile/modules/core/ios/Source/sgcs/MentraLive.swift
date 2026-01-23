@@ -3134,7 +3134,7 @@ class MentraLive: NSObject, SGCManager {
     private func emitDiscoveredDevice(_ name: String) {
         // Use the standardized typed message function
         let body = [
-            "model_name": "Mentra Live",
+            "device_model": "Mentra Live",
             "device_name": name,
             "device_address": "",
         ]
@@ -3146,7 +3146,7 @@ class MentraLive: NSObject, SGCManager {
         // Use the standardized typed message function
         let body = [
             "compatible_glasses_search_stop": [
-                "model_name": "Mentra Live",
+                "device_model": "Mentra Live",
             ],
         ]
         Bridge.sendTypedMessage("compatible_glasses_search_stop", body: body)

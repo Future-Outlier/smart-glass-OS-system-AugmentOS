@@ -23,8 +23,8 @@ export default function PairingSuccessScreen() {
   focusEffectPreventBack()
 
   // Get manufacturer logo component
-  const getManufacturerLogo = (modelName: string) => {
-    switch (modelName) {
+  const getManufacturerLogo = (deviceModel: string) => {
+    switch (deviceModel) {
       case DeviceTypes.G1:
         return <EvenRealitiesLogo color={theme.colors.text} />
       case DeviceTypes.LIVE:

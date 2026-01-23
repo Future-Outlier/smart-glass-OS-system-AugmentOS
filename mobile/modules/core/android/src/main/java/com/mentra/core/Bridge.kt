@@ -16,14 +16,6 @@ import kotlin.jvm.Volatile
 import org.json.JSONObject
 
 /**
- * Data class representing a discovered device during search
- */
-data class DeviceSearchResult(
-    val modelName: String,
-    val deviceName: String
-)
-
-/**
  * Bridge class for core communication between Expo modules and native Android code This is the
  * Android equivalent of the iOS Bridge.swift
  */
@@ -127,9 +119,9 @@ public class Bridge private constructor() {
         }
 
         /**
-         * Send microphone data to React Native.
-         * React Native handles the decision of whether to send via UDP or WebSocket.
-         * This keeps the native layer simple and UDP logic centralized in React Native.
+         * Send microphone data to React Native. React Native handles the decision of whether to
+         * send via UDP or WebSocket. This keeps the native layer simple and UDP logic centralized
+         * in React Native.
          */
         @JvmStatic
         fun sendMicData(data: ByteArray) {
@@ -185,11 +177,14 @@ public class Bridge private constructor() {
 
         /** Send discovered device */
         @JvmStatic
-        fun sendDiscoveredDevice(modelName: String, deviceName: String) {
-            val searchResults = GlassesStore.store.getCategory("core")["searchResults"] as? List<DeviceSearchResult> ?: emptyList()
-            val newResult = DeviceSearchResult(modelName = modelName, deviceName = deviceName)
+        fun sendDiscoveredDevice(deviceModel: String, deviceName: String) {
+            val searchResults =
+                    GlassesStore.store.getCategory("core")["searchResults"] as?
+                            List<Map<String, String>>
+                            ?: emptyList()
+            val newResult = mapOf("deviceModel" to deviceModel, "deviceName" to deviceName)
             val allResults = searchResults + newResult
-            val uniqueResults = allResults.associateBy { it.deviceName }.values.toList()
+            val uniqueResults = allResults.associateBy { it["deviceName"] }.values.toList()
             GlassesStore.set("core", "searchResults", uniqueResults)
         }
 
@@ -379,12 +374,13 @@ public class Bridge private constructor() {
                 return
             }
 
-            val transcription = mapOf(
-                "text" to text,
-                "isFinal" to isFinal,
-                "language" to language,
-                "type" to "local_transcription"
-            )
+            val transcription =
+                    mapOf(
+                            "text" to text,
+                            "isFinal" to isFinal,
+                            "language" to language,
+                            "type" to "local_transcription"
+                    )
 
             sendTypedMessage("local_transcription", transcription)
         }
@@ -508,7 +504,10 @@ public class Bridge private constructor() {
             sendTypedMessage("mtk_update_complete", eventBody as Map<String, Any>)
         }
 
-        /** Send OTA update available notification - glasses have detected an available update (background mode) */
+        /**
+         * Send OTA update available notification - glasses have detected an available update
+         * (background mode)
+         */
         @JvmStatic
         fun sendOtaUpdateAvailable(
                 versionCode: Long,
@@ -594,17 +593,19 @@ public class Bridge private constructor() {
         /** Send phone notification to server (via REST through TypeScript) */
         @JvmStatic
         fun sendPhoneNotification(
-            notificationKey: String,
-            packageName: String,
-            appName: String,
-            title: String,
-            text: String,
-            timestamp: Long
+                notificationKey: String,
+                packageName: String,
+                appName: String,
+                title: String,
+                text: String,
+                timestamp: Long
         ) {
             try {
                 log("NOTIF: Attempting to send notification from $appName: $title")
                 val data = HashMap<String, Any>()
-                data["notificationId"] = "$packageName-$notificationKey" // Stable ID combining package and Android key
+                data["notificationId"] =
+                        "$packageName-$notificationKey" // Stable ID combining package and Android
+                // key
                 data["app"] = appName
                 data["title"] = title
                 data["content"] = text
@@ -621,14 +622,12 @@ public class Bridge private constructor() {
 
         /** Send phone notification dismissed to server (via REST through TypeScript) */
         @JvmStatic
-        fun sendPhoneNotificationDismissed(
-            notificationKey: String,
-            packageName: String
-        ) {
+        fun sendPhoneNotificationDismissed(notificationKey: String, packageName: String) {
             try {
                 log("NOTIF: Attempting to send dismissal for $packageName")
                 val data = HashMap<String, Any>()
-                data["notificationId"] = "$packageName-$notificationKey" // Same format as posting for correlation
+                data["notificationId"] =
+                        "$packageName-$notificationKey" // Same format as posting for correlation
                 data["notificationKey"] = notificationKey // Keep Android key for reference
                 data["packageName"] = packageName
 
@@ -679,7 +678,10 @@ public class Bridge private constructor() {
             try {
                 // Check if event callback is available before proceeding
                 if (eventCallback == null) {
-                    Log.w(TAG, "Cannot send typed message '$type': eventCallback is null (app may be killed/backgrounded)")
+                    Log.w(
+                            TAG,
+                            "Cannot send typed message '$type': eventCallback is null (app may be killed/backgrounded)"
+                    )
                     return
                 }
 
@@ -693,7 +695,11 @@ public class Bridge private constructor() {
                 try {
                     eventCallback?.invoke("onCoreEvent", eventData as Map<String, Any>)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error invoking eventCallback for type '$type' (React Native may be dead)", e)
+                    Log.e(
+                            TAG,
+                            "Error invoking eventCallback for type '$type' (React Native may be dead)",
+                            e
+                    )
                     // Don't rethrow - this prevents crashes when RN context is destroyed
                 }
             } catch (e: Exception) {

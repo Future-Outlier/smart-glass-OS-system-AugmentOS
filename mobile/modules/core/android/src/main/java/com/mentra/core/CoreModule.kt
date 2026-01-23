@@ -76,8 +76,8 @@ class CoreModule : Module() {
 
         AsyncFunction("forget") { coreManager?.forget() }
 
-        AsyncFunction("findCompatibleDevices") { modelName: String ->
-            coreManager?.findCompatibleDevices(modelName)
+        AsyncFunction("findCompatibleDevices") { deviceModel: String ->
+            coreManager?.findCompatibleDevices(deviceModel)
         }
 
         AsyncFunction("showDashboard") { coreManager?.showDashboard() }

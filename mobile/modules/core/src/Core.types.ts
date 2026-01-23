@@ -46,7 +46,7 @@ export interface GlassesStatus {
   connectionState: string,
   btcConnected: boolean,
   // device info
-  modelName: string,
+  deviceModel: string,
   androidVersion: string,
   fwVersion: string,
   btMacAddress: string,
@@ -82,7 +82,7 @@ export interface GlassesStatus {
 export type MicRanking = "auto" | "phone" | "glasses" | "bluetooth"
 
 export interface DeviceSearchResult {
-  modelName: string
+  deviceModel: string
   deviceName: string
   deviceAddress?: string
 }
