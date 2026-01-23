@@ -773,11 +773,17 @@ class CoreManager {
                 Bridge.log("MAN: MIC_UNAVAILABLE: TRUE external_app_recording")
                 lastLog.add("MAN: MIC_UNAVAILABLE: TRUE external_app_recording")
             }
-            "external_app_stopped", "audio_focus_available" -> {
-                // External app released the microphone
+            "audio_focus_available" -> {
+                // Audio focus is available again
                 systemMicUnavailable = false
-                Bridge.log("MAN: MIC_AVAILABLE: FALSE external_app_stopped || audio_focus_available")
-                lastLog.add("MAN: MIC_AVAILABLE: FALSE external_app_stopped || audio_focus_available")
+                Bridge.log("MAN: MIC_UNAVAILABLE: FALSE audio_focus_available")
+                lastLog.add("MAN: MIC_UNAVAILABLE: FALSE audio_focus_available")
+            }
+            "external_app_stopped" -> {
+                // External app stopped recording
+                systemMicUnavailable = false
+                Bridge.log("MAN: MIC_UNAVAILABLE: FALSE external_app_stopped")
+                lastLog.add("MAN: MIC_UNAVAILABLE: FALSE external_app_stopped")
             }
             "phone_call_interruption" -> {
                 // Phone call started - mark mic as unavailable
@@ -810,12 +816,18 @@ class CoreManager {
                 lastLog.add("MAN: MIC_UNAVAILABLE: TRUE permission_denied")
                 // Don't trigger fallback - need to request permission from user
             }
+            "audio_route_changed" -> {
+                // Audio route changed
+                // systemMicUnavailable = false
+                Bridge.log("MAN: MIC_UNAVAILABLE: UNKNOWN audio_route_changed")
+                lastLog.add("MAN: MIC_UNAVAILABLE: UNKNOWN audio_route_changed")
+            }
             else -> {
                 // Other route changes (headset plug/unplug, BT connect/disconnect, etc.)
                 // Just log for now - may want to handle these in the future
+                Bridge.log("MAN: MIC_UNAVAILABLE: UNKNOWN other: $reason")
+                lastLog.add("MAN: MIC_UNAVAILABLE: UNKNOWN other: $reason")
                 systemMicUnavailable = false
-                Bridge.log("MAN: MIC_UNAVAILABLE: FALSE audio_route_changed: $reason")
-                lastLog.add("MAN: MIC_UNAVAILABLE: FALSE audio_route_changed: $reason")
             }
         }
 
