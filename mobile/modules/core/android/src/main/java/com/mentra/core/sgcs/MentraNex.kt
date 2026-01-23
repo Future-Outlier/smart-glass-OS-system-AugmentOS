@@ -468,7 +468,7 @@ class MentraNex : SGCManager() {
             }
             val bmp = BitmapFactory.decodeByteArray(bmpData, 0, bmpData.size)
 
-            displayBitmapImageForNexGlasses(bmpData, bmp.height, bmp.width)
+            displayBitmapImageForNexGlasses(bmpData, bmp.width,  bmp.height)
             return true
 
         } catch (e: Exception) {
