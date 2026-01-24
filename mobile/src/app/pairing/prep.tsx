@@ -15,6 +15,7 @@ import {useState} from "react"
 import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
 import {Spacer} from "@/components/ui/Spacer"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
+import {useAppletStatusStore} from "@/stores/applets"
 
 export default function PairingPrepScreen() {
   const route = useRoute()
@@ -205,6 +206,10 @@ export default function PairingPrepScreen() {
     }
 
     console.log("needsBluetoothPermissions", needsBluetoothPermissions)
+
+    // Stop any running apps from previous sessions to prevent mic race conditions
+    // This is symmetric with the logic in DeviceSettings that stops apps when unpairing
+    await useAppletStatusStore.getState().stopAllApplets()
 
     // skip pairing for simulated glasses:
     if (modelName.startsWith(DeviceTypes.SIMULATED)) {
