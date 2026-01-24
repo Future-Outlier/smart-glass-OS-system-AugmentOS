@@ -79,20 +79,23 @@ export default function SelectGlassesBluetoothScreen() {
         triggerGlassesPairingGuide(modelName as string, deviceName)
         return
       }
-      let newDevice = new SearchResultDevice(modelName, deviceName, deviceAddress)
-      setSearchResults([...searchResults, newDevice])
+      const newDevice = new SearchResultDevice(modelName, deviceName, deviceAddress)
 
-      // setSearchResults((prevResults) => {
-      //   const isDuplicate = deviceAddress
-      //     ? prevResults.some((device) => device.deviceAddress === deviceAddress)
-      //     : prevResults.some((device) => device.deviceName === deviceName)
+      // Use functional update to avoid stale closure issues with rapid results (e.g. G1)
+      // Also update the ref directly to ensure immediate availability for render
+      setSearchResults((prevResults) => {
+        const isDuplicate = deviceAddress
+          ? prevResults.some((device) => device.deviceAddress === deviceAddress)
+          : prevResults.some((device) => device.deviceName === deviceName)
 
-      //   if (!isDuplicate) {
-      //     const newDevice = new SearchResultDevice(modelName, deviceName, deviceAddress)
-      //     return [...prevResults, newDevice]
-      //   }
-      //   return prevResults
-      // })
+        if (!isDuplicate) {
+          const newResults = [...prevResults, newDevice]
+          // Update ref immediately so render sees it without waiting for state
+          rememberedSearchResults.current = newResults
+          return newResults
+        }
+        return prevResults
+      })
     }
 
     const stopSearch = ({modelName}: {modelName: string}) => {
