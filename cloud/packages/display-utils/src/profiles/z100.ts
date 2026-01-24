@@ -129,7 +129,7 @@ const Z100_GLYPH_WIDTHS: Record<string, number> = {
  * - Resolution: 640x480
  * - Usable text width: ~390px (empirically tested - SDK applies margins)
  * - Color: Green monochrome
- * - Max text lines: 5 (empirically tested)
+ * - Max text lines: 7
  * - Font: Noto Sans Regular at 21px
  * - No bitmap support via text commands
  * - Adjustable brightness
@@ -147,7 +147,7 @@ export const Z100_PROFILE: DisplayProfile = {
   // Empirically tested: ~42 chars of mixed text (387px) fits before SDK wraps
   // Using 390px to account for measurement variance
   displayWidthPx: 390,
-  maxLines: 5,
+  maxLines: 7,
 
   // BLE constraints
   // Z100 uses Vuzix Ultralite SDK which handles chunking internally
