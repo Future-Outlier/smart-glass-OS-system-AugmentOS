@@ -99,19 +99,19 @@ Mobile ← DisplayProcessor (display-utils) ← display_event
 ### DisplayProcessor API
 
 ```typescript
-import { displayProcessor } from "@/services/display";
+import {displayProcessor} from "@/services/display"
 
 // When glasses connect (called from MantleBridge)
-displayProcessor.setDeviceModel("Even Realities G1");
+displayProcessor.setDeviceModel("Even Realities G1")
 
 // Process display events (called from SocketComms)
-const processed = displayProcessor.processDisplayEvent(rawEvent);
+const processed = displayProcessor.processDisplayEvent(rawEvent)
 
 // Direct text wrapping
-const lines = displayProcessor.wrapText("Hello world this is a long text");
+const lines = displayProcessor.wrapText("Hello world this is a long text")
 
 // Measure text width
-const widthPx = displayProcessor.measureText("Hello");
+const widthPx = displayProcessor.measureText("Hello")
 ```
 
 ### Supported Layout Types
@@ -125,14 +125,14 @@ const widthPx = displayProcessor.measureText("Hello");
 
 ### Device Profile Support
 
-| Device            | Profile        | Status                                        |
-| ----------------- | -------------- | --------------------------------------------- |
-| Even Realities G1 | `G1_PROFILE`   | ✅ Full support                               |
-| Vuzix Z100        | `Z100_PROFILE` | ✅ Full support (Noto Sans metrics extracted) |
-| Mentra Mach1      | `Z100_PROFILE` | ✅ Full support (same hardware as Z100)       |
-| Mentra Nex        | `NEX_PROFILE`  | ✅ Placeholder (needs actual font metrics)    |
-| Mentra Live       | `G1_PROFILE`   | ℹ️ No display, uses G1 as fallback            |
-| Simulated         | `G1_PROFILE`   | ✅ Full support                               |
+| Device            | Profile        | Display Width | Max Lines | Status                                        |
+| ----------------- | -------------- | ------------- | --------- | --------------------------------------------- |
+| Even Realities G1 | `G1_PROFILE`   | 576px         | 5         | ✅ Full support                               |
+| Vuzix Z100        | `Z100_PROFILE` | 390px         | 7         | ✅ Full support (Noto Sans metrics extracted) |
+| Mentra Mach1      | `Z100_PROFILE` | 390px         | 7         | ✅ Full support (same hardware as Z100)       |
+| Mentra Nex        | `NEX_PROFILE`  | 576px         | 5         | ⚠️ Placeholder (needs actual font metrics)    |
+| Mentra Live       | `G1_PROFILE`   | N/A           | N/A       | ℹ️ No display, uses G1 as fallback            |
+| Simulated         | `G1_PROFILE`   | 576px         | 5         | ✅ Full support                               |
 
 ### Device Model Normalization
 
@@ -200,10 +200,12 @@ Added `ColumnComposer` class to `@mentra/display-utils` for pixel-precise column
 Updated Z100 profile with real font metrics extracted from Noto Sans TTF:
 
 - Extracted glyph widths from `NotoSans-Regular.ttf` at 21px using `extract-font-metrics.js`
-- Updated `displayWidthPx` to 600 (640 - 40px left buffer)
+- Updated `displayWidthPx` to 390px (empirically tested - SDK applies internal margins)
 - Updated `maxLines` to 7
 - Added real glyph widths for all ASCII characters
 - Space width: 5px, Hyphen width: 7px
+
+**Note**: The Vuzix Ultralite SDK handles text rendering internally and applies its own margins/padding. The usable text width (390px) is significantly less than the physical 640px resolution. Empirical testing shows ~42 characters of mixed text fits on one line before the SDK wraps.
 
 ### Phase 5: Hyphen-Free Word Breaking ✅
 

@@ -10,22 +10,24 @@ Consolidate text wrapping/formatting logic into a single React Native DisplayPro
 
 Text wrapping exists in multiple places with different implementations:
 
-| Location | Language | Logic |
-|----------|----------|-------|
-| `@mentra/sdk/display-utils` | TypeScript | Pixel-accurate glyph widths, G1_PROFILE |
-| `SGCManager` (Android) | Kotlin | Character count based (~44 chars) |
-| `SGCManager` (iOS) | Swift | Character count based (~44 chars) |
+| Location                       | Language   | Logic                                   |
+| ------------------------------ | ---------- | --------------------------------------- |
+| `@mentra/sdk/display-utils`    | TypeScript | Pixel-accurate glyph widths, G1_PROFILE |
+| `SGCManager` (Android)         | Kotlin     | Character count based (~44 chars)       |
+| `SGCManager` (iOS)             | Swift      | Character count based (~44 chars)       |
 | `TranscriptProcessor` (mobile) | TypeScript | Character count based (maxCharsPerLine) |
 
 ### 2. Inconsistent Results
 
 Cloud apps using `display-utils`:
+
 ```
 "The quick brown fox jumps over the la-"  // Pixel-accurate, 100% utilization
 "zy dog"
 ```
 
 Native SGC wrapping:
+
 ```
 "The quick brown fox jumps over the"      // Word boundary, ~70% utilization
 "lazy dog"
@@ -38,6 +40,7 @@ Native SGC wrapping:
 ### 4. Double Wrapping
 
 When cloud sends pre-wrapped text with `\n`, native SGC may add MORE line breaks if lines exceed its character limit, causing:
+
 - Total lines > 5 (hard display limit)
 - Content hidden from user
 - App appears "stuck"
@@ -115,7 +118,7 @@ Glasses Display
 
 ```typescript
 // mobile/src/services/DisplayProcessor.ts
-import { TextWrapper, G1_PROFILE } from '@mentra/sdk/display-utils';
+import { TextWrapper, G1_PROFILE } from "@mentra/sdk/display-utils";
 ```
 
 **Pros**: No duplication, always in sync  
@@ -148,12 +151,14 @@ Copy `display-utils` source files to mobile.
 
 DisplayProcessor needs to select correct profile:
 
-| Device | Profile | Display Width | Max Lines |
-|--------|---------|---------------|-----------|
-| Even Realities G1 | G1_PROFILE | 576px | 5 |
-| Mentra Mach1 | MACH1_PROFILE | TBD | TBD |
-| Mentra Live | LIVE_PROFILE | TBD | TBD |
-| Simulated | G1_PROFILE | 576px | 5 |
+| Device            | Profile      | Display Width       | Max Lines       |
+| ----------------- | ------------ | ------------------- | --------------- |
+| Even Realities G1 | G1_PROFILE   | 576px               | 5               |
+| Vuzix Z100        | Z100_PROFILE | 390px               | 7               |
+| Mentra Mach1      | Z100_PROFILE | 390px               | 7               |
+| Mentra Nex        | NEX_PROFILE  | 576px (placeholder) | 5 (placeholder) |
+| Mentra Live       | G1_PROFILE   | N/A (no display)    | N/A             |
+| Simulated         | G1_PROFILE   | 576px               | 5               |
 
 ## Native SGC Changes
 
@@ -176,13 +181,13 @@ DisplayProcessor needs to select correct profile:
 interface DisplayProcessor {
   // Process display event before sending to native
   processDisplayEvent(event: DisplayEvent): ProcessedDisplayEvent;
-  
+
   // Get current device profile
   getDeviceProfile(): DisplayProfile;
-  
+
   // Set device profile when glasses connect
   setDeviceProfile(modelName: string): void;
-  
+
   // Wrap text for current device
   wrapText(text: string, options?: WrapOptions): string[];
 }
