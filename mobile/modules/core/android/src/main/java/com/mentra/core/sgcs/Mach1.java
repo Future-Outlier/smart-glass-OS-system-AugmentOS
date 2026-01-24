@@ -72,10 +72,6 @@ public class Mach1 extends SGCManager {
     //ultralite pixel buffer on left side of screen
     int ultraliteLeftSidePixelBuffer = 40;
 
-    // Constants for maximum lines and characters per line //depends on size of pixel buffer! //for MEDIUM text!
-    private int maxLines = 12; // Adjusted from 11.5 for practical use
-    private int maxCharsPerLine = 38; // Assuming max 27 characters fit per line on your display
-
     //handler to turn off screen
     Handler goHomeHandler;
     Runnable goHomeRunnable;
@@ -596,15 +592,13 @@ public class Mach1 extends SGCManager {
         displayReferenceCardSimple("", text);
     }
 
-    private static final int MAX_LINES = 7;
+    /**
+     * Display pre-wrapped text on the glasses.
+     *
+     * Text wrapping and processing is handled by DisplayProcessor in React Native.
+     * This method is a "dumb pipe" - it just sends the text to the Vuzix SDK.
+     */
     public void displayTextWall(String text) {
-        // DEBUG: Log incoming text from DisplayProcessor
-        Bridge.log("Mach1: displayTextWall() ========================================");
-        Bridge.log("Mach1: Incoming text length: " + text.length());
-        Bridge.log("Mach1: Incoming text preview: " + text.substring(0, Math.min(200, text.length())));
-
-        String cleanedText = cleanText(text);
-
         if (screenToggleOff) {
             return;
         }
@@ -612,34 +606,9 @@ public class Mach1 extends SGCManager {
         goHomeHandler.removeCallbacksAndMessages(null);
         goHomeHandler.removeCallbacksAndMessages(goHomeRunnable);
 
-        // Cut text wall down to the largest number of lines possible to display
-        String[] lines = cleanedText.split("\n");
-
-        // DEBUG: Log line count and individual lines
-        Bridge.log("Mach1: Line count after split: " + lines.length);
-        for (int i = 0; i < Math.min(lines.length, MAX_LINES); i++) {
-            Bridge.log("Mach1: Line " + i + " (" + lines[i].length() + " chars): " + lines[i]);
-        }
-
-        StringBuilder truncatedText = new StringBuilder();
-        for (int i = 0; i < Math.min(lines.length, MAX_LINES); i++) {
-            truncatedText.append(lines[i]).append("\n");
-        }
-
-        // DEBUG: Log what we're sending to Vuzix SDK
-        Bridge.log("Mach1: Sending to Vuzix SDK: " + truncatedText.toString().trim());
-        Bridge.log("Mach1: ========================================");
-
+        // Text is already wrapped by DisplayProcessor - just send it
         changeUltraliteLayout(Layout.TEXT_BOTTOM_LEFT_ALIGN);
-        ultraliteSdk.sendText(truncatedText.toString().trim());
-
-//        changeUltraliteLayout(Layout.CANVAS);
-//        ultraliteCanvas.removeText(0); //remove last text we added
-//        Anchor ultraliteAnchor = Anchor.TOP_LEFT;
-//        TextAlignment ultraliteAlignment = TextAlignment.LEFT;
-//        int textId = ultraliteCanvas.createText(text, ultraliteAlignment, UltraliteColor.WHITE, ultraliteAnchor, ultraliteLeftSidePixelBuffer, 0, 640 - ultraliteLeftSidePixelBuffer, -1, TextWrapMode.WRAP, true);
-////        ultraliteCanvas.createText(title, TextAlignment.AUTO, UltraliteColor.WHITE, Anchor.TOP_LEFT, ultraliteLeftSidePixelBuffer, 120, 640 - ultraliteLeftSidePixelBuffer, -1, TextWrapMode.WRAP, true);
-//        Log.d(TAG, "VUZIX TEXT ID: " + textId);
+        ultraliteSdk.sendText(text);
 
         if (ultraliteCanvas != null) {
             ultraliteCanvas.commit();
@@ -647,86 +616,34 @@ public class Mach1 extends SGCManager {
         screenIsClear = false;
     }
 
-    private String cleanText(String input) {
-        // Replace Chinese punctuation with English equivalents
-        String cleaned = input.replace(" ，", ", ")
-                .replace("，", ", ")
-                .replace(" 。", ".")
-                .replace("。", ".")
-                .replace(" ！", "!")
-                .replace(" ？", "?")
-                .replace("？", "?")
-                .replace("：", ":")
-                .replace("；", ";")
-                .replace("（", "(")
-                .replace("）", ")")
-                .replace("【", "[")
-                .replace("】", "]")
-                .replace("“", "\"")
-                .replace("”", "\"")
-                .replace("、", ",") // No quotes around this one
-                .replace("‘", "'")
-                .replace("’", "'");
-
-        // Fix contractions: handle spaces around apostrophes
-        cleaned = cleaned.replaceAll("\\s+'\\s*", "'");
-
-        // Remove any non-breaking spaces and trim leading/trailing spaces
-//        cleaned = cleaned.replace("\u00A0", " ").trim();
-
-        return cleaned;
-    }
-
-    public static int countNewLines(String str) {
-        int count = 0;
-        for (int i = 0; i < str.length(); i++) {
-            if (str.charAt(i) == '\n') {
-                count++;
-            }
-        }
-        return count;
-    }
-
+    /**
+     * Display pre-composed double text wall (two columns) on the glasses.
+     *
+     * NOTE: DisplayProcessor now composes double_text_wall into a single text_wall
+     * with pixel-precise column alignment using ColumnComposer. This method may
+     * not be called anymore, but is kept for backwards compatibility.
+     *
+     * Column composition is handled by DisplayProcessor in React Native.
+     * This method is a "dumb pipe" - it just sends the text to the Vuzix SDK.
+     */
     public void displayDoubleTextWall(String textTop, String textBottom) {
         if (screenToggleOff) {
             return;
         }
 
-        textTop = cleanText(textTop);
-        textBottom = cleanText(textBottom);
-
-//        if (textBottom.endsWith("\n")) {
-//            textBottom = textBottom.substring(0, textBottom.length() - 1);
-//        }
-
         goHomeHandler.removeCallbacksAndMessages(null);
         goHomeHandler.removeCallbacksAndMessages(goHomeRunnable);
 
-//        int rowsTop = 5;
-        int rowsTop = 3 - countNewLines(textTop);
+        // Text is already composed by DisplayProcessor's ColumnComposer
+        // Just combine and send - no custom logic needed
+        String combinedText = textTop + "\n\n\n" + textBottom;
 
-        StringBuilder combinedText = new StringBuilder();
-        combinedText.append(textTop);
-
-        for (int i = 0; i < rowsTop; i++) {
-            combinedText.append("\n");
-        }
-
-        StringBuilder bottomBuilder = new StringBuilder(textBottom);
-
-        combinedText.append(bottomBuilder);
-
-        // Display the combined text using TEXT_BOTTOM_LEFT_ALIGN layout
         changeUltraliteLayout(Layout.TEXT_BOTTOM_LEFT_ALIGN);
-        // ultraliteSdk.sendText(combinedText.toString().trim());
-        ultraliteSdk.sendText(combinedText.toString());
-        if (ultraliteCanvas != null) {
-            ultraliteCanvas = ultraliteSdk.getCanvas();
-        }
+        ultraliteSdk.sendText(combinedText);
+
         if (ultraliteCanvas != null) {
             ultraliteCanvas.commit();
         }
-
         screenIsClear = false;
     }
 
@@ -872,36 +789,18 @@ public class Mach1 extends SGCManager {
     // }
 
 
-    public String addNewlineEveryNWords(String input, int n) {
-        String[] words = input.split("\\s+");
-        StringBuilder result = new StringBuilder();
-
-        for (int i = 0; i < words.length; i++) {
-            result.append(words[i]);
-            if ((i + 1) % n == 0 && i != words.length - 1) {
-                result.append("\n");
-            } else if (i != words.length - 1) {
-                result.append(" ");
-            }
-        }
-
-        return result.toString();
-    }
-
+    /**
+     * Draw text on Ultralite canvas.
+     * Text is expected to be pre-wrapped by DisplayProcessor.
+     */
     public void drawTextOnUltralite(String text){
-        //edit the text to add new lines to it because ultralite wrapping doesn't work
-        String wrappedText = addNewlineEveryNWords(text, 6);
-
-        //display the title at the top of the screen
         UltraliteColor ultraliteColor = UltraliteColor.WHITE;
         Anchor ultraliteAnchor = Anchor.TOP_LEFT;
         TextAlignment ultraliteAlignment = TextAlignment.LEFT;
         changeUltraliteLayout(Layout.CANVAS);
         ultraliteCanvas.clear();
         ultraliteCanvas.clearBackground(UltraliteColor.DIM);
-//        ultraliteCanvas.createText(text, ultraliteAlignment, ultraliteColor, ultraliteAnchor, true);
-//        ultraliteCanvas.createText(text, ultraliteAlignment, ultraliteColor, Anchor.BOTTOM_LEFT, 0, 0, -1, 80, TextWrapMode.WRAP, true);
-        ultraliteCanvas.createText(wrappedText, ultraliteAlignment, ultraliteColor, ultraliteAnchor, true); //, 0, 0, -1, -1, TextWrapMode.WRAP, true);
+        ultraliteCanvas.createText(text, ultraliteAlignment, ultraliteColor, ultraliteAnchor, true);
         ultraliteCanvas.commit();
         screenIsClear = false;
     }

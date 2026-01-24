@@ -49,62 +49,24 @@ class G1Text {
         return chunkTextForTransmission(text)
     }
 
+    /// Creates BLE chunks for pre-composed double text wall.
+    ///
+    /// NOTE: DisplayProcessor now composes double_text_wall into a single text_wall
+    /// with pixel-precise column alignment using ColumnComposer. This method may
+    /// not be called anymore for new flows, but is kept for backwards compatibility.
+    ///
+    /// Column composition is handled by DisplayProcessor in React Native.
+    /// This method is a "dumb pipe" - it just combines and chunks the text.
+    ///
+    /// - Parameters:
+    ///   - textTop: Pre-composed left/top column text
+    ///   - textBottom: Pre-composed right/bottom column text
+    /// - Returns: Array of BLE chunks ready for transmission
     func createDoubleTextWallChunks(textTop: String, textBottom: String) -> [[UInt8]] {
-        //        print("Creating double text wall chunks... \(textTop), \(textBottom)")
-        // Define column widths and positions
-        let LEFT_COLUMN_WIDTH = Int(Double(G1Text.DISPLAY_WIDTH) * 0.5) // 50% of display for left column
-        let RIGHT_COLUMN_START = Int(Double(G1Text.DISPLAY_WIDTH) * 0.55) // Right column starts at 60%
-
-        // Split texts into lines with specific width constraints
-        var lines1 = splitIntoLines(textTop, maxDisplayWidth: LEFT_COLUMN_WIDTH)
-        var lines2 = splitIntoLines(
-            textBottom, maxDisplayWidth: G1Text.DISPLAY_WIDTH - RIGHT_COLUMN_START
-        )
-
-        // Ensure we have exactly LINES_PER_SCREEN lines (typically 5)
-        while lines1.count < G1Text.LINES_PER_SCREEN {
-            lines1.append("")
-        }
-        while lines2.count < G1Text.LINES_PER_SCREEN {
-            lines2.append("")
-        }
-
-        lines1 = Array(lines1.prefix(G1Text.LINES_PER_SCREEN))
-        lines2 = Array(lines2.prefix(G1Text.LINES_PER_SCREEN))
-
-        // Get precise space width
-        let spaceWidth = calculateTextWidth(" ")
-
-        // Construct the text output by merging the lines with precise positioning
-        var pageText = ""
-        for i in 0 ..< G1Text.LINES_PER_SCREEN {
-            let leftText = lines1[i].replacingOccurrences(of: "\u{2002}", with: "") // Drop enspaces
-            let rightText = lines2[i].replacingOccurrences(of: "\u{2002}", with: "")
-
-            // Calculate width of left text in pixels
-            let leftTextWidth = calculateTextWidth(leftText)
-
-            // Calculate exactly how many spaces are needed to position the right column correctly
-            let spacesNeeded = calculateSpacesForAlignment(
-                currentWidth: leftTextWidth,
-                targetPosition: RIGHT_COLUMN_START,
-                spaceWidth: spaceWidth
-            )
-
-            // Log detailed alignment info for debugging
-            //            print("Line \(i): Left='\(leftText)' (width=\(leftTextWidth)px) | Spaces=\(spacesNeeded) | Right='\(rightText)'")
-
-            // Construct the full line with precise alignment
-            pageText.append(leftText)
-            pageText.append(String(repeating: " ", count: spacesNeeded))
-            pageText.append(rightText)
-            pageText.append("\n")
-        }
-
-        //        print("Page Text: \(pageText)")
-
-        // Convert to bytes and chunk for transmission
-        return chunkTextForTransmission(pageText)
+        // Text is already composed by DisplayProcessor's ColumnComposer
+        // Just combine and chunk for transmission - no custom wrapping logic needed
+        let combinedText = "\(textTop)\n\(textBottom)"
+        return chunkTextForTransmission(combinedText)
     }
 
     func chunkTextForTransmission(_ text: String) -> [[UInt8]] {

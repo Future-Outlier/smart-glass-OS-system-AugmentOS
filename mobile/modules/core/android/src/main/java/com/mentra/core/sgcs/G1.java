@@ -2277,19 +2277,21 @@ public class G1 extends SGCManager {
     public void blankScreen() {
     }
 
+    /**
+     * Display pre-composed double text wall (two columns) on the glasses.
+     *
+     * NOTE: DisplayProcessor now composes double_text_wall into a single text_wall
+     * with pixel-precise column alignment using ColumnComposer. This method may
+     * not be called anymore for new flows, but is kept for backwards compatibility.
+     *
+     * Column composition is handled by DisplayProcessor in React Native.
+     * This method is a "dumb pipe" - it just combines and sends the text.
+     */
     public void displayDoubleTextWall(String textTop, String textBottom) {
-        // if (updatingScreen)
-        //     return;
-
-        // if (textTop.trim().isEmpty() && textBottom.trim().isEmpty()) {
-        //     if (CoreManager.getInstance().getPowerSavingMode()) {
-        //         sendExitCommand();
-        //         return;
-        //     }
-        // }
-
-        List<byte[]> chunks = g1Text.createDoubleTextWallChunks(textTop, textBottom);
-        sendChunks(chunks);
+        // Text is already composed by DisplayProcessor's ColumnComposer
+        // Just combine and send as a text wall - no custom wrapping logic needed
+        String combinedText = textTop + "\n" + textBottom;
+        displayTextWall(combinedText);
     }
 
     public void showHomeScreen() {
