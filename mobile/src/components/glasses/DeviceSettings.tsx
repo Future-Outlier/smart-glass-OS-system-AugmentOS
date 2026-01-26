@@ -15,7 +15,7 @@ import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n/translate"
-import {useApplets} from "@/stores/applets"
+import {useApplets, useAppletStatusStore} from "@/stores/applets"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
@@ -54,6 +54,7 @@ export default function DeviceSettings() {
         {
           text: "Unpair",
           onPress: () => {
+            useAppletStatusStore.getState().stopAllApplets()
             CoreModule.forget()
             goBack()
           },

@@ -14,7 +14,7 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import wsManager from "@/services/WebSocketManager"
+import ws from "@/services/WebSocketManager"
 import socketComms from "@/services/SocketComms"
 
 // LC3 frame size options - maps to bitrates
@@ -154,7 +154,7 @@ export default function DeveloperSettingsScreen() {
               label="Clear Websocket"
               subtitle="Clear the Websocket"
               onPress={async () => {
-                wsManager.cleanup()
+                ws.cleanup()
                 socketComms.cleanup()
                 console.log("SOCKET: CLEANED")
                 await new Promise((resolve) => setTimeout(resolve, 3000))

@@ -19,6 +19,7 @@ import com.mentra.asg_client.io.streaming.services.RtmpStreamingService;
 import com.mentra.asg_client.audio.AudioAssets;
 import com.mentra.asg_client.service.system.interfaces.IStateManager;
 import com.mentra.asg_client.service.core.constants.BatteryConstants;
+import com.mentra.asg_client.io.storage.StorageManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -422,6 +423,18 @@ public class MediaCaptureService {
         if (hwManager != null && hwManager.supportsAudioPlayback()) {
             hwManager.playAudioAsset(AudioAssets.BATTERY_LOW);
             Log.d("MediaCaptureService", "🔋 Playing battery low sound (static)");
+        }
+    }
+
+    /**
+     * Play storage full sound to alert user.
+     */
+    public void playStorageFullSound() {
+        if (hardwareManager != null && hardwareManager.supportsAudioPlayback()) {
+            hardwareManager.playAudioAsset(AudioAssets.STORAGE_FULL);
+            Log.d(TAG, "💾 Playing storage full sound");
+        } else {
+            Log.w(TAG, "⚠️ Cannot play storage full sound - hardware manager not available");
         }
     }
 
@@ -1112,14 +1125,21 @@ public class MediaCaptureService {
             Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for local photo");
         }
 
-        // Note: No need to check CameraNeo.isCameraInUse() for photos
-        // The camera's keep-alive system handles rapid photo taking gracefully
-
-        // Check storage availability before taking photo
-        if (!isExternalStorageAvailable()) {
-            Log.e(TAG, "External storage is not available for photo capture");
+        // STORAGE CHECK: Reject if insufficient storage
+        StorageManager storageManager = StorageManager.getInstance(mContext);
+        if (!storageManager.canTakePhoto()) {
+            Log.w(TAG, "🚫 Photo rejected - insufficient storage");
+            playStorageFullSound();
+            if (mMediaCaptureListener != null) {
+                mMediaCaptureListener.onMediaError("local",
+                    "Insufficient storage space for photo capture",
+                    MediaUploadQueueManager.MEDIA_TYPE_PHOTO);
+            }
             return;
         }
+
+        // Note: No need to check CameraNeo.isCameraInUse() for photos
+        // The camera's keep-alive system handles rapid photo taking gracefully
 
         // Add milliseconds and a random component to ensure uniqueness even in rapid capture
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(new Date());
@@ -1249,6 +1269,15 @@ public class MediaCaptureService {
             }
         } else {
             Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for photo upload");
+        }
+
+        // STORAGE CHECK: Reject if insufficient storage
+        StorageManager storageManager = StorageManager.getInstance(mContext);
+        if (!storageManager.canTakePhoto()) {
+            Log.w(TAG, "🚫 Photo rejected - insufficient storage");
+            playStorageFullSound();
+            sendPhotoErrorResponse(requestId, "INSUFFICIENT_STORAGE", "Insufficient storage space for photo capture");
+            return;
         }
 
         // Check if already uploading - skip request if busy
@@ -2100,6 +2129,15 @@ public class MediaCaptureService {
             }
         } else {
             Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for BLE transfer");
+        }
+
+        // STORAGE CHECK: Reject if insufficient storage
+        StorageManager storageManager = StorageManager.getInstance(mContext);
+        if (!storageManager.canTakePhoto()) {
+            Log.w(TAG, "🚫 Photo rejected - insufficient storage");
+            playStorageFullSound();
+            sendPhotoErrorResponse(requestId, "INSUFFICIENT_STORAGE", "Insufficient storage space for photo capture");
+            return;
         }
 
         // Store the save flag for this request

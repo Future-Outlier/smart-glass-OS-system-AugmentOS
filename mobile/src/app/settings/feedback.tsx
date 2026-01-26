@@ -266,7 +266,7 @@ export default function FeedbackPage() {
       <Header title={translate("feedback:giveFeedback")} leftIcon="chevron-left" onLeftPress={goBack} />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
         <ScrollView
-          className="pt-6"
+          className="pt-6 -mx-6 px-6"
           contentContainerStyle={themed($scrollContainer)}
           keyboardShouldPersistTaps="handled">
           <View style={themed($container)}>

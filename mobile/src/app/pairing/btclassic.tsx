@@ -1,38 +1,51 @@
 import {useEffect, useState} from "react"
-import {Screen} from "@/components/ignite"
+import {Header, Screen} from "@/components/ignite"
 import {OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {translate} from "@/i18n"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
-import showAlert from "@/utils/AlertUtils"
 import CoreModule from "core"
 import {AudioPairingPrompt} from "@/components/pairing/AudioPairingPrompt"
-import GlassesTroubleshootingModal from "@/components/misc/GlassesTroubleshootingModal"
+import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
 
 export default function BtClassicPairingScreen() {
-  const {pushPrevious} = useNavigationHistory()
+  const {pushPrevious, goBack} = useNavigationHistory()
   const btcConnected = useGlassesStore((state) => state.btcConnected)
   const [deviceName] = useSetting(SETTINGS.device_name.key)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
-
-  focusEffectPreventBack()
+  
+  // focusEffectPreventBack()
 
   const handleSuccess = () => {
     // we should have a device name saved in the core:
-    CoreModule.connectByName("")
+    CoreModule.connectByName(deviceName)
     pushPrevious()
   }
 
+  const handleBack = () => {
+    goBack()
+    // pushPrevious()
+  }
+
   useEffect(() => {
-    console.log("BTCLASSIC: useEffect()", btcConnected)
+    console.log("BTCLASSIC: check btcConnected", btcConnected)
     if (btcConnected) {
       handleSuccess()
     }
   }, [btcConnected])
+
+  useEffect(() => {
+    console.log("BTCLASSIC: check deviceName", deviceName)
+    if (deviceName == "" || deviceName == null) {
+      console.log("BTCLASSIC: deviceName is empty, cannot continue")
+      handleBack()
+      return
+    }
+  }, [deviceName])
 
   let steps: OnboardingStep[] = [
     {
@@ -72,6 +85,7 @@ export default function BtClassicPairingScreen() {
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
+      <Header leftIcon="chevron-left" onLeftPress={handleBack} />
       {/* <OnboardingGuide
         steps={steps}
         autoStart={false}
@@ -95,13 +109,13 @@ export default function BtClassicPairingScreen() {
         deviceName={deviceName}
         // onSkip={() => {
         //   // Navigate first - don't update state which could cause race conditions
-        //   // replace("/pairing/success", {glassesModelName: glassesModelName})
+        //   // replace("/pairing/success", {modelName: modelName})
         // }}
       />
       <GlassesTroubleshootingModal
         isVisible={showTroubleshootingModal}
         onClose={() => setShowTroubleshootingModal(false)}
-        glassesModelName={defaultWearable}
+        modelName={defaultWearable}
       />
     </Screen>
   )

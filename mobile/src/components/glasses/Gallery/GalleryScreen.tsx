@@ -167,10 +167,12 @@ export function GalleryScreen() {
       setLoadingPhotoCount(totalFromStorage)
       console.log("[GalleryScreen] ⏱️ SET loadingPhotoCount to", totalFromStorage)
 
-      // Show validating status if we're validating more than 50 photos
-      if (totalFromStorage > 40) {
+      // Show validating status only for newly downloaded photos from this sync session
+      // Use completedFiles from sync store (photos downloaded this session) instead of total gallery count
+      if (completedFiles > 0) {
         setIsValidating(true)
-        setValidatingCount(totalFromStorage)
+        setValidatingCount(completedFiles)
+        console.log(`[GalleryScreen] 🔄 Validating ${completedFiles} newly downloaded pictures`)
       }
 
       const validPhotoInfos: PhotoInfo[] = []
@@ -245,7 +247,7 @@ export function GalleryScreen() {
       setIsValidating(false)
       setValidatingCount(0)
     }
-  }, [])
+  }, [completedFiles])
 
   // Initialize pending status for all files when sync starts
   useEffect(() => {
@@ -872,13 +874,13 @@ export function GalleryScreen() {
           )
 
         case "complete":
-          // Show validating status if we're validating >50 photos
+          // Show validating status for newly downloaded photos
           if (isValidating && validatingCount > 0) {
             return (
               <View style={themed($syncButtonRow)}>
                 <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
                 <Text style={themed($syncButtonText)}>
-                  Validating {validatingCount} {validatingCount === 1 ? "item" : "items"}...
+                  Validating {validatingCount} {validatingCount === 1 ? "picture" : "pictures"}...
                 </Text>
               </View>
             )
@@ -991,7 +993,6 @@ export function GalleryScreen() {
                     progress={Math.max(0, Math.min(100, syncStateForItem.progress || 0))}
                     size={50}
                     strokeWidth={4}
-                    showPercentage={!isFailed}
                     progressColor={isFailed ? theme.colors.error : theme.colors.primary}
                   />
                   {isFailed && (

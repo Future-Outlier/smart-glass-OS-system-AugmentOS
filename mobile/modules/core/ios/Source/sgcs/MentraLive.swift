@@ -1808,7 +1808,7 @@ class MentraLive: NSObject, SGCManager {
             Bridge.sendRgbLedControlResponse(requestId: requestId, success: success, error: error)
 
         case "pong":
-            Bridge.log("💓 Received pong response - connection healthy")
+            Bridge.log("LIVE: Received pong response - connection healthy")
 
         case "imu_response", "imu_stream_response", "imu_gesture_response",
              "imu_gesture_subscribed", "imu_ack", "imu_error":
