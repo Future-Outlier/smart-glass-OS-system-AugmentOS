@@ -283,10 +283,45 @@ export type CoreEvent =
 
 export type CoreModuleEvents = {
   onEvent: (data: any) => void
-  onCoreEvent: (data: CoreEvent) => void
   onChange: (params: ChangeEventPayload) => void
   onGlassesStatus: (changed: Partial<GlassesStatus>) => void
   onCoreStatus: (changed: Partial<CoreStatus>) => void
+  // Individual event handlers
+  onButtonPress: (event: ButtonPressEvent) => void
+  onTouchEvent: (event: TouchEvent) => void
+  onHeadUp: (event: HeadUpEvent) => void
+  onLocalTranscription: (event: LocalTranscriptionEvent) => void
+  onLog: (event: LogEvent) => void
+  onCoreStatusUpdate: (event: CoreStatusUpdateEvent) => void
+  onWifiStatusChange: (event: WifiStatusChangeEvent) => void
+  onHotspotStatusChange: (event: HotspotStatusChangeEvent) => void
+  onHotspotError: (event: HotspotErrorEvent) => void
+  onGalleryStatus: (event: GalleryStatusEvent) => void
+  onCompatibleGlassesSearchResult: (event: CompatibleGlassesSearchResultEvent) => void
+  onCompatibleGlassesSearchStop: (event: CompatibleGlassesSearchStopEvent) => void
+  onHeartbeatSent: (event: HeartbeatSentEvent) => void
+  onHeartbeatReceived: (event: HeartbeatReceivedEvent) => void
+  onNotifyManager: (event: NotifyManagerEvent) => void
+  onSwipeVolumeStatus: (event: SwipeVolumeStatusEvent) => void
+  onSwitchStatus: (event: SwitchStatusEvent) => void
+  onRgbLedControlResponse: (event: RgbLedControlResponseEvent) => void
+  onWifiScanResults: (event: WifiScanResultsEvent) => void
+  onPairFailure: (event: PairFailureEvent) => void
+  onAudioPairingNeeded: (event: AudioPairingNeededEvent) => void
+  onAudioConnected: (event: AudioConnectedEvent) => void
+  onAudioDisconnected: (event: AudioDisconnectedEvent) => void
+  onSaveSetting: (event: SaveSettingEvent) => void
+  onPhoneNotification: (event: PhoneNotificationEvent) => void
+  onPhoneNotificationDismissed: (event: PhoneNotificationDismissedEvent) => void
+  onWsText: (event: WsTextEvent) => void
+  onWsBin: (event: WsBinEvent) => void
+  onMicData: (event: MicDataEvent) => void
+  onRtmpStreamStatus: (event: RtmpStreamStatusEvent) => void
+  onKeepAliveAck: (event: KeepAliveAckEvent) => void
+  onMtkUpdateComplete: (event: MtkUpdateCompleteEvent) => void
+  onOtaUpdateAvailable: (event: OtaUpdateAvailableEvent) => void
+  onOtaProgress: (event: OtaProgressEvent) => void
+  onVersionInfo: (event: VersionInfoEvent) => void
 }
 
 

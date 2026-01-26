@@ -685,15 +685,9 @@ public class Bridge private constructor() {
                     return
                 }
 
-                val jsonData = JSONObject(mutableBody as Map<*, *>)
-                val jsonString = jsonData.toString()
-
-                val eventData = HashMap<String, Any>()
-                eventData["body"] = jsonString
-
-                // Additional safety: wrap the actual callback invocation
+                // Send directly using type as event name - no JSON serialization
                 try {
-                    eventCallback?.invoke("onCoreEvent", eventData as Map<String, Any>)
+                    eventCallback?.invoke(type, mutableBody as Map<String, Any>)
                 } catch (e: Exception) {
                     Log.e(
                             TAG,

@@ -349,9 +349,7 @@ class Bridge {
     static func sendTypedMessage(_ type: String, body: [String: Any]) {
         var body = body
         body["type"] = type
-        let jsonData = try! JSONSerialization.data(withJSONObject: body)
-        let jsonString = String(data: jsonData, encoding: .utf8)
-        let data: [String: Any] = ["body": jsonString!]
-        dispatchEvent("onCoreEvent", data)
+        // Send directly using type as event name - no JSON serialization
+        dispatchEvent(type, body)
     }
 }
