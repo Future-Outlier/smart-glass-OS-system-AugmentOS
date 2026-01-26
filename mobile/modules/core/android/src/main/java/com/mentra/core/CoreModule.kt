@@ -12,7 +12,7 @@ class CoreModule : Module() {
         Name("Core")
 
         // Define events that can be sent to JavaScript
-        Events("onCoreEvent", "onChange", "onGlassesStatus", "onCoreStatus")
+        Events()
 
         OnCreate {
             // Initialize Bridge with Android context and event callback
@@ -28,8 +28,8 @@ class CoreModule : Module() {
             // Configure observable store event emission
             GlassesStore.store.configure { category, changes ->
                 when (category) {
-                    "glasses" -> sendEvent("onGlassesStatus", changes)
-                    "core" -> sendEvent("onCoreStatus", changes)
+                    "glasses" -> sendEvent("GlassesStatus", changes)
+                    "core" -> sendEvent("CoreStatus", changes)
                 }
             }
         }

@@ -53,9 +53,9 @@ export default function MentraLiveOnboarding() {
       // wait for the action button to be pressed:
       waitFn: (): Promise<void> => {
         return new Promise<void>((resolve) => {
-          const unsub = CoreModule.onCoreEvent((data: any) => {
+          const unsub = CoreModule.addListener("button_press", (data: any) => {
             if (data?.type === "button_press" && data?.pressType === "short") {
-              unsub()
+              unsub.remove()
               resolve()
             }
           })
@@ -74,9 +74,9 @@ export default function MentraLiveOnboarding() {
       info: translate("onboarding:liveLedFlashWarning"),
       waitFn: (): Promise<void> => {
         return new Promise<void>((resolve) => {
-          const unsub = CoreModule.onCoreEvent((data: any) => {
+          const unsub = CoreModule.addListener("button_press", (data: any) => {
             if (data?.type === "button_press" && data?.pressType === "long") {
-              unsub()
+              unsub.remove()
               resolve()
             }
           })
@@ -95,9 +95,9 @@ export default function MentraLiveOnboarding() {
       info: translate("onboarding:liveLedFlashWarning"),
       waitFn: (): Promise<void> => {
         return new Promise<void>((resolve) => {
-          const unsub = CoreModule.onCoreEvent((data: any) => {
+          const unsub = CoreModule.addListener("button_press", (data: any) => {
             if (data?.type === "button_press" && data?.pressType === "long") {
-              unsub()
+              unsub.remove()
               resolve()
             }
           })

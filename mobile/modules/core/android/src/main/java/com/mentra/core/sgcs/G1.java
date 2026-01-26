@@ -3927,13 +3927,11 @@ public class G1 extends SGCManager {
     private void emitSerialNumberInfo(String serialNumber, String style, String color) {
         try {
             JSONObject eventBody = new JSONObject();
-            eventBody.put("type", "glasses_serial_number");
             eventBody.put("serialNumber", serialNumber);
             eventBody.put("style", style);
             eventBody.put("color", color);
 
-            String jsonString = eventBody.toString();
-            Bridge.sendEvent("onCoreEvent", jsonString);
+            Bridge.sendTypedMessage("glasses_serial_number", eventBody);
             Bridge.log("G1: 📱 Emitted serial number info: " + serialNumber + ", Style: " + style + ", Color: " + color);
 
             // Trigger status update to include serial number in status JSON

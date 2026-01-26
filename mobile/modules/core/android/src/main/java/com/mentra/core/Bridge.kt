@@ -78,15 +78,6 @@ public class Bridge private constructor() {
             eventCallback?.invoke(eventName, data as Map<String, Any>)
         }
 
-        /** Show a banner message in the UI */
-        @JvmStatic
-        fun showBanner(type: String, message: String) {
-            val data = HashMap<String, Any>()
-            data["type"] = type
-            data["message"] = message
-            sendTypedMessage("show_banner", data as Map<String, Any>)
-        }
-
         /** Send head position event */
         @JvmStatic
         fun sendHeadUp(isUp: Boolean) {
@@ -636,12 +627,6 @@ public class Bridge private constructor() {
             } catch (e: Exception) {
                 Log.e(TAG, "NOTIF: Error sending notification dismissal for $packageName", e)
             }
-        }
-
-        /** Get supported events Don't add to this list, use a typed message instead */
-        @JvmStatic
-        fun getSupportedEvents(): Array<String> {
-            return arrayOf("onCoreEvent")
         }
 
         // Arbitrary WS Comms (don't use these, make a dedicated function for your use case):

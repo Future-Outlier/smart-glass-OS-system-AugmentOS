@@ -129,14 +129,14 @@ NativeCoreModule.updateCore = function (values: Partial<CoreStatus>) {
   return this.update("core", values)
 }
 
-NativeCoreModule.onGlassesStatus = function (callback: GlassesListener) {
-  const sub = NativeCoreModule.addListener("onGlassesStatus", callback)
-  return () => sub.remove()
-}
+// NativeCoreModule.onGlassesStatus = function (callback: GlassesListener) {
+//   const sub = NativeCoreModule.addListener("onGlassesStatus", callback)
+//   return () => sub.remove()
+// }
 
-NativeCoreModule.onCoreStatus = function (callback: CoreListener) {
-  const sub = NativeCoreModule.addListener("onCoreStatus", callback)
-  return () => sub.remove()
-}
+// NativeCoreModule.onCoreStatus = function (callback: CoreListener) {
+//   const sub = NativeCoreModule.addListener("onCoreStatus", callback)
+//   return () => sub.remove()
+// }
 
 export default NativeCoreModule

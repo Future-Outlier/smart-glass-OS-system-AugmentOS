@@ -6,7 +6,7 @@ public class CoreModule: Module {
         Name("Core")
 
         // Define events that can be sent to JavaScript
-        Events("onCoreEvent", "onChange", "onGlassesStatus", "onCoreStatus")
+        Events()
 
         OnCreate {
             // Initialize Bridge with event callback
@@ -19,9 +19,9 @@ public class CoreModule: Module {
                 GlassesStore.shared.store.configure { [weak self] category, changes in
                     switch category {
                     case "glasses":
-                        self?.sendEvent("onGlassesStatus", changes)
+                        self?.sendEvent("glasses_status", changes)
                     case "core":
-                        self?.sendEvent("onCoreStatus", changes)
+                        self?.sendEvent("core_status", changes)
                     default:
                         break
                     }

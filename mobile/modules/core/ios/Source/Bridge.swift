@@ -40,11 +40,6 @@ class Bridge {
         dispatchEvent(withName, data)
     }
 
-    static func showBanner(type: String, message: String) {
-        let data = ["type": type, "message": message] as [String: Any]
-        Bridge.sendTypedMessage("show_banner", body: data)
-    }
-
     static func sendHeadUp(_ isUp: Bool) {
         let data = ["up": isUp]
         Bridge.sendTypedMessage("head_up", body: data)
