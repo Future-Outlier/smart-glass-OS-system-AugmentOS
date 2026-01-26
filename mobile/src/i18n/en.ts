@@ -162,6 +162,7 @@ const en = {
     openSettings: "Open Settings",
   },
   onboarding: {
+    pleaseFollowSteps: "Please follow the steps to continue.",
     doYouHaveGlasses: "Do you have smart glasses?",
     getStarted: "Let's get Started",
     haveGlasses: "I have glasses",

@@ -49,6 +49,13 @@ export default function MentraLiveOnboarding() {
       title: translate("onboarding:liveTakeAPhoto"),
       subtitle: translate("onboarding:livePressActionButton"),
       info: translate("onboarding:liveLedFlashWarning"),
+      waitFn: (): Promise<void> => {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve()
+          }, 5000)
+        })
+      },
     },
     {
       type: "video",
@@ -140,6 +147,7 @@ export default function MentraLiveOnboarding() {
       transition: false,
       subtitle: translate("onboarding:liveEndTitle"),
       subtitle2: translate("onboarding:liveEndMessage"),
+      title: " ", // for spacing so it's consistent with the other steps
     },
   ]
 

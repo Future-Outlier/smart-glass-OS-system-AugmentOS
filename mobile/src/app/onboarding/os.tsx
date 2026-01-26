@@ -88,7 +88,8 @@ export default function MentraOSOnboarding() {
       <OnboardingGuide
         steps={steps}
         autoStart={true}
-        showSkipButton={false}
+        showCloseButton={true}
+        // showSkipButton={true}
         exitFn={() => {
           pushPrevious()
         }}

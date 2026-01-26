@@ -8,6 +8,8 @@ import {Text, Button, Header, Icon} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import Toast from "react-native-toast-message"
+import {translate} from "@/i18n/translate"
 
 interface BaseStep {
   name: string
@@ -17,12 +19,12 @@ interface BaseStep {
   subtitle2?: string
   info?: string
   bullets?: string[]
+  waitFn?: () => Promise<void>
 }
 
 interface VideoStep extends BaseStep {
   type: "video"
   source: VideoSource
-  /** Optional poster/thumbnail image shown while video loads */
   poster?: ImageSource
   playCount: number
   containerStyle?: ViewStyle
@@ -34,7 +36,6 @@ interface ImageStep extends BaseStep {
   source: ImageSource
   containerStyle?: ViewStyle
   containerClassName?: string
-  //   imageComponent: React.ComponentType
   duration?: number // ms before showing next button, undefined = immediate
 }
 
@@ -94,6 +95,7 @@ export function OnboardingGuide({
   const [player1Loading, setPlayer1Loading] = useState(true)
   const [player2Loading, setPlayer2Loading] = useState(true)
   const [showPoster, setShowPoster] = useState(false)
+  const [waitState, setWaitState] = useState(false)
   // focusEffectPreventBack()
 
   // Initialize players with first video sources found
@@ -167,7 +169,7 @@ export function OnboardingGuide({
         return
       }
 
-      if (manual) {
+      if (manual && !step.transition) {
         setUiIndex(uiIndex + 1)
       }
 
@@ -578,8 +580,75 @@ export function OnboardingGuide({
     return renderComposedVideo()
   }
 
-  const wouldShowContinue = hasStarted && (showNextButton || showPoster)
-  const actuallyShowContinue = hasStarted && (showNextButton || showPoster || devMode)
+  // when a step has a waitFn, set the wait state to true, and when it resolves, set it to false
+  useEffect(() => {
+    if (step.waitFn) {
+      setWaitState(true)
+      step.waitFn().then(() => {
+        setWaitState(false)
+      })
+    }
+  }, [step.waitFn])
+
+  // const wouldShowContinue = hasStarted && (showNextButton || showPoster) && !waitState
+  // const actuallyShowContinue = hasStarted && (showNextButton || showPoster)
+  // let showContinue = hasStarted && (showNextButton || showPoster)
+  // if (waitState) {
+  //   showContinue = false
+  // }
+  // if (devMode) {
+  //   showContinue = true
+  // }
+
+  const renderContinueButton = () => {
+    let showLoader = waitState || !showNextButton
+    // the wait state should take precedence over the show next flag:
+    if (showLoader && step.waitFn && !waitState) {
+      showLoader = false
+    }
+    if (waitState || !showNextButton) {
+      return (
+        <Button
+          flex
+          // style={!wouldShowContinue && {backgroundColor: theme.colors.warning}}
+          preset="primary"
+          onPress={() => {
+            if (devMode) {
+              handleNext(true)
+              return
+            }
+            if (waitState) {
+              Toast.show({
+                text1: translate("onboarding:pleaseFollowSteps"),
+                type: "info",
+              })
+              return
+            }
+            // if (!showNextButton) {
+            //   Toast.show({
+            //     text1: translate("onboarding:pleaseFollowSteps"),
+            //     type: "info",
+            //   })
+            //   return
+            // }
+          }}>
+          <ActivityIndicator size="small" color={theme.colors.background} />
+        </Button>
+      )
+    }
+    return (
+      <Button
+        flex
+        // highlight when the button would actually show:
+        // style={!wouldShowContinue && {backgroundColor: theme.colors.warning}}
+        tx="common:continue"
+        preset="primary"
+        onPress={() => {
+          handleNext(true)
+        }}
+      />
+    )
+  }
 
   return (
     <>
@@ -596,7 +665,7 @@ export function OnboardingGuide({
         />
       )}
       <View id="main" className="flex flex-1">
-        <View id="top" className="flex">
+        <View id="top" className="flex mt-10">
           {step.title && <Text className="text-center text-2xl font-semibold" text={step.title} />}
 
           <View className="-mx-6">
@@ -605,16 +674,38 @@ export function OnboardingGuide({
             </View>
 
             {showReplayButton && isCurrentStepVideo && (
-              <View className="absolute bottom-8 left-0 right-0 items-center z-10">
+              <View className="absolute bottom-1 left-0 right-0 items-center z-10">
                 <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
               </View>
             )}
           </View>
+        </View>
+        <View id="bottom" className="flex justify-end flex-grow">
+          {step.waitFn && !waitState && (
+            <View className="flex-1 justify-center">
+              <View className="flex flex-row justify-center items-center">
+                <View className="bg-primary rounded-full p-1">
+                  <Icon name="check" size={20} color={theme.colors.background} />
+                </View>
+              </View>
+            </View>
+          )}
+          {/* if waitState is true, show a primary indicator with a height of 12px that overlays the content */}
+          {devMode && waitState && (
+            <View className="flex-1 justify-center">
+              <View className="flex flex-row justify-center items-center bg-primary/70 h-12 gap-2">
+                <Text className="text-center text-sm font-medium" text="<DEV_ONLY>: waiting for step to complete" />
+                <ActivityIndicator size="small" color={theme.colors.background} />
+              </View>
+            </View>
+          )}
 
           {hasStarted && (
-            <View className="flex flex-col gap-2 mt-4">
+            <View className="flex flex-col gap-2 mb-10">
               {step.subtitle && <Text className="text-center text-xl font-semibold" text={step.subtitle} />}
-              {step.subtitle2 && <Text className="text-center text-xl font-semibold" text={step.subtitle2} />}
+              {step.subtitle2 && (
+                <Text className="text-center text-lg text-foreground font-medium" text={step.subtitle2} />
+              )}
               {step.info && (
                 <View className="flex flex-row gap-2 justify-center items-center px-12">
                   <Icon name="info" size={20} color={theme.colors.muted_foreground} />
@@ -627,9 +718,7 @@ export function OnboardingGuide({
               )}
             </View>
           )}
-        </View>
 
-        <View id="bottom" className="flex justify-end flex-grow">
           {!hasStarted && (mainTitle || mainSubtitle) && (
             <View className="flex flex-col gap-2">
               {mainTitle && <Text className="text-center text-xl font-semibold" text={mainTitle} />}
@@ -646,22 +735,11 @@ export function OnboardingGuide({
             </View>
           )}
 
-          {actuallyShowContinue && (
-            <View className="flex flex-col gap-4">
-              {!isLastStep ? (
-                <Button
-                  flexContainer
-                  // highlight when the button would actually show:
-                  style={!wouldShowContinue && {backgroundColor: theme.colors.warning}}
-                  tx="common:continue"
-                  onPress={() => {
-                    handleNext(true)
-                  }}
-                />
-              ) : (
-                <Button flexContainer text={endButtonText} onPress={endButtonFn} />
-              )}
-              {!isFirstStep && <Button flexContainer preset="secondary" text="Back" onPress={handleBack} />}
+          {hasStarted && (
+            <View className="flex flex-row gap-4">
+              {!isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
+
+              {!isLastStep ? renderContinueButton() : <Button flex text={endButtonText} onPress={endButtonFn} />}
             </View>
           )}
         </View>

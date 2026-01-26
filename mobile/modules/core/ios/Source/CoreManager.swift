@@ -268,8 +268,7 @@ struct ViewState {
     // Canonical LC3 config: 16kHz sample rate, 10ms frame duration
     // Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps)
     // Persistent LC3 converter for encoding/decoding
-    private var lc3Converter: PcmConverter?
-    private var lc3FrameSize = 20 // bytes per LC3 frame (default: 20 = 16kbps)
+    public var lc3Converter: PcmConverter?
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = .lc3
 
