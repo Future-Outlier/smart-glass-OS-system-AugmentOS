@@ -1,4 +1,4 @@
-import CoreModule, { CoreStatus, GlassesStatus } from "core"
+import CoreModule, { CoreStatus, GlassesStatus, CoreEvent } from "core"
 import * as Calendar from "expo-calendar"
 import * as Location from "expo-location"
 import * as TaskManager from "expo-task-manager"
@@ -367,7 +367,7 @@ class MantleManager {
   }
 
 
-  private async handleCoreEvent(data: any) {
+  private async handleCoreEvent(data: CoreEvent) {
     // console.log("MANTLE: received core event from Core", data)
     if (!data) return
 

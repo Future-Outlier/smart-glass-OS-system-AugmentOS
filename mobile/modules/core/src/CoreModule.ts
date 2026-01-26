@@ -1,10 +1,10 @@
 import {NativeModule, requireNativeModule} from "expo"
 
-import {CoreModuleEvents, GlassesStatus, CoreStatus} from "./Core.types"
+import {CoreModuleEvents, GlassesStatus, CoreStatus, CoreEvent} from "./Core.types"
 
 type GlassesListener = (changed: Partial<GlassesStatus>) => void
 type CoreListener = (changed: Partial<CoreStatus>) => void
-type CoreMessageListener = (message: any) => void
+type CoreEventListener = (event: CoreEvent) => void
 
 declare class CoreModule extends NativeModule<CoreModuleEvents> {
   // Observable Store Functions (native)
@@ -115,6 +115,7 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   updateCore(values: Partial<CoreStatus>): Promise<void>
   onGlassesStatus(callback: GlassesListener): () => void
   onCoreStatus(callback: CoreListener): () => void
+  onCoreEvent(callback: CoreEventListener): () => void
 }
 
 // This call loads the native module object from the JSI.
@@ -140,14 +141,14 @@ NativeCoreModule.onCoreStatus = function (callback: CoreListener) {
   return () => sub.remove()
 }
 
-NativeCoreModule.onCoreEvent = function (callback: CoreMessageListener) {
+NativeCoreModule.onCoreEvent = function (callback: CoreEventListener) {
   const sub = NativeCoreModule.addListener("onCoreEvent", (event: any) => {
     try {
-      const data = JSON.parse(event.body)
+      const data = JSON.parse(event.body) as CoreEvent
       callback(data)
     } catch (error) {
       console.error("Error parsing JSON from onCoreEvent:", error)
-    } 
+    }
   })
   return () => sub.remove()
 }
