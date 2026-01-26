@@ -409,14 +409,6 @@ public class Bridge private constructor() {
             sendTypedMessage("wifi_status_change", event as Map<String, Any>)
         }
 
-        /** Send WiFi scan results */
-        @JvmStatic
-        fun sendWifiScanResults(networks: List<Map<String, Any>>) {
-            val eventBody = HashMap<String, Any>()
-            eventBody["networks"] = networks
-            sendTypedMessage("wifi_scan_results", eventBody as Map<String, Any>)
-        }
-
         /** Send gallery status - matches iOS MentraLive.swift handleGalleryStatus pattern */
         @JvmStatic
         fun sendGalleryStatus(

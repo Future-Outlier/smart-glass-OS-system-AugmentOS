@@ -257,6 +257,11 @@ struct ViewState {
         set { GlassesStore.shared.apply("core", "searchResults", newValue) }
     }
 
+    private var wifiScanResults: [[String: Any]] {
+        get { GlassesStore.shared.get("core", "wifiScanResults") as? [[String: Any]] ?? [] }
+        set { GlassesStore.shared.apply("core", "wifiScanResults", newValue) }
+    }
+
     private var lastLog: [String] {
         get { GlassesStore.shared.get("core", "lastLog") as? [String] ?? [] }
         set { GlassesStore.shared.apply("core", "lastLog", newValue) }

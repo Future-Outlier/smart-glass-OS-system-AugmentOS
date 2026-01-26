@@ -47,6 +47,7 @@ class GlassesStore {
         store.set("core", "micEnabled", false)
         store.set("core", "currentMic", "")
         store.set("core", "searchResults", [])
+        store.set("core", "wifiScanResults", [])
         store.set("core", "micRanking", MicMap.map["auto"]!)
         store.set("core", "lastLog", [])
 

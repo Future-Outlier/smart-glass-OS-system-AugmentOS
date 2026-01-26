@@ -195,33 +195,9 @@ class CoreManager {
         get() = GlassesStore.store.get("core", "searchResults") as? List<Any> ?: emptyList()
         set(value) = GlassesStore.apply("core", "searchResults", value)
 
-    private var buttonPressMode: String
-        get() = GlassesStore.store.get("core", "button_mode") as? String ?: "photo"
-        set(value) = GlassesStore.apply("core", "button_mode", value)
-
-    private var buttonPhotoSize: String
-        get() = GlassesStore.store.get("core", "button_photo_size") as? String ?: "medium"
-        set(value) = GlassesStore.apply("core", "button_photo_size", value)
-
-    private var buttonVideoWidth: Int
-        get() = GlassesStore.store.get("core", "button_video_width") as? Int ?: 1280
-        set(value) = GlassesStore.apply("core", "button_video_width", value)
-
-    private var buttonVideoHeight: Int
-        get() = GlassesStore.store.get("core", "button_video_height") as? Int ?: 720
-        set(value) = GlassesStore.apply("core", "button_video_height", value)
-
-    private var buttonVideoFps: Int
-        get() = GlassesStore.store.get("core", "button_video_fps") as? Int ?: 30
-        set(value) = GlassesStore.apply("core", "button_video_fps", value)
-
-    private var buttonMaxRecordingTime: Int
-        get() = GlassesStore.store.get("core", "button_max_recording_time") as? Int ?: 10
-        set(value) = GlassesStore.apply("core", "button_max_recording_time", value)
-
-    private var buttonCameraLed: Boolean
-        get() = GlassesStore.store.get("core", "button_camera_led") as? Boolean ?: true
-        set(value) = GlassesStore.apply("core", "button_camera_led", value)
+    private var wifiScanResults: List<Any>
+        get() = GlassesStore.store.get("core", "wifiScanResults") as? List<Any> ?: emptyList()
+        set(value) = GlassesStore.apply("core", "wifiScanResults", value)
 
     private var lastLog: MutableList<String>
         get() = GlassesStore.store.get("core", "lastLog") as? MutableList<String> ?: mutableListOf()

@@ -272,13 +272,6 @@ class Bridge {
         Bridge.sendTypedMessage("wifi_status_change", body: event)
     }
 
-    static func sendWifiScanResults(_ networks: [[String: Any]]) {
-        let eventBody: [String: Any] = [
-            "networks": networks
-        ]
-        Bridge.sendTypedMessage("wifi_scan_results", body: eventBody)
-    }
-
     static func sendMtkUpdateComplete(message: String, timestamp: Int64) {
         let eventBody: [String: Any] = [
             "message": message,

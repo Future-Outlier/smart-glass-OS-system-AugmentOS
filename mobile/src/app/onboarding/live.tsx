@@ -3,7 +3,7 @@ import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/Onboardin
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import CoreModule, {CoreMessageEventPayload} from "core"
+import CoreModule from "core"
 import {Platform} from "react-native"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"

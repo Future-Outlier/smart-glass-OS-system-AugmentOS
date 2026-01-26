@@ -1,4 +1,4 @@
-import CoreModule, { CoreStatus, GlassesStatus } from "core"
+import CoreModule, {CoreStatus, GlassesStatus} from "core"
 import * as Calendar from "expo-calendar"
 import * as Location from "expo-location"
 import * as TaskManager from "expo-task-manager"
@@ -14,10 +14,12 @@ import {useGlassesStore, getGlasesInfoPartial} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
-import { useCoreStore } from "@/stores/core"
+import {useCoreStore} from "@/stores/core"
 import Toast from "react-native-toast-message"
-import { translate } from "@/i18n"
+import {translate} from "@/i18n"
 import udp from "@/services/UdpManager"
+import {BackgroundTimer} from "@/utils/timers"
+import {useDebugStore} from "@/stores/debug"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -44,10 +46,10 @@ class MantleManager {
   private static instance: MantleManager | null = null
   private calendarSyncTimer: ReturnType<typeof setInterval> | null = null
   private clearTextTimeout: ReturnType<typeof setTimeout> | null = null
+  private micDataTimeout: ReturnType<typeof setTimeout> | null = null
+  private MIC_TIMEOUT_MS: number = 1000
   private transcriptProcessor: TranscriptProcessor
-  private coreStatusSubscription: any = null
-  private coreGlassesStatusSubscription: any = null
-  private coreEventSubscriptions: Array<any> = []
+  private subs: Array<any> = []
 
   public static getInstance(): MantleManager {
     if (!MantleManager.instance) {
@@ -93,7 +95,7 @@ class MantleManager {
 
     await CoreModule.updateCore(useSettingsStore.getState().getCoreSettings()) // send settings to core
     console.log("MANTLE: Settings sent to core")
-    
+
     // send initial status request:
     await CoreModule.getStatus()
 
@@ -108,15 +110,9 @@ class MantleManager {
       clearInterval(this.calendarSyncTimer)
       this.calendarSyncTimer = null
     }
-    if (this.coreStatusSubscription) {
-      this.coreStatusSubscription.remove()
-    }
-    if (this.coreGlassesStatusSubscription) {
-      this.coreGlassesStatusSubscription.remove()
-    }
     // Remove all event subscriptions
-    this.coreEventSubscriptions.forEach(sub => sub.remove())
-    this.coreEventSubscriptions = []
+    this.subs.forEach((sub) => sub.remove())
+    this.subs = []
 
     Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME)
     this.transcriptProcessor.clear()
@@ -134,12 +130,9 @@ class MantleManager {
   private async setupPeriodicTasks() {
     this.sendCalendarEvents()
     // Calendar sync every hour
-    this.calendarSyncTimer = setInterval(
-      () => {
-        this.sendCalendarEvents()
-      },
-      60 * 60 * 1000,
-    ) // 1 hour
+    this.calendarSyncTimer = setInterval(() => {
+      this.sendCalendarEvents()
+    }, 60 * 60 * 1000) // 1 hour
     try {
       let locationAccuracy = await useSettingsStore.getState().getSetting(SETTINGS.location_tier.key)
       let properAccuracy = this.getLocationAccuracy(locationAccuracy)
@@ -204,40 +197,33 @@ class MantleManager {
       {equalityFn: shallow},
     )
 
-    // subscribe to the core:
-    if (this.coreStatusSubscription) {
-      this.coreStatusSubscription.remove()
-    }
-    if (this.coreGlassesStatusSubscription) {
-      this.coreGlassesStatusSubscription.remove()
-    }
     // Remove old event subscriptions
-    this.coreEventSubscriptions.forEach(sub => sub.remove())
-    this.coreEventSubscriptions = []
+    this.subs.forEach((sub) => sub.remove())
+    this.subs = []
 
     // forward core status changes to the zustand core store:
-    this.coreEventSubscriptions.push(CoreModule.addListener("core_status", (changed: Partial<CoreStatus>) => {
-      console.log("MANTLE: Core status changed", changed)
-      useCoreStore.getState().setCoreInfo(changed)
-    }))
-    this.coreEventSubscriptions.push(CoreModule.addListener("glasses_status", (changed) => {
-      // console.log("MANTLE: Glasses status changed", changed)
-      useGlassesStore.getState().setGlassesInfo(changed)
-    }))
-
-    // Subscribe to individual core events
-    let sub = CoreModule.addListener("log", (event) => {
-      console.log("CORE:", event.message)
-    })
-    this.coreEventSubscriptions.push(sub)
-
-    this.coreEventSubscriptions.push(
-      CoreModule.addListener("wifi_status_change", (event) => {
-        useGlassesStore.getState().setWifiInfo(event.connected, event.ssid)
-      })
+    this.subs.push(
+      CoreModule.addListener("core_status", (changed: Partial<CoreStatus>) => {
+        console.log("MANTLE: Core status changed", changed)
+        useCoreStore.getState().setCoreInfo(changed)
+      }),
+    )
+    this.subs.push(
+      CoreModule.addListener("glasses_status", (changed) => {
+        // console.log("MANTLE: Glasses status changed", changed)
+        useGlassesStore.getState().setGlassesInfo(changed)
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    // Subscribe to individual core events
+    this.subs.push(
+      CoreModule.addListener("log", (event) => {
+        console.log("CORE:", event.message)
+      }),
+    )
+
+    // TODO: remove since we can sub to the zustand store for wifi info:
+    this.subs.push(
       CoreModule.addListener("hotspot_status_change", (event) => {
         useGlassesStore.getState().setHotspotInfo(event.enabled, event.ssid, event.password, event.local_ip)
         GlobalEventEmitter.emit("hotspot_status_change", {
@@ -246,19 +232,19 @@ class MantleManager {
           password: event.password,
           local_ip: event.local_ip,
         })
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("hotspot_error", (event) => {
         GlobalEventEmitter.emit("hotspot_error", {
           error_message: event.error_message,
           timestamp: event.timestamp,
         })
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("gallery_status", (event) => {
         GlobalEventEmitter.emit("gallery_status", {
           photos: event.photos,
@@ -267,67 +253,42 @@ class MantleManager {
           has_content: event.has_content,
           camera_busy: event.camera_busy,
         })
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
-      CoreModule.addListener("compatible_glasses_search_result", (event) => {
-        console.log("Received compatible_glasses_search_result event from Core", event)
-        GlobalEventEmitter.emit("compatible_glasses_search_result", {
-          deviceModel: event.device_model,
-          deviceName: event.device_name,
-          deviceAddress: event.device_address,
-        })
-      })
-    )
-
-    this.coreEventSubscriptions.push(
-      CoreModule.addListener("compatible_glasses_search_stop", (event) => {
-        GlobalEventEmitter.emit("compatible_glasses_search_stop", {
-          device_model: event.device_model,
-        })
-      })
-    )
-
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("heartbeat_sent", (event) => {
         console.log("MANTLE: received heartbeat_sent event from Core", event.heartbeat_sent)
+        // TODO: remove the global event emitter and sub directly in the component where needed
         GlobalEventEmitter.emit("heartbeat_sent", {
           timestamp: event.heartbeat_sent.timestamp,
         })
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("heartbeat_received", (event) => {
         console.log("MANTLE: received heartbeat_received event from Core", event.heartbeat_received)
+        // TODO: remove the global event emitter and sub directly in the component where needed
         GlobalEventEmitter.emit("heartbeat_received", {
           timestamp: event.heartbeat_received.timestamp,
         })
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
-      CoreModule.addListener("notify_manager", (event) => {
-        Toast.show({
-          type: event.notify_manager.type,
-          text1: translate(event.notify_manager.message),
-        })
-      })
-    )
-
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("button_press", (event) => {
-        console.log("🔘 BUTTON_PRESS event received:", event)
+        console.log("MANTLE: BUTTON_PRESS event received:", event)
         this.handle_button_press(event.buttonId, event.pressType, event.timestamp)
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("touch_event", (event) => {
         const deviceModel = event.device_model ?? "Mentra Live"
         const gestureName = event.gesture_name ?? "unknown"
         const timestamp = typeof event.timestamp === "number" ? event.timestamp : Date.now()
+        // TODO: remove
         GlobalEventEmitter.emit("touch_event", {
           deviceModel,
           gestureName,
@@ -338,110 +299,106 @@ class MantleManager {
           gesture_name: gestureName,
           timestamp,
         })
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("swipe_volume_status", (event) => {
         const enabled = !!event.enabled
         const timestamp = typeof event.timestamp === "number" ? event.timestamp : Date.now()
         socketComms.sendSwipeVolumeStatus(enabled, timestamp)
+        // TODO: remove
         GlobalEventEmitter.emit("SWIPE_VOLUME_STATUS", {enabled, timestamp})
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("switch_status", (event) => {
-        const switchType = typeof event.switch_type === "number" ? event.switch_type : (event.switchType ?? -1)
-        const switchValue = typeof event.switch_value === "number" ? event.switch_value : (event.switchValue ?? -1)
+        const switchType = typeof event.switch_type === "number" ? event.switch_type : event.switchType ?? -1
+        const switchValue = typeof event.switch_value === "number" ? event.switch_value : event.switchValue ?? -1
         const timestamp = typeof event.timestamp === "number" ? event.timestamp : Date.now()
         socketComms.sendSwitchStatus(switchType, switchValue, timestamp)
+        // TODO: remove
         GlobalEventEmitter.emit("SWITCH_STATUS", {switchType, switchValue, timestamp})
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("rgb_led_control_response", (event) => {
         const requestId = event.requestId ?? ""
         const success = !!event.success
         const errorMessage = typeof event.error === "string" ? event.error : null
         socketComms.sendRgbLedControlResponse(requestId, success, errorMessage)
+        // TODO: remove
         GlobalEventEmitter.emit("rgb_led_control_response", {requestId, success, error: errorMessage})
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
-      CoreModule.addListener("wifi_scan_results", (event) => {
-        GlobalEventEmitter.emit("wifi_scan_results", {
-          networks: event.networks,
-        })
-      })
-    )
-
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("pair_failure", (event) => {
         GlobalEventEmitter.emit("pair_failure", event.error)
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("audio_pairing_needed", (event) => {
         GlobalEventEmitter.emit("audio_pairing_needed", {
           deviceName: event.device_name,
         })
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("audio_connected", (event) => {
         GlobalEventEmitter.emit("audio_connected", {
           deviceName: event.device_name,
         })
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("audio_disconnected", () => {
         GlobalEventEmitter.emit("audio_disconnected", {})
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    // allow the core to change settings so it can persist state:
+    this.subs.push(
       CoreModule.addListener("save_setting", async (event) => {
         await useSettingsStore.getState().setSetting(event.key, event.value)
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("head_up", (event) => {
         mantle.handle_head_up(event.up)
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("local_transcription", (event) => {
         mantle.handle_local_transcription(event)
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("phone_notification", async (event) => {
         const res = await restComms.sendPhoneNotification({
           notificationId: event.notificationId,
           app: event.app,
           title: event.title,
           content: event.content,
-          priority: event.priority,
-          timestamp: event.timestamp,
+          priority: event.priority.toString(),
+          timestamp: parseInt(event.timestamp),
           packageName: event.packageName,
         })
         if (res.is_error()) {
           console.error("Failed to send phone notification:", res.error)
         }
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("phone_notification_dismissed", async (event) => {
         const res = await restComms.sendPhoneNotificationDismissed({
           notificationKey: event.notificationKey,
@@ -451,16 +408,16 @@ class MantleManager {
         if (res.is_error()) {
           console.error("Failed to send phone notification dismissal:", res.error)
         }
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("ws_text", (event) => {
         socketComms.sendText(event.text)
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("ws_bin", (event) => {
         const binaryString = atob(event.base64)
         const bytes = new Uint8Array(binaryString.length)
@@ -468,11 +425,19 @@ class MantleManager {
           bytes[i] = binaryString.charCodeAt(i)
         }
         socketComms.sendBinary(bytes)
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("mic_data", (event) => {
+        if (this.micDataTimeout) {
+          BackgroundTimer.clearTimeout(this.micDataTimeout)
+        }
+        BackgroundTimer.setTimeout(() => {
+          useDebugStore.getState().setDebugInfo({micDataRecvd: false})
+        }, this.MIC_TIMEOUT_MS)
+        useDebugStore.getState().setDebugInfo({micDataRecvd: true})
+
         // Route audio to: UDP (if enabled) -> WebSocket (fallback)
         if (socketComms.udpEnabledAndReady()) {
           // UDP audio is enabled and ready - send directly via UDP
@@ -489,34 +454,34 @@ class MantleManager {
           }
           socketComms.sendBinary(bytes)
         }
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("rtmp_stream_status", (event) => {
         console.log("MANTLE: Forwarding RTMP stream status to server:", event)
         socketComms.sendRtmpStreamStatus(event)
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("keep_alive_ack", (event) => {
         console.log("MANTLE: Forwarding keep-alive ACK to server:", event)
         socketComms.sendKeepAliveAck(event)
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("mtk_update_complete", (event) => {
         console.log("MANTLE: MTK firmware update complete:", event.message)
         GlobalEventEmitter.emit("mtk_update_complete", {
           message: event.message,
           timestamp: event.timestamp,
         })
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("ota_update_available", (event) => {
         console.log("📱 MANTLE: OTA update available from glasses:", event)
         useGlassesStore.getState().setOtaUpdateAvailable({
@@ -532,10 +497,10 @@ class MantleManager {
           updates: event.updates,
           totalSize: event.total_size,
         })
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("ota_progress", (event) => {
         console.log("📱 MANTLE: OTA progress:", event.stage, event.status, event.progress + "%")
         useGlassesStore.getState().setOtaProgress({
@@ -560,10 +525,10 @@ class MantleManager {
         if (event.status === "FINISHED" || event.status === "FAILED") {
           useGlassesStore.getState().setOtaUpdateAvailable(null)
         }
-      })
+      }),
     )
 
-    this.coreEventSubscriptions.push(
+    this.subs.push(
       CoreModule.addListener("version_info", (event) => {
         console.log("MANTLE: Received version_info:", event)
         useGlassesStore.getState().setGlassesInfo({
@@ -575,7 +540,7 @@ class MantleManager {
           fwVersion: event.firmware_version,
           btMacAddress: event.bt_mac_address,
         })
-      })
+      }),
     )
 
     // one time get all:
@@ -718,8 +683,6 @@ class MantleManager {
     })
     socketComms.sendButtonPress(id, type)
   }
-
-
 }
 
 const mantle = MantleManager.getInstance()

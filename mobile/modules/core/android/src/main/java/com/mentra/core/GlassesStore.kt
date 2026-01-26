@@ -48,9 +48,10 @@ object GlassesStore {
         store.set("core", "micEnabled", false)
         store.set("core", "currentMic", "")
         store.set("core", "searchResults", emptyList<Any>())
+        store.set("core", "wifiScanResults", emptyList<Any>())
         store.set("core", "micRanking", MicMap.map["auto"]!!)
         store.set("core", "lastLog", mutableListOf<String>())
-
+        
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
         store.set("core", "pending_wearable", "")

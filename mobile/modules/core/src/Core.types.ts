@@ -1,10 +1,3 @@
-export type CoreMessageEventPayload = {
-  message: string
-}
-
-export type ChangeEventPayload = {
-  value: string
-}
 
 // Core Event Types
 export type ButtonPressEvent = {
@@ -22,27 +15,23 @@ export type TouchEvent = {
 }
 
 export type HeadUpEvent = {
-  type: "head_up"
   up: boolean
 }
 
+export type BatteryStatusEvent = {
+  level: number
+  charging: boolean
+  timestamp: number
+}
+
 export type LocalTranscriptionEvent = {
-  type: "local_transcription"
   text: string
   isFinal?: boolean
   transcribeLanguage?: string
 }
 
 export type LogEvent = {
-  type: "log"
   message: string
-}
-
-export type CoreStatusUpdateEvent = {
-  type: "core_status_update"
-  core_status: {
-    glasses_info: Partial<GlassesStatus>
-  }
 }
 
 export type WifiStatusChangeEvent = {
@@ -74,13 +63,6 @@ export type GalleryStatusEvent = {
   camera_busy: boolean
 }
 
-export type CompatibleGlassesSearchResultEvent = {
-  type: "compatible_glasses_search_result"
-  device_model: string
-  device_name: string
-  device_address: string
-}
-
 export type CompatibleGlassesSearchStopEvent = {
   type: "compatible_glasses_search_stop"
   device_model: string
@@ -97,14 +79,6 @@ export type HeartbeatReceivedEvent = {
   type: "heartbeat_received"
   heartbeat_received: {
     timestamp: string
-  }
-}
-
-export type NotifyManagerEvent = {
-  type: "notify_manager" | "show_banner"
-  notify_manager: {
-    type: "success" | "error" | "info"
-    message: string
   }
 }
 
@@ -128,15 +102,6 @@ export type RgbLedControlResponseEvent = {
   requestId: string
   success: boolean
   error?: string
-}
-
-export type WifiScanResultsEvent = {
-  type: "wifi_scan_results"
-  networks: Array<{
-    ssid: string
-    signalStrength: number
-    secured: boolean
-  }>
 }
 
 export type PairFailureEvent = {
@@ -250,20 +215,16 @@ export type CoreEvent =
   | HeadUpEvent
   | LocalTranscriptionEvent
   | LogEvent
-  | CoreStatusUpdateEvent
   | WifiStatusChangeEvent
   | HotspotStatusChangeEvent
   | HotspotErrorEvent
   | GalleryStatusEvent
-  | CompatibleGlassesSearchResultEvent
   | CompatibleGlassesSearchStopEvent
   | HeartbeatSentEvent
   | HeartbeatReceivedEvent
-  | NotifyManagerEvent
   | SwipeVolumeStatusEvent
   | SwitchStatusEvent
   | RgbLedControlResponseEvent
-  | WifiScanResultsEvent
   | PairFailureEvent
   | AudioPairingNeededEvent
   | AudioConnectedEvent
@@ -282,30 +243,25 @@ export type CoreEvent =
   | VersionInfoEvent
 
 export type CoreModuleEvents = {
-  onEvent: (data: any) => void
-  onChange: (params: ChangeEventPayload) => void
   glasses_status: (changed: Partial<GlassesStatus>) => void
   core_status: (changed: Partial<CoreStatus>) => void
+  log: (event: LogEvent) => void
   // Individual event handlers
   button_press: (event: ButtonPressEvent) => void
   touch_event: (event: TouchEvent) => void
   head_up: (event: HeadUpEvent) => void
+  battery_status: (event: BatteryStatusEvent) => void
   local_transcription: (event: LocalTranscriptionEvent) => void
-  log: (event: LogEvent) => void
-  core_status_update: (event: CoreStatusUpdateEvent) => void
   wifi_status_change: (event: WifiStatusChangeEvent) => void
   hotspot_status_change: (event: HotspotStatusChangeEvent) => void
   hotspot_error: (event: HotspotErrorEvent) => void
   gallery_status: (event: GalleryStatusEvent) => void
-  compatible_glasses_search_result: (event: CompatibleGlassesSearchResultEvent) => void
   compatible_glasses_search_stop: (event: CompatibleGlassesSearchStopEvent) => void
   heartbeat_sent: (event: HeartbeatSentEvent) => void
   heartbeat_received: (event: HeartbeatReceivedEvent) => void
-  notify_manager: (event: NotifyManagerEvent) => void
   swipe_volume_status: (event: SwipeVolumeStatusEvent) => void
   switch_status: (event: SwitchStatusEvent) => void
   rgb_led_control_response: (event: RgbLedControlResponseEvent) => void
-  wifi_scan_results: (event: WifiScanResultsEvent) => void
   pair_failure: (event: PairFailureEvent) => void
   audio_pairing_needed: (event: AudioPairingNeededEvent) => void
   audio_connected: (event: AudioConnectedEvent) => void
@@ -397,6 +353,12 @@ export interface DeviceSearchResult {
   deviceAddress?: string
 }
 
+export interface WifiSearchResult {
+  ssid: string
+  requiresPassword: boolean
+  signalStrength: number
+}
+
 export interface CoreStatus {
   // state:
   searching: boolean
@@ -404,5 +366,6 @@ export interface CoreStatus {
   micRanking: MicRanking[]
   currentMic: MicRanking | null
   searchResults: DeviceSearchResult[]
+  wifiScanResults: WifiSearchResult[]
   lastLog: string[]
 }

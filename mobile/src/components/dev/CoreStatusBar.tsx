@@ -5,6 +5,7 @@ import {Icon, Text} from "@/components/ignite"
 import {translate} from "@/i18n"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useCoreStore} from "@/stores/core"
+import {useDebugStore} from "@/stores/debug"
 
 type DisplayStatus = "connected" | "warning" | "disconnected"
 
@@ -35,6 +36,7 @@ export default function CoreStatusBar() {
   const currentMic = useCoreStore((state) => state.currentMic)
   const systemMicUnavailable = useCoreStore((state) => state.systemMicUnavailable)
   const lastLog = useCoreStore((state) => state.lastLog)
+  const micDataRecvd = useDebugStore((state) => state.micDataRecvd)
   const {theme} = useAppTheme()
 
   const scrollViewRef = useRef<ScrollView>(null)
@@ -78,6 +80,12 @@ export default function CoreStatusBar() {
           <Text text="System mic is unavailable!" className="text-secondary-foreground text-sm font-medium ml-2" />
         </View>
       )}
+      {/* getting mic data? */}
+      <View
+        className={`flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-destructive`}>
+        <Icon name="unplug" size={14} color={theme.colors.secondary_foreground} />
+        <Text text={`Mic Data?`} className="text-secondary-foreground text-sm font-medium ml-2" />
+      </View>
     </View>
   )
 }

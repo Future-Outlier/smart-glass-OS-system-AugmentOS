@@ -18,7 +18,9 @@ import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {translate} from "@/i18n"
 import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
-import { BackgroundTimer } from "@/utils/timers"
+import {BackgroundTimer} from "@/utils/timers"
+import {WifiSearchResult} from "core"
+import { useCoreStore } from "@/stores/core"
 
 interface NetworkInfo {
   ssid: string
@@ -39,6 +41,7 @@ export default function WifiScanScreen() {
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const {push, goBack, pushPrevious, getPreviousRoute, incPreventBack, decPreventBack, setAndroidBackFn} =
     useNavigationHistory()
+  const wifiScanResults = useCoreStore()
 
   // if the previous route is in this list, or the second to last route is in this list
   // show / allow the back button:
@@ -83,20 +86,17 @@ export default function WifiScanScreen() {
     loadSavedNetworks()
     startScan()
 
-    const handleWifiScanResults = (data: {networks: string[]; networksEnhanced?: any[]}) => {
+    const handleWifiScanResults = (networks?: WifiSearchResult[]) => {
       // console.log("WIFI_SCAN: ========= SCAN.TSX RECEIVED WIFI RESULTS =========")
       // console.log("WIFI_SCAN: Data received:", data)
 
       let processedNetworks: NetworkInfo[]
-      if (data.networks && data.networks.length > 0) {
-        // console.log("WIFI_SCAN: Processing enhanced networks:", data.networks)
-        processedNetworks = data.networks.map((network: any) => ({
-          ssid: network.ssid || "",
-          requiresPassword: network.requiresPassword !== false,
-          signalStrength: network.signalStrength || -100,
-        }))
-        // console.log("WIFI_SCAN: Enhanced networks count:", processedNetworks.length)
-      }
+      // console.log("WIFI_SCAN: Processing enhanced networks:", data.networks)
+      processedNetworks = networks?.map((network: any) => ({
+        ssid: network.ssid || "",
+        requiresPassword: network.requiresPassword !== false,
+        signalStrength: network.signalStrength || -100,
+      }))
 
       if (scanTimeoutRef.current) {
         // console.log("WIFI_SCAN: Clearing scan timeout - results received")
@@ -135,16 +135,16 @@ export default function WifiScanScreen() {
       // console.log("WIFI_SCAN: ========= END SCAN.TSX WIFI RESULTS =========")
     }
 
-    GlobalEventEmitter.on("wifi_scan_results", handleWifiScanResults)
+    handleWifiScanResults(wifiScanResults)
+
 
     return () => {
-      GlobalEventEmitter.removeListener("wifi_scan_results", handleWifiScanResults)
       if (scanTimeoutRef.current) {
         BackgroundTimer.clearTimeout(scanTimeoutRef.current)
         scanTimeoutRef.current = null
       }
     }
-  }, [])
+  }, [wifiScanResults])
 
   const startScan = async () => {
     // console.log("WIFI_SCAN: ========= STARTING NEW WIFI SCAN =========")
@@ -244,7 +244,9 @@ export default function WifiScanScreen() {
     return (
       <TouchableOpacity
         key={item.ssid}
-        className={`flex-row justify-between items-center bg-primary-foreground py-4 px-4 rounded-xl ${isConnected ? "opacity-70" : ""}`}
+        className={`flex-row justify-between items-center bg-primary-foreground py-4 px-4 rounded-xl ${
+          isConnected ? "opacity-70" : ""
+        }`}
         onPress={() => handleNetworkSelect(item)}>
         <View className="flex-1 flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">

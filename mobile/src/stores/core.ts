@@ -14,6 +14,7 @@ const initialState: CoreStatus = {
   systemMicUnavailable: false,
   currentMic: null,
   searchResults: [],
+  wifiScanResults: [],
   lastLog: [],
 }
 
