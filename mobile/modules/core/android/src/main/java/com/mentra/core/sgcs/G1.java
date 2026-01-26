@@ -378,9 +378,9 @@ public class G1 extends SGCManager {
                     forceSideDisconnection();
                     Bridge.log("G1: Called forceSideDisconnection() after connection failure.");
 
-                    // gatt.disconnect();
-                    // gatt.close();
-                    Bridge.log("G1: GATT connection disconnected and closed due to failure.");
+                    // Update connection state and notify frontend of disconnection
+                    updateConnectionState();
+                    Bridge.log("G1: Updated connection state after connection failure.");
 
                     connectHandler.postDelayed(() -> {
                         Bridge.log("G1: Attempting GATT connection for leftDevice immediately.");
@@ -515,28 +515,11 @@ public class G1 extends SGCManager {
                             // }
 
                             if (deviceName.contains("R_")) {
-                                // decode the LC3 audio
-                                if (lc3DecoderPtr != 0) {
-                                    byte[] pcmData = Lc3Cpp.decodeLC3(lc3DecoderPtr, lc3);
-                                    // send the PCM out
-                                    if (shouldUseGlassesMic) {
-                                        if (pcmData != null && pcmData.length > 0) {
-                                            // audioProcessingCallback.onAudioDataAvailable(pcmData);
-                                            CoreManager.getInstance().handlePcm(pcmData);
-                                        }
-                                    }
-
-                                    // if (shouldUseGlassesMic) { TODO: add this back if needed
-                                    // EventBus.getDefault().post(new AudioChunkNewEvent(pcmData));
-                                    // } else {
-                                    // Log.e(TAG, "Failed to decode LC3 frame, got null or empty result");
-                                    // }
+                                // Forward raw LC3 to CoreManager (matches iOS behavior)
+                                // G1 uses 20-byte LC3 frames (default canonical config)
+                                if (shouldUseGlassesMic) {
+                                    CoreManager.getInstance().handleGlassesMicData(lc3, 20);
                                 }
-
-                                // send through the LC3
-                                // audioProcessingCallback.onLC3AudioDataAvailable(lc3);
-                                // CoreManager.getInstance().handleGlassesMicData(lc3);
-
                             } else {
                                 // Bridge.log("G1: Lc3 Audio data received. Seq: " + seq + ", Data: " +
                                 // Arrays.toString(lc3) + ", from: " + deviceName);
@@ -584,7 +567,7 @@ public class G1 extends SGCManager {
                                 // Bridge.log("G1: Minimum Battery Level: " + minBatt);
                                 // EventBus.getDefault().post(new BatteryLevelEvent(minBatt, false));
                                 batteryLevel = minBatt;
-                                CoreManager.getInstance().handle_request_status();
+                                CoreManager.getInstance().getStatus();
                             }
                         }
                         // CASE REMOVED
@@ -592,7 +575,7 @@ public class G1 extends SGCManager {
                                 && ((data[1] & 0xFF) == 0x07 || (data[1] & 0xFF) == 0x06)) {
                             caseRemoved = true;
                             Bridge.log("G1: CASE REMOVED");
-                            CoreManager.getInstance().handle_request_status();
+                            CoreManager.getInstance().getStatus();
                         }
                         // CASE OPEN
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x08) {
@@ -600,7 +583,7 @@ public class G1 extends SGCManager {
                             caseRemoved = false;
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            CoreManager.getInstance().handle_request_status();
+                            CoreManager.getInstance().getStatus();
                         }
                         // CASE CLOSED
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0B) {
@@ -608,21 +591,21 @@ public class G1 extends SGCManager {
                             caseRemoved = false;
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            CoreManager.getInstance().handle_request_status();
+                            CoreManager.getInstance().getStatus();
                         }
                         // CASE CHARGING STATUS
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0E) {
                             caseCharging = (data[2] & 0xFF) == 0x01;// TODO: verify this is correct
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            CoreManager.getInstance().handle_request_status();
+                            CoreManager.getInstance().getStatus();
                         }
                         // CASE CHARGING INFO
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0F) {
                             caseBatteryLevel = (data[2] & 0xFF);// TODO: verify this is correct
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            CoreManager.getInstance().handle_request_status();
+                            CoreManager.getInstance().getStatus();
                         }
                         // HEARTBEAT RESPONSE
                         else if (data.length > 0 && data[0] == 0x25) {
@@ -726,8 +709,8 @@ public class G1 extends SGCManager {
                 sendBrightnessCommandHandler
                         .postDelayed(() -> sendBrightnessCommand(brightnessValue, shouldUseAutoBrightness), 10);
 
-                // Maybe start MIC streaming
-                sendSetMicEnabled(false, 10); // Disable the MIC
+                // MIC state is handled by CoreManager.updateMicState() after reconnection
+                // Don't hardcode mic state here - let CoreManager restore the user's preference
 
                 // enable our AugmentOS notification key
                 sendWhiteListCommand(10);
@@ -786,6 +769,7 @@ public class G1 extends SGCManager {
 
     private void updateConnectionState() {
         Boolean previousReady = ready;
+        SmartGlassesConnectionState previousConnectionState = connectionState;
         if (isLeftConnected && isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTED;
             Bridge.log("G1: Both glasses connected");
@@ -800,7 +784,8 @@ public class G1 extends SGCManager {
             Bridge.log("G1: No glasses connected");
             ready = false;
         }
-        if (previousReady != ready) {
+        // Notify if either ready state or connection state changed
+        if (previousReady != ready || !previousConnectionState.equals(connectionState)) {
             CoreManager.getInstance().handleConnectionStateChanged();
         }
     }
@@ -1536,7 +1521,7 @@ public class G1 extends SGCManager {
     }
 
     @Override
-    public void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken, String compress) {
+    public void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken, String compress, boolean silent) {
 
     }
 
@@ -1571,7 +1556,7 @@ public class G1 extends SGCManager {
     }
 
     @Override
-    public void startVideoRecording(String requestId, boolean save) {
+    public void startVideoRecording(String requestId, boolean save, boolean silent) {
 
     }
 
@@ -1619,7 +1604,7 @@ public class G1 extends SGCManager {
 
     @Override
     public void sendTextWall(String text) {
-        Bridge.log("G1: sendTextWall() - text: " + text);
+        // Bridge.log("G1: sendTextWall() - text: " + text);
         displayTextWall(text);
     }
 
@@ -1731,8 +1716,18 @@ public class G1 extends SGCManager {
     }
 
     @Override
-    public void sendHotspotState(boolean enabled) {
+    public void forgetWifiNetwork(String ssid) {
+        // G1 doesn't support WiFi
+    }
 
+    @Override
+    public void sendHotspotState(boolean enabled) {
+        // G1 doesn't support hotspot
+    }
+
+    @Override
+    public void sendUserEmailToGlasses(String email) {
+        // G1 doesn't support user email (no ASG client)
     }
 
     @Override
@@ -3943,7 +3938,7 @@ public class G1 extends SGCManager {
             Bridge.log("G1: 📱 Emitted serial number info: " + serialNumber + ", Style: " + style + ", Color: " + color);
 
             // Trigger status update to include serial number in status JSON
-            CoreManager.getInstance().handle_request_status();
+            CoreManager.getInstance().getStatus();
         } catch (Exception e) {
             Bridge.log("G1: Error emitting serial number info: " + e.getMessage());
         }

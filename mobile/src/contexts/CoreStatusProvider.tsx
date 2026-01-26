@@ -29,7 +29,7 @@ export const CoreStatusProvider = ({children}: {children: ReactNode}) => {
     setStatus(prevStatus => {
       const diff = deepCompare(prevStatus, parsedStatus)
       if (diff.length === 0) {
-        console.log("CoreStatus: Status did not change")
+        // console.log("CoreStatus: Status did not change")
         return prevStatus // don't re-render
       }
 
@@ -44,10 +44,10 @@ export const CoreStatusProvider = ({children}: {children: ReactNode}) => {
       refreshStatus(data)
     }
 
-    GlobalEventEmitter.on("CORE_STATUS_UPDATE", handleCoreStatusUpdate)
+    GlobalEventEmitter.on("core_status_update", handleCoreStatusUpdate)
 
     return () => {
-      GlobalEventEmitter.removeListener("CORE_STATUS_UPDATE", handleCoreStatusUpdate)
+      GlobalEventEmitter.removeListener("core_status_update", handleCoreStatusUpdate)
     }
   }, [])
 

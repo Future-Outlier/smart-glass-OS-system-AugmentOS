@@ -1,10 +1,11 @@
 // @ts-nocheck
 
-import {Text} from "@/components/ignite/Text"
-import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 import {useEffect, useRef, useState} from "react"
 import {ScrollView, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+
+import {Text} from "@/components/ignite/Text"
+import {useAppTheme} from "@/contexts/ThemeContext"
+import {ThemedStyle} from "@/theme"
 
 export const DebugHitSlop = ({children, hitSlop, style, ...props}) => {
   if (!__DEV__ || !hitSlop) return children

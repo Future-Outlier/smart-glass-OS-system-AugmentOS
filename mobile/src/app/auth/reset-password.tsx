@@ -1,16 +1,16 @@
 import {FontAwesome} from "@expo/vector-icons"
 import {useEffect, useState} from "react"
 import {ActivityIndicator, ScrollView, TextInput, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
-import Toast from "react-native-toast-message"
 
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
-import {$styles, ThemedStyle, spacing} from "@/theme"
+import {ThemedStyle, spacing} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import mentraAuth from "@/utils/auth/authClient"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {mapAuthError} from "@/utils/auth/authErrors"
 
 export default function ResetPasswordScreen() {
   const [email, setEmail] = useState("")
@@ -22,7 +22,7 @@ export default function ResetPasswordScreen() {
   const [isValidToken, setIsValidToken] = useState(false)
 
   const {theme, themed} = useAppTheme()
-  const {goBack, replace} = useNavigationHistory()
+  const {goBack, replaceAll} = useNavigationHistory()
 
   const passwordsMatch = newPassword === confirmPassword && newPassword.length > 0
   const isFormValid = passwordsMatch && newPassword.length >= 6
@@ -37,7 +37,7 @@ export default function ResetPasswordScreen() {
     if (res.is_error()) {
       // No valid session, redirect back to login
       showAlert(translate("common:error"), translate("login:invalidResetLink"))
-      replace("/auth/login")
+      replaceAll("/auth/start")
       return
     }
     const session = res.value
@@ -64,66 +64,45 @@ export default function ResetPasswordScreen() {
 
     let res = await mentraAuth.updateUserPassword(newPassword)
     if (res.is_error()) {
-      showAlert(translate("common:error"), res.error.message)
+      console.error("Error resetting password:", res.error)
+      showAlert(translate("common:error"), mapAuthError(res.error), [{text: translate("common:ok")}])
+      setIsLoading(false)
       return
     }
 
     if (!email) {
       // No email, fallback to login redirect
-      Toast.show({
-        type: "success",
-        text1: translate("login:passwordResetSuccess"),
-        text2: translate("login:redirectingToLogin"),
-        position: "bottom",
-      })
-
+      setIsLoading(false)
       await mentraAuth.signOut()
-
-      setTimeout(() => {
-        replace("/auth/login")
-      }, 2000)
+      showAlert(translate("login:passwordResetSuccess"), translate("login:redirectingToLogin"), [
+        {text: translate("common:ok"), onPress: () => replaceAll("/auth/start")},
+      ])
+      return
     }
 
     // Try to automatically log the user in with the new password
     const res2 = await mentraAuth.signInWithPassword({email, password: newPassword})
-    if (res2.is_error()) {
-      showAlert(translate("common:error"), res2.error.message)
-      return
-    }
+    setIsLoading(false)
 
     if (res2.is_error()) {
       // If auto-login fails, just redirect to login
-      Toast.show({
-        type: "success",
-        text1: translate("login:passwordResetSuccess"),
-        text2: translate("login:redirectingToLogin"),
-        position: "bottom",
-      })
-
+      console.error("Error auto-logging in after password reset:", res2.error)
       await mentraAuth.signOut()
-
-      setTimeout(() => {
-        replace("/auth/login")
-      }, 2000)
+      showAlert(translate("login:passwordResetSuccess"), translate("login:redirectingToLogin"), [
+        {text: translate("common:ok"), onPress: () => replaceAll("/auth/start")},
+      ])
+      return
     }
 
-    Toast.show({
-      type: "success",
-      text1: translate("login:passwordResetSuccess"),
-      text2: translate("login:loggingYouIn"),
-      position: "bottom",
-    })
-
-    setTimeout(() => {
-      replace("/")
-    }, 1000)
-
-    setIsLoading(false)
+    // Auto-login succeeded
+    showAlert(translate("login:passwordResetSuccess"), translate("login:loggingYouIn"), [
+      {text: translate("common:ok"), onPress: () => replaceAll("/")},
+    ])
   }
 
   if (!isValidToken) {
     return (
-      <Screen preset="fixed" style={themed($styles.screen)}>
+      <Screen preset="fixed">
         <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
           <ActivityIndicator size="large" color={theme.colors.tint} />
           <Spacer height={spacing.s4} />
@@ -134,7 +113,7 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header title={translate("login:resetPasswordTitle")} leftIcon="chevron-left" onLeftPress={() => goBack()} />
       <ScrollView
         contentContainerStyle={themed($scrollContent)}
@@ -222,9 +201,11 @@ export default function ResetPasswordScreen() {
               textStyle={themed($buttonText)}
               onPress={handleResetPassword}
               disabled={!isFormValid || isLoading}
-              LeftAccessory={() =>
-                isLoading && <ActivityIndicator size="small" color={theme.colors.icon} style={{marginRight: 8}} />
-              }
+              {...(isLoading && {
+                LeftAccessory: () => (
+                  <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
+                ),
+              })}
             />
           </View>
         </View>

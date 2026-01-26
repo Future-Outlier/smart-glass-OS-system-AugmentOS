@@ -1,21 +1,23 @@
-import {BottomSheetBackdrop, BottomSheetModal, BottomSheetView} from "@gorhom/bottom-sheet"
+import {BottomSheetBackdrop, BottomSheetFlatList, BottomSheetModal, BottomSheetView} from "@gorhom/bottom-sheet"
 import {useCallback, useMemo, useRef} from "react"
-import {FlatList, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {FlatList, TouchableOpacity, View} from "react-native"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 import {Text} from "@/components/ignite"
-import AppIcon from "@/components/misc/AppIcon"
+import AppIcon from "@/components/home/AppIcon"
+import {Badge} from "@/components/ui"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {ClientAppletInterface, DUMMY_APPLET, useIncompatibleApps} from "@/stores/applets"
-import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 const GRID_COLUMNS = 4
 
 export const IncompatibleApps: React.FC = () => {
-  const {themed, theme} = useAppTheme()
+  const {theme} = useAppTheme()
   const incompatibleApps = useIncompatibleApps()
   const bottomSheetRef = useRef<BottomSheetModal>(null)
+  const {bottom} = useSafeAreaInsets()
 
   const snapPoints = useMemo(() => ["50%", "75%"], [])
 
@@ -44,7 +46,7 @@ export const IncompatibleApps: React.FC = () => {
   const handleAppPress = useCallback(
     (app: ClientAppletInterface) => {
       const missingHardware =
-        app.compatibility?.missingRequired?.map(req => req.type.toLowerCase()).join(", ") || "required features"
+        app.compatibility?.missingRequired?.map((req) => req.type.toLowerCase()).join(", ") || "required features"
 
       showAlert(
         translate("home:hardwareIncompatible"),
@@ -54,10 +56,6 @@ export const IncompatibleApps: React.FC = () => {
             missing: missingHardware,
           }),
         [{text: translate("common:ok")}],
-        {
-          iconName: "alert-circle-outline",
-          iconColor: theme.colors.error,
-        },
       )
     },
     [theme],
@@ -66,32 +64,65 @@ export const IncompatibleApps: React.FC = () => {
   const renderItem = useCallback(
     ({item}: {item: ClientAppletInterface}) => {
       if (!item.name) {
-        return <View style={themed($gridItem)} />
+        return <View className="flex-1 items-center my-3 px-2" />
       }
 
       return (
-        <TouchableOpacity style={themed($gridItem)} onPress={() => handleAppPress(item)} activeOpacity={0.7}>
-          <View style={themed($appContainer)}>
-            <AppIcon app={item as any} style={themed($appIcon)} />
+        <TouchableOpacity
+          className="flex-1 items-center my-3 px-2"
+          onPress={() => handleAppPress(item)}
+          activeOpacity={0.7}>
+          <View className="relative w-16 h-16">
+            <AppIcon app={item as any} className="w-16 h-16 rounded-xl opacity-40" />
           </View>
-          <Text text={item.name} style={themed($appNameIncompatible)} numberOfLines={2} />
+          <Text
+            text={item.name}
+            className="text-xs text-muted-foreground text-center mt-1 leading-[14px] opacity-60"
+            numberOfLines={2}
+          />
         </TouchableOpacity>
       )
     },
-    [themed, handleAppPress],
+    [handleAppPress],
   )
 
   if (incompatibleApps.length === 0) {
     return null
   }
 
+  const incompatibleAppsCount = incompatibleApps.length
+
   return (
     <>
-      <TouchableOpacity style={themed($trigger)} onPress={handleOpenSheet} activeOpacity={0.7}>
-        <Text
-          style={themed($triggerText)}
-          text={translate("home:incompatibleAppsCount", {count: incompatibleApps.length})}
-        />
+      <TouchableOpacity
+        onPress={handleOpenSheet}
+        activeOpacity={0.8}
+        className="bg-primary-foreground py-3 px-2 rounded-2xl flex-row justify-between items-center min-h-[72px] mb-8">
+        <View className="flex-row items-center gap-3 flex-1 px-2">
+          {/* Stacked app icons */}
+          <View className="flex-row items-center">
+            {incompatibleApps.slice(0, 3).map((app, index) => (
+              <View
+                key={app.packageName}
+                style={{
+                  zIndex: 3 - index,
+                  marginLeft: index > 0 ? -theme.spacing.s8 : 0,
+                }}>
+                <AppIcon app={app} className="w-12 h-12" />
+              </View>
+            ))}
+          </View>
+
+          {/* Text and badge */}
+          <View className="flex-col gap-1 flex-1 opacity-40">
+            <Text className="font-semibold text-secondary-foreground text-sm">
+              {translate("home:incompatibleApps")}
+            </Text>
+            {incompatibleAppsCount > 0 && (
+              <Badge text={`${translate("home:incompatibleAppsCount", {count: incompatibleAppsCount})}`} />
+            )}
+          </View>
+        </View>
       </TouchableOpacity>
 
       <BottomSheetModal
@@ -99,85 +130,24 @@ export const IncompatibleApps: React.FC = () => {
         snapPoints={snapPoints}
         backdropComponent={renderBackdrop}
         enablePanDownToClose
-        backgroundStyle={themed($sheetBackground)}
-        handleIndicatorStyle={themed($handleIndicator)}>
-        <BottomSheetView style={themed($sheetContent)}>
-          <Text style={themed($sheetTitle)} tx="home:incompatibleApps" />
-          <FlatList
+        enableDynamicSizing={false}
+        backgroundStyle={{backgroundColor: theme.colors.primary_foreground}}
+        handleIndicatorStyle={{backgroundColor: theme.colors.muted_foreground}}>
+        <View className="px-4">
+          <View className="gap-4 px-4 my-6 h-21">
+            <Text className="text-lg font-bold text-foreground text-center" tx="home:incompatibleApps" />
+            <Text className="text-sm text-muted-foreground font-medium" tx="home:incompatibleAppsDescription" />
+          </View>
+          <BottomSheetFlatList
             data={gridData}
             renderItem={renderItem}
-            keyExtractor={item => item.packageName}
+            keyExtractor={(item: ClientAppletInterface) => item.packageName}
             numColumns={GRID_COLUMNS}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={themed($gridContent)}
+            contentContainerStyle={{paddingBottom: 21 * 4 + 6 * 4 * 2}}
           />
-        </BottomSheetView>
+        </View>
       </BottomSheetModal>
     </>
   )
 }
-
-const $trigger: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingVertical: spacing.s4,
-  marginBottom: spacing.s4,
-})
-
-const $triggerText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 16,
-  fontWeight: "600",
-  color: colors.textDim,
-})
-
-const $sheetBackground: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.primary_foreground,
-})
-
-const $handleIndicator: ThemedStyle<ViewStyle> = ({colors}) => ({
-  backgroundColor: colors.textDim,
-})
-
-const $sheetContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  paddingHorizontal: spacing.s4,
-})
-
-const $sheetTitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 18,
-  fontWeight: "700",
-  color: colors.text,
-  marginBottom: spacing.s4,
-  textAlign: "center",
-})
-
-const $gridContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingBottom: spacing.s3,
-})
-
-const $gridItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  alignItems: "center",
-  marginVertical: spacing.s3,
-  paddingHorizontal: spacing.s2,
-})
-
-const $appContainer: ThemedStyle<ViewStyle> = () => ({
-  position: "relative",
-  width: 64,
-  height: 64,
-})
-
-const $appIcon: ThemedStyle<ImageStyle> = ({spacing}) => ({
-  width: 64,
-  height: 64,
-  borderRadius: spacing.s3,
-  opacity: 0.4,
-})
-
-const $appNameIncompatible: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 12,
-  color: colors.textDim,
-  textAlign: "center",
-  marginTop: spacing.s1,
-  lineHeight: 14,
-  opacity: 0.6,
-})

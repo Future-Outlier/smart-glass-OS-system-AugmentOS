@@ -3,9 +3,9 @@ import {Pressable, TextStyle, View, ViewStyle} from "react-native"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 import {Icon, IconTypes, Text} from "@/components/ignite"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 type TabButtonProps = TabTriggerSlotProps & {
   iconName: IconTypes
@@ -18,14 +18,26 @@ export default function Layout() {
   const {bottom} = useSafeAreaInsets()
 
   function TabButton({iconName, iconNameFilled, isFocused, label, ...props}: TabButtonProps) {
-    const iconColor = isFocused ? theme.colors.background : theme.colors.muted_foreground
+    let iconColor = isFocused ? theme.colors.primary_foreground : theme.colors.muted_foreground
+    let iconBgColor = "transparent"
+    if (iconName === "house") {
+      iconColor = isFocused ? theme.colors.primary : theme.colors.muted_foreground
+      iconBgColor = theme.colors.primary_foreground
+    }
+    if (iconName === "shopping-bag") {
+      if (isFocused) {
+        iconColor = theme.colors.primary
+        iconBgColor = theme.colors.primary_foreground
+      }
+    }
     const textColor = isFocused ? theme.colors.secondary_foreground : theme.colors.muted_foreground
-    const iconBgColor = isFocused ? theme.colors.primary : theme.colors.primary_foreground
+    const bottomBarColor = theme.colors.primary_foreground + "01"
+    const backgroundColor = isFocused ? theme.colors.primary : bottomBarColor
     const displayIcon = isFocused ? iconNameFilled : iconName
     return (
       <Pressable {...props} style={[themed($tabButton), {marginBottom: bottom}]}>
-        <View style={[themed($icon), {backgroundColor: iconBgColor}]}>
-          <Icon name={displayIcon} size={24} color={iconColor} />
+        <View style={[themed($icon), {backgroundColor: backgroundColor}]}>
+          <Icon name={displayIcon} size={24} color={iconColor} backgroundColor={iconBgColor} />
         </View>
         <Text text={label} style={[themed($tabLabel), {color: textColor}]} />
       </Pressable>
@@ -37,7 +49,7 @@ export default function Layout() {
       <TabSlot />
       <TabList style={themed($tabList)}>
         <TabTrigger name="home" href="/home" style={themed($tabTrigger)} asChild>
-          <TabButton iconName="home" iconNameFilled="home-filled" label={translate("navigation:home")} />
+          <TabButton iconName="house" iconNameFilled="house-filled" label={translate("navigation:home")} />
         </TabTrigger>
         <TabTrigger name="store" href="/store" style={themed($tabTrigger)} asChild>
           <TabButton

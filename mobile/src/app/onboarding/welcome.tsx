@@ -1,3 +1,4 @@
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import DontHaveGlassesSvg from "@assets/glasses/dont-have.svg"
 import HaveGlassesSvg from "@assets/glasses/have.svg"
 import LogoSvg from "@assets/logo/logo.svg"
@@ -7,12 +8,10 @@ import {SvgProps} from "react-native-svg"
 import {Screen, Text} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {TxKeyPath} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {$styles, ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
-
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import {ThemedStyle} from "@/theme"
 
 // Import SVG components
 
@@ -85,21 +84,21 @@ export default function OnboardingWelcome() {
     // analytics.track('onboarding_no_glasses_selected')
     setOnboardingCompleted(true)
     // Go directly to simulated glasses pairing screen
-    push("/pairing/prep", {glassesModelName: DeviceTypes.SIMULATED})
+    push("/pairing/prep", {modelName: DeviceTypes.SIMULATED})
   }
 
   return (
     <Screen
       preset="fixed"
       backgroundColor={theme.colors.primary_foreground}
-      style={[themed($styles.screen), {paddingHorizontal: theme.spacing.s8}]}
+      style={[{paddingHorizontal: theme.spacing.s2}]}
       safeAreaEdges={["top"]}>
       <View style={themed($logoContainer)}>
         <LogoSvg width={108} height={58} />
       </View>
 
       <View style={themed($infoContainer)}>
-        <Text style={themed($title)} tx="onboarding:welcome" weight="semiBold" />
+        <Text style={themed($title)} tx="onboarding:welcome" weight="semibold" />
         <Spacer height={theme.spacing.s4} />
         <Text style={themed($subtitle)} tx="onboarding:doYouHaveGlasses" />
       </View>

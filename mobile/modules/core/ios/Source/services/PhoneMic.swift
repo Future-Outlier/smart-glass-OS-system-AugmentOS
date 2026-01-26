@@ -9,6 +9,7 @@ import AVFoundation
 import Combine
 import Foundation
 
+@MainActor
 class PhoneMic {
     static let shared = PhoneMic()
 
@@ -187,7 +188,7 @@ class PhoneMic {
             try session.setCategory(
                 .playAndRecord,
                 mode: .default,
-                options: [.allowBluetooth, .defaultToSpeaker, .mixWithOthers, .allowBluetoothA2DP]
+                options: [ /* .allowBluetooth, */ .defaultToSpeaker, .mixWithOthers, .allowBluetoothA2DP]
             )
 
             // Override the output to use Bluetooth (AirPods) for speaker
@@ -226,7 +227,7 @@ class PhoneMic {
             try session.setCategory(
                 .playAndRecord,
                 mode: .voiceChat,
-                options: [.allowBluetooth]
+                options: [.allowBluetooth, .mixWithOthers]
             )
 
             // Try to set Bluetooth HFP as preferred input
@@ -556,7 +557,10 @@ class PhoneMic {
         // See: MENTRA-OS-YM, MENTRA-OS-137
         inputNode.removeTap(onBus: 0)
 
-        inputNode.installTap(onBus: 0, bufferSize: 256, format: nil) {
+        // Buffer size of 1024 at 48kHz = ~21ms of audio
+        // After downsampling to 16kHz = ~341 samples = ~2 LC3 frames (160 samples each)
+        // Larger buffers reduce callback frequency and timing jitter which can cause audio blips
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: nil) {
             [weak self] buffer, _ in
             guard let self = self else { return }
 
@@ -624,13 +628,23 @@ class PhoneMic {
         _isRecording = false
         currentMicMode = ""
 
-        // Remove the tap and stop the engine (may fail if engine invalid, that's ok)
-        audioEngine?.inputNode.removeTap(onBus: 0)
-        audioEngine?.stop()
+        // Capture engine reference before cleanup to avoid race conditions
+        let engine = audioEngine
+        audioEngine = nil
+
+        // Remove the tap and stop the engine safely
+        // Accessing inputNode can crash if engine is in an invalid state (e.g., during
+        // audio route changes), so we guard against this. See: MENTRA-OS-17X
+        if let engine = engine {
+            // Only access inputNode if engine is still attached
+            if engine.inputNode.engine != nil {
+                engine.inputNode.removeTap(onBus: 0)
+            }
+            engine.stop()
+        }
 
         // Clean up
         try? audioSession?.setActive(false)
-        audioEngine = nil
         audioSession = nil
 
         Bridge.log("MIC: Stopped recording")

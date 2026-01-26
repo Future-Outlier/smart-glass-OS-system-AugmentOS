@@ -2,8 +2,8 @@ import {useState, useEffect, useRef} from "react"
 import {View, Pressable, Modal, ScrollView, Platform, ViewStyle, TextStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 type TimeSettingProps = {
   label: string
@@ -150,7 +150,7 @@ const TimeSetting: React.FC<TimeSettingProps> = ({
 
   return (
     <View style={[themed($container), groupedStyle, containerStyle]}>
-      <Text style={themed($label)} weight="semiBold" text={label} />
+      <Text style={themed($label)} weight="semibold" text={label} />
 
       <Pressable
         style={themed($timeButton)}
@@ -164,7 +164,7 @@ const TimeSetting: React.FC<TimeSettingProps> = ({
         <View style={themed($modalOverlay)}>
           <View style={themed($modalContent)}>
             <View style={themed($modalHeader)}>
-              <Text style={themed($modalTitle)} weight="semiBold" text={label} />
+              <Text style={themed($modalTitle)} weight="semibold" text={label} />
             </View>
 
             <View style={themed($pickerContainer)}>

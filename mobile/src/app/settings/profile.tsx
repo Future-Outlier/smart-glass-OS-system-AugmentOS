@@ -8,13 +8,13 @@ import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
 import {useAuth} from "@/contexts/AuthContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
-import {$styles, ThemedStyle} from "@/theme"
+import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import mentraAuth from "@/utils/auth/authClient"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 // Default user icon component for profile pictures
 const DefaultUserIcon = ({size = 100, color = "#999"}: {size?: number; color?: string}) => {
@@ -86,6 +86,11 @@ export default function ProfileSettingsPage() {
   const handleChangePassword = () => {
     console.log("Profile: Navigating to change password screen")
     push("/settings/change-password")
+  }
+
+  const handleChangeEmail = () => {
+    console.log("Profile: Navigating to change email screen")
+    push("/settings/change-email")
   }
 
   const handleDeleteAccount = () => {
@@ -230,7 +235,7 @@ export default function ProfileSettingsPage() {
 
   const confirmSignOut = () => {
     showAlert(
-      translate("settings:signOut"),
+      translate("common:logOut"),
       translate("settings:signOutConfirm"),
       [
         {text: translate("common:cancel"), style: "cancel"},
@@ -243,11 +248,11 @@ export default function ProfileSettingsPage() {
   const {theme, themed} = useAppTheme()
 
   return (
-    <Screen preset="fixed" style={themed($styles.screen)}>
+    <Screen preset="fixed">
       <Header title={translate("profileSettings:title")} leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView>
         {loading ? (
-          <ActivityIndicator size="large" color={theme.colors.palette.primary500} />
+          <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
         ) : userData ? (
           <>
             <View style={themed($profileSection)}>
@@ -272,22 +277,26 @@ export default function ProfileSettingsPage() {
             <Spacer height={theme.spacing.s6} />
 
             <Group title={translate("account:appSettings")}>
-              {userData.provider == "email" && (
+              {/* Show password/email options only for email/password users (not OAuth) */}
+              {userData.provider !== "google" && userData.provider !== "apple" && (
                 <RouteButton label={translate("profileSettings:changePassword")} onPress={handleChangePassword} />
+              )}
+              {userData.provider !== "google" && userData.provider !== "apple" && (
+                <RouteButton label={translate("profileSettings:changeEmail")} onPress={handleChangeEmail} />
               )}
               <RouteButton label={translate("profileSettings:requestDataExport")} onPress={handleRequestDataExport} />
               <RouteButton
                 label={translate("profileSettings:deleteAccount")}
                 onPress={handleDeleteAccount}
-                variant="destructive"
+                preset="destructive"
               />
-              <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} variant="destructive" />
+              <RouteButton label={translate("common:logOut")} onPress={confirmSignOut} preset="destructive" />
             </Group>
           </>
         ) : (
           <>
             {/* Sign out button - always available, even if user data fails to load */}
-            <RouteButton label={translate("settings:signOut")} onPress={confirmSignOut} />
+            <RouteButton label={translate("common:logOut")} onPress={confirmSignOut} />
             <Text tx="profileSettings:errorGettingUserInfo" />
           </>
         )}
@@ -310,7 +319,7 @@ export default function ProfileSettingsPage() {
               alignItems: "center",
               minWidth: 200,
             }}>
-            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.s4}} />
+            <ActivityIndicator size="large" color={theme.colors.secondary_foreground} style={{marginBottom: theme.spacing.s4}} />
             <Text preset="bold" style={{color: theme.colors.text}}>
               {translate("settings:loggingOutMessage")}
             </Text>

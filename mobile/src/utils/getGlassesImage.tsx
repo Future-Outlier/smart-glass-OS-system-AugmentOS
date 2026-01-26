@@ -1,14 +1,15 @@
 import {Platform} from "react-native"
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export const getGlassesImage = (glasses: string | null) => {
   switch (glasses) {
     case "Vuzix-z100":
     case "Vuzix Z100":
     case "Vuzix Ultralite":
-      return require("../../assets/glasses/vuzix-z100-glasses.png")
+      return require("../../assets/glasses/vuzix_z100.png")
     case "Mentra Mach1":
     case "Mach1":
-      return require("../../assets/glasses/mentra-mach1-glasses.png")
+      return require("../../assets/glasses/vuzix_z100.png")
     case "Mentra Live":
     case "mentra_live":
       return require("../../assets/glasses/mentra_live/mentra_live.png")
@@ -26,7 +27,7 @@ export const getGlassesImage = (glasses: string | null) => {
     case "virtual-wearable":
     case "Audio Wearable":
       return require("../../assets/glasses/audio_wearable.png")
-    case "Simulated Glasses":
+    case DeviceTypes.SIMULATED:
       if (Platform.OS === "ios") {
         return require("../../assets/guide/iphone.png")
       } else {

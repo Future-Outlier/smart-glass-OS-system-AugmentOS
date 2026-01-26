@@ -5,7 +5,7 @@ import {BackHandler} from "react-native"
 import {GalleryScreen} from "@/components/glasses/Gallery/GalleryScreen"
 import {Screen} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/utils/useAppTheme"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function AsgGallery() {
   const {theme} = useAppTheme()
@@ -25,7 +25,7 @@ export default function AsgGallery() {
   )
 
   return (
-    <Screen preset="fixed" style={{paddingHorizontal: theme.spacing.s6}}>
+    <Screen preset="fixed">
       <GalleryScreen />
     </Screen>
   )

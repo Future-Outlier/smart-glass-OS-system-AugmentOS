@@ -2,8 +2,9 @@ import {useCallback, useMemo} from "react"
 import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
-import AppIcon from "@/components/misc/AppIcon"
+import AppIcon from "@/components/home/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {
   ClientAppletInterface,
   DUMMY_APPLET,
@@ -13,7 +14,6 @@ import {
 } from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 const GRID_COLUMNS = 4
 
@@ -98,7 +98,7 @@ export const BackgroundAppsGrid = () => {
   return (
     <View style={themed($container)}>
       <View style={themed($header)}>
-        <Text tx="home:inactiveApps" style={themed($headerText)} />
+        <Text tx="home:inactiveApps" className="font-semibold text-xl" />
       </View>
       <FlatList
         data={gridData}
@@ -148,20 +148,18 @@ const $appIcon: ThemedStyle<ViewStyle> = () => ({
 })
 
 const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 12,
   color: colors.text,
   textAlign: "center",
-  marginTop: spacing.s1,
+  marginTop: spacing.s2,
   lineHeight: 14,
   // overflow: "hidden",
   // wordWrap: "break-word",
 })
 
 const $appNameOffline: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 12,
   color: colors.textDim,
   textAlign: "center",
-  marginTop: spacing.s1,
+  marginTop: spacing.s2,
   textDecorationLine: "line-through",
   lineHeight: 14,
 })

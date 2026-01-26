@@ -26,6 +26,9 @@ import com.mentra.asg_client.service.core.handlers.BatteryCommandHandler;
 import com.mentra.asg_client.service.core.handlers.ImuCommandHandler;
 import com.mentra.asg_client.service.core.handlers.GalleryCommandHandler;
 import com.mentra.asg_client.service.core.handlers.RgbLedCommandHandler;
+import com.mentra.asg_client.service.core.handlers.BleConfigCommandHandler;
+import com.mentra.asg_client.service.core.handlers.UserEmailCommandHandler;
+import com.mentra.asg_client.reporting.core.ReportManager;
 
 import org.json.JSONObject;
 
@@ -294,13 +297,16 @@ public class CommandProcessor {
             commandHandlerRegistry.registerHandler(new AuthTokenCommandHandler(communicationManager, configurationManager));
             Log.d(TAG, "✅ Registered AuthTokenCommandHandler");
 
+            commandHandlerRegistry.registerHandler(new UserEmailCommandHandler(configurationManager, ReportManager.getInstance(context)));
+            Log.d(TAG, "✅ Registered UserEmailCommandHandler");
+
             commandHandlerRegistry.registerHandler(new PhotoCommandHandler(context, serviceManager, fileManager, stateManager));
             Log.d(TAG, "✅ Registered PhotoCommandHandler");
 
             commandHandlerRegistry.registerHandler(new VideoCommandHandler(context, serviceManager, streamingManager, fileManager, stateManager));
             Log.d(TAG, "✅ Registered VideoCommandHandler");
 
-            commandHandlerRegistry.registerHandler(new PingCommandHandler(communicationManager, responseBuilder));
+            commandHandlerRegistry.registerHandler(new PingCommandHandler(communicationManager, responseBuilder, serviceManager));
             Log.d(TAG, "✅ Registered PingCommandHandler");
 
             commandHandlerRegistry.registerHandler(new RtmpCommandHandler(context, stateManager, streamingManager));
@@ -312,7 +318,7 @@ public class CommandProcessor {
             commandHandlerRegistry.registerHandler(new BatteryCommandHandler(stateManager));
             Log.d(TAG, "✅ Registered BatteryCommandHandler");
 
-            commandHandlerRegistry.registerHandler(new VersionCommandHandler(context, serviceManager));
+            commandHandlerRegistry.registerHandler(new VersionCommandHandler(serviceManager));
             Log.d(TAG, "✅ Registered VersionCommandHandler");
 
             commandHandlerRegistry.registerHandler(new SettingsCommandHandler(serviceManager, communicationManager, responseBuilder));
@@ -338,6 +344,9 @@ public class CommandProcessor {
 
             commandHandlerRegistry.registerHandler(new com.mentra.asg_client.service.core.handlers.ServiceHeartbeatCommandHandler(serviceManager));
             Log.d(TAG, "✅ Registered ServiceHeartbeatCommandHandler");
+
+            commandHandlerRegistry.registerHandler(new BleConfigCommandHandler());
+            Log.d(TAG, "✅ Registered BleConfigCommandHandler");
 
             Log.i(TAG, "✅ Successfully registered " + commandHandlerRegistry.getHandlerCount() + " command handlers");
 
@@ -404,6 +413,20 @@ public class CommandProcessor {
             Log.d(TAG, "✅ Report swipe status sent successfully");
         } catch (Exception e) {
             Log.e(TAG, "💥 Error sending report swipe status", e);
+        }
+    }
+
+    /**
+     * Request BT MAC address from BES chip.
+     * This should be called after UART connection is established to retrieve the unique device identifier.
+     */
+    public void requestBtMacAddress() {
+        Log.d(TAG, "📤 requestBtMacAddress() called");
+
+        if (k900CommandHandler != null) {
+            k900CommandHandler.requestBtMacAddress();
+        } else {
+            Log.w(TAG, "⚠️ K900CommandHandler not available - cannot request BT MAC address");
         }
     }
 

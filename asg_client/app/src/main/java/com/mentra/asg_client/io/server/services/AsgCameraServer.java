@@ -337,6 +337,12 @@ public class AsgCameraServer extends AsgServer {
                     return createErrorResponse(Response.Status.REQUEST_TIMEOUT, "Gallery processing timeout");
                 }
 
+                // Skip AVIF transfer artifacts - they should not appear in gallery
+                if (isAvifTransferArtifact(photoMetadata.getFileName())) {
+                    logger.debug(TAG, "📚 Skipping AVIF transfer artifact in gallery: " + photoMetadata.getFileName());
+                    continue;
+                }
+
                 Map<String, Object> photoInfo = new HashMap<>();
                 photoInfo.put("name", photoMetadata.getFileName());
                 photoInfo.put("size", photoMetadata.getFileSize());
@@ -1079,10 +1085,32 @@ public class AsgCameraServer extends AsgServer {
                     fileInfo.put("url", "/api/photo?file=" + fileMetadata.getFileName());
                     fileInfo.put("download", "/api/download?file=" + fileMetadata.getFileName());
 
-                    // Add video-specific information
+                    // Add media type and thumbnail information
                     if (isVideoFile(fileMetadata.getFileName())) {
                         fileInfo.put("is_video", true);
                         if (includeThumbnailsFlag) {
+                            // Include base64 thumbnail data for immediate display
+                            try {
+                                File videoFile = fileManager.getFile(fileManager.getDefaultPackageName(), fileMetadata.getFileName());
+                                if (videoFile != null && videoFile.exists()) {
+                                    File thumbnailFile = fileManager.getThumbnailManager().getOrCreateThumbnail(videoFile);
+                                    if (thumbnailFile != null && thumbnailFile.exists()) {
+                                        try (FileInputStream fis = new FileInputStream(thumbnailFile)) {
+                                            byte[] thumbnailData;
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                                thumbnailData = fis.readAllBytes();
+                                            } else {
+                                                thumbnailData = new byte[(int) thumbnailFile.length()];
+                                                fis.read(thumbnailData);
+                                            }
+                                            String thumbnailBase64 = android.util.Base64.encodeToString(thumbnailData, android.util.Base64.DEFAULT);
+                                            fileInfo.put("thumbnail_data", thumbnailBase64);
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                logger.warn(TAG, "Failed to include thumbnail for " + fileMetadata.getFileName() + ": " + e.getMessage());
+                            }
                             fileInfo.put("thumbnail_url", "/api/photo?file=" + fileMetadata.getFileName());
                         }
                     } else {
@@ -1092,6 +1120,16 @@ public class AsgCameraServer extends AsgServer {
                     changedFiles.add(fileInfo);
                 }
             }
+
+            // Sort files by modification time (oldest first) for chronological sync
+            // This ensures older captures are synced first, building gallery chronologically
+            changedFiles.sort((file1, file2) -> {
+                Long modified1 = (Long) file1.get("modified");
+                Long modified2 = (Long) file2.get("modified");
+                if (modified1 == null) modified1 = 0L;
+                if (modified2 == null) modified2 = 0L;
+                return Long.compare(modified1, modified2);  // Oldest first
+            });
 
             // Calculate sync statistics
             long currentTime = System.currentTimeMillis();

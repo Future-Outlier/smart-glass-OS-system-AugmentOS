@@ -21,6 +21,7 @@ import com.mentra.core.utils.DeviceTypes
 import com.mentra.core.utils.MicMap
 import com.mentra.core.utils.MicTypes
 import com.mentra.mentra.stt.SherpaOnnxTranscriber
+import com.mentra.lc3Lib.Lc3Cpp
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -61,6 +62,7 @@ class CoreManager {
     // MARK: - Properties
     var coreToken = ""
     var coreTokenOwner = ""
+    var storedUserEmail = ""
     var sgc: SGCManager? = null
 
     // state
@@ -73,7 +75,6 @@ class CoreManager {
     private var screenDisabled = false
     private var isSearching = false
     private var systemMicUnavailable = false
-    public val currentRequiredData = mutableListOf<SpeechRequiredDataType>()
     public var micRanking = MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
 
     // glasses settings
@@ -89,19 +90,27 @@ class CoreManager {
     private var isHeadUp = false
 
     // core settings
-    public var sensingEnabled = true
     public var powerSavingMode = false
     private var alwaysOnStatusBar = false
     private var bypassVad = true
-    private var bypassVadForPCM = false
     private var enforceLocalTranscription = false
-    private var bypassAudioEncoding = false
     private var offlineMode = false
     private var metricSystem = false
 
+    // LC3 Audio Encoding
+    // Audio output format enum
+    enum class AudioOutputFormat { LC3, PCM }
+    // Canonical LC3 config: 16kHz sample rate, 10ms frame duration
+    // Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps)
+    private var lc3EncoderPtr: Long = 0
+    private var lc3DecoderPtr: Long = 0
+    private var lc3FrameSize = 20 // bytes per LC3 frame (default: 20 = 16kbps)
+    // Audio output format - defaults to LC3 for bandwidth savings
+    private var audioOutputFormat: AudioOutputFormat = AudioOutputFormat.LC3
+
     // mic
     public var useOnboardMic = false
-    public var preferredMic = "glasses"
+    public var preferredMic = "auto"
     public var micEnabled = false
     private var lastMicState: Triple<Boolean, Boolean, String>? =
             null // (useGlassesMic, useOnboardMic, preferredMic)
@@ -155,6 +164,18 @@ class CoreManager {
         } catch (e: Exception) {
             Bridge.log("Failed to initialize SherpaOnnxTranscriber: ${e.message}")
             transcriber = null
+        }
+
+        // Initialize LC3 encoder/decoder for unified audio encoding
+        try {
+            Lc3Cpp.init()
+            lc3EncoderPtr = Lc3Cpp.initEncoder()
+            lc3DecoderPtr = Lc3Cpp.initDecoder()
+            Bridge.log("LC3 encoder/decoder initialized successfully")
+        } catch (e: Exception) {
+            Bridge.log("Failed to initialize LC3 encoder/decoder: ${e.message}")
+            lc3EncoderPtr = 0
+            lc3DecoderPtr = 0
         }
     }
 
@@ -359,49 +380,6 @@ class CoreManager {
             var data: String?,
             var animationData: Map<String, Any>?
     )
-
-    enum class SpeechRequiredDataType(val rawValue: String) {
-        PCM("pcm"),
-        TRANSCRIPTION("transcription"),
-        PCM_OR_TRANSCRIPTION("pcm_or_transcription");
-
-        companion object {
-            /**
-             * Convert from string value to enum
-             * @param value The string value to convert
-             * @return The corresponding enum value, or null if not found
-             */
-            fun fromString(value: String): SpeechRequiredDataType? {
-                return values().find { it.rawValue == value }
-            }
-
-            /**
-             * Convert array of strings to array of enums
-             * @param stringArray Array of string values
-             * @return Array of enum values, filtering out invalid strings
-             */
-            fun fromStringArray(stringArray: List<String>): List<SpeechRequiredDataType> {
-                return stringArray.mapNotNull { fromString(it) }
-            }
-
-            /**
-             * Convert array of enums to array of strings
-             * @param enumArray Array of enum values
-             * @return Array of string values
-             */
-            fun toStringArray(enumArray: List<SpeechRequiredDataType>): List<String> {
-                return enumArray.map { it.rawValue }
-            }
-        }
-
-        /**
-         * Convert enum to string value
-         * @return The string representation of the enum
-         */
-        override fun toString(): String {
-            return rawValue
-        }
-    }
     // MARK: - End Unique
 
     // MARK: - Voice Data Handling
@@ -413,10 +391,35 @@ class CoreManager {
         }
     }
 
+    /**
+     * Send audio data to cloud via Bridge.
+     * Encodes to LC3 if audioOutputFormat is LC3, otherwise sends raw PCM.
+     * All audio destined for cloud should go through this function.
+     */
+    private fun sendMicData(pcmData: ByteArray) {
+        when (audioOutputFormat) {
+            AudioOutputFormat.LC3 -> {
+                if (lc3EncoderPtr == 0L) {
+                    Bridge.log("MAN: ERROR - LC3 encoder not initialized but format is LC3")
+                    return
+                }
+                val lc3Data = Lc3Cpp.encodeLC3(lc3EncoderPtr, pcmData, lc3FrameSize)
+                if (lc3Data == null || lc3Data.isEmpty()) {
+                    Bridge.log("MAN: ERROR - LC3 encoding returned empty data")
+                    return
+                }
+                Bridge.sendMicData(lc3Data)
+            }
+            AudioOutputFormat.PCM -> {
+                Bridge.sendMicData(pcmData)
+            }
+        }
+    }
+
     private fun emptyVadBuffer() {
         while (vadBuffer.isNotEmpty()) {
             val chunk = vadBuffer.removeAt(0)
-            Bridge.sendMicData(chunk)
+            sendMicData(chunk) // Uses our encoder, not Bridge directly
         }
     }
 
@@ -428,37 +431,51 @@ class CoreManager {
         }
     }
 
-    fun handleGlassesMicData(rawLC3Data: ByteArray) {
-        // decode the lc3 data to pcm and pass to the bridge to be sent to the server:
-        // TODO: config
+    /**
+     * Handle raw LC3 audio data from glasses.
+     * Decodes the glasses LC3, then passes to handlePcm for canonical LC3 encoding.
+     * Note: frameSize here is for glasses→phone decoding, NOT for phone→cloud encoding.
+     */
+    fun handleGlassesMicData(rawLC3Data: ByteArray, frameSize: Int = 40) {
+        if (lc3DecoderPtr == 0L) {
+            Bridge.log("MAN: LC3 decoder not initialized, cannot process glasses audio")
+            return
+        }
+
+        try {
+            // Decode glasses LC3 to PCM (glasses may use different LC3 configs)
+            val pcmData = Lc3Cpp.decodeLC3(lc3DecoderPtr, rawLC3Data, frameSize)
+            if (pcmData != null && pcmData.isNotEmpty()) {
+                // Re-encode to canonical LC3 via handlePcm
+                handlePcm(pcmData)
+            } else {
+                Bridge.log("MAN: LC3 decode returned empty data")
+            }
+        } catch (e: Exception) {
+            Bridge.log("MAN: Failed to decode glasses LC3: ${e.message}")
+        }
     }
 
     fun handlePcm(pcmData: ByteArray) {
-        // Bridge.log("MAN: handlePcm()")
-
-        // Send PCM to cloud if needed
+        // Send audio to cloud if needed (encoding handled by sendMicData)
         if (shouldSendPcmData) {
-            Bridge.sendMicData(pcmData)
+            sendMicData(pcmData)
         }
 
-        // Send PCM to local transcriber if needed
+        // Send PCM to local transcriber (always needs raw PCM)
         if (shouldSendTranscript) {
             transcriber?.acceptAudio(pcmData)
         }
     }
 
     // turns a single mic on and turns off all other mics:
-    private fun updateMicState() {
-        Bridge.log(
-                "MAN: updateMicState() - micEnabled=$micEnabled, systemMicUnavailable=$systemMicUnavailable"
-        )
-        Bridge.log("MAN: micRanking=$micRanking")
-
+    private fun updateMicState() {        
         // go through the micRanking and find the first mic that is available:
         var micUsed: String = ""
-
+        
         // allow the sgc to make changes to the micRanking:
         micRanking = sgc?.sortMicRanking(micRanking) ?: micRanking
+        Bridge.log("MAN: updateMicState() micRanking: $micRanking")
 
         if (micEnabled) {
 
@@ -474,6 +491,7 @@ class CoreManager {
                     }
 
                     if (systemMicUnavailable) {
+                        Bridge.log("MAN: systemMicUnavailable, continuing to next mic")
                         continue
                     }
 
@@ -487,11 +505,20 @@ class CoreManager {
                 }
 
                 if (micMode == MicTypes.GLASSES_CUSTOM) {
-                    if (sgc?.hasMic == true && sgc?.micEnabled == false) {
-                        sgc?.setMicEnabled(true)
-                        micUsed = micMode
-                        break
+                    if (sgc?.hasMic == true) {
+                        // enable the mic if it's not already on:
+                        if (sgc?.micEnabled == false) {
+                            sgc?.setMicEnabled(true)
+                            micUsed = micMode
+                            break
+                        } else {
+                            // the mic is already on, mark it as used and break:
+                            micUsed = micMode
+                            break
+                        }
                     }
+                    // if the glasses doesn't have a mic, continue to the next mic:
+                    continue
                 }
             }
         }
@@ -502,7 +529,14 @@ class CoreManager {
         }
 
         // go through and disable all mics after the first used one:
-        for (micMode in micRanking) {
+        val allMics = micRanking
+        // add any missing mics to the list:
+        for (micMode in MicMap.map["auto"]!!) {
+            if (!allMics.contains(micMode)) {
+                allMics.add(micMode)
+            }
+        }
+        for (micMode in allMics) {
             if (micMode == micUsed) {
                 continue
             }
@@ -519,6 +553,7 @@ class CoreManager {
                 sgc?.setMicEnabled(false)
             }
         }
+        getStatus() // to update the UI
     }
 
     private fun setOnboardMicEnabled(enabled: Boolean) {
@@ -531,21 +566,21 @@ class CoreManager {
     }
 
     private fun sendCurrentState() {
-        Bridge.log("MAN: sendCurrentState(): $isHeadUp")
+        // Bridge.log("MAN: sendCurrentState(): $isHeadUp")
         if (screenDisabled) {
             return
         }
 
         // executor.execute {
-        val currentViewState =
-                if (isHeadUp) {
-                    viewStates[1]
-                } else {
-                    viewStates[0]
-                }
+        var currentViewState: ViewState
+        if (isHeadUp) {
+            currentViewState = viewStates[1]
+        } else {
+            currentViewState = viewStates[0]
+        }
 
         if (isHeadUp && !contextualDashboard) {
-            return
+            currentViewState = viewStates[0]
         }
 
         if (sgc?.type?.contains(DeviceTypes.SIMULATED) == true) {
@@ -562,7 +597,7 @@ class CoreManager {
         // Cancel any pending clear display work item
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
 
-        Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
+        // Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
 
         when (currentViewState.layoutType) {
             "text_wall" -> sgc?.sendTextWall(currentViewState.text)
@@ -627,10 +662,6 @@ class CoreManager {
                         "MAN: External app released microphone - marking onboard mic as available"
                 )
                 systemMicUnavailable = false
-                // // Only trigger recovery if we're in automatic/phone mode
-                // if (preferredMic == "phone") {
-                //     handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-                // }
             }
             "phone_call_interruption" -> {
                 // Phone call started - mark mic as unavailable
@@ -671,7 +702,7 @@ class CoreManager {
     fun onInterruption(began: Boolean) {
         Bridge.log("MAN: Interruption: $began")
         systemMicUnavailable = began
-        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
     }
 
     // MARK: - State Management
@@ -684,33 +715,34 @@ class CoreManager {
 
     fun updateContextualDashboard(enabled: Boolean) {
         contextualDashboard = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updatePreferredMic(mic: String) {
+        preferredMic = mic
         micRanking =
-                MicMap.map[mic]?.toMutableList()
+                MicMap.map[preferredMic]?.toMutableList()
                         ?: MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
-        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-        handle_request_status()
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
+        getStatus()
     }
 
     fun updateButtonMode(mode: String) {
         buttonPressMode = mode
         sgc?.sendButtonModeSetting()
-        handle_request_status()
+        getStatus()
     }
 
     fun updateButtonPhotoSize(size: String) {
         buttonPhotoSize = size
         sgc?.sendButtonPhotoSettings()
-        handle_request_status()
+        getStatus()
     }
 
     fun updateGalleryMode(mode: Boolean) {
         galleryMode = mode
         sgc?.sendGalleryMode()
-        handle_request_status()
+        getStatus()
     }
 
     fun updateButtonVideoSettings(width: Int, height: Int, fps: Int) {
@@ -728,35 +760,35 @@ class CoreManager {
                 "CoreManager",
                 "✅ [SETTINGS_SYNC] Button video settings updated to: ${width}x${height}@${fps}fps"
         )
-        handle_request_status()
+        getStatus()
     }
 
     fun updateButtonCameraLed(enabled: Boolean) {
         buttonCameraLed = enabled
         sgc?.sendButtonCameraLedSetting()
-        handle_request_status()
+        getStatus()
     }
 
     fun updateButtonMaxRecordingTime(minutes: Int) {
         buttonMaxRecordingTime = minutes
         sgc?.sendButtonMaxRecordingTime()
-        handle_request_status()
+        getStatus()
     }
 
     fun updateNotificationsBlocklist(blacklist: List<String>) {
         notificationsBlocklist = blacklist
-        handle_request_status()
+        getStatus()
     }
 
     fun updateNotificationsEnabled(enabled: Boolean) {
         notificationsEnabled = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updateGlassesHeadUpAngle(value: Int) {
         headUpAngle = value
         sgc?.setHeadUpAngle(value)
-        handle_request_status()
+        getStatus()
     }
 
     fun updateGlassesBrightness(value: Int, autoMode: Boolean) {
@@ -781,7 +813,7 @@ class CoreManager {
             sgc?.clearDisplay()
         }
 
-        handle_request_status()
+        getStatus()
     }
 
     fun updateGlassesDepth(value: Int) {
@@ -790,7 +822,7 @@ class CoreManager {
             it.setDashboardPosition(dashboardHeight, dashboardDepth)
             Bridge.log("MAN: Set dashboard depth to $value")
         }
-        handle_request_status()
+        getStatus()
     }
 
     fun updateGlassesHeight(value: Int) {
@@ -799,65 +831,58 @@ class CoreManager {
             it.setDashboardPosition(dashboardHeight, dashboardDepth)
             Bridge.log("MAN: Set dashboard height to $value")
         }
-        handle_request_status()
-    }
-
-    fun updateSensing(enabled: Boolean) {
-        sensingEnabled = enabled
-        handle_microphone_state_change(currentRequiredData, bypassVadForPCM)
-        handle_request_status()
+        getStatus()
     }
 
     fun updatePowerSavingMode(enabled: Boolean) {
         powerSavingMode = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updateAlwaysOnStatusBar(enabled: Boolean) {
         alwaysOnStatusBar = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updateBypassVad(enabled: Boolean) {
         bypassVad = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updateEnforceLocalTranscription(enabled: Boolean) {
         enforceLocalTranscription = enabled
-
-        if (currentRequiredData.contains(SpeechRequiredDataType.PCM_OR_TRANSCRIPTION)) {
-            if (enforceLocalTranscription) {
-                shouldSendTranscript = true
-                shouldSendPcmData = false
-            } else {
-                shouldSendPcmData = true
-                shouldSendTranscript = false
-            }
-        }
-
-        handle_request_status()
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
+        getStatus()
     }
 
     fun updateOfflineMode(enabled: Boolean) {
         offlineMode = enabled
-        Bridge.log("Mentra: updating offline mode $enabled")
-
-        val requiredData = mutableListOf<SpeechRequiredDataType>()
-        if (enabled) {
-            requiredData.add(SpeechRequiredDataType.TRANSCRIPTION)
-        }
-
-        handle_microphone_state_change(requiredData, bypassVadForPCM)
+        Bridge.log("MAN: updating offline mode: $enabled")
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
     }
 
-    fun updateBypassAudioEncoding(enabled: Boolean) {
-        bypassAudioEncoding = enabled
+    fun updateAudioOutputFormat(format: AudioOutputFormat) {
+        audioOutputFormat = format
+        Bridge.log("Audio output format set to: $format")
+    }
+
+    /**
+     * Set the LC3 frame size for phone→cloud encoding.
+     * Valid values: 20 (16kbps), 40 (32kbps), 60 (48kbps).
+     */
+    fun setLC3FrameSize(frameSize: Int) {
+        if (frameSize != 20 && frameSize != 40 && frameSize != 60) {
+            Bridge.log("MAN: Invalid LC3 frame size $frameSize, must be 20, 40, or 60. Using default 20.")
+            lc3FrameSize = 20
+            return
+        }
+        lc3FrameSize = frameSize
+        Bridge.log("MAN: LC3 frame size set to $frameSize bytes (${frameSize * 800 / 1000}kbps)")
     }
 
     fun updateMetricSystem(enabled: Boolean) {
         metricSystem = enabled
-        handle_request_status()
+        getStatus()
     }
 
     fun updateScreenDisabled(enabled: Boolean) {
@@ -918,7 +943,7 @@ class CoreManager {
             handleDeviceReady()
         } else {
             handleDeviceDisconnected()
-            handle_request_status()
+            getStatus()
         }
     }
 
@@ -933,7 +958,7 @@ class CoreManager {
         defaultWearable = sgc?.type ?: ""
 
         isSearching = false
-        handle_request_status()
+        getStatus()
 
         // Show welcome message on first connect for all display glasses
         if (shouldSendBootingMessage) {
@@ -975,27 +1000,26 @@ class CoreManager {
 
     private fun handleMach1Ready() {
         // Mach1-specific setup (if any needed in the future)
-        handle_request_status()
+        getStatus()
     }
 
     private fun handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         isHeadUp = false
         lastMicState = null // Clear cache - hardware is definitely off now
-        shouldSendBootingMessage = true // Reset for next first connect
-        handle_request_status()
+        getStatus()
     }
 
     // MARK: - Network Command handlers
 
-    fun handle_display_text(params: Map<String, Any>) {
+    fun displayText(params: Map<String, Any>) {
         (params["text"] as? String)?.let { text ->
             Bridge.log("MAN: Displaying text: $text")
             sgc?.sendTextWall(text)
         }
     }
 
-    fun handle_display_event(event: Map<String, Any>) {
+    fun displayEvent(event: Map<String, Any>) {
         val view = event["view"] as? String
         if (view == null) {
             Bridge.log("MAN: Invalid view")
@@ -1018,159 +1042,136 @@ class CoreManager {
 
         val currentState = viewStates[stateIndex]
 
-        if (!statesEqual(currentState, newViewState)) {
-            Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
-            viewStates[stateIndex] = newViewState
-            if (stateIndex == 0 && !isHeadUp) {
-                sendCurrentState()
-            } else if (stateIndex == 1 && isHeadUp) {
-                sendCurrentState()
-            }
+        if (statesEqual(currentState, newViewState)) {
+            return
+        }
+
+        viewStates[stateIndex] = newViewState
+        val headUp = isHeadUp && contextualDashboard
+        // send the state we just received if the user is currently in that state:
+        if (stateIndex == 0 && !headUp) {
+            sendCurrentState()
+        } else if (stateIndex == 1 && headUp) {
+            sendCurrentState()
         }
     }
 
-    fun handle_show_dashboard() {
+    fun showDashboard() {
         sgc?.showDashboard()
     }
 
-    fun handle_send_rtmp_stream_start(message: MutableMap<String, Any>) {
+    fun startRtmpStream(message: MutableMap<String, Any>) {
         Bridge.log("MAN: startRtmpStream")
         sgc?.startRtmpStream(message)
     }
 
-    fun handle_stop_rtmp_stream() {
+    fun stopRtmpStream() {
         Bridge.log("MAN: stopRtmpStream")
         sgc?.stopRtmpStream()
     }
 
-    fun handle_keep_rtmp_stream_alive(message: MutableMap<String, Any>) {
+    fun keepRtmpStreamAlive(message: MutableMap<String, Any>) {
         Bridge.log("MAN: keepRtmpStreamAlive: (message)")
         sgc?.sendRtmpKeepAlive(message)
     }
 
-    fun handle_request_wifi_scan() {
+    fun requestWifiScan() {
         Bridge.log("MAN: Requesting wifi scan")
         sgc?.requestWifiScan()
     }
 
-    fun handle_send_wifi_credentials(ssid: String, password: String) {
+    fun sendWifiCredentials(ssid: String, password: String) {
         Bridge.log("MAN: Sending wifi credentials: $ssid")
         sgc?.sendWifiCredentials(ssid, password)
     }
 
-    fun handle_set_hotspot_state(enabled: Boolean) {
+    fun setUserEmail(email: String) {
+        Bridge.log("MAN: Setting user email for crash reporting")
+        storedUserEmail = email
+        sgc?.sendUserEmailToGlasses(email)
+    }
+
+    fun forgetWifiNetwork(ssid: String) {
+        Bridge.log("MAN: Forgetting wifi network: $ssid")
+        sgc?.forgetWifiNetwork(ssid)
+    }
+
+    fun setHotspotState(enabled: Boolean) {
         Bridge.log("MAN: Setting glasses hotspot state: $enabled")
         sgc?.sendHotspotState(enabled)
     }
 
-    fun handle_query_gallery_status() {
+    fun queryGalleryStatus() {
         Bridge.log("MAN: Querying gallery status from glasses")
         sgc?.queryGalleryStatus()
     }
 
-    fun handle_start_buffer_recording() {
+    /**
+     * Send OTA start command to glasses.
+     * Called when user approves an update (onboarding or background mode).
+     * Triggers glasses to begin download and installation.
+     */
+    fun sendOtaStart() {
+        Bridge.log("MAN: 📱 Sending OTA start command to glasses")
+        (sgc as? MentraLive)?.sendOtaStart()
+    }
+
+    fun startBufferRecording() {
         Bridge.log("MAN: onStartBufferRecording")
         sgc?.startBufferRecording()
     }
 
-    fun handle_stop_buffer_recording() {
+    fun stopBufferRecording() {
         Bridge.log("MAN: onStopBufferRecording")
         sgc?.stopBufferRecording()
     }
 
-    fun handle_save_buffer_video(requestId: String, durationSeconds: Int) {
+    fun saveBufferVideo(requestId: String, durationSeconds: Int) {
         Bridge.log("MAN: onSaveBufferVideo: requestId=$requestId, duration=$durationSeconds")
         sgc?.saveBufferVideo(requestId, durationSeconds)
     }
 
-    fun handle_start_video_recording(requestId: String, save: Boolean) {
-        Bridge.log("MAN: onStartVideoRecording: requestId=$requestId, save=$save")
-        sgc?.startVideoRecording(requestId, save)
+    fun startVideoRecording(requestId: String, save: Boolean, silent: Boolean) {
+        Bridge.log("MAN: onStartVideoRecording: requestId=$requestId, save=$save, silent=$silent")
+        sgc?.startVideoRecording(requestId, save, silent)
     }
 
-    fun handle_stop_video_recording(requestId: String) {
+    fun stopVideoRecording(requestId: String) {
         Bridge.log("MAN: onStopVideoRecording: requestId=$requestId")
         sgc?.stopVideoRecording(requestId)
     }
 
-    fun handle_microphone_state_change(
-            requiredData: List<SpeechRequiredDataType>,
-            bypassVad: Boolean
-    ) {
-        // Bridge.log(
-        //         "MAN: MIC: changing mic with requiredData: $requiredData bypassVad=$bypassVad
-        // offlineMode=$offlineMode"
-        // )
+    fun setMicState(sendPcm: Boolean, sendTranscript: Boolean, bypassVadForPCM: Boolean) {
+        Bridge.log("MAN: MIC: setMicState($sendPcm, $sendTranscript, $bypassVad)")
 
-        bypassVadForPCM = bypassVad
+        shouldSendPcmData = sendPcm
+        shouldSendTranscript = sendTranscript
+        bypassVad = bypassVadForPCM
 
-        shouldSendPcmData = false
-        shouldSendTranscript = false
-
-        // This must be done before the requiredData is modified by offline mode
-        currentRequiredData.clear()
-        currentRequiredData.addAll(requiredData)
-
-        val mutableRequiredData = requiredData.toMutableList()
-        if (offlineMode &&
-                        !mutableRequiredData.contains(
-                                SpeechRequiredDataType.PCM_OR_TRANSCRIPTION
-                        ) &&
-                        !mutableRequiredData.contains(SpeechRequiredDataType.TRANSCRIPTION)
-        ) {
-            Bridge.log("MAN: MIC: Offline mode active - adding TRANSCRIPTION requirement")
-            mutableRequiredData.add(SpeechRequiredDataType.TRANSCRIPTION)
-        }
-
-        when {
-            mutableRequiredData.contains(SpeechRequiredDataType.PCM) &&
-                    mutableRequiredData.contains(SpeechRequiredDataType.TRANSCRIPTION) -> {
-                shouldSendPcmData = true
-                shouldSendTranscript = true
-            }
-            mutableRequiredData.contains(SpeechRequiredDataType.PCM) -> {
-                shouldSendPcmData = true
-                shouldSendTranscript = false
-            }
-            mutableRequiredData.contains(SpeechRequiredDataType.TRANSCRIPTION) -> {
-                shouldSendTranscript = true
-                shouldSendPcmData = false
-            }
-            mutableRequiredData.contains(SpeechRequiredDataType.PCM_OR_TRANSCRIPTION) -> {
-                if (enforceLocalTranscription) {
-                    shouldSendTranscript = true
-                    shouldSendPcmData = false
-                } else {
-                    shouldSendPcmData = true
-                    shouldSendTranscript = false
-                }
-            }
+        // if offline mode is enabled and no PCM or transcription is requested, force transcription
+        if (offlineMode && (!shouldSendPcmData && !shouldSendTranscript)) {
+            shouldSendTranscript = true
         }
 
         vadBuffer.clear()
-        micEnabled = mutableRequiredData.isNotEmpty()
-
-        // Bridge.log(
-        //         "MAN: MIC: Result - shouldSendPcmData=$shouldSendPcmData,
-        // shouldSendTranscript=$shouldSendTranscript, micEnabled=$micEnabled"
-        // )
-
+        micEnabled = shouldSendPcmData || shouldSendTranscript
         updateMicState()
     }
 
-    fun handle_photo_request(
+    fun photoRequest(
             requestId: String,
             appId: String,
             size: String,
             webhookUrl: String,
             authToken: String,
-            compress: String
+            compress: String,
+            silent: Boolean
     ) {
-        Bridge.log("MAN: onPhotoRequest: $requestId, $appId, $size, compress=$compress")
-        sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken, compress)
+        Bridge.log("MAN: onPhotoRequest: $requestId, $appId, $size, compress=$compress, silent=$silent")
+        sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken, compress, silent)
     }
 
-    fun handle_rgb_led_control(
+    fun rgbLedControl(
             requestId: String,
             packageName: String?,
             action: String,
@@ -1183,7 +1184,7 @@ class CoreManager {
         sgc?.sendRgbLedControl(requestId, packageName, action, color, ontime, offtime, count)
     }
 
-    fun handle_connect_default() {
+    fun connectDefault() {
         if (defaultWearable.isEmpty()) {
             Bridge.log("MAN: No default wearable, returning")
             return
@@ -1194,12 +1195,19 @@ class CoreManager {
         }
         initSGC(defaultWearable)
         isSearching = true
-        handle_request_status()
+        getStatus()
         sgc?.connectById(deviceName)
     }
 
-    fun handle_connect_by_name(dName: String) {
+    fun connectByName(dName: String) {
         Bridge.log("MAN: Connecting to wearable: $dName")
+
+        var name = dName
+        
+        // use stored device name if available:
+        if (dName.isEmpty() && !deviceName.isEmpty()) {
+            name = deviceName
+        }
 
         if (pendingWearable.isEmpty() && defaultWearable.isEmpty()) {
             Bridge.log("MAN: No pending or default wearable, returning")
@@ -1211,51 +1219,53 @@ class CoreManager {
             pendingWearable = defaultWearable
         }
 
-        handle_disconnect()
+        disconnect()
         Thread.sleep(100)
         isSearching = true
-        deviceName = dName
+        deviceName = name
 
         initSGC(pendingWearable)
         sgc?.connectById(deviceName)
-        handle_request_status()
+        getStatus()
     }
 
-    fun handle_connect_simulated() {
+    fun connectSimulated() {
         defaultWearable = DeviceTypes.SIMULATED
         deviceName = DeviceTypes.SIMULATED
         initSGC(defaultWearable)
         handleDeviceReady()
     }
 
-    fun handle_disconnect() {
+    fun disconnect() {
         sgc?.clearDisplay()
         sgc?.disconnect()
         sgc = null // Clear the SGC reference after disconnect
         isSearching = false
-        handle_request_status()
+        shouldSendPcmData = false
+        shouldSendTranscript = false
+        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
+        shouldSendBootingMessage = true // Reset for next first connect
+        getStatus()
     }
 
-    fun handle_forget() {
+    fun forget() {
         Bridge.log("MAN: Forgetting smart glasses")
 
         // Call forget first to stop timers/handlers/reconnect logic
         sgc?.forget()
 
         // Then disconnect to close connections
-        sgc?.disconnect()
+        disconnect()
 
         // Clear state
         defaultWearable = ""
         deviceName = ""
-        sgc = null
         Bridge.saveSetting("default_wearable", "")
         Bridge.saveSetting("device_name", "")
-        isSearching = false
-        handle_request_status()
+        getStatus()
     }
 
-    fun handle_find_compatible_devices(modelName: String) {
+    fun findCompatibleDevices(modelName: String) {
         Bridge.log("MAN: Searching for compatible device names for: $modelName")
 
         if (DeviceTypes.ALL.contains(modelName)) {
@@ -1265,10 +1275,10 @@ class CoreManager {
         initSGC(pendingWearable)
         Bridge.log("MAN: sgc initialized, calling findCompatibleDevices")
         sgc?.findCompatibleDevices()
-        handle_request_status()
+        getStatus()
     }
 
-    fun handle_request_status() {
+    fun getStatus() {
         val simulatedConnected = defaultWearable == DeviceTypes.SIMULATED
         val glassesConnected = sgc?.ready ?: false
 
@@ -1289,6 +1299,13 @@ class CoreManager {
             glassesInfo["deviceModel"] = sgc.glassesDeviceModel
             glassesInfo["androidVersion"] = sgc.glassesAndroidVersion
             glassesInfo["otaVersionUrl"] = sgc.glassesOtaVersionUrl
+            glassesInfo["fwVersion"] = sgc.glassesFirmwareVersion
+            glassesInfo["btMacAddress"] = sgc.glassesBtMacAddress
+            // state:
+            glassesInfo["connected"] = glassesConnected
+            glassesInfo["connectionState"] = sgc.connectionState
+            glassesInfo["micEnabled"] = sgc.micEnabled
+            glassesInfo["btcConnected"] = true
         }
 
         if (sgc is G1) {
@@ -1337,11 +1354,7 @@ class CoreManager {
 
         val coreInfo =
                 mapOf(
-                        "default_wearable" to defaultWearable,
-                        "preferred_mic" to preferredMic,
                         "is_searching" to isSearching,
-                        "is_mic_enabled_for_frontend" to (micEnabled && sgc?.micEnabled == true),
-                        "core_token" to coreToken,
                 )
 
         val apps = emptyList<Any>()
@@ -1360,7 +1373,7 @@ class CoreManager {
         Bridge.sendStatus(statusObj)
     }
 
-    fun handle_update_settings(settings: Map<String, Any>) {
+    fun updateSettings(settings: Map<String, Any>) {
         Bridge.log("MAN: Received update settings: $settings")
 
         // Update settings with new values
@@ -1411,12 +1424,6 @@ class CoreManager {
         (settings["auto_brightness"] as? Boolean)?.let { newAutoBrightness ->
             if (autoBrightness != newAutoBrightness) {
                 updateGlassesBrightness(brightness, newAutoBrightness)
-            }
-        }
-
-        (settings["sensing"] as? Boolean)?.let { newSensingEnabled ->
-            if (sensingEnabled != newSensingEnabled) {
-                updateSensing(newSensingEnabled)
             }
         }
 
@@ -1536,6 +1543,11 @@ class CoreManager {
             if (defaultWearable != newDefaultWearable) {
                 defaultWearable = newDefaultWearable
                 Bridge.saveSetting("default_wearable", newDefaultWearable)
+                // Auto-init SGC for simulated glasses since they don't require connection
+                if (newDefaultWearable == DeviceTypes.SIMULATED) {
+                    deviceName = DeviceTypes.SIMULATED
+                    initSGC(newDefaultWearable)
+                }
             }
         }
 
@@ -1557,5 +1569,15 @@ class CoreManager {
         // Clean up transcriber resources
         transcriber?.shutdown()
         transcriber = null
+
+        // Clean up LC3 encoder/decoder
+        if (lc3EncoderPtr != 0L) {
+            Lc3Cpp.freeEncoder(lc3EncoderPtr)
+            lc3EncoderPtr = 0
+        }
+        if (lc3DecoderPtr != 0L) {
+            Lc3Cpp.freeDecoder(lc3DecoderPtr)
+            lc3DecoderPtr = 0
+        }
     }
 }

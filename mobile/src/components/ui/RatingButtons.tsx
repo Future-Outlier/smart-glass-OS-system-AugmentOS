@@ -1,8 +1,8 @@
 import {View, TouchableOpacity, ViewStyle, TextStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
+import {useAppTheme} from "@/contexts/ThemeContext"
 import {ThemedStyle} from "@/theme"
-import {useAppTheme} from "@/utils/useAppTheme"
 
 export interface RatingButtonsProps {
   value: number | null
@@ -25,7 +25,7 @@ export function RatingButtons({value, onValueChange, min = 1, max = 5, style}: R
           style={themed($button(value === rating))}
           onPress={() => onValueChange(rating)}
           activeOpacity={0.7}>
-          <Text style={themed($buttonText(value === rating))} weight="semiBold" text={rating.toString()} />
+          <Text style={themed($buttonText(value === rating))} weight="semibold" text={rating.toString()} />
         </TouchableOpacity>
       ))}
     </View>

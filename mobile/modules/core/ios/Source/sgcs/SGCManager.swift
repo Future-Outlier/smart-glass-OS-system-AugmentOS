@@ -1,3 +1,4 @@
+@MainActor
 protocol SGCManager {
     // MARK: - Device Information
 
@@ -11,6 +12,8 @@ protocol SGCManager {
     var glassesDeviceModel: String { get }
     var glassesAndroidVersion: String { get }
     var glassesOtaVersionUrl: String { get }
+    var glassesFirmwareVersion: String { get }
+    var glassesBtMacAddress: String { get }
     var glassesSerialNumber: String { get }
     var glassesStyle: String { get }
     var glassesColor: String { get }
@@ -50,14 +53,17 @@ protocol SGCManager {
 
     // MARK: - Camera & Media
 
-    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?, compress: String?)
+    func requestPhoto(
+        _ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?,
+        compress: String?, silent: Bool
+    )
     func startRtmpStream(_ message: [String: Any])
     func stopRtmpStream()
     func sendRtmpKeepAlive(_ message: [String: Any])
     func startBufferRecording()
     func stopBufferRecording()
     func saveBufferVideo(requestId: String, durationSeconds: Int)
-    func startVideoRecording(requestId: String, save: Bool)
+    func startVideoRecording(requestId: String, save: Bool, silent: Bool)
     func stopVideoRecording(requestId: String)
 
     // MARK: - Button Settings
@@ -84,7 +90,10 @@ protocol SGCManager {
     func getBatteryStatus()
     func setSilentMode(_ enabled: Bool)
     func exit()
-    func sendRgbLedControl(requestId: String, packageName: String?, action: String, color: String?, ontime: Int, offtime: Int, count: Int)
+    func sendRgbLedControl(
+        requestId: String, packageName: String?, action: String, color: String?, ontime: Int,
+        offtime: Int, count: Int
+    )
 
     // MARK: - Connection Management
 
@@ -99,7 +108,12 @@ protocol SGCManager {
 
     func requestWifiScan()
     func sendWifiCredentials(_ ssid: String, _ password: String)
+    func forgetWifiNetwork(_ ssid: String)
     func sendHotspotState(_ enabled: Bool)
+
+    // MARK: - User Context (for crash reporting)
+
+    func sendUserEmailToGlasses(_ email: String)
 
     // MARK: - Gallery
 
