@@ -3,6 +3,7 @@ import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/Onboardin
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import CoreModule, {CoreMessageEventPayload} from "core"
 import {Platform} from "react-native"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
@@ -49,11 +50,15 @@ export default function MentraLiveOnboarding() {
       title: translate("onboarding:liveTakeAPhoto"),
       subtitle: translate("onboarding:livePressActionButton"),
       info: translate("onboarding:liveLedFlashWarning"),
+      // wait for the action button to be pressed:
       waitFn: (): Promise<void> => {
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            resolve()
-          }, 5000)
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.onCoreEvent((data: any) => {
+            if (data?.type === "button_press" && data?.pressType === "short") {
+              unsub()
+              resolve()
+            }
+          })
         })
       },
     },
@@ -67,6 +72,16 @@ export default function MentraLiveOnboarding() {
       title: translate("onboarding:liveStartRecording"),
       subtitle: translate("onboarding:livePressAndHold"),
       info: translate("onboarding:liveLedFlashWarning"),
+      waitFn: (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.onCoreEvent((data: any) => {
+            if (data?.type === "button_press" && data?.pressType === "long") {
+              unsub()
+              resolve()
+            }
+          })
+        })
+      },
     },
     {
       type: "video",
@@ -78,6 +93,16 @@ export default function MentraLiveOnboarding() {
       title: translate("onboarding:liveStopRecording"),
       subtitle: translate("onboarding:livePressAndHoldAgain"),
       info: translate("onboarding:liveLedFlashWarning"),
+      waitFn: (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.onCoreEvent((data: any) => {
+            if (data?.type === "button_press" && data?.pressType === "long") {
+              unsub()
+              resolve()
+            }
+          })
+        })
+      },
     },
     {
       type: "video",
