@@ -2,7 +2,7 @@ import CoreModule from "core"
 
 import {push} from "@/contexts/NavigationRef"
 import audioPlaybackService from "@/services/AudioPlaybackService"
-import {displayProcessor} from "@/services/display"
+import displayProcessor from "@/services/DisplayProcessor"
 import mantle from "@/services/MantleManager"
 import udp from "@/services/UdpManager"
 import ws from "@/services/WebSocketManager"
