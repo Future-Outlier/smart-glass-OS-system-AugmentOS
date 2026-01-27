@@ -38,7 +38,10 @@ public class RtmpStreamConfig {
     }
 
     /**
-     * Parse video and audio config from JSON objects sent by the SDK
+     * Parse video and audio config from JSON objects sent by the SDK.
+     * Supports both full key names and compact keys for MTU-constrained messages:
+     *   Full: { width, height, bitrate, frameRate } / { bitrate, sampleRate, echoCancellation, noiseSuppression }
+     *   Compact: { w, h, br, fr } / { br, sr, ec, ns }
      *
      * @param videoJson Video configuration JSON (nullable)
      * @param audioJson Audio configuration JSON (nullable)
@@ -47,12 +50,12 @@ public class RtmpStreamConfig {
     public static RtmpStreamConfig fromJson(JSONObject videoJson, JSONObject audioJson) {
         RtmpStreamConfig config = new RtmpStreamConfig();
 
-        // Parse video config
+        // Parse video config (supports both full and compact keys)
         if (videoJson != null) {
-            config.videoWidth = videoJson.optInt("width", DEFAULT_VIDEO_WIDTH);
-            config.videoHeight = videoJson.optInt("height", DEFAULT_VIDEO_HEIGHT);
-            config.videoBitrate = videoJson.optInt("bitrate", DEFAULT_VIDEO_BITRATE);
-            config.videoFps = videoJson.optInt("frameRate", DEFAULT_VIDEO_FPS);
+            config.videoWidth = optIntWithFallback(videoJson, "width", "w", DEFAULT_VIDEO_WIDTH);
+            config.videoHeight = optIntWithFallback(videoJson, "height", "h", DEFAULT_VIDEO_HEIGHT);
+            config.videoBitrate = optIntWithFallback(videoJson, "bitrate", "br", DEFAULT_VIDEO_BITRATE);
+            config.videoFps = optIntWithFallback(videoJson, "frameRate", "fr", DEFAULT_VIDEO_FPS);
 
             // Validate and clamp values to reasonable ranges
             config.videoWidth = clamp(config.videoWidth, 320, 1920);
@@ -61,12 +64,12 @@ public class RtmpStreamConfig {
             config.videoFps = clamp(config.videoFps, 10, 60);
         }
 
-        // Parse audio config
+        // Parse audio config (supports both full and compact keys)
         if (audioJson != null) {
-            config.audioBitrate = audioJson.optInt("bitrate", DEFAULT_AUDIO_BITRATE);
-            config.audioSampleRate = audioJson.optInt("sampleRate", DEFAULT_AUDIO_SAMPLE_RATE);
-            config.echoCancellation = audioJson.optBoolean("echoCancellation", DEFAULT_ECHO_CANCELLATION);
-            config.noiseSuppression = audioJson.optBoolean("noiseSuppression", DEFAULT_NOISE_SUPPRESSION);
+            config.audioBitrate = optIntWithFallback(audioJson, "bitrate", "br", DEFAULT_AUDIO_BITRATE);
+            config.audioSampleRate = optIntWithFallback(audioJson, "sampleRate", "sr", DEFAULT_AUDIO_SAMPLE_RATE);
+            config.echoCancellation = optBoolWithFallback(audioJson, "echoCancellation", "ec", DEFAULT_ECHO_CANCELLATION);
+            config.noiseSuppression = optBoolWithFallback(audioJson, "noiseSuppression", "ns", DEFAULT_NOISE_SUPPRESSION);
 
             // Validate and clamp values
             config.audioBitrate = clamp(config.audioBitrate, 32000, 320000); // 32 kbps to 320 kbps
@@ -74,6 +77,22 @@ public class RtmpStreamConfig {
         }
 
         return config;
+    }
+
+    /** Try full key first, then compact key, then default */
+    private static int optIntWithFallback(JSONObject json, String fullKey, String compactKey, int defaultValue) {
+        if (json.has(fullKey)) {
+            return json.optInt(fullKey, defaultValue);
+        }
+        return json.optInt(compactKey, defaultValue);
+    }
+
+    /** Try full key first, then compact key, then default */
+    private static boolean optBoolWithFallback(JSONObject json, String fullKey, String compactKey, boolean defaultValue) {
+        if (json.has(fullKey)) {
+            return json.optBoolean(fullKey, defaultValue);
+        }
+        return json.optBoolean(compactKey, defaultValue);
     }
 
     private static int clamp(int value, int min, int max) {

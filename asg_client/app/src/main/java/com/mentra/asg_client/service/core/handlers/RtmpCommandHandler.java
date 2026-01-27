@@ -113,9 +113,17 @@ public class RtmpCommandHandler implements ICommandHandler {
             boolean silent = data.optBoolean("silent", false);
             boolean enableLed = !silent; // Convert to internal enableLed (inverted logic)
 
-            // Parse video/audio config from SDK message
+            // Parse video/audio config from SDK message (supports both full and compact keys)
+            // Full: { video: {...}, audio: {...} }
+            // Compact: { v: {...}, a: {...} }
             JSONObject videoJson = data.optJSONObject("video");
+            if (videoJson == null) {
+                videoJson = data.optJSONObject("v");
+            }
             JSONObject audioJson = data.optJSONObject("audio");
+            if (audioJson == null) {
+                audioJson = data.optJSONObject("a");
+            }
             RtmpStreamConfig streamConfig = RtmpStreamConfig.fromJson(videoJson, audioJson);
 
             Log.d(TAG, "Starting RTMP stream with config: " + streamConfig.toString());
