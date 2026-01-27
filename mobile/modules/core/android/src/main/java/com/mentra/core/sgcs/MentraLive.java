@@ -3415,6 +3415,12 @@ public class MentraLive extends SGCManager {
         return isMicrophoneEnabled;
     }
 
+    public void sendAuthToken(String token) {
+        Bridge.log("LIVE: Sending auth token");
+        // let json: [String: Any] = ["type": "send_auth_token"]
+        // sendJson(json, wakeUp: true)
+    }
+
     public void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken, String compress, boolean silent) {
         Bridge.log("LIVE: Requesting photo: " + requestId + " for app: " + appId + " with size: " + size + ", webhookUrl: " + webhookUrl + ", authToken: " + (authToken.isEmpty() ? "none" : "***") + ", compress=" + compress + ", silent=" + silent);
 

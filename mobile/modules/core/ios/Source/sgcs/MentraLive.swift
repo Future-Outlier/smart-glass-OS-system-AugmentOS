@@ -1208,6 +1208,12 @@ class MentraLive: NSObject, SGCManager {
         }
     }
 
+    func sendAuthToken(token: String) {
+        Bridge.log("LIVE: Sending auth token")
+        // let json: [String: Any] = ["type": "send_auth_token"]
+        // sendJson(json, wakeUp: true)
+    }
+
     func requestPhoto(
         _ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?,
         compress: String?, silent: Bool

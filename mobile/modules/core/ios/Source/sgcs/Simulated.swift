@@ -202,6 +202,10 @@ class Simulated: SGCManager {
         Bridge.log("cleanup")
     }
 
+    func sendAuthToken(token: String) {
+        Bridge.log("sendAuthToken")
+    }
+
     // MARK: - Network Management
 
     func requestWifiScan() {

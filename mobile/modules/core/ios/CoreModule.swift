@@ -6,7 +6,43 @@ public class CoreModule: Module {
         Name("Core")
 
         // Define events that can be sent to JavaScript
-        Events()
+        Events(
+            "glasses_status",
+            "core_status",
+            "log",
+            // Individual event handlers
+            "button_press",
+            "touch_event",
+            "head_up",
+            "battery_status",
+            "local_transcription",
+            "wifi_status_change",
+            "hotspot_status_change",
+            "hotspot_error",
+            "gallery_status",
+            "compatible_glasses_search_stop",
+            "heartbeat_sent",
+            "heartbeat_received",
+            "swipe_volume_status",
+            "switch_status",
+            "rgb_led_control_response",
+            "pair_failure",
+            "audio_pairing_needed",
+            "audio_connected",
+            "audio_disconnected",
+            "save_setting",
+            "phone_notification",
+            "phone_notification_dismissed",
+            "ws_text",
+            "ws_bin",
+            "mic_data",
+            "rtmp_stream_status",
+            "keep_alive_ack",
+            "mtk_update_complete",
+            "ota_update_available",
+            "ota_progress",
+            "version_info",
+        )
 
         OnCreate {
             // Initialize Bridge with event callback

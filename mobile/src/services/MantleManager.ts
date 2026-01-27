@@ -15,8 +15,6 @@ import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import TranscriptProcessor from "@/utils/TranscriptProcessor"
 import {useCoreStore} from "@/stores/core"
-import Toast from "react-native-toast-message"
-import {translate} from "@/i18n"
 import udp from "@/services/UdpManager"
 import {BackgroundTimer} from "@/utils/timers"
 import {useDebugStore} from "@/stores/debug"
@@ -365,6 +363,7 @@ class MantleManager {
     // allow the core to change settings so it can persist state:
     this.subs.push(
       CoreModule.addListener("save_setting", async (event) => {
+        console.log("MANTLE: Received save_setting event from Core:", event)
         await useSettingsStore.getState().setSetting(event.key, event.value)
       }),
     )

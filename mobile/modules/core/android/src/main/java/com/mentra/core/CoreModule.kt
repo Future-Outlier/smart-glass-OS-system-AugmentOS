@@ -12,7 +12,43 @@ class CoreModule : Module() {
         Name("Core")
 
         // Define events that can be sent to JavaScript
-        Events()
+        Events(
+            "glasses_status",
+            "core_status",
+            "log",
+            // Individual event handlers
+            "button_press",
+            "touch_event",
+            "head_up",
+            "battery_status",
+            "local_transcription",
+            "wifi_status_change",
+            "hotspot_status_change",
+            "hotspot_error",
+            "gallery_status",
+            "compatible_glasses_search_stop",
+            "heartbeat_sent",
+            "heartbeat_received",
+            "swipe_volume_status",
+            "switch_status",
+            "rgb_led_control_response",
+            "pair_failure",
+            "audio_pairing_needed",
+            "audio_connected",
+            "audio_disconnected",
+            "save_setting",
+            "phone_notification",
+            "phone_notification_dismissed",
+            "ws_text",
+            "ws_bin",
+            "mic_data",
+            "rtmp_stream_status",
+            "keep_alive_ack",
+            "mtk_update_complete",
+            "ota_update_available",
+            "ota_progress",
+            "version_info",
+        )
 
         OnCreate {
             // Initialize Bridge with Android context and event callback
@@ -45,9 +81,7 @@ class CoreModule : Module() {
         }
 
         Function("update") { category: String, values: Map<String, Any> ->
-            values.forEach { (key, value) ->
-                GlassesStore.apply(category, key, value)
-            }
+            values.forEach { (key, value) -> GlassesStore.apply(category, key, value) }
         }
 
         // MARK: - Display Commands
@@ -92,9 +126,7 @@ class CoreModule : Module() {
             coreManager?.sendWifiCredentials(ssid, password)
         }
 
-        AsyncFunction("forgetWifiNetwork") { ssid: String ->
-            coreManager?.forgetWifiNetwork(ssid)
-        }
+        AsyncFunction("forgetWifiNetwork") { ssid: String -> coreManager?.forgetWifiNetwork(ssid) }
 
         AsyncFunction("setHotspotState") { enabled: Boolean ->
             coreManager?.setHotspotState(enabled)
@@ -102,9 +134,7 @@ class CoreModule : Module() {
 
         // MARK: - User Context Commands
 
-        AsyncFunction("setUserEmail") { email: String ->
-            coreManager?.setUserEmail(email)
-        }
+        AsyncFunction("setUserEmail") { email: String -> coreManager?.setUserEmail(email) }
 
         // MARK: - Gallery Commands
 
@@ -118,7 +148,15 @@ class CoreModule : Module() {
                 authToken: String,
                 compress: String,
                 silent: Boolean ->
-            coreManager?.photoRequest(requestId, appId, size, webhookUrl, authToken, compress, silent)
+            coreManager?.photoRequest(
+                    requestId,
+                    appId,
+                    size,
+                    webhookUrl,
+                    authToken,
+                    compress,
+                    silent
+            )
         }
 
         // MARK: - OTA Commands
@@ -266,10 +304,14 @@ class CoreModule : Module() {
                     appContext.reactContext
                             ?: appContext.currentActivity
                                     ?: throw IllegalStateException("No context available")
-            val locationManager = context.getSystemService(android.content.Context.LOCATION_SERVICE) as android.location.LocationManager
+            val locationManager =
+                    context.getSystemService(android.content.Context.LOCATION_SERVICE) as
+                            android.location.LocationManager
             // Check if either GPS or Network location provider is enabled
             locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
-                    locationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
+                    locationManager.isProviderEnabled(
+                            android.location.LocationManager.NETWORK_PROVIDER
+                    )
         }
 
         AsyncFunction("openLocationSettings") {

@@ -106,6 +106,7 @@ abstract class SGCManager {
     abstract fun connectById(id: String)
     abstract fun getConnectedBluetoothName(): String
     abstract fun cleanup()
+    abstract fun sendAuthToken(token: String)
 
     // Network Management
     abstract fun requestWifiScan()
