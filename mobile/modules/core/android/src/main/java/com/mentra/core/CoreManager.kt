@@ -1181,7 +1181,7 @@ class CoreManager {
         sgc?.disconnect()
         sgc = null // Clear the SGC reference after disconnect
         searching = false
-''        shouldSendPcmData = false
+        shouldSendPcmData = false
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         shouldSendBootingMessage = true // Reset for next first connect

@@ -414,12 +414,13 @@ public class Bridge private constructor() {
         fun updateWifiScanResults(networks: List<Map<String, Any>>) {
             var storedNetworks: List<Map<String, Any>> = GlassesStore.get("core", "wifiScanResults") as? List<Map<String, Any>> ?: emptyList()
             // add the networks to the storedNetworks array, removing duplicates by ssid
-            for network in networks {
-                if (!storedNetworks.contains(where: { $0["ssid"] as? String == network["ssid"] as? String })) {
-                    storedNetworks.add(network)
+            val updatedNetworks = storedNetworks.toMutableList()
+            for (network in networks) {
+                if (!updatedNetworks.any { it["ssid"] as? String == network["ssid"] as? String }) {
+                    updatedNetworks.add(network)
                 }
             }
-            GlassesStore.apply("core", "wifiScanResults", storedNetworks)
+            GlassesStore.apply("core", "wifiScanResults", updatedNetworks)
         }
 
         /** Send gallery status - matches iOS MentraLive.swift handleGalleryStatus pattern */

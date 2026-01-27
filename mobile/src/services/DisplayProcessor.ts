@@ -709,13 +709,5 @@ export class DisplayProcessor {
   }
 }
 
-// =============================================================================
-// Singleton Export
-// =============================================================================
-
-/**
- * Default DisplayProcessor instance
- */
 export const displayProcessor = DisplayProcessor.getInstance()
-
 export default displayProcessor
