@@ -4,12 +4,13 @@ import Toast from "react-native-toast-message"
 import {translate} from "@/i18n"
 // NOTE: LiveKit audio path disabled - using UDP or WebSocket instead
 // import livekit from "@/services/Livekit"
+import {displayProcessor} from "@/services/display"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import udp from "@/services/UdpManager"
 import {useGlassesStore} from "@/stores/glasses"
-import {useSettingsStore} from "@/stores/settings"
+import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {INTENSE_LOGGING} from "@/utils/Constants"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
@@ -23,6 +24,14 @@ export class MantleBridge {
   private constructor() {
     // Initialize message event listener
     this.initializeMessageEventListener()
+
+    // Initialize DisplayProcessor with the saved default wearable setting
+    // This ensures correct text wrapping profile is used from the start
+    const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
+    if (defaultWearable) {
+      displayProcessor.setDeviceModel(defaultWearable)
+      console.log(`[MantleBridge] Initialized DisplayProcessor with default wearable: ${defaultWearable}`)
+    }
   }
 
   /**
@@ -109,6 +118,10 @@ export class MantleBridge {
       switch (data.type) {
         case "core_status_update":
           useGlassesStore.getState().setGlassesInfo(data.core_status.glasses_info)
+          // Update DisplayProcessor with the device model for correct text wrapping
+          if (data.core_status.glasses_info?.modelName) {
+            displayProcessor.setDeviceModel(data.core_status.glasses_info.modelName)
+          }
           GlobalEventEmitter.emit("core_status_update", data)
           return
         case "wifi_status_change":
@@ -389,6 +402,13 @@ export class MantleBridge {
             fwVersion: data.firmware_version,
             btMacAddress: data.bt_mac_address,
           })
+          // Update DisplayProcessor with the connected glasses model
+          // This ensures text wrapping uses the correct device profile
+          try {
+            displayProcessor.setDeviceModel(data.device_model)
+          } catch (err) {
+            console.error("MantleBridge: Failed to set device model:", err)
+          }
           break
         default:
           console.log("Unknown event type:", data.type)

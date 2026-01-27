@@ -624,7 +624,9 @@ struct ViewState {
     /// Valid values: 20 (16kbps), 40 (32kbps), 60 (48kbps).
     func setLC3FrameSize(_ frameSize: Int) {
         if frameSize != 20 && frameSize != 40 && frameSize != 60 {
-            Bridge.log("MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 20.")
+            Bridge.log(
+                "MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 20."
+            )
             lc3FrameSize = 20
             lc3Converter?.setOutputFrameSize(20)
             return

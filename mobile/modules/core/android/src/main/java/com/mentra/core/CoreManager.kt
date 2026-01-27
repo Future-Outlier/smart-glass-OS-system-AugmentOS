@@ -470,10 +470,10 @@ class CoreManager {
     }
 
     // turns a single mic on and turns off all other mics:
-    private fun updateMicState() {        
+    private fun updateMicState() {
         // go through the micRanking and find the first mic that is available:
         var micUsed: String = ""
-        
+
         // allow the sgc to make changes to the micRanking:
         micRanking = sgc?.sortMicRanking(micRanking) ?: micRanking
         Bridge.log("MAN: updateMicState() micRanking: $micRanking")
@@ -567,7 +567,8 @@ class CoreManager {
     }
 
     private fun sendCurrentState() {
-        // Bridge.log("MAN: sendCurrentState(): $isHeadUp")
+        Bridge.log("MAN: sendCurrentState(): $isHeadUp")
+
         if (screenDisabled) {
             return
         }
@@ -598,10 +599,14 @@ class CoreManager {
         // Cancel any pending clear display work item
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
 
-        // Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
+        Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
+        Bridge.log("MAN: viewState text: '${currentViewState.text}' (len=${currentViewState.text.length})")
 
         when (currentViewState.layoutType) {
-            "text_wall" -> sgc?.sendTextWall(currentViewState.text)
+            "text_wall" -> {
+                Bridge.log("MAN: sending text_wall with text: '${currentViewState.text.take(50)}...'")
+                sgc?.sendTextWall(currentViewState.text)
+            }
             "double_text_wall" -> {
                 sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
             }
@@ -1211,7 +1216,7 @@ class CoreManager {
         Bridge.log("MAN: Connecting to wearable: $dName")
 
         var name = dName
-        
+
         // use stored device name if available:
         if (dName.isEmpty() && !deviceName.isEmpty()) {
             name = deviceName
