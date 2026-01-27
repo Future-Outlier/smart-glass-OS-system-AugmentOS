@@ -75,7 +75,7 @@ export const ConnectDeviceButton = () => {
         <Button
           flex
           compact
-          LeftAccessory={() => <ActivityIndicator size="small" color={theme.colors.textAlt} />}
+          LeftAccessory={() => <ActivityIndicator size="small" color={theme.colors.foreground} />}
           tx="home:connectingGlasses"
         />
       </View>

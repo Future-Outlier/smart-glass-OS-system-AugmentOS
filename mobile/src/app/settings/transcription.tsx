@@ -303,7 +303,7 @@ export default function TranscriptionSettingsScreen() {
 
         {isCheckingModel ? (
           <View style={{alignItems: "center", padding: theme.spacing.s6}}>
-            <ActivityIndicator size="large" color={theme.colors.text} />
+            <ActivityIndicator size="large" color={theme.colors.foreground} />
             <Spacer height={theme.spacing.s3} />
             <Text>Checking model status...</Text>
           </View>

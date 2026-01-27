@@ -286,7 +286,7 @@ export default function DataExportPage() {
 
       {loading ? (
         <View style={themed($loadingContainer)}>
-          <ActivityIndicator size="large" color={theme.colors.palette.primary500} />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <Spacer height={theme.spacing.s4} />
           <Text text="Collecting your data..." style={themed($loadingText)} />
         </View>

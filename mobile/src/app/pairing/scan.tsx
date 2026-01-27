@@ -134,7 +134,7 @@ export default function SelectGlassesBluetoothScreen() {
 
           {!rememberedSearchResults.current || rememberedSearchResults.current.length === 0 ? (
             <View className="flex-1 justify-center py-4">
-              <ActivityIndicator size="large" color={theme.colors.text} />
+              <ActivityIndicator size="large" color={theme.colors.foreground} />
             </View>
           ) : (
             <ScrollView className="max-h-[300px] -mr-4 pr-4">

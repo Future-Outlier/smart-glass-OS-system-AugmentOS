@@ -148,7 +148,7 @@ export default function AppStoreWeb() {
       <Screen preset="fixed">
         <Header leftTx="store:title" RightActionComponent={<MentraLogoStandalone />} />
         <View style={[themed($loadingContainer), {marginHorizontal: -theme.spacing.s4}]}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <Text text="Preparing App Store..." style={themed($loadingText)} />
         </View>
       </Screen>
@@ -213,7 +213,7 @@ export default function AppStoreWeb() {
         {/* Loading overlay - stays visible until store confirms auth ready */}
         {!isAuthReady && (
           <View style={themed($loadingOverlay)}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.foreground} />
             <Text text="Loading App Store..." style={themed($loadingText)} />
           </View>
         )}

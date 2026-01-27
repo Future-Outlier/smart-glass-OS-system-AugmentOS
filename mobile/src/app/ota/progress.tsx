@@ -162,7 +162,7 @@ export default function OtaProgressScreen() {
           <View className="h-6" />
           <Text tx="ota:startingUpdate" className="font-semibold text-xl text-center" />
           <View className="h-4" />
-          <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <View className="h-4" />
           <Text tx="ota:doNotDisconnect" className="text-sm text-center text-secondary-foreground" />
         </View>
@@ -179,7 +179,7 @@ export default function OtaProgressScreen() {
           <View className="h-4" />
           <Text text={`${progress}%`} className="text-3xl font-bold" style={{color: theme.colors.primary}} />
           <View className="h-4" />
-          <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <View className="h-4" />
           <Text tx="ota:doNotDisconnect" className="text-sm text-center" style={{color: theme.colors.textDim}} />
         </View>
@@ -194,7 +194,7 @@ export default function OtaProgressScreen() {
           <View className="h-6" />
           <Text tx="ota:installing" className="font-semibold text-xl text-center" />
           <View className="h-4" />
-          <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <View className="h-4" />
           <Text tx="ota:doNotDisconnect" className="text-sm text-center" style={{color: theme.colors.textDim}} />
         </View>

@@ -100,7 +100,7 @@ export default function OtaCheckForUpdatesScreen() {
           </View>
 
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
+            <ActivityIndicator size="large" color={theme.colors.foreground} />
           </View>
 
           <View className="justify-center items-center">

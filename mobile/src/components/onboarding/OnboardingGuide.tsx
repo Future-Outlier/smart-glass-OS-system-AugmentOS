@@ -402,12 +402,16 @@ export function OnboardingGuide({
   }, [exitFn, clearHistoryAndGoHome])
 
   const renderBullets = useCallback(() => {
+    // console.log("ONBOARD: renderBullets", step.bullets)
+    // console.log("ONBOARD: currentIndex", currentIndex)
+    // console.log("ONBOARD: steps.bullets2", steps[currentIndex].bullets)
+    // console.log("ONBOARD: bullets", bullets)
     if (!step.bullets) {
       return null
     }
 
     return (
-      <View className="flex flex-col gap-2 flex-1 px-2">
+      <View className={`flex flex-col flex-grow justify-center gap-2 flex-1 px-2 ${devMode ? "bg-chart-2" : ""}`}>
         <Text className="text-center text-xl self-start font-semibold" text={step.bullets[0]} />
         {step.bullets.slice(1).map((bullet, index) => (
           <View key={index} className="flex-row items-start gap-2 px-4">
@@ -417,7 +421,7 @@ export function OnboardingGuide({
         ))}
       </View>
     )
-  }, [])
+  }, [step])
 
   const isLastStep = currentIndex === steps.length - 1
   const isFirstStep = currentIndex === 0
@@ -468,12 +472,12 @@ export function OnboardingGuide({
         )}
         {showPoster && !s.poster && (
           <View className="absolute top-0 left-0 right-0 bottom-0 z-10 items-center justify-center bg-background">
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.foreground} />
           </View>
         )}
         {/* {showPoster && (
           <View className="absolute top-0 left-0 right-0 bottom-0 z-10 items-center justify-center bg-background">
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.foreground} />
           </View>
         )} */}
       </>
@@ -511,7 +515,7 @@ export function OnboardingGuide({
               )}
               {player1Loading && (
                 <View className="absolute top-0 left-0 right-0 bottom-0 z-10 items-center justify-center">
-                  <ActivityIndicator size="large" color={theme.colors.primary} />
+                  <ActivityIndicator size="large" color={theme.colors.foreground} />
                 </View>
               )}
             </View>
@@ -534,7 +538,7 @@ export function OnboardingGuide({
               )}
               {player2Loading && (
                 <View className="absolute top-0 left-0 right-0 bottom-0 z-10 items-center justify-center">
-                  <ActivityIndicator size="large" color={theme.colors.primary} />
+                  <ActivityIndicator size="large" color={theme.colors.foreground} />
                 </View>
               )}
             </View>
@@ -552,7 +556,7 @@ export function OnboardingGuide({
             )}
             {!s.poster && (
               <View className="w-1/3 items-center justify-center bg-background">
-                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <ActivityIndicator size="large" color={theme.colors.foreground} />
               </View>
             )}
           </View>
@@ -746,7 +750,7 @@ export function OnboardingGuide({
         {renderStepCheck()}
         {renderStepContent()}
         {renderBullets()}
-        <View id="bottom" className={`flex justify-end flex-grow ${devMode ? "bg-chart-5" : ""}`}>
+        <View id="bottom" className={`flex justify-end flex-shrink ${devMode ? "bg-chart-5" : ""}`}>
           {/* {!hasStarted && (mainTitle || mainSubtitle) && (
             <View className="flex flex-col gap-2 mb-10">
               {mainTitle && <Text className="text-center text-xl font-semibold" text={mainTitle} />}

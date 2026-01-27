@@ -20,18 +20,12 @@ import {translate} from "@/i18n"
 import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {BackgroundTimer} from "@/utils/timers"
 import {WifiSearchResult} from "core"
-import { useCoreStore } from "@/stores/core"
-
-interface NetworkInfo {
-  ssid: string
-  requiresPassword: boolean
-  signalStrength?: number
-}
+import {useCoreStore} from "@/stores/core"
 
 export default function WifiScanScreen() {
   const {theme} = useAppTheme()
 
-  const [networks, setNetworks] = useState<NetworkInfo[]>([])
+  const [networks, setNetworks] = useState<WifiSearchResult[]>([])
   const [savedNetworks, setSavedNetworks] = useState<string[]>([])
   const [isScanning, setIsScanning] = useState(true)
   const scanTimeoutRef = useRef<number | null>(null)
@@ -78,68 +72,35 @@ export default function WifiScanScreen() {
   )
 
   useEffect(() => {
-    const loadSavedNetworks = () => {
-      const savedCredentials = WifiCredentialsService.getAllCredentials()
-      setSavedNetworks(savedCredentials.map((cred) => cred.ssid))
-    }
-
-    loadSavedNetworks()
+    const savedCredentials = WifiCredentialsService.getAllCredentials()
+    setSavedNetworks(savedCredentials.map((cred) => cred.ssid))
     startScan()
+  }, [])
 
-    const handleWifiScanResults = (networks: WifiSearchResult[]) => {
-      
-      // console.log("WIFI_SCAN: ========= SCAN.TSX RECEIVED WIFI RESULTS =========")
-      // console.log("WIFI_SCAN: Data received:", data)
+  useEffect(() => {
+    const handleWifiScanResults = (scanResults: WifiSearchResult[]) => {
+      if (scanResults.length === 0) {
+        return
+      }
 
-      let processedNetworks: NetworkInfo[]
-      // console.log("WIFI_SCAN: Processing enhanced networks:", data.networks)
-      processedNetworks = networks?.map((network: any) => ({
+      let processedNetworks = scanResults?.map((network: any) => ({
         ssid: network.ssid || "",
         requiresPassword: network.requiresPassword !== false,
         signalStrength: network.signalStrength || -100,
       }))
 
       if (scanTimeoutRef.current) {
-        // console.log("WIFI_SCAN: Clearing scan timeout - results received")
         BackgroundTimer.clearTimeout(scanTimeoutRef.current)
         scanTimeoutRef.current = null
       }
 
-      setNetworks((prevNetworks) => {
-        // console.log("WIFI_SCAN: Current scan session ID:", currentScanSessionRef.current)
-        // console.log("WIFI_SCAN: Previous networks count:", prevNetworks.length)
-        // console.log("WIFI_SCAN: Is first result of this scan session?", !receivedResultsForSessionRef.current)
-
-        let baseNetworks: NetworkInfo[]
-        if (receivedResultsForSessionRef.current) {
-          // console.log("WIFI_SCAN: APPENDING: Adding to existing networks from current scan session")
-          baseNetworks = prevNetworks
-        } else {
-          console.log("WIFI_SCAN: REPLACING: Starting fresh with new scan session results")
-          baseNetworks = []
-        }
-
-        const existingMap = new Map<string, NetworkInfo>()
-        baseNetworks.forEach((network) => existingMap.set(network.ssid, network))
-        processedNetworks.forEach((network) => {
-          if (network.ssid) {
-            existingMap.set(network.ssid, network)
-          }
-        })
-        const newNetworks = Array.from(existingMap.values())
-        // console.log("WIFI_SCAN: Final networks count:", newNetworks.length)
-        return newNetworks
-      })
+      setNetworks(processedNetworks)
 
       receivedResultsForSessionRef.current = true
       setIsScanning(false)
-      // console.log("WIFI_SCAN: ========= END SCAN.TSX WIFI RESULTS =========")
     }
 
-    console.log("WIFI_SCAN: wifiScanResults", wifiScanResults)
-
     handleWifiScanResults(wifiScanResults)
-
 
     return () => {
       if (scanTimeoutRef.current) {
@@ -150,11 +111,11 @@ export default function WifiScanScreen() {
   }, [wifiScanResults])
 
   const startScan = async () => {
-    // console.log("WIFI_SCAN: ========= STARTING NEW WIFI SCAN =========")
+    console.log("WIFI_SCAN: ========= STARTING NEW WIFI SCAN =========")
     setIsScanning(true)
+    setNetworks([])
     currentScanSessionRef.current = Date.now()
     receivedResultsForSessionRef.current = false
-    setNetworks([])
 
     if (scanTimeoutRef.current) {
       BackgroundTimer.clearTimeout(scanTimeoutRef.current)
@@ -167,7 +128,7 @@ export default function WifiScanScreen() {
 
     try {
       await CoreModule.requestWifiScan()
-      // console.log("WIFI_SCAN: WiFi scan request sent successfully")
+      console.log("WIFI_SCAN: WiFi scan request sent successfully")
     } catch (error) {
       console.error("WIFI_SCAN: Error scanning for WiFi networks:", error)
       if (scanTimeoutRef.current) {
@@ -182,7 +143,7 @@ export default function WifiScanScreen() {
     }
   }
 
-  const handleNetworkSelect = (selectedNetwork: NetworkInfo) => {
+  const handleNetworkSelect = (selectedNetwork: WifiSearchResult) => {
     if (wifiConnected && wifiSsid === selectedNetwork.ssid) {
       showAlert(
         "Forget Network",
@@ -240,7 +201,7 @@ export default function WifiScanScreen() {
     })
   }
 
-  const renderNetworkItem = (item: NetworkInfo) => {
+  const renderNetworkItem = (item: WifiSearchResult) => {
     const isConnected = wifiConnected && wifiSsid === item.ssid
     const isSaved = savedNetworks.includes(item.ssid)
 

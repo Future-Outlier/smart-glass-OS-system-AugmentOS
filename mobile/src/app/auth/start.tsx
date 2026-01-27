@@ -3,7 +3,7 @@ import LogoSvg from "@assets/logo/logo.svg"
 import {useLocalSearchParams} from "expo-router"
 import * as WebBrowser from "expo-web-browser"
 import {useEffect, useRef, useState} from "react"
-import {ActivityIndicator, Animated, AppState, BackHandler, Modal, Platform, TouchableOpacity, View} from "react-native"
+import {ActivityIndicator, Animated, AppState, BackHandler, Platform, TouchableOpacity, View} from "react-native"
 
 import {Button, Icon, Screen, Text} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -133,7 +133,7 @@ export default function LoginScreen() {
               <View className="items-center justify-center mb-6">
                 <LogoSvg width={80} height={80} />
               </View>
-              <ActivityIndicator className="mb-3" size="large" color={theme.colors.tint} />
+              <ActivityIndicator className="mb-3" size="large" color={theme.colors.foreground} />
               <Text className="text-primary-foreground text-center">{translate("login:connectingToServer")}</Text>
             </View>
           </Animated.View>

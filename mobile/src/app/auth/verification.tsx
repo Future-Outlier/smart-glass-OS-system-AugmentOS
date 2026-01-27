@@ -83,7 +83,7 @@ export default function VerificationScreen() {
         <TouchableOpacity onPress={handleResendEmail} disabled={isResending}>
           {isResending ? (
             <View style={themed($resendContainer)}>
-              <ActivityIndicator size="small" color={theme.colors.tint} />
+              <ActivityIndicator size="small" color={theme.colors.foreground} />
               <Text style={themed($resendingText)}>{translate("login:verification.resending")}</Text>
             </View>
           ) : (

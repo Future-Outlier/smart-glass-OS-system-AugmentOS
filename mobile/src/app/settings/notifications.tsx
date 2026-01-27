@@ -195,7 +195,7 @@ export default function NotificationSettingsScreen() {
       <Screen preset="fixed">
         <Header title="Notification Settings" leftIcon="chevron-left" onLeftPress={goBack} />
         <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <Text style={{color: theme.colors.textDim, marginTop: theme.spacing.s4}}>Loading apps...</Text>
         </View>
       </Screen>

@@ -292,7 +292,7 @@ export default function InitScreen() {
                   text={isRetrying ? translate("versionCheck:retrying") : translate("versionCheck:retryConnection")}
                   disabled={isRetrying}
                   LeftAccessory={
-                    isRetrying ? () => <ActivityIndicator size="small" color={theme.colors.textAlt} /> : undefined
+                    isRetrying ? () => <ActivityIndicator size="small" color={theme.colors.foreground} /> : undefined
                   }
                 />
               ))}
@@ -316,7 +316,7 @@ export default function InitScreen() {
                 preset="secondary"
                 disabled={isRetrying}
                 LeftAccessory={
-                  isRetrying ? () => <ActivityIndicator size="small" color={theme.colors.text} /> : undefined
+                  isRetrying ? () => <ActivityIndicator size="small" color={theme.colors.foreground} /> : undefined
                 }
               />
             )}

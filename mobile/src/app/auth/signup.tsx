@@ -249,7 +249,7 @@ export default function SignupScreen() {
                   disabled={!isStep2Valid || isLoading}
                   {...(isLoading && {
                     LeftAccessory: () => (
-                      <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
+                      <ActivityIndicator size="small" color={theme.colors.foreground} style={{marginRight: 8}} />
                     ),
                   })}
                 />
@@ -263,7 +263,7 @@ export default function SignupScreen() {
       <Modal visible={isLoading} transparent={true} animationType="fade">
         <View style={themed($modalOverlay)}>
           <View style={themed($modalContent)}>
-            <ActivityIndicator size="large" color={theme.colors.tint} style={{marginBottom: theme.spacing.s4}} />
+            <ActivityIndicator size="large" color={theme.colors.foreground} style={{marginBottom: theme.spacing.s4}} />
             <Text preset="bold" style={{color: theme.colors.text}}>
               {translate("login:signup.creatingAccount")}
             </Text>
