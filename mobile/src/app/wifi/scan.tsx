@@ -270,7 +270,7 @@ export default function WifiScanScreen() {
         <View className="flex-1 flex-shrink min-h-0 pb-4">
           {isScanning ? (
             <View className="flex-1 justify-center items-center py-12">
-              <ActivityIndicator size="large" color={theme.colors.text} />
+              <ActivityIndicator size="large" color={theme.colors.foreground} />
               <Text className="mt-4 text-base text-text-dim" tx="wifi:scanningForNetworks" />
             </View>
           ) : networks.length > 0 ? (

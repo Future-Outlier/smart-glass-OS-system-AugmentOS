@@ -596,13 +596,6 @@ struct ViewState {
         }
     }
 
-    // MARK: - State Management
-
-    func updateAudioOutputFormat(_ format: AudioOutputFormat) {
-        audioOutputFormat = format
-        Bridge.log("Audio output format set to: \(format)")
-    }
-
     // MARK: - Glasses Commands
 
     private func playStartupSequence() {

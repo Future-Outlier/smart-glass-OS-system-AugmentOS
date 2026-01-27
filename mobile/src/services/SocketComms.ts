@@ -2,6 +2,7 @@ import CoreModule from "core"
 
 import {push} from "@/contexts/NavigationRef"
 import audioPlaybackService from "@/services/AudioPlaybackService"
+import {displayProcessor} from "@/services/display"
 import mantle from "@/services/MantleManager"
 import udp from "@/services/UdpManager"
 import ws from "@/services/WebSocketManager"
@@ -507,10 +508,52 @@ class SocketComms {
       console.error("SOCKET: display_event missing view")
       return
     }
-    CoreModule.displayEvent(msg)
-    // Update the Zustand store with the display content
-    const displayEvent = JSON.stringify(msg)
-    useDisplayStore.getState().setDisplayEvent(displayEvent)
+
+    // DEBUG: Log incoming event before processing
+    const deviceModel = displayProcessor.getDeviceModel()
+    const profile = displayProcessor.getProfile()
+    console.log(`[DisplayProcessor DEBUG] ========================================`)
+    console.log(`[DisplayProcessor DEBUG] Device Model: ${deviceModel}`)
+    console.log(
+      `[DisplayProcessor DEBUG] Profile: ${profile.id} (width: ${profile.displayWidthPx}px, lines: ${profile.maxLines})`,
+    )
+    console.log(`[DisplayProcessor DEBUG] Incoming layoutType: ${msg.layout?.layoutType || msg.layoutType}`)
+    console.log(`[DisplayProcessor DEBUG] Incoming text length: ${(msg.layout?.text || msg.text || "").length}`)
+    console.log(
+      `[DisplayProcessor DEBUG] Incoming text preview: "${(msg.layout?.text || msg.text || "").substring(0, 100)}..."`,
+    )
+
+    // Process the display event through DisplayProcessor for pixel-accurate wrapping
+    // This ensures the preview matches exactly what the glasses will show
+    let processedEvent
+    try {
+      processedEvent = displayProcessor.processDisplayEvent(msg)
+    } catch (err) {
+      console.error("SOCKET: DisplayProcessor error, using raw event:", err)
+      processedEvent = msg
+    }
+
+    // DEBUG: Log processed event
+    console.log(
+      `[DisplayProcessor DEBUG] Processed layoutType: ${processedEvent.layout?.layoutType || processedEvent.layoutType}`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] Processed text length: ${(processedEvent.layout?.text || processedEvent.text || "").length}`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] Processed text preview: "${(processedEvent.layout?.text || processedEvent.text || "").substring(0, 200)}..."`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] _processed: ${processedEvent._processed}, _profile: ${processedEvent._profile}`,
+    )
+    console.log(`[DisplayProcessor DEBUG] ========================================`)
+
+    // Send processed event to native SGC
+    CoreModule.displayEvent(processedEvent)
+
+    // Update the Zustand store with the processed display content
+    const displayEventStr = JSON.stringify(processedEvent)
+    useDisplayStore.getState().setDisplayEvent(displayEventStr)
   }
 
   private handle_set_location_tier(msg: any) {

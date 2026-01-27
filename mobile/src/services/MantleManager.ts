@@ -638,7 +638,16 @@ class MantleManager {
 
   public async handle_head_up(isUp: boolean) {
     socketComms.sendHeadPosition(isUp)
-    useDisplayStore.getState().setView(isUp ? "dashboard" : "main")
+
+    // Only switch to dashboard view if contextual dashboard is enabled
+    // Otherwise, always show main view regardless of head position
+    const contextualDashboardEnabled = await useSettingsStore.getState().getSetting(SETTINGS.contextual_dashboard.key)
+
+    if (isUp && contextualDashboardEnabled) {
+      useDisplayStore.getState().setView("dashboard")
+    } else {
+      useDisplayStore.getState().setView("main")
+    }
   }
 
   public async resetDisplayTimeout() {

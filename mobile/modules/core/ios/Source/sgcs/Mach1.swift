@@ -14,7 +14,10 @@ import UltraliteSDK
 
 @MainActor
 class Mach1: UltraliteBaseViewController, SGCManager {
-    func requestPhoto(_: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?, compress _: String?, silent _: Bool) {}
+    func requestPhoto(
+        _: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?,
+        compress _: String?, silent _: Bool
+    ) {}
 
     func sendGalleryMode() {}
 
@@ -74,8 +77,13 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func exit() {}
 
-    func sendRgbLedControl(requestId: String, packageName _: String?, action _: String, color _: String?, ontime _: Int, offtime _: Int, count _: Int) {
-        Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "device_not_supported")
+    func sendRgbLedControl(
+        requestId: String, packageName _: String?, action _: String, color _: String?,
+        ontime _: Int, offtime _: Int, count _: Int
+    ) {
+        Bridge.sendRgbLedControlResponse(
+            requestId: requestId, success: false, error: "device_not_supported"
+        )
     }
 
     func requestWifiScan() {}
@@ -350,6 +358,14 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         device.canvas.commit()
     }
 
+    /// Display pre-composed double text wall (two columns) on the glasses.
+    ///
+    /// NOTE: DisplayProcessor now composes double_text_wall into a single text_wall
+    /// with pixel-precise column alignment using ColumnComposer. This method may
+    /// not be called anymore for new flows, but is kept for backwards compatibility.
+    ///
+    /// Column composition is handled by DisplayProcessor in React Native.
+    /// This method is a "dumb pipe" - it just combines and sends the text.
     func sendDoubleTextWall(_ topText: String, _ bottomText: String) {
         guard let device = UltraliteManager.shared.currentDevice else {
             Bridge.log("Mach1Manager: No current device")
@@ -363,30 +379,11 @@ class Mach1: UltraliteBaseViewController, SGCManager {
             return
         }
 
-        Bridge.log("MACH1: Sending double text wall - top: \(topText), bottom: \(bottomText)")
+        // Text is already composed by DisplayProcessor's ColumnComposer
+        // Just combine and send - no custom wrapping logic needed
+        let combinedText = "\(topText)\n\n\n\(bottomText)"
 
-        // Clean the text (remove any special characters if needed)
-        let cleanedTopText = topText
-        let cleanedBottomText = bottomText
-
-        // Count newlines in top text
-        let newlineCount = cleanedTopText.filter { $0 == "\n" }.count
-
-        // Calculate rows to add between top and bottom (3 minus existing newlines)
-        let rowsTop = 3 - newlineCount
-
-        // Build combined text
-        var combinedText = cleanedTopText
-
-        // Add empty lines between top and bottom
-        for _ in 0 ..< rowsTop {
-            combinedText += "\n"
-        }
-
-        // Add bottom text
-        combinedText += cleanedBottomText
-
-        // Send the combined text
+        Bridge.log("MACH1: Sending double text wall")
         device.sendText(text: combinedText)
         device.canvas.commit()
     }
