@@ -2132,7 +2132,7 @@ public class MentraLive extends SGCManager {
                         }
                 }
 
-                Bridge.sendWifiScanResults(networks);
+                GlassesStore.INSTANCE.apply("core", "wifiScanResults", networks);
                 break;
 
             case "token_status":

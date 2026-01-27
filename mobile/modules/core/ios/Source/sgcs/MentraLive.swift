@@ -2130,12 +2130,13 @@ class MentraLive: NSObject, SGCManager {
         // First, check for enhanced format (networks_neo)
         if let networksNeoArray = json["networks_neo"] as? [[String: Any]] {
             networks = networksNeoArray
+            GlassesStore.shared.apply("core", "wifiScanResults", networks)
             // Bridge.log(
             //     "Received enhanced WiFi scan results: \(networks.count) networks with security info"
             // )
         }
 
-        Bridge.sendWifiScanResults(networks)
+        // Bridge.sendWifiScanResults(networks)
     }
 
     private func handleButtonPress(_ json: [String: Any]) {
