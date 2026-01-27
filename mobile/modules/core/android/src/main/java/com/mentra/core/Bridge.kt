@@ -409,6 +409,19 @@ public class Bridge private constructor() {
             sendTypedMessage("wifi_status_change", event as Map<String, Any>)
         }
 
+        /** Send WiFi scan results */
+        @JvmStatic
+        fun updateWifiScanResults(networks: List<Map<String, Any>>) {
+            var storedNetworks: List<Map<String, Any>> = GlassesStore.get("core", "wifiScanResults") as? List<Map<String, Any>> ?: emptyList()
+            // add the networks to the storedNetworks array, removing duplicates by ssid
+            for network in networks {
+                if (!storedNetworks.contains(where: { $0["ssid"] as? String == network["ssid"] as? String })) {
+                    storedNetworks.add(network)
+                }
+            }
+            GlassesStore.apply("core", "wifiScanResults", storedNetworks)
+        }
+
         /** Send gallery status - matches iOS MentraLive.swift handleGalleryStatus pattern */
         @JvmStatic
         fun sendGalleryStatus(

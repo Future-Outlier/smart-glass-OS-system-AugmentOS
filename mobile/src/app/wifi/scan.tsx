@@ -41,7 +41,7 @@ export default function WifiScanScreen() {
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const {push, goBack, pushPrevious, getPreviousRoute, incPreventBack, decPreventBack, setAndroidBackFn} =
     useNavigationHistory()
-  const wifiScanResults = useCoreStore()
+  const wifiScanResults: WifiSearchResult[] = useCoreStore((state) => state.wifiScanResults)
 
   // if the previous route is in this list, or the second to last route is in this list
   // show / allow the back button:
@@ -86,7 +86,8 @@ export default function WifiScanScreen() {
     loadSavedNetworks()
     startScan()
 
-    const handleWifiScanResults = (networks?: WifiSearchResult[]) => {
+    const handleWifiScanResults = (networks: WifiSearchResult[]) => {
+      
       // console.log("WIFI_SCAN: ========= SCAN.TSX RECEIVED WIFI RESULTS =========")
       // console.log("WIFI_SCAN: Data received:", data)
 
@@ -134,6 +135,8 @@ export default function WifiScanScreen() {
       setIsScanning(false)
       // console.log("WIFI_SCAN: ========= END SCAN.TSX WIFI RESULTS =========")
     }
+
+    console.log("WIFI_SCAN: wifiScanResults", wifiScanResults)
 
     handleWifiScanResults(wifiScanResults)
 

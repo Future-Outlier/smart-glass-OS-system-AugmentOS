@@ -1065,6 +1065,7 @@ struct ViewState {
 
     func requestWifiScan() {
         Bridge.log("MAN: Requesting wifi scan")
+        GlassesStore.shared.apply("core", "wifiScanResults", [])
         sgc?.requestWifiScan()
     }
 

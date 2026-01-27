@@ -50,23 +50,23 @@ export default function SelectGlassesModelScreen() {
   const glassesOptions =
     Platform.OS === "ios"
       ? [
-          // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
-          {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
-          {modelName: DeviceTypes.LIVE, key: "mentra_live"},
-          {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
-          {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
-          {modelName: DeviceTypes.NEX, key: "mentra_nex"},
-          //{modelName: "Brilliant Labs Frame", key: "frame"},
+          // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
+          {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
+          {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
+          {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
+          {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
+          {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
+          //{deviceModel: "Brilliant Labs Frame", key: "frame"},
         ]
       : [
           // Android:
-          // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
-          {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
-          {modelName: DeviceTypes.LIVE, key: "mentra_live"},
-          {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
-          {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
-          {modelName: DeviceTypes.NEX, key: "mentra_nex"},
-          // {modelName: "Brilliant Labs Frame", key: "frame"},
+          // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
+          {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
+          {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
+          {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
+          {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
+          {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
+          // {deviceModel: "Brilliant Labs Frame", key: "frame"},
         ]
 
   const triggerGlassesPairingGuide = async (deviceModel: string) => {

@@ -2131,8 +2131,8 @@ public class MentraLive extends SGCManager {
                             Log.e(TAG, "Error parsing networks_neo", e);
                         }
                 }
-
-                GlassesStore.INSTANCE.apply("core", "wifiScanResults", networks);
+                
+                Bridge.updateWifiScanResults(networks);
                 break;
 
             case "token_status":
