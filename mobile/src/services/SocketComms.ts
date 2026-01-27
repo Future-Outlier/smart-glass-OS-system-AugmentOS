@@ -10,20 +10,19 @@ import {useDisplayStore} from "@/stores/display"
 import {useGlassesStore} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import restComms from "@/services/RestComms"
+import {checkFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
 
 class SocketComms {
   private static instance: SocketComms | null = null
   private coreToken: string = ""
   public userid: string = ""
-  
-  private constructor() {
-  }
+
+  private constructor() {}
 
   private setupListeners() {
     ws.removeAllListeners("message")
-    ws.on("message", message => {
+    ws.on("message", (message) => {
       this.handle_message(message)
     })
   }
@@ -123,7 +122,7 @@ class SocketComms {
     ws.sendText(
       JSON.stringify({
         type: "glasses_connection_state",
-        modelName: deviceModel,// TODO: remove this
+        modelName: deviceModel, // TODO: remove this
         deviceModel: deviceModel,
         status: connected ? "CONNECTED" : "DISCONNECTED",
         timestamp: new Date(),
@@ -348,7 +347,6 @@ class SocketComms {
 
   // MARK: - UDP Audio Methods
 
-
   /**
    * Check if UDP audio is currently enabled.
    */
@@ -369,7 +367,7 @@ class SocketComms {
 
     // Configure audio format (LC3) for bandwidth savings
     // This tells the cloud that we're sending LC3-encoded audio
-    this.configureAudioFormat().catch(err => {
+    this.configureAudioFormat().catch((err) => {
       console.log("SOCKET: Audio format configuration failed (cloud will expect PCM):", err)
     })
 
@@ -393,9 +391,11 @@ class SocketComms {
       udp.configure(udpHost, udpPort, this.userid)
       udp.handleAck()
     } else {
-      console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:", JSON.stringify(msg, null, 2))
+      console.log(
+        "SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:",
+        JSON.stringify(msg, null, 2),
+      )
     }
-
   }
 
   /**
@@ -469,7 +469,7 @@ class SocketComms {
     console.error("SOCKET: auth error")
   }
 
-  private handle_microphone_state_change(msg: any) {
+  private async handle_microphone_state_change(msg: any) {
     // const bypassVad = msg.bypassVad ?? true
     const bypassVad = true
     const requiredDataStrings = msg.requiredData || []
@@ -486,6 +486,19 @@ class SocketComms {
       shouldSendPcmData = true
       shouldSendTranscript = true
     }
+
+    // check permission if we're turning the mic ON.
+    // Turning it off is always allowed and should go through regardless.
+    // This prevents setting systemMicUnavailable=true before permissions are granted,
+    // which would cause the mic to never start even after permissions are granted.
+    if (shouldSendPcmData || shouldSendTranscript) {
+      const hasMicPermission = await checkFeaturePermissions(PermissionFeatures.MICROPHONE)
+      if (!hasMicPermission) {
+        console.log("SOCKET: mic_state_change ignored - microphone permission not granted yet")
+        return
+      }
+    }
+
     CoreModule.setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
   }
 

@@ -379,9 +379,9 @@ public class G1 extends SGCManager {
                     forceSideDisconnection();
                     Bridge.log("G1: Called forceSideDisconnection() after connection failure.");
 
-                    // gatt.disconnect();
-                    // gatt.close();
-                    Bridge.log("G1: GATT connection disconnected and closed due to failure.");
+                    // Update connection state and notify frontend of disconnection
+                    updateConnectionState();
+                    Bridge.log("G1: Updated connection state after connection failure.");
 
                     connectHandler.postDelayed(() -> {
                         Bridge.log("G1: Attempting GATT connection for leftDevice immediately.");
@@ -710,8 +710,8 @@ public class G1 extends SGCManager {
                 sendBrightnessCommandHandler
                         .postDelayed(() -> sendBrightnessCommand(brightnessValue, shouldUseAutoBrightness), 10);
 
-                // Maybe start MIC streaming
-                sendSetMicEnabled(false, 10); // Disable the MIC
+                // MIC state is handled by CoreManager.updateMicState() after reconnection
+                // Don't hardcode mic state here - let CoreManager restore the user's preference
 
                 // enable our AugmentOS notification key
                 sendWhiteListCommand(10);
@@ -770,6 +770,7 @@ public class G1 extends SGCManager {
 
     private void updateConnectionState() {
         Boolean previousReady = ready;
+        SmartGlassesConnectionState previousConnectionState = connectionState;
         if (isLeftConnected && isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTED;
             Bridge.log("G1: Both glasses connected");
@@ -784,7 +785,8 @@ public class G1 extends SGCManager {
             Bridge.log("G1: No glasses connected");
             ready = false;
         }
-        if (previousReady != ready) {
+        // Notify if either ready state or connection state changed
+        if (previousReady != ready || !previousConnectionState.equals(connectionState)) {
             CoreManager.getInstance().handleConnectionStateChanged();
         }
     }
