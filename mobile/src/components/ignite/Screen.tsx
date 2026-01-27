@@ -255,7 +255,7 @@ export function Screen(props: ScreenProps) {
 
   const $containerInsets = useSafeAreaInsetsStyle(safeAreaEdges)
   const {theme} = useAppTheme()
-  const [debugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
+  // const [debugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
 
   return (
     <View
@@ -274,7 +274,7 @@ export function Screen(props: ScreenProps) {
           style={[$styles.flex1, KeyboardAvoidingViewProps?.style]}>
           {isNonScrolling(props.preset) ? <ScreenWithoutScrolling {...props} /> : <ScreenWithScrolling {...props} />}
         </KeyboardAvoidingView>
-        {debugCoreStatusBarEnabled && <CoreStatusBar />}
+        {/* {debugCoreStatusBarEnabled && <CoreStatusBar />} */}
       </View>
       {/*</BackgroundGradient>*/}
     </View>

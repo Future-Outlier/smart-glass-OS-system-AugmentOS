@@ -12,6 +12,8 @@ import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {waitForGlassesState} from "@/stores/glasses"
 import {getGlassesImage} from "@/utils/getGlassesImage"
+import { OnboardingGuide, OnboardingStep } from "@/components/onboarding/OnboardingGuide"
+import { translate } from "@/i18n"
 
 export default function PairingSuccessScreen() {
   const {theme, themed} = useAppTheme()
@@ -90,6 +92,48 @@ export default function PairingSuccessScreen() {
 
     clearHistoryAndGoHome()
   }
+
+
+  let steps: OnboardingStep[] = []
+
+  if (defaultWearable === DeviceTypes.LIVE) {
+    steps = [
+      {
+        type: "image",
+        // source: `${CDN_BASE}/ONB0_start_onboarding.mp4`,
+        source: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
+        name: "Start Onboarding",
+        // playCount: 1,
+        transition: false,
+        title: " ", // for spacing so it's consistent with the other steps
+        // title: "Welcome to Mentra Live",
+        subtitle: translate("common:success"),
+        subtitleSmall: translate("onboarding:liveConnected"),
+        // description: "Learn the basics",
+      },
+    ]
+  }
+
+  return (
+    <Screen preset="fixed" safeAreaEdges={["bottom"]}>
+      <OnboardingGuide
+        steps={steps}
+        autoStart={true}
+        showCloseButton={false}
+        // mainTitle={translate("common:success")}
+        // mainSubtitle={translate("onboarding:liveConnected")}
+        showSkipButton={false}
+        startButtonText={translate("onboarding:continueSetup")}
+        exitFn={() => {
+          handleContinue()
+        }}
+        endButtonText={translate("onboarding:continueSetup")}
+        endButtonFn={() => {
+          handleContinue()
+        }}
+      />
+    </Screen>
+  )
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>

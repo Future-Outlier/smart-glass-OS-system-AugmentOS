@@ -103,7 +103,6 @@ protocol SGCManager {
     func connectById(_ id: String)
     func getConnectedBluetoothName() -> String?
     func cleanup()
-    func sendAuthToken(token: String)
 
     // MARK: - Network Management
 

@@ -551,8 +551,6 @@ class G1: NSObject, SGCManager {
         // TODO:
     }
 
-    func sendAuthToken(token: String) {}
-
     private func startHeartbeat() {
         Task {
             await heartbeatManager.start { [weak self] in

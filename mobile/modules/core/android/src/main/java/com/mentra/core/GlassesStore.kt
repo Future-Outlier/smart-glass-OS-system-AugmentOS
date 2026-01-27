@@ -82,6 +82,8 @@ object GlassesStore {
         store.set("core", "button_video_fps", 30)
         store.set("core", "preferred_mic", "auto")
         store.set("core", "lc3_frame_size", 20)
+        store.set("core", "auth_email", "")
+        store.set("core", "auth_token", "")
     }
     
     fun get(category: String, key: String): Any? {
@@ -101,6 +103,16 @@ object GlassesStore {
         
         // Trigger hardware updates based on setting changes
         when (category to key) {
+            "core" to "auth_email" -> {
+                if (value is String) {
+                    // CoreManager.getInstance().sgc?.sendAuthEmail(value)
+                }
+            }
+            "core" to "auth_token" -> {
+                if (value is String) {
+                    // CoreManager.getInstance().sgc?.sendAuthToken(value)
+                }
+            }
             "core" to "lc3_frame_size" -> {
                 if (value is Int) {
                     if (value != 20 && value != 40 && value != 60) {

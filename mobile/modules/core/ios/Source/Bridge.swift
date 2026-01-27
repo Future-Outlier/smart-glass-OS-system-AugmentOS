@@ -273,15 +273,21 @@ class Bridge {
     }
 
     static func updateWifiScanResults(_ networks: [[String: Any]]) {
-        var storedNetworks: [[String: Any]] =
-            GlassesStore.shared.get("core", "wifiScanResults") as? [[String: Any]] ?? []
-        // add the networks to the storedNetworks array, removing duplicates by ssid
-        for network in networks {
-            if !networks.contains(where: { $0["ssid"] as? String == network["ssid"] as? String }) {
-                storedNetworks.append(network)
+        Task {
+            await MainActor.run {
+                var storedNetworks: [[String: Any]] =
+                    GlassesStore.shared.get("core", "wifiScanResults") as? [[String: Any]] ?? []
+                // add the networks to the storedNetworks array, removing duplicates by ssid
+                for network in networks {
+                    if !storedNetworks.contains(where: {
+                        $0["ssid"] as? String == network["ssid"] as? String
+                    }) {
+                        storedNetworks.append(network)
+                    }
+                }
+                GlassesStore.shared.apply("core", "wifiScanResults", storedNetworks)
             }
         }
-        GlassesStore.shared.apply("core", "wifiScanResults", storedNetworks)
     }
 
     static func sendMtkUpdateComplete(message: String, timestamp: Int64) {

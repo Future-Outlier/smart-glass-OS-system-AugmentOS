@@ -103,6 +103,8 @@ export const SETTINGS: Record<string, Setting> = {
   location_tier: {key: "location_tier", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
   // state:
   core_token: {key: "core_token", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
+  auth_email: {key: "auth_email", defaultValue: () => "", writable: true, saveOnServer: false, persist: true},
+  auth_token: {key: "auth_token", defaultValue: () => "", writable: true, saveOnServer: false, persist: true},
   pending_wearable: {
     key: "pending_wearable",
     defaultValue: () => "",
@@ -435,6 +437,8 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.lc3_frame_size.key,
   SETTINGS.preferred_mic.key,
   SETTINGS.screen_disabled.key,
+  SETTINGS.auth_email.key,
+  SETTINGS.auth_token.key,
   // glasses settings:
   SETTINGS.contextual_dashboard.key,
   SETTINGS.head_up_angle.key,

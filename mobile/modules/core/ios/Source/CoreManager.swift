@@ -1084,12 +1084,6 @@ struct ViewState {
         sgc?.sendHotspotState(enabled)
     }
 
-    func setUserEmail(_ email: String) {
-        Bridge.log("MAN: Setting user email for crash reporting")
-        userEmail = email
-        sgc?.sendUserEmailToGlasses(email)
-    }
-
     func queryGalleryStatus() {
         Bridge.log("MAN: 📸 Querying gallery status from glasses")
         sgc?.queryGalleryStatus()

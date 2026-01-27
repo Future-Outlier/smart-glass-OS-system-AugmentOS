@@ -81,6 +81,8 @@ class GlassesStore {
         store.set("core", "button_video_fps", 30)
         store.set("core", "preferred_mic", "auto")
         store.set("core", "lc3_frame_size", 20)
+        store.set("core", "auth_email", "")
+        store.set("core", "auth_token", "")
     }
 
     func get(_ category: String, _ key: String) -> Any? {
@@ -98,6 +100,17 @@ class GlassesStore {
 
         // Trigger hardware updates based on setting changes
         switch (category, key) {
+
+        case ("core", "auth_email"):
+            if let email = value as? String {
+                // CoreManager.shared.sgc?.sendAuthEmail(email)
+            }
+
+        case ("core", "auth_token"):
+            if let token = value as? String {
+                // CoreManager.shared.sgc?.sendAuthToken(token)
+            }
+
         case ("core", "lc3_frame_size"):
             if let frameSize = value as? Int {
                 if frameSize != 20 && frameSize != 40 && frameSize != 60 {

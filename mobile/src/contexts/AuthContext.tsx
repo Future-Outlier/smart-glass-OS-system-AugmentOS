@@ -5,6 +5,7 @@ import {FC, createContext, useEffect, useState, useContext} from "react"
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import mentraAuth from "@/utils/auth/authClient"
 import {MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"
+import { SETTINGS, useSetting } from "@/stores/settings"
 
 interface AuthContextProps {
   user: MentraAuthUser | null
@@ -24,6 +25,7 @@ export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
   const [session, setSession] = useState<any>(null)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [_authEmail, setAuthEmail] = useSetting(SETTINGS.auth_email.key)
 
   useEffect(() => {
     let subscription: {unsubscribe: () => void} | undefined
@@ -59,9 +61,7 @@ export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
         })
         // Send user email to glasses for crash reporting
         if (session?.user?.email) {
-          CoreModule.setUserEmail(session.user.email).catch((e) => {
-            console.log("AuthContext: Failed to send user email to glasses:", e)
-          })
+          setAuthEmail(session.user.email)
         }
       })
       console.log("AuthContext: setupAuthListener()", res)

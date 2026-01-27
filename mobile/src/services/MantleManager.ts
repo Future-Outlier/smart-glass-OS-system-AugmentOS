@@ -432,7 +432,7 @@ class MantleManager {
         if (this.micDataTimeout) {
           BackgroundTimer.clearTimeout(this.micDataTimeout)
         }
-        BackgroundTimer.setTimeout(() => {
+        this.micDataTimeout = BackgroundTimer.setTimeout(() => {
           useDebugStore.getState().setDebugInfo({micDataRecvd: false})
         }, this.MIC_TIMEOUT_MS)
         useDebugStore.getState().setDebugInfo({micDataRecvd: true})

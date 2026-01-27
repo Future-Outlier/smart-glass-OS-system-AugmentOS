@@ -1208,12 +1208,6 @@ class MentraLive: NSObject, SGCManager {
         }
     }
 
-    func sendAuthToken(token: String) {
-        Bridge.log("LIVE: Sending auth token")
-        // let json: [String: Any] = ["type": "send_auth_token"]
-        // sendJson(json, wakeUp: true)
-    }
-
     func requestPhoto(
         _ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?,
         compress: String?, silent: Bool
@@ -2724,7 +2718,7 @@ class MentraLive: NSObject, SGCManager {
     private func sendCoreTokenToAsgClient() {
         Bridge.log("Preparing to send coreToken to ASG client")
 
-        let coreToken = CoreManager.shared.coreToken
+        let coreToken = GlassesStore.shared.get("core", "auth_token") as? String ?? ""
         if coreToken.isEmpty {
             Bridge.log("No coreToken available to send to ASG client")
             return
@@ -2741,7 +2735,7 @@ class MentraLive: NSObject, SGCManager {
 
     /// Send stored user email to the ASG client for Sentry crash reporting
     private func sendStoredUserEmailToAsgClient() {
-        let storedEmail = CoreManager.shared.userEmail
+        let storedEmail = GlassesStore.shared.store.get("core", "auth_email") as? String ?? ""
 
         guard !storedEmail.isEmpty else {
             Bridge.log("LIVE: No stored user email to send to ASG client")

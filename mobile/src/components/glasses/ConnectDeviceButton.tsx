@@ -45,7 +45,7 @@ export const ConnectDeviceButton = () => {
 
   // New handler: if already connecting, pressing the button calls disconnect.
   const handleConnectOrDisconnect = async () => {
-    if (status.core_info.is_searching) {
+    if (isSearching) {
       await CoreModule.disconnect()
     } else {
       await connectGlasses()

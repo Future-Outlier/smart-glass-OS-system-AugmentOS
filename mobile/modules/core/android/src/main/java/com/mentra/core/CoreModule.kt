@@ -132,10 +132,6 @@ class CoreModule : Module() {
             coreManager?.setHotspotState(enabled)
         }
 
-        // MARK: - User Context Commands
-
-        AsyncFunction("setUserEmail") { email: String -> coreManager?.setUserEmail(email) }
-
         // MARK: - Gallery Commands
 
         AsyncFunction("queryGalleryStatus") { coreManager?.queryGalleryStatus() }

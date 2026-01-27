@@ -2865,7 +2865,7 @@ public class MentraLive extends SGCManager {
      * Send stored user email to the ASG client for Sentry crash reporting
      */
     private void sendStoredUserEmailToAsgClient() {
-        String storedEmail = CoreManager.Companion.getInstance().getStoredUserEmail();
+        String storedEmail = GlassesStore.INSTANCE.get("core", "auth_email") as? String ?? "";
 
         if (storedEmail == null || storedEmail.isEmpty()) {
             Bridge.log("LIVE: No stored user email to send to ASG client");
@@ -3413,12 +3413,6 @@ public class MentraLive extends SGCManager {
      */
     public boolean isMicrophoneEnabled() {
         return isMicrophoneEnabled;
-    }
-
-    public void sendAuthToken(String token) {
-        Bridge.log("LIVE: Sending auth token");
-        // let json: [String: Any] = ["type": "send_auth_token"]
-        // sendJson(json, wakeUp: true)
     }
 
     public void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken, String compress, boolean silent) {

@@ -122,8 +122,6 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func cleanup() {}
     
-    func sendAuthToken(token: String) {}
-
     var type: String = DeviceTypes.MACH1
     let hasMic: Bool = false
     var micEnabled: Bool = false

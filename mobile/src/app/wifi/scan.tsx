@@ -55,7 +55,7 @@ export default function WifiScanScreen() {
     if (showBack) {
       goBack()
     } else {
-      pushPrevious(2)
+      pushPrevious(1)
     }
   }
 

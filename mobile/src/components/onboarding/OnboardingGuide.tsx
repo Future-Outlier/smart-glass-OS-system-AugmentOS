@@ -17,6 +17,7 @@ interface BaseStep {
   title?: string
   subtitle?: string
   subtitle2?: string
+  subtitleSmall?: string
   info?: string
   bullets?: string[]
   waitFn?: () => Promise<void>
@@ -400,11 +401,15 @@ export function OnboardingGuide({
     }
   }, [exitFn, clearHistoryAndGoHome])
 
-  const renderBullets = useCallback((bullets: string[]) => {
+  const renderBullets = useCallback(() => {
+    if (!step.bullets) {
+      return null
+    }
+
     return (
-      <View className="flex flex-col gap-2 flex-1 px-2 mt-6">
-        <Text className="text-center text-xl self-start font-semibold" text={bullets[0]} />
-        {bullets.slice(1).map((bullet, index) => (
+      <View className="flex flex-col gap-2 flex-1 px-2">
+        <Text className="text-center text-xl self-start font-semibold" text={step.bullets[0]} />
+        {step.bullets.slice(1).map((bullet, index) => (
           <View key={index} className="flex-row items-start gap-2 px-4">
             <Text className="text-sm font-medium">•</Text>
             <Text className="flex-1 text-sm font-medium" text={bullet} />
@@ -650,14 +655,72 @@ export function OnboardingGuide({
     )
   }
 
+  const renderStepContent = () => {
+    if (!step.subtitle && !step.subtitle2 && !step.subtitleSmall && !step.info) {
+      return null
+    }
+
+    return (
+      <View className={`flex flex-col gap-2 flex-grow justify-center ${devMode ? "bg-chart-1" : ""}`}>
+        {step.subtitle && <Text className="text-center text-xl font-semibold" text={step.subtitle} />}
+        {step.subtitle2 && <Text className="text-center text-lg text-foreground font-medium" text={step.subtitle2} />}
+        {step.subtitleSmall && <Text className="text-center text-sm font-medium" text={step.subtitleSmall} />}
+        {step.info && (
+          <View className="flex flex-row gap-2 justify-center items-center px-12">
+            <Icon name="info" size={20} color={theme.colors.muted_foreground} />
+            <Text
+              className="text-center text-sm font-medium text-muted-foreground"
+              text={step.info}
+              numberOfLines={2}
+            />
+          </View>
+        )}
+      </View>
+    )
+  }
+
+  const renderStepCheck = () => {
+    const showCheck = step.waitFn && !waitState
+    const showDebug = devMode && waitState && step.waitFn
+    if (!showCheck && !showDebug) {
+      // still show a small height if there is a waitFn so the text doesn't move around:
+      if (step.waitFn) {
+        return <View className="h-12" />
+      }
+      return null
+    }
+    return (
+      <View id="bottom" className={`flex justify-end h-12 ${devMode ? "bg-chart-4" : ""}`}>
+        {showCheck && (
+          <View className="flex-1 justify-center">
+            <View className="flex flex-row justify-center items-center">
+              <View className="bg-primary rounded-full p-1">
+                <Icon name="check" size={20} color={theme.colors.background} />
+              </View>
+            </View>
+          </View>
+        )}
+        {/* if waitState is true, show a primary indicator with a height of 12px that overlays the content */}
+        {showDebug && (
+          <View className="flex-1 justify-center">
+            <View className="flex flex-row justify-center items-center gap-2">
+              <Text className="text-center text-sm font-medium" text="<DEV_ONLY>: waiting for step to complete" />
+              <ActivityIndicator size="small" color={theme.colors.background} />
+            </View>
+          </View>
+        )}
+      </View>
+    )
+  }
+
   return (
     <>
       {showHeader && (
         <Header
           leftIcon={showCloseButton ? "x" : undefined}
           RightActionComponent={
-            <View className="flex flex-row gap-2">
-              {hasStarted && <Text className="text-center text-sm font-medium" text={counter} />}
+            <View className={`flex flex-row gap-2 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
+              {hasStarted && steps.length > 1 && <Text className="text-center text-sm font-medium" text={counter} />}
               <MentraLogoStandalone />
             </View>
           }
@@ -680,71 +743,28 @@ export function OnboardingGuide({
             )}
           </View>
         </View>
-        <View id="bottom" className="flex justify-end flex-grow">
-          {step.waitFn && !waitState && (
-            <View className="flex-1 justify-center">
-              <View className="flex flex-row justify-center items-center">
-                <View className="bg-primary rounded-full p-1">
-                  <Icon name="check" size={20} color={theme.colors.background} />
-                </View>
-              </View>
-            </View>
-          )}
-          {/* if waitState is true, show a primary indicator with a height of 12px that overlays the content */}
-          {devMode && waitState && (
-            <View className="flex-1 justify-center">
-              <View className="flex flex-row justify-center items-center bg-primary/70 h-12 gap-2">
-                <Text className="text-center text-sm font-medium" text="<DEV_ONLY>: waiting for step to complete" />
-                <ActivityIndicator size="small" color={theme.colors.background} />
-              </View>
-            </View>
-          )}
-
-          {/* <View className="flex flex-row justify-center items-center">
-            <View className="bg-primary rounded-full p-1">
-              <Icon name="check" size={20} color={theme.colors.background} />
-            </View>
-          </View> */}
-        </View>
-
-        <View id="bottom" className="flex justify-end flex-grow">
-          {hasStarted && (
+        {renderStepCheck()}
+        {renderStepContent()}
+        {renderBullets()}
+        <View id="bottom" className={`flex justify-end flex-grow ${devMode ? "bg-chart-5" : ""}`}>
+          {/* {!hasStarted && (mainTitle || mainSubtitle) && (
             <View className="flex flex-col gap-2 mb-10">
-              {step.subtitle && <Text className="text-center text-xl font-semibold" text={step.subtitle} />}
-              {step.subtitle2 && (
-                <Text className="text-center text-lg text-foreground font-medium" text={step.subtitle2} />
-              )}
-              {step.info && (
-                <View className="flex flex-row gap-2 justify-center items-center px-12">
-                  <Icon name="info" size={20} color={theme.colors.muted_foreground} />
-                  <Text
-                    className="text-center text-sm font-medium text-muted-foreground"
-                    text={step.info}
-                    numberOfLines={2}
-                  />
-                </View>
-              )}
-            </View>
-          )}
-
-          {!hasStarted && (mainTitle || mainSubtitle) && (
-            <View className="flex flex-col gap-2">
               {mainTitle && <Text className="text-center text-xl font-semibold" text={mainTitle} />}
               {mainSubtitle && <Text className="text-center text-sm font-medium" text={mainSubtitle} />}
             </View>
-          )}
+          )} */}
 
-          {step.bullets && renderBullets(step.bullets)}
+          {/* <View className="h-10"/> */}
 
           {!hasStarted && (
-            <View className="flex flex-col gap-4 mt-8">
+            <View className="flex-col gap-4">
               <Button flexContainer text={startButtonText} onPress={handleStart} />
               {showSkipButton && <Button flexContainer preset="secondary" tx="common:skip" onPress={handleSkip} />}
             </View>
           )}
 
           {hasStarted && (
-            <View className="flex flex-row gap-4">
+            <View className="flex-row gap-4">
               {!isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
 
               {!isLastStep ? renderContinueButton() : <Button flex text={endButtonText} onPress={endButtonFn} />}
