@@ -411,7 +411,7 @@ export function OnboardingGuide({
     }
 
     return (
-      <View className={`flex flex-col flex-grow justify-center gap-2 flex-1 px-2 ${devMode ? "bg-chart-2" : ""}`}>
+      <View className={`flex flex-col flex-grow justify-center gap-2 flex-1 px-2`}>
         <Text className="text-center text-xl self-start font-semibold" text={step.bullets[0]} />
         {step.bullets.slice(1).map((bullet, index) => (
           <View key={index} className="flex-row items-start gap-2 px-4">
@@ -595,6 +595,9 @@ export function OnboardingGuide({
       setWaitState(true)
       step.waitFn().then(() => {
         setWaitState(false)
+        setTimeout(() => {
+          handleNext(true)
+        }, 1500)
       })
     }
   }, [step.waitFn])
@@ -610,16 +613,32 @@ export function OnboardingGuide({
   // }
 
   const renderContinueButton = () => {
-    let showLoader = waitState || !showNextButton
+    let showLoader = (waitState && step.waitFn) || !showNextButton
     // the wait state should take precedence over the show next flag:
-    if (showLoader && step.waitFn && !waitState) {
-      showLoader = false
+    // if (showLoader && step.waitFn && !waitState) {
+    //   showLoader = false
+    // }
+
+    // if (showLoader && !step.waitFn) {
+    //   showLoader = false
+    // }
+
+    // console.log("ONBOARD: waitState", waitState)
+    // console.log("ONBOARD: showNextButton", showNextButton)
+    // console.log("ONBOARD: showLoader", showLoader)
+    // console.log("ONBOARD: step.waitFn", step.waitFn)
+
+    if (showLoader && !devMode) {
+      return null
     }
-    if (waitState || !showNextButton) {
+
+    if (showLoader) {
       return (
         <Button
           flex
-          // style={!wouldShowContinue && {backgroundColor: theme.colors.warning}}
+          text="DEV: Continue"
+          style={{backgroundColor: theme.colors.chart_4}}
+          textStyle={{fontWeight: "bold"}}
           preset="primary"
           onPress={() => {
             if (devMode) {
@@ -641,7 +660,7 @@ export function OnboardingGuide({
             //   return
             // }
           }}>
-          <ActivityIndicator size="small" color={theme.colors.background} />
+          {/* <ActivityIndicator size="small" color={theme.colors.background} /> */}
         </Button>
       )
     }
@@ -665,7 +684,7 @@ export function OnboardingGuide({
     }
 
     return (
-      <View className={`flex flex-col gap-2 flex-grow justify-center ${devMode ? "bg-chart-1" : ""}`}>
+      <View className={`flex flex-col gap-2 flex-grow justify-center`}>
         {step.subtitle && <Text className="text-center text-xl font-semibold" text={step.subtitle} />}
         {step.subtitle2 && <Text className="text-center text-lg text-foreground font-medium" text={step.subtitle2} />}
         {step.subtitleSmall && <Text className="text-center text-sm font-medium" text={step.subtitleSmall} />}
@@ -708,7 +727,7 @@ export function OnboardingGuide({
         {showDebug && (
           <View className="flex-1 justify-center">
             <View className="flex flex-row justify-center items-center gap-2">
-              <Text className="text-center text-sm font-medium" text="<DEV_ONLY>: waiting for step to complete" />
+              <Text className="text-center text-sm font-bold" text="DEV: waiting for step to complete" />
               <ActivityIndicator size="small" color={theme.colors.background} />
             </View>
           </View>
@@ -717,6 +736,8 @@ export function OnboardingGuide({
     )
   }
 
+  const showCounter = hasStarted && steps.length > 1
+
   return (
     <>
       {showHeader && (
@@ -724,7 +745,7 @@ export function OnboardingGuide({
           leftIcon={showCloseButton ? "x" : undefined}
           RightActionComponent={
             <View className={`flex flex-row gap-2 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
-              {hasStarted && steps.length > 1 && <Text className="text-center text-sm font-medium" text={counter} />}
+              <Text className="text-center text-sm font-medium" text={showCounter ? counter : ""} />
               <MentraLogoStandalone />
             </View>
           }
@@ -747,10 +768,12 @@ export function OnboardingGuide({
             )}
           </View>
         </View>
-        {renderStepCheck()}
-        {renderStepContent()}
-        {renderBullets()}
-        <View id="bottom" className={`flex justify-end flex-shrink ${devMode ? "bg-chart-5" : ""}`}>
+        <View className="flex-1">
+          {renderStepCheck()}
+          {renderStepContent()}
+          {renderBullets()}
+        </View>
+        <View id="bottom" className={`flex justify-end flex-shrink`}>
           {/* {!hasStarted && (mainTitle || mainSubtitle) && (
             <View className="flex flex-col gap-2 mb-10">
               {mainTitle && <Text className="text-center text-xl font-semibold" text={mainTitle} />}
@@ -762,15 +785,14 @@ export function OnboardingGuide({
 
           {!hasStarted && (
             <View className="flex-col gap-4">
-              <Button flexContainer text={startButtonText} onPress={handleStart} />
-              {showSkipButton && <Button flexContainer preset="secondary" tx="common:skip" onPress={handleSkip} />}
+              <Button text={startButtonText} onPress={handleStart} />
+              {showSkipButton && <Button preset="secondary" tx="common:skip" onPress={handleSkip} />}
             </View>
           )}
 
           {hasStarted && (
             <View className="flex-row gap-4">
               {!isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
-
               {!isLastStep ? renderContinueButton() : <Button flex text={endButtonText} onPress={endButtonFn} />}
             </View>
           )}

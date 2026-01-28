@@ -64,8 +64,8 @@ class CoreModule : Module() {
             // Configure observable store event emission
             GlassesStore.store.configure { category, changes ->
                 when (category) {
-                    "glasses" -> sendEvent("GlassesStatus", changes)
-                    "core" -> sendEvent("CoreStatus", changes)
+                    "glasses" -> sendEvent("glasses_status", changes)
+                    "core" -> sendEvent("core_status", changes)
                 }
             }
         }

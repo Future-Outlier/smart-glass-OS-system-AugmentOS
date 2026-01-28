@@ -1,5 +1,5 @@
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
-import {View, ViewStyle, Image, ImageStyle, TextStyle} from "react-native"
+import {View, ViewStyle, Image, ImageStyle, TextStyle, Platform} from "react-native"
 
 import {EvenRealitiesLogo} from "@/components/brands/EvenRealitiesLogo"
 import {MentraLogo} from "@/components/brands/MentraLogo"
@@ -48,6 +48,9 @@ export default function PairingSuccessScreen() {
 
       let btcConnected = await waitForGlassesState("btcConnected", (value) => value === true, 1000)
       console.log("PAIR_SUCCESS: btcConnected", btcConnected)
+      if (Platform.OS === "android") {
+        btcConnected = true
+      }
       
       if (!btcConnected) {
         stack.push("/pairing/btclassic")
