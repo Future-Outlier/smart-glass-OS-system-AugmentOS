@@ -3873,7 +3873,7 @@ public class G1 extends SGCManager {
             eventBody.put("style", style);
             eventBody.put("color", color);
 
-            Bridge.sendTypedMessage("glasses_serial_number", eventBody);
+            // Bridge.sendTypedMessage("glasses_serial_number", eventBody);
             Bridge.log("G1: 📱 Emitted serial number info: " + serialNumber + ", Style: " + style + ", Color: " + color);
 
             // Trigger status update to include serial number in status JSON

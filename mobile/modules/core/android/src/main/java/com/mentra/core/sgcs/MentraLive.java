@@ -2865,7 +2865,8 @@ public class MentraLive extends SGCManager {
      * Send stored user email to the ASG client for Sentry crash reporting
      */
     private void sendStoredUserEmailToAsgClient() {
-        String storedEmail = GlassesStore.INSTANCE.get("core", "auth_email") as? String ?? "";
+        Object emailObj = GlassesStore.INSTANCE.get("core", "auth_email");
+        String storedEmail = emailObj instanceof String ? (String) emailObj : "";
 
         if (storedEmail == null || storedEmail.isEmpty()) {
             Bridge.log("LIVE: No stored user email to send to ASG client");
