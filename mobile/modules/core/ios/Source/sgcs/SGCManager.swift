@@ -1,3 +1,5 @@
+import Foundation
+
 @MainActor
 protocol SGCManager {
     // MARK: - Device Information
@@ -7,23 +9,23 @@ protocol SGCManager {
     var connectionState: String { get }
 
     // info:
-    var glassesAppVersion: String { get }
-    var glassesBuildNumber: String { get }
-    var glassesDeviceModel: String { get }
-    var glassesAndroidVersion: String { get }
-    var glassesOtaVersionUrl: String { get }
-    var glassesFirmwareVersion: String { get }
-    var glassesBtMacAddress: String { get }
-    var glassesSerialNumber: String { get }
-    var glassesStyle: String { get }
-    var glassesColor: String { get }
+    var appVersion: String { get }
+    var buildNumber: String { get }
+    var deviceModel: String { get }
+    var androidVersion: String { get }
+    var otaVersionUrl: String { get }
+    var firmwareVersion: String { get }
+    var btMacAddress: String { get }
+    var serialNumber: String { get }
+    var style: String { get }
+    var color: String { get }
 
     // MARK: - Hardware Status
 
     var hasMic: Bool { get }
     var micEnabled: Bool { get }
     var batteryLevel: Int { get }
-    var isHeadUp: Bool { get }
+    var charging: Bool { get }
 
     // MARK: - Case Status
 
@@ -126,26 +128,136 @@ extension SGCManager {
     func sendJson(_ jsonOriginal: [String: Any], wakeUp: Bool) {
         sendJson(jsonOriginal, wakeUp: wakeUp, requireAck: true)
     }
-}
 
-//// template:
-// var glassesBuildNumber = ""
-// var glassesDeviceModel = ""
-// var glassesAndroidVersion = ""
-// var glassesOtaVersionUrl = ""
-// var glassesSerialNumber = ""
-// var glassesStyle = ""
-// var glassesColor = ""
-// var caseBatteryLevel = 0
-// var glassesAppVersion = ""
-//
-//// Data Properties
-// @Published var batteryLevel: Int = -1
-// @Published var isCharging: Bool = false
-// @Published var wifiConnected: Bool = false
-// @Published var wifiSsid: String = ""
-// @Published var wifiLocalIp: String = ""
-// @Published var isHotspotEnabled: Bool = false
-// @Published var hotspotSsid: String = ""
-// @Published var hotspotPassword: String = ""
-// @Published var hotspotGatewayIp: String = "" // The gateway IP to connect to when on hotspot
+    // MARK: - Default GlassesStore-backed property implementations
+    
+    var ready: Bool {
+        get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "ready", newValue) }
+    }
+
+    var appVersion: String {
+        get { GlassesStore.shared.get("glasses", "appVersion") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "appVersion", newValue) }
+    }
+
+    var buildNumber: String {
+        get { GlassesStore.shared.get("glasses", "buildNumber") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "buildNumber", newValue) }
+    }
+
+    var deviceModel: String {
+        get { GlassesStore.shared.get("glasses", "deviceModel") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "deviceModel", newValue) }
+    }
+
+    var androidVersion: String {
+        get { GlassesStore.shared.get("glasses", "androidVersion") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "androidVersion", newValue) }
+    }
+
+    var otaVersionUrl: String {
+        get { GlassesStore.shared.get("glasses", "otaVersionUrl") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "otaVersionUrl", newValue) }
+    }
+
+    var firmwareVersion: String {
+        get { GlassesStore.shared.get("glasses", "fwVersion") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "fwVersion", newValue) }
+    }
+
+    var btMacAddress: String {
+        get { GlassesStore.shared.get("glasses", "btMacAddress") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "btMacAddress", newValue) }
+    }
+
+    var serialNumber: String {
+        get { GlassesStore.shared.get("glasses", "serialNumber") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "serialNumber", newValue) }
+    }
+
+    var style: String {
+        get { GlassesStore.shared.get("glasses", "style") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "style", newValue) }
+    }
+
+    var color: String {
+        get { GlassesStore.shared.get("glasses", "color") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "color", newValue) }
+    }
+
+    var micEnabled: Bool {
+        get { GlassesStore.shared.get("glasses", "micEnabled") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "micEnabled", newValue) }
+    }
+
+    var batteryLevel: Int {
+        get { GlassesStore.shared.get("glasses", "batteryLevel") as? Int ?? -1 }
+        set { GlassesStore.shared.apply("glasses", "batteryLevel", newValue) }
+    }
+
+    var headUp: Bool {
+        get { GlassesStore.shared.get("glasses", "headUp") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "headUp", newValue) }
+    }
+
+    var charging: Bool {
+        get { GlassesStore.shared.get("glasses", "charging") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "charging", newValue) }
+    }
+
+    var caseOpen: Bool {
+        get { GlassesStore.shared.get("glasses", "caseOpen") as? Bool ?? true }
+        set { GlassesStore.shared.apply("glasses", "caseOpen", newValue) }
+    }
+
+    var caseRemoved: Bool {
+        get { GlassesStore.shared.get("glasses", "caseRemoved") as? Bool ?? true }
+        set { GlassesStore.shared.apply("glasses", "caseRemoved", newValue) }
+    }
+
+    var caseCharging: Bool {
+        get { GlassesStore.shared.get("glasses", "caseCharging") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "caseCharging", newValue) }
+    }
+
+    var caseBatteryLevel: Int {
+        get { GlassesStore.shared.get("glasses", "caseBatteryLevel") as? Int ?? -1 }
+        set { GlassesStore.shared.apply("glasses", "caseBatteryLevel", newValue) }
+    }
+
+    var wifiSsid: String {
+        get { GlassesStore.shared.get("glasses", "wifiSsid") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "wifiSsid", newValue) }
+    }
+
+    var wifiConnected: Bool {
+        get { GlassesStore.shared.get("glasses", "wifiConnected") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "wifiConnected", newValue) }
+    }
+
+    var wifiLocalIp: String {
+        get { GlassesStore.shared.get("glasses", "wifiLocalIp") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "wifiLocalIp", newValue) }
+    }
+
+    var isHotspotEnabled: Bool {
+        get { GlassesStore.shared.get("glasses", "hotspotEnabled") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "hotspotEnabled", newValue) }
+    }
+
+    var hotspotSsid: String {
+        get { GlassesStore.shared.get("glasses", "hotspotSsid") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "hotspotSsid", newValue) }
+    }
+
+    var hotspotPassword: String {
+        get { GlassesStore.shared.get("glasses", "hotspotPassword") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "hotspotPassword", newValue) }
+    }
+
+    var hotspotGatewayIp: String {
+        get { GlassesStore.shared.get("glasses", "hotspotGatewayIp") as? String ?? "" }
+        set { GlassesStore.shared.apply("glasses", "hotspotGatewayIp", newValue) }
+    }
+}

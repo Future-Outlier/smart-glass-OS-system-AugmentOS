@@ -386,7 +386,7 @@ public class Mach1 extends SGCManager {
             if (tapCount >= 2) {
                 isHeadUp = !isHeadUp;
                 // Notify CoreManager of head up state change (same as G1 does with IMU)
-                GlassesStore.INSTANCE.set("core", "isHeadUp", isHeadUp);
+                GlassesStore.INSTANCE.apply("glasses", "headUp", isHeadUp);
                 Log.d(TAG, "Mach1: Dashboard toggled via tap, isHeadUp: " + isHeadUp);
 
                 // Auto turn off the dashboard after 15 seconds
@@ -394,7 +394,7 @@ public class Mach1 extends SGCManager {
                     goHomeHandler.postDelayed(() -> {
                         if (isHeadUp) {
                             isHeadUp = false;
-                            GlassesStore.INSTANCE.set("core", "isHeadUp", false);
+                            GlassesStore.INSTANCE.apply("glasses", "headUp", false);
                             Log.d(TAG, "Mach1: Auto-disabling dashboard after 15 seconds");
                         }
                     }, 15000);

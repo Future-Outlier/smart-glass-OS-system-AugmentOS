@@ -176,9 +176,9 @@ class CoreManager {
         get() = GlassesStore.store.get("core", "systemMicUnavailable") as? Boolean ?: false
         set(value) = GlassesStore.apply("core", "systemMicUnavailable", value)
 
-    public var isHeadUp: Boolean
-        get() = GlassesStore.store.get("core", "isHeadUp") as? Boolean ?: false
-        set(value) = GlassesStore.apply("core", "isHeadUp", value)
+    public var headUp: Boolean
+        get() = GlassesStore.store.get("glasses", "headUp") as? Boolean ?: false
+        set(value) = GlassesStore.apply("glasses", "headUp", value)
 
     private var micEnabled: Boolean
         get() = GlassesStore.store.get("core", "micEnabled") as? Boolean ?: false
@@ -1231,13 +1231,13 @@ class CoreManager {
             GlassesStore.apply("glasses", "connected", sgc?.ready ?: false)
             GlassesStore.apply("glasses", "micEnabled", sgc?.micEnabled ?: false)
             GlassesStore.apply("glasses", "batteryLevel", sgc?.batteryLevel ?: -1)
-            GlassesStore.apply("glasses", "appVersion", sgc?.glassesAppVersion ?: "")
-            GlassesStore.apply("glasses", "buildNumber", sgc?.glassesBuildNumber ?: "")
-            GlassesStore.apply("glasses", "deviceModel", sgc?.glassesDeviceModel ?: "")
-            GlassesStore.apply("glasses", "androidVersion", sgc?.glassesAndroidVersion ?: "")
-            GlassesStore.apply("glasses", "otaVersionUrl", sgc?.glassesOtaVersionUrl ?: "")
-            GlassesStore.apply("glasses", "fwVersion", sgc?.glassesFirmwareVersion ?: "")
-            GlassesStore.apply("glasses", "btMacAddress", sgc?.glassesBtMacAddress ?: "")
+            GlassesStore.apply("glasses", "appVersion", sgc?.appVersion ?: "")
+            GlassesStore.apply("glasses", "buildNumber", sgc?.buildNumber ?: "")
+            GlassesStore.apply("glasses", "deviceModel", sgc?.deviceModel ?: "")
+            GlassesStore.apply("glasses", "androidVersion", sgc?.androidVersion ?: "")
+            GlassesStore.apply("glasses", "otaVersionUrl", sgc?.otaVersionUrl ?: "")
+            GlassesStore.apply("glasses", "fwVersion", sgc?.firmwareVersion ?: "")
+            GlassesStore.apply("glasses", "btMacAddress", sgc?.btMacAddress ?: "")
 
             if (sgc is G1) {
                 GlassesStore.apply("glasses", "caseRemoved", sgc!!.caseRemoved)
@@ -1245,9 +1245,9 @@ class CoreManager {
                 GlassesStore.apply("glasses", "caseCharging", sgc!!.caseCharging)
                 GlassesStore.apply("glasses", "caseBatteryLevel", sgc!!.caseBatteryLevel)
 
-                GlassesStore.apply("glasses", "serialNumber", sgc!!.glassesSerialNumber)
-                GlassesStore.apply("glasses", "style", sgc!!.glassesStyle)
-                GlassesStore.apply("glasses", "color", sgc!!.glassesColor)
+                GlassesStore.apply("glasses", "serialNumber", sgc!!.serialNumber)
+                GlassesStore.apply("glasses", "style", sgc!!.style)
+                GlassesStore.apply("glasses", "color", sgc!!.color)
             }
 
             if (sgc is MentraLive) {

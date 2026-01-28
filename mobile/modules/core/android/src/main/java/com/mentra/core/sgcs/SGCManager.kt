@@ -13,22 +13,22 @@ abstract class SGCManager {
     @JvmField var protobufSchemaVersion: String = ""
     @JvmField var glassesProtobufVersion: String = ""
 
-    @JvmField var glassesAppVersion: String = ""
-    @JvmField var glassesBuildNumber: String = ""
-    @JvmField var glassesDeviceModel: String = ""
-    @JvmField var glassesAndroidVersion: String = ""
-    @JvmField var glassesOtaVersionUrl: String = ""
-    @JvmField var glassesFirmwareVersion: String = ""
-    @JvmField var glassesBtMacAddress: String = ""
-    @JvmField var glassesSerialNumber: String = ""
-    @JvmField var glassesStyle: String = ""
-    @JvmField var glassesColor: String = ""
+    @JvmField var appVersion: String = ""
+    @JvmField var buildNumber: String = ""
+    @JvmField var deviceModel: String = ""
+    @JvmField var androidVersion: String = ""
+    @JvmField var otaVersionUrl: String = ""
+    @JvmField var firmwareVersion: String = ""
+    @JvmField var btMacAddress: String = ""
+    @JvmField var serialNumber: String = ""
+    @JvmField var style: String = ""
+    @JvmField var color: String = ""
 
     // Hardware Status
     @JvmField var hasMic: Boolean = false
     @JvmField var micEnabled: Boolean = false
     @JvmField var batteryLevel: Int = -1
-    @JvmField var isHeadUp: Boolean = false
+    @JvmField var headUp: Boolean = false
 
     // Case Status
     @JvmField var caseOpen: Boolean = false

@@ -45,8 +45,8 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const glassesConnected = useGlassesStore((state) => state.connected)
-  const glassesStyle = useGlassesStore((state) => state.style)
-  const glassesColor = useGlassesStore((state) => state.color)
+  const style = useGlassesStore((state) => state.style)
+  const color = useGlassesStore((state) => state.color)
   const caseRemoved = useGlassesStore((state) => state.caseRemoved)
   const caseBatteryLevel = useGlassesStore((state) => state.caseBatteryLevel)
   const caseOpen = useGlassesStore((state) => state.caseOpen)
@@ -100,7 +100,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
       if (!caseRemoved) {
         state = caseOpen ? "case_open" : "case_close"
       }
-      return getEvenRealitiesG1Image(glassesStyle, glassesColor, state, "l", theme.isDark, caseBatteryLevel)
+      return getEvenRealitiesG1Image(style, color, state, "l", theme.isDark, caseBatteryLevel)
     }
 
     if (!caseRemoved) {

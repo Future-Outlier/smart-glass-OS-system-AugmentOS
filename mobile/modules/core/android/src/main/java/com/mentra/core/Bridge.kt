@@ -388,7 +388,7 @@ public class Bridge private constructor() {
 
         /** Send glasses serial number */
         @JvmStatic
-        fun sendGlassesSerialNumber(serialNumber: String, style: String, color: String) {
+        fun sendserialNumber(serialNumber: String, style: String, color: String) {
             val serialData = HashMap<String, Any>()
             serialData["serial_number"] = serialNumber
             serialData["style"] = style

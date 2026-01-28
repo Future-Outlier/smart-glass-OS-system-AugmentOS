@@ -855,10 +855,6 @@ typealias JSONObject = [String: Any]
 class MentraLive: NSObject, SGCManager {
     var connectionState: String = ConnTypes.DISCONNECTED
 
-    var caseBatteryLevel: Int = -1
-    var glassesSerialNumber: String = ""
-    var glassesStyle: String = ""
-    var glassesColor: String = ""
     func setDashboardPosition(_: Int, _: Int) {}
     func setSilentMode(_: Bool) {}
     func exit() {}
@@ -887,11 +883,7 @@ class MentraLive: NSObject, SGCManager {
 
     var type = "Mentra Live"
     var hasMic = true
-    var micEnabled = false
-    var isHeadUp = false
-    var caseOpen = false
-    var caseRemoved = true
-    var caseCharging = false
+    
     func setMicEnabled(_ enabled: Bool) {
         Bridge.log("LIVE: setMicEnabled called: \(enabled)")
         micEnabled = enabled
@@ -981,13 +973,6 @@ class MentraLive: NSObject, SGCManager {
     private var isNewVersion = false
     private var globalMessageId = 0
     private var lastReceivedMessageId = 0
-    var glassesAppVersion: String = ""
-    var glassesBuildNumber: String = ""
-    var glassesOtaVersionUrl: String = ""
-    var glassesFirmwareVersion: String = ""
-    var glassesBtMacAddress: String = ""
-    var glassesDeviceModel: String = ""
-    var glassesAndroidVersion: String = ""
 
     // Version info chunking support (for MTU workaround)
     // Glasses send version_info in 2 chunks to fit within BLE MTU limits
@@ -1010,17 +995,6 @@ class MentraLive: NSObject, SGCManager {
             }
         }
     }
-
-    // Data Properties
-    @Published var batteryLevel: Int = -1
-    @Published var isCharging: Bool = false
-    @Published var wifiConnected: Bool = false
-    @Published var wifiSsid: String = ""
-    @Published var wifiLocalIp: String = ""
-    @Published var isHotspotEnabled: Bool = false
-    @Published var hotspotSsid: String = ""
-    @Published var hotspotPassword: String = ""
-    @Published var hotspotGatewayIp: String = "" // The gateway IP to connect to when on hotspot
 
     // Queue Management
     private let commandQueue = CommandQueue()
@@ -1703,8 +1677,8 @@ class MentraLive: NSObject, SGCManager {
 
         case "battery_status":
             let level = json["level"] as? Int ?? batteryLevel
-            let charging = json["charging"] as? Bool ?? isCharging
-            updateBatteryStatus(level: level, charging: charging)
+            let isCharging = json["charging"] as? Bool ?? charging
+            updateBatteryStatus(level: level, isCharging: isCharging)
 
         case "wifi_status":
             let connected = json["connected"] as? Bool ?? false
@@ -1783,7 +1757,7 @@ class MentraLive: NSObject, SGCManager {
         case "touch_event":
             let gestureName = json["gesture_name"] as? String ?? "unknown"
             let timestamp = parseTimestamp(json["timestamp"])
-            let deviceModel = json["device_model"] as? String ?? glassesDeviceModel
+            let deviceModel = json["device_model"] as? String ?? deviceModel
             Bridge.sendTouchEvent(
                 deviceModel: deviceModel, gestureName: gestureName, timestamp: timestamp
             )
@@ -2152,14 +2126,14 @@ class MentraLive: NSObject, SGCManager {
         let firmwareVersion = json["firmware_version"] as? String ?? ""
         let btMacAddress = json["bt_mac_address"] as? String ?? ""
 
-        glassesAppVersion = appVersion
-        glassesBuildNumber = buildNumber
-        glassesOtaVersionUrl = otaVersionUrl
-        glassesFirmwareVersion = firmwareVersion
-        glassesBtMacAddress = btMacAddress
+        appVersion = appVersion
+        buildNumber = buildNumber
+        otaVersionUrl = otaVersionUrl
+        firmwareVersion = firmwareVersion
+        btMacAddress = btMacAddress
         isNewVersion = (Int(buildNumber) ?? 0) >= 5
-        glassesDeviceModel = deviceModel
-        glassesAndroidVersion = androidVersion
+        deviceModel = deviceModel
+        androidVersion = androidVersion
 
         // Detect LC3 audio support: K901+ devices have microphone, K900 does not
         // supportsLC3Audio = deviceModel != "K900"
@@ -2916,11 +2890,9 @@ class MentraLive: NSObject, SGCManager {
 
     // MARK: - Update Methods
 
-    private func updateBatteryStatus(level: Int, charging: Bool) {
+    private func updateBatteryStatus(level: Int, isCharging: Bool) {
         batteryLevel = level
-        isCharging = charging
-        CoreManager.shared.getStatus()
-        // emitBatteryLevelEvent(level: level, charging: charging)
+        charging = isCharging
     }
 
     private func updateWifiStatus(connected: Bool, ssid: String, ip: String) {

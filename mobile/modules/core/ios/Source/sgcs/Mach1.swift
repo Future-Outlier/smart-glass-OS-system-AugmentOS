@@ -29,42 +29,6 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
 
-    var caseBatteryLevel: Int = -1
-
-    var glassesAppVersion: String = ""
-
-    var glassesBuildNumber: String = ""
-
-    var glassesDeviceModel: String = ""
-
-    var glassesAndroidVersion: String = ""
-
-    var glassesOtaVersionUrl: String = ""
-
-    var glassesFirmwareVersion: String = ""
-
-    var glassesBtMacAddress: String = ""
-
-    var glassesSerialNumber: String = ""
-
-    var glassesStyle: String = ""
-
-    var glassesColor: String = ""
-
-    var wifiSsid: String = ""
-
-    var wifiConnected: Bool = false
-
-    var wifiLocalIp: String = ""
-
-    var isHotspotEnabled: Bool = false
-
-    var hotspotSsid: String = ""
-
-    var hotspotPassword: String = ""
-
-    var hotspotGatewayIp: String = ""
-
     func sendButtonPhotoSettings() {}
 
     func sendButtonModeSetting() {}
@@ -129,13 +93,9 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     func setBrightness(_: Int, autoMode _: Bool) {}
 
     func cleanup() {}
-    
+
     var type: String = DeviceTypes.MACH1
     let hasMic: Bool = false
-    var micEnabled: Bool = false
-    var caseOpen = false
-    var caseRemoved = true
-    var caseCharging = false
 
     func setMicEnabled(_: Bool) {
         // N/A
@@ -171,7 +131,6 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     private var isConnectedListener: BondListener<Bool>?
     private var batteryLevelListener: BondListener<Int>?
     private var setupDone: Bool = false
-    @Published var isHeadUp = false
 
     func setup() {
         if setupDone { return }
@@ -238,16 +197,16 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         Bridge.log("MACH1: Tap detected! Count: \(tapNumberInt)")
 
         if tapNumberInt >= 2 {
-            isHeadUp = !isHeadUp
-            // Notify CoreManager of head up state change (same as G1 does with IMU)
-            GlassesStore.shared.set("core", "isHeadUp", isHeadUp)
+            let hUp = GlassesStore.shared.get("glasses", "headUp") as? Bool ?? false
+            GlassesStore.shared.apply("glasses", "headUp", !hUp)
 
             // start a timer and auto turn off the dashboard after 15 seconds:
-            if isHeadUp {
+            if !hUp {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
-                    if self.isHeadUp {
-                        self.isHeadUp = false
-                        GlassesStore.shared.set("core", "isHeadUp", false)
+                    let currentHeadUp =
+                        GlassesStore.shared.get("glasses", "headUp") as? Bool ?? false
+                    if currentHeadUp {
+                        GlassesStore.shared.apply("glasses", "headUp", false)
                     }
                 }
             }
@@ -274,7 +233,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         let currentDevice = UltraliteManager.shared.currentDevice
         let isConnected =
             isLinked && currentDevice != nil && currentDevice!.isPaired
-                && currentDevice!.isConnected.value
+            && currentDevice!.isConnected.value
         let peripheral = discoveredPeripherals[peripheralId] ?? currentDevice?.peripheral
 
         // Bind listeners to get notified when device connects
@@ -403,7 +362,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
         // Store the peripheral by its identifier
         discoveredPeripherals[id] = device
-        Bridge.sendDiscoveredDevice(type, name) // Use self.type to support both Mach1 and Z100
+        Bridge.sendDiscoveredDevice(type, name)  // Use self.type to support both Mach1 and Z100
     }
 
     func foundDevice2(_ device: CBPeripheral) {
@@ -461,7 +420,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         UIGraphicsEndImageContext()
 
         guard let resizedImage,
-              let cgImage = resizedImage.cgImage
+            let cgImage = resizedImage.cgImage
         else {
             Bridge.log("MACH1: Failed to resize image or get CGImage")
             return false

@@ -198,9 +198,9 @@ public class G1 extends SGCManager {
     private boolean lastThingDisplayedWasAnImage = false;
 
     // Serial number and style/color information
-    public String glassesSerialNumber = "";
-    public String glassesStyle = "";
-    public String glassesColor = "";
+    public String serialNumber = "";
+    public String style = "";
+    public String color = "";
 
     // lock writing until the last write is successful
     // fonts in G1
@@ -532,7 +532,7 @@ public class G1 extends SGCManager {
                             if (deviceName.contains("R_")) {
                                 // Check for head down movement - initial F5 02 signal
                                 Bridge.log("G1: HEAD UP MOVEMENT DETECTED");
-                                GlassesStore.INSTANCE.set("core", "isHeadUp", true);
+                                GlassesStore.INSTANCE.apply("glasses", "headUp", true);
                             }
                         }
                         // HEAD DOWN MOVEMENTS
@@ -540,7 +540,7 @@ public class G1 extends SGCManager {
                             if (deviceName.contains("R_")) {
                             Bridge.log("G1: HEAD DOWN MOVEMENT DETECTED");
                                 // clearBmpDisplay();
-                                GlassesStore.INSTANCE.set("core", "isHeadUp", false);
+                                GlassesStore.INSTANCE.apply("glasses", "headUp", false);
                             }
                         }
                         // DOUBLE TAP
@@ -1133,9 +1133,9 @@ public class G1 extends SGCManager {
 
                         if (preferredG1DeviceId != null && preferredG1DeviceId.equals(parsedDeviceName)) {
                             // Store the information (matching iOS implementation)
-                            glassesSerialNumber = decodedSerial;
-                            glassesStyle = decoded[0];
-                            glassesColor = decoded[1];
+                            serialNumber = decodedSerial;
+                            style = decoded[0];
+                            color = decoded[1];
 
                             // Emit the serial number information to React Native
                             emitSerialNumberInfo(decodedSerial, decoded[0], decoded[1]);

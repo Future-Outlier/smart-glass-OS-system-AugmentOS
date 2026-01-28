@@ -124,8 +124,8 @@ public class MentraLive extends SGCManager {
     private static final int LC3_FRAME_SIZE = 40;
 
     // Local-only fields (not in parent SGCManager)
-    private int glassesBuildNumberInt = 0; // Build number as integer for version checks
-    // Note: glassesAppVersion, glassesBuildNumber, glassesDeviceModel, glassesAndroidVersion
+    private int buildNumberInt = 0; // Build number as integer for version checks
+    // Note: appVersion, buildNumber, deviceModel, androidVersion
     // are inherited from SGCManager parent class
 
     // Version info chunking support (for MTU workaround)
@@ -1477,7 +1477,7 @@ public class MentraLive extends SGCManager {
     private void sendJson(JSONObject json, boolean wakeup) {
         if (json != null) {
             try {
-                if (glassesBuildNumberInt < 5) {
+                if (buildNumberInt < 5) {
                     String jsonStr = json.toString();
                     Bridge.log("LIVE: 📤 Sending JSON with esoteric message ID: " + jsonStr);
                     sendDataToGlasses(jsonStr, wakeup);
@@ -1555,8 +1555,8 @@ public class MentraLive extends SGCManager {
         }
 
         // Skip ACK tracking for glasses with build number < 5 (older firmware)
-        if (glassesBuildNumberInt < 5) {
-            Bridge.log("LIVE: Glasses build number (" + glassesBuildNumberInt + ") < 5, skipping ACK tracking for message " + messageId);
+        if (buildNumberInt < 5) {
+            Bridge.log("LIVE: Glasses build number (" + buildNumberInt + ") < 5, skipping ACK tracking for message " + messageId);
             return;
         }
 
@@ -2216,7 +2216,7 @@ public class MentraLive extends SGCManager {
                 // Process touch event from glasses (swipes, taps, long press)
                 String gestureName = json.optString("gesture_name", "unknown");
                 long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
-                String touchDeviceModel = json.optString("device_model", glassesDeviceModel);
+                String touchDeviceModel = json.optString("device_model", deviceModel);
 
                 Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
 
@@ -2364,20 +2364,20 @@ public class MentraLive extends SGCManager {
                     String btMacAddressChunked = json.optString("bt_mac_address", "");
 
                     // Update parent SGCManager fields
-                    glassesAppVersion = appVersionChunked;
-                    glassesBuildNumber = buildNumberChunked;
-                    glassesDeviceModel = deviceModelChunked;
-                    glassesAndroidVersion = androidVersionChunked;
-                    glassesOtaVersionUrl = otaVersionUrlChunked != null ? otaVersionUrlChunked : "";
-                    glassesFirmwareVersion = firmwareVersionChunked;
-                    glassesBtMacAddress = btMacAddressChunked;
+                    appVersion = appVersionChunked;
+                    buildNumber = buildNumberChunked;
+                    deviceModel = deviceModelChunked;
+                    androidVersion = androidVersionChunked;
+                    otaVersionUrl = otaVersionUrlChunked != null ? otaVersionUrlChunked : "";
+                    firmwareVersion = firmwareVersionChunked;
+                    btMacAddress = btMacAddressChunked;
 
                     // Parse build number as integer for version checks (local field)
                     try {
-                        glassesBuildNumberInt = Integer.parseInt(buildNumberChunked);
-                        Bridge.log("LIVE: Parsed build number as integer: " + glassesBuildNumberInt);
+                        buildNumberInt = Integer.parseInt(buildNumberChunked);
+                        Bridge.log("LIVE: Parsed build number as integer: " + buildNumberInt);
                     } catch (NumberFormatException e) {
-                        glassesBuildNumberInt = 0;
+                        buildNumberInt = 0;
                         Log.e(TAG, "Failed to parse build number as integer: " + buildNumberChunked);
                     }
 
@@ -2421,20 +2421,20 @@ public class MentraLive extends SGCManager {
                 String btMacAddress = json.optString("bt_mac_address", "");
 
                 // Update parent SGCManager fields
-                glassesAppVersion = appVersion;
-                glassesBuildNumber = buildNumber;
-                glassesDeviceModel = deviceModel;
-                glassesAndroidVersion = androidVersion;
-                glassesOtaVersionUrl = otaVersionUrl != null ? otaVersionUrl : "";
-                glassesFirmwareVersion = firmwareVersion;
-                glassesBtMacAddress = btMacAddress;
+                appVersion = appVersion;
+                buildNumber = buildNumber;
+                deviceModel = deviceModel;
+                androidVersion = androidVersion;
+                otaVersionUrl = otaVersionUrl != null ? otaVersionUrl : "";
+                firmwareVersion = firmwareVersion;
+                btMacAddress = btMacAddress;
 
                 // Parse build number as integer for version checks (local field)
                 try {
-                    glassesBuildNumberInt = Integer.parseInt(buildNumber);
-                    Bridge.log("LIVE: Parsed build number as integer: " + glassesBuildNumberInt);
+                    buildNumberInt = Integer.parseInt(buildNumber);
+                    Bridge.log("LIVE: Parsed build number as integer: " + buildNumberInt);
                 } catch (NumberFormatException e) {
-                    glassesBuildNumberInt = 0;
+                    buildNumberInt = 0;
                     Log.e(TAG, "Failed to parse build number as integer: " + buildNumber);
                 }
 
@@ -2903,13 +2903,10 @@ public class MentraLive extends SGCManager {
      * Update battery status and notify listeners
      * Matches iOS MentraLive.swift updateBatteryStatus pattern
      */
-    private void updateBatteryStatus(int level, boolean charging) {
+    private void updateBatteryStatus(int level, boolean isCharging) {
         // Update parent SGCManager fields
         batteryLevel = level;  // Parent class field
-        isCharging = charging;  // Local field
-
-        // Notify CoreManager to update status and send to frontend
-        CoreManager.getInstance().getStatus();
+        charging = isCharging;  // Local field
     }
 
     /**

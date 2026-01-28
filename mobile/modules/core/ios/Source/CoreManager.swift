@@ -237,9 +237,9 @@ struct ViewState {
         set { GlassesStore.shared.apply("core", "systemMicUnavailable", newValue) }
     }
 
-    private var isHeadUp: Bool {
-        get { GlassesStore.shared.get("core", "isHeadUp") as? Bool ?? false }
-        set { GlassesStore.shared.apply("core", "isHeadUp", newValue) }
+    private var headUp: Bool {
+        get { GlassesStore.shared.get("glasses", "headUp") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "headUp", newValue) }
     }
 
     private var micEnabled: Bool {
@@ -688,12 +688,12 @@ struct ViewState {
 
         Task {
             var currentViewState: ViewState!
-            if isHeadUp {
+            if headUp {
                 currentViewState = self.viewStates[1]
             } else {
                 currentViewState = self.viewStates[0]
             }
-            if isHeadUp && !self.contextualDashboard {
+            if headUp && !self.contextualDashboard {
                 currentViewState = self.viewStates[0]
             }
 
@@ -874,7 +874,7 @@ struct ViewState {
         }
     }
 
-    private func handleDeviceReady() {
+    func handleDeviceReady() {
         guard let sgc else {
             Bridge.log("MAN: SGC is nil, returning")
             return
@@ -943,7 +943,7 @@ struct ViewState {
         }
     }
 
-    private func handleDeviceDisconnected() {
+    public func handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         // setMicState(shouldSendPcmData, shouldSendTranscript, false)
         // shouldSendBootingMessage = true  // Reset for next first connect
@@ -1028,11 +1028,11 @@ struct ViewState {
 
         viewStates[stateIndex] = newViewState
 
-        let headUp = isHeadUp && contextualDashboard
+        let hUp = headUp && contextualDashboard
         // send the state we just received if the user is currently in that state:
-        if stateIndex == 0 && !headUp {
+        if stateIndex == 0 && !hUp {
             sendCurrentState()
-        } else if stateIndex == 1 && headUp {
+        } else if stateIndex == 1 && hUp {
             sendCurrentState()
         }
     }
@@ -1274,39 +1274,8 @@ struct ViewState {
                 searching = false
             }
 
-            // GlassesStore.shared.set("glasses", "ready", sgc?.ready ?? false)
-            // GlassesStore.shared.set("glasses", "connected", sgc?.connectionState == ConnTypes.CONNECTED)
+            // Set derived/computed state (properties backed by GlassesStore are already synced via protocol extension)
             GlassesStore.shared.set("glasses", "connected", sgc?.ready ?? false)
-            GlassesStore.shared.set("glasses", "micEnabled", sgc?.micEnabled ?? false)
-            GlassesStore.shared.set("glasses", "batteryLevel", sgc?.batteryLevel ?? -1)
-            GlassesStore.shared.set("glasses", "appVersion", sgc?.glassesAppVersion ?? "")
-            GlassesStore.shared.set("glasses", "buildNumber", sgc?.glassesBuildNumber ?? "")
-            GlassesStore.shared.set("glasses", "deviceModel", sgc?.glassesDeviceModel ?? "")
-            GlassesStore.shared.set("glasses", "androidVersion", sgc?.glassesAndroidVersion ?? "")
-            GlassesStore.shared.set("glasses", "otaVersionUrl", sgc?.glassesOtaVersionUrl ?? "")
-            GlassesStore.shared.set("glasses", "fwVersion", sgc?.glassesFirmwareVersion ?? "")
-            GlassesStore.shared.set("glasses", "btMacAddress", sgc?.glassesBtMacAddress ?? "")
-
-            if sgc is G1 {
-                GlassesStore.shared.set("glasses", "caseRemoved", sgc?.caseRemoved ?? true)
-                GlassesStore.shared.set("glasses", "caseOpen", sgc?.caseOpen ?? true)
-                GlassesStore.shared.set("glasses", "caseCharging", sgc?.caseCharging ?? false)
-                GlassesStore.shared.set("glasses", "caseBatteryLevel", sgc?.caseBatteryLevel ?? -1)
-
-                GlassesStore.shared.set("glasses", "serialNumber", sgc?.glassesSerialNumber ?? "")
-                GlassesStore.shared.set("glasses", "style", sgc?.glassesStyle ?? "")
-                GlassesStore.shared.set("glasses", "color", sgc?.glassesColor ?? "")
-            }
-
-            if sgc is MentraLive {
-                GlassesStore.shared.set("glasses", "wifiSsid", sgc?.wifiSsid ?? "")
-                GlassesStore.shared.set("glasses", "wifiConnected", sgc?.wifiConnected ?? false)
-                GlassesStore.shared.set("glasses", "wifiLocalIp", sgc?.wifiLocalIp ?? "")
-                GlassesStore.shared.set("glasses", "hotspotEnabled", sgc?.isHotspotEnabled ?? false)
-                GlassesStore.shared.set("glasses", "hotspotSsid", sgc?.hotspotSsid ?? "")
-                GlassesStore.shared.set("glasses", "hotspotPassword", sgc?.hotspotPassword ?? "")
-                GlassesStore.shared.set("glasses", "hotspotGatewayIp", sgc?.hotspotGatewayIp ?? "")
-            }
 
             // Add Bluetooth device name if available
             if let bluetoothName = sgc?.getConnectedBluetoothName() {

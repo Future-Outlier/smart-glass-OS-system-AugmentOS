@@ -17,7 +17,9 @@ class GlassesStore {
         // CORE STATE is camelCase
 
         // GLASSES STATE:
+        store.set("glasses", "ready", false)
         store.set("glasses", "batteryLevel", -1)
+        store.set("glasses", "charging", false)
         store.set("glasses", "connected", false)
         store.set("glasses", "connectionState", "disconnected")
         store.set("glasses", "deviceModel", "")
@@ -28,6 +30,7 @@ class GlassesStore {
         store.set("glasses", "caseOpen", true)
         store.set("glasses", "caseCharging", false)
         store.set("glasses", "caseBatteryLevel", -1)
+        store.set("glasses", "headUp", false)
         store.set("glasses", "serialNumber", "")
         store.set("glasses", "style", "")
         store.set("glasses", "color", "")
@@ -42,7 +45,6 @@ class GlassesStore {
 
         // CORE STATE:
         store.set("core", "systemMicUnavailable", false)
-        store.set("core", "isHeadUp", false)
         store.set("core", "searching", false)
         store.set("core", "micEnabled", false)
         store.set("core", "currentMic", "")
@@ -101,6 +103,24 @@ class GlassesStore {
         // Trigger hardware updates based on setting changes
         switch (category, key) {
 
+        case ("glasses", "ready"):
+            if let ready = value as? Bool {
+                if ready {
+                    CoreManager.shared.handleDeviceReady()
+                } else {
+                    CoreManager.shared.handleDeviceDisconnected()
+                }
+            }
+
+        case ("glasses", "headUp"):
+            if let headUp = value as? Bool {
+                CoreManager.shared.sendCurrentState()
+                Bridge.sendHeadUp(headUp)
+            }
+
+
+        /// CORE:
+
         case ("core", "auth_email"):
             if let email = value as? String {
                 // CoreManager.shared.sgc?.sendAuthEmail(email)
@@ -123,11 +143,6 @@ class GlassesStore {
                 }
                 CoreManager.shared.lc3Converter?.setOutputFrameSize(frameSize)
                 Bridge.log("MAN: LC3 frame size set to \(frameSize) bytes (\(frameSize * 800 / 1000)kbps)")
-            }
-        case ("core", "isHeadUp"):
-            if let isHeadUp = value as? Bool {
-                CoreManager.shared.sendCurrentState()
-                Bridge.sendHeadUp(isHeadUp)
             }
 
         case ("core", "brightness"):

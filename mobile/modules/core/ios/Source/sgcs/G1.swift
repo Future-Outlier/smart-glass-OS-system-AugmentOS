@@ -275,44 +275,6 @@ class G1: NSObject, SGCManager {
 
     func sendButtonMaxRecordingTime() {}
 
-    var glassesAppVersion: String = ""
-
-    var glassesBuildNumber: String = ""
-
-    var glassesDeviceModel: String = ""
-
-    var glassesAndroidVersion: String = ""
-
-    var glassesOtaVersionUrl: String = ""
-
-    var glassesFirmwareVersion: String = ""
-
-    var glassesBtMacAddress: String = ""
-
-    var glassesSerialNumber: String = ""
-
-    var glassesStyle: String = ""
-
-    var glassesColor: String = ""
-
-    var caseBatteryLevel: Int = -1
-
-    var wifiSsid: String = ""
-
-    var wifiConnected: Bool = false
-
-    var wifiLocalIp: String = ""
-
-    var isHotspotEnabled: Bool = false
-
-    var micEnabled: Bool = false
-
-    var hotspotSsid: String = ""
-
-    var hotspotPassword: String = ""
-
-    var hotspotGatewayIp: String = ""
-
     func requestPhoto(
         _: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?,
         compress _: String?, silent _: Bool
@@ -473,7 +435,6 @@ class G1: NSObject, SGCManager {
     var lastConnectionTimestamp: Date = .distantPast
     private var leftInitialized: Bool = false
     private var rightInitialized: Bool = false
-    @Published var isHeadUp = false
 
     private var leftGlassUUID: UUID? {
         get {
@@ -980,9 +941,9 @@ class G1: NSObject, SGCManager {
 
     func getSerialNumberInfo() -> [String: Any] {
         return [
-            "serialNumber": glassesSerialNumber ?? "",
-            "style": glassesStyle ?? "",
-            "color": glassesColor ?? "",
+            "serialNumber": serialNumber ?? "",
+            "style": style ?? "",
+            "color": color ?? "",
         ]
     }
 
@@ -1273,20 +1234,16 @@ class G1: NSObject, SGCManager {
             switch DeviceOrders(rawValue: order) {
             case .HEAD_UP:
                 Bridge.log("G1: HEAD_UP")
-                isHeadUp = true
-                GlassesStore.shared.set("core", "isHeadUp", isHeadUp)
+                GlassesStore.shared.apply("glasses", "headUp", headUp)
             case .HEAD_UP2:
                 Bridge.log("G1: HEAD_UP2")
-                isHeadUp = true
-                GlassesStore.shared.set("core", "isHeadUp", isHeadUp)
+                GlassesStore.shared.apply("glasses", "headUp", headUp)
             // case .HEAD_DOWN:
             //   CoreCommsService.log("HEAD_DOWN")
-            //   isHeadUp = false
             //   break
             case .HEAD_DOWN2:
                 Bridge.log("G1: HEAD_DOWN2")
-                isHeadUp = false
-                GlassesStore.shared.set("core", "isHeadUp", isHeadUp)
+                GlassesStore.shared.apply("glasses", "headUp", headUp)
             case .ACTIVATED:
                 Bridge.log("G1: ACTIVATED")
             case .SILENCED:
@@ -2170,13 +2127,13 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                     Bridge.log("G1: 📱 Decoded serial number: \(decodedSerial)")
 
                     // Decode style and color from serial number
-                    let (style, color) = G1.decodeEvenG1SerialNumber(decodedSerial)
+                    let (decodedStyle, decodedColor) = G1.decodeEvenG1SerialNumber(decodedSerial)
                     Bridge.log("G1: 📱 Style: \(style), Color: \(color)")
 
                     // Store the information
-                    glassesSerialNumber = decodedSerial
-                    glassesStyle = style
-                    glassesColor = color
+                    serialNumber = decodedSerial
+                    style = decodedStyle
+                    color = decodedColor
 
                     // Emit the serial number information
                     // emitSerialNumberInfo(serialNumber: decodedSerial, style: style, color: color)

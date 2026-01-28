@@ -252,7 +252,7 @@ class Bridge {
         Bridge.sendTypedMessage("core_status_update", body: body)
     }
 
-    static func sendGlassesSerialNumber(_ serialNumber: String, style: String, color: String) {
+    static func sendserialNumber(_ serialNumber: String, style: String, color: String) {
         let body = [
             "glasses_serial_number": [
                 "serial_number": serialNumber,

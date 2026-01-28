@@ -443,17 +443,6 @@ class SocketComms {
     const audioFormat = bypassEncoding ? "pcm" : "lc3"
     console.log(`SOCKET: Configuring audio format: ${audioFormat} (bypass=${bypassEncoding})`)
 
-    // Configure the native encoder frame size first (only needed for LC3)
-    if (!bypassEncoding) {
-      try {
-        await CoreModule.setLC3FrameSize(frameSizeBytes)
-        console.log(`SOCKET: Native LC3 encoder configured to ${frameSizeBytes} bytes/frame`)
-      } catch (err) {
-        console.error("SOCKET: Failed to configure native LC3 encoder:", err)
-        // Continue anyway - cloud config is more important
-      }
-    }
-
     try {
       const body: any = {
         format: audioFormat,

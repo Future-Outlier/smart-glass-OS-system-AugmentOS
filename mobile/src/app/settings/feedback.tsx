@@ -44,13 +44,13 @@ export default function FeedbackPage() {
 
   // Glasses info for bug reports
   const glassesConnected = useGlassesStore((state) => state.connected)
-  const glassesDeviceModel = useGlassesStore((state) => state.deviceModel)
+  const deviceModel = useGlassesStore((state) => state.deviceModel)
   const glassesBluetoothName = useGlassesStore((state) => state.bluetoothName)
-  const glassesBuildNumber = useGlassesStore((state) => state.buildNumber)
+  const buildNumber = useGlassesStore((state) => state.buildNumber)
   const glassesFwVersion = useGlassesStore((state) => state.fwVersion)
-  const glassesAppVersion = useGlassesStore((state) => state.appVersion)
-  const glassesSerialNumber = useGlassesStore((state) => state.serialNumber)
-  const glassesAndroidVersion = useGlassesStore((state) => state.androidVersion)
+  const appVersion = useGlassesStore((state) => state.appVersion)
+  const serialNumber = useGlassesStore((state) => state.serialNumber)
+  const androidVersion = useGlassesStore((state) => state.androidVersion)
   const glassesWifiConnected = useGlassesStore((state) => state.wifiConnected)
   const glassesWifiSsid = useGlassesStore((state) => state.wifiSsid)
   const glassesBatteryLevel = useGlassesStore((state) => state.batteryLevel)
@@ -185,13 +185,13 @@ export default function FeedbackPage() {
       // Glasses information (only if connected)
       ...(glassesConnected && {
         glassesInfo: {
-          deviceModel: glassesDeviceModel || undefined,
+          deviceModel: deviceModel || undefined,
           bluetoothId: glassesBluetoothId || undefined,
-          serialNumber: glassesSerialNumber || undefined,
-          buildNumber: glassesBuildNumber || undefined,
+          serialNumber: serialNumber || undefined,
+          buildNumber: buildNumber || undefined,
           fwVersion: glassesFwVersion || undefined,
-          appVersion: glassesAppVersion || undefined,
-          androidVersion: glassesAndroidVersion || undefined,
+          appVersion: appVersion || undefined,
+          androidVersion: androidVersion || undefined,
           wifiConnected: glassesWifiConnected,
           ...(glassesWifiConnected && glassesWifiSsid && {wifiSsid: glassesWifiSsid}),
           ...(glassesBatteryLevel >= 0 && {batteryLevel: glassesBatteryLevel}),

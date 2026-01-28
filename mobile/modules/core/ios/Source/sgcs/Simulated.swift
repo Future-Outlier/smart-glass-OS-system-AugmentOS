@@ -13,22 +13,22 @@ class Simulated: SGCManager {
     var ready: Bool = true
     var connectionState: String = ConnTypes.CONNECTED
 
-    var glassesAppVersion: String = ""
-    var glassesBuildNumber: String = ""
-    var glassesDeviceModel: String = ""
-    var glassesAndroidVersion: String = ""
-    var glassesOtaVersionUrl: String = ""
-    var glassesFirmwareVersion: String = ""
-    var glassesBtMacAddress: String = ""
-    var glassesSerialNumber: String = ""
-    var glassesStyle: String = ""
-    var glassesColor: String = ""
+    var appVersion: String = ""
+    var buildNumber: String = ""
+    var deviceModel: String = ""
+    var androidVersion: String = ""
+    var otaVersionUrl: String = ""
+    var firmwareVersion: String = ""
+    var btMacAddress: String = ""
+    var serialNumber: String = ""
+    var style: String = ""
+    var color: String = ""
 
     // MARK: - Hardware Status
 
     var hasMic: Bool = false
     var batteryLevel: Int = 100
-    var isHeadUp: Bool = false
+    var headUp: Bool = false
     var micEnabled: Bool = false
 
     // MARK: - Case Status

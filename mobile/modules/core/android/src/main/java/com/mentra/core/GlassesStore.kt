@@ -29,6 +29,7 @@ object GlassesStore {
         store.set("glasses", "caseOpen", true)
         store.set("glasses", "caseCharging", false)
         store.set("glasses", "caseBatteryLevel", -1)
+        store.set("glasses", "headUp", false)
         store.set("glasses", "serialNumber", "")
         store.set("glasses", "style", "")
         store.set("glasses", "color", "")
@@ -43,7 +44,6 @@ object GlassesStore {
         
         // CORE STATE:
         store.set("core", "systemMicUnavailable", false)
-        store.set("core", "isHeadUp", false)
         store.set("core", "searching", false)
         store.set("core", "micEnabled", false)
         store.set("core", "currentMic", "")

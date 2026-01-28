@@ -129,7 +129,7 @@
 // import java.util.Map;
 // import java.util.HashMap;
 
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesSerialNumberEvent;
+// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.serialNumberEvent;
 // import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.ProtobufSchemaVersionEvent;
 // import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.ProtocolVersionResponseEvent;
 
