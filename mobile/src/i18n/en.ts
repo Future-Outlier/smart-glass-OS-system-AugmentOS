@@ -111,7 +111,8 @@ const en = {
     needHelpPairing: "Need help pairing?",
     btClassicConnected: "Glasses audio connected successfully",
     btClassicDisconnected: "Glasses audio disconnected",
-    btClassicDisconnectedMessage: "Your glasses are connected to the app, but the bluetooth audio device is not connected.",
+    btClassicDisconnectedMessage:
+      "Your glasses are connected to the app, but the bluetooth audio device is not connected.",
     powerOn: "Power on",
     poweredOn: "Powered on",
   },
@@ -193,7 +194,7 @@ const en = {
     liveWelcomeTitle: "Welcome to Mentra Live",
     liveWelcomeSubtitle: "Learn the basics",
     livePowerOnTutorial: "Press and hold the power button for 5 seconds",
-    livePowerOnInfo: "You will hear \"Power on\"",
+    livePowerOnInfo: 'You will hear "Power on"',
     liveConnected: "Mentra Live connected",
     osStartStopApps: "Start and stop apps",
     osStartStopAppsBullet1: "Tap any inactive app to start that app",
@@ -320,6 +321,14 @@ const en = {
     appletPlaceholder: "Tap an app below to activate it",
     simulatedGlasses: "Simulated glasses",
     glassesMirror: "Glasses Mirror",
+  },
+  permissions: {
+    backgroundLocationPermissionRequiredMessage:
+      'MentraOS needs access to your location when the app is in the background to provide location-based features. On the next screen, select Location, then select "Always" instead of "While Using the App"',
+    openSettings: "Open Settings",
+    permissionRequired: "Permission Required",
+    permissionRequiredMessage:
+      "{{name}} permission is required but has been denied previously. Please enable it in your device settings.",
   },
   glasses: {
     title: "Glasses",
