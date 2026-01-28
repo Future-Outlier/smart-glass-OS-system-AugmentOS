@@ -16,9 +16,9 @@ const RETRY_INTERVAL_MS = 5000 // 5 seconds between retries
 export default function OtaProgressScreen() {
   const {theme} = useAppTheme()
   const {pushPrevious} = useNavigationHistory()
-  const otaProgress = useGlassesStore(state => state.otaProgress)
-  const glassesConnected = useGlassesStore(state => state.connected)
-  const buildNumber = useGlassesStore(state => state.buildNumber)
+  const otaProgress = useGlassesStore((state) => state.otaProgress)
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const buildNumber = useGlassesStore((state) => state.buildNumber)
 
   const [progressState, setProgressState] = useState<ProgressState>("starting")
   const [retryCount, setRetryCount] = useState(0)
@@ -66,7 +66,7 @@ export default function OtaProgressScreen() {
         if (!hasReceivedProgress.current && progressState === "starting") {
           if (retryCount < MAX_RETRIES - 1) {
             console.log("OTA: No progress received, retrying...")
-            setRetryCount(prev => prev + 1)
+            setRetryCount((prev) => prev + 1)
           } else {
             console.log("OTA: Max retries reached, failing")
             setErrorMessage("Unable to start update. Glasses did not respond.")
@@ -77,7 +77,7 @@ export default function OtaProgressScreen() {
     } catch (error) {
       console.error("OTA: Failed to send start command:", error)
       if (retryCount < MAX_RETRIES - 1) {
-        setRetryCount(prev => prev + 1)
+        setRetryCount((prev) => prev + 1)
       } else {
         setErrorMessage("Failed to communicate with glasses.")
         setProgressState("failed")
@@ -152,6 +152,21 @@ export default function OtaProgressScreen() {
   }
 
   const progress = otaProgress?.progress ?? 0
+  const currentUpdate = otaProgress?.currentUpdate // "apk", "mtk", or "bes"
+
+  // Get user-friendly name for current component being updated
+  const getComponentName = (component: string | undefined): string => {
+    switch (component) {
+      case "apk":
+        return "Software"
+      case "mtk":
+        return "System Firmware"
+      case "bes":
+        return "Bluetooth Firmware"
+      default:
+        return "Update"
+    }
+  }
 
   const renderContent = () => {
     // Starting state - waiting for glasses to respond
@@ -171,11 +186,12 @@ export default function OtaProgressScreen() {
 
     // Downloading state
     if (progressState === "downloading") {
+      const componentName = getComponentName(currentUpdate)
       return (
         <View className="flex-1 items-center justify-center px-6">
           <Icon name="world-download" size={64} color={theme.colors.primary} />
           <View className="h-6" />
-          <Text tx="ota:downloading" className="font-semibold text-xl text-center" />
+          <Text text={`Downloading ${componentName}...`} className="font-semibold text-xl text-center" />
           <View className="h-4" />
           <Text text={`${progress}%`} className="text-3xl font-bold" style={{color: theme.colors.primary}} />
           <View className="h-4" />
@@ -188,11 +204,12 @@ export default function OtaProgressScreen() {
 
     // Installing state - no percentage shown since APK installation doesn't report progress
     if (progressState === "installing") {
+      const componentName = getComponentName(currentUpdate)
       return (
         <View className="flex-1 items-center justify-center px-6">
           <Icon name="settings" size={64} color={theme.colors.primary} />
           <View className="h-6" />
-          <Text tx="ota:installing" className="font-semibold text-xl text-center" />
+          <Text text={`Installing ${componentName}...`} className="font-semibold text-xl text-center" />
           <View className="h-4" />
           <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
           <View className="h-4" />

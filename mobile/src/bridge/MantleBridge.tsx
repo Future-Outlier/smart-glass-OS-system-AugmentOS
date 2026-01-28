@@ -399,8 +399,11 @@ export class MantleBridge {
             modelName: data.device_model,
             androidVersion: data.android_version,
             otaVersionUrl: data.ota_version_url,
-            fwVersion: data.firmware_version,
+            fwVersion: data.firmware_version || data.bes_fw_version, // Legacy or new field
             btMacAddress: data.bt_mac_address,
+            // New firmware version fields for OTA patch matching
+            besFwVersion: data.bes_fw_version,
+            mtkFwVersion: data.mtk_fw_version,
           })
           // Update DisplayProcessor with the connected glasses model
           // This ensures text wrapping uses the correct device profile

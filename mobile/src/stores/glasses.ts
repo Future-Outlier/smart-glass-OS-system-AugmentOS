@@ -34,7 +34,7 @@ export interface GlassesInfo {
   // device info
   modelName: string
   androidVersion: string
-  fwVersion: string
+  fwVersion: string // Legacy field - same as besFwVersion for old glasses
   btMacAddress: string
   buildNumber: string
   otaVersionUrl: string
@@ -43,6 +43,9 @@ export interface GlassesInfo {
   serialNumber: string
   style: string
   color: string
+  // firmware version info (for OTA patch matching)
+  besFwVersion?: string // BES firmware version (e.g., "17.26.1.14")
+  mtkFwVersion?: string // MTK firmware version (e.g., "20241130")
   // wifi info
   wifiConnected: boolean
   wifiSsid: string
@@ -133,12 +136,12 @@ export const getGlasesInfoPartial = (state: GlassesInfo) => {
 }
 
 export const useGlassesStore = create<GlassesState>()(
-  subscribeWithSelector(set => ({
+  subscribeWithSelector((set) => ({
     ...initialState,
 
-    setGlassesInfo: info => set(state => ({...state, ...info})),
+    setGlassesInfo: (info) => set((state) => ({...state, ...info})),
 
-    setConnected: connected => set({connected}),
+    setConnected: (connected) => set({connected}),
 
     setBatteryInfo: (batteryLevel, charging, caseBatteryLevel, caseCharging) =>
       set({
@@ -166,7 +169,7 @@ export const useGlassesStore = create<GlassesState>()(
     setOtaUpdateAvailable: (info: OtaUpdateInfo | null) => set({otaUpdateAvailable: info}),
 
     setOtaProgress: (progress: OtaProgress | null) =>
-      set(_state => {
+      set((_state) => {
         // Auto-detect otaInProgress from status
         const otaInProgress = progress !== null && progress.status !== "FINISHED" && progress.status !== "FAILED"
         return {otaProgress: progress, otaInProgress}
@@ -190,7 +193,7 @@ export const waitForGlassesState = <K extends keyof GlassesInfo>(
   predicate: (value: GlassesInfo[K]) => boolean,
   timeoutMs = 1000,
 ): Promise<boolean> => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const state = useGlassesStore.getState()
     if (predicate(state[key])) {
       resolve(true)
@@ -198,8 +201,8 @@ export const waitForGlassesState = <K extends keyof GlassesInfo>(
     }
 
     const unsubscribe = useGlassesStore.subscribe(
-      s => s[key],
-      value => {
+      (s) => s[key],
+      (value) => {
         if (predicate(value)) {
           unsubscribe()
           resolve(true)
