@@ -381,6 +381,53 @@ public class K900CommandHandler {
     }
 
     /**
+     * Request BES firmware version and MAC address from BES chipset.
+     * Sends sh_syvr command to BES, which responds with hs_syvr containing:
+     * - version: BES firmware version (e.g., "17.26.1.14")
+     * - btaddr: Bluetooth MAC address
+     * - bleaddr: BLE MAC address
+     *
+     * This ensures version info is cached before phone connects, making it available
+     * for OTA patch matching and version_info messages to the phone.
+     */
+    public void requestSystemVersion() {
+        Log.i(TAG, "🔧 Requesting BES system version (sh_syvr)");
+
+        if (serviceManager == null || serviceManager.getBluetoothManager() == null) {
+            Log.w(TAG, "⚠️ ServiceManager or Bluetooth manager unavailable");
+            return;
+        }
+
+        if (!serviceManager.getBluetoothManager().isConnected()) {
+            Log.w(TAG, "⚠️ Bluetooth not connected; cannot request BES system version");
+            return;
+        }
+
+        try {
+            // Build full K900 format: C, V, B (all three required to avoid double-wrapping!)
+            JSONObject k900Command = new JSONObject();
+            k900Command.put("C", "sh_syvr");
+            k900Command.put("V", 1);
+            k900Command.put("B", "");
+
+            String commandStr = k900Command.toString();
+            Log.d(TAG, "📤 Sending sh_syvr request: " + commandStr);
+
+            // Send via BluetoothManager - response handled by handleSystemVersionReport()
+            boolean sent = serviceManager.getBluetoothManager().sendData(
+                commandStr.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            if (sent) {
+                Log.i(TAG, "✅ BES system version request (sh_syvr) sent successfully");
+            } else {
+                Log.e(TAG, "❌ Failed to send BES system version request");
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "💥 Failed to build sh_syvr request", e);
+        }
+    }
+
+    /**
      * Send request to BES chip to get BT MAC address (cs_btaddr)
      * Call this on startup/UART connection to retrieve the unique device identifier
      */

@@ -66,6 +66,10 @@ public class K900HardwareManager extends BaseHardwareManager {
 
         audioController = new I2SAudioController(context);
 
+        // Note: BES system version query will be requested when BluetoothManager is set
+        // via setBluetoothManager() -> requestSystemVersion() call
+        // Response (~50ms) will be cached via K900CommandHandler.handleSystemVersionReport()
+
         Log.d(TAG, "🔧 ✅ K900 Hardware Manager initialized");
     }
     
@@ -194,6 +198,9 @@ public class K900HardwareManager extends BaseHardwareManager {
                 Log.e(TAG, "🔧 ❌ Failed to initialize K900 RGB LED controller", e);
                 rgbLedController = null;
             }
+
+            // Note: BES system version query is handled by K900CommandHandler.requestSystemVersion()
+            // which will be called when K900CommandHandler is available and BluetoothManager is ready
         } else {
             Log.w(TAG, "Invalid BluetoothManager provided (expected K900BluetoothManager)");
         }

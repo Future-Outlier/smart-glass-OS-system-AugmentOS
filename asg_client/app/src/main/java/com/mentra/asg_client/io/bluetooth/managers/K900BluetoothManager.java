@@ -292,8 +292,8 @@ public class K900BluetoothManager extends BaseBluetoothManager implements Serial
 
     @Override
     public void onSerialRead(String serialPath, byte[] data, int size) {
-        // Suppress verbose serial read logging to prevent logcat overflow
-        // Log.d(TAG, "📥 K900 SERIAL READ - " + size + " bytes");
+        // Log serial reads for debugging (especially for hs_syvr response)
+        Log.d(TAG, "📥 K900 SERIAL READ - " + size + " bytes");
 
         if (data != null && size > 0) {
             // Copy the data to avoid issues with buffer reuse
@@ -308,7 +308,7 @@ public class K900BluetoothManager extends BaseBluetoothManager implements Serial
                 // Try to extract complete messages
                 List<byte[]> completeMessages = messageParser.parseMessages();
                 if (completeMessages != null && !completeMessages.isEmpty()) {
-                    // Log.d(TAG, "📥 Extracted " + completeMessages.size() + " complete messages");
+                    Log.d(TAG, "📥 Extracted " + completeMessages.size() + " complete messages");
                     // Process each complete message
                     for (byte[] message : completeMessages) {
                         // Check for file transfer acknowledgments first
@@ -324,7 +324,8 @@ public class K900BluetoothManager extends BaseBluetoothManager implements Serial
                             
                             if (payload != null && payload.length > 0) {
                                 // Notify listeners with the clean payload (JSON data without markers)
-                                // Suppress verbose notification logging
+                                String payloadPreview = new String(payload, 0, Math.min(payload.length, 200));
+                                Log.d(TAG, "📥 Extracted K900 payload (" + payload.length + " bytes): " + payloadPreview);
                                 notifyDataReceived(payload);
                             } else {
                                 Log.w(TAG, "📥 Failed to extract payload from K900 message");

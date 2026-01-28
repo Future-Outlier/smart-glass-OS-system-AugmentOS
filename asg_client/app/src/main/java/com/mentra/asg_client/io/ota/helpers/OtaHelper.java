@@ -39,6 +39,7 @@ import java.security.MessageDigest;
 import java.util.stream.Collectors;
 
 import com.mentra.asg_client.io.ota.utils.OtaConstants;
+import com.mentra.asg_client.settings.AsgSettings;
 
 import org.json.JSONArray;
 
@@ -522,55 +523,90 @@ public class OtaHelper {
         
         Log.d(TAG, "apkUpdateNeeded: " + apkUpdateNeeded);
         
-        // PHASE 2: Update MTK firmware (only if no APK update)
-        boolean mtkUpdateStarted = false;
-        
-        // ⚠️ DEBUG MODE: Force install MTK firmware from local file
-        if (DEBUG_FORCE_MTK_INSTALL && !apkUpdateNeeded) {
-            Log.w(TAG, "========================================");
-            Log.w(TAG, "⚠️⚠️⚠️ DEBUG MODE ACTIVE ⚠️⚠️⚠️");
-            Log.w(TAG, "Force installing MTK firmware from local file");
-            Log.w(TAG, "Skipping version check and download");
-            Log.w(TAG, "========================================");
-            mtkUpdateStarted = debugInstallMtkFirmware(context);
-            if (mtkUpdateStarted) {
-                Log.i(TAG, "DEBUG: MTK firmware install triggered");
-            } else {
-                Log.e(TAG, "DEBUG: MTK firmware install failed - check if file exists");
+        // PHASE 2 & 3: Firmware updates (MTK first, then BES) - only if no APK update
+        if (!apkUpdateNeeded) {
+            JSONObject mtkPatch = null;
+            boolean besUpdateAvailable = false;
+
+            // ⚠️ DEBUG MODE: Force install MTK firmware from local file
+            if (DEBUG_FORCE_MTK_INSTALL) {
+                Log.w(TAG, "========================================");
+                Log.w(TAG, "⚠️⚠️⚠️ DEBUG MODE ACTIVE ⚠️⚠️⚠️");
+                Log.w(TAG, "Force installing MTK firmware from local file");
+                Log.w(TAG, "Skipping version check and download");
+                Log.w(TAG, "========================================");
+                boolean mtkUpdateStarted = debugInstallMtkFirmware(context);
+                if (mtkUpdateStarted) {
+                    Log.i(TAG, "DEBUG: MTK firmware install triggered");
+                } else {
+                    Log.e(TAG, "DEBUG: MTK firmware install failed - check if file exists");
+                }
             }
-        }
-        // Normal MTK update flow
-        else if (!apkUpdateNeeded && rootJson.has("mtk_firmware")) {
-            Log.i(TAG, "No APK updates needed - checking MTK firmware");
-            mtkUpdateStarted = checkAndUpdateMtkFirmware(rootJson.getJSONObject("mtk_firmware"), context);
-            if (mtkUpdateStarted) {
-                Log.i(TAG, "MTK firmware update started - BES firmware check will happen after restart");
+            // ⚠️ DEBUG MODE: Force install BES firmware from local file
+            else if (DEBUG_FORCE_BES_INSTALL) {
+                Log.w(TAG, "========================================");
+                Log.w(TAG, "⚠️⚠️⚠️ DEBUG MODE ACTIVE ⚠️⚠️⚠️");
+                Log.w(TAG, "Force installing BES firmware from local file");
+                Log.w(TAG, "Skipping version check and download");
+                Log.w(TAG, "========================================");
+                boolean besUpdateStarted = debugInstallBesFirmware(context);
+                if (besUpdateStarted) {
+                    Log.i(TAG, "DEBUG: BES firmware install triggered");
+                } else {
+                    Log.e(TAG, "DEBUG: BES firmware install failed - check if file exists and BesOtaManager is available");
+                }
             }
-        } else if (apkUpdateNeeded) {
-            Log.i(TAG, "APK update performed - MTK firmware check will happen after restart");
-        }
-        
-        // PHASE 3: Update BES firmware (only if no APK update and no MTK update)
-        // ⚠️ DEBUG MODE: Force install BES firmware from local file
-        if (DEBUG_FORCE_BES_INSTALL && !apkUpdateNeeded && !mtkUpdateStarted) {
-            Log.w(TAG, "========================================");
-            Log.w(TAG, "⚠️⚠️⚠️ DEBUG MODE ACTIVE ⚠️⚠️⚠️");
-            Log.w(TAG, "Force installing BES firmware from local file");
-            Log.w(TAG, "Skipping version check and download");
-            Log.w(TAG, "========================================");
-            boolean besUpdateStarted = debugInstallBesFirmware(context);
-            if (besUpdateStarted) {
-                Log.i(TAG, "DEBUG: BES firmware install triggered");
-            } else {
-                Log.e(TAG, "DEBUG: BES firmware install failed - check if file exists and BesOtaManager is available");
+            // Normal firmware update flow with new patch matching logic
+            else {
+                // Find matching MTK patch (MTK requires sequential updates)
+                if (rootJson.has("mtk_patches")) {
+                    String currentMtkVersion = com.mentra.asg_client.SysControl.getSystemCurrentVersion(context);
+                    mtkPatch = findMatchingMtkPatch(rootJson.getJSONArray("mtk_patches"), currentMtkVersion);
+                    if (mtkPatch != null) {
+                        Log.i(TAG, "MTK patch found for current version: " + currentMtkVersion);
+                    }
+                }
+
+                // Check BES firmware (BES does not require sequential updates)
+                // BES version comes from hs_syvr at boot, cached in AsgSettings
+                if (rootJson.has("bes_firmware")) {
+                    // Get BES version from AsgSettings (cached from hs_syvr response)
+                    // AsgSettings uses SharedPreferences, so we can create a new instance to read the cached version
+                    String currentBesVersion = "";
+                    try {
+                        AsgSettings asgSettings = new AsgSettings(context);
+                        currentBesVersion = asgSettings.getBesFirmwareVersion();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error getting BES firmware version from AsgSettings", e);
+                    }
+                    besUpdateAvailable = checkBesUpdate(rootJson.getJSONObject("bes_firmware"), currentBesVersion);
+                }
+
+                // Apply updates in correct order
+                if (mtkPatch != null && besUpdateAvailable) {
+                    // Both available - MTK stages, BES applies and triggers reboot
+                    Log.i(TAG, "Both MTK and BES updates available - applying MTK first, then BES");
+                    // TODO: Implement downloadAndStageMtkFirmware() - for now use existing method
+                    boolean mtkStarted = checkAndUpdateMtkFirmware(mtkPatch, context);
+                    if (mtkStarted) {
+                        Log.i(TAG, "MTK firmware staged - will apply on reboot");
+                    }
+                    // Apply BES (triggers reboot)
+                    checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context);
+                } else if (mtkPatch != null) {
+                    // Only MTK - apply normally (stages, needs reboot)
+                    Log.i(TAG, "MTK update available - applying");
+                    checkAndUpdateMtkFirmware(mtkPatch, context);
+                } else if (besUpdateAvailable) {
+                    // Only BES - apply normally (triggers reboot)
+                    Log.i(TAG, "BES update available - applying");
+                    checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context);
+                } else {
+                    Log.i(TAG, "No firmware updates available");
+                }
             }
-        }
-        // Normal BES update flow
-        else if (!apkUpdateNeeded && !mtkUpdateStarted && rootJson.has("bes_firmware")) {
-            Log.i(TAG, "No APK or MTK updates needed - checking BES firmware");
-            checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context);
-        } else if (apkUpdateNeeded || mtkUpdateStarted) {
-            Log.i(TAG, "APK or MTK update performed - BES firmware check will happen after next check cycle");
+        } else {
+            Log.i(TAG, "APK update performed - firmware checks will happen after restart");
         }
         
         Log.d(TAG, "Sequential updates completed (APK → MTK → BES)");
@@ -1182,7 +1218,96 @@ public class OtaHelper {
     }
     
     // ========== BES Firmware Update Methods ==========
-    
+    /**
+     * Find MTK firmware patch matching the current version.
+     * MTK requires sequential updates - must find patch starting from current version.
+     * @param patches Array of patch objects with start_firmware, end_firmware, url
+     * @param currentVersion Current MTK firmware version string (e.g., "20241130")
+     * @return Matching patch object, or null if no match or version unknown
+     */
+    private JSONObject findMatchingMtkPatch(JSONArray patches, String currentVersion) {
+        if (currentVersion == null || currentVersion.isEmpty()) {
+            Log.w(TAG, "Cannot match MTK patch - current version unknown");
+            return null;
+        }
+
+        try {
+            for (int i = 0; i < patches.length(); i++) {
+                JSONObject patch = patches.getJSONObject(i);
+                String startFirmware = patch.getString("start_firmware");
+                if (startFirmware.equals(currentVersion)) {
+                    Log.i(TAG, "Found matching MTK patch: " + startFirmware + " -> " + patch.getString("end_firmware"));
+                    return patch;
+                }
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Error parsing MTK patches", e);
+            return null;
+        }
+
+        Log.i(TAG, "No MTK patch available for current version: " + currentVersion);
+        return null;
+    }
+
+    /**
+     * Check if BES firmware update is available.
+     * BES does not require sequential updates - can install any newer version directly.
+     * @param besFirmware Object with version and url
+     * @param currentVersion Current BES version string (e.g., "17.26.1.14")
+     * @return true if server version > current version
+     */
+    private boolean checkBesUpdate(JSONObject besFirmware, String currentVersion) {
+        if (currentVersion == null || currentVersion.isEmpty()) {
+            Log.w(TAG, "Cannot check BES update - current version unknown");
+            return false;
+        }
+
+        try {
+            String serverVersion = besFirmware.getString("version");
+            // Simple version string comparison - if server > current, update available
+            int comparison = compareVersions(serverVersion, currentVersion);
+            if (comparison > 0) {
+                Log.i(TAG, "BES update available: " + currentVersion + " -> " + serverVersion);
+                return true;
+            } else {
+                Log.i(TAG, "BES firmware is up to date (current: " + currentVersion + ", server: " + serverVersion + ")");
+                return false;
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Error parsing BES firmware info", e);
+            return false;
+        }
+    }
+
+    /**
+     * Compare two version strings.
+     * Supports formats like "17.26.1.14" (BES) or "20241130" (MTK date format).
+     * @param version1 First version string
+     * @param version2 Second version string
+     * @return positive if version1 > version2, negative if version1 < version2, 0 if equal
+     */
+    private int compareVersions(String version1, String version2) {
+        // Simple lexicographic comparison works for both date format (YYYYMMDD) and dotted format
+        // For dotted versions like "17.26.1.14", split and compare each component
+        if (version1.contains(".") && version2.contains(".")) {
+            String[] parts1 = version1.split("\\.");
+            String[] parts2 = version2.split("\\.");
+            int maxLen = Math.max(parts1.length, parts2.length);
+
+            for (int i = 0; i < maxLen; i++) {
+                int v1 = i < parts1.length ? Integer.parseInt(parts1[i]) : 0;
+                int v2 = i < parts2.length ? Integer.parseInt(parts2[i]) : 0;
+                if (v1 != v2) {
+                    return Integer.compare(v1, v2);
+                }
+            }
+            return 0;
+        } else {
+            // For date format or simple strings, use lexicographic comparison
+            return version1.compareTo(version2);
+        }
+    }
+
     /**
      * Check and update BES firmware if newer version available
      * @param firmwareInfo JSON object with firmware metadata
@@ -1236,10 +1361,13 @@ public class OtaHelper {
                 Log.w(TAG, "Current firmware version not available - proceeding with update anyway");
             }
             
+            // Set current update type for progress reporting
+            currentUpdateType = "bes";
+
             // Download firmware file
             String firmwareUrl = firmwareInfo.getString("firmwareUrl");
             boolean downloaded = downloadBesFirmware(firmwareUrl, firmwareInfo, context);
-            
+
             if (downloaded) {
                 // Start firmware update via BesOtaManager singleton
                 BesOtaManager manager = BesOtaManager.getInstance();
@@ -1440,6 +1568,9 @@ public class OtaHelper {
                 return false;
             }
             
+            // Set current update type for progress reporting
+            currentUpdateType = "mtk";
+
             // Download firmware file
             String firmwareUrl = firmwareInfo.getString("firmwareUrl");
             boolean downloaded = downloadMtkFirmware(firmwareUrl, firmwareInfo, context);
@@ -1671,36 +1802,34 @@ public class OtaHelper {
                 }
             }
 
-            // Check MTK firmware
-            if (rootJson.has("mtk_firmware")) {
-                JSONObject mtkFirmware = rootJson.getJSONObject("mtk_firmware");
-                String currentVersionStr = com.mentra.asg_client.SysControl.getSystemCurrentVersion(context);
-                long currentVersion = 0;
-                try {
-                    currentVersion = Long.parseLong(currentVersionStr);
-                } catch (NumberFormatException e) {
-                    // Ignore parse errors
-                }
-
-                long serverVersion = mtkFirmware.optLong("versionCode", 0);
-                if (serverVersion > currentVersion) {
+            // Check MTK firmware patches (sequential updates)
+            if (rootJson.has("mtk_patches")) {
+                JSONArray mtkPatches = rootJson.getJSONArray("mtk_patches");
+                String currentMtkVersion = com.mentra.asg_client.SysControl.getSystemCurrentVersion(context);
+                JSONObject matchingPatch = findMatchingMtkPatch(mtkPatches, currentMtkVersion);
+                if (matchingPatch != null) {
                     updatesArray.put("mtk");
-                    totalSize += mtkFirmware.optLong("fileSize", 0);
+                    // Note: Patch file size not available in new schema
+                    // Could add fileSize field to patch objects if needed for totalSize calculation
                 }
             }
 
-            // Check BES firmware
+            // Check BES firmware (does not require sequential updates)
             if (rootJson.has("bes_firmware")) {
                 JSONObject besFirmware = rootJson.getJSONObject("bes_firmware");
-                byte[] currentVersion = BesOtaManager.getCurrentFirmwareVersion();
-                long serverVersion = besFirmware.optLong("versionCode", 0);
-                byte[] serverVersionBytes = BesOtaManager.parseServerVersionCode(serverVersion);
-
-                if (currentVersion != null && serverVersionBytes != null) {
-                    if (BesOtaManager.isNewerVersion(serverVersionBytes, currentVersion)) {
+                // Get BES version from AsgSettings (cached from hs_syvr response)
+                // AsgSettings uses SharedPreferences, so we can create a new instance to read the cached version
+                String currentBesVersion = "";
+                try {
+                    AsgSettings asgSettings = new AsgSettings(context);
+                    currentBesVersion = asgSettings.getBesFirmwareVersion();
+                } catch (Exception e) {
+                    Log.e(TAG, "Error getting BES firmware version from AsgSettings", e);
+                }
+                
+                if (checkBesUpdate(besFirmware, currentBesVersion)) {
                         updatesArray.put("bes");
-                        totalSize += besFirmware.optLong("fileSize", 0);
-                    }
+                    // Note: File size not available in new schema
                 }
             }
 
