@@ -407,6 +407,12 @@ export interface AudioPlayResponse extends BaseMessage {
 export interface UdpRegister extends BaseMessage {
   type: GlassesToCloudMessageType.UDP_REGISTER;
   userIdHash: number; // FNV-1a 32-bit hash of userId
+  /**
+   * Client's X25519 public key (base64 encoded, 32 bytes)
+   * Only present if client requested encryption via ?udpEncryption=true
+   * Server uses this along with its private key to derive shared secret
+   */
+  clientPublicKey?: string;
 }
 
 /**

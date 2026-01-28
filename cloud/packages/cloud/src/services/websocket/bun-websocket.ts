@@ -99,9 +99,14 @@ function handleGlassesUpgrade(req: Request, server: any, url: URL): Response | u
     }
 
     const livekitRequested = url.searchParams.get("livekit") === "true" || req.headers.get("livekit") === "true";
+    const udpEncryptionRequested = url.searchParams.get("udpEncryption") === "true";
 
     if (livekitRequested) {
       logger.info({ userId, feature: "livekit" }, "Client requested LiveKit transport");
+    }
+
+    if (udpEncryptionRequested) {
+      logger.info({ userId, feature: "udp-audio-encryption" }, "Client requested UDP encryption");
     }
 
     const upgraded = server.upgrade(req, {
@@ -109,6 +114,7 @@ function handleGlassesUpgrade(req: Request, server: any, url: URL): Response | u
         type: "glasses",
         userId,
         livekitRequested,
+        udpEncryptionRequested,
       } as GlassesWebSocketData,
     });
 
@@ -269,7 +275,7 @@ export const websocketHandlers = {
  * Handle glasses WebSocket connection open
  */
 async function handleGlassesOpen(ws: GlassesServerWebSocket): Promise<void> {
-  const { userId, livekitRequested } = ws.data;
+  const { userId, livekitRequested, udpEncryptionRequested } = ws.data;
 
   try {
     // Create or reconnect user session
@@ -278,13 +284,18 @@ async function handleGlassesOpen(ws: GlassesServerWebSocket): Promise<void> {
     // Store LiveKit preference
     userSession.livekitRequested = livekitRequested;
 
+    // Initialize UDP encryption if requested
+    if (udpEncryptionRequested) {
+      userSession.udpAudioManager.initializeEncryption();
+    }
+
     userSession.logger.info(
       { reconnection, livekitRequested },
       `Glasses WebSocket connection opened for user: ${userId}`,
     );
 
     // Handle connection initialization
-    await handleGlassesConnectionInit(userSession, ws, reconnection, livekitRequested);
+    await handleGlassesConnectionInit(userSession, ws, reconnection, livekitRequested, udpEncryptionRequested);
 
     // Track connection in analytics
     PosthogService.trackEvent("glasses_connection", userId, {
@@ -306,6 +317,7 @@ async function handleGlassesConnectionInit(
   ws: GlassesServerWebSocket,
   reconnection: boolean,
   livekitRequested: boolean,
+  udpEncryptionRequested: boolean,
 ): Promise<void> {
   if (!reconnection) {
     // Start dashboard app
@@ -388,6 +400,26 @@ async function handleGlassesConnectionInit(
     userSession.logger.info({ udpHost, udpPort, feature: "udp-audio" }, "Included UDP endpoint in CONNECTION_ACK");
   }
 
+  // Include UDP encryption info if requested
+  if (udpEncryptionRequested) {
+    const serverPublicKey = userSession.udpAudioManager.getServerPublicKey();
+    if (serverPublicKey) {
+      ackMessage.udpEncryption = {
+        publicKey: serverPublicKey,
+        algorithm: "x25519-xsalsa20-poly1305",
+      };
+      userSession.logger.info(
+        { feature: "udp-audio-encryption" },
+        "Included UDP encryption public key in CONNECTION_ACK",
+      );
+    } else {
+      userSession.logger.warn(
+        { feature: "udp-audio-encryption" },
+        "UDP encryption requested but no server public key available",
+      );
+    }
+  }
+
   // Include LiveKit info if requested
   if (livekitRequested) {
     try {
@@ -440,7 +472,13 @@ async function handleGlassesMessage(ws: GlassesServerWebSocket, message: string 
     // Handle connection init specially (re-init after reconnect)
     if (parsed.type === GlassesToCloudMessageType.CONNECTION_INIT) {
       userSession.logger.info("Received CONNECTION_INIT from glasses");
-      await handleGlassesConnectionInit(userSession, ws, true, userSession.livekitRequested || false);
+      await handleGlassesConnectionInit(
+        userSession,
+        ws,
+        true,
+        userSession.livekitRequested || false,
+        userSession.udpAudioManager.encryptionRequested,
+      );
       return;
     }
 
