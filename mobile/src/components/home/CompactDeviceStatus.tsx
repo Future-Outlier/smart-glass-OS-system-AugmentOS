@@ -54,6 +54,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
   const searching = useCoreStore((state) => state.searching)
+  const connectionState = useGlassesStore((state) => state.connectionState)
 
   if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
     return <ConnectedSimulatedGlassesInfo style={style} mirrorStyle={{backgroundColor: theme.colors.background}} />
@@ -110,6 +111,11 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   }
 
   let isSearching = searching || isCheckingConnectivity
+  // let connectingText = translate("home:connectingGlasses")
+  // if (defaultWearable === DeviceTypes.LIVE) {
+  //   connectingText = connectionState
+  //   console.log("CONNECTION STATE:", connectionState)
+  // }
 
   if (!glassesConnected || isSearching) {
     return (
@@ -150,6 +156,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
                 LeftAccessory={() => (
                   <ActivityIndicator size="small" color={theme.colors.foreground} style={{marginLeft: 5}} />
                 )}
+                // text={connectingText}
                 tx="home:connectingGlasses"
               />
             </>

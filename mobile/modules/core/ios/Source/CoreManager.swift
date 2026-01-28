@@ -1274,6 +1274,8 @@ struct ViewState {
                 searching = false
             }
 
+            // GlassesStore.shared.set("glasses", "ready", sgc?.ready ?? false)
+            // GlassesStore.shared.set("glasses", "connected", sgc?.connectionState == ConnTypes.CONNECTED)
             GlassesStore.shared.set("glasses", "connected", sgc?.ready ?? false)
             GlassesStore.shared.set("glasses", "micEnabled", sgc?.micEnabled ?? false)
             GlassesStore.shared.set("glasses", "batteryLevel", sgc?.batteryLevel ?? -1)
