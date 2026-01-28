@@ -120,7 +120,7 @@ Header (6 bytes) stays the same for routing. Only payload is encrypted.
 **Fix**: Added `react-native-get-random-values` package and imported it at the very top of `_layout.tsx` (must be before any other imports):
 
 ```typescript
-import "react-native-get-random-values" // Must be first - required for tweetnacl crypto
+import "react-native-get-random-values"; // Must be first - required for tweetnacl crypto
 ```
 
 ### 2. LC3 Frame Misalignment (Mobile)
@@ -131,7 +131,7 @@ import "react-native-get-random-values" // Must be first - required for tweetnac
 
 ```typescript
 // BAD: 960 - 40 = 920 bytes (920 / 60 = 15.33 frames - NOT ALIGNED!)
-maxChunkSize = this.getMaxChunkSize() - ENCRYPTION_OVERHEAD
+maxChunkSize = this.getMaxChunkSize() - ENCRYPTION_OVERHEAD;
 ```
 
 This resulted in 920-byte chunks which is not divisible by 60-byte LC3 frames, causing frames to be split across packets and corrupting the decoder.
@@ -140,9 +140,9 @@ This resulted in 920-byte chunks which is not divisible by 60-byte LC3 frames, c
 
 ```typescript
 // GOOD: Calculate alignment after accounting for overhead
-const availableForAudio = MAX_AUDIO_CHUNK_SIZE_BASE - ENCRYPTION_OVERHEAD // 1018 - 40 = 978
-const maxFrames = Math.floor(availableForAudio / frameSizeBytes) // 978 / 60 = 16 frames
-maxChunkSize = maxFrames * frameSizeBytes // 16 * 60 = 960 bytes (properly aligned)
+const availableForAudio = MAX_AUDIO_CHUNK_SIZE_BASE - ENCRYPTION_OVERHEAD; // 1018 - 40 = 978
+const maxFrames = Math.floor(availableForAudio / frameSizeBytes); // 978 / 60 = 16 frames
+maxChunkSize = maxFrames * frameSizeBytes; // 16 * 60 = 960 bytes (properly aligned)
 ```
 
 ## Status
@@ -163,8 +163,11 @@ maxChunkSize = maxFrames * frameSizeBytes // 16 * 60 = 960 bytes (properly align
 - [x] Fix bugs found during testing
   - [x] "no PRNG" error - added crypto polyfill
   - [x] LC3 frame misalignment - fixed chunk size calculation
-- [ ] Test encrypted path end-to-end
-- [ ] Verify backwards compatibility
+- [x] Test encrypted path end-to-end
+  - [x] Local cloud (via ngrok/Tailscale)
+  - [x] Debug server (debug.augmentos.cloud)
+- [x] Verify backwards compatibility
+  - [x] New client → old cloud (falls back to unencrypted)
 - [ ] Deploy to production
 
 ## Related
