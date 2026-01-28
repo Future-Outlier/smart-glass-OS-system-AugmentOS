@@ -12,13 +12,7 @@ import { Logger } from "pino";
 import { UdpRegister, UdpUnregister } from "@mentra/sdk";
 
 import { udpAudioServer } from "../udp/UdpAudioServer";
-import {
-  UdpEncryptionState,
-  createEncryptionState,
-  completeEncryptionSetup,
-  encodePublicKey,
-  decrypt,
-} from "../udp/UdpCrypto";
+import { UdpEncryptionState, createEncryptionState, encodeKey, decrypt } from "../udp/UdpCrypto";
 import { WebSocketReadyState } from "../websocket/types";
 
 import type { UserSession } from "./UserSession";
@@ -55,14 +49,14 @@ export class UdpAudioManager {
   }
 
   /**
-   * Whether encryption is enabled and fully set up for this session
+   * Whether encryption is enabled for this session
    */
   get encryptionEnabled(): boolean {
-    return this._encryptionState?.enabled === true && this._encryptionState?.sharedKey !== undefined;
+    return this._encryptionState?.enabled === true;
   }
 
   /**
-   * Whether encryption was requested (but may not be fully set up yet)
+   * Whether encryption was requested (same as enabled for symmetric key approach)
    */
   get encryptionRequested(): boolean {
     return this._encryptionState?.enabled === true;
@@ -71,28 +65,27 @@ export class UdpAudioManager {
   /**
    * Initialize encryption for this session.
    * Called when client connects with ?udpEncryption=true
-   * Generates server keypair and prepares for key exchange.
+   * Generates symmetric key for the session.
    */
   initializeEncryption(): void {
     this._encryptionState = createEncryptionState();
     this.logger.info(
       {
-        serverPublicKey: encodePublicKey(this._encryptionState.serverKeyPair.publicKey),
         feature: "udp-audio-encryption",
       },
-      "UDP encryption initialized - server keypair generated",
+      "UDP encryption initialized - symmetric key generated",
     );
   }
 
   /**
-   * Get the server's public key for CONNECTION_ACK
-   * @returns Base64-encoded public key, or undefined if encryption not initialized
+   * Get the symmetric key for CONNECTION_ACK (base64 encoded)
+   * @returns Base64-encoded key, or undefined if encryption not initialized
    */
-  getServerPublicKey(): string | undefined {
+  getEncryptionKey(): string | undefined {
     if (!this._encryptionState) {
       return undefined;
     }
-    return encodePublicKey(this._encryptionState.serverKeyPair.publicKey);
+    return encodeKey(this._encryptionState.key);
   }
 
   /**
@@ -100,7 +93,7 @@ export class UdpAudioManager {
    * Registers this session with the global UDP server for packet routing
    */
   handleRegister(message: UdpRegister): void {
-    const { userIdHash, clientPublicKey } = message;
+    const { userIdHash } = message;
 
     // Compute expected hash for comparison (FNV-1a of userId)
     const expectedHash = this.computeFnv1aHash(this.userSession.userId);
@@ -113,8 +106,7 @@ export class UdpAudioManager {
         expectedHash,
         expectedHashHex: expectedHash.toString(16).padStart(8, "0"),
         hashMatch: userIdHash === expectedHash,
-        hasClientPublicKey: !!clientPublicKey,
-        encryptionRequested: this.encryptionRequested,
+        encryptionEnabled: this.encryptionEnabled,
         feature: "udp-audio",
       },
       "UDP register request received from mobile",
@@ -133,40 +125,6 @@ export class UdpAudioManager {
         },
         "UDP userIdHash mismatch! Mobile hash differs from server computed hash",
       );
-    }
-
-    // Handle encryption key exchange if client provided their public key
-    if (clientPublicKey && this._encryptionState) {
-      const result = completeEncryptionSetup(this._encryptionState, clientPublicKey);
-      if (result.success) {
-        this.logger.info(
-          {
-            userIdHash,
-            feature: "udp-audio-encryption",
-          },
-          "UDP encryption key exchange complete - shared key computed",
-        );
-      } else {
-        this.logger.error(
-          {
-            userIdHash,
-            error: result.error,
-            feature: "udp-audio-encryption",
-          },
-          "UDP encryption key exchange failed",
-        );
-        // Disable encryption on failure - will fall back to unencrypted
-        this._encryptionState = undefined;
-      }
-    } else if (this._encryptionState && !clientPublicKey) {
-      this.logger.warn(
-        {
-          userIdHash,
-          feature: "udp-audio-encryption",
-        },
-        "Encryption was requested but client did not provide public key - disabling encryption",
-      );
-      this._encryptionState = undefined;
     }
 
     // Store state
@@ -213,12 +171,12 @@ export class UdpAudioManager {
    * @returns Decrypted audio data, or null if decryption fails
    */
   decryptAudio(encryptedData: Uint8Array): Uint8Array | null {
-    if (!this._encryptionState?.sharedKey) {
-      this.logger.error({ feature: "udp-audio-encryption" }, "Cannot decrypt - no shared key");
+    if (!this._encryptionState?.key) {
+      this.logger.error({ feature: "udp-audio-encryption" }, "Cannot decrypt - no encryption key");
       return null;
     }
 
-    const decrypted = decrypt(encryptedData, this._encryptionState.sharedKey);
+    const decrypted = decrypt(encryptedData, this._encryptionState.key);
     if (!decrypted) {
       this.logger.warn({ feature: "udp-audio-encryption" }, "Decryption failed - invalid data or wrong key");
     }

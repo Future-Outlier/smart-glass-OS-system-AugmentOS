@@ -24,13 +24,13 @@ export interface ConnectionAck extends BaseMessage {
   };
   /**
    * UDP encryption info - only present if client requested encryption via ?udpEncryption=true
-   * Client should use this public key along with their own keypair to derive shared secret
+   * Client uses this symmetric key to encrypt UDP audio packets with secretbox
    */
   udpEncryption?: {
-    /** Server's X25519 public key (base64 encoded, 32 bytes) */
-    publicKey: string;
+    /** Symmetric key for XSalsa20-Poly1305 encryption (base64 encoded, 32 bytes) */
+    key: string;
     /** Encryption algorithm being used */
-    algorithm: "x25519-xsalsa20-poly1305";
+    algorithm: "xsalsa20-poly1305";
   };
 }
 

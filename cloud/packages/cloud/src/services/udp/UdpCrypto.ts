@@ -1,14 +1,19 @@
 /**
  * @fileoverview UDP Crypto utility for encrypted audio packets.
  *
- * Uses tweetnacl (X25519 + XSalsa20-Poly1305) for key exchange and authenticated encryption.
+ * Uses tweetnacl secretbox (XSalsa20-Poly1305) for symmetric authenticated encryption.
  *
- * Key exchange flow:
- * 1. Server generates ephemeral X25519 keypair on session start
- * 2. Server sends public key to client in CONNECTION_ACK
- * 3. Client generates its own keypair and sends public key in UDP_REGISTER
- * 4. Both sides compute shared key using box.before()
- * 5. All subsequent packets encrypted with box.after() using shared key
+ * Simplified key exchange flow (symmetric key via TLS):
+ * 1. Server generates random 32-byte symmetric key on session start
+ * 2. Server sends key to client in CONNECTION_ACK (over TLS-encrypted WebSocket)
+ * 3. Client uses key to encrypt audio with secretbox
+ * 4. Server decrypts with same key
+ *
+ * This is secure because:
+ * - Key is transmitted over TLS (WebSocket connection)
+ * - Each session gets a unique key
+ * - XSalsa20-Poly1305 provides encryption + authentication
+ * - Keys are garbage collected when session ends
  *
  * Encrypted packet format:
  * [userIdHash(4)|seq(2)|nonce(24)|ciphertext(audio + 16 bytes tag)]
@@ -19,59 +24,35 @@
 import nacl from "tweetnacl";
 
 /** Nonce size for XSalsa20-Poly1305 (24 bytes) */
-export const NONCE_SIZE = nacl.box.nonceLength; // 24
+export const NONCE_SIZE = nacl.secretbox.nonceLength; // 24
 
 /** Auth tag size for Poly1305 (16 bytes) */
-export const TAG_SIZE = nacl.box.overheadLength; // 16
+export const TAG_SIZE = nacl.secretbox.overheadLength; // 16
 
-/** Public key size for X25519 (32 bytes) */
-export const PUBLIC_KEY_SIZE = nacl.box.publicKeyLength; // 32
+/** Symmetric key size (32 bytes) */
+export const KEY_SIZE = nacl.secretbox.keyLength; // 32
 
 /** Total overhead per encrypted packet */
 export const ENCRYPTION_OVERHEAD = NONCE_SIZE + TAG_SIZE; // 40 bytes
 
 /**
- * Keypair for X25519 key exchange
+ * Generate a random 32-byte symmetric key for a session
  */
-export interface UdpKeyPair {
-  publicKey: Uint8Array;
-  secretKey: Uint8Array;
+export function generateKey(): Uint8Array {
+  return nacl.randomBytes(KEY_SIZE);
 }
 
 /**
- * Generate a new X25519 keypair for a session
- */
-export function generateKeyPair(): UdpKeyPair {
-  const keyPair = nacl.box.keyPair();
-  return {
-    publicKey: keyPair.publicKey,
-    secretKey: keyPair.secretKey,
-  };
-}
-
-/**
- * Compute shared key from our secret key and peer's public key.
- * This is computed once per session and reused for all packets.
- *
- * @param ourSecretKey Our X25519 secret key
- * @param theirPublicKey Peer's X25519 public key
- * @returns 32-byte shared key for symmetric encryption
- */
-export function computeSharedKey(ourSecretKey: Uint8Array, theirPublicKey: Uint8Array): Uint8Array {
-  return nacl.box.before(theirPublicKey, ourSecretKey);
-}
-
-/**
- * Encrypt audio data using precomputed shared key.
+ * Encrypt audio data using symmetric key.
  * Returns nonce + ciphertext (which includes 16-byte auth tag).
  *
  * @param plaintext Audio data to encrypt
- * @param sharedKey Precomputed shared key from computeSharedKey()
+ * @param key 32-byte symmetric key
  * @returns Buffer containing [nonce(24)|ciphertext(plaintext.length + 16)]
  */
-export function encrypt(plaintext: Uint8Array, sharedKey: Uint8Array): Uint8Array {
+export function encrypt(plaintext: Uint8Array, key: Uint8Array): Uint8Array {
   const nonce = nacl.randomBytes(NONCE_SIZE);
-  const ciphertext = nacl.box.after(plaintext, nonce, sharedKey);
+  const ciphertext = nacl.secretbox(plaintext, nonce, key);
 
   // Combine nonce + ciphertext
   const result = new Uint8Array(NONCE_SIZE + ciphertext.length);
@@ -82,14 +63,14 @@ export function encrypt(plaintext: Uint8Array, sharedKey: Uint8Array): Uint8Arra
 }
 
 /**
- * Decrypt audio data using precomputed shared key.
+ * Decrypt audio data using symmetric key.
  * Input should be [nonce(24)|ciphertext(...)].
  *
  * @param encryptedData Buffer containing [nonce(24)|ciphertext]
- * @param sharedKey Precomputed shared key from computeSharedKey()
+ * @param key 32-byte symmetric key
  * @returns Decrypted audio data, or null if decryption fails (tampered/wrong key)
  */
-export function decrypt(encryptedData: Uint8Array, sharedKey: Uint8Array): Uint8Array | null {
+export function decrypt(encryptedData: Uint8Array, key: Uint8Array): Uint8Array | null {
   if (encryptedData.length < NONCE_SIZE + TAG_SIZE) {
     return null; // Too short to contain nonce + tag
   }
@@ -97,24 +78,24 @@ export function decrypt(encryptedData: Uint8Array, sharedKey: Uint8Array): Uint8
   const nonce = encryptedData.slice(0, NONCE_SIZE);
   const ciphertext = encryptedData.slice(NONCE_SIZE);
 
-  return nacl.box.open.after(ciphertext, nonce, sharedKey);
+  return nacl.secretbox.open(ciphertext, nonce, key);
 }
 
 /**
- * Encode public key to base64 for transmission in JSON messages
+ * Encode key to base64 for transmission in JSON messages
  */
-export function encodePublicKey(publicKey: Uint8Array): string {
-  return Buffer.from(publicKey).toString("base64");
+export function encodeKey(key: Uint8Array): string {
+  return Buffer.from(key).toString("base64");
 }
 
 /**
- * Decode base64 public key from JSON messages
- * @returns Public key bytes, or null if invalid
+ * Decode base64 key from JSON messages
+ * @returns Key bytes, or null if invalid
  */
-export function decodePublicKey(base64Key: string): Uint8Array | null {
+export function decodeKey(base64Key: string): Uint8Array | null {
   try {
     const bytes = Buffer.from(base64Key, "base64");
-    if (bytes.length !== PUBLIC_KEY_SIZE) {
+    if (bytes.length !== KEY_SIZE) {
       return null;
     }
     return new Uint8Array(bytes);
@@ -129,38 +110,16 @@ export function decodePublicKey(base64Key: string): Uint8Array | null {
 export interface UdpEncryptionState {
   /** Whether encryption is enabled for this session */
   enabled: boolean;
-  /** Server's keypair (generated on session start) */
-  serverKeyPair: UdpKeyPair;
-  /** Client's public key (received in UDP_REGISTER) */
-  clientPublicKey?: Uint8Array;
-  /** Precomputed shared key (computed after receiving client's public key) */
-  sharedKey?: Uint8Array;
+  /** Symmetric key for this session (32 bytes) */
+  key: Uint8Array;
 }
 
 /**
- * Create initial encryption state for a session that requested encryption
+ * Create encryption state for a session that requested encryption
  */
 export function createEncryptionState(): UdpEncryptionState {
   return {
     enabled: true,
-    serverKeyPair: generateKeyPair(),
+    key: generateKey(),
   };
-}
-
-/**
- * Complete encryption setup by adding client's public key and computing shared key
- */
-export function completeEncryptionSetup(
-  state: UdpEncryptionState,
-  clientPublicKeyBase64: string,
-): { success: boolean; error?: string } {
-  const clientPublicKey = decodePublicKey(clientPublicKeyBase64);
-  if (!clientPublicKey) {
-    return { success: false, error: "Invalid client public key" };
-  }
-
-  state.clientPublicKey = clientPublicKey;
-  state.sharedKey = computeSharedKey(state.serverKeyPair.secretKey, clientPublicKey);
-
-  return { success: true };
 }

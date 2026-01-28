@@ -4,10 +4,16 @@
  * Replaces native Kotlin/Swift UDP implementations with a pure React Native solution.
  * Uses react-native-udp for cross-platform UDP socket support.
  *
- * Packet format:
+ * Packet format (unencrypted):
  * - Bytes 0-3: userIdHash (FNV-1a hash of userId, big-endian)
  * - Bytes 4-5: sequence number (big-endian, wraps at 65535)
  * - Bytes 6+: PCM audio data (or "PING" for probe packets)
+ *
+ * Packet format (encrypted):
+ * - Bytes 0-3: userIdHash (FNV-1a hash of userId, big-endian)
+ * - Bytes 4-5: sequence number (big-endian, wraps at 65535)
+ * - Bytes 6-29: nonce (24 bytes)
+ * - Bytes 30+: ciphertext (encrypted audio + 16-byte auth tag)
  */
 
 import socketComms from "@/services/SocketComms"
@@ -17,6 +23,7 @@ import {Buffer} from "buffer"
 import dgram from "react-native-udp"
 
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
+import {UdpEncryptionConfig, createEncryptionConfig, encrypt, ENCRYPTION_OVERHEAD} from "./UdpCrypto"
 
 const UDP_PORT = 8000
 const HEADER_SIZE = 6 // 4 bytes userIdHash + 2 bytes sequence
@@ -69,6 +76,9 @@ class UdpManager {
   private isConnecting: boolean = false
   private audioEnabled: boolean = false
 
+  // Encryption state
+  private encryptionConfig: UdpEncryptionConfig | null = null
+
   // Ping state
   private pingResolve: ((available: boolean) => void) | null = null
   private pingTimeout: number | null = null
@@ -92,6 +102,39 @@ class UdpManager {
   public handleAck(): void {
     // start UDP registration:
     this.registerUdpAudio(false)
+  }
+
+  /**
+   * Set encryption configuration from CONNECTION_ACK
+   * @param base64Key Base64-encoded symmetric key from server
+   * @returns true if encryption was successfully configured
+   */
+  public setEncryption(base64Key: string): boolean {
+    const config = createEncryptionConfig(base64Key)
+    if (config) {
+      this.encryptionConfig = config
+      console.log("UDP: Encryption configured successfully")
+      return true
+    } else {
+      console.log("UDP: Failed to configure encryption - invalid key")
+      this.encryptionConfig = null
+      return false
+    }
+  }
+
+  /**
+   * Clear encryption configuration
+   */
+  public clearEncryption(): void {
+    this.encryptionConfig = null
+    console.log("UDP: Encryption cleared")
+  }
+
+  /**
+   * Check if encryption is enabled
+   */
+  public isEncryptionEnabled(): boolean {
+    return this.encryptionConfig?.enabled === true
   }
 
   /**
@@ -394,14 +437,21 @@ class UdpManager {
       // Decode base64 to bytes
       const audioBytes = Buffer.from(pcmData, "base64")
 
-      // Get frame-aligned max chunk size
-      const maxChunkSize = this.getMaxChunkSize()
+      // Get frame-aligned max chunk size (reduce if encryption enabled to account for overhead)
+      let maxChunkSize = this.getMaxChunkSize()
+      if (this.encryptionConfig) {
+        maxChunkSize = Math.max(maxChunkSize - ENCRYPTION_OVERHEAD, 100) // Leave room for nonce + tag
+      }
 
       // Debug log every 100 packets to confirm audio is flowing
       const numChunks = Math.ceil(audioBytes.length / maxChunkSize)
       if (this.sequenceNumber % 100 === 0) {
         console.log(
-          `UDP: Sending audio #${this.sequenceNumber}, total=${audioBytes.length}bytes, chunks=${numChunks}, maxChunk=${maxChunkSize} to ${this.config.host}:${this.config.port}`,
+          `UDP: Sending audio #${this.sequenceNumber}, total=${
+            audioBytes.length
+          }bytes, chunks=${numChunks}, maxChunk=${maxChunkSize}, encrypted=${!!this.encryptionConfig} to ${
+            this.config.host
+          }:${this.config.port}`,
         )
       }
 
@@ -410,7 +460,17 @@ class UdpManager {
       let offset = 0
       while (offset < audioBytes.length) {
         const chunkSize = Math.min(maxChunkSize, audioBytes.length - offset)
-        const packet = Buffer.alloc(HEADER_SIZE + chunkSize)
+        const audioChunk = audioBytes.slice(offset, offset + chunkSize)
+
+        let payload: Buffer | Uint8Array
+        if (this.encryptionConfig) {
+          // Encrypt the audio chunk
+          payload = encrypt(new Uint8Array(audioChunk), this.encryptionConfig.key)
+        } else {
+          payload = audioChunk
+        }
+
+        const packet = Buffer.alloc(HEADER_SIZE + payload.length)
 
         // Write userIdHash (big-endian, 4 bytes)
         packet.writeUInt32BE(this.userIdHash, 0)
@@ -420,8 +480,12 @@ class UdpManager {
         packet.writeUInt16BE(seq, 4)
         this.sequenceNumber++
 
-        // Write audio chunk
-        audioBytes.copy(packet, HEADER_SIZE, offset, offset + chunkSize)
+        // Write payload (encrypted or raw audio)
+        if (Buffer.isBuffer(payload)) {
+          payload.copy(packet, HEADER_SIZE)
+        } else {
+          packet.set(payload, HEADER_SIZE)
+        }
 
         // Send packet
         this.socket.send(packet, 0, packet.length, this.config.port, this.config.host, (err) => {
@@ -449,15 +513,28 @@ class UdpManager {
     }
 
     try {
-      // Get frame-aligned max chunk size
-      const maxChunkSize = this.getMaxChunkSize()
+      // Get frame-aligned max chunk size (reduce if encryption enabled to account for overhead)
+      let maxChunkSize = this.getMaxChunkSize()
+      if (this.encryptionConfig) {
+        maxChunkSize = Math.max(maxChunkSize - ENCRYPTION_OVERHEAD, 100)
+      }
 
       // Chunk audio data if it exceeds max packet size
       // Chunks are aligned to LC3 frame boundaries to prevent decoder corruption
       let offset = 0
       while (offset < pcmData.length) {
         const chunkSize = Math.min(maxChunkSize, pcmData.length - offset)
-        const packet = Buffer.alloc(HEADER_SIZE + chunkSize)
+        const audioChunk = pcmData.slice(offset, offset + chunkSize)
+
+        let payload: Buffer | Uint8Array
+        if (this.encryptionConfig) {
+          // Encrypt the audio chunk
+          payload = encrypt(new Uint8Array(audioChunk), this.encryptionConfig.key)
+        } else {
+          payload = audioChunk
+        }
+
+        const packet = Buffer.alloc(HEADER_SIZE + payload.length)
 
         // Write userIdHash (big-endian, 4 bytes)
         packet.writeUInt32BE(this.userIdHash, 0)
@@ -467,8 +544,12 @@ class UdpManager {
         packet.writeUInt16BE(seq, 4)
         this.sequenceNumber++
 
-        // Write audio chunk
-        pcmData.copy(packet, HEADER_SIZE, offset, offset + chunkSize)
+        // Write payload (encrypted or raw audio)
+        if (Buffer.isBuffer(payload)) {
+          payload.copy(packet, HEADER_SIZE)
+        } else {
+          packet.set(payload, HEADER_SIZE)
+        }
 
         // Send packet
         this.socket.send(packet, 0, packet.length, this.config.port, this.config.host, (err) => {

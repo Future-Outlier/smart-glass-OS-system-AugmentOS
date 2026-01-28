@@ -402,20 +402,17 @@ async function handleGlassesConnectionInit(
 
   // Include UDP encryption info if requested
   if (udpEncryptionRequested) {
-    const serverPublicKey = userSession.udpAudioManager.getServerPublicKey();
-    if (serverPublicKey) {
+    const encryptionKey = userSession.udpAudioManager.getEncryptionKey();
+    if (encryptionKey) {
       ackMessage.udpEncryption = {
-        publicKey: serverPublicKey,
-        algorithm: "x25519-xsalsa20-poly1305",
+        key: encryptionKey,
+        algorithm: "xsalsa20-poly1305",
       };
-      userSession.logger.info(
-        { feature: "udp-audio-encryption" },
-        "Included UDP encryption public key in CONNECTION_ACK",
-      );
+      userSession.logger.info({ feature: "udp-audio-encryption" }, "Included UDP encryption key in CONNECTION_ACK");
     } else {
       userSession.logger.warn(
         { feature: "udp-audio-encryption" },
-        "UDP encryption requested but no server public key available",
+        "UDP encryption requested but no encryption key available",
       );
     }
   }

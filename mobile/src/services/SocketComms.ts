@@ -381,12 +381,27 @@ class SocketComms {
       udp_port: msg.udp_port,
       resolvedHost: udpHost,
       resolvedPort: udpPort,
+      hasEncryption: !!msg.udpEncryption,
       allKeys: Object.keys(msg),
     })
 
     if (udpHost) {
       console.log(`SOCKET: UDP endpoint found, configuring with ${udpHost}:${udpPort}`)
       udp.configure(udpHost, udpPort, this.userid)
+
+      // Configure encryption if server provided a key
+      if (msg.udpEncryption?.key) {
+        const encryptionConfigured = udp.setEncryption(msg.udpEncryption.key)
+        console.log(
+          `SOCKET: UDP encryption ${encryptionConfigured ? "enabled" : "failed"} (algorithm: ${
+            msg.udpEncryption.algorithm
+          })`,
+        )
+      } else {
+        udp.clearEncryption()
+        console.log("SOCKET: UDP encryption not enabled (no key in connection_ack)")
+      }
+
       udp.handleAck()
     } else {
       console.log(
