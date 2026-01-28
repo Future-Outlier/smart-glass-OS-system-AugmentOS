@@ -466,7 +466,19 @@ public class Bridge private constructor() {
             sendTypedMessage("hotspot_error", eventBody as Map<String, Any>)
         }
 
-        /** Send version info - matches iOS MentraLive.swift emitVersionInfo */
+        /**
+         * Send version info with flexible fields (new flexible parsing approach)
+         * Accepts any fields from glasses and forwards to RN
+         */
+        @JvmStatic
+        fun sendVersionInfo(fields: Map<String, Any>) {
+            sendTypedMessage("version_info", fields)
+        }
+
+        /**
+         * Send version info - matches iOS MentraLive.swift emitVersionInfo (legacy)
+         * Kept for backwards compatibility with old glasses
+         */
         @JvmStatic
         fun sendVersionInfo(
                 appVersion: String,

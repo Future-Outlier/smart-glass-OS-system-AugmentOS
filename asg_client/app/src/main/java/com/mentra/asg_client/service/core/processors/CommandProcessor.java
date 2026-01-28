@@ -417,6 +417,20 @@ public class CommandProcessor {
     }
 
     /**
+     * Request BES system version from BES chip.
+     * This should be called when BluetoothManager is ready to query firmware version.
+     */
+    public void requestSystemVersion() {
+        Log.d(TAG, "📤 requestSystemVersion() called");
+
+        if (k900CommandHandler != null) {
+            k900CommandHandler.requestSystemVersion();
+        } else {
+            Log.w(TAG, "⚠️ K900CommandHandler not available - cannot request BES system version");
+        }
+    }
+
+    /**
      * Request BT MAC address from BES chip.
      * This should be called after UART connection is established to retrieve the unique device identifier.
      */

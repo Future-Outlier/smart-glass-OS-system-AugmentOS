@@ -127,9 +127,8 @@ public class MentraLive extends SGCManager {
     // Note: glassesAppVersion, glassesBuildNumber, glassesDeviceModel, glassesAndroidVersion
     // are inherited from SGCManager parent class
 
-    // Version info chunking support (for MTU workaround)
-    // Glasses send version_info in 2 chunks to fit within BLE MTU limits
-    private JSONObject pendingVersionInfoChunk1 = null; // Stores chunk 1 until chunk 2 arrives
+    // Version info: Flexible parsing - glasses can send any version_info* message with any fields
+    // RN accumulates fields via setGlassesInfo({...state, ...info}) - no chunking/merging needed
 
     // BLE UUIDs - updated to match K900 BES2800 MCU UUIDs for compatibility with both glass types
     // CRITICAL FIX: Swapped TX and RX UUIDs to match actual usage from central device perspective
@@ -2341,70 +2340,8 @@ public class MentraLive extends SGCManager {
                 }
                 break;
 
-            case "version_info_1":
-                // Chunk 1 of version info (MTU workaround) - contains basic device info
-                Bridge.log("LIVE: Received version_info_1 (chunk 1/2): " + json.toString());
-                pendingVersionInfoChunk1 = json;
-                // Wait for chunk 2 to arrive before processing
-                break;
-
-            case "version_info_2":
-                // Chunk 2 of version info (MTU workaround) - contains URLs and identifiers
-                Bridge.log("LIVE: Received version_info_2 (chunk 2/2): " + json.toString());
-
-                if (pendingVersionInfoChunk1 != null) {
-                    // Merge both chunks and process as complete version_info
-                    String appVersionChunked = pendingVersionInfoChunk1.optString("app_version", "");
-                    String buildNumberChunked = pendingVersionInfoChunk1.optString("build_number", "");
-                    String deviceModelChunked = pendingVersionInfoChunk1.optString("device_model", "");
-                    String androidVersionChunked = pendingVersionInfoChunk1.optString("android_version", "");
-                    String otaVersionUrlChunked = json.optString("ota_version_url", null);
-                    String firmwareVersionChunked = json.optString("firmware_version", "");
-                    String btMacAddressChunked = json.optString("bt_mac_address", "");
-
-                    // Update parent SGCManager fields
-                    glassesAppVersion = appVersionChunked;
-                    glassesBuildNumber = buildNumberChunked;
-                    glassesDeviceModel = deviceModelChunked;
-                    glassesAndroidVersion = androidVersionChunked;
-                    glassesOtaVersionUrl = otaVersionUrlChunked != null ? otaVersionUrlChunked : "";
-                    glassesFirmwareVersion = firmwareVersionChunked;
-                    glassesBtMacAddress = btMacAddressChunked;
-
-                    // Parse build number as integer for version checks (local field)
-                    try {
-                        glassesBuildNumberInt = Integer.parseInt(buildNumberChunked);
-                        Bridge.log("LIVE: Parsed build number as integer: " + glassesBuildNumberInt);
-                    } catch (NumberFormatException e) {
-                        glassesBuildNumberInt = 0;
-                        Log.e(TAG, "Failed to parse build number as integer: " + buildNumberChunked);
-                    }
-
-                    // Determine LC3 audio support: base K900 doesn't support LC3, variants do
-                    boolean supportsLC3Audio = !"K900".equals(deviceModelChunked);
-                    Bridge.log("LIVE: 📱 LC3 audio support: " + supportsLC3Audio + " (device: " + deviceModelChunked + ")");
-
-                    Bridge.log("LIVE: Glasses Version (from chunks) - App: " + appVersionChunked +
-                          ", Build: " + buildNumberChunked +
-                          ", Device: " + deviceModelChunked +
-                          ", Android: " + androidVersionChunked +
-                          ", Firmware: " + firmwareVersionChunked +
-                          ", BT MAC: " + btMacAddressChunked +
-                          ", OTA URL: " + otaVersionUrlChunked);
-
-                    // Send version info event (matches iOS emitVersionInfo)
-                    Bridge.sendVersionInfo(appVersionChunked, buildNumberChunked, deviceModelChunked, androidVersionChunked,
-                          otaVersionUrlChunked != null ? otaVersionUrlChunked : "", firmwareVersionChunked, btMacAddressChunked);
-
-                    // Notify CoreManager to update status and send to frontend
-                    CoreManager.getInstance().getStatus();
-
-                    // Clear the pending chunk
-                    pendingVersionInfoChunk1 = null;
-                } else {
-                    Bridge.log("LIVE: ⚠️ Received version_info_2 without version_info_1 - ignoring");
-                }
-                break;
+            // Removed: version_info_1 and version_info_2 cases
+            // Now handled by flexible parsing in default case below
 
             case "version_info":
                 // Process version information from ASG client (legacy single-message format)
@@ -2579,11 +2516,71 @@ public class MentraLive extends SGCManager {
                 break;
 
             default:
-                Log.d(TAG, "📦 Unknown message type: " + type);
-                // Pass the data to the subscriber for custom processing
-                // if (dataObservable != null) {
-                    // dataObservable.onNext(json);
-                // }
+                // Flexible version_info parsing - handle any version_info* message
+                if (type.startsWith("version_info")) {
+                    Bridge.log("LIVE: Received " + type + ": " + json.toString());
+
+                    // Extract all fields from JSON (except "type")
+                    Map<String, Object> fields = new HashMap<>();
+                    Iterator<String> keys = json.keys();
+                    while (keys.hasNext()) {
+                        String key = keys.next();
+                        if (!key.equals("type")) {
+                            fields.put(key, json.opt(key));
+                        }
+                    }
+
+                    // Update local SGCManager fields for any we recognize
+                    if (fields.containsKey("app_version")) {
+                        glassesAppVersion = (String) fields.get("app_version");
+                    }
+                    if (fields.containsKey("build_number")) {
+                        glassesBuildNumber = (String) fields.get("build_number");
+                        // Parse build number as integer for version checks
+                        try {
+                            glassesBuildNumberInt = Integer.parseInt(glassesBuildNumber);
+                            Bridge.log("LIVE: Parsed build number as integer: " + glassesBuildNumberInt);
+                        } catch (NumberFormatException e) {
+                            glassesBuildNumberInt = 0;
+                            Log.e(TAG, "Failed to parse build number as integer: " + glassesBuildNumber);
+                        }
+                    }
+                    if (fields.containsKey("device_model")) {
+                        glassesDeviceModel = (String) fields.get("device_model");
+                        // Determine LC3 audio support: base K900 doesn't support LC3, variants do
+                        boolean supportsLC3Audio = !"K900".equals(glassesDeviceModel);
+                        Bridge.log("LIVE: 📱 LC3 audio support: " + supportsLC3Audio + " (device: " + glassesDeviceModel + ")");
+                    }
+                    if (fields.containsKey("android_version")) {
+                        glassesAndroidVersion = (String) fields.get("android_version");
+                    }
+                    if (fields.containsKey("ota_version_url")) {
+                        glassesOtaVersionUrl = (String) fields.get("ota_version_url");
+                    }
+                    if (fields.containsKey("firmware_version")) {
+                        glassesFirmwareVersion = (String) fields.get("firmware_version");
+                    }
+                    if (fields.containsKey("bes_fw_version")) {
+                        glassesFirmwareVersion = (String) fields.get("bes_fw_version");
+                    }
+                    if (fields.containsKey("bt_mac_address")) {
+                        glassesBtMacAddress = (String) fields.get("bt_mac_address");
+                    }
+
+                    // Send fields immediately to RN - no waiting for other chunks
+                    Bridge.sendVersionInfo(fields);
+
+                    // Notify CoreManager to update status and send to frontend
+                    CoreManager.getInstance().getStatus();
+
+                    Bridge.log("LIVE: Processed version_info fields and sent to RN");
+                } else {
+                    Log.d(TAG, "📦 Unknown message type: " + type);
+                    // Pass the data to the subscriber for custom processing
+                    // if (dataObservable != null) {
+                        // dataObservable.onNext(json);
+                    // }
+                }
                 break;
         }
     }

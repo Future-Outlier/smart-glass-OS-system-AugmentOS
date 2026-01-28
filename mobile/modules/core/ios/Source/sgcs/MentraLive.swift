@@ -989,9 +989,8 @@ class MentraLive: NSObject, SGCManager {
     var glassesDeviceModel: String = ""
     var glassesAndroidVersion: String = ""
 
-    // Version info chunking support (for MTU workaround)
-    // Glasses send version_info in 2 chunks to fit within BLE MTU limits
-    private var pendingVersionInfoChunk1: [String: Any]?
+    // Version info: Flexible parsing - glasses can send any version_info* message with any fields
+    // RN accumulates fields via setGlassesInfo({...state, ...info}) - no chunking/merging needed
 
     var _ready = false
     var ready: Bool {
@@ -1746,38 +1745,11 @@ class MentraLive: NSObject, SGCManager {
         case "button_press":
             handleButtonPress(json)
 
-        case "version_info_1":
-            // Chunk 1 of version info (MTU workaround) - contains basic device info
-            print("LIVE: Received version_info_1 (chunk 1/2): \(json)")
-            pendingVersionInfoChunk1 = json
-            // Wait for chunk 2 to arrive before processing
-
-        case "version_info_2":
-            // Chunk 2 of version info (MTU workaround) - contains URLs and identifiers
-            print("LIVE: Received version_info_2 (chunk 2/2): \(json)")
-
-            if let chunk1 = pendingVersionInfoChunk1 {
-                // Merge both chunks into a complete version_info dict
-                var mergedJson: [String: Any] = [:]
-                // Copy all fields from chunk 1
-                for (key, value) in chunk1 {
-                    mergedJson[key] = value
-                }
-                // Copy all fields from chunk 2
-                for (key, value) in json {
-                    mergedJson[key] = value
-                }
-                // Process as complete version_info
-                print("LIVE: Processing merged version_info from chunks: \(mergedJson)")
-                handleVersionInfo(mergedJson)
-                // Clear the pending chunk
-                pendingVersionInfoChunk1 = nil
-            } else {
-                print("LIVE: ⚠️ Received version_info_2 without version_info_1 - ignoring")
-            }
+        // Removed: version_info_1 and version_info_2 cases
+        // Now handled by flexible parsing below
 
         case "version_info":
-            // Legacy single-message format
+            // Legacy single-message format - for backwards compat with old glasses
             handleVersionInfo(json)
 
         case "touch_event":
@@ -1895,7 +1867,61 @@ class MentraLive: NSObject, SGCManager {
             )
 
         default:
-            Bridge.log("Unhandled message type: \(type)")
+            // Flexible version_info parsing - handle any version_info* message
+            if type.hasPrefix("version_info") {
+                Bridge.log("LIVE: Received \(type): \(json)")
+
+                // Extract all fields from JSON (except "type")
+                var fields: [String: Any] = [:]
+                for (key, value) in json {
+                    if key != "type" {
+                        fields[key] = value
+                    }
+                }
+
+                // Update local fields for any we recognize
+                if let appVersion = fields["app_version"] as? String {
+                    glassesAppVersion = appVersion
+                }
+                if let buildNumber = fields["build_number"] as? String {
+                    glassesBuildNumber = buildNumber
+                    isNewVersion = (Int(buildNumber) ?? 0) >= 5
+                }
+                if let deviceModel = fields["device_model"] as? String {
+                    glassesDeviceModel = deviceModel
+                }
+                if let androidVersion = fields["android_version"] as? String {
+                    glassesAndroidVersion = androidVersion
+                }
+                if let otaVersionUrl = fields["ota_version_url"] as? String {
+                    glassesOtaVersionUrl = otaVersionUrl
+                }
+                if let firmwareVersion = fields["firmware_version"] as? String {
+                    glassesFirmwareVersion = firmwareVersion
+                }
+                if let besFwVersion = fields["bes_fw_version"] as? String {
+                    glassesFirmwareVersion = besFwVersion
+                }
+                if let mtkFwVersion = fields["mtk_fw_version"] as? String {
+                    // MTK firmware version (e.g., "20241130")
+                    // Note: Stored separately from BES version for OTA patch matching
+                    // Field is forwarded to RN via sendTypedMessage below
+                }
+                if let btMacAddress = fields["bt_mac_address"] as? String {
+                    glassesBtMacAddress = btMacAddress
+                }
+
+                // Send fields immediately to RN - no waiting for other chunks
+                // All fields including mtk_fw_version are forwarded to RN
+                Bridge.sendTypedMessage("version_info", body: fields)
+
+                // Notify CoreManager to update status and send to frontend
+                CoreManager.shared.getStatus()
+
+                Bridge.log("LIVE: Processed version_info fields and sent to RN")
+            } else {
+                Bridge.log("Unhandled message type: \(type)")
+            }
         }
     }
 
