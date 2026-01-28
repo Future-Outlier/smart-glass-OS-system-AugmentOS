@@ -32,13 +32,12 @@ import java.util.concurrent.Executors
 class CoreManager {
     companion object {
 
-        @Volatile
-        private var instance: CoreManager? = null
+        @Volatile private var instance: CoreManager? = null
 
         @JvmStatic
         fun getInstance(): CoreManager {
             return instance
-                ?: synchronized(this) { instance ?: CoreManager().also { instance = it } }
+                    ?: synchronized(this) { instance ?: CoreManager().also { instance = it } }
         }
     }
 
@@ -102,15 +101,16 @@ class CoreManager {
     // LC3 Audio Encoding
     // Audio output format enum
     enum class AudioOutputFormat { LC3, PCM }
-
     // Canonical LC3 config: 16kHz sample rate, 10ms frame duration
     // Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps)
     private var lc3EncoderPtr: Long = 0
     private var lc3DecoderPtr: Long = 0
     private var lc3FrameSize = 20 // bytes per LC3 frame (default: 20 = 16kbps)
-
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = AudioOutputFormat.LC3
+
+    // Setting to bypass audio encoding for debugging (send raw PCM instead of LC3)
+    private var bypassAudioEncoding: Boolean = false
 
     // PCM remainder buffer for handling partial LC3 frames
     // LC3 requires 320 bytes (160 samples) per frame - any remainder is saved for next chunk
@@ -121,12 +121,13 @@ class CoreManager {
     private val lc3EncoderLock = Any()
     private val lc3DecoderLock = Any()
 
+
     // mic
     public var useOnboardMic = false
     public var preferredMic = "auto"
     public var micEnabled = false
     private var lastMicState: Triple<Boolean, Boolean, String>? =
-        null // (useGlassesMic, useOnboardMic, preferredMic)
+            null // (useGlassesMic, useOnboardMic, preferredMic)
 
     // button settings
     public var buttonPressMode = "photo"
@@ -160,17 +161,17 @@ class CoreManager {
             val context = Bridge.getContext()
             transcriber = SherpaOnnxTranscriber(context)
             transcriber?.setTranscriptListener(
-                object : SherpaOnnxTranscriber.TranscriptListener {
-                    override fun onPartialResult(text: String, language: String) {
-                        Bridge.log("STT: Partial result: $text")
-                        Bridge.sendLocalTranscription(text, false, language)
-                    }
+                    object : SherpaOnnxTranscriber.TranscriptListener {
+                        override fun onPartialResult(text: String, language: String) {
+                            Bridge.log("STT: Partial result: $text")
+                            Bridge.sendLocalTranscription(text, false, language)
+                        }
 
-                    override fun onFinalResult(text: String, language: String) {
-                        Bridge.log("STT: Final result: $text")
-                        Bridge.sendLocalTranscription(text, true, language)
+                        override fun onFinalResult(text: String, language: String) {
+                            Bridge.log("STT: Final result: $text")
+                            Bridge.sendLocalTranscription(text, true, language)
+                        }
                     }
-                }
             )
             transcriber?.initialize()
             Bridge.log("SherpaOnnxTranscriber fully initialized")
@@ -201,30 +202,30 @@ class CoreManager {
         lastHadMicrophonePermission = checkMicrophonePermission(context)
 
         Bridge.log(
-            "MAN: Initial permissions - BT: $lastHadBluetoothPermission, Mic: $lastHadMicrophonePermission"
+                "MAN: Initial permissions - BT: $lastHadBluetoothPermission, Mic: $lastHadMicrophonePermission"
         )
 
         // Create receiver for package changes (fires when permissions change)
         permissionReceiver =
-            object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    if (intent?.action == Intent.ACTION_PACKAGE_CHANGED &&
-                        intent.data?.schemeSpecificPart == context?.packageName
-                    ) {
+                object : BroadcastReceiver() {
+                    override fun onReceive(context: Context?, intent: Intent?) {
+                        if (intent?.action == Intent.ACTION_PACKAGE_CHANGED &&
+                                        intent.data?.schemeSpecificPart == context?.packageName
+                        ) {
 
-                        Bridge.log("MAN: Package changed, checking permissions...")
-                        checkPermissionChanges()
+                            Bridge.log("MAN: Package changed, checking permissions...")
+                            checkPermissionChanges()
+                        }
                     }
                 }
-            }
 
         // Register the receiver
         try {
             val filter =
-                IntentFilter().apply {
-                    addAction(Intent.ACTION_PACKAGE_CHANGED)
-                    addDataScheme("package")
-                }
+                    IntentFilter().apply {
+                        addAction(Intent.ACTION_PACKAGE_CHANGED)
+                        addDataScheme("package")
+                    }
             context.registerReceiver(permissionReceiver, filter)
             Bridge.log("MAN: Permission monitoring started")
         } catch (e: Exception) {
@@ -237,12 +238,12 @@ class CoreManager {
 
     private fun startPeriodicPermissionCheck() {
         permissionCheckRunnable =
-            object : Runnable {
-                override fun run() {
-                    checkPermissionChanges()
-                    handler.postDelayed(this, 10000) // Check every 10 seconds
+                object : Runnable {
+                    override fun run() {
+                        checkPermissionChanges()
+                        handler.postDelayed(this, 10000) // Check every 10 seconds
+                    }
                 }
-            }
         handler.postDelayed(permissionCheckRunnable!!, 10000)
     }
 
@@ -256,7 +257,7 @@ class CoreManager {
 
         if (currentHasBluetoothPermission != lastHadBluetoothPermission) {
             Bridge.log(
-                "MAN: Bluetooth permission changed: $lastHadBluetoothPermission -> $currentHasBluetoothPermission"
+                    "MAN: Bluetooth permission changed: $lastHadBluetoothPermission -> $currentHasBluetoothPermission"
             )
             lastHadBluetoothPermission = currentHasBluetoothPermission
             permissionsChanged = true
@@ -264,7 +265,7 @@ class CoreManager {
 
         if (currentHasMicrophonePermission != lastHadMicrophonePermission) {
             Bridge.log(
-                "MAN: Microphone permission changed: $lastHadMicrophonePermission -> $currentHasMicrophonePermission"
+                    "MAN: Microphone permission changed: $lastHadMicrophonePermission -> $currentHasMicrophonePermission"
             )
             lastHadMicrophonePermission = currentHasMicrophonePermission
             permissionsChanged = true
@@ -279,8 +280,8 @@ class CoreManager {
     private fun checkBluetoothPermission(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             ContextCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.BLUETOOTH_CONNECT
+                    context,
+                    android.Manifest.permission.BLUETOOTH_CONNECT
             ) == PackageManager.PERMISSION_GRANTED
         } else {
             ContextCompat.checkSelfPermission(context, android.Manifest.permission.BLUETOOTH) ==
@@ -290,8 +291,8 @@ class CoreManager {
 
     private fun checkMicrophonePermission(context: Context): Boolean {
         return ContextCompat.checkSelfPermission(
-            context,
-            android.Manifest.permission.RECORD_AUDIO
+                context,
+                android.Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
     }
 
@@ -346,35 +347,35 @@ class CoreManager {
         // Matching Swift's 4 view states exactly
         viewStates.add(ViewState(" ", " ", " ", "text_wall", "", null, null))
         viewStates.add(
-            ViewState(
-                " ",
-                " ",
-                " ",
-                "text_wall",
-                "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$",
-                null,
-                null
-            )
+                ViewState(
+                        " ",
+                        " ",
+                        " ",
+                        "text_wall",
+                        "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$",
+                        null,
+                        null
+                )
         )
         viewStates.add(ViewState(" ", " ", " ", "text_wall", "", null, null))
         viewStates.add(
-            ViewState(
-                " ",
-                " ",
-                " ",
-                "text_wall",
-                "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$",
-                null,
-                null
-            )
+                ViewState(
+                        " ",
+                        " ",
+                        " ",
+                        "text_wall",
+                        "\$TIME12$ \$DATE$ \$GBATT$ \$CONNECTION_STATUS$",
+                        null,
+                        null
+                )
         )
     }
 
     private fun statesEqual(s1: ViewState, s2: ViewState): Boolean {
         val state1 =
-            "${s1.layoutType}${s1.text}${s1.topText}${s1.bottomText}${s1.title}${s1.data ?: ""}"
+                "${s1.layoutType}${s1.text}${s1.topText}${s1.bottomText}${s1.title}${s1.data ?: ""}"
         val state2 =
-            "${s2.layoutType}${s2.text}${s2.topText}${s2.bottomText}${s2.title}${s2.data ?: ""}"
+                "${s2.layoutType}${s2.text}${s2.topText}${s2.bottomText}${s2.title}${s2.data ?: ""}"
         return state1 == state2
     }
 
@@ -385,13 +386,13 @@ class CoreManager {
     // Inner classes
 
     data class ViewState(
-        var topText: String,
-        var bottomText: String,
-        var title: String,
-        var layoutType: String,
-        var text: String,
-        var data: String?,
-        var animationData: Map<String, Any>?
+            var topText: String,
+            var bottomText: String,
+            var title: String,
+            var layoutType: String,
+            var text: String,
+            var data: String?,
+            var animationData: Map<String, Any>?
     )
     // MARK: - End Unique
 
@@ -408,64 +409,59 @@ class CoreManager {
      * Send audio data to cloud via Bridge.
      * Encodes to LC3 if audioOutputFormat is LC3, otherwise sends raw PCM.
      * All audio destined for cloud should go through this function.
+     *
+     * For LC3 encoding, handles partial frames by buffering remainder for next call.
+     * Uses synchronized block since LC3 encoder is stateful and not thread-safe.
      */
-    // Debug counter for logging
-    private var lc3EncodeCounter = 0
-
     private fun sendMicData(pcmData: ByteArray) {
+        // Check bypass setting - if true, always send raw PCM regardless of format
+        if (bypassAudioEncoding) {
+            Bridge.sendMicData(pcmData)
+            return
+        }
+
         when (audioOutputFormat) {
             AudioOutputFormat.LC3 -> {
-                // Synchronize all LC3 encoder access - encoder is stateful and not thread-safe
-                // This prevents corruption when switching between phone mic and glasses mic
                 synchronized(lc3EncoderLock) {
                     if (lc3EncoderPtr == 0L) {
                         Bridge.log("MAN: ERROR - LC3 encoder not initialized but format is LC3")
                         return
                     }
 
-                    // Prepend any remainder from previous chunk
-                    val prevRemainderSize = pcmRemainder?.size ?: 0
-                    val dataToEncode = if (pcmRemainder != null && pcmRemainder!!.isNotEmpty()) {
+                    // Combine any remainder from previous call with new data
+                    val inputData = if (pcmRemainder != null) {
                         pcmRemainder!! + pcmData
                     } else {
                         pcmData
                     }
 
                     // Calculate how many complete frames we can encode
-                    val completeFrameBytes = (dataToEncode.size / LC3_PCM_FRAME_BYTES) * LC3_PCM_FRAME_BYTES
-                    val remainderBytes = dataToEncode.size % LC3_PCM_FRAME_BYTES
-                    val numFrames = completeFrameBytes / LC3_PCM_FRAME_BYTES
+                    val completeFrames = inputData.size / LC3_PCM_FRAME_BYTES
+                    val bytesToEncode = completeFrames * LC3_PCM_FRAME_BYTES
+                    val remainderBytes = inputData.size - bytesToEncode
 
-                    // Save remainder for next chunk
+                    // Save remainder for next call
                     pcmRemainder = if (remainderBytes > 0) {
-                        dataToEncode.copyOfRange(completeFrameBytes, dataToEncode.size)
+                        inputData.copyOfRange(bytesToEncode, inputData.size)
                     } else {
                         null
                     }
 
-                    // Debug logging every 100 chunks
-                    lc3EncodeCounter++
-                    if (lc3EncodeCounter % 100 == 1) {
-                        Bridge.log("MAN: LC3 encode #$lc3EncodeCounter: input=${pcmData.size}bytes, prevRemainder=$prevRemainderSize, total=${dataToEncode.size}, frames=$numFrames, newRemainder=$remainderBytes")
-                    }
-
-                    // Only encode if we have at least one complete frame
-                    if (completeFrameBytes == 0) {
-                        Bridge.log("MAN: LC3 encode: no complete frames, buffering ${dataToEncode.size} bytes")
+                    // If we don't have enough data for even one frame, just save and return
+                    if (bytesToEncode == 0) {
                         return
                     }
 
-                    // Encode only the complete frames
-                    val framesToEncode = dataToEncode.copyOfRange(0, completeFrameBytes)
-                    val lc3Data = Lc3Cpp.encodeLC3(lc3EncoderPtr, framesToEncode, lc3FrameSize)
+                    // Encode only complete frames
+                    val dataToEncode = inputData.copyOfRange(0, bytesToEncode)
+                    val lc3Data = Lc3Cpp.encodeLC3(lc3EncoderPtr, dataToEncode, lc3FrameSize)
                     if (lc3Data == null || lc3Data.isEmpty()) {
-                        Bridge.log("MAN: ERROR - LC3 encoding returned empty data for $completeFrameBytes bytes ($numFrames frames)")
+                        Bridge.log("MAN: ERROR - LC3 encoding returned empty data")
                         return
                     }
                     Bridge.sendMicData(lc3Data)
                 }
             }
-
             AudioOutputFormat.PCM -> {
                 Bridge.sendMicData(pcmData)
             }
@@ -491,6 +487,7 @@ class CoreManager {
      * Handle raw LC3 audio data from glasses.
      * Decodes the glasses LC3, then passes to handlePcm for canonical LC3 encoding.
      * Note: frameSize here is for glasses→phone decoding, NOT for phone→cloud encoding.
+     * Uses synchronized block since LC3 decoder is stateful and not thread-safe.
      */
     fun handleGlassesMicData(rawLC3Data: ByteArray, frameSize: Int = 40) {
         if (lc3DecoderPtr == 0L) {
@@ -499,9 +496,9 @@ class CoreManager {
         }
 
         try {
-            // Synchronize decoder access - decoder is stateful and not thread-safe
+            // Decode glasses LC3 to PCM (glasses may use different LC3 configs)
+            // Synchronized because decoder is stateful and not thread-safe
             val pcmData = synchronized(lc3DecoderLock) {
-                // Decode glasses LC3 to PCM (glasses may use different LC3 configs)
                 Lc3Cpp.decodeLC3(lc3DecoderPtr, rawLC3Data, frameSize)
             }
             if (pcmData != null && pcmData.isNotEmpty()) {
@@ -540,8 +537,8 @@ class CoreManager {
 
             for (micMode in micRanking) {
                 if (micMode == MicTypes.PHONE_INTERNAL ||
-                    micMode == MicTypes.BT_CLASSIC ||
-                    micMode == MicTypes.BT
+                                micMode == MicTypes.BT_CLASSIC ||
+                                micMode == MicTypes.BT
                 ) {
 
                     if (phoneMic?.isRecordingWithMode(micMode) == true) {
@@ -601,8 +598,8 @@ class CoreManager {
             }
 
             if (micMode == MicTypes.PHONE_INTERNAL ||
-                micMode == MicTypes.BT_CLASSIC ||
-                micMode == MicTypes.BT
+                            micMode == MicTypes.BT_CLASSIC ||
+                            micMode == MicTypes.BT
             ) {
                 phoneMic?.stopMode(micMode)
             }
@@ -668,15 +665,12 @@ class CoreManager {
             "double_text_wall" -> {
                 sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
             }
-
             "reference_card" -> {
                 sgc?.sendTextWall("${currentViewState.title}\n\n${currentViewState.text}")
             }
-
             "bitmap_view" -> {
                 currentViewState.data?.let { data -> sgc?.displayBitmap(data) }
             }
-
             "clear_view" -> sgc?.clearDisplay()
             else -> Bridge.log("MAN: UNHANDLED LAYOUT_TYPE ${currentViewState.layoutType}")
         }
@@ -697,15 +691,15 @@ class CoreManager {
         val currentDate = dateFormat.format(Date())
 
         val placeholders =
-            mapOf(
-                "\$no_datetime$" to formattedDate,
-                "\$DATE$" to currentDate,
-                "\$TIME12$" to time12,
-                "\$TIME24$" to time24,
-                "\$GBATT$" to
-                        (sgc?.batteryLevel?.let { if (it == -1) "" else "$it%" } ?: ""),
-                "\$CONNECTION_STATUS$" to "Connected"
-            )
+                mapOf(
+                        "\$no_datetime$" to formattedDate,
+                        "\$DATE$" to currentDate,
+                        "\$TIME12$" to time12,
+                        "\$TIME24$" to time24,
+                        "\$GBATT$" to
+                                (sgc?.batteryLevel?.let { if (it == -1) "" else "$it%" } ?: ""),
+                        "\$CONNECTION_STATUS$" to "Connected"
+                )
 
         return placeholders.entries.fold(text) { result, (key, value) ->
             result.replace(key, value)
@@ -723,46 +717,39 @@ class CoreManager {
                 Bridge.log("MAN: External app took microphone - marking onboard mic as unavailable")
                 systemMicUnavailable = true
             }
-
             "external_app_stopped", "audio_focus_available" -> {
                 // External app released the microphone
                 Bridge.log(
-                    "MAN: External app released microphone - marking onboard mic as available"
+                        "MAN: External app released microphone - marking onboard mic as available"
                 )
                 systemMicUnavailable = false
             }
-
             "phone_call_interruption" -> {
                 // Phone call started - mark mic as unavailable
                 Bridge.log("MAN: Phone call interruption - marking onboard mic as unavailable")
                 systemMicUnavailable = true
             }
-
             "phone_call_ended" -> {
                 // Phone call ended - mark mic as available again
                 Bridge.log("MAN: Phone call ended - marking onboard mic as available")
                 systemMicUnavailable = false
             }
-
             "phone_call_active" -> {
                 // Tried to start recording while phone call already active
                 Bridge.log("MAN: Phone call already active - marking onboard mic as unavailable")
                 systemMicUnavailable = true
             }
-
             "audio_focus_denied" -> {
                 // Another app has audio focus
                 Bridge.log("MAN: Audio focus denied - marking onboard mic as unavailable")
                 systemMicUnavailable = true
             }
-
             "permission_denied" -> {
                 // Microphone permission not granted
                 Bridge.log("MAN: Microphone permission denied - cannot use phone mic")
                 systemMicUnavailable = true
                 // Don't trigger fallback - need to request permission from user
             }
-
             else -> {
                 // Other route changes (headset plug/unplug, BT connect/disconnect, etc.)
                 // Just log for now - may want to handle these in the future
@@ -795,8 +782,8 @@ class CoreManager {
     fun updatePreferredMic(mic: String) {
         preferredMic = mic
         micRanking =
-            MicMap.map[preferredMic]?.toMutableList()
-                ?: MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
+                MicMap.map[preferredMic]?.toMutableList()
+                        ?: MicMap.map["auto"]?.toMutableList() ?: mutableListOf()
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         getStatus()
     }
@@ -821,8 +808,8 @@ class CoreManager {
 
     fun updateButtonVideoSettings(width: Int, height: Int, fps: Int) {
         Log.d(
-            "CoreManager",
-            "🎥 [SETTINGS_SYNC] updateButtonVideoSettings called: ${width}x${height}@${fps}fps"
+                "CoreManager",
+                "🎥 [SETTINGS_SYNC] updateButtonVideoSettings called: ${width}x${height}@${fps}fps"
         )
         Log.d("CoreManager", "📱 [SETTINGS_SYNC] Connected device model: $defaultWearable")
         buttonVideoWidth = width
@@ -831,8 +818,8 @@ class CoreManager {
         Log.d("CoreManager", "📡 [SETTINGS_SYNC] Sending button video settings to glasses via SGC")
         sgc?.sendButtonVideoRecordingSettings()
         Log.d(
-            "CoreManager",
-            "✅ [SETTINGS_SYNC] Button video settings updated to: ${width}x${height}@${fps}fps"
+                "CoreManager",
+                "✅ [SETTINGS_SYNC] Button video settings updated to: ${width}x${height}@${fps}fps"
         )
         getStatus()
     }
@@ -874,7 +861,7 @@ class CoreManager {
             sgc?.setBrightness(value, autoMode)
             if (autoBrightnessChanged) {
                 sgc?.sendTextWall(
-                    if (autoMode) "Enabled auto brightness" else "Disabled auto brightness"
+                        if (autoMode) "Enabled auto brightness" else "Disabled auto brightness"
                 )
             } else {
                 sgc?.sendTextWall("Set brightness to $value%")
@@ -1235,33 +1222,31 @@ class CoreManager {
         }
 
         vadBuffer.clear()
-        // Clear PCM remainder buffer to avoid stale data when mic source changes
-        pcmRemainder = null
         micEnabled = shouldSendPcmData || shouldSendTranscript
         updateMicState()
     }
 
     fun photoRequest(
-        requestId: String,
-        appId: String,
-        size: String,
-        webhookUrl: String,
-        authToken: String,
-        compress: String,
-        silent: Boolean
+            requestId: String,
+            appId: String,
+            size: String,
+            webhookUrl: String,
+            authToken: String,
+            compress: String,
+            silent: Boolean
     ) {
         Bridge.log("MAN: onPhotoRequest: $requestId, $appId, $size, compress=$compress, silent=$silent")
         sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken, compress, silent)
     }
 
     fun rgbLedControl(
-        requestId: String,
-        packageName: String?,
-        action: String,
-        color: String?,
-        ontime: Int,
-        offtime: Int,
-        count: Int
+            requestId: String,
+            packageName: String?,
+            action: String,
+            color: String?,
+            ontime: Int,
+            offtime: Int,
+            count: Int
     ) {
         Bridge.log("MAN: RGB LED control: action=$action, color=$color, requestId=$requestId")
         sgc?.sendRgbLedControl(requestId, packageName, action, color, ontime, offtime, count)
@@ -1426,19 +1411,19 @@ class CoreManager {
         glassesSettings["button_photo_size"] = buttonPhotoSize
 
         val buttonVideoSettings =
-            mapOf(
-                "width" to buttonVideoWidth,
-                "height" to buttonVideoHeight,
-                "fps" to buttonVideoFps
-            )
+                mapOf(
+                        "width" to buttonVideoWidth,
+                        "height" to buttonVideoHeight,
+                        "fps" to buttonVideoFps
+                )
         glassesSettings["button_video_settings"] = buttonVideoSettings
         glassesSettings["button_max_recording_time"] = buttonMaxRecordingTime
         glassesSettings["button_camera_led"] = buttonCameraLed
 
         val coreInfo =
-            mutableMapOf<String, Any>(
-                "is_searching" to isSearching,
-            )
+                mutableMapOf<String, Any>(
+                    "is_searching" to isSearching,
+                )
 
         sgc?.let {
             coreInfo["glasses_protobuf_version"] = it.glassesProtobufVersion
@@ -1450,13 +1435,13 @@ class CoreManager {
         val authObj = mapOf("core_token_owner" to coreTokenOwner)
 
         val statusObj =
-            mapOf(
-                "glasses_info" to glassesInfo,
-                "glasses_settings" to glassesSettings,
-                "apps" to apps,
-                "core_info" to coreInfo,
-                "auth" to authObj
-            )
+                mapOf(
+                        "glasses_info" to glassesInfo,
+                        "glasses_settings" to glassesSettings,
+                        "apps" to apps,
+                        "core_info" to coreInfo,
+                        "auth" to authObj
+                )
 
         Bridge.sendStatus(statusObj)
     }
@@ -1533,13 +1518,6 @@ class CoreManager {
             }
         }
 
-        (settings["bypass_audio_encoding_for_debugging"] as? Boolean)?.let { bypassEncoding ->
-            val newFormat = if (bypassEncoding) AudioOutputFormat.PCM else AudioOutputFormat.LC3
-            if (audioOutputFormat != newFormat) {
-                updateAudioOutputFormat(newFormat)
-            }
-        }
-
         (settings["enforce_local_transcription"] as? Boolean)?.let { newEnforceLocalTranscription ->
             if (enforceLocalTranscription != newEnforceLocalTranscription) {
                 updateEnforceLocalTranscription(newEnforceLocalTranscription)
@@ -1574,32 +1552,32 @@ class CoreManager {
         // First check for nested object structure (from AsyncStorage)
         val videoSettingsObj = settings["button_video_settings"] as? Map<*, *>
         val newWidth =
-            if (videoSettingsObj != null) {
-                (videoSettingsObj["width"] as? Number)?.toInt() ?: buttonVideoWidth
-            } else {
-                // Fallback to flat key structure (backwards compatibility)
-                (settings["button_video_width"] as? Number)?.toInt() ?: buttonVideoWidth
-            }
+                if (videoSettingsObj != null) {
+                    (videoSettingsObj["width"] as? Number)?.toInt() ?: buttonVideoWidth
+                } else {
+                    // Fallback to flat key structure (backwards compatibility)
+                    (settings["button_video_width"] as? Number)?.toInt() ?: buttonVideoWidth
+                }
         val newHeight =
-            if (videoSettingsObj != null) {
-                (videoSettingsObj["height"] as? Number)?.toInt() ?: buttonVideoHeight
-            } else {
-                (settings["button_video_height"] as? Number)?.toInt() ?: buttonVideoHeight
-            }
+                if (videoSettingsObj != null) {
+                    (videoSettingsObj["height"] as? Number)?.toInt() ?: buttonVideoHeight
+                } else {
+                    (settings["button_video_height"] as? Number)?.toInt() ?: buttonVideoHeight
+                }
         val newFps =
-            if (videoSettingsObj != null) {
-                (videoSettingsObj["fps"] as? Number)?.toInt() ?: buttonVideoFps
-            } else {
-                (settings["button_video_fps"] as? Number)?.toInt() ?: buttonVideoFps
-            }
+                if (videoSettingsObj != null) {
+                    (videoSettingsObj["fps"] as? Number)?.toInt() ?: buttonVideoFps
+                } else {
+                    (settings["button_video_fps"] as? Number)?.toInt() ?: buttonVideoFps
+                }
 
         // Only update if any value actually changed
         if (newWidth != buttonVideoWidth ||
-            newHeight != buttonVideoHeight ||
-            newFps != buttonVideoFps
+                        newHeight != buttonVideoHeight ||
+                        newFps != buttonVideoFps
         ) {
             Bridge.log(
-                "MAN: Updating button video settings: $newWidth x $newHeight @ ${newFps}fps (was: $buttonVideoWidth x $buttonVideoHeight @ ${buttonVideoFps}fps)"
+                    "MAN: Updating button video settings: $newWidth x $newHeight @ ${newFps}fps (was: $buttonVideoWidth x $buttonVideoHeight @ ${buttonVideoFps}fps)"
             )
             updateButtonVideoSettings(newWidth, newHeight, newFps)
         }
