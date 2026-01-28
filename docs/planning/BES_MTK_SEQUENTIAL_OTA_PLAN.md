@@ -1,19 +1,21 @@
-# BES & MTK Sequential Firmware OTA Update Plan
+# BES & MTK Firmware OTA Update Plan
 
 ## Executive Summary
 
-This document outlines the implementation plan for adding sequential firmware patch support for BES and MTK firmwares to the Mentra Live OTA system. Unlike the APK updates which simply install the latest version, BES and MTK firmware patches are **sequential** and must be applied in a specific order from a starting version to an ending version.
+This document outlines the implementation plan for adding firmware update support for BES and MTK firmwares to the Mentra Live OTA system. **MTK firmware requires sequential patches** and must be applied in order from a starting version to an ending version. **BES firmware does not require sequential updates** - it can be installed directly to any newer version without requiring intermediate patches, similar to APK updates.
 
 ## Current State Analysis
 
 ### What We Have
 
 **ASG Client OTA (Working)**
+
 - Location: `asg_client/app/src/main/java/com/mentra/asg_client/io/ota/helpers/OtaHelper.java`
 - Schema: Simple versionCode comparison - if server versionCode > current, download and install
 - Works well because APK can update to any newer version
 
 **BES Firmware OTA (Partially Implemented)**
+
 - Location: `asg_client/app/src/main/java/com/mentra/asg_client/io/bes/BesOtaManager.java`
 - Code for applying patches exists and works
 - Missing: Logic for finding the correct patch based on current version
@@ -22,6 +24,7 @@ This document outlines the implementation plan for adding sequential firmware pa
 - **Solution Needed**: Query BES version on startup before checking for updates
 
 **MTK Firmware OTA (Partially Implemented)**
+
 - Location: `asg_client/app/src/main/java/com/mentra/asg_client/io/ota/helpers/OtaHelper.java` (checkAndUpdateMtkFirmware method)
 - Code for applying patches exists via `SysControl.installOTA(context, path)`
 - Missing: Logic for finding the correct patch based on current version
@@ -29,6 +32,7 @@ This document outlines the implementation plan for adding sequential firmware pa
 - Format: `YYYYMMDD` (e.g., "20241130")
 
 **Current live_version.json Schema**
+
 ```json
 {
   "versionCode": 28,
@@ -38,19 +42,23 @@ This document outlines the implementation plan for adding sequential firmware pa
 ```
 
 **Extended Schema in Code (Never Deployed - Will Be Removed)**
+
 ```json
 {
   "mtk_firmware": { ... },
   "bes_firmware": { ... }
 }
 ```
+
 This schema was added to the code but never deployed to production. We're replacing it with the patches array approach below.
 
 ## Problem Statement
 
-1. **Sequential Patch Requirement**: BES and MTK patches are designed to update from version A to version B. You cannot skip intermediate versions.
+1. **Sequential Patch Requirement for MTK**: MTK patches must be applied sequentially from version A to version B. You cannot skip intermediate versions. **BES firmware does not require sequential patches** - it can be updated directly to any newer version, similar to APK updates.
 
-2. **Patch Selection Logic**: Need to match current device version with the correct patch that has `start_version == current_version`.
+2. **Update Selection Logic**:
+   - **MTK**: Must match current device version with the correct patch where `start_version == current_version`
+   - **BES**: Simple version comparison - if server version > current version, install it directly
 
 3. **Update Order**: If both MTK and BES updates are available:
    - MTK installs but only applies after reboot
@@ -91,40 +99,39 @@ This schema was added to the code but never deployed to production. We're replac
       "url": "https://ota.mentraglass.com/mtk/20250115_to_20250125.zip"
     }
   ],
-  "bes_patches": [
-    {
-      "start_firmware": "17.26.1.14",
-      "end_firmware": "17.27.0.0",
-      "url": "https://ota.mentraglass.com/bes/17.26.1.14_to_17.27.0.0.bin"
-    },
-    {
-      "start_firmware": "17.27.0.0",
-      "end_firmware": "17.28.0.0",
-      "url": "https://ota.mentraglass.com/bes/17.27.0.0_to_17.28.0.0.bin"
-    }
-  ]
+  "bes_firmware": {
+    "version": "17.28.0.0",
+    "url": "https://ota.mentraglass.com/bes/17.28.0.0.bin"
+  }
 }
 ```
 
 ### Schema Design Decisions
 
-1. **Array Format**: Using arrays for patches because:
+1. **MTK: Array Format for Sequential Patches**:
+   - MTK requires sequential updates - must follow step-by-step upgrade path
    - Easy to iterate and find matching `start_firmware` version
    - Allows multiple patches to be available simultaneously
-   - Clear ordering for future multi-step upgrade paths
+   - Clear ordering for multi-step upgrade paths
 
-2. **Minimal Patch Fields**: Only `start_firmware`, `end_firmware`, and `url` required
-   - No SHA256 or fileSize needed for firmware patches
+2. **BES: Simple Object Format (Like APK)**:
+   - BES does not require sequential updates - can jump directly to any version
+   - Simple `version` + `url` format, just like APK updates
+   - Version comparison: if server version > current, download and install
+
+3. **Minimal Fields**:
+   - MTK patches: `start_firmware`, `end_firmware`, `url`
+   - BES firmware: `version`, `url`
+   - No SHA256 or fileSize needed for firmware updates
    - Keeps schema simple and easy to maintain
 
-3. **Version String Format**:
+4. **Version String Format**:
    - MTK: `YYYYMMDD` format (existing format from `ro.custom.ota.version`)
    - BES: `major.minor.patch.build` format (e.g., "17.26.1.14" - from `hs_syvr` at boot)
 
-4. **Backward Compatibility**:
+5. **Backward Compatibility**:
    - Support current flat schema: `{ "versionCode": 28, "apkUrl": "...", "sha256": "..." }`
    - New `apps` object takes precedence if present
-   - Old `mtk_firmware`/`bes_firmware` objects will be removed from code (never deployed)
 
 ## Implementation Plan
 
@@ -132,15 +139,17 @@ This schema was added to the code but never deployed to production. We're replac
 
 #### 1.1 BES Version & MAC - Explicit Query on Startup
 
-**Problem**: The BES chip is *supposed* to automatically send `hs_syvr` at boot with version and MAC addresses. However, the firmware stack is unreliable - sometimes the response arrives too late or not at all. When `sendVersionInfo()` is called (after phone connects), the cached values are often empty.
+**Problem**: The BES chip is _supposed_ to automatically send `hs_syvr` at boot with version and MAC addresses. However, the firmware stack is unreliable - sometimes the response arrives too late or not at all. When `sendVersionInfo()` is called (after phone connects), the cached values are often empty.
 
 **Solution**: Explicitly query `sh_syvr` at startup in `K900HardwareManager` and cache the response. This ensures values are populated before the phone ever connects.
 
 **The sh_syvr / hs_syvr Protocol:**
+
 - **Request**: `{"C":"sh_syvr","V":1,"B":""}` (send system version request)
 - **Response**: `{"C":"hs_syvr","B":{"version":"17.26.1.14","ble":"Mentra_Live_D627","bt":"Mentra_Live_D627","btaddr":"2c:ba:ca:25:d6:27","bleaddr":"2c:ba:ca:25:d6:27"}}`
 
 **Response fields:**
+
 - `version`: BES/MCU firmware version (e.g., `17.26.1.14`)
 - `btaddr`: Bluetooth MAC address (e.g., `2c:ba:ca:25:d6:27`)
 - `bleaddr`: BLE MAC address (usually same as btaddr)
@@ -180,12 +189,14 @@ private void requestSystemVersion() {
 ```
 
 **Timing:**
+
 1. Glasses boot → ASG Client starts → `K900HardwareManager.initialize()` → sends `sh_syvr`
 2. BES responds with `hs_syvr` (~50ms) → `K900CommandHandler.handleSystemVersionReport()` caches values
 3. Phone connects later (seconds/minutes after boot) → sends `phone_ready`
 4. Glasses send `glasses_ready` + version info chunks → values are now populated
 
 **Cached values** (in AsgSettings):
+
 - `mcuFirmwareVersion`: "17.26.1.14" (naming is legacy, but it's the BES version)
 - `btMacAddress`: "2c:ba:ca:25:d6:27"
 
@@ -194,11 +205,13 @@ private void requestSystemVersion() {
 #### 1.2 MTK Version - NEEDS TO BE SENT TO PHONE
 
 **Current Implementation**: `SysControl.getSystemCurrentVersion(context)`
+
 - Reads `ro.custom.ota.version` system property
 - Returns `YYYYMMDD` format string (e.g., "20241130")
 - Already called in `checkAndUpdateMtkFirmware()`
 
 **Problem**: MTK version is NOT currently sent to the phone. For full mobile app integration, the phone needs to know the MTK version to:
+
 1. Determine if an MTK patch is available
 2. Show the user what will be updated
 
@@ -206,14 +219,15 @@ private void requestSystemVersion() {
 
 #### 1.3 Version Summary
 
-| Version | Source | Field Name | Sent in |
-|---------|--------|------------|---------|
+| Version      | Source                                                              | Field Name       | Sent in          |
+| ------------ | ------------------------------------------------------------------- | ---------------- | ---------------- |
 | MCU FW (BES) | `sh_syvr` query → `hs_syvr` → `AsgSettings.getMcuFirmwareVersion()` | `mcu_fw_version` | `version_info_3` |
-| SoC FW (MTK) | `ro.custom.ota.version` → `SysControl.getSystemCurrentVersion()` | `soc_fw_version` | `version_info_3` |
-| BT MAC | `sh_syvr` query → `hs_syvr` → cached | `bt_mac_address` | `version_info_3` |
-| APK Build | Package manager | `build_number` | `version_info_1` |
+| SoC FW (MTK) | `ro.custom.ota.version` → `SysControl.getSystemCurrentVersion()`    | `soc_fw_version` | `version_info_3` |
+| BT MAC       | `sh_syvr` query → `hs_syvr` → cached                                | `bt_mac_address` | `version_info_3` |
+| APK Build    | Package manager                                                     | `build_number`   | `version_info_1` |
 
 **Field naming convention:**
+
 - `mcu_fw_version`: BES chip firmware (the MCU/Bluetooth controller)
 - `soc_fw_version`: MTK SoC firmware (the applications processor)
 - These names generalize beyond Mentra Live specific chip names
@@ -225,22 +239,25 @@ private void requestSystemVersion() {
 **File**: `asg_client/app/src/main/java/com/mentra/asg_client/io/ota/helpers/OtaHelper.java`
 
 **Changes:**
-1. Add method `findMatchingMtkPatch(JSONArray patches, String currentVersion)`
-2. Add method `findMatchingBesPatch(JSONArray patches, String currentVersion)`
-3. Update `processAppsSequentially()` to check for `mtk_patches` and `bes_patches` arrays
-4. Remove old `mtk_firmware`/`bes_firmware` object handling (never deployed, not needed)
+
+1. Add method `findMatchingMtkPatch(JSONArray patches, String currentVersion)` - MTK requires sequential patches
+2. Add method `checkBesUpdate(JSONObject besFirmware, String currentVersion)` - BES allows direct version updates
+3. Update `processAppsSequentially()` to check for `mtk_patches` and `bes_firmware`
+4. Remove old `mtk_firmware`/`bes_firmware` array handling (never deployed, not needed)
 
 **Pseudo-code:**
+
 ```java
 /**
- * Find a firmware patch matching the current version.
+ * Find MTK firmware patch matching the current version.
+ * MTK requires sequential updates - must find patch starting from current version.
  * @param patches Array of patch objects with start_firmware, end_firmware, url
- * @param currentVersion Current firmware version string (e.g., "20241130" for MTK, "17.26.1.14" for BES)
+ * @param currentVersion Current MTK firmware version string (e.g., "20241130")
  * @return Matching patch object, or null if no match or version unknown
  */
-private JSONObject findMatchingPatch(JSONArray patches, String currentVersion) {
+private JSONObject findMatchingMtkPatch(JSONArray patches, String currentVersion) {
     if (currentVersion == null || currentVersion.isEmpty()) {
-        Log.w(TAG, "Cannot match patch - current version unknown");
+        Log.w(TAG, "Cannot match MTK patch - current version unknown");
         return null;
     }
     for (int i = 0; i < patches.length(); i++) {
@@ -252,9 +269,26 @@ private JSONObject findMatchingPatch(JSONArray patches, String currentVersion) {
     return null; // No patch available for this version
 }
 
+/**
+ * Check if BES firmware update is available.
+ * BES does not require sequential updates - can install any newer version directly.
+ * @param besFirmware Object with version and url
+ * @param currentVersion Current BES version string (e.g., "17.26.1.14")
+ * @return true if server version > current version
+ */
+private boolean checkBesUpdate(JSONObject besFirmware, String currentVersion) {
+    if (currentVersion == null || currentVersion.isEmpty()) {
+        Log.w(TAG, "Cannot check BES update - current version unknown");
+        return false;
+    }
+    String serverVersion = besFirmware.getString("version");
+    // Simple version string comparison - if server > current, update available
+    return compareVersions(serverVersion, currentVersion) > 0;
+}
+
 // Usage:
-// MTK: findMatchingPatch(mtkPatches, SysControl.getSystemCurrentVersion(context))
-// BES: findMatchingPatch(besPatches, AsgSettings.getMcuFirmwareVersion())
+// MTK: findMatchingMtkPatch(mtkPatches, SysControl.getSystemCurrentVersion(context))
+// BES: checkBesUpdate(besFirmware, AsgSettings.getMcuFirmwareVersion())
 ```
 
 ### Phase 3: Update Priority Logic
@@ -262,6 +296,7 @@ private JSONObject findMatchingPatch(JSONArray patches, String currentVersion) {
 #### 3.1 Correct Order: MTK First, Then BES
 
 **Current Code** (OtaHelper.java line 569-574):
+
 ```java
 // PHASE 3: Update BES firmware (only if no APK update and no MTK update)
 else if (!apkUpdateNeeded && !mtkUpdateStarted && rootJson.has("bes_firmware")) {
@@ -273,6 +308,7 @@ else if (!apkUpdateNeeded && !mtkUpdateStarted && rootJson.has("bes_firmware")) 
 **Problem**: This skips BES if MTK was started, but we need to apply BOTH if available.
 
 **Solution**: Change logic to:
+
 1. Check for MTK patch first
 2. Check for BES patch second
 3. If BOTH are available:
@@ -281,37 +317,38 @@ else if (!apkUpdateNeeded && !mtkUpdateStarted && rootJson.has("bes_firmware")) 
    - MTK update applies during reboot
 
 **Updated Logic:**
+
 ```java
 // PHASE 2 & 3: Firmware updates (MTK first, then BES)
 if (!apkUpdateNeeded) {
     JSONObject mtkPatch = null;
-    JSONObject besPatch = null;
+    boolean besUpdateAvailable = false;
 
-    // Find matching MTK patch
+    // Find matching MTK patch (MTK requires sequential updates)
     if (rootJson.has("mtk_patches")) {
         String currentMtkVersion = SysControl.getSystemCurrentVersion(context);
         mtkPatch = findMatchingMtkPatch(rootJson.getJSONArray("mtk_patches"), currentMtkVersion);
     }
 
-    // Find matching BES patch
+    // Check BES firmware (BES does not require sequential updates)
     // BES version comes from hs_syvr at boot, cached in AsgSettings
-    if (rootJson.has("bes_patches")) {
+    if (rootJson.has("bes_firmware")) {
         String currentBesVersion = AsgSettings.getMcuFirmwareVersion(); // e.g., "17.26.1.14"
-        besPatch = findMatchingBesPatch(rootJson.getJSONArray("bes_patches"), currentBesVersion);
+        besUpdateAvailable = checkBesUpdate(rootJson.getJSONObject("bes_firmware"), currentBesVersion);
     }
 
     // Apply updates in correct order
-    if (mtkPatch != null && besPatch != null) {
+    if (mtkPatch != null && besUpdateAvailable) {
         // Both available - MTK stages, BES applies and triggers reboot
-        Log.i(TAG, "Both MTK and BES patches available - applying MTK first, then BES");
-        downloadAndStageMtkFirmware(mtkPatch, context); // Downloads, stages, does NOT reboot
-        checkAndUpdateBesFirmware(besPatch, context);   // Downloads, applies, triggers reboot
+        Log.i(TAG, "Both MTK and BES updates available - applying MTK first, then BES");
+        downloadAndStageMtkFirmware(mtkPatch, context);           // Downloads, stages, does NOT reboot
+        checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context); // Downloads, applies, triggers reboot
     } else if (mtkPatch != null) {
         // Only MTK - apply normally (stages, needs reboot)
         checkAndUpdateMtkFirmware(mtkPatch, context);
-    } else if (besPatch != null) {
+    } else if (besUpdateAvailable) {
         // Only BES - apply normally (triggers reboot)
-        checkAndUpdateBesFirmware(besPatch, context);
+        checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context);
     }
 }
 ```
@@ -344,9 +381,12 @@ The mobile app currently handles OTA as follows:
 Currently only checks `versionCode` for APK. Need to also check for firmware patches.
 
 **Approach: Full Integration**
-- Mobile app parses `mtk_patches` and `bes_patches` arrays
+
+- Mobile app parses `mtk_patches` array and `bes_firmware` object
 - Mobile app receives current MTK/BES versions from glasses (via core_status)
-- Mobile app determines which patches are applicable
+- Mobile app determines which updates are applicable:
+  - **MTK**: Find patch where `start_firmware == current_version` (MTK requires sequential updates)
+  - **BES**: Simple version comparison - if server version > current, update available (BES does not require sequential updates)
 - Mobile app shows user exactly what will be updated (APK, MTK, BES)
 - No half measures.
 
@@ -355,6 +395,7 @@ Currently only checks `versionCode` for APK. Need to also check for firmware pat
 The current version_info chunking is brittle - hardcoded chunk expectations, waiting for specific chunks before processing. We should refactor to be flexible and future-proof.
 
 **Current Problems:**
+
 1. SGC waits for `version_info_1` + `version_info_2` before sending anything to RN
 2. Hardcoded field expectations in SGC and Bridge
 3. Adding new fields requires changes at multiple layers
@@ -363,8 +404,9 @@ The current version_info chunking is brittle - hardcoded chunk expectations, wai
 **Solution: Flexible Parsing with Immediate Updates**
 
 **Key Discovery**: The RN store already supports partial updates:
+
 ```typescript
-setGlassesInfo: info => set(state => ({...state, ...info}))
+setGlassesInfo: (info) => set((state) => ({...state, ...info}))
 ```
 
 This means we can send fields 1-by-1 as they arrive, and RN accumulates them automatically.
@@ -382,6 +424,7 @@ This means we can send fields 1-by-1 as they arrive, and RN accumulates them aut
    - No waiting, no merging, no hardcoded field expectations
 
 3. **Bridge**: Accept generic map instead of hardcoded params
+
    ```kotlin
    // OLD: sendVersionInfo(appVersion, buildNumber, deviceModel, ...)
    // NEW: sendVersionInfo(fields: Map<String, Any>)
@@ -394,6 +437,7 @@ This means we can send fields 1-by-1 as they arrive, and RN accumulates them aut
    - `setGlassesInfo({...state, ...info})` merges partial updates
 
 **SGC Implementation (MentraLive.java):**
+
 ```java
 // Instead of separate cases for version_info_1, version_info_2, etc:
 default:
@@ -432,12 +476,14 @@ version_info_3: mcu_fw_version, soc_fw_version, bt_mac_address            (hardw
 Or even send each field separately if needed - the phone handles it.
 
 **Benefits:**
+
 - Future-proof: Add new fields on glasses, phone automatically receives them
 - No more MTU issues: Split chunks as small as needed
 - Simpler code: No chunk waiting/merging logic in SGC
 - Backwards compatible: Old glasses still work (just send fewer fields)
 
 **GlassesInfo Interface Update:**
+
 ```typescript
 interface GlassesInfo {
   // Existing fields
@@ -448,19 +494,21 @@ interface GlassesInfo {
   otaVersionUrl?: string
   btMacAddress?: string
   // New generalized firmware version fields
-  mcuFwVersion?: string   // MCU/BES firmware version (e.g., "17.26.1.14")
-  socFwVersion?: string   // SoC/MTK firmware version (e.g., "20241130")
+  mcuFwVersion?: string // MCU/BES firmware version (e.g., "17.26.1.14")
+  socFwVersion?: string // SoC/MTK firmware version (e.g., "20241130")
   // Legacy field (keep for backwards compat with old glasses)
-  fwVersion?: string      // Old name for MCU firmware version
+  fwVersion?: string // Old name for MCU firmware version
 }
 ```
 
 **Field Mapping (glasses → phone):**
+
 - `mcu_fw_version` → `mcuFwVersion`
 - `soc_fw_version` → `socFwVersion`
 - `firmware_version` → `fwVersion` (legacy, from old glasses)
 
 **Backwards Compatibility:**
+
 - New phone + old glasses: Works - receives `firmware_version`, maps to `fwVersion`
 - Old phone + new glasses: Works - old phone ignores unknown fields like `mcu_fw_version`
 - New phone + new glasses: Uses `mcuFwVersion` and `socFwVersion` for OTA patch matching
@@ -468,28 +516,37 @@ interface GlassesInfo {
 **4.3 Update `OtaUpdateChecker.tsx` to Parse Patches**
 
 ```typescript
-interface FirmwarePatch {
+interface MtkPatch {
   start_firmware: string
   end_firmware: string
   url: string
 }
 
+interface BesFirmware {
+  version: string
+  url: string
+}
+
 interface VersionJson {
-  apps?: { [packageName: string]: VersionInfo }
-  mtk_patches?: FirmwarePatch[]
-  bes_patches?: FirmwarePatch[]
+  apps?: {[packageName: string]: VersionInfo}
+  mtk_patches?: MtkPatch[]
+  bes_firmware?: BesFirmware
   // Legacy flat format
   versionCode?: number
   apkUrl?: string
   sha256?: string
 }
 
-function findMatchingPatch(
-  patches: FirmwarePatch[] | undefined,
-  currentVersion: string
-): FirmwarePatch | null {
+function findMatchingMtkPatch(patches: MtkPatch[] | undefined, currentVersion: string): MtkPatch | null {
   if (!patches || !currentVersion) return null
-  return patches.find(p => p.start_firmware === currentVersion) || null
+  // MTK requires sequential updates - find the patch that starts from current version
+  return patches.find((p) => p.start_firmware === currentVersion) || null
+}
+
+function checkBesUpdate(besFirmware: BesFirmware | undefined, currentVersion: string): boolean {
+  if (!besFirmware || !currentVersion) return false
+  // BES does not require sequential updates - can install any newer version directly
+  return compareVersions(besFirmware.version, currentVersion) > 0
 }
 
 // Called with values from GlassesInfo store:
@@ -498,19 +555,19 @@ function findMatchingPatch(
 export async function checkForOtaUpdate(
   otaVersionUrl: string,
   currentBuildNumber: string,
-  currentSocVersion: string,   // MTK/SoC firmware version
-  currentMcuVersion: string,   // BES/MCU firmware version
+  currentSocVersion: string, // MTK/SoC firmware version
+  currentMcuVersion: string, // BES/MCU firmware version
 ): Promise<OtaUpdateAvailable> {
   const versionJson = await fetchVersionInfo(otaVersionUrl)
 
   const apkUpdateAvailable = checkVersionUpdateAvailable(currentBuildNumber, versionJson)
-  const mtkPatch = findMatchingPatch(versionJson?.mtk_patches, currentSocVersion)
-  const besPatch = findMatchingPatch(versionJson?.bes_patches, currentMcuVersion)
+  const mtkPatch = findMatchingMtkPatch(versionJson?.mtk_patches, currentSocVersion)
+  const besUpdateAvailable = checkBesUpdate(versionJson?.bes_firmware, currentMcuVersion)
 
   const updates: string[] = []
   if (apkUpdateAvailable) updates.push("apk")
   if (mtkPatch) updates.push("mtk")
-  if (besPatch) updates.push("bes")
+  if (besUpdateAvailable) updates.push("bes")
 
   return {
     hasCheckCompleted: true,
@@ -518,7 +575,7 @@ export async function checkForOtaUpdate(
     updates: updates,
     latestVersionInfo: getLatestVersionInfo(versionJson),
     mtkPatch: mtkPatch,
-    besPatch: besPatch,
+    besVersion: versionJson?.bes_firmware?.version,
   }
 }
 ```
@@ -542,20 +599,22 @@ export interface OtaUpdateInfo {
   available: boolean
   versionCode: number
   versionName: string
-  updates: string[]  // ["apk", "mtk", "bes"]
+  updates: string[] // ["apk", "mtk", "bes"]
   totalSize: number
-  // New fields for firmware patches
-  mtkPatch: { start: string, end: string, url: string } | null
-  besPatch: { start: string, end: string, url: string } | null
+  // New fields for firmware updates
+  mtkPatch: {start: string; end: string; url: string} | null // MTK requires sequential patches
+  besVersion: string | null // BES does not require sequential updates - direct version number
 }
 ```
 
 **4.6 Progress Screen Updates** (`mobile/src/app/ota/progress.tsx`)
 
 Current progress screen tracks:
+
 - `starting` → `downloading` → `installing` → `completed`
 
 **Enhanced states to show what's being updated:**
+
 ```typescript
 type UpdateComponent = "apk" | "mtk" | "bes"
 
@@ -578,6 +637,7 @@ if (progressState === "downloading") {
 ```
 
 **Update `OtaProgress` type:**
+
 ```typescript
 export interface OtaProgress {
   stage: OtaStage
@@ -585,7 +645,7 @@ export interface OtaProgress {
   progress: number
   bytesDownloaded: number
   totalBytes: number
-  currentUpdate: "apk" | "mtk" | "bes"  // Which component is being updated
+  currentUpdate: "apk" | "mtk" | "bes" // Which component is being updated
   errorMessage?: string
 }
 ```
@@ -628,12 +688,13 @@ Glasses send progress via `CommunicationManager.sendOtaProgress()`:
 **Location**: `asg_client/ota_website/live_version.json`
 
 **Tasks:**
-1. Update JSON schema to include `mtk_patches` and `bes_patches` arrays
+
+1. Update JSON schema to include `mtk_patches` array and `bes_firmware` object
 2. Host firmware files on CDN/storage
-3. Add CI/CD to generate SHA256 hashes
+3. Add CI/CD to generate SHA256 hashes (optional)
 4. Version control for firmware binaries
 
-#### 5.2 Naming Convention for Patch Files
+#### 5.2 Naming Convention for Firmware Files
 
 ```
 /ota.mentraglass.com/
@@ -641,12 +702,13 @@ Glasses send progress via `CommunicationManager.sendOtaProgress()`:
 ├── apk/
 │   └── asg-client-29.apk
 ├── mtk/
-│   ├── 20241130_to_20250115.zip
+│   ├── 20241130_to_20250115.zip  (sequential patches)
 │   └── 20250115_to_20250125.zip
 └── bes/
-    ├── 17.26.1.14_to_17.27.0.0.bin
-    └── 17.27.0.0_to_17.28.0.0.bin
+    └── 17.28.0.0.bin  (direct version, not sequential)
 ```
+
+**Note**: BES firmware files are named by version, not as patches, since BES does not require sequential updates.
 
 ## Open Questions
 
@@ -658,7 +720,7 @@ Glasses send progress via `CommunicationManager.sendOtaProgress()`:
    - Cached via `AsgSettings.setMcuFirmwareVersion()`
    - Will be sent to phone as `mcu_fw_version` in `version_info_3`
    - Format: `major.minor.patch.build` (e.g., `17.26.1.14`)
-   - Note: BES is *supposed* to auto-send this at boot, but firmware stack is unreliable - explicit query is best practice
+   - Note: BES is _supposed_ to auto-send this at boot, but firmware stack is unreliable - explicit query is best practice
 
 ### Remaining Questions for Mr. Liu
 
@@ -695,33 +757,39 @@ Glasses send progress via `CommunicationManager.sendOtaProgress()`:
 ## Risk Assessment
 
 ### High Risk
+
 - ~~**BES version query failure**~~ → RESOLVED: BES version auto-reported via `hs_syvr` at boot
 - **Patch mismatch**: Applying wrong patch could brick device
 - **MTU issues**: `version_info_2` may already be hitting BLE MTU limits (BES MAC not showing on phone)
 
 ### Medium Risk
+
 - **Network failures during dual update**: If MTK succeeds but BES fails
 - **Reboot timing**: Ensuring correct order of MTK staging and BES application
 - **Backwards compatibility**: New phone + old glasses must gracefully handle missing `version_info_3`
 
 ### Low Risk
+
 - **Schema backward compatibility**: Old `live_version.json` format still supported
 - **Phone app notification changes**: Additive changes only
 
 ## Testing Plan
 
 ### Unit Tests
+
 1. Schema parsing with new `mtk_patches`/`bes_patches` arrays
 2. Version matching logic for both MTK and BES
 3. Correct update order when both available
 
 ### Integration Tests
+
 1. BES version query on startup
 2. MTK version retrieval
 3. Download and verification of patch files
 4. Full OTA flow with mock server
 
 ### Device Tests (Mentra Live)
+
 1. Single MTK patch application
 2. Single BES patch application
 3. Combined MTK + BES patch application
@@ -729,17 +797,18 @@ Glasses send progress via `CommunicationManager.sendOtaProgress()`:
 
 ## Implementation Phases
 
-| Phase | Description | Complexity | Notes |
-|-------|-------------|------------|-------|
-| Phase 1 | Version retrieval | Low | BES already available! Only need to send MTK version via `version_info_3` |
-| Phase 2 | Schema parsing updates (glasses) | Medium | Add `findMatchingMtkPatch()` and `findMatchingBesPatch()` |
-| Phase 3 | Update priority logic (glasses) | Medium | MTK first, then BES (triggers reboot) |
-| Phase 4 | Mobile app integration | Medium | Parse patches, receive `version_info_3`, show what's updating |
-| Phase 5 | Server infrastructure | Low | Update `live_version.json` schema, host patch files |
+| Phase   | Description                      | Complexity | Notes                                                                     |
+| ------- | -------------------------------- | ---------- | ------------------------------------------------------------------------- |
+| Phase 1 | Version retrieval                | Low        | BES already available! Only need to send MTK version via `version_info_3` |
+| Phase 2 | Schema parsing updates (glasses) | Medium     | Add `findMatchingMtkPatch()` and `findMatchingBesPatch()`                 |
+| Phase 3 | Update priority logic (glasses)  | Medium     | MTK first, then BES (triggers reboot)                                     |
+| Phase 4 | Mobile app integration           | Medium     | Parse patches, receive `version_info_3`, show what's updating             |
+| Phase 5 | Server infrastructure            | Low        | Update `live_version.json` schema, host patch files                       |
 
 ## Files to Modify
 
 ### ASG Client (Glasses) - Primary Files
+
 1. `asg_client/app/src/main/java/com/mentra/asg_client/io/hardware/managers/K900HardwareManager.java` - send `sh_syvr` on init to query BES version + MAC
 2. `asg_client/app/src/main/java/com/mentra/asg_client/service/core/handlers/K900CommandHandler.java` - ensure `handleSystemVersionReport()` caches values properly
 3. `asg_client/app/src/main/java/com/mentra/asg_client/service/core/AsgClientService.java` - restructure version_info chunks (v2 = URL only, v3 = firmware info)
@@ -747,26 +816,31 @@ Glasses send progress via `CommunicationManager.sendOtaProgress()`:
 5. `asg_client/ota_website/live_version.json` - new schema with `mtk_patches` and `bes_patches` arrays
 
 ### Mobile App - RN Layer
+
 1. `mobile/src/effects/OtaUpdateChecker.tsx` - parse patches arrays, match versions using `mcuFwVersion`/`socFwVersion`
 2. `mobile/src/stores/glasses.ts` - add `mcuFwVersion`, `socFwVersion` fields, update OtaProgress type
 3. `mobile/src/app/ota/progress.tsx` - show current_update component name
 4. `mobile/src/bridge/MantleBridge.tsx` - add field mapping for new `mcu_fw_version` → `mcuFwVersion`, `soc_fw_version` → `socFwVersion`
 
 ### Mobile App - Native Bridge (flexible version_info parsing)
+
 5. `mobile/modules/core/android/src/main/java/com/mentra/core/sgcs/MentraLive.java` - refactor to flexible `version_info*` parsing (no more chunk waiting)
 6. `mobile/modules/core/android/src/main/java/com/mentra/core/Bridge.kt` - change `sendVersionInfo()` to accept generic `Map<String, Any>` instead of hardcoded params
 7. `mobile/modules/core/ios/Source/sgcs/MentraLive.swift` - refactor to flexible `version_info*` parsing (no more chunk waiting)
 8. `mobile/modules/core/ios/Source/Bridge.swift` - change `emitVersionInfo()` to accept generic `[String: Any]` dictionary instead of hardcoded params
 
 ### Secondary Files
+
 1. `asg_client/app/src/main/java/com/mentra/asg_client/io/ota/utils/OtaConstants.java` (if new constants needed)
 2. `asg_client/app/src/main/java/com/mentra/asg_client/service/communication/managers/CommunicationManager.java` - update sendOtaProgress to include current_update
 
 ### Documentation
+
 1. `asg_client/agents/BES_OTA_README.md` (update schema examples)
 2. `asg_client/app/src/main/java/com/mentra/asg_client/io/ota/README.md`
 
 ### Files NOT Needing Changes
+
 - `BesOtaManager.java` - BES version comes from `hs_syvr`, not from OTA protocol query
 
 ## Complete OTA Flow (After Implementation)
@@ -782,16 +856,18 @@ Glasses send progress via `CommunicationManager.sendOtaProgress()`:
 7. **Glasses receive `ota_start`** and begin OTA check:
    - Parse `live_version.json`
    - Check APK: server versionCode 29 > current 28 → APK update needed
-   - Check MTK: find patch where `start_firmware` == current MTK version → MTK patch found
-   - Check BES: query BES version, find patch where `start_firmware` == current BES version → BES patch found
+   - Check MTK: find patch where `start_firmware` == current MTK version → MTK patch found (MTK requires sequential updates)
+   - Check BES: compare server version with current BES version → BES update available if server > current (BES does not require sequential updates)
 8. **Glasses send `ota_update_available`** to phone:
    ```json
    {"type": "ota_update_available", "updates": ["apk", "mtk", "bes"]}
    ```
 9. **Glasses execute updates in order**:
    - Download and install APK (glasses restart with new ASG Client)
-   - After restart, check again: APK up-to-date, MTK and BES patches still pending
+   - After restart, check again: APK up-to-date, MTK and BES updates still pending
+   - Find matching MTK patch (MTK requires sequential updates - must start from current version)
    - Download and stage MTK firmware (does NOT reboot yet)
+   - Check BES version (BES allows direct updates - if server > current, install it)
    - Download and apply BES firmware (triggers device reboot)
    - MTK update applies during that reboot
 10. **Glasses reconnect** with new build number
@@ -800,10 +876,12 @@ Glasses send progress via `CommunicationManager.sendOtaProgress()`:
 ### Key Insight: Multi-Reboot Process
 
 The full update process may involve multiple reboots:
+
 1. APK install → app restart
 2. BES install → device reboot (MTK applies here too)
 
 The mobile app handles this via:
+
 - Not failing on disconnect during "installing" state
 - Watching for `buildNumber` increase to detect success
 - Glasses reconnect automatically after reboot
@@ -812,7 +890,8 @@ The mobile app handles this via:
 
 ### Key Change: Explicit BES Version Query
 
-The BES chip is *supposed* to auto-send `hs_syvr` at boot, but the firmware stack is unreliable. We explicitly query it:
+The BES chip is _supposed_ to auto-send `hs_syvr` at boot, but the firmware stack is unreliable. We explicitly query it:
+
 - **Query**: Send `sh_syvr` in `K900HardwareManager.initialize()` at ASG Client startup
 - **Response**: BES responds with `hs_syvr` containing version + MAC (~50ms)
 - **Cached at**: `AsgSettings.getMcuFirmwareVersion()`
@@ -822,33 +901,30 @@ The BES chip is *supposed* to auto-send `hs_syvr` at boot, but the firmware stac
 ### What Needs to Change
 
 **Server/Schema (`live_version.json`)**:
-1. Add `mtk_patches` array with `start_firmware`, `end_firmware`, `url` objects
-2. Add `bes_patches` array with `start_firmware`, `end_firmware`, `url` objects
+
+1. Add `mtk_patches` array with `start_firmware`, `end_firmware`, `url` objects (sequential)
+2. Add `bes_firmware` object with `version`, `url` (non-sequential, like APK)
 3. Keep backward compat with flat APK schema (current production)
-4. Remove unused `mtk_firmware`/`bes_firmware` object handling (never deployed)
 
 **ASG Client (Glasses)**:
+
 1. Add explicit `sh_syvr` query in `K900HardwareManager.initialize()` to ensure BES version is cached
 2. Restructure version_info chunks:
    - `version_info_2`: Only `ota_version_url` (isolated due to size)
    - `version_info_3`: `mcu_fw_version`, `soc_fw_version`, `bt_mac_address`
-3. Add `findMatchingPatch()` for patch selection logic
-4. Update priority logic: when both MTK + BES available, apply MTK first then BES
-5. Update `ota_update_available` message to include which updates are available
+3. Add `findMatchingMtkPatch()` for MTK patch selection (MTK requires sequential updates)
+4. Add `checkBesUpdate()` for BES version comparison (BES does not require sequential updates)
+5. Update priority logic: when both MTK + BES available, apply MTK first then BES
+6. Update `ota_update_available` message to include which updates are available
 
 **Mobile App - SGC Layer Refactor** (flexible version_info parsing):
+
 1. Refactor `MentraLive.java` / `MentraLive.swift` to handle any `version_info*` message flexibly
 2. Extract all fields and send to RN immediately (no chunk waiting/merging)
 3. Change `Bridge.sendVersionInfo()` / `emitVersionInfo()` to accept generic Map/Dictionary
 4. Add field mapping in MantleBridge: `mcu_fw_version` → `mcuFwVersion`, `soc_fw_version` → `socFwVersion`
 
-**Mobile App - OTA Integration**:
-5. Add `mcuFwVersion`, `socFwVersion` to `GlassesInfo` interface
-6. Update `OtaUpdateChecker.tsx` to parse `mtk_patches` and `bes_patches` arrays
-7. Add `findMatchingPatch()` function to match current version with available patches
-8. Update UI to show what will be updated (APK, MTK, BES)
-9. Update `OtaUpdateInfo` type with patch details
-10. Show `current_update` in progress UI (apk/mtk/bes)
+**Mobile App - OTA Integration**: 5. Add `mcuFwVersion`, `socFwVersion` to `GlassesInfo` interface 6. Update `OtaUpdateChecker.tsx` to parse `mtk_patches` array and `bes_firmware` object 7. Add `findMatchingMtkPatch()` (MTK requires sequential updates) and `checkBesUpdate()` (BES allows direct version updates) 8. Update UI to show what will be updated (APK, MTK, BES) 9. Update `OtaUpdateInfo` type with firmware details 10. Show `current_update` in progress UI (apk/mtk/bes)
 
 ### What Already Works
 
@@ -865,11 +941,13 @@ The BES chip is *supposed* to auto-send `hs_syvr` at boot, but the firmware stac
 **Issue**: `version_info_2` hitting BLE MTU limits due to long OTA URL - BES MAC not showing on phone.
 
 **Solution - Flexible Parsing + New Chunking**:
+
 - Refactor SGC to handle ANY `version_info*` message and send fields to RN immediately
 - Move firmware info out of `version_info_2`, isolate the long URL
 - RN accumulates fields via `setGlassesInfo({...state, ...info})`
 
 **New Chunking (Glasses-side)**:
+
 ```
 version_info_1: app_version, build_number, device_model, android_version
 version_info_2: ota_version_url  (isolated - it's the long one)
@@ -878,11 +956,11 @@ version_info_3: mcu_fw_version, soc_fw_version, bt_mac_address
 
 **Backwards Compatibility Matrix**:
 
-| Phone Client | ASG Client | Result |
-|-------------|------------|--------|
-| Old | Old | Works (APK only, current behavior) |
-| New | Old | Works (APK only, missing fields treated as unknown, uses legacy `fwVersion`) |
-| Old | New | Works (old phone ignores new fields like `mcu_fw_version`) |
-| New | New | Full functionality (APK + MTK + BES patches) |
+| Phone Client | ASG Client | Result                                                                       |
+| ------------ | ---------- | ---------------------------------------------------------------------------- |
+| Old          | Old        | Works (APK only, current behavior)                                           |
+| New          | Old        | Works (APK only, missing fields treated as unknown, uses legacy `fwVersion`) |
+| Old          | New        | Works (old phone ignores new fields like `mcu_fw_version`)                   |
+| New          | New        | Full functionality (APK + MTK + BES patches)                                 |
 
 **Key Insight**: Flexible parsing means phone accumulates whatever fields it receives - no hardcoded chunk expectations.
