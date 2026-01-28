@@ -15,7 +15,7 @@ export async function checkAndRequestNotificationAccessSpecialPermission(): Prom
     return true
   }
 
-  return await new Promise<boolean>(resolve => {
+  return await new Promise<boolean>((resolve) => {
     // useFocusEffect(
     //   useCallback(() => {
     //     // let hasAccess = await CoreModule.hasNotificationListenerPermission()
