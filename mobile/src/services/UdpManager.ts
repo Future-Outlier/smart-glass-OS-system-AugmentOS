@@ -437,10 +437,16 @@ class UdpManager {
       // Decode base64 to bytes
       const audioBytes = Buffer.from(pcmData, "base64")
 
-      // Get frame-aligned max chunk size (reduce if encryption enabled to account for overhead)
-      let maxChunkSize = this.getMaxChunkSize()
+      // Get frame-aligned max chunk size
+      // If encryption enabled, we need to recalculate alignment after accounting for overhead
+      let maxChunkSize: number
       if (this.encryptionConfig) {
-        maxChunkSize = Math.max(maxChunkSize - ENCRYPTION_OVERHEAD, 100) // Leave room for nonce + tag
+        const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key) || 60
+        const availableForAudio = MAX_AUDIO_CHUNK_SIZE_BASE - ENCRYPTION_OVERHEAD // 1018 - 40 = 978
+        const maxFrames = Math.floor(availableForAudio / frameSizeBytes) // 978 / 60 = 16 frames
+        maxChunkSize = maxFrames * frameSizeBytes // 16 * 60 = 960 bytes (properly aligned)
+      } else {
+        maxChunkSize = this.getMaxChunkSize()
       }
 
       // Debug log every 100 packets to confirm audio is flowing
@@ -513,10 +519,16 @@ class UdpManager {
     }
 
     try {
-      // Get frame-aligned max chunk size (reduce if encryption enabled to account for overhead)
-      let maxChunkSize = this.getMaxChunkSize()
+      // Get frame-aligned max chunk size
+      // If encryption enabled, we need to recalculate alignment after accounting for overhead
+      let maxChunkSize: number
       if (this.encryptionConfig) {
-        maxChunkSize = Math.max(maxChunkSize - ENCRYPTION_OVERHEAD, 100)
+        const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key) || 60
+        const availableForAudio = MAX_AUDIO_CHUNK_SIZE_BASE - ENCRYPTION_OVERHEAD // 1018 - 40 = 978
+        const maxFrames = Math.floor(availableForAudio / frameSizeBytes)
+        maxChunkSize = maxFrames * frameSizeBytes // Properly aligned to LC3 frames
+      } else {
+        maxChunkSize = this.getMaxChunkSize()
       }
 
       // Chunk audio data if it exceeds max packet size
