@@ -81,6 +81,8 @@ class WebSocketManager extends EventEmitter {
     wsUrl.searchParams.set("livekit", "true")
     wsUrl.searchParams.set("udpEncryption", "true")
 
+    console.log("WSM: Connecting to WebSocket URL:", wsUrl.toString().replace(/token=[^&]+/, "token=REDACTED"))
+
     this.webSocket = new WebSocket(wsUrl.toString())
 
     // Set up event handlers
