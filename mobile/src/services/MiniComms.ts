@@ -1,7 +1,7 @@
 import {EventEmitter} from "events"
 
 import mantle from "./MantleManager"
-import CoreModule from "modules/core/src/CoreModule"
+import CoreModule from "core"
 
 export interface SuperWebViewMessage {
   type: string

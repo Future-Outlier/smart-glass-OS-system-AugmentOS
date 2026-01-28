@@ -705,7 +705,7 @@ public class G1 extends SGCManager {
                 queryBatteryStatusHandler.postDelayed(() -> queryBatteryStatus(), 10);
 
                 // setup brightness
-                int brightnessValue = (Integer) GlassesStore.INSTANCE.get("core", "brightness");
+                int brightnessValue = ((Number) GlassesStore.INSTANCE.get("core", "brightness")).intValue();
                 Boolean shouldUseAutoBrightness = (Boolean) GlassesStore.INSTANCE.get("core", "auto_brightness");
                 sendBrightnessCommandHandler
                         .postDelayed(() -> sendBrightnessCommand(brightnessValue, shouldUseAutoBrightness), 10);

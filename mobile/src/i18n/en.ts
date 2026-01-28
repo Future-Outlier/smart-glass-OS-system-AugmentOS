@@ -196,6 +196,8 @@ const en = {
     livePowerOnTutorial: "Press and hold the power button for 5 seconds",
     livePowerOnInfo: 'You will hear "Power on"',
     liveConnected: "Mentra Live connected",
+    g1Connected: "Even Realities G1 connected",
+    g2Connected: "Even Realities G2 connected",
     osStartStopApps: "Start and stop apps",
     osStartStopAppsBullet1: "Tap any inactive app to start that app",
     osStartStopAppsBullet2: "Tap the X button beside an app to stop it",

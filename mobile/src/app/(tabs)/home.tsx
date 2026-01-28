@@ -60,6 +60,7 @@ export default function Homepage() {
           <View className="flex-row items-center flex-1 justify-end">
             <WebsocketStatus />
             <NonProdWarning />
+            <View className="w-2" />
             <MentraLogoStandalone />
           </View>
         }
