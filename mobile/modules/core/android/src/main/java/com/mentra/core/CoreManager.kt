@@ -109,19 +109,6 @@ class CoreManager {
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = AudioOutputFormat.LC3
 
-    // Setting to bypass audio encoding for debugging (send raw PCM instead of LC3)
-    private var bypassAudioEncoding: Boolean = false
-
-    // PCM remainder buffer for handling partial LC3 frames
-    // LC3 requires 320 bytes (160 samples) per frame - any remainder is saved for next chunk
-    private var pcmRemainder: ByteArray? = null
-    private val LC3_PCM_FRAME_BYTES = 320 // 160 samples * 2 bytes per sample
-
-    // Locks for thread-safe LC3 encoding/decoding - codecs are stateful and not thread-safe
-    private val lc3EncoderLock = Any()
-    private val lc3DecoderLock = Any()
-
-
     // mic
     public var useOnboardMic = false
     public var preferredMic = "auto"
@@ -409,58 +396,20 @@ class CoreManager {
      * Send audio data to cloud via Bridge.
      * Encodes to LC3 if audioOutputFormat is LC3, otherwise sends raw PCM.
      * All audio destined for cloud should go through this function.
-     *
-     * For LC3 encoding, handles partial frames by buffering remainder for next call.
-     * Uses synchronized block since LC3 encoder is stateful and not thread-safe.
      */
     private fun sendMicData(pcmData: ByteArray) {
-        // Check bypass setting - if true, always send raw PCM regardless of format
-        if (bypassAudioEncoding) {
-            Bridge.sendMicData(pcmData)
-            return
-        }
-
         when (audioOutputFormat) {
             AudioOutputFormat.LC3 -> {
-                synchronized(lc3EncoderLock) {
-                    if (lc3EncoderPtr == 0L) {
-                        Bridge.log("MAN: ERROR - LC3 encoder not initialized but format is LC3")
-                        return
-                    }
-
-                    // Combine any remainder from previous call with new data
-                    val inputData = if (pcmRemainder != null) {
-                        pcmRemainder!! + pcmData
-                    } else {
-                        pcmData
-                    }
-
-                    // Calculate how many complete frames we can encode
-                    val completeFrames = inputData.size / LC3_PCM_FRAME_BYTES
-                    val bytesToEncode = completeFrames * LC3_PCM_FRAME_BYTES
-                    val remainderBytes = inputData.size - bytesToEncode
-
-                    // Save remainder for next call
-                    pcmRemainder = if (remainderBytes > 0) {
-                        inputData.copyOfRange(bytesToEncode, inputData.size)
-                    } else {
-                        null
-                    }
-
-                    // If we don't have enough data for even one frame, just save and return
-                    if (bytesToEncode == 0) {
-                        return
-                    }
-
-                    // Encode only complete frames
-                    val dataToEncode = inputData.copyOfRange(0, bytesToEncode)
-                    val lc3Data = Lc3Cpp.encodeLC3(lc3EncoderPtr, dataToEncode, lc3FrameSize)
-                    if (lc3Data == null || lc3Data.isEmpty()) {
-                        Bridge.log("MAN: ERROR - LC3 encoding returned empty data")
-                        return
-                    }
-                    Bridge.sendMicData(lc3Data)
+                if (lc3EncoderPtr == 0L) {
+                    Bridge.log("MAN: ERROR - LC3 encoder not initialized but format is LC3")
+                    return
                 }
+                val lc3Data = Lc3Cpp.encodeLC3(lc3EncoderPtr, pcmData, lc3FrameSize)
+                if (lc3Data == null || lc3Data.isEmpty()) {
+                    Bridge.log("MAN: ERROR - LC3 encoding returned empty data")
+                    return
+                }
+                Bridge.sendMicData(lc3Data)
             }
             AudioOutputFormat.PCM -> {
                 Bridge.sendMicData(pcmData)
@@ -487,7 +436,6 @@ class CoreManager {
      * Handle raw LC3 audio data from glasses.
      * Decodes the glasses LC3, then passes to handlePcm for canonical LC3 encoding.
      * Note: frameSize here is for glasses→phone decoding, NOT for phone→cloud encoding.
-     * Uses synchronized block since LC3 decoder is stateful and not thread-safe.
      */
     fun handleGlassesMicData(rawLC3Data: ByteArray, frameSize: Int = 40) {
         if (lc3DecoderPtr == 0L) {
@@ -497,10 +445,7 @@ class CoreManager {
 
         try {
             // Decode glasses LC3 to PCM (glasses may use different LC3 configs)
-            // Synchronized because decoder is stateful and not thread-safe
-            val pcmData = synchronized(lc3DecoderLock) {
-                Lc3Cpp.decodeLC3(lc3DecoderPtr, rawLC3Data, frameSize)
-            }
+            val pcmData = Lc3Cpp.decodeLC3(lc3DecoderPtr, rawLC3Data, frameSize)
             if (pcmData != null && pcmData.isNotEmpty()) {
                 // Re-encode to canonical LC3 via handlePcm
                 handlePcm(pcmData)

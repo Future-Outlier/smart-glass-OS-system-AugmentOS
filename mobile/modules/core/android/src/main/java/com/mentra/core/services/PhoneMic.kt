@@ -549,14 +549,6 @@ class PhoneMic private constructor(private val context: Context) {
         audioRecord?.startRecording()
         isRecording.set(true)
 
-        // Log actual audio format we got (may differ from requested)
-        audioRecord?.let { ar ->
-            Bridge.log("MIC: AudioRecord actual config - SampleRate: \${ar.sampleRate}Hz, Channels: \${ar.channelCount}, Format: \${ar.audioFormat}")
-            if (ar.sampleRate != SAMPLE_RATE) {
-                Bridge.log("MIC: WARNING - Requested \${SAMPLE_RATE}Hz but got \${ar.sampleRate}Hz!")
-            }
-        }
-
         // Start recording thread
         startRecordingThread(bufferSize)
 
