@@ -83,26 +83,67 @@ Header (6 bytes) stays the same for routing. Only payload is encrypted.
 **Mobile (React Native):**
 | File | Change |
 |------|--------|
+| `mobile/src/app/_layout.tsx` | Added `react-native-get-random-values` polyfill import (must be first!) |
 | `mobile/src/services/UdpCrypto.ts` | **NEW** - Crypto utilities (decrypt key, encrypt audio) |
 | `mobile/src/services/UdpManager.ts` | Store key, encrypt packets in sendAudio/sendAudioRaw |
 | `mobile/src/services/SocketComms.ts` | Extract key from CONNECTION_ACK, pass to UdpManager |
+| `mobile/src/services/WebSocketManager.ts` | Added `?udpEncryption=true` query param to WebSocket URL |
 
 ### Key Numbers
 
-| Parameter           | Value                                      |
-| ------------------- | ------------------------------------------ |
-| Symmetric key       | 32 bytes                                   |
-| XSalsa20 nonce      | 24 bytes                                   |
-| Poly1305 auth tag   | 16 bytes                                   |
-| Total overhead      | 40 bytes/packet                            |
-| Max UDP payload     | 1024 bytes                                 |
-| Max encrypted audio | ~978 bytes (still fits 40ms LC3 at 48kbps) |
+| Parameter           | Value                                  |
+| ------------------- | -------------------------------------- |
+| Symmetric key       | 32 bytes                               |
+| XSalsa20 nonce      | 24 bytes                               |
+| Poly1305 auth tag   | 16 bytes                               |
+| Total overhead      | 40 bytes/packet                        |
+| Max UDP payload     | 1024 bytes                             |
+| Max encrypted audio | ~960 bytes (16 LC3 frames at 60 bytes) |
+| Latency overhead    | ~10-30μs per packet (negligible)       |
 
 ## Backwards Compatibility
 
 - Clients without `udpEncryption=true` → no key in CONNECTION_ACK → raw UDP works as before
 - Cloud checks `session.udpAudioManager.encryptionEnabled` before attempting decryption
+- New client → old cloud: Falls back to unencrypted (no key in ACK)
+- Old client → new cloud: Works normally (encryption never initialized)
 - No breaking changes to existing clients
+
+## Bugs Found During Testing
+
+### 1. "no PRNG" Error (Mobile)
+
+**Symptom**: `Error: no PRNG` when trying to send encrypted packets
+
+**Cause**: `tweetnacl` uses `nacl.randomBytes()` which requires `crypto.getRandomValues()`, but React Native doesn't have this API by default.
+
+**Fix**: Added `react-native-get-random-values` package and imported it at the very top of `_layout.tsx` (must be before any other imports):
+
+```typescript
+import "react-native-get-random-values" // Must be first - required for tweetnacl crypto
+```
+
+### 2. LC3 Frame Misalignment (Mobile)
+
+**Symptom**: Audio defects/corruption when encryption enabled
+
+**Cause**: When calculating chunk size for encrypted packets, we subtracted `ENCRYPTION_OVERHEAD` (40 bytes) from the frame-aligned chunk size _after_ alignment:
+
+```typescript
+// BAD: 960 - 40 = 920 bytes (920 / 60 = 15.33 frames - NOT ALIGNED!)
+maxChunkSize = this.getMaxChunkSize() - ENCRYPTION_OVERHEAD
+```
+
+This resulted in 920-byte chunks which is not divisible by 60-byte LC3 frames, causing frames to be split across packets and corrupting the decoder.
+
+**Fix**: Calculate frame alignment _after_ accounting for encryption overhead:
+
+```typescript
+// GOOD: Calculate alignment after accounting for overhead
+const availableForAudio = MAX_AUDIO_CHUNK_SIZE_BASE - ENCRYPTION_OVERHEAD // 1018 - 40 = 978
+const maxFrames = Math.floor(availableForAudio / frameSizeBytes) // 978 / 60 = 16 frames
+maxChunkSize = maxFrames * frameSizeBytes // 16 * 60 = 960 bytes (properly aligned)
+```
 
 ## Status
 
@@ -117,8 +158,14 @@ Header (6 bytes) stays the same for routing. Only payload is encrypted.
   - [x] UdpCrypto utility module
   - [x] UdpManager encryption in sendAudio/sendAudioRaw
   - [x] SocketComms key extraction from CONNECTION_ACK
+  - [x] WebSocketManager adds `?udpEncryption=true` param
+  - [x] Added `react-native-get-random-values` polyfill
+- [x] Fix bugs found during testing
+  - [x] "no PRNG" error - added crypto polyfill
+  - [x] LC3 frame misalignment - fixed chunk size calculation
 - [ ] Test encrypted path end-to-end
 - [ ] Verify backwards compatibility
+- [ ] Deploy to production
 
 ## Related
 
