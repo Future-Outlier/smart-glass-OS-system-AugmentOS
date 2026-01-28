@@ -2,6 +2,7 @@ import CoreModule from "core"
 
 import {push} from "@/contexts/NavigationRef"
 import audioPlaybackService from "@/services/AudioPlaybackService"
+import {displayProcessor} from "@/services/display"
 import mantle from "@/services/MantleManager"
 import udp from "@/services/UdpManager"
 import ws from "@/services/WebSocketManager"
@@ -10,7 +11,6 @@ import {useDisplayStore} from "@/stores/display"
 import {useGlassesStore} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import restComms from "@/services/RestComms"
 import {checkFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
 
@@ -18,13 +18,12 @@ class SocketComms {
   private static instance: SocketComms | null = null
   private coreToken: string = ""
   public userid: string = ""
-  
-  private constructor() {
-  }
+
+  private constructor() {}
 
   private setupListeners() {
     ws.removeAllListeners("message")
-    ws.on("message", message => {
+    ws.on("message", (message) => {
       this.handle_message(message)
     })
   }
@@ -348,7 +347,6 @@ class SocketComms {
 
   // MARK: - UDP Audio Methods
 
-
   /**
    * Check if UDP audio is currently enabled.
    */
@@ -369,7 +367,7 @@ class SocketComms {
 
     // Configure audio format (LC3) for bandwidth savings
     // This tells the cloud that we're sending LC3-encoded audio
-    this.configureAudioFormat().catch(err => {
+    this.configureAudioFormat().catch((err) => {
       console.log("SOCKET: Audio format configuration failed (cloud will expect PCM):", err)
     })
 
@@ -393,9 +391,11 @@ class SocketComms {
       udp.configure(udpHost, udpPort, this.userid)
       udp.handleAck()
     } else {
-      console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:", JSON.stringify(msg, null, 2))
+      console.log(
+        "SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:",
+        JSON.stringify(msg, null, 2),
+      )
     }
-
   }
 
   /**
@@ -513,10 +513,52 @@ class SocketComms {
       console.error("SOCKET: display_event missing view")
       return
     }
-    CoreModule.displayEvent(msg)
-    // Update the Zustand store with the display content
-    const displayEvent = JSON.stringify(msg)
-    useDisplayStore.getState().setDisplayEvent(displayEvent)
+
+    // DEBUG: Log incoming event before processing
+    const deviceModel = displayProcessor.getDeviceModel()
+    const profile = displayProcessor.getProfile()
+    console.log(`[DisplayProcessor DEBUG] ========================================`)
+    console.log(`[DisplayProcessor DEBUG] Device Model: ${deviceModel}`)
+    console.log(
+      `[DisplayProcessor DEBUG] Profile: ${profile.id} (width: ${profile.displayWidthPx}px, lines: ${profile.maxLines})`,
+    )
+    console.log(`[DisplayProcessor DEBUG] Incoming layoutType: ${msg.layout?.layoutType || msg.layoutType}`)
+    console.log(`[DisplayProcessor DEBUG] Incoming text length: ${(msg.layout?.text || msg.text || "").length}`)
+    console.log(
+      `[DisplayProcessor DEBUG] Incoming text preview: "${(msg.layout?.text || msg.text || "").substring(0, 100)}..."`,
+    )
+
+    // Process the display event through DisplayProcessor for pixel-accurate wrapping
+    // This ensures the preview matches exactly what the glasses will show
+    let processedEvent
+    try {
+      processedEvent = displayProcessor.processDisplayEvent(msg)
+    } catch (err) {
+      console.error("SOCKET: DisplayProcessor error, using raw event:", err)
+      processedEvent = msg
+    }
+
+    // DEBUG: Log processed event
+    console.log(
+      `[DisplayProcessor DEBUG] Processed layoutType: ${processedEvent.layout?.layoutType || processedEvent.layoutType}`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] Processed text length: ${(processedEvent.layout?.text || processedEvent.text || "").length}`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] Processed text preview: "${(processedEvent.layout?.text || processedEvent.text || "").substring(0, 200)}..."`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] _processed: ${processedEvent._processed}, _profile: ${processedEvent._profile}`,
+    )
+    console.log(`[DisplayProcessor DEBUG] ========================================`)
+
+    // Send processed event to native SGC
+    CoreModule.displayEvent(processedEvent)
+
+    // Update the Zustand store with the processed display content
+    const displayEventStr = JSON.stringify(processedEvent)
+    useDisplayStore.getState().setDisplayEvent(displayEventStr)
   }
 
   private handle_set_location_tier(msg: any) {

@@ -2279,19 +2279,21 @@ public class G1 extends SGCManager {
     public void blankScreen() {
     }
 
+    /**
+     * Display pre-composed double text wall (two columns) on the glasses.
+     *
+     * NOTE: DisplayProcessor now composes double_text_wall into a single text_wall
+     * with pixel-precise column alignment using ColumnComposer. This method may
+     * not be called anymore for new flows, but is kept for backwards compatibility.
+     *
+     * Column composition is handled by DisplayProcessor in React Native.
+     * This method is a "dumb pipe" - it just combines and sends the text.
+     */
     public void displayDoubleTextWall(String textTop, String textBottom) {
-        // if (updatingScreen)
-        //     return;
-
-        // if (textTop.trim().isEmpty() && textBottom.trim().isEmpty()) {
-        //     if (CoreManager.getInstance().getPowerSavingMode()) {
-        //         sendExitCommand();
-        //         return;
-        //     }
-        // }
-
-        List<byte[]> chunks = g1Text.createDoubleTextWallChunks(textTop, textBottom);
-        sendChunks(chunks);
+        // Text is already composed by DisplayProcessor's ColumnComposer
+        // Just combine and send as a text wall - no custom wrapping logic needed
+        String combinedText = textTop + "\n" + textBottom;
+        displayTextWall(combinedText);
     }
 
     public void showHomeScreen() {
@@ -2332,19 +2334,7 @@ public class G1 extends SGCManager {
     }
 
     public void displayTextWall(String a) {
-        // if (a.trim().isEmpty()) {
-        //     if (CoreManager.getInstance().getPowerSavingMode()) {
-        //         sendExitCommand();
-        //         return;
-        //     }
-        // }
-
         List<byte[]> chunks = createTextWallChunks(a);
-        // if (a.isEmpty()) {
-        //     clearDisplay();
-        //     return;
-        // }
-        // List<byte[]> chunks = chunkTextForTransmission(a);
         sendChunks(chunks);
     }
 
@@ -2770,99 +2760,33 @@ public class G1 extends SGCManager {
 
     private int textSeqNum = 0; // Sequence number for text packets
 
-    // currently only a single page - 1PAGE CHANGE
+    /**
+     * Creates BLE chunks for pre-wrapped text.
+     *
+     * IMPORTANT: Text is expected to come pre-wrapped from the DisplayProcessor in React Native.
+     * This function does NOT perform any text wrapping - it only chunks the text for BLE transmission.
+     * The DisplayProcessor handles all pixel-accurate wrapping using @mentra/display-utils.
+     *
+     * @param text Pre-wrapped text with newlines already in place
+     * @return List of BLE chunks ready for transmission
+     */
     private List<byte[]> createTextWallChunks(String text) {
-        int margin = 5;
-
-        // Get width of single space character
-        int spaceWidth = g1Text.calculateTextWidth(" ");
-
-        // Calculate effective display width after accounting for left and right margins
-        // in spaces
-        int marginWidth = margin * spaceWidth; // Width of left margin in pixels
-        int effectiveWidth = DISPLAY_WIDTH - (2 * marginWidth); // Subtract left and right margins
-
-        // Split text into lines based on effective display width
-        List<String> lines = g1Text.splitIntoLines(text, effectiveWidth);
-
-        // Calculate total pages
-        int totalPages = 1; // hard set to 1 since we only do 1 page - 1PAGECHANGE
-
-        List<byte[]> allChunks = new ArrayList<>();
-
-        // Process each page
-        for (int page = 0; page < totalPages; page++) {
-            // Get lines for current page
-            int startLine = page * LINES_PER_SCREEN;
-            int endLine = Math.min(startLine + LINES_PER_SCREEN, lines.size());
-            List<String> pageLines = lines.subList(startLine, endLine);
-
-            // Combine lines for this page with proper indentation
-            StringBuilder pageText = new StringBuilder();
-
-            for (String line : pageLines) {
-                // Add the exact number of spaces for indentation
-                String indentation = " ".repeat(margin);
-                pageText.append(indentation).append(line).append("\n");
-            }
-
-            byte[] textBytes = pageText.toString().getBytes(StandardCharsets.UTF_8);
-            int totalChunks = (int) Math.ceil((double) textBytes.length / MAX_CHUNK_SIZE);
-
-            // Create chunks for this page
-            for (int i = 0; i < totalChunks; i++) {
-                int start = i * MAX_CHUNK_SIZE;
-                int end = Math.min(start + MAX_CHUNK_SIZE, textBytes.length);
-                byte[] payloadChunk = Arrays.copyOfRange(textBytes, start, end);
-
-                // Create header with protocol specifications
-                byte screenStatus = 0x71; // New content (0x01) + Text Show (0x70)
-                byte[] header = new byte[] {
-                        (byte) TEXT_COMMAND, // Command type
-                        (byte) textSeqNum, // Sequence number
-                        (byte) totalChunks, // Total packages
-                        (byte) i, // Current package number
-                        screenStatus, // Screen status
-                        (byte) 0x00, // new_char_pos0 (high)
-                        (byte) 0x00, // new_char_pos1 (low)
-                        (byte) page, // Current page number
-                        (byte) totalPages // Max page number
-                };
-
-                // Combine header and payload
-                ByteBuffer chunk = ByteBuffer.allocate(header.length + payloadChunk.length);
-                chunk.put(header);
-                chunk.put(payloadChunk);
-
-                allChunks.add(chunk.array());
-            }
-
-            // Increment sequence number for next page
-            textSeqNum = (textSeqNum + 1) % 256;
-            break; // hard set to 1 - 1PAGECHANGE
-        }
-
-        return allChunks;
+        // Text comes pre-wrapped from DisplayProcessor - just chunk it for transmission
+        return chunkTextForTransmission(text);
     }
 
-    private int calculateSpacesForAlignment(int currentWidth, int targetPosition, int spaceWidth) {
-        // Calculate space needed in pixels
-        int pixelsNeeded = targetPosition - currentWidth;
-
-        // Calculate spaces needed (with minimum of 1 space for separation)
-        if (pixelsNeeded <= 0) {
-            return 1; // Ensure at least one space between columns
-        }
-
-        // Calculate the exact number of spaces needed
-        int spaces = (int) Math.ceil((double) pixelsNeeded / spaceWidth);
-
-        // Cap at a reasonable maximum
-        return Math.min(spaces, 100);
-    }
-
+    /**
+     * Chunks text into BLE packets for transmission to glasses.
+     * This is a low-level function that handles BLE protocol framing.
+     *
+     * @param text Text to chunk (should already be formatted/wrapped)
+     * @return List of BLE chunks with headers
+     */
     private List<byte[]> chunkTextForTransmission(String text) {
-        byte[] textBytes = text.getBytes(StandardCharsets.UTF_8);
+        // Handle empty or whitespace-only text by sending at least a space
+        // This ensures the display gets updated/cleared properly
+        String textToSend = (text == null || text.trim().isEmpty()) ? " " : text;
+        byte[] textBytes = textToSend.getBytes(StandardCharsets.UTF_8);
         int totalChunks = (int) Math.ceil((double) textBytes.length / MAX_CHUNK_SIZE);
 
         List<byte[]> allChunks = new ArrayList<>();
@@ -2881,7 +2805,7 @@ public class G1 extends SGCManager {
                     screenStatus, // Screen status
                     (byte) 0x00, // new_char_pos0 (high)
                     (byte) 0x00, // new_char_pos1 (low)
-                    (byte) 0x00, // Current page number (always 0 for now)
+                    (byte) 0x00, // Current page number (always 0)
                     (byte) 0x01 // Max page number (always 1)
             };
 
@@ -2893,10 +2817,26 @@ public class G1 extends SGCManager {
             allChunks.add(chunk.array());
         }
 
-        // Increment sequence number for next page
+        // Increment sequence number for next transmission
         textSeqNum = (textSeqNum + 1) % 256;
 
         return allChunks;
+    }
+
+    private int calculateSpacesForAlignment(int currentWidth, int targetPosition, int spaceWidth) {
+        // Calculate space needed in pixels
+        int pixelsNeeded = targetPosition - currentWidth;
+
+        // Calculate spaces needed (with minimum of 1 space for separation)
+        if (pixelsNeeded <= 0) {
+            return 1; // Ensure at least one space between columns
+        }
+
+        // Calculate the exact number of spaces needed
+        int spaces = (int) Math.ceil((double) pixelsNeeded / spaceWidth);
+
+        // Cap at a reasonable maximum
+        return Math.min(spaces, 100);
     }
 
     private void sendPeriodicTextWall() {
