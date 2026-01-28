@@ -79,6 +79,7 @@ class WebSocketManager extends EventEmitter {
     const wsUrl = new URL(url)
     wsUrl.searchParams.set("token", coreToken)
     wsUrl.searchParams.set("livekit", "true")
+    wsUrl.searchParams.set("udpEncryption", "true")
 
     this.webSocket = new WebSocket(wsUrl.toString())
 
