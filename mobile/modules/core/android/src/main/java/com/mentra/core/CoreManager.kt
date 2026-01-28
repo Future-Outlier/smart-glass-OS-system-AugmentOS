@@ -625,7 +625,8 @@ class CoreManager {
     }
 
     private fun sendCurrentState() {
-        // Bridge.log("MAN: sendCurrentState(): $isHeadUp")
+        Bridge.log("MAN: sendCurrentState(): $isHeadUp")
+
         if (screenDisabled) {
             return
         }
@@ -656,10 +657,14 @@ class CoreManager {
         // Cancel any pending clear display work item
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
 
-        // Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
+        Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
+        Bridge.log("MAN: viewState text: '${currentViewState.text}' (len=${currentViewState.text.length})")
 
         when (currentViewState.layoutType) {
-            "text_wall" -> sgc?.sendTextWall(currentViewState.text)
+            "text_wall" -> {
+                Bridge.log("MAN: sending text_wall with text: '${currentViewState.text.take(50)}...'")
+                sgc?.sendTextWall(currentViewState.text)
+            }
             "double_text_wall" -> {
                 sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
             }
@@ -1118,14 +1123,17 @@ class CoreManager {
 
         val currentState = viewStates[stateIndex]
 
-        if (!statesEqual(currentState, newViewState)) {
-            // Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
-            viewStates[stateIndex] = newViewState
-            if (stateIndex == 0 && !isHeadUp) {
-                sendCurrentState()
-            } else if (stateIndex == 1 && isHeadUp) {
-                sendCurrentState()
-            }
+        if (statesEqual(currentState, newViewState)) {
+            return
+        }
+
+        viewStates[stateIndex] = newViewState
+        val headUp = isHeadUp && contextualDashboard
+        // send the state we just received if the user is currently in that state:
+        if (stateIndex == 0 && !headUp) {
+            sendCurrentState()
+        } else if (stateIndex == 1 && headUp) {
+            sendCurrentState()
         }
     }
 
@@ -1630,6 +1638,11 @@ class CoreManager {
             if (defaultWearable != newDefaultWearable) {
                 defaultWearable = newDefaultWearable
                 Bridge.saveSetting("default_wearable", newDefaultWearable)
+                // Auto-init SGC for simulated glasses since they don't require connection
+                if (newDefaultWearable == DeviceTypes.SIMULATED) {
+                    deviceName = DeviceTypes.SIMULATED
+                    initSGC(newDefaultWearable)
+                }
             }
         }
 

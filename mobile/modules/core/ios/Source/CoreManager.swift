@@ -624,7 +624,9 @@ struct ViewState {
     /// Valid values: 20 (16kbps), 40 (32kbps), 60 (48kbps).
     func setLC3FrameSize(_ frameSize: Int) {
         if frameSize != 20 && frameSize != 40 && frameSize != 60 {
-            Bridge.log("MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 20.")
+            Bridge.log(
+                "MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 20."
+            )
             lc3FrameSize = 20
             lc3Converter?.setOutputFrameSize(20)
             return
@@ -1081,11 +1083,11 @@ struct ViewState {
 
         viewStates[stateIndex] = newViewState
 
-        let headUp = isHeadUp
+        let headUp = isHeadUp && contextualDashboard
         // send the state we just received if the user is currently in that state:
-        if stateIndex == 0, !headUp {
+        if stateIndex == 0 && !headUp {
             sendCurrentState()
-        } else if stateIndex == 1, headUp {
+        } else if stateIndex == 1 && headUp {
             sendCurrentState()
         }
     }

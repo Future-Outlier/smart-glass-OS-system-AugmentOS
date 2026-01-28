@@ -14,6 +14,7 @@
         "@livekit/react-native": "^2.9.6",
         "@livekit/react-native-expo-plugin": "^1.0.1",
         "@livekit/react-native-webrtc": "^137.0.2",
+        "@mentra/display-utils": "file:../cloud/packages/display-utils",
         "@react-native-community/netinfo": "^11.4.1",
         "@react-native-community/slider": "5.0.1",
         "@sentry/react-native": "~7.2.0",
@@ -611,6 +612,8 @@
     "@livekit/react-native-expo-plugin": ["@livekit/react-native-expo-plugin@1.0.1", "", { "peerDependencies": { "@livekit/react-native": "^2.1.0", "expo": "*", "react": "*", "react-native": "*" } }, "sha512-CSPjjzgDDlBH1ZyFyaw7/FW2Ql1S51eUkIxv/vjGwVshn+lUD6eQ9VgfUh7ha84itvjXi9X87FvP0XWKn9CiFQ=="],
 
     "@livekit/react-native-webrtc": ["@livekit/react-native-webrtc@137.0.2", "", { "dependencies": { "base64-js": "1.5.1", "debug": "4.3.4", "event-target-shim": "6.0.2" }, "peerDependencies": { "react-native": ">=0.60.0" } }, "sha512-0aXYATcBraOMDTteKzmfH5ICNHw8xFyMPHmhKg14+94fAGZ2hGjdHZUSkzL14+e508W486aIAmbXipuSQCCJgA=="],
+
+    "@mentra/display-utils": ["@mentra/display-utils@file:../cloud/packages/display-utils", { "devDependencies": { "typescript": "^5.0.0" } }],
 
     "@nicolo-ribaudo/chokidar-2": ["@nicolo-ribaudo/chokidar-2@2.1.8-no-fsevents.3", "", {}, "sha512-s88O1aVtXftvp5bCPB7WnmXc5IwOZZ7YPuwNPt+GtOOXpPvad1LfbmjYv+qII7zP6RU2QGnqve27dnLycEnyEQ=="],
 
