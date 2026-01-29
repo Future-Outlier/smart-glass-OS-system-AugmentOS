@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 import com.mentra.asg_client.io.ota.utils.OtaConstants;
 import com.mentra.asg_client.settings.AsgSettings;
+import com.mentra.asg_client.service.utils.SysProp;
 
 import org.json.JSONArray;
 
@@ -422,7 +423,7 @@ public class OtaHelper {
                     JSONObject updateInfo = checkForAvailableUpdates(json);
 
                     if (updateInfo != null && updateInfo.optBoolean("available", false)) {
-                        // Notify phone and wait for approval
+                        // Notify phone and wait for approval (all updates require phone confirmation)
                         notifyPhoneUpdateAvailable(updateInfo);
                         hasNotifiedPhoneOfUpdate = true;
                         Log.i(TAG, "📱 Notified phone of update - waiting for ota_start command");
@@ -557,9 +558,11 @@ public class OtaHelper {
             }
             // Normal firmware update flow with new patch matching logic
             else {
+                Log.d(TAG, "Finding matching MTK patch");
                 // Find matching MTK patch (MTK requires sequential updates)
                 if (rootJson.has("mtk_patches")) {
-                    String currentMtkVersion = com.mentra.asg_client.SysControl.getSystemCurrentVersion(context);
+                    String currentMtkVersion = SysProp.getProperty(context, "ro.custom.ota.version");
+                    Log.d(TAG, "Current MTK version: " + currentMtkVersion);
                     mtkPatch = findMatchingMtkPatch(rootJson.getJSONArray("mtk_patches"), currentMtkVersion);
                     if (mtkPatch != null) {
                         Log.i(TAG, "MTK patch found for current version: " + currentMtkVersion);
@@ -1374,8 +1377,12 @@ public class OtaHelper {
             // Set current update type for progress reporting
             currentUpdateType = "bes";
 
-            // Download firmware file
-            String firmwareUrl = firmwareInfo.getString("firmwareUrl");
+            // Download firmware file (support both "url" and legacy "firmwareUrl")
+            String firmwareUrl = firmwareInfo.optString("url", firmwareInfo.optString("firmwareUrl", ""));
+            if (firmwareUrl.isEmpty()) {
+                Log.e(TAG, "BES firmware URL missing in JSON (expected 'url' or 'firmwareUrl')");
+                return false;
+            }
             boolean downloaded = downloadBesFirmware(firmwareUrl, firmwareInfo, context);
 
             if (downloaded) {
@@ -1434,9 +1441,9 @@ public class OtaHelper {
             
             long fileSize = conn.getContentLength();
             
-            // Check file size doesn't exceed 1100KB
-            if (fileSize > 1100 * 1024) {
-                Log.e(TAG, "Firmware file too large: " + fileSize + " bytes (max 1100KB)");
+            // Check file size doesn't exceed 2MB (BES firmware can be larger than 1MB)
+            if (fileSize > 2 * 1024 * 1024) {
+                Log.e(TAG, "Firmware file too large: " + fileSize + " bytes (max 2MB)");
                 conn.disconnect();
                 return false;
             }
@@ -1557,7 +1564,7 @@ public class OtaHelper {
             Log.i(TAG, "MTK firmware available - Version: " + versionName + " (code: " + serverVersion + ")");
             
             // Get current MTK firmware version from system property
-            String currentVersionStr = com.mentra.asg_client.SysControl.getSystemCurrentVersion(context);
+            String currentVersionStr = SysProp.getProperty(context, "ro.custom.ota.version");
             long currentVersion = 0;
             
             try {
@@ -1580,8 +1587,12 @@ public class OtaHelper {
             // Set current update type for progress reporting
             currentUpdateType = "mtk";
 
-            // Download firmware file
-            String firmwareUrl = firmwareInfo.getString("firmwareUrl");
+            // Download firmware file (support both "url" and legacy "firmwareUrl")
+            String firmwareUrl = firmwareInfo.optString("url", firmwareInfo.optString("firmwareUrl", ""));
+            if (firmwareUrl.isEmpty()) {
+                Log.e(TAG, "MTK firmware URL missing in JSON (expected 'url' or 'firmwareUrl')");
+                return false;
+            }
             boolean downloaded = downloadMtkFirmware(firmwareUrl, firmwareInfo, context);
             
             if (downloaded) {
@@ -1814,7 +1825,7 @@ public class OtaHelper {
             // Check MTK firmware patches (sequential updates)
             if (rootJson.has("mtk_patches")) {
                 JSONArray mtkPatches = rootJson.getJSONArray("mtk_patches");
-                String currentMtkVersion = com.mentra.asg_client.SysControl.getSystemCurrentVersion(context);
+                String currentMtkVersion = SysProp.getProperty(context, "ro.custom.ota.version");
                 JSONObject matchingPatch = findMatchingMtkPatch(mtkPatches, currentMtkVersion);
                 if (matchingPatch != null) {
                     updatesArray.put("mtk");
