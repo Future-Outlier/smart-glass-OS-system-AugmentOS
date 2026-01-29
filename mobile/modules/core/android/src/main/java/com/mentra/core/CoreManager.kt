@@ -15,6 +15,7 @@ import com.mentra.core.services.PhoneMic
 import com.mentra.core.sgcs.G1
 import com.mentra.core.sgcs.Mach1
 import com.mentra.core.sgcs.MentraLive
+import com.mentra.core.sgcs.MentraNex
 import com.mentra.core.sgcs.SGCManager
 import com.mentra.core.sgcs.Simulated
 import com.mentra.core.utils.DeviceTypes
@@ -469,10 +470,10 @@ class CoreManager {
     }
 
     // turns a single mic on and turns off all other mics:
-    private fun updateMicState() {        
+    private fun updateMicState() {
         // go through the micRanking and find the first mic that is available:
         var micUsed: String = ""
-        
+
         // allow the sgc to make changes to the micRanking:
         micRanking = sgc?.sortMicRanking(micRanking) ?: micRanking
         Bridge.log("MAN: updateMicState() micRanking: $micRanking")
@@ -491,6 +492,7 @@ class CoreManager {
                     }
 
                     if (systemMicUnavailable) {
+                        Bridge.log("MAN: systemMicUnavailable, continuing to next mic")
                         continue
                     }
 
@@ -566,6 +568,7 @@ class CoreManager {
 
     private fun sendCurrentState() {
         Bridge.log("MAN: sendCurrentState(): $isHeadUp")
+
         if (screenDisabled) {
             return
         }
@@ -597,9 +600,13 @@ class CoreManager {
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
 
         Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
+        Bridge.log("MAN: viewState text: '${currentViewState.text}' (len=${currentViewState.text.length})")
 
         when (currentViewState.layoutType) {
-            "text_wall" -> sgc?.sendTextWall(currentViewState.text)
+            "text_wall" -> {
+                Bridge.log("MAN: sending text_wall with text: '${currentViewState.text.take(50)}...'")
+                sgc?.sendTextWall(currentViewState.text)
+            }
             "double_text_wall" -> {
                 sgc?.sendDoubleTextWall(currentViewState.topText, currentViewState.bottomText)
             }
@@ -916,6 +923,8 @@ class CoreManager {
             sgc = G1()
         } else if (wearable.contains(DeviceTypes.LIVE)) {
             sgc = MentraLive()
+        } else if (wearable.contains(DeviceTypes.NEX)) {
+            sgc = MentraNex()
         } else if (wearable.contains(DeviceTypes.MACH1)) {
             sgc = Mach1()
         } else if (wearable.contains(DeviceTypes.Z100)) {
@@ -1018,6 +1027,11 @@ class CoreManager {
         }
     }
 
+    fun clearDisplay() {
+        Bridge.log("MAN: Clearing Display")
+        sgc?.clearDisplay()
+    }
+
     fun displayEvent(event: Map<String, Any>) {
         val view = event["view"] as? String
         if (view == null) {
@@ -1041,14 +1055,17 @@ class CoreManager {
 
         val currentState = viewStates[stateIndex]
 
-        if (!statesEqual(currentState, newViewState)) {
-            // Bridge.log("MAN: Updating view state $stateIndex with $layoutType")
-            viewStates[stateIndex] = newViewState
-            if (stateIndex == 0 && !isHeadUp) {
-                sendCurrentState()
-            } else if (stateIndex == 1 && isHeadUp) {
-                sendCurrentState()
-            }
+        if (statesEqual(currentState, newViewState)) {
+            return
+        }
+
+        viewStates[stateIndex] = newViewState
+        val headUp = isHeadUp && contextualDashboard
+        // send the state we just received if the user is currently in that state:
+        if (stateIndex == 0 && !headUp) {
+            sendCurrentState()
+        } else if (stateIndex == 1 && headUp) {
+            sendCurrentState()
         }
     }
 
@@ -1199,7 +1216,7 @@ class CoreManager {
         Bridge.log("MAN: Connecting to wearable: $dName")
 
         var name = dName
-        
+
         // use stored device name if available:
         if (dName.isEmpty() && !deviceName.isEmpty()) {
             name = deviceName
@@ -1349,9 +1366,14 @@ class CoreManager {
         glassesSettings["button_camera_led"] = buttonCameraLed
 
         val coreInfo =
-                mapOf(
-                        "is_searching" to isSearching,
+                mutableMapOf<String, Any>(
+                    "is_searching" to isSearching,
                 )
+
+        sgc?.let {
+            coreInfo["glasses_protobuf_version"] = it.glassesProtobufVersion
+            coreInfo["protobuf_schema_version"] = it.protobufSchemaVersion
+        }
 
         val apps = emptyList<Any>()
 
@@ -1539,6 +1561,11 @@ class CoreManager {
             if (defaultWearable != newDefaultWearable) {
                 defaultWearable = newDefaultWearable
                 Bridge.saveSetting("default_wearable", newDefaultWearable)
+                // Auto-init SGC for simulated glasses since they don't require connection
+                if (newDefaultWearable == DeviceTypes.SIMULATED) {
+                    deviceName = DeviceTypes.SIMULATED
+                    initSGC(newDefaultWearable)
+                }
             }
         }
 

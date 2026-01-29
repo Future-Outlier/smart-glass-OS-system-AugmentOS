@@ -1,11 +1,11 @@
 import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
 import {useState, useCallback, useEffect, useMemo} from "react"
-import {View, ViewStyle, ActivityIndicator} from "react-native"
+import {View, ViewStyle, ActivityIndicator, Platform} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Button, Header, Icon} from "@/components/ignite"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
@@ -46,10 +46,12 @@ interface OnboardingGuideProps {
   autoStart?: boolean
   mainTitle?: string
   mainSubtitle?: string
+  startButtonText?: string
   endButtonText?: string
   endButtonFn?: () => void
   exitFn?: () => void
   showCloseButton?: boolean
+  showHeader?: boolean
 }
 
 // Find next video step's source for preloading
@@ -67,8 +69,10 @@ export function OnboardingGuide({
   showSkipButton = true,
   showCloseButton = true,
   autoStart = false,
+  showHeader = true,
   mainTitle,
   mainSubtitle,
+  startButtonText = "Start",
   endButtonText = "Done",
   endButtonFn,
   exitFn,
@@ -90,7 +94,7 @@ export function OnboardingGuide({
   const [player1Loading, setPlayer1Loading] = useState(true)
   const [player2Loading, setPlayer2Loading] = useState(true)
   const [showPoster, setShowPoster] = useState(false)
-  focusEffectPreventBack()
+  // focusEffectPreventBack()
 
   // Initialize players with first video sources found
   const initialSource1 = useMemo(() => findNextVideoSource(steps, 0), [steps])
@@ -425,6 +429,7 @@ export function OnboardingGuide({
             style={{
               width: "100%",
               height: "100%",
+              marginLeft: activePlayer === 1 ? 0 : "100%",
             }}
             nativeControls={false}
             allowsVideoFrameAnalysis={false}
@@ -441,6 +446,7 @@ export function OnboardingGuide({
             style={{
               width: "100%",
               height: "100%",
+              marginLeft: activePlayer === 2 ? 0 : "100%",
             }}
             nativeControls={false}
             allowsVideoFrameAnalysis={false}
@@ -565,7 +571,7 @@ export function OnboardingGuide({
       )
     }
 
-    if (devMode) {
+    if (devMode && Platform.OS === "ios") {
       return renderDebugVideos()
     }
 
@@ -577,18 +583,20 @@ export function OnboardingGuide({
 
   return (
     <>
-      <Header
-        leftIcon={showCloseButton ? "x" : undefined}
-        RightActionComponent={
-          <View className="flex flex-row gap-2">
-            {hasStarted && <Text className="text-center text-sm font-medium" text={counter} />}
-            <MentraLogoStandalone />
-          </View>
-        }
-        onLeftPress={handleExit}
-      />
+      {showHeader && (
+        <Header
+          leftIcon={showCloseButton ? "x" : undefined}
+          RightActionComponent={
+            <View className="flex flex-row gap-2">
+              {hasStarted && <Text className="text-center text-sm font-medium" text={counter} />}
+              <MentraLogoStandalone />
+            </View>
+          }
+          onLeftPress={handleExit}
+        />
+      )}
       <View id="main" className="flex flex-1">
-        <View id="top" className="flex">
+        <View id="top" className="flex mt-10">
           {step.title && <Text className="text-center text-2xl font-semibold" text={step.title} />}
 
           <View className="-mx-6">
@@ -597,16 +605,26 @@ export function OnboardingGuide({
             </View>
 
             {showReplayButton && isCurrentStepVideo && (
-              <View className="absolute bottom-8 left-0 right-0 items-center z-10">
+              <View className="absolute bottom-0 left-0 right-0 items-center z-10">
                 <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
               </View>
             )}
           </View>
 
+          {/* <View className="flex flex-row justify-center items-center">
+            <View className="bg-primary rounded-full p-1">
+              <Icon name="check" size={20} color={theme.colors.background} />
+            </View>
+          </View> */}
+        </View>
+
+        <View id="bottom" className="flex justify-end flex-grow">
           {hasStarted && (
-            <View className="flex flex-col gap-2 mt-4">
+            <View className="flex flex-col gap-2 mb-10">
               {step.subtitle && <Text className="text-center text-xl font-semibold" text={step.subtitle} />}
-              {step.subtitle2 && <Text className="text-center text-xl font-semibold" text={step.subtitle2} />}
+              {step.subtitle2 && (
+                <Text className="text-center text-lg text-foreground font-medium" text={step.subtitle2} />
+              )}
               {step.info && (
                 <View className="flex flex-row gap-2 justify-center items-center px-12">
                   <Icon name="info" size={20} color={theme.colors.muted_foreground} />
@@ -619,9 +637,7 @@ export function OnboardingGuide({
               )}
             </View>
           )}
-        </View>
 
-        <View id="bottom" className="flex justify-end flex-grow">
           {!hasStarted && (mainTitle || mainSubtitle) && (
             <View className="flex flex-col gap-2">
               {mainTitle && <Text className="text-center text-xl font-semibold" text={mainTitle} />}
@@ -633,7 +649,7 @@ export function OnboardingGuide({
 
           {!hasStarted && (
             <View className="flex flex-col gap-4 mt-8">
-              <Button flexContainer tx="onboarding:continueOnboarding" onPress={handleStart} />
+              <Button flexContainer text={startButtonText} onPress={handleStart} />
               {showSkipButton && <Button flexContainer preset="secondary" tx="common:skip" onPress={handleSkip} />}
             </View>
           )}

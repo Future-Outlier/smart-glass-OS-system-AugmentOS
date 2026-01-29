@@ -2,6 +2,7 @@ import CoreModule from "core"
 
 import {push} from "@/contexts/NavigationRef"
 import audioPlaybackService from "@/services/AudioPlaybackService"
+import {displayProcessor} from "@/services/display"
 import mantle from "@/services/MantleManager"
 import udp from "@/services/UdpManager"
 import ws from "@/services/WebSocketManager"
@@ -10,20 +11,19 @@ import {useDisplayStore} from "@/stores/display"
 import {useGlassesStore} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import restComms from "@/services/RestComms"
+import {checkFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
 
 class SocketComms {
   private static instance: SocketComms | null = null
   private coreToken: string = ""
   public userid: string = ""
-  
-  private constructor() {
-  }
+
+  private constructor() {}
 
   private setupListeners() {
     ws.removeAllListeners("message")
-    ws.on("message", message => {
+    ws.on("message", (message) => {
       this.handle_message(message)
     })
   }
@@ -38,14 +38,13 @@ class SocketComms {
 
   public cleanup() {
     console.log("SOCKET: cleanup()")
-    udp.stop()
     udp.cleanup()
     ws.cleanup()
   }
 
   // Connection Management
 
-  private async connectWebsocket() {
+  public async connectWebsocket() {
     console.log("SOCKET: connectWebsocket()")
     this.setupListeners()
     const url = useSettingsStore.getState().getWsUrl()
@@ -75,7 +74,7 @@ class SocketComms {
     this.coreToken = coreToken
     this.userid = userid
     useSettingsStore.getState().setSetting(SETTINGS.core_token.key, coreToken)
-    this.connectWebsocket()
+    // this.connectWebsocket()
   }
 
   public sendAudioPlayResponse(requestId: string, success: boolean, error: string | null, duration: number | null) {
@@ -348,7 +347,6 @@ class SocketComms {
 
   // MARK: - UDP Audio Methods
 
-
   /**
    * Check if UDP audio is currently enabled.
    */
@@ -369,7 +367,7 @@ class SocketComms {
 
     // Configure audio format (LC3) for bandwidth savings
     // This tells the cloud that we're sending LC3-encoded audio
-    this.configureAudioFormat().catch(err => {
+    this.configureAudioFormat().catch((err) => {
       console.log("SOCKET: Audio format configuration failed (cloud will expect PCM):", err)
     })
 
@@ -385,18 +383,34 @@ class SocketComms {
       udp_port: msg.udp_port,
       resolvedHost: udpHost,
       resolvedPort: udpPort,
+      hasEncryption: !!msg.udpEncryption,
       allKeys: Object.keys(msg),
     })
 
     if (udpHost) {
       console.log(`SOCKET: UDP endpoint found, configuring with ${udpHost}:${udpPort}`)
       udp.configure(udpHost, udpPort, this.userid)
+
+      // Configure encryption if server provided a key
+      if (msg.udpEncryption?.key) {
+        const encryptionConfigured = udp.setEncryption(msg.udpEncryption.key)
+        console.log(
+          `SOCKET: UDP encryption ${encryptionConfigured ? "enabled" : "failed"} (algorithm: ${
+            msg.udpEncryption.algorithm
+          })`,
+        )
+      } else {
+        udp.clearEncryption()
+        console.log("SOCKET: UDP encryption not enabled (no key in connection_ack)")
+      }
+
       udp.handleAck()
     } else {
-      console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:", JSON.stringify(msg, null, 2))
+      console.log(
+        "SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:",
+        JSON.stringify(msg, null, 2),
+      )
     }
-
-    GlobalEventEmitter.emit("APP_STATE_CHANGE", msg)
   }
 
   /**
@@ -417,36 +431,50 @@ class SocketComms {
     const backendUrl = useSettingsStore.getState().getSetting(SETTINGS.backend_url.key)
     const coreToken = useSettingsStore.getState().getSetting(SETTINGS.core_token.key)
     const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key) || 20
+    const bypassEncoding =
+      useSettingsStore.getState().getSetting(SETTINGS.bypass_audio_encoding_for_debugging.key) || false
 
     if (!backendUrl || !coreToken) {
       console.log("SOCKET: Cannot configure audio format - missing backend URL or token")
       return
     }
 
-    // Configure the native encoder frame size first
-    try {
-      await CoreModule.setLC3FrameSize(frameSizeBytes)
-      console.log(`SOCKET: Native LC3 encoder configured to ${frameSizeBytes} bytes/frame`)
-    } catch (err) {
-      console.error("SOCKET: Failed to configure native LC3 encoder:", err)
-      // Continue anyway - cloud config is more important
+    // Determine format based on bypass setting
+    const audioFormat = bypassEncoding ? "pcm" : "lc3"
+    console.log(`SOCKET: Configuring audio format: ${audioFormat} (bypass=${bypassEncoding})`)
+
+    // Configure the native encoder frame size first (only needed for LC3)
+    if (!bypassEncoding) {
+      try {
+        await CoreModule.setLC3FrameSize(frameSizeBytes)
+        console.log(`SOCKET: Native LC3 encoder configured to ${frameSizeBytes} bytes/frame`)
+      } catch (err) {
+        console.error("SOCKET: Failed to configure native LC3 encoder:", err)
+        // Continue anyway - cloud config is more important
+      }
     }
 
     try {
+      const body: any = {
+        format: audioFormat,
+      }
+
+      // Only include LC3 config if using LC3 format
+      if (!bypassEncoding) {
+        body.lc3Config = {
+          sampleRate: 16000,
+          frameDurationMs: 10,
+          frameSizeBytes: frameSizeBytes,
+        }
+      }
+
       const response = await fetch(`${backendUrl}/api/client/audio/configure`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${coreToken}`,
         },
-        body: JSON.stringify({
-          format: "lc3",
-          lc3Config: {
-            sampleRate: 16000,
-            frameDurationMs: 10,
-            frameSizeBytes: frameSizeBytes,
-          },
-        }),
+        body: JSON.stringify(body),
       })
 
       if (!response.ok) {
@@ -456,7 +484,11 @@ class SocketComms {
       }
 
       const result = await response.json()
-      console.log(`SOCKET: Audio format configured successfully: ${result.format}, ${frameSizeBytes} bytes/frame`)
+      console.log(
+        `SOCKET: Audio format configured successfully: ${result.format}${
+          bypassEncoding ? " (raw PCM)" : `, ${frameSizeBytes} bytes/frame`
+        }`,
+      )
     } catch (error) {
       console.error("SOCKET: Error configuring audio format:", error)
       throw error
@@ -464,9 +496,8 @@ class SocketComms {
   }
 
   private handle_app_state_change(msg: any) {
-    // console.log("SOCKET: app state change", msg)
-    // this.parse_app_list(msg)
-    GlobalEventEmitter.emit("app_state_change", msg)
+    console.log("SOCKET: app_state_change", msg)
+    useAppletStatusStore.getState().refreshApplets()
   }
 
   private handle_connection_error(msg: any) {
@@ -477,11 +508,11 @@ class SocketComms {
     console.error("SOCKET: auth error")
   }
 
-  private handle_microphone_state_change(msg: any) {
+  private async handle_microphone_state_change(msg: any) {
     // const bypassVad = msg.bypassVad ?? true
     const bypassVad = true
     const requiredDataStrings = msg.requiredData || []
-    console.log(`SOCKET: requiredData = ${requiredDataStrings}, bypassVad = ${bypassVad}`)
+    console.log(`SOCKET: mic_state_change: requiredData = [${requiredDataStrings}], bypassVad = ${bypassVad}`)
     let shouldSendPcmData = false
     let shouldSendTranscript = false
     if (requiredDataStrings.includes("pcm")) {
@@ -494,6 +525,19 @@ class SocketComms {
       shouldSendPcmData = true
       shouldSendTranscript = true
     }
+
+    // check permission if we're turning the mic ON.
+    // Turning it off is always allowed and should go through regardless.
+    // This prevents setting systemMicUnavailable=true before permissions are granted,
+    // which would cause the mic to never start even after permissions are granted.
+    if (shouldSendPcmData || shouldSendTranscript) {
+      const hasMicPermission = await checkFeaturePermissions(PermissionFeatures.MICROPHONE)
+      if (!hasMicPermission) {
+        console.log("SOCKET: mic_state_change ignored - microphone permission not granted yet")
+        return
+      }
+    }
+
     CoreModule.setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
   }
 
@@ -502,10 +546,52 @@ class SocketComms {
       console.error("SOCKET: display_event missing view")
       return
     }
-    CoreModule.displayEvent(msg)
-    // Update the Zustand store with the display content
-    const displayEvent = JSON.stringify(msg)
-    useDisplayStore.getState().setDisplayEvent(displayEvent)
+
+    // DEBUG: Log incoming event before processing
+    const deviceModel = displayProcessor.getDeviceModel()
+    const profile = displayProcessor.getProfile()
+    console.log(`[DisplayProcessor DEBUG] ========================================`)
+    console.log(`[DisplayProcessor DEBUG] Device Model: ${deviceModel}`)
+    console.log(
+      `[DisplayProcessor DEBUG] Profile: ${profile.id} (width: ${profile.displayWidthPx}px, lines: ${profile.maxLines})`,
+    )
+    console.log(`[DisplayProcessor DEBUG] Incoming layoutType: ${msg.layout?.layoutType || msg.layoutType}`)
+    console.log(`[DisplayProcessor DEBUG] Incoming text length: ${(msg.layout?.text || msg.text || "").length}`)
+    console.log(
+      `[DisplayProcessor DEBUG] Incoming text preview: "${(msg.layout?.text || msg.text || "").substring(0, 100)}..."`,
+    )
+
+    // Process the display event through DisplayProcessor for pixel-accurate wrapping
+    // This ensures the preview matches exactly what the glasses will show
+    let processedEvent
+    try {
+      processedEvent = displayProcessor.processDisplayEvent(msg)
+    } catch (err) {
+      console.error("SOCKET: DisplayProcessor error, using raw event:", err)
+      processedEvent = msg
+    }
+
+    // DEBUG: Log processed event
+    console.log(
+      `[DisplayProcessor DEBUG] Processed layoutType: ${processedEvent.layout?.layoutType || processedEvent.layoutType}`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] Processed text length: ${(processedEvent.layout?.text || processedEvent.text || "").length}`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] Processed text preview: "${(processedEvent.layout?.text || processedEvent.text || "").substring(0, 200)}..."`,
+    )
+    console.log(
+      `[DisplayProcessor DEBUG] _processed: ${processedEvent._processed}, _profile: ${processedEvent._profile}`,
+    )
+    console.log(`[DisplayProcessor DEBUG] ========================================`)
+
+    // Send processed event to native SGC
+    CoreModule.displayEvent(processedEvent)
+
+    // Update the Zustand store with the processed display content
+    const displayEventStr = JSON.stringify(processedEvent)
+    useDisplayStore.getState().setDisplayEvent(displayEventStr)
   }
 
   private handle_set_location_tier(msg: any) {

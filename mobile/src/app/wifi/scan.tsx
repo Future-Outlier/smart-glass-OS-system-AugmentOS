@@ -1,7 +1,7 @@
 import CoreModule from "core"
-import {useLocalSearchParams} from "expo-router"
-import {useEffect, useRef, useState} from "react"
-import {ActivityIndicator, Platform, ScrollView, TouchableOpacity, View} from "react-native"
+import {useFocusEffect} from "expo-router"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {ActivityIndicator, ScrollView, TouchableOpacity, View} from "react-native"
 import Toast from "react-native-toast-message"
 
 import {WifiIcon} from "@/components/icons/WifiIcon"
@@ -10,7 +10,7 @@ import {WifiUnlockedIcon} from "@/components/icons/WifiUnlockedIcon"
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Badge} from "@/components/ui/Badge"
 import {Group} from "@/components/ui"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
 import showAlert from "@/utils/AlertUtils"
@@ -18,6 +18,7 @@ import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {translate} from "@/i18n"
 import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
+import { BackgroundTimer } from "@/utils/timers"
 
 interface NetworkInfo {
   ssid: string
@@ -31,17 +32,20 @@ export default function WifiScanScreen() {
   const [networks, setNetworks] = useState<NetworkInfo[]>([])
   const [savedNetworks, setSavedNetworks] = useState<string[]>([])
   const [isScanning, setIsScanning] = useState(true)
-  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const scanTimeoutRef = useRef<number | null>(null)
   const currentScanSessionRef = useRef<number>(Date.now())
   const receivedResultsForSessionRef = useRef<boolean>(false)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
-  const {push, goBack, pushPrevious, getPreviousRoute} = useNavigationHistory()
+  const {push, goBack, pushPrevious, getPreviousRoute, incPreventBack, decPreventBack, setAndroidBackFn} =
+    useNavigationHistory()
 
-  // if the previous route is in this list, show / allow the back button:
+  // if the previous route is in this list, or the second to last route is in this list
+  // show / allow the back button:
   const backableRoutes = ["/settings/glasses", "/home"]
 
-  const showBack = backableRoutes.includes(getPreviousRoute() || "")
+  const secondLastRoute = getPreviousRoute(1)
+  const showBack = backableRoutes.includes(getPreviousRoute() || "") || backableRoutes.includes(secondLastRoute || "")
   const showSkip = !showBack
 
   const handleBack = () => {
@@ -52,26 +56,23 @@ export default function WifiScanScreen() {
     }
   }
 
-  // focusEffectPreventBack(() => {
-  //   if (showBack) {
-  //     goBack()
-  //   }
-  // })
+  // only prevent back if the showBack flag is false:
+  useFocusEffect(
+    useCallback(() => {
+      if (!showBack) {
+        incPreventBack()
+      }
+      setAndroidBackFn(() => {
+        if (showBack) {
+          goBack()
+        }
+      })
 
-  // if (Platform.OS === "android") {
-  //   focusEffectPreventBack(() => {
-  //     if (showBack) {
-  //       goBack()
-  //     } else {
-  //       // do nothing
-  //     }
-  //   })
-  // } else if (Platform.OS === "ios") {
-  //   // only prevent back if the showBack flag is false:
-  //   if (!showBack) {
-  //     focusEffectPreventBack()
-  //   }
-  // }
+      return () => {
+        decPreventBack()
+      }
+    }, [incPreventBack, decPreventBack, showBack]),
+  )
 
   useEffect(() => {
     const loadSavedNetworks = () => {
@@ -99,7 +100,7 @@ export default function WifiScanScreen() {
 
       if (scanTimeoutRef.current) {
         // console.log("WIFI_SCAN: Clearing scan timeout - results received")
-        clearTimeout(scanTimeoutRef.current)
+        BackgroundTimer.clearTimeout(scanTimeoutRef.current)
         scanTimeoutRef.current = null
       }
 
@@ -139,7 +140,7 @@ export default function WifiScanScreen() {
     return () => {
       GlobalEventEmitter.removeListener("wifi_scan_results", handleWifiScanResults)
       if (scanTimeoutRef.current) {
-        clearTimeout(scanTimeoutRef.current)
+        BackgroundTimer.clearTimeout(scanTimeoutRef.current)
         scanTimeoutRef.current = null
       }
     }
@@ -153,10 +154,10 @@ export default function WifiScanScreen() {
     setNetworks([])
 
     if (scanTimeoutRef.current) {
-      clearTimeout(scanTimeoutRef.current)
+      BackgroundTimer.clearTimeout(scanTimeoutRef.current)
     }
 
-    scanTimeoutRef.current = setTimeout(() => {
+    scanTimeoutRef.current = BackgroundTimer.setTimeout(() => {
       console.log("WIFI_SCAN: SCAN TIMEOUT - RETRYING...")
       scanTimeoutRef.current = null
     }, 15000)
@@ -167,7 +168,7 @@ export default function WifiScanScreen() {
     } catch (error) {
       console.error("WIFI_SCAN: Error scanning for WiFi networks:", error)
       if (scanTimeoutRef.current) {
-        clearTimeout(scanTimeoutRef.current)
+        BackgroundTimer.clearTimeout(scanTimeoutRef.current)
         scanTimeoutRef.current = null
       }
       setIsScanning(false)

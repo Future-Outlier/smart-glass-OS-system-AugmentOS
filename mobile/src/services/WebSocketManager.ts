@@ -79,6 +79,9 @@ class WebSocketManager extends EventEmitter {
     const wsUrl = new URL(url)
     wsUrl.searchParams.set("token", coreToken)
     wsUrl.searchParams.set("livekit", "true")
+    wsUrl.searchParams.set("udpEncryption", "true")
+
+    console.log("WSM: Connecting to WebSocket URL:", wsUrl.toString().replace(/token=[^&]+/, "token=REDACTED"))
 
     this.webSocket = new WebSocket(wsUrl.toString())
 

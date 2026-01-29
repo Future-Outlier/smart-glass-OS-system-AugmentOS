@@ -13,6 +13,7 @@ export function BtClassicPairing() {
   const btcConnected = useGlassesStore((state) => state.btcConnected)
   const glassesConnected = useGlassesStore((state) => state.connected)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const [deviceName] = useSetting(SETTINGS.device_name.key)
   const {push} = useNavigationHistory()
 
   const pathname = usePathname()

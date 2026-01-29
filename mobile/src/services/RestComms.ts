@@ -134,6 +134,24 @@ class RestComms {
     return res.map((response) => response.success)
   }
 
+  public retry<T>(fn: () => AsyncResult<T, Error>, attempts: number, delayMs: number = 0): AsyncResult<T, Error> {
+    return Res.try_async(async () => {
+      let lastError: Error | null = null
+
+      for (let i = 0; i < attempts; i++) {
+        const result: Result<T, Error> = await fn()
+        if (result.is_ok()) {
+          return result.value
+        }
+        lastError = result.error
+        if (i < attempts - 1 && delayMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs))
+        }
+      }
+      throw lastError
+    })
+  }
+
   public getApplets(): AsyncResult<AppletInterface[], Error> {
     interface Response {
       success: boolean
