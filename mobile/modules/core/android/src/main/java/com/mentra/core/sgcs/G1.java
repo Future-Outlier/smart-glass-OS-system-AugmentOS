@@ -769,7 +769,7 @@ public class G1 extends SGCManager {
     }
 
     private void updateConnectionState() {
-        Boolean previousReady = ready;
+        Boolean previousReady = getReady();
         SmartGlassesConnectionState previousConnectionState = connectionState;
         if (isLeftConnected && isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTED;
@@ -786,7 +786,7 @@ public class G1 extends SGCManager {
             GlassesStore.INSTANCE.apply("glasses", "ready", false);
         }
         // Notify if either ready state or connection state changed
-        if (previousReady != ready || !previousConnectionState.equals(connectionState)) {
+        if (previousReady != getReady() || !previousConnectionState.equals(connectionState)) {
             CoreManager.getInstance().handleConnectionStateChanged();
         }
     }
@@ -2124,7 +2124,7 @@ public class G1 extends SGCManager {
         // Reset battery levels
         batteryLeft = -1;
         batteryRight = -1;
-        batteryLevel = -1;
+        GlassesStore.INSTANCE.apply("glasses", "batteryLevel", -1);
 
         // stop BLE scanning
         stopScan();
