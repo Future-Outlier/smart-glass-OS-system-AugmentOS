@@ -41,7 +41,7 @@ public class CoreModule: Module {
             "mtk_update_complete",
             "ota_update_available",
             "ota_progress",
-            "version_info",
+            "version_info"
         )
 
         OnCreate {
@@ -68,13 +68,13 @@ public class CoreModule: Module {
         // MARK: - Observable Store Functions
 
         AsyncFunction("getGlassesStatus") {
-            return await MainActor.run {
+            await MainActor.run {
                 GlassesStore.shared.store.getCategory("glasses")
             }
         }
 
         AsyncFunction("getCoreStatus") {
-            return await MainActor.run {
+            await MainActor.run {
                 GlassesStore.shared.store.getCategory("core")
             }
         }
