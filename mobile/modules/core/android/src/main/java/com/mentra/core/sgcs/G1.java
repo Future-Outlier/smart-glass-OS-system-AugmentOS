@@ -776,15 +776,15 @@ public class G1 extends SGCManager {
             connectionState = SmartGlassesConnectionState.CONNECTED;
             Bridge.log("G1: Both glasses connected");
             lastConnectionTimestamp = System.currentTimeMillis();
-            ready = true;
+            GlassesStore.INSTANCE.apply("glasses", "ready", true);
         } else if (isLeftConnected || isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTING;
             Bridge.log("G1: One glass connected");
-            ready = false;
+            GlassesStore.INSTANCE.apply("glasses", "ready", false);
         } else {
             connectionState = SmartGlassesConnectionState.DISCONNECTED;
             Bridge.log("G1: No glasses connected");
-            ready = false;
+            GlassesStore.INSTANCE.apply("glasses", "ready", false);
         }
         // Notify if either ready state or connection state changed
         if (previousReady != ready || !previousConnectionState.equals(connectionState)) {
@@ -1677,15 +1677,14 @@ public class G1 extends SGCManager {
 
     @Override
     public void disconnect() {
-        ready = false;
-        ready = false;
+        GlassesStore.INSTANCE.apply("glasses", "ready", false);
         destroy();
         // CoreManager.getInstance().handleConnectionStateChanged();
     }
 
     @Override
     public void forget() {
-        ready = false;
+        GlassesStore.INSTANCE.apply("glasses", "ready", false);
         destroy();
         CoreManager.getInstance().handleConnectionStateChanged();
     }
@@ -2121,7 +2120,7 @@ public class G1 extends SGCManager {
         Bridge.log("G1: EvenRealitiesG1SGC ONDESTROY");
         showHomeScreen();
         isKilled = true;
-        ready = false;
+        GlassesStore.INSTANCE.apply("glasses", "ready", false);
 
         // Reset battery levels
         batteryLeft = -1;

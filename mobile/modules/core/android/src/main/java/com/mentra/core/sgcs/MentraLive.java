@@ -570,11 +570,11 @@ public class MentraLive extends SGCManager {
         connectionState = state;
 
         if (state.equals(ConnTypes.CONNECTED)) {
-            ready = true;
-            CoreManager.getInstance().handleConnectionStateChanged();
+            GlassesStore.INSTANCE.apply("glasses", "ready", true);
+            // CoreManager.getInstance().handleConnectionStateChanged();
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
-            ready = false;
-            CoreManager.getInstance().handleConnectionStateChanged();
+            GlassesStore.INSTANCE.apply("glasses", "ready", false);
+            // CoreManager.getInstance().handleConnectionStateChanged();
         }
     }
 
@@ -3960,7 +3960,7 @@ public class MentraLive extends SGCManager {
         reconnectAttempts = 0;
         isReconnecting = false;
         glassesReady = false;
-        ready = false;
+        GlassesStore.INSTANCE.apply("glasses", "ready", false);
         updateConnectionState(ConnTypes.DISCONNECTED);
 
         // Note: We don't null context here to prevent race conditions with BLE callbacks

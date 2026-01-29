@@ -7,6 +7,14 @@
 
 @MainActor
 class Simulated: SGCManager {
+    init() {
+        GlassesStore.shared.apply("glasses", "ready", true)
+        GlassesStore.shared.apply("glasses", "connected", true)
+        GlassesStore.shared.apply("glasses", "connectionState", ConnTypes.CONNECTED)
+        GlassesStore.shared.apply("glasses", "micEnabled", false)
+        GlassesStore.shared.apply("glasses", "btcConnected", false)
+    }
+
     // MARK: - Device Information
 
     var type: String = DeviceTypes.SIMULATED

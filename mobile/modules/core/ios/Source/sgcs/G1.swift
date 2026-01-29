@@ -365,7 +365,7 @@ class G1: NSObject, SGCManager {
             let oldValue = _ready
             _ready = newValue
             if oldValue != newValue {
-                CoreManager.shared.handleConnectionStateChanged()
+                GlassesStore.shared.apply("glasses", "ready", newValue)
             }
             if !newValue {
                 // Reset battery levels when disconnected

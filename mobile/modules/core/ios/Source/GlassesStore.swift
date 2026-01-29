@@ -102,7 +102,6 @@ class GlassesStore {
 
         // Trigger hardware updates based on setting changes
         switch (category, key) {
-
         case ("glasses", "ready"):
             if let ready = value as? Bool {
                 if ready {
@@ -118,8 +117,7 @@ class GlassesStore {
                 Bridge.sendHeadUp(headUp)
             }
 
-
-        /// CORE:
+        // CORE:
 
         case ("core", "auth_email"):
             if let email = value as? String {
@@ -151,7 +149,7 @@ class GlassesStore {
             Task {
                 CoreManager.shared.sgc?.setBrightness(b, autoMode: auto)
                 CoreManager.shared.sgc?.sendTextWall("Set brightness to \(b)%")
-                try? await Task.sleep(nanoseconds: 800_000_000)  // 0.8 seconds
+                try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
                 CoreManager.shared.sgc?.clearDisplay()
             }
 
@@ -165,7 +163,7 @@ class GlassesStore {
                     CoreManager.shared.sgc?.sendTextWall(
                         auto ? "Enabled auto brightness" : "Disabled auto brightness"
                     )
-                    try? await Task.sleep(nanoseconds: 800_000_000)  // 0.8 seconds
+                    try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
                     CoreManager.shared.sgc?.clearDisplay()
                 }
             }
@@ -205,7 +203,7 @@ class GlassesStore {
             CoreManager.shared.sgc?.sendButtonMaxRecordingTime()
 
         case ("core", "button_video_width"), ("core", "button_video_height"),
-            ("core", "button_video_fps"):
+             ("core", "button_video_fps"):
             CoreManager.shared.sgc?.sendButtonVideoRecordingSettings()
 
         case ("core", "preferred_mic"):
@@ -239,7 +237,7 @@ class GlassesStore {
         case ("core", "default_wearable"):
             if let wearable = value as? String {
                 Bridge.saveSetting("default_wearable", wearable)
-                CoreManager.shared.getStatus()// force update connection status
+                CoreManager.shared.getStatus() // force update connection status
             }
 
         case ("core", "device_name"):
@@ -251,9 +249,10 @@ class GlassesStore {
             if let logs = value as? [String] {
                 // ensure the list is trimmed to 100 items (remove oldest items)
                 // if logs.count > 100 {
-                    // store.set("core", "lastLog", logs.subList(0, logs.count - 100))
+                // store.set("core", "lastLog", logs.subList(0, logs.count - 100))
                 // }
             }
+
         default:
             break
         }
