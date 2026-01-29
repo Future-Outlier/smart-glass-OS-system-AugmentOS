@@ -802,6 +802,11 @@ struct ViewState {
 
     func checkCurrentAudioDevice() {
         let audioDevicePattern = getAudioDevicePattern()
+        
+        if audioDevicePattern.isEmpty || audioDevicePattern == DeviceTypes.SIMULATED {
+            Bridge.log("MAN: Audio device pattern is empty or simulated, returning")
+            return
+        }
 
         // check if the device disconnected:
         let isConnected = AudioSessionMonitor.isAudioDeviceConnected(
@@ -809,7 +814,6 @@ struct ViewState {
         if !isConnected {
             Bridge.log("MAN: Device '\(deviceName)' disconnected")
             glassesBtcConnected = false
-            getStatus()
             return
         }
 
@@ -864,14 +868,14 @@ struct ViewState {
     // MARK: - connection state management
 
     func handleConnectionStateChanged() {
-        Bridge.log("MAN: Glasses: connection state changed!")
-        if sgc == nil { return }
-        if sgc!.ready {
-            handleDeviceReady()
-        } else {
-            handleDeviceDisconnected()
-            getStatus()
-        }
+        // Bridge.log("MAN: Glasses: connection state changed!")
+        // if sgc == nil { return }
+        // if sgc!.ready {
+        //     handleDeviceReady()
+        // } else {
+        //     handleDeviceDisconnected()
+        //     getStatus()
+        // }
     }
 
     func handleDeviceReady() {
@@ -904,9 +908,6 @@ struct ViewState {
         } else if defaultWearable.contains(DeviceTypes.Z100) {
             handleMach1Ready() // Z100 uses same initialization as Mach1
         }
-
-        // send to the server our battery status:
-        Bridge.sendBatteryStatus(level: sgc.batteryLevel ?? -1, charging: false)
 
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
@@ -1267,21 +1268,6 @@ struct ViewState {
     }
 
     func getStatus() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            let glassesConnected = sgc?.ready ?? false
-            if glassesConnected {
-                searching = false
-            }
-
-            // Set derived/computed state (properties backed by GlassesStore are already synced via protocol extension)
-            GlassesStore.shared.set("glasses", "connected", sgc?.ready ?? false)
-
-            // Add Bluetooth device name if available
-            if let bluetoothName = sgc?.getConnectedBluetoothName() {
-                GlassesStore.shared.set("glasses", "bluetoothName", bluetoothName)
-            }
-        }
     }
 
     func cleanup() {

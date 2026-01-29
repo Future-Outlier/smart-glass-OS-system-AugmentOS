@@ -3,47 +3,9 @@ package com.mentra.core.sgcs
 import com.mentra.core.utils.ConnTypes
 
 abstract class SGCManager {
-    // Device Information
+    // Hard coded device properties:
     @JvmField var type: String = ""
-    @JvmField var ready: Boolean = false
-    @JvmField
-    var connectionState: String =
-            ConnTypes.DISCONNECTED // "disconnected" | "connected" | "connecting"
-
-    @JvmField var protobufSchemaVersion: String = ""
-    @JvmField var glassesProtobufVersion: String = ""
-
-    @JvmField var appVersion: String = ""
-    @JvmField var buildNumber: String = ""
-    @JvmField var deviceModel: String = ""
-    @JvmField var androidVersion: String = ""
-    @JvmField var otaVersionUrl: String = ""
-    @JvmField var firmwareVersion: String = ""
-    @JvmField var btMacAddress: String = ""
-    @JvmField var serialNumber: String = ""
-    @JvmField var style: String = ""
-    @JvmField var color: String = ""
-
-    // Hardware Status
     @JvmField var hasMic: Boolean = false
-    @JvmField var micEnabled: Boolean = false
-    @JvmField var batteryLevel: Int = -1
-    @JvmField var headUp: Boolean = false
-
-    // Case Status
-    @JvmField var caseOpen: Boolean = false
-    @JvmField var caseRemoved: Boolean = false
-    @JvmField var caseCharging: Boolean = false
-    @JvmField var caseBatteryLevel: Int = -1
-
-    // Network Status
-    @JvmField var wifiSsid: String = ""
-    @JvmField var wifiConnected: Boolean = false
-    @JvmField var wifiLocalIp: String = ""
-    @JvmField var isHotspotEnabled: Boolean = false
-    @JvmField var hotspotSsid: String = ""
-    @JvmField var hotspotPassword: String = ""
-    @JvmField var hotspotGatewayIp: String = ""
 
     // Audio Control
     abstract fun setMicEnabled(enabled: Boolean)

@@ -1346,7 +1346,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         let level = Int(batteryStatus.level)
         let isCharging = batteryStatus.charging
 
-        Bridge.log("NEX: 🔋 Battery Status - Level: \(level)%, Charging: \(charging)")
+        Bridge.log("NEX: 🔋 Battery Status - Level: \(level)%, Charging: \(isCharging)")
 
         // Update @Published properties (G1-compatible approach)
         GlassesStore.shared.apply("glasses", "batteryLevel", level)

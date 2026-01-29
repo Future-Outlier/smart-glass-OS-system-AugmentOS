@@ -603,7 +603,8 @@ public class G1 extends SGCManager {
                         }
                         // CASE CHARGING INFO
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0F) {
-                            caseBatteryLevel = (data[2] & 0xFF);// TODO: verify this is correct
+                            int newCaseBatteryLevel = (data[2] & 0xFF);// TODO: verify this is correct
+                            GlassesStore.INSTANCE.apply("glasses", "caseBatteryLevel", newCaseBatteryLevel);
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
                             CoreManager.getInstance().getStatus();
@@ -1133,9 +1134,9 @@ public class G1 extends SGCManager {
 
                         if (preferredG1DeviceId != null && preferredG1DeviceId.equals(parsedDeviceName)) {
                             // Store the information (matching iOS implementation)
-                            serialNumber = decodedSerial;
-                            style = decoded[0];
-                            color = decoded[1];
+                            GlassesStore.INSTANCE.apply("glasses", "serialNumber", decodedSerial);
+                            GlassesStore.INSTANCE.apply("glasses", "style", decoded[0]);
+                            GlassesStore.INSTANCE.apply("glasses", "color", decoded[1]);
 
                             // Emit the serial number information to React Native
                             emitSerialNumberInfo(decodedSerial, decoded[0], decoded[1]);
@@ -2658,7 +2659,7 @@ public class G1 extends SGCManager {
         Bridge.log("G1: sendSetMicEnabled(): " + enable);
 
         isMicrophoneEnabled = enable; // Update the state tracker
-        micEnabled = enable;
+        GlassesStore.INSTANCE.apply("glasses", "micEnabled", enable);
         micEnableHandler.postDelayed(new Runnable() {
             @Override
             public void run() {

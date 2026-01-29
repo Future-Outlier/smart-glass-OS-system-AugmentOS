@@ -3385,8 +3385,8 @@ public class MentraLive extends SGCManager {
 
         // Update the microphone state tracker
         isMicrophoneEnabled = enable;
-        
-        micEnabled = enable;
+
+        GlassesStore.INSTANCE.apply("glasses", "micEnabled", enable);
 
         // Post event for frontend notification
         // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
