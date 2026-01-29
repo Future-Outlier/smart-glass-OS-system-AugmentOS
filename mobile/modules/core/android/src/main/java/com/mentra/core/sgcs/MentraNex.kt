@@ -171,7 +171,7 @@ class MentraNex : SGCManager() {
             Bridge.log("Device Class: ${device.bluetoothClass}")
             Bridge.log("Bond State: ${device.bondState}")
 
-            if (name == null || !name.contains("Nex1-")) {
+            if (name == null || (!name.contains("Nex1-") && !name.contains("Display-"))) {
                 return
             }
 
@@ -336,7 +336,7 @@ class MentraNex : SGCManager() {
                 val address = device.address
                 
                 name?.let {
-                    if (it.startsWith("Nex1-")) {
+                    if (it.startsWith("Nex1-") || it.startsWith("Display-")) {
                         Bridge.log("bleScanCallback onScanResult: $name address $address")
                         synchronized(foundDeviceNames) {
                             if (!foundDeviceNames.contains(it)) {
@@ -437,8 +437,9 @@ class MentraNex : SGCManager() {
 
     override fun clearDisplay() { 
         Bridge.log("Nex: clearDisplay() - sending clear display request command bytes");
-        val clearDisplayPackets = NexProtobufUtils.generateClearDisplayRequestCommandBytes()
-        sendDataSequentially(clearDisplayPackets, 10)
+        // val clearDisplayPackets = NexProtobufUtils.generateClearDisplayRequestCommandBytes()
+        // sendDataSequentially(clearDisplayPackets, 10)
+        sendTextWall(" ")
         Bridge.log("Nex: clearDisplay() - sent clear display request command bytes");
     }
 
@@ -577,15 +578,17 @@ class MentraNex : SGCManager() {
                 Bridge.log("Stopped heartbeat monitoring and mic beat; cleared sendQueue")
                 updateConnectionState()
                 Bridge.log("Updated connection state after disconnection")
-                
-                gatt.device?.let {
-                    Bridge.log("Closing GATT connection for device: ${it.address}")
-                    gatt.disconnect()
-                    gatt.close()
-                    Bridge.log("GATT connection closed")
-                } ?: run {
-                    Bridge.log("No GATT device available to disconnect")
-                }
+
+                // gatt.device?.let {
+                //     Bridge.log("Closing GATT connection for device: ${it.address}")
+                //     gatt.disconnect()
+                //     gatt.close()
+                //     Bridge.log("GATT connection closed")
+                // } ?: run {
+                //     Bridge.log("No GATT device available to disconnect")
+                // }
+
+                mainTaskHandler?.sendEmptyMessageDelayed(MAIN_TASK_HANDLER_CODE_RECONNECT_DEVICE, 0)
             }
 
             private fun handleConnectionFailure(gatt: BluetoothGatt, status: Int) {

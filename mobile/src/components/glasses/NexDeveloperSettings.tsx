@@ -259,11 +259,11 @@ export default function NexDeveloperSettings() {
   const {status} = useCoreStatus()
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
-  const glassesConnected = useGlassesStore(state => state.connected)
-  const modelName = useGlassesStore(state => state.modelName)
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const modelName = useGlassesStore((state) => state.modelName)
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
-  // Mentra Nex BLE test state variables
+  // Mentra Display BLE test state variables
   const [text, setText] = useState("Hello World")
   const [positionX, setPositionX] = useState("0")
   const [positionY, setPositionY] = useState("0")
@@ -288,7 +288,7 @@ export default function NexDeveloperSettings() {
   const [showFullSenderCommand, setShowFullSenderCommand] = useState(false)
   const [showFullReceiverCommand, setShowFullReceiverCommand] = useState(false)
 
-  // Mentra Nex BLE test event handlers
+  // Mentra Display BLE test event handlers
   useEffect(() => {
     const handleCommandFromSender = (sender: BleCommand) => {
       console.log("handleCommandFromSender:", sender)
@@ -327,7 +327,7 @@ export default function NexDeveloperSettings() {
     }
   }, [])
 
-  // Mentra Nex BLE test handlers
+  // Mentra Display BLE test handlers
   const onSendTextClick = async () => {
     if (glassesConnected) {
       if (text === "" || positionX === null || positionY === null || size === null) {
@@ -435,13 +435,15 @@ export default function NexDeveloperSettings() {
           </View>
         )}
 
-        {/* Mentra Nex BLE Test Section - Only show when connected to Mentra Nex */}
-        {modelName === "Mentra Nex" ? (
+        {/* Mentra Display BLE Test Section - Only show when connected to Mentra Display */}
+        {modelName === "Mentra Display" ? (
           <>
             {/* Custom Display Text Settings */}
             <View style={themed($settingsGroup)}>
               <Text style={themed($sectionTitle)}>Custom Display Text</Text>
-              <Text style={themed($description)}>Set the display text for the Mentra Nex with text, x, y and size</Text>
+              <Text style={themed($description)}>
+                Set the display text for the Mentra Display with text, x, y and size
+              </Text>
 
               <TextInput
                 style={themed($textInput)}
@@ -526,7 +528,7 @@ export default function NexDeveloperSettings() {
                     {label: "32×32", value: "32x32"},
                     {label: "160×160", value: "160x160"},
                     {label: "240×240", value: "240x240"},
-                  ].map(size => (
+                  ].map((size) => (
                     <PillButton
                       key={size.value}
                       text={size.label}
@@ -546,7 +548,7 @@ export default function NexDeveloperSettings() {
                     {label: "Pattern", value: "pattern"},
                     {label: "Checkerboard", value: "checkerboard"},
                     {label: "Solid Color", value: "solid"},
-                  ].map(image => (
+                  ].map((image) => (
                     <PillButton
                       key={image.value}
                       text={image.label}
@@ -677,7 +679,7 @@ export default function NexDeveloperSettings() {
             {/* Ping-Pong Console */}
             <View style={themed($settingsGroup)}>
               <Text style={themed($sectionTitle)}>💓 Ping-Pong Console</Text>
-              <Text style={themed($description)}>Monitor ping-pong communication with Mentra Nex glasses</Text>
+              <Text style={themed($description)}>Monitor ping-pong communication with Mentra Display glasses</Text>
 
               <Text style={themed($label)}>🏓 Last Pong Sent:</Text>
               <Text style={themed($timestampText)}>Time: {formatTimestamp(lastHeartbeatSent)}</Text>
@@ -711,9 +713,9 @@ export default function NexDeveloperSettings() {
           </>
         ) : (
           <View style={themed($settingsGroup)}>
-            <Text style={themed($sectionTitle)}>Mentra Nex Required</Text>
+            <Text style={themed($sectionTitle)}>Mentra Display Required</Text>
             <Text style={themed($description)}>
-              Connect to Mentra Nex glasses to access BLE testing tools and advanced developer features.
+              Connect to Mentra Display glasses to access BLE testing tools and advanced developer features.
             </Text>
           </View>
         )}

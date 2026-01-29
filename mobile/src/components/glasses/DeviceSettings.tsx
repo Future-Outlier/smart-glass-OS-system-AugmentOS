@@ -30,7 +30,7 @@ export default function DeviceSettings() {
     SETTINGS.default_button_action_enabled.key,
   )
   const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS.default_button_action_app.key)
-  const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesConnected = useGlassesStore((state) => state.connected)
 
   const {push, goBack} = useNavigationHistory()
   const applets = useApplets()
@@ -39,9 +39,9 @@ export default function DeviceSettings() {
   // Check if we have any advanced settings to show
   const hasMicrophoneSelector = glassesConnected && defaultWearable && features?.hasMicrophone
 
-  const wifiLocalIp = useGlassesStore(state => state.wifiSsid)
-  const bluetoothName = useGlassesStore(state => state.bluetoothName)
-  const buildNumber = useGlassesStore(state => state.buildNumber)
+  const wifiLocalIp = useGlassesStore((state) => state.wifiSsid)
+  const bluetoothName = useGlassesStore((state) => state.bluetoothName)
+  const buildNumber = useGlassesStore((state) => state.buildNumber)
 
   const hasDeviceInfo = Boolean(bluetoothName || buildNumber || wifiLocalIp)
 
@@ -131,7 +131,7 @@ export default function DeviceSettings() {
       {/* Battery Status Section */}
       {glassesConnected && <BatteryStatus />}
 
-      {/* Nex Developer Settings - Only show when connected to Mentra Nex */}
+      {/* Nex Developer Settings - Only show when connected to Mentra Display */}
       {defaultWearable && defaultWearable.includes(DeviceTypes.NEX) && (
         <RouteButton
           // icon={}
