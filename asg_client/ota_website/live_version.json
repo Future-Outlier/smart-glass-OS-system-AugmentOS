@@ -15,14 +15,9 @@
   },
   "mtk_patches": [
     {
-      "start_firmware": "20241130",
-      "end_firmware": "20250115",
-      "url": "https://ota.mentraglass.com/mtk/20241130_to_20250115.zip"
-    },
-    {
-      "start_firmware": "20250115",
-      "end_firmware": "20250125",
-      "url": "https://ota.mentraglass.com/mtk/20250115_to_20250125.zip"
+      "start_firmware": "MentraLive_20260113",
+      "end_firmware": "MentraLive_20260129",
+      "url": "https://github.com/Mentra-Community/MentraOS/releases/download/asg-client/mtk_firmware_20260113_20260129.zip"
     }
   ],
   "bes_firmware": {
