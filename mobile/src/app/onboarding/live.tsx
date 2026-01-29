@@ -11,7 +11,6 @@ const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-li
 export default function MentraLiveOnboarding() {
   const {pushPrevious} = useNavigationHistory()
   const [_onboardingLiveCompleted, setOnboardingLiveCompleted] = useSetting(SETTINGS.onboarding_live_completed.key)
-  // focusEffectPreventBack()
 
   // NOTE: you can't have 2 transition videos in a row or things will break:
   let steps: OnboardingStep[] = [
@@ -22,26 +21,9 @@ export default function MentraLiveOnboarding() {
       name: "Start Onboarding",
       playCount: 1,
       transition: true,
-      // title: " ", // for spacing so it's consistent with the other steps
-      // title: "Welcome to Mentra Live",
-      // info: "Learn the basics",
       title: translate("onboarding:liveWelcomeTitle"),
       subtitle: translate("onboarding:liveWelcomeSubtitle"),
     },
-    // {
-    //   type: "video",
-    //   source: `${CDN_BASE}/ONB1_power_button.mp4`,
-    //   name: "Power Button",
-    //   loop: true,
-    //   transition: false,
-    // },
-    // {
-    //   type: "video",
-    //   source: `${CDN_BASE}/ONB2_pairing_successful.mp4`,
-    //   name: "Pairing Successful",
-    //   loop: false,
-    //   transition: false,
-    // },
     {
       type: "video",
       source: `${CDN_BASE}/ONB4_action_button_click.mp4`,
@@ -137,12 +119,6 @@ export default function MentraLiveOnboarding() {
         })
       },
     },
-    // {
-    //   source: `${CDN_BASE}/ONB8_transition_trackpad2.mp4`,
-    //   name: "Transition Trackpad 2",
-    //   loop: false,
-    //   transition: true,
-    // },
     {
       type: "video",
       source: `${CDN_BASE}/ONB8_trackpad_slide.mp4`,
@@ -192,9 +168,8 @@ export default function MentraLiveOnboarding() {
       name: "End",
       playCount: 1,
       transition: false,
-      subtitle: translate("onboarding:liveEndTitle"),
-      subtitle2: translate("onboarding:liveEndMessage"),
-      title: " ", // for spacing so it's consistent with the other steps
+      title: translate("onboarding:liveEndTitle"),
+      subtitle: translate("onboarding:liveEndMessage"),
     },
   ]
 

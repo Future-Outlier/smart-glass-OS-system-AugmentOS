@@ -155,7 +155,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
                 flex
                 compact
                 LeftAccessory={() => (
-                  <ActivityIndicator size="small" color={theme.colors.foreground} style={{marginLeft: 5}} />
+                  <ActivityIndicator size="small" color={theme.colors.primary_foreground} style={{marginRight: 8}} />
                 )}
                 text={connectingText}
                 // tx="home:connectingGlasses"

@@ -28,6 +28,7 @@ export default function SelectGlassesBluetoothScreen() {
   const btcConnected = useGlassesStore((state) => state.btcConnected)
   const [_deviceName, setDeviceName] = useSetting(SETTINGS.device_name.key)
   const searchResults = useCoreStore((state) => state.searchResults)
+  const [rememberedSearchResults, setRememberedSearchResults] = useState<DeviceSearchResult[]>(searchResults)
 
   // useFocusEffect(
   //   useCallback(() => {
@@ -105,20 +106,16 @@ export default function SelectGlassesBluetoothScreen() {
   }
 
   // remember the search results to ensure consistent ordering:
-  const rememberedSearchResults = useRef<DeviceSearchResult[]>(searchResults)
   useEffect(() => {
-    // ensure remembered search results is a set:
-    for (const result of searchResults) {
-      if (!rememberedSearchResults.current.includes(result)) {
-        rememberedSearchResults.current.push(result)
+    setRememberedSearchResults((prev) => {
+      const combined = [...prev]
+      for (const result of searchResults) {
+        if (!combined.some((r) => r.deviceAddress === result.deviceAddress && r.deviceName === result.deviceName)) {
+          combined.push(result)
+        }
       }
-    }
-
-    // ensure remembered search results has no duplicates:
-    rememberedSearchResults.current = rememberedSearchResults.current.filter(
-      (result, index, self) =>
-        index === self.findIndex((t) => t.deviceAddress === result.deviceAddress && t.deviceName === result.deviceName),
-    )
+      return combined
+    })
   }, [searchResults])
 
   return (
@@ -132,14 +129,14 @@ export default function SelectGlassesBluetoothScreen() {
             text={translate("pairing:scanningForGlassesModel", {model: deviceModel})}
           />
 
-          {!rememberedSearchResults.current || rememberedSearchResults.current.length === 0 ? (
+          {!rememberedSearchResults || rememberedSearchResults.length === 0 ? (
             <View className="flex-1 justify-center py-4">
               <ActivityIndicator size="large" color={theme.colors.foreground} />
             </View>
           ) : (
             <ScrollView className="max-h-[300px] -mr-4 pr-4">
               <Group>
-                {rememberedSearchResults.current.map((res: DeviceSearchResult, index: number) => (
+                {rememberedSearchResults.map((res: DeviceSearchResult, index: number) => (
                   <TouchableOpacity
                     key={index}
                     className="h-[50px] flex-row items-center justify-between bg-background px-4 py-3"

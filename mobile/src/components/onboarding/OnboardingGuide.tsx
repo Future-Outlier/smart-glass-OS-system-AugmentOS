@@ -248,7 +248,7 @@ export function OnboardingGuide({
 
     // The start is a special case
     if (currentIndex === 0 || currentIndex === 1) {
-      setHasStarted(autoStart)// if autoStart is true, we don't want to reset the hasStarted state (because it's already started)
+      setHasStarted(autoStart) // if autoStart is true, we don't want to reset the hasStarted state (because it's already started)
       setCurrentIndex(0)
       setActivePlayer(1)
       setShowReplayButton(false)
@@ -725,7 +725,7 @@ export function OnboardingGuide({
     // }
 
     return (
-      <View id="step-content" className="flex mb-4 h-26 gap-3 w-full justify-center">
+      <View id="step-content" className="flex mb-4 h-34 gap-3 w-full justify-start">
         {step.title && (
           <Text className={`${step.info ? "text-start" : "text-center"} text-2xl font-semibold`} text={step.title} />
         )}
@@ -749,9 +749,9 @@ export function OnboardingGuide({
     const showDebug = superMode && waitState && step.waitFn
     if (!showCheck && !showDebug) {
       // still show a small height if there is a waitFn so the text doesn't move around:
-      if (step.waitFn) {
+      // if (step.waitFn) {
         return <View className="h-12" />
-      }
+      // }
       return null
     }
     return (
@@ -780,23 +780,24 @@ export function OnboardingGuide({
 
   const showCounter = hasStarted && steps.length > 1
   const showContent = step.title || step.subtitle || step.info
+  const shouldPadTop = !step.bullets && !step.numberedBullets
 
   return (
     <>
-      {showHeader && (
-        <Header
-          leftIcon={showCloseButton ? "x" : undefined}
-          RightActionComponent={
-            <View className={`flex flex-row gap-2 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
-              <Text className="text-center text-sm font-medium" text={showCounter ? counter : ""} />
-              <MentraLogoStandalone />
-            </View>
-          }
-          onLeftPress={handleExit}
-        />
-      )}
-      <View id="main" className="flex-1">
-        <View id="top" className={`${showContent ? "mt-20" : "mt-8"}`}>
+      <View id="main" className="flex-1 justify-between">
+        {showHeader && (
+          <Header
+            leftIcon={showCloseButton ? "x" : undefined}
+            RightActionComponent={
+              <View className={`flex flex-row gap-2 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
+                <Text className="text-center text-sm font-medium" text={showCounter ? counter : ""} />
+                <MentraLogoStandalone />
+              </View>
+            }
+            onLeftPress={handleExit}
+          />
+        )}
+        <View id="top">
           {showContent && renderStepContent()}
           <View className="-mx-6">
             <View className="relative" style={{width: "100%", aspectRatio: 1}}>
@@ -809,16 +810,18 @@ export function OnboardingGuide({
             )}
           </View>
         </View>
-        <View className="flex-1">
+        <View className="flex">
           {renderStepCheck()}
           {renderBullets()}
           {renderNumberedBullets()}
         </View>
-        
+
         <View id="bottom" className={`flex justify-end flex-shrink min-h-12`}>
           {!hasStarted && (
-            <View className="flex-col gap-4">
-              <Button text={startButtonText} onPress={handleStart} />
+            <View className="flex-col">
+              <View className="absolute w-full bottom-15 z-10">
+                <Button flexContainer text={startButtonText} onPress={handleStart} />
+              </View>
               {showSkipButton && <Button preset="secondary" tx="common:skip" onPress={handleSkip} />}
             </View>
           )}
