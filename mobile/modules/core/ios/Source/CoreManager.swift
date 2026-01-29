@@ -873,6 +873,10 @@ struct ViewState {
         defaultWearable = sgc.type
         searching = false
 
+        // TODO: this should be set in the SGC itself, not here
+        GlassesStore.shared.apply("glasses", "ready", true)
+        GlassesStore.shared.apply("glasses", "connected", true)
+
         // Show welcome message on first connect for all display glasses
         if shouldSendBootingMessage {
             Task {
