@@ -6,7 +6,7 @@ import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {checkForOtaUpdate, VersionInfo} from "@/effects/OtaUpdateChecker"
+import {checkForOtaUpdate} from "@/effects/OtaUpdateChecker"
 import {translate} from "@/i18n/translate"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
@@ -26,7 +26,7 @@ export default function OtaCheckForUpdatesScreen() {
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
 
   const [checkState, setCheckState] = useState<CheckState>("checking")
-  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null)
+  const [availableUpdates, setAvailableUpdates] = useState<string[]>([])
 
   focusEffectPreventBack()
 
@@ -62,7 +62,7 @@ export default function OtaCheckForUpdatesScreen() {
 
         if (result.updateAvailable && result.latestVersionInfo) {
           console.log("📱 Updates available - setting update_available state")
-          setVersionInfo(result.latestVersionInfo)
+          setAvailableUpdates(result.updates || [])
           setCheckState("update_available")
         } else {
           console.log("📱 No updates available - setting no_update state")
@@ -118,6 +118,7 @@ export default function OtaCheckForUpdatesScreen() {
 
     // Update available state
     if (checkState === "update_available") {
+      const updateList = availableUpdates.map((u) => u.toUpperCase()).join(", ")
       return (
         <>
           <View className="flex-1 items-center justify-center px-6">
@@ -126,7 +127,7 @@ export default function OtaCheckForUpdatesScreen() {
             <Text text={translate("ota:updateAvailable", {deviceName})} className="font-semibold text-xl text-center" />
             <View className="h-2" />
             <Text
-              text={`Version ${versionInfo?.versionName || versionInfo?.versionCode || "Unknown"}`}
+              text={`Updates available: ${updateList}`}
               className="text-base text-center"
               style={{color: theme.colors.textDim}}
             />
@@ -136,7 +137,7 @@ export default function OtaCheckForUpdatesScreen() {
 
           <View className="gap-3 pb-2">
             <Button preset="primary" tx="ota:updateNow" onPress={handleUpdateNow} />
-            <Button preset="secondary" tx="ota:updateLater" onPress={handleSkip} />
+            {__DEV__ && <Button preset="secondary" text="Update Later (dev mode only)" onPress={handleSkip} />}
           </View>
         </>
       )
