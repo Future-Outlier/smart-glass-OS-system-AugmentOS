@@ -3809,15 +3809,6 @@ public class G1 extends SGCManager {
     }
 
     /**
-     * Returns whether the microphone is currently enabled
-     *
-     * @return true if microphone is enabled, false otherwise
-     */
-    public boolean isMicrophoneEnabled() {
-        return micEnabled;
-    }
-
-    /**
      * Decodes Even G1 serial number to extract style and color information
      *
      * @param serialNumber The full serial number (e.g., "S110LABD020021")

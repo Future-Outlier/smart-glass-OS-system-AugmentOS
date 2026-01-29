@@ -3405,14 +3405,6 @@ public class MentraLive extends SGCManager {
         }
     }
 
-    /**
-     * Returns whether the microphone is currently enabled
-     * @return true if microphone is enabled, false otherwise
-     */
-    public boolean isMicrophoneEnabled() {
-        return isMicrophoneEnabled;
-    }
-
     public void requestPhoto(String requestId, String appId, String size, String webhookUrl, String authToken, String compress, boolean silent) {
         Bridge.log("LIVE: Requesting photo: " + requestId + " for app: " + appId + " with size: " + size + ", webhookUrl: " + webhookUrl + ", authToken: " + (authToken.isEmpty() ? "none" : "***") + ", compress=" + compress + ", silent=" + silent);
 
