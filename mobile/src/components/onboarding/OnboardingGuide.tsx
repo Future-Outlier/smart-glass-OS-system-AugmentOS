@@ -103,6 +103,7 @@ export function OnboardingGuide({
   // Initialize players with first video sources found
   const initialSource1 = useMemo(() => findNextVideoSource(steps, 0), [steps])
   const initialSource2 = useMemo(() => findNextVideoSource(steps, 1), [steps])
+  const [isUnmounted, setIsUnmounted] = useState(false)
 
   const player1: VideoPlayer = useVideoPlayer(initialSource1, (player: any) => {
     player.loop = false
@@ -120,7 +121,7 @@ export function OnboardingGuide({
   const step = steps[currentIndex]
   const isCurrentStepImage = step.type === "image"
   const isCurrentStepVideo = step.type === "video"
-
+  
   // Handle image step timing
   useEffect(() => {
     if (!hasStarted || !isCurrentStepImage) return
@@ -235,6 +236,14 @@ export function OnboardingGuide({
     },
     [currentIndex, activePlayer, uiIndex, steps, transitionCount, clearHistoryAndGoHome],
   )
+  
+  const handleEndButton = useCallback(() => {
+    if (endButtonFn) {
+      endButtonFn()
+    } else {
+      clearHistoryAndGoHome()
+    }
+  }, [endButtonFn, clearHistoryAndGoHome])
 
   const handleBack = useCallback(() => {
     setUiIndex(uiIndex - 1)
@@ -755,6 +764,10 @@ export function OnboardingGuide({
 
   const showCounter = hasStarted && steps.length > 1
 
+  if (isUnmounted) {
+    return null
+  }
+
   return (
     <>
       {showHeader && (
@@ -828,7 +841,7 @@ export function OnboardingGuide({
           {hasStarted && (
             <View className="flex-row gap-4">
               {!isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
-              {!isLastStep ? renderContinueButton() : <Button flex text={endButtonText} onPress={endButtonFn} />}
+              {!isLastStep ? renderContinueButton() : <Button flex text={endButtonText} onPress={handleEndButton} />}
             </View>
           )}
         </View>
