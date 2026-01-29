@@ -108,7 +108,7 @@ public class OtaHelper {
     // When false, OTA updates only happen when initiated by the phone app.
     // When true, glasses will also check for updates autonomously (initial check, periodic checks, WiFi callback).
     // Disabled by default since phone-initiated OTA is the preferred flow.
-    private static final boolean AUTONOMOUS_OTA_ENABLED = true;
+    private static final boolean AUTONOMOUS_OTA_ENABLED = false;
 
     // ========== Phone-Controlled OTA State ==========
 
