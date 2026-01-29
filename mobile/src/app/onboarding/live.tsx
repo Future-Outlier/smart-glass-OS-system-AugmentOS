@@ -156,7 +156,7 @@ export default function MentraLiveOnboarding() {
       waitFn: (): Promise<void> => {
         return new Promise<void>((resolve) => {
           const unsub = CoreModule.addListener("touch_event", (data: TouchEvent) => {
-            if (data?.gesture_name === "up_swipe") {
+            if (data?.gesture_name === "forward_swipe" || data?.gesture_name === "backward_swipe") {
               unsub.remove()
               resolve()
             }
