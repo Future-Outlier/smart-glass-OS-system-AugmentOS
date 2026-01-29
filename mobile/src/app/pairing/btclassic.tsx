@@ -1,24 +1,19 @@
-import {useEffect, useState} from "react"
-import {Header, Screen} from "@/components/ignite"
+import {useEffect} from "react"
+import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {translate} from "@/i18n"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
 import CoreModule from "core"
-import {AudioPairingPrompt} from "@/components/pairing/AudioPairingPrompt"
-import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import { SettingsNavigationUtils } from "@/utils/SettingsNavigationUtils"
+import {SettingsNavigationUtils} from "@/utils/SettingsNavigationUtils"
 
-const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
 
 export default function BtClassicPairingScreen() {
   const {pushPrevious, goBack} = useNavigationHistory()
   const btcConnected = useGlassesStore((state) => state.btcConnected)
   const [deviceName] = useSetting(SETTINGS.device_name.key)
-  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
-  const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
-  
+
   focusEffectPreventBack()
 
   const handleSuccess = () => {
@@ -60,12 +55,12 @@ export default function BtClassicPairingScreen() {
       source: require("@assets/onboarding/os/thumbnails/btclassic.png"),
       name: "Start Onboarding",
       transition: false,
-      title: translate("onboarding:btClassicTitle"), // for spacing so it's consistent with the other steps
+      title: translate("onboarding:btClassicTitle"),
       subtitle: translate("onboarding:btClassicSubtitle", {name: deviceName}),
       numberedBullets: [
         translate("onboarding:btClassicStep1"),
         translate("onboarding:btClassicStep2"),
-        translate("onboarding:btClassicStep3"),
+        translate("onboarding:btClassicStep3", {name: deviceName}),
         translate("onboarding:btClassicStep4"),
       ],
     },

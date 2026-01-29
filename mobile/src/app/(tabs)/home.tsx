@@ -32,9 +32,12 @@ export default function Homepage() {
   const renderContent = () => {
     if (!defaultWearable) {
       return (
-        <Group>
-          <PairGlassesCard />
-        </Group>
+        <>
+          {debugCoreStatusBarEnabled && <CoreStatusBar />}
+          <Group>
+            <PairGlassesCard />
+          </Group>
+        </>
       )
     }
 

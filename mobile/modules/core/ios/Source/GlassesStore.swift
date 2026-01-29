@@ -103,6 +103,7 @@ class GlassesStore {
         // Trigger hardware updates based on setting changes
         switch (category, key) {
         case ("glasses", "ready"):
+            Bridge.log("MAN: Glasses ready changed to \(value)")
             if let ready = value as? Bool {
                 if ready {
                     CoreManager.shared.handleDeviceReady()
