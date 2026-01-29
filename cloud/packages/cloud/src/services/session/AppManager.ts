@@ -1210,20 +1210,26 @@ export class AppManager {
       const user = await User.findOrCreateUser(this.userSession.userId);
       const userSettings = user.getAppSettings(packageName) || app?.settings || [];
 
-      // Get user's AugmentOS system settings with fallback to defaults
-      // NOTE: user.augmentosSettings is legacy - new settings go through UserSettings model
-      // This fallback is kept for backward compatibility with apps expecting augmentosSettings in CONNECTION_ACK
-      const userAugmentosSettings = user.augmentosSettings || {
-        useOnboardMic: false,
-        contextualDashboard: true,
-        headUpAngle: 20,
-        brightness: 50,
-        autoBrightness: false,
-        sensingEnabled: true,
-        alwaysOnStatusBar: false,
-        bypassVad: false,
-        bypassAudioEncoding: false,
-        metricSystemEnabled: false,
+      // Load MentraOS system settings from UserSettings model (the new source of truth)
+      // Map from REST keys (snake_case) to SDK keys (camelCase) for backward compatibility
+      // Keys must match exactly what mobile sends (see mobile/src/stores/settings.ts)
+      const settingsSnapshot = this.userSession.userSettingsManager.getSnapshot();
+      const mentraosSettings = {
+        // Primary settings apps care about
+        metricSystemEnabled: settingsSnapshot.metric_system ?? false,
+        contextualDashboard: settingsSnapshot.contextual_dashboard ?? true,
+        headUpAngle: settingsSnapshot.head_up_angle ?? 45,
+        brightness: settingsSnapshot.brightness ?? 50,
+        autoBrightness: settingsSnapshot.auto_brightness ?? true,
+        sensingEnabled: settingsSnapshot.sensing_enabled ?? true,
+        alwaysOnStatusBar: settingsSnapshot.always_on_status_bar ?? false,
+        // Mobile uses "_for_debugging" suffix for these keys
+        bypassVad: settingsSnapshot.bypass_vad_for_debugging ?? false,
+        bypassAudioEncoding: settingsSnapshot.bypass_audio_encoding_for_debugging ?? false,
+        // Mobile uses preferred_mic instead of useOnboardMic
+        preferredMic: settingsSnapshot.preferred_mic ?? "auto",
+        // Legacy key for backward compat (derived from preferred_mic)
+        useOnboardMic: settingsSnapshot.preferred_mic === "glasses",
       };
 
       // Send connection acknowledgment with capabilities
@@ -1231,7 +1237,7 @@ export class AppManager {
         type: CloudToAppMessageType.CONNECTION_ACK,
         sessionId: sessionId,
         settings: userSettings,
-        augmentosSettings: userAugmentosSettings,
+        mentraosSettings: mentraosSettings,
         capabilities: this.userSession.getCapabilities(),
         timestamp: new Date(),
       };

@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # Manual trigger fallback
   push:
     branches:
-      - cloud/udp-audio-encryption
+      - cloud/settings-system-cleanup
     paths:
       - "cloud/**"
       - ".github/workflows/porter-debug.yml"
