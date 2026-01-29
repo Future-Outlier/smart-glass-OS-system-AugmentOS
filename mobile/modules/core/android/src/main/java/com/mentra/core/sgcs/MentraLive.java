@@ -492,7 +492,7 @@ public class MentraLive extends SGCManager {
         }
 
         // Initialize connection state
-        connectionState = ConnTypes.DISCONNECTED;
+        GlassesStore.INSTANCE.apply("glasses", "connectionState", ConnTypes.DISCONNECTED);
 
         // Initialize CTKD bonding receiver
         initializeBondingReceiver();
@@ -561,13 +561,13 @@ public class MentraLive extends SGCManager {
     }
 
     private void updateConnectionState(String state) {
-        boolean isEqual = state.equals(connectionState);
+        boolean isEqual = state.equals(getConnectionState());
         if (isEqual) {
             return;
         }
 
         // Actually update the connection state!
-        connectionState = state;
+        GlassesStore.INSTANCE.apply("glasses", "connectionState", state);
 
         if (state.equals(ConnTypes.CONNECTED)) {
             GlassesStore.INSTANCE.apply("glasses", "ready", true);
@@ -2000,7 +2000,7 @@ public class MentraLive extends SGCManager {
                         Log.e(TAG, "   - bluetoothGatt: " + (bluetoothGatt != null ? "NOT NULL" : "NULL"));
                         Log.e(TAG, "   - txCharacteristic: " + (txCharacteristic != null ? "NOT NULL" : "NULL"));
                         Log.e(TAG, "   - rxCharacteristic: " + (rxCharacteristic != null ? "NOT NULL" : "NULL"));
-                        Log.e(TAG, "   - connectionState: " + connectionState);
+                        Log.e(TAG, "   - connectionState: " + getConnectionState());
                         Log.e(TAG, "   - glassesReady: " + glassesReady);
                     }
                 }
@@ -2021,7 +2021,7 @@ public class MentraLive extends SGCManager {
 
             case "battery_status":
                 // Process battery status
-                int percent = json.optInt("percent", batteryLevel);
+                int percent = json.optInt("percent", getBatteryLevel());
                 boolean charging = json.optBoolean("charging", isCharging);
                 updateBatteryStatus(percent, charging);
                 break;
@@ -2216,7 +2216,7 @@ public class MentraLive extends SGCManager {
                 // Process touch event from glasses (swipes, taps, long press)
                 String gestureName = json.optString("gesture_name", "unknown");
                 long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
-                String touchDeviceModel = json.optString("device_model", deviceModel);
+                String touchDeviceModel = json.optString("device_model", getDeviceModel());
 
                 Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
 
@@ -2364,13 +2364,13 @@ public class MentraLive extends SGCManager {
                     String btMacAddressChunked = json.optString("bt_mac_address", "");
 
                     // Update parent SGCManager fields
-                    appVersion = appVersionChunked;
-                    buildNumber = buildNumberChunked;
-                    deviceModel = deviceModelChunked;
-                    androidVersion = androidVersionChunked;
-                    otaVersionUrl = otaVersionUrlChunked != null ? otaVersionUrlChunked : "";
-                    firmwareVersion = firmwareVersionChunked;
-                    btMacAddress = btMacAddressChunked;
+                    GlassesStore.INSTANCE.apply("glasses", "appVersion", appVersionChunked);
+                    GlassesStore.INSTANCE.apply("glasses", "buildNumber", buildNumberChunked);
+                    GlassesStore.INSTANCE.apply("glasses", "deviceModel", deviceModelChunked);
+                    GlassesStore.INSTANCE.apply("glasses", "androidVersion", androidVersionChunked);
+                    GlassesStore.INSTANCE.apply("glasses", "otaVersionUrl", otaVersionUrlChunked != null ? otaVersionUrlChunked : "");
+                    GlassesStore.INSTANCE.apply("glasses", "firmwareVersion", firmwareVersionChunked);
+                    GlassesStore.INSTANCE.apply("glasses", "btMacAddress", btMacAddressChunked);
 
                     // Parse build number as integer for version checks (local field)
                     try {
@@ -2412,43 +2412,43 @@ public class MentraLive extends SGCManager {
                 Bridge.log("LIVE: Received version info from ASG client: " + json.toString());
 
                 // Extract version information
-                String appVersion = json.optString("app_version", "");
-                String buildNumber = json.optString("build_number", "");
-                String deviceModel = json.optString("device_model", "");
-                String androidVersion = json.optString("android_version", "");
-                String otaVersionUrl = json.optString("ota_version_url", null);
-                String firmwareVersion = json.optString("firmware_version", "");
-                String btMacAddress = json.optString("bt_mac_address", "");
+                String appVersionLegacy = json.optString("app_version", "");
+                String buildNumberLegacy = json.optString("build_number", "");
+                String deviceModelLegacy = json.optString("device_model", "");
+                String androidVersionLegacy = json.optString("android_version", "");
+                String otaVersionUrlLegacy = json.optString("ota_version_url", null);
+                String firmwareVersionLegacy = json.optString("firmware_version", "");
+                String btMacAddressLegacy = json.optString("bt_mac_address", "");
 
                 // Update parent SGCManager fields
-                appVersion = appVersion;
-                buildNumber = buildNumber;
-                deviceModel = deviceModel;
-                androidVersion = androidVersion;
-                otaVersionUrl = otaVersionUrl != null ? otaVersionUrl : "";
-                firmwareVersion = firmwareVersion;
-                btMacAddress = btMacAddress;
+                GlassesStore.INSTANCE.apply("glasses", "appVersion", appVersionLegacy);
+                GlassesStore.INSTANCE.apply("glasses", "buildNumber", buildNumberLegacy);
+                GlassesStore.INSTANCE.apply("glasses", "deviceModel", deviceModelLegacy);
+                GlassesStore.INSTANCE.apply("glasses", "androidVersion", androidVersionLegacy);
+                GlassesStore.INSTANCE.apply("glasses", "otaVersionUrl", otaVersionUrlLegacy != null ? otaVersionUrlLegacy : "");
+                GlassesStore.INSTANCE.apply("glasses", "firmwareVersion", firmwareVersionLegacy);
+                GlassesStore.INSTANCE.apply("glasses", "btMacAddress", btMacAddressLegacy);
 
                 // Parse build number as integer for version checks (local field)
                 try {
-                    buildNumberInt = Integer.parseInt(buildNumber);
+                    buildNumberInt = Integer.parseInt(buildNumberLegacy);
                     Bridge.log("LIVE: Parsed build number as integer: " + buildNumberInt);
                 } catch (NumberFormatException e) {
                     buildNumberInt = 0;
-                    Log.e(TAG, "Failed to parse build number as integer: " + buildNumber);
+                    Log.e(TAG, "Failed to parse build number as integer: " + buildNumberLegacy);
                 }
 
-                Bridge.log("LIVE: Glasses Version - App: " + appVersion +
-                      ", Build: " + buildNumber +
-                      ", Device: " + deviceModel +
-                      ", Android: " + androidVersion +
-                      ", Firmware: " + firmwareVersion +
-                      ", BT MAC: " + btMacAddress +
-                      ", OTA URL: " + otaVersionUrl);
+                Bridge.log("LIVE: Glasses Version - App: " + appVersionLegacy +
+                      ", Build: " + buildNumberLegacy +
+                      ", Device: " + deviceModelLegacy +
+                      ", Android: " + androidVersionLegacy +
+                      ", Firmware: " + firmwareVersionLegacy +
+                      ", BT MAC: " + btMacAddressLegacy +
+                      ", OTA URL: " + otaVersionUrlLegacy);
 
                 // Send version info event (matches iOS emitVersionInfo)
-                Bridge.sendVersionInfo(appVersion, buildNumber, deviceModel, androidVersion,
-                      otaVersionUrl != null ? otaVersionUrl : "", firmwareVersion, btMacAddress);
+                Bridge.sendVersionInfo(appVersionLegacy, buildNumberLegacy, deviceModelLegacy, androidVersionLegacy,
+                      otaVersionUrlLegacy != null ? otaVersionUrlLegacy : "", firmwareVersionLegacy, btMacAddressLegacy);
 
                 // Notify CoreManager to update status and send to frontend
                 CoreManager.getInstance().getStatus();
@@ -2905,8 +2905,8 @@ public class MentraLive extends SGCManager {
      */
     private void updateBatteryStatus(int level, boolean isCharging) {
         // Update parent SGCManager fields
-        batteryLevel = level;  // Parent class field
-        charging = isCharging;  // Local field
+        GlassesStore.INSTANCE.apply("glasses", "batteryLevel", level);
+        GlassesStore.INSTANCE.apply("glasses", "charging", isCharging);
     }
 
     /**
@@ -2917,9 +2917,9 @@ public class MentraLive extends SGCManager {
         Bridge.log("LIVE: 🌐 Updating WiFi status - connected: " + connected + ", SSID: " + ssid);
 
         // Update parent SGCManager fields
-        wifiConnected = connected;
-        wifiSsid = ssid;
-        wifiLocalIp = localIp;
+        GlassesStore.INSTANCE.apply("glasses", "wifiConnected", connected);
+        GlassesStore.INSTANCE.apply("glasses", "wifiSsid", ssid);
+        GlassesStore.INSTANCE.apply("glasses", "wifiLocalIp", localIp);
 
         // Send event to bridge for cloud communication
         Bridge.sendWifiStatusChange(connected, ssid, localIp);
@@ -2933,10 +2933,10 @@ public class MentraLive extends SGCManager {
         Bridge.log("LIVE: 🔥 Updating hotspot status - enabled: " + enabled + ", SSID: " + ssid);
 
         // Update parent SGCManager fields
-        isHotspotEnabled = enabled;
-        hotspotSsid = ssid;
-        hotspotPassword = password;
-        hotspotGatewayIp = gatewayIp;
+        GlassesStore.INSTANCE.apply("glasses", "hotspotEnabled", enabled);
+        GlassesStore.INSTANCE.apply("glasses", "hotspotSsid", ssid);
+        GlassesStore.INSTANCE.apply("glasses", "hotspotPassword", password);
+        GlassesStore.INSTANCE.apply("glasses", "hotspotGatewayIp", gatewayIp);
 
         // Send hotspot status change event (matches iOS emitHotspotStatusChange)
         Bridge.sendHotspotStatusChange(enabled, ssid, password, gatewayIp);
@@ -3061,7 +3061,7 @@ public class MentraLive extends SGCManager {
      * Send heartbeat ping to glasses and handle periodic battery requests
      */
     private void sendHeartbeat() {
-        if (!glassesReady || connectionState != ConnTypes.CONNECTED) {
+        if (!glassesReady || !getConnectionState().equals(ConnTypes.CONNECTED)) {
             Bridge.log("LIVE: Skipping heartbeat - glasses not ready or not connected");
             return;
         }
@@ -3157,7 +3157,7 @@ public class MentraLive extends SGCManager {
      * Send a periodic test message to verify ACK system
      */
     private void sendTestMessage() {
-        if (!glassesReady || connectionState != ConnTypes.CONNECTED) {
+        if (!glassesReady || !getConnectionState().equals(ConnTypes.CONNECTED)) {
             Bridge.log("LIVE: Skipping test message - glasses not ready or not connected");
             return;
         }
@@ -3513,7 +3513,7 @@ public class MentraLive extends SGCManager {
      * @return true if connected to WiFi, false otherwise
      */
     public boolean isGlassesWifiConnected() {
-        return wifiConnected;  // Using parent SGCManager field
+        return getWifiConnected();  // Using parent SGCManager getter
     }
 
     /**
@@ -3521,7 +3521,7 @@ public class MentraLive extends SGCManager {
      * @return SSID string, or empty string if not connected
      */
     public String getGlassesWifiSsid() {
-        return wifiSsid;
+        return getWifiSsid();
     }
 
     /**

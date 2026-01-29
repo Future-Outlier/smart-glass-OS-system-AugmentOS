@@ -186,7 +186,7 @@ extension SGCManager {
         get { GlassesStore.shared.get("glasses", "wifiLocalIp") as? String ?? "" }
     }
 
-    var isHotspotEnabled: Bool {
+    var hotspotEnabled: Bool {
         get { GlassesStore.shared.get("glasses", "hotspotEnabled") as? Bool ?? false }
     }
 

@@ -3134,7 +3134,7 @@ class MentraLive: NSObject, SGCManager {
 
     private func emitHotspotStatusChange() {
         let eventBody: [String: Any] = [
-            "enabled": isHotspotEnabled,
+            "enabled": hotspotEnabled,
             "ssid": hotspotSsid,
             "password": hotspotPassword,
             "local_ip": hotspotGatewayIp, // Using gateway IP for consistency with Android

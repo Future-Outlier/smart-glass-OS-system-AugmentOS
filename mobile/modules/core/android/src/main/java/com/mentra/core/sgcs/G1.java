@@ -214,7 +214,7 @@ public class G1 extends SGCManager {
         super();
         this.type = DeviceTypes.G1;
         this.hasMic = true;  // G1 has a built-in microphone
-        this.micEnabled = false;
+        GlassesStore.INSTANCE.apply("glasses", "micEnabled", false);
         Bridge.log("G1: G1 constructor");
         this.context = Bridge.getContext();
         loadPairedDeviceNames();
@@ -236,7 +236,7 @@ public class G1 extends SGCManager {
 
         // setup fonts
         g1Text = new G1Text();
-        caseRemoved = true;
+        GlassesStore.INSTANCE.apply("glasses", "caseRemoved", true);
     }
 
     private final BluetoothGattCallback leftGattCallback = createGattCallback("Left");
@@ -567,36 +567,35 @@ public class G1 extends SGCManager {
                                 int minBatt = Math.min(batteryLeft, batteryRight);
                                 // Bridge.log("G1: Minimum Battery Level: " + minBatt);
                                 // EventBus.getDefault().post(new BatteryLevelEvent(minBatt, false));
-                                batteryLevel = minBatt;
-                                CoreManager.getInstance().getStatus();
+                                GlassesStore.INSTANCE.apply("glasses", "batteryLevel", minBatt);
                             }
                         }
                         // CASE REMOVED
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5
                                 && ((data[1] & 0xFF) == 0x07 || (data[1] & 0xFF) == 0x06)) {
-                            caseRemoved = true;
+                            GlassesStore.INSTANCE.apply("glasses", "caseRemoved", true);
                             Bridge.log("G1: CASE REMOVED");
                             CoreManager.getInstance().getStatus();
                         }
                         // CASE OPEN
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x08) {
-                            caseOpen = true;
-                            caseRemoved = false;
+                            GlassesStore.INSTANCE.apply("glasses", "caseOpen", true);
+                            GlassesStore.INSTANCE.apply("glasses", "caseRemoved", false);
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
                             CoreManager.getInstance().getStatus();
                         }
                         // CASE CLOSED
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0B) {
-                            caseOpen = false;
-                            caseRemoved = false;
+                            GlassesStore.INSTANCE.apply("glasses", "caseOpen", false);
+                            GlassesStore.INSTANCE.apply("glasses", "caseRemoved", false);
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
                             CoreManager.getInstance().getStatus();
                         }
                         // CASE CHARGING STATUS
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0E) {
-                            caseCharging = (data[2] & 0xFF) == 0x01;// TODO: verify this is correct
+                            GlassesStore.INSTANCE.apply("glasses", "caseCharging", (data[2] & 0xFF) == 0x01);// TODO: verify this is correct
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
                             CoreManager.getInstance().getStatus();

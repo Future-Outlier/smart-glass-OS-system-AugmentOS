@@ -97,19 +97,19 @@ public class Mach1 extends SGCManager {
     private int totalDashboardsIdk = 0;
 
     private void updateConnectionState(String state) {
-        boolean isEqual = state.equals(connectionState);
+        boolean isEqual = state.equals(getConnectionState());
         if (isEqual) {
             return;
         }
 
         // Update the connection state
-        connectionState = state;
+        GlassesStore.INSTANCE.apply("glasses", "connectionState", state);
 
         if (state.equals(ConnTypes.CONNECTED)) {
-            ready = true;
+            GlassesStore.INSTANCE.apply("glasses", "ready", true);
             CoreManager.getInstance().handleConnectionStateChanged();
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
-            ready = false;
+            GlassesStore.INSTANCE.apply("glasses", "ready", false);
             CoreManager.getInstance().handleConnectionStateChanged();
         }
     }
@@ -555,7 +555,7 @@ public class Mach1 extends SGCManager {
         }
         Log.d(TAG, "Ultralite new battery status: " + batteryStatus.getLevel());
         // Update the class field, not a local variable
-        this.batteryLevel = batteryStatus.getLevel();
+        GlassesStore.INSTANCE.apply("glasses", "batteryLevel", batteryStatus.getLevel());
         updateConnectionState(ConnTypes.CONNECTED);
     }
 
@@ -871,7 +871,7 @@ public class Mach1 extends SGCManager {
 
         String title = maybeReverseRTLString(titleStr);
         String body = maybeReverseRTLString(bodyStr);
-        if (connectionState != ConnTypes.CONNECTED) {
+        if (!getConnectionState().equals(ConnTypes.CONNECTED)) {
             Log.d(TAG, "Not showing reference card because not connected to Ultralites...");
             return;
         }
@@ -943,7 +943,7 @@ public class Mach1 extends SGCManager {
         }
 
         String[] rowStrings = maybeReverseRTLStringList(rowStringList);
-        if (connectionState != ConnTypes.CONNECTED) {
+        if (!getConnectionState().equals(ConnTypes.CONNECTED)) {
             Log.d(TAG, "Not showing rows card because not connected to Ultralites...");
             return;
         }
@@ -1004,7 +1004,7 @@ public class Mach1 extends SGCManager {
         }
 
         String[] bullets = maybeReverseRTLStringList(bulletList);
-        if (connectionState != ConnTypes.CONNECTED) {
+        if (!getConnectionState().equals(ConnTypes.CONNECTED)) {
             Log.d(TAG, "Not showing bullet point list because not connected to Ultralites...");
             return;
         }
@@ -1176,7 +1176,7 @@ public class Mach1 extends SGCManager {
     }
 
     public void scrollingTextViewFinalText(String text){
-        if (connectionState != ConnTypes.CONNECTED) {
+        if (!getConnectionState().equals(ConnTypes.CONNECTED)) {
             return;
         }
 
@@ -1272,7 +1272,7 @@ public class Mach1 extends SGCManager {
     }
 
     public void displayPromptView(String prompt, String [] options){
-        if (connectionState != ConnTypes.CONNECTED) {
+        if (!getConnectionState().equals(ConnTypes.CONNECTED)) {
             return;
         }
 

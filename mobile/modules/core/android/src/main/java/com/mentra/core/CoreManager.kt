@@ -688,7 +688,9 @@ class CoreManager {
         // sendStateWorkItem?.let { mainHandler.removeCallbacks(it) }
 
         Bridge.log("MAN: parsing layoutType: ${currentViewState.layoutType}")
-        Bridge.log("MAN: viewState text: '${currentViewState.text}' (len=${currentViewState.text.length})")
+        Bridge.log(
+                "MAN: viewState text: '${currentViewState.text}' (len=${currentViewState.text.length})"
+        )
 
         when (currentViewState.layoutType) {
             "text_wall" -> {
@@ -1222,51 +1224,7 @@ class CoreManager {
         getStatus()
     }
 
-    fun getStatus() {
-        mainHandler.post {
-            val glassesConnected = sgc?.ready ?: false
-            if (glassesConnected) {
-                searching = false
-            }
-
-            GlassesStore.apply("glasses", "connected", sgc?.ready ?: false)
-            GlassesStore.apply("glasses", "micEnabled", sgc?.micEnabled ?: false)
-            GlassesStore.apply("glasses", "batteryLevel", sgc?.batteryLevel ?: -1)
-            GlassesStore.apply("glasses", "appVersion", sgc?.appVersion ?: "")
-            GlassesStore.apply("glasses", "buildNumber", sgc?.buildNumber ?: "")
-            GlassesStore.apply("glasses", "deviceModel", sgc?.deviceModel ?: "")
-            GlassesStore.apply("glasses", "androidVersion", sgc?.androidVersion ?: "")
-            GlassesStore.apply("glasses", "otaVersionUrl", sgc?.otaVersionUrl ?: "")
-            GlassesStore.apply("glasses", "fwVersion", sgc?.firmwareVersion ?: "")
-            GlassesStore.apply("glasses", "btMacAddress", sgc?.btMacAddress ?: "")
-
-            if (sgc is G1) {
-                GlassesStore.apply("glasses", "caseRemoved", sgc!!.caseRemoved)
-                GlassesStore.apply("glasses", "caseOpen", sgc!!.caseOpen)
-                GlassesStore.apply("glasses", "caseCharging", sgc!!.caseCharging)
-                GlassesStore.apply("glasses", "caseBatteryLevel", sgc!!.caseBatteryLevel)
-
-                GlassesStore.apply("glasses", "serialNumber", sgc!!.serialNumber)
-                GlassesStore.apply("glasses", "style", sgc!!.style)
-                GlassesStore.apply("glasses", "color", sgc!!.color)
-            }
-
-            if (sgc is MentraLive) {
-                GlassesStore.apply("glasses", "wifiSsid", sgc!!.wifiSsid)
-                GlassesStore.apply("glasses", "wifiConnected", sgc!!.wifiConnected)
-                GlassesStore.apply("glasses", "wifiLocalIp", sgc!!.wifiLocalIp)
-                GlassesStore.apply("glasses", "hotspotEnabled", sgc!!.isHotspotEnabled)
-                GlassesStore.apply("glasses", "hotspotSsid", sgc!!.hotspotSsid)
-                GlassesStore.apply("glasses", "hotspotPassword", sgc!!.hotspotPassword)
-                GlassesStore.apply("glasses", "hotspotGatewayIp", sgc!!.hotspotGatewayIp)
-            }
-
-            // Add Bluetooth device name if available
-            sgc?.getConnectedBluetoothName()?.let { bluetoothName ->
-                GlassesStore.apply("glasses", "bluetoothName", bluetoothName)
-            }
-        }
-    }
+    fun getStatus() {}
 
     // MARK: Cleanup
     fun cleanup() {

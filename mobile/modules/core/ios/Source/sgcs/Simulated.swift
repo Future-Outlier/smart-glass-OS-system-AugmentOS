@@ -51,7 +51,7 @@ class Simulated: SGCManager {
     var wifiSsid: String = ""
     var wifiConnected: Bool = false
     var wifiLocalIp: String = ""
-    var isHotspotEnabled: Bool = false
+    var hotspotEnabled: Bool = false
     var hotspotSsid: String = ""
     var hotspotPassword: String = ""
     var hotspotGatewayIp: String = ""
