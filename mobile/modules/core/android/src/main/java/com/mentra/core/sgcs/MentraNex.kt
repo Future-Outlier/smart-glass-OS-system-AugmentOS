@@ -171,7 +171,7 @@ class MentraNex : SGCManager() {
             Bridge.log("Device Class: ${device.bluetoothClass}")
             Bridge.log("Bond State: ${device.bondState}")
 
-            if (name == null || (!name.contains("Nex1-") && !name.contains("Display-"))) {
+            if (name == null || (!name.contains("Nex1-") && !name.contains("MENTRA_DISPLAY_"))) {
                 return
             }
 
@@ -336,7 +336,7 @@ class MentraNex : SGCManager() {
                 val address = device.address
                 
                 name?.let {
-                    if (it.startsWith("Nex1-") || it.startsWith("Display-")) {
+                    if (it.startsWith("Nex1-") || it.startsWith("MENTRA_DISPLAY_")) {
                         Bridge.log("bleScanCallback onScanResult: $name address $address")
                         synchronized(foundDeviceNames) {
                             if (!foundDeviceNames.contains(it)) {
