@@ -77,6 +77,8 @@ public class OtaHelper {
     private static volatile boolean isUpdating = false;  // Tracks download/install in progress
     private static volatile boolean isMtkOtaInProgress = false;  // Tracks MTK firmware update in progress
     private static final Object versionCheckLock = new Object();
+    private static volatile long lastVersionCheckTime = 0;  // Track last check time to prevent duplicate network callback triggers
+    private static final long NETWORK_CALLBACK_IGNORE_WINDOW_MS = 2000;  // Ignore network callback if check happened within last 2 seconds
     private Handler handler;
     private Context context;
     private Runnable periodicCheckRunnable;
@@ -84,7 +86,7 @@ public class OtaHelper {
     
     // Retry logic constants
     private static final int MAX_DOWNLOAD_RETRIES = 3;
-    private static final long[] RETRY_DELAYS = {30000, 60000, 120000}; // 30s, 1m, 2m
+    private static final long RETRY_DELAY_MS = 10000; // 10 seconds between attempts
     
     // Update order configuration - can be easily modified to change update sequence
     // Order: APK updates → MTK firmware → BES firmware
@@ -105,7 +107,7 @@ public class OtaHelper {
     // When false, OTA updates only happen when initiated by the phone app.
     // When true, glasses will also check for updates autonomously (initial check, periodic checks, WiFi callback).
     // Disabled by default since phone-initiated OTA is the preferred flow.
-    private static final boolean AUTONOMOUS_OTA_ENABLED = false;
+    private static final boolean AUTONOMOUS_OTA_ENABLED = true;
 
     // ========== Phone-Controlled OTA State ==========
 
@@ -163,10 +165,10 @@ public class OtaHelper {
         EventBus.getDefault().register(this);
 
         if (AUTONOMOUS_OTA_ENABLED) {
-            // Delay all autonomous checks by 30 seconds to ensure PhoneConnectionProvider
+            // Delay all autonomous checks by 5 seconds to ensure PhoneConnectionProvider
             // is set up (happens at ~6s) so isPhoneConnected() works correctly
             handler.postDelayed(() -> {
-                Log.d(TAG, "Starting autonomous OTA checks after 30 second delay");
+                Log.d(TAG, "Starting autonomous OTA checks after 5 second delay");
 
                 // Perform initial check
                 startVersionCheck(this.context);
@@ -175,8 +177,10 @@ public class OtaHelper {
                 startPeriodicChecks();
 
                 // Register network callback to check for updates when WiFi becomes available
+                // Note: If WiFi is already available, callback may fire immediately, but timestamp
+                // tracking prevents duplicate checks within 2 seconds
                 registerNetworkCallback(this.context);
-            }, 30000);
+            }, 5000);
 
             Log.i(TAG, "Autonomous OTA mode ENABLED - checks will start in 30 seconds");
         } else {
@@ -301,6 +305,12 @@ public class OtaHelper {
                 super.onAvailable(network);
                 NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(network);
                 if (capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                    // Ignore if a version check happened very recently (prevents duplicate from initial check)
+                    long timeSinceLastCheck = System.currentTimeMillis() - lastVersionCheckTime;
+                    if (timeSinceLastCheck < NETWORK_CALLBACK_IGNORE_WINDOW_MS) {
+                        Log.d(TAG, "WiFi network available, but version check happened " + timeSinceLastCheck + "ms ago - ignoring to prevent duplicate");
+                        return;
+                    }
                     Log.d(TAG, "WiFi network became available, triggering version check");
                     startVersionCheck(context);
                 }
@@ -389,34 +399,16 @@ public class OtaHelper {
                     return;
                 }
                 isCheckingVersion = true;
+                // Record timestamp to prevent duplicate network callback triggers
+                lastVersionCheckTime = System.currentTimeMillis();
             }
 
             try {
-                // ⚠️ DEBUG: Mock JSON to skip APK checks and trigger firmware install
-                String versionInfo;
-                if (DEBUG_FORCE_MTK_INSTALL || DEBUG_FORCE_BES_INSTALL) {
-                    Log.w(TAG, "DEBUG: Using mock version.json (APK versions set to 0 to skip updates)");
-                    versionInfo = "{"
-                        + "\"apps\": {"
-                        + "  \"com.mentra.asg_client\": {"
-                        + "    \"versionCode\": 0,"
-                        + "    \"versionName\": \"0.0.0\","
-                        + "    \"apkUrl\": \"https://mock.url/app.apk\","
-                        + "    \"sha256\": \"mock\""
-                        + "  },"
-                        + "  \"com.augmentos.otaupdater\": {"
-                        + "    \"versionCode\": 0,"
-                        + "    \"versionName\": \"0.0.0\","
-                        + "    \"apkUrl\": \"https://mock.url/updater.apk\","
-                        + "    \"sha256\": \"mock\""
-                        + "  }"
-                        + "}"
-                        + "}";
-                } else {
-                    // Fetch version info normally
-                    versionInfo = fetchVersionInfo(OtaConstants.VERSION_JSON_URL);
-                }
+                // Fetch version info from URL
+                String versionInfo = fetchVersionInfo(OtaConstants.VERSION_JSON_URL);
                 JSONObject json = new JSONObject(versionInfo);
+
+                Log.d(TAG, "versionInfo: " + versionInfo);
 
                 // ========== Phone-Controlled OTA Logic ==========
                 // If phone is connected AND this is NOT phone-initiated AND we haven't notified yet:
@@ -470,7 +462,14 @@ public class OtaHelper {
         }).start();
     }
 
+    /**
+     * Fetch version info from URL.
+     * @param url URL (http://, https://)
+     * @return JSON string content
+     * @throws Exception if fetch fails
+     */
     private String fetchVersionInfo(String url) throws Exception {
+        Log.d(TAG, "Fetching version info from URL: " + url);
         BufferedReader reader = new BufferedReader(
             new InputStreamReader(new URL(url).openStream())
         );
@@ -733,9 +732,14 @@ public class OtaHelper {
         while (retryCount < MAX_DOWNLOAD_RETRIES) {
             try {
                 // Attempt download
-                if (downloadApkInternal(urlStr, json, context, filename)) {
+                boolean success = downloadApkInternal(urlStr, json, context, filename);
+                if (success) {
                     return true; // Success!
                 }
+                // If download succeeded but verification failed, don't retry
+                // (downloadApkInternal already logged the error and deleted the file)
+                Log.e(TAG, "Download succeeded but verification failed - not retrying");
+                return false;
             } catch (Exception e) {
                 lastException = e;
                 Log.e(TAG, "Download attempt " + (retryCount + 1) + " failed", e);
@@ -749,17 +753,16 @@ public class OtaHelper {
                 
                 retryCount++;
                 if (retryCount < MAX_DOWNLOAD_RETRIES) {
-                    long delay = RETRY_DELAYS[Math.min(retryCount - 1, RETRY_DELAYS.length - 1)];
-                    Log.i(TAG, "Retrying download in " + (delay / 1000) + " seconds...");
+                    Log.i(TAG, "Retrying download in " + (RETRY_DELAY_MS / 1000) + " seconds...");
                     
                     // Emit retry event
                     EventBus.getDefault().post(new DownloadProgressEvent(
                         DownloadProgressEvent.DownloadStatus.FAILED, 
-                        "Retrying in " + (delay / 1000) + " seconds..."
+                        "Retrying in " + (RETRY_DELAY_MS / 1000) + " seconds..."
                     ));
                     
                     try {
-                        Thread.sleep(delay);
+                        Thread.sleep(RETRY_DELAY_MS);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         break;
@@ -860,6 +863,13 @@ public class OtaHelper {
     private boolean verifyApkFile(String apkPath, JSONObject jsonObject) {
         try {
             String expectedHash = jsonObject.getString("sha256");
+            
+            // Fail immediately if hash is a placeholder - prevents wasted downloads
+            if (expectedHash == null || expectedHash.equals("example_sha256_hash_here") || 
+                expectedHash.startsWith("example_")) {
+                Log.e(TAG, "SHA256 hash is a placeholder - verification failed. Please provide a valid SHA256 hash.");
+                return false;
+            }
 
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             InputStream is = new FileInputStream(apkPath);
@@ -1484,7 +1494,7 @@ public class OtaHelper {
     private boolean verifyFirmwareFile(String filePath, JSONObject firmwareInfo) {
         try {
             String expectedHash = firmwareInfo.getString("sha256");
-            
+
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             InputStream is = new FileInputStream(filePath);
             byte[] buffer = new byte[4096];
@@ -1504,8 +1514,7 @@ public class OtaHelper {
             Log.d(TAG, "Expected firmware SHA256: " + expectedHash);
             Log.d(TAG, "Calculated firmware SHA256: " + calculatedHash);
             
-            // boolean match = calculatedHash.equalsIgnoreCase(expectedHash);
-            boolean match = true;
+            boolean match = calculatedHash.equalsIgnoreCase(expectedHash);
             Log.d(TAG, "Firmware SHA256 check " + (match ? "passed" : "failed"));
             return match;
         } catch (Exception e) {
