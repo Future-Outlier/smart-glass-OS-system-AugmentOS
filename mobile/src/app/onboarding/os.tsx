@@ -1,6 +1,6 @@
 import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
@@ -55,32 +55,45 @@ export default function MentraOSOnboarding() {
         translate("onboarding:osBackgroundAppsBullet2"),
       ],
     },
-    // {
-    //   type: "video",
-    //   name: "Foreground and Background Apps",
-    //   source: `${CDN_BASE}/foreground_background_apps.mov`,
-    //   containerClassName: "bg-background",
-    //   transition: false,
-    //   playCount: 2,
-    //   bullets: [
-    //     translate("onboarding:osForegroundAndBackgroundApps"),
-    //     translate("onboarding:osForegroundAndBackgroundAppsBullet1"),
-    //     translate("onboarding:osForegroundAndBackgroundAppsBullet2"),
-    //   ],
-    // },
-    // {
-    //   type: "video",
-    //   name: "Mentra AI",
-    //   source: `${CDN_BASE}/mentra_ai.mov`,
-    //   containerClassName: "bg-background",
-    //   transition: false,
-    //   playCount: 2,
-    //   bullets: [
-    //     translate("onboarding:osMentraAi"),
-    //     translate("onboarding:osMentraAiBullet1"),
-    //     translate("onboarding:osMentraAiBullet2"),
-    //   ],
-    // },
+    {
+      type: "video",
+      name: "Foreground and Background Apps",
+      source: `${CDN_BASE}/foreground_background_apps.mov`,
+      containerClassName: "bg-background",
+      transition: false,
+      playCount: 2,
+      bullets: [
+        translate("onboarding:osForegroundAndBackgroundApps"),
+        translate("onboarding:osForegroundAndBackgroundAppsBullet1"),
+        translate("onboarding:osForegroundAndBackgroundAppsBullet2"),
+      ],
+    },
+    {
+      type: "video",
+      name: "Mentra AI",
+      source: `${CDN_BASE}/mentra_ai.mov`,
+      containerClassName: "bg-background",
+      transition: false,
+      playCount: 2,
+      bullets: [
+        translate("onboarding:osMentraAi"),
+        translate("onboarding:osMentraAiBullet1"),
+        translate("onboarding:osMentraAiBullet2"),
+      ],
+    },
+    {
+      type: "video",
+      name: "end",
+      source: `${CDN_BASE}/mentra_ai.mov`,
+      containerClassName: "bg-background",
+      transition: false,
+      playCount: 2,
+      bullets: [
+        translate("onboarding:osEnd"),
+        translate("onboarding:osEndBullet1"),
+        translate("onboarding:osEndBullet2"),
+      ],
+    },
   ]
 
   return (
@@ -90,7 +103,6 @@ export default function MentraOSOnboarding() {
         autoStart={true}
         showCloseButton={true}
         preventBack={true}
-        // showSkipButton={true}
         exitFn={() => {
           pushPrevious()
         }}
