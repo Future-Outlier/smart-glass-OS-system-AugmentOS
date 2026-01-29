@@ -98,6 +98,10 @@ extension SGCManager {
         get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
     }
 
+    var connected: Bool {
+        get { GlassesStore.shared.get("glasses", "connected") as? Bool ?? false }
+    }
+
     var appVersion: String {
         get { GlassesStore.shared.get("glasses", "appVersion") as? String ?? "" }
     }

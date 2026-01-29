@@ -360,13 +360,10 @@ class G1: NSObject, SGCManager {
 
     private var _ready: Bool = false
     var ready: Bool {
-        get { return _ready }
+        get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
         set {
-            let oldValue = _ready
-            _ready = newValue
-            if oldValue != newValue {
-                GlassesStore.shared.apply("glasses", "ready", newValue)
-            }
+            let oldValue = GlassesStore.shared.get("glasses", "ready") as? Bool ?? false
+            GlassesStore.shared.apply("glasses", "ready", newValue)
             if !newValue {
                 // Reset battery levels when disconnected
                 batteryLevel = -1
@@ -374,6 +371,11 @@ class G1: NSObject, SGCManager {
                 rightBatteryLevel = -1
             }
         }
+    }
+
+    private var connected: Bool {
+        get { GlassesStore.shared.get("glasses", "connected") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "connected", newValue) }
     }
 
     var leftReady: Bool = false
@@ -928,6 +930,7 @@ class G1: NSObject, SGCManager {
 
         //         CoreCommsService.log("g1Ready set to \(leftReady) \(rightReady) \(leftReady && rightReady) left: \(left), right: \(right)")
         ready = leftReady && rightReady
+        connected = leftReady && rightReady
         if ready {
             stopReconnectionTimer()
         }

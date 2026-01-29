@@ -4,15 +4,16 @@ import com.mentra.core.Bridge
 import com.mentra.core.CoreManager
 import com.mentra.core.utils.ConnTypes
 import com.mentra.core.utils.DeviceTypes
+import com.mentra.core.GlassesStore
 
 class Simulated : SGCManager() {
 
     init {
-        ready = true
         type = DeviceTypes.SIMULATED
-        connectionState = ConnTypes.CONNECTED
-        batteryLevel = 100
-        micEnabled = false
+        GlassesStore.apply("glasses", "ready", true)
+        GlassesStore.apply("glasses", "connected", true)
+        GlassesStore.apply("glasses", "connectionState", ConnTypes.CONNECTED)
+        GlassesStore.apply("glasses", "micEnabled", false)
     }
 
     // Audio Control

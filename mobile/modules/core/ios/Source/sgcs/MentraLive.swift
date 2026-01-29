@@ -610,6 +610,7 @@ extension MentraLive: CBCentralManagerDelegate {
 
         connectedPeripheral = nil
         ready = false
+        connected = false
         connectionState = ConnTypes.DISCONNECTED
         rgbLedAuthorityClaimed = false
 
@@ -978,22 +979,14 @@ class MentraLive: NSObject, SGCManager {
     // Glasses send version_info in 2 chunks to fit within BLE MTU limits
     private var pendingVersionInfoChunk1: [String: Any]?
 
-    var _ready = false
-    var ready: Bool {
-        get { return _ready }
-        set {
-            let oldValue = _ready
-            _ready = newValue
-            if oldValue != newValue {
-                // Call the callback when state changes
-                CoreManager.shared.handleConnectionStateChanged()
-                Bridge.log("LIVE: connection state changed to: \(newValue)")
-            }
-            if !newValue {
-                // Reset battery levels when disconnected
-                GlassesStore.shared.apply("glasses", "batteryLevel", -1)
-            }
-        }
+    private var ready: Bool {
+        get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "ready", newValue) }
+    }
+
+    private var connected: Bool {
+        get { GlassesStore.shared.get("glasses", "connected") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "connected", newValue) }
     }
 
     // Queue Management
@@ -2094,6 +2087,7 @@ class MentraLive: NSObject, SGCManager {
         startHeartbeat()
 
         ready = true
+        connected = true
         connectionState = ConnTypes.CONNECTED
         // maybe add audio monitoring here?
     }
@@ -3012,6 +3006,7 @@ class MentraLive: NSObject, SGCManager {
 
         readinessCheckCounter = 0
         ready = false
+        connected = false
 
         Bridge.log("LIVE: 🔄 Starting glasses SOC readiness check loop")
 

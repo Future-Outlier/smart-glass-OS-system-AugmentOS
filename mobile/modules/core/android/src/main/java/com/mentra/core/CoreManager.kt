@@ -655,6 +655,7 @@ class CoreManager {
     }
 
     fun sendCurrentState() {
+        val hUp = GlassesStore.get("glasses", "headUp") as? Boolean ?: false
         // Bridge.log("MAN: sendCurrentState(): $isHeadUp")
         if (screenDisabled) {
             return
@@ -662,13 +663,13 @@ class CoreManager {
 
         // executor.execute {
         var currentViewState: ViewState
-        if (isHeadUp) {
+        if (hUp) {
             currentViewState = viewStates[1]
         } else {
             currentViewState = viewStates[0]
         }
 
-        if (isHeadUp && !contextualDashboard) {
+        if (hUp && !contextualDashboard) {
             currentViewState = viewStates[0]
         }
 
@@ -888,7 +889,7 @@ class CoreManager {
         }
     }
 
-    private fun handleDeviceReady() {
+    fun handleDeviceReady() {
         if (sgc == null) {
             Bridge.log("MAN: SGC is null, returning")
             return
@@ -944,9 +945,9 @@ class CoreManager {
         getStatus()
     }
 
-    private fun handleDeviceDisconnected() {
+    fun handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
-        isHeadUp = false
+        GlassesStore.apply("glasses", "headUp", false)
         getStatus()
     }
 
@@ -992,11 +993,11 @@ class CoreManager {
         }
 
         viewStates[stateIndex] = newViewState
-        val headUp = isHeadUp && contextualDashboard
+        val hUp = headUp && contextualDashboard
         // send the state we just received if the user is currently in that state:
-        if (stateIndex == 0 && !headUp) {
+        if (stateIndex == 0 && !hUp) {
             sendCurrentState()
-        } else if (stateIndex == 1 && headUp) {
+        } else if (stateIndex == 1 && hUp) {
             sendCurrentState()
         }
     }
