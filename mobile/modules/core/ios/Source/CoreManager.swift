@@ -89,11 +89,9 @@ struct ViewState {
                     Bridge.log("Audio: ✅ Device paired and connected")
                     // Don't activate - let PhoneMic.swift handle that when recording starts
                     self.glassesBtcConnected = true
-                    CoreManager.shared.getStatus()
                 } else {
                     Bridge.log("Audio: Device disconnected")
                     self.glassesBtcConnected = false
-                    CoreManager.shared.getStatus()
                 }
             }
         }
@@ -570,7 +568,6 @@ struct ViewState {
                 sgc?.setMicEnabled(false)
             }
         }
-        getStatus() // to update the UI
     }
 
     func setOnboardMicEnabled(_ isEnabled: Bool) {
@@ -825,10 +822,8 @@ struct ViewState {
             })?.portName
             Bridge.log("MAN: ✅ Successfully detected newly paired device '\(deviceName)'")
             glassesBtcConnected = true
-            getStatus()
         } else {
             glassesBtcConnected = false
-            getStatus()
         }
     }
 
@@ -867,17 +862,6 @@ struct ViewState {
 
     // MARK: - connection state management
 
-    func handleConnectionStateChanged() {
-        // Bridge.log("MAN: Glasses: connection state changed!")
-        // if sgc == nil { return }
-        // if sgc!.ready {
-        //     handleDeviceReady()
-        // } else {
-        //     handleDeviceDisconnected()
-        //     getStatus()
-        // }
-    }
-
     func handleDeviceReady() {
         guard let sgc else {
             Bridge.log("MAN: SGC is nil, returning")
@@ -888,7 +872,6 @@ struct ViewState {
         pendingWearable = ""
         defaultWearable = sgc.type
         searching = false
-        getStatus()
 
         // Show welcome message on first connect for all display glasses
         if shouldSendBootingMessage {
@@ -933,22 +916,16 @@ struct ViewState {
             // try? await Task.sleep(nanoseconds: 400_000_000)
             //      playStartupSequence()
 
-            self.getStatus()
         }
     }
 
     private func handleMach1Ready() {
-        Task {
-            // Mach1-specific setup (if any needed in the future)
-            self.getStatus()
-        }
     }
 
     public func handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         // setMicState(shouldSendPcmData, shouldSendTranscript, false)
         // shouldSendBootingMessage = true  // Reset for next first connect
-        getStatus()
     }
 
     // MARK: - Network Command handlers
@@ -1182,7 +1159,6 @@ struct ViewState {
         }
         initSGC(defaultWearable)
         searching = true
-        getStatus()
         sgc?.connectById(deviceName)
     }
 
@@ -1213,7 +1189,6 @@ struct ViewState {
 
             initSGC(self.pendingWearable)
             sgc?.connectById(self.deviceName)
-            getStatus()
         }
     }
 
@@ -1233,7 +1208,8 @@ struct ViewState {
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         shouldSendBootingMessage = true // Reset for next first connect
-        getStatus()
+        GlassesStore.shared.apply("glasses", "ready", false)
+        GlassesStore.shared.apply("glasses", "connected", false)
     }
 
     func forget() {
@@ -1249,7 +1225,6 @@ struct ViewState {
         deviceName = ""
         Bridge.saveSetting("default_wearable", "")
         Bridge.saveSetting("device_name", "")
-        getStatus()
     }
 
     func findCompatibleDevices(_ deviceModel: String) {
@@ -1264,10 +1239,6 @@ struct ViewState {
 
         initSGC(pendingWearable)
         sgc?.findCompatibleDevices()
-        getStatus()
-    }
-
-    func getStatus() {
     }
 
     func cleanup() {

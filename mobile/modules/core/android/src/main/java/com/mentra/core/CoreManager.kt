@@ -642,7 +642,6 @@ class CoreManager {
                 sgc?.setMicEnabled(false)
             }
         }
-        getStatus() // to update the UI
     }
 
     private fun setOnboardMicEnabled(enabled: Boolean) {
@@ -887,7 +886,6 @@ class CoreManager {
             handleDeviceReady()
         } else {
             handleDeviceDisconnected()
-            getStatus()
         }
     }
 
@@ -902,7 +900,6 @@ class CoreManager {
         defaultWearable = sgc?.type ?: ""
 
         searching = false
-        getStatus()
 
         // Show welcome message on first connect for all display glasses
         if (shouldSendBootingMessage) {
@@ -944,13 +941,11 @@ class CoreManager {
 
     private fun handleMach1Ready() {
         // Mach1-specific setup (if any needed in the future)
-        getStatus()
     }
 
     fun handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         GlassesStore.apply("glasses", "headUp", false)
-        getStatus()
     }
 
     // MARK: - Network Command handlers
@@ -1138,7 +1133,6 @@ class CoreManager {
         }
         initSGC(defaultWearable)
         searching = true
-        getStatus()
         sgc?.connectById(deviceName)
     }
 
@@ -1169,7 +1163,6 @@ class CoreManager {
 
         initSGC(pendingWearable)
         sgc?.connectById(deviceName)
-        getStatus()
     }
 
     fun connectSimulated() {
@@ -1188,7 +1181,8 @@ class CoreManager {
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         shouldSendBootingMessage = true // Reset for next first connect
-        getStatus()
+        GlassesStore.apply("glasses", "ready", false)
+        GlassesStore.apply("glasses", "connected", false)
     }
 
     fun forget() {
@@ -1205,7 +1199,6 @@ class CoreManager {
         deviceName = ""
         Bridge.saveSetting("default_wearable", "")
         Bridge.saveSetting("device_name", "")
-        getStatus()
     }
 
     fun findCompatibleDevices(deviceModel: String) {
@@ -1221,10 +1214,7 @@ class CoreManager {
         initSGC(pendingWearable)
         Bridge.log("MAN: sgc initialized, calling findCompatibleDevices")
         sgc?.findCompatibleDevices()
-        getStatus()
     }
-
-    fun getStatus() {}
 
     // MARK: Cleanup
     fun cleanup() {

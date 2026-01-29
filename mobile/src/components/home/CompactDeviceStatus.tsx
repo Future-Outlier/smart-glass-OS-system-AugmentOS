@@ -45,6 +45,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const glassesConnected = useGlassesStore((state) => state.connected)
+  const glassesReady = useGlassesStore((state) => state.ready)
   const glassesStyle = useGlassesStore((state) => state.style)
   const color = useGlassesStore((state) => state.color)
   const caseRemoved = useGlassesStore((state) => state.caseRemoved)
@@ -110,13 +111,14 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   }
 
   let isSearching = searching || isCheckingConnectivity
-  // let connectingText = translate("home:connectingGlasses")
-  // if (defaultWearable === DeviceTypes.LIVE) {
-  //   connectingText = connectionState
-  //   console.log("CONNECTION STATE:", connectionState)
-  // }
+  let connectingText = translate("home:connectingGlasses")
+  if (glassesConnected && !glassesReady) {
+    // connectingText = connectionState
+    // console.log("CONNECTION STATE:", connectionState)
+    connectingText = "Glasses are booting..."
+  }
 
-  if (!glassesConnected || isSearching) {
+  if (!glassesConnected || !glassesReady || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
         <View style={themed($header)}>
@@ -155,8 +157,8 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
                 LeftAccessory={() => (
                   <ActivityIndicator size="small" color={theme.colors.foreground} style={{marginLeft: 5}} />
                 )}
-                // text={connectingText}
-                tx="home:connectingGlasses"
+                text={connectingText}
+                // tx="home:connectingGlasses"
               />
             </>
           )}
