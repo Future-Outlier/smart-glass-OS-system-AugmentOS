@@ -95,7 +95,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     func cleanup() {}
 
     var type: String = DeviceTypes.MACH1
-    let hasMic: Bool = false
+    var hasMic: Bool = false
 
     func setMicEnabled(_: Bool) {
         // N/A
@@ -233,7 +233,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         let currentDevice = UltraliteManager.shared.currentDevice
         let isConnected =
             isLinked && currentDevice != nil && currentDevice!.isPaired
-            && currentDevice!.isConnected.value
+                && currentDevice!.isConnected.value
         let peripheral = discoveredPeripherals[peripheralId] ?? currentDevice?.peripheral
 
         // Bind listeners to get notified when device connects
@@ -362,7 +362,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
         // Store the peripheral by its identifier
         discoveredPeripherals[id] = device
-        Bridge.sendDiscoveredDevice(type, name)  // Use self.type to support both Mach1 and Z100
+        Bridge.sendDiscoveredDevice(type, name) // Use self.type to support both Mach1 and Z100
     }
 
     func foundDevice2(_ device: CBPeripheral) {
@@ -420,7 +420,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         UIGraphicsEndImageContext()
 
         guard let resizedImage,
-            let cgImage = resizedImage.cgImage
+              let cgImage = resizedImage.cgImage
         else {
             Bridge.log("MACH1: Failed to resize image or get CGImage")
             return false

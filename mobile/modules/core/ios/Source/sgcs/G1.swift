@@ -17,7 +17,7 @@ extension Data {
         var index = 0
         while index < count {
             let chunkSize = Swift.min(size, count - index)
-            let chunk = subdata(in: index..<(index + chunkSize))
+            let chunk = subdata(in: index ..< (index + chunkSize))
             chunks.append(chunk)
             index += chunkSize
         }
@@ -37,7 +37,7 @@ extension Data {
 
             for byte in buffer {
                 crc ^= UInt32(byte)
-                for _ in 0..<8 {
+                for _ in 0 ..< 8 {
                     if crc & 1 == 1 {
                         crc = (crc >> 1) ^ 0xEDB8_8320
                     } else {
@@ -60,7 +60,7 @@ extension Data {
 
         while index < cleanHex.endIndex {
             let nextIndex = cleanHex.index(index, offsetBy: 2)
-            let byteString = cleanHex[index..<nextIndex]
+            let byteString = cleanHex[index ..< nextIndex]
             guard let byte = UInt8(byteString, radix: 16) else { return nil }
             data.append(byte)
             index = nextIndex
@@ -217,7 +217,7 @@ actor ReconnectionManager {
     private var task: Task<Void, Never>?
     private let intervalSeconds: TimeInterval
     private var attempts = 0
-    private let maxAttempts: Int  // -1 for unlimited
+    private let maxAttempts: Int // -1 for unlimited
 
     init(intervalSeconds: TimeInterval = 30, maxAttempts: Int = -1) {
         self.intervalSeconds = intervalSeconds
@@ -329,7 +329,7 @@ class G1: NSObject, SGCManager {
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
 
     var type = DeviceTypes.G1
-    let hasMic = true
+    var hasMic = true
 
     // TODO: we probably don't need this
     @objc static func requiresMainQueueSetup() -> Bool { return true }
@@ -346,7 +346,7 @@ class G1: NSObject, SGCManager {
     private var animationFrames: [String] = []
     private var animationTimer: Timer?
     private var currentFrameIndex: Int = 0
-    private var animationInterval: TimeInterval = 1.650  // Default 1650ms
+    private var animationInterval: TimeInterval = 1.650 // Default 1650ms
     private var animationRepeat: Bool = false
     private var isAnimationRunning: Bool = false
 
@@ -410,9 +410,9 @@ class G1: NSObject, SGCManager {
 
     // Constants
     var DEVICE_SEARCH_ID = "NOT_SET"
-    let DELAY_BETWEEN_CHUNKS_SEND: UInt64 = 16_000_000  // 16ms
-    let DELAY_BETWEEN_SENDS_MS: UInt64 = 8_000_000  // 8ms
-    let INITIAL_CONNECTION_DELAY_MS: UInt64 = 350_000_000  // 350ms
+    let DELAY_BETWEEN_CHUNKS_SEND: UInt64 = 16_000_000 // 16ms
+    let DELAY_BETWEEN_SENDS_MS: UInt64 = 8_000_000 // 8ms
+    let INITIAL_CONNECTION_DELAY_MS: UInt64 = 350_000_000 // 350ms
     var textHelper = G1Text()
     var msgId = 100
 
@@ -593,8 +593,8 @@ class G1: NSObject, SGCManager {
 
         // Check if it looks like a valid Even G1 serial number
         if decodedString.count >= 12,
-            decodedString.hasPrefix("S1") || decodedString.hasPrefix("100")
-                || decodedString.hasPrefix("110")
+           decodedString.hasPrefix("S1") || decodedString.hasPrefix("100")
+           || decodedString.hasPrefix("110")
         {
             return decodedString
         }
@@ -614,7 +614,6 @@ class G1: NSObject, SGCManager {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: eventBody, options: [])
             if let jsonString = String(data: jsonData, encoding: .utf8) {
-
                 // Bridge.sendTypedMessage("glasses_serial_number", body: eventBody)
 
                 Bridge.log(
@@ -642,7 +641,7 @@ class G1: NSObject, SGCManager {
             )
         }
 
-        isDisconnecting = false  // reset intentional disconnect flag
+        isDisconnecting = false // reset intentional disconnect flag
         guard centralManager!.state == .poweredOn else {
             Bridge.log("G1: Attempting to scan but bluetooth is not powered on.")
             return false
@@ -675,7 +674,7 @@ class G1: NSObject, SGCManager {
         }
 
         let scanOptions: [String: Any] = [
-            CBCentralManagerScanOptionAllowDuplicatesKey: false  // Don't allow duplicate advertisements
+            CBCentralManagerScanOptionAllowDuplicatesKey: false, // Don't allow duplicate advertisements
         ]
 
         centralManager!.scanForPeripherals(withServices: nil, options: scanOptions)
@@ -727,15 +726,15 @@ class G1: NSObject, SGCManager {
             guard let textData = displayText.data(using: .utf8) else { return }
 
             var command: [UInt8] = [
-                0x4E,  // SEND_RESULT command
-                0x00,  // sequence number
-                0x01,  // total packages
-                0x00,  // current package
-                0x71,  // screen status (0x70 Text Show | 0x01 New Content)
-                0x00,  // char position 0
-                0x00,  // char position 1
-                0x01,  // page number
-                0x01,  // max pages
+                0x4E, // SEND_RESULT command
+                0x00, // sequence number
+                0x01, // total packages
+                0x00, // current package
+                0x71, // screen status (0x70 Text Show | 0x01 New Content)
+                0x00, // char position 0
+                0x00, // char position 1
+                0x01, // page number
+                0x01, // max pages
             ]
             command.append(contentsOf: Array(textData))
             self.queueChunks([command])
@@ -824,12 +823,12 @@ class G1: NSObject, SGCManager {
         let noteNumber = 1
         var command = Data()
         command.append(Commands.QUICK_NOTE_ADD.rawValue)
-        command.append(0x10)  // Fixed length for delete command
-        command.append(0x00)  // Fixed byte
-        command.append(0xE0)  // Version byte for delete
-        command.append(contentsOf: [0x03, 0x01, 0x00, 0x01, 0x00])  // Fixed bytes
-        command.append(UInt8(noteNumber))  // Note number to delete
-        command.append(contentsOf: [0x00, 0x01, 0x00, 0x01, 0x00, 0x00])  // Fixed bytes for delete
+        command.append(0x10) // Fixed length for delete command
+        command.append(0x00) // Fixed byte
+        command.append(0xE0) // Version byte for delete
+        command.append(contentsOf: [0x03, 0x01, 0x00, 0x01, 0x00]) // Fixed bytes
+        command.append(UInt8(noteNumber)) // Note number to delete
+        command.append(contentsOf: [0x00, 0x01, 0x00, 0x01, 0x00, 0x00]) // Fixed bytes for delete
 
         //          // Send delete command to both glasses with proper timing
         //          rightGlass.writeValue(command, for: rightTxChar, type: .withResponse)
@@ -847,7 +846,7 @@ class G1: NSObject, SGCManager {
             let slotNumber = index + 1
 
             guard let textData = note.text.data(using: .utf8),
-                let nameData = "Quick Note2".data(using: .utf8)
+                  let nameData = "Quick Note2".data(using: .utf8)
             else {
                 continue
             }
@@ -857,31 +856,31 @@ class G1: NSObject, SGCManager {
             let versionByte = UInt8(
                 Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 256))
             let payloadLength =
-                1  // Fixed byte
-                + 1  // Version byte
-                + fixedBytes.count  // Fixed bytes sequence
-                + 1  // Note number
-                + 1  // Fixed byte 2
-                + 1  // Name length
-                + nameData.count  // Name bytes
-                + 1  // Text length
-                + 1  // Fixed byte after text length
-                + textData.count  // Text bytes
-                + 2  // Final bytes
+                1 // Fixed byte
+                + 1 // Version byte
+                + fixedBytes.count // Fixed bytes sequence
+                + 1 // Note number
+                + 1 // Fixed byte 2
+                + 1 // Name length
+                + nameData.count // Name bytes
+                + 1 // Text length
+                + 1 // Fixed byte after text length
+                + textData.count // Text bytes
+                + 2 // Final bytes
 
             // Build command
             var command = Data()
             command.append(Commands.QUICK_NOTE_ADD.rawValue)
             command.append(UInt8(payloadLength & 0xFF))
-            command.append(0x00)  // Fixed byte
+            command.append(0x00) // Fixed byte
             command.append(versionByte)
             command.append(contentsOf: fixedBytes)
             command.append(UInt8(slotNumber))
-            command.append(0x01)  // Fixed byte 2
+            command.append(0x01) // Fixed byte 2
             command.append(UInt8(nameData.count))
             command.append(nameData)
             command.append(UInt8(textData.count))
-            command.append(0x00)  // Fixed byte
+            command.append(0x00) // Fixed byte
             command.append(textData)
 
             // convert command to array of UInt8
@@ -993,13 +992,13 @@ class G1: NSObject, SGCManager {
                 break
             }
 
-            for i in 0..<chunks.count - 1 {
+            for i in 0 ..< chunks.count - 1 {
                 let chunk = chunks[i]
 
                 let firstFewBytes = String(Data(chunk).hexEncodedString().prefix(16))
                 // CoreCommsService.log("SEND (\(side)) \(firstFewBytes)")
                 await sendCommandToSideWithoutResponse(chunk, side: side)
-                try? await Task.sleep(nanoseconds: UInt64(cmd.chunkTimeMs) * 1_000_000)  // 8ms
+                try? await Task.sleep(nanoseconds: UInt64(cmd.chunkTimeMs) * 1_000_000) // 8ms
             }
 
             let lastChunk = chunks.last!
@@ -1016,7 +1015,7 @@ class G1: NSObject, SGCManager {
             }
 
             if cmd.lastFrameMs > 0 {
-                try? await Task.sleep(nanoseconds: UInt64(cmd.lastFrameMs) * 1_000_000)  // 100ms
+                try? await Task.sleep(nanoseconds: UInt64(cmd.lastFrameMs) * 1_000_000) // 100ms
             }
 
             let firstFewBytes = String(Data(lastChunk).hexEncodedString().prefix(16)).uppercased()
@@ -1092,7 +1091,7 @@ class G1: NSObject, SGCManager {
             try? await Task.sleep(nanoseconds: UInt64(command.waitTime) * 1_000_000)
         } else {
             // sleep for a min amount of time unless otherwise specified
-            try? await Task.sleep(nanoseconds: 8 * 1_000_000)  // Xms
+            try? await Task.sleep(nanoseconds: 8 * 1_000_000) // Xms
         }
     }
 
@@ -1114,7 +1113,7 @@ class G1: NSObject, SGCManager {
 
     private func getConnectedDevices() -> [CBPeripheral] {
         let connectedPeripherals = centralManager!.retrieveConnectedPeripherals(withServices: [
-            UART_SERVICE_UUID
+            UART_SERVICE_UUID,
         ])
         return connectedPeripherals
     }
@@ -1134,7 +1133,7 @@ class G1: NSObject, SGCManager {
     }
 
     private func handleNotification(from peripheral: CBPeripheral, data: Data) {
-        guard let command = data.first else { return }  // ensure the data isn't empty
+        guard let command = data.first else { return } // ensure the data isn't empty
 
         let side = peripheral == leftPeripheral ? "L" : "R"
         let s = peripheral == leftPeripheral ? "L" : "R"
@@ -1176,7 +1175,7 @@ class G1: NSObject, SGCManager {
         case .BLE_REQ_TRANSFER_MIC_DATA:
             // compressedVoiceData = data
             // skip the first 2 bytes:
-            let lc3Data = data.subdata(in: 2..<data.count)
+            let lc3Data = data.subdata(in: 2 ..< data.count)
             CoreManager.shared.handleGlassesMicData(lc3Data)
         //                CoreCommsService.log("G1: Got voice data: " + String(data.count))
         case .UNK_1:
@@ -1201,7 +1200,7 @@ class G1: NSObject, SGCManager {
             let voltageLow = Int(data[4])
             let voltageHigh = Int(data[5])
             let rawVoltage = (voltageHigh << 8) | voltageLow
-            let voltage = rawVoltage / 10  // Scale down by 10 to get actual millivolts
+            let voltage = rawVoltage / 10 // Scale down by 10 to get actual millivolts
 
             //      CoreCommsService.log("G1: Raw battery data - Battery: \(batteryPercent)%, Voltage: \(voltage)mV, Flags: 0x\(String(format: "%02X", flags))")
 
@@ -1289,8 +1288,9 @@ class G1: NSObject, SGCManager {
                 Bridge.log("G1: CASE CHARGE INFO")
                 guard data.count >= 3 else { break }
                 if Int(data[2]) != -1 {
-                    caseBatteryLevel = Int(data[2])
-                    Bridge.log("G1: Case battery level: \(caseBatteryLevel)%")
+                    let newCaseBatteryLevel = Int(data[2])
+                    GlassesStore.shared.apply("glasses", "caseBatteryLevel", newCaseBatteryLevel)
+                    Bridge.log("G1: Case battery level: \(newCaseBatteryLevel)%")
                 } else {
                     Bridge.log("G1: Case battery level was -1")
                 }
@@ -1370,7 +1370,7 @@ extension G1 {
 
     // Helper function to split JSON into chunks
     private func createWhitelistChunks(json: String) -> [[UInt8]] {
-        let MAX_CHUNK_SIZE = 180 - 4  // Reserve space for the header
+        let MAX_CHUNK_SIZE = 180 - 4 // Reserve space for the header
         guard let jsonData = json.data(using: .utf8) else { return [] }
 
         let totalChunks = Int(ceil(Double(jsonData.count) / Double(MAX_CHUNK_SIZE)))
@@ -1378,10 +1378,10 @@ extension G1 {
 
         Bridge.log("G1: jsonData.count = \(jsonData.count), totalChunks = \(totalChunks)")
 
-        for i in 0..<totalChunks {
+        for i in 0 ..< totalChunks {
             let start = i * MAX_CHUNK_SIZE
             let end = min(start + MAX_CHUNK_SIZE, jsonData.count)
-            let range = start..<end
+            let range = start ..< end
             let payloadChunk = jsonData.subdata(in: range)
 
             // Create the header: [WHITELIST_CMD, total_chunks, chunk_index]
@@ -1499,20 +1499,20 @@ extension G1 {
         if side == "L" {
             // send to left
             if let leftPeripheral = leftPeripheral,
-                let characteristic = leftPeripheral.services?
-                    .first(where: { $0.uuid == UART_SERVICE_UUID })?
-                    .characteristics?
-                    .first(where: { $0.uuid == UART_TX_CHAR_UUID })
+               let characteristic = leftPeripheral.services?
+               .first(where: { $0.uuid == UART_SERVICE_UUID })?
+               .characteristics?
+               .first(where: { $0.uuid == UART_TX_CHAR_UUID })
             {
                 leftPeripheral.writeValue(commandData, for: characteristic, type: .withResponse)
             }
         } else {
             // send to right
             if let rightPeripheral = rightPeripheral,
-                let characteristic = rightPeripheral.services?
-                    .first(where: { $0.uuid == UART_SERVICE_UUID })?
-                    .characteristics?
-                    .first(where: { $0.uuid == UART_TX_CHAR_UUID })
+               let characteristic = rightPeripheral.services?
+               .first(where: { $0.uuid == UART_SERVICE_UUID })?
+               .characteristics?
+               .first(where: { $0.uuid == UART_TX_CHAR_UUID })
             {
                 rightPeripheral.writeValue(commandData, for: characteristic, type: .withResponse)
             }
@@ -1569,10 +1569,10 @@ extension G1 {
         if side == "L" {
             // send to left
             if let leftPeripheral = leftPeripheral,
-                let characteristic = leftPeripheral.services?
-                    .first(where: { $0.uuid == UART_SERVICE_UUID })?
-                    .characteristics?
-                    .first(where: { $0.uuid == UART_TX_CHAR_UUID })
+               let characteristic = leftPeripheral.services?
+               .first(where: { $0.uuid == UART_SERVICE_UUID })?
+               .characteristics?
+               .first(where: { $0.uuid == UART_TX_CHAR_UUID })
             {
                 // Fast approach: .withoutResponse for speed
                 leftPeripheral.writeValue(commandData, for: characteristic, type: .withoutResponse)
@@ -1580,10 +1580,10 @@ extension G1 {
         } else {
             // send to right
             if let rightPeripheral = rightPeripheral,
-                let characteristic = rightPeripheral.services?
-                    .first(where: { $0.uuid == UART_SERVICE_UUID })?
-                    .characteristics?
-                    .first(where: { $0.uuid == UART_TX_CHAR_UUID })
+               let characteristic = rightPeripheral.services?
+               .first(where: { $0.uuid == UART_SERVICE_UUID })?
+               .characteristics?
+               .first(where: { $0.uuid == UART_TX_CHAR_UUID })
             {
                 // Fast approach: .withoutResponse for speed
                 rightPeripheral.writeValue(commandData, for: characteristic, type: .withoutResponse)
@@ -1720,13 +1720,13 @@ extension G1 {
         // Build dashboard position command
         var command = Data()
         command.append(Commands.DASHBOARD_LAYOUT_COMMAND.rawValue)
-        command.append(0x08)  // Length
-        command.append(0x00)  // Sequence
-        command.append(globalCounter & 0xFF)  // Fixed value
-        command.append(0x02)  // Fixed value
-        command.append(0x01)  // State ON
-        command.append(h)  // height
-        command.append(d)  // depth
+        command.append(0x08) // Length
+        command.append(0x00) // Sequence
+        command.append(globalCounter & 0xFF) // Fixed value
+        command.append(0x02) // Fixed value
+        command.append(0x01) // State ON
+        command.append(h) // height
+        command.append(d) // depth
 
         //    while command.count < 20 {
         //      command.append(0x00)
@@ -1740,7 +1740,7 @@ extension G1 {
 
     func setMicEnabled(_ enabled: Bool) {
         Bridge.log("G1: setMicEnabled() \(enabled)")
-        micEnabled = enabled
+        GlassesStore.shared.apply("glasses", "micEnabled", enabled)
         var micOnData = Data()
         micOnData.append(Commands.BLE_REQ_MIC_ON.rawValue)
         if enabled {
@@ -1790,15 +1790,15 @@ extension G1 {
 
         // Create a simple pattern: alternating lines
         var pixelData = ""
-        let bytesPerRow = 72  // 576 pixels / 8 bits per byte
+        let bytesPerRow = 72 // 576 pixels / 8 bits per byte
 
-        for row in 0..<135 {
-            for col in 0..<bytesPerRow {
+        for row in 0 ..< 135 {
+            for col in 0 ..< bytesPerRow {
                 // Create a pattern: every other row is different
                 if row % 10 < 5 {
-                    pixelData += "ff"  // White line
+                    pixelData += "ff" // White line
                 } else {
-                    pixelData += col % 4 == 0 ? "00" : "ff"  // Pattern line
+                    pixelData += col % 4 == 0 ? "00" : "ff" // Pattern line
                 }
             }
         }
@@ -1814,7 +1814,7 @@ extension G1 {
 
         // BMP header is 62 bytes for your format (14 byte file header + 40 byte DIB header + 8 byte color table)
         let headerSize = 62
-        var invertedData = Data(bmpData.prefix(headerSize))  // Keep header unchanged
+        var invertedData = Data(bmpData.prefix(headerSize)) // Keep header unchanged
 
         // Invert the pixel data (everything after the header)
         let pixelData = bmpData.dropFirst(headerSize)
@@ -1844,9 +1844,9 @@ extension G1 {
         )
 
         // MentraOS constants - exact match
-        let packLen = 194  // Exact chunk size from MentraOS
-        let iosDelayMs = 8  // iOS delay from MentraOS
-        let addressBytes: [UInt8] = [0x00, 0x1C, 0x00, 0x00]  // Address from MentraOS
+        let packLen = 194 // Exact chunk size from MentraOS
+        let iosDelayMs = 8 // iOS delay from MentraOS
+        let addressBytes: [UInt8] = [0x00, 0x1C, 0x00, 0x00] // Address from MentraOS
 
         //    // Debug: Check bmpData integrity before chunking
         //    let pixelDataStart = 62
@@ -1861,10 +1861,10 @@ extension G1 {
         var index = 0
         while index < bmpData.count {
             let end = min(index + packLen, bmpData.count)
-            let singlePack = bmpData.subdata(in: index..<end)
+            let singlePack = bmpData.subdata(in: index ..< end)
 
             // Debug first few chunks to see where corruption happens
-            if index < 600 {  // First 3 chunks (194 * 3 = 582)
+            if index < 600 { // First 3 chunks (194 * 3 = 582)
                 let chunkSample = Array(singlePack.prefix(20))
                 let chunkHex = chunkSample.map { String(format: "%02X", $0) }.joined(separator: " ")
                 Bridge.log("G1: 🔍 Chunk creation - index \(index), sample: \(chunkHex)")
@@ -1935,9 +1935,9 @@ extension G1 {
 
         // Build CRC table for efficiency (matches crclib behavior)
         var table: [UInt32] = Array(repeating: 0, count: 256)
-        for i in 0..<256 {
+        for i in 0 ..< 256 {
             var entry = UInt32(i) << 24
-            for _ in 0..<8 {
+            for _ in 0 ..< 8 {
                 if (entry & 0x8000_0000) != 0 {
                     entry = (entry << 1) ^ polynomial
                 } else {
@@ -1963,7 +1963,7 @@ extension G1 {
 
         for byte in data {
             crc ^= UInt32(byte)
-            for _ in 0..<8 {
+            for _ in 0 ..< 8 {
                 if (crc & 1) != 0 {
                     crc = (crc >> 1) ^ polynomial
                 } else {
@@ -1978,26 +1978,26 @@ extension G1 {
     /// Create BMP chunks with MentraOS-compatible headers
     private func createBmpChunks(from bmpData: Data, chunkSize: Int) -> [[UInt8]] {
         var chunks: [[UInt8]] = []
-        let glassesAddress: [UInt8] = [0x00, 0x1C, 0x00, 0x00]  // MentraOS uses address 0x1c
+        let glassesAddress: [UInt8] = [0x00, 0x1C, 0x00, 0x00] // MentraOS uses address 0x1c
 
         let totalChunks = (bmpData.count + chunkSize - 1) / chunkSize
 
-        for i in 0..<totalChunks {
+        for i in 0 ..< totalChunks {
             let start = i * chunkSize
             let end = min(start + chunkSize, bmpData.count)
-            let chunkData = bmpData.subdata(in: start..<end)
+            let chunkData = bmpData.subdata(in: start ..< end)
 
             var chunk: [UInt8] = []
 
             // First chunk needs address bytes
             if i == 0 {
-                chunk.append(0x15)  // Command
-                chunk.append(UInt8(i & 0xFF))  // Sequence
-                chunk.append(contentsOf: glassesAddress)  // Address
+                chunk.append(0x15) // Command
+                chunk.append(UInt8(i & 0xFF)) // Sequence
+                chunk.append(contentsOf: glassesAddress) // Address
                 chunk.append(contentsOf: chunkData)
             } else {
-                chunk.append(0x15)  // Command
-                chunk.append(UInt8(i & 0xFF))  // Sequence
+                chunk.append(0x15) // Command
+                chunk.append(UInt8(i & 0xFF)) // Sequence
                 chunk.append(contentsOf: chunkData)
             }
 
@@ -2016,7 +2016,7 @@ extension G1 {
         timeoutMs: Int
     ) async -> Bool {
         // Create data with address for CRC calculation (MentraOS pattern)
-        let glassesAddress: [UInt8] = [0x00, 0x1C, 0x00, 0x00]  // Same address as in chunks
+        let glassesAddress: [UInt8] = [0x00, 0x1C, 0x00, 0x00] // Same address as in chunks
         var dataWithAddress = Data(glassesAddress)
         dataWithAddress.append(bmpData)
 
@@ -2024,7 +2024,7 @@ extension G1 {
         let crcValue = dataWithAddress.crc32
 
         // Create CRC command packet
-        var crcCommand: [UInt8] = [0x16]  // CRC command
+        var crcCommand: [UInt8] = [0x16] // CRC command
         crcCommand.append(UInt8((crcValue >> 24) & 0xFF))
         crcCommand.append(UInt8((crcValue >> 16) & 0xFF))
         crcCommand.append(UInt8((crcValue >> 8) & 0xFF))
@@ -2033,7 +2033,7 @@ extension G1 {
         Bridge.log("G1: Sending CRC command, CRC value: \(String(format: "%08x", crcValue))")
 
         // Send CRC with retry
-        for attempt in 0..<maxAttempts {
+        for attempt in 0 ..< maxAttempts {
             queueChunks([crcCommand], sendLeft: sendLeft, sendRight: sendRight)
 
             // Wait for CRC command to process
@@ -2057,7 +2057,8 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
         for service in peripheral.services ?? [] {
             if service.uuid == UART_SERVICE_UUID {
                 for characteristic in service.characteristics ?? []
-                where characteristic.uuid == UART_TX_CHAR_UUID {
+                    where characteristic.uuid == UART_TX_CHAR_UUID
+                {
                     return characteristic
                 }
             }
@@ -2075,7 +2076,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
         }
 
         // Look for matches in the input string
-        let range = NSRange(string.startIndex..<string.endIndex, in: string)
+        let range = NSRange(string.startIndex ..< string.endIndex, in: string)
         guard let match = regex.firstMatch(in: string, options: [], range: range) else {
             return nil
         }
@@ -2131,13 +2132,9 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                     Bridge.log("G1: 📱 Style: \(style), Color: \(color)")
 
                     // Store the information
-                    serialNumber = decodedSerial
-                    style = decodedStyle
-                    color = decodedColor
-
-                    // Emit the serial number information
-                    // emitSerialNumberInfo(serialNumber: decodedSerial, style: style, color: color)
-                    CoreManager.shared.getStatus()
+                    GlassesStore.shared.apply("glasses", "serialNumber", decodedSerial)
+                    GlassesStore.shared.apply("glasses", "style", decodedStyle)
+                    GlassesStore.shared.apply("glasses", "color", decodedColor)
                 } else {
                     Bridge.log("G1: 📱 Could not decode serial number from manufacturer data")
                 }
@@ -2192,7 +2189,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
     ) {
         let side =
             peripheral == leftPeripheral
-            ? "LEFT" : peripheral == rightPeripheral ? "RIGHT" : "unknown"
+                ? "LEFT" : peripheral == rightPeripheral ? "RIGHT" : "unknown"
         Bridge.log("G1: @@@@@ \(side) PERIPHERAL DISCONNECTED @@@@@")
 
         // only reconnect if we're not intentionally disconnecting:
@@ -2205,7 +2202,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
             leftPeripheral = nil
             rightPeripheral = nil
             setReadiness(left: false, right: false)
-            startReconnectionTimer()  // Start periodic reconnection attempts
+            startReconnectionTimer() // Start periodic reconnection attempts
         }
     }
 
@@ -2217,7 +2214,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                 // Check if already connected
                 if await MainActor.run(body: { self.ready }) {
                     Bridge.log("G1: Already connected, stopping reconnection")
-                    return true  // Returning true stops the reconnection loop
+                    return true // Returning true stops the reconnection loop
                 }
 
                 Bridge.log("G1: Attempting reconnection...")
@@ -2318,13 +2315,13 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                     peripheral.setNotifyValue(true, for: characteristic)
 
                     // enable notification (needed for pairing from scracth!)
-                    Thread.sleep(forTimeInterval: 0.5)  // 500ms delay
+                    Thread.sleep(forTimeInterval: 0.5) // 500ms delay
                     let CLIENT_CHARACTERISTIC_CONFIG_UUID = CBUUID(
                         string: "00002902-0000-1000-8000-00805f9b34fb")
                     if let descriptor = characteristic.descriptors?.first(where: {
                         $0.uuid == CLIENT_CHARACTERISTIC_CONFIG_UUID
                     }) {
-                        let value = Data([0x01, 0x00])  // ENABLE_NOTIFICATION_VALUE in iOS
+                        let value = Data([0x01, 0x00]) // ENABLE_NOTIFICATION_VALUE in iOS
                         peripheral.writeValue(value, for: descriptor)
                     } else {
                         Bridge.log("PROC_QUEUE - descriptor not found")
@@ -2383,8 +2380,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
     }
 
     // L/R Synchronization - Handle BLE write completions
-    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor _: CBCharacteristic, error: Error?)
-    {
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor _: CBCharacteristic, error: Error?) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 

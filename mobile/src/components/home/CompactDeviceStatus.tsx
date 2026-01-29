@@ -26,7 +26,7 @@ import {
 } from "@/utils/getGlassesImage"
 
 import MicIcon from "assets/icons/component/MicIcon"
-import { useCoreStore } from "@/stores/core"
+import {useCoreStore} from "@/stores/core"
 
 const getBatteryIcon = (batteryLevel: number): string => {
   if (batteryLevel >= 75) return "battery-3"
@@ -45,7 +45,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const glassesConnected = useGlassesStore((state) => state.connected)
-  const style = useGlassesStore((state) => state.style)
+  const glassesStyle = useGlassesStore((state) => state.style)
   const color = useGlassesStore((state) => state.color)
   const caseRemoved = useGlassesStore((state) => state.caseRemoved)
   const caseBatteryLevel = useGlassesStore((state) => state.caseBatteryLevel)
@@ -54,7 +54,6 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
   const searching = useCoreStore((state) => state.searching)
-  const connectionState = useGlassesStore((state) => state.connectionState)
 
   if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
     return <ConnectedSimulatedGlassesInfo style={style} mirrorStyle={{backgroundColor: theme.colors.background}} />
@@ -100,7 +99,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
       if (!caseRemoved) {
         state = caseOpen ? "case_open" : "case_close"
       }
-      return getEvenRealitiesG1Image(style, color, state, "l", theme.isDark, caseBatteryLevel)
+      return getEvenRealitiesG1Image(glassesStyle, color, state, "l", theme.isDark, caseBatteryLevel)
     }
 
     if (!caseRemoved) {

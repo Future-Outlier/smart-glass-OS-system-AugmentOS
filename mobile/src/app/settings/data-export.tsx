@@ -23,6 +23,7 @@ import {useApplets} from "@/stores/applets"
 import {useSettingsStore} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
+import {useCoreStore} from "@/stores/core"
 
 export interface UserDataExport {
   metadata: {
@@ -150,7 +151,7 @@ class DataExportService {
   private static sanitizeAppData(appStatus: any[]): any[] {
     if (!appStatus || !Array.isArray(appStatus)) return []
 
-    return appStatus.map(app => {
+    return appStatus.map((app) => {
       const sanitized = {...app}
 
       // Remove sensitive app data
@@ -203,6 +204,7 @@ export default function DataExportPage() {
   const appStatus = useApplets()
   const {goBack} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
+  const coreStatus = useCoreStore()
 
   useEffect(() => {
     collectData()
@@ -213,7 +215,7 @@ export default function DataExportPage() {
     setLoading(true)
 
     try {
-      const data = await DataExportService.collectUserData(user, session, status, appStatus)
+      const data = await DataExportService.collectUserData(user, session, coreStatus, appStatus)
       const formatted = DataExportService.formatAsJson(data)
 
       setExportData(data)

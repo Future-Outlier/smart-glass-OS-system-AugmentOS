@@ -5,44 +5,46 @@ protocol SGCManager {
     // MARK: - Device Information
 
     var type: String { get set }
-    var ready: Bool { get }
-    var connectionState: String { get }
-
-    // info:
-    var appVersion: String { get }
-    var buildNumber: String { get }
-    var deviceModel: String { get }
-    var androidVersion: String { get }
-    var otaVersionUrl: String { get }
-    var firmwareVersion: String { get }
-    var btMacAddress: String { get }
-    var serialNumber: String { get }
-    var style: String { get }
-    var color: String { get }
-
-    // MARK: - Hardware Status
-
     var hasMic: Bool { get }
-    var micEnabled: Bool { get }
-    var batteryLevel: Int { get }
-    var charging: Bool { get }
 
-    // MARK: - Case Status
+    // var ready: Bool { get }
+    // var connectionState: String { get }
 
-    var caseOpen: Bool { get }
-    var caseRemoved: Bool { get }
-    var caseCharging: Bool { get }
-    var caseBatteryLevel: Int { get }
+    // // info:
+    // var appVersion: String { get }
+    // var buildNumber: String { get }
+    // var deviceModel: String { get }
+    // var androidVersion: String { get }
+    // var otaVersionUrl: String { get }
+    // var firmwareVersion: String { get }
+    // var btMacAddress: String { get }
+    // var serialNumber: String { get }
+    // var style: String { get }
+    // var color: String { get }
 
-    // MARK: - Network Status
+    // // MARK: - Hardware Status
 
-    var wifiSsid: String { get }
-    var wifiConnected: Bool { get }
-    var wifiLocalIp: String { get }
-    var isHotspotEnabled: Bool { get }
-    var hotspotSsid: String { get }
-    var hotspotPassword: String { get }
-    var hotspotGatewayIp: String { get }
+    // var hasMic: Bool { get }
+    // var micEnabled: Bool { get }
+    // var batteryLevel: Int { get }
+    // var charging: Bool { get }
+
+    // // MARK: - Case Status
+
+    // var caseOpen: Bool { get }
+    // var caseRemoved: Bool { get }
+    // var caseCharging: Bool { get }
+    // var caseBatteryLevel: Int { get }
+
+    // // MARK: - Network Status
+
+    // var wifiSsid: String { get }
+    // var wifiConnected: Bool { get }
+    // var wifiLocalIp: String { get }
+    // var isHotspotEnabled: Bool { get }
+    // var hotspotSsid: String { get }
+    // var hotspotPassword: String { get }
+    // var hotspotGatewayIp: String { get }
 
     // MARK: - Audio Control
 
@@ -130,7 +132,7 @@ extension SGCManager {
     }
 
     // MARK: - Default GlassesStore-backed property implementations
-    
+
     var ready: Bool {
         get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
         set { GlassesStore.shared.apply("glasses", "ready", newValue) }

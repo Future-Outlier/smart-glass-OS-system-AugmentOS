@@ -11,14 +11,6 @@ import Foundation
 import SwiftProtobuf
 import UIKit
 
-// MARK: - Connection State Management
-
-enum MentraNexConnectionState {
-    case disconnected
-    case connecting
-    case connected
-}
-
 // Helper extension for debugging
 extension Data {
     func toHexString() -> String {
@@ -29,121 +21,89 @@ extension Data {
 @MainActor
 @objc(MentraNexSGC)
 class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SGCManager {
-    func setMicEnabled(_ enabled: Bool) {
-    }
+    func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
+
+    func setMicEnabled(_: Bool) {}
 
     func requestPhoto(
-        _ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?,
-        compress: String?, silent: Bool
-    ) {
+        _: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?,
+        compress _: String?, silent _: Bool
+    ) {}
+
+    func startRtmpStream(_: [String: Any]) {}
+
+    func stopRtmpStream() {}
+
+    func sendRtmpKeepAlive(_: [String: Any]) {}
+
+    func startBufferRecording() {}
+
+    func stopBufferRecording() {}
+
+    func saveBufferVideo(requestId _: String, durationSeconds _: Int) {}
+
+    func startVideoRecording(requestId _: String, save _: Bool, silent _: Bool) {}
+
+    func stopVideoRecording(requestId _: String) {}
+
+    func sendButtonPhotoSettings() {}
+
+    func sendButtonModeSetting() {}
+
+    func sendButtonVideoRecordingSettings() {}
+
+    func sendButtonMaxRecordingTime() {}
+
+    func sendButtonCameraLedSetting() {}
+
+    func setBrightness(_: Int, autoMode _: Bool) {}
+
+    func sendDoubleTextWall(_: String, _: String) {}
+
+    func displayBitmap(base64ImageData _: String) async -> Bool {
+        return false
     }
 
-    func startRtmpStream(_ message: [String: Any]) {
-    }
+    func showDashboard() {}
 
-    func stopRtmpStream() {
-    }
+    func setDashboardPosition(_: Int, _: Int) {}
 
-    func sendRtmpKeepAlive(_ message: [String: Any]) {
-    }
+    func setHeadUpAngle(_: Int) {}
 
-    func startBufferRecording() {
-    }
+    func getBatteryStatus() {}
 
-    func stopBufferRecording() {
-    }
+    func setSilentMode(_: Bool) {}
 
-    func saveBufferVideo(requestId: String, durationSeconds: Int) {
-    }
-
-    func startVideoRecording(requestId: String, save: Bool, silent: Bool) {
-    }
-
-    func stopVideoRecording(requestId: String) {
-    }
-
-    func sendButtonPhotoSettings() {
-    }
-
-    func sendButtonModeSetting() {
-    }
-
-    func sendButtonVideoRecordingSettings() {
-    }
-
-    func sendButtonMaxRecordingTime() {
-    }
-
-    func sendButtonCameraLedSetting() {
-    }
-
-    func setBrightness(_ level: Int, autoMode: Bool) {
-    }
-
-    func sendDoubleTextWall(_ top: String, _ bottom: String) {
-    }
-
-    func displayBitmap(base64ImageData: String) async -> Bool {
-    }
-
-    func showDashboard() {
-    }
-
-    func setDashboardPosition(_ height: Int, _ depth: Int) {
-    }
-
-    func setHeadUpAngle(_ angle: Int) {
-    }
-
-    func getBatteryStatus() {
-    }
-
-    func setSilentMode(_ enabled: Bool) {
-    }
-
-    func exit() {
-    }
+    func exit() {}
 
     func sendRgbLedControl(
-        requestId: String, packageName: String?, action: String, color: String?, ontime: Int,
-        offtime: Int, count: Int
-    ) {
-    }
+        requestId _: String, packageName _: String?, action _: String, color _: String?, ontime _: Int,
+        offtime _: Int, count _: Int
+    ) {}
 
-    func forget() {
-    }
+    func forget() {}
 
-    func connectById(_ id: String) {
-    }
+    func connectById(_: String) {}
 
     func getConnectedBluetoothName() -> String? {
+        return nil
     }
 
-    func cleanup() {
-    }
+    func cleanup() {}
 
-    func requestWifiScan() {
-    }
+    func requestWifiScan() {}
 
-    func sendWifiCredentials(_ ssid: String, _ password: String) {
-    }
+    func sendWifiCredentials(_: String, _: String) {}
 
-    func forgetWifiNetwork(_ ssid: String) {
-    }
+    func forgetWifiNetwork(_: String) {}
 
-    func sendHotspotState(_ enabled: Bool) {
-    }
+    func sendHotspotState(_: Bool) {}
 
-    func sendOtaStart() {
-    }
+    func sendOtaStart() {}
 
-    func sendUserEmailToGlasses(_ email: String) {
+    func sendUserEmailToGlasses(_: String) {}
 
-    }
-
-    func queryGalleryStatus() {
-
-    }
+    func queryGalleryStatus() {}
 
     @objc static func requiresMainQueueSetup() -> Bool { true }
 
@@ -162,8 +122,8 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
     private var reconnectionTimer: Timer?
     private var reconnectionAttempts = 0
     // TODO: change this
-    private let maxReconnectionAttempts = -1  // -1 for unlimited
-    private let reconnectionInterval: TimeInterval = 5.0  // 5 seconds
+    private let maxReconnectionAttempts = -1 // -1 for unlimited
+    private let reconnectionInterval: TimeInterval = 5.0 // 5 seconds
     private var peripheralToConnectName: String?
 
     // Heartbeat tracking (like Java implementation)
@@ -174,7 +134,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
     // Microphone beat system (like Java implementation)
     private var micBeatTimer: Timer?
     private var micBeatCount = 0
-    private let MICBEAT_INTERVAL_MS: TimeInterval = 30 * 60  // 30 minutes like Java
+    private let MICBEAT_INTERVAL_MS: TimeInterval = 30 * 60 // 30 minutes like Java
     private var shouldUseGlassesMic = true
     private var microphoneStateBeforeDisconnection = false
 
@@ -186,7 +146,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
     private var protobufVersionPosted = false
 
     // Device discovery cache (like MentraLive)
-    private var discoveredPeripherals = [String: CBPeripheral]()  // name -> peripheral
+    private var discoveredPeripherals = [String: CBPeripheral]() // name -> peripheral
 
     // MARK: - Published Properties (G1-compatible)
 
@@ -238,6 +198,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         get { nexReady }
         set { nexReady = newValue }
     }
+
     var hasMic: Bool = true
 
     private var peripheralUUID: UUID? {
@@ -258,7 +219,8 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
     // Custom Bluetooth queue for better performance (like G1)
     private static let _bluetoothQueue = DispatchQueue(
-        label: "com.mentra.nex.bluetooth", qos: .background)
+        label: "com.mentra.nex.bluetooth", qos: .background
+    )
 
     static var instance: MentraNexSGC?
 
@@ -283,12 +245,12 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
     private let PACKET_TYPE_IMAGE: UInt8 = 0xB0
 
     // MTU Configuration (iOS-optimized)
-    private let MTU_MAX_IOS = 185  // iOS maximum (platform limitation)
-    private let MTU_DEFAULT = 23  // Default BLE MTU
-    private var currentMTU = 23  // Currently negotiated MTU
-    private var deviceMaxMTU = 23  // Device's maximum capability
-    private var maxChunkSize = 176  // Calculated optimal chunk size
-    private var bmpChunkSize = 176  // Image chunk size (iOS-optimized)
+    private let MTU_MAX_IOS = 185 // iOS maximum (platform limitation)
+    private let MTU_DEFAULT = 23 // Default BLE MTU
+    private var currentMTU = 23 // Currently negotiated MTU
+    private var deviceMaxMTU = 23 // Device's maximum capability
+    private var maxChunkSize = 176 // Calculated optimal chunk size
+    private var bmpChunkSize = 176 // Image chunk size (iOS-optimized)
 
     // MARK: - Command Queue (modeled after ERG1Manager)
 
@@ -371,7 +333,8 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
     private func queueChunks(_ chunks: [[UInt8]], waitTimeMs: Int = 0, chunkDelayMs: Int = 8) {
         let cmd = BufferedCommand(
-            chunks: chunks, waitTimeMs: waitTimeMs, chunkDelayMs: chunkDelayMs)
+            chunks: chunks, waitTimeMs: waitTimeMs, chunkDelayMs: chunkDelayMs
+        )
         Task { [weak self] in
             await self?.commandQueue.enqueue(cmd)
         }
@@ -382,7 +345,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         _ data: Data, packetType: UInt8 = 0x02, waitTimeMs: Int = 0
     ) {
         var chunks: [[UInt8]] = []
-        let effectiveChunkSize = maxChunkSize - 1  // Reserve 1 byte for packet type
+        let effectiveChunkSize = maxChunkSize - 1 // Reserve 1 byte for packet type
 
         // Add packet type as first byte
         var packetData = Data([packetType])
@@ -392,7 +355,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         var offset = 0
         while offset < packetData.count {
             let chunkSize = min(effectiveChunkSize, packetData.count - offset)
-            let chunkData = packetData.subdata(in: offset..<(offset + chunkSize))
+            let chunkData = packetData.subdata(in: offset ..< (offset + chunkSize))
             chunks.append(Array(chunkData))
             offset += chunkSize
         }
@@ -488,7 +451,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
     private func isCompatibleNexDevice(_ deviceName: String) -> Bool {
         // Enhanced filtering logic from Java implementation
         let compatiblePrefixes = [
-            "NexSim"
+            "NexSim",
             // "MENTRA",
             // "NEX",
             // "Nex",
@@ -519,9 +482,9 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
         for pattern in patterns {
             let regex = try? NSRegularExpression(pattern: pattern)
-            let range = NSRange(deviceName.startIndex..<deviceName.endIndex, in: deviceName)
+            let range = NSRange(deviceName.startIndex ..< deviceName.endIndex, in: deviceName)
             if let match = regex?.firstMatch(in: deviceName, options: [], range: range),
-                let matchRange = Range(match.range(at: 1), in: deviceName)
+               let matchRange = Range(match.range(at: 1), in: deviceName)
             {
                 let deviceId = String(deviceName[matchRange])
                 Bridge.log("NEX: 🏷️ Extracted device ID: \(deviceId) from \(deviceName)")
@@ -576,7 +539,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
     private func startReconnectionTimer() {
         Bridge.log("NEX-CONN: 🔄 Starting reconnection timer...")
-        stopReconnectionTimer()  // Ensure no existing timer is running
+        stopReconnectionTimer() // Ensure no existing timer is running
         reconnectionAttempts = 0
 
         DispatchQueue.main.async {
@@ -621,7 +584,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
     private func startScan() {
         Bridge.log("NEX-CONN: 🔍 startScan called")
 
-        isDisconnecting = false  // Reset intentional disconnect flag
+        isDisconnecting = false // Reset intentional disconnect flag
 
         guard let centralManager else {
             Bridge.log("NEX-CONN: ❌ Central Manager is nil!")
@@ -642,12 +605,12 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
         // If that fails, check for already-connected system devices
         let connectedPeripherals = centralManager.retrieveConnectedPeripherals(withServices: [
-            MAIN_SERVICE_UUID
+            MAIN_SERVICE_UUID,
         ])
         if let targetName = peripheralToConnectName,
-            let existingPeripheral = connectedPeripherals.first(where: {
-                $0.name?.contains(targetName) == true
-            })
+           let existingPeripheral = connectedPeripherals.first(where: {
+               $0.name?.contains(targetName) == true
+           })
         {
             Bridge.log(
                 "NEX-CONN: 📱 Found already connected peripheral that matches target: \(existingPeripheral.name ?? "Unknown")"
@@ -661,7 +624,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
         // Check if we have a saved device name to reconnect to (like MentraLive)
         if let savedDeviceName = UserDefaults.standard.string(forKey: PREFS_DEVICE_NAME),
-            !savedDeviceName.isEmpty
+           !savedDeviceName.isEmpty
         {
             Bridge.log("NEX-CONN: 🔄 Looking for saved device: \(savedDeviceName)")
             // This will be handled in didDiscover when the device is found
@@ -673,7 +636,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         // Scan for ALL devices, not just those with specific services
         // Use same options as G1 scanner for consistency
         let scanOptions: [String: Any] = [
-            CBCentralManagerScanOptionAllowDuplicatesKey: false  // Don't allow duplicate advertisements
+            CBCentralManagerScanOptionAllowDuplicatesKey: false, // Don't allow duplicate advertisements
         ]
         centralManager.scanForPeripherals(withServices: nil, options: scanOptions)
 
@@ -703,17 +666,19 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
     }
 
     @objc func isConnected() -> Bool {
-        nexReady && nexConnectionState == .connected
+        nexReady && connectionState == ConnTypes.CONNECTED
     }
 
     @objc func getConnectionState() -> String {
         switch connectionState {
-        case .disconnected:
+        case ConnTypes.DISCONNECTED:
             return "disconnected"
-        case .connecting:
+        case ConnTypes.CONNECTING:
             return "connecting"
-        case .connected:
+        case ConnTypes.CONNECTED:
             return "connected"
+        default:
+            return "disconnected"
         }
     }
 
@@ -746,15 +711,16 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
         // Clear any specific device targets to ensure we are only discovering
         peripheralToConnectName = nil
-        clearSavedDeviceInfo()  // This clears UserDefaults and our in-memory cache of saved/preferred devices.
+        clearSavedDeviceInfo() // This clears UserDefaults and our in-memory cache of saved/preferred devices.
 
         Task {
             if centralManager == nil {
                 centralManager = CBCentralManager(
                     delegate: self, queue: bluetoothQueue,
-                    options: ["CBCentralManagerOptionShowPowerAlertKey": 0])
+                    options: ["CBCentralManagerOptionShowPowerAlertKey": 0]
+                )
                 // wait for the central manager to be fully initialized before we start scanning:
-                try? await Task.sleep(nanoseconds: 100 * 1_000_000)  // 100ms
+                try? await Task.sleep(nanoseconds: 100 * 1_000_000) // 100ms
             }
 
             if centralManager?.state == .poweredOn {
@@ -880,7 +846,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         Bridge.log("NEX: Displaying bitmap data (\(bmpData.count) bytes, \(width)x\(height))")
 
         // Generate stream ID for image transfer
-        let streamId = String(format: "%04X", Int.random(in: 0...0xFFFF))
+        let streamId = String(format: "%04X", Int.random(in: 0 ... 0xFFFF))
         let totalChunks = Int(ceil(Double(bmpData.count) / Double(bmpChunkSize)))
 
         // Send display image command first
@@ -901,7 +867,8 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
         let protobufData = try! phoneToGlasses.serializedData()
         queueDataWithOptimalChunking(
-            protobufData, packetType: PACKET_TYPE_PROTOBUF, waitTimeMs: 100)
+            protobufData, packetType: PACKET_TYPE_PROTOBUF, waitTimeMs: 100
+        )
 
         // Send image chunks
         sendImageChunks(streamId: streamId, imageData: bmpData)
@@ -913,16 +880,16 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
         var chunks: [[UInt8]] = []
 
-        for i in 0..<totalChunks {
+        for i in 0 ..< totalChunks {
             let start = i * bmpChunkSize
             let end = min(start + bmpChunkSize, imageData.count)
-            let chunkData = imageData.subdata(in: start..<end)
+            let chunkData = imageData.subdata(in: start ..< end)
 
             var header: [UInt8] = [
-                PACKET_TYPE_IMAGE,  // 0xB0
-                UInt8((streamIdInt >> 8) & 0xFF),  // Stream ID high byte
-                UInt8(streamIdInt & 0xFF),  // Stream ID low byte
-                UInt8(i & 0xFF),  // Chunk index
+                PACKET_TYPE_IMAGE, // 0xB0
+                UInt8((streamIdInt >> 8) & 0xFF), // Stream ID high byte
+                UInt8(streamIdInt & 0xFF), // Stream ID low byte
+                UInt8(i & 0xFF), // Chunk index
             ]
             header.append(contentsOf: chunkData)
             chunks.append(header)
@@ -1198,7 +1165,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
     }
 
     @objc func isDeviceReady() -> Bool {
-        nexReady && nexConnectionState == .connected
+        nexReady && connectionState == ConnTypes.CONNECTED
     }
 
     @objc func getDeviceInfo() -> [String: Any] {
@@ -1238,20 +1205,20 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         switch packetType {
         case PACKET_TYPE_JSON:
             if data.count > 1 {
-                let jsonData = data.subdata(in: 1..<data.count)
+                let jsonData = data.subdata(in: 1 ..< data.count)
                 processJsonData(jsonData)
             }
 
         case PACKET_TYPE_PROTOBUF:
             if data.count > 1 {
-                let protobufData = data.subdata(in: 1..<data.count)
+                let protobufData = data.subdata(in: 1 ..< data.count)
                 processProtobufData(protobufData)
             }
 
         case PACKET_TYPE_AUDIO:
             if data.count > 2 {
                 let sequenceNumber = data[1]
-                let audioData = data.subdata(in: 2..<data.count)
+                let audioData = data.subdata(in: 2 ..< data.count)
                 processAudioData(audioData, sequenceNumber: sequenceNumber)
             }
 
@@ -1273,7 +1240,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
         do {
             guard let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                let type = json["type"] as? String
+                  let type = json["type"] as? String
             else {
                 return
             }
@@ -1382,8 +1349,8 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         Bridge.log("NEX: 🔋 Battery Status - Level: \(level)%, Charging: \(charging)")
 
         // Update @Published properties (G1-compatible approach)
-        batteryLevel = level
-        charging = isCharging
+        GlassesStore.shared.apply("glasses", "batteryLevel", level)
+        GlassesStore.shared.apply("glasses", "charging", isCharging)
     }
 
     private func handleChargingStateProtobuf(_ chargingState: Mentraos_Ble_ChargingState) {
@@ -1392,15 +1359,15 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         Bridge.log("NEX: 🔌 Charging State: \(chargingState ? "CHARGING" : "NOT_CHARGING")")
 
         // Update @Published property (G1-compatible approach)
-        charging = chargingState
+        GlassesStore.shared.apply("glasses", "charging", chargingState)
     }
 
     private func handleDeviceInfoProtobuf(_ deviceInfo: Mentraos_Ble_DeviceInfo) {
         Bridge.log("NEX: 📱 Device Info: \(deviceInfo)")
 
         // Update @Published properties (G1-compatible approach)
-        deviceFirmwareVersion = deviceInfo.fwVersion
-        deviceHardwareModel = deviceInfo.hwModel
+        GlassesStore.shared.apply("glasses", "deviceFirmwareVersion", deviceInfo.fwVersion)
+        GlassesStore.shared.apply("glasses", "deviceHardwareModel", deviceInfo.hwModel)
     }
 
     private func handleHeadPositionProtobuf(_ headPosition: Mentraos_Ble_HeadPosition) {
@@ -1440,7 +1407,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             "heartbeat_received": [
                 "timestamp": timestamp,
                 "device_model": "Mentra Nex",
-            ]
+            ],
         ]
 
         emitEvent("HeartbeatReceivedEvent", body: eventBody)
@@ -1461,7 +1428,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
         // Update @Published properties (G1-compatible approach)
         vadActive = vadActiveState
-        aiListening = vadActiveState  // Mirror G1's aiListening behavior
+        aiListening = vadActiveState // Mirror G1's aiListening behavior
     }
 
     private func handleImageTransferCompleteProtobuf(
@@ -1491,7 +1458,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
                 "status": status == .ok ? "success" : "incomplete",
                 "missing_chunks": missingChunks,
                 "timestamp": Date().timeIntervalSince1970 * 1000,
-            ]
+            ],
         ]
 
         emitEvent("ImageTransferCompleteEvent", body: eventBody)
@@ -1525,7 +1492,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         // Update @Published properties (G1-compatible approach)
         switch gestureType {
         case .headUp:
-            headUp = true
+            GlassesStore.shared.apply("glasses", "headUp", true)
             lastHeadGesture = "headUp"
         case .nod:
             lastHeadGesture = "nod"
@@ -1546,8 +1513,8 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         Bridge.log("NEX: 🔋 JSON Battery Status - Level: \(level)%, Charging: \(charging)")
 
         // Update @Published properties (G1-compatible approach)
-        batteryLevel = level
-        charging = isCharging
+        GlassesStore.shared.apply("glasses", "batteryLevel", level)
+        GlassesStore.shared.apply("glasses", "charging", isCharging)
     }
 
     private func handleDeviceInfoJson(_ json: [String: Any]) {
@@ -1573,7 +1540,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
                 "button_id": buttonId,
                 "press_type": pressType,
                 "timestamp": Date().timeIntervalSince1970 * 1000,
-            ]
+            ],
         ]
 
         emitEvent("ButtonPressEvent", body: eventBody)
@@ -1592,7 +1559,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             "heartbeat_received": [
                 "timestamp": timestamp,
                 "device_model": "Mentra Nex",
-            ]
+            ],
         ]
 
         emitEvent("HeartbeatReceivedEvent", body: eventBody)
@@ -1605,7 +1572,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
         // Update @Published properties (G1-compatible approach)
         vadActive = vadActiveState
-        aiListening = vadActiveState  // Mirror G1's aiListening behavior
+        aiListening = vadActiveState // Mirror G1's aiListening behavior
     }
 
     private func handleImuDataJson(_ json: [String: Any]) {
@@ -1628,7 +1595,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             "head_gesture": [
                 "gesture": gesture,
                 "timestamp": Date().timeIntervalSince1970 * 1000,
-            ]
+            ],
         ]
 
         emitEvent("HeadGestureEvent", body: eventBody)
@@ -1651,7 +1618,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             "heartbeat_sent": [
                 "timestamp": timestamp,
                 "device_model": "Mentra Nex",
-            ]
+            ],
         ]
 
         emitEvent("HeartbeatSentEvent", body: eventBody)
@@ -1664,7 +1631,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             "heartbeat_received": [
                 "timestamp": timestamp,
                 "device_model": "Mentra Nex",
-            ]
+            ],
         ]
 
         emitEvent("HeartbeatReceivedEvent", body: eventBody)
@@ -1722,7 +1689,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         let chunks = createWhitelistChunks(json: whitelistJson)
 
         // Send chunks with delay like Java
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {  // 10ms delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // 10ms delay
             self.queueChunks(chunks)
         }
     }
@@ -1736,7 +1703,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             "ios_mail_enable": false,
             "app": [
                 "list": [
-                    ["id": "com.augment.os", "name": "AugmentOS"]
+                    ["id": "com.augment.os", "name": "AugmentOS"],
                 ],
                 "enable": true,
             ],
@@ -1762,16 +1729,16 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         let totalChunks = Int(ceil(Double(jsonData.count) / Double(maxChunkSize)))
         var chunks: [[UInt8]] = []
 
-        for i in 0..<totalChunks {
+        for i in 0 ..< totalChunks {
             let start = i * maxChunkSize
             let end = min(start + maxChunkSize, jsonData.count)
-            let payloadChunk = jsonData.subdata(in: start..<end)
+            let payloadChunk = jsonData.subdata(in: start ..< end)
 
             // Create header: [WHITELIST_CMD, total_chunks, chunk_index] (Java lines 2714-2717)
             var header: [UInt8] = [
-                WHITELIST_CMD,  // Command ID (0x04)
-                UInt8(totalChunks),  // Total number of chunks
-                UInt8(i),  // Current chunk index
+                WHITELIST_CMD, // Command ID (0x04)
+                UInt8(totalChunks), // Total number of chunks
+                UInt8(i), // Current chunk index
             ]
 
             // Combine header and payload (Java lines 2720-2725)
@@ -1795,10 +1762,10 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         // Emit protobuf schema version event like Java (lines 3709-3728)
         let eventBody: [String: Any] = [
             "protobuf_schema_version": [
-                "schema_version": 1,  // Default version
+                "schema_version": 1, // Default version
                 "build_info": "Schema v1 | mentraos_ble.proto",
                 "device_model": "Mentra Nex",
-            ]
+            ],
         ]
 
         // emitEvent("ProtobufSchemaVersionEvent", body: eventBody)
@@ -1821,7 +1788,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             stopMicBeat()
 
             isDisconnecting = true
-            nexConnectionState = .disconnected
+            connectionState = ConnTypes.DISCONNECTED
             centralManager?.cancelPeripheralConnection(peripheral)
         }
         stopReconnectionTimer()
@@ -1924,7 +1891,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
                 Bridge.log("NEX: ✅ Bluetooth is ready for scanning")
 
                 if let savedDeviceName = UserDefaults.standard.string(forKey: PREFS_DEVICE_NAME),
-                    !savedDeviceName.isEmpty
+                   !savedDeviceName.isEmpty
                 {
                     Bridge.log("NEX: 🔄 Looking for saved device: \(savedDeviceName)")
                     // This will be handled in didDiscover when the device is found
@@ -1963,16 +1930,16 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             }
         case .poweredOff:
             Bridge.log("NEX: ❌ Bluetooth is Off - user needs to enable Bluetooth")
-            nexConnectionState = .disconnected
+            connectionState = ConnTypes.DISCONNECTED
         case .resetting:
             Bridge.log("NEX: 🔄 Bluetooth is resetting - wait for completion")
-            nexConnectionState = .disconnected
+            connectionState = ConnTypes.DISCONNECTED
         case .unauthorized:
             Bridge.log("NEX: ❌ Bluetooth is unauthorized - check app permissions")
-            nexConnectionState = .disconnected
+            connectionState = ConnTypes.DISCONNECTED
         case .unsupported:
             Bridge.log("NEX: ❌ Bluetooth is unsupported on this device")
-            nexConnectionState = .disconnected
+            connectionState = ConnTypes.DISCONNECTED
         case .unknown:
             Bridge.log("NEX: ❓ Bluetooth state is unknown - may be initializing")
         @unknown default:
@@ -2053,7 +2020,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         // Store the peripheral and initiate connection
         self.peripheral = peripheral
         isConnecting = true
-        nexConnectionState = .connecting
+        connectionState = ConnTypes.CONNECTING
 
         // Use connection options for better reliability (from Java implementation)
         let connectionOptions: [String: Any] = [
@@ -2070,8 +2037,8 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
     func centralManager(_: CBCentralManager, didConnect peripheral: CBPeripheral) {
         Bridge.log("NEX-CONN: ✅ Successfully connected to \(peripheral.name ?? "unknown device").")
         isConnecting = false
-        peripheralUUID = peripheral.identifier  // Persist UUID
-        stopReconnectionTimer()  // Successfully connected, stop trying to reconnect.
+        peripheralUUID = peripheral.identifier // Persist UUID
+        stopReconnectionTimer() // Successfully connected, stop trying to reconnect.
 
         // Enhanced device info saving (from Java implementation)
         let deviceName = peripheral.name
@@ -2102,8 +2069,8 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             "NEX-CONN: ❌ Failed to connect to peripheral \(peripheral.name ?? "Unknown"). Error: \(error?.localizedDescription ?? "unknown")"
         )
         isConnecting = false
-        connectionState = .disconnected
-        self.peripheral = nil  // Reset peripheral on failure to allow reconnection
+        connectionState = ConnTypes.DISCONNECTED
+        self.peripheral = nil // Reset peripheral on failure to allow reconnection
         // Optionally, start reconnection attempts here
         if !isDisconnecting, !isKilled {
             startReconnectionTimer()
@@ -2133,8 +2100,10 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
         nexReady = false
         deviceReady = false
-        batteryLevel = -1
-        charging = false
+        // batteryLevel = -1
+        // charging = false
+        GlassesStore.shared.apply("glasses", "batteryLevel", -1)
+        GlassesStore.shared.apply("glasses", "charging", false)
         vadActive = false
         compressedVoiceData = .init()
         aiListening = false
@@ -2151,7 +2120,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         peripheral = nil
         writeCharacteristic = nil
         notifyCharacteristic = nil
-        connectionState = .disconnected
+        connectionState = ConnTypes.DISCONNECTED
 
         // Clear command queue if needed
         if isQueueWorkerRunning {
@@ -2191,7 +2160,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
         // Get current MTU capability (iOS-specific approach)
         let maxWriteLength = peripheral.maximumWriteValueLength(for: .withResponse)
-        let actualMTU = maxWriteLength + 3  // Add L2CAP header size
+        let actualMTU = maxWriteLength + 3 // Add L2CAP header size
 
         Bridge.log("NEX: 📊 iOS MTU Discovery Results:")
         Bridge.log("NEX:    📏 Max write length: \(maxWriteLength) bytes")
@@ -2225,8 +2194,8 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             Bridge.log("NEX:    🤝 Final MTU: \(currentMTU) bytes")
 
             // Calculate optimal chunk sizes based on iOS MTU constraints
-            maxChunkSize = currentMTU - 10  // Reserve 10 bytes for headers
-            bmpChunkSize = currentMTU - 6  // Reserve 6 bytes for image headers
+            maxChunkSize = currentMTU - 10 // Reserve 10 bytes for headers
+            bmpChunkSize = currentMTU - 6 // Reserve 6 bytes for image headers
 
             Bridge.log("NEX: 📦 Optimized Chunk Sizes:")
             Bridge.log("NEX:    📄 Data Chunk Size: \(maxChunkSize) bytes")
@@ -2236,8 +2205,8 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             Bridge.log("NEX: ⚠️ MTU negotiation failed or using minimum, applying iOS defaults")
             currentMTU = MTU_DEFAULT
             deviceMaxMTU = MTU_DEFAULT
-            maxChunkSize = 20  // Very conservative for 23-byte MTU
-            bmpChunkSize = 20  // Very conservative for 23-byte MTU
+            maxChunkSize = 20 // Very conservative for 23-byte MTU
+            bmpChunkSize = 20 // Very conservative for 23-byte MTU
 
             Bridge.log("NEX: 📋 iOS Fallback Configuration:")
             Bridge.log("NEX:    📊 Default MTU: \(MTU_DEFAULT) bytes")
@@ -2249,7 +2218,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         // Device is now ready for communication
         Bridge.log("NEX-CONN: ✅ Device initialization complete - ready for communication")
         nexReady = true
-        nexConnectionState = .connected
+        connectionState = ConnTypes.CONNECTED
 
         // Update @Published property for device ready state
         deviceReady = true
@@ -2269,13 +2238,13 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         // Exact Java initialization sequence from lines 648-691:
 
         // 1. Do first battery status query (Java line 650)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {  // 10ms delay like Java
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // 10ms delay like Java
             Bridge.log("NEX: 🔋 Sending first battery status query")
             self.queryBatteryStatus()
         }
 
         // 2. Restore previous microphone state (Java lines 657-665)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {  // 20ms delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { // 20ms delay
             let shouldRestoreMic = UserDefaults.standard.bool(
                 forKey: "microphoneStateBeforeDisconnection")
             Bridge.log("NEX: 🎤 Restoring microphone state to: \(shouldRestoreMic)")
@@ -2288,22 +2257,22 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         }
 
         // 3. Enable AugmentOS notification key (Java line 668)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) {  // 30ms delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) { // 30ms delay
             self.sendWhiteListCommand()
         }
 
         // 4. Show home screen to turn on the NexGlasses display (Java line 673)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {  // 50ms delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // 50ms delay
             self.showHomeScreen()
         }
 
         // 5. Post protobuf schema version information (Java lines 684-687)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {  // 100ms delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { // 100ms delay
             self.postProtobufSchemaVersionInfo()
         }
 
         // 6. Query glasses protobuf version from firmware (Java line 690)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {  // 150ms delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { // 150ms delay
             self.queryGlassesInfo()
         }
 
@@ -2317,7 +2286,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
                 "mtu_negotiated": currentMTU,
                 "max_chunk_size": maxChunkSize,
                 "connection_state": "ready",
-            ]
+            ],
         ]
 
         // Use the standardized Bridge.sendTypedMessage helper for consistent type field handling
@@ -2341,7 +2310,8 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
             if service.uuid == MAIN_SERVICE_UUID {
                 Bridge.log("NEX-CONN: ✅ Found main service. Discovering characteristics...")
                 peripheral.discoverCharacteristics(
-                    [WRITE_CHAR_UUID, NOTIFY_CHAR_UUID], for: service)
+                    [WRITE_CHAR_UUID, NOTIFY_CHAR_UUID], for: service
+                )
             }
         }
     }

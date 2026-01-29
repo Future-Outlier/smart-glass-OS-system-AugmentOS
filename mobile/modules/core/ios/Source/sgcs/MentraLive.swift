@@ -883,10 +883,10 @@ class MentraLive: NSObject, SGCManager {
 
     var type = "Mentra Live"
     var hasMic = true
-    
+
     func setMicEnabled(_ enabled: Bool) {
         Bridge.log("LIVE: setMicEnabled called: \(enabled)")
-        micEnabled = enabled
+        GlassesStore.shared.apply("glasses", "micEnabled", enabled)
         // Only enable if device supports LC3 audio
         guard supportsLC3Audio else {
             Bridge.log("LIVE: Device does not support LC3 audio, ignoring mic enable request")
@@ -991,7 +991,7 @@ class MentraLive: NSObject, SGCManager {
             }
             if !newValue {
                 // Reset battery levels when disconnected
-                batteryLevel = -1
+                GlassesStore.shared.apply("glasses", "batteryLevel", -1)
             }
         }
     }
@@ -1907,7 +1907,7 @@ class MentraLive: NSObject, SGCManager {
 
                 // Update battery status if we have valid data
                 if percentage > 0 {
-                    updateBatteryStatus(level: percentage, charging: charging)
+                    updateBatteryStatus(level: percentage, isCharging: charging)
                     if voltage > 0 {
                         let voltageVolts = Double(voltage) / 1000.0
                         // Bridge.log(
@@ -1942,7 +1942,7 @@ class MentraLive: NSObject, SGCManager {
 
                 Bridge.log(
                     "🔋 K900 Battery Status - Voltage: \(voltageVolts)V, Level: \(percentage)%")
-                updateBatteryStatus(level: percentage, charging: isCharging)
+                updateBatteryStatus(level: percentage, isCharging: isCharging)
             }
 
         case "sr_shut":
@@ -2126,14 +2126,14 @@ class MentraLive: NSObject, SGCManager {
         let firmwareVersion = json["firmware_version"] as? String ?? ""
         let btMacAddress = json["bt_mac_address"] as? String ?? ""
 
-        appVersion = appVersion
-        buildNumber = buildNumber
-        otaVersionUrl = otaVersionUrl
-        firmwareVersion = firmwareVersion
-        btMacAddress = btMacAddress
+        GlassesStore.shared.apply("glasses", "appVersion", appVersion)
+        GlassesStore.shared.apply("glasses", "buildNumber", buildNumber)
+        GlassesStore.shared.apply("glasses", "otaVersionUrl", otaVersionUrl)
+        GlassesStore.shared.apply("glasses", "fwVersion", firmwareVersion)
+        GlassesStore.shared.apply("glasses", "btMacAddress", btMacAddress)
         isNewVersion = (Int(buildNumber) ?? 0) >= 5
-        deviceModel = deviceModel
-        androidVersion = androidVersion
+        GlassesStore.shared.apply("glasses", "deviceModel", deviceModel)
+        GlassesStore.shared.apply("glasses", "androidVersion", androidVersion)
 
         // Detect LC3 audio support: K901+ devices have microphone, K900 does not
         // supportsLC3Audio = deviceModel != "K900"
@@ -2891,28 +2891,27 @@ class MentraLive: NSObject, SGCManager {
     // MARK: - Update Methods
 
     private func updateBatteryStatus(level: Int, isCharging: Bool) {
-        batteryLevel = level
-        charging = isCharging
+        GlassesStore.shared.apply("glasses", "batteryLevel", level)
+        GlassesStore.shared.apply("glasses", "charging", isCharging)
     }
 
     private func updateWifiStatus(connected: Bool, ssid: String, ip: String) {
         Bridge.log("LIVE: 🌐 Updating WiFi status - connected: \(connected), ssid: \(ssid)")
-        wifiConnected = connected
-        wifiSsid = ssid
-        wifiLocalIp = ip
+        GlassesStore.shared.apply("glasses", "wifiConnected", connected)
+        GlassesStore.shared.apply("glasses", "wifiSsid", ssid)
+        GlassesStore.shared.apply("glasses", "wifiLocalIp", ip)
         emitWifiStatusChange()
     }
 
     private func updateHotspotStatus(enabled: Bool, ssid: String, password: String, ip: String) {
         Bridge.log("LIVE: 🔥 Updating hotspot status - enabled: \(enabled), ssid: \(ssid)")
-        isHotspotEnabled = enabled
-        hotspotSsid = ssid
-        hotspotPassword = password
-        hotspotGatewayIp = ip // This is the gateway IP from glasses
-        emitHotspotStatusChange()
-
+        GlassesStore.shared.apply("glasses", "hotspotEnabled", enabled)
+        GlassesStore.shared.apply("glasses", "hotspotSsid", ssid)
+        GlassesStore.shared.apply("glasses", "hotspotPassword", password)
+        GlassesStore.shared.apply("glasses", "hotspotGatewayIp", ip) // This is the gateway IP from glasses
+        // emitHotspotStatusChange()
         // Trigger a full status update so React Native gets the updated glasses_info
-        CoreManager.shared.getStatus()
+        // CoreManager.shared.getStatus()
     }
 
     private func handleHotspotError(errorMessage: String, timestamp: Int64) {
@@ -3655,7 +3654,7 @@ extension MentraLive {
         let width = GlassesStore.shared.get("core", "button_video_width") as? Int ?? 1280
         let height = GlassesStore.shared.get("core", "button_video_height") as? Int ?? 720
         let fps = GlassesStore.shared.get("core", "button_video_fps") as? Int ?? 30
-        
+
         // Use defaults if not set
         let finalWidth = width > 0 ? width : 1280
         let finalHeight = height > 0 ? height : 720

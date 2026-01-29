@@ -9,7 +9,7 @@ import Foundation
 
 @MainActor
 class ObservableStore {
-    private var values: [String: Any] = [:]
+    private nonisolated(unsafe) var values: [String: Any] = [:]
     private var onEmit: ((String, [String: Any]) -> Void)?
 
     func configure(onEmit: @escaping (String, [String: Any]) -> Void) {
@@ -31,7 +31,7 @@ class ObservableStore {
         onEmit?(category, [key: value])
     }
 
-    func get(_ category: String, _ key: String) -> Any? {
+    nonisolated func get(_ category: String, _ key: String) -> Any? {
         values["\(category).\(key)"]
     }
 
