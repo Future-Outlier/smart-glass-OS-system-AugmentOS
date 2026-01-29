@@ -350,22 +350,9 @@ export class MantleBridge {
             timestamp: data.timestamp,
           })
           break
-        case "ota_update_available":
-          console.log("📱 MantleBridge: OTA update available from glasses:", data)
-          useGlassesStore.getState().setOtaUpdateAvailable({
-            available: true,
-            versionCode: data.version_code ?? 0,
-            versionName: data.version_name ?? "",
-            updates: data.updates ?? [],
-            totalSize: data.total_size ?? 0,
-          })
-          GlobalEventEmitter.emit("ota_update_available", {
-            versionCode: data.version_code,
-            versionName: data.version_name,
-            updates: data.updates,
-            totalSize: data.total_size,
-          })
-          break
+        // NOTE: ota_update_available is no longer sent by glasses.
+        // Phone now handles all OTA checking via OtaUpdateChecker.tsx.
+        // Glasses only report versions; phone compares and initiates updates.
         case "ota_progress":
           console.log("📱 MantleBridge: OTA progress:", data.stage, data.status, data.progress + "%")
           useGlassesStore.getState().setOtaProgress({

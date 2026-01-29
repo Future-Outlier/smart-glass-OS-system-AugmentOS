@@ -225,6 +225,13 @@ public class K900CommandHandler {
             if (serviceManager != null && serviceManager.getAsgSettings() != null &&
                 !version.equals("unknown") && !version.isEmpty()) {
                 serviceManager.getAsgSettings().setMcuFirmwareVersion(version);
+                
+                // Re-send version info to phone now that we have fresh BES version
+                // This ensures phone has accurate firmware version for OTA checking
+                if (serviceManager.getService() != null) {
+                    Log.i(TAG, "📋 BES version cached - re-sending version info to phone");
+                    serviceManager.getService().sendVersionInfo();
+                }
             }
 
             // Request BT MAC address from BES chip (if not already saved)

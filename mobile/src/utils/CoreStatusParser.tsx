@@ -235,7 +235,8 @@ export class CoreStatusParser {
               glasses_device_model: glassesInfo.glasses_device_model,
               glasses_android_version: glassesInfo.glasses_android_version,
               glasses_ota_version_url:
-                glassesInfo.glasses_ota_version_url || "https://ota.mentraglass.com/live_version.json",
+                glassesInfo.glasses_ota_version_url ||
+                "https://github.com/Mentra-Community/MentraOS/releases/download/asg-client/live_version_test_non_production.json",
               glasses_firmware_version: glassesInfo.glasses_firmware_version,
               glasses_serial_number: glassesInfo.glasses_serial_number,
               glasses_style: glassesInfo.glasses_style,

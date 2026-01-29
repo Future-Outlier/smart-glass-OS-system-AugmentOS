@@ -411,14 +411,24 @@ public class OtaHelper {
 
                 Log.d(TAG, "versionInfo: " + versionInfo);
 
-                // ========== Phone-Controlled OTA Logic ==========
+                // ========== Phone-Initiated OTA Check ==========
+                // When AUTONOMOUS_OTA_ENABLED = false, this method should ONLY be called via
+                // startOtaFromPhone() which sets isPhoneInitiatedOta = true.
+                // 
+                // Safety check: If not phone-initiated and autonomous mode is disabled, abort.
+                if (!isPhoneInitiatedOta && !AUTONOMOUS_OTA_ENABLED) {
+                    Log.w(TAG, "📱 Autonomous OTA disabled and not phone-initiated - aborting version check");
+                    return;
+                }
+
+                // ========== Legacy Autonomous OTA Logic (only when AUTONOMOUS_OTA_ENABLED = true) ==========
                 // If phone is connected AND this is NOT phone-initiated AND we haven't notified yet:
                 // - Check for available updates
                 // - Notify phone (background mode)
                 // - Wait for phone to send ota_start before proceeding
                 boolean phoneConnected = isPhoneConnected();
 
-                if (phoneConnected && !isPhoneInitiatedOta && !hasNotifiedPhoneOfUpdate) {
+                if (AUTONOMOUS_OTA_ENABLED && phoneConnected && !isPhoneInitiatedOta && !hasNotifiedPhoneOfUpdate) {
                     Log.i(TAG, "📱 Phone connected, checking for available updates (background mode)");
                     JSONObject updateInfo = checkForAvailableUpdates(json);
 
@@ -433,11 +443,10 @@ public class OtaHelper {
                     }
                 }
 
-                // ========== Proceed with OTA (Autonomous or Phone-Initiated) ==========
-                // Either:
-                // 1. Phone not connected (autonomous mode)
-                // 2. Phone initiated OTA (isPhoneInitiatedOta = true)
-                // 3. Already notified phone and no updates available
+                // ========== Proceed with OTA ==========
+                // Reaches here when:
+                // 1. Phone initiated OTA (isPhoneInitiatedOta = true) - PRIMARY FLOW
+                // 2. Autonomous mode enabled AND (phone not connected OR already notified)
 
                 // Check if new format (multiple apps) or legacy format
                 if (json.has("apps")) {
@@ -1386,6 +1395,8 @@ public class OtaHelper {
             boolean downloaded = downloadBesFirmware(firmwareUrl, firmwareInfo, context);
 
             if (downloaded) {
+                Log.i(TAG, "✅ BES firmware download complete - beginning installation");
+                
                 // Start firmware update via BesOtaManager singleton
                 BesOtaManager manager = BesOtaManager.getInstance();
                 if (manager != null) {
@@ -1456,7 +1467,13 @@ public class OtaHelper {
             long total = 0;
             int lastProgress = 0;
             
-            Log.d(TAG, "Downloading firmware, size: " + fileSize + " bytes");
+            Log.d(TAG, "Downloading BES firmware, size: " + fileSize + " bytes");
+            
+            // Set update type for progress reporting
+            currentUpdateType = "bes";
+            
+            // Send download started to phone
+            sendProgressToPhone("download", 0, 0, fileSize, "STARTED", null);
             
             while ((len = in.read(buffer)) > 0) {
                 out.write(buffer, 0, len);
@@ -1465,16 +1482,23 @@ public class OtaHelper {
                 // Log progress at 10% intervals
                 int progress = fileSize > 0 ? (int) (total * 100 / fileSize) : 0;
                 if (progress >= lastProgress + 10 || progress == 100) {
-                    Log.d(TAG, "Firmware download progress: " + progress + "%");
+                    Log.d(TAG, "BES firmware download progress: " + progress + "%");
+                    
+                    // Send progress to phone
+                    sendProgressToPhone("download", progress, total, fileSize, "PROGRESS", null);
+                    
                     lastProgress = progress;
                 }
             }
+            
+            // Send download finished to phone
+            sendProgressToPhone("download", 100, fileSize, fileSize, "FINISHED", null);
             
             out.close();
             in.close();
             conn.disconnect();
             
-            Log.d(TAG, "Firmware downloaded to: " + firmwareFile.getAbsolutePath());
+            Log.d(TAG, "BES firmware downloaded to: " + firmwareFile.getAbsolutePath());
             
             // Verify SHA256 hash
             boolean verified = verifyFirmwareFile(firmwareFile.getAbsolutePath(), firmwareInfo);
@@ -1534,7 +1558,7 @@ public class OtaHelper {
     
     /**
      * Check and update MTK firmware if newer version available
-     * @param firmwareInfo JSON object with firmware metadata
+     * @param firmwareInfo JSON object with firmware metadata (either patch object or legacy firmware info)
      * @param context Application context
      * @return true if update started successfully
      */
@@ -1557,31 +1581,42 @@ public class OtaHelper {
                 return false;
             }
             
-            // Get version info from server
-            long serverVersion = firmwareInfo.optLong("versionCode", 0);
-            String versionName = firmwareInfo.optString("versionName", "unknown");
+            // Detect if this is a patch object (from findMatchingMtkPatch) or legacy firmware info
+            // Patch objects have start_firmware/end_firmware fields and are already version-matched
+            boolean isPatchObject = firmwareInfo.has("start_firmware");
             
-            Log.i(TAG, "MTK firmware available - Version: " + versionName + " (code: " + serverVersion + ")");
-            
-            // Get current MTK firmware version from system property
-            String currentVersionStr = SysProp.getProperty(context, "ro.custom.ota.version");
-            long currentVersion = 0;
-            
-            try {
-                currentVersion = Long.parseLong(currentVersionStr);
-            } catch (NumberFormatException e) {
-                Log.w(TAG, "Could not parse current MTK version: " + currentVersionStr);
-            }
-            
-            Log.d(TAG, "Current MTK firmware version: " + currentVersionStr + " (parsed: " + currentVersion + ")");
-            Log.d(TAG, "Server MTK firmware version: " + serverVersion);
-            
-            // Compare versions
-            if (serverVersion > currentVersion) {
-                Log.i(TAG, "Server MTK firmware version is newer - proceeding with update");
+            if (isPatchObject) {
+                // Patch object - version matching already done by findMatchingMtkPatch()
+                String startFirmware = firmwareInfo.optString("start_firmware", "unknown");
+                String endFirmware = firmwareInfo.optString("end_firmware", "unknown");
+                Log.i(TAG, "MTK patch update: " + startFirmware + " -> " + endFirmware);
             } else {
-                Log.i(TAG, "MTK firmware is up to date - skipping update");
-                return false;
+                // Legacy firmware info with versionCode - do numeric comparison
+                long serverVersion = firmwareInfo.optLong("versionCode", 0);
+                String versionName = firmwareInfo.optString("versionName", "unknown");
+                
+                Log.i(TAG, "MTK firmware available - Version: " + versionName + " (code: " + serverVersion + ")");
+                
+                // Get current MTK firmware version from system property
+                String currentVersionStr = SysProp.getProperty(context, "ro.custom.ota.version");
+                long currentVersion = 0;
+                
+                try {
+                    currentVersion = Long.parseLong(currentVersionStr);
+                } catch (NumberFormatException e) {
+                    Log.w(TAG, "Could not parse current MTK version: " + currentVersionStr);
+                }
+                
+                Log.d(TAG, "Current MTK firmware version: " + currentVersionStr + " (parsed: " + currentVersion + ")");
+                Log.d(TAG, "Server MTK firmware version: " + serverVersion);
+                
+                // Compare versions
+                if (serverVersion > currentVersion) {
+                    Log.i(TAG, "Server MTK firmware version is newer - proceeding with update");
+                } else {
+                    Log.i(TAG, "MTK firmware is up to date - skipping update");
+                    return false;
+                }
             }
             
             // Set current update type for progress reporting
@@ -1596,6 +1631,8 @@ public class OtaHelper {
             boolean downloaded = downloadMtkFirmware(firmwareUrl, firmwareInfo, context);
             
             if (downloaded) {
+                Log.i(TAG, "✅ MTK firmware download complete - beginning installation");
+                
                 // Set flag before starting update
                 isMtkOtaInProgress = true;
                 
@@ -1671,6 +1708,12 @@ public class OtaHelper {
             
             Log.d(TAG, "Downloading MTK firmware, size: " + fileSize + " bytes");
             
+            // Set update type for progress reporting
+            currentUpdateType = "mtk";
+            
+            // Send download started to phone
+            sendProgressToPhone("download", 0, 0, fileSize, "STARTED", null);
+            
             while ((len = in.read(buffer)) > 0) {
                 out.write(buffer, 0, len);
                 total += len;
@@ -1688,9 +1731,15 @@ public class OtaHelper {
                         fileSize
                     ));
                     
+                    // Send progress to phone
+                    sendProgressToPhone("download", progress, total, fileSize, "PROGRESS", null);
+                    
                     lastProgress = progress;
                 }
             }
+            
+            // Send download finished to phone
+            sendProgressToPhone("download", 100, fileSize, fileSize, "FINISHED", null);
             
             out.close();
             in.close();
@@ -1941,6 +1990,68 @@ public class OtaHelper {
             Log.d(TAG, "📱 Sent OTA progress: " + stage + " " + status + " " + progress + "%");
         } catch (JSONException e) {
             Log.e(TAG, "Failed to send OTA progress", e);
+        }
+    }
+
+    /**
+     * Send MTK installation progress to phone.
+     * Called by OtaService when receiving MTK OTA progress events.
+     * 
+     * @param status Status: "STARTED", "PROGRESS", "FINISHED", "FAILED"
+     * @param progress Progress percentage (0-100)
+     * @param message Optional message
+     */
+    public void sendMtkInstallProgressToPhone(String status, int progress, String message) {
+        currentUpdateType = "mtk";
+        sendProgressToPhone("install", progress, 0, 0, status, 
+            "FAILED".equals(status) ? message : null);
+    }
+
+    /**
+     * Send BES installation progress to phone.
+     * Called by OtaService when receiving BES OTA progress events.
+     * 
+     * @param status Status: "STARTED", "PROGRESS", "FINISHED", "FAILED"
+     * @param progress Progress percentage (0-100)
+     * @param message Optional message
+     */
+    public void sendBesInstallProgressToPhone(String status, int progress, String message) {
+        currentUpdateType = "bes";
+        sendProgressToPhone("install", progress, 0, 0, status, 
+            "FAILED".equals(status) ? message : null);
+    }
+
+    /**
+     * Static method to send MTK installation progress to phone.
+     * Used by MtkOtaReceiver which doesn't have access to OtaHelper instance.
+     * 
+     * @param provider Phone connection provider
+     * @param status Status: "STARTED", "PROGRESS", "FINISHED", "FAILED"  
+     * @param progress Progress percentage (0-100)
+     * @param message Optional message
+     */
+    public static void sendMtkInstallProgress(PhoneConnectionProvider provider, 
+                                               String status, int progress, String message) {
+        if (provider == null || !provider.isPhoneConnected()) {
+            Log.d(TAG, "📱 Cannot send MTK install progress - phone not connected");
+            return;
+        }
+        
+        try {
+            JSONObject progressInfo = new JSONObject();
+            progressInfo.put("type", "ota_progress");
+            progressInfo.put("stage", "install");
+            progressInfo.put("status", status);
+            progressInfo.put("progress", progress);
+            progressInfo.put("current_update", "mtk");
+            if (message != null && "FAILED".equals(status)) {
+                progressInfo.put("error_message", message);
+            }
+            
+            provider.sendOtaProgress(progressInfo);
+            Log.d(TAG, "📱 Sent MTK install progress: " + status + " " + progress + "%");
+        } catch (JSONException e) {
+            Log.e(TAG, "Failed to send MTK install progress", e);
         }
     }
 

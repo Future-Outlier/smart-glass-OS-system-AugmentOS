@@ -18,6 +18,8 @@ export default function OtaCheckForUpdatesScreen() {
   const {pushPrevious, push} = useNavigationHistory()
   const otaVersionUrl = useGlassesStore((state) => state.otaVersionUrl)
   const currentBuildNumber = useGlassesStore((state) => state.buildNumber)
+  const mtkFwVersion = useGlassesStore((state) => state.mtkFwVersion)
+  const besFwVersion = useGlassesStore((state) => state.besFwVersion)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const deviceName = defaultWearable || "Glasses"
   const glassesConnected = useGlassesStore((state) => state.connected)
@@ -42,7 +44,8 @@ export default function OtaCheckForUpdatesScreen() {
       const startTime = Date.now()
 
       try {
-        const result = await checkForOtaUpdate(otaVersionUrl, currentBuildNumber)
+        const result = await checkForOtaUpdate(otaVersionUrl, currentBuildNumber, mtkFwVersion, besFwVersion)
+        console.log("📱 OTA check completed - result:", JSON.stringify(result))
 
         // Calculate remaining time to meet minimum display duration
         const elapsed = Date.now() - startTime
@@ -52,14 +55,17 @@ export default function OtaCheckForUpdatesScreen() {
         await new Promise((resolve) => setTimeout(resolve, remainingDelay))
 
         if (!result.hasCheckCompleted) {
+          console.log("📱 OTA check did not complete - setting error state")
           setCheckState("error")
           return
         }
 
         if (result.updateAvailable && result.latestVersionInfo) {
+          console.log("📱 Updates available - setting update_available state")
           setVersionInfo(result.latestVersionInfo)
           setCheckState("update_available")
         } else {
+          console.log("📱 No updates available - setting no_update state")
           setCheckState("no_update")
         }
       } catch (error) {

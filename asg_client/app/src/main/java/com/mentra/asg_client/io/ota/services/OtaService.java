@@ -15,6 +15,7 @@ import com.mentra.asg_client.io.ota.utils.OtaConstants;
 import com.mentra.asg_client.io.ota.events.DownloadProgressEvent;
 import com.mentra.asg_client.io.ota.events.InstallationProgressEvent;
 import com.mentra.asg_client.io.ota.events.MtkOtaProgressEvent;
+import com.mentra.asg_client.io.bes.events.BesOtaProgressEvent;
 import com.mentra.asg_client.io.ota.helpers.OtaHelper;
 import com.mentra.asg_client.events.BatteryStatusEvent;
 import com.mentra.asg_client.SysControl;
@@ -174,23 +175,52 @@ public class OtaService extends Service {
     public void onMtkOtaProgress(MtkOtaProgressEvent event) {
         Log.d(TAG, "MTK OTA progress: " + event.toString());
         
+        // Parse progress percentage from message if available
+        int progress = 0;
+        try {
+            if (event.getMessage() != null && !event.getMessage().isEmpty()) {
+                progress = Integer.parseInt(event.getMessage());
+            }
+        } catch (NumberFormatException e) {
+            // Message is not a number, use 0
+        }
+        
         switch (event.getStatus()) {
             case STARTED:
                 updateNotification("MTK firmware update started");
+                if (otaHelper != null) {
+                    otaHelper.sendMtkInstallProgressToPhone("STARTED", 0, null);
+                }
                 break;
             case WRITE_PROGRESS:
-                updateNotification("Writing MTK firmware...");
+                updateNotification("Writing MTK firmware: " + progress + "%");
+                if (otaHelper != null) {
+                    otaHelper.sendMtkInstallProgressToPhone("PROGRESS", progress, null);
+                }
                 break;
             case UPDATE_PROGRESS:
-                updateNotification("Installing MTK firmware...");
+                updateNotification("Installing MTK firmware: " + progress + "%");
+                if (otaHelper != null) {
+                    otaHelper.sendMtkInstallProgressToPhone("PROGRESS", progress, null);
+                }
                 break;
             case SUCCESS:
                 updateNotification("MTK firmware updated successfully");
-                // Send broadcast to notify app that MTK update is complete
-                sendMtkUpdateCompleteMessage();
+                if (otaHelper != null) {
+                    otaHelper.sendMtkInstallProgressToPhone("FINISHED", 100, null);
+                }
+                // Delay 1 second to ensure FINISHED message is sent over BLE before reboot
+                Log.i(TAG, "📱 MTK update success - waiting 1 second for FINISHED to be sent before broadcast");
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    // Send broadcast to notify app that MTK update is complete
+                    sendMtkUpdateCompleteMessage();
+                }, 1000);
                 break;
             case ERROR:
                 updateNotification("MTK firmware update failed: " + event.getMessage());
+                if (otaHelper != null) {
+                    otaHelper.sendMtkInstallProgressToPhone("FAILED", 0, event.getMessage());
+                }
                 break;
         }
     }
@@ -199,5 +229,37 @@ public class OtaService extends Service {
         Log.i(TAG, "Sending MTK update complete broadcast");
         Intent intent = new Intent("com.mentra.asg_client.MTK_UPDATE_COMPLETE");
         sendBroadcast(intent);
+    }
+    
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onBesOtaProgress(BesOtaProgressEvent event) {
+        Log.d(TAG, "BES OTA progress: " + event.toString());
+        
+        switch (event.getStatus()) {
+            case STARTED:
+                updateNotification("BES firmware update started");
+                if (otaHelper != null) {
+                    otaHelper.sendBesInstallProgressToPhone("STARTED", 0, null);
+                }
+                break;
+            case PROGRESS:
+                updateNotification("Sending BES firmware: " + event.getProgress() + "%");
+                if (otaHelper != null) {
+                    otaHelper.sendBesInstallProgressToPhone("PROGRESS", event.getProgress(), null);
+                }
+                break;
+            case FINISHED:
+                updateNotification("BES firmware updated successfully");
+                if (otaHelper != null) {
+                    otaHelper.sendBesInstallProgressToPhone("FINISHED", 100, null);
+                }
+                break;
+            case FAILED:
+                updateNotification("BES firmware update failed: " + event.getErrorMessage());
+                if (otaHelper != null) {
+                    otaHelper.sendBesInstallProgressToPhone("FAILED", 0, event.getErrorMessage());
+                }
+                break;
+        }
     }
 }

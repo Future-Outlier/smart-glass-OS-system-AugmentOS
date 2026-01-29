@@ -120,6 +120,9 @@ export default function OtaProgressScreen() {
     }
   }, [glassesConnected, progressState])
 
+  // Track completion timeout to allow cleanup
+  const completionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   // Watch for OTA progress updates from glasses
   useEffect(() => {
     if (!otaProgress) return
@@ -139,12 +142,25 @@ export default function OtaProgressScreen() {
         setProgressState("installing")
       }
     } else if (otaProgress.status === "FINISHED") {
-      setProgressState("completed")
+      // Delay 2 seconds before showing completed to ensure glasses have time to process
+      console.log("OTA: Received FINISHED - showing completed in 2 seconds")
+      completionTimeoutRef.current = setTimeout(() => {
+        setProgressState("completed")
+      }, 2000)
     } else if (otaProgress.status === "FAILED") {
       setErrorMessage(otaProgress.errorMessage || null)
       setProgressState("failed")
     }
   }, [otaProgress])
+
+  // Cleanup completion timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (completionTimeoutRef.current) {
+        clearTimeout(completionTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleContinue = () => {
     // Go directly back to onboarding, skipping check-for-updates
