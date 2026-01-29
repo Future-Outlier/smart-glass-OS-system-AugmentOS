@@ -899,10 +899,7 @@ class CoreManager {
         pendingWearable = ""
         defaultWearable = sgc?.type ?: ""
         searching = false
-        // TODO: this should be set in the SGC itself, not here
-        GlassesStore.apply("glasses", "ready", true)
-        GlassesStore.apply("glasses", "connected", true)
-
+        
         // Show welcome message on first connect for all display glasses
         if (shouldSendBootingMessage) {
             shouldSendBootingMessage = false

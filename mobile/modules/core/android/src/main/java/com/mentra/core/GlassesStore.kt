@@ -108,6 +108,10 @@ object GlassesStore {
                     } else {
                         CoreManager.getInstance().handleDeviceDisconnected()
                     }
+                    // if ready is true, set connected to true
+                    if (value) {
+                        store.set("glasses", "connected", true)
+                    }
                 }
             }
             "glasses" to "headUp" -> {

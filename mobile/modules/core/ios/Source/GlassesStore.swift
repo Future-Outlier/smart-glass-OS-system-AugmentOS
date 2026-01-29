@@ -110,6 +110,11 @@ class GlassesStore {
                 } else {
                     CoreManager.shared.handleDeviceDisconnected()
                 }
+                // also set the connected state to the same value
+                // if ready is true, set connected to true
+                if ready {
+                  GlassesStore.shared.set("glasses", "connected", value)
+                }
             }
 
         case ("glasses", "headUp"):

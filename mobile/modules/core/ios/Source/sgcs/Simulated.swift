@@ -199,7 +199,7 @@ class Simulated: SGCManager {
     }
 
     func connectById(_: String) {
-        CoreManager.shared.handleConnectionStateChanged()
+        Bridge.log("connectById")
     }
 
     func getConnectedBluetoothName() -> String? {
