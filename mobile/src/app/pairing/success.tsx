@@ -93,6 +93,42 @@ export default function PairingSuccessScreen() {
         },
       ]
       break
+    case DeviceTypes.Z100:
+      steps = [
+        {
+          name: "Start Onboarding",
+          type: "image",
+          source: glassesImage,
+          transition: false,
+          title: translate("common:success"),
+          // subtitle: translate("onboarding:z100Connected"),
+        },
+      ]
+      break
+    case DeviceTypes.MACH1:
+      steps = [
+        {
+          name: "Start Onboarding",
+          type: "image",
+          source: glassesImage,
+          transition: false,
+          title: translate("common:success"),
+          // subtitle: translate("onboarding:mach1Connected"),
+        },
+      ]
+      break
+    case DeviceTypes.NEX:
+      steps = [
+        {
+          name: "Start Onboarding",
+          type: "image",
+          source: glassesImage,
+          transition: false,
+          title: translate("common:success"),
+          // subtitle: translate("onboarding:nexConnected"),
+        },
+      ]
+      break
     case DeviceTypes.G1:
     default:
       steps = [
@@ -100,6 +136,10 @@ export default function PairingSuccessScreen() {
           name: "Start Onboarding",
           type: "image",
           source: glassesImage,
+          containerClassName: "px-12",
+          containerStyle: {
+            paddingHorizontal: 100,
+          },
           transition: false,
           title: translate("common:success"),
           subtitle: translate("onboarding:g1Connected"),

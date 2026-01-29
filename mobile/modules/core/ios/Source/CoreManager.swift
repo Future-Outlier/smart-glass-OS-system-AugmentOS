@@ -683,6 +683,8 @@ struct ViewState {
             return
         }
 
+        Bridge.log("MAN: sendCurrentState() headUp: \(headUp)")
+
         Task {
             var currentViewState: ViewState!
             if headUp {

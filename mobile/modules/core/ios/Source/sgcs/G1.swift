@@ -1243,16 +1243,16 @@ class G1: NSObject, SGCManager {
             switch DeviceOrders(rawValue: order) {
             case .HEAD_UP:
                 Bridge.log("G1: HEAD_UP")
-                GlassesStore.shared.apply("glasses", "headUp", headUp)
+                GlassesStore.shared.apply("glasses", "headUp", true)
             case .HEAD_UP2:
                 Bridge.log("G1: HEAD_UP2")
-                GlassesStore.shared.apply("glasses", "headUp", headUp)
+                GlassesStore.shared.apply("glasses", "headUp", true)
             // case .HEAD_DOWN:
             //   CoreCommsService.log("HEAD_DOWN")
             //   break
             case .HEAD_DOWN2:
                 Bridge.log("G1: HEAD_DOWN2")
-                GlassesStore.shared.apply("glasses", "headUp", headUp)
+                GlassesStore.shared.apply("glasses", "headUp", false)
             case .ACTIVATED:
                 Bridge.log("G1: ACTIVATED")
             case .SILENCED:

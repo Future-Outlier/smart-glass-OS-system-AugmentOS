@@ -178,6 +178,7 @@ class GlassesStore {
             let h = store.get("glasses", "dashboard_height") as? Int ?? 4
             let d = store.get("glasses", "dashboard_depth") as? Int ?? 5
             Task { await CoreManager.shared.sgc?.setDashboardPosition(h, d) }
+            Bridge.log("STORE: Dashboard position changed to \(h)x\(d)")
 
         case ("core", "head_up_angle"):
             if let angle = value as? Int {
