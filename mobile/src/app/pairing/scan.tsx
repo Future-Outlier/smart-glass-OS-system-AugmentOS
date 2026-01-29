@@ -35,7 +35,7 @@ export default function SelectGlassesBluetoothScreen() {
   //   }, [setSearchResults]),
   // )
 
-  focusEffectPreventBack()
+  // focusEffectPreventBack()
 
   useEffect(() => {
     if (searchResults.some((result) => result.deviceName === "NOTREQUIREDSKIP")) {

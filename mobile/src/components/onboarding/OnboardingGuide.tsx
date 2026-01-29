@@ -20,6 +20,7 @@ interface BaseStep {
   subtitleSmall?: string
   info?: string
   bullets?: string[]
+  numberedBullets?: string[]
   waitFn?: () => Promise<void>
 }
 
@@ -401,6 +402,22 @@ export function OnboardingGuide({
     }
   }, [exitFn, clearHistoryAndGoHome])
 
+  const renderNumberedBullets = useCallback(() => {
+    if (!step.numberedBullets) {
+      return null
+    }
+    return (
+      <View className={`flex flex-col flex-grow justify-center gap-2 flex-1 px-2`}>
+        {step.numberedBullets.map((bullet, index) => (
+          <View key={index} className="flex-row items-start gap-2">
+            <Text className="text-md font-semibold" text={`${index + 1}.`} />
+            <Text className="text-md font-semibold" text={bullet} />
+          </View>
+        ))}
+      </View>
+    )
+  }, [step])
+
   const renderBullets = useCallback(() => {
     // console.log("ONBOARD: renderBullets", step.bullets)
     // console.log("ONBOARD: currentIndex", currentIndex)
@@ -753,8 +770,25 @@ export function OnboardingGuide({
         />
       )}
       <View id="main" className="flex flex-1">
-        <View id="top" className="flex mt-10">
-          {step.title && <Text className="text-center text-2xl font-semibold" text={step.title} />}
+        <View id="top" className="flex">
+          <View id="step-content" className="flex py-8">
+            {step.title && <Text className="text-start text-2xl font-semibold" text={step.title} />}
+            {step.subtitle && <Text className="text-start text-xl font-semibold" text={step.subtitle} />}
+            {step.subtitle2 && (
+              <Text className="text-start text-lg text-foreground font-medium" text={step.subtitle2} />
+            )}
+            {step.subtitleSmall && <Text className="text-start text-sm font-medium" text={step.subtitleSmall} />}
+            {step.info && (
+              <View className="flex flex-row gap-2 justify-center items-center px-12">
+                <Icon name="info" size={20} color={theme.colors.muted_foreground} />
+                <Text
+                  className="text-center text-sm font-medium text-muted-foreground"
+                  text={step.info}
+                  numberOfLines={2}
+                />
+              </View>
+            )}
+          </View>
 
           <View className="-mx-6">
             <View className="relative" style={{width: "100%", aspectRatio: 1}}>
@@ -770,8 +804,9 @@ export function OnboardingGuide({
         </View>
         <View className="flex-1">
           {renderStepCheck()}
-          {renderStepContent()}
+          {/* {renderStepContent()} */}
           {renderBullets()}
+          {renderNumberedBullets()}
         </View>
         <View id="bottom" className={`flex justify-end flex-shrink`}>
           {/* {!hasStarted && (mainTitle || mainSubtitle) && (

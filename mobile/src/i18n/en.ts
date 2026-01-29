@@ -214,6 +214,13 @@ const en = {
     osMentraAiBullet1: "TODO1",
     osMentraAiBullet2: "TODO2",
     learnAboutOs: "Learn about Mentra OS",
+    btClassicStep1: "Tap open settings",
+    btClassicStep2: "Tap Bluetooth",
+    btClassicStep3: "Select \"{{name}}\" under My Devices",
+    btClassicStep4: "Return to the app once it says \"Connected\"",
+    btClassicTitle: "Pair Audio",
+    btClassicSubtitle: "Connect {{name}} as a Bluetooth audio device",
+    openSettings: "Open settings",
   },
   wifi: {
     networks: "Networks",
