@@ -47,8 +47,6 @@ interface OnboardingGuideProps {
   steps: OnboardingStep[]
   showSkipButton?: boolean
   autoStart?: boolean
-  mainTitle?: string
-  mainSubtitle?: string
   startButtonText?: string
   endButtonText?: string
   endButtonFn?: () => void
@@ -73,8 +71,6 @@ export function OnboardingGuide({
   showCloseButton = true,
   autoStart = false,
   showHeader = true,
-  mainTitle,
-  mainSubtitle,
   startButtonText = "Start",
   endButtonText = "Done",
   endButtonFn,
@@ -103,7 +99,6 @@ export function OnboardingGuide({
   // Initialize players with first video sources found
   const initialSource1 = useMemo(() => findNextVideoSource(steps, 0), [steps])
   const initialSource2 = useMemo(() => findNextVideoSource(steps, 1), [steps])
-  const [isUnmounted, setIsUnmounted] = useState(false)
 
   const player1: VideoPlayer = useVideoPlayer(initialSource1, (player: any) => {
     player.loop = false
@@ -121,7 +116,7 @@ export function OnboardingGuide({
   const step = steps[currentIndex]
   const isCurrentStepImage = step.type === "image"
   const isCurrentStepVideo = step.type === "video"
-  
+
   // Handle image step timing
   useEffect(() => {
     if (!hasStarted || !isCurrentStepImage) return
@@ -236,7 +231,7 @@ export function OnboardingGuide({
     },
     [currentIndex, activePlayer, uiIndex, steps, transitionCount, clearHistoryAndGoHome],
   )
-  
+
   const handleEndButton = useCallback(() => {
     if (endButtonFn) {
       endButtonFn()
@@ -466,7 +461,7 @@ export function OnboardingGuide({
             style={{
               width: "100%",
               height: "100%",
-              marginLeft: activePlayer === 1 ? 0 : "100%",
+              marginLeft: activePlayer === 1 && !showPoster ? 0 : "100%",
             }}
             nativeControls={false}
             allowsVideoFrameAnalysis={false}
@@ -483,7 +478,7 @@ export function OnboardingGuide({
             style={{
               width: "100%",
               height: "100%",
-              marginLeft: activePlayer === 2 ? 0 : "100%",
+              marginLeft: activePlayer === 2 && !showPoster ? 0 : "100%",
             }}
             nativeControls={false}
             allowsVideoFrameAnalysis={false}
@@ -491,7 +486,7 @@ export function OnboardingGuide({
           />
         </View>
         {/* Poster image overlay - shown until a video is loaded on a slow connection: */}
-        {s.poster && showPoster && (
+        {showPoster && s.poster && (
           <View className="absolute top-0 left-0 right-0 bottom-0 z-10">
             <Image source={s.poster} style={{width: "100%", height: "100%"}} contentFit="contain" />
           </View>
@@ -710,18 +705,15 @@ export function OnboardingGuide({
     }
 
     return (
-      <View className={`flex flex-col gap-2 flex-grow justify-center`}>
-        {step.subtitle && <Text className="text-center text-xl font-semibold" text={step.subtitle} />}
-        {step.subtitle2 && <Text className="text-center text-lg text-foreground font-medium" text={step.subtitle2} />}
-        {step.subtitleSmall && <Text className="text-center text-sm font-medium" text={step.subtitleSmall} />}
+      <View id="step-content" className="flex py-8">
+        {step.title && <Text className="text-start text-2xl font-semibold" text={step.title} />}
+        {step.subtitle && <Text className="text-start text-xl font-semibold" text={step.subtitle} />}
+        {step.subtitle2 && <Text className="text-start text-lg text-foreground font-medium" text={step.subtitle2} />}
+        {step.subtitleSmall && <Text className="text-start text-sm font-medium" text={step.subtitleSmall} />}
         {step.info && (
-          <View className="flex flex-row gap-2 justify-center items-center px-12">
+          <View className="flex flex-row gap-2 py-2 justify-start items-center">
             <Icon name="info" size={20} color={theme.colors.muted_foreground} />
-            <Text
-              className="text-center text-sm font-medium text-muted-foreground"
-              text={step.info}
-              numberOfLines={2}
-            />
+            <Text className="text-start text-sm font-medium text-muted-foreground" text={step.info} numberOfLines={2} />
           </View>
         )}
       </View>
@@ -764,10 +756,6 @@ export function OnboardingGuide({
 
   const showCounter = hasStarted && steps.length > 1
 
-  if (isUnmounted) {
-    return null
-  }
-
   return (
     <>
       {showHeader && (
@@ -784,24 +772,7 @@ export function OnboardingGuide({
       )}
       <View id="main" className="flex flex-1">
         <View id="top" className="flex">
-          <View id="step-content" className="flex py-8">
-            {step.title && <Text className="text-start text-2xl font-semibold" text={step.title} />}
-            {step.subtitle && <Text className="text-start text-xl font-semibold" text={step.subtitle} />}
-            {step.subtitle2 && (
-              <Text className="text-start text-lg text-foreground font-medium" text={step.subtitle2} />
-            )}
-            {step.subtitleSmall && <Text className="text-start text-sm font-medium" text={step.subtitleSmall} />}
-            {step.info && (
-              <View className="flex flex-row gap-2 justify-center items-center px-12">
-                <Icon name="info" size={20} color={theme.colors.muted_foreground} />
-                <Text
-                  className="text-center text-sm font-medium text-muted-foreground"
-                  text={step.info}
-                  numberOfLines={2}
-                />
-              </View>
-            )}
-          </View>
+          {renderStepContent()}
 
           <View className="-mx-6">
             <View className="relative" style={{width: "100%", aspectRatio: 1}}>

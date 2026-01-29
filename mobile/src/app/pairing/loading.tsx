@@ -22,7 +22,7 @@ export default function GlassesPairingLoadingScreen() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const failureErrorRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasAlertShownRef = useRef(false)
-  const glassesConnected = useGlassesStore((state) => state.connected)
+  const glassesReady = useGlassesStore((state) => state.ready)
 
   focusEffectPreventBack()
 
@@ -43,7 +43,7 @@ export default function GlassesPairingLoadingScreen() {
     setPairingInProgress(true)
 
     timerRef.current = setTimeout(() => {
-      if (!glassesConnected && !hasAlertShownRef.current) {
+      if (!glassesReady && !hasAlertShownRef.current) {
         hasAlertShownRef.current = true
       }
     }, 30000)
@@ -55,11 +55,11 @@ export default function GlassesPairingLoadingScreen() {
   }, [])
 
   useEffect(() => {
-    if (!glassesConnected) return
+    if (!glassesReady) return
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
     replace("/pairing/success", {deviceModel: deviceModel})
-  }, [glassesConnected, replace, deviceModel])
+  }, [glassesReady, replace, deviceModel])
 
   if (pairingInProgress) {
     return (
