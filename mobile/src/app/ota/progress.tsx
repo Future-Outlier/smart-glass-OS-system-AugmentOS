@@ -8,7 +8,7 @@ import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/Navigatio
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
 
-type ProgressState = "starting" | "downloading" | "installing" | "completed" | "failed" | "disconnected"
+type ProgressState = "starting" | "downloading" | "installing" | "completed" | "failed" | "disconnected" | "restarting"
 
 const MAX_RETRIES = 3
 const RETRY_INTERVAL_MS = 5000 // 5 seconds between retries
@@ -101,13 +101,14 @@ export default function OtaProgressScreen() {
 
   // Watch for BLE disconnection
   useEffect(() => {
-    // Don't fail on disconnect during "installing" - glasses will reboot and reconnect
+    // Don't fail on disconnect during "installing" or "restarting" - glasses will reboot/power off
     // Only fail if we're in starting/downloading states
     if (
       !glassesConnected &&
       progressState !== "completed" &&
       progressState !== "failed" &&
       progressState !== "installing" &&
+      progressState !== "restarting" &&
       progressState !== "disconnected"
     ) {
       console.log("OTA: Glasses disconnected during update")
@@ -118,10 +119,22 @@ export default function OtaProgressScreen() {
       setErrorMessage("Glasses disconnected during update.")
       setProgressState("disconnected")
     }
-  }, [glassesConnected, progressState])
+
+    // If we're installing/restarting and disconnect, that's expected for MTK/BES updates
+    if (!glassesConnected && (progressState === "installing" || progressState === "restarting")) {
+      const updateType = otaProgress?.currentUpdate
+      if (updateType === "mtk" || updateType === "bes") {
+        console.log(`OTA: Glasses disconnected during ${updateType} update - expected behavior`)
+        setProgressState("restarting")
+      }
+    }
+  }, [glassesConnected, progressState, otaProgress?.currentUpdate])
 
   // Track completion timeout to allow cleanup
   const completionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Track MTK-only timeout (if MTK finishes but no BES follows)
+  const mtkOnlyTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Watch for OTA progress updates from glasses
   useEffect(() => {
@@ -136,34 +149,73 @@ export default function OtaProgressScreen() {
     }
 
     if (otaProgress.status === "STARTED" || otaProgress.status === "PROGRESS") {
+      // Clear MTK-only timeout if BES starts
+      if (mtkOnlyTimeoutRef.current && otaProgress.currentUpdate === "bes") {
+        console.log("OTA: BES update started - clearing MTK-only timeout")
+        clearTimeout(mtkOnlyTimeoutRef.current)
+        mtkOnlyTimeoutRef.current = null
+      }
+
       if (otaProgress.stage === "download") {
         setProgressState("downloading")
       } else if (otaProgress.stage === "install") {
         setProgressState("installing")
       }
     } else if (otaProgress.status === "FINISHED") {
-      // Delay 2 seconds before showing completed to ensure glasses have time to process
-      console.log("OTA: Received FINISHED - showing completed in 2 seconds")
-      completionTimeoutRef.current = setTimeout(() => {
-        setProgressState("completed")
-      }, 2000)
+      const updateType = otaProgress.currentUpdate
+
+      if (updateType === "mtk") {
+        // MTK finished - mark as updated this session to prevent re-prompting
+        // (MTK A/B updates don't change version until reboot)
+        useGlassesStore.getState().setMtkUpdatedThisSession(true)
+        console.log("OTA: MTK update FINISHED - marked as updated this session")
+
+        // BES update may start automatically next
+        // Set timeout: if BES doesn't start within 10 seconds, show "restarting" state
+        // (user needs to manually restart glasses to apply MTK A/B slot switch)
+        console.log("OTA: Waiting up to 10s for BES update to start")
+        mtkOnlyTimeoutRef.current = setTimeout(() => {
+          console.log("OTA: No BES update started after MTK - showing restarting state (manual restart needed)")
+          setProgressState("restarting")
+        }, 10000)
+      } else if (updateType === "bes") {
+        // Clear any pending MTK timeout
+        if (mtkOnlyTimeoutRef.current) {
+          clearTimeout(mtkOnlyTimeoutRef.current)
+          mtkOnlyTimeoutRef.current = null
+        }
+        // BES finished - glasses will power off
+        console.log("OTA: BES update FINISHED - glasses will power off")
+        setProgressState("restarting")
+      } else {
+        // APK update - show completed after delay
+        console.log("OTA: Received FINISHED for APK update - showing completed in 2 seconds")
+        completionTimeoutRef.current = setTimeout(() => {
+          setProgressState("completed")
+        }, 2000)
+      }
     } else if (otaProgress.status === "FAILED") {
       setErrorMessage(otaProgress.errorMessage || null)
       setProgressState("failed")
     }
   }, [otaProgress])
 
-  // Cleanup completion timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (completionTimeoutRef.current) {
         clearTimeout(completionTimeoutRef.current)
       }
+      if (mtkOnlyTimeoutRef.current) {
+        clearTimeout(mtkOnlyTimeoutRef.current)
+      }
     }
   }, [])
 
   const handleContinue = () => {
-    // Go directly back to onboarding, skipping check-for-updates
+    // After firmware updates complete (or staged), go back to previous screen
+    // OtaUpdateChecker will prompt for any remaining updates when glasses reconnect
+    console.log("OTA: Continue pressed - returning to previous screen")
     pushPrevious(1)
   }
 
@@ -231,6 +283,48 @@ export default function OtaProgressScreen() {
           <View className="h-4" />
           <Text tx="ota:doNotDisconnect" className="text-sm text-center" style={{color: theme.colors.textDim}} />
         </View>
+      )
+    }
+
+    // Restarting state - for MTK/BES updates that require reboot/power cycle
+    if (progressState === "restarting") {
+      const updateType = otaProgress?.currentUpdate
+      const isBes = updateType === "bes"
+
+      // Determine the appropriate message based on update type
+      let statusMessage: string
+      let showSpinner = false
+
+      if (isBes) {
+        // BES update causes automatic power off
+        statusMessage = "Your glasses will power off. Please turn them back on to continue."
+        showSpinner = true
+      } else {
+        // MTK-only update (or MTK completed, no BES) - needs manual restart
+        statusMessage = "Update staged. Please restart your glasses to apply the update."
+        showSpinner = false
+      }
+
+      return (
+        <>
+          <View className="flex-1 items-center justify-center px-6">
+            <Icon name="check" size={64} color={theme.colors.primary} />
+            <View className="h-6" />
+            <Text text="Update Installed" className="font-semibold text-xl text-center" />
+            <View className="h-2" />
+            <Text text={statusMessage} className="text-sm text-center" style={{color: theme.colors.textDim}} />
+            {showSpinner && (
+              <>
+                <View className="h-4" />
+                <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
+              </>
+            )}
+          </View>
+
+          <View className="justify-center items-center">
+            <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
+          </View>
+        </>
       )
     }
 

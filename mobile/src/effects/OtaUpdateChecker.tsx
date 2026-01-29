@@ -323,6 +323,12 @@ export function OtaUpdateChecker() {
         hasCheckedOta.current = false
         pendingUpdate.current = null
       }
+      // Clear MTK session flag on disconnect (glasses rebooted, new version now active)
+      const mtkWasUpdated = useGlassesStore.getState().mtkUpdatedThisSession
+      if (mtkWasUpdated) {
+        console.log("📱 OTA: Clearing MTK session flag - glasses disconnected (likely rebooted)")
+        useGlassesStore.getState().setMtkUpdatedThisSession(false)
+      }
     }
   }, [glassesConnected])
 
@@ -391,7 +397,15 @@ export function OtaUpdateChecker() {
           `📱 OTA check completed - updateAvailable: ${updateAvailable}, updates: ${updates?.join(", ") || "none"}`,
         )
 
-        if (!updateAvailable || !latestVersionInfo) {
+        // Filter out MTK if it was already updated this session (A/B updates don't change version until reboot)
+        const mtkUpdatedThisSession = useGlassesStore.getState().mtkUpdatedThisSession
+        let filteredUpdates = updates
+        if (mtkUpdatedThisSession && updates.includes("mtk")) {
+          console.log("📱 OTA: Filtering out MTK - already updated this session (pending reboot)")
+          filteredUpdates = updates.filter((u) => u !== "mtk")
+        }
+
+        if (filteredUpdates.length === 0 || !latestVersionInfo) {
           console.log("📱 OTA check result: No updates available")
           return
         }
@@ -404,7 +418,7 @@ export function OtaUpdateChecker() {
         }
 
         const deviceName = defaultWearable || "Glasses"
-        const updateList = updates.join(", ").toUpperCase() // "APK, MTK, BES"
+        const updateList = filteredUpdates.join(", ").toUpperCase() // "APK, MTK, BES"
         const updateMessage = `Updates available: ${updateList}`
 
         console.log(`📱 OTA showing alert - WiFi connected: ${glassesWifiConnected}, updates: ${updateList}`)
@@ -421,7 +435,7 @@ export function OtaUpdateChecker() {
         } else {
           // No WiFi - cache the update info and prompt to connect
           console.log("📱 Update available but WiFi not connected - caching for later")
-          pendingUpdate.current = {latestVersionInfo, updates}
+          pendingUpdate.current = {latestVersionInfo, updates: filteredUpdates}
 
           const wifiMessage = `Updates available: ${updateList}\n\nConnect your ${deviceName} to WiFi to install.`
           showAlert(translate("ota:updateAvailable", {deviceName}), wifiMessage, [

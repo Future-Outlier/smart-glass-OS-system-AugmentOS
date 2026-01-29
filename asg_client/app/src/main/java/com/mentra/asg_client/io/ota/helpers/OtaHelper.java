@@ -131,6 +131,15 @@ public class OtaHelper {
     private String currentUpdateStage = "download"; // "download" or "install"
     private String currentUpdateType = "apk"; // "apk", "mtk", or "bes"
 
+    // Pending BES update - saved when MTK update is in progress
+    // BES will be started after MTK completes (to avoid concurrent firmware updates)
+    private JSONObject pendingBesUpdate = null;
+
+    // Track if MTK was updated this session (to prevent re-updating before reboot)
+    // MTK A/B updates don't change ro.custom.ota.version until reboot, so without this
+    // flag the system would try to re-download and re-install the same MTK update
+    private static volatile boolean mtkUpdatedThisSession = false;
+
     // ========== Singleton Pattern ==========
 
     private static volatile OtaHelper instance;
@@ -569,7 +578,11 @@ public class OtaHelper {
             else {
                 Log.d(TAG, "Finding matching MTK patch");
                 // Find matching MTK patch (MTK requires sequential updates)
-                if (rootJson.has("mtk_patches")) {
+                // Skip if MTK was already updated this session (A/B updates don't change version until reboot)
+                if (wasMtkUpdatedThisSession()) {
+                    Log.i(TAG, "📱 MTK already updated this session - skipping MTK check (reboot required to apply)");
+                    mtkPatch = null;
+                } else if (rootJson.has("mtk_patches")) {
                     String currentMtkVersion = SysProp.getProperty(context, "ro.custom.ota.version");
                     Log.d(TAG, "Current MTK version: " + currentMtkVersion);
                     mtkPatch = findMatchingMtkPatch(rootJson.getJSONArray("mtk_patches"), currentMtkVersion);
@@ -595,25 +608,35 @@ public class OtaHelper {
 
                 // Apply updates in correct order
                 if (mtkPatch != null && besUpdateAvailable) {
-                    // Both available - MTK stages, BES applies and triggers reboot
-                    Log.i(TAG, "Both MTK and BES updates available - applying MTK first, then BES");
-                    // TODO: Implement downloadAndStageMtkFirmware() - for now use existing method
+                    // Both available - MTK first, then BES after MTK completes
+                    // BES update power-cycles the system, which also applies MTK A/B slot switch
+                    Log.i(TAG, "Both MTK and BES updates available - applying MTK first, BES will follow");
+                    
+                    // Queue BES update to run after MTK completes
+                    setPendingBesUpdate(rootJson.getJSONObject("bes_firmware"));
+                    
+                    // Start MTK update - OtaService will trigger BES after MTK SUCCESS
                     boolean mtkStarted = checkAndUpdateMtkFirmware(mtkPatch, context);
                     if (mtkStarted) {
-                        Log.i(TAG, "MTK firmware staged - will apply on reboot");
+                        Log.i(TAG, "MTK firmware update started - BES queued for after completion");
+                    } else {
+                        Log.e(TAG, "MTK firmware update failed to start - clearing pending BES");
+                        clearPendingBesUpdate();
                     }
-                    // Apply BES (triggers reboot)
-                    checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context);
                 } else if (mtkPatch != null) {
-                    // Only MTK - apply normally (stages, needs reboot)
+                    // Only MTK - apply normally (stages, needs manual reboot)
                     Log.i(TAG, "MTK update available - applying");
                     checkAndUpdateMtkFirmware(mtkPatch, context);
                 } else if (besUpdateAvailable) {
-                    // Only BES - apply normally (triggers reboot)
+                    // Only BES - apply normally (triggers power-cycle)
                     Log.i(TAG, "BES update available - applying");
                     checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context);
                 } else {
                     Log.i(TAG, "No firmware updates available");
+                    // Send FINISHED to phone since no more updates
+                    if (isPhoneInitiatedOta) {
+                        sendProgressToPhone("install", 100, 0, 0, "FINISHED", null);
+                    }
                 }
             }
         } else {
@@ -2053,6 +2076,84 @@ public class OtaHelper {
         } catch (JSONException e) {
             Log.e(TAG, "Failed to send MTK install progress", e);
         }
+    }
+
+    // ========== Pending BES Update Methods ==========
+
+    /**
+     * Check if there's a pending BES update waiting to be installed.
+     * Used after MTK update completes to chain BES update.
+     * @return true if BES update is pending
+     */
+    public boolean hasPendingBesUpdate() {
+        return pendingBesUpdate != null;
+    }
+
+    /**
+     * Start the pending BES update.
+     * Called by OtaService after MTK update completes successfully.
+     * BES update will power-cycle the system, which also applies the MTK A/B slot switch.
+     */
+    public void startPendingBesUpdate() {
+        if (pendingBesUpdate == null) {
+            Log.w(TAG, "📱 startPendingBesUpdate called but no pending BES update");
+            return;
+        }
+
+        Log.i(TAG, "📱 Starting pending BES update after MTK completion");
+        JSONObject besInfo = pendingBesUpdate;
+        pendingBesUpdate = null; // Clear pending to prevent re-trigger
+
+        // Start BES update on background thread
+        new Thread(() -> {
+            checkAndUpdateBesFirmware(besInfo, context);
+        }).start();
+    }
+
+    /**
+     * Set pending BES update to be executed after MTK completes.
+     * @param besFirmwareInfo BES firmware JSON object
+     */
+    private void setPendingBesUpdate(JSONObject besFirmwareInfo) {
+        this.pendingBesUpdate = besFirmwareInfo;
+        Log.i(TAG, "📱 BES update queued - will start after MTK completes");
+    }
+
+    /**
+     * Clear any pending BES update (e.g., on error or cleanup)
+     */
+    public void clearPendingBesUpdate() {
+        this.pendingBesUpdate = null;
+    }
+
+    // ========== MTK Session Tracking ==========
+
+    /**
+     * Mark that MTK was updated this session.
+     * Called by OtaService when MTK update succeeds.
+     * Prevents re-downloading the same MTK update before reboot.
+     */
+    public static void setMtkUpdatedThisSession() {
+        mtkUpdatedThisSession = true;
+        Log.i(TAG, "📱 MTK updated this session - will skip MTK checks until reboot");
+    }
+
+    /**
+     * Check if MTK was already updated this session.
+     * @return true if MTK was updated and glasses haven't rebooted yet
+     */
+    public static boolean wasMtkUpdatedThisSession() {
+        return mtkUpdatedThisSession;
+    }
+
+    /**
+     * Clear the MTK session flag.
+     * This is called automatically on app restart (static variable resets).
+     * Can also be called manually if needed.
+     */
+    public static void clearMtkSessionFlag() {
+        mtkUpdatedThisSession = false;
+        Log.d(TAG, "📱 MTK session flag cleared");
     }
 
     // ========== DEBUG METHODS ==========

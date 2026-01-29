@@ -206,14 +206,30 @@ public class OtaService extends Service {
                 break;
             case SUCCESS:
                 updateNotification("MTK firmware updated successfully");
+                
+                // Mark MTK as updated this session to prevent re-update before reboot
+                OtaHelper.setMtkUpdatedThisSession();
+                
                 if (otaHelper != null) {
                     otaHelper.sendMtkInstallProgressToPhone("FINISHED", 100, null);
                 }
-                // Delay 1 second to ensure FINISHED message is sent over BLE before reboot
-                Log.i(TAG, "📱 MTK update success - waiting 1 second for FINISHED to be sent before broadcast");
+                // Delay 1 second to ensure FINISHED message is sent over BLE before proceeding
+                Log.i(TAG, "📱 MTK update success - waiting 1 second before checking for BES update");
                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                     // Send broadcast to notify app that MTK update is complete
                     sendMtkUpdateCompleteMessage();
+                    
+                    // MTK A/B updates are staged - no reboot needed yet
+                    // Check if BES update is pending and start it
+                    // BES update will power-cycle the system, which also applies MTK A/B slot switch
+                    if (otaHelper != null && otaHelper.hasPendingBesUpdate()) {
+                        Log.i(TAG, "📱 MTK complete - starting pending BES update");
+                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                            otaHelper.startPendingBesUpdate();
+                        }, 2000); // 2 second delay to let phone process MTK FINISHED
+                    } else {
+                        Log.i(TAG, "📱 MTK complete - no BES update pending, user must reboot manually");
+                    }
                 }, 1000);
                 break;
             case ERROR:

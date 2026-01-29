@@ -61,9 +61,22 @@ export default function OtaCheckForUpdatesScreen() {
         }
 
         if (result.updateAvailable && result.latestVersionInfo) {
-          console.log("📱 Updates available - setting update_available state")
-          setAvailableUpdates(result.updates || [])
-          setCheckState("update_available")
+          // Filter out MTK if it was already updated this session
+          const mtkUpdatedThisSession = useGlassesStore.getState().mtkUpdatedThisSession
+          let filteredUpdates = result.updates || []
+          if (mtkUpdatedThisSession && filteredUpdates.includes("mtk")) {
+            console.log("📱 Filtering out MTK - already updated this session (pending reboot)")
+            filteredUpdates = filteredUpdates.filter((u) => u !== "mtk")
+          }
+
+          if (filteredUpdates.length > 0) {
+            console.log("📱 Updates available - setting update_available state")
+            setAvailableUpdates(filteredUpdates)
+            setCheckState("update_available")
+          } else {
+            console.log("📱 No updates available after filtering - setting no_update state")
+            setCheckState("no_update")
+          }
         } else {
           console.log("📱 No updates available - setting no_update state")
           setCheckState("no_update")

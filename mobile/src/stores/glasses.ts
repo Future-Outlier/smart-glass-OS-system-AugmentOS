@@ -66,6 +66,9 @@ export interface GlassesInfo {
   otaUpdateAvailable: OtaUpdateInfo | null
   otaProgress: OtaProgress | null
   otaInProgress: boolean
+  // Track if MTK was updated this session (to prevent re-prompting before reboot)
+  // MTK A/B updates don't change version until reboot, so we track it separately
+  mtkUpdatedThisSession: boolean
 }
 
 interface GlassesState extends GlassesInfo {
@@ -78,6 +81,7 @@ interface GlassesState extends GlassesInfo {
   setOtaUpdateAvailable: (info: OtaUpdateInfo | null) => void
   setOtaProgress: (progress: OtaProgress | null) => void
   setOtaInProgress: (inProgress: boolean) => void
+  setMtkUpdatedThisSession: (updated: boolean) => void
   clearOtaState: () => void
   reset: () => void
 }
@@ -120,6 +124,7 @@ const initialState: GlassesInfo = {
   otaUpdateAvailable: null,
   otaProgress: null,
   otaInProgress: false,
+  mtkUpdatedThisSession: false,
 }
 
 export const getGlasesInfoPartial = (state: GlassesInfo) => {
@@ -177,11 +182,14 @@ export const useGlassesStore = create<GlassesState>()(
 
     setOtaInProgress: (inProgress: boolean) => set({otaInProgress: inProgress}),
 
+    setMtkUpdatedThisSession: (updated: boolean) => set({mtkUpdatedThisSession: updated}),
+
     clearOtaState: () =>
       set({
         otaUpdateAvailable: null,
         otaProgress: null,
         otaInProgress: false,
+        // Note: mtkUpdatedThisSession is NOT cleared here - it stays true until glasses disconnect/reboot
       }),
 
     reset: () => set(initialState),
