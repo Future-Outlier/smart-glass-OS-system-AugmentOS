@@ -103,12 +103,6 @@ public class CoreModule: Module {
 
         // MARK: - Connection Commands
 
-        AsyncFunction("getStatus") {
-            await MainActor.run {
-                CoreManager.shared.getStatus()
-            }
-        }
-
         AsyncFunction("connectDefault") {
             await MainActor.run {
                 CoreManager.shared.connectDefault()

@@ -95,7 +95,7 @@ class MantleManager {
     console.log("MANTLE: Settings sent to core")
 
     // send initial status request:
-    await CoreModule.getStatus()
+    // await CoreModule.getStatus()
 
     this.initServices()
     this.setupPeriodicTasks()

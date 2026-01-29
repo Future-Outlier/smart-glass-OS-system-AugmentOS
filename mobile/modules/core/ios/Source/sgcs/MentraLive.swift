@@ -2143,8 +2143,6 @@ class MentraLive: NSObject, SGCManager {
             btMacAddress: btMacAddress
         )
 
-        // Trigger status update so React Native gets the updated glasses info with version details
-        CoreManager.shared.getStatus()
     }
 
     private func handleAck(_: [String: Any]) {
@@ -2903,9 +2901,6 @@ class MentraLive: NSObject, SGCManager {
         GlassesStore.shared.apply("glasses", "hotspotSsid", ssid)
         GlassesStore.shared.apply("glasses", "hotspotPassword", password)
         GlassesStore.shared.apply("glasses", "hotspotGatewayIp", ip) // This is the gateway IP from glasses
-        // emitHotspotStatusChange()
-        // Trigger a full status update so React Native gets the updated glasses_info
-        // CoreManager.shared.getStatus()
     }
 
     private func handleHotspotError(errorMessage: String, timestamp: Int64) {

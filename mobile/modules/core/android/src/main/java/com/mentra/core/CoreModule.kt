@@ -98,8 +98,6 @@ class CoreModule : Module() {
 
         // MARK: - Connection Commands
 
-        AsyncFunction("getStatus") { coreManager?.getStatus() }
-
         AsyncFunction("connectDefault") { coreManager?.connectDefault() }
 
         AsyncFunction("connectByName") { deviceName: String ->

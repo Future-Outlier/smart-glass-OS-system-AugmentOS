@@ -88,9 +88,8 @@ export default function PairingSuccessScreen() {
           type: "image",
           source: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
           transition: false,
-          title: " ", // for spacing so it's consistent with the other steps
-          subtitle: translate("common:success"),
-          subtitleSmall: translate("onboarding:liveConnected"),
+          title: translate("common:success"),
+          subtitle: translate("onboarding:liveConnected"),
         },
       ]
       break
@@ -102,9 +101,8 @@ export default function PairingSuccessScreen() {
           type: "image",
           source: glassesImage,
           transition: false,
-          title: " ", // for spacing so it's consistent with the other steps
-          subtitle: translate("common:success"),
-          subtitleSmall: translate("onboarding:g1Connected"),
+          title: translate("common:success"),
+          subtitle: translate("onboarding:g1Connected"),
         },
       ]
       break

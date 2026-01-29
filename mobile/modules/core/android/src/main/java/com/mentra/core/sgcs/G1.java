@@ -575,7 +575,6 @@ public class G1 extends SGCManager {
                                 && ((data[1] & 0xFF) == 0x07 || (data[1] & 0xFF) == 0x06)) {
                             GlassesStore.INSTANCE.apply("glasses", "caseRemoved", true);
                             Bridge.log("G1: CASE REMOVED");
-                            CoreManager.getInstance().getStatus();
                         }
                         // CASE OPEN
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x08) {
@@ -583,7 +582,6 @@ public class G1 extends SGCManager {
                             GlassesStore.INSTANCE.apply("glasses", "caseRemoved", false);
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            CoreManager.getInstance().getStatus();
                         }
                         // CASE CLOSED
                         else if (data.length > 1 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0B) {
@@ -591,14 +589,12 @@ public class G1 extends SGCManager {
                             GlassesStore.INSTANCE.apply("glasses", "caseRemoved", false);
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            CoreManager.getInstance().getStatus();
                         }
                         // CASE CHARGING STATUS
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0E) {
                             GlassesStore.INSTANCE.apply("glasses", "caseCharging", (data[2] & 0xFF) == 0x01);// TODO: verify this is correct
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            CoreManager.getInstance().getStatus();
                         }
                         // CASE CHARGING INFO
                         else if (data.length > 3 && (data[0] & 0xFF) == 0xF5 && (data[1] & 0xFF) == 0x0F) {
@@ -606,7 +602,6 @@ public class G1 extends SGCManager {
                             GlassesStore.INSTANCE.apply("glasses", "caseBatteryLevel", newCaseBatteryLevel);
                             // EventBus.getDefault()
                                     // .post(new CaseEvent(caseBatteryLevel, caseCharging, caseOpen, caseRemoved));
-                            CoreManager.getInstance().getStatus();
                         }
                         // HEARTBEAT RESPONSE
                         else if (data.length > 0 && data[0] == 0x25) {
@@ -3865,9 +3860,10 @@ public class G1 extends SGCManager {
 
             // Bridge.sendTypedMessage("glasses_serial_number", eventBody);
             Bridge.log("G1: 📱 Emitted serial number info: " + serialNumber + ", Style: " + style + ", Color: " + color);
+            GlassesStore.INSTANCE.apply("glasses", "serialNumber", serialNumber);
+            GlassesStore.INSTANCE.apply("glasses", "style", style);
+            GlassesStore.INSTANCE.apply("glasses", "color", color);
 
-            // Trigger status update to include serial number in status JSON
-            CoreManager.getInstance().getStatus();
         } catch (Exception e) {
             Bridge.log("G1: Error emitting serial number info: " + e.getMessage());
         }

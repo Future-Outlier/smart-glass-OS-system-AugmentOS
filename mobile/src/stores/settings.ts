@@ -23,6 +23,7 @@ interface Setting {
 export const SETTINGS: Record<string, Setting> = {
   // feature flags / mantle settings:
   dev_mode: {key: "dev_mode", defaultValue: () => __DEV__, writable: true, saveOnServer: true, persist: true},
+  super_mode: {key: "super_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
   enable_squircles: {
     key: "enable_squircles",
     defaultValue: () => true,

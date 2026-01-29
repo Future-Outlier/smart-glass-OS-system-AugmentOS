@@ -5,7 +5,7 @@ import {View, ViewStyle, ActivityIndicator, Platform} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Button, Header, Icon} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import Toast from "react-native-toast-message"
@@ -53,6 +53,8 @@ interface OnboardingGuideProps {
   exitFn?: () => void
   showCloseButton?: boolean
   showHeader?: boolean
+  preventBack?: boolean
+  androidBackFn?: () => void
 }
 
 // Find next video step's source for preloading
@@ -75,10 +77,11 @@ export function OnboardingGuide({
   endButtonText = "Done",
   endButtonFn,
   exitFn,
+  preventBack = false,
 }: OnboardingGuideProps) {
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const {theme} = useAppTheme()
-  const [devMode] = useSetting(SETTINGS.dev_mode.key)
+  const [superMode] = useSetting(SETTINGS.super_mode.key)
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showNextButton, setShowNextButton] = useState(false)
@@ -94,7 +97,6 @@ export function OnboardingGuide({
   const [player2Loading, setPlayer2Loading] = useState(true)
   const [showPoster, setShowPoster] = useState(false)
   const [waitState, setWaitState] = useState(false)
-  // focusEffectPreventBack()
 
   // Initialize players with first video sources found
   const initialSource1 = useMemo(() => findNextVideoSource(steps, 0), [steps])
@@ -246,7 +248,7 @@ export function OnboardingGuide({
 
     // The start is a special case
     if (currentIndex === 0 || currentIndex === 1) {
-      setHasStarted(false)
+      setHasStarted(autoStart)// if autoStart is true, we don't want to reset the hasStarted state (because it's already started)
       setCurrentIndex(0)
       setActivePlayer(1)
       setShowReplayButton(false)
@@ -321,6 +323,15 @@ export function OnboardingGuide({
       player1.pause()
     }
   }, [currentIndex, uiIndex, activePlayer, steps])
+
+  if (preventBack) {
+    focusEffectPreventBack(() => {
+      // console.log("ONBOARD: preventBack back handler called")
+      if (hasStarted && !isFirstStep) {
+        handleBack()
+      }
+    })
+  }
 
   // Video status change listener
   useEffect(() => {
@@ -432,12 +443,12 @@ export function OnboardingGuide({
     }
 
     return (
-      <View className={`flex flex-col flex-grow justify-center gap-2 flex-1 px-2`}>
-        <Text className="text-center text-xl self-start font-semibold" text={step.bullets[0]} />
+      <View className={`flex-1 gap-4 mt-6`}>
+        <Text className="text-xl font-semibold" text={step.bullets[0]} />
         {step.bullets.slice(1).map((bullet, index) => (
-          <View key={index} className="flex-row items-start gap-2 px-4">
-            <Text className="text-sm font-medium">•</Text>
-            <Text className="flex-1 text-sm font-medium" text={bullet} />
+          <View key={index} className="flex-row items-start gap-2 pl-4">
+            <Text className="text-[15px] font-medium">•</Text>
+            <Text className="flex-1 text-[15px] font-medium" text={bullet} />
           </View>
         ))}
       </View>
@@ -603,7 +614,7 @@ export function OnboardingGuide({
       )
     }
 
-    if (devMode && Platform.OS === "ios") {
+    if (superMode && Platform.OS === "ios") {
       return renderDebugVideos()
     }
 
@@ -649,7 +660,7 @@ export function OnboardingGuide({
     // console.log("ONBOARD: showLoader", showLoader)
     // console.log("ONBOARD: step.waitFn", step.waitFn)
 
-    if (showLoader && !devMode) {
+    if (showLoader && !superMode) {
       return null
     }
 
@@ -657,12 +668,12 @@ export function OnboardingGuide({
       return (
         <Button
           flex
-          text="DEV: Continue"
+          text="Continue"
           style={{backgroundColor: theme.colors.chart_4}}
           textStyle={{fontWeight: "bold"}}
           preset="primary"
           onPress={() => {
-            if (devMode) {
+            if (superMode) {
               handleNext(true)
               return
             }
@@ -700,18 +711,31 @@ export function OnboardingGuide({
   }
 
   const renderStepContent = () => {
-    if (!step.subtitle && !step.subtitle2 && !step.subtitleSmall && !step.info) {
-      return null
-    }
+    // if (!step.subtitle && !step.subtitle2 && !step.subtitleSmall && !step.info) {
+    //   return null
+    // }
+
+    // if (!step.info) {
+    //   return (
+    //     <View id="step-content" className="flex mb-4 h-26 gap-3 bg-blue-500 w-full justify-center">
+    //       {step.title && <Text className="text-center text-2xl font-semibold" text={step.title} />}
+    //       {step.subtitle && <Text className="text-center text-[18px]" text={step.subtitle} />}
+    //     </View>
+    //   )
+    // }
 
     return (
-      <View id="step-content" className="flex py-8">
-        {step.title && <Text className="text-start text-2xl font-semibold" text={step.title} />}
-        {step.subtitle && <Text className="text-start text-xl font-semibold" text={step.subtitle} />}
-        {step.subtitle2 && <Text className="text-start text-lg text-foreground font-medium" text={step.subtitle2} />}
-        {step.subtitleSmall && <Text className="text-start text-sm font-medium" text={step.subtitleSmall} />}
+      <View id="step-content" className="flex mb-4 h-26 gap-3 w-full justify-center">
+        {step.title && (
+          <Text className={`${step.info ? "text-start" : "text-center"} text-2xl font-semibold`} text={step.title} />
+        )}
+        {step.subtitle && (
+          <Text className={`${step.info ? "text-start" : "text-center"} text-[18px]`} text={step.subtitle} />
+        )}
+        {/* {step.subtitle2 && <Text className="text-start text-lg text-foreground font-medium" text={step.subtitle2} />} */}
+        {/* {step.subtitleSmall && <Text className="text-start text-sm font-medium" text={step.subtitleSmall} />} */}
         {step.info && (
-          <View className="flex flex-row gap-2 py-2 justify-start items-center">
+          <View className="flex flex-row gap-2 justify-start items-center">
             <Icon name="info" size={20} color={theme.colors.muted_foreground} />
             <Text className="text-start text-sm font-medium text-muted-foreground" text={step.info} numberOfLines={2} />
           </View>
@@ -722,7 +746,7 @@ export function OnboardingGuide({
 
   const renderStepCheck = () => {
     const showCheck = step.waitFn && !waitState
-    const showDebug = devMode && waitState && step.waitFn
+    const showDebug = superMode && waitState && step.waitFn
     if (!showCheck && !showDebug) {
       // still show a small height if there is a waitFn so the text doesn't move around:
       if (step.waitFn) {
@@ -731,7 +755,7 @@ export function OnboardingGuide({
       return null
     }
     return (
-      <View id="bottom" className={`flex justify-end h-12 ${devMode ? "bg-chart-4" : ""}`}>
+      <View id="bottom" className={`flex justify-end h-12 ${superMode ? "bg-chart-4" : ""}`}>
         {showCheck && (
           <View className="flex-1 justify-center">
             <View className="flex flex-row justify-center items-center">
@@ -745,7 +769,7 @@ export function OnboardingGuide({
         {showDebug && (
           <View className="flex-1 justify-center">
             <View className="flex flex-row justify-center items-center gap-2">
-              <Text className="text-center text-sm font-bold" text="DEV: waiting for step to complete" />
+              <Text className="text-center text-sm font-bold" text="waiting for step to complete" />
               <ActivityIndicator size="small" color={theme.colors.background} />
             </View>
           </View>
@@ -755,6 +779,7 @@ export function OnboardingGuide({
   }
 
   const showCounter = hasStarted && steps.length > 1
+  const showContent = step.title || step.subtitle || step.info
 
   return (
     <>
@@ -770,15 +795,13 @@ export function OnboardingGuide({
           onLeftPress={handleExit}
         />
       )}
-      <View id="main" className="flex flex-1">
-        <View id="top" className="flex">
-          {renderStepContent()}
-
+      <View id="main" className="flex-1">
+        <View id="top" className={`${showContent ? "mt-20" : "mt-8"}`}>
+          {showContent && renderStepContent()}
           <View className="-mx-6">
             <View className="relative" style={{width: "100%", aspectRatio: 1}}>
               {renderContent()}
             </View>
-
             {showReplayButton && isCurrentStepVideo && (
               <View className="absolute bottom-1 left-0 right-0 items-center z-10">
                 <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
@@ -788,20 +811,11 @@ export function OnboardingGuide({
         </View>
         <View className="flex-1">
           {renderStepCheck()}
-          {/* {renderStepContent()} */}
           {renderBullets()}
           {renderNumberedBullets()}
         </View>
-        <View id="bottom" className={`flex justify-end flex-shrink`}>
-          {/* {!hasStarted && (mainTitle || mainSubtitle) && (
-            <View className="flex flex-col gap-2 mb-10">
-              {mainTitle && <Text className="text-center text-xl font-semibold" text={mainTitle} />}
-              {mainSubtitle && <Text className="text-center text-sm font-medium" text={mainSubtitle} />}
-            </View>
-          )} */}
-
-          {/* <View className="h-10"/> */}
-
+        
+        <View id="bottom" className={`flex justify-end flex-shrink min-h-12`}>
           {!hasStarted && (
             <View className="flex-col gap-4">
               <Button text={startButtonText} onPress={handleStart} />

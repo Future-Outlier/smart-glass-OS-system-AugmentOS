@@ -238,7 +238,6 @@ class GlassesStore {
         case ("core", "default_wearable"):
             if let wearable = value as? String {
                 Bridge.saveSetting("default_wearable", wearable)
-                CoreManager.shared.getStatus() // force update connection status
             }
 
         case ("core", "device_name"):

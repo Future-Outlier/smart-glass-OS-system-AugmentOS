@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.mentra.core.utils.DeviceTypes
 
 /** Centralized observable state store for glasses and core settings */
 object GlassesStore {
@@ -257,7 +258,6 @@ object GlassesStore {
             "core" to "default_wearable" -> {
                 (value as? String)?.let { wearable ->
                     Bridge.saveSetting("default_wearable", wearable)
-                    CoreManager.getInstance().getStatus() // force update status
                 }
             }
             "core" to "device_name" -> {

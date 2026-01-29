@@ -1,9 +1,9 @@
 import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import CoreModule from "core"
+import CoreModule, {TouchEvent} from "core"
 import {Platform} from "react-native"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
@@ -11,7 +11,7 @@ const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-li
 export default function MentraLiveOnboarding() {
   const {pushPrevious} = useNavigationHistory()
   const [_onboardingLiveCompleted, setOnboardingLiveCompleted] = useSetting(SETTINGS.onboarding_live_completed.key)
-  focusEffectPreventBack()
+  // focusEffectPreventBack()
 
   // NOTE: you can't have 2 transition videos in a row or things will break:
   let steps: OnboardingStep[] = [
@@ -22,9 +22,11 @@ export default function MentraLiveOnboarding() {
       name: "Start Onboarding",
       playCount: 1,
       transition: true,
-      title: " ", // for spacing so it's consistent with the other steps
+      // title: " ", // for spacing so it's consistent with the other steps
       // title: "Welcome to Mentra Live",
       // info: "Learn the basics",
+      title: translate("onboarding:liveWelcomeTitle"),
+      subtitle: translate("onboarding:liveWelcomeSubtitle"),
     },
     // {
     //   type: "video",
@@ -124,6 +126,16 @@ export default function MentraLiveOnboarding() {
       transition: false,
       title: translate("onboarding:livePlayMusic"),
       subtitle: translate("onboarding:liveDoubleTapTouchpad"),
+      waitFn: (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.addListener("touch_event", (data: TouchEvent) => {
+            if (data?.gesture_name === "double_tap") {
+              unsub.remove()
+              resolve()
+            }
+          })
+        })
+      },
     },
     // {
     //   source: `${CDN_BASE}/ONB8_transition_trackpad2.mp4`,
@@ -141,6 +153,16 @@ export default function MentraLiveOnboarding() {
       title: translate("onboarding:liveAdjustVolume"),
       subtitle: translate("onboarding:liveSwipeTouchpadUp"),
       subtitle2: translate("onboarding:liveSwipeTouchpadDown"),
+      waitFn: (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.addListener("touch_event", (data: TouchEvent) => {
+            if (data?.gesture_name === "up_swipe") {
+              unsub.remove()
+              resolve()
+            }
+          })
+        })
+      },
     },
     {
       type: "video",
@@ -192,8 +214,7 @@ export default function MentraLiveOnboarding() {
         steps={steps}
         autoStart={false}
         showCloseButton={false}
-        mainTitle={translate("onboarding:liveWelcomeTitle")}
-        mainSubtitle={translate("onboarding:liveWelcomeSubtitle")}
+        preventBack={true}
         exitFn={() => {
           pushPrevious()
         }}

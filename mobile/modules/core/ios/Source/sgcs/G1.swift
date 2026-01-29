@@ -387,9 +387,21 @@ class G1: NSObject, SGCManager {
     var batteryLevel: Int = -1
     @Published var leftBatteryLevel: Int = -1
     @Published var rightBatteryLevel: Int = -1
-    @Published var caseCharging = false
-    @Published var caseOpen = false
-    @Published var caseRemoved = true
+
+    private var caseCharging: Bool {
+        get { GlassesStore.shared.get("glasses", "caseCharging") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "caseCharging", newValue) }
+    }
+
+    private var caseOpen: Bool {
+        get { GlassesStore.shared.get("glasses", "caseOpen") as? Bool ?? true }
+        set { GlassesStore.shared.apply("glasses", "caseOpen", newValue) }
+    }
+
+    private var caseRemoved: Bool {
+        get { GlassesStore.shared.get("glasses", "caseRemoved") as? Bool ?? true }
+        set { GlassesStore.shared.apply("glasses", "caseRemoved", newValue) }
+    }
 
     var isDisconnecting = false
 
@@ -621,11 +633,6 @@ class G1: NSObject, SGCManager {
                 Bridge.log(
                     "G1: 📱 Emitted serial number info: \(serialNumber), Style: \(style), Color: \(color)"
                 )
-
-                // Trigger status update to include serial number in status JSON
-                DispatchQueue.main.async {
-                    CoreManager.shared.getStatus()
-                }
             }
         } catch {
             Bridge.log("G1: Error creating serial number JSON: \(error)")
@@ -1262,21 +1269,17 @@ class G1: NSObject, SGCManager {
             case .CASE_REMOVED:
                 Bridge.log("G1: REMOVED FROM CASE")
                 caseRemoved = true
-                CoreManager.shared.getStatus()
             case .CASE_REMOVED2:
                 Bridge.log("G1: REMOVED FROM CASE2")
                 caseRemoved = true
-                CoreManager.shared.getStatus()
             case .CASE_OPEN:
                 caseOpen = true
                 caseRemoved = false
                 Bridge.log("G1: CASE OPEN")
-                CoreManager.shared.getStatus()
             case .CASE_CLOSED:
                 caseOpen = false
                 caseRemoved = false
                 Bridge.log("G1: CASE CLOSED")
-                CoreManager.shared.getStatus()
             case .CASE_CHARGING_STATUS:
                 guard data.count >= 3 else { break }
                 let status = data[2]

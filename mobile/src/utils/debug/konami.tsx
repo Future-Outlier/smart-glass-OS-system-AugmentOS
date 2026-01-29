@@ -9,7 +9,8 @@ type Direction = "up" | "down" | "left" | "right"
 
 const KONAMI_CODE: Direction[] = ["up", "up", "down", "down", "left", "right", "left", "right"]
 const MINI_CODE: Direction[] = ["up", "up", "down", "down", "left", "left", "right", "right", "up", "up"]
-const MAX_CODE_LENGTH = Math.max(KONAMI_CODE.length, MINI_CODE.length)
+const SUPER_CODE: Direction[] = ["up", "up", "down", "down", "up", "up", "down", "down", "left", "left", "left"]
+const MAX_CODE_LENGTH = Math.max(KONAMI_CODE.length, MINI_CODE.length, SUPER_CODE.length)
 
 export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
   const [sequence, setSequence] = useState<Direction[]>([])
@@ -29,6 +30,14 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
       const matches = sequence.every((dir, i) => dir === MINI_CODE[i])
       if (matches) {
         console.log("KONAMI: Mini code activated!")
+        setSequence([])
+      }
+    }
+    if (sequence.length === SUPER_CODE.length) {
+      const matches = sequence.every((dir, i) => dir === SUPER_CODE[i])
+      if (matches) {
+        console.log("KONAMI: Super code activated!")
+        goHomeAndPush("/settings/super")
         setSequence([])
       }
     }

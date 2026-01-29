@@ -26,16 +26,15 @@ const LC3_FRAME_SIZE_OPTIONS = [
 ]
 
 export default function DeveloperSettingsScreen() {
-  const {theme, themed} = useAppTheme()
+  const {theme} = useAppTheme()
   const {goBack, push, replaceAll, clearHistoryAndGoHome} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
+  const [superMode] = useSetting(SETTINGS.super_mode.key)
   const [powerSavingMode, setPowerSavingMode] = useSetting(SETTINGS.power_saving_mode.key)
   const [reconnectOnAppForeground, setReconnectOnAppForeground] = useSetting(SETTINGS.reconnect_on_app_foreground.key)
   const [enableSquircles, setEnableSquircles] = useSetting(SETTINGS.enable_squircles.key)
   const [debugConsole, setDebugConsole] = useSetting(SETTINGS.debug_console.key)
-  const [debugNavigationHistoryEnabled, setDebugNavigationHistoryEnabled] = useSetting(SETTINGS.debug_navigation_history.key)
-  const [debugCoreStatusBarEnabled, setDebugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
   const [_onboardingOsCompleted, setOnboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
   const [_onboardingLiveCompleted, setOnboardingLiveCompleted] = useSetting(SETTINGS.onboarding_live_completed.key)
   const [lc3FrameSize, setLc3FrameSize] = useSetting(SETTINGS.lc3_frame_size.key)
@@ -44,19 +43,14 @@ export default function DeveloperSettingsScreen() {
     <Screen preset="fixed">
       <Header title="Developer Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
 
-      <ScrollView
-        style={{
-          flex: 1,
-          marginHorizontal: -theme.spacing.s4,
-          paddingHorizontal: theme.spacing.s4,
-        }}>
+      <ScrollView className="flex px-4 -mx-4">
         <View className="flex gap-6">
-          <View style={themed($warningContainer)}>
-            <View style={themed($warningContent)}>
-              <Icon name="alert" size={16} color={theme.colors.text} />
-              <Text tx="warning:warning" style={themed($warningTitle)} />
+          <View className="mt-6 border-destructive border-2 bg-destructive/10 rounded-lg px-4 py-3">
+            <View className="flex flex-row items-center gap-2">
+              <Icon name="alert-triangle" size={16} color={theme.colors.destructive} />
+              <Text tx="warning:warning" className="text-lg font-bold" />
             </View>
-            <Text tx="warning:developerSettingsWarning" style={themed($warningSubtitle)} />
+            <Text tx="warning:developerSettingsWarning" className="text-sm font-medium" />
           </View>
 
           <Group title="Settings">
@@ -85,17 +79,6 @@ export default function DeveloperSettingsScreen() {
               subtitle="Use iOS-style squircle app icons instead of circles"
               value={enableSquircles}
               onValueChange={(value) => setEnableSquircles(value)}
-            />
-            <ToggleSetting
-              label="Debug Navigation History"
-              value={debugNavigationHistoryEnabled}
-              onValueChange={(value) => setDebugNavigationHistoryEnabled(value)}
-            />
-
-            <ToggleSetting
-              label="Debug Core Status Bar"
-              value={debugCoreStatusBarEnabled}
-              onValueChange={(value) => setDebugCoreStatusBarEnabled(value)}
             />
           </Group>
 
@@ -163,10 +146,8 @@ export default function DeveloperSettingsScreen() {
               onPress={async () => {
                 ws.cleanup()
                 socketComms.cleanup()
-                console.log("SOCKET: CLEANED")
                 await new Promise((resolve) => setTimeout(resolve, 3000))
                 socketComms.restartConnection()
-                console.log("SOCKET: RESTARTED")
               }}
             />
           </Group>
@@ -226,6 +207,8 @@ export default function DeveloperSettingsScreen() {
           <BackendUrl />
 
           <StoreUrl />
+
+          {superMode && <RouteButton label="Super Settings" onPress={() => push("/settings/super")} />}
 
           <Spacer height={theme.spacing.s12} />
         </View>

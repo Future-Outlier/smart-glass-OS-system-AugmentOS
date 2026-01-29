@@ -9,7 +9,7 @@ const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentraos/
 export default function MentraOSOnboarding() {
   const {pushPrevious} = useNavigationHistory()
   const [_onboardingOsCompleted, setOnboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
-  focusEffectPreventBack()
+  // focusEffectPreventBack()
 
   // NOTE: you can't have 2 transition videos in a row or things will break:
   const steps: OnboardingStep[] = [
@@ -89,6 +89,7 @@ export default function MentraOSOnboarding() {
         steps={steps}
         autoStart={true}
         showCloseButton={true}
+        preventBack={true}
         // showSkipButton={true}
         exitFn={() => {
           pushPrevious()

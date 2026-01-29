@@ -2397,9 +2397,6 @@ public class MentraLive extends SGCManager {
                     Bridge.sendVersionInfo(appVersionChunked, buildNumberChunked, deviceModelChunked, androidVersionChunked,
                           otaVersionUrlChunked != null ? otaVersionUrlChunked : "", firmwareVersionChunked, btMacAddressChunked);
 
-                    // Notify CoreManager to update status and send to frontend
-                    CoreManager.getInstance().getStatus();
-
                     // Clear the pending chunk
                     pendingVersionInfoChunk1 = null;
                 } else {
@@ -2450,8 +2447,6 @@ public class MentraLive extends SGCManager {
                 Bridge.sendVersionInfo(appVersionLegacy, buildNumberLegacy, deviceModelLegacy, androidVersionLegacy,
                       otaVersionUrlLegacy != null ? otaVersionUrlLegacy : "", firmwareVersionLegacy, btMacAddressLegacy);
 
-                // Notify CoreManager to update status and send to frontend
-                CoreManager.getInstance().getStatus();
                 break;
 
             case "ota_download_progress":
@@ -2939,10 +2934,7 @@ public class MentraLive extends SGCManager {
         GlassesStore.INSTANCE.apply("glasses", "hotspotGatewayIp", gatewayIp);
 
         // Send hotspot status change event (matches iOS emitHotspotStatusChange)
-        Bridge.sendHotspotStatusChange(enabled, ssid, password, gatewayIp);
-
-        // Trigger a full status update so React Native gets the updated glasses_info
-        CoreManager.getInstance().getStatus();
+        // Bridge.sendHotspotStatusChange(enabled, ssid, password, gatewayIp);
     }
 
     /**
