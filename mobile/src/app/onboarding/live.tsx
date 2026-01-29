@@ -168,8 +168,8 @@ export default function MentraLiveOnboarding() {
       name: "End",
       playCount: 1,
       transition: false,
-      subtitle: translate("onboarding:liveEndTitle"),
-      subtitle2: translate("onboarding:liveEndMessage"),
+      title: translate("onboarding:liveEndTitle"),
+      subtitle: translate("onboarding:liveEndMessage"),
     },
   ]
 
