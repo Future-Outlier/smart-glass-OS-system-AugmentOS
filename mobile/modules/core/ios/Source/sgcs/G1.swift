@@ -384,9 +384,14 @@ class G1: NSObject, SGCManager {
     @Published var compressedVoiceData: Data = .init()
     @Published var aiListening: Bool = false
     @Published var quickNotes: [QuickNote] = []
-    var batteryLevel: Int = -1
     @Published var leftBatteryLevel: Int = -1
     @Published var rightBatteryLevel: Int = -1
+    
+
+    private var batteryLevel: Int {
+        get { GlassesStore.shared.get("glasses", "batteryLevel") as? Int ?? -1 }
+        set { GlassesStore.shared.apply("glasses", "batteryLevel", newValue) }
+    }
 
     private var caseCharging: Bool {
         get { GlassesStore.shared.get("glasses", "caseCharging") as? Bool ?? false }

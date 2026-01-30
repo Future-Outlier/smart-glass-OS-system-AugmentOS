@@ -271,8 +271,7 @@ const $wrapper: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  height: 40,
-  marginTop: spacing.s9,
+  height: 44,
   // paddingBottom: spacing.s3,
 })
 

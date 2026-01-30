@@ -3988,17 +3988,17 @@ public class MentraLive extends SGCManager {
 
     @Override
     public void sendButtonVideoRecordingSettings() {
-        JSONObject settings = GlassesStore.INSTANCE.get("core", "button_video_settings") as JSONObject;
-        int videoWidth = settings.getInt("width");
-        int videoHeight = settings.getInt("height");
-        int videoFps = settings.getInt("fps");
-        // int videoWidth = (Integer) GlassesStore.INSTANCE.get("core", "button_video_width");
-        // int videoHeight = (Integer) GlassesStore.INSTANCE.get("core", "button_video_height");
-        // int videoFps = (Integer) GlassesStore.INSTANCE.get("core", "button_video_fps");
-
-        Bridge.log("LIVE: 🎥 [SETTINGS_SYNC] Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
-
         try {
+            JSONObject videoSettings = (JSONObject) GlassesStore.INSTANCE.get("core", "button_video_settings");
+            int videoWidth = videoSettings.getInt("width");
+            int videoHeight = videoSettings.getInt("height");
+            int videoFps = videoSettings.getInt("fps");
+            // int videoWidth = (Integer) GlassesStore.INSTANCE.get("core", "button_video_width");
+            // int videoHeight = (Integer) GlassesStore.INSTANCE.get("core", "button_video_height");
+            // int videoFps = (Integer) GlassesStore.INSTANCE.get("core", "button_video_fps");
+
+            Bridge.log("LIVE: 🎥 [SETTINGS_SYNC] Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
+
             JSONObject json = new JSONObject();
             json.put("type", "button_video_recording_setting");
             JSONObject settings = new JSONObject();
@@ -4010,7 +4010,7 @@ public class MentraLive extends SGCManager {
             sendJson(json);
             Bridge.log("LIVE: ✅ [SETTINGS_SYNC] Video settings transmitted via BLE");
         } catch (JSONException e) {
-            Log.e(TAG, "❌ [SETTINGS_SYNC] Error creating button video recording settings message", e);
+            Log.e(TAG, "❌ [SETTINGS_SYNC] Error sending button video recording settings", e);
         }
     }
 

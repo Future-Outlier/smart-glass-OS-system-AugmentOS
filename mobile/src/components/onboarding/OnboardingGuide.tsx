@@ -443,7 +443,7 @@ export function OnboardingGuide({
     }
 
     return (
-      <View className={`flex-1 gap-4 mt-6`}>
+      <View className={`flex gap-4 flex-grow`}>
         <Text className="text-xl font-semibold" text={step.bullets[0]} />
         {step.bullets.slice(1).map((bullet, index) => (
           <View key={index} className="flex-row items-start gap-2 pl-4">
@@ -750,7 +750,7 @@ export function OnboardingGuide({
     if (!showCheck && !showDebug) {
       // still show a small height if there is a waitFn so the text doesn't move around:
       // if (step.waitFn) {
-        return <View className="h-12" />
+      return <View className="h-12" />
       // }
       return null
     }
@@ -780,7 +780,6 @@ export function OnboardingGuide({
 
   const showCounter = hasStarted && steps.length > 1
   const showContent = step.title || step.subtitle || step.info
-  const shouldPadTop = !step.bullets && !step.numberedBullets
 
   return (
     <>
@@ -809,14 +808,13 @@ export function OnboardingGuide({
               </View>
             )}
           </View>
-        </View>
-        <View className="flex">
-          {renderStepCheck()}
+          <View className="flex-shrink">{renderStepCheck()}</View>
           {renderBullets()}
           {renderNumberedBullets()}
         </View>
 
         <View id="bottom" className={`flex justify-end flex-shrink min-h-12`}>
+
           {!hasStarted && (
             <View className="flex-col">
               <View className="absolute w-full bottom-15 z-10">
