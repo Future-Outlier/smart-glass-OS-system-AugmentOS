@@ -1019,6 +1019,7 @@ class CoreManager {
 
     fun requestWifiScan() {
         Bridge.log("MAN: Requesting wifi scan")
+        GlassesStore.apply("core", "wifiScanResults", emptyList())
         sgc?.requestWifiScan()
     }
 
